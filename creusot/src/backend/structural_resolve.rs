@@ -1,6 +1,6 @@
 use rustc_ast::Mutability;
 use rustc_middle::ty::{GenericArg, Ty};
-use rustc_span::{DUMMY_SP, Ident};
+use rustc_span::DUMMY_SP;
 use rustc_type_ir::TyKind;
 
 use crate::{
@@ -34,9 +34,9 @@ pub fn structural_resolve<'tcx>(
                         .fields
                         .iter_enumerated()
                         .map(|(ix, f)| {
-                            let sym = Ident::from_str(&format!("x{}", ix.as_usize()));
+                            let sym = PIdent::bound(&format!("x{}", ix.as_usize()));
                             let fty = f.ty(ctx.tcx, args);
-                            (Pattern::binder(sym, fty), resolve_of(ctx, Term::var(sym, fty)))
+                            (Pattern::binder(sym, DUMMY_SP, fty), resolve_of(ctx, Term::var(sym, fty)))
                         })
                         .unzip();
 
@@ -56,8 +56,8 @@ pub fn structural_resolve<'tcx>(
                 .iter()
                 .enumerate()
                 .map(|(i, ty)| {
-                    let sym = Ident::from_str(&format!("x{i}"));
-                    (Pattern::binder(sym, ty), resolve_of(ctx, Term::var(sym, ty)))
+                    let sym = PIdent::bound(&format!("x{i}"));
+                    (Pattern::binder(sym, DUMMY_SP, ty), resolve_of(ctx, Term::var(sym, ty)))
                 })
                 .unzip();
 
