@@ -44,6 +44,7 @@ use rustc_middle::{
 };
 use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
+use rustc_type_ir::inherent::Ty as _;
 use why3::Ident;
 use std::{cell::RefCell, collections::HashMap, ops::Deref};
 
@@ -497,6 +498,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 contract: ContractClauses::new(),
                 subst: erased_identity_for_item(self.tcx, def_id),
                 inputs: Box::new([]),
+                output: Ty::new_bool(self.tcx), // dummy
                 additional_predicates,
             });
         }
