@@ -5,18 +5,9 @@ use std::{
 
 use crate::{
     backend::{
-        Namer, TranslationCtx, Why3Generator,
-        clone_map::{CloneNames, Dependency, Kind},
-        is_trusted_item,
-        logic::{lower_logical_defn, spec_axiom},
-        program,
-        signature::lower_sig,
-        structural_resolve::structural_resolve,
-        term::lower_pure,
-        ty::{
+        clone_map::{CloneNames, Dependency, Kind}, is_trusted_item, logic::{lower_logical_defn, spec_axiom}, program, signature::lower_sig, structural_resolve::structural_resolve, term::lower_pure, ty::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
-        },
-        ty_inv::InvariantElaborator,
+        }, ty_inv::InvariantElaborator, Namer, TranslationCtx, Why3Generator
     },
     constant::from_ty_const,
     contracts_items::{
@@ -27,7 +18,7 @@ use crate::{
     },
     ctx::{BodyId, ItemType},
     function::closure_resolve,
-    pearlite::{Term, normalize},
+    pearlite::{normalize, PIdent, Term},
     traits::{self, TraitResolved},
 };
 use petgraph::graphmap::DiGraphMap;
@@ -37,7 +28,7 @@ use rustc_middle::ty::{
     Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
     UnevaluatedConst,
 };
-use rustc_span::{Ident as RustIdent, Span, DUMMY_SP};
+use rustc_span::{Span, DUMMY_SP};
 use rustc_type_ir::{ConstKind, EarlyBinder};
 use why3::{declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use}, Ident};
 
@@ -450,7 +441,7 @@ fn resolve_term<'tcx>(
     let mut pre_sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
     pre_sig = pre_sig.normalize(ctx.tcx, typing_env);
 
-    let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].1);
+    let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
 
     if let &TyKind::Closure(def_id, subst) = subst[0].as_type().unwrap().kind() {
         Some(closure_resolve(ctx, def_id, subst))
@@ -479,14 +470,14 @@ fn fn_once_postcond_term<'tcx>(
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(RustIdent::from_str("self"), ty_self);
-    let args = Term::var(RustIdent::from_str("args"), subst.type_at(0));
+    let self_ = Term::var(PIdent::bound("self"), ty_self);
+    let args = Term::var(PIdent::bound("args"), subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(tcx)).inputs[2].1),
+        EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(tcx)).inputs[2].2),
     );
-    let res = Term::var(RustIdent::from_str("result"), ty_res);
+    let res = Term::var(PIdent::bound("result"), ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond_once.clone(),
         TyKind::Ref(_, cl, Mutability::Mut) => {
@@ -521,15 +512,15 @@ fn fn_mut_postcond_term<'tcx>(
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(RustIdent::from_str("self"), ty_self);
-    let args = Term::var(RustIdent::from_str("args"), subst.type_at(0));
-    let result_state = Term::var(RustIdent::from_str("result_state"), ty_self);
+    let self_ = Term::var(PIdent::bound("self"), ty_self);
+    let args = Term::var(PIdent::bound("args"), subst.type_at(0));
+    let result_state = Term::var(PIdent::bound("result_state"), ty_self);
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_mut_impl_postcond(tcx)).inputs[3].1),
+        EarlyBinder::bind(ctx.sig(get_fn_mut_impl_postcond(tcx)).inputs[3].2),
     );
-    let res = Term::var(RustIdent::from_str("result"), ty_res);
+    let res = Term::var(PIdent::bound("result"), ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond_mut.clone(),
         TyKind::Ref(_, cl, Mutability::Mut) => {
@@ -570,14 +561,14 @@ fn fn_postcond_term<'tcx>(
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(RustIdent::from_str("self"), ty_self);
-    let args = Term::var(RustIdent::from_str("args"), subst.type_at(0));
+    let self_ = Term::var(PIdent::bound("self"), ty_self);
+    let args = Term::var(PIdent::bound("args"), subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(tcx)).inputs[2].1),
+        EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(tcx)).inputs[2].2),
     );
-    let res = Term::var(RustIdent::from_str("result"), ty_res);
+    let res = Term::var(PIdent::bound("result"), ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond.clone(),
         TyKind::Ref(_, cl, Mutability::Not) => {
