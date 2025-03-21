@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
 use rustc_middle::mir::{self};
-use rustc_span::Ident;
 use std::collections::HashSet;
 
 use crate::translation::{
     fmir::*,
-    pearlite::{Term, TermKind, TermVisitor, super_visit_term},
+    pearlite::{PIdent as Ident, Term, TermKind, TermVisitor, super_visit_term},
 };
 
 pub mod invariants;
@@ -76,8 +75,8 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
         match t {
             Terminator::Switch(e, _) => self.visit_operand(e),
             Terminator::Return => {
-                self.read(Ident::from_str("_0"), true);
-                self.read(Ident::from_str("_0"), true);
+                self.read(Ident::bound("_0"), true);
+                self.read(Ident::bound("_0"), true);
             }
             _ => {}
         }
