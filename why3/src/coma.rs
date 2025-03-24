@@ -1,8 +1,5 @@
 use crate::{
-    Ident, QName,
-    declaration::{Attribute, Use},
-    printer::Print,
-    ty::Type,
+    declaration::{Attribute, Use}, printer::{Print, Why3Scope}, ty::Type, Ident, QName
 };
 
 use pretty::docs;
@@ -237,21 +234,22 @@ impl Print for Param {
     fn pretty<'a, A: pretty::DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
+        scope: &mut Why3Scope,
     ) -> pretty::DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         match self {
-            Param::Ty(ty) => docs![alloc, "< ", ty.pretty(alloc), " >"],
-            Param::Term(id, ty) => docs![alloc, id.pretty(alloc), ":", ty.pretty(alloc)].parens(),
-            Param::Reference(id, ty) => docs![alloc, "&", id.pretty(alloc), ":", ty.pretty(alloc)],
+            Param::Ty(ty) => docs![alloc, "< ", ty.pretty(alloc, scope), " >"],
+            Param::Term(id, ty) => docs![alloc, id.pretty(alloc, scope), ":", ty.pretty(alloc, scope)].parens(),
+            Param::Reference(id, ty) => docs![alloc, "&", id.pretty(alloc, scope), ":", ty.pretty(alloc, scope)],
             Param::Cont(id, writes, params) => docs![
                 alloc,
-                id.pretty(alloc),
+                id.pretty(alloc, scope),
                 alloc.space(),
-                brackets(alloc.intersperse(writes.iter().map(|a| a.pretty(alloc)), " ")),
+                brackets(alloc.intersperse(writes.iter().map(|a| a.pretty(alloc, scope)), " ")),
                 alloc.space(),
-                alloc.intersperse(params.iter().map(|a| a.pretty(alloc)), " "),
+                alloc.intersperse(params.iter().map(|a| a.pretty(alloc, scope)), " "),
             ]
             .parens(),
         }
@@ -262,6 +260,7 @@ impl Print for Var {
     fn pretty<'a, A: pretty::DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
+        scope: &mut Why3Scope,
     ) -> pretty::DocBuilder<'a, A>
     where
         A::Doc: Clone,
@@ -269,11 +268,11 @@ impl Print for Var {
         docs![
             alloc,
             if matches!(self.3, IsRef::Ref) { alloc.text("& ") } else { alloc.nil() },
-            self.0.pretty(alloc),
+            self.0.pretty(alloc, scope),
             " : ",
-            self.1.pretty(alloc),
+            self.1.pretty(alloc, scope),
             " = ",
-            self.2.pretty(alloc)
+            self.2.pretty(alloc, scope)
         ]
     }
 }
@@ -282,16 +281,17 @@ impl Print for Arg {
     fn pretty<'a, A: pretty::DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
+        scope: &mut Why3Scope,
     ) -> pretty::DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         match self {
-            Arg::Ty(ty) => ty.pretty(alloc).enclose("<", ">"),
-            Arg::Term(t) => t.pretty(alloc).braces(),
-            Arg::Ref(r) => alloc.text("& ").append(r.pretty(alloc)),
-            Arg::Cont(e @ Expr::Lambda(_, _)) => e.pretty(alloc),
-            Arg::Cont(c) => c.pretty(alloc).parens(),
+            Arg::Ty(ty) => ty.pretty(alloc, scope).enclose("<", ">"),
+            Arg::Term(t) => t.pretty(alloc, scope).braces(),
+            Arg::Ref(r) => alloc.text("& ").append(r.pretty(alloc, scope)),
+            Arg::Cont(e @ Expr::Lambda(_, _)) => e.pretty(alloc, scope),
+            Arg::Cont(c) => c.pretty(alloc, scope).parens(),
         }
     }
 }
@@ -300,13 +300,14 @@ impl Print for Expr {
     fn pretty<'a, A: pretty::DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
+        scope: &mut Why3Scope,
     ) -> pretty::DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         match self {
-            Expr::Variable(id) => id.pretty(alloc),
-            Expr::Constant(name) => name.pretty(alloc),
+            Expr::Variable(id) => id.pretty(alloc, scope),
+            Expr::Constant(name) => name.pretty(alloc, scope),
             Expr::App(e, arg) => {
                 let mut args = vec![arg];
 
@@ -326,7 +327,7 @@ impl Print for Expr {
                     Expr::App(_, _) | Expr::Variable(_) | Expr::Constant(_) | Expr::Any | Expr::Lambda(_, _)
                 );
 
-                let doc = e.pretty(alloc);
+                let doc = e.pretty(alloc, scope);
 
                 docs![
                     alloc,
@@ -334,7 +335,7 @@ impl Print for Expr {
                         alloc,
                         if needs_paren { doc.parens() } else { doc },
                         alloc.line(),
-                        alloc.intersperse(ty_term.iter().map(|a| a.pretty(alloc)), alloc.line())
+                        alloc.intersperse(ty_term.iter().map(|a| a.pretty(alloc, scope)), alloc.line())
                     ]
                     .group(),
                     if !ty_term.is_empty() && !conts.is_empty() {
@@ -342,7 +343,7 @@ impl Print for Expr {
                     } else {
                         alloc.line_()
                     },
-                    alloc.intersperse(conts.iter().map(|a| a.pretty(alloc)), alloc.line()),
+                    alloc.intersperse(conts.iter().map(|a| a.pretty(alloc, scope)), alloc.line()),
                 ]
                 .group()
                 .nest(2)
@@ -354,27 +355,28 @@ impl Print for Expr {
                     docs![
                         alloc,
                         "fun ",
-                        alloc.intersperse(params.iter().map(|p| p.pretty(alloc)), alloc.text(" ")),
+                        alloc.intersperse(params.iter().map(|p| p.pretty(alloc, scope)), alloc.text(" ")),
                         alloc.text(" ->")
                     ]
                 };
-                header.append(alloc.line()).append(body.pretty(alloc)).group().nest(2).parens()
+                header.append(alloc.line()).append(body.pretty(alloc, scope)).group().nest(2).parens()
             }
             Expr::Defn(cont, rec, handlers) => {
-                let handlers =
-                    handlers.iter().map(|d| print_defn(d, if *rec { "=" } else { "->" }, alloc));
-                cont.pretty(alloc).append(bracket_list(
+                // TODO: double check scopes are correctly bracketed
+                let handlers: Box<[_]> =
+                    handlers.iter().map(|d| print_defn(d, if *rec { "=" } else { "->" }, alloc, scope)).collect();
+                cont.pretty(alloc, scope).append(bracket_list(
                     alloc,
-                    handlers,
+                    handlers.into_iter(),
                     alloc.line().append(alloc.text("| ")),
                 ))
             }
             Expr::Let(cont, lets) => docs![
                 alloc,
-                cont.pretty(alloc),
+                cont.pretty(alloc, scope),
                 bracket_list(
                     alloc,
-                    lets.iter().map(|l| l.pretty(alloc)),
+                    lets.iter().map(|l| l.pretty(alloc, scope)),
                     alloc.line().append(alloc.text("| "))
                 )
             ],
@@ -387,26 +389,26 @@ impl Print for Expr {
                         asgns.iter().map(|(id, t)| docs![
                             alloc,
                             "&",
-                            id.pretty(alloc),
+                            id.pretty(alloc, scope),
                             alloc.space(),
                             "<-",
                             alloc.space(),
-                            t.pretty(alloc)
+                            t.pretty(alloc, scope)
                         ]),
                         alloc.line().append(alloc.text("| "))
                     ),
                     if asgns.is_empty() { alloc.nil() } else { alloc.line_() },
-                    if needs_parens { cont.pretty(alloc).parens() } else { cont.pretty(alloc) }
+                    if needs_parens { cont.pretty(alloc, scope).parens() } else { cont.pretty(alloc, scope) }
                 ]
             }
             Expr::Assert(t, e) => {
-                docs![alloc, t.pretty(alloc).braces().group(), alloc.line(), e.pretty(alloc)]
+                docs![alloc, t.pretty(alloc, scope).braces().group(), alloc.line(), e.pretty(alloc, scope)]
             }
             Expr::Assume(t, e) => {
-                docs![alloc, t.pretty(alloc).enclose("-{", "}-"), alloc.line(), e.pretty(alloc)]
+                docs![alloc, t.pretty(alloc, scope).enclose("-{", "}-"), alloc.line(), e.pretty(alloc, scope)]
             }
-            Expr::BlackBox(e) => docs![alloc, "!", alloc.space(), e.pretty(alloc)].parens(),
-            Expr::WhiteBox(e) => docs![alloc, "?", alloc.space(), e.pretty(alloc)].parens(),
+            Expr::BlackBox(e) => docs![alloc, "!", alloc.space(), e.pretty(alloc, scope)].parens(),
+            Expr::WhiteBox(e) => docs![alloc, "?", alloc.space(), e.pretty(alloc, scope)].parens(),
             Expr::Any => alloc.text("any"),
         }
     }
@@ -447,19 +449,20 @@ fn print_defn<'a, A: pretty::DocAllocator<'a>>(
     defn: &'a Defn,
     arrow_kind: &'a str,
     alloc: &'a A,
+    scope: &mut Why3Scope,
 ) -> pretty::DocBuilder<'a, A>
 where
     A::Doc: Clone,
 {
     docs![
         alloc,
-        defn.name.pretty(alloc),
-        alloc.intersperse(defn.attrs.iter().map(|a| a.pretty(alloc)), alloc.space()),
+        defn.name.pretty(alloc, scope),
+        alloc.intersperse(defn.attrs.iter().map(|a| a.pretty(alloc, scope)), alloc.space()),
         alloc.space(),
-        alloc.intersperse(defn.params.iter().map(|a| a.pretty(alloc)), " "),
+        alloc.intersperse(defn.params.iter().map(|a| a.pretty(alloc, scope)), " "),
         arrow_kind,
         alloc.space(),
-        defn.body.pretty(alloc).nest(2).group(),
+        defn.body.pretty(alloc, scope).nest(2).group(),
     ]
 }
 
@@ -467,10 +470,11 @@ impl Print for Defn {
     fn pretty<'a, A: pretty::DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
+        scope: &mut Why3Scope,
     ) -> pretty::DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
-        docs![alloc, "let rec ", print_defn(self, "=", alloc),]
+        docs![alloc, "let rec ", print_defn(self, "=", alloc, scope),]
     }
 }
