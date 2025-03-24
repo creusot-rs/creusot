@@ -110,7 +110,7 @@ fn main() -> anyhow::Result<()> {
 
 fn install(args: Args) -> anyhow::Result<()> {
     let paths = setup::get_config_paths()?;
-    if !args.external.contains(&SetupManagedTool::Why3AndWhy3find) {
+    if !args.external.contains(&SetupManagedTool::Why3AndWhy3find) && !args.skip_extra_tools {
         install_why3(&paths)?;
     }
     if !args.skip_cargo_creusot {
