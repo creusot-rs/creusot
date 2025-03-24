@@ -119,11 +119,18 @@ impl<I: Interner> TypeFoldable<I> for PIdent {
 }
 
 impl<T: Decoder> Decodable<T> for PIdent {
-    fn decode(_: &mut T) -> Self { todo!() }
+    fn decode(decoder: &mut T) -> Self {
+        let id = decoder.read_u64();
+        let name = decoder.read_str();
+        PIdent(Ident::unsafe_raw(name, id))
+    }
 }
 
 impl<T: Encoder> Encodable<T> for PIdent {
-    fn encode(&self, _: &mut T) { todo!() }
+    fn encode(&self, encoder: &mut T) {
+        encoder.emit_u64(self.0.unsafe_id());
+        encoder.emit_str(&self.0.name.as_str());
+    }
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
