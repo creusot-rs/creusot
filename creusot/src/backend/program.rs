@@ -1182,7 +1182,7 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
     args: Box<[Operand<'tcx>]>,
     istmts: &mut Vec<IntermediateStmt>,
 ) -> (QName, Box<[Arg]>) {
-    // TODO(xavier): Perform this simplification earlier
+    // TODO: Perform this simplification earlier
     // Eliminate "rust-call" ABI
     let args: Box<[_]> = if lower.ctx.is_closure_like(id) {
         assert!(args.len() == 2, "closures should only have two arguments (env, args)");
