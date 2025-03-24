@@ -169,7 +169,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
             None => ctx.fatal_error(span, "implicit parameters are unsupported").emit(),
         }).collect();
     let output_ty = match thir.body_type {
-        thir::BodyTy::Const(_) => panic!{"don't put an extern_spec on a const"},
+        thir::BodyTy::Const(_) => ctx.fatal_error(span, "don't put an extern spec on a const").emit(),
         thir::BodyTy::Fn(fn_sig) => {
             ctx.normalize_erasing_regions(rustc_middle::ty::TypingEnv::non_body_analysis(ctx.tcx, def_id), fn_sig.output())
         }
