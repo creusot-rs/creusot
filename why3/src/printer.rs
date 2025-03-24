@@ -28,7 +28,7 @@ impl<A: Print> Display for PrintDisplay<'_, A> {
 pub const ALLOC: BoxAllocator = BoxAllocator;
 
 pub trait Print {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone;
 
@@ -50,7 +50,7 @@ macro_rules! parens {
     };
 }
 
-fn parens<'b, 'a: 'b, A: DocAllocator<'a>>(
+fn parens<'a, A: DocAllocator<'a>>(
     alloc: &'a A,
     prec: Precedence,
     child: &'a Exp,
@@ -77,7 +77,7 @@ macro_rules! ty_parens {
 }
 
 impl Print for Span {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -103,7 +103,7 @@ impl Print for Span {
 }
 
 impl Print for Decl {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -129,7 +129,7 @@ impl Print for Decl {
 }
 
 impl Print for Module {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -168,7 +168,7 @@ where
 }
 
 impl Print for Axiom {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -181,7 +181,7 @@ impl Print for Axiom {
 }
 
 impl Print for Goal {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -194,7 +194,7 @@ impl Print for Goal {
 }
 
 impl Print for declaration::Constant {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -213,7 +213,7 @@ impl Print for declaration::Constant {
 }
 
 impl Print for Attribute {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -237,7 +237,7 @@ impl Print for Attribute {
 }
 
 impl Print for Signature {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -263,7 +263,7 @@ impl Print for Signature {
 }
 
 impl Print for Predicate {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -284,7 +284,7 @@ where
 }
 
 impl Print for LogicDefn {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -298,7 +298,7 @@ impl Print for LogicDefn {
 }
 
 impl Print for Use {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -315,7 +315,7 @@ impl Print for Use {
 }
 
 impl Print for Meta {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -328,7 +328,7 @@ impl Print for Meta {
 }
 
 impl Print for MetaIdent {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -340,7 +340,7 @@ impl Print for MetaIdent {
 }
 
 impl Print for MetaArg {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -351,7 +351,7 @@ impl Print for MetaArg {
 }
 
 impl Print for LogicDecl {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -370,7 +370,7 @@ impl Print for LogicDecl {
 }
 
 impl Print for Contract {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -407,7 +407,7 @@ impl Print for Contract {
 }
 
 impl Print for Type {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -435,7 +435,7 @@ impl Print for Type {
 }
 
 impl Print for Trigger {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -444,7 +444,7 @@ impl Print for Trigger {
 }
 
 impl Print for Exp {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -634,7 +634,7 @@ impl Print for Exp {
 }
 
 impl Print for Binder {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -663,7 +663,7 @@ impl Print for Binder {
 }
 
 impl Print for Pattern {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -755,7 +755,7 @@ fn bin_op_to_string(op: &BinOp) -> &str {
 }
 
 impl Print for Constant {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -816,7 +816,7 @@ fn print_float(f: f64) -> String {
 }
 
 impl Print for TyDecl {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -894,7 +894,7 @@ impl Print for TyDecl {
 }
 
 impl Print for ConstructorDecl {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -911,7 +911,7 @@ impl Print for ConstructorDecl {
 }
 
 impl Print for FieldDecl {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -920,7 +920,7 @@ impl Print for FieldDecl {
 }
 
 impl Print for IdentString {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -929,7 +929,7 @@ impl Print for IdentString {
 }
 
 impl Print for Ident {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -938,7 +938,7 @@ impl Print for Ident {
 }
 
 impl Print for QName {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
