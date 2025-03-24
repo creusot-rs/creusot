@@ -143,7 +143,7 @@ impl SpanMap {
         self.vec[s]
     }
 
-    // TODO(xavier): Refactor this so that we don't check the why3_cmd when translating spans!!
+    // TODO: Refactor this so that we don't check the why3_cmd when translating spans!!
     pub(crate) fn encode_span(&mut self, opts: &Options, span: Span) -> Option<Attribute> {
         if let Some(cmd) = &opts.why3_cmd
             && matches!(cmd.sub, Why3Sub::Prove)

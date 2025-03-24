@@ -72,7 +72,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     // Generics of our stub.
     let outer_subst = erased_identity_for_item(ctx.tcx, def_id.to_def_id());
 
-    // FIXME(xavier): I don't remember the original reason for introducing this...
+    // FIXME: I don't remember the original reason for introducing this...
     let extra_parameters = inner_subst.len() - outer_subst.len();
 
     // Move Self_ to the front of the list like rustc does for real trait impls (not expressible in surface rust).

@@ -16,7 +16,7 @@ impl EncodeError {
     pub fn into_tokens(self) -> TokenStream {
         match self {
             Self::LocalErr => {
-                quote! { compile_error!("LocalErr: what does this even mean? -- Xavier") }
+                quote! { compile_error!("LocalErr: what does this even mean?") }
             }
             Self::Unsupported(sp, msg) => {
                 let msg = format!("Unsupported expression: {}", msg);

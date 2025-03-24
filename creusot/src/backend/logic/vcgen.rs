@@ -627,7 +627,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     //
     // If V is the variant expression at entry and V' is the variant expression of the recursive call it generates
     //  0 <= V && V' < V
-    //  Weirdly (to me Xavier) this doesn't check `0 <= V'` but this is actually the same behavior as Why3
+    //  Weirdly this doesn't check `0 <= V'` but this is actually the same behavior as Why3
     fn build_variant(
         &self,
         call_args: &[Exp],
