@@ -126,7 +126,7 @@ fn install(args: Args) -> anyhow::Result<()> {
 }
 
 fn install_why3(cfg: &CfgPaths) -> anyhow::Result<()> {
-    println! {"Installing Why3 and Why3find..."};
+    println!("Installing Why3 and Why3find...");
     let switch_dir = opam_switch(cfg);
     if fs::exists(switch_dir.join("_opam"))? {
         // Upgrade existing switch
@@ -164,7 +164,7 @@ fn opam_switch(_: &CfgPaths) -> PathBuf {
 }
 
 fn install_cargo_creusot() -> anyhow::Result<()> {
-    println! {"Installing cargo-creusot..."};
+    println!("Installing cargo-creusot...");
     let mut cmd = Command::new("cargo");
     cmd.args(["install", "--path", "cargo-creusot", "--quiet"]);
     if !cmd.status()?.success() {
@@ -174,9 +174,9 @@ fn install_cargo_creusot() -> anyhow::Result<()> {
 }
 
 fn install_creusot_rustc(cfg: &setup::CfgPaths) -> anyhow::Result<()> {
-    println! {"Installing creusot-rustc..."};
+    println!("Installing creusot-rustc...");
     let toolchain = setup::toolchain_channel();
-    let _ = fs::remove_dir_all(&cfg.data_dir.join("toolchains"));
+    let _ = fs::remove_dir_all(cfg.data_dir.join("toolchains"));
     // Usually ~/.local/share/creusot/toolchains/nightly-YYYY-MM-DD/
     let toolchain_dir = &setup::toolchain_dir(&cfg.data_dir, &toolchain);
     let mut cmd = Command::new("cargo");
@@ -252,7 +252,7 @@ fn install_tools(paths: &setup::CfgPaths, args: Args) -> anyhow::Result<()> {
     // do not attempt checking version of builtin solvers (we haven't installed
     // them yet, and we know they will be of the expected version).
 
-    let issues = setup::diagnostic_config(&paths, &config, false);
+    let issues = setup::diagnostic_config(paths, &config, false);
     for issue in &issues {
         eprintln!("{issue}")
     }
@@ -261,7 +261,7 @@ fn install_tools(paths: &setup::CfgPaths, args: Args) -> anyhow::Result<()> {
     }
 
     // apply the configuration to disk
-    apply_config(&paths, &config)
+    apply_config(paths, &config)
 }
 
 fn apply_config(paths: &setup::CfgPaths, cfg: &Config) -> anyhow::Result<()> {
@@ -293,7 +293,7 @@ fn apply_config(paths: &setup::CfgPaths, cfg: &Config) -> anyhow::Result<()> {
 
     // create symbolic links for external tools so that why3 picks them up
     for (bin, path) in external {
-        symlink_file(path, &paths.bin_subdir.join(bin.bin.binary_name))?;
+        symlink_file(path, paths.bin_subdir.join(bin.bin.binary_name))?;
     }
 
     // generate the corresponding .why3.conf
@@ -352,7 +352,7 @@ fn download_from_url(client: &Client, url: &Url, dest: &Path) -> anyhow::Result<
             eprintln!("Download failed (wrong hash)");
             let _ = fs::remove_file(dest);
         }
-        tries = tries + 1;
+        tries += 1;
     }
     if !success {
         bail!("Download failed after {DOWNLOAD_RETRIES} retries (wrong hash?)")
@@ -387,14 +387,14 @@ fn generate_why3_conf(
     println!("Generating a fresh why3 configuration...");
     {
         use std::io::Write;
-        let mut f = fs::File::create(&dest_file)?;
+        let mut f = fs::File::create(dest_file)?;
         writeln!(&mut f, "[main]")?;
         writeln!(&mut f, "magic = {WHY3_CONFIG_MAGIC_NUMBER}")?;
         writeln!(&mut f, "running_provers_max = {}", provers_parallelism)?;
     }
     let status = Command::new(why3_path)
         .arg("-C")
-        .arg(&dest_file)
+        .arg(dest_file)
         .args(["config", "detect"])
         .envs([("PATH", bin_dir)])
         .status()
@@ -403,7 +403,7 @@ fn generate_why3_conf(
         bail!("failed to generate why3's configuration")
     };
     {
-        let mut f = fs::OpenOptions::new().append(true).open(&dest_file)?;
+        let mut f = fs::OpenOptions::new().append(true).open(dest_file)?;
         generate_strategy(&mut f)?;
     }
 
@@ -482,7 +482,7 @@ fn download_z3_from_url(
             .map(String::from)
             .ok_or(anyhow!("did not find a bin/z3 binary in the z3 release archive"))?;
         let mut z3zipfile = archive.by_name(&z3_archive_path)?;
-        let mut z3file = fs::File::create(&dest)?;
+        let mut z3file = fs::File::create(dest)?;
         std::io::copy(&mut z3zipfile, &mut z3file)?;
     }
     Ok(())
@@ -494,9 +494,9 @@ fn set_executable(dest: &Path) -> anyhow::Result<()> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(&dest)?.permissions();
+        let mut perms = fs::metadata(dest)?.permissions();
         perms.set_mode(0o755);
-        fs::set_permissions(&dest, perms)?;
+        fs::set_permissions(dest, perms)?;
     }
     Ok(())
 }
