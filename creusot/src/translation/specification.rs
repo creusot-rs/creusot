@@ -375,8 +375,8 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         // We do NOT normalize the contract here. See below.
         let contract = spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, spec.subst);
         PreSignature {
-            inputs: spec.inputs,
-            output: spec.output,
+            inputs: EarlyBinder::bind(spec.inputs).instantiate(ctx.tcx, spec.subst),
+            output: EarlyBinder::bind(spec.output).instantiate(ctx.tcx, spec.subst),
             contract,
         }
     } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
@@ -387,8 +387,8 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         // of a specific call).
         let contract = spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, subst);
         PreSignature {
-            inputs: spec.inputs,
-            output: spec.output,
+            inputs: EarlyBinder::bind(spec.inputs).instantiate(ctx.tcx, subst),
+            output: EarlyBinder::bind(spec.output).instantiate(ctx.tcx, subst),
             contract,
         }
     } else {
