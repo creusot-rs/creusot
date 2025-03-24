@@ -233,7 +233,7 @@ impl Expr {
 }
 
 impl Print for Param {
-    fn pretty<'b, 'a: 'b, A: pretty::DocAllocator<'a>>(
+    fn pretty<'a, A: pretty::DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
     ) -> pretty::DocBuilder<'a, A>
@@ -258,7 +258,7 @@ impl Print for Param {
 }
 
 impl Print for Var {
-    fn pretty<'b, 'a: 'b, A: pretty::DocAllocator<'a>>(
+    fn pretty<'a, A: pretty::DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
     ) -> pretty::DocBuilder<'a, A>
@@ -278,7 +278,7 @@ impl Print for Var {
 }
 
 impl Print for Arg {
-    fn pretty<'b, 'a: 'b, A: pretty::DocAllocator<'a>>(
+    fn pretty<'a, A: pretty::DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
     ) -> pretty::DocBuilder<'a, A>
@@ -296,7 +296,7 @@ impl Print for Arg {
 }
 
 impl Print for Expr {
-    fn pretty<'b, 'a: 'b, A: pretty::DocAllocator<'a>>(
+    fn pretty<'a, A: pretty::DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
     ) -> pretty::DocBuilder<'a, A>
@@ -463,7 +463,7 @@ where
 }
 
 impl Print for Defn {
-    fn pretty<'b, 'a: 'b, A: pretty::DocAllocator<'a>>(
+    fn pretty<'a, A: pretty::DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
     ) -> pretty::DocBuilder<'a, A>
