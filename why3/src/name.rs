@@ -95,6 +95,17 @@ impl Ident {
     pub fn unique_str(&self) -> String {
         format!("{}_{}", self.name.as_str(), self.id)
     }
+
+    pub fn unsafe_id(&self) -> u64 {
+        self.id
+    }
+
+    pub fn unsafe_raw(name: &str, id: u64) -> Self {
+        Ident {
+            name: name.into(),
+            id,
+        }
+    }
 }
 
 impl From<Ident> for IdentString {
