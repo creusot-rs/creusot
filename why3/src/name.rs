@@ -8,10 +8,10 @@ use string_interner::{DefaultStringInterner, DefaultSymbol};
 use crate::exp::Exp;
 
 static FRESH_COUNTER: AtomicU64 = AtomicU64::new(1);
-static INTERNER: LazyLock<RwLock<DefaultStringInterner>> = LazyLock::new(|| RwLock::new(DefaultStringInterner::new()));
+pub(crate) static INTERNER: LazyLock<RwLock<DefaultStringInterner>> = LazyLock::new(|| RwLock::new(DefaultStringInterner::new()));
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct IdentString(DefaultSymbol);
+pub struct IdentString(pub(crate) DefaultSymbol);
 
 impl IdentString {
     pub fn as_str(self) -> String {
@@ -58,7 +58,7 @@ impl From<&str> for IdentString {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Ident {
     pub name: IdentString,
-    id: u64, // 0 for "bound" identifiers, >0 for "fresh" identifiers
+    pub(crate) id: u64, // 0 for "bound" identifiers, >0 for "fresh" identifiers
 }
 
 impl Ident {

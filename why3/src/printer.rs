@@ -1,6 +1,5 @@
 use std::{
-    fmt::Display,
-    iter::{once, repeat},
+    collections::{HashMap, HashSet}, fmt::Display, iter::{once, repeat}
 };
 
 use crate::{
@@ -14,21 +13,110 @@ IdentString,
 };
 use num::{Float, Zero};
 use pretty::*;
+use string_interner::DefaultSymbol;
 
 pub struct PrintDisplay<'a, A: Print>(&'a A);
 
 impl<'a, A: Print> Display for PrintDisplay<'a, A> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let alloc = BoxAllocator;
-        self.0.pretty(&alloc).1.render_fmt(120, f)?;
+        self.0.pretty(&alloc, &mut Why3Scope::new()).1.render_fmt(120, f)?;
         Ok(())
     }
 }
 
 pub const ALLOC: BoxAllocator = BoxAllocator;
 
+struct Scope {
+    bound: HashSet<DefaultSymbol>,
+    rename: HashMap<Ident, DefaultSymbol>,
+    undo: Vec<Vec<Ident>>,
+}
+
+impl Scope {
+    fn new() -> Self {
+        Scope {
+            bound: HashSet::new(),
+            rename: HashMap::new(),
+            undo: vec![Vec::new()],
+        }
+    }
+
+    fn open(&mut self) {
+        self.undo.push(Vec::new());
+    }
+
+    fn close(&mut self) {
+        let undo = self.undo.pop().unwrap();
+        for ident in undo {
+            self.unbind(ident);
+        }
+    }
+
+    fn bind(&mut self, ident: Ident) -> DefaultSymbol {
+        if ident.id == 0 {
+            return ident.name.0;
+        }
+        let name = ident.name.as_str();
+        let mut sym = crate::name::INTERNER.write().unwrap().get_or_intern(&name);
+        let mut i = 0;
+        while self.bound.contains(&sym) {
+            sym = crate::name::INTERNER.write().unwrap().get_or_intern(&format!("{name}'{i}"));
+            i += 1;
+        }
+        self.bound.insert(sym);
+        self.rename.insert(ident, sym);
+        return sym;
+    }
+
+    fn unbind(&mut self, ident: Ident) {
+        let sym = self.rename.remove(&ident).unwrap();
+        self.bound.remove(&sym);
+    }
+}
+
+pub struct Why3Scope {
+    value_scope: Scope,
+    type_scope: Scope,
+    span_scope: Scope,
+}
+
+impl Why3Scope {
+    fn new() -> Self {
+        Why3Scope {
+            value_scope: Scope::new(),
+            type_scope: Scope::new(),
+            span_scope: Scope::new(),
+        }
+    }
+
+    fn open(&mut self) {
+        self.value_scope.open();
+        self.type_scope.open();
+        self.span_scope.open();
+    }
+
+    fn close(&mut self) {
+        self.value_scope.close();
+        self.type_scope.close();
+        self.span_scope.close();
+    }
+
+    fn bind_value(&mut self, ident: Ident) -> DefaultSymbol {
+        self.value_scope.bind(ident)
+    }
+
+    fn bind_type(&mut self, ident: Ident) -> DefaultSymbol {
+        self.type_scope.bind(ident)
+    }
+
+    fn bind_span(&mut self, ident: Ident) -> DefaultSymbol {
+        self.span_scope.bind(ident)
+    }
+}
+
 pub trait Print {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone;
 
@@ -42,16 +130,17 @@ pub trait Print {
 
 // TODO: replace with functions
 macro_rules! parens {
-    ($alloc:ident, $parent:ident, $child:ident) => {
-        parens($alloc, $parent.precedence(), $child)
+    ($alloc:ident, $scope:ident, $parent:ident, $child:ident) => {
+        parens($alloc, $scope, $parent.precedence(), $child)
     };
-    ($alloc:ident, $par_prec:expr, $child:ident) => {
-        parens($alloc, $par_prec, $child)
+    ($alloc:ident, $scope:ident, $par_prec:expr, $child:ident) => {
+        parens($alloc, $scope, $par_prec, $child)
     };
 }
 
 fn parens<'a, A: DocAllocator<'a>>(
     alloc: &'a A,
+    scope: &mut Why3Scope,
     prec: Precedence,
     child: &'a Exp,
 ) -> DocBuilder<'a, A>
@@ -60,24 +149,24 @@ where
 {
     let child_prec = child.precedence();
     if child_prec == Precedence::Atom {
-        child.pretty(alloc)
+        child.pretty(alloc, scope)
     } else if child_prec < prec {
-        child.pretty(alloc).parens()
+        child.pretty(alloc, scope).parens()
     } else if child_prec == prec && child.associativity() != child.associativity() {
-        child.pretty(alloc).parens()
+        child.pretty(alloc, scope).parens()
     } else {
-        child.pretty(alloc)
+        child.pretty(alloc, scope)
     }
 }
 
 macro_rules! ty_parens {
-    ($alloc:ident, $e:ident) => {
-        if $e.complex() { $e.pretty($alloc).parens() } else { $e.pretty($alloc) }
+    ($alloc:ident, $scope:ident, $e:ident) => {
+        if $e.complex() { $e.pretty($alloc, $scope).parens() } else { $e.pretty($alloc, $scope) }
     };
 }
 
 impl Print for Span {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -85,7 +174,7 @@ impl Print for Span {
             alloc,
             "let%span",
             alloc.space(),
-            self.name.pretty(alloc),
+            self.name.pretty(alloc, scope),
             alloc.space(),
             alloc.text("="),
             alloc.space(),
@@ -103,33 +192,33 @@ impl Print for Span {
 }
 
 impl Print for Decl {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         match self {
-            Decl::LogicDefn(log) => log.pretty(alloc),
-            Decl::PredDecl(p) => p.pretty(alloc),
-            Decl::TyDecl(t) => t.pretty(alloc),
-            Decl::LogicDecl(v) => v.pretty(alloc),
+            Decl::LogicDefn(log) => log.pretty(alloc, scope),
+            Decl::PredDecl(p) => p.pretty(alloc, scope),
+            Decl::TyDecl(t) => t.pretty(alloc, scope),
+            Decl::LogicDecl(v) => v.pretty(alloc, scope),
             Decl::UseDecls(uses) => {
-                alloc.intersperse(uses.iter().map(|u| u.pretty(alloc)), alloc.hardline())
+                alloc.intersperse(uses.iter().map(|u| u.pretty(alloc, scope)), alloc.hardline())
             }
-            Decl::Axiom(a) => a.pretty(alloc),
-            Decl::Goal(g) => g.pretty(alloc),
-            Decl::ConstantDecl(c) => c.pretty(alloc),
-            Decl::Coma(d) => d.pretty(alloc),
+            Decl::Axiom(a) => a.pretty(alloc, scope),
+            Decl::Goal(g) => g.pretty(alloc, scope),
+            Decl::ConstantDecl(c) => c.pretty(alloc, scope),
+            Decl::Coma(d) => d.pretty(alloc, scope),
             Decl::LetSpans(spans) => {
-                alloc.intersperse(spans.iter().map(|span| span.pretty(alloc)), alloc.hardline())
+                alloc.intersperse(spans.iter().map(|span| span.pretty(alloc, scope)), alloc.hardline())
             }
-            Decl::Meta(meta) => meta.pretty(alloc),
+            Decl::Meta(meta) => meta.pretty(alloc, scope),
             Decl::Comment(c) => alloc.text("(* ").append(c).append(" *)"),
         }
     }
 }
 
 impl Print for Module {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -139,14 +228,14 @@ impl Print for Module {
             .append(if self.attrs.is_empty() {
                 alloc.nil()
             } else {
-                alloc.concat(self.attrs.iter().map(|attr| alloc.space().append(attr.pretty(alloc))))
+                alloc.concat(self.attrs.iter().map(|attr| alloc.space().append(attr.pretty(alloc, scope))))
             })
             .append(match self.meta.as_ref() {
                 Some(meta) => alloc.text(" (* ").append(meta.pretty(alloc)).append(" *)"),
                 None => alloc.nil(),
             })
             .append(alloc.hardline())
-            .append(pretty_blocks(&self.decls, alloc).indent(2))
+            .append(pretty_blocks(&self.decls, alloc, scope).indent(2))
             .append(alloc.hardline())
             .append("end");
         doc
@@ -157,55 +246,56 @@ impl Print for Module {
 pub fn pretty_blocks<'a, T: Print + 'a, A: DocAllocator<'a>>(
     items: impl IntoIterator<Item = &'a T>,
     alloc: &'a A,
+    scope: &mut Why3Scope,
 ) -> DocBuilder<'a, A>
 where
     A::Doc: Clone,
 {
     alloc.intersperse(
-        items.into_iter().map(|item| item.pretty(alloc)),
+        items.into_iter().map(|item| item.pretty(alloc, scope)),
         alloc.hardline().append(alloc.hardline()),
     )
 }
 
 impl Print for Axiom {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         alloc
             .text("axiom ")
-            .append(self.name.pretty(alloc))
+            .append(self.name.pretty(alloc, scope))
             .append(if self.rewrite { " [@rewrite] : " } else { " : " })
-            .append(self.axiom.pretty(alloc))
+            .append(self.axiom.pretty(alloc, scope))
     }
 }
 
 impl Print for Goal {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         alloc
             .text("goal ")
-            .append(self.name.pretty(alloc))
+            .append(self.name.pretty(alloc, scope))
             .append(" : ")
-            .append(self.goal.pretty(alloc))
+            .append(self.goal.pretty(alloc, scope))
     }
 }
 
 impl Print for declaration::Constant {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         docs![
             alloc,
             "constant ",
-            self.name.pretty(alloc),
+            self.name.pretty(alloc, scope),
             " : ",
-            self.type_.pretty(alloc),
+            self.type_.pretty(alloc, scope),
             match &self.body {
-                Some(b) => alloc.text(" = ").append(b.pretty(alloc)),
+                Some(b) => alloc.text(" = ").append(b.pretty(alloc, scope)),
                 None => alloc.nil(),
             }
         ]
@@ -213,13 +303,13 @@ impl Print for declaration::Constant {
 }
 
 impl Print for Attribute {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         match &self {
             Attribute::Attr(s) => alloc.text("@").append(s),
-            Attribute::NamedSpan(s) => alloc.text("%#").append(s.pretty(alloc)),
+            Attribute::NamedSpan(s) => alloc.text("%#").append(s.pretty(alloc, scope)),
             Attribute::Span(f, ls, cs, le, ce) => alloc
                 .text("#")
                 .append(alloc.text(f).double_quotes())
@@ -237,68 +327,68 @@ impl Print for Attribute {
 }
 
 impl Print for Signature {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         self.name
-            .pretty(alloc)
+            .pretty(alloc, scope)
             .append(alloc.space())
             .append(alloc.intersperse(
-                self.attrs.iter().map(|a| a.pretty(alloc)).chain(once(alloc.nil())),
+                self.attrs.iter().map(|a| a.pretty(alloc, scope)).chain(once(alloc.nil())),
                 alloc.space(),
             ))
-            .append(arg_list(alloc, &self.args))
+            .append(arg_list(alloc, &self.args, scope))
             .append(
                 self.retty
                     .as_ref()
-                    .map_or_else(|| alloc.nil(), |t| alloc.text(" : ").append(t.pretty(alloc))),
+                    .map_or_else(|| alloc.nil(), |t| alloc.text(" : ").append(t.pretty(alloc, scope))),
             )
-            .append(alloc.line_().append(self.contract.pretty(alloc)))
+            .append(alloc.line_().append(self.contract.pretty(alloc, scope)))
             .nest(2)
             .group()
         // .append(alloc.line())
-        // .append(self.contract.pretty(alloc).indent(2))
+        // .append(self.contract.pretty(alloc, scope).indent(2))
     }
 }
 
 impl Print for Predicate {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         alloc
             .text("predicate ")
-            .append(self.sig.pretty(alloc).append(alloc.line_()).append(alloc.text(" =")))
+            .append(self.sig.pretty(alloc, scope).append(alloc.line_()).append(alloc.text(" =")))
             .group()
             .append(alloc.line())
-            .append(self.body.pretty(alloc).indent(2))
+            .append(self.body.pretty(alloc, scope).indent(2))
     }
 }
 
-fn arg_list<'b: 'a, 'a, A: DocAllocator<'a>>(alloc: &'a A, args: &'a [Binder]) -> DocBuilder<'a, A>
+fn arg_list<'b: 'a, 'a, A: DocAllocator<'a>>(alloc: &'a A, args: &'a [Binder], scope: &mut Why3Scope) -> DocBuilder<'a, A>
 where
     A::Doc: Clone,
 {
-    alloc.intersperse(args.iter().map(|b| b.pretty(alloc)), alloc.space())
+    alloc.intersperse(args.iter().map(|b| b.pretty(alloc, scope)), alloc.space())
 }
 
 impl Print for LogicDefn {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         alloc
             .text("function ")
-            .append(self.sig.pretty(alloc).append(alloc.line_()).append(alloc.text(" =")))
+            .append(self.sig.pretty(alloc, scope).append(alloc.line_()).append(alloc.text(" =")))
             .group()
             .append(alloc.line())
-            .append(self.body.pretty(alloc).indent(2))
+            .append(self.body.pretty(alloc, scope).indent(2))
     }
 }
 
 impl Print for Use {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -307,7 +397,7 @@ impl Print for Use {
             .append(if self.export { alloc.text("export ") } else { alloc.nil() })
             .append(alloc.intersperse(self.name.iter().map(|t| alloc.text(t.as_str())), "."))
             .append(if let Some(as_) = &self.as_ {
-                alloc.text(" as ").append(as_.pretty(alloc))
+                alloc.text(" as ").append(as_.pretty(alloc, scope))
             } else {
                 alloc.nil()
             })
@@ -315,32 +405,32 @@ impl Print for Use {
 }
 
 impl Print for Meta {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         alloc
             .text("meta ")
-            .append(self.name.pretty(alloc))
+            .append(self.name.pretty(alloc, scope))
             .append(alloc.space())
-            .append(alloc.intersperse(self.args.iter().map(|a| a.pretty(alloc)), alloc.space()))
+            .append(alloc.intersperse(self.args.iter().map(|a| a.pretty(alloc, scope)), alloc.space()))
     }
 }
 
 impl Print for MetaIdent {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         match self {
-            MetaIdent::Ident(i) => i.pretty(alloc),
+            MetaIdent::Ident(i) => i.pretty(alloc, scope),
             MetaIdent::String(s) => alloc.text(format!("{s:?}")),
         }
     }
 }
 
 impl Print for MetaArg {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, _: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -351,7 +441,7 @@ impl Print for MetaArg {
 }
 
 impl Print for LogicDecl {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -364,13 +454,13 @@ impl Print for LogicDecl {
             None => {}
         };
 
-        doc = doc.append(self.sig.pretty(alloc));
+        doc = doc.append(self.sig.pretty(alloc, scope));
         doc
     }
 }
 
 impl Print for Contract {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -380,7 +470,7 @@ impl Print for Contract {
             doc = doc.append(
                 alloc
                     .text("requires ")
-                    .append(req.exp.pretty(alloc).braces())
+                    .append(req.exp.pretty(alloc, scope).braces())
                     .append(alloc.hardline()),
             )
         }
@@ -390,7 +480,7 @@ impl Print for Contract {
                 alloc
                     .text("ensures ")
                     .append(
-                        alloc.space().append(req.exp.pretty(alloc)).append(alloc.space()).braces(),
+                        alloc.space().append(req.exp.pretty(alloc, scope)).append(alloc.space()).braces(),
                     )
                     .append(alloc.hardline()),
             )
@@ -398,7 +488,7 @@ impl Print for Contract {
 
         if let Some(ref var) = self.variant {
             doc = doc.append(
-                alloc.text("variant ").append(var.pretty(alloc).braces()).append(alloc.hardline()),
+                alloc.text("variant ").append(var.pretty(alloc, scope).braces()).append(alloc.hardline()),
             )
         }
 
@@ -407,44 +497,44 @@ impl Print for Contract {
 }
 
 impl Print for Type {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         use Type::*;
         match self {
             TVar(v) => alloc.text(format!("'{}", v.as_str())),
-            TConstructor(ty) => ty.pretty(alloc),
-            TFun(a, b) => ty_parens!(alloc, a).append(" -> ").append(ty_parens!(alloc, b)),
+            TConstructor(ty) => ty.pretty(alloc, scope),
+            TFun(a, b) => ty_parens!(alloc, scope, a).append(" -> ").append(ty_parens!(alloc, scope, b)),
             TApp(tyf, args) => {
                 if args.is_empty() {
-                    tyf.pretty(alloc)
+                    tyf.pretty(alloc, scope)
                 } else {
-                    tyf.pretty(alloc).append(alloc.space()).append(
+                    tyf.pretty(alloc, scope).append(alloc.space()).append(
                         alloc.intersperse(
-                            args.iter().map(|arg| ty_parens!(alloc, arg)),
+                            args.iter().map(|arg| ty_parens!(alloc, scope, arg)),
                             alloc.space(),
                         ),
                     )
                 }
             }
-            Tuple(tys) if tys.len() == 1 => tys[0].pretty(alloc),
-            Tuple(tys) => alloc.intersperse(tys.iter().map(|ty| ty.pretty(alloc)), ", ").parens(),
+            Tuple(tys) if tys.len() == 1 => tys[0].pretty(alloc, scope),
+            Tuple(tys) => alloc.intersperse(tys.iter().map(|ty| ty.pretty(alloc, scope)), ", ").parens(),
         }
     }
 }
 
 impl Print for Trigger {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
-        alloc.intersperse(self.0.iter().map(|t| t.pretty(alloc)), ", ")
+        alloc.intersperse(self.0.iter().map(|t| t.pretty(alloc, scope)), ", ")
     }
 }
 
 impl Print for Exp {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -452,66 +542,66 @@ impl Print for Exp {
             // TODO parenthesization
             Exp::Let { pattern, arg, body } => alloc
                 .text("let ")
-                .append(pattern.pretty(alloc))
+                .append(pattern.pretty(alloc, scope))
                 .append(" = ")
-                .append(arg.pretty(alloc))
+                .append(arg.pretty(alloc, scope))
                 .append(" in ")
-                .append(body.pretty(alloc)),
-            Exp::Var(v) => v.pretty(alloc),
-            Exp::QVar(v) => v.pretty(alloc),
+                .append(body.pretty(alloc, scope)),
+            Exp::Var(v) => v.pretty(alloc, scope),
+            Exp::QVar(v) => v.pretty(alloc, scope),
             Exp::RecField { record, label } => {
-                parens!(alloc, self.precedence().next(), record).append(".").append(label.as_str())
+                parens!(alloc, scope, self.precedence().next(), record).append(".").append(label.as_str())
             }
 
             Exp::Tuple(args) => alloc
-                .intersperse(args.iter().map(|a| parens!(alloc, Precedence::Cast, a)), ", ")
+                .intersperse(args.iter().map(|a| parens!(alloc, scope, Precedence::Cast, a)), ", ")
                 .parens(),
 
             Exp::Constructor { ctor, args } => {
-                ctor.pretty(alloc).append(if args.is_empty() {
+                ctor.pretty(alloc, scope).append(if args.is_empty() {
                     alloc.nil()
                 } else {
                     alloc.space().append(alloc.intersperse(
-                        args.iter().map(|a| parens!(alloc, Precedence::Brackets, a)),
+                        args.iter().map(|a| parens!(alloc, scope, Precedence::Brackets, a)),
                         " ",
                     ))
                 })
             }
-            Exp::Const(c) => c.pretty(alloc),
+            Exp::Const(c) => c.pretty(alloc, scope),
 
-            Exp::UnaryOp(UnOp::Not, op) => alloc.text("not ").append(parens!(alloc, self, op)),
+            Exp::UnaryOp(UnOp::Not, op) => alloc.text("not ").append(parens!(alloc, scope, self, op)),
 
-            Exp::UnaryOp(UnOp::Neg, op) => alloc.text("- ").append(parens!(alloc, self, op)),
-            Exp::UnaryOp(UnOp::FloatNeg, op) => alloc.text(".- ").append(parens!(alloc, self, op)),
+            Exp::UnaryOp(UnOp::Neg, op) => alloc.text("- ").append(parens!(alloc, scope, self, op)),
+            Exp::UnaryOp(UnOp::FloatNeg, op) => alloc.text(".- ").append(parens!(alloc, scope, self, op)),
             Exp::BinaryOp(op, l, r) => match self.associativity() {
-                Some(AssocDir::Left) => parens!(alloc, self, l),
-                Some(AssocDir::Right) | None => parens!(alloc, self.precedence().next(), l),
+                Some(AssocDir::Left) => parens!(alloc, scope, self, l),
+                Some(AssocDir::Right) | None => parens!(alloc, scope, self.precedence().next(), l),
             }
             .append(alloc.line())
             .append(bin_op_to_string(op))
             .append(alloc.space())
             .append(match self.associativity() {
-                Some(AssocDir::Right) => parens!(alloc, self, r),
-                Some(AssocDir::Left) | None => parens!(alloc, self.precedence().next(), r),
+                Some(AssocDir::Right) => parens!(alloc, scope, self, r),
+                Some(AssocDir::Left) | None => parens!(alloc, scope, self.precedence().next(), r),
             })
             .group(),
             Exp::Call(fun, args) => {
-                parens!(alloc, self, fun).append(alloc.space()).append(alloc.intersperse(
-                    args.iter().map(|a| parens!(alloc, Precedence::App.next(), a)),
+                parens!(alloc, scope, self, fun).append(alloc.space()).append(alloc.intersperse(
+                    args.iter().map(|a| parens!(alloc, scope, Precedence::App.next(), a)),
                     alloc.space(),
                 ))
             }
 
-            Exp::Attr(attr, e) => attr.pretty(alloc).append(alloc.space()).append(e.pretty(alloc)),
+            Exp::Attr(attr, e) => attr.pretty(alloc, scope).append(alloc.space()).append(e.pretty(alloc, scope)),
             Exp::Lam(binders, body) => alloc
                 .text("fun ")
-                .append(alloc.intersperse(binders.iter().map(|b| b.pretty(alloc)), alloc.space()))
+                .append(alloc.intersperse(binders.iter().map(|b| b.pretty(alloc, scope)), alloc.space()))
                 .append(" -> ")
-                .append(body.pretty(alloc)),
+                .append(body.pretty(alloc, scope)),
 
             Exp::Match(scrut, brs) => alloc
                 .text("match ")
-                .append(scrut.pretty(alloc))
+                .append(scrut.pretty(alloc, scope))
                 .append(" with")
                 .append(alloc.hardline())
                 .append(
@@ -520,9 +610,9 @@ impl Print for Exp {
                         brs.iter().map(|(pat, br)| {
                             alloc
                                 .text("| ")
-                                .append(pat.pretty(alloc))
+                                .append(pat.pretty(alloc, scope))
                                 .append(" -> ")
-                                .append(br.pretty(alloc))
+                                .append(br.pretty(alloc, scope))
                         }),
                         alloc.hardline(),
                     )
@@ -531,18 +621,18 @@ impl Print for Exp {
                 ),
             Exp::IfThenElse(s, i, e) => alloc
                 .text("if ")
-                .append(s.pretty(alloc))
+                .append(s.pretty(alloc, scope))
                 .append(" then")
-                .append(alloc.line().append(i.pretty(alloc)).nest(2).append(alloc.line()))
+                .append(alloc.line().append(i.pretty(alloc, scope)).nest(2).append(alloc.line()))
                 .append("else")
-                .append(alloc.line().append(e.pretty(alloc)).nest(2).append(alloc.line_()))
+                .append(alloc.line().append(e.pretty(alloc, scope)).nest(2).append(alloc.line_()))
                 .group(),
             Exp::Forall(binders, trig, exp) => {
                 let mut res = alloc.text("forall ").append(
                     alloc.intersperse(
                         binders
                             .iter()
-                            .map(|(b, t)| b.pretty(alloc).append(" : ").append(t.pretty(alloc))),
+                            .map(|(b, t)| b.pretty(alloc, scope).append(" : ").append(t.pretty(alloc, scope))),
                         ", ",
                     ),
                 );
@@ -550,18 +640,18 @@ impl Print for Exp {
                 if trig.iter().fold(false, |acc, t| acc || !t.0.is_empty()) {
                     res = res
                         .append(" [")
-                        .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), " | "))
+                        .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc, scope)), " | "))
                         .append("]");
                 }
 
-                res.append(" . ").append(exp.pretty(alloc))
+                res.append(" . ").append(exp.pretty(alloc, scope))
             }
             Exp::Exists(binders, trig, exp) => {
                 let mut res = alloc.text("exists ").append(
                     alloc.intersperse(
                         binders
                             .iter()
-                            .map(|(b, t)| b.pretty(alloc).append(" : ").append(t.pretty(alloc))),
+                            .map(|(b, t)| b.pretty(alloc, scope).append(" : ").append(t.pretty(alloc, scope))),
                         ", ",
                     ),
                 );
@@ -569,29 +659,29 @@ impl Print for Exp {
                 if trig.iter().fold(false, |acc, t| acc || !t.0.is_empty()) {
                     res = res
                         .append(" [")
-                        .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), " | "))
+                        .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc, scope)), " | "))
                         .append("]");
                 }
 
-                res.append(" . ").append(exp.pretty(alloc))
+                res.append(" . ").append(exp.pretty(alloc, scope))
             }
             Exp::Impl(hyp, exp) => {
-                let hyp = parens!(alloc, self, hyp);
+                let hyp = parens!(alloc, scope, self, hyp);
                 let impl_ = alloc
                     .line()
                     .append(alloc.text(" -> "))
-                    .append(parens!(alloc, self, exp))
+                    .append(parens!(alloc, scope, self, exp))
                     .group();
 
                 hyp.append(impl_)
             }
             Exp::Ascribe(e, t) => {
-                parens!(alloc, self, e).append(" : ").append(t.pretty(alloc)).group()
+                parens!(alloc, scope, self, e).append(" : ").append(t.pretty(alloc, scope)).group()
             }
-            Exp::Old(e) => alloc.text("old").append(e.pretty(alloc).parens()),
+            Exp::Old(e) => alloc.text("old").append(e.pretty(alloc, scope).parens()),
             Exp::RecUp { record, updates } => alloc
                 .space()
-                .append(parens!(alloc, self.precedence().next(), record))
+                .append(parens!(alloc, scope, self.precedence().next(), record))
                 .append(" with ")
                 .append(
                     alloc
@@ -599,6 +689,7 @@ impl Print for Exp {
                             updates.iter().map(|(nm, a)| {
                                 alloc.text(nm.as_str()).append(" = ").append(parens!(
                                     alloc,
+                                    scope,
                                     Precedence::Attr.next(),
                                     a
                                 ))
@@ -618,6 +709,7 @@ impl Print for Exp {
                             fields.iter().map(|(nm, a)| {
                                 alloc.text(nm.as_str()).append(" = ").append(parens!(
                                     alloc,
+                                    scope,
                                     Precedence::Attr.next(),
                                     a
                                 ))
@@ -634,21 +726,21 @@ impl Print for Exp {
 }
 
 impl Print for Binder {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         match self {
             Binder::Wild => alloc.text("_"),
-            Binder::UnNamed(ty) => ty.pretty(alloc),
-            Binder::Named(id) => id.pretty(alloc),
+            Binder::UnNamed(ty) => ty.pretty(alloc, scope),
+            Binder::Named(id) => id.pretty(alloc, scope),
             Binder::Typed(ghost, ids, ty) => {
                 (if *ghost { alloc.text("ghost ") } else { alloc.nil() })
                     .append(
                         alloc
-                            .intersperse(ids.iter().map(|id| id.pretty(alloc)), alloc.space())
+                            .intersperse(ids.iter().map(|id| id.pretty(alloc, scope)), alloc.space())
                             .append(" : ")
-                            .append(ty.pretty(alloc)),
+                            .append(ty.pretty(alloc, scope)),
                     )
                     .parens()
             }
@@ -657,26 +749,26 @@ impl Print for Binder {
 }
 
 impl Print for Pattern {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         match self {
             Pattern::Wildcard => alloc.text("_"),
-            Pattern::VarP(v) => v.pretty(alloc),
+            Pattern::VarP(v) => v.pretty(alloc, scope),
             Pattern::TupleP(pats) => {
-                alloc.intersperse(pats.iter().map(|p| p.pretty(alloc)), ", ").parens()
+                alloc.intersperse(pats.iter().map(|p| p.pretty(alloc, scope)), ", ").parens()
             }
             Pattern::ConsP(c, pats) => {
-                let mut doc = c.pretty(alloc);
+                let mut doc = c.pretty(alloc, scope);
 
                 if !pats.is_empty() {
                     doc = doc.append(alloc.space()).append(alloc.intersperse(
                         pats.iter().map(|p| {
                             if matches!(p, Pattern::ConsP(_, _)) {
-                                p.pretty(alloc).parens()
+                                p.pretty(alloc, scope).parens()
                             } else {
-                                p.pretty(alloc)
+                                p.pretty(alloc, scope)
                             }
                         }),
                         " ",
@@ -686,7 +778,7 @@ impl Print for Pattern {
             }
             Pattern::RecP(pats) => {
                 let pats = pats.iter().map(|(field, pat)| {
-                    field.pretty(alloc).append(" = ").append(pat.pretty(alloc))
+                    field.pretty(alloc, scope).append(" = ").append(pat.pretty(alloc, scope))
                 });
 
                 alloc.intersperse(pats, " ; ").braces()
@@ -749,7 +841,7 @@ fn bin_op_to_string(op: &BinOp) -> &str {
 }
 
 impl Print for Constant {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -764,14 +856,14 @@ impl Print for Constant {
             }
             Constant::Char(c, t) => {
                 let c = *c as u32;
-                alloc.as_string(c).append(" : ").append(t.pretty(alloc)).parens()
+                alloc.as_string(c).append(" : ").append(t.pretty(alloc, scope)).parens()
             }
             Constant::Int(i, Some(t)) => {
-                alloc.as_string(i).append(" : ").append(t.pretty(alloc)).parens()
+                alloc.as_string(i).append(" : ").append(t.pretty(alloc, scope)).parens()
             }
             Constant::Int(i, None) => alloc.as_string(i),
             Constant::Uint(i, Some(t)) => {
-                alloc.as_string(i).append(" : ").append(t.pretty(alloc)).parens()
+                alloc.as_string(i).append(" : ").append(t.pretty(alloc, scope)).parens()
             }
             Constant::String(s) => alloc.text(format!("{s:?}")),
             Constant::Uint(i, None) => alloc.as_string(i),
@@ -786,7 +878,7 @@ impl Print for Constant {
             Constant::Float(f, Some(t)) => {
                 assert!(f.is_finite());
                 let f_str = print_float(*f);
-                alloc.text(f_str).append(" : ").append(t.pretty(alloc)).parens()
+                alloc.text(f_str).append(" : ").append(t.pretty(alloc, scope)).parens()
             }
         }
     }
@@ -810,17 +902,17 @@ fn print_float(f: f64) -> String {
 }
 
 impl Print for TyDecl {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         let ty_decl = match self {
             TyDecl::Opaque { ty_name, ty_params } => {
-                let mut decl = alloc.text("type ").append(ty_name.pretty(alloc));
+                let mut decl = alloc.text("type ").append(ty_name.pretty(alloc, scope));
 
                 if !ty_params.is_empty() {
                     decl = decl.append(" ").append(alloc.intersperse(
-                        ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc))),
+                        ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc, scope))),
                         alloc.space(),
                     ));
                 }
@@ -828,14 +920,14 @@ impl Print for TyDecl {
             }
             TyDecl::Alias { ty_name, ty_params, alias } => alloc
                 .text("type ")
-                .append(ty_name.pretty(alloc))
+                .append(ty_name.pretty(alloc, scope))
                 .append(" ")
                 .append(alloc.intersperse(
-                    ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc))),
+                    ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc, scope))),
                     alloc.space(),
                 ))
                 .append(alloc.text(" =").append(alloc.hardline()))
-                .append(alias.pretty(alloc).indent(2)),
+                .append(alias.pretty(alloc, scope).indent(2)),
             TyDecl::Adt { tys } => {
                 let header = once("type").chain(repeat("with"));
 
@@ -846,15 +938,15 @@ impl Print for TyDecl {
                         .nil()
                         .append(hdr)
                         .append(" ")
-                        .append(ty_name.pretty(alloc))
+                        .append(ty_name.pretty(alloc, scope))
                         .append(" ")
                         .append(alloc.intersperse(
-                            ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc))),
+                            ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc, scope))),
                             alloc.space(),
                         ));
                     let inner_doc = match sumrecord {
                         SumRecord::Sum(constrs) => alloc.intersperse(
-                            constrs.iter().map(|cons| alloc.text("| ").append(cons.pretty(alloc))),
+                            constrs.iter().map(|cons| alloc.text("| ").append(cons.pretty(alloc, scope))),
                             alloc.hardline(),
                         ),
                         SumRecord::Record(fields) => alloc
@@ -863,7 +955,7 @@ impl Print for TyDecl {
                             .append(
                                 alloc
                                     .intersperse(
-                                        fields.iter().map(|f| f.pretty(alloc)),
+                                        fields.iter().map(|f| f.pretty(alloc, scope)),
                                         alloc.text(";").append(alloc.line()),
                                     )
                                     .align(),
@@ -888,15 +980,15 @@ impl Print for TyDecl {
 }
 
 impl Print for ConstructorDecl {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
-        let mut cons_doc = self.name.pretty(alloc);
+        let mut cons_doc = self.name.pretty(alloc, scope);
 
         if !self.fields.is_empty() {
             cons_doc = cons_doc.append(alloc.space()).append(
-                alloc.intersperse(self.fields.iter().map(|ty_arg| ty_parens!(alloc, ty_arg)), " "),
+                alloc.intersperse(self.fields.iter().map(|ty_arg| ty_parens!(alloc, scope, ty_arg)), " "),
             );
         }
 
@@ -905,16 +997,16 @@ impl Print for ConstructorDecl {
 }
 
 impl Print for FieldDecl {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
-        alloc.text(self.name.as_str()).append(alloc.text(": ")).append(self.ty.pretty(alloc))
+        alloc.text(self.name.as_str()).append(alloc.text(": ")).append(self.ty.pretty(alloc, scope))
     }
 }
 
 impl Print for IdentString {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -923,7 +1015,7 @@ impl Print for IdentString {
 }
 
 impl Print for Ident {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
@@ -932,7 +1024,7 @@ impl Print for Ident {
 }
 
 impl Print for QName {
-    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    fn pretty<'a, A: DocAllocator<'a>>(&'a self, alloc: &'a A, scope: &mut Why3Scope) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
