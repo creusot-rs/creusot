@@ -28,7 +28,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::DUMMY_SP;
 use std::{fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
-    declaration::{Attribute, Decl, Module}, printer::{self, pretty_blocks, Print}, IdentString
+    declaration::{Attribute, Decl, Module}, printer::{self, pretty_blocks, Print, Why3Scope}, IdentString
 };
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
@@ -189,13 +189,13 @@ fn modular_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Result<(
     let attrs = attrs.iter().map(|attr| Decl::Comment(show_attribute(attr)));
     let meta = meta.iter().map(|s| Decl::Comment(s.clone()));
     let decls: Vec<Decl> = attrs.chain(meta).chain(decls.iter().cloned()).collect();
-    pretty_blocks(&decls, &printer::ALLOC).1.render(120, out)?;
+    pretty_blocks(&decls, &printer::ALLOC, &mut Why3Scope::new()).1.render(120, out)?;
     writeln!(out)?;
     Ok(())
 }
 
 fn monolithic_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Result<()> {
-    modl.modl.pretty(&printer::ALLOC).1.render(120, out)?;
+    modl.modl.pretty(&printer::ALLOC, &mut Why3Scope::new()).1.render(120, out)?;
     writeln!(out)?;
     Ok(())
 }

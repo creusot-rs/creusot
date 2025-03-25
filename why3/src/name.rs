@@ -9,7 +9,8 @@ use std::{
 use string_interner::{DefaultStringInterner, DefaultSymbol};
 
 static FRESH_COUNTER: AtomicU64 = AtomicU64::new(1);
-pub(crate) static INTERNER: LazyLock<RwLock<DefaultStringInterner>> = LazyLock::new(|| RwLock::new(DefaultStringInterner::new()));
+pub(crate) static INTERNER: LazyLock<RwLock<DefaultStringInterner>> =
+    LazyLock::new(|| RwLock::new(DefaultStringInterner::new()));
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -24,14 +25,14 @@ impl IdentString {
 #[cfg(feature = "serialize")]
 impl Serialize for IdentString {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        todo!{}
+        todo! {}
     }
 }
 
 #[cfg(feature = "serialize")]
 impl<'d> Deserialize<'d> for IdentString {
     fn deserialize<D: serde::Deserializer<'d>>(deserializer: D) -> Result<Self, D::Error> {
-        todo!{}
+        todo! {}
     }
 }
 
@@ -78,10 +79,7 @@ impl Ident {
     /// All `bound` names from the same string are equal.
     /// Use this for fixed identifiers (result, ret)
     pub fn bound(name: impl Into<String>) -> Self {
-        Ident {
-            name: IdentString::from(name.into()),
-            id: 0,
-        }
+        Ident { name: IdentString::from(name.into()), id: 0 }
     }
 
     // TODO: remove this
@@ -105,10 +103,7 @@ impl Ident {
     }
 
     pub fn unsafe_raw(name: &str, id: u64) -> Self {
-        Ident {
-            name: name.into(),
-            id,
-        }
+        Ident { name: name.into(), id }
     }
 }
 
@@ -173,8 +168,11 @@ impl QName {
     }
 
     pub fn without_search_path(mut self) -> QName {
-        self.module =
-            self.module.into_iter().skip_while(|s| s.as_str().starts_with(char::is_lowercase)).collect();
+        self.module = self
+            .module
+            .into_iter()
+            .skip_while(|s| s.as_str().starts_with(char::is_lowercase))
+            .collect();
         self
     }
 

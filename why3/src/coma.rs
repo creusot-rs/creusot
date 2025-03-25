@@ -1,5 +1,8 @@
 use crate::{
-    declaration::{Attribute, Use}, printer::{Print, Why3Scope}, ty::Type, Ident, QName
+    Ident, QName,
+    declaration::{Attribute, Use},
+    printer::{Print, Why3Scope},
+    ty::Type,
 };
 
 use pretty::docs;
@@ -194,40 +197,40 @@ impl Expr {
 
     /// Checks whether a symbol of name `cont` occurs in `self`
     pub fn occurs(&self, cont: &Ident) -> bool {
-    match self {
-        Expr::Variable(v) => v == cont,
-        Expr::Constant(_) => false,
-        Expr::App(e, arg) => {
-            let arg = if let Arg::Cont(e) = &**arg { e.occurs(cont) } else { false };
-            arg || e.occurs(cont)
+        match self {
+            Expr::Variable(v) => v == cont,
+            Expr::Constant(_) => false,
+            Expr::App(e, arg) => {
+                let arg = if let Arg::Cont(e) = &**arg { e.occurs(cont) } else { false };
+                arg || e.occurs(cont)
+            }
+            Expr::Lambda(params, body) => {
+                let in_params = params
+                    .iter()
+                    .filter_map(|p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None })
+                    .any(|n| n == cont);
+                !in_params && body.occurs(cont)
+            }
+            Expr::Defn(e, _, defs) => {
+                e.occurs(cont)
+                    || defs.iter().any(|d| {
+                        let in_params = d
+                            .params
+                            .iter()
+                            .filter_map(
+                                |p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None },
+                            )
+                            .any(|n| n == cont);
+                        !in_params && d.body.occurs(cont)
+                    })
+            }
+            Expr::Assign(e, _) => e.occurs(cont),
+            Expr::Let(e, _) => e.occurs(cont),
+            Expr::Assert(_, e) | Expr::Assume(_, e) => e.occurs(cont),
+            Expr::BlackBox(e) | Expr::WhiteBox(e) => e.occurs(cont),
+            Expr::Any => false,
         }
-        Expr::Lambda(params, body) => {
-            let in_params = params
-                .iter()
-                .filter_map(|p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None })
-                .any(|n| n == cont);
-            !in_params && body.occurs(cont)
-        }
-        Expr::Defn(e, _, defs) => {
-            e.occurs(cont)
-                || defs.iter().any(|d| {
-                    let in_params = d
-                        .params
-                        .iter()
-                        .filter_map(
-                            |p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None },
-                        )
-                        .any(|n| n == cont);
-                    !in_params && d.body.occurs(cont)
-                })
-        }
-        Expr::Assign(e, _) => e.occurs(cont),
-        Expr::Let(e, _) => e.occurs(cont),
-        Expr::Assert(_, e) | Expr::Assume(_, e) => e.occurs(cont),
-        Expr::BlackBox(e) | Expr::WhiteBox(e) => e.occurs(cont),
-        Expr::Any => false,
     }
-}
 }
 
 impl Print for Param {
@@ -241,17 +244,30 @@ impl Print for Param {
     {
         match self {
             Param::Ty(ty) => docs![alloc, "< ", ty.pretty(alloc, scope), " >"],
-            Param::Term(id, ty) => docs![alloc, id.pretty(alloc, scope), ":", ty.pretty(alloc, scope)].parens(),
-            Param::Reference(id, ty) => docs![alloc, "&", id.pretty(alloc, scope), ":", ty.pretty(alloc, scope)],
-            Param::Cont(id, writes, params) => docs![
-                alloc,
-                id.pretty(alloc, scope),
-                alloc.space(),
-                brackets(alloc.intersperse(writes.iter().map(|a| a.pretty(alloc, scope)), " ")),
-                alloc.space(),
-                alloc.intersperse(params.iter().map(|a| a.pretty(alloc, scope)), " "),
-            ]
-            .parens(),
+            Param::Term(id, ty) => {
+                scope.bind_value(*id);
+                docs![alloc, id.pretty_value_name(alloc, scope), ":", ty.pretty(alloc, scope)]
+                    .parens()
+            }
+            Param::Reference(id, ty) => {
+                scope.bind_value(*id);
+                docs![alloc, "&", id.pretty_value_name(alloc, scope), ":", ty.pretty(alloc, scope)]
+            }
+            Param::Cont(id, writes, params) => {
+                scope.bind_value(*id);
+                docs![
+                    alloc,
+                    id.pretty_value_name(alloc, scope),
+                    alloc.space(),
+                    brackets(alloc.intersperse(
+                        writes.iter().map(|a| a.pretty_value_name(alloc, scope)),
+                        " "
+                    )),
+                    alloc.space(),
+                    alloc.intersperse(params.iter().map(|a| a.pretty(alloc, scope)), " "),
+                ]
+                .parens()
+            }
         }
     }
 }
@@ -265,10 +281,11 @@ impl Print for Var {
     where
         A::Doc: Clone,
     {
+        scope.bind_value(self.0);
         docs![
             alloc,
             if matches!(self.3, IsRef::Ref) { alloc.text("& ") } else { alloc.nil() },
-            self.0.pretty(alloc, scope),
+            self.0.pretty_value_name(alloc, scope),
             " : ",
             self.1.pretty(alloc, scope),
             " = ",
@@ -289,7 +306,7 @@ impl Print for Arg {
         match self {
             Arg::Ty(ty) => ty.pretty(alloc, scope).enclose("<", ">"),
             Arg::Term(t) => t.pretty(alloc, scope).braces(),
-            Arg::Ref(r) => alloc.text("& ").append(r.pretty(alloc, scope)),
+            Arg::Ref(r) => alloc.text("& ").append(r.pretty_value_name(alloc, scope)),
             Arg::Cont(e @ Expr::Lambda(_, _)) => e.pretty(alloc, scope),
             Arg::Cont(c) => c.pretty(alloc, scope).parens(),
         }
@@ -306,7 +323,7 @@ impl Print for Expr {
         A::Doc: Clone,
     {
         match self {
-            Expr::Variable(id) => id.pretty(alloc, scope),
+            Expr::Variable(id) => id.pretty_value_name(alloc, scope),
             Expr::Constant(name) => name.pretty(alloc, scope),
             Expr::App(e, arg) => {
                 let mut args = vec![arg];
@@ -324,7 +341,11 @@ impl Print for Expr {
 
                 let needs_paren = !matches!(
                     &**e,
-                    Expr::App(_, _) | Expr::Variable(_) | Expr::Constant(_) | Expr::Any | Expr::Lambda(_, _)
+                    Expr::App(_, _)
+                        | Expr::Variable(_)
+                        | Expr::Constant(_)
+                        | Expr::Any
+                        | Expr::Lambda(_, _)
                 );
 
                 let doc = e.pretty(alloc, scope);
@@ -335,7 +356,10 @@ impl Print for Expr {
                         alloc,
                         if needs_paren { doc.parens() } else { doc },
                         alloc.line(),
-                        alloc.intersperse(ty_term.iter().map(|a| a.pretty(alloc, scope)), alloc.line())
+                        alloc.intersperse(
+                            ty_term.iter().map(|a| a.pretty(alloc, scope)),
+                            alloc.line()
+                        )
                     ]
                     .group(),
                     if !ty_term.is_empty() && !conts.is_empty() {
@@ -349,37 +373,54 @@ impl Print for Expr {
                 .nest(2)
             }
             Expr::Lambda(params, body) => {
+                scope.open();
                 let header = if params.is_empty() {
                     alloc.text("->")
                 } else {
                     docs![
                         alloc,
                         "fun ",
-                        alloc.intersperse(params.iter().map(|p| p.pretty(alloc, scope)), alloc.text(" ")),
+                        alloc.intersperse(
+                            params.iter().map(|p| p.pretty(alloc, scope)),
+                            alloc.text(" ")
+                        ),
                         alloc.text(" ->")
                     ]
                 };
-                header.append(alloc.line()).append(body.pretty(alloc, scope)).group().nest(2).parens()
+                let doc = header
+                    .append(alloc.line())
+                    .append(body.pretty(alloc, scope))
+                    .group()
+                    .nest(2)
+                    .parens();
+                scope.close();
+                doc
             }
             Expr::Defn(cont, rec, handlers) => {
-                // TODO: double check scopes are correctly bracketed
-                let handlers: Box<[_]> =
-                    handlers.iter().map(|d| print_defn(d, if *rec { "=" } else { "->" }, alloc, scope)).collect();
-                cont.pretty(alloc, scope).append(bracket_list(
+                scope.open();
+                let handlers: Box<[_]> = handlers
+                    .iter()
+                    .map(|d| print_defn(d, if *rec { "=" } else { "->" }, alloc, scope))
+                    .collect();
+                let doc = cont.pretty(alloc, scope).append(bracket_list(
                     alloc,
                     handlers.into_iter(),
                     alloc.line().append(alloc.text("| ")),
-                ))
+                ));
+                scope.close();
+                doc
             }
-            Expr::Let(cont, lets) => docs![
-                alloc,
-                cont.pretty(alloc, scope),
-                bracket_list(
+            Expr::Let(cont, lets) => {
+                scope.open();
+                let lets = bracket_list(
                     alloc,
                     lets.iter().map(|l| l.pretty(alloc, scope)),
-                    alloc.line().append(alloc.text("| "))
-                )
-            ],
+                    alloc.line().append(alloc.text("| ")),
+                );
+                let doc = docs![alloc, cont.pretty(alloc, scope), lets,];
+                scope.close();
+                doc
+            }
             Expr::Assign(cont, asgns) => {
                 let needs_parens = matches!(&**cont, Expr::Let(_, _) | Expr::Defn(_, _, _));
                 docs![
@@ -389,7 +430,7 @@ impl Print for Expr {
                         asgns.iter().map(|(id, t)| docs![
                             alloc,
                             "&",
-                            id.pretty(alloc, scope),
+                            id.pretty_value_name(alloc, scope),
                             alloc.space(),
                             "<-",
                             alloc.space(),
@@ -398,14 +439,28 @@ impl Print for Expr {
                         alloc.line().append(alloc.text("| "))
                     ),
                     if asgns.is_empty() { alloc.nil() } else { alloc.line_() },
-                    if needs_parens { cont.pretty(alloc, scope).parens() } else { cont.pretty(alloc, scope) }
+                    if needs_parens {
+                        cont.pretty(alloc, scope).parens()
+                    } else {
+                        cont.pretty(alloc, scope)
+                    }
                 ]
             }
             Expr::Assert(t, e) => {
-                docs![alloc, t.pretty(alloc, scope).braces().group(), alloc.line(), e.pretty(alloc, scope)]
+                docs![
+                    alloc,
+                    t.pretty(alloc, scope).braces().group(),
+                    alloc.line(),
+                    e.pretty(alloc, scope)
+                ]
             }
             Expr::Assume(t, e) => {
-                docs![alloc, t.pretty(alloc, scope).enclose("-{", "}-"), alloc.line(), e.pretty(alloc, scope)]
+                docs![
+                    alloc,
+                    t.pretty(alloc, scope).enclose("-{", "}-"),
+                    alloc.line(),
+                    e.pretty(alloc, scope)
+                ]
             }
             Expr::BlackBox(e) => docs![alloc, "!", alloc.space(), e.pretty(alloc, scope)].parens(),
             Expr::WhiteBox(e) => docs![alloc, "?", alloc.space(), e.pretty(alloc, scope)].parens(),
@@ -454,9 +509,10 @@ fn print_defn<'a, A: pretty::DocAllocator<'a>>(
 where
     A::Doc: Clone,
 {
+    scope.bind_value(defn.name);
     docs![
         alloc,
-        defn.name.pretty(alloc, scope),
+        defn.name.pretty_value_name(alloc, scope),
         alloc.intersperse(defn.attrs.iter().map(|a| a.pretty(alloc, scope)), alloc.space()),
         alloc.space(),
         alloc.intersperse(defn.params.iter().map(|a| a.pretty(alloc, scope)), " "),

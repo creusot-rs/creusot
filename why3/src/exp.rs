@@ -1,6 +1,6 @@
 mod binder;
 
-use crate::{Ident, QName, declaration::Attribute, ty::Type, IdentString};
+use crate::{Ident, IdentString, QName, declaration::Attribute, ty::Type};
 use indexmap::IndexSet;
 use std::collections::HashMap;
 
@@ -110,29 +110,14 @@ impl Trigger {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
-    Let {
-        pattern: Pattern,
-        arg: Box<Exp>,
-        body: Box<Exp>,
-    },
+    Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
     Var(Ident),
     QVar(QName),
-    Record {
-        fields: Box<[(IdentString, Exp)]>,
-    },
-    RecUp {
-        record: Box<Exp>,
-        updates: Box<[(IdentString, Exp)]>,
-    },
-    RecField {
-        record: Box<Exp>,
-        label: IdentString,
-    },
+    Record { fields: Box<[(IdentString, Exp)]> },
+    RecUp { record: Box<Exp>, updates: Box<[(IdentString, Exp)]> },
+    RecField { record: Box<Exp>, label: IdentString },
     Tuple(Box<[Exp]>),
-    Constructor {
-        ctor: QName,
-        args: Box<[Exp]>,
-    },
+    Constructor { ctor: QName, args: Box<[Exp]> },
     Const(Constant),
     BinaryOp(BinOp, Box<Exp>, Box<Exp>),
     UnaryOp(UnOp, Box<Exp>),
@@ -509,10 +494,14 @@ impl Exp {
     pub fn exists_trig(
         bound: impl IntoIterator<Item = (Ident, Type)>,
         trigger: impl IntoIterator<Item = Trigger>,
-        body: Exp
+        body: Exp,
     ) -> Self {
         let mut bound = bound.into_iter().peekable();
-        if body.is_false() || bound.peek().is_none() { body } else { Exp::Exists(bound.collect(), trigger.into_iter().collect(), Box::new(body)) }
+        if body.is_false() || bound.peek().is_none() {
+            body
+        } else {
+            Exp::Exists(bound.collect(), trigger.into_iter().collect(), Box::new(body))
+        }
     }
 
     pub fn exists(bound: impl IntoIterator<Item = (Ident, Type)>, body: Exp) -> Self {

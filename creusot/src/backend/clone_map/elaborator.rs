@@ -160,7 +160,6 @@ impl DepElab for LogicElab {
                 Kind::UsedBuiltin(qname) if !qname.module.is_empty() => {
                     return vec![Decl::UseDecls(Box::new([Use {
                         name: qname.module.clone(),
-                        as_: None,
                         export: false,
                     }]))];
                 }
@@ -249,7 +248,6 @@ impl DepElab for TyElab {
                         vec![]
                     } else {
                         vec![Decl::UseDecls(Box::new([Use {
-                            as_: None,
                             name: qname.module.clone(),
                             export: false,
                         }]))]
@@ -343,7 +341,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             Dependency::PreMod(b) => {
                 vec![Decl::UseDecls(Box::new([Use {
                     name: self.namer.prelude_module_name(b),
-                    as_: None,
                     export: false,
                 }]))]
             }
