@@ -12,11 +12,13 @@ use indexmap::IndexSet;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
-    thir::{self, visit::Visitor, Expr, ExprKind, Pat, PatKind, Thir},
+    thir::{self, visit::Visitor, Expr, ExprKind, Thir},
     ty::{Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Span;
 use rustc_type_ir::ConstKind;
+
+use super::specification::inputs_and_output;
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {
@@ -44,7 +46,9 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: LocalDefId,
 ) -> CreusotResult<(DefId, ExternSpec<'tcx>)> {
-    let span = ctx.def_span(def_id.to_def_id());
+    let def_id_ = def_id.to_def_id();
+    let span = ctx.def_span(def_id_);
+    let contract = contract_clauses_of(ctx, def_id_).unwrap();
     // Handle error gracefully
     let (thir, expr) = ctx.fetch_thir(def_id)?;
     let thir = thir.borrow();
@@ -56,13 +60,13 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let (id, subst) = visit.items.pop().unwrap();
 
     let (id, _) = if ctx.trait_of_item(id).is_some() {
-        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id.to_def_id()), id, subst).to_opt(id, subst).unwrap_or_else(|| {
+        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id_), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
-                ctx.def_span(def_id.to_def_id()),
+                ctx.def_span(def_id_),
                 "could not derive original instance from external specification",
             );
 
-            err.span_warn(ctx.def_span(def_id.to_def_id()), "the bounds on an external specification must be at least as strong as the original impl bounds");
+            err.span_warn(ctx.def_span(def_id_), "the bounds on an external specification must be at least as strong as the original impl bounds");
             err.emit()
         })
     } else {
@@ -72,7 +76,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     // Generics of the actual item.
     let mut inner_subst = erased_identity_for_item(ctx.tcx, id).to_vec();
     // Generics of our stub.
-    let outer_subst = erased_identity_for_item(ctx.tcx, def_id.to_def_id());
+    let outer_subst = erased_identity_for_item(ctx.tcx, def_id_);
 
     // FIXME: I don't remember the original reason for introducing this...
     let extra_parameters = inner_subst.len() - outer_subst.len();
@@ -147,8 +151,6 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     let subst = ctx.mk_args(&subst);
 
-    let contract = contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
-
     let additional_predicates = ctx
         .predicates_of(def_id)
         .instantiate(ctx.tcx, subst)
@@ -157,24 +159,8 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .map(Clause::as_predicate)
         .collect();
 
-    let args = thir.params.iter().enumerate().map(|(idx, param)|
-        match &param.pat {
-            Some(box Pat { kind, span, ty }) => {
-                let ident = match kind {
-                    PatKind::Binding { var, .. } => Ident(ctx.rename(*var)),
-                    _ => Ident::fresh(&format!{"__{}", idx}),
-                };
-                (ident, *span, ty.clone())
-            }
-            None => ctx.fatal_error(span, "implicit parameters are unsupported").emit(),
-        }).collect();
-    let output_ty = match thir.body_type {
-        thir::BodyTy::Const(_) => ctx.fatal_error(span, "don't put an extern spec on a const").emit(),
-        thir::BodyTy::Fn(fn_sig) => {
-            ctx.normalize_erasing_regions(rustc_middle::ty::TypingEnv::non_body_analysis(ctx.tcx, def_id), fn_sig.output())
-        }
-    };
-    Ok((id, ExternSpec { contract, additional_predicates, subst, inputs: args, output: output_ty }))
+    let (inputs, output) = inputs_and_output(ctx, def_id_, &thir);
+    Ok((id, ExternSpec { contract, additional_predicates, subst, inputs, output }))
 }
 
 // We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.
