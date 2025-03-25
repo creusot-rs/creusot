@@ -23,12 +23,14 @@ impl IdentString {
     }
 }
 
+#[cfg(feature = "serialize")]
 impl Serialize for IdentString {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         todo! {}
     }
 }
 
+#[cfg(feature = "serialize")]
 impl<'d> Deserialize<'d> for IdentString {
     fn deserialize<D: serde::Deserializer<'d>>(deserializer: D) -> Result<Self, D::Error> {
         todo! {}
