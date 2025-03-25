@@ -52,9 +52,9 @@ impl Scope {
         }
     }
 
-    fn bind(&mut self, ident: Ident) -> DefaultSymbol {
+    fn bind(&mut self, ident: Ident) {
         if ident.id == 0 {
-            return ident.name.0;
+            return;
         }
         let name = ident.name.as_str();
         let mut sym = crate::name::INTERNER.write().unwrap().get_or_intern(&name);
@@ -65,11 +65,18 @@ impl Scope {
         }
         self.bound.insert(sym);
         self.rename.insert(ident, sym);
-        return sym;
+        return;
     }
 
-    fn get(&self, ident: Ident) -> DefaultSymbol {
-        if ident.id == 0 { ident.name.0 } else { self.rename[&ident] }
+    fn get(&self, ident: Ident) -> String {
+        if ident.id == 0 {
+            ident.name.as_str()
+        } else {
+            match self.rename.get(&ident) {
+                Some(sym) => crate::INTERNER.read().unwrap().resolve(*sym).unwrap().to_string(),
+                None => "ERROR_UNBOUND_".to_string() + &ident.name.as_str(), // TODO Output errror message
+            }
+        }
     }
 
     fn unbind(&mut self, ident: Ident) {
@@ -101,27 +108,27 @@ impl Why3Scope {
         self.span_scope.close();
     }
 
-    pub fn bind_value(&mut self, ident: Ident) -> DefaultSymbol {
+    pub fn bind_value(&mut self, ident: Ident) {
         self.value_scope.bind(ident)
     }
 
-    pub fn bind_type(&mut self, ident: Ident) -> DefaultSymbol {
+    pub fn bind_type(&mut self, ident: Ident) {
         self.type_scope.bind(ident)
     }
 
-    pub fn bind_span(&mut self, ident: Ident) -> DefaultSymbol {
+    pub fn bind_span(&mut self, ident: Ident) {
         self.span_scope.bind(ident)
     }
 
-    pub fn get_value(&self, ident: Ident) -> DefaultSymbol {
+    pub fn get_value(&self, ident: Ident) -> String {
         self.value_scope.get(ident)
     }
 
-    pub fn get_type(&self, ident: Ident) -> DefaultSymbol {
+    pub fn get_type(&self, ident: Ident) -> String {
         self.type_scope.get(ident)
     }
 
-    pub fn get_span(&self, ident: Ident) -> DefaultSymbol {
+    pub fn get_span(&self, ident: Ident) -> String {
         self.span_scope.get(ident)
     }
 }
@@ -152,8 +159,7 @@ impl Ident {
     where
         A::Doc: Clone,
     {
-        let s = crate::name::INTERNER.read().unwrap().resolve(scope.get_value(self)).unwrap().to_string();
-        alloc.text(s)
+        alloc.text(scope.get_value(self))
     }
 
     pub fn pretty_type_name<'a, A: DocAllocator<'a>>(
@@ -164,8 +170,7 @@ impl Ident {
     where
         A::Doc: Clone,
     {
-        let s = crate::name::INTERNER.read().unwrap().resolve(scope.get_type(self)).unwrap().to_string();
-        alloc.text(s)
+        alloc.text(scope.get_type(self))
     }
 
     pub fn pretty_span_name<'a, A: DocAllocator<'a>>(
@@ -176,8 +181,7 @@ impl Ident {
     where
         A::Doc: Clone,
     {
-        let s = crate::name::INTERNER.read().unwrap().resolve(scope.get_span(self)).unwrap().to_string();
-        alloc.text(s)
+        alloc.text(scope.get_span(self))
     }
 }
 
@@ -421,26 +425,25 @@ impl Print for Signature {
     where
         A::Doc: Clone,
     {
-        scope.bind_value(self.name);
-        scope.open();
-        let doc =
-            self.name
-                .pretty_value_name(alloc, scope)
-                .append(alloc.space())
-                .append(alloc.intersperse(
-                    self.attrs.iter().map(|a| a.pretty(alloc, scope)).chain(once(alloc.nil())),
-                    alloc.space(),
-                ))
-                .append(arg_list(alloc, &self.args, scope))
-                .append(self.retty.as_ref().map_or_else(
+        // Assume that self.name is bound and that a local scope has been open for the parameters.
+        // We bind the parameters here so they are in scope when printing the body of a Predicate.
+        self.name
+            .pretty_value_name(alloc, scope)
+            .append(alloc.space())
+            .append(alloc.intersperse(
+                self.attrs.iter().map(|a| a.pretty(alloc, scope)).chain(once(alloc.nil())),
+                alloc.space(),
+            ))
+            .append(arg_list(alloc, &self.args, scope))
+            .append(
+                self.retty.as_ref().map_or_else(
                     || alloc.nil(),
                     |t| alloc.text(" : ").append(t.pretty(alloc, scope)),
-                ))
-                .append(alloc.line_().append(self.contract.pretty(alloc, scope)))
-                .nest(2)
-                .group();
-        scope.close();
-        doc
+                ),
+            )
+            .append(alloc.line_().append(self.contract.pretty(alloc, scope)))
+            .nest(2)
+            .group()
     }
 }
 
@@ -453,12 +456,16 @@ impl Print for Predicate {
     where
         A::Doc: Clone,
     {
-        alloc
+        scope.bind_value(self.sig.name);
+        scope.open();
+        let doc = alloc
             .text("predicate ")
             .append(self.sig.pretty(alloc, scope).append(alloc.line_()).append(alloc.text(" =")))
             .group()
             .append(alloc.line())
-            .append(self.body.pretty(alloc, scope).indent(2))
+            .append(self.body.pretty(alloc, scope).indent(2));
+        scope.close();
+        doc
     }
 }
 
@@ -562,16 +569,16 @@ impl Print for LogicDecl {
     where
         A::Doc: Clone,
     {
-        let mut doc = alloc.nil();
-
-        match self.kind {
-            Some(DeclKind::Function) => doc = doc.append("function "),
-            Some(DeclKind::Predicate) => doc = doc.append("predicate "),
-            Some(DeclKind::Constant) => doc = doc.append("constant "),
-            None => {}
+        let doc = match self.kind {
+            Some(DeclKind::Function) => alloc.text("function "),
+            Some(DeclKind::Predicate) => alloc.text("predicate "),
+            Some(DeclKind::Constant) => alloc.text("constant "),
+            None => alloc.nil(),
         };
-
-        doc = doc.append(self.sig.pretty(alloc, scope));
+        scope.bind_value(self.sig.name);
+        scope.open();
+        let doc = doc.append(self.sig.pretty(alloc, scope));
+        scope.close();
         doc
     }
 }
