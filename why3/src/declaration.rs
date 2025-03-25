@@ -275,7 +275,6 @@ pub struct LogicDecl {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
     pub name: Box<[IdentString]>,
-    pub as_: Option<Ident>,
     pub export: bool,
 }
 
@@ -321,7 +320,7 @@ pub struct Meta {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum MetaIdent {
     String(String),
-    Ident(Ident),
+    Ident(IdentString),
 }
 
 // meta_arg:
