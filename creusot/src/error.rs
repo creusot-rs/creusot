@@ -47,6 +47,7 @@ impl From<CannotFetchThir> for Error {
 ///
 /// It should usually be bubbled up to the caller, which should then throw it away and
 /// proceed to call `tcx.dcx().abort_if_errors()`.
+#[derive(Debug)]
 pub(crate) struct CannotFetchThir;
 
 #[derive(Debug, Clone)]
