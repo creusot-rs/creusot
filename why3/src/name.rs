@@ -14,12 +14,18 @@ static FRESH_COUNTER: AtomicU64 = AtomicU64::new(1);
 pub(crate) static INTERNER: LazyLock<RwLock<DefaultStringInterner>> =
     LazyLock::new(|| RwLock::new(DefaultStringInterner::new()));
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IdentString(pub(crate) DefaultSymbol);
 
 impl IdentString {
     pub fn as_str(self) -> String {
         String::from(self)
+    }
+}
+
+impl std::fmt::Debug for IdentString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", INTERNER.read().unwrap().resolve(self.0).unwrap())
     }
 }
 
