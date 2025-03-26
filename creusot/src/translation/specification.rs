@@ -19,17 +19,19 @@ use rustc_span::{Span, DUMMY_SP};
 use rustc_type_ir::ClosureKind;
 use std::collections::{HashMap, HashSet};
 
+use super::pearlite::FTerm;
+
 /// A term with an "expl:" label (includes the "expl:" prefix)
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct Condition<'tcx> {
-    pub(crate) term: Term<'tcx>,
+    pub(crate) term: FTerm<'tcx>,
     /// Label including the "expl:" prefix.
     pub(crate) expl: String,
 }
 
 #[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {
-    pub(crate) variant: Option<Term<'tcx>>,
+    pub(crate) variant: Option<FTerm<'tcx>>,
     pub(crate) requires: Vec<Condition<'tcx>>,
     pub(crate) ensures: Vec<Condition<'tcx>>,
     pub(crate) no_panic: bool,
@@ -42,20 +44,20 @@ pub struct PreContract<'tcx> {
 impl<'tcx> PreContract<'tcx> {
     pub(crate) fn subst(&mut self, subst: &HashMap<Ident, Term<'tcx>>) {
         for term in self.terms_mut() {
-            term.subst(subst);
+            term.1.subst(subst);
         }
     }
 
     pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> Self {
         for term in self.terms_mut() {
-            *term =
-                normalize(tcx, typing_env, std::mem::replace(term, /*Dummy*/ Term::mk_true(tcx)));
+            term.1 =
+                normalize(tcx, typing_env, std::mem::replace(&mut term.1, /*Dummy*/ Term::mk_true(tcx)));
         }
         self
     }
 
     pub(crate) fn is_requires_false(&self) -> bool {
-        self.requires.iter().any(|req| matches!(req.term.kind, TermKind::Lit(Literal::Bool(false))))
+        self.requires.iter().any(|req| matches!(req.term.1.kind, TermKind::Lit(Literal::Bool(false))))
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -63,7 +65,7 @@ impl<'tcx> PreContract<'tcx> {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn terms(&self) -> impl Iterator<Item = &Term<'tcx>> {
+    pub(crate) fn terms(&self) -> impl Iterator<Item = &FTerm<'tcx>> {
         self.requires
             .iter()
             .chain(self.ensures.iter())
@@ -71,7 +73,7 @@ impl<'tcx> PreContract<'tcx> {
             .chain(self.variant.iter())
     }
 
-    fn terms_mut(&mut self) -> impl Iterator<Item = &mut Term<'tcx>> {
+    fn terms_mut(&mut self) -> impl Iterator<Item = &mut FTerm<'tcx>> {
         self.requires
             .iter_mut()
             .chain(self.ensures.iter_mut())
@@ -82,18 +84,18 @@ impl<'tcx> PreContract<'tcx> {
     pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
         let mut ensures = self.ensures.clone();
 
-        let postcond = ensures.pop().map_or(Term::mk_true(tcx), |cond| cond.term);
+        let postcond = ensures.pop().map_or(Term::mk_true(tcx), |cond| cond.term.1);
         let postcond =
-            ensures.into_iter().rfold(postcond, |postcond, cond| Term::conj(postcond, cond.term));
+            ensures.into_iter().rfold(postcond, |postcond, cond| Term::conj(postcond, cond.term.1));
         postcond
     }
 
     pub(crate) fn requires_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
         let mut requires = self.requires.clone();
 
-        let precond = requires.pop().map_or(Term::mk_true(tcx), |cond| cond.term);
+        let precond = requires.pop().map_or(Term::mk_true(tcx), |cond| cond.term.1);
         let precond =
-            requires.into_iter().rfold(precond, |precond, cond| Term::conj(precond, cond.term));
+            requires.into_iter().rfold(precond, |precond, cond| Term::conj(precond, cond.term.1));
         precond
     }
 }
@@ -401,7 +403,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         {
             contract.extern_no_spec = true;
             contract.requires.push(Condition {
-                term: Term::mk_false(ctx.tcx),
+                term: FTerm([].into(), Term::mk_false(ctx.tcx)),
                 expl: format!("expl:{} requires false", fn_name),
             });
         }
@@ -454,6 +456,7 @@ impl<'tcx> PreSignature<'tcx> {
             if !params_open_inv.contains(&i)
                 && let Some(term) = type_invariant_term(ctx, typing_env, *ident, *span, *ty)
             {
+                let term = FTerm([].into(), term);
                 let expl = format!("expl:{} '{}' type invariant", fn_name, ident.0.name.as_str());
                 Some(Condition { term, expl })
             } else {
@@ -474,6 +477,7 @@ impl<'tcx> PreSignature<'tcx> {
                 self.output,
             )
         {
+            let term = FTerm([].into(), term);
             let expl = format!("expl:{} result type invariant", fn_name);
             self.contract.ensures.insert(0, Condition { term, expl });
         }
@@ -502,7 +506,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         let mut pre_subst =
             closure_capture_subst(ctx, def_id, subst, false, None, self_pre.clone());
         for pre in &mut contract.requires {
-            pre_subst.visit_mut_term(&mut pre.term);
+            pre_subst.visit_mut_term(&mut pre.term.1);
         }
 
         if kind == ClosureKind::FnMut {
@@ -517,6 +521,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
                 Term::var(self_, env_ty).cur(),
                 Term::var(self_, env_ty).fin(),
             ]);
+            let term = FTerm([].into(), term);
             let expl = "expl:closure unnest".to_string();
             contract.ensures.push(Condition { term, expl });
         };
@@ -531,7 +536,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             closure_capture_subst(ctx, def_id, subst, !env_ty.is_ref(), Some(self_pre), self_post);
 
         for post in &mut contract.ensures {
-            post_subst.visit_mut_term(&mut post.term);
+            post_subst.visit_mut_term(&mut post.term.1);
         }
 
         if let Some(span) = post_subst.use_of_consumed_var_error

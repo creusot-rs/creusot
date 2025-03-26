@@ -1,25 +1,16 @@
 use crate::{
-    backend::ty_inv::is_tyinv_trivial,
-    callbacks,
-    contracts_items::{
+    backend::ty_inv::is_tyinv_trivial, callbacks, contracts_items::{
         get_inv_function, is_extern_spec, is_logic, is_open_inv_param, is_predicate, is_prophetic,
         opacity_witness_name,
-    },
-    creusot_items::{self, CreusotItems},
-    error::{CannotFetchThir, CreusotResult, Error},
-    metadata::{BinaryMetadata, Metadata},
-    options::Options,
-    specification::{PreSignature, inherited_extern_spec, pre_sig_of},
-    translation::{
+    }, creusot_items::{self, CreusotItems}, error::{CannotFetchThir, CreusotResult, Error}, metadata::{BinaryMetadata, Metadata}, options::Options, pearlite::{FTerm, PIdent}, specification::{inherited_extern_spec, pre_sig_of, PreSignature}, translation::{
         self,
-        external::{ExternSpec, extract_extern_specs_from_item},
+        external::{extract_extern_specs_from_item, ExternSpec},
         fmir,
         function::ClosureContract,
         pearlite::{self, Term},
         specification::ContractClauses,
         traits::TraitImpl,
-    },
-    util::{erased_identity_for_item, parent_module},
+    }, util::{erased_identity_for_item, parent_module}
 };
 use once_map::unsync::OnceMap;
 use rustc_ast::{
@@ -150,7 +141,7 @@ pub struct TranslationCtx<'tcx> {
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
-    terms: OnceMap<DefId, Box<Option<Term<'tcx>>>>,
+    terms: OnceMap<DefId, Box<Option<FTerm<'tcx>>>>,
     trait_impl: OnceMap<DefId, Box<TraitImpl<'tcx>>>,
     sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
     bodies: OnceMap<LocalDefId, Box<BodyWithBorrowckFacts<'tcx>>>,
@@ -255,7 +246,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn term<'a>(
         &'a self,
         def_id: DefId,
-    ) -> Result<Option<&'a Term<'tcx>>, CannotFetchThir> {
+    ) -> Result<Option<&'a FTerm<'tcx>>, CannotFetchThir> {
         let Some(local_id) = def_id.as_local() else {
             return Ok(self.externs.term(def_id));
         };
@@ -268,7 +259,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                         Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
                         Err(Error::TypeCheck(thir)) => return Err(thir),
                     };
-                    Ok(Box::new(Some(pearlite::normalize(self.tcx, self.typing_env(def_id), term))))
+                    Ok(Box::new(Some(FTerm(bound, pearlite::normalize(self.tcx, self.typing_env(def_id), term)))))
                 } else {
                     Ok(Box::new(None))
                 }
@@ -280,7 +271,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     ///
     /// This should only be used in [`after_analysis`](crate::translation::after_analysis),
     /// where we are confident that typechecking errors have already been reported.
-    pub(crate) fn term_fail_fast(&self, def_id: DefId) -> Option<&Term<'tcx>> {
+    pub(crate) fn term_fail_fast(&self, def_id: DefId) -> Option<&FTerm<'tcx>> {
         let tcx = self.tcx;
         self.term(def_id).unwrap_or_else(|_| {
             tcx.dcx().abort_if_errors();

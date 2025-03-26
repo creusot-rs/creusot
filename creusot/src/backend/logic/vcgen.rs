@@ -327,7 +327,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         self.ctx.crash_and_error(t.span, "Polymorphic recursion is not supported.")
                     }
 
-                    if let Some(variant) = variant {
+                    if let Some(FTerm(bound, variant)) = variant {
                         self.build_variant(&args, variant.ty, variant.span)?
                     } else {
                         if self.structurally_recursive { Exp::mk_true() } else { Exp::mk_false() }

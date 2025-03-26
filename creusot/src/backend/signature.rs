@@ -55,7 +55,7 @@ pub(crate) fn lower_sig<'tcx, N: Namer<'tcx>>(
         .into_iter()
         .map(|cond| lower_condition(ctx, names, cond))
         .collect();
-    let variant = pre_sig.contract.variant.map(|term| lower_pure(ctx, names, &term));
+    let variant = pre_sig.contract.variant.map(|term| lower_pure(ctx, names, &term.1));
     let contract = Contract { requires, ensures, variant };
 
     let mut sig = Signature { name, trigger: None, attrs, retty, args, contract };

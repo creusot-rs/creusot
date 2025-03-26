@@ -3,11 +3,7 @@ use rustc_middle::ty::Visibility;
 use rustc_span::Span;
 
 use crate::{
-    contracts_items::{is_spec, opacity_witness_name},
-    ctx::TranslationCtx,
-    error::CannotFetchThir,
-    translation::pearlite::{TermKind, TermVisitor, super_visit_term},
-    util::parent_module,
+    contracts_items::{is_spec, opacity_witness_name}, ctx::TranslationCtx, error::CannotFetchThir, pearlite::FTerm, translation::pearlite::{super_visit_term, TermKind, TermVisitor}, util::parent_module
 };
 
 /// Validates that an `#[open]` function is not made visible in a less opened one.
@@ -64,8 +60,7 @@ pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) -> Result<(), 
         return Ok(());
     }
 
-    // UGLY clone...
-    let Some(term) = ctx.term(item)?.cloned() else { return Ok(()) };
+    let Some(FTerm(bound, term)) = ctx.term(item)? else { return Ok(()) };
 
     if ctx.visibility(item) != Visibility::Restricted(parent_module(ctx.tcx, item))
         && opacity_witness_name(ctx.tcx, item).is_none()
@@ -74,6 +69,6 @@ pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) -> Result<(), 
     }
 
     let opacity = ctx.opacity(item).scope();
-    OpacityVisitor { opacity, ctx, source_item: item }.visit_term(&term);
+    OpacityVisitor { opacity, ctx, source_item: item }.visit_term(term);
     Ok(())
 }

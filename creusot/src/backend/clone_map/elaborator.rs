@@ -18,7 +18,7 @@ use crate::{
     },
     ctx::{BodyId, ItemType},
     function::closure_resolve,
-    pearlite::{normalize, PIdent, Term},
+    pearlite::{normalize, FTerm, PIdent, Term},
     traits::{self, TraitResolved},
 };
 use petgraph::graphmap::DiGraphMap;
@@ -617,7 +617,7 @@ fn term<'tcx>(
                 let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
                 Some(ctx.closure_contract(*did).unnest.clone().unwrap())
             } else {
-                let term = ctx.term_fail_fast(def_id).unwrap().clone();
+                let FTerm(bound, term) = ctx.term_fail_fast(def_id).unwrap().clone();
                 let term = normalize(
                     ctx.tcx,
                     typing_env,
