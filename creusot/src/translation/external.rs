@@ -18,7 +18,7 @@ use rustc_middle::{
 use rustc_span::Span;
 use rustc_type_ir::ConstKind;
 
-use super::specification::inputs_and_output;
+use super::specification::inputs_and_output_from_thir;
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {
@@ -159,7 +159,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .map(Clause::as_predicate)
         .collect();
 
-    let (inputs, output) = inputs_and_output(ctx, def_id_, &thir);
+    let (inputs, output) = inputs_and_output_from_thir(ctx, def_id_, &thir);
     Ok((id, ExternSpec { contract, additional_predicates, subst, inputs, output }))
 }
 

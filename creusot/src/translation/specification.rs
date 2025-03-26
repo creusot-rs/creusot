@@ -10,7 +10,7 @@ use crate::{
     translation::pearlite::{Literal, Term, TermKind, normalize, type_invariant_term},
     util::erased_identity_for_item,
 };
-use rustc_hir::{AttrArgs, def_id::DefId};
+use rustc_hir::{def_id::DefId, AttrArgs, Safety};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{self, Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE}, thir::{BodyTy, Pat, PatKind, Thir}, ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv}
@@ -405,9 +405,13 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
                 expl: format!("expl:{} requires false", fn_name),
             });
         }
-        let (thir, _) = ctx.fetch_thir(def_id.as_local().unwrap()).unwrap();
-        let thir = thir.borrow();
-        let (inputs, output) = inputs_and_output(ctx, def_id, &thir);
+        let (inputs, output) = if ctx.tcx.trait_of_item(def_id).is_some() {
+            inputs_and_output(ctx.tcx, def_id)
+        } else {
+            debug!{"{def_id:?}"};
+            let (thir, _) = ctx.fetch_thir(def_id.as_local().unwrap()).unwrap();
+            inputs_and_output_from_thir(ctx, def_id, &thir.borrow())
+        };
         let contract = contract.normalize(ctx.tcx, ctx.typing_env(def_id));
         PreSignature { inputs, output, contract }
     }
@@ -559,7 +563,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     presig
 }
 
-pub fn inputs_and_output<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId, thir: &Thir<'tcx>) -> (Box<[(Ident, Span, Ty<'tcx>)]>, Ty<'tcx>) {
+pub fn inputs_and_output_from_thir<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId, thir: &Thir<'tcx>) -> (Box<[(Ident, Span, Ty<'tcx>)]>, Ty<'tcx>) {
     let span = ctx.tcx.def_span(def_id);
     match thir.body_type {
         BodyTy::Const(ty) => ([].into(), ty.clone()),
@@ -584,5 +588,35 @@ pub fn inputs_and_output<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId, thir: 
             let output = ctx.normalize_erasing_regions(rustc_middle::ty::TypingEnv::non_body_analysis(ctx.tcx, def_id), fn_sig.output());
             (inputs, output)
         }
+    }
+}
+
+pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(Ident, Span, Ty)]>, Ty) {
+    let ty = tcx.type_of(def_id).instantiate_identity();
+    match ty.kind()
+    {
+        TyKind::FnDef(..) => {
+            let gen_sig = tcx
+                .instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity());
+            let sig =
+                tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), gen_sig);
+            let inputs = tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned()).map(|(ident, ty)|
+                (Ident::fresh(ident.name.as_str()), ident.span, ty)).collect();
+            (inputs, sig.output())
+        }
+        TyKind::Closure(_, subst) => {
+            let sig = tcx.instantiate_bound_regions_with_erased(
+                tcx.signature_unclosure(subst.as_closure().sig(), Safety::Safe),
+            );
+            let sig = tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), sig);
+            let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
+
+            let closure_env = (Ident::fresh("_1"), DUMMY_SP, env_ty);
+            let names = tcx.fn_arg_names(def_id).iter().cloned();
+            let inputs = std::iter::once(closure_env).chain(names.zip(sig.inputs().iter().cloned()).map(|(ident, ty)|
+                (Ident::fresh(ident.name.as_str()), ident.span, ty))).collect();
+            (inputs, sig.output())
+        }
+        _ => ([].into(), tcx.type_of(def_id).instantiate_identity()),
     }
 }
