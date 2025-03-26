@@ -407,13 +407,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
                 expl: format!("expl:{} requires false", fn_name),
             });
         }
-        let (inputs, output) = if ctx.tcx.trait_of_item(def_id).is_some() {
-            inputs_and_output(ctx.tcx, def_id)
-        } else {
-            debug!{"{def_id:?}"};
-            let (thir, _) = ctx.fetch_thir(def_id.as_local().unwrap()).unwrap();
-            inputs_and_output_from_thir(ctx, def_id, &thir.borrow())
-        };
+        let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
         let contract = contract.normalize(ctx.tcx, ctx.typing_env(def_id));
         PreSignature { inputs, output, contract }
     }
