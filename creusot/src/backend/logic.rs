@@ -1,12 +1,7 @@
 use crate::{
     backend::{
-        CannotFetchThir, Why3Generator, is_trusted_item, logic::vcgen::wp, signature::lower_sig,
-        term::lower_pure, ty::translate_ty,
-    },
-    contracts_items::get_builtin,
-    ctx::*,
-    translated_item::FileModule,
-    translation::pearlite::Term,
+        is_trusted_item, logic::vcgen::wp, signature::lower_sig, term::lower_pure, ty::translate_ty, CannotFetchThir, Why3Generator
+    }, contracts_items::get_builtin, ctx::*, pearlite::FTerm, translated_item::FileModule, translation::pearlite::Term
 };
 use rustc_hir::def_id::DefId;
 use why3::{
@@ -85,7 +80,7 @@ pub(crate) fn translate_logic_or_predicate(
     let postcondition = sig.contract.ensures_conj();
 
     let result_ident = Ident::bound("result");
-    let term = ctx.ctx.term(def_id)?.unwrap().clone();
+    let FTerm(bound, term) = ctx.ctx.term(def_id)?.unwrap().clone();
     let wp = wp(
         ctx,
         &mut names,

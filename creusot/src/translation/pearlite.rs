@@ -1856,3 +1856,8 @@ fn print_thir_expr(fmt: &mut Formatter, thir: &Thir, expr_id: ExprId) -> std::fm
     }
     Ok(())
 }
+
+/// Pearlite expressions are desugared into Rust functions or closures.
+/// This represents the desugared term together with the names of arguments of the function or closure.
+#[derive(Debug, Clone, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
+pub struct FTerm<'tcx>(pub Box<[PIdent]>, pub Term<'tcx>);
