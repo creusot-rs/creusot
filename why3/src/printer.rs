@@ -489,12 +489,16 @@ impl Print for LogicDefn {
     where
         A::Doc: Clone,
     {
-        alloc
+        scope.bind_value(self.sig.name);
+        scope.open();
+        let doc = alloc
             .text("function ")
             .append(self.sig.pretty(alloc, scope).append(alloc.line_()).append(alloc.text(" =")))
             .group()
             .append(alloc.line())
-            .append(self.body.pretty(alloc, scope).indent(2))
+            .append(self.body.pretty(alloc, scope).indent(2));
+        scope.close();
+        doc
     }
 }
 
