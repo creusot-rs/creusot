@@ -1595,15 +1595,15 @@ impl<'tcx> Term<'tcx> {
     /// If `inv_subst` containts `("x", 5)`:
     /// - If `self` is `x == 1`, `self.subst(inv_subst)` is `5 + 1`
     /// - If `self` is `forall<x: Int> x == 1`, `self.subst(inv_subst)` is still `forall<x: Int> x == 1`
-    pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<PIdent, Term<'tcx>>) {
+    pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<PIdent, TermKind<'tcx>>) {
         self.subst_with(|k| inv_subst.get(&k).cloned());
     }
 
-    pub(crate) fn subst_with<F: FnMut(PIdent) -> Option<Term<'tcx>>>(&mut self, mut f: F) {
+    pub(crate) fn subst_with<F: FnMut(PIdent) -> Option<TermKind<'tcx>>>(&mut self, mut f: F) {
         self.subst_with_inner(&HashSet::new(), &mut f)
     }
 
-    fn subst_with_inner<F: FnMut(PIdent) -> Option<Term<'tcx>>>(
+    fn subst_with_inner<F: FnMut(PIdent) -> Option<TermKind<'tcx>>>(
         &mut self,
         bound: &HashSet<PIdent>,
         inv_subst: &mut F,
@@ -1614,7 +1614,7 @@ impl<'tcx> Term<'tcx> {
                     return;
                 }
                 if let Some(t) = inv_subst(*v) {
-                    self.kind = t.kind.clone()
+                    self.kind = t
                 }
             }
             TermKind::Lit(_) => {}
@@ -1861,3 +1861,19 @@ fn print_thir_expr(fmt: &mut Formatter, thir: &Thir, expr_id: ExprId) -> std::fm
 /// This represents the desugared term together with the names of arguments of the function or closure.
 #[derive(Debug, Clone, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub struct FTerm<'tcx>(pub Box<[PIdent]>, pub Term<'tcx>);
+
+impl<'tcx> FTerm<'tcx> {
+    /// `idents` must be the same length as the slice in `self`.
+    pub fn instantiate(&self, idents: &[PIdent]) -> Term<'tcx> {
+        assert!(idents.len() == self.0.len());
+        let subst = self
+            .0
+            .iter()
+            .zip(idents.iter())
+            .map(|(from, to)| (*from, TermKind::Var(*to)))
+            .collect();
+        let mut term = self.1.clone();
+        term.subst(&subst);
+        term
+    }
+}
