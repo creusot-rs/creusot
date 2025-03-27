@@ -141,9 +141,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         };
 
         let typing_env = ctx.typing_env(body.source.def_id());
-        let bound = std::iter::repeat_n(Ident::bound("TODO"), body.arg_count).collect();
-        let invariants = corrected_invariant_names_and_locations(ctx, body);
-        let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, bound, body);
         let mut erased_locals = MixedBitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
@@ -155,6 +152,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         });
 
         let (vars, locals) = translate_vars(body, &erased_locals);
+        let bound: Box<[Ident]> = std::iter::repeat_n(Ident::bound("TODO"), body.arg_count).collect();
+        let invariants = corrected_invariant_names_and_locations(ctx, &bound, body);
+        let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, &bound, body);
 
         f(BodyTranslator {
             body,
