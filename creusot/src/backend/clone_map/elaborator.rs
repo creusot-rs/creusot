@@ -18,7 +18,7 @@ use crate::{
     },
     ctx::{BodyId, ItemType},
     function::closure_resolve,
-    pearlite::{normalize, FTerm, PIdent, Term},
+    pearlite::{normalize, PIdent, Term},
     traits::{self, TraitResolved},
 };
 use petgraph::graphmap::DiGraphMap;
@@ -172,6 +172,7 @@ impl DepElab for LogicElab {
         let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
             .instantiate(ctx.tcx, subst)
             .normalize(ctx.tcx, typing_env);
+        let bound: Box<[PIdent]> = pre_sig.inputs.iter().map(|(ident, _, _)| *ident).collect();
 
         let trait_resol = ctx
             .tcx
@@ -187,7 +188,7 @@ impl DepElab for LogicElab {
         let mut names = elab.namer(dep);
         let name = names.dependency(dep).ident();
         let sig = lower_sig(ctx, &mut names, name, pre_sig, def_id);
-        if !is_opaque && let Some(term) = term(ctx, typing_env, dep) {
+        if !is_opaque && let Some(term) = term(ctx, typing_env, &bound, dep) {
             lower_logical_defn(ctx, &mut names, sig, kind, term)
         } else {
             val(sig, kind)
@@ -587,6 +588,7 @@ fn fn_postcond_term<'tcx>(
 fn term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
+    bound: &[PIdent],
     dep: Dependency<'tcx>,
 ) -> Option<Term<'tcx>> {
     match dep {
@@ -617,7 +619,7 @@ fn term<'tcx>(
                 let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
                 Some(ctx.closure_contract(*did).unnest.clone().unwrap())
             } else {
-                let FTerm(bound, term) = ctx.term_fail_fast(def_id).unwrap().clone();
+                let term = ctx.term_fail_fast(def_id).unwrap().instantiate(bound);
                 let term = normalize(
                     ctx.tcx,
                     typing_env,
