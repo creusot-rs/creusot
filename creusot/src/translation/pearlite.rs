@@ -1863,7 +1863,7 @@ fn print_thir_expr(fmt: &mut Formatter, thir: &Thir, expr_id: ExprId) -> std::fm
 pub struct FTerm<'tcx>(pub Box<[PIdent]>, pub Term<'tcx>);
 
 impl<'tcx> FTerm<'tcx> {
-    /// `idents` must be the same length as the slice in `self`.
+    /// `idents` must be at least as long as the slice in `self`.
     pub fn instantiate(&self, idents: &[PIdent]) -> Term<'tcx> {
         assert!(idents.len() >= self.0.len(), "{idents:?} < {:?}", self.0);
         let subst = self

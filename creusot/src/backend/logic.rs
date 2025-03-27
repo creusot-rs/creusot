@@ -38,6 +38,7 @@ pub(crate) fn translate_logic_or_predicate(
     let mut body_decls = Vec::new();
 
     let args = pre_sig.inputs.clone();
+    let bound = args.iter().map(|(name, _, _)| *name).collect::<Box<[PIdent]>>();
 
     let name = Ident::bound(names.item(names.self_id, names.self_subst).name);
     let sig = lower_sig(ctx, &mut names, name, pre_sig, def_id);
@@ -80,7 +81,7 @@ pub(crate) fn translate_logic_or_predicate(
     let postcondition = sig.contract.ensures_conj();
 
     let result_ident = Ident::bound("result");
-    let term = ctx.ctx.term(def_id)?.unwrap().instantiate(&args_names.iter().map(|n| PIdent(*n)).collect::<Box<_>>());
+    let term = ctx.ctx.term(def_id)?.unwrap().instantiate(&bound);
     let wp = wp(
         ctx,
         &mut names,
@@ -98,7 +99,7 @@ pub(crate) fn translate_logic_or_predicate(
     let goal = sig.contract.requires_implies(wp);
 
     let vc_ident = Ident::fresh(&format!("vc_{}", sig.name.as_str()));
-    body_decls.extend([Decl::Goal(Goal { name: vc_ident, goal })]);
+    body_decls.push(Decl::Goal(Goal { name: vc_ident, goal }));
 
     let mut decls = names.provide_deps(ctx);
     decls.extend(body_decls);
