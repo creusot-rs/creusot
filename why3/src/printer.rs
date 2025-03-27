@@ -33,7 +33,7 @@ pub const ALLOC: BoxAllocator = BoxAllocator;
 struct Scope {
     bound: HashSet<DefaultSymbol>,
     rename: HashMap<Ident, DefaultSymbol>,
-    undo: Vec<Vec<Ident>>,
+    undo: Vec<Vec<(Ident, Option<DefaultSymbol>)>>,
 }
 
 impl Scope {
@@ -47,8 +47,8 @@ impl Scope {
 
     fn close(&mut self) {
         let undo = self.undo.pop().unwrap();
-        for ident in undo {
-            self.unbind(ident);
+        for (ident, old) in undo.into_iter().rev() {
+            self.unbind(ident, old);
         }
     }
 
@@ -64,8 +64,8 @@ impl Scope {
             i += 1;
         }
         self.bound.insert(sym);
-        self.rename.insert(ident, sym);
-        self.undo.last_mut().unwrap().push(ident);
+        let old = self.rename.insert(ident, sym);
+        self.undo.last_mut().unwrap().push((ident, old));
         return;
     }
 
@@ -80,8 +80,11 @@ impl Scope {
         }
     }
 
-    fn unbind(&mut self, ident: Ident) {
-        let sym = self.rename.remove(&ident).unwrap();
+    fn unbind(&mut self, ident: Ident, old: Option<DefaultSymbol>) {
+        let sym = match old {
+            None => self.rename.remove(&ident).unwrap(),
+            Some(old) => self.rename.insert(ident, old).unwrap(),
+        };
         self.bound.remove(&sym);
     }
 }
@@ -375,7 +378,8 @@ impl Print for declaration::Constant {
         A::Doc: Clone,
     {
         scope.bind_value(self.name);
-        docs![
+        scope.open();
+        let doc = docs![
             alloc,
             "constant ",
             self.name.pretty_value_name(alloc, scope),
@@ -385,7 +389,9 @@ impl Print for declaration::Constant {
                 Some(b) => alloc.text(" = ").append(b.pretty(alloc, scope)),
                 None => alloc.nil(),
             }
-        ]
+        ];
+        scope.close();
+        doc
     }
 }
 
