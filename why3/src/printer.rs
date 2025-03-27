@@ -65,6 +65,7 @@ impl Scope {
         }
         self.bound.insert(sym);
         self.rename.insert(ident, sym);
+        self.undo.last_mut().unwrap().push(ident);
         return;
     }
 
