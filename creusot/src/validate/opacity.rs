@@ -60,7 +60,7 @@ pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) -> Result<(), 
         return Ok(());
     }
 
-    let Some(FTerm(bound, term)) = ctx.term(item)? else { return Ok(()) };
+    let Some(FTerm(_, term)) = ctx.term(item)? else { return Ok(()) };
 
     if ctx.visibility(item) != Visibility::Restricted(parent_module(ctx.tcx, item))
         && opacity_witness_name(ctx.tcx, item).is_none()
