@@ -35,12 +35,10 @@ impl<'tcx> SpecClosures<'tcx> {
         let mut snapshots = IndexMap::new();
         for clos in visitor.closures.into_iter() {
             if is_assertion(ctx.tcx, clos) {
-                let FTerm(bound2, term) = ctx.term_fail_fast(clos).unwrap().clone();
-                assert!(bound2.len() == bound.len(), "Assertion closures have the same parameters as the enclosing function.");
+                let term = ctx.term_fail_fast(clos).unwrap().instantiate(bound);
                 assertions.insert(clos, term);
             } else if is_snapshot_closure(ctx.tcx, clos) {
-                let FTerm(bound2, term) = ctx.term_fail_fast(clos).unwrap().clone();
-                assert!(bound2.len() == bound.len(), "Snapshot closures should have the same parameters as the enclosing function.");
+                let term = ctx.term_fail_fast(clos).unwrap().instantiate(bound);
                 snapshots.insert(clos, term);
             }
         }
@@ -86,17 +84,42 @@ impl<'tcx> Visitor<'tcx> for Closures<'tcx> {
     }
 }
 
-pub(crate) struct Invariants<'tcx> {
-    pub(crate) loop_headers: IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
+pub(crate) struct Invariants_<T> {
+    pub(crate) loop_headers: IndexMap<BasicBlock, Vec<(LoopSpecKind, T)>>,
     /// Invariants for which we couldn't find a loop header are translated as assertions.
-    pub(crate) assertions: IndexMap<DefId, (Term<'tcx>, String)>,
+    pub(crate) assertions: IndexMap<DefId, (T, String)>,
+}
+
+type RawInvariants<'tcx> = Invariants_<FTerm<'tcx>>;
+type Invariants<'tcx> = Invariants_<Term<'tcx>>;
+
+impl<'tcx> RawInvariants<'tcx> {
+    pub fn instantiate(&self, bound: &[PIdent]) -> Invariants<'tcx> {
+        let loop_headers = self
+            .loop_headers
+            .iter()
+            .map(|(bb, invariants)| {
+                let invariants = invariants
+                    .iter()
+                    .map(|(kind, term)| (kind.clone(), term.instantiate(bound)))
+                    .collect();
+                (*bb, invariants)
+            })
+            .collect();
+        let assertions = self
+            .assertions
+            .iter()
+            .map(|(id, (term, expl))| (*id, (term.instantiate(bound), expl.clone())))
+            .collect();
+        Invariants { loop_headers, assertions }
+    }
 }
 
 struct InvariantsVisitor<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     body: &'a Body<'tcx>,
     before_loop: IndexSet<BasicBlock>,
-    invariants: Invariants<'tcx>,
+    invariants: RawInvariants<'tcx>,
 }
 
 impl<'a, 'tcx> InvariantsVisitor<'a, 'tcx> {
@@ -143,8 +166,6 @@ impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
                 return;
             };
             let term = self.ctx.term_fail_fast(*id).unwrap().clone();
-            assert!(term.0.is_empty(), "Invariant closures should not have parameters.");
-            let term = term.1;
             match self.find_loop_header(loc) {
                 None if let LoopSpecKind::Invariant(expl) = kind => {
                     self.ctx.warn(
@@ -178,8 +199,8 @@ pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
         ctx,
         body,
         before_loop: IndexSet::new(),
-        invariants: Invariants { loop_headers: IndexMap::new(), assertions: IndexMap::new() },
+        invariants: RawInvariants { loop_headers: IndexMap::new(), assertions: IndexMap::new() },
     };
     invs_gather.visit_body(body);
-    invs_gather.invariants
+    invs_gather.invariants.instantiate(bound)
 }

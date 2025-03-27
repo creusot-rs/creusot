@@ -42,7 +42,7 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
-    pub(crate) fn subst(&mut self, subst: &HashMap<Ident, Term<'tcx>>) {
+    pub(crate) fn subst(&mut self, subst: &HashMap<Ident, TermKind<'tcx>>) {
         for term in self.terms_mut() {
             term.1.subst(subst);
         }
@@ -242,7 +242,7 @@ pub(crate) fn inv_subst<'tcx>(
     body: &Body<'tcx>,
     locals: &HashMap<Local, Ident>,
     info: SourceInfo,
-) -> HashMap<Ident, Term<'tcx>> {
+) -> HashMap<Ident, TermKind<'tcx>> {
     let mut args = HashMap::new();
 
     let tree = ScopeTree::build(body);
@@ -266,8 +266,7 @@ fn place_to_term<'tcx>(
     p: mir::Place<'tcx>,
     locals: &HashMap<Local, Ident>,
     body: &Body<'tcx>,
-) -> Term<'tcx> {
-    let ty = p.ty(&body.local_decls, tcx).ty;
+) -> TermKind<'tcx> {
     let span = body.local_decls[p.local].source_info.span;
     let mut kind = TermKind::Var(locals[&p.local]);
     for (place_ref, proj) in p.iter_projections() {
@@ -290,7 +289,7 @@ fn place_to_term<'tcx>(
             }
         };
     }
-    Term { ty, span, kind }
+    kind
 }
 
 #[derive(Debug)]

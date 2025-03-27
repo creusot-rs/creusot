@@ -152,7 +152,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         });
 
         let (vars, locals) = translate_vars(body, &erased_locals);
-        let bound: Box<[Ident]> = std::iter::repeat_n(Ident::bound("TODO"), body.arg_count).collect();
+        let bound: Box<[Ident]> = (1..=body.arg_count).map(|i| locals[&Local::from_usize(i)]).collect();
         let invariants = corrected_invariant_names_and_locations(ctx, &bound, body);
         let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, &bound, body);
 
