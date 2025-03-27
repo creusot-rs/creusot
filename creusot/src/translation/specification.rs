@@ -19,19 +19,17 @@ use rustc_span::{Span, DUMMY_SP};
 use rustc_type_ir::ClosureKind;
 use std::collections::{HashMap, HashSet};
 
-use super::pearlite::FTerm;
-
 /// A term with an "expl:" label (includes the "expl:" prefix)
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct Condition<'tcx> {
-    pub(crate) term: FTerm<'tcx>,
+    pub(crate) term: Term<'tcx>,
     /// Label including the "expl:" prefix.
     pub(crate) expl: String,
 }
 
-#[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {
-    pub(crate) variant: Option<FTerm<'tcx>>,
+    pub(crate) variant: Option<Term<'tcx>>,
     pub(crate) requires: Vec<Condition<'tcx>>,
     pub(crate) ensures: Vec<Condition<'tcx>>,
     pub(crate) no_panic: bool,
@@ -44,20 +42,20 @@ pub struct PreContract<'tcx> {
 impl<'tcx> PreContract<'tcx> {
     pub(crate) fn subst(&mut self, subst: &HashMap<Ident, TermKind<'tcx>>) {
         for term in self.terms_mut() {
-            term.1.subst(subst);
+            term.subst(subst);
         }
     }
 
     pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> Self {
         for term in self.terms_mut() {
-            term.1 =
-                normalize(tcx, typing_env, std::mem::replace(&mut term.1, /*Dummy*/ Term::mk_true(tcx)));
+            *term =
+                normalize(tcx, typing_env, std::mem::replace(term, /*Dummy*/ Term::mk_true(tcx)));
         }
         self
     }
 
     pub(crate) fn is_requires_false(&self) -> bool {
-        self.requires.iter().any(|req| matches!(req.term.1.kind, TermKind::Lit(Literal::Bool(false))))
+        self.requires.iter().any(|req| matches!(req.term.kind, TermKind::Lit(Literal::Bool(false))))
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -65,7 +63,7 @@ impl<'tcx> PreContract<'tcx> {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn terms(&self) -> impl Iterator<Item = &FTerm<'tcx>> {
+    pub(crate) fn terms(&self) -> impl Iterator<Item = &Term<'tcx>> {
         self.requires
             .iter()
             .chain(self.ensures.iter())
@@ -73,7 +71,7 @@ impl<'tcx> PreContract<'tcx> {
             .chain(self.variant.iter())
     }
 
-    fn terms_mut(&mut self) -> impl Iterator<Item = &mut FTerm<'tcx>> {
+    fn terms_mut(&mut self) -> impl Iterator<Item = &mut Term<'tcx>> {
         self.requires
             .iter_mut()
             .chain(self.ensures.iter_mut())
@@ -84,18 +82,18 @@ impl<'tcx> PreContract<'tcx> {
     pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
         let mut ensures = self.ensures.clone();
 
-        let postcond = ensures.pop().map_or(Term::mk_true(tcx), |cond| cond.term.1);
+        let postcond = ensures.pop().map_or(Term::mk_true(tcx), |cond| cond.term);
         let postcond =
-            ensures.into_iter().rfold(postcond, |postcond, cond| Term::conj(postcond, cond.term.1));
+            ensures.into_iter().rfold(postcond, |postcond, cond| Term::conj(postcond, cond.term));
         postcond
     }
 
     pub(crate) fn requires_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
         let mut requires = self.requires.clone();
 
-        let precond = requires.pop().map_or(Term::mk_true(tcx), |cond| cond.term.1);
+        let precond = requires.pop().map_or(Term::mk_true(tcx), |cond| cond.term);
         let precond =
-            requires.into_iter().rfold(precond, |precond, cond| Term::conj(precond, cond.term.1));
+            requires.into_iter().rfold(precond, |precond, cond| Term::conj(precond, cond.term));
         precond
     }
 }
@@ -123,48 +121,58 @@ impl ContractClauses {
         }
     }
 
+    /// The last element of `bound` must be "Ident::bound(result)"
     fn get_pre<'tcx>(
         self,
         ctx: &TranslationCtx<'tcx>,
         fn_name: &str,
+        bound: &[Ident],
     ) -> EarlyBinder<'tcx, PreContract<'tcx>> {
-        let mut out = PreContract::default();
-        out.has_user_contract =
+        let has_user_contract =
             !self.requires.is_empty() || !self.ensures.is_empty() || self.variant.is_some();
         let n_requires = self.requires.len();
+        let mut requires = Vec::new();
         for req_id in self.requires {
             log::trace!("require clause {:?}", req_id);
-            let term = ctx.term_fail_fast(req_id).unwrap().clone();
+            let term = ctx.term_fail_fast(req_id).unwrap().instantiate(bound);
             let expl = if n_requires == 1 {
                 format!("expl:{} requires", fn_name)
             } else {
-                format!("expl:{} requires #{}", fn_name, out.requires.len())
+                format!("expl:{} requires #{}", fn_name, requires.len())
             };
-            out.requires.push(Condition { term, expl });
+            requires.push(Condition { term, expl });
         }
 
         let n_ensures = self.ensures.len();
+        let mut ensures = Vec::new();
         for ens_id in self.ensures {
             log::trace!("ensures clause {:?}", ens_id);
-            let term = ctx.term_fail_fast(ens_id).unwrap().clone();
+            let term = ctx.term_fail_fast(ens_id).unwrap().instantiate(bound);
             let expl = if n_ensures == 1 {
                 format!("expl:{} ensures", fn_name)
             } else {
-                format!("expl:{} ensures #{}", fn_name, out.ensures.len())
+                format!("expl:{} ensures #{}", fn_name, ensures.len())
             };
-            out.ensures.push(Condition { term, expl });
+            ensures.push(Condition { term, expl });
         }
 
+        let mut variant = None;
         if let Some(var_id) = self.variant {
             log::trace!("variant clause {:?}", var_id);
-            let term = ctx.term_fail_fast(var_id).unwrap().clone();
-            out.variant = Some(term);
+            let term = ctx.term_fail_fast(var_id).unwrap().instantiate(bound);
+            variant = Some(term);
         };
         log::trace!("no_panic: {}", self.no_panic);
-        out.no_panic = self.no_panic;
         log::trace!("terminates: {}", self.terminates);
-        out.terminates = self.terminates;
-        EarlyBinder::bind(out)
+        EarlyBinder::bind(PreContract {
+            variant,
+            requires,
+            ensures,
+            no_panic: self.no_panic,
+            terminates: self.terminates,
+            extern_no_spec: false,
+            has_user_contract,
+        })
     }
 
     pub(crate) fn iter_ids(&self) -> impl Iterator<Item = DefId> + '_ {
@@ -306,8 +314,6 @@ pub(crate) fn contract_clauses_of(
 ) -> Result<ContractClauses, SpecAttrError> {
     use SpecAttrError::*;
 
-    let mut contract = ContractClauses::new();
-
     let get_creusot_item = |arg: &AttrArgs| {
         let predicate_name = match arg {
             AttrArgs::Eq { expr: l, .. } => l.symbol,
@@ -316,29 +322,24 @@ pub(crate) fn contract_clauses_of(
         ctx.creusot_item(predicate_name).ok_or(InvalidTerm { id: def_id })
     };
 
-    for arg in creusot_clause_attrs(ctx.tcx, def_id, "requires") {
-        contract.requires.push(get_creusot_item(arg)?)
-    }
-
-    for arg in creusot_clause_attrs(ctx.tcx, def_id, "ensures") {
-        contract.ensures.push(get_creusot_item(arg)?)
-    }
-
+    let requires = creusot_clause_attrs(ctx.tcx, def_id, "requires").map(get_creusot_item).collect::<Result<Vec<_>,_>>()?;
+    let ensures = creusot_clause_attrs(ctx.tcx, def_id, "ensures").map(get_creusot_item).collect::<Result<Vec<_>,_>>()?;
+    let mut variant = None;
     for arg in creusot_clause_attrs(ctx.tcx, def_id, "variant") {
-        if std::mem::replace(&mut contract.variant, Some(get_creusot_item(arg)?)).is_some() {
+        if std::mem::replace(&mut variant, Some(get_creusot_item(arg)?)).is_some() {
             return Err(MultipleVariant { id: def_id });
         }
     }
+    let terminates = creusot_clause_attrs(ctx.tcx, def_id, "terminates").next().is_some();
+    let no_panic = creusot_clause_attrs(ctx.tcx, def_id, "no_panic").next().is_some();
 
-    for _ in creusot_clause_attrs(ctx.tcx, def_id, "terminates") {
-        contract.terminates = true;
-    }
-
-    for _ in creusot_clause_attrs(ctx.tcx, def_id, "no_panic") {
-        contract.no_panic = true;
-    }
-
-    Ok(contract)
+    Ok(ContractClauses {
+        requires,
+        ensures,
+        variant,
+        terminates,
+        no_panic,
+    })
 }
 
 pub(crate) fn inherited_extern_spec<'tcx>(
@@ -370,7 +371,8 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     };
     if let Some(spec) = ctx.extern_spec(def_id).cloned() {
         // We do NOT normalize the contract here. See below.
-        let contract = spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, spec.subst);
+        let bound = spec.inputs.iter().map(|(ident, _, _)| *ident).chain([Ident::bound("result")]).collect::<Box<[Ident]>>();
+        let contract = spec.contract.get_pre(ctx, fn_name, &bound).instantiate(ctx.tcx, spec.subst);
         PreSignature {
             inputs: EarlyBinder::bind(spec.inputs).instantiate(ctx.tcx, spec.subst),
             output: EarlyBinder::bind(spec.output).instantiate(ctx.tcx, spec.subst),
@@ -378,21 +380,24 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         }
     } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
         let spec = ctx.extern_spec(parent_id).cloned().unwrap();
+        let bound = spec.inputs.iter().map(|(ident, _, _)| *ident).chain([Ident::bound("result")]).collect::<Box<[Ident]>>();
         // We do NOT normalize the contract here: indeed, we do not have a valid non-redundant param
         // env for doing this. This is still valid because this contract is going to be substituted
         // and normalized in the caller context (such extern specs are only evaluated in the context
         // of a specific call).
-        let contract = spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, subst);
+        let contract = spec.contract.get_pre(ctx, fn_name, &bound).instantiate(ctx.tcx, subst);
         PreSignature {
             inputs: EarlyBinder::bind(spec.inputs).instantiate(ctx.tcx, subst),
             output: EarlyBinder::bind(spec.output).instantiate(ctx.tcx, subst),
             contract,
         }
     } else {
+        let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
+        let bound = inputs.iter().map(|(ident, _, _)| *ident).chain([Ident::bound("result")]).collect::<Box<[Ident]>>();
         let subst = erased_identity_for_item(ctx.tcx, def_id);
         let mut contract = contract_clauses_of(ctx, def_id)
             .unwrap()
-            .get_pre(ctx, fn_name)
+            .get_pre(ctx, fn_name, &bound)
             .instantiate(ctx.tcx, subst);
 
         if contract.is_empty()
@@ -402,11 +407,10 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         {
             contract.extern_no_spec = true;
             contract.requires.push(Condition {
-                term: FTerm([].into(), Term::mk_false(ctx.tcx)),
+                term: Term::mk_false(ctx.tcx),
                 expl: format!("expl:{} requires false", fn_name),
             });
         }
-        let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
         let contract = contract.normalize(ctx.tcx, ctx.typing_env(def_id));
         PreSignature { inputs, output, contract }
     }
@@ -449,7 +453,6 @@ impl<'tcx> PreSignature<'tcx> {
             if !params_open_inv.contains(&i)
                 && let Some(term) = type_invariant_term(ctx, typing_env, *ident, *span, *ty)
             {
-                let term = FTerm([].into(), term);
                 let expl = format!("expl:{} '{}' type invariant", fn_name, ident.0.name.as_str());
                 Some(Condition { term, expl })
             } else {
@@ -470,7 +473,6 @@ impl<'tcx> PreSignature<'tcx> {
                 self.output,
             )
         {
-            let term = FTerm([].into(), term);
             let expl = format!("expl:{} result type invariant", fn_name);
             self.contract.ensures.insert(0, Condition { term, expl });
         }
@@ -499,7 +501,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         let mut pre_subst =
             closure_capture_subst(ctx, def_id, subst, false, None, self_pre.clone());
         for pre in &mut contract.requires {
-            pre_subst.visit_mut_term(&mut pre.term.1);
+            pre_subst.visit_mut_term(&mut pre.term);
         }
 
         if kind == ClosureKind::FnMut {
@@ -514,7 +516,6 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
                 Term::var(self_, env_ty).cur(),
                 Term::var(self_, env_ty).fin(),
             ]);
-            let term = FTerm([].into(), term);
             let expl = "expl:closure unnest".to_string();
             contract.ensures.push(Condition { term, expl });
         };
@@ -529,7 +530,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             closure_capture_subst(ctx, def_id, subst, !env_ty.is_ref(), Some(self_pre), self_post);
 
         for post in &mut contract.ensures {
-            post_subst.visit_mut_term(&mut post.term.1);
+            post_subst.visit_mut_term(&mut post.term);
         }
 
         if let Some(span) = post_subst.use_of_consumed_var_error

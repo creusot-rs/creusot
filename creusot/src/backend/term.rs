@@ -40,7 +40,7 @@ pub(crate) fn lower_condition<'tcx, N: Namer<'tcx>>(
     names: &N,
     cond: Condition<'tcx>,
 ) -> WCondition {
-    WCondition { exp: lower_pure(ctx, names, &cond.term.1), expl: cond.expl }
+    WCondition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
 }
 
 pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
