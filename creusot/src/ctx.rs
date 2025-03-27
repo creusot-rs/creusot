@@ -2,12 +2,12 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial, callbacks, contracts_items::{
         get_inv_function, is_extern_spec, is_logic, is_open_inv_param, is_predicate, is_prophetic,
         opacity_witness_name,
-    }, creusot_items::{self, CreusotItems}, error::{CannotFetchThir, CreusotResult, Error}, metadata::{BinaryMetadata, Metadata}, options::Options, pearlite::{FTerm, PIdent}, specification::{inherited_extern_spec, pre_sig_of, PreSignature}, translation::{
+    }, creusot_items::{self, CreusotItems}, error::{CannotFetchThir, CreusotResult, Error}, metadata::{BinaryMetadata, Metadata}, options::Options, pearlite::FTerm, specification::{inherited_extern_spec, pre_sig_of, PreSignature}, translation::{
         self,
+        pearlite,
         external::{extract_extern_specs_from_item, ExternSpec},
         fmir,
         function::ClosureContract,
-        pearlite::{self, Term},
         specification::ContractClauses,
         traits::TraitImpl,
     }, util::{erased_identity_for_item, parent_module}

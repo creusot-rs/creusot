@@ -1,5 +1,5 @@
 use crate::{
-    creusot_items::CreusotItems, ctx::*, external::ExternSpec, pearlite::{FTerm, PIdent}, translation::pearlite::Term
+    creusot_items::CreusotItems, ctx::*, external::ExternSpec, pearlite::FTerm
 };
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;

@@ -35,7 +35,7 @@ use crate::{
     contracts_items::{has_variant_clause, is_no_translate, is_pearlite},
     ctx::TranslationCtx,
     error::CannotFetchThir,
-    pearlite::{FTerm, TermKind, TermVisitor},
+    pearlite::{TermKind, TermVisitor},
     traits::TraitResolved,
     util::erased_identity_for_item,
 };
@@ -432,9 +432,9 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
 
         let impl_id = impl_id.to_def_id();
         let typing_env = ctx.typing_env(impl_id);
-        let FTerm(bound, term) = ctx.term(item_id)?.unwrap();
+        let term = ctx.term(item_id)?.unwrap();
         let mut visitor = TermCalls { results: IndexSet::new() };
-        visitor.visit_term(term);
+        visitor.visit_term(&term.1);
 
         let trait_id = tcx.trait_id_of_impl(impl_id).unwrap();
 
