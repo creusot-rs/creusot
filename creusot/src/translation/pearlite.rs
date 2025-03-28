@@ -449,8 +449,8 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
         None => Ok(None),
     };
     let did = id.into();
-    let patterns: Box<[Option<Pattern>]> = if is_spec(ctx.tcx, did) && ctx.tcx.is_closure_like(did)
-    {
+    let is_closure = ctx.tcx.is_closure_like(did);
+    let patterns: Box<[Option<Pattern>]> = if is_spec(ctx.tcx, did) && is_closure {
         // Most specs are closures.
         // Preconditions and variants have all of their variables bound in the parent function.
         // Postonditions also bind a `result` variable.
@@ -465,6 +465,9 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
             .chain(thir.params.iter().skip(1))
             .map(to_pattern)
             .collect::<CreusotResult<_>>()?
+    } else if is_closure {
+        // Skip implicit `self` parameter.
+        thir.params.iter().skip(1).map(to_pattern).collect::<CreusotResult<_>>()?
     } else {
         // Case of non-specs or trait item specs (which desugar to extra trait items).
         thir.params.iter().map(to_pattern).collect::<CreusotResult<_>>()?

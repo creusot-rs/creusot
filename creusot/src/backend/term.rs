@@ -270,7 +270,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let binders = sig
                     .inputs
                     .into_iter()
-                    .skip(1)
                     .map(|(ident, _, ty)| {
                         let ty = self.names.normalize(self.ctx, ty);
                         Binder::typed(ident.0, self.lower_ty(ty))
