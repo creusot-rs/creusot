@@ -126,8 +126,9 @@ impl ContractClauses {
         self,
         ctx: &TranslationCtx<'tcx>,
         fn_name: &str,
-        bound: &[Ident],
+        bound_with_result: &[Ident],
     ) -> EarlyBinder<'tcx, PreContract<'tcx>> {
+        let bound = bound_with_result.split_last().unwrap().1;
         let has_user_contract =
             !self.requires.is_empty() || !self.ensures.is_empty() || self.variant.is_some();
         let n_requires = self.requires.len();
@@ -147,7 +148,7 @@ impl ContractClauses {
         let mut ensures = Vec::new();
         for ens_id in self.ensures {
             log::trace!("ensures clause {:?}", ens_id);
-            let term = ctx.term_fail_fast(ens_id).unwrap().instantiate(bound);
+            let term = ctx.term_fail_fast(ens_id).unwrap().instantiate(bound_with_result);
             let expl = if n_ensures == 1 {
                 format!("expl:{} ensures", fn_name)
             } else {

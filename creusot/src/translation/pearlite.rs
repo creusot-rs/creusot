@@ -31,10 +31,12 @@ pub(crate) use rustc_middle::thir;
 use rustc_middle::{
     mir::{BorrowKind, Mutability::*, ProjectionElem},
     thir::{
-        AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtId, StmtKind, Thir
+        AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtId,
+        StmtKind, Thir,
     },
     ty::{
-        int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind
+        CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind,
+        TypeFoldable, TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind, int_ty, uint_ty,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -111,11 +113,24 @@ impl PIdent {
 }
 
 impl<I: Interner> TypeVisitable<I> for PIdent {
-    fn visit_with<V>(&self, _: &mut V) -> <V as rustc_middle::ty::TypeVisitor<I>>::Result where V: rustc_middle::ty::TypeVisitor<I> { V::Result::output() }
+    fn visit_with<V>(&self, _: &mut V) -> <V as rustc_middle::ty::TypeVisitor<I>>::Result
+    where
+        V: rustc_middle::ty::TypeVisitor<I>,
+    {
+        V::Result::output()
+    }
 }
 
 impl<I: Interner> TypeFoldable<I> for PIdent {
-    fn try_fold_with<F>(self, _: &mut F) -> Result<Self, <F as rustc_middle::ty::FallibleTypeFolder<I>>::Error> where F: rustc_middle::ty::FallibleTypeFolder<I> { Ok(self) }
+    fn try_fold_with<F>(
+        self,
+        _: &mut F,
+    ) -> Result<Self, <F as rustc_middle::ty::FallibleTypeFolder<I>>::Error>
+    where
+        F: rustc_middle::ty::FallibleTypeFolder<I>,
+    {
+        Ok(self)
+    }
 }
 
 impl<T: Decoder> Decodable<T> for PIdent {
@@ -406,7 +421,11 @@ pub(crate) fn pearlite<'tcx>(
     id: LocalDefId,
 ) -> CreusotResult<(Box<[PIdent]>, Term<'tcx>)> {
     let (bound, triggers, term) = pearlite_with_triggers(ctx, id)?;
-    if !triggers.is_empty() { Err(Error::msg(ctx.def_span(id), TRIGGER_ERROR)) } else { Ok((bound, term)) }
+    if !triggers.is_empty() {
+        Err(Error::msg(ctx.def_span(id), TRIGGER_ERROR))
+    } else {
+        Ok((bound, term))
+    }
 }
 
 pub(crate) fn pearlite_with_triggers<'tcx>(
@@ -418,10 +437,64 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
     if thir.exprs.is_empty() {
         return Err(Error::TypeCheck(CannotFetchThir));
     };
-
     let lower = ThirTerm { ctx, item_id: id, thir: &thir };
 
-    lower.body_term(expr)
+    let (triggers, body) = lower.body_term(expr)?;
+
+    // All that remains is to translate patterns in the parameter list.
+    // Postconditions make this annoying. They are closures with a `result` parameter,
+    // so we have to collect the parameters of the parent function and the current closure.
+    let to_pattern = |param: &thir::Param<'tcx>| match &param.pat {
+        Some(box pat) => lower.pattern_term(pat, true).map(Some),
+        None => Ok(None),
+    };
+    let did = id.into();
+    let patterns: Box<[Option<Pattern>]> = if is_spec(ctx.tcx, did) && ctx.tcx.is_closure_like(did)
+    {
+        // Most specs are closures.
+        // Preconditions and variants have all of their variables bound in the parent function.
+        // Postonditions also bind a `result` variable.
+        let parent = ctx.tcx.parent(did).expect_local();
+        let (parent_thir, _) = ctx.fetch_thir(parent)?;
+        let parent_thir: &Thir = &parent_thir.borrow();
+        // Parameters of the parent function plus maybe the `result` parameter from the current closure
+        // (skipping its implicit `self` parameter).
+        parent_thir
+            .params
+            .iter()
+            .chain(thir.params.iter().skip(1))
+            .map(to_pattern)
+            .collect::<CreusotResult<_>>()?
+    } else {
+        // Case of non-specs or trait item specs (which desugar to extra trait items).
+        thir.params.iter().map(to_pattern).collect::<CreusotResult<_>>()?
+    };
+    let bound: Box<[PIdent]> = patterns
+        .iter()
+        .enumerate()
+        .map(|(idx, pat)| match pat {
+            Some(Pattern { kind: PatternKind::Binder(var), .. }) => *var,
+            _ => PIdent::fresh(&format!("__{}", idx)),
+        })
+        .collect();
+    let body = patterns.into_iter().zip(bound.iter().cloned()).rev().fold(
+        body,
+        |body: Term<'tcx>, (pat, ident)| match pat {
+            Some(pattern)
+                if !matches!(pattern.kind, PatternKind::Binder(_) | PatternKind::Wildcard) =>
+            {
+                let ty = pattern.ty;
+                let arg = Box::new(Term::var(ident, ty));
+                Term {
+                    ty: ty,
+                    span: body.span,
+                    kind: TermKind::Let { pattern, arg, body: Box::new(body) },
+                }
+            }
+            _ => body,
+        },
+    );
+    Ok((bound, triggers, body))
 }
 
 struct ThirTerm<'a, 'tcx> {
@@ -433,51 +506,11 @@ struct ThirTerm<'a, 'tcx> {
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
 impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
-    fn body_term(&self, expr: ExprId) -> CreusotResult<(Box<[PIdent]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
+    fn body_term(&self, expr: ExprId) -> CreusotResult<(Box<[Trigger<'tcx>]>, Term<'tcx>)> {
         let mut triggers = vec![];
         let expr = self.collect_triggers(expr, &mut triggers)?;
         let body = self.expr_term(expr)?;
-
-        let did = self.item_id.into();
-        let owner_id = if is_spec(self.ctx.tcx, did) && self.ctx.tcx.is_closure_like(did) {
-            self.ctx.tcx.parent(did).expect_local()
-        } else {
-            self.item_id
-        };
-
-        let (thir, _) = self.ctx.fetch_thir(owner_id)?;
-        let thir: &Thir = &thir.borrow();
-        let bound: Box<[PIdent]> = thir.params.iter().enumerate().map(|(idx, param)|
-            match param.pat {
-                Some(box Pat { kind: PatKind::Binding { var, .. }, .. }) => self.local_var_id(var),
-                _ => PIdent(Ident::fresh(&format!("__{}", idx)))
-            }).collect();
-        let res = thir
-            .params
-            .iter()
-            .zip(bound.iter())
-            .rev()
-            .try_fold(body, |body, (param, arg_id)| -> CreusotResult<_> {
-                match &param.pat {
-                    Some(box pat) => {
-                        let ty = param.ty;
-                        let pattern = self.pattern_term(&pat, true)?;
-                        match pattern.kind {
-                            PatternKind::Binder(_) | PatternKind::Wildcard => Ok(body),
-                            _ => {
-                                let arg = Box::new(Term::var(*arg_id, ty));
-                                Ok(Term {
-                                    ty: body.ty,
-                                    span: body.span,
-                                    kind: TermKind::Let { pattern, arg, body: Box::new(body) },
-                                })
-                            }
-                        }
-                    }
-                    None => Ok(body)
-                }
-            })?;
-        Ok((bound, triggers.into(), res))
+        Ok((triggers.into(), body))
     }
 
     fn collect_triggers(
@@ -590,8 +623,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 };
                 Ok(Term { ty, span, kind: TermKind::Unary { op, arg: Box::new(arg) } })
             }
-            ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } =>
-                Ok(Term { ty, span, kind: TermKind::Var(self.local_var_id(id)) }),
+            ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => {
+                Ok(Term { ty, span, kind: TermKind::Var(self.local_var_id(id)) })
+            }
             ExprKind::Literal { lit, neg } => {
                 let lit = match lit.node {
                     LitKind::Bool(b) => Literal::Bool(b),
@@ -1550,11 +1584,7 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn exists(self, binder: (PIdent, Ty<'tcx>)) -> Self {
-        self.quant(
-            QuantKind::Exists,
-            Box::new([binder]),
-            Box::new([]),
-        )
+        self.quant(QuantKind::Exists, Box::new([binder]), Box::new([]))
     }
 
     pub(crate) fn quant(
@@ -1863,9 +1893,9 @@ fn print_thir_expr(fmt: &mut Formatter, thir: &Thir, expr_id: ExprId) -> std::fm
 pub struct FTerm<'tcx>(pub Box<[PIdent]>, pub Term<'tcx>);
 
 impl<'tcx> FTerm<'tcx> {
-    /// `idents` must be at least as long as the slice in `self`.
+    /// `idents` must be as long as the slice in `self`.
     pub fn instantiate(&self, idents: &[PIdent]) -> Term<'tcx> {
-        assert!(idents.len() >= self.0.len(), "{idents:?} < {:?}", self.0);
+        assert!(idents.len() == self.0.len(), "{:?}.len() != {:?}.len()", idents, self.0);
         let subst = self
             .0
             .iter()
