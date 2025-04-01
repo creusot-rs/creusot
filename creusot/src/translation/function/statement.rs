@@ -147,6 +147,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                         self.tcx(),
                                         &self.body,
                                         &self.locals,
+                                        self.tree,
                                         si,
                                     ));
                                     self.check_use_in_logic(&cond, loc);
@@ -163,7 +164,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 .assertions
                                 .shift_remove(def_id)
                                 .expect("Could not find body of assertion");
-                            assertion.subst(&inv_subst(self.tcx(), &self.body, &self.locals, si));
+                            assertion.subst(&inv_subst(self.tcx(), &self.body, &self.locals, self.tree, si));
                             self.check_use_in_logic(&assertion, loc);
                             self.emit_statement(fmir::Statement::Assertion {
                                 cond: assertion,

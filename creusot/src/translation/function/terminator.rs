@@ -93,6 +93,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         self.tcx(),
                         self.body,
                         &self.locals,
+                        &self.tree,
                         terminator.source_info,
                     ));
                     self.check_use_in_logic(&assertion, location);

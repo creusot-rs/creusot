@@ -63,6 +63,7 @@ struct BodyTranslator<'a, 'tcx> {
     body_id: BodyId,
 
     body: &'a Body<'tcx>,
+    tree: &'a fmir::ScopeTree<'tcx>,
 
     resolver: Option<Resolver<'a, 'tcx>>,
 
@@ -163,6 +164,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             body_id,
             resolver,
             move_data: &move_data,
+            tree: &fmir::ScopeTree::build(body),
             typing_env,
             locals,
             vars,
@@ -213,13 +215,15 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let mut invariants = Vec::new();
             let mut variant = None;
 
-            for (kind, mut body) in self.invariants.shift_remove(&bb).unwrap_or_else(Vec::new) {
-                body.subst(&inv_subst(
+            let subst = inv_subst(
                     self.tcx(),
                     self.body,
                     &self.locals,
+                    &self.tree,
                     *self.body.source_info(bb.start_location()),
-                ));
+                );
+            for (kind, mut body) in self.invariants.shift_remove(&bb).unwrap_or_else(Vec::new) {
+                body.subst(&subst);
                 self.check_use_in_logic(&body, bb.start_location());
                 match kind {
                     LoopSpecKind::Variant => {

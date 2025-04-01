@@ -289,12 +289,12 @@ pub struct Body<'tcx> {
 }
 
 #[derive(Debug)]
-struct ScopeTree<'tcx>(
+pub struct ScopeTree<'tcx>(
     HashMap<SourceScope, (HashSet<(Ident, mir::Place<'tcx>)>, Option<SourceScope>)>,
 );
 
 impl<'tcx> ScopeTree<'tcx> {
-    fn build(body: &mir::Body<'tcx>) -> Self {
+    pub fn build(body: &mir::Body<'tcx>) -> Self {
         use rustc_middle::mir::VarDebugInfoContents::Place;
         let mut scope_tree: HashMap<SourceScope, (HashSet<_>, Option<_>)> = Default::default();
 
@@ -357,12 +357,10 @@ pub(crate) fn inv_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
     locals: &HashMap<Local, Ident>,
+    tree: &ScopeTree<'tcx>,
     info: SourceInfo,
 ) -> HashMap<Ident, TermKind<'tcx>> {
     let mut args = HashMap::new();
-
-    let tree = ScopeTree::build(body);
-
     for (k, p) in tree.visible_places(info.scope) {
         args.insert(k, place_to_term(tcx, p, locals, body));
     }
