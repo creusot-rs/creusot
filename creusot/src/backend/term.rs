@@ -240,7 +240,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     fields: fields
                         .into_iter()
                         .enumerate()
-                        .map(|(ix, f)| (self.names.tuple_field(tys, ix.into()).name, self.lower_term(f)))
+                        .map(|(ix, f)| {
+                            (self.names.tuple_field(tys, ix.into()).name, self.lower_term(f))
+                        })
                         .collect(),
                 }
             }
@@ -331,7 +333,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 } else {
                     let flds: Box<[_]> = flds
                         .enumerate()
-                        .map(|(i, f)| (Ident::bound(self.names.field(var_did, subst, i.into()).name), f))
+                        .map(|(i, f)| {
+                            (Ident::bound(self.names.field(var_did, subst, i.into()).name), f)
+                        })
                         .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                         .collect();
                     if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
@@ -350,7 +354,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     .iter()
                     .enumerate()
                     .map(|(idx, pat)| {
-                        (Ident::bound(self.names.tuple_field(tys, idx.into()).name), self.lower_pat(pat))
+                        (
+                            Ident::bound(self.names.tuple_field(tys, idx.into()).name),
+                            self.lower_pat(pat),
+                        )
                     })
                     .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                     .collect();
@@ -361,9 +368,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 match ty.kind() {
                     TyKind::Adt(def, _) if def.is_box() => self.lower_pat(pointee),
                     TyKind::Ref(_, _, Mutability::Not) => self.lower_pat(pointee),
-                    TyKind::Ref(_, _, Mutability::Mut) => {
-                        WPattern::RecP(Box::new([(Ident::bound("current"), self.lower_pat(pointee))]))
-                    }
+                    TyKind::Ref(_, _, Mutability::Mut) => WPattern::RecP(Box::new([(
+                        Ident::bound("current"),
+                        self.lower_pat(pointee),
+                    )])),
                     _ => unreachable!(),
                 }
             }

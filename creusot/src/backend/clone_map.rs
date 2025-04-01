@@ -201,7 +201,9 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
 
     fn span(&self, span: Span) -> Option<Attribute> {
         let path = path_of_span(self.tcx, span, &self.span_mode)?;
-        let ident = self.spans.insert(span, |_| Box::new(Ident::fresh(&format!("s{}", path.file_stem().unwrap().to_str().unwrap()))));
+        let ident = self.spans.insert(span, |_| {
+            Box::new(Ident::fresh(&format!("s{}", path.file_stem().unwrap().to_str().unwrap())))
+        });
         Some(Attribute::NamedSpan(*ident))
     }
 
@@ -222,9 +224,8 @@ impl<'tcx> CloneNames<'tcx> {
                 return Box::new(Kind::UsedBuiltin(qname));
             }
             Box::new(
-                key.base_ident(tcx).map_or(Kind::Unnamed, |base| {
-                    Kind::Named(Ident::fresh(base.as_str()))
-                }),
+                key.base_ident(tcx)
+                    .map_or(Kind::Unnamed, |base| Kind::Named(Ident::fresh(base.as_str()))),
             )
         })
     }

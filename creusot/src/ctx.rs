@@ -1,16 +1,26 @@
 use crate::{
-    backend::ty_inv::is_tyinv_trivial, callbacks, contracts_items::{
+    backend::ty_inv::is_tyinv_trivial,
+    callbacks,
+    contracts_items::{
         get_inv_function, is_extern_spec, is_logic, is_open_inv_param, is_predicate, is_prophetic,
         opacity_witness_name,
-    }, creusot_items::{self, CreusotItems}, error::{CannotFetchThir, CreusotResult, Error}, metadata::{BinaryMetadata, Metadata}, options::Options, pearlite::FTerm, specification::{inherited_extern_spec, pre_sig_of, PreSignature}, translation::{
+    },
+    creusot_items::{self, CreusotItems},
+    error::{CannotFetchThir, CreusotResult, Error},
+    metadata::{BinaryMetadata, Metadata},
+    options::Options,
+    pearlite::FTerm,
+    specification::{PreSignature, inherited_extern_spec, pre_sig_of},
+    translation::{
         self,
-        pearlite,
-        external::{extract_extern_specs_from_item, ExternSpec},
+        external::{ExternSpec, extract_extern_specs_from_item},
         fmir,
         function::ClosureContract,
+        pearlite,
         specification::ContractClauses,
         traits::TraitImpl,
-    }, util::{erased_identity_for_item, parent_module}
+    },
+    util::{erased_identity_for_item, parent_module},
 };
 use once_map::unsync::OnceMap;
 use rustc_ast::{
@@ -36,8 +46,8 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
 use rustc_type_ir::inherent::Ty as _;
-use why3::Ident;
 use std::{cell::RefCell, collections::HashMap, ops::Deref};
+use why3::Ident;
 
 pub(crate) use crate::{backend::clone_map::*, translated_item::*};
 
@@ -259,7 +269,10 @@ impl<'tcx> TranslationCtx<'tcx> {
                         Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
                         Err(Error::TypeCheck(thir)) => return Err(thir),
                     };
-                    Ok(Box::new(Some(FTerm(bound, pearlite::normalize(self.tcx, self.typing_env(def_id), term)))))
+                    Ok(Box::new(Some(FTerm(
+                        bound,
+                        pearlite::normalize(self.tcx, self.typing_env(def_id), term),
+                    ))))
                 } else {
                     Ok(Box::new(None))
                 }

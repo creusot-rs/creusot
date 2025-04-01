@@ -28,7 +28,9 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::DUMMY_SP;
 use std::{fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
-    declaration::{Attribute, Decl, Module}, printer::{self, pretty_blocks, Print, Why3Scope}, IdentString
+    IdentString,
+    declaration::{Attribute, Decl, Module},
+    printer::{self, Print, Why3Scope, pretty_blocks},
 };
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
@@ -157,7 +159,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::err
 
 pub enum OutputHandle {
     Directory(PathBuf, Vec<IdentString>), // One file per Coma module, second component is a prefix for all files
-    File(Box<dyn Write>),           // Monolithic output
+    File(Box<dyn Write>),                 // Monolithic output
 }
 
 fn module_output(modl: &FileModule, output: &mut OutputHandle) -> std::io::Result<()> {

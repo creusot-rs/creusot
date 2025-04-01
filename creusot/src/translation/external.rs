@@ -12,7 +12,7 @@ use indexmap::IndexSet;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
-    thir::{self, visit::Visitor, Expr, ExprKind, Thir},
+    thir::{self, Expr, ExprKind, Thir, visit::Visitor},
     ty::{Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Span;

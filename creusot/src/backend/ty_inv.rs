@@ -94,10 +94,9 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
         if is_tyinv_trivial(self.ctx.tcx, self.typing_env, ty) {
             self.rewrite = true;
-            return Some(lhs.eq(self.ctx.tcx, Term::mk_true(self.ctx.tcx)).forall_trig(
-                (x_ident, ty),
-                trig,
-            ));
+            return Some(
+                lhs.eq(self.ctx.tcx, Term::mk_true(self.ctx.tcx)).forall_trig((x_ident, ty), trig),
+            );
         }
 
         let mut use_imples = false;

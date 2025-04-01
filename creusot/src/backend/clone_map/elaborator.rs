@@ -5,9 +5,18 @@ use std::{
 
 use crate::{
     backend::{
-        clone_map::{CloneNames, Dependency, Kind}, is_trusted_item, logic::{lower_logical_defn, spec_axiom}, program, signature::lower_sig, structural_resolve::structural_resolve, term::lower_pure, ty::{
+        Namer, TranslationCtx, Why3Generator,
+        clone_map::{CloneNames, Dependency, Kind},
+        is_trusted_item,
+        logic::{lower_logical_defn, spec_axiom},
+        program,
+        signature::lower_sig,
+        structural_resolve::structural_resolve,
+        term::lower_pure,
+        ty::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
-        }, ty_inv::InvariantElaborator, Namer, TranslationCtx, Why3Generator
+        },
+        ty_inv::InvariantElaborator,
     },
     constant::from_ty_const,
     contracts_items::{
@@ -18,7 +27,7 @@ use crate::{
     },
     ctx::{BodyId, ItemType},
     function::closure_resolve,
-    pearlite::{normalize, PIdent, Term},
+    pearlite::{PIdent, Term, normalize},
     traits::{self, TraitResolved},
 };
 use petgraph::graphmap::DiGraphMap;
@@ -28,9 +37,12 @@ use rustc_middle::ty::{
     Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
     UnevaluatedConst,
 };
-use rustc_span::{Span, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ConstKind, EarlyBinder};
-use why3::{declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use}, Ident};
+use why3::{
+    Ident,
+    declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
+};
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
 /// weak dependencies are used to perform an initial stratification of the dependency graph.

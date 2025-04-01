@@ -15,7 +15,7 @@ use rustc_middle::ty::{
     ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv,
     TypingMode,
 };
-use rustc_span::{Span, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
     traits::{FulfillmentError, ImplSource, InCrate, TraitEngineExt, orphan_check_trait_ref},
@@ -155,10 +155,8 @@ fn logic_refinement_term<'tcx>(
 
     let retty = impl_sig.output;
 
-    let post_refn = impl_postcond
-        .implies(trait_postcond)
-        .forall((PIdent::bound("result"), retty))
-        .span(span);
+    let post_refn =
+        impl_postcond.implies(trait_postcond).forall((PIdent::bound("result"), retty)).span(span);
 
     let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
     refn = args.into_iter().rfold(refn, |acc, r| acc.forall(r).span(span));

@@ -4,7 +4,10 @@ use crate::{
     ctx::FileModule,
 };
 use rustc_hir::def_id::DefId;
-use why3::{declaration::{Decl, Goal, Module}, Ident};
+use why3::{
+    Ident,
+    declaration::{Decl, Goal, Module},
+};
 
 pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<FileModule> {
     if is_trusted_item(ctx.tcx, def_id) {

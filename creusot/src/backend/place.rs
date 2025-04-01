@@ -1,4 +1,8 @@
-use crate::{backend::Namer, ctx::PreMod, fmir::{ProjectionElem, Place}};
+use crate::{
+    backend::Namer,
+    ctx::PreMod,
+    fmir::{Place, ProjectionElem},
+};
 use rustc_middle::{
     mir::tcx::PlaceTy,
     ty::{TyCtxt, TyKind},

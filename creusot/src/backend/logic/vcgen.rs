@@ -14,7 +14,7 @@ use crate::{
     },
     contracts_items::get_builtin,
     ctx::PreMod,
-    pearlite::{Literal, Pattern, PatternKind, PIdent, Term, TermVisitor, super_visit_term},
+    pearlite::{Literal, PIdent, Pattern, PatternKind, Term, TermVisitor, super_visit_term},
     util::erased_identity_for_item,
 };
 use rustc_ast::Mutability;
@@ -388,10 +388,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Quant { kind: QuantKind::Forall, binder, body, .. } => {
                 let forall_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
-                let forall_pre = Exp::forall(
-                    binder.iter().map(|(s, t)| (s.0, self.ty(*t))),
-                    forall_pre,
-                );
+                let forall_pre =
+                    Exp::forall(binder.iter().map(|(s, t)| (s.0, self.ty(*t))), forall_pre);
                 let forall_pure = self.lower_pure(t);
                 Ok(forall_pre.log_and(k(forall_pure)?))
             }
@@ -399,10 +397,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Quant { kind: QuantKind::Exists, binder, body, .. } => {
                 let exists_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
-                let exists_pre = Exp::forall(
-                    binder.iter().map(|(s, t)| (s.0, self.ty(*t))),
-                    exists_pre,
-                );
+                let exists_pre =
+                    Exp::forall(binder.iter().map(|(s, t)| (s.0, self.ty(*t))), exists_pre);
                 let exists_pure = self.lower_pure(t);
                 Ok(exists_pre.log_and(k(exists_pure)?))
             }
@@ -532,7 +528,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 } else {
                     let flds: Box<[_]> = flds
                         .enumerate()
-                        .map(|(i, f)| (Ident::bound(self.names.field(var_did, subst, i.into()).name), f))
+                        .map(|(i, f)| {
+                            (Ident::bound(self.names.field(var_did, subst, i.into()).name), f)
+                        })
                         .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                         .collect();
                     if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }

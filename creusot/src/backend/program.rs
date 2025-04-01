@@ -15,7 +15,7 @@ use crate::{
     },
     ctx::{BodyId, Dependencies},
     fmir::{Body, BorrowKind, Operand, TrivialInv},
-    pearlite::{Pattern, PIdent},
+    pearlite::{PIdent, Pattern},
     translated_item::FileModule,
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
 };
@@ -240,8 +240,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     def_id: LocalDefId,
     c: Component<BasicBlock>,
 ) -> Defn {
-    let mut lower =
-        LoweringState { ctx, names, locals: &body.locals, def_id };
+    let mut lower = LoweringState { ctx, names, locals: &body.locals, def_id };
     let (head, tl) = match c {
         Component::Vertex(v) => {
             let block = body.blocks.shift_remove(&v).unwrap();
@@ -676,15 +675,19 @@ impl<'tcx> Terminator<'tcx> {
     ) -> (Vec<IntermediateStmt>, Expr) {
         let mut istmts = vec![];
         match self {
-            Terminator::Goto(bb) => (istmts, Expr::Variable(Ident::bound(&format!("bb{}", bb.as_usize())))),
+            Terminator::Goto(bb) => {
+                (istmts, Expr::Variable(Ident::bound(&format!("bb{}", bb.as_usize()))))
+            }
             Terminator::Switch(switch, branches) => {
                 let ty = switch.ty(lower.ctx.tcx, lower.locals);
                 let discr = switch.to_why(lower, &mut istmts);
                 (istmts, branches.to_why(lower.ctx, lower.names, discr, &ty))
             }
-            Terminator::Return => {
-                (istmts, Expr::Variable(Ident::bound("return")).app([Arg::Term(Exp::Var(Ident::bound("_0")))]))
-            }
+            Terminator::Return => (
+                istmts,
+                Expr::Variable(Ident::bound("return"))
+                    .app([Arg::Term(Exp::Var(Ident::bound("_0")))]),
+            ),
             Terminator::Abort(span) => {
                 let mut exp = Exp::mk_false();
                 if let Some(attr) = lower.names.span(span) {
@@ -727,7 +730,8 @@ impl<'tcx> Branches<'tcx> {
                         (e, mk_goto(tgt))
                     }),
                 );
-                let brs = brs.chain([Defn::simple(Ident::bound("default"), mk_goto(def).black_box())]);
+                let brs =
+                    brs.chain([Defn::simple(Ident::bound("default"), mk_goto(def).black_box())]);
                 Expr::Defn(Expr::Any.boxed(), false, brs.collect())
             }
             Branches::Uint(brs, def) => {

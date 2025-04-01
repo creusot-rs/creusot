@@ -3,7 +3,12 @@ use rustc_middle::ty::Visibility;
 use rustc_span::Span;
 
 use crate::{
-    contracts_items::{is_spec, opacity_witness_name}, ctx::TranslationCtx, error::CannotFetchThir, pearlite::FTerm, translation::pearlite::{super_visit_term, TermKind, TermVisitor}, util::parent_module
+    contracts_items::{is_spec, opacity_witness_name},
+    ctx::TranslationCtx,
+    error::CannotFetchThir,
+    pearlite::FTerm,
+    translation::pearlite::{TermKind, TermVisitor, super_visit_term},
+    util::parent_module,
 };
 
 /// Validates that an `#[open]` function is not made visible in a less opened one.

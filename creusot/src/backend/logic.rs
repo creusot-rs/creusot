@@ -1,7 +1,13 @@
 use crate::{
     backend::{
-        is_trusted_item, logic::vcgen::wp, signature::lower_sig, term::lower_pure, ty::translate_ty, CannotFetchThir, Why3Generator
-    }, contracts_items::get_builtin, ctx::*, pearlite::PIdent, translated_item::FileModule, translation::pearlite::Term
+        CannotFetchThir, Why3Generator, is_trusted_item, logic::vcgen::wp, signature::lower_sig,
+        term::lower_pure, ty::translate_ty,
+    },
+    contracts_items::get_builtin,
+    ctx::*,
+    pearlite::PIdent,
+    translated_item::FileModule,
+    translation::pearlite::Term,
 };
 use rustc_hir::def_id::DefId;
 use why3::{
