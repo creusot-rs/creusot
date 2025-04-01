@@ -13,8 +13,9 @@ use crate::{
     pearlite::{PIdent as Ident, Term, normalize},
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
+        fmir::inv_subst,
         pearlite::{Pattern, TermKind, TermVisitorMut, super_visit_mut_term},
-        specification::{contract_of, inv_subst},
+        specification::contract_of,
         traits,
     },
 };
@@ -37,7 +38,7 @@ use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
     on_all_children_bits,
 };
-use rustc_span::{Span, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use std::{
     collections::{HashMap, HashSet},
@@ -152,7 +153,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         });
 
         let (vars, locals) = translate_vars(body, &erased_locals);
-        let bound: Box<[Ident]> = (1..=body.arg_count).map(|i| locals[&Local::from_usize(i)]).collect();
+        let bound: Box<[Ident]> =
+            (1..=body.arg_count).map(|i| locals[&Local::from_usize(i)]).collect();
         let invariants = corrected_invariant_names_and_locations(ctx, &bound, body);
         let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, &bound, body);
 
@@ -793,8 +795,10 @@ impl<'tcx> TranslationCtx<'tcx> {
         let arg_ty = Ty::new_tup_from_iter(self.tcx, args.clone().map(|&(_, _, ty)| ty));
         let arg_tuple = Term::var(args_ident, arg_ty);
 
-        let arg_pat =
-            Pattern::tuple(args.clone().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)), arg_ty);
+        let arg_pat = Pattern::tuple(
+            args.clone().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
+            arg_ty,
+        );
 
         let env_ty = self.closure_env_ty(
             self.type_of(def_id).instantiate_identity(),
@@ -1024,11 +1028,8 @@ impl<'tcx> TranslationCtx<'tcx> {
 
                 base = base.conj(bor_self.clone().cur().eq(self.tcx, closure_env));
                 if postcond_kind == ClosureKind::FnMut {
-                    base = base.conj(
-                        bor_self
-                            .fin()
-                            .eq(self.tcx, Term::var(result_state_ident, env_ty)),
-                    )
+                    base = base
+                        .conj(bor_self.fin().eq(self.tcx, Term::var(result_state_ident, env_ty)))
                 }
 
                 base.exists((bor_self_ident, env_ty))
@@ -1239,7 +1240,9 @@ pub(crate) fn closure_capture_subst<'a, 'tcx>(
 
     let map = zip(captures, cs.as_closure().upvar_tys())
         .enumerate()
-        .map(|(ix, (cap, ty))| (Ident::bound(cap.to_symbol().as_str()), (cap.info.capture_kind, ty, ix.into())))
+        .map(|(ix, (cap, ty))| {
+            (Ident::bound(cap.to_symbol().as_str()), (cap.info.capture_kind, ty, ix.into()))
+        })
         .collect();
 
     ClosureSubst {

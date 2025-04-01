@@ -10,12 +10,13 @@ use crate::{
     translation::pearlite::{Literal, Term, TermKind, normalize, type_invariant_term},
     util::erased_identity_for_item,
 };
-use rustc_hir::{def_id::DefId, AttrArgs, Safety};
+use rustc_hir::{AttrArgs, Safety, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{self, Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE}, thir::{BodyTy, Pat, PatKind, Thir}, ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv}
+    thir::{BodyTy, Pat, PatKind, Thir},
+    ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv},
 };
-use rustc_span::{Span, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::ClosureKind;
 use std::collections::{HashMap, HashSet};
 
@@ -182,126 +183,6 @@ impl ContractClauses {
 }
 
 #[derive(Debug)]
-struct ScopeTree<'tcx>(
-    HashMap<SourceScope, (HashSet<(Ident, mir::Place<'tcx>)>, Option<SourceScope>)>,
-);
-
-impl<'tcx> ScopeTree<'tcx> {
-    fn build(body: &Body<'tcx>) -> Self {
-        use rustc_middle::mir::VarDebugInfoContents::Place;
-        let mut scope_tree: HashMap<SourceScope, (HashSet<_>, Option<_>)> = Default::default();
-
-        for var_info in &body.var_debug_info {
-            // All variables in the DebugVarInfo should be user variables and thus be just places
-            // If the variable is local to the function the place will have no projections.
-            // Else this is a captured variable.
-            let p = match var_info.value {
-                Place(p) => p,
-                _ => panic!(),
-            };
-            let info = var_info.source_info;
-
-            let scope = info.scope;
-            let scope_data = &body.source_scopes[scope];
-
-            let entry = scope_tree.entry(scope).or_default();
-
-            let ident = Ident::fresh(var_info.name.as_str());
-            entry.0.insert((ident, p));
-
-            if let Some(parent) = scope_data.parent_scope {
-                entry.1 = Some(parent);
-            } else {
-                // Only the argument scope has no parent, because it's the root.
-                assert_eq!(scope, OUTERMOST_SOURCE_SCOPE);
-            }
-        }
-
-        for (scope, scope_data) in body.source_scopes.iter_enumerated() {
-            if let Some(parent) = scope_data.parent_scope {
-                scope_tree.entry(scope).or_default().1 = Some(parent);
-                scope_tree.entry(parent).or_default();
-            } else {
-                // Only the argument scope has no parent, because it's the root.
-                assert_eq!(scope, OUTERMOST_SOURCE_SCOPE);
-            }
-        }
-        ScopeTree(scope_tree)
-    }
-
-    fn visible_places(&self, scope: SourceScope) -> HashMap<Ident, mir::Place<'tcx>> {
-        let mut locals = HashMap::new();
-        let mut to_visit = Some(scope);
-
-        while let Some(s) = to_visit.take() {
-            let d = (HashSet::new(), None);
-            self.0.get(&s).unwrap_or(&d).0.iter().for_each(|(id, loc)| {
-                locals.entry(*id).or_insert(*loc);
-            });
-            to_visit = self.0.get(&s).unwrap_or(&d).1;
-        }
-
-        locals
-    }
-}
-
-// Turn a typing context into a substition.
-pub(crate) fn inv_subst<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    body: &Body<'tcx>,
-    locals: &HashMap<Local, Ident>,
-    info: SourceInfo,
-) -> HashMap<Ident, TermKind<'tcx>> {
-    let mut args = HashMap::new();
-
-    let tree = ScopeTree::build(body);
-
-    for (k, p) in tree.visible_places(info.scope) {
-        args.insert(k, place_to_term(tcx, p, locals, body));
-    }
-
-    args
-}
-
-/// Translate a place to a term. The place must represent a single named variable, so it can be
-/// - A simple `mir::Local`.
-/// - A capture. In this case, the place will simply be a local (the capture's envirnoment)
-///   followed by
-///   + a `Deref` projection if the closure is FnMut.
-///   + a `Field` projection.
-///   + a `Deref` projection if the capture is mutable.
-fn place_to_term<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    p: mir::Place<'tcx>,
-    locals: &HashMap<Local, Ident>,
-    body: &Body<'tcx>,
-) -> TermKind<'tcx> {
-    let span = body.local_decls[p.local].source_info.span;
-    let mut kind = TermKind::Var(locals[&p.local]);
-    for (place_ref, proj) in p.iter_projections() {
-        let ty = place_ref.ty(&body.local_decls, tcx).ty;
-        match proj {
-            mir::ProjectionElem::Deref => {
-                if ty.is_mutable_ptr() {
-                    kind = TermKind::Cur { term: Box::new(Term { ty, span, kind }) };
-                } else {
-                    kind = TermKind::Coerce { arg: Box::new(Term { ty, span, kind }) }
-                }
-            }
-            mir::ProjectionElem::Field(idx, _) => {
-                kind = TermKind::Projection { lhs: Box::new(Term { ty, span, kind }), idx };
-            }
-            // The rest are impossible for a place generated by a closure capture.
-            // FIXME: is this still true in 2021 (with partial captures) ?
-            _ => {
-                tcx.dcx().struct_span_err(span, "Partial captures are not supported here").emit();
-            }
-        };
-    }
-    kind
-}
-
-#[derive(Debug)]
 #[allow(dead_code)]
 pub enum SpecAttrError {
     InvalidTokens { id: DefId },
@@ -323,8 +204,12 @@ pub(crate) fn contract_clauses_of(
         ctx.creusot_item(predicate_name).ok_or(InvalidTerm { id: def_id })
     };
 
-    let requires = creusot_clause_attrs(ctx.tcx, def_id, "requires").map(get_creusot_item).collect::<Result<Vec<_>,_>>()?;
-    let ensures = creusot_clause_attrs(ctx.tcx, def_id, "ensures").map(get_creusot_item).collect::<Result<Vec<_>,_>>()?;
+    let requires = creusot_clause_attrs(ctx.tcx, def_id, "requires")
+        .map(get_creusot_item)
+        .collect::<Result<Vec<_>, _>>()?;
+    let ensures = creusot_clause_attrs(ctx.tcx, def_id, "ensures")
+        .map(get_creusot_item)
+        .collect::<Result<Vec<_>, _>>()?;
     let mut variant = None;
     for arg in creusot_clause_attrs(ctx.tcx, def_id, "variant") {
         if std::mem::replace(&mut variant, Some(get_creusot_item(arg)?)).is_some() {
@@ -334,13 +219,7 @@ pub(crate) fn contract_clauses_of(
     let terminates = creusot_clause_attrs(ctx.tcx, def_id, "terminates").next().is_some();
     let no_panic = creusot_clause_attrs(ctx.tcx, def_id, "no_panic").next().is_some();
 
-    Ok(ContractClauses {
-        requires,
-        ensures,
-        variant,
-        terminates,
-        no_panic,
-    })
+    Ok(ContractClauses { requires, ensures, variant, terminates, no_panic })
 }
 
 pub(crate) fn inherited_extern_spec<'tcx>(
@@ -372,7 +251,12 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     };
     if let Some(spec) = ctx.extern_spec(def_id).cloned() {
         // We do NOT normalize the contract here. See below.
-        let bound = spec.inputs.iter().map(|(ident, _, _)| *ident).chain([Ident::bound("result")]).collect::<Box<[Ident]>>();
+        let bound = spec
+            .inputs
+            .iter()
+            .map(|(ident, _, _)| *ident)
+            .chain([Ident::bound("result")])
+            .collect::<Box<[Ident]>>();
         let contract = spec.contract.get_pre(ctx, fn_name, &bound).instantiate(ctx.tcx, spec.subst);
         PreSignature {
             inputs: EarlyBinder::bind(spec.inputs).instantiate(ctx.tcx, spec.subst),
@@ -381,7 +265,12 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         }
     } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
         let spec = ctx.extern_spec(parent_id).cloned().unwrap();
-        let bound = spec.inputs.iter().map(|(ident, _, _)| *ident).chain([Ident::bound("result")]).collect::<Box<[Ident]>>();
+        let bound = spec
+            .inputs
+            .iter()
+            .map(|(ident, _, _)| *ident)
+            .chain([Ident::bound("result")])
+            .collect::<Box<[Ident]>>();
         // We do NOT normalize the contract here: indeed, we do not have a valid non-redundant param
         // env for doing this. This is still valid because this contract is going to be substituted
         // and normalized in the caller context (such extern specs are only evaluated in the context
@@ -394,7 +283,11 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         }
     } else {
         let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
-        let bound = inputs.iter().map(|(ident, _, _)| *ident).chain([Ident::bound("result")]).collect::<Box<[Ident]>>();
+        let bound = inputs
+            .iter()
+            .map(|(ident, _, _)| *ident)
+            .chain([Ident::bound("result")])
+            .collect::<Box<[Ident]>>();
         let subst = erased_identity_for_item(ctx.tcx, def_id);
         let mut contract = contract_clauses_of(ctx, def_id)
             .unwrap()
@@ -549,11 +442,11 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
 
     for (input, _, _) in &presig.inputs {
         if input.0.name.as_str() == "result"
-                && !is_fn_impl_postcond(ctx.tcx, def_id)
-                && !is_fn_mut_impl_postcond(ctx.tcx, def_id)
-                && !is_fn_once_impl_postcond(ctx.tcx, def_id)
-                && !is_fn_mut_impl_unnest(ctx.tcx, def_id)
-                && !is_fn_once_impl_precond(ctx.tcx, def_id)
+            && !is_fn_impl_postcond(ctx.tcx, def_id)
+            && !is_fn_mut_impl_postcond(ctx.tcx, def_id)
+            && !is_fn_once_impl_postcond(ctx.tcx, def_id)
+            && !is_fn_mut_impl_unnest(ctx.tcx, def_id)
+            && !is_fn_once_impl_precond(ctx.tcx, def_id)
         {
             let span = ctx.tcx.def_span(def_id);
             ctx.crash_and_error(span, "`result` is not allowed as a parameter name")
@@ -563,29 +456,41 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     presig
 }
 
-pub fn inputs_and_output_from_thir<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId, thir: &Thir<'tcx>) -> (Box<[(Ident, Span, Ty<'tcx>)]>, Ty<'tcx>) {
+pub fn inputs_and_output_from_thir<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    def_id: DefId,
+    thir: &Thir<'tcx>,
+) -> (Box<[(Ident, Span, Ty<'tcx>)]>, Ty<'tcx>) {
     let span = ctx.tcx.def_span(def_id);
     match thir.body_type {
         BodyTy::Const(ty) => ([].into(), ty.clone()),
         BodyTy::Fn(fn_sig) => {
-            let inputs = thir.params.iter().enumerate().map(|(idx, param)|
-                match &param.pat {
+            let inputs = thir
+                .params
+                .iter()
+                .enumerate()
+                .map(|(idx, param)| match &param.pat {
                     Some(box Pat { kind, span, ty }) => {
                         let ident = match kind {
                             PatKind::Binding { var, .. } => Ident(ctx.rename(*var)),
-                            _ => Ident::fresh(&format!{"__{}", idx}),
+                            _ => Ident::fresh(&format! {"__{}", idx}),
                         };
                         (ident, *span, ty.clone())
                     }
                     None => {
                         if idx != 0 {
-                            ctx.fatal_error(span, "only the first parameter can be anonymous").emit();
+                            ctx.fatal_error(span, "only the first parameter can be anonymous")
+                                .emit();
                         }
                         // let env_ty = ctx.closure_env_ty(param.ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
-                        (Ident::fresh(&format!{"__{}", idx}), DUMMY_SP, param.ty.clone())
+                        (Ident::fresh(&format! {"__{}", idx}), DUMMY_SP, param.ty.clone())
                     }
-                }).collect();
-            let output = ctx.normalize_erasing_regions(rustc_middle::ty::TypingEnv::non_body_analysis(ctx.tcx, def_id), fn_sig.output());
+                })
+                .collect();
+            let output = ctx.normalize_erasing_regions(
+                rustc_middle::ty::TypingEnv::non_body_analysis(ctx.tcx, def_id),
+                fn_sig.output(),
+            );
             (inputs, output)
         }
     }
@@ -593,15 +498,19 @@ pub fn inputs_and_output_from_thir<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: Def
 
 pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(Ident, Span, Ty)]>, Ty) {
     let ty = tcx.type_of(def_id).instantiate_identity();
-    match ty.kind()
-    {
+    match ty.kind() {
         TyKind::FnDef(..) => {
             let gen_sig = tcx
                 .instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity());
             let sig =
                 tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), gen_sig);
-            let inputs = tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned()).map(|(ident, ty)|
-                (Ident::fresh(ident.name.as_str()), ident.span, ty)).collect();
+            let inputs = tcx
+                .fn_arg_names(def_id)
+                .iter()
+                .cloned()
+                .zip(sig.inputs().iter().cloned())
+                .map(|(ident, ty)| (Ident::fresh(ident.name.as_str()), ident.span, ty))
+                .collect();
             (inputs, sig.output())
         }
         TyKind::Closure(_, subst) => {
@@ -613,8 +522,13 @@ pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(Ident, Span, Ty)]
 
             let closure_env = (Ident::fresh("_1"), DUMMY_SP, env_ty);
             let names = tcx.fn_arg_names(def_id).iter().cloned();
-            let inputs = std::iter::once(closure_env).chain(names.zip(sig.inputs().iter().cloned()).map(|(ident, ty)|
-                (Ident::fresh(ident.name.as_str()), ident.span, ty))).collect();
+            let inputs = std::iter::once(closure_env)
+                .chain(
+                    names
+                        .zip(sig.inputs().iter().cloned())
+                        .map(|(ident, ty)| (Ident::fresh(ident.name.as_str()), ident.span, ty)),
+                )
+                .collect();
             (inputs, sig.output())
         }
         _ => ([].into(), tcx.type_of(def_id).instantiate_identity()),

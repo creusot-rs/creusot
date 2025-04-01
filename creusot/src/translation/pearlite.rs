@@ -1664,7 +1664,10 @@ impl<'tcx> Term<'tcx> {
                 for (ident, _) in binder {
                     bound.insert(*ident);
                 }
-                trigger.iter_mut().flat_map(|ts| &mut ts.0).for_each(|t| t.subst_with_inner(&bound, inv_subst));
+                trigger
+                    .iter_mut()
+                    .flat_map(|ts| &mut ts.0)
+                    .for_each(|t| t.subst_with_inner(&bound, inv_subst));
                 body.subst_with_inner(&bound, inv_subst);
             }
             TermKind::Call { args, .. } => {

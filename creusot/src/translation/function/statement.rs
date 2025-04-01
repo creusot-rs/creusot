@@ -6,10 +6,7 @@ use crate::{
     },
     extended_location::ExtendedLocation,
     fmir::Operand,
-    translation::{
-        fmir::{self, RValue},
-        specification::inv_subst,
-    },
+    translation::fmir::{self, RValue, inv_subst},
 };
 use rustc_borrowck::consumers::TwoPhaseActivation;
 use rustc_middle::{

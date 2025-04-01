@@ -1,11 +1,22 @@
-use crate::{backend::place::projection_ty, pearlite::{PIdent as Ident, Term}};
+use std::collections::{HashMap, HashSet};
+
+use crate::{
+    backend::place::projection_ty,
+    pearlite::{PIdent as Ident, Term},
+};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{tcx::PlaceTy, BasicBlock, BinOp, Promoted, UnOp}, ty::{AdtDef, GenericArgsRef, Ty, TyCtxt}
+    mir::{
+        self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, Promoted, SourceInfo, SourceScope,
+        UnOp, tcx::PlaceTy,
+    },
+    ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
 use rustc_span::Span;
 use rustc_target::abi::VariantIdx;
+
+use super::pearlite::TermKind;
 
 pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<Ident, Ty<'tcx>>;
 
@@ -38,18 +49,15 @@ impl<'tcx> Place<'tcx> {
 
     pub(crate) fn iter_projections(
         &self,
-    ) -> impl Iterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)>
-    + DoubleEndedIterator
-    + '_ {
+    ) -> impl Iterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> + DoubleEndedIterator + '_
+    {
         self.projections.iter().enumerate().map(move |(i, proj)| {
             let base = PlaceRef { local: self.local, projection: &self.projections[..i] };
             (base, *proj)
         })
     }
 
-    pub fn last_projection(
-        &self,
-    ) -> Option<(PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> {
+    pub fn last_projection(&self) -> Option<(PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> {
         if let &[ref proj_base @ .., elem] = &self.projections[..] {
             Some((PlaceRef { local: self.local, projection: proj_base }, elem))
         } else {
@@ -278,6 +286,126 @@ pub struct Body<'tcx> {
     pub(crate) arg_count: usize,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
     pub(crate) fresh: usize,
+}
+
+#[derive(Debug)]
+struct ScopeTree<'tcx>(
+    HashMap<SourceScope, (HashSet<(Ident, mir::Place<'tcx>)>, Option<SourceScope>)>,
+);
+
+impl<'tcx> ScopeTree<'tcx> {
+    fn build(body: &mir::Body<'tcx>) -> Self {
+        use rustc_middle::mir::VarDebugInfoContents::Place;
+        let mut scope_tree: HashMap<SourceScope, (HashSet<_>, Option<_>)> = Default::default();
+
+        for var_info in &body.var_debug_info {
+            // All variables in the DebugVarInfo should be user variables and thus be just places
+            // If the variable is local to the function the place will have no projections.
+            // Else this is a captured variable.
+            let p = match var_info.value {
+                Place(p) => p,
+                _ => panic!(),
+            };
+            let info = var_info.source_info;
+
+            let scope = info.scope;
+            let scope_data = &body.source_scopes[scope];
+
+            let entry = scope_tree.entry(scope).or_default();
+
+            let ident = Ident::fresh(var_info.name.as_str());
+            entry.0.insert((ident, p));
+
+            if let Some(parent) = scope_data.parent_scope {
+                entry.1 = Some(parent);
+            } else {
+                // Only the argument scope has no parent, because it's the root.
+                assert_eq!(scope, OUTERMOST_SOURCE_SCOPE);
+            }
+        }
+
+        for (scope, scope_data) in body.source_scopes.iter_enumerated() {
+            if let Some(parent) = scope_data.parent_scope {
+                scope_tree.entry(scope).or_default().1 = Some(parent);
+                scope_tree.entry(parent).or_default();
+            } else {
+                // Only the argument scope has no parent, because it's the root.
+                assert_eq!(scope, OUTERMOST_SOURCE_SCOPE);
+            }
+        }
+        ScopeTree(scope_tree)
+    }
+
+    fn visible_places(&self, scope: SourceScope) -> HashMap<Ident, mir::Place<'tcx>> {
+        let mut locals = HashMap::new();
+        let mut to_visit = Some(scope);
+
+        while let Some(s) = to_visit.take() {
+            let d = (HashSet::new(), None);
+            self.0.get(&s).unwrap_or(&d).0.iter().for_each(|(id, loc)| {
+                locals.entry(*id).or_insert(*loc);
+            });
+            to_visit = self.0.get(&s).unwrap_or(&d).1;
+        }
+
+        locals
+    }
+}
+
+// Turn a typing context into a substition.
+pub(crate) fn inv_subst<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+    locals: &HashMap<Local, Ident>,
+    info: SourceInfo,
+) -> HashMap<Ident, TermKind<'tcx>> {
+    let mut args = HashMap::new();
+
+    let tree = ScopeTree::build(body);
+
+    for (k, p) in tree.visible_places(info.scope) {
+        args.insert(k, place_to_term(tcx, p, locals, body));
+    }
+
+    args
+}
+
+/// Translate a place to a term. The place must represent a single named variable, so it can be
+/// - A simple `mir::Local`.
+/// - A capture. In this case, the place will simply be a local (the capture's envirnoment)
+///   followed by
+///   + a `Deref` projection if the closure is FnMut.
+///   + a `Field` projection.
+///   + a `Deref` projection if the capture is mutable.
+fn place_to_term<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    p: mir::Place<'tcx>,
+    locals: &HashMap<Local, Ident>,
+    body: &mir::Body<'tcx>,
+) -> TermKind<'tcx> {
+    let span = body.local_decls[p.local].source_info.span;
+    let mut kind = TermKind::Var(locals[&p.local]);
+    for (place_ref, proj) in p.iter_projections() {
+        let ty = place_ref.ty(&body.local_decls, tcx).ty;
+        match proj {
+            mir::ProjectionElem::Deref => {
+                if ty.is_mutable_ptr() {
+                    kind = TermKind::Cur { term: Box::new(Term { ty, span, kind }) };
+                } else {
+                    kind = TermKind::Coerce { arg: Box::new(Term { ty, span, kind }) }
+                }
+            }
+            mir::ProjectionElem::Field(idx, _) => {
+                kind = TermKind::Projection { lhs: Box::new(Term { ty, span, kind }), idx };
+            }
+            // The rest are impossible for a place generated by a closure capture.
+            // FIXME: is this still true in 2021 (with partial captures) ?
+            _ => {
+                tcx.dcx().struct_span_err(span, "Partial captures are not supported here").emit();
+            }
+        };
+    }
+    kind
 }
 
 pub(crate) trait FmirVisitor<'tcx>: Sized {

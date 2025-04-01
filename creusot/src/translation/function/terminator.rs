@@ -7,14 +7,9 @@ use crate::{
     lints::contractless_external_function::{
         CONTRACTLESS_EXTERNAL_FUNCTION, ContractlessExternalFunction,
     },
+    pearlite::{Term, TermKind, UnOp},
     resolve::HasMoveDataExt,
-    translation::{
-        fmir::*,
-        function::mk_goto,
-        pearlite::{Term, TermKind, UnOp},
-        specification::inv_subst,
-        traits,
-    },
+    translation::{fmir::*, function::mk_goto, traits},
 };
 use itertools::Itertools;
 use rustc_hir::def_id::DefId;
