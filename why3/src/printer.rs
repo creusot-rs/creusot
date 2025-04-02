@@ -18,7 +18,7 @@ use pretty::*;
 
 pub struct PrintDisplay<'a, A: Print>(&'a A);
 
-impl<'a, A: Print> Display for PrintDisplay<'a, A> {
+impl<A: Print> Display for PrintDisplay<'_, A> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let alloc = BoxAllocator;
         self.0.pretty(&alloc).1.render_fmt(120, f)?;
@@ -548,7 +548,7 @@ impl Print for Exp {
                     ),
                 );
 
-                if trig.iter().fold(false, |acc, t| acc || !t.0.is_empty()) {
+                if trig.iter().any(|t| !t.0.is_empty()) {
                     res = res
                         .append(" [")
                         .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), " | "))
@@ -567,7 +567,7 @@ impl Print for Exp {
                     ),
                 );
 
-                if trig.iter().fold(false, |acc, t| acc || !t.0.is_empty()) {
+                if trig.iter().any(|t| !t.0.is_empty()) {
                     res = res
                         .append(" [")
                         .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), " | "))
@@ -647,7 +647,13 @@ impl Print for Binder {
                 (if *ghost { alloc.text("ghost ") } else { alloc.nil() })
                     .append(
                         alloc
-                            .intersperse(ids.iter().map(|id| id.pretty(alloc)), alloc.space())
+                            .intersperse(
+                                ids.iter().map(|id| match id {
+                                    None => alloc.text("_"),
+                                    Some(id) => id.pretty(alloc),
+                                }),
+                                alloc.space(),
+                            )
                             .append(" : ")
                             .append(ty.pretty(alloc)),
                     )

@@ -1,17 +1,19 @@
-use std::{borrow::Cow, fmt::Write, ops::Deref};
-
+use crate::exp::Exp;
 use indexmap::Equivalent;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
-
-use crate::exp::Exp;
+use std::{
+    borrow::Cow,
+    fmt::{Display, Write},
+    ops::Deref,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Ident(pub(crate) String);
 
 impl Ident {
-    // Constructs a valid why3 identifier representing a given string
+    /// Constructs a valid why3 identifier representing a given string
     pub fn build(name: &str) -> Self {
         if RESERVED.contains(&name) {
             return Ident(format!("{}'", name));
@@ -27,10 +29,6 @@ impl Ident {
         Ident(name)
     }
 
-    pub fn to_string(self) -> String {
-        self.0
-    }
-
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -44,7 +42,13 @@ impl Ident {
     }
 }
 
-// TODO: Make this try_from and test for validity
+impl Display for Ident {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+// TODO: Make this `parse` and test for validity
 impl From<&str> for Ident {
     fn from(nm: &str) -> Self {
         Ident::build(nm)
@@ -83,6 +87,7 @@ impl Equivalent<QName> for Ident {
     }
 }
 
+/// A _qualified_ name. This also contains the module path in which to search for this name.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct QName {
@@ -141,6 +146,7 @@ impl From<Ident> for QName {
     }
 }
 
+/// The why3 keywords
 const RESERVED: &[&str] = &[
     "abstract",
     "alias",

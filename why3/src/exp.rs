@@ -1,10 +1,13 @@
-use std::collections::HashMap;
+mod binder;
 
 use crate::{Ident, QName, declaration::Attribute, ty::Type};
 use indexmap::IndexSet;
+use std::collections::HashMap;
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
+
+pub use self::binder::Binder;
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
@@ -77,15 +80,10 @@ impl BinOp {
     }
 
     fn associative(&self) -> bool {
-        match self {
-            BinOp::LogAnd => true,
-            BinOp::LazyAnd => true,
-            BinOp::LogOr => true,
-            BinOp::LazyOr => true,
-            BinOp::Add => true,
-            BinOp::Mul => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            BinOp::LogAnd | BinOp::LazyAnd | BinOp::LogOr | BinOp::LazyOr | BinOp::Add | BinOp::Mul
+        )
     }
 }
 
@@ -135,15 +133,6 @@ pub enum Exp {
     Impl(Box<Exp>, Box<Exp>),
     Forall(Box<[(Ident, Type)]>, Box<[Trigger]>, Box<Exp>),
     Exists(Box<[(Ident, Type)]>, Box<[Trigger]>, Box<Exp>),
-}
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub enum Binder {
-    Wild,                             // let f _ = ..
-    UnNamed(Type),                    // let f int : bool = ..
-    Named(Ident),                     // let f a  = ..
-    Typed(bool, Box<[Binder]>, Type), // let f (ghost? a int b : int) = ..
 }
 
 pub trait ExpMutVisitor: Sized {
@@ -214,7 +203,7 @@ pub fn super_visit_mut_trigger<T: ExpMutVisitor>(f: &mut T, trigger: &mut Trigge
     trigger.0.iter_mut().for_each(|t| f.visit_mut(t))
 }
 
-impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
+impl ExpMutVisitor for &'_ HashMap<Ident, Exp> {
     fn visit_mut(&mut self, exp: &mut Exp) {
         match exp {
             Exp::Var(v) => {
@@ -266,7 +255,7 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
                 });
                 let bnds: IndexSet<_> = binders.iter().map(|b| &b.0).cloned().collect();
                 let mut extended = HashMap::new();
-                for (_, exp) in &mut subst {
+                for exp in subst.values_mut() {
                     for id in &bnds & &exp.fvs() {
                         extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
                     }
@@ -289,7 +278,7 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
                 });
                 let bnds: IndexSet<_> = binders.iter().map(|b| &b.0).cloned().collect();
                 let mut extended = HashMap::new();
-                for (_, exp) in &mut subst {
+                for exp in subst.values_mut() {
                     for id in &bnds & &exp.fvs() {
                         extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
                     }
@@ -419,7 +408,7 @@ impl Exp {
 
     pub fn app(self, args: impl IntoIterator<Item = Self>) -> Self {
         let args: Box<[Exp]> = args.into_iter().collect();
-        if args.is_empty() { return self } else { Exp::Call(Box::new(self), args) }
+        if args.is_empty() { self } else { Exp::Call(Box::new(self), args) }
     }
 
     pub fn field(self, label: QName) -> Self {
@@ -461,9 +450,7 @@ impl Exp {
     }
 
     pub fn if_(cond: Self, then: Self, else_: Self) -> Self {
-        if then.is_true() && else_.is_true() {
-            then
-        } else if cond.is_true() {
+        if (then.is_true() && else_.is_true()) || cond.is_true() {
             then
         } else if cond.is_false() {
             else_
@@ -475,12 +462,10 @@ impl Exp {
     /// Build an implication
     ///
     /// Performs the following simplifications
-    /// - True -> A <-> A
-    /// - A -> True <-> True
+    /// - `true -> A` -> `A`
+    /// - `A -> true` -> `true`
     pub fn implies(self, other: Self) -> Self {
-        if self.is_true() {
-            other
-        } else if other.is_true() {
+        if self.is_true() || other.is_true() {
             other
         } else {
             Exp::Impl(Box::new(self), Box::new(other))
@@ -489,7 +474,7 @@ impl Exp {
 
     /// Builds a quantifier with explicit trigger
     ///
-    /// Simplfies ∀ x, True into True
+    /// Simplfies `∀ x, true` into `true`
     pub fn forall_trig(
         bound: impl IntoIterator<Item = (Ident, Type)>,
         trigger: impl IntoIterator<Item = Trigger>,
@@ -505,7 +490,7 @@ impl Exp {
 
     /// Builds a quantifier
     ///
-    /// Simplfies ∀ x, True into True
+    /// Simplifies `∀ x, true` into `true`
     pub fn forall(bound: impl IntoIterator<Item = (Ident, Type)>, body: Exp) -> Self {
         Exp::forall_trig(bound, [], body)
     }
@@ -578,6 +563,7 @@ impl Exp {
         }
     }
 
+    /// Returns a type abscribtion expression (e.g. `(1 : int)`), of the form `(self : ty)`.
     pub fn ascribe(self, ty: Type) -> Self {
         Exp::Ascribe(Box::new(self), ty)
     }
@@ -586,6 +572,11 @@ impl Exp {
         Exp::Const(Constant::Uint(value, None))
     }
 
+    /// Reorder binary operations, so that the one that are associative are always evaluated left-to-right.
+    ///
+    /// # Example
+    ///
+    /// `1 + (2 + 3)` becomes `(1 + 2) + 3`.
     pub fn reassociate(&mut self) {
         struct Reassociate;
 
@@ -642,28 +633,44 @@ impl Exp {
     }
 }
 
-// Precedence ordered from lowest to highest priority
+/// Precedence ordered from lowest to highest priority
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum Precedence {
-    IfLet, // if then else / let in
+    /// if then else / let in
+    IfLet,
     Attr,
     Cast,
-    Impl,   // -> / <-> / by / so
-    Disj,   // \/ / ||
-    Conj,   // /\ / &&
-    Not,    // not
-    Infix1, // infix-op level 1 (right-assoc)
+    /// -> / <-> / by / so
+    Impl,
+    /// \/ / ||
+    Disj,
+    /// /\ / &&
+    Conj,
+    /// not
+    Not,
+    /// infix-op level 1 (right-assoc)
+    Infix1,
     AtOld,
-    Infix2,   // infix-op level 2 (left-assoc)
-    Infix3,   // infix-op level 3 (left-assoc)
-    Infix4,   // infix-op level 4 (left-assoc)
-    Prefix,   // prefix-op
-    Abs,      // Function abstraction
-    App,      // Function application
-    Field,    // Record field accesses (from observing the why3 parser)
-    Brackets, // Brackets ([_])
-    Atom,     // Syntactically closed or atomic expressions
-    BangOp,   // !
+    /// infix-op level 2 (left-assoc)
+    Infix2,
+    /// infix-op level 3 (left-assoc)
+    Infix3,
+    /// infix-op level 4 (left-assoc)
+    Infix4,
+    /// prefix-op
+    Prefix,
+    /// Function abstraction
+    Abs,
+    /// Function application
+    App,
+    /// Record field accesses (from observing the why3 parser)
+    Field,
+    /// Brackets ([_])
+    Brackets,
+    /// Syntactically closed or atomic expressions
+    Atom,
+    /// !
+    BangOp,
 }
 
 #[derive(PartialEq, Debug)]
@@ -745,13 +752,21 @@ impl Exp {
         }
     }
 
+    /// Returns `true` if `id` appears in `self` not under a binder.
+    ///
+    /// # Examples
+    ///
+    /// - `self = a + 1`, `id = a` -> `true`
+    /// - `self = a + 1`, `id = b` -> `false`
+    /// - `self = ∀b, a + b`, `id = a` -> `true`
+    /// - `self = ∀b, a + b`, `id = b` -> `false`
     pub fn occurs(&self, id: &Ident) -> bool {
         let fvs = self.occurences();
 
         fvs.contains_key(id)
     }
 
-    pub fn occurences(&self) -> HashMap<Ident, u64> {
+    fn occurences(&self) -> HashMap<Ident, u64> {
         struct Occurs {
             occurs: HashMap<Ident, u64>,
         }
@@ -800,6 +815,7 @@ impl Exp {
         fvs.occurs
     }
 
+    /// Get the free variables in `self`.
     pub fn fvs(&self) -> IndexSet<Ident> {
         self.occurences().into_keys().collect()
     }
@@ -827,11 +843,16 @@ impl Exp {
         qfvs.qfvs
     }
 
+    /// Substituate free variables of `self` by their value in `subst`.
     pub fn subst(&mut self, subst: &mut Environment) {
         subst.visit_mut(self);
     }
 }
 
+/// An environment in a stack of mappings from names to expressions.
+///
+/// It represents all the variables that have been bound in a scope containing the
+/// current expression.
 #[derive(Default)]
 pub struct Environment {
     substs: Vec<HashMap<Ident, Exp>>,
@@ -855,7 +876,7 @@ impl Environment {
         None
     }
 
-    pub fn occ(&self, id: &Ident) -> usize {
+    pub fn nb_occurences(&self, id: &Ident) -> usize {
         let mut occ = 0;
         for sub in self.substs.iter() {
             if sub.get(id).is_some() {
@@ -953,64 +974,6 @@ impl ExpMutVisitor for Environment {
 
     fn visit_trigger_mut(&mut self, trig: &mut Trigger) {
         super_visit_mut_trigger(self, trig)
-    }
-}
-
-impl Binder {
-    pub fn typed(id: Ident, ty: Type) -> Self {
-        Binder::Typed(false, Box::new([Binder::Named(id)]), ty)
-    }
-
-    pub fn ghost(id: Ident, ty: Type) -> Self {
-        Binder::Typed(true, Box::new([Binder::Named(id)]), ty)
-    }
-
-    pub fn wild(ty: Type) -> Self {
-        Binder::Typed(false, Box::new([Binder::Wild]), ty)
-    }
-
-    pub fn fvs(&self) -> Vec<Ident> {
-        match self {
-            Binder::Wild => Vec::new(),
-            Binder::UnNamed(_) => Vec::new(),
-            Binder::Named(id) => vec![id.clone()],
-            Binder::Typed(_, ids, _) => ids.iter().fold(Vec::new(), |mut acc, id| {
-                acc.extend(id.fvs());
-                acc
-            }),
-        }
-    }
-
-    fn flatten_inner(self, ty: &Type, out: &mut Vec<(Ident, Type)>) {
-        match self {
-            Binder::Wild => out.push(("_".into(), ty.clone())),
-            Binder::UnNamed(_) => out.push(("_".into(), ty.clone())),
-            Binder::Named(id) => out.push((id, ty.clone())),
-            Binder::Typed(_, ids, ty2) => {
-                assert!(ty == &ty2);
-                ids.into_iter().for_each(|i| i.flatten_inner(ty, out))
-            }
-        }
-    }
-
-    pub fn var_type_pairs(self) -> Vec<(Ident, Type)> {
-        if let Binder::Typed(_, _, ty) = &self {
-            let mut out = Vec::new();
-            let ty = &ty.clone();
-            self.flatten_inner(ty, &mut out);
-            out
-        } else {
-            panic!("cannot get name and type for binder")
-        }
-    }
-
-    pub fn type_of(&self) -> Option<&Type> {
-        match self {
-            Binder::Wild => None,
-            Binder::UnNamed(_) => None,
-            Binder::Named(_) => None,
-            Binder::Typed(_, _, ty) => Some(ty),
-        }
     }
 }
 

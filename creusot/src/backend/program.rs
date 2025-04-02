@@ -45,18 +45,15 @@ use why3::{
     ty::Type,
 };
 
-pub(crate) fn translate_function<'tcx, 'sess>(
-    ctx: &Why3Generator<'tcx>,
-    def_id: DefId,
-) -> Option<FileModule> {
-    let mut names = Dependencies::new(ctx, def_id);
+pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<FileModule> {
+    let names = Dependencies::new(ctx, def_id);
 
     if !def_id.is_local() || !ctx.has_body(def_id) || is_trusted_item(ctx.tcx, def_id) {
         return None;
     }
 
     let name = names.item(names.self_id, names.self_subst).as_ident();
-    let body = Decl::Coma(to_why(ctx, &mut names, name, BodyId::new(def_id.expect_local(), None)));
+    let body = Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), None)));
 
     let mut decls = names.provide_deps(ctx);
     decls.push(Decl::Meta(Meta {
@@ -72,7 +69,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } })
 }
 
-pub fn val<'tcx>(_: &Why3Generator<'tcx>, sig: Signature) -> Decl {
+pub fn val(sig: Signature) -> Decl {
     let params = sig
         .args
         .into_iter()
@@ -94,7 +91,7 @@ pub fn val<'tcx>(_: &Why3Generator<'tcx>, sig: Signature) -> Decl {
     postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
 
     let body = Expr::Defn(
-        body.boxed(),
+        Box::new(body),
         false,
         Box::new([Defn {
             name: "return".into(),
@@ -170,7 +167,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             contract: Contract::default(),
         }
     };
-    let mut body = Expr::Defn(Expr::Symbol("bb0".into()).boxed(), true, blocks);
+    let mut body = Expr::Defn(Box::new(Expr::Symbol("bb0".into())), true, blocks);
 
     let mut postcond = Expr::Symbol("return".into()).app([Arg::Term(Exp::var("result"))]);
 
@@ -200,7 +197,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     body = body.let_(vars);
 
     body = Expr::Defn(
-        body.boxed(),
+        Box::new(body),
         false,
         Box::new([Defn {
             name: "return".into(),
@@ -254,9 +251,9 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
         block.body = block.body.black_box();
     }
 
-    let inner = Expr::Defn(block.body.boxed(), true, defns);
+    let inner = Expr::Defn(Box::new(block.body), true, defns);
     block.body = Expr::Defn(
-        Expr::Symbol(block.name.clone().into()).boxed(),
+        Box::new(Expr::Symbol(block.name.clone().into())),
         true,
         Box::new([Defn::simple(block.name.clone(), inner)]),
     );
@@ -271,7 +268,7 @@ pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) def_id: LocalDefId,
 }
 
-impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
+impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
     pub(super) fn ty(&self, ty: Ty<'tcx>) -> Type {
         translate_ty(self.ctx, self.names, DUMMY_SP, ty)
     }
@@ -732,7 +729,7 @@ impl<'tcx> Branches<'tcx> {
                     }),
                 );
                 let brs = brs.chain([Defn::simple("default", mk_goto(def).black_box())]);
-                Expr::Defn(Expr::Any.boxed(), false, brs.collect())
+                Expr::Defn(Box::new(Expr::Any), false, brs.collect())
             }
             Branches::Uint(brs, def) => {
                 let uty = match discr_ty.kind() {
@@ -751,11 +748,11 @@ impl<'tcx> Branches<'tcx> {
                 )
                 .chain([Defn::simple("default", mk_goto(def).black_box())])
                 .collect();
-                Expr::Defn(Expr::Any.boxed(), false, brs)
+                Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Constructor(adt, substs, vars, def) => {
                 let brs = mk_adt_switch(ctx, names, adt, substs, discr, vars, def);
-                Expr::Defn(Expr::Any.boxed(), false, brs)
+                Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Bool(f, t) => {
                 let brs = mk_switch_branches(discr, vec![
@@ -763,7 +760,7 @@ impl<'tcx> Branches<'tcx> {
                     (Exp::mk_true(), mk_goto(t)),
                 ]);
 
-                Expr::Defn(Expr::Any.boxed(), false, brs.collect())
+                Expr::Defn(Box::new(Expr::Any), false, brs.collect())
             }
         }
     }
@@ -883,11 +880,11 @@ where
     istmts.rfold(exp, |tail, stmt| match stmt {
         IntermediateStmt::Assign(id, exp) => tail.assign(id, exp),
         IntermediateStmt::Call(params, fun, args) => Expr::Symbol(fun)
-            .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, tail.boxed()))])),
+            .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, Box::new(tail)))])),
         IntermediateStmt::Assume(e) => Expr::assume(e, tail),
         IntermediateStmt::Assert(e) => Expr::assert(e, tail),
         IntermediateStmt::Any(id, ty) => Expr::Defn(
-            Expr::Any.boxed(),
+            Box::new(Expr::Any),
             false,
             Box::new([Defn {
                 name: "any_".into(),
@@ -1020,7 +1017,7 @@ impl<'tcx> Statement<'tcx> {
                     bor_id_arg = Some(Arg::Term(borrow_id));
                 } else {
                     let (_, foc, constr) = projections_to_expr(
-                        &lower,
+                        lower,
                         &mut istmts,
                         rhs_local_ty,
                         Focus::new(|_| Exp::var(ident_of(rhs.local))),
@@ -1111,7 +1108,7 @@ impl<'tcx> Statement<'tcx> {
                     ])
                 };
 
-                let exp = exp.with_attr(Attribute::Attr(format!("expl:type invariant")));
+                let exp = exp.with_attr(Attribute::Attr("expl:type invariant".to_string()));
                 istmts.push(IntermediateStmt::Assert(exp));
             }
         }
@@ -1144,7 +1141,7 @@ fn pattern_of_place<'tcx>(
                     pat = Pattern::constructor(variant, fields, ty.ty)
                 }
                 TyKind::Tuple(tys) => {
-                    let mut fields: Box<[_]> = tys.iter().map(|ty| Pattern::wildcard(ty)).collect();
+                    let mut fields: Box<[_]> = tys.iter().map(Pattern::wildcard).collect();
                     fields[fidx.as_usize()] = pat;
                     pat = Pattern::tuple(fields, ty.ty)
                 }
@@ -1153,7 +1150,7 @@ fn pattern_of_place<'tcx>(
                         .as_closure()
                         .upvar_tys()
                         .into_iter()
-                        .map(|ty| Pattern::wildcard(ty))
+                        .map(Pattern::wildcard)
                         .collect();
                     fields[fidx.as_usize()] = pat;
                     pat = Pattern::constructor(VariantIdx::ZERO, fields, ty.ty)
@@ -1205,7 +1202,7 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
             }))
             .collect()
     } else {
-        args.into_iter().map(|a| a.to_why(lower, istmts)).map(|a| Arg::Term(a)).collect()
+        args.into_iter().map(|a| a.to_why(lower, istmts)).map(Arg::Term).collect()
     };
 
     (lower.names.item(id, subst), args)
