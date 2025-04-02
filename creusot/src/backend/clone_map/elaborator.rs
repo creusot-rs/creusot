@@ -122,7 +122,7 @@ impl DepElab for ProgElab {
                 .normalize(ctx.tcx, typing_env);
             pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
             let sig = lower_sig(ctx, &mut names, name, pre_sig, def_id);
-            return vec![program::val(ctx, sig)];
+            return vec![program::val(sig)];
         }
 
         // Inline the body of closures and promoted

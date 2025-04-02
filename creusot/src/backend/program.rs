@@ -69,7 +69,7 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } })
 }
 
-pub fn val(_: &Why3Generator, sig: Signature) -> Decl {
+pub fn val(sig: Signature) -> Decl {
     let params = sig
         .args
         .into_iter()
@@ -268,7 +268,7 @@ pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) def_id: LocalDefId,
 }
 
-impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
+impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
     pub(super) fn ty(&self, ty: Ty<'tcx>) -> Type {
         translate_ty(self.ctx, self.names, DUMMY_SP, ty)
     }
@@ -1017,7 +1017,7 @@ impl<'tcx> Statement<'tcx> {
                     bor_id_arg = Some(Arg::Term(borrow_id));
                 } else {
                     let (_, foc, constr) = projections_to_expr(
-                        &lower,
+                        lower,
                         &mut istmts,
                         rhs_local_ty,
                         Focus::new(|_| Exp::var(ident_of(rhs.local))),
@@ -1108,7 +1108,7 @@ impl<'tcx> Statement<'tcx> {
                     ])
                 };
 
-                let exp = exp.with_attr(Attribute::Attr(format!("expl:type invariant")));
+                let exp = exp.with_attr(Attribute::Attr("expl:type invariant".to_string()));
                 istmts.push(IntermediateStmt::Assert(exp));
             }
         }
@@ -1141,7 +1141,7 @@ fn pattern_of_place<'tcx>(
                     pat = Pattern::constructor(variant, fields, ty.ty)
                 }
                 TyKind::Tuple(tys) => {
-                    let mut fields: Box<[_]> = tys.iter().map(|ty| Pattern::wildcard(ty)).collect();
+                    let mut fields: Box<[_]> = tys.iter().map(Pattern::wildcard).collect();
                     fields[fidx.as_usize()] = pat;
                     pat = Pattern::tuple(fields, ty.ty)
                 }
@@ -1150,7 +1150,7 @@ fn pattern_of_place<'tcx>(
                         .as_closure()
                         .upvar_tys()
                         .into_iter()
-                        .map(|ty| Pattern::wildcard(ty))
+                        .map(Pattern::wildcard)
                         .collect();
                     fields[fidx.as_usize()] = pat;
                     pat = Pattern::constructor(VariantIdx::ZERO, fields, ty.ty)
@@ -1202,7 +1202,7 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
             }))
             .collect()
     } else {
-        args.into_iter().map(|a| a.to_why(lower, istmts)).map(|a| Arg::Term(a)).collect()
+        args.into_iter().map(|a| a.to_why(lower, istmts)).map(Arg::Term).collect()
     };
 
     (lower.names.item(id, subst), args)
