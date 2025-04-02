@@ -241,13 +241,13 @@ impl DepElab for TyElab {
         let mut names = elab.namer(dep);
         match ty.kind() {
             TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
-                ty_name: Ident::bound(names.ty(ty).name),
+                ty_name: names.ty(ty),
                 ty_params: Box::new([]),
             })],
             TyKind::Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
                 let (def_id, subst) = dep.did().unwrap();
                 vec![Decl::TyDecl(TyDecl::Opaque {
-                    ty_name: Ident::bound(names.def_ty(def_id, subst).name),
+                    ty_name: names.def_ty(def_id, subst),
                     ty_params: Box::new([]),
                 })]
             }

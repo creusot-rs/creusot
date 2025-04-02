@@ -22,7 +22,7 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::Span;
 use why3::{
-    Exp, Ident,
+    Exp, Ident, Name,
     exp::{BinOp, Environment, Pattern as WPattern, UnOp as WUnOp},
     ty::Type,
 };
@@ -413,7 +413,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         fields: flds
                             .into_iter()
                             .enumerate()
-                            .map(|(idx, fld)| (self.names.tuple_field(args, idx.into()).name, fld))
+                            .map(|(idx, fld)| (self.names.tuple_field(args, idx.into()), fld))
                             .collect(),
                     }),
                 })
@@ -428,9 +428,13 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 })
             }
             // VC( * T, Q) = VC(T, |t| Q(*t))
-            TermKind::Cur { term } => self.build_wp(term, &|term| k(term.field("current".into()))),
+            TermKind::Cur { term } => {
+                self.build_wp(term, &|term| k(term.field(Ident::bound("current"))))
+            }
             // VC( ^ T, Q) = VC(T, |t| Q(^t))
-            TermKind::Fin { term } => self.build_wp(term, &|term| k(term.field("final".into()))),
+            TermKind::Fin { term } => {
+                self.build_wp(term, &|term| k(term.field(Ident::bound("final"))))
+            }
             // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))
             TermKind::Impl { lhs, rhs } => self.build_wp(lhs, &|lhs| {
                 Ok(Exp::if_(lhs, self.build_wp(rhs, k)?, k(Exp::mk_true())?))
@@ -481,7 +485,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                self.build_wp(lhs, &|lhs| k(lhs.field(field.name)))
+                self.build_wp(lhs, &|lhs| k(lhs.field(field)))
             }
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
             TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
@@ -522,15 +526,16 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 };
                 let flds = fields.iter().map(|pat| self.build_pattern_inner(bounds, pat));
                 if self.ctx.def_kind(var_did) == DefKind::Variant {
-                    WPattern::ConsP(self.names.constructor(var_did, subst), flds.collect())
+                    WPattern::ConsP(
+                        Name::Local(self.names.constructor(var_did, subst)),
+                        flds.collect(),
+                    )
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {
                     let flds: Box<[_]> = flds
                         .enumerate()
-                        .map(|(i, f)| {
-                            (Ident::bound(self.names.field(var_did, subst, i.into()).name), f)
-                        })
+                        .map(|(i, f)| (self.names.field(var_did, subst, i.into()), f))
                         .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                         .collect();
                     if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
@@ -556,7 +561,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .enumerate()
                     .map(|(idx, pat)| {
                         (
-                            Ident::bound(self.names.tuple_field(tys, idx.into()).name),
+                            self.names.tuple_field(tys, idx.into()),
                             self.build_pattern_inner(bounds, pat),
                         )
                     })

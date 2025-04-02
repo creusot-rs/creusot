@@ -226,7 +226,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     let field_name = if tuple_var {
                         Ident::bound(&format!("a_{field_idx}"))
                     } else {
-                        Ident::bound(field_def.ident(self.ctx.tcx).name.as_str())
+                        Ident::bound(field_def.ident(self.ctx.tcx).name.as_str()) // TODO rename fields
                     };
 
                     let field_ty = field_def.ty(self.ctx.tcx, substs);

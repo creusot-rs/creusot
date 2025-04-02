@@ -35,7 +35,7 @@ use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};
 use std::{fmt::Debug, iter::once};
 use why3::{
-    Ident, QName,
+    Ident, Name, QName,
     coma::{Arg, Defn, Expr, IsRef, Param, Term, Var},
     declaration::{
         Attribute, Condition, Contract, Decl, Meta, MetaArg, MetaIdent, Module, Signature,
@@ -51,7 +51,7 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
         return None;
     }
 
-    let name = Ident::bound(names.item(names.self_id, names.self_subst).name);
+    let name = names.item_ident(names.self_id, names.self_subst);
     let body = Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), None)));
 
     let mut decls = names.provide_deps(ctx);
@@ -87,7 +87,7 @@ pub fn val(sig: Signature) -> Decl {
     let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
     let body = requires.rfold(Expr::Any, |acc, cond| Expr::assert(cond, acc));
 
-    let mut postcond = Expr::Variable(return_ident).app([Arg::Term(Exp::Var(result_ident))]);
+    let mut postcond = Expr::var(return_ident).app([Arg::Term(Exp::Var(result_ident))]);
     postcond = postcond.black_box();
     let ensures = sig.contract.ensures.into_iter().map(Condition::unlabelled_exp);
     postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
@@ -174,9 +174,9 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     let result_ident = Ident::bound("result");
     let ret_ident = Ident::bound("ret");
     let return_ident = Ident::bound("return");
-    let mut body = Expr::Defn(Expr::Variable(bb0).boxed(), true, blocks);
+    let mut body = Expr::Defn(Expr::var(bb0).boxed(), true, blocks);
 
-    let mut postcond = Expr::Variable(return_ident).app([Arg::Term(Exp::Var(result_ident))]);
+    let mut postcond = Expr::var(return_ident).app([Arg::Term(Exp::Var(result_ident))]);
 
     let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
         && !ctx.sig(body_id.def_id()).contract.has_user_contract;
@@ -260,7 +260,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
 
     let inner = Expr::Defn(block.body.boxed(), true, defns);
     block.body = Expr::Defn(
-        Expr::Variable(block.name).boxed(),
+        Expr::var(block.name).boxed(),
         true,
         [Defn::simple(block.name.clone(), inner)].into(),
     );
@@ -298,7 +298,7 @@ impl<'tcx> Operand<'tcx> {
                 istmts.push(IntermediateStmt::call(
                     var,
                     lower.ty(ty),
-                    lower.names.promoted(lower.def_id, pid),
+                    Name::Local(lower.names.promoted(lower.def_id, pid)),
                     [],
                 ));
                 Exp::Var(var)
@@ -395,7 +395,7 @@ impl<'tcx> RValue<'tcx> {
                     istmts.push(IntermediateStmt::call(
                         ret_ident,
                         lower.ty(ty),
-                        fname,
+                        Name::Global(fname),
                         args.map(Arg::Term),
                     ));
                     Exp::Var(ret_ident)
@@ -428,7 +428,9 @@ impl<'tcx> RValue<'tcx> {
                 let neg = lower.names.in_pre(prelude, "neg");
                 let ret_ident = Ident::fresh("_ret");
                 let arg = Arg::Term(arg.to_why(lower, istmts));
-                istmts.push(IntermediateStmt::call(ret_ident, lower.ty(ty), neg, [arg]));
+                istmts.push(IntermediateStmt::call(ret_ident, lower.ty(ty), Name::Global(neg), [
+                    arg,
+                ]));
                 Exp::Var(ret_ident)
             }
             RValue::Constructor(id, subst, args) => {
@@ -449,7 +451,7 @@ impl<'tcx> RValue<'tcx> {
                         .into_iter()
                         .enumerate()
                         .map(|(ix, f)| {
-                            (lower.names.tuple_field(tys, ix.into()).name, f.to_why(lower, istmts))
+                            (lower.names.tuple_field(tys, ix.into()), f.to_why(lower, istmts))
                         })
                         .collect(),
                 }
@@ -516,7 +518,7 @@ impl<'tcx> RValue<'tcx> {
                         istmts.push(IntermediateStmt::call(
                             of_ret_id.clone(),
                             lower.ty(ty),
-                            of_fname,
+                            Name::Global(of_fname),
                             [Arg::Term(to_exp)],
                         ));
                         Exp::Var(of_ret_id)
@@ -533,7 +535,7 @@ impl<'tcx> RValue<'tcx> {
 
                 let arr_var = Exp::Var(id);
                 let arr_elts =
-                    Exp::RecField { record: arr_var.clone().boxed(), label: "elts".into() };
+                    Exp::RecField { record: arr_var.clone().boxed(), label: Ident::bound("elts") };
 
                 istmts.push(IntermediateStmt::Any(id, ty.clone()));
                 let mut assumptions = fields
@@ -567,7 +569,7 @@ impl<'tcx> RValue<'tcx> {
                 istmts.push(IntermediateStmt::call(
                     res_ident,
                     lower.ty(ty),
-                    lower.names.in_pre(PreMod::Slice, "create"),
+                    Name::Global(lower.names.in_pre(PreMod::Slice, "create")),
                     args,
                 ));
 
@@ -581,7 +583,7 @@ impl<'tcx> RValue<'tcx> {
                         assert!(ty.is_slice());
                         let mut op = op.to_why(lower, istmts);
                         if mu.is_mut() {
-                            op = op.field("current".into())
+                            op = op.field(Ident::bound("current"))
                         }
                         Exp::qvar(lower.names.in_pre(PreMod::Slice, "length")).app([op])
                     }
@@ -598,7 +600,7 @@ impl<'tcx> RValue<'tcx> {
                 istmts.push(IntermediateStmt::call(
                     ptr_ident,
                     lower.ty(ty),
-                    lower.names.in_pre(PreMod::Opaque, "fresh_ptr"),
+                    Name::Global(lower.names.in_pre(PreMod::Opaque, "fresh_ptr")),
                     [],
                 ));
 
@@ -676,7 +678,7 @@ impl<'tcx> Terminator<'tcx> {
         let mut istmts = vec![];
         match self {
             Terminator::Goto(bb) => {
-                (istmts, Expr::Variable(Ident::bound(&format!("bb{}", bb.as_usize()))))
+                (istmts, Expr::var(Ident::bound(&format!("bb{}", bb.as_usize()))))
             }
             Terminator::Switch(switch, branches) => {
                 let ty = switch.ty(lower.ctx.tcx, lower.locals);
@@ -685,8 +687,7 @@ impl<'tcx> Terminator<'tcx> {
             }
             Terminator::Return => (
                 istmts,
-                Expr::Variable(Ident::bound("return"))
-                    .app([Arg::Term(Exp::Var(Ident::bound("_0")))]),
+                Expr::var(Ident::bound("return")).app([Arg::Term(Exp::Var(Ident::bound("_0")))]),
             ),
             Terminator::Abort(span) => {
                 let mut exp = Exp::mk_false();
@@ -716,7 +717,7 @@ impl<'tcx> Branches<'tcx> {
                     discr,
                     brs.into_iter().map(|(mut val, tgt)| {
                         let why_ty =
-                            Type::TConstructor(names.in_pre(ity_to_prelude(ctx.tcx, *ity), "t"));
+                            Type::qconstructor(names.in_pre(ity_to_prelude(ctx.tcx, *ity), "t"));
                         let e = if names.bitwise_mode() {
                             // In bitwise mode, integers are bit vectors, whose literals are always unsigned
                             if val < 0 && *ity != IntTy::I128 {
@@ -744,7 +745,7 @@ impl<'tcx> Branches<'tcx> {
                     discr,
                     brs.into_iter().map(|(val, tgt)| {
                         let why_ty =
-                            Type::TConstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t"));
+                            Type::qconstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t"));
                         let e = Exp::Const(Constant::Uint(val, Some(why_ty)));
                         (e, mk_goto(tgt))
                     }),
@@ -770,7 +771,7 @@ impl<'tcx> Branches<'tcx> {
 }
 
 fn mk_goto(bb: BasicBlock) -> Expr {
-    Expr::Variable(Ident::bound(&format!("bb{}", bb.as_u32())))
+    Expr::var(Ident::bound(&format!("bb{}", bb.as_u32())))
 }
 
 fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
@@ -812,8 +813,7 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
                 .unzip();
 
             let cons = names.constructor(var.def_id, subst);
-
-            let body = Exp::qvar(cons).app(ids);
+            let body = Exp::Var(cons).app(ids);
             let body = Expr::assert(discr.clone().eq(body), mk_goto(tgt).black_box());
             let name = Ident::bound(format!("br{}", ix.as_usize()));
 
@@ -849,7 +849,7 @@ impl<'tcx> Block<'tcx> {
 
             let body = assemble_intermediates(
                 stmt.into_iter(),
-                Expr::Variable(Ident::bound(&format!("s{}", ix + 1))),
+                Expr::var(Ident::bound(&format!("s{}", ix + 1))),
             );
             statements.push(Defn::simple(Ident::bound(&format!("s{}", ix)), body));
         }
@@ -857,7 +857,7 @@ impl<'tcx> Block<'tcx> {
         let body = assemble_intermediates(istmts.into_iter(), terminator);
         statements.push(Defn::simple(Ident::bound(&format!("s{}", statements.len())), body));
 
-        let mut body = Expr::Variable(Ident::bound("s0"));
+        let mut body = Expr::var(Ident::bound("s0"));
         if !self.invariants.is_empty() {
             body = body.black_box();
         }
@@ -882,7 +882,7 @@ where
 {
     istmts.rfold(exp, |tail, stmt| match stmt {
         IntermediateStmt::Assign(id, exp) => tail.assign(id, exp),
-        IntermediateStmt::Call(params, fun, args) => Expr::Constant(fun)
+        IntermediateStmt::Call(params, fun, args) => Expr::Name(fun)
             .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, tail.boxed()))])),
         IntermediateStmt::Assume(e) => Expr::assume(e, tail),
         IntermediateStmt::Assert(e) => Expr::assert(e, tail),
@@ -939,7 +939,7 @@ pub(crate) enum IntermediateStmt {
     // [ id = E] K
     Assign(Ident, Exp),
     // E [ARGS] (id : ty -> K)
-    Call(Box<[Param]>, QName, Box<[Arg]>),
+    Call(Box<[Param]>, Name, Box<[Arg]>),
     // -{ E }- K
     Assume(Exp),
     // { E } K
@@ -949,7 +949,7 @@ pub(crate) enum IntermediateStmt {
 }
 
 impl IntermediateStmt {
-    fn call(id: Ident, ty: Type, f: QName, args: impl IntoIterator<Item = Arg>) -> Self {
+    fn call(id: Ident, ty: Type, f: Name, args: impl IntoIterator<Item = Arg>) -> Self {
         IntermediateStmt::Call([Param::Term(id, ty)].into(), f, args.into_iter().collect())
     }
 }
@@ -969,7 +969,7 @@ impl<'tcx> Statement<'tcx> {
                 let rhs_local_ty = PlaceTy::from_ty(lower.locals[&rhs.local].ty);
 
                 let rhs_inv_fun = if matches!(triv_inv, TrivialInv::NonTrivial) {
-                    Some(Exp::qvar(lower.names.ty_inv(rhs_ty)))
+                    Some(Exp::Var(lower.names.ty_inv(rhs_ty)))
                 } else {
                     None
                 };
@@ -1042,11 +1042,12 @@ impl<'tcx> Statement<'tcx> {
                 let args =
                     [Arg::Ty(rhs_ty_low), Arg::Term(rhs_rplace)].into_iter().chain(bor_id_arg);
                 let ret_ident = Ident::fresh("_ret");
-                let borrow_call = IntermediateStmt::call(ret_ident, lhs_ty_low, func, args);
+                let borrow_call =
+                    IntermediateStmt::call(ret_ident, lhs_ty_low, Name::Global(func), args);
                 istmts.push(borrow_call);
                 lower.assignment(&lhs, Exp::Var(ret_ident), &mut istmts);
 
-                let reassign = Exp::Var(ret_ident).field("final".into());
+                let reassign = Exp::Var(ret_ident).field(Ident::bound("final"));
 
                 if let Some(rhs_inv_fun) = rhs_inv_fun {
                     istmts.push(IntermediateStmt::Assume(rhs_inv_fun.app([reassign.clone()])));
@@ -1064,7 +1065,7 @@ impl<'tcx> Statement<'tcx> {
                 let ty = dest.ty(lower.ctx.tcx, lower.locals);
                 let ty = lower.ty(ty);
                 let ret_ident = Ident::fresh("_ret");
-                istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, args));
+                istmts.push(IntermediateStmt::call(ret_ident, ty, Name::Global(fun_qname), args));
                 lower.assignment(&dest, Exp::Var(ret_ident), &mut istmts);
             }
             Statement::Resolve { did, subst, pl } => {
@@ -1093,7 +1094,7 @@ impl<'tcx> Statement<'tcx> {
                 }
             }
             Statement::AssertTyInv { pl } => {
-                let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
+                let inv_fun = Exp::Var(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
                 let loc = pl.local;
                 let bound = PIdent::bound("x"); // TODO freshen
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);

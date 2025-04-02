@@ -11,7 +11,7 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
 use why3::{
-    Ident,
+    Ident, Name,
     coma::{Arg, Defn, Expr, Param},
     declaration::{AdtDecl, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl},
     exp::{Exp, Trigger},
@@ -26,22 +26,22 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
 ) -> MlT {
     let ty = names.normalize(ctx, ty);
     match ty.kind() {
-        Bool => MlT::TConstructor("bool".into()),
-        Char => MlT::TConstructor(names.in_pre(PreMod::Char, "t")),
+        Bool => MlT::qconstructor("bool".into()),
+        Char => MlT::qconstructor(names.in_pre(PreMod::Char, "t")),
         Tuple(args) if args.is_empty() => MlT::unit(),
         Tuple(args) if args.len() == 1 => translate_ty(ctx, names, span, args[0]),
-        Int(ity) => MlT::TConstructor(names.in_pre(ity_to_prelude(ctx.tcx, *ity), "t")),
-        Uint(uty) => MlT::TConstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t")),
-        Float(flty) => MlT::TConstructor(names.in_pre(floatty_to_prelude(*flty), "t")),
+        Int(ity) => MlT::qconstructor(names.in_pre(ity_to_prelude(ctx.tcx, *ity), "t")),
+        Uint(uty) => MlT::qconstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t")),
+        Float(flty) => MlT::qconstructor(names.in_pre(floatty_to_prelude(*flty), "t")),
         Adt(def, s) if def.is_box() => translate_ty(ctx, names, span, s[0].expect_ty()),
         Adt(def, s) if is_snap_ty(ctx.tcx, def.did()) => {
             // Make sure we create a cycle of dependency if we create a type which is recursive through Snapshot
             // See test should_fail/bug/436_2.rs, and #436
-            names.ty(ty);
+            names.ty_qname(ty);
             translate_ty(ctx, names, span, s[0].expect_ty())
         }
         Adt(def, s) if get_builtin(ctx.tcx, def.did()).is_some() => {
-            let cons = MlT::TConstructor(names.ty(ty));
+            let cons = MlT::qconstructor(names.ty_qname(ty));
             cons.tapp(s.types().map(|t| translate_ty(ctx, names, span, t)))
         }
         Adt(def, _) if def.is_struct() && def.variant(VariantIdx::ZERO).fields.is_empty() => {
@@ -50,34 +50,34 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
             match borkind {
-                Mut => MlT::TConstructor(names.in_pre(PreMod::MutBor, "t"))
+                Mut => MlT::qconstructor(names.in_pre(PreMod::MutBor, "t"))
                     .tapp([translate_ty(ctx, names, span, *ty)]),
                 Not => translate_ty(ctx, names, span, *ty),
             }
         }
-        Slice(ty) => MlT::TConstructor(names.in_pre(PreMod::Slice, "slice"))
+        Slice(ty) => MlT::qconstructor(names.in_pre(PreMod::Slice, "slice"))
             .tapp([translate_ty(ctx, names, span, *ty)]),
-        Array(ty, _) => MlT::TConstructor(names.in_pre(PreMod::Slice, "array"))
+        Array(ty, _) => MlT::qconstructor(names.in_pre(PreMod::Slice, "array"))
             .tapp([translate_ty(ctx, names, span, *ty)]),
-        Str => MlT::TConstructor("string".into()),
+        Str => MlT::qconstructor("string".into()),
         Never => MlT::unit(),
-        RawPtr(_, _) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "ptr")),
+        RawPtr(_, _) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "ptr")),
         Closure(id, subst)
             if is_logic(ctx.tcx, *id) || subst.as_closure().upvar_tys().len() == 0 =>
         {
             MlT::unit()
         }
         FnDef(_, _) => MlT::unit(), /* FnDef types are effectively singleton types, so it is sound to translate to unit. */
-        FnPtr(..) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "ptr")),
-        Dynamic(_, _, _) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "dyn")),
-        Foreign(_) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "foreign")),
+        FnPtr(..) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "ptr")),
+        Dynamic(_, _, _) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "dyn")),
+        Foreign(_) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "foreign")),
         Error(_) => MlT::unit(),
         Closure(..)
         | Adt(..)
         | Tuple(_)
         | Param(_)
         | Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
-            MlT::TConstructor(names.ty(ty))
+            MlT::TConstructor(Name::Local(names.ty(ty)))
         }
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
@@ -89,7 +89,7 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Vec<Decl> {
-    let ty_name = Ident::bound(names.def_ty(did, subst).name);
+    let ty_name = names.def_ty(did, subst);
     let closure_subst = subst.as_closure();
     let fields: Box<[_]> = closure_subst
         .upvar_tys()
@@ -97,7 +97,7 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
         .enumerate()
         .map(|(ix, uv)| FieldDecl {
             ty: translate_ty(ctx, names, DUMMY_SP, uv),
-            name: Ident::bound(names.field(did, subst, ix.into()).name),
+            name: names.field(did, subst, ix.into()),
         })
         .collect();
 
@@ -126,13 +126,13 @@ pub(crate) fn translate_tuple_ty<'tcx, N: Namer<'tcx>>(
         .enumerate()
         .map(|(ix, ty)| FieldDecl {
             ty: translate_ty(ctx, names, DUMMY_SP, ty),
-            name: Ident::bound(names.tuple_field(args, ix.into()).name),
+            name: names.tuple_field(args, ix.into()),
         })
         .collect();
 
     vec![Decl::TyDecl(TyDecl::Adt {
         tys: Box::new([AdtDecl {
-            ty_name: Ident::bound(names.ty(ty).name),
+            ty_name: names.ty(ty),
             ty_params: Box::new([]),
             sumrecord: SumRecord::Record(fields),
         }]),
@@ -152,19 +152,19 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
 ) -> Vec<Decl> {
     // Trusted types (opaque)
     if is_trusted(ctx.tcx, did) {
-        let ty_name = Ident::bound(names.def_ty(did, subst).name);
+        let ty_name = names.def_ty(did, subst);
         return vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })];
     }
 
     let adt = ctx.tcx.adt_def(did);
-    let ty_name = Ident::bound(names.def_ty(did, subst).name);
+    let ty_name = names.def_ty(did, subst);
 
     let sumrecord = if adt.is_enum() {
         SumRecord::Sum(
             adt.variants()
                 .iter()
                 .map(|var_def| ConstructorDecl {
-                    name: Ident::bound(names.constructor(var_def.def_id, subst).name),
+                    name: names.constructor(var_def.def_id, subst),
                     fields: var_def
                         .fields
                         .iter()
@@ -184,7 +184,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
             .fields
             .iter_enumerated()
             .map(|(ix, f)| {
-                let name = Ident::bound(names.field(did, subst, ix).name);
+                let name = names.field(did, subst, ix);
                 let ty = f.ty(ctx.tcx, subst);
                 let ty = ctx.normalize_erasing_regions(typing_env, ty);
                 let ty = translate_ty(ctx, names, ctx.def_span(f.did), ty);
@@ -217,7 +217,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
             let id = if fld.name.as_str().as_bytes()[0].is_ascii_digit() {
                 Ident::bound(&format!("field_{}", fld.name))
             } else {
-                Ident::bound(fld.name.as_str())
+                Ident::bound(fld.name.as_str()) // TODO find field name
             };
             let ty =
                 translate_ty(ctx, names, DUMMY_SP, names.normalize(ctx, fld.ty(ctx.tcx, subst)));
@@ -229,14 +229,14 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         fields.iter().cloned().map(|(nm, ty)| Param::Term(nm, ty)).collect();
 
     let constr = names.constructor(variant_id, subst);
-    let cons_test = Exp::qvar(constr).app(fields.iter().map(|(nm, _)| Exp::Var(nm.clone())));
+    let cons_test = Exp::Var(constr).app(fields.iter().map(|(nm, _)| Exp::Var(nm.clone())));
 
     let ret_ident = Ident::bound("ret");
     let good_ident = Ident::bound("good");
     let bad_ident = Ident::bound("bad");
     let input_ident = Ident::bound("input");
     let ret =
-        Expr::Variable(ret_ident).app(fields.iter().map(|(nm, _)| Arg::Term(Exp::Var(nm.clone()))));
+        Expr::var(ret_ident).app(fields.iter().map(|(nm, _)| Arg::Term(Exp::Var(nm.clone()))));
 
     let good_branch: Defn = Defn {
         name: good_ident,
@@ -266,7 +266,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
 
     let branches = once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
-        name: Ident::bound(names.eliminator(variant_id, subst).name),
+        name: names.eliminator(variant_id, subst),
         params: Box::new([input, ret_cont]),
         body: Expr::Defn(Box::new(Expr::Any), false, branches),
         attrs: vec![],
@@ -281,7 +281,7 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
 ) -> Exp {
     match names.tcx().def_kind(did) {
         DefKind::Variant => {
-            let ctor = names.constructor(did, subst);
+            let ctor = Name::Local(names.constructor(did, subst));
             Exp::Constructor { ctor, args: fields }
         }
         DefKind::Closure | DefKind::Struct => {
@@ -291,7 +291,7 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
                 let fields = fields
                     .into_iter()
                     .enumerate()
-                    .map(|(ix, f)| (names.field(did, subst, ix.into()).name, f))
+                    .map(|(ix, f)| (names.field(did, subst, ix.into()), f))
                     .collect();
                 Exp::Record { fields }
             }

@@ -46,7 +46,7 @@ pub(crate) fn translate_logic_or_predicate(
     let args = pre_sig.inputs.clone();
     let bound = args.iter().map(|(name, _, _)| *name).collect::<Box<[PIdent]>>();
 
-    let name = Ident::bound(names.item(names.self_id, names.self_subst).name);
+    let name = names.item_ident(names.self_id, names.self_subst);
     let sig = lower_sig(ctx, &mut names, name, pre_sig, def_id);
     let (param_decls, args_names): (Vec<_>, Vec<_>) = args
         .into_iter()

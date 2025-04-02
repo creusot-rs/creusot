@@ -63,7 +63,12 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(node).qname()
     }
 
-    fn def_ty(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+    fn item_ident(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+        let node = Dependency::Item(def_id, subst);
+        self.dependency(node).ident()
+    }
+
+    fn def_ty(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
         let ty = match self.tcx().def_kind(def_id) {
             DefKind::Enum | DefKind::Struct | DefKind::Union => {
                 Ty::new_adt(self.tcx(), self.tcx().adt_def(def_id), subst)
@@ -76,19 +81,24 @@ pub(crate) trait Namer<'tcx> {
         self.ty(ty)
     }
 
-    fn ty(&self, ty: Ty<'tcx>) -> QName {
+    fn ty(&self, ty: Ty<'tcx>) -> Ident {
+        assert!(!ty.has_escaping_bound_vars());
+        self.dependency(Dependency::Type(ty)).ident()
+    }
+
+    fn ty_qname(&self, ty: Ty<'tcx>) -> QName {
         assert!(!ty.has_escaping_bound_vars());
         self.dependency(Dependency::Type(ty)).qname()
     }
 
-    fn constructor(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        self.dependency(Dependency::Item(def_id, subst)).qname()
+    fn constructor(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+        self.dependency(Dependency::Item(def_id, subst)).ident()
     }
 
-    fn ty_inv(&self, ty: Ty<'tcx>) -> QName {
+    fn ty_inv(&self, ty: Ty<'tcx>) -> Ident {
         let def_id = get_inv_function(self.tcx());
         let subst = self.tcx().mk_args(&[ty::GenericArg::from(ty)]);
-        self.item(def_id, subst)
+        self.item_ident(def_id, subst)
     }
 
     /// Creates a name for a struct or closure projection ie: x.field1
@@ -96,7 +106,7 @@ pub(crate) trait Namer<'tcx> {
     /// * `def_id` - The id of the type or closure being projected
     /// * `subst` - Substitution that type is being accessed at
     /// * `ix` - The field in that constructor being accessed.
-    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> QName {
+    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> Ident {
         let node = match self.tcx().def_kind(def_id) {
             DefKind::Closure => {
                 self.def_ty(def_id, subst);
@@ -110,21 +120,21 @@ pub(crate) trait Namer<'tcx> {
             _ => unreachable!(),
         };
 
-        self.dependency(node).qname()
+        self.dependency(node).ident()
     }
 
-    fn tuple_field(&self, args: &'tcx List<Ty<'tcx>>, idx: FieldIdx) -> QName {
+    fn tuple_field(&self, args: &'tcx List<Ty<'tcx>>, idx: FieldIdx) -> Ident {
         assert!(args.len() > 1);
         self.ty(Ty::new_tup(self.tcx(), args));
-        self.dependency(Dependency::TupleField(args, idx)).qname()
+        self.dependency(Dependency::TupleField(args, idx)).ident()
     }
 
-    fn eliminator(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        self.dependency(Dependency::Eliminator(def_id, subst)).qname()
+    fn eliminator(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+        self.dependency(Dependency::Eliminator(def_id, subst)).ident()
     }
 
-    fn promoted(&self, def_id: LocalDefId, prom: Promoted) -> QName {
-        self.dependency(Dependency::Promoted(def_id, prom)).qname()
+    fn promoted(&self, def_id: LocalDefId, prom: Promoted) -> Ident {
+        self.dependency(Dependency::Promoted(def_id, prom)).ident()
     }
 
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T;

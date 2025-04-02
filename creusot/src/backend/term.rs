@@ -11,11 +11,11 @@ use crate::{
 };
 use rustc_ast::Mutability;
 use rustc_hir::def::DefKind;
-use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
+use rustc_middle::ty::{Ty, TyKind};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    Ident,
+    Ident, Name,
     declaration::Condition as WCondition,
     exp::{
         BinOp as WBinOp, Binder, Constant, Exp, Pattern as WPattern, Trigger as WTrigger,
@@ -201,11 +201,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Cur { box term } => {
                 assert!(term.ty.is_mutable_ptr() && term.ty.is_ref());
                 self.names.import_prelude_module(PreMod::MutBor);
-                self.lower_term(term).field("current".into())
+                self.lower_term(term).field(Ident::bound("current"))
             }
             TermKind::Fin { box term } => {
                 self.names.import_prelude_module(PreMod::MutBor);
-                self.lower_term(term).field("final".into())
+                self.lower_term(term).field(Ident::bound("final"))
             }
             TermKind::Impl { box lhs, box rhs } => {
                 self.lower_term(lhs).implies(self.lower_term(rhs))
@@ -240,9 +240,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     fields: fields
                         .into_iter()
                         .enumerate()
-                        .map(|(ix, f)| {
-                            (self.names.tuple_field(tys, ix.into()).name, self.lower_term(f))
-                        })
+                        .map(|(ix, f)| (self.names.tuple_field(tys, ix.into()), self.lower_term(f)))
                         .collect(),
                 }
             }
@@ -251,21 +249,24 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                 match lhs.ty.kind() {
                     TyKind::Closure(did, substs) => {
-                        lhs_low.field(self.names.field(*did, substs, *idx).name)
+                        lhs_low.field(self.names.field(*did, substs, *idx))
                     }
                     TyKind::Adt(def, substs) => {
-                        lhs_low.field(self.names.field(def.did(), substs, *idx).name)
+                        lhs_low.field(self.names.field(def.did(), substs, *idx))
                     }
                     TyKind::Tuple(tys) if tys.len() == 1 => lhs_low,
-                    TyKind::Tuple(tys) => lhs_low.field(self.names.tuple_field(tys, *idx).name),
+                    TyKind::Tuple(tys) => lhs_low.field(self.names.tuple_field(tys, *idx)),
                     k => unreachable!("Projection from {k:?}"),
                 }
             }
             TermKind::Closure { bound, body } => {
-                let binders = bound.iter().map(|&(ident, ty)| {
-                    let ty = self.names.normalize(self.ctx, ty);
-                    Binder::typed(ident.0, self.lower_ty(ty))
-                }).collect();
+                let binders = bound
+                    .iter()
+                    .map(|&(ident, ty)| {
+                        let ty = self.names.normalize(self.ctx, ty);
+                        Binder::typed(ident.0, self.lower_ty(ty))
+                    })
+                    .collect();
                 let body = self.lower_term(&*body);
                 Exp::Lam(binders, body.boxed())
             }
@@ -316,15 +317,16 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 };
                 let flds = fields.iter().map(|pat| self.lower_pat(pat));
                 if self.ctx.def_kind(var_did) == DefKind::Variant {
-                    WPattern::ConsP(self.names.constructor(var_did, subst), flds.collect())
+                    WPattern::ConsP(
+                        Name::Local(self.names.constructor(var_did, subst)),
+                        flds.collect(),
+                    )
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {
                     let flds: Box<[_]> = flds
                         .enumerate()
-                        .map(|(i, f)| {
-                            (Ident::bound(self.names.field(var_did, subst, i.into()).name), f)
-                        })
+                        .map(|(i, f)| (self.names.field(var_did, subst, i.into()), f))
                         .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                         .collect();
                     if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
@@ -343,10 +345,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     .iter()
                     .enumerate()
                     .map(|(idx, pat)| {
-                        (
-                            Ident::bound(self.names.tuple_field(tys, idx.into()).name),
-                            self.lower_pat(pat),
-                        )
+                        (self.names.tuple_field(tys, idx.into()), self.lower_pat(pat))
                     })
                     .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                     .collect();
@@ -388,7 +387,7 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
         Literal::Integer(i) => Constant::Int(i, None).into(),
         Literal::UInteger(i) => Constant::Uint(i, None).into(),
         Literal::MachSigned(mut i, ity) => {
-            let why_ty = Type::TConstructor(names.in_pre(ity_to_prelude(ctx.tcx, ity), "t"));
+            let why_ty = Type::qconstructor(names.in_pre(ity_to_prelude(ctx.tcx, ity), "t"));
             if names.bitwise_mode() {
                 // In bitwise mode, integers are bit vectors, whose literals are always unsigned
                 if i < 0 && ity != IntTy::I128 {
@@ -401,7 +400,7 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
             }
         }
         Literal::MachUnsigned(u, uty) => {
-            let why_ty = Type::TConstructor(names.in_pre(uty_to_prelude(ctx.tcx, uty), "t"));
+            let why_ty = Type::qconstructor(names.in_pre(uty_to_prelude(ctx.tcx, uty), "t"));
             Constant::Uint(u, Some(why_ty)).into()
         }
         Literal::Bool(true) => Constant::const_true().into(),
@@ -416,7 +415,7 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
             Exp::unit()
         }
         Literal::Float(ref f, fty) => {
-            let why_ty = Type::TConstructor(names.in_pre(floatty_to_prelude(fty), "t"));
+            let why_ty = Type::qconstructor(names.in_pre(floatty_to_prelude(fty), "t"));
             Constant::Float(f.0, Some(why_ty)).into()
         }
         Literal::ZST => Exp::unit(),
