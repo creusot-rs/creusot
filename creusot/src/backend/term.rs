@@ -261,23 +261,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     k => unreachable!("Projection from {k:?}"),
                 }
             }
-            TermKind::Closure { body, .. } => {
-                let TyKind::Closure(id, subst) = term.ty.kind() else {
-                    unreachable!("closure has non closure type")
-                };
+            TermKind::Closure { bound, body } => {
+                let binders = bound.iter().map(|&(ident, ty)| {
+                    let ty = self.names.normalize(self.ctx, ty);
+                    Binder::typed(ident.0, self.lower_ty(ty))
+                }).collect();
                 let body = self.lower_term(&*body);
-
-                let sig = self.ctx.sig(*id).clone();
-                let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
-                let binders = sig
-                    .inputs
-                    .into_iter()
-                    .map(|(ident, _, ty)| {
-                        let ty = self.names.normalize(self.ctx, ty);
-                        Binder::typed(ident.0, self.lower_ty(ty))
-                    })
-                    .collect();
-
                 Exp::Lam(binders, body.boxed())
             }
             TermKind::Reborrow { cur, fin, inner, projection } => {

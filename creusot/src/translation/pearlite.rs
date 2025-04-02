@@ -222,7 +222,7 @@ pub enum TermKind<'tcx> {
         term: Box<Term<'tcx>>,
     },
     Closure {
-        bound: Box<[PIdent]>,
+        bound: Box<[(PIdent, Ty<'tcx>)]>,
         body: Box<Term<'tcx>>,
     },
     Reborrow {
@@ -419,7 +419,7 @@ const TRIGGER_ERROR: &str = "Triggers can only be used inside quantifiers";
 pub(crate) fn pearlite<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
-) -> CreusotResult<(Box<[PIdent]>, Term<'tcx>)> {
+) -> CreusotResult<(Box<[(PIdent, Ty<'tcx>)]>, Term<'tcx>)> {
     let (bound, triggers, term) = pearlite_with_triggers(ctx, id)?;
     if !triggers.is_empty() {
         Err(Error::msg(ctx.def_span(id), TRIGGER_ERROR))
@@ -431,7 +431,7 @@ pub(crate) fn pearlite<'tcx>(
 pub(crate) fn pearlite_with_triggers<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
-) -> CreusotResult<(Box<[PIdent]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
+) -> CreusotResult<(Box<[(PIdent, Ty<'tcx>)]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
     let (thir, expr) = ctx.fetch_thir(id)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
@@ -445,12 +445,14 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
     // Postconditions make this annoying. They are closures with a `result` parameter,
     // so we have to collect the parameters of the parent function and the current closure.
     let to_pattern = |param: &thir::Param<'tcx>| match &param.pat {
-        Some(box pat) => lower.pattern_term(pat, true).map(Some),
-        None => Ok(None),
+        Some(box pat) => lower.pattern_term(pat, true),
+        None => Err(Error::msg(DUMMY_SP, &format!("Unexpected implicit parameter in {:?}", id))),
+        // Implicit parameters (`self` for closures) are skipped using skip() below.
+        // If there are others, this will tell us.
     };
     let did = id.into();
     let is_closure = ctx.tcx.is_closure_like(did);
-    let patterns: Box<[Option<Pattern>]> = if is_spec(ctx.tcx, did) && is_closure {
+    let patterns: Box<[Pattern]> = if is_spec(ctx.tcx, did) && is_closure {
         // Most specs are closures.
         // Preconditions and variants have all of their variables bound in the parent function.
         // Postonditions also bind a `result` variable.
@@ -458,44 +460,48 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
         let (parent_thir, _) = ctx.fetch_thir(parent)?;
         let parent_thir: &Thir = &parent_thir.borrow();
         // Parameters of the parent function plus maybe the `result` parameter from the current closure
-        // (skipping its implicit `self` parameter).
         parent_thir
             .params
             .iter()
             .chain(thir.params.iter().skip(1))
             .map(to_pattern)
-            .collect::<CreusotResult<_>>()?
+            .collect::<CreusotResult<_>>()
     } else if is_closure {
+        let name = ctx.tcx.def_path_str(did);
+        if name.contains("unions_union") {
+            debug! {"debug: {:?} {:#?}", did, thir.params}
+        }
         // Skip implicit `self` parameter.
-        thir.params.iter().skip(1).map(to_pattern).collect::<CreusotResult<_>>()?
+        thir.params.iter().skip(1).map(to_pattern).collect::<CreusotResult<_>>()
     } else {
         // Case of non-specs or trait item specs (which desugar to extra trait items).
-        thir.params.iter().map(to_pattern).collect::<CreusotResult<_>>()?
-    };
-    let bound: Box<[PIdent]> = patterns
+        thir.params.iter().map(to_pattern).collect::<CreusotResult<_>>()
+    }?;
+    let bound: Box<[(PIdent, Ty<'tcx>)]> = patterns
         .iter()
         .enumerate()
-        .map(|(idx, pat)| match pat {
-            Some(Pattern { kind: PatternKind::Binder(var), .. }) => *var,
-            _ => PIdent::fresh(&format!("__{}", idx)),
+        .map(|(idx, pat)| {
+            let ident = match pat.kind {
+                PatternKind::Binder(var) => var,
+                _ => PIdent::fresh(&format!("__{}", idx)),
+            };
+            (ident, ctx.normalize_erasing_regions(TypingEnv::non_body_analysis(ctx.tcx, did), pat.ty))
         })
         .collect();
     let body = patterns.into_iter().zip(bound.iter().cloned()).rev().fold(
         body,
-        |body: Term<'tcx>, (pat, ident)| match pat {
-            Some(pattern)
-                if !matches!(pattern.kind, PatternKind::Binder(_) | PatternKind::Wildcard) =>
-            {
-                let ty = pattern.ty;
-                let arg = Box::new(Term::var(ident, ty));
-                Term {
-                    ty: ty,
-                    span: body.span,
-                    kind: TermKind::Let { pattern, arg, body: Box::new(body) },
+        |body: Term<'tcx>, (pattern, (ident, ty))|
+            match pattern.kind {
+                PatternKind::Binder(_) | PatternKind::Wildcard => body,
+                _ => {
+                    let arg = Box::new(Term::var(ident, ty));
+                    Term {
+                        ty: body.ty,
+                        span: body.span,
+                        kind: TermKind::Let { pattern, arg, body: Box::new(body) },
+                    }
                 }
             }
-            _ => body,
-        },
     );
     Ok((bound, triggers, body))
 }
@@ -662,12 +668,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         let kind =
                             if let Forall = s { QuantKind::Forall } else { QuantKind::Exists };
                         let (binder, trigger, body) = self.quant_term(args[0])?;
-                        let arg_tuple_ty = if let TyKind::FnDef(_, subst) = f_ty.kind() {
-                            subst[0].as_type().unwrap().tuple_fields()
-                        } else {
-                            unreachable!()
-                        };
-                        let binder = binder.into_iter().zip(arg_tuple_ty).collect();
                         Ok(body.quant(kind, binder, trigger).span(span))
                     }
                     Some(Fin) => {
@@ -1075,7 +1075,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn quant_term(
         &self,
         body: ExprId,
-    ) -> Result<(Box<[PIdent]>, Box<[Trigger<'tcx>]>, Term<'tcx>), Error> {
+    ) -> Result<(Box<[(PIdent, Ty<'tcx>)]>, Box<[Trigger<'tcx>]>, Term<'tcx>), Error> {
         trace!("{:?}", self.thir[body].kind);
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
@@ -1704,7 +1704,7 @@ impl<'tcx> Term<'tcx> {
             TermKind::Old { term } => term.subst_with_inner(bound, inv_subst),
             TermKind::Closure { body, bound: bound_new } => {
                 let mut bound = bound.clone();
-                bound.extend(bound_new.iter());
+                bound.extend(bound_new.iter().map(|b| b.0));
                 body.subst_with_inner(&bound, inv_subst);
             }
             TermKind::Reborrow { cur, fin, inner, projection } => {
@@ -1793,7 +1793,7 @@ impl<'tcx> Term<'tcx> {
             TermKind::Old { term } => term.free_vars_inner(bound, free),
             TermKind::Closure { body, bound: bound_new } => {
                 let mut bound = bound.clone();
-                bound.extend(bound_new.iter());
+                bound.extend(bound_new.iter().map(|b| b.0));
                 body.free_vars_inner(&bound, free);
             }
             TermKind::Reborrow { cur, fin, inner, projection } => {

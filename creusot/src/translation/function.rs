@@ -11,8 +11,7 @@ use crate::{
     fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inv_subst},
     gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
     pearlite::{
-        PIdent as Ident, Pattern, Term, TermKind, TermVisitorMut, normalize,
-        super_visit_mut_term,
+        PIdent as Ident, Pattern, Term, TermKind, TermVisitorMut, normalize, super_visit_mut_term,
     },
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{specification::contract_of, traits},
@@ -1225,7 +1224,7 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'_, 'tcx> {
             }
             TermKind::Closure { bound: bound_new, box body } => {
                 let mut bound = self.bound.clone();
-                bound.extend(bound_new.iter());
+                bound.extend(bound_new.iter().map(|b| b.0));
                 std::mem::swap(&mut self.bound, &mut bound);
                 self.visit_mut_term(body);
                 std::mem::swap(&mut self.bound, &mut bound);

@@ -271,6 +271,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                         Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
                         Err(Error::TypeCheck(thir)) => return Err(thir),
                     };
+                    let bound = bound.iter().map(|b| b.0).collect();
                     Ok(Box::new(Some(FTerm(
                         bound,
                         pearlite::normalize(self.tcx, self.typing_env(def_id), term),

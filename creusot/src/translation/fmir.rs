@@ -9,8 +9,8 @@ use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{
-        self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, Promoted, SourceScope,
-        UnOp, tcx::PlaceTy,
+        self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, Promoted, SourceScope, UnOp,
+        tcx::PlaceTy,
     },
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
@@ -344,10 +344,7 @@ impl<'tcx> ScopeTree<'tcx> {
         ScopeTree(scope_tree)
     }
 
-    pub fn visible_places(
-        &self,
-        scope: SourceScope,
-    ) -> HashMap<rustc_span::Ident, TermKind<'tcx>> {
+    pub fn visible_places(&self, scope: SourceScope) -> HashMap<rustc_span::Ident, TermKind<'tcx>> {
         let mut locals = HashMap::new();
         let mut to_visit = Some(scope);
 

@@ -468,6 +468,7 @@ pub fn inputs_and_output_from_thir<'tcx>(
             let inputs = thir
                 .params
                 .iter()
+                .skip(if ctx.tcx.is_closure_like(def_id) { 1 } else { 0 })
                 .enumerate()
                 .map(|(idx, param)| match &param.pat {
                     Some(box Pat { kind, span, ty }) => {
@@ -518,16 +519,10 @@ pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(Ident, Span, Ty)]
                 tcx.signature_unclosure(subst.as_closure().sig(), Safety::Safe),
             );
             let sig = tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), sig);
-            let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
-
-            let closure_env = (Ident::fresh("_1"), DUMMY_SP, env_ty);
             let names = tcx.fn_arg_names(def_id).iter().cloned();
-            let inputs = std::iter::once(closure_env)
-                .chain(
-                    names
-                        .zip(sig.inputs().iter().cloned())
-                        .map(|(ident, ty)| (Ident::fresh(ident.name.as_str()), ident.span, ty)),
-                )
+            let inputs = names
+                .zip(sig.inputs().iter().cloned())
+                .map(|(ident, ty)| (Ident::fresh(ident.name.as_str()), ident.span, ty))
                 .collect();
             (inputs, sig.output())
         }
