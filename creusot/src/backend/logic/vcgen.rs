@@ -318,7 +318,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .map(|((nm, _, _), res)| (nm.0, res.clone()))
                     .collect();
                 let variant = pre_sig.contract.variant.clone();
-                let mut sig = lower_sig(self.ctx, self.names, Ident::fresh(""), pre_sig, *id);
+                let mut sig = lower_sig(self.ctx, self.names, Ident::bound(""), pre_sig, *id);
 
                 let variant = if *id == self.self_id {
                     let subst = self.ctx.normalize_erasing_regions(self.typing_env, *subst);

@@ -485,23 +485,25 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
                 PatternKind::Binder(var) => var,
                 _ => PIdent::fresh(&format!("__{}", idx)),
             };
-            (ident, ctx.normalize_erasing_regions(TypingEnv::non_body_analysis(ctx.tcx, did), pat.ty))
+            (
+                ident,
+                ctx.normalize_erasing_regions(TypingEnv::non_body_analysis(ctx.tcx, did), pat.ty),
+            )
         })
         .collect();
     let body = patterns.into_iter().zip(bound.iter().cloned()).rev().fold(
         body,
-        |body: Term<'tcx>, (pattern, (ident, ty))|
-            match pattern.kind {
-                PatternKind::Binder(_) | PatternKind::Wildcard => body,
-                _ => {
-                    let arg = Box::new(Term::var(ident, ty));
-                    Term {
-                        ty: body.ty,
-                        span: body.span,
-                        kind: TermKind::Let { pattern, arg, body: Box::new(body) },
-                    }
+        |body: Term<'tcx>, (pattern, (ident, ty))| match pattern.kind {
+            PatternKind::Binder(_) | PatternKind::Wildcard => body,
+            _ => {
+                let arg = Box::new(Term::var(ident, ty));
+                Term {
+                    ty: body.ty,
+                    span: body.span,
+                    kind: TermKind::Let { pattern, arg, body: Box::new(body) },
                 }
             }
+        },
     );
     Ok((bound, triggers, body))
 }

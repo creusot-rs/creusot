@@ -510,7 +510,11 @@ pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(Ident, Span, Ty)]
                 .iter()
                 .cloned()
                 .zip(sig.inputs().iter().cloned())
-                .map(|(ident, ty)| (Ident::fresh(ident.name.as_str()), ident.span, ty))
+                .map(|(ident, ty)| {
+                    let name = ident.name.as_str();
+                    let name = if name.is_empty() { "_x" } else { name };
+                    (Ident::fresh(name), ident.span, ty)
+                })
                 .collect();
             (inputs, sig.output())
         }
