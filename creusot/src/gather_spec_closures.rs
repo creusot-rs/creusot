@@ -3,7 +3,7 @@ use crate::{
         get_invariant_expl, is_assertion, is_before_loop, is_loop_variant, is_snapshot_closure,
     },
     ctx::TranslationCtx,
-    pearlite::{FTerm, PIdent, Term},
+    pearlite::{FTerm, Term},
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::def_id::DefId;
@@ -27,7 +27,7 @@ pub(crate) struct SpecClosures<'tcx> {
 }
 
 impl<'tcx> SpecClosures<'tcx> {
-    pub(crate) fn collect(ctx: &TranslationCtx<'tcx>, bound: &[PIdent], body: &Body<'tcx>) -> Self {
+    pub(crate) fn collect(ctx: &TranslationCtx<'tcx>, body: &Body<'tcx>) -> Self {
         let mut visitor = Closures::new(ctx.tcx);
         visitor.visit_body(body);
 
@@ -35,10 +35,10 @@ impl<'tcx> SpecClosures<'tcx> {
         let mut snapshots = IndexMap::new();
         for clos in visitor.closures.into_iter() {
             if is_assertion(ctx.tcx, clos) {
-                let term = ctx.term_fail_fast(clos).unwrap().instantiate(bound);
+                let term = ctx.term_fail_fast(clos).unwrap().1.clone();
                 assertions.insert(clos, term);
             } else if is_snapshot_closure(ctx.tcx, clos) {
-                let term = ctx.term_fail_fast(clos).unwrap().instantiate(bound);
+                let term = ctx.term_fail_fast(clos).unwrap().1.clone();
                 snapshots.insert(clos, term);
             }
         }
@@ -84,42 +84,17 @@ impl<'tcx> Visitor<'tcx> for Closures<'tcx> {
     }
 }
 
-pub(crate) struct Invariants_<T> {
-    pub(crate) loop_headers: IndexMap<BasicBlock, Vec<(LoopSpecKind, T)>>,
+pub(crate) struct Invariants<'tcx> {
+    pub(crate) loop_headers: IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
     /// Invariants for which we couldn't find a loop header are translated as assertions.
-    pub(crate) assertions: IndexMap<DefId, (T, String)>,
-}
-
-type RawInvariants<'tcx> = Invariants_<FTerm<'tcx>>;
-type Invariants<'tcx> = Invariants_<Term<'tcx>>;
-
-impl<'tcx> RawInvariants<'tcx> {
-    pub fn instantiate(&self, bound: &[PIdent]) -> Invariants<'tcx> {
-        let loop_headers = self
-            .loop_headers
-            .iter()
-            .map(|(bb, invariants)| {
-                let invariants = invariants
-                    .iter()
-                    .map(|(kind, term)| (kind.clone(), term.instantiate(bound)))
-                    .collect();
-                (*bb, invariants)
-            })
-            .collect();
-        let assertions = self
-            .assertions
-            .iter()
-            .map(|(id, (term, expl))| (*id, (term.instantiate(bound), expl.clone())))
-            .collect();
-        Invariants { loop_headers, assertions }
-    }
+    pub(crate) assertions: IndexMap<DefId, (Term<'tcx>, String)>,
 }
 
 struct InvariantsVisitor<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     body: &'a Body<'tcx>,
     before_loop: IndexSet<BasicBlock>,
-    invariants: RawInvariants<'tcx>,
+    invariants: Invariants<'tcx>,
 }
 
 impl<'a, 'tcx> InvariantsVisitor<'a, 'tcx> {
@@ -165,7 +140,7 @@ impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
                 }
                 return;
             };
-            let term = self.ctx.term_fail_fast(*id).unwrap().clone();
+            let term = self.ctx.term_fail_fast(*id).unwrap().1.clone();
             match self.find_loop_header(loc) {
                 None if let LoopSpecKind::Invariant(expl) = kind => {
                     self.ctx.warn(
@@ -192,15 +167,14 @@ impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
 // Calculate the *actual* location of invariants in MIR
 pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    bound: &[PIdent],
     body: &Body<'tcx>,
 ) -> Invariants<'tcx> {
     let mut invs_gather = InvariantsVisitor {
         ctx,
         body,
         before_loop: IndexSet::new(),
-        invariants: RawInvariants { loop_headers: IndexMap::new(), assertions: IndexMap::new() },
+        invariants: Invariants { loop_headers: IndexMap::new(), assertions: IndexMap::new() },
     };
     invs_gather.visit_body(body);
-    invs_gather.invariants.instantiate(bound)
+    invs_gather.invariants
 }

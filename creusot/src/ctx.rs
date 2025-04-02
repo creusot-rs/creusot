@@ -158,6 +158,7 @@ pub struct TranslationCtx<'tcx> {
     opacity: OnceMap<DefId, Box<Opacity>>,
     closure_contract: OnceMap<DefId, Box<ClosureContract<'tcx>>>,
     renamer: RefCell<HashMap<LocalVarId, Ident>>,
+    pub corenamer: RefCell<HashMap<Ident, LocalVarId>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -217,6 +218,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             closure_contract: Default::default(),
             params_open_inv,
             renamer: Default::default(),
+            corenamer: Default::default(),
         }
     }
 
@@ -538,7 +540,11 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.renamer
             .borrow_mut()
             .entry(ident)
-            .or_insert_with(|| Ident::fresh(self.hir().name(ident.0).as_str()))
+            .or_insert_with(|| {
+                let r = Ident::fresh(self.hir().name(ident.0).as_str());
+                self.corenamer.borrow_mut().insert(r, ident);
+                r
+            })
             .clone()
     }
 }

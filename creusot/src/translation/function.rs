@@ -8,16 +8,14 @@ use crate::{
     },
     ctx::*,
     extended_location::ExtendedLocation,
-    fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv},
+    fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inv_subst},
     gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
-    pearlite::{PIdent as Ident, Term, normalize},
-    resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
-    translation::{
-        fmir::inv_subst,
-        pearlite::{Pattern, TermKind, TermVisitorMut, super_visit_mut_term},
-        specification::contract_of,
-        traits,
+    pearlite::{
+        PIdent as Ident, Pattern, Term, TermKind, TermVisitorMut, normalize,
+        super_visit_mut_term,
     },
+    resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
+    translation::{specification::contract_of, traits},
 };
 use indexmap::IndexMap;
 use rustc_borrowck::consumers::BorrowSet;
@@ -156,15 +154,30 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let (vars, locals) = translate_vars(body, &erased_locals);
         let bound: Box<[Ident]> =
             (1..=body.arg_count).map(|i| locals[&Local::from_usize(i)]).collect();
-        let invariants = corrected_invariant_names_and_locations(ctx, &bound, body);
-        let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, &bound, body);
+        let invariants = corrected_invariant_names_and_locations(ctx, body);
+        let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, body);
+
+        let _ = match body.source.instance {
+            rustc_middle::ty::InstanceKind::Item(defid) => {
+                let name = tcx.def_path_str(defid);
+                debug! {"{:?} {:?}", name, defid};
+                {
+                    debug! {"inv_subst: {name} {:#?}\n", body.var_debug_info};
+                    for i in body.var_debug_info.iter() {
+                        debug! {"VAR: {:?} {:?} {:?} {:?} {:?}", i.name, i.source_info, i.composite, i.value, i.argument_index};
+                    }
+                    debug! {"{:#?}", body.source_scopes};
+                }
+            }
+            _ => (),
+        };
 
         f(BodyTranslator {
             body,
             body_id,
             resolver,
             move_data: &move_data,
-            tree: &fmir::ScopeTree::build(body),
+            tree: &fmir::ScopeTree::build(body, ctx.tcx, &locals),
             typing_env,
             locals,
             vars,
@@ -215,15 +228,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let mut invariants = Vec::new();
             let mut variant = None;
 
-            let subst = inv_subst(
-                    self.tcx(),
-                    self.body,
-                    &self.locals,
-                    &self.tree,
-                    *self.body.source_info(bb.start_location()),
-                );
+            let info = *self.body.source_info(bb.start_location());
+            let places = self.tree.visible_places(info.scope);
+            let subst = inv_subst(&self.ctx, &places);
             for (kind, mut body) in self.invariants.shift_remove(&bb).unwrap_or_else(Vec::new) {
-                body.subst(&subst);
+                body.subst_with(&subst);
                 self.check_use_in_logic(&body, bb.start_location());
                 match kind {
                     LoopSpecKind::Variant => {

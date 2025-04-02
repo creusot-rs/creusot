@@ -89,13 +89,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     };
                     let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
                     let mut assertion = self.snapshots.shift_remove(def_id).unwrap();
-                    assertion.subst(&inv_subst(
-                        self.tcx(),
-                        self.body,
-                        &self.locals,
-                        &self.tree,
-                        terminator.source_info,
-                    ));
+                    let places = self.tree.visible_places(terminator.source_info.scope);
+                    assertion.subst_with(inv_subst(&self.ctx, &places));
                     self.check_use_in_logic(&assertion, location);
                     self.emit_snapshot_assign(destination, assertion, span);
                 } else {

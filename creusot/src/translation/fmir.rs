@@ -1,14 +1,15 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use crate::{
     backend::place::projection_ty,
+    ctx::TranslationCtx,
     pearlite::{PIdent as Ident, Term},
 };
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{
-        self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, Promoted, SourceInfo, SourceScope,
+        self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, Promoted, SourceScope,
         UnOp, tcx::PlaceTy,
     },
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
@@ -290,20 +291,27 @@ pub struct Body<'tcx> {
 
 #[derive(Debug)]
 pub struct ScopeTree<'tcx>(
-    HashMap<SourceScope, (HashSet<(Ident, mir::Place<'tcx>)>, Option<SourceScope>)>,
+    HashMap<SourceScope, (Vec<(rustc_span::Ident, TermKind<'tcx>)>, Option<SourceScope>)>,
 );
 
 impl<'tcx> ScopeTree<'tcx> {
-    pub fn build(body: &mir::Body<'tcx>) -> Self {
+    pub fn build(
+        body: &mir::Body<'tcx>,
+        tcx: TyCtxt<'tcx>,
+        locals: &HashMap<Local, Ident>,
+    ) -> Self {
         use rustc_middle::mir::VarDebugInfoContents::Place;
-        let mut scope_tree: HashMap<SourceScope, (HashSet<_>, Option<_>)> = Default::default();
+        let mut scope_tree: HashMap<
+            SourceScope,
+            (Vec<(rustc_span::Ident, TermKind<'tcx>)>, Option<_>),
+        > = Default::default();
 
         for var_info in &body.var_debug_info {
             // All variables in the DebugVarInfo should be user variables and thus be just places
             // If the variable is local to the function the place will have no projections.
             // Else this is a captured variable.
             let p = match var_info.value {
-                Place(p) => p,
+                Place(p) => place_to_term(tcx, p, locals, body),
                 _ => panic!(),
             };
             let info = var_info.source_info;
@@ -313,8 +321,8 @@ impl<'tcx> ScopeTree<'tcx> {
 
             let entry = scope_tree.entry(scope).or_default();
 
-            let ident = Ident::fresh(var_info.name.as_str());
-            entry.0.insert((ident, p));
+            let ident = rustc_span::Ident { name: var_info.name, span: var_info.source_info.span };
+            entry.0.push((ident, p));
 
             if let Some(parent) = scope_data.parent_scope {
                 entry.1 = Some(parent);
@@ -336,16 +344,23 @@ impl<'tcx> ScopeTree<'tcx> {
         ScopeTree(scope_tree)
     }
 
-    fn visible_places(&self, scope: SourceScope) -> HashMap<Ident, mir::Place<'tcx>> {
+    pub fn visible_places(
+        &self,
+        scope: SourceScope,
+    ) -> HashMap<rustc_span::Ident, TermKind<'tcx>> {
         let mut locals = HashMap::new();
         let mut to_visit = Some(scope);
 
         while let Some(s) = to_visit.take() {
-            let d = (HashSet::new(), None);
-            self.0.get(&s).unwrap_or(&d).0.iter().for_each(|(id, loc)| {
-                locals.entry(*id).or_insert(*loc);
-            });
-            to_visit = self.0.get(&s).unwrap_or(&d).1;
+            match self.0.get(&s) {
+                None => to_visit = None,
+                Some((places, parent)) => {
+                    for (id, term) in places {
+                        locals.entry(*id).or_insert_with(|| term.clone()); // If multiple binders have the same identifier, use the closest one
+                    }
+                    to_visit = *parent;
+                }
+            }
         }
 
         locals
@@ -354,18 +369,21 @@ impl<'tcx> ScopeTree<'tcx> {
 
 // Turn a typing context into a substition.
 pub(crate) fn inv_subst<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    body: &mir::Body<'tcx>,
-    locals: &HashMap<Local, Ident>,
-    tree: &ScopeTree<'tcx>,
-    info: SourceInfo,
-) -> HashMap<Ident, TermKind<'tcx>> {
-    let mut args = HashMap::new();
-    for (k, p) in tree.visible_places(info.scope) {
-        args.insert(k, place_to_term(tcx, p, locals, body));
+    tcx: &TranslationCtx<'tcx>,
+    places: &HashMap<rustc_span::Ident, TermKind<'tcx>>,
+) -> impl Fn(Ident) -> Option<TermKind<'tcx>> {
+    |ident| {
+        let var = *tcx
+            .corenamer
+            .borrow()
+            .get(&ident.0)
+            .unwrap_or_else(|| panic!("Variable not found in core name map: {:?}", ident));
+        let ident2 = tcx.tcx.hir().ident(var.0);
+        match places.get(&ident2) {
+            Some(term) => Some(term.clone()),
+            None => panic!("Variable not found: {:?}", ident),
+        }
     }
-
-    args
 }
 
 /// Translate a place to a term. The place must represent a single named variable, so it can be
