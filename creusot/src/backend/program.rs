@@ -45,18 +45,15 @@ use why3::{
     ty::Type,
 };
 
-pub(crate) fn translate_function<'tcx, 'sess>(
-    ctx: &Why3Generator<'tcx>,
-    def_id: DefId,
-) -> Option<FileModule> {
-    let mut names = Dependencies::new(ctx, def_id);
+pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<FileModule> {
+    let names = Dependencies::new(ctx, def_id);
 
     if !def_id.is_local() || !ctx.has_body(def_id) || is_trusted_item(ctx.tcx, def_id) {
         return None;
     }
 
     let name = names.item(names.self_id, names.self_subst).as_ident();
-    let body = Decl::Coma(to_why(ctx, &mut names, name, BodyId::new(def_id.expect_local(), None)));
+    let body = Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), None)));
 
     let mut decls = names.provide_deps(ctx);
     decls.push(Decl::Meta(Meta {
@@ -72,7 +69,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } })
 }
 
-pub fn val<'tcx>(_: &Why3Generator<'tcx>, sig: Signature) -> Decl {
+pub fn val(_: &Why3Generator, sig: Signature) -> Decl {
     let params = sig
         .args
         .into_iter()
@@ -94,7 +91,7 @@ pub fn val<'tcx>(_: &Why3Generator<'tcx>, sig: Signature) -> Decl {
     postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
 
     let body = Expr::Defn(
-        body.boxed(),
+        Box::new(body),
         false,
         Box::new([Defn {
             name: "return".into(),
@@ -170,7 +167,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             contract: Contract::default(),
         }
     };
-    let mut body = Expr::Defn(Expr::Symbol("bb0".into()).boxed(), true, blocks);
+    let mut body = Expr::Defn(Box::new(Expr::Symbol("bb0".into())), true, blocks);
 
     let mut postcond = Expr::Symbol("return".into()).app([Arg::Term(Exp::var("result"))]);
 
@@ -200,7 +197,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     body = body.let_(vars);
 
     body = Expr::Defn(
-        body.boxed(),
+        Box::new(body),
         false,
         Box::new([Defn {
             name: "return".into(),
@@ -254,9 +251,9 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
         block.body = block.body.black_box();
     }
 
-    let inner = Expr::Defn(block.body.boxed(), true, defns);
+    let inner = Expr::Defn(Box::new(block.body), true, defns);
     block.body = Expr::Defn(
-        Expr::Symbol(block.name.clone().into()).boxed(),
+        Box::new(Expr::Symbol(block.name.clone().into())),
         true,
         Box::new([Defn::simple(block.name.clone(), inner)]),
     );
@@ -732,7 +729,7 @@ impl<'tcx> Branches<'tcx> {
                     }),
                 );
                 let brs = brs.chain([Defn::simple("default", mk_goto(def).black_box())]);
-                Expr::Defn(Expr::Any.boxed(), false, brs.collect())
+                Expr::Defn(Box::new(Expr::Any), false, brs.collect())
             }
             Branches::Uint(brs, def) => {
                 let uty = match discr_ty.kind() {
@@ -751,11 +748,11 @@ impl<'tcx> Branches<'tcx> {
                 )
                 .chain([Defn::simple("default", mk_goto(def).black_box())])
                 .collect();
-                Expr::Defn(Expr::Any.boxed(), false, brs)
+                Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Constructor(adt, substs, vars, def) => {
                 let brs = mk_adt_switch(ctx, names, adt, substs, discr, vars, def);
-                Expr::Defn(Expr::Any.boxed(), false, brs)
+                Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Bool(f, t) => {
                 let brs = mk_switch_branches(discr, vec![
@@ -763,7 +760,7 @@ impl<'tcx> Branches<'tcx> {
                     (Exp::mk_true(), mk_goto(t)),
                 ]);
 
-                Expr::Defn(Expr::Any.boxed(), false, brs.collect())
+                Expr::Defn(Box::new(Expr::Any), false, brs.collect())
             }
         }
     }
@@ -883,11 +880,11 @@ where
     istmts.rfold(exp, |tail, stmt| match stmt {
         IntermediateStmt::Assign(id, exp) => tail.assign(id, exp),
         IntermediateStmt::Call(params, fun, args) => Expr::Symbol(fun)
-            .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, tail.boxed()))])),
+            .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, Box::new(tail)))])),
         IntermediateStmt::Assume(e) => Expr::assume(e, tail),
         IntermediateStmt::Assert(e) => Expr::assert(e, tail),
         IntermediateStmt::Any(id, ty) => Expr::Defn(
-            Expr::Any.boxed(),
+            Box::new(Expr::Any),
             false,
             Box::new([Defn {
                 name: "any_".into(),

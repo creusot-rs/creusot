@@ -588,7 +588,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     }
 
     fn uniq_occ(&self, id: &Ident) -> Ident {
-        let occ = self.subst.borrow().occ(id);
+        let occ = self.subst.borrow().nb_occurences(id);
         if occ == 0 { id.clone() } else { Ident::from_string(format!("{}_{occ}", &**id)) }
     }
 

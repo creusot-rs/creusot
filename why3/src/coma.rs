@@ -23,7 +23,6 @@ pub type Term = crate::Exp;
 /// 1. Higher order functional language that always generates first-order VCs
 /// 2. User level control on transparency of functions
 /// 3. CPS structure
-
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Expr {
@@ -53,12 +52,14 @@ pub enum Expr {
     /// This operator distinguishes the responsibility between the caller and callee for
     /// verification. Everything under an abstraction is opaque to the outside world, whereas from the inside,
     /// we can suppose than any surrounding assertions hold.
+    ///
+    // TODO: Write a more intuitive explanation
     //
-    /// TODO: Write a more intuitive explanaitio
-    //
-    /// ! e
+    /// `! e`
     BlackBox(Box<Expr>),
     /// Good question...
+    ///
+    /// This operator exists in Coma's surface syntax, but it is (almost?) never needed for the user (us).
     WhiteBox(Box<Expr>),
     /// A non-deterministic value
     Any,
@@ -89,7 +90,7 @@ pub enum Param {
 
 impl Param {
     pub fn as_term(&self) -> (&Ident, &Type) {
-        if let Param::Term(id, ty) = self { (&id, &ty) } else { unreachable!() }
+        if let Param::Term(id, ty) = self { (id, ty) } else { unreachable!() }
     }
 }
 
@@ -135,10 +136,6 @@ impl Defn {
 }
 
 impl Expr {
-    pub fn boxed(self) -> Box<Self> {
-        Box::new(self)
-    }
-
     pub fn app(self, args: impl IntoIterator<Item = Arg>) -> Self {
         args.into_iter().fold(self, |acc, a| Expr::App(Box::new(acc), Box::new(a)))
     }
@@ -204,7 +201,7 @@ impl Expr {
             Expr::Lambda(params, body) => {
                 let in_params = params
                     .iter()
-                    .filter_map(|p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None })
+                    .filter_map(|p| if let Param::Cont(n, _, _) = p { Some(n) } else { None })
                     .any(|n| n == cont);
                 !in_params && body.occurs_cont(cont)
             }
@@ -215,7 +212,7 @@ impl Expr {
                             .params
                             .iter()
                             .filter_map(
-                                |p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None },
+                                |p| if let Param::Cont(n, _, _) = p { Some(n) } else { None },
                             )
                             .any(|n| n == cont);
                         !in_params && d.body.occurs_cont(cont)
