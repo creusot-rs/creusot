@@ -138,21 +138,6 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         .collect();
     let ret = body.locals.first().map(|(_, decl)| decl.clone());
 
-    let vars: Box<[_]> = body
-        .locals
-        .into_iter()
-        .map(|(id, decl)| {
-            let ty = translate_ty(ctx, names, decl.span, decl.ty);
-            let id = id.0;
-            let init = if decl.arg {
-                Exp::var(id)
-            } else {
-                Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])
-            };
-            Var(id, ty.clone(), init, IsRef::Ref)
-        })
-        .collect();
-
     let mut sig = if body_id.promoted.is_none() {
         let def_id = body_id.def_id();
         let typing_env = ctx.typing_env(def_id);
@@ -170,6 +155,31 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             contract: Contract::default(),
         }
     };
+    let mut params = sig.args.iter().cloned().flat_map(|b| b.var_type_pairs());
+    let vars: Box<[_]> = body
+        .locals
+        .into_iter()
+        .map(|(id, decl)| {
+            let ty = translate_ty(ctx, names, decl.span, decl.ty);
+            let id = id.0;
+            let init = if decl.arg {
+                match params.next() {
+                    Some((p, _)) => Exp::var(p),
+                    None => panic!("not enough parameters for function"),
+                }
+            } else {
+                Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])
+            };
+            Var(id, ty.clone(), init, IsRef::Ref)
+        })
+        .collect();
+    match params.next() {
+        Some(p) => {
+            panic!("parameter with no place: {p:?} {name:?}");
+        }
+        None => {}
+    }
+
     let bb0 = Ident::bound("bb0");
     let result_ident = Ident::bound("result");
     let ret_ident = Ident::bound("ret");
