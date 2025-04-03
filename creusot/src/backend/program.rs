@@ -58,7 +58,7 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     let mut decls = names.provide_deps(ctx);
     decls.push(Decl::Meta(Meta {
         name: MetaIdent::String("compute_max_steps".into()),
-        args: Box::new([MetaArg::Integer(1_000_000)]),
+        args: [MetaArg::Integer(1_000_000)].into(),
     }));
     decls.push(body);
 
@@ -77,8 +77,8 @@ pub fn val(sig: Signature) -> Decl {
         .map(|(v, ty)| Param::Term(v, ty))
         .chain([Param::Cont(
             "return".into(),
-            Box::new([]),
-            Box::new([Param::Term("ret".into(), sig.retty.clone().unwrap())]),
+            [].into(),
+            [Param::Term("ret".into(), sig.retty.clone().unwrap())].into(),
         )])
         .collect();
 
@@ -91,14 +91,15 @@ pub fn val(sig: Signature) -> Decl {
     postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
 
     let body = Expr::Defn(
-        Box::new(body),
+        body.boxed(),
         false,
-        Box::new([Defn {
+        [Defn {
             name: "return".into(),
             attrs: vec![],
-            params: Box::new([Param::Term("result".into(), sig.retty.clone().unwrap())]),
+            params: [Param::Term("result".into(), sig.retty.clone().unwrap())].into(),
             body: postcond,
-        }]),
+        }]
+        .into(),
     );
     Decl::Coma(Defn { name: sig.name, attrs: vec![], params, body })
 }
@@ -163,11 +164,11 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             trigger: None,
             attrs: vec![],
             retty: Some(translate_ty(ctx, names, ret.span, ret.ty)),
-            args: Box::new([]),
+            args: [].into(),
             contract: Contract::default(),
         }
     };
-    let mut body = Expr::Defn(Box::new(Expr::Symbol("bb0".into())), true, blocks);
+    let mut body = Expr::Defn(Expr::Symbol("bb0".into()).boxed(), true, blocks);
 
     let mut postcond = Expr::Symbol("return".into()).app([Arg::Term(Exp::var("result"))]);
 
@@ -197,14 +198,15 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     body = body.let_(vars);
 
     body = Expr::Defn(
-        Box::new(body),
+        body.boxed(),
         false,
-        Box::new([Defn {
+        [Defn {
             name: "return".into(),
             attrs: vec![],
-            params: Box::new([Param::Term("result".into(), sig.retty.clone().unwrap())]),
+            params: [Param::Term("result".into(), sig.retty.clone().unwrap())].into(),
             body: postcond,
-        }]),
+        }]
+        .into(),
     );
 
     let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
@@ -218,8 +220,8 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         .map(|(v, ty)| Param::Term(v, ty))
         .chain([Param::Cont(
             "return".into(),
-            Box::new([]),
-            Box::new([Param::Term("ret".into(), sig.retty.unwrap())]),
+            [].into(),
+            [Param::Term("ret".into(), sig.retty.unwrap())].into(),
         )])
         .collect();
     Defn { name: sig.name, attrs: sig.attrs, params, body }
@@ -251,11 +253,11 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
         block.body = block.body.black_box();
     }
 
-    let inner = Expr::Defn(Box::new(block.body), true, defns);
+    let inner = Expr::Defn(block.body.boxed(), true, defns);
     block.body = Expr::Defn(
-        Box::new(Expr::Symbol(block.name.clone().into())),
+        Expr::Symbol(block.name.clone().into()).boxed(),
         true,
-        Box::new([Defn::simple(block.name.clone(), inner)]),
+        [Defn::simple(block.name.clone(), inner)].into(),
     );
     block
 }
@@ -562,7 +564,7 @@ impl<'tcx> RValue<'tcx> {
                     Arg::Ty(lower.ty(e.ty(lower.ctx.tcx, lower.locals))),
                     Arg::Term(len.to_why(lower, istmts)),
                     Arg::Term(Exp::Lam(
-                        Box::new([Binder::wild(int_ty(lower.ctx, lower.names))]),
+                        [Binder::wild(int_ty(lower.ctx, lower.names))].into(),
                         e.to_why(lower, istmts).boxed(),
                     )),
                 ];
@@ -729,7 +731,7 @@ impl<'tcx> Branches<'tcx> {
                     }),
                 );
                 let brs = brs.chain([Defn::simple("default", mk_goto(def).black_box())]);
-                Expr::Defn(Box::new(Expr::Any), false, brs.collect())
+                Expr::Defn(Expr::Any.boxed(), false, brs.collect())
             }
             Branches::Uint(brs, def) => {
                 let uty = match discr_ty.kind() {
@@ -748,11 +750,11 @@ impl<'tcx> Branches<'tcx> {
                 )
                 .chain([Defn::simple("default", mk_goto(def).black_box())])
                 .collect();
-                Expr::Defn(Box::new(Expr::Any), false, brs)
+                Expr::Defn(Expr::Any.boxed(), false, brs)
             }
             Branches::Constructor(adt, substs, vars, def) => {
                 let brs = mk_adt_switch(ctx, names, adt, substs, discr, vars, def);
-                Expr::Defn(Box::new(Expr::Any), false, brs)
+                Expr::Defn(Expr::Any.boxed(), false, brs)
             }
             Branches::Bool(f, t) => {
                 let brs = mk_switch_branches(discr, vec![
@@ -760,7 +762,7 @@ impl<'tcx> Branches<'tcx> {
                     (Exp::mk_true(), mk_goto(t)),
                 ]);
 
-                Expr::Defn(Box::new(Expr::Any), false, brs.collect())
+                Expr::Defn(Expr::Any.boxed(), false, brs.collect())
             }
         }
     }
@@ -880,18 +882,19 @@ where
     istmts.rfold(exp, |tail, stmt| match stmt {
         IntermediateStmt::Assign(id, exp) => tail.assign(id, exp),
         IntermediateStmt::Call(params, fun, args) => Expr::Symbol(fun)
-            .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, Box::new(tail)))])),
+            .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, tail.boxed()))])),
         IntermediateStmt::Assume(e) => Expr::assume(e, tail),
         IntermediateStmt::Assert(e) => Expr::assert(e, tail),
         IntermediateStmt::Any(id, ty) => Expr::Defn(
-            Box::new(Expr::Any),
+            Expr::Any.boxed(),
             false,
-            Box::new([Defn {
+            [Defn {
                 name: "any_".into(),
                 attrs: vec![],
-                params: Box::new([Param::Term(id, ty)]),
+                params: [Param::Term(id, ty)].into(),
                 body: tail.black_box(),
-            }]),
+            }]
+            .into(),
         ),
     })
 }
@@ -946,7 +949,7 @@ pub(crate) enum IntermediateStmt {
 
 impl IntermediateStmt {
     fn call(id: Ident, ty: Type, f: QName, args: impl IntoIterator<Item = Arg>) -> Self {
-        IntermediateStmt::Call(Box::new([Param::Term(id, ty)]), f, args.into_iter().collect())
+        IntermediateStmt::Call([Param::Term(id, ty)].into(), f, args.into_iter().collect())
     }
 }
 
