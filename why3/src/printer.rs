@@ -718,7 +718,6 @@ impl Print for Exp {
                 doc
             }
             Exp::Var(v) => v.pretty_value_name(alloc, scope),
-            Exp::QVar(v) => v.pretty(alloc, scope),
             Exp::RecField { record, label } => {
                 parens!(alloc, scope, self.precedence().next(), record)
                     .append(".")

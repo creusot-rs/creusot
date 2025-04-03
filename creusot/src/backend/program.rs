@@ -35,7 +35,7 @@ use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};
 use std::{fmt::Debug, iter::once};
 use why3::{
-    Ident, Name, QName,
+    Ident, Name,
     coma::{Arg, Defn, Expr, IsRef, Param, Term, Var},
     declaration::{
         Attribute, Condition, Contract, Decl, Meta, MetaArg, MetaIdent, Module, Signature,
@@ -87,7 +87,7 @@ pub fn val(sig: Signature) -> Decl {
     let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
     let body = requires.rfold(Expr::Any, |acc, cond| Expr::assert(cond, acc));
 
-    let mut postcond = Expr::var(return_ident).app([Arg::Term(Exp::Var(result_ident))]);
+    let mut postcond = Expr::var(return_ident).app([Arg::Term(Exp::var(result_ident))]);
     postcond = postcond.black_box();
     let ensures = sig.contract.ensures.into_iter().map(Condition::unlabelled_exp);
     postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
@@ -145,7 +145,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
             let id = id.0;
             let init = if decl.arg {
-                Exp::Var(id)
+                Exp::var(id)
             } else {
                 Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])
             };
@@ -176,7 +176,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     let return_ident = Ident::bound("return");
     let mut body = Expr::Defn(Expr::var(bb0).boxed(), true, blocks);
 
-    let mut postcond = Expr::var(return_ident).app([Arg::Term(Exp::Var(result_ident))]);
+    let mut postcond = Expr::var(return_ident).app([Arg::Term(Exp::var(result_ident))]);
 
     let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
         && !ctx.sig(body_id.def_id()).contract.has_user_contract;
@@ -301,7 +301,7 @@ impl<'tcx> Operand<'tcx> {
                     Name::Local(lower.names.promoted(lower.def_id, pid)),
                     [],
                 ));
-                Exp::Var(var)
+                Exp::var(var)
             }
         }
     }
@@ -398,7 +398,7 @@ impl<'tcx> RValue<'tcx> {
                         Name::Global(fname),
                         args.map(Arg::Term),
                     ));
-                    Exp::Var(ret_ident)
+                    Exp::var(ret_ident)
                 }
             }
             RValue::UnaryOp(UnOp::Not, arg) => {
@@ -431,7 +431,7 @@ impl<'tcx> RValue<'tcx> {
                 istmts.push(IntermediateStmt::call(ret_ident, lower.ty(ty), Name::Global(neg), [
                     arg,
                 ]));
-                Exp::Var(ret_ident)
+                Exp::var(ret_ident)
             }
             RValue::Constructor(id, subst, args) => {
                 if lower.ctx.def_kind(id) == DefKind::Closure {
@@ -521,7 +521,7 @@ impl<'tcx> RValue<'tcx> {
                             Name::Global(of_fname),
                             [Arg::Term(to_exp)],
                         ));
-                        Exp::Var(of_ret_id)
+                        Exp::var(of_ret_id)
                     }
                 }
             }
@@ -533,7 +533,7 @@ impl<'tcx> RValue<'tcx> {
 
                 let len = fields.len();
 
-                let arr_var = Exp::Var(id);
+                let arr_var = Exp::var(id);
                 let arr_elts =
                     Exp::RecField { record: arr_var.clone().boxed(), label: Ident::bound("elts") };
 
@@ -554,7 +554,7 @@ impl<'tcx> RValue<'tcx> {
                 assumptions.reassociate();
 
                 istmts.push(IntermediateStmt::Assume(assumptions));
-                Exp::Var(id)
+                Exp::var(id)
             }
             RValue::Repeat(e, len) => {
                 let args = [
@@ -573,7 +573,7 @@ impl<'tcx> RValue<'tcx> {
                     args,
                 ));
 
-                Exp::Var(res_ident)
+                Exp::var(res_ident)
             }
             RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t),
             RValue::Borrow(_, _, _) => unreachable!(), // Handled in Statement::to_why
@@ -612,7 +612,7 @@ impl<'tcx> RValue<'tcx> {
                     istmts.push(IntermediateStmt::Assume(lhs.eq(rhs)));
                 }
 
-                Exp::Var(ptr_ident)
+                Exp::var(ptr_ident)
             }
         }
     }
@@ -687,7 +687,7 @@ impl<'tcx> Terminator<'tcx> {
             }
             Terminator::Return => (
                 istmts,
-                Expr::var(Ident::bound("return")).app([Arg::Term(Exp::Var(Ident::bound("_0")))]),
+                Expr::var(Ident::bound("return")).app([Arg::Term(Exp::var(Ident::bound("_0")))]),
             ),
             Terminator::Abort(span) => {
                 let mut exp = Exp::mk_false();
@@ -807,13 +807,13 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
                             id,
                             translate_ty(ctx, names, DUMMY_SP, field.ty(ctx.tcx, subst)),
                         ),
-                        Exp::Var(id),
+                        Exp::var(id),
                     )
                 })
                 .unzip();
 
             let cons = names.constructor(var.def_id, subst);
-            let body = Exp::Var(cons).app(ids);
+            let body = Exp::var(cons).app(ids);
             let body = Expr::assert(discr.clone().eq(body), mk_goto(tgt).black_box());
             let name = Ident::bound(format!("br{}", ix.as_usize()));
 
@@ -969,7 +969,7 @@ impl<'tcx> Statement<'tcx> {
                 let rhs_local_ty = PlaceTy::from_ty(lower.locals[&rhs.local].ty);
 
                 let rhs_inv_fun = if matches!(triv_inv, TrivialInv::NonTrivial) {
-                    Some(Exp::Var(lower.names.ty_inv(rhs_ty)))
+                    Some(Exp::var(lower.names.ty_inv(rhs_ty)))
                 } else {
                     None
                 };
@@ -989,7 +989,7 @@ impl<'tcx> Statement<'tcx> {
                             lower,
                             &mut istmts,
                             rhs_local_ty,
-                            Focus::new(|_| Exp::Var(rhs.local.0)),
+                            Focus::new(|_| Exp::var(rhs.local.0)),
                             Box::new(|_, x| x),
                             &rhs.projections[..deref_index],
                         );
@@ -1014,7 +1014,7 @@ impl<'tcx> Statement<'tcx> {
                                     .names
                                     .in_pre(uty_to_prelude(lower.ctx.tcx, UintTy::Usize), "t'int"),
                             )
-                            .app([Exp::Var(sym.0)])
+                            .app([Exp::var(sym.0)])
                         },
                     );
 
@@ -1024,7 +1024,7 @@ impl<'tcx> Statement<'tcx> {
                         lower,
                         &mut istmts,
                         rhs_local_ty,
-                        Focus::new(|_| Exp::Var(rhs.local.0)),
+                        Focus::new(|_| Exp::var(rhs.local.0)),
                         Box::new(|_, x| x),
                         &rhs.projections,
                     );
@@ -1045,9 +1045,9 @@ impl<'tcx> Statement<'tcx> {
                 let borrow_call =
                     IntermediateStmt::call(ret_ident, lhs_ty_low, Name::Global(func), args);
                 istmts.push(borrow_call);
-                lower.assignment(&lhs, Exp::Var(ret_ident), &mut istmts);
+                lower.assignment(&lhs, Exp::var(ret_ident), &mut istmts);
 
-                let reassign = Exp::Var(ret_ident).field(Ident::bound("final"));
+                let reassign = Exp::var(ret_ident).field(Ident::bound("final"));
 
                 if let Some(rhs_inv_fun) = rhs_inv_fun {
                     istmts.push(IntermediateStmt::Assume(rhs_inv_fun.app([reassign.clone()])));
@@ -1065,20 +1065,20 @@ impl<'tcx> Statement<'tcx> {
                 let ty = dest.ty(lower.ctx.tcx, lower.locals);
                 let ty = lower.ty(ty);
                 let ret_ident = Ident::fresh("_ret");
-                istmts.push(IntermediateStmt::call(ret_ident, ty, Name::Global(fun_qname), args));
-                lower.assignment(&dest, Exp::Var(ret_ident), &mut istmts);
+                istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, args));
+                lower.assignment(&dest, Exp::var(ret_ident), &mut istmts);
             }
             Statement::Resolve { did, subst, pl } => {
-                let rp = Exp::qvar(lower.names.item(did, subst));
+                let rp = Exp::Var(lower.names.item(did, subst));
                 let loc = pl.local;
                 let bound = PIdent::bound("x"); // TODO freshen
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let WPattern::VarP(_) = pat {
-                    rp.app([Exp::Var(loc.0)])
+                    rp.app([Exp::var(loc.0)])
                 } else {
-                    Exp::Var(loc.0).match_([
-                        (pat, rp.app([Exp::Var(bound.0)])),
+                    Exp::var(loc.0).match_([
+                        (pat, rp.app([Exp::var(bound.0)])),
                         (WPattern::Wildcard, Exp::mk_true()),
                     ])
                 };
@@ -1094,16 +1094,16 @@ impl<'tcx> Statement<'tcx> {
                 }
             }
             Statement::AssertTyInv { pl } => {
-                let inv_fun = Exp::Var(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
+                let inv_fun = Exp::var(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
                 let loc = pl.local;
                 let bound = PIdent::bound("x"); // TODO freshen
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let WPattern::VarP(_) = pat {
-                    inv_fun.app([Exp::Var(loc.0)])
+                    inv_fun.app([Exp::var(loc.0)])
                 } else {
-                    Exp::Var(loc.0).match_([
-                        (pat, inv_fun.app([Exp::Var(bound.0)])),
+                    Exp::var(loc.0).match_([
+                        (pat, inv_fun.app([Exp::var(bound.0)])),
                         (WPattern::Wildcard, Exp::mk_true()),
                     ])
                 };
@@ -1178,7 +1178,7 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
     subst: GenericArgsRef<'tcx>,
     args: Box<[Operand<'tcx>]>,
     istmts: &mut Vec<IntermediateStmt>,
-) -> (QName, Box<[Arg]>) {
+) -> (Name, Box<[Arg]>) {
     // TODO: Perform this simplification earlier
     // Eliminate "rust-call" ABI
     let args: Box<[_]> = if lower.ctx.is_closure_like(id) {

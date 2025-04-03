@@ -124,7 +124,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let clone = self.names.item(*id, subst);
                 let item = match self.ctx.type_of(id).instantiate_identity().kind() {
                     TyKind::FnDef(_, _) => Exp::unit(),
-                    _ => Exp::qvar(clone),
+                    _ => Exp::Var(clone),
                 };
 
                 if matches!(self.ctx.def_kind(*id), DefKind::AssocConst) {
@@ -134,7 +134,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::Var(v.0),
+            TermKind::Var(v) => Exp::var(v.0),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -182,7 +182,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 };
                 Exp::UnaryOp(op, self.lower_term(arg).boxed())
             }
-            TermKind::Call { id, subst, args, .. } => Exp::qvar(self.names.item(*id, *subst))
+            TermKind::Call { id, subst, args, .. } => Exp::Var(self.names.item(*id, *subst))
                 .app(args.into_iter().map(|arg| self.lower_term(arg))),
             TermKind::Quant { kind, binder, box body, trigger } => {
                 let bound = binder.iter().map(|(s, t)| (s.0, self.lower_ty(*t)));
@@ -291,15 +291,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Assert { .. } => Exp::unit(), // Discard cond, use unit
             TermKind::Precondition { item, args, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
-                let mut sym = self.names.item(*item, args);
+                let mut sym: Ident = self.names.item(*item, args).to_ident();
                 sym.name = format!("{}'pre", sym.name.as_str()).into();
-                Exp::qvar(sym).app(params)
+                Exp::var(sym).app(params)
             }
             TermKind::Postcondition { item, args, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
-                let mut sym = self.names.item(*item, args);
+                let mut sym: Ident = self.names.item(*item, args).to_ident();
                 sym.name = format!("{}'post'return'", sym.name.as_str()).into();
-                Exp::qvar(sym).app(params)
+                Exp::var(sym).app(params)
             }
         }
     }

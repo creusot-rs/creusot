@@ -27,8 +27,7 @@ use rustc_middle::{
 use rustc_span::Span;
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
-    Ident, QName,
-    declaration::{Attribute, Decl, Span as WSpan, TyDecl},
+    declaration::{Attribute, Decl, Span as WSpan, TyDecl}, Ident, Name, QName
 };
 
 mod elaborator;
@@ -58,9 +57,9 @@ pub enum PreMod {
 }
 
 pub(crate) trait Namer<'tcx> {
-    fn item(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+    fn item(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
         let node = Dependency::Item(def_id, subst);
-        self.dependency(node).qname()
+        self.dependency(node).name()
     }
 
     fn item_ident(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
@@ -68,7 +67,7 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(node).ident()
     }
 
-    fn def_ty(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+    fn def_ty(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
         let ty = match self.tcx().def_kind(def_id) {
             DefKind::Enum | DefKind::Struct | DefKind::Union => {
                 Ty::new_adt(self.tcx(), self.tcx().adt_def(def_id), subst)
@@ -81,14 +80,9 @@ pub(crate) trait Namer<'tcx> {
         self.ty(ty)
     }
 
-    fn ty(&self, ty: Ty<'tcx>) -> Ident {
+    fn ty(&self, ty: Ty<'tcx>) -> Name {
         assert!(!ty.has_escaping_bound_vars());
-        self.dependency(Dependency::Type(ty)).ident()
-    }
-
-    fn ty_qname(&self, ty: Ty<'tcx>) -> QName {
-        assert!(!ty.has_escaping_bound_vars());
-        self.dependency(Dependency::Type(ty)).qname()
+        self.dependency(Dependency::Type(ty)).name()
     }
 
     fn constructor(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
@@ -333,11 +327,11 @@ impl Kind {
         }
     }
 
-    fn qname(&self) -> QName {
+    fn name(&self) -> Name {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
-            Kind::Named(nm) => nm.as_str().into(),
-            Kind::UsedBuiltin(qname) => qname.clone().without_search_path(),
+            Kind::Named(nm) => Name::Local(*nm),
+            Kind::UsedBuiltin(qname) => Name::Global(qname.clone().without_search_path()),
         }
     }
 }

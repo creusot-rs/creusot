@@ -37,11 +37,11 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Adt(def, s) if is_snap_ty(ctx.tcx, def.did()) => {
             // Make sure we create a cycle of dependency if we create a type which is recursive through Snapshot
             // See test should_fail/bug/436_2.rs, and #436
-            names.ty_qname(ty);
+            names.ty(ty);
             translate_ty(ctx, names, span, s[0].expect_ty())
         }
         Adt(def, s) if get_builtin(ctx.tcx, def.did()).is_some() => {
-            let cons = MlT::qconstructor(names.ty_qname(ty));
+            let cons = MlT::TConstructor(names.ty(ty));
             cons.tapp(s.types().map(|t| translate_ty(ctx, names, span, t)))
         }
         Adt(def, _) if def.is_struct() && def.variant(VariantIdx::ZERO).fields.is_empty() => {
@@ -77,7 +77,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         | Tuple(_)
         | Param(_)
         | Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
-            MlT::TConstructor(Name::Local(names.ty(ty)))
+            MlT::TConstructor(names.ty(ty))
         }
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
@@ -89,7 +89,7 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Vec<Decl> {
-    let ty_name = names.def_ty(did, subst);
+    let ty_name = names.def_ty(did, subst).to_ident();
     let closure_subst = subst.as_closure();
     let fields: Box<[_]> = closure_subst
         .upvar_tys()
@@ -132,7 +132,7 @@ pub(crate) fn translate_tuple_ty<'tcx, N: Namer<'tcx>>(
 
     vec![Decl::TyDecl(TyDecl::Adt {
         tys: Box::new([AdtDecl {
-            ty_name: names.ty(ty),
+            ty_name: names.ty(ty).to_ident(),
             ty_params: Box::new([]),
             sumrecord: SumRecord::Record(fields),
         }]),
@@ -152,12 +152,12 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
 ) -> Vec<Decl> {
     // Trusted types (opaque)
     if is_trusted(ctx.tcx, did) {
-        let ty_name = names.def_ty(did, subst);
+        let ty_name = names.def_ty(did, subst).to_ident();
         return vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })];
     }
 
     let adt = ctx.tcx.adt_def(did);
-    let ty_name = names.def_ty(did, subst);
+    let ty_name = names.def_ty(did, subst).to_ident();
 
     let sumrecord = if adt.is_enum() {
         SumRecord::Sum(
@@ -229,20 +229,20 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         fields.iter().cloned().map(|(nm, ty)| Param::Term(nm, ty)).collect();
 
     let constr = names.constructor(variant_id, subst);
-    let cons_test = Exp::Var(constr).app(fields.iter().map(|(nm, _)| Exp::Var(nm.clone())));
+    let cons_test = Exp::var(constr).app(fields.iter().map(|(nm, _)| Exp::var(*nm)));
 
     let ret_ident = Ident::bound("ret");
     let good_ident = Ident::bound("good");
     let bad_ident = Ident::bound("bad");
     let input_ident = Ident::bound("input");
     let ret =
-        Expr::var(ret_ident).app(fields.iter().map(|(nm, _)| Arg::Term(Exp::Var(nm.clone()))));
+        Expr::var(ret_ident).app(fields.iter().map(|(nm, _)| Arg::Term(Exp::var(*nm))));
 
     let good_branch: Defn = Defn {
         name: good_ident,
         attrs: vec![],
         params: field_args.clone(),
-        body: Expr::assert(cons_test.clone().eq(Exp::Var(input_ident)), ret.black_box()),
+        body: Expr::assert(cons_test.clone().eq(Exp::var(input_ident)), ret.black_box()),
     };
 
     let ty = translate_ty(ctx, names, DUMMY_SP, Ty::new_adt(ctx.tcx, adt, subst));
@@ -253,7 +253,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         let negative_assertion = Exp::forall_trig(
             fields.clone(),
             [Trigger::single(cons_test.clone().ascribe(ty.clone()))],
-            cons_test.neq(Exp::Var(input_ident)),
+            cons_test.neq(Exp::var(input_ident)),
         );
         Some(Defn::simple(bad_ident, Expr::assert(negative_assertion, fail)))
     } else {

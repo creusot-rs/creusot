@@ -227,6 +227,22 @@ pub enum Name {
     Global(QName),
 }
 
+impl Name {
+    pub fn to_qname(self) -> QName {
+        match self {
+            Name::Local(_) => panic!("Cannot convert local name to QName"),
+            Name::Global(q) => q,
+        }
+    }
+
+    pub fn to_ident(self) -> Ident {
+        match self {
+            Name::Local(i) => i,
+            Name::Global(_) => panic!("Cannot convert global name to Ident"),
+        }
+    }
+}
+
 /// The why3 keywords
 const RESERVED: &[&str] = &[
     "abstract",

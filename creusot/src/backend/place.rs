@@ -105,13 +105,13 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         args,
                     ));
 
-                    let foc = Exp::Var(fields[ix.as_usize()].as_term().0.clone());
+                    let foc = Exp::var(fields[ix.as_usize()].as_term().0);
                     focus = Focus::new(|_| foc);
 
                     constructor = Box::new(move |is, t| {
-                        let constr = Exp::Var(lower.names.constructor(variant.def_id, subst));
+                        let constr = Exp::var(lower.names.constructor(variant.def_id, subst));
                         let mut fields: Box<[_]> =
-                            fields.into_iter().map(|f| Exp::Var(f.as_term().0.clone())).collect();
+                            fields.into_iter().map(|f| Exp::var(f.as_term().0)).collect();
                         fields[ix.as_usize()] = t;
                         constructor(is, constr.app(fields))
                     });
@@ -173,7 +173,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                 let elt_ty = lower.ty(elt_ty.ty);
                 let ty = lower.ty(place_ty.ty);
                 // TODO: Use [_] syntax
-                let ix_exp = Exp::Var(ix.0);
+                let ix_exp = Exp::var(ix.0);
 
                 let focus1 = focus.clone();
                 let elt_ty1 = elt_ty.clone();
@@ -186,7 +186,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         Name::Global(lower.names.in_pre(PreMod::Slice, "get")),
                         Box::new([Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(ix_exp1)]),
                     ));
-                    Exp::Var(result)
+                    Exp::var(result)
                 });
 
                 constructor = Box::new(move |is, t| {
@@ -204,7 +204,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                             Arg::Term(rhs),
                         ]),
                     ));
-                    constructor(is, Exp::Var(out))
+                    constructor(is, Exp::var(out))
                 });
             }
             Downcast(_, _) => {}
@@ -230,7 +230,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::Var(pl.local.0)),
+        Focus::new(|_| Exp::var(pl.local.0)),
         Box::new(|_, _| unreachable!()),
         &pl.projections,
     );
@@ -248,7 +248,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::Var(pl.local.0)),
+        Focus::new(|_| Exp::var(pl.local.0)),
         Box::new(|_, x| x),
         &pl.projections,
     );

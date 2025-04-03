@@ -63,7 +63,7 @@ pub(super) fn wp<'tcx>(
     post: Exp,
 ) -> Result<Exp, VCError<'tcx>> {
     let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
-    let bounds = args_names.iter().map(|arg| (arg.clone(), Exp::Var(arg.clone()))).collect();
+    let bounds = args_names.iter().map(|&arg| (arg, Exp::var(arg))).collect();
     let vcgen = VCGen {
         typing_env: ctx.typing_env(self_id),
         ctx,
@@ -231,7 +231,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => {
-                let exp = self.subst.borrow().get(&v.0).unwrap_or(Exp::Var(v.0));
+                let exp = self.subst.borrow().get(&v.0).unwrap_or(Exp::var(v.0));
                 k(exp)
             }
             // VC(l, Q) = Q(l)
@@ -294,9 +294,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
                 if get_builtin(self.ctx.tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
-                    k(Exp::qvar(item_name).ascribe(self.ty(t.ty)))
+                    k(Exp::Var(item_name).ascribe(self.ty(t.ty)))
                 } else {
-                    k(Exp::qvar(item_name))
+                    k(Exp::Var(item_name))
                 }
             }
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
@@ -338,7 +338,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
                 sig.contract.subst(&arg_subst);
 
-                let fun = Exp::qvar(self.names.item(*id, subst));
+                let fun = Exp::Var(self.names.item(*id, subst));
                 let call = fun.app(args);
                 sig.contract.subst(&[(Ident::bound("result"), call.clone())].into_iter().collect());
 
@@ -362,10 +362,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_wp(rhs, k)?))
                 }),
                 BinOp::Div => self.build_wp(lhs, &|lhs| {
-                    self.build_wp(rhs, &|rhs| k(Exp::QVar("div".into()).app([lhs.clone(), rhs])))
+                    self.build_wp(rhs, &|rhs| k(Exp::qvar("div".into()).app([lhs.clone(), rhs])))
                 }),
                 BinOp::Rem => self.build_wp(lhs, &|lhs| {
-                    self.build_wp(rhs, &|rhs| k(Exp::QVar("mod".into()).app([lhs.clone(), rhs])))
+                    self.build_wp(rhs, &|rhs| k(Exp::qvar("mod".into()).app([lhs.clone(), rhs])))
                 }),
                 _ => self.build_wp(lhs, &|lhs| {
                     self.build_wp(rhs, &|rhs| {
@@ -544,7 +544,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             PatternKind::Wildcard => WPattern::Wildcard,
             PatternKind::Binder(PIdent(name)) => {
                 let new = name.refresh();
-                bounds.insert(*name, Exp::Var(new.clone()));
+                bounds.insert(*name, Exp::var(new));
                 WPattern::VarP(new)
             }
             PatternKind::Bool(true) => WPattern::mk_true(),

@@ -111,8 +111,7 @@ impl Trigger {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
-    Var(Ident),
-    QVar(QName),
+    Var(Name),
     Record { fields: Box<[(Ident, Exp)]> },
     RecUp { record: Box<Exp>, updates: Box<[(Ident, Exp)]> },
     RecField { record: Box<Exp>, label: Ident },
@@ -152,7 +151,6 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(body)
         }
         Exp::Var(_) => {}
-        Exp::QVar(_) => {}
         Exp::RecUp { record, updates } => {
             f.visit_mut(record);
             updates.iter_mut().for_each(|(_, val)| f.visit_mut(val));
@@ -206,7 +204,7 @@ pub fn super_visit_mut_trigger<T: ExpMutVisitor>(f: &mut T, trigger: &mut Trigge
 impl ExpMutVisitor for &'_ HashMap<Ident, Exp> {
     fn visit_mut(&mut self, exp: &mut Exp) {
         match exp {
-            Exp::Var(v) => {
+            Exp::Var(Name::Local(v)) => {
                 if let Some(e) = self.get(v) {
                     *exp = e.clone()
                 }
@@ -257,11 +255,11 @@ impl ExpMutVisitor for &'_ HashMap<Ident, Exp> {
                 let mut extended = HashMap::new();
                 for exp in subst.values_mut() {
                     for id in &bnds & &exp.fvs() {
-                        extended.insert(id, Exp::Var(id.refresh()));
+                        extended.insert(id, Exp::Var(Name::Local(id.refresh())));
                     }
                 }
                 binders.iter_mut().for_each(|(id, _)| {
-                    if let Some(Exp::Var(id2)) = extended.get(id) {
+                    if let Some(Exp::Var(Name::Local(id2))) = extended.get(id) {
                         *id = *id2;
                     }
                 });
@@ -280,11 +278,11 @@ impl ExpMutVisitor for &'_ HashMap<Ident, Exp> {
                 let mut extended = HashMap::new();
                 for exp in subst.values_mut() {
                     for id in &bnds & &exp.fvs() {
-                        extended.insert(id, Exp::Var(id.refresh()));
+                        extended.insert(id, Exp::Var(Name::Local(id.refresh())));
                     }
                 }
                 binders.iter_mut().for_each(|(id, _)| {
-                    if let Some(Exp::Var(id2)) = extended.get(id) {
+                    if let Some(Exp::Var(Name::Local(id2))) = extended.get(id) {
                         *id = *id2;
                     }
                 });
@@ -316,7 +314,6 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(body)
         }
         Exp::Var(_) => {}
-        Exp::QVar(_) => {}
         Exp::RecUp { record, updates } => {
             f.visit(record);
             updates.iter().for_each(|(_, val)| f.visit(val));
@@ -376,8 +373,12 @@ impl Exp {
         Exp::Tuple(Box::new([]))
     }
 
+    pub fn var(ident: Ident) -> Self {
+        Exp::Var(Name::Local(ident))
+    }
+
     pub fn qvar(q: QName) -> Self {
-        Exp::QVar(q)
+        Exp::Var(Name::Global(q))
     }
 
     pub fn lazy_conj(l: Exp, r: Exp) -> Self {
@@ -726,7 +727,6 @@ impl Exp {
             Exp::Let { .. } => IfLet,
             Exp::Lam(_, _) => Abs,
             Exp::Var(_) => Atom,
-            Exp::QVar(_) => Atom,
             Exp::RecUp { .. } => App,
             Exp::RecField { .. } => Field,
             Exp::Tuple(_) => Atom,
@@ -770,7 +770,7 @@ impl Exp {
         impl ExpVisitor for Occurs {
             fn visit(&mut self, exp: &Exp) {
                 match exp {
-                    Exp::Var(v) => {
+                    Exp::Var(Name::Local(v)) => {
                         *self.occurs.entry(v.clone()).or_insert(0) += 1;
                     }
                     Exp::Let { pattern, arg, body } => {
@@ -824,7 +824,7 @@ impl Exp {
         impl ExpVisitor for QFvs {
             fn visit(&mut self, exp: &Exp) {
                 match exp {
-                    Exp::QVar(v) => {
+                    Exp::Var(Name::Global(v)) => {
                         self.qfvs.insert(v.clone());
                     }
                     _ => super_visit(self, exp),
@@ -897,7 +897,7 @@ impl FromIterator<(Ident, Exp)> for Environment {
 impl ExpMutVisitor for Environment {
     fn visit_mut(&mut self, exp: &mut Exp) {
         match exp {
-            Exp::Var(v) => {
+            Exp::Var(Name::Local(v)) => {
                 if let Some(e) = self.get(v) {
                     *exp = e.clone()
                 }
@@ -907,7 +907,7 @@ impl ExpMutVisitor for Environment {
 
                 for binder in binders {
                     binder.fvs().into_iter().for_each(|id| {
-                        bound_here.insert(id.clone(), Exp::Var(id));
+                        bound_here.insert(id, Exp::var(id));
                     });
                 }
 
@@ -923,7 +923,7 @@ impl ExpMutVisitor for Environment {
 
                 let mut bound_here = HashMap::default();
                 bound.drain(..).for_each(|k| {
-                    bound_here.insert(k.clone(), Exp::Var(k));
+                    bound_here.insert(k, Exp::var(k));
                 });
 
                 self.add_subst(bound_here);
@@ -936,7 +936,7 @@ impl ExpMutVisitor for Environment {
                 for (pat, br) in brs {
                     let mut bound_here = HashMap::default();
                     pat.binders().drain(..).for_each(|k| {
-                        bound_here.insert(k.clone(), Exp::Var(k));
+                        bound_here.insert(k, Exp::var(k));
                     });
 
                     self.add_subst(bound_here);
@@ -947,8 +947,8 @@ impl ExpMutVisitor for Environment {
             Exp::Forall(binders, trig, exp) => {
                 let mut bound_here = HashMap::default();
 
-                binders.iter().for_each(|k| {
-                    bound_here.insert(k.0.clone(), Exp::Var(k.0.clone()));
+                binders.iter().for_each(|&(k, _)| {
+                    bound_here.insert(k, Exp::var(k));
                 });
 
                 self.add_subst(bound_here);
@@ -959,8 +959,8 @@ impl ExpMutVisitor for Environment {
             Exp::Exists(binders, trig, exp) => {
                 let mut bound_here = HashMap::default();
 
-                binders.iter().for_each(|k| {
-                    bound_here.insert(k.0.clone(), Exp::Var(k.0.clone()));
+                binders.iter().for_each(|&(k, _)| {
+                    bound_here.insert(k, Exp::var(k));
                 });
 
                 self.add_subst(bound_here);

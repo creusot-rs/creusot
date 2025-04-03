@@ -89,8 +89,8 @@ pub enum Param {
 }
 
 impl Param {
-    pub fn as_term(&self) -> (&Ident, &Type) {
-        if let Param::Term(id, ty) = self { (id, ty) } else { unreachable!() }
+    pub fn as_term(&self) -> (Ident, &Type) {
+        if let Param::Term(id, ty) = self { (*id, ty) } else { unreachable!() }
     }
 }
 
