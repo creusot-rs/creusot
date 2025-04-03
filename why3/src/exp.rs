@@ -461,35 +461,35 @@ impl Exp {
     /// - `true -> A` -> `A`
     /// - `A -> true` -> `true`
     pub fn implies(self, other: Self) -> Self {
-    if self.is_true() || other.is_true() {
-        other
-    } else {
-        Exp::Impl(Box::new(self), Box::new(other))
+        if self.is_true() || other.is_true() {
+            other
+        } else {
+            Exp::Impl(Box::new(self), Box::new(other))
+        }
     }
-}
 
     /// Builds a quantifier with explicit trigger
     ///
     /// Simplfies `∀ x, true` into `true`
     pub fn forall_trig(
-    bound: impl IntoIterator<Item = (Ident, Type)>,
-    trigger: impl IntoIterator<Item = Trigger>,
-    body: Exp,
-) -> Self {
-    let mut bound = bound.into_iter().peekable();
-    if body.is_true() || bound.peek().is_none() {
-        body
-    } else {
-        Exp::Forall(bound.collect(), trigger.into_iter().collect(), Box::new(body))
+        bound: impl IntoIterator<Item = (Ident, Type)>,
+        trigger: impl IntoIterator<Item = Trigger>,
+        body: Exp,
+    ) -> Self {
+        let mut bound = bound.into_iter().peekable();
+        if body.is_true() || bound.peek().is_none() {
+            body
+        } else {
+            Exp::Forall(bound.collect(), trigger.into_iter().collect(), Box::new(body))
+        }
     }
-}
 
     /// Builds a quantifier
     ///
     /// Simplifies `∀ x, true` into `true`
     pub fn forall(bound: impl IntoIterator<Item = (Ident, Type)>, body: Exp) -> Self {
-    Exp::forall_trig(bound, [], body)
-}
+        Exp::forall_trig(bound, [], body)
+    }
 
     pub fn exists_trig(
         bound: impl IntoIterator<Item = (Ident, Type)>,
@@ -561,8 +561,8 @@ impl Exp {
 
     /// Returns a type abscribtion expression (e.g. `(1 : int)`), of the form `(self : ty)`.
     pub fn ascribe(self, ty: Type) -> Self {
-    Exp::Ascribe(Box::new(self), ty)
-}
+        Exp::Ascribe(Box::new(self), ty)
+    }
 
     pub fn uint(value: u128) -> Self {
         Exp::Const(Constant::Uint(value, None))
@@ -574,59 +574,59 @@ impl Exp {
     ///
     /// `1 + (2 + 3)` becomes `(1 + 2) + 3`.
     pub fn reassociate(&mut self) {
-    struct Reassociate;
+        struct Reassociate;
 
-    impl ExpMutVisitor for Reassociate {
-        fn visit_mut(&mut self, exp: &mut Exp) {
-            match exp {
-                Exp::BinaryOp(op, l, r) if op.associative() => {
-                    let mut reordered = false;
-                    match op.precedence().associativity().unwrap() {
-                        AssocDir::Left => {
-                            //     self                self
-                            //   /       \            /    \
-                            //   l        r    =>    r     rr
-                            //           / \        / \
-                            //          rl rr      l  rl
-                            //
-                            // First swap rl and rr
-                            // Then swap the left child of with the left child of self moving `l` into
-                            // the left chid of `r` and moving `rr` to the left of self
-                            // Finally swap the two children of self which are now `r` and `rr`
-                            if let Exp::BinaryOp(iop, rl, rr) = &mut **r {
-                                if *iop == *op {
-                                    std::mem::swap(rl, rr);
-                                    std::mem::swap(rl, l);
-                                    std::mem::swap(l, r);
-                                    reordered = true;
+        impl ExpMutVisitor for Reassociate {
+            fn visit_mut(&mut self, exp: &mut Exp) {
+                match exp {
+                    Exp::BinaryOp(op, l, r) if op.associative() => {
+                        let mut reordered = false;
+                        match op.precedence().associativity().unwrap() {
+                            AssocDir::Left => {
+                                //     self                self
+                                //   /       \            /    \
+                                //   l        r    =>    r     rr
+                                //           / \        / \
+                                //          rl rr      l  rl
+                                //
+                                // First swap rl and rr
+                                // Then swap the left child of with the left child of self moving `l` into
+                                // the left chid of `r` and moving `rr` to the left of self
+                                // Finally swap the two children of self which are now `r` and `rr`
+                                if let Exp::BinaryOp(iop, rl, rr) = &mut **r {
+                                    if *iop == *op {
+                                        std::mem::swap(rl, rr);
+                                        std::mem::swap(rl, l);
+                                        std::mem::swap(l, r);
+                                        reordered = true;
+                                    }
+                                }
+                            }
+                            AssocDir::Right => {
+                                // ll -> l, r -> lr, lr -> ll, l -> r;
+                                if let Exp::BinaryOp(iop, ll, lr) = &mut **l {
+                                    if *iop == *op {
+                                        std::mem::swap(ll, lr);
+                                        std::mem::swap(lr, r);
+                                        std::mem::swap(l, r);
+                                        reordered = true;
+                                    }
                                 }
                             }
                         }
-                        AssocDir::Right => {
-                            // ll -> l, r -> lr, lr -> ll, l -> r;
-                            if let Exp::BinaryOp(iop, ll, lr) = &mut **l {
-                                if *iop == *op {
-                                    std::mem::swap(ll, lr);
-                                    std::mem::swap(lr, r);
-                                    std::mem::swap(l, r);
-                                    reordered = true;
-                                }
-                            }
+                        if reordered {
+                            self.visit_mut(exp);
+                        } else {
+                            self.visit_mut(l);
+                            self.visit_mut(r);
                         }
                     }
-                    if reordered {
-                        self.visit_mut(exp);
-                    } else {
-                        self.visit_mut(l);
-                        self.visit_mut(r);
-                    }
+                    _ => super_visit_mut(self, exp),
                 }
-                _ => super_visit_mut(self, exp),
             }
         }
+        Reassociate.visit_mut(self);
     }
-    Reassociate.visit_mut(self);
-}
 }
 
 /// Precedence ordered from lowest to highest priority

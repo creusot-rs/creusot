@@ -9,4 +9,4 @@ pub mod printer;
 pub mod ty;
 
 pub use exp::Exp;
-pub use name::{Ident, IdentString, QName, Name};
+pub use name::{Ident, IdentString, Name, QName};

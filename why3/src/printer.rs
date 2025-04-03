@@ -74,7 +74,9 @@ impl Scope {
             ident.name.as_str()
         } else {
             match self.rename.get(&ident) {
-                Some(sym) => crate::name::INTERNER.read().unwrap().resolve(*sym).unwrap().to_string(),
+                Some(sym) => {
+                    crate::name::INTERNER.read().unwrap().resolve(*sym).unwrap().to_string()
+                }
                 None => "ERROR_UNBOUND_".to_string() + &ident.name.as_str(), // TODO Output errror message
             }
         }
@@ -295,6 +297,7 @@ impl Print for Module {
     where
         A::Doc: Clone,
     {
+        scope.open();
         let doc = alloc
             .text("module ")
             .append(self.name.as_str())
@@ -313,6 +316,7 @@ impl Print for Module {
             .append(pretty_blocks(&self.decls, alloc, scope).indent(2))
             .append(alloc.hardline())
             .append("end");
+        scope.close();
         doc
     }
 }
@@ -654,7 +658,7 @@ impl Print for Type {
         use Type::*;
         match self {
             TVar(v) => alloc.text(format!("'{}", v.as_str())),
-            TConstructor(ty) => ty.pretty(alloc, scope),
+            TConstructor(ty) => ty.pretty_type_name(alloc, scope),
             TFun(a, b) => {
                 ty_parens!(alloc, scope, a).append(" -> ").append(ty_parens!(alloc, scope, b))
             }
@@ -726,7 +730,7 @@ impl Print for Exp {
                 .parens(),
 
             Exp::Constructor { ctor, args } => {
-                ctor.pretty(alloc, scope).append(if args.is_empty() {
+                ctor.pretty_value_name(alloc, scope).append(if args.is_empty() {
                     alloc.nil()
                 } else {
                     alloc.space().append(alloc.intersperse(
@@ -944,9 +948,13 @@ impl Print for Binder {
                             .intersperse(
                                 ids.iter().map(|id| match id {
                                     None => alloc.text("_"),
-                                    Some(id) => id.pretty_value_name(alloc, scope),
+                                    Some(id) => {
+                                        scope.bind_value(*id);
+                                        id.pretty_value_name(alloc, scope)
+                                    }
                                 }),
-                                alloc.space(),)
+                                alloc.space(),
+                            )
                             .append(" : ")
                             .append(ty.pretty(alloc, scope)),
                     )
@@ -975,7 +983,7 @@ impl Print for Pattern {
                 alloc.intersperse(pats.iter().map(|p| p.pretty(alloc, scope)), ", ").parens()
             }
             Pattern::ConsP(c, pats) => {
-                let mut doc = c.pretty(alloc, scope);
+                let mut doc = c.pretty_value_name(alloc, scope);
 
                 if !pats.is_empty() {
                     doc = doc.append(alloc.space()).append(alloc.intersperse(
@@ -1005,8 +1013,8 @@ impl Print for Pattern {
     }
 }
 
-impl Print for Name {
-    fn pretty<'a, A: DocAllocator<'a>>(
+impl Name {
+    fn pretty_value_name<'a, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         scope: &mut Why3Scope,
@@ -1016,6 +1024,20 @@ impl Print for Name {
     {
         match self {
             Name::Local(i) => i.pretty_value_name(alloc, scope),
+            Name::Global(q) => q.pretty(alloc, scope),
+        }
+    }
+
+    fn pretty_type_name<'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        scope: &mut Why3Scope,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        match self {
+            Name::Local(i) => i.pretty_type_name(alloc, scope),
             Name::Global(q) => q.pretty(alloc, scope),
         }
     }

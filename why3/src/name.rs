@@ -4,14 +4,13 @@ use indexmap::Equivalent;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Write},
-    sync::{atomic::AtomicU64, LazyLock, RwLock},
+    sync::{LazyLock, RwLock, atomic::AtomicU64},
 };
 use string_interner::{DefaultStringInterner, DefaultSymbol};
 
 static FRESH_COUNTER: AtomicU64 = AtomicU64::new(1);
 pub(crate) static INTERNER: LazyLock<RwLock<DefaultStringInterner>> =
     LazyLock::new(|| RwLock::new(DefaultStringInterner::new()));
-
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IdentString(pub(crate) DefaultSymbol);
