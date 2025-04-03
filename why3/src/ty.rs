@@ -1,4 +1,4 @@
-use crate::{Ident, QName};
+use crate::{Ident, Name, QName};
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Type {
     TVar(Ident),
-    TConstructor(QName),
+    TConstructor(Name),
     TApp(Box<Type>, Box<[Type]>),
     Tuple(Box<[Type]>),
     TFun(Box<Type>, Box<Type>),
@@ -26,5 +26,9 @@ impl Type {
     pub(crate) fn complex(&self) -> bool {
         use Type::*;
         !matches!(self, TVar(_) | Tuple(_) | TConstructor(_))
+    }
+
+    pub fn qconstructor(qname: QName) -> Self {
+        Self::TConstructor(Name::Global(qname))
     }
 }

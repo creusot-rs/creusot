@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    Exp, Ident, IdentString, QName,
+    Exp, Ident, IdentString, Name, QName,
     declaration::{
         self, AdtDecl, Attribute, Axiom, ConstructorDecl, Contract, Decl, DeclKind, FieldDecl,
         Goal, LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Module, Predicate, Signature, Span,
@@ -74,7 +74,7 @@ impl Scope {
             ident.name.as_str()
         } else {
             match self.rename.get(&ident) {
-                Some(sym) => crate::INTERNER.read().unwrap().resolve(*sym).unwrap().to_string(),
+                Some(sym) => crate::name::INTERNER.read().unwrap().resolve(*sym).unwrap().to_string(),
                 None => "ERROR_UNBOUND_".to_string() + &ident.name.as_str(), // TODO Output errror message
             }
         }
@@ -718,7 +718,7 @@ impl Print for Exp {
             Exp::RecField { record, label } => {
                 parens!(alloc, scope, self.precedence().next(), record)
                     .append(".")
-                    .append(label.as_str())
+                    .append(label.pretty_value_name(alloc, scope))
             }
 
             Exp::Tuple(args) => alloc
@@ -877,48 +877,46 @@ impl Print for Exp {
                 parens!(alloc, scope, self, e).append(" : ").append(t.pretty(alloc, scope)).group()
             }
             Exp::Old(e) => alloc.text("old").append(e.pretty(alloc, scope).parens()),
-            Exp::RecUp { record, updates } => alloc
-                .space()
-                .append(parens!(alloc, scope, self.precedence().next(), record))
-                .append(" with ")
-                .append(
-                    alloc
-                        .intersperse(
-                            updates.iter().map(|(nm, a)| {
-                                alloc.text(nm.as_str()).append(" = ").append(parens!(
-                                    alloc,
-                                    scope,
-                                    Precedence::Attr.next(),
-                                    a
-                                ))
-                            }),
-                            alloc.text(";").append(alloc.line()),
-                        )
-                        .align(),
-                )
-                .append(alloc.space())
-                .braces()
-                .group(),
-            Exp::Record { fields } => alloc
-                .space()
-                .append(
-                    alloc
-                        .intersperse(
-                            fields.iter().map(|(nm, a)| {
-                                alloc.text(nm.as_str()).append(" = ").append(parens!(
-                                    alloc,
-                                    scope,
-                                    Precedence::Attr.next(),
-                                    a
-                                ))
-                            }),
-                            alloc.text(";").append(alloc.line()),
-                        )
-                        .align(),
-                )
-                .append(alloc.space())
-                .braces()
-                .group(),
+            Exp::RecUp { record, updates } => {
+                alloc
+                    .space()
+                    .append(parens!(alloc, scope, self.precedence().next(), record))
+                    .append(" with ")
+                    .append(
+                        alloc
+                            .intersperse(
+                                updates.iter().map(|(nm, a)| {
+                                    nm.pretty_value_name(alloc, scope)
+                                        .append(" = ")
+                                        .append(parens!(alloc, scope, Precedence::Attr.next(), a))
+                                }),
+                                alloc.text(";").append(alloc.line()),
+                            )
+                            .align(),
+                    )
+                    .append(alloc.space())
+                    .braces()
+                    .group()
+            }
+            Exp::Record { fields } => {
+                alloc
+                    .space()
+                    .append(
+                        alloc
+                            .intersperse(
+                                fields.iter().map(|(nm, a)| {
+                                    nm.pretty_value_name(alloc, scope)
+                                        .append(" = ")
+                                        .append(parens!(alloc, scope, Precedence::Attr.next(), a))
+                                }),
+                                alloc.text(";").append(alloc.line()),
+                            )
+                            .align(),
+                    )
+                    .append(alloc.space())
+                    .braces()
+                    .group()
+            }
         }
     }
 }
@@ -1003,6 +1001,22 @@ impl Print for Pattern {
 
                 alloc.intersperse(pats, " ; ").braces()
             }
+        }
+    }
+}
+
+impl Print for Name {
+    fn pretty<'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        scope: &mut Why3Scope,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        match self {
+            Name::Local(i) => i.pretty_value_name(alloc, scope),
+            Name::Global(q) => q.pretty(alloc, scope),
         }
     }
 }

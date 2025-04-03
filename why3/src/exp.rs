@@ -1,6 +1,6 @@
 mod binder;
 
-use crate::{Ident, IdentString, QName, declaration::Attribute, ty::Type};
+use crate::{Ident, Name, QName, declaration::Attribute, ty::Type};
 use indexmap::IndexSet;
 use std::collections::HashMap;
 
@@ -113,11 +113,11 @@ pub enum Exp {
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
     Var(Ident),
     QVar(QName),
-    Record { fields: Box<[(IdentString, Exp)]> },
-    RecUp { record: Box<Exp>, updates: Box<[(IdentString, Exp)]> },
-    RecField { record: Box<Exp>, label: IdentString },
+    Record { fields: Box<[(Ident, Exp)]> },
+    RecUp { record: Box<Exp>, updates: Box<[(Ident, Exp)]> },
+    RecField { record: Box<Exp>, label: Ident },
     Tuple(Box<[Exp]>),
-    Constructor { ctor: QName, args: Box<[Exp]> },
+    Constructor { ctor: Name, args: Box<[Exp]> },
     Const(Constant),
     BinaryOp(BinOp, Box<Exp>, Box<Exp>),
     UnaryOp(UnOp, Box<Exp>),
@@ -407,7 +407,7 @@ impl Exp {
         if args.is_empty() { self } else { Exp::Call(Box::new(self), args) }
     }
 
-    pub fn field(self, label: IdentString) -> Self {
+    pub fn field(self, label: Ident) -> Self {
         Self::RecField { record: Box::new(self), label }
     }
 
@@ -1010,17 +1010,20 @@ pub enum Pattern {
     Wildcard,
     VarP(Ident),
     TupleP(Box<[Pattern]>),
-    ConsP(QName, Box<[Pattern]>),
+    ConsP(Name, Box<[Pattern]>),
     RecP(Box<[(Ident, Pattern)]>),
 }
 
 impl Pattern {
     pub fn mk_true() -> Self {
-        Self::ConsP(QName { module: Box::new([]), name: "True".into() }, Box::new([]))
+        Self::ConsP(Name::Global(QName { module: Box::new([]), name: "True".into() }), Box::new([]))
     }
 
     pub fn mk_false() -> Self {
-        Self::ConsP(QName { module: Box::new([]), name: "False".into() }, Box::new([]))
+        Self::ConsP(
+            Name::Global(QName { module: Box::new([]), name: "False".into() }),
+            Box::new([]),
+        )
     }
 
     pub fn binders(&self) -> IndexSet<Ident> {

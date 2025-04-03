@@ -221,6 +221,13 @@ impl From<String> for QName {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub enum Name {
+    Local(Ident),
+    Global(QName),
+}
+
 /// The why3 keywords
 const RESERVED: &[&str] = &[
     "abstract",

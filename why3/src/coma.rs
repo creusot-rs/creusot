@@ -1,5 +1,5 @@
 use crate::{
-    Ident, QName,
+    Ident, Name, QName,
     declaration::{Attribute, Use},
     printer::{Print, Why3Scope},
     ty::Type,
@@ -27,8 +27,7 @@ pub type Term = crate::Exp;
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Expr {
     /// Variables eg: `x`
-    Variable(Ident),
-    Constant(QName),
+    Name(Name),
     /// Generic application for type lambdas, terms, references and continuations
     /// e <ty>... t... | e...
     App(Box<Expr>, Box<Arg>),
@@ -137,6 +136,14 @@ impl Defn {
 }
 
 impl Expr {
+    pub fn var(name: Ident) -> Self {
+        Expr::Name(Name::Local(name))
+    }
+
+    pub fn constant(name: QName) -> Self {
+        Expr::Name(Name::Global(name))
+    }
+
     pub fn boxed(self) -> Box<Self> {
         Box::new(self)
     }
@@ -180,7 +187,7 @@ impl Expr {
     }
 
     pub fn as_variable(&self) -> Option<&Ident> {
-        if let Expr::Variable(nm) = self { Some(nm) } else { None }
+        if let Expr::Name(Name::Local(nm)) = self { Some(nm) } else { None }
     }
 
     /// Checks whether the expression is protected by a black box.
@@ -198,8 +205,8 @@ impl Expr {
     /// Checks whether a symbol of name `cont` occurs in `self`
     pub fn occurs(&self, cont: &Ident) -> bool {
         match self {
-            Expr::Variable(v) => v == cont,
-            Expr::Constant(_) => false,
+            Expr::Name(Name::Local(v)) => v == cont,
+            Expr::Name(Name::Global(_)) => false,
             Expr::App(e, arg) => {
                 let arg = if let Arg::Cont(e) = &**arg { e.occurs(cont) } else { false };
                 arg || e.occurs(cont)
@@ -323,8 +330,8 @@ impl Print for Expr {
         A::Doc: Clone,
     {
         match self {
-            Expr::Variable(id) => id.pretty_value_name(alloc, scope),
-            Expr::Constant(name) => name.pretty(alloc, scope),
+            Expr::Name(Name::Local(id)) => id.pretty_value_name(alloc, scope),
+            Expr::Name(Name::Global(name)) => name.pretty(alloc, scope),
             Expr::App(e, arg) => {
                 let mut args = vec![arg];
 
@@ -341,11 +348,7 @@ impl Print for Expr {
 
                 let needs_paren = !matches!(
                     &**e,
-                    Expr::App(_, _)
-                        | Expr::Variable(_)
-                        | Expr::Constant(_)
-                        | Expr::Any
-                        | Expr::Lambda(_, _)
+                    Expr::App(_, _) | Expr::Name(_) | Expr::Any | Expr::Lambda(_, _)
                 );
 
                 let doc = e.pretty(alloc, scope);
