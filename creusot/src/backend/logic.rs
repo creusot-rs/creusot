@@ -11,7 +11,9 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use why3::{
-    declaration::*, exp::{super_visit_mut, BinOp, Exp, ExpMutVisitor, Trigger}, Ident, Name
+    Ident, Name,
+    declaration::*,
+    exp::{BinOp, Exp, ExpMutVisitor, Trigger, super_visit_mut},
 };
 
 mod vcgen;
@@ -182,7 +184,9 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
     impl<'a> ExpMutVisitor for QNameSubst<'a> {
         fn visit_mut(&mut self, exp: &mut Exp) {
             match exp {
-                Exp::Var(Name::Global(qname)) if qname.is_ident(&self.0.name) => *exp = Exp::var(*self.1),
+                Exp::Var(Name::Global(qname)) if qname.is_ident(&self.0.name) => {
+                    *exp = Exp::var(*self.1)
+                }
                 _ => super_visit_mut(self, exp),
             }
         }

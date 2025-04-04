@@ -33,7 +33,7 @@ use rustc_middle::{
 use rustc_span::DUMMY_SP;
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};
-use std::{fmt::Debug, iter::once};
+use std::{collections::HashMap, fmt::Debug, iter::once};
 use why3::{
     Ident, Name,
     coma::{Arg, Defn, Expr, IsRef, Param, Term, Var},
@@ -127,6 +127,15 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
 ) -> Defn {
     let mut body = ctx.fmir_body(body_id).clone();
 
+    // Remember the index of every argument before removing unused variables in simplify_mir
+    let arg_index = body
+        .locals
+        .iter()
+        .flat_map(|(id, decl)| if decl.arg { Some(id.0) } else { None })
+        .enumerate()
+        .map(|(i, k)| (k, i))
+        .collect::<HashMap<_, _>>();
+
     simplify_fmir(gather_usage(&body), &mut body);
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
@@ -155,7 +164,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             contract: Contract::default(),
         }
     };
-    let mut params = sig.args.iter().cloned().flat_map(|b| b.var_type_pairs());
+    let params: Box<[_]> = sig.args.iter().cloned().flat_map(|b| b.var_type_pairs()).collect();
     let vars: Box<[_]> = body
         .locals
         .into_iter()
@@ -163,22 +172,15 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
             let id = id.0;
             let init = if decl.arg {
-                match params.next() {
-                    Some((p, _)) => Exp::var(p),
-                    None => panic!("not enough parameters for function"),
-                }
+                let (id2, ty2) = &params[arg_index[&id]];
+                assert_eq! {ty, *ty2};
+                Exp::var(*id2)
             } else {
                 Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])
             };
             Var(id, ty.clone(), init, IsRef::Ref)
         })
         .collect();
-    match params.next() {
-        Some(p) => {
-            panic!("parameter with no place: {p:?} {name:?}");
-        }
-        None => {}
-    }
 
     let bb0 = Ident::bound("bb0");
     let result_ident = Ident::bound("result");

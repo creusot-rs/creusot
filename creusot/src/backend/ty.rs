@@ -235,8 +235,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
     let good_ident = Ident::bound("good");
     let bad_ident = Ident::bound("bad");
     let input_ident = Ident::bound("input");
-    let ret =
-        Expr::var(ret_ident).app(fields.iter().map(|(nm, _)| Arg::Term(Exp::var(*nm))));
+    let ret = Expr::var(ret_ident).app(fields.iter().map(|(nm, _)| Arg::Term(Exp::var(*nm))));
 
     let good_branch: Defn = Defn {
         name: good_ident,
