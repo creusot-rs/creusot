@@ -10,7 +10,7 @@ use crate::{
         is_trusted_item,
         logic::{lower_logical_defn, spec_axiom},
         program,
-        signature::lower_sig,
+        signature::{lower_logic_sig, lower_program_sig},
         structural_resolve::structural_resolve,
         term::lower_pure,
         ty::{
@@ -66,7 +66,7 @@ struct ExpansionProxy<'a, 'tcx> {
     source: Dependency<'tcx>,
 }
 
-impl<'a, 'tcx> Namer<'tcx> for ExpansionProxy<'a, 'tcx> {
+impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, 'tcx> {
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T {
         self.namer.normalize(ctx, ty)
     }
@@ -102,16 +102,16 @@ trait DepElab {
     ) -> Vec<Decl>;
 }
 
-struct ProgElab;
+struct ProgramElab;
 
-impl DepElab for ProgElab {
+impl DepElab for ProgramElab {
     fn expand<'tcx>(
         elab: &mut Expander<'_, 'tcx>,
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<Decl> {
         let typing_env = elab.typing_env;
-        let mut names = elab.namer(dep);
+        let names = elab.namer(dep);
         let name = names.dependency(dep).ident();
 
         if let Dependency::Item(def_id, subst) = dep
@@ -121,7 +121,7 @@ impl DepElab for ProgElab {
                 .instantiate(ctx.tcx, subst)
                 .normalize(ctx.tcx, typing_env);
             pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
-            let sig = lower_sig(ctx, &mut names, name, pre_sig, def_id);
+            let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id);
             return vec![program::val(sig)];
         }
 
@@ -132,7 +132,7 @@ impl DepElab for ProgElab {
             _ => unreachable!(),
         };
 
-        let coma = program::to_why(ctx, &mut names, name, bid);
+        let coma = program::to_why(ctx, &names, name, bid);
         vec![Decl::Coma(coma)]
     }
 }
@@ -194,11 +194,11 @@ impl DepElab for LogicElab {
         ) || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0)
             || is_trusted_item(ctx.tcx, def_id);
 
-        let mut names = elab.namer(dep);
+        let names = elab.namer(dep);
         let name = names.dependency(dep).ident();
-        let sig = lower_sig(ctx, &mut names, name, pre_sig, def_id);
+        let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
         if !is_opaque && let Some(term) = term(ctx, typing_env, dep) {
-            lower_logical_defn(ctx, &mut names, sig, kind, term)
+            lower_logical_defn(ctx, &names, sig, kind, term)
         } else {
             val(sig, kind)
         }
@@ -212,12 +212,12 @@ fn expand_ty_inv_axiom<'tcx>(
     ty: Ty<'tcx>,
 ) -> Vec<Decl> {
     let param_env = elab.typing_env;
-    let mut names = elab.namer(Dependency::TyInvAxiom(ty));
+    let names = elab.namer(Dependency::TyInvAxiom(ty));
 
     let mut elab = InvariantElaborator::new(param_env, ctx);
     let Some(term) = elab.elaborate_inv(ty, false) else { return vec![] };
     let rewrite = elab.rewrite;
-    let exp = lower_pure(ctx, &mut names, &term);
+    let exp = lower_pure(ctx, &names, &term);
     let axiom =
         Axiom { name: names.dependency(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom: exp };
     vec![Decl::Axiom(axiom)]
@@ -235,7 +235,7 @@ impl DepElab for TyElab {
     ) -> Vec<Decl> {
         let Dependency::Type(ty) = dep else { unreachable!() };
         let typing_env = elab.typing_env;
-        let mut names = elab.namer(dep);
+        let names = elab.namer(dep);
         match ty.kind() {
             TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
                 ty_name: names.ty(ty).as_ident(),
@@ -248,10 +248,10 @@ impl DepElab for TyElab {
                     ty_params: Box::new([]),
                 })]
             }
-            TyKind::Closure(did, subst) => translate_closure_ty(ctx, &mut names, *did, subst),
+            TyKind::Closure(did, subst) => translate_closure_ty(ctx, &names, *did, subst),
             TyKind::Adt(adt_def, subst) if get_builtin(ctx.tcx, adt_def.did()).is_some() => {
                 for ty in subst.types() {
-                    translate_ty(ctx, &mut names, DUMMY_SP, ty);
+                    translate_ty(ctx, &names, DUMMY_SP, ty);
                 }
                 if let Kind::UsedBuiltin(qname) = names.dependency(dep) {
                     vec![Decl::UseDecls(Box::new([Use {
@@ -265,9 +265,9 @@ impl DepElab for TyElab {
             }
             TyKind::Adt(_, _) => {
                 let (def_id, subst) = dep.did().unwrap();
-                translate_tydecl(ctx, &mut names, (def_id, subst), typing_env)
+                translate_tydecl(ctx, &names, (def_id, subst), typing_env)
             }
-            TyKind::Tuple(_) => translate_tuple_ty(ctx, &mut names, ty),
+            TyKind::Tuple(_) => translate_tuple_ty(ctx, &names, ty),
             _ => unreachable!(),
         }
     }
@@ -340,7 +340,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                     self.namer(dep).def_ty(ctx.parent(def_id), subst);
                     vec![]
                 } else {
-                    ProgElab::expand(self, ctx, dep)
+                    ProgramElab::expand(self, ctx, dep)
                 }
             }
             Dependency::TyInvAxiom(ty) => expand_ty_inv_axiom(self, ctx, ty),
@@ -353,9 +353,9 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 }]))]
             }
             Dependency::Eliminator(def_id, subst) => {
-                vec![eliminator(ctx, &mut self.namer(dep), def_id, subst)]
+                vec![eliminator(ctx, &self.namer(dep), def_id, subst)]
             }
-            Dependency::Promoted(_, _) => ProgElab::expand(self, ctx, dep),
+            Dependency::Promoted(_, _) => ProgramElab::expand(self, ctx, dep),
         };
 
         self.dep_bodies.insert(dep, decls);

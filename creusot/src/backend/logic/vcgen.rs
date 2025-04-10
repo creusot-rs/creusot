@@ -8,7 +8,7 @@ use crate::{
     backend::{
         Namer as _, Why3Generator,
         logic::Dependencies,
-        signature::lower_sig,
+        signature::lower_logic_sig,
         term::{binop_to_binop, lower_literal, lower_pure},
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
     },
@@ -41,7 +41,8 @@ use why3::{
 /// There are several intersting / atypical rules here:
 ///
 /// 1. Conjunction: 2. Exists & Forall: 3. Function calls:
-
+///
+/// TODO: Finish doc
 struct VCGen<'a, 'tcx> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a Dependencies<'tcx>,
@@ -204,7 +205,7 @@ pub enum VCError<'tcx> {
     UnsupportedVariant(Ty<'tcx>, Span),
 }
 
-impl<'tcx> VCError<'tcx> {
+impl VCError<'_> {
     pub fn span(&self) -> Span {
         match self {
             VCError::OldInLemma(s) => *s,
@@ -219,7 +220,7 @@ impl<'tcx> VCError<'tcx> {
 // the post condition appears several times).
 type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> Result<R, VCError<'tcx>>;
 
-impl<'a, 'tcx> VCGen<'a, 'tcx> {
+impl<'tcx> VCGen<'_, 'tcx> {
     fn lower_literal(&self, lit: &Literal<'tcx>) -> Exp {
         lower_literal(self.ctx, self.names, lit)
     }
@@ -321,7 +322,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .map(|(nm, res)| (ident_of(nm.0), res.clone()))
                     .collect();
                 let variant = pre_sig.contract.variant.clone();
-                let mut sig = lower_sig(self.ctx, self.names, "".into(), pre_sig, *id);
+                let mut sig = lower_logic_sig(self.ctx, self.names, "".into(), pre_sig, *id);
 
                 let variant = if *id == self.self_id {
                     let subst = self.ctx.normalize_erasing_regions(self.typing_env, *subst);
@@ -332,8 +333,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
                     if let Some(variant) = variant {
                         self.build_variant(&args, variant.ty, variant.span)?
+                    } else if self.structurally_recursive {
+                        Exp::mk_true()
                     } else {
-                        if self.structurally_recursive { Exp::mk_true() } else { Exp::mk_false() }
+                        Exp::mk_false()
                     }
                 } else {
                     Exp::mk_true()
@@ -522,9 +525,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         match &pat.kind {
             PatternKind::Constructor(variant, fields) => {
                 let ty = self.names.normalize(self.ctx, pat.ty);
-                let (var_did, subst) = match ty.kind() {
-                    &TyKind::Adt(def, subst) => (def.variant(*variant).def_id, subst),
-                    &TyKind::Closure(did, subst) => (did, subst),
+                let (var_did, subst) = match *ty.kind() {
+                    TyKind::Adt(def, subst) => (def.variant(*variant).def_id, subst),
+                    TyKind::Closure(did, subst) => (did, subst),
                     _ => unreachable!(),
                 };
                 let flds = fields.iter().map(|pat| self.build_pattern_inner(bounds, pat));
@@ -538,7 +541,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         .map(|(i, f)| (self.names.field(var_did, subst, i.into()), f))
                         .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                         .collect();
-                    if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
+                    if flds.is_empty() { WPattern::Wildcard } else { WPattern::RecP(flds) }
                 }
             }
             PatternKind::Wildcard => WPattern::Wildcard,
@@ -568,7 +571,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     })
                     .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                     .collect();
-                if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
+                if flds.is_empty() { WPattern::Wildcard } else { WPattern::RecP(flds) }
             }
             PatternKind::Deref(pointee) => {
                 let ty = self.names.normalize(self.ctx, pat.ty);

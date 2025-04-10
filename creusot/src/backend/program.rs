@@ -6,7 +6,7 @@ use crate::{
         is_trusted_item,
         optimization::{gather_usage, infer_proph_invariants, simplify_fmir},
         place::{Focus, create_assign_inner, projections_to_expr, rplace_to_expr},
-        signature::lower_sig,
+        signature::lower_program_sig,
         term::{lower_pat, lower_pure},
         ty::{
             constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, uty_to_prelude,
@@ -117,6 +117,7 @@ pub(crate) fn node_graph(x: &Body) -> petgraph::graphmap::DiGraphMap<BasicBlock,
     graph
 }
 
+/// Translate a program function body to why3.
 pub fn to_why<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
@@ -156,7 +157,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         let typing_env = ctx.typing_env(def_id);
         let mut pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
         pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
-        lower_sig(ctx, names, name, pre_sig, def_id)
+        lower_program_sig(ctx, names, name, pre_sig, def_id)
     } else {
         let ret = ret.unwrap();
         Signature {

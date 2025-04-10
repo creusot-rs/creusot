@@ -17,8 +17,10 @@ use crate::{
     specification::PreSignature,
 };
 
-// This should be given a normalized pre_sig!
-pub(crate) fn lower_sig<'tcx, N: Namer<'tcx>>(
+/// Translates a Rust (program) function signature to a coma signature.
+///
+/// Note that `pre_sig` should be normalized!
+pub(crate) fn lower_program_sig<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     name: Ident,
@@ -36,11 +38,11 @@ pub(crate) fn lower_sig<'tcx, N: Namer<'tcx>>(
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
 
-    def_id
-        .as_local()
-        .map(|d| ctx.def_span(d))
-        .and_then(|span| ctx.span_attr(span))
-        .map(|attr| attrs.push(attr));
+    if let Some(attr) =
+        def_id.as_local().map(|d| ctx.def_span(d)).and_then(|span| ctx.span_attr(span))
+    {
+        attrs.push(attr)
+    }
 
     let retty = Some(translate_ty(ctx, names, span, pre_sig.output));
 
@@ -64,4 +66,19 @@ pub(crate) fn lower_sig<'tcx, N: Namer<'tcx>>(
         sig.trigger = Some(Trigger::single(function_call(&sig)))
     };
     sig
+}
+
+/// Translates a logical (pearlite) function signature to a whyml signature.
+///
+/// Note that `pre_sig` should be normalized!
+pub(crate) fn lower_logic_sig<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    name: Ident,
+    pre_sig: PreSignature<'tcx>,
+    // FIXME: Get rid of this def id
+    // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
+    def_id: DefId,
+) -> Signature {
+    lower_program_sig(ctx, names, name, pre_sig, def_id)
 }
