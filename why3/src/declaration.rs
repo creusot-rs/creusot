@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Module {
-    pub name: Ident,
+    pub name: Symbol,
     pub decls: Box<[Decl]>,
     pub attrs: Vec<Attribute>,
     // Meta data stored in comments
@@ -95,6 +95,10 @@ pub struct Contract {
 }
 
 impl Contract {
+    pub fn is_empty(&self) -> bool {
+        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
+    }
+
     pub fn ensures_conj(&self) -> Exp {
         let mut ensures = self.ensures.iter().map(|cond| cond.exp.clone());
         let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
@@ -128,9 +132,8 @@ impl Contract {
     }
 
     pub fn requires_implies(&self, conclusion: Exp) -> Exp {
-        self.requires
-            .iter()
-            .rfold(conclusion, |acc, cond| cond.clone().unlabelled_exp().implies(acc))
+        let requires = self.requires.iter().map(|cond| cond.exp.clone());
+        requires.rfold(conclusion, |acc, arg| arg.implies(acc))
     }
 
     pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
@@ -179,7 +182,7 @@ impl Contract {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Attribute {
     Attr(String),
-    NamedSpan(String),
+    NamedSpan(Ident),
     Span(String, usize, usize, usize, usize), // file, start line, start col, end line, end col
 }
 
@@ -271,8 +274,7 @@ pub struct LogicDecl {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
-    pub name: Box<[Ident]>,
-    pub as_: Option<Ident>,
+    pub name: Box<[Symbol]>,
     pub export: bool,
 }
 
@@ -318,7 +320,7 @@ pub struct Meta {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum MetaIdent {
     String(String),
-    Ident(Ident),
+    Ident(Symbol),
 }
 
 // meta_arg:

@@ -1,4 +1,4 @@
-use crate::{Ident, QName};
+use crate::{Ident, Name, QName};
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Type {
     TVar(Ident),
-    TConstructor(QName),
+    TConstructor(Name),
     TApp(Box<Type>, Box<[Type]>),
     Tuple(Box<[Type]>),
     TFun(Box<Type>, Box<Type>),
@@ -19,12 +19,16 @@ impl Type {
     }
 
     pub fn tapp(self, args: impl IntoIterator<Item = Self>) -> Self {
-        let args: Box<[_]> = args.into_iter().collect();
-        if args.is_empty() { self } else { Self::TApp(Box::new(self), args) }
+        let mut args = args.into_iter().peekable();
+        if args.peek().is_none() { self } else { Self::TApp(Box::new(self), args.collect()) }
     }
 
     pub(crate) fn complex(&self) -> bool {
         use Type::*;
         !matches!(self, TVar(_) | Tuple(_) | TConstructor(_))
+    }
+
+    pub fn qconstructor(qname: QName) -> Self {
+        Self::TConstructor(Name::Global(qname))
     }
 }

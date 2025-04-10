@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use why3::Ident;
+use why3::Symbol;
 
 #[derive(Debug, Clone)]
 pub enum SpanMode {
@@ -32,7 +32,7 @@ pub struct Options {
     pub should_output: bool,
     pub output: Output,
     pub monolithic: bool,
-    pub prefix: Vec<Ident>,
+    pub prefix: Vec<Symbol>,
     pub in_cargo: bool,
     pub span_mode: SpanMode,
     pub simple_triggers: bool,

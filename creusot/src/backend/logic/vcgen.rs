@@ -8,22 +8,28 @@ use crate::{
     backend::{
         Namer as _, Why3Generator,
         logic::Dependencies,
+<<<<<<< LEFT
         signature::lower_logic_sig,
+||||||| BASE
+        signature::lower_sig,
+=======
+        signature::lower_contract,
+>>>>>>> RIGHT
         term::{binop_to_binop, lower_literal, lower_pure},
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
     },
     contracts_items::get_builtin,
     ctx::PreMod,
-    naming::ident_of,
+    naming::STATIC_NAMES,
     pearlite::{Literal, Pattern, PatternKind, Term, TermVisitor, super_visit_term},
     util::erased_identity_for_item,
 };
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
-use rustc_span::{Span, Symbol};
+use rustc_span::Span;
 use why3::{
-    Exp, Ident,
+    Exp, Ident, Name,
     exp::{BinOp, Environment, Pattern as WPattern, UnOp as WUnOp},
     ty::Type,
 };
@@ -65,7 +71,7 @@ pub(super) fn wp<'tcx>(
     post: Exp,
 ) -> Result<Exp, VCError<'tcx>> {
     let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
-    let bounds = args_names.iter().map(|arg| (arg.clone(), Exp::var(arg.clone()))).collect();
+    let bounds = args_names.iter().map(|&arg| (arg, Exp::var(arg))).collect();
     let vcgen = VCGen {
         typing_env: ctx.typing_env(self_id),
         ctx,
@@ -94,12 +100,11 @@ pub(super) fn wp<'tcx>(
 /// This check can be extended in the future
 fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'_>) -> bool {
     struct StructuralRecursion {
-        smaller_than: HashMap<Symbol, Symbol>,
+        smaller_than: HashMap<Ident, Ident>,
         self_id: DefId,
         /// Index of the decreasing argument
-        decreasing_args: HashSet<Symbol>,
-
-        orig_args: Vec<Symbol>,
+        decreasing_args: HashSet<Ident>,
+        orig_args: Vec<Ident>,
     }
     use crate::pearlite::TermKind;
 
@@ -109,23 +114,23 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
         }
 
         /// Is `t` smaller than the argument `nm`?
-        fn is_smaller_than(&self, t: &Term, nm: Symbol) -> bool {
+        fn is_smaller_than(&self, t: &Term, nm: Ident) -> bool {
             match &t.kind {
-                TermKind::Var(s) => self.smaller_than.get(s) == Some(&nm),
+                TermKind::Var(s) => self.smaller_than.get(&s.0) == Some(&nm),
                 TermKind::Coerce { arg } => self.is_smaller_than(arg, nm),
                 _ => false,
             }
         }
 
         // TODO: could make this a `pattern` to term comparison to make it more powerful
-        /// Mark `sym` as smaller than `term`. Currently, this only updates the relation if `term` is a variable.
-        fn smaller_than(&mut self, sym: Symbol, term: &Term<'_>) {
+        /// Mark `nm` as smaller than `term`. Currently, this only updates the relation if `term` is a variable.
+        fn smaller_than(&mut self, nm: Ident, term: &Term<'_>) {
             match &term.kind {
                 TermKind::Var(var) => {
-                    let parent = self.smaller_than.get(var).unwrap_or(var);
-                    self.smaller_than.insert(sym, *parent);
+                    let parent = self.smaller_than.get(&var.0).unwrap_or(&var.0);
+                    self.smaller_than.insert(nm, *parent);
                 }
-                TermKind::Coerce { arg } => self.smaller_than(sym, arg),
+                TermKind::Coerce { arg } => self.smaller_than(nm, arg),
                 _ => (),
             }
         }
@@ -143,8 +148,8 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
                 }
                 TermKind::Quant { binder, body, .. } => {
                     let old_smaller = self.smaller_than.clone();
-                    for name in &binder.0 {
-                        self.smaller_than.remove(&name.name);
+                    for (name, _) in binder {
+                        self.smaller_than.remove(&name.0);
                     }
                     self.visit_term(body);
                     self.smaller_than = old_smaller;
@@ -155,7 +160,7 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
                     let mut binds = Default::default();
                     pattern.binds(&mut binds);
                     let old_smaller = self.smaller_than.clone();
-                    self.smaller_than.retain(|nm, _| !binds.contains(nm));
+                    self.smaller_than.retain(|nm, _| !binds.contains(&nm));
                     binds.into_iter().for_each(|b| self.smaller_than(b, arg));
                     self.visit_term(body);
                     self.smaller_than = old_smaller;
@@ -179,7 +184,7 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
         }
     }
 
-    let orig_args = ctx.sig(self_id).inputs.iter().map(|a| a.0).collect();
+    let orig_args = ctx.sig(self_id).inputs.iter().map(|a| a.0.0).collect();
     let mut s = StructuralRecursion {
         self_id,
         smaller_than: Default::default(),
@@ -234,8 +239,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => {
-                let id = ident_of(*v);
-                let exp = self.subst.borrow().get(&id).unwrap_or(Exp::var(id));
+                let exp = self.subst.borrow().get(&v.0).unwrap_or(Exp::var(v.0));
                 k(exp)
             }
             // VC(l, Q) = Q(l)
@@ -298,9 +302,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
 
                 if get_builtin(self.ctx.tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
-                    k(Exp::qvar(item_name).ascribe(self.ty(t.ty)))
+                    k(Exp::Var(item_name).ascribe(self.ty(t.ty)))
                 } else {
-                    k(Exp::qvar(item_name))
+                    k(Exp::Var(item_name))
                 }
             }
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
@@ -319,10 +323,16 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     .inputs
                     .iter()
                     .zip(&args)
-                    .map(|(nm, res)| (ident_of(nm.0), res.clone()))
+                    .map(|((nm, _, _), res)| (nm.0, res.clone()))
                     .collect();
                 let variant = pre_sig.contract.variant.clone();
-                let mut sig = lower_logic_sig(self.ctx, self.names, "".into(), pre_sig, *id);
+<<<<<<< LEFT
+                let mut contract = lower_logic_sig(self.ctx, self.names, pre_sig.contract);
+||||||| BASE
+                let mut contract = lower_sig(self.ctx, self.names, pre_sig.contract);
+=======
+                let mut contract = lower_contract(self.ctx, self.names, pre_sig.contract);
+>>>>>>> RIGHT
 
                 let variant = if *id == self.self_id {
                     let subst = self.ctx.normalize_erasing_regions(self.typing_env, *subst);
@@ -342,17 +352,16 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     Exp::mk_true()
                 };
 
-                sig.contract.subst(&arg_subst);
+                contract.subst(&arg_subst);
 
-                let fun = Exp::qvar(self.names.item(*id, subst));
+                let fun = Exp::Var(self.names.item(*id, subst));
                 let call = fun.app(args);
-                sig.contract.subst(&[("result".into(), call.clone())].into_iter().collect());
+                contract.subst(&[(STATIC_NAMES.result, call.clone())].into_iter().collect());
 
-                let post = sig
-                    .contract
+                let post = contract
                     .requires_conj_labelled()
                     .log_and(variant)
-                    .log_and(sig.contract.ensures_conj().implies(k(call)?));
+                    .log_and(contract.ensures_conj().implies(k(call)?));
 
                 Ok(post)
             }),
@@ -368,10 +377,10 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_wp(rhs, k)?))
                 }),
                 BinOp::Div => self.build_wp(lhs, &|lhs| {
-                    self.build_wp(rhs, &|rhs| k(Exp::var("div").app([lhs.clone(), rhs])))
+                    self.build_wp(rhs, &|rhs| k(Exp::qvar("div".into()).app([lhs.clone(), rhs])))
                 }),
                 BinOp::Rem => self.build_wp(lhs, &|lhs| {
-                    self.build_wp(rhs, &|rhs| k(Exp::var("mod").app([lhs.clone(), rhs])))
+                    self.build_wp(rhs, &|rhs| k(Exp::qvar("mod".into()).app([lhs.clone(), rhs])))
                 }),
                 _ => self.build_wp(lhs, &|lhs| {
                     self.build_wp(rhs, &|rhs| {
@@ -394,10 +403,8 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Quant { kind: QuantKind::Forall, binder, body, .. } => {
                 let forall_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
-                let forall_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))),
-                    forall_pre,
-                );
+                let forall_pre =
+                    Exp::forall(binder.iter().map(|(s, t)| (s.0, self.ty(*t))), forall_pre);
                 let forall_pure = self.lower_pure(t);
                 Ok(forall_pre.log_and(k(forall_pure)?))
             }
@@ -405,10 +412,8 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Quant { kind: QuantKind::Exists, binder, body, .. } => {
                 let exists_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
-                let exists_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))),
-                    exists_pre,
-                );
+                let exists_pre =
+                    Exp::forall(binder.iter().map(|(s, t)| (s.0, self.ty(*t))), exists_pre);
                 let exists_pure = self.lower_pure(t);
                 Ok(exists_pre.log_and(k(exists_pure)?))
             }
@@ -423,7 +428,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         fields: flds
                             .into_iter()
                             .enumerate()
-                            .map(|(idx, fld)| (self.names.tuple_field(args, idx.into()), fld))
+                            .map(|(idx, fld)| {
+                                (Name::local(self.names.tuple_field(args, idx.into())), fld)
+                            })
                             .collect(),
                     }),
                 })
@@ -438,9 +445,13 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 })
             }
             // VC( * T, Q) = VC(T, |t| Q(*t))
-            TermKind::Cur { term } => self.build_wp(term, &|term| k(term.field("current".into()))),
+            TermKind::Cur { term } => {
+                self.build_wp(term, &|term| k(term.field(Name::Global("current".into()))))
+            }
             // VC( ^ T, Q) = VC(T, |t| Q(^t))
-            TermKind::Fin { term } => self.build_wp(term, &|term| k(term.field("final".into()))),
+            TermKind::Fin { term } => {
+                self.build_wp(term, &|term| k(term.field(Name::Global("final".into()))))
+            }
             // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))
             TermKind::Impl { lhs, rhs } => self.build_wp(lhs, &|lhs| {
                 Ok(Exp::if_(lhs, self.build_wp(rhs, k)?, k(Exp::mk_true())?))
@@ -491,7 +502,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                self.build_wp(lhs, &|lhs| k(lhs.field(field.clone())))
+                self.build_wp(lhs, &|lhs| k(lhs.field(Name::local(field))))
             }
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
             TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
@@ -532,13 +543,16 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 };
                 let flds = fields.iter().map(|pat| self.build_pattern_inner(bounds, pat));
                 if self.ctx.def_kind(var_did) == DefKind::Variant {
-                    WPattern::ConsP(self.names.constructor(var_did, subst), flds.collect())
+                    WPattern::ConsP(
+                        Name::local(self.names.constructor(var_did, subst)),
+                        flds.collect(),
+                    )
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {
                     let flds: Box<[_]> = flds
                         .enumerate()
-                        .map(|(i, f)| (self.names.field(var_did, subst, i.into()), f))
+                        .map(|(i, f)| (Name::local(self.names.field(var_did, subst, i.into())), f))
                         .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                         .collect();
                     if flds.is_empty() { WPattern::Wildcard } else { WPattern::RecP(flds) }
@@ -546,9 +560,8 @@ impl<'tcx> VCGen<'_, 'tcx> {
             }
             PatternKind::Wildcard => WPattern::Wildcard,
             PatternKind::Binder(name) => {
-                let name_id = name.as_str().into();
-                let new = self.uniq_occ(&name_id);
-                bounds.insert(name_id, Exp::var(new.clone()));
+                let new = name.0.refresh();
+                bounds.insert(name.0, Exp::var(new));
                 WPattern::VarP(new)
             }
             PatternKind::Bool(true) => WPattern::mk_true(),
@@ -565,7 +578,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     .enumerate()
                     .map(|(idx, pat)| {
                         (
-                            self.names.tuple_field(tys, idx.into()),
+                            Name::local(self.names.tuple_field(tys, idx.into())),
                             self.build_pattern_inner(bounds, pat),
                         )
                     })
@@ -581,18 +594,13 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     }
                     TyKind::Ref(_, _, Mutability::Not) => self.build_pattern_inner(bounds, pointee),
                     TyKind::Ref(_, _, Mutability::Mut) => WPattern::RecP(Box::new([(
-                        "current".into(),
+                        Name::Global(self.names.in_pre(PreMod::MutBor, "current")),
                         self.build_pattern_inner(bounds, pointee),
                     )])),
                     _ => unreachable!(),
                 }
             }
         }
-    }
-
-    fn uniq_occ(&self, id: &Ident) -> Ident {
-        let occ = self.subst.borrow().nb_occurences(id);
-        if occ == 0 { id.clone() } else { Ident::from_string(format!("{}_{occ}", &**id)) }
     }
 
     fn build_wp_slice(

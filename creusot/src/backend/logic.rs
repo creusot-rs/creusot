@@ -5,13 +5,13 @@ use crate::{
     },
     contracts_items::get_builtin,
     ctx::*,
-    naming::ident_of,
+    naming::STATIC_NAMES,
     translated_item::FileModule,
     translation::pearlite::Term,
 };
 use rustc_hir::def_id::DefId;
 use why3::{
-    Ident,
+    Ident, Name,
     declaration::*,
     exp::{BinOp, Exp, ExpMutVisitor, Trigger, super_visit_mut},
 };
@@ -44,17 +44,18 @@ pub(crate) fn translate_logic_or_predicate(
     let mut body_decls = Vec::new();
 
     let args = pre_sig.inputs.clone();
+    let bound: Box<[Ident]> = args.iter().map(|(name, _, _)| name.0).collect();
 
-    let name = names.item(names.self_id, names.self_subst).as_ident();
+    let name = names.item_ident(names.self_id, names.self_subst);
     let sig = lower_logic_sig(ctx, &mut names, name, pre_sig, def_id);
     let (param_decls, args_names): (Vec<_>, Vec<_>) = args
         .into_iter()
-        .map(|(nm, span, ty)| {
-            let name = ident_of(nm);
+        .map(|(name, span, ty)| {
+            let name = name.0;
             let decl = Decl::LogicDecl(LogicDecl {
                 kind: Some(DeclKind::Constant),
                 sig: Signature {
-                    name: name.clone(),
+                    name,
                     trigger: None,
                     attrs: vec![],
                     retty: Some(translate_ty(ctx, &names, span, ty)),
@@ -85,7 +86,7 @@ pub(crate) fn translate_logic_or_predicate(
 
     let postcondition = sig.contract.ensures_conj();
 
-    let term = ctx.ctx.term(def_id)?.unwrap().clone();
+    let term = ctx.ctx.term(def_id)?.unwrap().instantiate(&bound);
     let wp = wp(
         ctx,
         &mut names,
@@ -93,7 +94,7 @@ pub(crate) fn translate_logic_or_predicate(
         args_names,
         sig.contract.variant.clone(),
         term,
-        "result".into(),
+        STATIC_NAMES.result,
         postcondition.clone(),
     )
     .unwrap_or_else(|e| {
@@ -102,7 +103,8 @@ pub(crate) fn translate_logic_or_predicate(
 
     let goal = sig.contract.requires_implies(wp);
 
-    body_decls.extend([Decl::Goal(Goal { name: format!("vc_{}", (&*sig.name)).into(), goal })]);
+    let vc_ident = Ident::fresh(&format!("vc_{}", sig.name.name()));
+    body_decls.push(Decl::Goal(Goal { name: vc_ident, goal }));
 
     let mut decls = names.provide_deps(ctx);
     decls.extend(body_decls);
@@ -129,6 +131,11 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     let mut decls = vec![];
 
     let body = lower_pure(ctx, names, &body);
+    let lim_name = if sig.uses_simple_triggers() {
+        Some(Ident::fresh(format!("{}_lim", sig.name.name())))
+    } else {
+        None
+    };
 
     if sig.contract.variant.is_none() {
         let mut sig = sig.clone();
@@ -151,16 +158,17 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
         decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: decl_sig }));
 
-        if sig.uses_simple_triggers() {
-            limited_function_encode(&mut decls, &sig, body, kind)
+        if let Some(lim_name) = lim_name {
+            limited_function_encode(&mut decls, &sig, lim_name, body, kind)
         } else {
             decls.push(Decl::Axiom(definition_axiom(&sig, body, "def")));
         }
     }
 
     if !sig.contract.ensures.is_empty() {
-        if sig.uses_simple_triggers() && !sig.contract.variant.is_none() {
-            let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
+        if let Some(lim_name) = lim_name
+            && !sig.contract.variant.is_none()
+        {
             let mut lim_sig = sig;
             lim_sig.name = lim_name;
             lim_sig.trigger = Some(Trigger::single(function_call(&lim_sig)));
@@ -182,7 +190,9 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
     impl<'a> ExpMutVisitor for QNameSubst<'a> {
         fn visit_mut(&mut self, exp: &mut Exp) {
             match exp {
-                Exp::QVar(qname) if qname.is_ident(self.0) => *exp = Exp::var(self.1.clone()),
+                Exp::Var(Name::Global(qname)) if qname.is_ident(&self.0.name) => {
+                    *exp = Exp::var(*self.1)
+                }
                 _ => super_visit_mut(self, exp),
             }
         }
@@ -198,8 +208,13 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
 // axiom weaker but avoids having it cause a matching loop. This is useful since it can help the
 // solve return "unknown" instead of relying on a timeout, and give it a chance to apply map
 // extensionality axioms.
-fn limited_function_encode(decls: &mut Vec<Decl>, sig: &Signature, mut body: Exp, kind: DeclKind) {
-    let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
+fn limited_function_encode(
+    decls: &mut Vec<Decl>,
+    sig: &Signature,
+    lim_name: Ident,
+    mut body: Exp,
+    kind: DeclKind,
+) {
     subst_qname(&mut body, &sig.name, &lim_name);
     let mut lim_sig = Signature {
         name: lim_name,
@@ -221,19 +236,19 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     let mut condition = sig.contract.requires_implies(postcondition);
 
     let func_call = function_call(sig);
-    let trigger = sig.trigger.clone().into_iter();
-    condition.subst(&mut [("result".into(), func_call.clone())].into_iter().collect());
+    let trigger = sig.trigger.clone();
+    condition.subst(&mut [(STATIC_NAMES.result, func_call.clone())].into_iter().collect());
     let args: Box<[(_, _)]> = sig
         .args
         .iter()
         .cloned()
         .flat_map(|b| b.var_type_pairs())
-        .filter(|arg| &*arg.0 != "_")
+        // .filter(|arg| arg.0 != "_") // TODO Wat
         .collect();
 
     let axiom = Exp::forall_trig(args, trigger, condition);
-
-    Axiom { name: format!("{}_spec", &*sig.name).into(), rewrite: false, axiom }
+    let spec_ident = Ident::fresh(&format!("{}_spec", sig.name.name()));
+    Axiom { name: spec_ident, rewrite: false, axiom }
 }
 
 pub fn function_call(sig: &Signature) -> Exp {
@@ -242,15 +257,15 @@ pub fn function_call(sig: &Signature) -> Exp {
         .iter()
         .cloned()
         .flat_map(|b| b.var_type_pairs())
-        .filter(|arg| &*arg.0 != "_")
-        .map(|arg| Exp::var(arg.0));
+        // .filter(|arg| &*arg.0 != "_") // TODO Wat
+        .map(|(arg, _)| Exp::var(arg));
 
-    Exp::var(sig.name.clone()).app(args)
+    Exp::var(sig.name).app(args)
 }
 
 fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     let call = function_call(sig);
-    let trigger = sig.trigger.clone().into_iter();
+    let trigger = sig.trigger.clone();
 
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
@@ -259,6 +274,6 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
 
     let axiom = Exp::forall_trig(args, trigger, condition);
 
-    let name = format!("{}_{suffix}", &*sig.name).into();
+    let name = Ident::fresh(&format!("{}_{suffix}", &sig.name.name()));
     Axiom { name, rewrite: false, axiom }
 }
