@@ -2,7 +2,7 @@ use crate::{
     ctx::*,
     error::CreusotResult,
     translation::{
-        pearlite::Term,
+        pearlite::PIdent,
         specification::{ContractClauses, contract_clauses_of},
         traits::TraitResolved,
     },
@@ -13,17 +13,20 @@ use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     thir::{self, Expr, ExprKind, Thir, visit::Visitor},
-    ty::{Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, TyCtxt, TyKind},
+    ty::{Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, Ty, TyCtxt, TyKind},
 };
-use rustc_span::Symbol;
+use rustc_span::Span;
 use rustc_type_ir::ConstKind;
+
+use super::specification::inputs_and_output_from_thir;
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
     pub contract: ContractClauses,
     pub subst: GenericArgsRef<'tcx>,
-    pub arg_subst: Vec<(Symbol, Term<'tcx>)>,
+    pub inputs: Box<[(PIdent, Span, Ty<'tcx>)]>,
+    pub output: Ty<'tcx>,
     // Additional predicates we must verify to call this function
     pub additional_predicates: Vec<Predicate<'tcx>>,
 }
@@ -43,6 +46,9 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: LocalDefId,
 ) -> CreusotResult<(DefId, ExternSpec<'tcx>)> {
+    let def_id_ = def_id.to_def_id();
+    let span = ctx.def_span(def_id_);
+    let contract = contract_clauses_of(ctx, def_id_).unwrap();
     // Handle error gracefully
     let (thir, expr) = ctx.fetch_thir(def_id)?;
     let thir = thir.borrow();
@@ -54,13 +60,13 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let (id, subst) = visit.items.pop().unwrap();
 
     let (id, _) = if ctx.trait_of_item(id).is_some() {
-        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id.to_def_id()), id, subst).to_opt(id, subst).unwrap_or_else(|| {
+        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id_), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
-                ctx.def_span(def_id.to_def_id()),
+                ctx.def_span(def_id_),
                 "could not derive original instance from external specification",
             );
 
-            err.span_warn(ctx.def_span(def_id.to_def_id()), "the bounds on an external specification must be at least as strong as the original impl bounds");
+            err.span_warn(ctx.def_span(def_id_), "the bounds on an external specification must be at least as strong as the original impl bounds");
             err.emit()
         })
     } else {
@@ -70,7 +76,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     // Generics of the actual item.
     let mut inner_subst = erased_identity_for_item(ctx.tcx, id).to_vec();
     // Generics of our stub.
-    let outer_subst = erased_identity_for_item(ctx.tcx, def_id.to_def_id());
+    let outer_subst = erased_identity_for_item(ctx.tcx, def_id_);
 
     // FIXME: I don't remember the original reason for introducing this...
     let extra_parameters = inner_subst.len() - outer_subst.len();
@@ -96,7 +102,6 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let mut subst = Vec::new();
     let mut errors = Vec::new();
     for i in 0..outer_subst.len() {
-        let span = ctx.def_span(def_id.to_def_id());
         match (inner_subst[i + extra_parameters].unpack(), outer_subst[i].unpack()) {
             (GenericArgKind::Type(t1), GenericArgKind::Type(t2)) => match (t1.kind(), t2.kind()) {
                 (TyKind::Param(param1), TyKind::Param(param2))
@@ -146,8 +151,6 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     let subst = ctx.mk_args(&subst);
 
-    let contract = contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
-
     let additional_predicates = ctx
         .predicates_of(def_id)
         .instantiate(ctx.tcx, subst)
@@ -156,16 +159,8 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .map(Clause::as_predicate)
         .collect();
 
-    let arg_subst = ctx
-        .fn_arg_names(def_id)
-        .iter()
-        .zip(ctx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).instantiate_identity().inputs().iter()))
-        .map(|(i, (i2, ty))| {
-            let ty = ctx.tcx.instantiate_bound_regions_with_erased(ty.map_bound(|&ty| ty));
-            (i.name, Term::var(i2.name, ty))
-        })
-        .collect();
-    Ok((id, ExternSpec { contract, additional_predicates, subst, arg_subst }))
+    let (inputs, output) = inputs_and_output_from_thir(ctx, def_id_, &thir);
+    Ok((id, ExternSpec { contract, additional_predicates, subst, inputs, output }))
 }
 
 // We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.

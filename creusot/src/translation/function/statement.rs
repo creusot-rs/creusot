@@ -6,10 +6,7 @@ use crate::{
     },
     extended_location::ExtendedLocation,
     fmir::Operand,
-    translation::{
-        fmir::{self, RValue},
-        specification::inv_subst,
-    },
+    translation::fmir::{self, RValue, inv_subst},
 };
 use rustc_borrowck::consumers::TwoPhaseActivation;
 use rustc_middle::{
@@ -146,12 +143,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             match self.invariant_assertions.shift_remove(def_id) {
                                 None => return,
                                 Some((mut cond, msg)) => {
-                                    cond.subst(&inv_subst(
-                                        self.tcx(),
-                                        &self.body,
-                                        &self.locals,
-                                        si,
-                                    ));
+                                    let places = self.tree.visible_places(si.scope);
+                                    let subst = inv_subst(&self.ctx, &places);
+                                    cond.subst_with(subst);
                                     self.check_use_in_logic(&cond, loc);
                                     self.emit_statement(fmir::Statement::Assertion {
                                         cond,
@@ -166,7 +160,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 .assertions
                                 .shift_remove(def_id)
                                 .expect("Could not find body of assertion");
-                            assertion.subst(&inv_subst(self.tcx(), &self.body, &self.locals, si));
+                            let places = self.tree.visible_places(si.scope);
+                            assertion.subst_with(inv_subst(&self.ctx, &places));
                             self.check_use_in_logic(&assertion, loc);
                             self.emit_statement(fmir::Statement::Assertion {
                                 cond: assertion,

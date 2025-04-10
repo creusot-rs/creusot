@@ -13,8 +13,7 @@ use crate::{
         ty::translate_ty,
     },
     contracts_items::{should_replace_trigger, why3_attrs},
-    naming::ident_of,
-    specification::PreSignature,
+    specification::{PreContract, PreSignature},
 };
 
 // This should be given a normalized pre_sig!
@@ -31,7 +30,7 @@ pub(crate) fn lower_sig<'tcx, N: Namer<'tcx>>(
     let args: Box<[Binder]> = pre_sig
         .inputs
         .iter()
-        .map(|(id, span, ty)| Binder::typed(ident_of(*id), translate_ty(ctx, names, *span, *ty)))
+        .map(|&(id, span, ty)| Binder::typed(id.0, translate_ty(ctx, names, span, ty)))
         .collect();
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
@@ -43,25 +42,24 @@ pub(crate) fn lower_sig<'tcx, N: Namer<'tcx>>(
         .map(|attr| attrs.push(attr));
 
     let retty = Some(translate_ty(ctx, names, span, pre_sig.output));
-
-    let requires = pre_sig
-        .contract
-        .requires
-        .into_iter()
-        .map(|cond| lower_condition(ctx, names, cond))
-        .collect();
-    let ensures = pre_sig
-        .contract
-        .ensures
-        .into_iter()
-        .map(|cond| lower_condition(ctx, names, cond))
-        .collect();
-    let variant = pre_sig.contract.variant.map(|term| lower_pure(ctx, names, &term));
-    let contract = Contract { requires, ensures, variant };
+    let contract = lower_contract(ctx, names, pre_sig.contract);
 
     let mut sig = Signature { name, trigger: None, attrs, retty, args, contract };
     if ctx.opts.simple_triggers && should_replace_trigger(ctx.tcx, def_id) {
         sig.trigger = Some(Trigger::single(function_call(&sig)))
     };
     sig
+}
+
+pub(crate) fn lower_contract<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    contract: PreContract<'tcx>,
+) -> Contract {
+    let requires =
+        contract.requires.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
+    let ensures =
+        contract.ensures.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
+    let variant = contract.variant.map(|term| lower_pure(ctx, names, &term));
+    Contract { requires, ensures, variant }
 }

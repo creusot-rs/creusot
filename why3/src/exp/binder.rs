@@ -44,10 +44,10 @@ impl Binder {
     /// Given that `self`'s type is `ty`, collect all the variables defined by `self` in `out`.
     fn flatten_inner(self, ty: &Type, out: &mut Vec<(Ident, Type)>) {
         match self {
-            Binder::Wild => out.push(("_".into(), ty.clone())),
+            Binder::Wild => out.push((Ident::fresh("_"), ty.clone())),
             Binder::UnNamed(ty2) => {
                 assert!(ty == &ty2);
-                out.push(("_".into(), ty2))
+                out.push((Ident::fresh("_"), ty2.clone()))
             }
             Binder::Named(id) => out.push((id, ty.clone())),
             Binder::Typed(_, ids, ty2) => {
