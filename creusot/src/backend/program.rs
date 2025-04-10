@@ -37,7 +37,7 @@ use rustc_type_ir::{IntTy, UintTy};
 use std::{cell::RefCell, fmt::Debug, iter::once};
 use why3::{
     Ident, QName,
-    coma::{Arg, Defn, Expr, IsRef, Param, Term, Var},
+    coma::{Arg, Defn, Expr, IsRef, Param, Prototype, Term, Var},
     declaration::{
         Attribute, Condition, Contract, Decl, Meta, MetaArg, MetaIdent, Module, Signature,
     },
@@ -94,14 +94,16 @@ pub fn val(sig: Signature) -> Decl {
         body.boxed(),
         false,
         [Defn {
-            name: "return".into(),
-            attrs: vec![],
-            params: [Param::Term("result".into(), sig.retty.clone().unwrap())].into(),
+            prototype: Prototype {
+                name: "return".into(),
+                attrs: vec![],
+                params: [Param::Term("result".into(), sig.retty.clone().unwrap())].into(),
+            },
             body: postcond,
         }]
         .into(),
     );
-    Decl::Coma(Defn { name: sig.name, attrs: vec![], params, body })
+    Decl::Coma(Defn { prototype: Prototype { name: sig.name, attrs: vec![], params }, body })
 }
 
 // TODO: move to a more "central" location
@@ -202,9 +204,11 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         body.boxed(),
         false,
         [Defn {
-            name: "return".into(),
-            attrs: vec![],
-            params: [Param::Term("result".into(), sig.retty.clone().unwrap())].into(),
+            prototype: Prototype {
+                name: "return".into(),
+                attrs: vec![],
+                params: [Param::Term("result".into(), sig.retty.clone().unwrap())].into(),
+            },
             body: postcond,
         }]
         .into(),
@@ -225,7 +229,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             [Param::Term("ret".into(), sig.retty.unwrap())].into(),
         )])
         .collect();
-    Defn { name: sig.name, attrs: sig.attrs, params, body }
+    Defn { prototype: Prototype { name: sig.name, attrs: sig.attrs, params }, body }
 }
 
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
@@ -256,9 +260,9 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
 
     let inner = Expr::Defn(block.body.boxed(), true, defns);
     block.body = Expr::Defn(
-        Expr::Symbol(block.name.clone().into()).boxed(),
+        Expr::Symbol(block.prototype.name.clone().into()).boxed(),
         true,
-        [Defn::simple(block.name.clone(), inner)].into(),
+        [Defn::simple(block.prototype.name.clone(), inner)].into(),
     );
     block
 }
@@ -817,7 +821,7 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
             let body = Expr::assert(discr.clone().eq(body), mk_goto(tgt).black_box());
             let name = format!("br{}", ix.as_usize()).into();
 
-            Defn { name, body, params: params.into(), attrs: vec![] }
+            Defn { prototype: Prototype { name, params: params.into(), attrs: vec![] }, body }
         })
         .collect();
     assert!(brch.next().is_none());
@@ -890,9 +894,11 @@ where
             Expr::Any.boxed(),
             false,
             [Defn {
-                name: "any_".into(),
-                attrs: vec![],
-                params: [Param::Term(id, ty)].into(),
+                prototype: Prototype {
+                    name: "any_".into(),
+                    attrs: vec![],
+                    params: [Param::Term(id, ty)].into(),
+                },
                 body: tail.black_box(),
             }]
             .into(),
