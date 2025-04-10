@@ -1,7 +1,7 @@
 use crate::{
     backend::{
-        CannotFetchThir, Why3Generator, is_trusted_item, logic::vcgen::wp, signature::lower_sig,
-        term::lower_pure, ty::translate_ty,
+        CannotFetchThir, Why3Generator, is_trusted_item, logic::vcgen::wp,
+        signature::lower_logic_sig, term::lower_pure, ty::translate_ty,
     },
     contracts_items::get_builtin,
     ctx::*,
@@ -46,7 +46,7 @@ pub(crate) fn translate_logic_or_predicate(
     let args = pre_sig.inputs.clone();
 
     let name = names.item(names.self_id, names.self_subst).as_ident();
-    let sig = lower_sig(ctx, &mut names, name, pre_sig, def_id);
+    let sig = lower_logic_sig(ctx, &mut names, name, pre_sig, def_id);
     let (param_decls, args_names): (Vec<_>, Vec<_>) = args
         .into_iter()
         .map(|(nm, span, ty)| {
@@ -114,6 +114,7 @@ pub(crate) fn translate_logic_or_predicate(
     Ok(Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } }))
 }
 
+/// Translate a logical term to why3.
 pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,

@@ -12,7 +12,7 @@ use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
 use why3::{
     Ident,
-    coma::{Arg, Defn, Expr, Param},
+    coma::{Arg, Defn, Expr, Param, Prototype},
     declaration::{AdtDecl, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl},
     exp::{Exp, Trigger},
     ty::Type as MlT,
@@ -63,7 +63,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Never => MlT::unit(),
         RawPtr(_, _) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "ptr")),
         Closure(id, subst)
-            if is_logic(ctx.tcx, *id) || subst.as_closure().upvar_tys().len() == 0 =>
+            if is_logic(ctx.tcx, *id) || subst.as_closure().upvar_tys().is_empty() =>
         {
             MlT::unit()
         }
@@ -101,7 +101,7 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
         })
         .collect();
 
-    if fields.len() == 0 {
+    if fields.is_empty() {
         return vec![];
     }
 
@@ -235,9 +235,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         .app(fields.iter().map(|(nm, _)| Arg::Term(Exp::var(nm.clone()))));
 
     let good_branch: Defn = Defn {
-        name: format!("good").into(),
-        attrs: vec![],
-        params: field_args.clone(),
+        prototype: Prototype { name: "good".into(), attrs: vec![], params: field_args.clone() },
         body: Expr::assert(cons_test.clone().eq(Exp::var("input")), ret.black_box()),
     };
 
@@ -262,10 +260,12 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
 
     let branches = once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
-        name: names.eliminator(variant_id, subst).as_ident(),
-        params: Box::new([input, ret_cont]),
+        prototype: Prototype {
+            name: names.eliminator(variant_id, subst).as_ident(),
+            params: Box::new([input, ret_cont]),
+            attrs: vec![],
+        },
         body: Expr::Defn(Box::new(Expr::Any), false, branches),
-        attrs: vec![],
     })
 }
 
@@ -281,7 +281,7 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
             Exp::Constructor { ctor, args: fields }
         }
         DefKind::Closure | DefKind::Struct => {
-            if fields.len() == 0 {
+            if fields.is_empty() {
                 Exp::unit()
             } else {
                 let fields = fields

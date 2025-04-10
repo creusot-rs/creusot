@@ -107,12 +107,23 @@ pub enum Arg {
     Cont(Expr),
 }
 
+/// The signature of a coma handler.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Prototype {
+    /// Name of the handler
+    pub name: Ident,
+    /// optional attributes, like `[@coma:extspec]`
+    pub attrs: Vec<Attribute>,
+    /// Arguments (and continuations) of the handler
+    pub params: Box<[Param]>,
+}
+
+/// A coma handler, introduced with `let`.
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Defn {
-    pub name: Ident,
-    pub attrs: Vec<Attribute>,
-    pub params: Box<[Param]>,
+    pub prototype: Prototype,
     pub body: Expr,
 }
 
@@ -131,7 +142,10 @@ pub struct Module(pub Box<[Decl]>);
 
 impl Defn {
     pub fn simple(name: impl Into<Ident>, body: Expr) -> Self {
-        Defn { name: name.into(), attrs: vec![], params: Box::new([]), body }
+        Defn {
+            prototype: Prototype { name: name.into(), attrs: vec![], params: Box::new([]) },
+            body,
+        }
     }
 }
 
@@ -168,8 +182,8 @@ impl Expr {
     pub fn where_(self, defs: Box<[Defn]>) -> Self {
         // If we have `x [ x = z ]` replace this by `z`
         if defs.len() == 1
-            && !defs[0].body.occurs_cont(&defs[0].name)
-            && self.as_symbol().is_some_and(|qn| qn.is_ident(&defs[0].name))
+            && !defs[0].body.occurs_cont(&defs[0].prototype.name)
+            && self.as_symbol().is_some_and(|qn| qn.is_ident(&defs[0].prototype.name))
         {
             let [d] = *defs.into_array::<1>().unwrap();
             d.body
@@ -213,6 +227,7 @@ impl Expr {
                 e.occurs_cont(cont)
                     || defs.iter().any(|d| {
                         let in_params = d
+                            .prototype
                             .params
                             .iter()
                             .filter_map(
@@ -450,10 +465,10 @@ where
 {
     docs![
         alloc,
-        defn.name.pretty(alloc),
-        alloc.intersperse(defn.attrs.iter().map(|a| a.pretty(alloc)), alloc.space()),
+        defn.prototype.name.pretty(alloc),
+        alloc.intersperse(defn.prototype.attrs.iter().map(|a| a.pretty(alloc)), alloc.space()),
         alloc.space(),
-        alloc.intersperse(defn.params.iter().map(|a| a.pretty(alloc)), " "),
+        alloc.intersperse(defn.prototype.params.iter().map(|a| a.pretty(alloc)), " "),
         arrow_kind,
         alloc.space(),
         defn.body.pretty(alloc).nest(2).group(),

@@ -6,7 +6,7 @@ use crate::{
         is_trusted_item,
         optimization::{gather_usage, infer_proph_invariants, simplify_fmir},
         place::{Focus, create_assign_inner, projections_to_expr, rplace_to_expr},
-        signature::lower_sig,
+        signature::lower_program_sig,
         term::{lower_pat, lower_pure},
         ty::{
             constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, uty_to_prelude,
@@ -37,10 +37,8 @@ use rustc_type_ir::{IntTy, UintTy};
 use std::{cell::RefCell, fmt::Debug, iter::once};
 use why3::{
     Ident, QName,
-    coma::{Arg, Defn, Expr, IsRef, Param, Term, Var},
-    declaration::{
-        Attribute, Condition, Contract, Decl, Meta, MetaArg, MetaIdent, Module, Signature,
-    },
+    coma::{Arg, Defn, Expr, IsRef, Param, Prototype, Term, Var},
+    declaration::{Attribute, Condition, Contract, Decl, Meta, MetaArg, MetaIdent, Module},
     exp::{Binder, Constant, Exp, Pattern as WPattern},
     ty::Type,
 };
@@ -69,39 +67,29 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } })
 }
 
-pub fn val(sig: Signature) -> Decl {
-    let params = sig
-        .args
-        .into_iter()
-        .flat_map(|b| b.var_type_pairs())
-        .map(|(v, ty)| Param::Term(v, ty))
-        .chain([Param::Cont(
-            "return".into(),
-            [].into(),
-            [Param::Term("ret".into(), sig.retty.clone().unwrap())].into(),
-        )])
-        .collect();
-
-    let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
+pub(crate) fn val(sig: Prototype, contract: Contract, return_ty: why3::ty::Type) -> Decl {
+    let requires = contract.requires.into_iter().map(Condition::labelled_exp);
     let body = requires.rfold(Expr::Any, |acc, cond| Expr::assert(cond, acc));
 
     let mut postcond = Expr::Symbol("return".into()).app([Arg::Term(Exp::var("result"))]);
     postcond = postcond.black_box();
-    let ensures = sig.contract.ensures.into_iter().map(Condition::unlabelled_exp);
+    let ensures = contract.ensures.into_iter().map(Condition::unlabelled_exp);
     postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
 
     let body = Expr::Defn(
         body.boxed(),
         false,
         [Defn {
-            name: "return".into(),
-            attrs: vec![],
-            params: [Param::Term("result".into(), sig.retty.clone().unwrap())].into(),
+            prototype: Prototype {
+                name: "return".into(),
+                attrs: vec![],
+                params: [Param::Term("result".into(), return_ty)].into(),
+            },
             body: postcond,
         }]
         .into(),
     );
-    Decl::Coma(Defn { name: sig.name, attrs: vec![], params, body })
+    Decl::Coma(Defn { prototype: Prototype { attrs: Vec::new(), ..sig }, body })
 }
 
 // TODO: move to a more "central" location
@@ -117,7 +105,8 @@ pub(crate) fn node_graph(x: &Body) -> petgraph::graphmap::DiGraphMap<BasicBlock,
     graph
 }
 
-pub fn to_why<'tcx, N: Namer<'tcx>>(
+/// Translate a program function body to why3.
+pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     name: Ident,
@@ -151,22 +140,29 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         })
         .collect();
 
-    let mut sig = if body_id.promoted.is_none() {
+    let (mut sig, contract, return_ty) = if body_id.promoted.is_none() {
         let def_id = body_id.def_id();
         let typing_env = ctx.typing_env(def_id);
         let mut pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
         pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
-        lower_sig(ctx, names, name, pre_sig, def_id)
+        lower_program_sig(ctx, names, name, pre_sig, def_id)
     } else {
         let ret = ret.unwrap();
-        Signature {
-            name,
-            trigger: None,
-            attrs: vec![],
-            retty: Some(translate_ty(ctx, names, ret.span, ret.ty)),
-            args: [].into(),
-            contract: Contract::default(),
-        }
+        let ret_ty = translate_ty(ctx, names, ret.span, ret.ty);
+        (
+            Prototype {
+                name,
+                attrs: vec![],
+                params: [Param::Cont(
+                    "return".into(),
+                    [].into(),
+                    [Param::Term("ret".into(), ret_ty.clone())].into(),
+                )]
+                .into(),
+            },
+            Contract::default(),
+            ret_ty,
+        )
     };
     let mut body = Expr::Defn(Expr::Symbol("bb0".into()).boxed(), true, blocks);
 
@@ -182,7 +178,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         // a promoted item
         || body_id.promoted.is_some();
 
-    let ensures = sig.contract.ensures.into_iter().map(Condition::labelled_exp);
+    let ensures = contract.ensures.into_iter().map(Condition::labelled_exp);
 
     if !open_body {
         postcond = postcond.black_box();
@@ -201,30 +197,21 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         body.boxed(),
         false,
         [Defn {
-            name: "return".into(),
-            attrs: vec![],
-            params: [Param::Term("result".into(), sig.retty.clone().unwrap())].into(),
+            prototype: Prototype {
+                name: "return".into(),
+                attrs: vec![],
+                params: [Param::Term("result".into(), return_ty)].into(),
+            },
             body: postcond,
         }]
         .into(),
     );
 
-    let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
+    let requires = contract.requires.into_iter().map(Condition::labelled_exp);
     if !open_body {
         body = requires.rfold(body, |acc, req| Expr::assert(req, acc));
     }
-    let params = sig
-        .args
-        .into_iter()
-        .flat_map(|b| b.var_type_pairs())
-        .map(|(v, ty)| Param::Term(v, ty))
-        .chain([Param::Cont(
-            "return".into(),
-            [].into(),
-            [Param::Term("ret".into(), sig.retty.unwrap())].into(),
-        )])
-        .collect();
-    Defn { name: sig.name, attrs: sig.attrs, params, body }
+    Defn { prototype: sig, body }
 }
 
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
@@ -255,9 +242,9 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
 
     let inner = Expr::Defn(block.body.boxed(), true, defns);
     block.body = Expr::Defn(
-        Expr::Symbol(block.name.clone().into()).boxed(),
+        Expr::Symbol(block.prototype.name.clone().into()).boxed(),
         true,
-        [Defn::simple(block.name.clone(), inner)].into(),
+        [Defn::simple(block.prototype.name.clone(), inner)].into(),
     );
     block
 }
@@ -289,7 +276,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
 }
 
 impl<'tcx> Operand<'tcx> {
-    pub(crate) fn to_why<N: Namer<'tcx>>(
+    fn to_why<N: Namer<'tcx>>(
         self,
         lower: &mut LoweringState<'_, 'tcx, N>,
         istmts: &mut Vec<IntermediateStmt>,
@@ -313,7 +300,7 @@ impl<'tcx> Operand<'tcx> {
 }
 
 impl<'tcx> RValue<'tcx> {
-    pub(crate) fn to_why<N: Namer<'tcx>>(
+    fn to_why<N: Namer<'tcx>>(
         self,
         lower: &mut LoweringState<'_, 'tcx, N>,
         ty: Ty<'tcx>,
@@ -673,7 +660,7 @@ impl<'tcx> Terminator<'tcx> {
         }
     }
 
-    pub(crate) fn to_why<N: Namer<'tcx>>(
+    fn to_why<N: Namer<'tcx>>(
         self,
         lower: &mut LoweringState<'_, 'tcx, N>,
     ) -> (Vec<IntermediateStmt>, Expr) {
@@ -816,7 +803,7 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
             let body = Expr::assert(discr.clone().eq(body), mk_goto(tgt).black_box());
             let name = format!("br{}", ix.as_usize()).into();
 
-            Defn { name, body, params: params.into(), attrs: vec![] }
+            Defn { prototype: Prototype { name, params: params.into(), attrs: vec![] }, body }
         })
         .collect();
     assert!(brch.next().is_none());
@@ -834,7 +821,7 @@ fn mk_switch_branches(
 }
 
 impl<'tcx> Block<'tcx> {
-    pub(crate) fn to_why<N: Namer<'tcx>>(
+    fn to_why<N: Namer<'tcx>>(
         self,
         lower: &mut LoweringState<'_, 'tcx, N>,
         id: BasicBlock,
@@ -889,9 +876,11 @@ where
             Expr::Any.boxed(),
             false,
             [Defn {
-                name: "any_".into(),
-                attrs: vec![],
-                params: [Param::Term(id, ty)].into(),
+                prototype: Prototype {
+                    name: "any_".into(),
+                    attrs: vec![],
+                    params: [Param::Term(id, ty)].into(),
+                },
                 body: tail.black_box(),
             }]
             .into(),
@@ -954,7 +943,7 @@ impl IntermediateStmt {
 }
 
 impl<'tcx> Statement<'tcx> {
-    pub(crate) fn to_why<N: Namer<'tcx>>(
+    fn to_why<N: Namer<'tcx>>(
         self,
         lower: &mut LoweringState<'_, 'tcx, N>,
     ) -> Vec<IntermediateStmt> {
