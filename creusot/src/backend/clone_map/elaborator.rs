@@ -121,8 +121,8 @@ impl DepElab for ProgramElab {
                 .instantiate(ctx.tcx, subst)
                 .normalize(ctx.tcx, typing_env);
             pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
-            let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id);
-            return vec![program::val(sig)];
+            let (sig, contract, return_ty) = lower_program_sig(ctx, &names, name, pre_sig, def_id);
+            return vec![program::val(sig, contract, return_ty)];
         }
 
         // Inline the body of closures and promoted
