@@ -434,7 +434,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         let typing_env = ctx.typing_env(impl_id);
         let term = ctx.term(item_id)?.unwrap();
         let mut visitor = TermCalls { results: IndexSet::new() };
-        visitor.visit_term(term);
+        visitor.visit_term(&term.1);
 
         let trait_id = tcx.trait_id_of_impl(impl_id).unwrap();
 

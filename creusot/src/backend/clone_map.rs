@@ -9,7 +9,7 @@ use crate::{
     util::{erased_identity_for_item, path_of_span},
 };
 use elaborator::Strength;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 use itertools::{Either, Itertools};
 use once_map::unsync::OnceMap;
 use petgraph::prelude::DiGraphMap;
@@ -24,10 +24,10 @@ use rustc_middle::{
         self, GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
     },
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::Span;
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
-    Ident, QName,
+    Ident, Name, QName, Symbol,
     declaration::{Attribute, Decl, Span as WSpan, TyDecl},
 };
 
@@ -58,12 +58,17 @@ pub enum PreMod {
 }
 
 pub(crate) trait Namer<'tcx> {
-    fn item(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+    fn item(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
         let node = Dependency::Item(def_id, subst);
-        self.dependency(node).qname()
+        self.dependency(node).name()
     }
 
-    fn def_ty(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+    fn item_ident(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+        let node = Dependency::Item(def_id, subst);
+        self.dependency(node).ident()
+    }
+
+    fn def_ty(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
         let ty = match self.tcx().def_kind(def_id) {
             DefKind::Enum | DefKind::Struct | DefKind::Union => {
                 Ty::new_adt(self.tcx(), self.tcx().adt_def(def_id), subst)
@@ -76,19 +81,19 @@ pub(crate) trait Namer<'tcx> {
         self.ty(ty)
     }
 
-    fn ty(&self, ty: Ty<'tcx>) -> QName {
+    fn ty(&self, ty: Ty<'tcx>) -> Name {
         assert!(!ty.has_escaping_bound_vars());
-        self.dependency(Dependency::Type(ty)).qname()
+        self.dependency(Dependency::Type(ty)).name()
     }
 
-    fn constructor(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        self.dependency(Dependency::Item(def_id, subst)).qname()
+    fn constructor(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+        self.dependency(Dependency::Item(def_id, subst)).ident()
     }
 
-    fn ty_inv(&self, ty: Ty<'tcx>) -> QName {
+    fn ty_inv(&self, ty: Ty<'tcx>) -> Ident {
         let def_id = get_inv_function(self.tcx());
         let subst = self.tcx().mk_args(&[ty::GenericArg::from(ty)]);
-        self.item(def_id, subst)
+        self.item_ident(def_id, subst)
     }
 
     /// Creates a name for a struct or closure projection ie: x.field1
@@ -96,7 +101,7 @@ pub(crate) trait Namer<'tcx> {
     /// * `def_id` - The id of the type or closure being projected
     /// * `subst` - Substitution that type is being accessed at
     /// * `ix` - The field in that constructor being accessed.
-    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> QName {
+    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> Ident {
         let node = match self.tcx().def_kind(def_id) {
             DefKind::Closure => {
                 self.def_ty(def_id, subst);
@@ -110,21 +115,21 @@ pub(crate) trait Namer<'tcx> {
             _ => unreachable!(),
         };
 
-        self.dependency(node).qname()
+        self.dependency(node).ident()
     }
 
-    fn tuple_field(&self, args: &'tcx List<Ty<'tcx>>, idx: FieldIdx) -> QName {
+    fn tuple_field(&self, args: &'tcx List<Ty<'tcx>>, idx: FieldIdx) -> Ident {
         assert!(args.len() > 1);
         self.ty(Ty::new_tup(self.tcx(), args));
-        self.dependency(Dependency::TupleField(args, idx)).qname()
+        self.dependency(Dependency::TupleField(args, idx)).ident()
     }
 
-    fn eliminator(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        self.dependency(Dependency::Eliminator(def_id, subst)).qname()
+    fn eliminator(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+        self.dependency(Dependency::Eliminator(def_id, subst)).ident()
     }
 
-    fn promoted(&self, def_id: LocalDefId, prom: Promoted) -> QName {
-        self.dependency(Dependency::Promoted(def_id, prom)).qname()
+    fn promoted(&self, def_id: LocalDefId, prom: Promoted) -> Ident {
+        self.dependency(Dependency::Promoted(def_id, prom)).ident()
     }
 
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T;
@@ -133,46 +138,47 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::PreMod(module));
     }
 
-    fn prelude_module_name(&self, module: PreMod) -> Box<[Ident]> {
+    fn prelude_module_name(&self, module: PreMod) -> Box<[why3::Symbol]> {
         self.dependency(Dependency::PreMod(module));
-        let qname: QName = match (module, self.bitwise_mode()) {
-            (PreMod::Float32, _) => "creusot.float.Float32.".into(),
-            (PreMod::Float64, _) => "creusot.float.Float64.".into(),
-            (PreMod::Int, _) => "mach.int.Int.".into(),
-            (PreMod::Int8, false) => "creusot.int.Int8.".into(),
-            (PreMod::Int16, false) => "creusot.int.Int16.".into(),
-            (PreMod::Int32, false) => "creusot.int.Int32.".into(),
-            (PreMod::Int64, false) => "creusot.int.Int64.".into(),
-            (PreMod::Int128, false) => "creusot.int.Int128.".into(),
-            (PreMod::UInt8, false) => "creusot.int.UInt8.".into(),
-            (PreMod::UInt16, false) => "creusot.int.UInt16.".into(),
-            (PreMod::UInt32, false) => "creusot.int.UInt32.".into(),
-            (PreMod::UInt64, false) => "creusot.int.UInt64.".into(),
-            (PreMod::UInt128, false) => "creusot.int.UInt128.".into(),
-            (PreMod::Int8, true) => "creusot.int.Int8BW.".into(),
-            (PreMod::Int16, true) => "creusot.int.Int16BW.".into(),
-            (PreMod::Int32, true) => "creusot.int.Int32BW.".into(),
-            (PreMod::Int64, true) => "creusot.int.Int64BW.".into(),
-            (PreMod::Int128, true) => "creusot.int.Int128BW.".into(),
-            (PreMod::UInt8, true) => "creusot.int.UInt8BW.".into(),
-            (PreMod::UInt16, true) => "creusot.int.UInt16BW.".into(),
-            (PreMod::UInt32, true) => "creusot.int.UInt32BW.".into(),
-            (PreMod::UInt64, true) => "creusot.int.UInt64BW.".into(),
-            (PreMod::UInt128, true) => "creusot.int.UInt128BW.".into(),
-            (PreMod::Char, _) => "creusot.prelude.Char.".into(),
-            (PreMod::Opaque, _) => "creusot.prelude.Opaque.".into(),
-            (PreMod::Bool, _) => "creusot.prelude.Bool.".into(),
-            (PreMod::MutBor, _) => "creusot.prelude.MutBorrow.".into(),
+        let name = match (module, self.bitwise_mode()) {
+            (PreMod::Float32, _) => ["creusot", "float", "Float32"],
+            (PreMod::Float64, _) => ["creusot", "float", "Float64"],
+            (PreMod::Int, _) => ["mach", "int", "Int"],
+            (PreMod::Int8, false) => ["creusot", "int", "Int8"],
+            (PreMod::Int16, false) => ["creusot", "int", "Int16"],
+            (PreMod::Int32, false) => ["creusot", "int", "Int32"],
+            (PreMod::Int64, false) => ["creusot", "int", "Int64"],
+            (PreMod::Int128, false) => ["creusot", "int", "Int128"],
+            (PreMod::UInt8, false) => ["creusot", "int", "UInt8"],
+            (PreMod::UInt16, false) => ["creusot", "int", "UInt16"],
+            (PreMod::UInt32, false) => ["creusot", "int", "UInt32"],
+            (PreMod::UInt64, false) => ["creusot", "int", "UInt64"],
+            (PreMod::UInt128, false) => ["creusot", "int", "UInt128"],
+            (PreMod::Int8, true) => ["creusot", "int", "Int8BW"],
+            (PreMod::Int16, true) => ["creusot", "int", "Int16BW"],
+            (PreMod::Int32, true) => ["creusot", "int", "Int32BW"],
+            (PreMod::Int64, true) => ["creusot", "int", "Int64BW"],
+            (PreMod::Int128, true) => ["creusot", "int", "Int128BW"],
+            (PreMod::UInt8, true) => ["creusot", "int", "UInt8BW"],
+            (PreMod::UInt16, true) => ["creusot", "int", "UInt16BW"],
+            (PreMod::UInt32, true) => ["creusot", "int", "UInt32BW"],
+            (PreMod::UInt64, true) => ["creusot", "int", "UInt64BW"],
+            (PreMod::UInt128, true) => ["creusot", "int", "UInt128BW"],
+            (PreMod::Char, _) => ["creusot", "prelude", "Char"],
+            (PreMod::Opaque, _) => ["creusot", "prelude", "Opaque"],
+            (PreMod::Bool, _) => ["creusot", "prelude", "Bool"],
+            (PreMod::MutBor, _) => ["creusot", "prelude", "MutBorrow"],
             (PreMod::Slice, _) => {
-                format!("creusot.slice.Slice{}.", self.tcx().sess.target.pointer_width).into()
+                ["creusot", "slice", &format!("Slice{}", self.tcx().sess.target.pointer_width)]
             }
-            (PreMod::Any, _) => "creusot.prelude.Any.".into(),
+            (PreMod::Any, _) => ["creusot", "prelude", "Any"],
         };
-        qname.module
+        name.into_iter().map(|s| Symbol::intern(s)).collect()
     }
 
     fn in_pre(&self, module: PreMod, name: &str) -> QName {
-        QName { module: self.prelude_module_name(module), name: name.into() }.without_search_path()
+        QName { module: self.prelude_module_name(module), name: Symbol::intern(name) }
+            .without_search_path()
     }
 
     fn dependency(&self, dep: Dependency<'tcx>) -> &Kind;
@@ -201,14 +207,13 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
 
     fn span(&self, span: Span) -> Option<Attribute> {
         let path = path_of_span(self.tcx, span, &self.span_mode)?;
-        let cnt = self.spans.len();
-        let name = self.spans.insert(span, |_| {
-            Box::new((
-                Symbol::intern(&format!("s{}{cnt}", path.file_stem().unwrap().to_str().unwrap())),
-                cnt,
-            ))
+        let ident = self.spans.insert(span, |_| {
+            Box::new(Ident::fresh_local(&format!(
+                "s{}",
+                path.file_stem().unwrap().to_str().unwrap()
+            )))
         });
-        Some(Attribute::NamedSpan(name.0.to_string()))
+        Some(Attribute::NamedSpan(*ident))
     }
 
     fn bitwise_mode(&self) -> bool {
@@ -224,18 +229,12 @@ impl<'tcx> CloneNames<'tcx> {
             {
                 let why3_modl =
                     why3_modl.as_str().replace("$BW$", if self.bitwise_mode { "BW" } else { "" });
-                let qname = QName::from(why3_modl);
-                if qname.module.is_empty() {
-                    return Box::new(Kind::Named(Symbol::intern(&qname.name)));
-                } else {
-                    return Box::new(Kind::UsedBuiltin(qname));
-                }
+                let qname = QName::parse(&why3_modl);
+                return Box::new(Kind::UsedBuiltin(qname));
             }
-            Box::new(
-                key.base_ident(tcx).map_or(Kind::Unnamed, |base| {
-                    Kind::Named(self.counts.borrow_mut().freshen(base))
-                }),
-            )
+            Box::new(key.base_ident(tcx).map_or(Kind::Unnamed, |base| {
+                Kind::Named(Ident::fresh(crate_name(tcx), base.as_str()))
+            }))
         })
     }
 
@@ -279,11 +278,6 @@ pub(crate) struct Dependencies<'tcx> {
     pub(crate) self_subst: GenericArgsRef<'tcx>,
 }
 
-#[derive(Default, Clone)]
-pub(crate) struct NameSupply {
-    name_counts: IndexMap<Symbol, usize>,
-}
-
 pub(crate) struct CloneNames<'tcx> {
     tcx: TyCtxt<'tcx>,
     // To normalize during dependency stuff (deprecated)
@@ -292,13 +286,10 @@ pub(crate) struct CloneNames<'tcx> {
     span_mode: SpanMode,
     // Should we use the BW version of the machine integer prelude?
     bitwise_mode: bool,
-
-    /// Freshens a symbol by appending a number to the end
-    counts: RefCell<NameSupply>,
     /// Tracks the name given to each dependency
     names: OnceMap<Dependency<'tcx>, Box<Kind>>,
     /// Maps spans to a unique name
-    spans: OnceMap<Span, Box<(Symbol, usize)>>,
+    spans: OnceMap<Span, Box<Ident>>,
 }
 
 impl<'tcx> CloneNames<'tcx> {
@@ -313,23 +304,9 @@ impl<'tcx> CloneNames<'tcx> {
             typing_env,
             span_mode,
             bitwise_mode,
-            counts: Default::default(),
             names: Default::default(),
             spans: Default::default(),
         }
-    }
-}
-
-impl NameSupply {
-    pub(crate) fn freshen(&mut self, sym: Symbol) -> Symbol {
-        let count: usize = *self.name_counts.entry(sym).and_modify(|c| *c += 1).or_insert(0);
-        // FIXME: if we don't do use the initial ident when count == 0, then the ident clashes
-        // with local variables
-        /*if count == 0 {
-            sym
-        } else {*/
-        Symbol::intern(&format!("{sym}'{count}"))
-        /*}*/
     }
 }
 
@@ -338,7 +315,7 @@ pub enum Kind {
     /// This does not corresponds to a defined symbol
     Unnamed,
     /// This symbol is locally defined
-    Named(Symbol),
+    Named(Ident),
     /// Used, UsedBuiltin: the symbols in the last argument must be acompanied by a `use` statement in Why3
     UsedBuiltin(QName),
 }
@@ -347,18 +324,18 @@ impl Kind {
     fn ident(&self) -> Ident {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
-            Kind::Named(nm) => nm.as_str().into(),
+            Kind::Named(nm) => *nm,
             Kind::UsedBuiltin(_) => {
                 panic!("cannot get ident of used module {self:?}")
             }
         }
     }
 
-    fn qname(&self) -> QName {
+    fn name(&self) -> Name {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
-            Kind::Named(nm) => nm.as_str().into(),
-            Kind::UsedBuiltin(qname) => qname.clone().without_search_path(),
+            Kind::Named(nm) => Name::local(*nm),
+            Kind::UsedBuiltin(qname) => Name::Global(qname.clone().without_search_path()),
         }
     }
 }
@@ -499,16 +476,15 @@ impl<'tcx> Dependencies<'tcx> {
             .names
             .spans
             .into_iter()
-            .sorted_by_key(|(_, b)| b.1)
-            .filter_map(|(sp, b)| {
+            .sorted_by_key(|(_, b)| **b)
+            .filter_map(|(sp, name)| {
                 let (path, start_line, start_column, end_line, end_column) =
                     if let Some(Attribute::Span(path, l1, c1, l2, c2)) = ctx.span_attr(sp) {
                         (path, l1, c1, l2, c2)
                     } else {
                         return None;
                     };
-                let name = b.0.as_str().into();
-                Some(WSpan { name, path, start_line, start_column, end_line, end_column })
+                Some(WSpan { name: *name, path, start_line, start_column, end_line, end_column })
             })
             .collect();
 

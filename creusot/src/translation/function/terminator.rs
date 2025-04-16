@@ -7,14 +7,9 @@ use crate::{
     lints::contractless_external_function::{
         CONTRACTLESS_EXTERNAL_FUNCTION, ContractlessExternalFunction,
     },
+    pearlite::{Term, TermKind, UnOp},
     resolve::HasMoveDataExt,
-    translation::{
-        fmir::*,
-        function::mk_goto,
-        pearlite::{Term, TermKind, UnOp},
-        specification::inv_subst,
-        traits,
-    },
+    translation::{fmir::*, function::mk_goto, traits},
 };
 use itertools::Itertools;
 use rustc_hir::def_id::DefId;
@@ -94,12 +89,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     };
                     let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
                     let mut assertion = self.snapshots.shift_remove(def_id).unwrap();
-                    assertion.subst(&inv_subst(
-                        self.tcx(),
-                        self.body,
-                        &self.locals,
-                        terminator.source_info,
-                    ));
+                    let places = self.tree.visible_places(terminator.source_info.scope);
+                    assertion.subst(inline_pearlite_subst(&self.ctx, &places));
                     self.check_use_in_logic(&assertion, location);
                     self.emit_snapshot_assign(destination, assertion, span);
                 } else {
@@ -175,7 +166,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         if let Some(locl) = pl.as_local() {
                             Term {
                                 // hack
-                                kind: TermKind::Var(self.locals[&locl]),
+                                kind: TermKind::Var(self.locals[&locl].1.into()),
                                 span,
                                 ty: cond.ty(self.body, self.tcx()),
                             }

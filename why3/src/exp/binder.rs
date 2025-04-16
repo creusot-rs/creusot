@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
@@ -41,33 +43,22 @@ impl Binder {
         }
     }
 
-    /// Given that `self`'s type is `ty`, collect all the variables defined by `self` in `out`.
-    fn flatten_inner(self, ty: &Type, out: &mut Vec<(Ident, Type)>) {
+    pub(crate) fn refresh(&mut self, bound: &mut HashMap<Ident, Ident>) {
         match self {
-            Binder::Wild => out.push(("_".into(), ty.clone())),
-            Binder::UnNamed(ty2) => {
-                assert!(ty == &ty2);
-                out.push(("_".into(), ty2))
+            Binder::Wild => {}
+            Binder::UnNamed(_) => {}
+            Binder::Named(id) => {
+                let id2 = id.refresh();
+                bound.insert(*id, id2);
+                *id = id2;
             }
-            Binder::Named(id) => out.push((id, ty.clone())),
-            Binder::Typed(_, ids, ty2) => {
-                assert!(ty == &ty2);
-                for i in ids.into_iter().flatten() {
-                    out.push((i, ty.clone()));
+            Binder::Typed(_, ids, _) => {
+                for id in ids.iter_mut().flatten() {
+                    let id2 = id.refresh();
+                    bound.insert(*id, id2);
+                    *id = id2;
                 }
             }
-        }
-    }
-
-    /// Collect all the variables defined by `self`, along with their type.
-    pub fn var_type_pairs(self) -> Vec<(Ident, Type)> {
-        if let Binder::Typed(_, _, ty) = &self {
-            let mut out = Vec::new();
-            let ty = &ty.clone();
-            self.flatten_inner(ty, &mut out);
-            out
-        } else {
-            panic!("cannot get name and type for binder")
         }
     }
 }

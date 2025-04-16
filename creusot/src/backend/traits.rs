@@ -4,7 +4,10 @@ use crate::{
     ctx::FileModule,
 };
 use rustc_hir::def_id::DefId;
-use why3::declaration::{Decl, Goal, Module};
+use why3::{
+    Ident,
+    declaration::{Decl, Goal, Module},
+};
 
 pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<FileModule> {
     if is_trusted_item(ctx.tcx, def_id) {
@@ -28,7 +31,8 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
             continue;
         }
         let mut decls = names.provide_deps(ctx);
-        decls.push(Decl::Goal(Goal { name: "refines".into(), goal }));
+        let refines = Ident::fresh(ctx.crate_name(), "refines");
+        decls.push(Decl::Goal(Goal { name: refines, goal }));
 
         let attrs = ctx.span_attr(ctx.def_span(impl_did)).into_iter().collect();
         let meta = ctx.display_impl_of(impl_did);

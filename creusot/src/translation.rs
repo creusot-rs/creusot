@@ -28,9 +28,9 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::DUMMY_SP;
 use std::{fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
-    Ident,
+    Symbol,
     declaration::{Attribute, Decl, Module},
-    printer::{self, Print, pretty_blocks},
+    printer::{render_decls, render_module},
 };
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
@@ -158,8 +158,8 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::err
 }
 
 pub enum OutputHandle {
-    Directory(PathBuf, Vec<Ident>), // One file per Coma module, second component is a prefix for all files
-    File(Box<dyn Write>),           // Monolithic output
+    Directory(PathBuf, Vec<Symbol>), // One file per Coma module, second component is a prefix for all files
+    File(Box<dyn Write>),            // Monolithic output
 }
 
 fn module_output(modl: &FileModule, output: &mut OutputHandle) -> std::io::Result<()> {
@@ -179,7 +179,7 @@ fn module_output(modl: &FileModule, output: &mut OutputHandle) -> std::io::Resul
 fn show_attribute(attr: &Attribute) -> String {
     match attr {
         Attribute::Attr(contents) => format!("@{}", contents),
-        Attribute::NamedSpan(name) => format!("%#{}", name),
+        Attribute::NamedSpan(_name) => panic!("unexpected toplevel named span"),
         Attribute::Span(file, sline, scol, eline, ecol) => {
             format!("#\"{}\" {} {} {} {}", file, sline, scol, eline, ecol)
         }
@@ -191,13 +191,13 @@ fn modular_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Result<(
     let attrs = attrs.iter().map(|attr| Decl::Comment(show_attribute(attr)));
     let meta = meta.iter().map(|s| Decl::Comment(s.clone()));
     let decls: Vec<Decl> = attrs.chain(meta).chain(decls.iter().cloned()).collect();
-    pretty_blocks(&decls, &printer::ALLOC).1.render(120, out)?;
+    render_decls(&decls, out)?;
     writeln!(out)?;
     Ok(())
 }
 
 fn monolithic_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Result<()> {
-    modl.modl.pretty(&printer::ALLOC).1.render(120, out)?;
+    render_module(&modl.modl, out)?;
     writeln!(out)?;
     Ok(())
 }
@@ -224,14 +224,14 @@ fn remove_coma_files(dir: &PathBuf) -> std::io::Result<()> {
 
 fn print_crate<I: Iterator<Item = FileModule>>(
     output_target: Output,
-    prefix: Vec<Ident>,
+    prefix: Vec<Symbol>,
     modules: I,
 ) -> std::io::Result<Option<PathBuf>> {
     let (root, mut output) = match output_target {
         Output::Directory(dir) => {
             let mut outdir = dir.clone();
             for m in &prefix {
-                outdir.push(m.as_str());
+                outdir.push(m.to_string());
             }
             remove_coma_files(&outdir)?;
             (Some(dir.clone()), OutputHandle::Directory(dir, prefix))
