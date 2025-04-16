@@ -1,118 +1,119 @@
 module M_222__A__is_true [#"222.rs" 14 4 14 16]
-  let%span s2220 = "222.rs" 13 14 13 34
+  let%span s222 = "222.rs" 13 14 13 34
   
   use mach.int.Int
   
-  function mktrue'0 [#"222.rs" 7 4 7 22]  : int
+  function mktrue [#"222.rs" 7 4 7 22]  : int
   
-  function is_true'0 [#"222.rs" 14 4 14 16]  : ()
+  function is_true [#"222.rs" 14 4 14 16]  : ()
   
-  goal vc_is_true'0 : [%#s2220] mktrue'0 <= 10
+  goal vc_is_true : [%#s222] mktrue <= 10
 end
 module M_222__uses_invariant [#"222.rs" 40 0 40 41]
-  let%span s2220 = "222.rs" 40 25 40 26
-  let%span s2221 = "222.rs" 38 11 38 24
-  let%span s2222 = "222.rs" 39 10 39 26
-  let%span soption3 = "../../../creusot-contracts/src/std/option.rs" 416 26 416 58
-  let%span s2224 = "222.rs" 30 8 30 12
-  let%span sresolve5 = "../../../creusot-contracts/src/resolve.rs" 82 8 85 9
-  let%span sresolve6 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
-  let%span sinvariant7 = "../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span s222 = "222.rs" 40 25 40 26
+  let%span s222'0 = "222.rs" 38 11 38 24
+  let%span s222'1 = "222.rs" 39 10 39 26
+  let%span s222'2 = "222.rs" 30 8 30 12
+  let%span soption = "../../../creusot-contracts/src/std/option.rs" 415 16 415 17
+  let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 416 26 416 58
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 82 8 85 9
+  let%span sresolve'0 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_T'0
+  type t_T
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_T'0
+  type t_Option  =
+    | C_None
+    | C_Some t_T
   
-  predicate inv'3 (_1 : t_T'0)
+  predicate inv (_0 : t_T)
   
-  predicate inv'0 (_1 : t_Option'0)
+  predicate inv'0 (_0 : t_Option)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x
+  axiom inv_axiom [@rewrite] : forall x : t_Option [inv'0 x] . inv'0 x
   = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'3 a_0
+    | C_None -> true
+    | C_Some a_0 -> inv a_0
     end
   
-  type t_Once'0  =
-    { t_Once__0'0: t_Option'0 }
+  type t_Once  =
+    { t_Once__0: t_Option }
   
-  predicate invariant'2 (self : MutBorrow.t t_Option'0) =
-    [%#sinvariant7] inv'0 self.current /\ inv'0 self.final
+  predicate invariant' (self : MutBorrow.t t_Option) =
+    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'2 (_1 : MutBorrow.t t_Option'0)
+  predicate inv'1 (_0 : MutBorrow.t t_Option)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Option'0 [inv'2 x] . inv'2 x = invariant'2 x
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Option [inv'1 x] . inv'1 x = invariant' x
   
-  let rec take'0 (self:MutBorrow.t t_Option'0) (return'  (ret:t_Option'0))= {[@expl:take 'self' type invariant] inv'2 self}
+  let rec take (self_:MutBorrow.t t_Option) (return'  (x:t_Option))= {[@expl:take 'self_' type invariant] [%#soption] inv'1 self_}
     any
-    [ return' (result:t_Option'0)-> {inv'0 result}
-      {[%#soption3] result = self.current /\ self.final = C_None'0}
+    [ return''0 (result:t_Option)-> {inv'0 result}
+      {[%#soption'0] result = self_.current /\ self_.final = C_None}
       (! return' {result}) ]
   
   
-  predicate resolve'4 (_1 : t_T'0)
+  predicate resolve (_0 : t_T)
   
-  predicate resolve'2 (self : t_Option'0) =
-    [%#sresolve5] match self with
-      | C_Some'0 x -> resolve'4 x
-      | C_None'0 -> true
+  predicate resolve'0 (self : t_Option) =
+    [%#sresolve] match self with
+      | C_Some x -> resolve x
+      | C_None -> true
       end
   
-  predicate resolve'0 (_1 : t_Option'0) =
-    resolve'2 _1
+  predicate resolve'1 (_0 : t_Option) =
+    resolve'0 _0
   
-  predicate inv'4 (_1 : t_Once'0)
+  predicate inv'2 (_0 : t_Once)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Once'0 [inv'4 x] . inv'4 x
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Once [inv'2 x] . inv'2 x
   = match x with
-    | {t_Once__0'0 = a_0} -> inv'0 a_0
+    | {t_Once__0 = a_0} -> inv'0 a_0
     end
   
-  predicate invariant'1 (self : MutBorrow.t t_Once'0) =
-    [%#sinvariant7] inv'4 self.current /\ inv'4 self.final
+  predicate invariant''0 (self : MutBorrow.t t_Once) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
-  predicate inv'1 (_1 : MutBorrow.t t_Once'0)
+  predicate inv'3 (_0 : MutBorrow.t t_Once)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_Once'0 [inv'1 x] . inv'1 x = invariant'1 x
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Once [inv'3 x] . inv'3 x = invariant''0 x
   
-  predicate resolve'3 (self : MutBorrow.t t_Once'0) =
-    [%#sresolve6] self.final = self.current
+  predicate resolve'2 (self : MutBorrow.t t_Once) =
+    [%#sresolve'0] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t t_Once'0) =
-    resolve'3 _1
+  predicate resolve'3 (_0 : MutBorrow.t t_Once) =
+    resolve'2 _0
   
-  predicate invariant'0 [#"222.rs" 29 4 29 30] (self : t_Once'0) =
-    [%#s2224] true
+  predicate invariant''1 [#"222.rs" 29 4 29 30] (self : t_Once) =
+    [%#s222'2] true
   
   meta "compute_max_steps" 1000000
   
-  let rec uses_invariant'0[#"222.rs" 40 0 40 41] (x:MutBorrow.t t_Once'0) (return'  (ret:()))= {[@expl:uses_invariant 'x' type invariant] [%#s2220] inv'1 x}
-    {[@expl:uses_invariant requires] [%#s2221] invariant'0 x.current}
+  let rec uses_invariant[#"222.rs" 40 0 40 41] (x:MutBorrow.t t_Once) (return'  (x'0:()))= {[@expl:uses_invariant 'x' type invariant] [%#s222] inv'3 x}
+    {[@expl:uses_invariant requires] [%#s222'0] invariant''1 x.current}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'0 (x.current).t_Once__0'0}
-        MutBorrow.borrow_final <t_Option'0> {(x.current).t_Once__0'0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
-          (fun (_ret':MutBorrow.t t_Option'0) ->
-             [ &_5 <- _ret' ] 
-            -{inv'0 _ret'.final}-
-             [ &x <- { x with current = { t_Once__0'0 = _ret'.final } } ] 
+      [ s0 = {inv'0 (x'0.current).t_Once__0}
+        MutBorrow.borrow_final <t_Option> {(x'0.current).t_Once__0} {MutBorrow.inherit_id (MutBorrow.get_id x'0) 1}
+          (fun (_ret:MutBorrow.t t_Option) ->
+             [ &_5 <- _ret ] 
+            -{inv'0 _ret.final}-
+             [ &x'0 <- { x'0 with current = { t_Once__0 = _ret.final } } ] 
             s1)
-      | s1 = take'0 {_5} (fun (_ret':t_Option'0) ->  [ &_4 <- _ret' ] s2)
+      | s1 = take {_5} (fun (_ret:t_Option) ->  [ &_4 <- _ret ] s2)
       | s2 = {[@expl:type invariant] inv'0 _4} s3
-      | s3 = -{resolve'0 _4}- s4
+      | s3 = -{resolve'1 _4}- s4
       | s4 = bb1 ]
     
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'1 x} s1 | s1 = -{resolve'1 x}- s2 | s2 = bb2 ] 
-    | bb2 = return' {_0} ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 x'0} s1 | s1 = -{resolve'3 x'0}- s2 | s2 = bb2 ] 
+    | bb2 = return''0 {_0} ]
     )
     [ & _0 : () = Any.any_l ()
-    | & x : MutBorrow.t t_Once'0 = x
-    | & _4 : t_Option'0 = Any.any_l ()
-    | & _5 : MutBorrow.t t_Option'0 = Any.any_l () ]
-     [ return' (result:())-> {[@expl:uses_invariant ensures] [%#s2222] invariant'0 x.final} (! return' {result}) ] 
+    | & x'0 : MutBorrow.t t_Once = x
+    | & _4 : t_Option = Any.any_l ()
+    | & _5 : MutBorrow.t t_Option = Any.any_l () ]
+     [ return''0 (result:())-> {[@expl:uses_invariant ensures] [%#s222'1] invariant''1 x.final} (! return' {result}) ] 
 end
