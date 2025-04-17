@@ -27,7 +27,8 @@ use crate::{
     },
     ctx::{BodyId, ItemType},
     function::closure_resolve,
-    pearlite::{Term, normalize},
+    naming::name,
+    pearlite::{SmallRenaming, Term, normalize},
     traits::{self, TraitResolved},
 };
 use petgraph::graphmap::DiGraphMap;
@@ -37,9 +38,12 @@ use rustc_middle::ty::{
     Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
     UnevaluatedConst,
 };
-use rustc_span::{DUMMY_SP, Span, Symbol};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ConstKind, EarlyBinder};
-use why3::declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use};
+use why3::{
+    Ident,
+    declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
+};
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
 /// weak dependencies are used to perform an initial stratification of the dependency graph.
@@ -121,8 +125,10 @@ impl DepElab for ProgramElab {
                 .instantiate(ctx.tcx, subst)
                 .normalize(ctx.tcx, typing_env);
             pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
-            let (sig, contract, return_ty) = lower_program_sig(ctx, &names, name, pre_sig, def_id);
-            return vec![program::val(sig, contract, return_ty)];
+            let return_ident = Ident::fresh_local("return");
+            let (sig, contract, return_ty) =
+                lower_program_sig(ctx, &names, name, pre_sig, def_id, return_ident);
+            return vec![program::val(sig, contract, return_ident, return_ty)];
         }
 
         // Inline the body of closures and promoted
@@ -170,7 +176,6 @@ impl DepElab for LogicElab {
                 Kind::UsedBuiltin(qname) => {
                     return vec![Decl::UseDecls(Box::new([Use {
                         name: qname.module.clone(),
-                        as_: None,
                         export: false,
                     }]))];
                 }
@@ -182,6 +187,7 @@ impl DepElab for LogicElab {
         let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
             .instantiate(ctx.tcx, subst)
             .normalize(ctx.tcx, typing_env);
+        let bound: Box<[Ident]> = pre_sig.inputs.iter().map(|(ident, _, _)| ident.0).collect();
 
         let trait_resol = ctx
             .tcx
@@ -197,7 +203,7 @@ impl DepElab for LogicElab {
         let names = elab.namer(dep);
         let name = names.dependency(dep).ident();
         let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
-        if !is_opaque && let Some(term) = term(ctx, typing_env, dep) {
+        if !is_opaque && let Some(term) = term(ctx, typing_env, &bound, dep) {
             lower_logical_defn(ctx, &names, sig, kind, term)
         } else {
             val(sig, kind)
@@ -238,13 +244,13 @@ impl DepElab for TyElab {
         let names = elab.namer(dep);
         match ty.kind() {
             TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
-                ty_name: names.ty(ty).as_ident(),
+                ty_name: names.ty(ty).to_ident(),
                 ty_params: Box::new([]),
             })],
             TyKind::Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
                 let (def_id, subst) = dep.did().unwrap();
                 vec![Decl::TyDecl(TyDecl::Opaque {
-                    ty_name: names.def_ty(def_id, subst).as_ident(),
+                    ty_name: names.def_ty(def_id, subst).to_ident(),
                     ty_params: Box::new([]),
                 })]
             }
@@ -253,9 +259,10 @@ impl DepElab for TyElab {
                 for ty in subst.types() {
                     translate_ty(ctx, &names, DUMMY_SP, ty);
                 }
-                if let Kind::UsedBuiltin(qname) = names.dependency(dep) {
+                if let Kind::UsedBuiltin(qname) = names.dependency(dep)
+                    && !qname.module.is_empty()
+                {
                     vec![Decl::UseDecls(Box::new([Use {
-                        as_: None,
                         name: qname.module.clone(),
                         export: false,
                     }]))]
@@ -348,7 +355,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             Dependency::PreMod(b) => {
                 vec![Decl::UseDecls(Box::new([Use {
                     name: self.namer.prelude_module_name(b),
-                    as_: None,
                     export: false,
                 }]))]
             }
@@ -435,11 +441,13 @@ fn val(mut sig: Signature, kind: DeclKind) -> Vec<Decl> {
     d
 }
 
+/// Generate body of `resolve` for `FnMut` closures.
 fn resolve_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
+    bound: &[Ident],
 ) -> Option<Term<'tcx>> {
     let trait_meth_id = get_resolve_method(ctx.tcx);
     let sig = ctx.sig(def_id).clone();
@@ -449,7 +457,7 @@ fn resolve_term<'tcx>(
     let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
 
     if let &TyKind::Closure(def_id, subst) = subst[0].as_type().unwrap().kind() {
-        Some(closure_resolve(ctx, def_id, subst))
+        Some(closure_resolve(ctx, def_id, subst, bound))
     } else {
         match traits::TraitResolved::resolve_item(ctx.tcx, typing_env, trait_meth_id, subst) {
             traits::TraitResolved::Instance(meth_did, meth_substs) => {
@@ -468,23 +476,34 @@ fn resolve_term<'tcx>(
     }
 }
 
+/// Generate body of `postcondition_once` for `FnMut` closures.
 fn fn_once_postcond_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
+    bound: &[Ident],
 ) -> Option<Term<'tcx>> {
+    let &[self_, args, result] = bound else {
+        panic!("postcondition_once must have 3 arguments. This should not happen. Found: {bound:?}")
+    };
+    let isubst: &SmallRenaming =
+        &[(name::self_(), self_), (name::args(), args), (name::result(), result)];
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(Symbol::intern("self"), ty_self);
-    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
+    let self_ = Term::var(self_, ty_self);
+    let args = Term::var(args, subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
         EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(tcx)).inputs[2].2),
     );
-    let res = Term::var(Symbol::intern("result"), ty_res);
+    let res = Term::var(result, ty_res);
     match ty_self.kind() {
-        TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond_once.clone(),
+        TyKind::Closure(did, _) => {
+            let mut term = ctx.closure_contract(*did).postcond_once.clone();
+            term.iter_mut().for_each(|term| term.subst(isubst));
+            term
+        }
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
@@ -510,24 +529,39 @@ fn fn_once_postcond_term<'tcx>(
     }
 }
 
+/// Generate body of `postcondition_mut` for `FnMut` closures.
 fn fn_mut_postcond_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
+    bound: &[Ident],
 ) -> Option<Term<'tcx>> {
+    let &[self_, args, result_state, result] = bound else {
+        panic!("postcondition_mut must have 4 arguments. This should not happen. Found: {bound:?}")
+    };
+    let isubst: &SmallRenaming = &[
+        (name::self_(), self_),
+        (name::args(), args),
+        (name::result_state(), result_state),
+        (name::result(), result),
+    ];
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(Symbol::intern("self"), ty_self);
-    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
-    let result_state = Term::var(Symbol::intern("result_state"), ty_self);
+    let self_ = Term::var(self_, ty_self);
+    let args = Term::var(args, subst.type_at(0));
+    let result_state = Term::var(result_state, ty_self);
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
         EarlyBinder::bind(ctx.sig(get_fn_mut_impl_postcond(tcx)).inputs[3].2),
     );
-    let res = Term::var(Symbol::intern("result"), ty_res);
+    let res = Term::var(result, ty_res);
     match ty_self.kind() {
-        TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond_mut.clone(),
+        TyKind::Closure(did, _) => {
+            let mut term = ctx.closure_contract(*did).postcond_mut.clone();
+            term.iter_mut().for_each(|term| term.subst(isubst));
+            term
+        }
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
@@ -559,23 +593,34 @@ fn fn_mut_postcond_term<'tcx>(
     }
 }
 
+/// Generate body of `postcondition` for `Fn` closures.
 fn fn_postcond_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
+    bound: &[Ident],
 ) -> Option<Term<'tcx>> {
+    let &[self_, args, result] = bound else {
+        panic!("postcondition must have 3 arguments. This should not happen. Found: {bound:?}")
+    };
+    let isubst: &SmallRenaming =
+        &[(name::self_(), self_), (name::args(), args), (name::result(), result)];
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(Symbol::intern("self"), ty_self);
-    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
+    let self_ = Term::var(self_, ty_self);
+    let args = Term::var(args, subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
         EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(tcx)).inputs[2].2),
     );
-    let res = Term::var(Symbol::intern("result"), ty_res);
+    let res = Term::var(result, ty_res);
     match ty_self.kind() {
-        TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond.clone(),
+        TyKind::Closure(did, _) => {
+            let mut term = ctx.closure_contract(*did).postcond.clone();
+            term.iter_mut().for_each(|term| term.subst(isubst));
+            term
+        }
         TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
@@ -590,11 +635,44 @@ fn fn_postcond_term<'tcx>(
     }
 }
 
+/// Generate body of `precondition_once` for `FnOnce` closures.
+fn fn_once_precond_term<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    subst: GenericArgsRef<'tcx>,
+    bound: &[Ident],
+) -> Option<Term<'tcx>> {
+    let &[self_, args] = bound else {
+        panic!("precondition_once must have 2 arguments. This should not happen. Found: {bound:?}")
+    };
+    let isubst: &SmallRenaming = &[(name::self_(), self_), (name::args(), args)];
+    let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
+    let mut term = ctx.closure_contract(*did).precond.clone();
+    term.subst(isubst);
+    Some(term)
+}
+
+/// Generate body of `unnest` for `FnMut` closures.
+fn fn_mut_unnest_term<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    subst: GenericArgsRef<'tcx>,
+    bound: &[Ident],
+) -> Option<Term<'tcx>> {
+    let &[self_, future] = bound else {
+        panic!("unnest must have 2 arguments. This should not happen. Found: {bound:?}")
+    };
+    let isubst: &SmallRenaming = &[(name::self_(), self_), (name::future(), future)];
+    let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
+    let mut term = ctx.closure_contract(*did).unnest.clone().unwrap();
+    term.subst(isubst);
+    Some(term)
+}
+
 // Returns a resolved and normalized term for a dependency.
 // Currently, it does not handle invariant axioms but otherwise returns all logical terms.
 fn term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
+    bound: &[Ident],
     dep: Dependency<'tcx>,
 ) -> Option<Term<'tcx>> {
     match dep {
@@ -608,24 +686,22 @@ fn term<'tcx>(
                 let res = from_ty_const(&ctx.ctx, constant, ty, typing_env, span);
                 Some(res)
             } else if is_resolve_function(ctx.tcx, def_id) {
-                resolve_term(ctx, typing_env, def_id, subst)
+                resolve_term(ctx, typing_env, def_id, subst, bound)
             } else if is_structural_resolve(ctx.tcx, def_id) {
-                let subj = ctx.sig(def_id).inputs[0].0;
+                let subj = ctx.sig(def_id).inputs[0].0.0;
                 structural_resolve(ctx, subj, subst.type_at(0))
             } else if is_fn_once_impl_postcond(ctx.tcx, def_id) {
-                fn_once_postcond_term(ctx, typing_env, subst)
+                fn_once_postcond_term(ctx, typing_env, subst, bound)
             } else if is_fn_mut_impl_postcond(ctx.tcx, def_id) {
-                fn_mut_postcond_term(ctx, typing_env, subst)
+                fn_mut_postcond_term(ctx, typing_env, subst, bound)
             } else if is_fn_impl_postcond(ctx.tcx, def_id) {
-                fn_postcond_term(ctx, typing_env, subst)
+                fn_postcond_term(ctx, typing_env, subst, bound)
             } else if is_fn_once_impl_precond(ctx.tcx, def_id) {
-                let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
-                Some(ctx.closure_contract(*did).precond.clone())
+                fn_once_precond_term(ctx, subst, bound)
             } else if is_fn_mut_impl_unnest(ctx.tcx, def_id) {
-                let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
-                Some(ctx.closure_contract(*did).unnest.clone().unwrap())
+                fn_mut_unnest_term(ctx, subst, bound)
             } else {
-                let term = ctx.term_fail_fast(def_id).unwrap().clone();
+                let term = ctx.term_fail_fast(def_id).unwrap().rename(bound);
                 let term = normalize(
                     ctx.tcx,
                     typing_env,

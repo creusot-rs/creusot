@@ -1,6 +1,4 @@
-use crate::{
-    creusot_items::CreusotItems, ctx::*, external::ExternSpec, translation::pearlite::Term,
-};
+use crate::{creusot_items::CreusotItems, ctx::*, external::ExternSpec, pearlite::ScopedTerm};
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
 use once_map::unsync::OnceMap;
@@ -30,7 +28,7 @@ impl<'tcx> Metadata<'tcx> {
         self.crates.get(&cnum)
     }
 
-    pub(crate) fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
+    pub(crate) fn term(&self, def_id: DefId) -> Option<&ScopedTerm<'tcx>> {
         assert!(!def_id.is_local());
         self.get(def_id.krate)?.term(def_id)
     }
@@ -68,7 +66,7 @@ impl<'tcx> Metadata<'tcx> {
 }
 
 pub struct CrateMetadata<'tcx> {
-    terms: IndexMap<DefId, Term<'tcx>>,
+    terms: IndexMap<DefId, ScopedTerm<'tcx>>,
     creusot_items: CreusotItems,
     params_open_inv: HashMap<DefId, Vec<usize>>,
 }
@@ -82,7 +80,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         }
     }
 
-    pub(crate) fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
+    pub(crate) fn term(&self, def_id: DefId) -> Option<&ScopedTerm<'tcx>> {
         assert!(!def_id.is_local());
         self.terms.get(&def_id)
     }
@@ -133,7 +131,7 @@ impl<'tcx> CrateMetadata<'tcx> {
 // a proper index map after parsing.
 #[derive(TyDecodable, TyEncodable)]
 pub(crate) struct BinaryMetadata<'tcx> {
-    terms: Vec<(DefId, Term<'tcx>)>,
+    terms: Vec<(DefId, ScopedTerm<'tcx>)>,
     creusot_items: CreusotItems,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
@@ -141,7 +139,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
 
 impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
-        terms: &mut OnceMap<DefId, Box<Option<Term<'tcx>>>>,
+        terms: &mut OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
         items: &CreusotItems,
         extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
         params_open_inv: &HashMap<DefId, Vec<usize>>,

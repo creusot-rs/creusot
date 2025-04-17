@@ -1,6 +1,6 @@
 mod binder;
 
-use crate::{Ident, QName, declaration::Attribute, ty::Type};
+use crate::{Ident, Name, QName, declaration::Attribute, name, ty::Type};
 use indexmap::IndexSet;
 use std::collections::HashMap;
 
@@ -111,13 +111,12 @@ impl Trigger {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
-    Var(Ident),
-    QVar(QName),
-    Record { fields: Box<[(QName, Exp)]> },
-    RecUp { record: Box<Exp>, updates: Box<[(QName, Exp)]> },
-    RecField { record: Box<Exp>, label: QName },
+    Var(Name),
+    Record { fields: Box<[(Name, Exp)]> },
+    RecUp { record: Box<Exp>, updates: Box<[(Name, Exp)]> },
+    RecField { record: Box<Exp>, label: Name },
     Tuple(Box<[Exp]>),
-    Constructor { ctor: QName, args: Box<[Exp]> },
+    Constructor { ctor: Name, args: Box<[Exp]> },
     Const(Constant),
     BinaryOp(BinOp, Box<Exp>, Box<Exp>),
     UnaryOp(UnOp, Box<Exp>),
@@ -152,7 +151,6 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(body)
         }
         Exp::Var(_) => {}
-        Exp::QVar(_) => {}
         Exp::RecUp { record, updates } => {
             f.visit_mut(record);
             updates.iter_mut().for_each(|(_, val)| f.visit_mut(val));
@@ -203,96 +201,68 @@ pub fn super_visit_mut_trigger<T: ExpMutVisitor>(f: &mut T, trigger: &mut Trigge
     trigger.0.iter_mut().for_each(|t| f.visit_mut(t))
 }
 
-impl ExpMutVisitor for &'_ HashMap<Ident, Exp> {
+/// Capture-avoiding substitution
+///
+/// This is used as a persistent data structure:
+/// we clone the `bound` whenever we add variables.
+struct BoundSubst<'a> {
+    /// The original substition. Remains constant during traversal.
+    subst: &'a HashMap<Ident, Exp>,
+    /// Renaming of bound variables to fresh names.
+    bound: HashMap<Ident, Ident>,
+}
+
+impl<'a> ExpMutVisitor for BoundSubst<'a> {
     fn visit_mut(&mut self, exp: &mut Exp) {
         match exp {
-            Exp::Var(v) => {
-                if let Some(e) = self.get(v) {
+            Exp::Var(Name::Local(v, suffix)) => {
+                if let Some(w) = self.bound.get(v) {
+                    *v = *w
+                } else if let Some(e) = self.subst.get(v) {
+                    if suffix.is_some() {
+                        unimplemented!();
+                    }
                     *exp = e.clone()
                 }
             }
             Exp::Lam(binders, body) => {
-                let mut subst = self.clone();
-
+                let mut bound = self.bound.clone();
                 for binder in binders {
-                    binder.fvs().into_iter().for_each(|id| {
-                        subst.remove(&id);
-                    });
+                    binder.refresh(&mut bound);
                 }
-
-                let mut s = &subst;
-                s.visit_mut(body);
+                BoundSubst { bound, ..*self }.visit_mut(body);
             }
-
             Exp::Let { pattern, arg, body } => {
                 self.visit_mut(arg);
-                let mut bound = pattern.binders();
-                let mut subst = self.clone();
-                bound.drain(..).for_each(|k| {
-                    subst.remove(&k);
-                });
-
-                let mut s = &subst;
-                s.visit_mut(body);
+                let mut bound = self.bound.clone();
+                pattern.refresh(&mut bound);
+                BoundSubst { bound, ..*self }.visit_mut(body);
             }
             Exp::Match(scrut, brs) => {
                 self.visit_mut(scrut);
-
                 for (pat, br) in brs {
-                    let mut s = self.clone();
-                    pat.binders().drain(..).for_each(|b| {
-                        s.remove(&b);
-                    });
-
-                    let mut s = &s;
-                    s.visit_mut(br);
+                    let mut bound = self.bound.clone();
+                    pat.refresh(&mut bound);
+                    BoundSubst { bound, ..*self }.visit_mut(br);
                 }
             }
             Exp::Forall(binders, trig, exp) => {
-                let mut subst = self.clone();
-                binders.iter().for_each(|k| {
-                    subst.remove(&k.0);
-                });
-                let bnds: IndexSet<_> = binders.iter().map(|b| &b.0).cloned().collect();
-                let mut extended = HashMap::new();
-                for exp in subst.values_mut() {
-                    for id in &bnds & &exp.fvs() {
-                        extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
-                    }
+                let mut bound = self.bound.clone();
+                for (id, _) in binders {
+                    refresh_var(id, &mut bound);
                 }
-                binders.iter_mut().for_each(|(id, _)| {
-                    if extended.contains_key(id) {
-                        *id = format!("{}'", &**id).into();
-                    }
-                });
-                subst.extend(extended);
-
-                let mut s = &subst;
-                s.visit_mut(exp);
+                let mut s = BoundSubst { bound, ..*self };
                 trig.iter_mut().for_each(|t| s.visit_trigger_mut(t));
+                s.visit_mut(exp);
             }
             Exp::Exists(binders, trig, exp) => {
-                let mut subst = self.clone();
-                binders.iter().for_each(|k| {
-                    subst.remove(&k.0);
-                });
-                let bnds: IndexSet<_> = binders.iter().map(|b| &b.0).cloned().collect();
-                let mut extended = HashMap::new();
-                for exp in subst.values_mut() {
-                    for id in &bnds & &exp.fvs() {
-                        extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
-                    }
+                let mut bound = self.bound.clone();
+                for (id, _) in binders {
+                    refresh_var(id, &mut bound);
                 }
-                binders.iter_mut().for_each(|(id, _)| {
-                    if extended.contains_key(id) {
-                        *id = format!("{}'", &**id).into();
-                    }
-                });
-                subst.extend(extended);
-
-                let mut s = &subst;
-                s.visit_mut(exp);
+                let mut s = BoundSubst { bound, ..*self };
                 trig.iter_mut().for_each(|t| s.visit_trigger_mut(t));
+                s.visit_mut(exp);
             }
             _ => super_visit_mut(self, exp),
         }
@@ -316,7 +286,6 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(body)
         }
         Exp::Var(_) => {}
-        Exp::QVar(_) => {}
         Exp::RecUp { record, updates } => {
             f.visit(record);
             updates.iter().for_each(|(_, val)| f.visit(val));
@@ -376,12 +345,12 @@ impl Exp {
         Exp::Tuple(Box::new([]))
     }
 
-    pub fn qvar(q: QName) -> Self {
-        Exp::QVar(q)
+    pub fn var(ident: Ident) -> Self {
+        Exp::Var(Name::local(ident))
     }
 
-    pub fn var(v: impl Into<Ident>) -> Self {
-        Exp::Var(v.into())
+    pub fn qvar(q: QName) -> Self {
+        Exp::Var(Name::Global(q))
     }
 
     pub fn lazy_conj(l: Exp, r: Exp) -> Self {
@@ -411,7 +380,7 @@ impl Exp {
         if args.is_empty() { self } else { Exp::Call(Box::new(self), args) }
     }
 
-    pub fn field(self, label: QName) -> Self {
+    pub fn field(self, label: Name) -> Self {
         Self::RecField { record: Box::new(self), label }
     }
 
@@ -730,7 +699,6 @@ impl Exp {
             Exp::Let { .. } => IfLet,
             Exp::Lam(_, _) => Abs,
             Exp::Var(_) => Atom,
-            Exp::QVar(_) => Atom,
             Exp::RecUp { .. } => App,
             Exp::RecField { .. } => Field,
             Exp::Tuple(_) => Atom,
@@ -774,7 +742,7 @@ impl Exp {
         impl ExpVisitor for Occurs {
             fn visit(&mut self, exp: &Exp) {
                 match exp {
-                    Exp::Var(v) => {
+                    Exp::Var(Name::Local(v, _)) => {
                         *self.occurs.entry(v.clone()).or_insert(0) += 1;
                     }
                     Exp::Let { pattern, arg, body } => {
@@ -828,7 +796,7 @@ impl Exp {
         impl ExpVisitor for QFvs {
             fn visit(&mut self, exp: &Exp) {
                 match exp {
-                    Exp::QVar(v) => {
+                    Exp::Var(Name::Global(v)) => {
                         self.qfvs.insert(v.clone());
                     }
                     _ => super_visit(self, exp),
@@ -844,136 +812,8 @@ impl Exp {
     }
 
     /// Substituate free variables of `self` by their value in `subst`.
-    pub fn subst(&mut self, subst: &mut Environment) {
-        subst.visit_mut(self);
-    }
-}
-
-/// An environment in a stack of mappings from names to expressions.
-///
-/// It represents all the variables that have been bound in a scope containing the
-/// current expression.
-#[derive(Default)]
-pub struct Environment {
-    substs: Vec<HashMap<Ident, Exp>>,
-}
-
-impl Environment {
-    pub fn add_subst(&mut self, substs: HashMap<Ident, Exp>) {
-        self.substs.push(substs);
-    }
-
-    pub fn pop_subst(&mut self) {
-        self.substs.pop();
-    }
-
-    pub fn get(&self, id: &Ident) -> Option<Exp> {
-        for sub in self.substs.iter().rev() {
-            if let Some(e) = sub.get(id) {
-                return Some(e.clone());
-            }
-        }
-        None
-    }
-
-    pub fn nb_occurences(&self, id: &Ident) -> usize {
-        let mut occ = 0;
-        for sub in self.substs.iter() {
-            if sub.get(id).is_some() {
-                occ += 1;
-            }
-        }
-
-        occ
-    }
-}
-
-impl FromIterator<(Ident, Exp)> for Environment {
-    fn from_iter<T: IntoIterator<Item = (Ident, Exp)>>(iter: T) -> Self {
-        Environment { substs: vec![iter.into_iter().collect()] }
-    }
-}
-
-impl ExpMutVisitor for Environment {
-    fn visit_mut(&mut self, exp: &mut Exp) {
-        match exp {
-            Exp::Var(v) => {
-                if let Some(e) = self.get(v) {
-                    *exp = e.clone()
-                }
-            }
-            Exp::Lam(binders, body) => {
-                let mut bound_here = HashMap::default();
-
-                for binder in binders {
-                    binder.fvs().into_iter().for_each(|id| {
-                        bound_here.insert(id.clone(), Exp::var(id));
-                    });
-                }
-
-                self.add_subst(bound_here);
-                self.visit_mut(body);
-                self.pop_subst();
-            }
-
-            Exp::Let { pattern, arg, body } => {
-                self.visit_mut(arg);
-
-                let mut bound = pattern.binders();
-
-                let mut bound_here = HashMap::default();
-                bound.drain(..).for_each(|k| {
-                    bound_here.insert(k.clone(), Exp::var(k));
-                });
-
-                self.add_subst(bound_here);
-                self.visit_mut(body);
-                self.pop_subst();
-            }
-            Exp::Match(scrut, brs) => {
-                self.visit_mut(scrut);
-
-                for (pat, br) in brs {
-                    let mut bound_here = HashMap::default();
-                    pat.binders().drain(..).for_each(|k| {
-                        bound_here.insert(k.clone(), Exp::var(k));
-                    });
-
-                    self.add_subst(bound_here);
-                    self.visit_mut(br);
-                    self.pop_subst();
-                }
-            }
-            Exp::Forall(binders, trig, exp) => {
-                let mut bound_here = HashMap::default();
-
-                binders.iter().for_each(|k| {
-                    bound_here.insert(k.0.clone(), Exp::var(k.0.clone()));
-                });
-
-                self.add_subst(bound_here);
-                self.visit_mut(exp);
-                trig.iter_mut().for_each(|t| self.visit_trigger_mut(t));
-                self.pop_subst();
-            }
-            Exp::Exists(binders, trig, exp) => {
-                let mut bound_here = HashMap::default();
-
-                binders.iter().for_each(|k| {
-                    bound_here.insert(k.0.clone(), Exp::var(k.0.clone()));
-                });
-
-                self.add_subst(bound_here);
-                self.visit_mut(exp);
-                trig.iter_mut().for_each(|t| self.visit_trigger_mut(t));
-                self.pop_subst();
-            }
-            _ => super_visit_mut(self, exp),
-        }
-    }
-
-    fn visit_trigger_mut(&mut self, trig: &mut Trigger) {
-        super_visit_mut_trigger(self, trig)
+    pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
+        BoundSubst { subst, bound: HashMap::new() }.visit_mut(self);
     }
 }
 
@@ -1010,17 +850,17 @@ pub enum Pattern {
     Wildcard,
     VarP(Ident),
     TupleP(Box<[Pattern]>),
-    ConsP(QName, Box<[Pattern]>),
-    RecP(Box<[(QName, Pattern)]>),
+    ConsP(Name, Box<[Pattern]>),
+    RecP(Box<[(Name, Pattern)]>),
 }
 
 impl Pattern {
     pub fn mk_true() -> Self {
-        Self::ConsP(QName { module: Box::new([]), name: "True".into() }, Box::new([]))
+        Self::ConsP(Name::Global(QName { module: Box::new([]), name: *name::TRUE }), Box::new([]))
     }
 
     pub fn mk_false() -> Self {
-        Self::ConsP(QName { module: Box::new([]), name: "False".into() }, Box::new([]))
+        Self::ConsP(Name::Global(QName { module: Box::new([]), name: *name::FALSE }), Box::new([]))
     }
 
     pub fn binders(&self) -> IndexSet<Ident> {
@@ -1051,4 +891,26 @@ impl Pattern {
             }
         }
     }
+
+    pub fn refresh(&mut self, bound: &mut HashMap<Ident, Ident>) {
+        match self {
+            Pattern::Wildcard => {}
+            Pattern::VarP(id) => refresh_var(id, bound),
+            Pattern::TupleP(pats) => {
+                pats.iter_mut().for_each(|p| p.refresh(bound));
+            }
+            Pattern::ConsP(_, pats) => {
+                pats.iter_mut().for_each(|p| p.refresh(bound));
+            }
+            Pattern::RecP(fields) => {
+                fields.iter_mut().for_each(|(_, p)| p.refresh(bound));
+            }
+        }
+    }
+}
+
+pub(crate) fn refresh_var(id: &mut Ident, bound: &mut HashMap<Ident, Ident>) {
+    let id2 = id.refresh();
+    bound.insert(*id, id2);
+    *id = id2;
 }

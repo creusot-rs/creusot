@@ -3,7 +3,7 @@ use rustc_middle::{
     mir::{BasicBlock, ProjectionElem, START_BLOCK, tcx::PlaceTy},
     ty::{Ty, TyCtxt},
 };
-use rustc_span::{DUMMY_SP, Symbol};
+use rustc_span::DUMMY_SP;
 
 use crate::{
     backend::{
@@ -13,7 +13,7 @@ use crate::{
     },
     contracts_items::get_snap_ty,
     ctx::TranslationCtx,
-    pearlite::{Term, mk_projection},
+    pearlite::{Ident, Term, mk_projection},
     translation::fmir,
 };
 use petgraph::Direction;
@@ -45,7 +45,7 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
         for (ix, u) in unchanged.iter().enumerate() {
             let Some(pterm) = place_to_term(u, tcx, &body.locals) else { continue };
 
-            let local = Symbol::intern(&format!("old_{}_{ix}", k.as_u32()));
+            let local = Ident::fresh_local(&format!("old_{}_{ix}", k.as_u32()));
             let subst = ctx.mk_args(&[u.ty(tcx, &body.locals).into()]);
             let ty = Ty::new_adt(ctx.tcx, ctx.adt_def(snap_ty), subst);
 

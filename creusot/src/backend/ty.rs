@@ -4,6 +4,7 @@ use crate::{
     backend::Why3Generator,
     contracts_items::{get_builtin, get_int_ty, is_int_ty, is_logic, is_snap_ty, is_trusted},
     ctx::*,
+    naming::name,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv};
@@ -11,7 +12,7 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
 use why3::{
-    Ident,
+    Ident, Name,
     coma::{Arg, Defn, Expr, Param, Prototype},
     declaration::{AdtDecl, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl},
     exp::{Exp, Trigger},
@@ -26,13 +27,13 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
 ) -> MlT {
     let ty = names.normalize(ctx, ty);
     match ty.kind() {
-        Bool => MlT::TConstructor("bool".into()),
-        Char => MlT::TConstructor(names.in_pre(PreMod::Char, "t")),
+        Bool => MlT::qconstructor(name::bool()),
+        Char => MlT::qconstructor(names.in_pre(PreMod::Char, "t")),
         Tuple(args) if args.is_empty() => MlT::unit(),
         Tuple(args) if args.len() == 1 => translate_ty(ctx, names, span, args[0]),
-        Int(ity) => MlT::TConstructor(names.in_pre(ity_to_prelude(ctx.tcx, *ity), "t")),
-        Uint(uty) => MlT::TConstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t")),
-        Float(flty) => MlT::TConstructor(names.in_pre(floatty_to_prelude(*flty), "t")),
+        Int(ity) => MlT::qconstructor(names.in_pre(ity_to_prelude(ctx.tcx, *ity), "t")),
+        Uint(uty) => MlT::qconstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t")),
+        Float(flty) => MlT::qconstructor(names.in_pre(floatty_to_prelude(*flty), "t")),
         Adt(def, s) if def.is_box() => translate_ty(ctx, names, span, s[0].expect_ty()),
         Adt(def, s) if is_snap_ty(ctx.tcx, def.did()) => {
             // Make sure we create a cycle of dependency if we create a type which is recursive through Snapshot
@@ -50,27 +51,27 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
             match borkind {
-                Mut => MlT::TConstructor(names.in_pre(PreMod::MutBor, "t"))
+                Mut => MlT::qconstructor(names.in_pre(PreMod::MutBor, "t"))
                     .tapp([translate_ty(ctx, names, span, *ty)]),
                 Not => translate_ty(ctx, names, span, *ty),
             }
         }
-        Slice(ty) => MlT::TConstructor(names.in_pre(PreMod::Slice, "slice"))
+        Slice(ty) => MlT::qconstructor(names.in_pre(PreMod::Slice, "slice"))
             .tapp([translate_ty(ctx, names, span, *ty)]),
-        Array(ty, _) => MlT::TConstructor(names.in_pre(PreMod::Slice, "array"))
+        Array(ty, _) => MlT::qconstructor(names.in_pre(PreMod::Slice, "array"))
             .tapp([translate_ty(ctx, names, span, *ty)]),
-        Str => MlT::TConstructor("string".into()),
+        Str => MlT::qconstructor(name::string()),
         Never => MlT::unit(),
-        RawPtr(_, _) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "ptr")),
+        RawPtr(_, _) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "ptr")),
         Closure(id, subst)
             if is_logic(ctx.tcx, *id) || subst.as_closure().upvar_tys().is_empty() =>
         {
             MlT::unit()
         }
         FnDef(_, _) => MlT::unit(), /* FnDef types are effectively singleton types, so it is sound to translate to unit. */
-        FnPtr(..) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "ptr")),
-        Dynamic(_, _, _) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "dyn")),
-        Foreign(_) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "foreign")),
+        FnPtr(..) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "ptr")),
+        Dynamic(_, _, _) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "dyn")),
+        Foreign(_) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "foreign")),
         Error(_) => MlT::unit(),
         Closure(..)
         | Adt(..)
@@ -89,7 +90,7 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Vec<Decl> {
-    let ty_name = names.def_ty(did, subst).as_ident();
+    let ty_name = names.def_ty(did, subst).to_ident();
     let closure_subst = subst.as_closure();
     let fields: Box<[_]> = closure_subst
         .upvar_tys()
@@ -97,7 +98,7 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
         .enumerate()
         .map(|(ix, uv)| FieldDecl {
             ty: translate_ty(ctx, names, DUMMY_SP, uv),
-            name: names.field(did, subst, ix.into()).as_ident(),
+            name: names.field(did, subst, ix.into()),
         })
         .collect();
 
@@ -126,13 +127,13 @@ pub(crate) fn translate_tuple_ty<'tcx, N: Namer<'tcx>>(
         .enumerate()
         .map(|(ix, ty)| FieldDecl {
             ty: translate_ty(ctx, names, DUMMY_SP, ty),
-            name: names.tuple_field(args, ix.into()).as_ident(),
+            name: names.tuple_field(args, ix.into()),
         })
         .collect();
 
     vec![Decl::TyDecl(TyDecl::Adt {
         tys: Box::new([AdtDecl {
-            ty_name: names.ty(ty).as_ident(),
+            ty_name: names.ty(ty).to_ident(),
             ty_params: Box::new([]),
             sumrecord: SumRecord::Record(fields),
         }]),
@@ -152,19 +153,19 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
 ) -> Vec<Decl> {
     // Trusted types (opaque)
     if is_trusted(ctx.tcx, did) {
-        let ty_name = names.def_ty(did, subst).as_ident();
+        let ty_name = names.def_ty(did, subst).to_ident();
         return vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })];
     }
 
     let adt = ctx.tcx.adt_def(did);
-    let ty_name = names.def_ty(did, subst).as_ident();
+    let ty_name = names.def_ty(did, subst).to_ident();
 
     let sumrecord = if adt.is_enum() {
         SumRecord::Sum(
             adt.variants()
                 .iter()
                 .map(|var_def| ConstructorDecl {
-                    name: names.constructor(var_def.def_id, subst).as_ident(),
+                    name: names.constructor(var_def.def_id, subst),
                     fields: var_def
                         .fields
                         .iter()
@@ -184,7 +185,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
             .fields
             .iter_enumerated()
             .map(|(ix, f)| {
-                let name = names.field(did, subst, ix).as_ident();
+                let name = names.field(did, subst, ix);
                 let ty = f.ty(ctx.tcx, subst);
                 let ty = ctx.normalize_erasing_regions(typing_env, ty);
                 let ty = translate_ty(ctx, names, ctx.def_span(f.did), ty);
@@ -215,13 +216,13 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         .iter()
         .map(|fld| {
             let id = if fld.name.as_str().as_bytes()[0].is_ascii_digit() {
-                Ident::build(&format!("field_{}", fld.name))
+                &format!("field_{}", fld.name)
             } else {
-                Ident::build(fld.name.as_str())
+                fld.name.as_str()
             };
             let ty =
                 translate_ty(ctx, names, DUMMY_SP, names.normalize(ctx, fld.ty(ctx.tcx, subst)));
-            (id, ty)
+            (Ident::fresh_local(id), ty)
         })
         .collect();
 
@@ -229,14 +230,17 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         fields.iter().cloned().map(|(nm, ty)| Param::Term(nm, ty)).collect();
 
     let constr = names.constructor(variant_id, subst);
-    let cons_test = Exp::qvar(constr).app(fields.iter().map(|(nm, _)| Exp::var(nm.clone())));
+    let cons_test = Exp::var(constr).app(fields.iter().map(|(nm, _)| Exp::var(*nm)));
 
-    let ret = Expr::Symbol("ret".into())
-        .app(fields.iter().map(|(nm, _)| Arg::Term(Exp::var(nm.clone()))));
+    let ret_ident = Ident::fresh_local("ret");
+    let good_ident = Ident::fresh_local("good");
+    let bad_ident = Ident::fresh_local("bad");
+    let input_ident = Ident::fresh_local("input");
+    let ret = Expr::var(ret_ident).app(fields.iter().map(|(nm, _)| Arg::Term(Exp::var(*nm))));
 
     let good_branch: Defn = Defn {
-        prototype: Prototype { name: "good".into(), attrs: vec![], params: field_args.clone() },
-        body: Expr::assert(cons_test.clone().eq(Exp::var("input")), ret.black_box()),
+        prototype: Prototype { name: good_ident, attrs: vec![], params: field_args.clone() },
+        body: Expr::assert(cons_test.clone().eq(Exp::var(input_ident)), ret.black_box()),
     };
 
     let ty = translate_ty(ctx, names, DUMMY_SP, Ty::new_adt(ctx.tcx, adt, subst));
@@ -247,21 +251,21 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         let negative_assertion = Exp::forall_trig(
             fields.clone(),
             [Trigger::single(cons_test.clone().ascribe(ty.clone()))],
-            cons_test.neq(Exp::var("input")),
+            cons_test.neq(Exp::var(input_ident)),
         );
-        Some(Defn::simple("bad", Expr::assert(negative_assertion, fail)))
+        Some(Defn::simple(bad_ident, Expr::assert(negative_assertion, fail)))
     } else {
         None
     };
 
-    let ret_cont = Param::Cont("ret".into(), Box::new([]), field_args);
+    let ret_cont = Param::Cont(ret_ident, Box::new([]), field_args);
 
-    let input = Param::Term("input".into(), ty);
+    let input = Param::Term(input_ident, ty);
 
     let branches = once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
         prototype: Prototype {
-            name: names.eliminator(variant_id, subst).as_ident(),
+            name: names.eliminator(variant_id, subst),
             params: Box::new([input, ret_cont]),
             attrs: vec![],
         },
@@ -277,7 +281,7 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
 ) -> Exp {
     match names.tcx().def_kind(did) {
         DefKind::Variant => {
-            let ctor = names.constructor(did, subst);
+            let ctor = Name::local(names.constructor(did, subst));
             Exp::Constructor { ctor, args: fields }
         }
         DefKind::Closure | DefKind::Struct => {
@@ -287,7 +291,7 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
                 let fields = fields
                     .into_iter()
                     .enumerate()
-                    .map(|(ix, f)| (names.field(did, subst, ix.into()), f))
+                    .map(|(ix, f)| (Name::local(names.field(did, subst, ix.into())), f))
                     .collect();
                 Exp::Record { fields }
             }
@@ -333,5 +337,16 @@ pub(crate) fn floatty_to_prelude(fty: FloatTy) -> PreMod {
         FloatTy::F32 => PreMod::Float32,
         FloatTy::F64 => PreMod::Float64,
         FloatTy::F16 | FloatTy::F128 => todo!("unsupported: {fty:?}"),
+    }
+}
+
+pub fn ty_to_prelude(tcx: TyCtxt<'_>, ty: &TyKind) -> PreMod {
+    match ty {
+        TyKind::Int(ity) => ity_to_prelude(tcx, *ity),
+        TyKind::Uint(uty) => uty_to_prelude(tcx, *uty),
+        TyKind::Float(fty) => floatty_to_prelude(*fty),
+        TyKind::Bool => PreMod::Bool,
+        TyKind::Char => PreMod::Char,
+        _ => unreachable!("non-primitive type {ty:?}"),
     }
 }

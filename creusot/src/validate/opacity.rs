@@ -6,6 +6,7 @@ use crate::{
     contracts_items::{is_spec, opacity_witness_name},
     ctx::TranslationCtx,
     error::CannotFetchThir,
+    pearlite::ScopedTerm,
     translation::pearlite::{TermKind, TermVisitor, super_visit_term},
     util::parent_module,
 };
@@ -64,8 +65,7 @@ pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) -> Result<(), 
         return Ok(());
     }
 
-    // UGLY clone...
-    let Some(term) = ctx.term(item)?.cloned() else { return Ok(()) };
+    let Some(ScopedTerm(_, term)) = ctx.term(item)? else { return Ok(()) };
 
     if ctx.visibility(item) != Visibility::Restricted(parent_module(ctx.tcx, item))
         && opacity_witness_name(ctx.tcx, item).is_none()
@@ -74,6 +74,6 @@ pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) -> Result<(), 
     }
 
     let opacity = ctx.opacity(item).scope();
-    OpacityVisitor { opacity, ctx, source_item: item }.visit_term(&term);
+    OpacityVisitor { opacity, ctx, source_item: item }.visit_term(term);
     Ok(())
 }

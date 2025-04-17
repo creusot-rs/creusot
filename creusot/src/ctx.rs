@@ -9,13 +9,14 @@ use crate::{
     error::{CannotFetchThir, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
     options::Options,
+    pearlite::ScopedTerm,
     specification::{PreSignature, inherited_extern_spec, pre_sig_of},
     translation::{
         self,
         external::{ExternSpec, extract_extern_specs_from_item},
         fmir,
         function::ClosureContract,
-        pearlite::{self, Term},
+        pearlite,
         specification::ContractClauses,
         traits::TraitImpl,
     },
@@ -29,8 +30,9 @@ use rustc_ast::{
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_errors::{Diag, FatalAbort};
 use rustc_hir::{
+    HirId,
     def::DefKind,
-    def_id::{DefId, LocalDefId},
+    def_id::{DefId, LOCAL_CRATE, LocalDefId},
 };
 use rustc_infer::traits::ObligationCause;
 use rustc_macros::{TypeFoldable, TypeVisitable};
@@ -44,7 +46,13 @@ use rustc_middle::{
 };
 use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
-use std::{collections::HashMap, ops::Deref};
+use rustc_type_ir::inherent::Ty as _;
+use std::{
+    cell::{OnceCell, RefCell},
+    collections::HashMap,
+    ops::Deref,
+};
+use why3::Ident;
 
 pub(crate) use crate::{backend::clone_map::*, translated_item::*};
 
@@ -148,12 +156,15 @@ pub struct TranslationCtx<'tcx> {
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
-    terms: OnceMap<DefId, Box<Option<Term<'tcx>>>>,
+    terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
     trait_impl: OnceMap<DefId, Box<TraitImpl<'tcx>>>,
     sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
     bodies: OnceMap<LocalDefId, Box<BodyWithBorrowckFacts<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
     closure_contract: OnceMap<DefId, Box<ClosureContract<'tcx>>>,
+    renamer: RefCell<HashMap<HirId, Ident>>,
+    pub corenamer: RefCell<HashMap<Ident, HirId>>,
+    crate_name: OnceCell<why3::Symbol>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -212,6 +223,9 @@ impl<'tcx> TranslationCtx<'tcx> {
             opacity: Default::default(),
             closure_contract: Default::default(),
             params_open_inv,
+            renamer: Default::default(),
+            corenamer: Default::default(),
+            crate_name: Default::default(),
         }
     }
 
@@ -251,7 +265,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn term<'a>(
         &'a self,
         def_id: DefId,
-    ) -> Result<Option<&'a Term<'tcx>>, CannotFetchThir> {
+    ) -> Result<Option<&'a ScopedTerm<'tcx>>, CannotFetchThir> {
         let Some(local_id) = def_id.as_local() else {
             return Ok(self.externs.term(def_id));
         };
@@ -259,12 +273,16 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.terms
             .try_insert(def_id, |_| {
                 if self.tcx.hir().maybe_body_owned_by(local_id).is_some() {
-                    let term = match pearlite::pearlite(self, local_id) {
+                    let (bound, term) = match pearlite::pearlite(self, local_id) {
                         Ok(t) => t,
                         Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
                         Err(Error::TypeCheck(thir)) => return Err(thir),
                     };
-                    Ok(Box::new(Some(pearlite::normalize(self.tcx, self.typing_env(def_id), term))))
+                    let bound = bound.iter().map(|b| b.0).collect();
+                    Ok(Box::new(Some(ScopedTerm(
+                        bound,
+                        pearlite::normalize(self.tcx, self.typing_env(def_id), term),
+                    ))))
                 } else {
                     Ok(Box::new(None))
                 }
@@ -276,7 +294,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     ///
     /// This should only be used in [`after_analysis`](crate::translation::after_analysis),
     /// where we are confident that typechecking errors have already been reported.
-    pub(crate) fn term_fail_fast(&self, def_id: DefId) -> Option<&Term<'tcx>> {
+    pub(crate) fn term_fail_fast(&self, def_id: DefId) -> Option<&ScopedTerm<'tcx>> {
         let tcx = self.tcx;
         self.term(def_id).unwrap_or_else(|_| {
             tcx.dcx().abort_if_errors();
@@ -493,7 +511,8 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.extern_specs.insert(def_id, ExternSpec {
                 contract: ContractClauses::new(),
                 subst: erased_identity_for_item(self.tcx, def_id),
-                arg_subst: Vec::new(),
+                inputs: Box::new([]),
+                output: Ty::new_bool(self.tcx), // dummy
                 additional_predicates,
             });
         }
@@ -524,4 +543,28 @@ impl<'tcx> TranslationCtx<'tcx> {
             dk => ItemType::Unsupported(dk),
         }
     }
+
+    pub(crate) fn rename(&self, ident: HirId) -> Ident {
+        self.renamer
+            .borrow_mut()
+            .entry(ident)
+            .or_insert_with(|| {
+                let r = Ident::fresh(self.crate_name(), self.hir().name(ident).as_str());
+                self.corenamer.borrow_mut().insert(r, ident);
+                r
+            })
+            .clone()
+    }
+
+    pub(crate) fn crate_name(&self) -> why3::Symbol {
+        *self.crate_name.get_or_init(|| crate_name(self.tcx))
+    }
+
+    pub(crate) fn fresh(&self, name: impl AsRef<str>) -> Ident {
+        Ident::fresh(self.crate_name(), name)
+    }
+}
+
+pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
+    tcx.crate_name(LOCAL_CRATE).as_str().into()
 }
