@@ -45,13 +45,8 @@
     )
 )]
 
-extern crate self as creusot_contracts;
-
-#[cfg(creusot)]
 extern crate creusot_contracts_proc as base_macros;
-
-#[cfg(not(creusot))]
-extern crate creusot_contracts_dummy as base_macros;
+extern crate self as creusot_contracts;
 
 /// Specification are written using these macros
 ///
