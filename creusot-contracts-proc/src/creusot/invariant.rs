@@ -1,4 +1,4 @@
-use crate::pretyping;
+use crate::creusot::pretyping;
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
@@ -233,7 +233,7 @@ pub(crate) fn desugar_variant(attr: TokenStream, tokens: TokenStream) -> Result<
 }
 
 fn variant_to_tokens(span: Span, p: &pearlite_syn::Term) -> (String, TokenStream) {
-    let var_name = crate::generate_unique_ident("variant");
+    let var_name = crate::creusot::generate_unique_ident("variant");
     let var_body = pretyping::encode_term(p).unwrap_or_else(|e| {
         return e.into_tokens();
     });

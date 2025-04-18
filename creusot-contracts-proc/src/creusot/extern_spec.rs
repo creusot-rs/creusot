@@ -1,4 +1,4 @@
-use crate::{doc::DocItemName, generate_unique_ident};
+use crate::creusot::{doc::DocItemName, generate_unique_ident};
 use pearlite_syn::term::*;
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, quote, quote_spanned};
