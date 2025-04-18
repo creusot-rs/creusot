@@ -1,10 +1,13 @@
 use anyhow::Result;
+use cargo_metadata::semver::Version;
 use clap::Parser;
 use std::{
     fs,
     io::Write,
     process::{Command, Stdio},
 };
+
+use crate::helpers::{CREUSOT_CONTRACTS_VERSION, creusot_contracts_path};
 
 #[derive(Debug, Parser)]
 pub struct NewArgs {
@@ -36,7 +39,7 @@ pub struct NewInitArgs {
     pub creusot_contracts: Option<String>,
 }
 
-fn cargo_template(name: &str, dep: &str) -> String {
+fn cargo_template(name: &str, dep: &str, patch: &str) -> String {
     format!(
         r#"[package]
 name = "{name}"
@@ -48,7 +51,7 @@ creusot-contracts = {dep}
 
 [lints.rust]
 unexpected_cfgs = {{ level = "warn", check-cfg = ['cfg(creusot)'] }}
-"#
+{patch}"#
     )
 }
 
@@ -115,22 +118,20 @@ pub fn init(args: InitArgs) -> Result<()> {
     create_project(name, args.args)
 }
 
-/// Only remember the version string at compile-time
-const QUOTED_VERSION: &str = {
-    use const_str::{format, split};
-    format!(
-        "\"{}\"",
-        split!(split!(include_str!("../../creusot-contracts/Cargo.toml"), "version = \"")[1], "\"")
-            [0]
-    )
-};
-
 pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
-    let contract_dep = match args.creusot_contracts {
-        Some(path) => format!(r#"{{ path = "{}" }}"#, path),
-        None => QUOTED_VERSION.into(),
+    let version = Version::parse(CREUSOT_CONTRACTS_VERSION)?;
+    let contract_dep = format!("\"{}\"", CREUSOT_CONTRACTS_VERSION);
+    let patch = if version.pre.is_empty() {
+        "".to_string()
+    } else {
+        format!(
+            r#"[patch.crates-io]
+creusot-contracts = {{ path = "{}" }}
+"#,
+            creusot_contracts_path().display()
+        )
     };
-    write("Cargo.toml", &cargo_template(&name, &contract_dep));
+    write("Cargo.toml", &cargo_template(&name, &contract_dep, &patch));
     if args.tests {
         fs::create_dir_all("tests")?;
         write("tests/test.rs", TEST_TEMPLATE);
