@@ -74,7 +74,7 @@ otherwise you can remove them with `cargo creusot clean`.
 - `--force`: Don't ask for confirmation before removing dangling files.
 - `--dry-run`: Only print the list of files that would be removed by `cargo creusot clean`.
 
-## Create package
+## Create and maintain package
 
 ### `new`
 
@@ -113,6 +113,25 @@ Generate `why3find` configuration.
 
 This is used to set up Creusot in an existing Rust package.
 You don't need to run this command if you used `cargo creusot new` or `cargo creusot init`.
+
+### `patch-deps`
+
+```
+cargo creusot patch-deps
+```
+
+Update `Cargo.toml` with a `creusot-contracts` version matching your Creusot installation.
+
+For released versions of Creusot, this is equivalent to `cargo add creusot-contracts@$VERSION` just with the right version.
+
+For a development version of Creusot (those that don't have a git tag), this also adds the following lines:
+
+```
+[patch.crates-io]
+creusot-contracts = { path = "/path/to/creusot-contracts" }
+```
+
+This setting is documented in [The Cargo Book: Overriding Dependencies](https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html).
 
 ## Show configuration
 

@@ -37,19 +37,22 @@ A successful run gives us the certainty that functions defined in this package s
 for all arguments satisfying the preconditions (`requires` clauses), the result of the function will
 satisfy the postconditions (`ensures` clauses).
 
-However, if you get this error 
+### Troubleshooting
+
+If you get an error like this
+
 ```
-error: The `creusot_contracts` crate is loaded, but the following items are missing: ghost_new, ghost_into_inner, ghost_inner_logic, ghost_deref, ghost_deref_mut, ghost_ty. Maybe your version of `creusot-contracts` is wrong?
+error: The `creusot_contracts` crate is loaded, but the following items are missing: <a list of identifiers> Maybe your version of `creusot-contracts` is wrong?
 ```
 
-Then you can fix it by going into your Cargo.toml file in your new project and changing
+Add the following to your `Cargo.toml` file:
+
 ```
-creusot-contracts = "0.4.0"
-```
-To 
-```
+[patch.crates-io]
 creusot-contracts = { path = "/relative/or/absolute/path/to/creusot-contracts/in/creusot/directory" }
 ```
+
+And please notify the Creusot developers that the version of Creusot should be bumped to `NEXT_VERSION-dev` to prevent this error.
 
 ## Prove with Why3
 
