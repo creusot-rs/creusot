@@ -1,3 +1,5 @@
+use anyhow::bail;
+use cargo_metadata::semver::Version;
 use clap::*;
 use creusot_args::{CREUSOT_RUSTC_ARGS, options::*};
 use creusot_setup as setup;
@@ -8,6 +10,7 @@ use std::{
     process::{Command, exit},
 };
 use tempdir::TempDir;
+use toml_edit::DocumentMut;
 
 mod helpers;
 use helpers::*;
@@ -19,32 +22,29 @@ mod new;
 use new::*;
 
 fn main() -> Result<()> {
-    let cargs = CargoCreusotArgs::parse_from(std::env::args().skip(1));
+    let cargs = CargoCreusotCmds::parse_from(std::env::args().skip(1));
 
     match cargs.subcommand {
-        None => creusot(None, cargs.options, cargs.creusot_rustc, cargs.cargo_flags),
-        Some(Creusot(subcmd)) => {
-            creusot(Some(subcmd), cargs.options, cargs.creusot_rustc, cargs.cargo_flags)
-        }
+        None => creusot(None, cargs.args),
+        Some(Creusot(subcmd)) => creusot(Some(subcmd), cargs.args),
         Some(Setup { command: SetupSubCommand::Status }) => setup::status(),
         Some(Config(args)) => why3find_config(args),
         Some(Prove(args)) => {
-            creusot(None, cargs.options, cargs.creusot_rustc, cargs.cargo_flags)?;
+            creusot(None, cargs.args)?;
             why3find_prove(args)
         }
         Some(New(args)) => new(args),
         Some(Init(args)) => init(args),
         Some(Clean(args)) => clean(args),
+        Some(PatchDep) => patch_dep(),
     }
 }
 
-fn creusot(
-    subcmd: Option<CreusotSubCommand>,
-    options: CommonOptions,
-    creusot_rustc: Option<PathBuf>,
-    cargo_flags: Vec<String>,
-) -> Result<()> {
-    let (coma_src, coma_glob) = get_coma(&options);
+fn creusot(subcmd: Option<CreusotSubCommand>, args: CargoCreusotArgs) -> Result<()> {
+    if !args.no_check_version {
+        check_contracts_version()?;
+    }
+    let (coma_src, coma_glob) = get_coma(&args.options);
 
     // subcommand analysis:
     //   we want to launch Why3 Ide and replay in cargo-creusot not by creusot-rustc.
@@ -63,16 +63,16 @@ fn creusot(
     };
 
     // Default output_dir to "." if not specified
-    let include_dir = Some(options.output_dir.clone().unwrap_or(".".into()));
+    let include_dir = Some(args.options.output_dir.clone().unwrap_or(".".into()));
     let paths = setup::creusot_paths()?;
     let creusot_args = CreusotArgs {
-        options,
+        options: args.options,
         why3_path: paths.why3.clone(),
         why3_config_file: paths.why3.clone(),
         subcommand: creusot_rustc_subcmd.clone(),
     };
 
-    invoke_cargo(&creusot_args, creusot_rustc, cargo_flags);
+    invoke_cargo(&creusot_args, args.creusot_rustc, args.cargo_flags);
     warn_if_dangling()?;
 
     if let Some((mode, coma_src, args)) = launch_why3 {
@@ -173,18 +173,27 @@ fn invoke_cargo(args: &CreusotArgs, creusot_rustc: Option<PathBuf>, cargo_flags:
 }
 
 #[derive(Debug, Parser)]
-pub struct CargoCreusotArgs {
-    #[clap(flatten)]
-    pub options: CommonOptions,
-    /// Path to creusot-rustc (for testing)
-    #[clap(long, value_name = "PATH")]
-    pub creusot_rustc: Option<PathBuf>,
+pub struct CargoCreusotCmds {
     /// Subcommand: why3, setup
     #[command(subcommand)]
     pub subcommand: Option<CargoCreusotSubCommand>,
+    #[clap(flatten)]
+    pub args: CargoCreusotArgs,
+}
+
+#[derive(Debug, Parser)]
+pub struct CargoCreusotArgs {
+    /// Options for creusot-rustc
+    #[clap(flatten)]
+    pub options: CommonOptions,
+    /// Allow mismatching creusot-contracts versions (use at your own risk!)
+    #[clap(long)]
+    pub no_check_version: bool,
+    /// Path to creusot-rustc (for testing)
+    #[clap(long, value_name = "PATH")]
+    pub creusot_rustc: Option<PathBuf>,
     /// Additional flags to pass to the underlying cargo invocation.
-    #[clap(last = true)]
-    #[clap(global = true)]
+    #[clap(last = true, global = true)]
     pub cargo_flags: Vec<String>,
 }
 
@@ -208,6 +217,8 @@ pub enum CargoCreusotSubCommand {
     Init(InitArgs),
     /// Clean dangling files in verif/
     Clean(CleanArgs),
+    /// Modify Cargo.toml to depend on the current version of creusot-contracts
+    PatchDep,
 }
 use CargoCreusotSubCommand::*;
 
@@ -362,4 +373,80 @@ fn find_dangling_rec(dir: &PathBuf) -> Result<Option<Vec<FileOrDirectory>>> {
         }
     }
     if all_dangling { Ok(None) } else { Ok(Some(dangling)) }
+}
+
+fn check_contracts_version() -> Result<()> {
+    use std::cmp::Ordering;
+    // The cargo-creusot version should be the same as the creusot-contracts version
+    let self_version = Version::parse(CREUSOT_CONTRACTS_VERSION)?;
+    let contracts_version = get_contracts_version()?;
+    let err = |msg, fixes| {
+        bail!(
+            r"{msg}
+    creusot-contracts {contracts_version}
+    creusot           {self_version}
+{fixes}"
+        )
+    };
+    match self_version.cmp(&contracts_version) {
+        Ordering::Less => err(
+            "creusot-contracts is newer than Creusot.",
+            "Possible fixes: upgrade Creusot, or run `cargo creusot patch-dep`.",
+        ),
+        Ordering::Greater => err(
+            "creusot-contracts is out of date.",
+            "Possible fixes: run `cargo creusot patch-dep` or downgrade Creusot.",
+        ),
+        Ordering::Equal => Ok(()),
+    }
+}
+
+fn get_contracts_version() -> Result<Version> {
+    let metadata = cargo_metadata::MetadataCommand::new().exec()?;
+    for package in metadata.packages {
+        if package.name == "creusot-contracts" {
+            return Ok(package.version);
+        }
+    }
+    Err(anyhow::anyhow!("creusot-contracts not found in dependencies"))
+}
+
+/// Add or update creusot-contracts in Cargo.toml:
+///
+/// ```toml
+/// [dependencies]
+/// creusot-contracts = "X.Y.Z"
+///
+/// [patch.crates-io]
+/// creusot-contracts = { path = "/path/to/creusot-contracts" }  # Only for dev versions
+/// ```
+fn patch_dep() -> Result<()> {
+    let self_version = Version::parse(CREUSOT_CONTRACTS_VERSION)?;
+    let cargo_toml = std::fs::read_to_string("Cargo.toml")?;
+    let mut cargo_toml = cargo_toml.parse::<DocumentMut>()?;
+    implicit_table(&mut cargo_toml, "dependencies")["creusot-contracts"] =
+        toml_edit::value(CREUSOT_CONTRACTS_VERSION);
+    if !self_version.pre.is_empty() {
+        let patch = implicit_table(&mut cargo_toml, "patch");
+        implicit_table(patch.as_table_mut().unwrap(), "crates-io")["creusot-contracts"]["path"] =
+            toml_edit::value(creusot_contracts_path().display().to_string());
+    }
+    let mut file = std::fs::File::create("Cargo.toml")?;
+    file.write_all(cargo_toml.to_string().as_bytes())?;
+    Ok(())
+}
+
+/// Get the value for the key if it exists.
+/// If the key doesn't exist, insert a `Table` and mark it implicit.
+///
+/// We don't just use `Index` (`toml[key]`) because it creates an
+/// `InlineTable` instead of a `Table`.
+/// And we call `set_implcit` because otherwise we would get an empty `[patch]`
+/// table next to `[patch.crates-io]` to appear in our generated toml file.
+fn implicit_table<'a>(toml: &'a mut toml_edit::Table, key: &'a str) -> &'a mut toml_edit::Item {
+    toml.entry(key).or_insert_with(|| {
+        let mut table = toml_edit::Table::new();
+        table.set_implicit(true);
+        table.into()
+    })
 }
