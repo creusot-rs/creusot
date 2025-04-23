@@ -98,5 +98,5 @@ echo "--external z3" > INSTALL.opts
 
 # Hacking on Creusot
 
-See [HACKING.md](HACKING.md) for information on the developer workflow for
+See [CONTRIBUTING.md](CONTRIBUTING.md) for information on the developer workflow for
 hacking on the Creusot codebase.
