@@ -2,7 +2,7 @@
 use anyhow::{Context as _, anyhow, bail};
 use clap::*;
 use creusot_setup::{
-    self as setup, Binary, CfgPaths,
+    self as setup, Binary, CfgPaths, PROVERS,
     config::{Config, ExternalTool, ManagedTool},
     tools_versions_urls::*,
 };
@@ -309,6 +309,9 @@ fn apply_config(paths: &setup::CfgPaths, cfg: &Config) -> anyhow::Result<()> {
 
     // install the why3find package `creusot`
     install_prelude(&cfg.why3find.path)?;
+
+    // This depends on the `creusot` prelude being installed (for `--package creusot`)
+    generate_why3find_json(&cfg.why3find.path, &paths.why3_config_file, &paths.config_dir)?;
     Ok(())
 }
 
@@ -407,6 +410,40 @@ fn generate_why3_conf(
         generate_strategy(&mut f)?;
     }
 
+    Ok(())
+}
+
+/// Generate a why3find.json file to be copied when setting up new Creusot projects.
+fn generate_why3find_json(
+    why3find: &Path,
+    why3_config: &Path,
+    config_dir: &Path,
+) -> anyhow::Result<()> {
+    println!("Generating why3find.json...)");
+    let mut provers = String::new();
+    for prover in PROVERS.iter() {
+        if !provers.is_empty() {
+            provers.push_str(",");
+        }
+        provers.push_str(&format!("+{}", prover.binary_name));
+    }
+    let mut why3find = Command::new(why3find);
+    why3find
+        .args([
+            "config",
+            "--quiet",
+            "--why3-warn-off",
+            "unused_variable,axiom_abstract",
+            "--package",
+            "creusot",
+            "--prover",
+            &provers,
+            "--master",
+            "--root",
+        ])
+        .arg(config_dir)
+        .env("WHY3CONFIG", why3_config);
+    why3find.status().context(format!("{:?} failed", why3find))?;
     Ok(())
 }
 

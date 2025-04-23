@@ -186,6 +186,7 @@ pub fn status() -> anyhow::Result<()> {
 pub struct Paths {
     pub why3: PathBuf,
     pub why3find: PathBuf,
+    pub config_dir: PathBuf,
     pub why3_config: PathBuf,
 }
 
@@ -216,6 +217,7 @@ pub fn creusot_paths() -> anyhow::Result<Paths> {
             Ok(Paths {
                 why3: cfg.why3.path.to_path_buf(),
                 why3find: cfg.why3find.path.to_path_buf(),
+                config_dir: paths.config_dir,
                 why3_config: paths.why3_config_file,
             })
         }

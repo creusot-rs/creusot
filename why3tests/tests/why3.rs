@@ -56,7 +56,7 @@ fn main() {
     std::env::set_current_dir("..").unwrap();
 
     // Use the Creusot installation for Why3, Why3find, and solvers (because they're a pain to keep track of if we allow them to come from anywhere)
-    let creusot_setup::Paths { why3, why3find, why3_config } =
+    let creusot_setup::Paths { why3, why3find, why3_config, .. } =
         creusot_setup::creusot_paths().unwrap();
     // Use the local prelude, so that it's easy to test quick changes.
     let build_prelude_success = Command::new("cargo")
