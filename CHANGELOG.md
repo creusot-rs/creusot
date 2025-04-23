@@ -14,6 +14,43 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [0.5.0] - 2025-04-23
 
+### Tooling
+
+`cargo creusot new` and `cargo creusot init` can now also update existing Rust package manifests (`Cargo.toml`)
+to enable verification with Creusot.
+
+Improved error messages when `creusot-contracts` has the wrong version or is missing as a dependency.
+
+- [Refactor handling of existing Rust projects](https://github.com/creusot-rs/creusot/pull/1471)
+- [Handle version mismatch of `creusot-contracts`](https://github.com/creusot-rs/creusot/pull/1470)
+- [`cargo creusot new`: Set specific version of `creusot-contracts`](https://github.com/creusot-rs/creusot/pull/1433)
+- [Detect when `creusot-contracts` is not loaded](https://github.com/creusot-rs/creusot/pull/1404)
+
+### Improved surface syntax
+
+- **[Add basic support for RPIT](https://github.com/creusot-rs/creusot/pull/1351)**
+- [Soundly erase `ghost!`](https://github.com/creusot-rs/creusot/pull/1458)
+- [Write snapshots in `ghost!`](https://github.com/creusot-rs/creusot/pull/1450)
+- [Infer the `FnMut` spec of a `Fn` closure](https://github.com/creusot-rs/creusot/pull/1444)
+- [Do not validate purity of trusted program functions](https://github.com/creusot-rs/creusot/pull/1428)
+
+### Improved Coma generation
+
+- [Improve binder hygiene](https://github.com/creusot-rs/creusot/pull/1465)
+- [In generated coma file, move all the use declarations to the beginning of modules, and remove duplicates](https://github.com/creusot-rs/creusot/pull/1419)
+- [Fix spans in blocks, assertions, and extern specs](https://github.com/creusot-rs/creusot/pull/1408)
+- [No need for additional unit parameter to functions](https://github.com/creusot-rs/creusot/pull/1417)
+
+### Standard library (`creusot-contracts`)
+
+- [Add Peano integers](https://github.com/creusot-rs/creusot/pull/1451)
+- [Give a body to almost every extern spec in `option.rs`](https://github.com/creusot-rs/creusot/pull/1442)
+- [Rename `GhostBox` to `Ghost`](https://github.com/creusot-rs/creusot/pull/1430)
+- [Specify `std::hint::*`, `std::mem::drop` and `std::mem::forget`](https://github.com/creusot-rs/creusot/pull/1425)
+- [Add difference operation in `fset`](https://github.com/creusot-rs/creusot/pull/1420)
+- [Unsafe operations in `ptr_own`](https://github.com/creusot-rs/creusot/pull/1416)
+- [Fix the spec of `Seq::get_mut_ghost`](https://github.com/creusot-rs/creusot/pull/1402)
+
 ## [0.4.0] - 2025-03-03
 
 ### Main features
