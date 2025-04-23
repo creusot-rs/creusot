@@ -71,23 +71,7 @@ If you'd like to help, a prototype VSCode plugin for Why3 is [in development](ht
 
 ## Prove with Why3find
 
-### Configure
-
-```sh
-$ cargo creusot config
-```
-
-The configuration is stored in `why3find.json`.
-
-### Prove
-
-1. Run the Creusot translation.
-
-    ```sh
-    $ cargo creusot
-    ```
-
-2. Run the Why3find prover.
+1. Run the Why3find prover:
 
     ```sh
     $ cargo creusot prove
@@ -99,7 +83,7 @@ The configuration is stored in `why3find.json`.
     $ cargo creusot prove verif/[COMA_FILES]
     ```
 
-3. Launch Why3 IDE on unproved goals (this will only open one file even if there are many listed with unproved goals).
+2. Launch Why3 IDE on unproved goals (this will only open one file even if there are many listed with unproved goals).
 
     ```sh
     $ cargo creusot prove -i

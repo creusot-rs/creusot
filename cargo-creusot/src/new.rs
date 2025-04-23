@@ -1,11 +1,8 @@
 use anyhow::Result;
 use cargo_metadata::semver::Version;
 use clap::Parser;
-use std::{
-    fs,
-    io::Write,
-    process::{Command, Stdio},
-};
+use creusot_setup::creusot_paths;
+use std::{fs, io::Write, path::Path};
 
 use crate::helpers::{CREUSOT_CONTRACTS_VERSION, creusot_contracts_path};
 
@@ -39,7 +36,19 @@ pub struct NewInitArgs {
     pub creusot_contracts: Option<String>,
 }
 
-fn cargo_template(name: &str, dep: &str, patch: &str) -> String {
+fn cargo_template(name: &str) -> String {
+    let version = Version::parse(CREUSOT_CONTRACTS_VERSION).unwrap();
+    let patch = if version.pre.is_empty() {
+        "".to_string()
+    } else {
+        format!(
+            r#"
+[patch.crates-io]
+creusot-contracts = {{ path = "{}" }}
+"#,
+            creusot_contracts_path().display()
+        )
+    };
     format!(
         r#"[package]
 name = "{name}"
@@ -47,7 +56,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-creusot-contracts = {dep}
+creusot-contracts = "{CREUSOT_CONTRACTS_VERSION}"
 
 [lints.rust]
 unexpected_cfgs = {{ level = "warn", check-cfg = ['cfg(creusot)'] }}
@@ -119,29 +128,24 @@ pub fn init(args: InitArgs) -> Result<()> {
 }
 
 pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
-    let version = Version::parse(CREUSOT_CONTRACTS_VERSION)?;
-    let contract_dep = format!("\"{}\"", CREUSOT_CONTRACTS_VERSION);
-    let patch = if version.pre.is_empty() {
-        "".to_string()
+    let paths = creusot_paths()?;
+    let cargo_toml = Path::new("Cargo.toml");
+    if cargo_toml.exists() {
+        patch_dep(cargo_toml)?;
     } else {
-        format!(
-            r#"[patch.crates-io]
-creusot-contracts = {{ path = "{}" }}
-"#,
-            creusot_contracts_path().display()
-        )
-    };
-    write("Cargo.toml", &cargo_template(&name, &contract_dep, &patch));
-    if args.tests {
-        fs::create_dir_all("tests")?;
-        write("tests/test.rs", TEST_TEMPLATE);
+        write(cargo_toml, &cargo_template(&name));
+        if args.tests {
+            fs::create_dir_all("tests")?;
+            write("tests/test.rs", TEST_TEMPLATE);
+        }
+        fs::create_dir_all("src")?;
+        if args.main {
+            write("src/main.rs", &bin_template(&name));
+        }
+        write("src/lib.rs", LIB_TEMPLATE);
     }
-    fs::create_dir_all("src")?;
-    if args.main {
-        write("src/main.rs", &bin_template(&name));
-    }
-    write("src/lib.rs", LIB_TEMPLATE);
-    Command::new("cargo").args(["creusot", "config"]).stdout(Stdio::null()).status()?;
+    let why3find_json = paths.config_dir.join("why3find.json");
+    copy(&why3find_json, "why3find.json");
     Ok(())
 }
 
@@ -155,15 +159,73 @@ fn validate_name(name: &str) -> Result<()> {
 }
 
 /// Do not overwrite existing file.
-/// Warn if writing fails, then keep going
-fn write(path: &str, contents: &str) {
+/// Warn if writing fails, then return.
+fn write(path: impl AsRef<Path>, contents: &str) {
+    let path = path.as_ref();
     fs::File::create_new(path)
         .and_then(|mut file| file.write_all(contents.as_ref()))
         .unwrap_or_else(|e| {
             if e.kind() == std::io::ErrorKind::AlreadyExists {
-                eprintln!("File '{}' already exists. (Skipped)", path);
+                eprintln!("File '{}' already exists. (Skipped)", path.display());
             } else {
-                eprintln!("Could not write to '{}': {} (Skipped)", path, e);
+                eprintln!("Could not write to '{}': {} (Skipped)", path.display(), e);
             }
         });
+}
+
+/// Do not overwrite existing file.
+fn copy(src: impl AsRef<Path>, dst: impl AsRef<Path>) {
+    let src = src.as_ref();
+    let dst = dst.as_ref();
+    if dst.exists() {
+        return;
+    }
+    fs::copy(src, dst).unwrap();
+}
+
+/// Add or update creusot-contracts in Cargo.toml:
+///
+/// ```toml
+/// [dependencies]
+/// creusot-contracts = "X.Y.Z"
+///
+/// [patch.crates-io]
+/// creusot-contracts = { path = "/path/to/creusot-contracts" }  # Only for dev versions
+/// ```
+fn patch_dep(cargo_toml_path: impl AsRef<Path>) -> Result<()> {
+    let cargo_toml_path = cargo_toml_path.as_ref();
+    let self_version = Version::parse(CREUSOT_CONTRACTS_VERSION)?;
+    let cargo_toml = std::fs::read_to_string(cargo_toml_path)?;
+    let mut cargo_toml = cargo_toml.parse::<toml_edit::DocumentMut>()?;
+    if cargo_toml.contains_key("package") {
+        implicit_table(&mut cargo_toml, "dependencies")["creusot-contracts"] =
+            toml_edit::value(CREUSOT_CONTRACTS_VERSION);
+        if !self_version.pre.is_empty() {
+            let patch = implicit_table(&mut cargo_toml, "patch");
+            implicit_table(patch.as_table_mut().unwrap(), "crates-io")["creusot-contracts"]["path"] =
+                toml_edit::value(creusot_contracts_path().display().to_string());
+        }
+    } else {
+        eprintln!(
+            "No [package] found in Cargo.toml. Not updating dependencies. If this is a Cargo workspace, you may update the dependencies of a package in <DIR> individually with `cargo creusot new <DIR>`"
+        );
+    }
+    let mut file = std::fs::File::create(cargo_toml_path)?;
+    file.write_all(cargo_toml.to_string().as_bytes())?;
+    Ok(())
+}
+
+/// Get the value for the key if it exists.
+/// If the key doesn't exist, insert a `Table` and mark it implicit.
+///
+/// We don't just use `Index` (`toml[key]`) because it creates an
+/// `InlineTable` instead of a `Table`.
+/// And we call `set_implcit` because otherwise we would get an empty `[patch]`
+/// table next to `[patch.crates-io]` to appear in our generated toml file.
+fn implicit_table<'a>(toml: &'a mut toml_edit::Table, key: &'a str) -> &'a mut toml_edit::Item {
+    toml.entry(key).or_insert_with(|| {
+        let mut table = toml_edit::Table::new();
+        table.set_implicit(true);
+        table.into()
+    })
 }

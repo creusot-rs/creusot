@@ -10,7 +10,6 @@ use std::{
     process::{Command, exit},
 };
 use tempdir::TempDir;
-use toml_edit::DocumentMut;
 
 mod helpers;
 use helpers::*;
@@ -28,7 +27,6 @@ fn main() -> Result<()> {
         None => creusot(None, cargs.args),
         Some(Creusot(subcmd)) => creusot(Some(subcmd), cargs.args),
         Some(Setup { command: SetupSubCommand::Status }) => setup::status(),
-        Some(Config(args)) => why3find_config(args),
         Some(Prove(args)) => {
             creusot(None, cargs.args)?;
             why3find_prove(args)
@@ -36,7 +34,6 @@ fn main() -> Result<()> {
         Some(New(args)) => new(args),
         Some(Init(args)) => init(args),
         Some(Clean(args)) => clean(args),
-        Some(PatchDep) => patch_dep(),
     }
 }
 
@@ -207,8 +204,6 @@ pub enum CargoCreusotSubCommand {
     },
     #[command(flatten)]
     Creusot(CreusotSubCommand),
-    /// Generate prover configuration
-    Config(ConfigArgs),
     /// Run prover on translated files
     Prove(ProveArgs),
     /// Create new project in a sub-directory
@@ -217,8 +212,6 @@ pub enum CargoCreusotSubCommand {
     Init(InitArgs),
     /// Clean dangling files in verif/
     Clean(CleanArgs),
-    /// Modify Cargo.toml to depend on the current version of creusot-contracts
-    PatchDep,
 }
 use CargoCreusotSubCommand::*;
 
@@ -391,11 +384,11 @@ fn check_contracts_version() -> Result<()> {
     match self_version.cmp(&contracts_version) {
         Ordering::Less => err(
             "creusot-contracts is newer than Creusot.",
-            "Possible fixes: upgrade Creusot, or run `cargo creusot patch-dep`.",
+            "Possible fixes: upgrade Creusot, or run `cargo creusot init`.",
         ),
         Ordering::Greater => err(
             "creusot-contracts is out of date.",
-            "Possible fixes: run `cargo creusot patch-dep` or downgrade Creusot.",
+            "Possible fixes: run `cargo creusot init` or downgrade Creusot.",
         ),
         Ordering::Equal => Ok(()),
     }
@@ -409,44 +402,4 @@ fn get_contracts_version() -> Result<Version> {
         }
     }
     Err(anyhow::anyhow!("creusot-contracts not found in dependencies"))
-}
-
-/// Add or update creusot-contracts in Cargo.toml:
-///
-/// ```toml
-/// [dependencies]
-/// creusot-contracts = "X.Y.Z"
-///
-/// [patch.crates-io]
-/// creusot-contracts = { path = "/path/to/creusot-contracts" }  # Only for dev versions
-/// ```
-fn patch_dep() -> Result<()> {
-    let self_version = Version::parse(CREUSOT_CONTRACTS_VERSION)?;
-    let cargo_toml = std::fs::read_to_string("Cargo.toml")?;
-    let mut cargo_toml = cargo_toml.parse::<DocumentMut>()?;
-    implicit_table(&mut cargo_toml, "dependencies")["creusot-contracts"] =
-        toml_edit::value(CREUSOT_CONTRACTS_VERSION);
-    if !self_version.pre.is_empty() {
-        let patch = implicit_table(&mut cargo_toml, "patch");
-        implicit_table(patch.as_table_mut().unwrap(), "crates-io")["creusot-contracts"]["path"] =
-            toml_edit::value(creusot_contracts_path().display().to_string());
-    }
-    let mut file = std::fs::File::create("Cargo.toml")?;
-    file.write_all(cargo_toml.to_string().as_bytes())?;
-    Ok(())
-}
-
-/// Get the value for the key if it exists.
-/// If the key doesn't exist, insert a `Table` and mark it implicit.
-///
-/// We don't just use `Index` (`toml[key]`) because it creates an
-/// `InlineTable` instead of a `Table`.
-/// And we call `set_implcit` because otherwise we would get an empty `[patch]`
-/// table next to `[patch.crates-io]` to appear in our generated toml file.
-fn implicit_table<'a>(toml: &'a mut toml_edit::Table, key: &'a str) -> &'a mut toml_edit::Item {
-    toml.entry(key).or_insert_with(|| {
-        let mut table = toml_edit::Table::new();
-        table.set_implicit(true);
-        table.into()
-    })
 }
