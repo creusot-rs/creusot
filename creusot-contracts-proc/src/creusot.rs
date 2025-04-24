@@ -667,9 +667,7 @@ fn predicate_item(
         #prophetic
         #(#attrs)*
         #documentation
-        #vis #def #sig {
-            #req_body
-        }
+        #vis #def #sig #req_body
     })
 }
 
