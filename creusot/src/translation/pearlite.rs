@@ -675,6 +675,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             },
                         }
                     }
+                    LitKind::Char(c) => Literal::Char(c),
                     _ => unimplemented!("Unsupported literal"),
                 };
                 Ok(Term { ty, span, kind: TermKind::Lit(lit) })
