@@ -381,6 +381,12 @@ fn download_from_url_with_cache(
     Ok(())
 }
 
+// Remember [ide] settings if they exist
+fn extract_ide_section(dest_file: &Path) -> Option<String> {
+    let file = fs::read_to_string(dest_file).ok()?;
+    Some(file.split_at(file.find("[ide]")?).1.split_once("\n\n")?.0.to_string())
+}
+
 fn generate_why3_conf(
     provers_parallelism: usize,
     why3_path: &Path,
@@ -388,9 +394,13 @@ fn generate_why3_conf(
     dest_file: &Path,
 ) -> anyhow::Result<()> {
     println!("Generating a fresh why3 configuration...");
+    let old_settings: Option<_> = extract_ide_section(dest_file);
     {
         use std::io::Write;
         let mut f = fs::File::create(dest_file)?;
+        if let Some(item) = old_settings {
+            writeln!(&mut f, "{item}\n").unwrap();
+        }
         writeln!(&mut f, "[main]")?;
         writeln!(&mut f, "magic = {WHY3_CONFIG_MAGIC_NUMBER}")?;
         writeln!(&mut f, "running_provers_max = {}", provers_parallelism)?;
