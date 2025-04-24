@@ -921,7 +921,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Ok(Term { ty, span, kind: TermKind::Closure { bound, body: Box::new(term) } })
                 }
             }
-            ExprKind::Cast { source } => {
+            ExprKind::Cast { source } | ExprKind::NeverToAny { source } => {
                 let source = self.expr_term(source)?;
                 Ok(Term { ty, span, kind: TermKind::Cast { arg: Box::new(source) } })
             }
