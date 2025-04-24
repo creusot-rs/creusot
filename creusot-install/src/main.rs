@@ -419,7 +419,7 @@ fn generate_why3find_json(
     why3_config: &Path,
     config_dir: &Path,
 ) -> anyhow::Result<()> {
-    println!("Generating why3find.json...)");
+    println!("Generating why3find.json...");
     let mut provers = String::new();
     for prover in PROVERS.iter() {
         if !provers.is_empty() {
