@@ -48,6 +48,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Adt(def, _) if def.is_struct() && def.variant(VariantIdx::ZERO).fields.is_empty() => {
             MlT::unit()
         }
+        Adt(def, _) if def.is_enum() && def.variants().is_empty() => MlT::unit(),
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
             match borkind {

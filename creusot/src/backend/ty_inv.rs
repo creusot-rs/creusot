@@ -54,6 +54,10 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                     continue;
                 }
 
+                if def.is_enum() && def.variants().is_empty() {
+                    return false;
+                }
+
                 stack.extend(def.all_fields().map(|f| f.ty(tcx, substs)))
             }
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
@@ -215,8 +219,11 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             unreachable!("asked to build ADT invariant for non-ADT type {:?}", term.ty)
         };
 
-        let arms = adt_def
-            .variants()
+        let variants = adt_def.variants();
+        if variants.is_empty() {
+            return Term::mk_false(self.ctx.tcx);
+        }
+        let arms = variants
             .iter_enumerated()
             .map(|(var_idx, var_def)| {
                 let tuple_var = var_def.ctor.is_some();
