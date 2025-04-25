@@ -111,13 +111,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                     Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([self.lower_term(arg)])])
                 }
-                TyKind::Never => Exp::ascribe(
-                    Exp::qvar(self.names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()]),
-                    translate_ty(self.ctx, self.names, term.span, term.ty),
-                ),
                 _ => self.ctx.crash_and_error(
                     DUMMY_SP,
-                    "casting from a type other than booleans, integers, and `!` is not supported",
+                    "casting from a type other than booleans and integers is not supported",
                 ),
             },
             TermKind::Coerce { arg } => self.lower_term(arg),
@@ -216,12 +212,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Old { box term } => Exp::Old(self.lower_term(term).boxed()),
             TermKind::Match { box scrutinee, arms } => {
-                if arms.is_empty() {
-                    Exp::ascribe(
-                        Exp::qvar(self.names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()]),
-                        translate_ty(self.ctx, self.names, term.span, term.ty),
-                    )
-                } else if let PatternKind::Bool(b0) = arms[0].0.kind {
+                // Pearlite matches are non-empty.
+                if let PatternKind::Bool(b0) = arms[0].0.kind {
                     let (true_br, false_br) =
                         if b0 { (&arms[0].1, &arms[1].1) } else { (&arms[1].1, &arms[0].1) };
                     Exp::if_(

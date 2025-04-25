@@ -206,6 +206,7 @@ pub enum TermKind<'tcx> {
         lhs: Box<Term<'tcx>>,
         rhs: Box<Term<'tcx>>,
     },
+    /// Pearlite matches must be non-empty.
     Match {
         scrutinee: Box<Term<'tcx>>,
         arms: Box<[(Pattern<'tcx>, Term<'tcx>)]>,
@@ -851,8 +852,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::Match { scrutinee, ref arms, .. } => {
                 let scrutinee = self.expr_term(scrutinee)?;
+                if arms.is_empty() {
+                    return Err(Error::msg(
+                        thir_term.span,
+                        "Empty matches are forbidden in Pearlite, because Why3 types are always inhabited.",
+                    ));
+                }
                 let arms = arms.iter().map(|arm| self.arm_term(*arm)).collect::<Result<_, _>>()?;
-
                 Ok(Term {
                     ty,
                     span,
@@ -921,9 +927,18 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Ok(Term { ty, span, kind: TermKind::Closure { bound, body: Box::new(term) } })
                 }
             }
-            ExprKind::Cast { source } | ExprKind::NeverToAny { source } => {
+            ExprKind::Cast { source } => {
                 let source = self.expr_term(source)?;
                 Ok(Term { ty, span, kind: TermKind::Cast { arg: Box::new(source) } })
+            }
+            ExprKind::NeverToAny { source } => {
+                // When the cast comes from an empty match, prefer the error message
+                // from the empty match. It is more helpful because it has a visible source.
+                let _ = self.expr_term(source)?;
+                Err(Error::msg(
+                    thir_term.span,
+                    "Casts from ! are not supported in Pearlite, because Why3 types are always inhabited.",
+                ))
             }
             ref ek => todo!("lower_expr: {:?}", ek),
         };
