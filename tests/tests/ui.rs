@@ -260,6 +260,9 @@ fn run_creusot(
     cmd.arg(format!("-Ldependency={}/", dep_path.display()));
     cmd.arg(file.file_name().unwrap());
 
+    if header_line.contains("SHORT_ERROR") {
+        cmd.arg("--error-format=short");
+    }
     cmd.args(&[
         "--",
         "--stdout",

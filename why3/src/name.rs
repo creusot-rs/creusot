@@ -327,6 +327,7 @@ const RESERVED_STR: &[&str] = &[
     "current", // creusot prelude
     "final",   // creusot prelude
     "abstract",
+    "absurd",
     "alias",
     "any",
     "assert",

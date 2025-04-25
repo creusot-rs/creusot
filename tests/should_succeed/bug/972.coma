@@ -1,0 +1,75 @@
+module M_972__foo [#"972.rs" 14 0 14 16]
+  let%span s972 = "972.rs" 15 10 15 11
+  let%span s972'0 = "972.rs" 14 11 14 12
+  let%span s972'1 = "972.rs" 11 11 11 21
+  let%span s972'2 = "972.rs" 12 11 12 29
+  let%span s972'3 = "972.rs" 8 4 8 14
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 15 8 15 13
+  
+  use creusot.prelude.Any
+  
+  predicate invariant' (self : ()) =
+    [%#sinvariant] false
+  
+  predicate inv (_0 : ())
+  
+  axiom inv_axiom [@rewrite] : forall x : () [inv x] . inv x = invariant' x
+  
+  function absurd' [#"972.rs" 7 0 7 27] (x : ()) : bool =
+    [%#s972'3] Any.any_l () : bool
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec foo[#"972.rs" 14 0 14 16] (x:()) (return'  (x'0:()))= {[@expl:foo 'x' type invariant] [%#s972'0] inv x}
+    {[@expl:foo requires #0] [%#s972'1] Any.any_l () : bool}
+    {[@expl:foo requires #1] [%#s972'2] absurd' (Any.any_l () : ())}
+    (! bb0 [ bb0 = {[%#s972] false} any ] ) [ return''0 (result:())-> (! return' {result}) ] 
+end
+module M_972__bar [#"972.rs" 19 0 19 24]
+  let%span s972 = "972.rs" 21 19 21 20
+  let%span s972'0 = "972.rs" 19 11 19 12
+  let%span s972'1 = "972.rs" 18 10 18 46
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 15 8 15 13
+  
+  use creusot.prelude.Any
+  
+  type t_Option  =
+    | C_None
+    | C_Some ()
+  
+  let rec v_Some (input:t_Option) (ret  (field_0:()))= any
+    [ good (field_0:())-> {C_Some field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : () [C_Some field_0 : t_Option] . C_Some field_0 <> input} (! {false} any) ]
+  
+  
+  predicate invariant' (self : ()) =
+    [%#sinvariant] false
+  
+  predicate inv (_0 : ())
+  
+  axiom inv_axiom [@rewrite] : forall x : () [inv x] . inv x = invariant' x
+  
+  predicate inv'0 (_0 : t_Option)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option [inv'0 x] . inv'0 x
+  = match x with
+    | C_None -> true
+    | C_Some a_0 -> inv a_0
+    end
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec bar[#"972.rs" 19 0 19 24] (x:t_Option) (return'  (x'0:()))= {[@expl:bar 'x' type invariant] [%#s972'0] inv'0 x}
+    (! bb0
+    [ bb0 = any [ br0 -> {x'0 = C_None} (! bb1) | br1 (x0:())-> {x'0 = C_Some x0} (! bb2) ] 
+    | bb1 = return''0 {_0}
+    | bb2 = bb3
+    | bb3 = s0 [ s0 = v_Some {x'0} (fun (r0:()) ->  [ &x'1 <- r0 ] s1) | s1 = {[%#s972] false} any ]  ]
+    ) [ & _0 : () = Any.any_l () | & x'0 : t_Option = x | & x'1 : () = Any.any_l () ] 
+    [ return''0 (result:())-> {[@expl:bar ensures] [%#s972'1] match x with
+        | C_Some x'0 -> Any.any_l () : bool
+        | C_None -> true
+        end}
+      (! return' {result}) ]
+
+end
