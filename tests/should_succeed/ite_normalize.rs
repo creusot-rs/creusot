@@ -76,15 +76,33 @@ extern_spec! {
     }
 }
 
-impl From<usize> for Expr {
+impl ::std::convert::From<usize> for Expr {
+    #[ensures(result.comes_from(a))]
     fn from(a: usize) -> Self {
         Self::variable(a)
     }
 }
 
-impl From<bool> for Expr {
+impl ::std::convert::From<bool> for Expr {
+    #[ensures(result.comes_from(b))]
     fn from(b: bool) -> Self {
         if b { Self::True } else { Self::False }
+    }
+}
+
+impl From<usize> for Expr {
+    #[predicate]
+    #[open]
+    fn comes_from(self, _: usize) -> bool {
+        true
+    }
+}
+
+impl From<bool> for Expr {
+    #[predicate]
+    #[open]
+    fn comes_from(self, _: bool) -> bool {
+        true
     }
 }
 
@@ -94,6 +112,7 @@ impl Expr {
         Self::IfThenElse { c: Box::new(c), t: Box::new(t), e: Box::new(e) }
     }
 
+    #[ensures(result == Expr::Var { v })]
     pub fn variable(v: usize) -> Self {
         Self::Var { v }
     }
