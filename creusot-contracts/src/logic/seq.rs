@@ -286,6 +286,17 @@ impl<T: ?Sized> Seq<T> {
         dead
     }
 
+    #[logic]
+    #[open]
+    #[variant(self.len())]
+    pub fn flat_map<U: ?Sized>(self, other: Mapping<T, Seq<U>>) -> Seq<U> {
+        if self.len() == 0 {
+            Seq::EMPTY
+        } else {
+            other.get(*self.index_logic_unsized(0)).concat(self.tail().flat_map(other))
+        }
+    }
+
     /// Returns a new sequence, which is `self` in reverse order.
     ///
     /// # Example
@@ -381,6 +392,19 @@ impl<T: ?Sized> Seq<T> {
     where
         T: Sized,
     {
+    }
+}
+
+impl<T: ?Sized> Seq<Seq<T>> {
+    #[open]
+    #[logic]
+    #[variant(self.len())]
+    pub fn flatten(self) -> Seq<T> {
+        if self.len() == 0 {
+            Seq::EMPTY
+        } else {
+            self.index_logic_unsized(0).concat(self.tail().flatten())
+        }
     }
 }
 
@@ -627,5 +651,21 @@ impl<T: ?Sized> Invariant for Seq<T> {
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<i:Int> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
+    }
+}
+
+#[logic]
+#[open]
+#[ensures(forall<x: A, f: Mapping<A, Seq<B>>> Seq::singleton(x).flat_map(f) == f.get(x))]
+pub fn flat_map_singleton<A, B>() {}
+
+#[logic]
+#[open]
+#[ensures(forall<x: A, f: Mapping<A, Seq<B>>> xs.push_back(x).flat_map(f) == xs.flat_map(f).concat(f.get(x)))]
+#[variant(xs.len())]
+pub fn flat_map_push_back<A, B>(xs: Seq<A>) {
+    if xs.len() > 0 {
+        flat_map_push_back::<A, B>(xs.tail());
+        proof_assert! { forall<x: A> xs.tail().push_back(x) == xs.push_back(x).tail() }
     }
 }

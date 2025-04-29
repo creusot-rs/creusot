@@ -420,6 +420,7 @@ mod base_prelude {
 
     // Export extension traits anonymously
     pub use crate::std::{
+        char::CharExt as _,
         iter::{SkipExt as _, TakeExt as _},
         ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
         ptr::PointerExt as _,
