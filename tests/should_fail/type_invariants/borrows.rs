@@ -23,7 +23,7 @@ impl NonZero {
     #[ensures((^self).0@ == (^result)@)]
     pub fn inner_mut(&mut self) -> &mut i32 {
         &mut self.0
-        // cannot proof (^self).inv() as *self = ^result which is unknown
+        // cannot prove (^self).inv() as *self = ^result which is unknown
     }
 }
 

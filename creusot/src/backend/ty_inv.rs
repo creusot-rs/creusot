@@ -30,27 +30,21 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         }
 
         let user_inv = resolve_user_inv(tcx, ty, typing_env);
-        if let TraitResolved::Instance(uinv_did, _) = user_inv
-            && !is_tyinv_trivial_if_param_trivial(tcx, uinv_did)
-        {
-            return false;
+        match user_inv {
+            TraitResolved::NoInstance => (),
+            TraitResolved::Instance(uinv_did, _)
+                if is_tyinv_trivial_if_param_trivial(tcx, uinv_did) =>
+            {
+                ()
+            }
+            _ => return false,
         }
 
         match ty.kind() {
             TyKind::Ref(_, ty, _) | TyKind::Slice(ty) | TyKind::Array(ty, _) => stack.push(*ty),
             TyKind::Tuple(tys) => stack.extend(*tys),
-            TyKind::Adt(_, substs) if matches!(user_inv, TraitResolved::Instance(_, _)) => {
-                // => The instance is annotated with tyinv_trivial_if_param_trivial
-                stack.extend(substs.types())
-            }
-            TyKind::Adt(def, substs) => {
+            TyKind::Adt(def, substs) if matches!(user_inv, TraitResolved::NoInstance) => {
                 if is_trusted(tcx, def.did()) {
-                    continue;
-                }
-
-                if let TraitResolved::Instance(uinv_did, _) = user_inv
-                    && is_ignore_structural_inv(tcx, uinv_did)
-                {
                     continue;
                 }
 
@@ -60,6 +54,10 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
 
                 stack.extend(def.all_fields().map(|f| f.ty(tcx, substs)))
             }
+
+            // The instance is annotated with tyinv_trivial_if_param_trivial
+            TyKind::Adt(_, substs) => stack.extend(substs.types()),
+
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
             TyKind::Never | TyKind::Param(_) | TyKind::Alias(_, _) => return false,
             TyKind::Bool
@@ -88,7 +86,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         InvariantElaborator { typing_env, ctx, rewrite: false }
     }
 
-    pub(crate) fn elaborate_inv(&mut self, ty: Ty<'tcx>, for_deps: bool) -> Option<Term<'tcx>> {
+    pub(crate) fn elaborate_inv(&mut self, ty: Ty<'tcx>) -> Option<Term<'tcx>> {
         let x_ident = Ident::fresh_local("x").into();
         let subject = Term::var(x_ident, ty);
         let inv_id = get_inv_function(self.ctx.tcx);
@@ -113,7 +111,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     subject.clone(),
                 ]))
             }
-            TraitResolved::UnknownNotFound if !for_deps => use_imples = true,
+            TraitResolved::UnknownNotFound => use_imples = true,
             TraitResolved::NoInstance => (),
             _ => {
                 let trait_item_did = get_invariant_method(self.ctx.tcx);

@@ -221,7 +221,7 @@ fn expand_ty_inv_axiom<'tcx>(
     let names = elab.namer(Dependency::TyInvAxiom(ty));
 
     let mut elab = InvariantElaborator::new(param_env, ctx);
-    let Some(term) = elab.elaborate_inv(ty, false) else { return vec![] };
+    let Some(term) = elab.elaborate_inv(ty) else { return vec![] };
     let rewrite = elab.rewrite;
     let exp = lower_pure(ctx, &names, &term);
     let axiom =
