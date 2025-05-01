@@ -30,7 +30,7 @@ use crate::{
     },
     ctx::{BodyId, ItemType},
     naming::name,
-    pearlite::{Pattern, QuantKind, SmallRenaming, Term, Trigger, normalize},
+    pearlite::{Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
     specification::Condition,
     traits::{self, TraitResolved},
 };
@@ -574,6 +574,7 @@ fn fn_once_postcond_term<'tcx>(
     subst: GenericArgsRef<'tcx>,
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
+    let tcx = ctx.tcx;
     let &[self_, args, result] = bound else {
         panic!("postcondition_once must have 3 arguments. This should not happen. Found: {bound:?}")
     };
@@ -583,7 +584,7 @@ fn fn_once_postcond_term<'tcx>(
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(ctx.tcx)).inputs[2].2),
+        EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(tcx)).inputs[2].2),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
@@ -592,6 +593,22 @@ fn fn_once_postcond_term<'tcx>(
                 closure_post(ctx, ClosureKind::FnOnce, did.expect_local(), self_, args, None);
             post.subst(&SmallRenaming([(name::result(), result)]));
             Some(post)
+        }
+        // Handle `FnPureWrapper`
+        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+            let mut subst_postcond = subst.to_vec();
+            let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
+            subst_postcond[1] = GenericArg::from(closure_ty);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+                Term {
+                    ty: closure_ty,
+                    span: self_.span,
+                    kind: TermKind::Projection { lhs: Box::new(self_), idx: 0usize.into() },
+                },
+                args,
+                res,
+            ]))
         }
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
@@ -679,6 +696,28 @@ fn fn_mut_postcond_term<'tcx>(
             post.subst(&SmallRenaming([(name::result(), result)]));
             Some(post)
         }
+        // Handle `FnPureWrapper`
+        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+            let mut subst_postcond = subst.to_vec();
+            let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
+            subst_postcond[1] = GenericArg::from(closure_ty);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            Some(
+                Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+                    Term {
+                        ty: closure_ty,
+                        kind: TermKind::Projection {
+                            lhs: Box::new(self_.clone()),
+                            idx: 0usize.into(),
+                        },
+                        span: self_.span,
+                    },
+                    args,
+                    res,
+                ])
+                .conj(self_.eq(ctx.tcx, result_state)),
+            )
+        }
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
@@ -742,6 +781,7 @@ fn fn_postcond_term<'tcx>(
     subst: GenericArgsRef<'tcx>,
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
+    let tcx = ctx.tcx;
     let &[self_, args, result] = bound else {
         panic!("postcondition must have 3 arguments. This should not happen. Found: {bound:?}")
     };
@@ -751,7 +791,7 @@ fn fn_postcond_term<'tcx>(
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(ctx.tcx)).inputs[2].2),
+        EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(tcx)).inputs[2].2),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
@@ -761,11 +801,27 @@ fn fn_postcond_term<'tcx>(
             post.subst(&SmallRenaming([(name::result(), result)]));
             Some(post)
         }
+        // Handle `FnPureWrapper`
+        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+            let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
+            let mut subst_postcond = subst.to_vec();
+            subst_postcond[1] = GenericArg::from(closure_ty);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+                Term {
+                    ty: closure_ty,
+                    kind: TermKind::Projection { lhs: Box::new(self_.clone()), idx: 0usize.into() },
+                    span: self_.span,
+                },
+                args,
+                res,
+            ]))
+        }
         &TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(cl);
-            let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(ctx.tcx, typing_env, get_fn_impl_postcond(ctx.tcx), subst_postcond, [
+            let subst_postcond = tcx.mk_args(&subst_postcond);
+            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
                 self_.clone().coerce(cl),
                 args,
                 res,
@@ -774,8 +830,8 @@ fn fn_postcond_term<'tcx>(
         TyKind::Adt(def, bsubst) if def.is_box() => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = bsubst[0];
-            let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(ctx.tcx, typing_env, get_fn_impl_postcond(ctx.tcx), subst_postcond, [
+            let subst_postcond = tcx.mk_args(&subst_postcond);
+            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
                 self_.coerce(bsubst.type_at(0)),
                 args,
                 res,
@@ -834,6 +890,7 @@ fn fn_once_precond_term<'tcx>(
     subst: GenericArgsRef<'tcx>,
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
+    let tcx = ctx.tcx;
     let &[self_, args] = bound else {
         panic!("precondition_once must have 2 arguments. This should not happen. Found: {bound:?}")
     };
@@ -852,7 +909,7 @@ fn fn_once_precond_term<'tcx>(
                 self_, args,
             ]))
         }
-        &TyKind::Adt(def, bsubst) if def.is_box() => {
+        TyKind::Adt(def, bsubst) if def.is_box() => {
             let mut subst_pre = subst.to_vec();
             subst_pre[1] = bsubst[0];
             let subst_pre = ctx.mk_args(&subst_pre);
@@ -874,6 +931,21 @@ fn fn_once_precond_term<'tcx>(
                 subst = subst_i;
             };
             pre_fndef(ctx, typing_env, did, subst, args)
+        }
+        // Handle `FnPureWrapper`
+        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+            let mut subst_postcond = subst.to_vec();
+            let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
+            subst_postcond[1] = GenericArg::from(closure_ty);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            Some(Term::call(ctx.tcx, typing_env, get_fn_once_impl_precond(tcx), subst_postcond, [
+                Term {
+                    ty: closure_ty,
+                    kind: TermKind::Projection { lhs: Box::new(self_.clone()), idx: 0usize.into() },
+                    span: self_.span,
+                },
+                args,
+            ]))
         }
         _ => None,
     }
