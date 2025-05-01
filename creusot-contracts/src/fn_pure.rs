@@ -8,6 +8,7 @@ mod private {
 /// Marker trait for functions that are [`pure`].
 ///
 /// To create such a function, the easiest way is to use [`clos_pure`].
+#[cfg_attr(creusot, rustc_diagnostic_item = "fn_pure_trait")]
 pub trait FnPure: private::_Sealed {}
 
 /// Structure that implements [`FnPure`].

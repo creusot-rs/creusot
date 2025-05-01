@@ -1,14 +1,8 @@
-use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_middle::{
-    thir::{self, ClosureExpr, ExprKind, Thir},
-    ty::{FnDef, TypingEnv},
-};
-
 use crate::{
     backend::is_trusted_item,
     contracts_items::{
-        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner, is_ghost_new,
-        is_logic, is_no_translate, is_predicate, is_prophetic, is_snapshot_closure,
+        get_builtin, get_fn_pure_trait, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner,
+        is_ghost_new, is_logic, is_no_translate, is_predicate, is_prophetic, is_snapshot_closure,
         is_snapshot_deref, is_spec,
     },
     ctx::TranslationCtx,
@@ -17,6 +11,13 @@ use crate::{
     traits::TraitResolved,
     validate::is_overloaded_item,
 };
+use rustc_hir::def_id::{DefId, LocalDefId};
+use rustc_infer::infer::TyCtxtInferExt;
+use rustc_middle::{
+    thir::{self, ClosureExpr, ExprKind, Thir},
+    ty::{FnDef, TypingEnv},
+};
+use rustc_trait_selection::infer::InferCtxtExt;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Purity {
@@ -123,7 +124,7 @@ struct PurityVisitor<'a, 'tcx> {
 }
 
 impl PurityVisitor<'_, '_> {
-    fn purity(&self, fun: thir::ExprId, func_did: DefId) -> Purity {
+    fn purity(&self, fun: thir::ExprId, func_did: DefId, args: &[thir::ExprId]) -> Purity {
         let tcx = self.ctx.tcx;
         let stub = pearlite_stub(tcx, self.thir[fun].ty);
 
@@ -147,10 +148,26 @@ impl PurityVisitor<'_, '_> {
             Purity::Ghost
         } else {
             let contract = &self.ctx.sig(func_did).contract;
-            let terminates = contract.terminates;
-            let no_panic = contract.no_panic;
+            let is_pure = self.implements_fn_pure(func_did, args);
+            let terminates = contract.terminates || is_pure;
+            let no_panic = contract.no_panic || is_pure;
             Purity::Program { terminates, no_panic }
         }
+    }
+
+    /// Returns `true` if `func_did` is one of `call`, `call_mut` or `call_once`, and
+    /// the closure being called implements `FnPure`.
+    fn implements_fn_pure(&self, func_did: DefId, args: &[thir::ExprId]) -> bool {
+        let tcx = self.ctx.tcx;
+        let Some(trait_did) = tcx.trait_of_item(func_did) else { return false };
+        if !tcx.is_fn_trait(trait_did) {
+            return false;
+        };
+        tcx.trait_of_item(func_did);
+        let ty = self.thir[args[0]].ty.peel_refs();
+        let (infcx, param_env) = tcx.infer_ctxt().build_with_typing_env(self.typing_env);
+        let res = infcx.type_implements_trait(get_fn_pure_trait(tcx), [ty], param_env);
+        res.must_apply_considering_regions()
     }
 }
 
@@ -179,7 +196,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                         func_did
                     };
 
-                    let fn_purity = self.purity(fun, func_did);
+                    let fn_purity = self.purity(fun, func_did, args);
                     if !(self.context.can_call(fn_purity)
                         || self.context.is_logic() && is_overloaded_item(self.ctx.tcx, func_did))
                     {
