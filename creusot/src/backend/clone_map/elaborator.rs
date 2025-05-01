@@ -21,14 +21,14 @@ use crate::{
     constant::from_ty_const,
     contracts_items::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_postcond, get_fn_once_impl_postcond,
-        get_resolve_method, is_fn_impl_postcond, is_fn_mut_impl_postcond, is_fn_mut_impl_unnest,
-        is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_resolve_function,
-        is_structural_resolve,
+        get_fn_once_impl_precond, get_resolve_method, is_fn_impl_postcond, is_fn_mut_impl_postcond,
+        is_fn_mut_impl_unnest, is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function,
+        is_resolve_function, is_structural_resolve,
     },
     ctx::{BodyId, ItemType},
     function::closure_resolve,
     naming::name,
-    pearlite::{SmallRenaming, Term, normalize},
+    pearlite::{SmallRenaming, Term, TermKind, normalize},
     traits::{self, TraitResolved},
 };
 use petgraph::graphmap::DiGraphMap;
@@ -504,6 +504,22 @@ fn fn_once_postcond_term<'tcx>(
             term.iter_mut().for_each(|term| term.subst(isubst));
             term
         }
+        // Handle `FnPureWrapper`
+        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+            let mut subst_postcond = subst.to_vec();
+            let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
+            subst_postcond[1] = GenericArg::from(closure_ty);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+                Term {
+                    ty: closure_ty,
+                    span: self_.span,
+                    kind: TermKind::Projection { lhs: Box::new(self_), idx: 0usize.into() },
+                },
+                args,
+                res,
+            ]))
+        }
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
@@ -561,6 +577,28 @@ fn fn_mut_postcond_term<'tcx>(
             let mut term = ctx.closure_contract(*did).postcond_mut.clone();
             term.iter_mut().for_each(|term| term.subst(isubst));
             term
+        }
+        // Handle `FnPureWrapper`
+        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+            let mut subst_postcond = subst.to_vec();
+            let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
+            subst_postcond[1] = GenericArg::from(closure_ty);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            Some(
+                Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+                    Term {
+                        ty: closure_ty,
+                        kind: TermKind::Projection {
+                            lhs: Box::new(self_.clone()),
+                            idx: 0usize.into(),
+                        },
+                        span: self_.span,
+                    },
+                    args,
+                    res,
+                ])
+                .conj(self_.eq(ctx.tcx, result_state)),
+            )
         }
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
@@ -621,6 +659,22 @@ fn fn_postcond_term<'tcx>(
             term.iter_mut().for_each(|term| term.subst(isubst));
             term
         }
+        // Handle `FnPureWrapper`
+        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+            let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
+            let mut subst_postcond = subst.to_vec();
+            subst_postcond[1] = GenericArg::from(closure_ty);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+                Term {
+                    ty: closure_ty,
+                    kind: TermKind::Projection { lhs: Box::new(self_.clone()), idx: 0usize.into() },
+                    span: self_.span,
+                },
+                args,
+                res,
+            ]))
+        }
         TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
@@ -638,6 +692,7 @@ fn fn_postcond_term<'tcx>(
 /// Generate body of `precondition_once` for `FnOnce` closures.
 fn fn_once_precond_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
@@ -645,10 +700,33 @@ fn fn_once_precond_term<'tcx>(
         panic!("precondition_once must have 2 arguments. This should not happen. Found: {bound:?}")
     };
     let isubst: &SmallRenaming = &[(name::self_(), self_), (name::args(), args)];
-    let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
-    let mut term = ctx.closure_contract(*did).precond.clone();
-    term.subst(isubst);
-    Some(term)
+    let tcx = ctx.tcx;
+    let ty_self = subst.type_at(1);
+    let self_ = Term::var(self_, ty_self);
+    let args = Term::var(args, subst.type_at(0));
+    match subst.type_at(1).kind() {
+        TyKind::Closure(did, _) => {
+            let mut term = ctx.closure_contract(*did).precond.clone();
+            term.subst(isubst);
+            Some(term)
+        }
+        // Handle `FnPureWrapper`
+        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+            let mut subst_postcond = subst.to_vec();
+            let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
+            subst_postcond[1] = GenericArg::from(closure_ty);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            Some(Term::call(ctx.tcx, typing_env, get_fn_once_impl_precond(tcx), subst_postcond, [
+                Term {
+                    ty: closure_ty,
+                    kind: TermKind::Projection { lhs: Box::new(self_.clone()), idx: 0usize.into() },
+                    span: self_.span,
+                },
+                args,
+            ]))
+        }
+        _ => None,
+    }
 }
 
 /// Generate body of `unnest` for `FnMut` closures.
@@ -697,7 +775,7 @@ fn term<'tcx>(
             } else if is_fn_impl_postcond(ctx.tcx, def_id) {
                 fn_postcond_term(ctx, typing_env, subst, bound)
             } else if is_fn_once_impl_precond(ctx.tcx, def_id) {
-                fn_once_precond_term(ctx, subst, bound)
+                fn_once_precond_term(ctx, typing_env, subst, bound)
             } else if is_fn_mut_impl_unnest(ctx.tcx, def_id) {
                 fn_mut_unnest_term(ctx, subst, bound)
             } else {

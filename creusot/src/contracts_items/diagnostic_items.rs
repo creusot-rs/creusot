@@ -112,6 +112,8 @@ contracts_items! {{
         is_snap_ty                      get_snap_ty
     type Ghost                           ["ghost_ty"]
         is_ghost_ty                     get_ghost_ty
+    type FnPureWrapper                   ["fn_pure_ty"]
+        is_fn_pure_ty                   get_fn_pure_ty
     trait FnPure                         ["fn_pure_trait"]
         is_fn_pure_trait                get_fn_pure_trait
 }}
