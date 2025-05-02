@@ -382,6 +382,7 @@ pub mod std;
 #[cfg(creusot)]
 pub mod num_rational;
 
+pub mod fn_pure;
 pub mod ghost;
 pub mod invariant;
 pub mod logic;
@@ -397,6 +398,7 @@ pub mod well_founded;
 // We add some common things at the root of the creusot-contracts library
 mod base_prelude {
     pub use crate::{
+        fn_pure::FnPure,
         ghost::Ghost,
         logic::{Int, OrdLogic, Seq, ops::IndexLogic as _},
         model::{DeepModel, View},
