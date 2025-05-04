@@ -22,6 +22,7 @@ struct SumTo10 {
 // The type invariant constrains the set of valid `SumTo10`s to
 // only allow values where the sum of both fields is equal to 10.
 impl Invariant for SumTo10 {
+    #[open(self)]
     #[predicate]
     fn invariant(self) -> bool {
         pearlite! {
