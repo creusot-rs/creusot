@@ -22,13 +22,12 @@ This generates a directory `creusot-tutorial` containing the following files:
 
 ```
 Cargo.toml
-rust-toolchain
 why3find.json
 src/lib.rs
 ```
 
-The first three files contain package-level configuration settings. You may already be familiar with
-`Cargo.toml` and `rust-toolchain`, generic files for Rust projects. The file `why3find.json` is
+The first two files contain package-level configuration settings. You're most likely already familiar with
+`Cargo.toml`. `why3find.json` is
 used by a verification tool invoked by Creusot. We will leave these files alone for this tutorial.
 
 The last file, `src/lib.rs`, is what we will be editing in this tutorial.
