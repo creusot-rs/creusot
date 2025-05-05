@@ -9,6 +9,22 @@ use std::{iter::once, path::PathBuf};
 
 use crate::very_stable_hash::get_very_stable_hash;
 
+// TODO: clean up this module. There are a bunch of redundancies.
+//
+// The most flagrant redundancy is `value_name` vs `variable_name`.
+// The difference is that `value_name` is injective, whereas `variable_name`
+// is a noop for names that are already valid Why3 identifiers
+// (notably when `v_` is a prefix, and with leading or trailing underscores).
+// The difference seems quite cosmetic so it would be nice to somehow unify them.
+//
+// Q: Do we really want to be able to recover the original Rust identifier from a Why3 identifier?
+// It's probably useful to preserve function (`fn`) names (for users directly and for Creusot IDE),
+// but not locally bound variables (`let`, `match`, function arguments).
+// Making name mangling injective everywhere used to be useful when names were just strings but
+// that's no longer the case.
+// For now, we do minimal changes to the handling of names as needed, until someone has a strong
+// opinion about this or there is an issue that forces a more systematic refactoring.
+
 // Why3 value names must start with a lower case letter.
 // Rust function names conventionally start with a lower case letter,
 // but that is not mandatory, in which case we insert a prefix `v_`.
@@ -48,6 +64,36 @@ pub(crate) fn item_symb(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Symbol {
         }
         _ => Symbol::intern(&value_name(&translate_name(tcx.item_name(def_id).as_str()))),
     }
+}
+
+/// Translate a variable name to a string of ASCII alphanumerics and underscores that starts with a lower case letter.
+/// This is not injective, which is fine for variable names because they are locally bound.
+pub fn variable_name(name: &str) -> String {
+    // In Rust, an identifier either starts with an ASCII letter or underscore, or a non-ASCII character
+    // from the set `XID_Start` in the Unicode standard, in which case `to_alphanumeric` produces a sequence
+    // that start with an underscore so nothing else needs to be done.
+    // Unlike `value_name` this is not injective (Both `X` and `v_X` become `v_X`).
+    let name = to_alphanumeric(name);
+    if name.starts_with(|c: char| c.is_ascii_lowercase() || c == '_') {
+        name.to_string()
+    } else {
+        format!("v_{}", name)
+    }
+}
+
+/// Mangle a string to consist only of ASCII alphanumerics and underscores. Code point `123` becomes `"_123_"`.
+fn to_alphanumeric(n: &str) -> String {
+    let mut dest = String::new();
+    for c in n.chars() {
+        if c.is_ascii_alphanumeric() || c == '_' {
+            dest.push(c);
+        } else {
+            dest.push('_');
+            dest.push_str(&format!("{}", c as u32));
+            dest.push('_');
+        }
+    }
+    dest
 }
 
 // Translate a name to be a valid fragment of a Why3 identifier

@@ -6,7 +6,7 @@ use crate::{
     },
     ctx::*,
     function::closure_capture_subst,
-    naming::name,
+    naming::{name, variable_name},
     pearlite::{Ident, PIdent, TermVisitorMut},
     translation::pearlite::{Literal, Term, TermKind, normalize, type_invariant_term},
     util::erased_identity_for_item,
@@ -501,7 +501,7 @@ pub fn inputs_and_output<'tcx>(
                     let ident = if name.is_empty() {
                         Ident::fresh_local(&format!("_{ix}"))
                     } else {
-                        Ident::fresh_local(name)
+                        Ident::fresh_local(variable_name(name))
                     };
                     (ident.into(), span, ty)
                 })
@@ -524,7 +524,7 @@ pub fn inputs_and_output<'tcx>(
                         let ident = if name.is_empty() {
                             Ident::fresh_local(&format!("_{ix}"))
                         } else {
-                            Ident::fresh_local(name)
+                            Ident::fresh_local(variable_name(name))
                         };
                         (ident.into(), span, ty)
                     },

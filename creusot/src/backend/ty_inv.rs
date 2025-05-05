@@ -4,6 +4,7 @@ use crate::{
         get_inv_function, get_invariant_method, is_ignore_structural_inv, is_trusted,
         is_tyinv_trivial_if_param_trivial,
     },
+    naming::variable_name,
     pearlite::{Ident, Trigger},
     traits::TraitResolved,
     translation::{
@@ -231,7 +232,9 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     let field_name = if tuple_var {
                         Ident::fresh_local(&format!("a_{field_idx}"))
                     } else {
-                        Ident::fresh_local(field_def.ident(self.ctx.tcx).name.as_str())
+                        Ident::fresh_local(variable_name(
+                            field_def.ident(self.ctx.tcx).name.as_str(),
+                        ))
                     };
 
                     let field_ty = field_def.ty(self.ctx.tcx, substs);

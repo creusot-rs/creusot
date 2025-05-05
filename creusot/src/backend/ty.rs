@@ -4,7 +4,7 @@ use crate::{
     backend::Why3Generator,
     contracts_items::{get_builtin, get_int_ty, is_int_ty, is_logic, is_snap_ty, is_trusted},
     ctx::*,
-    naming::name,
+    naming::{name, variable_name},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv};
@@ -223,7 +223,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
             };
             let ty =
                 translate_ty(ctx, names, DUMMY_SP, names.normalize(ctx, fld.ty(ctx.tcx, subst)));
-            (Ident::fresh_local(id), ty)
+            (Ident::fresh_local(variable_name(id)), ty)
         })
         .collect();
 
