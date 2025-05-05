@@ -108,7 +108,7 @@ enum TranslationError {
 impl TranslationError {
     fn crash(&self, ctx: &TranslationCtx, span: Span) -> ! {
         ctx.crash_and_error(span,  match self {
-            TranslationError::PtrDeref => "Dereference of a raw pointer is forbidden in creusot: use `creusot_contracts::PtrOwn` instead",
+            TranslationError::PtrDeref => "Dereference of a raw pointer is forbidden in creusot: use `creusot_contracts::ptr_own::PtrOwn` instead",
         })
     }
 }
