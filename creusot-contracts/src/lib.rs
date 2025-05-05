@@ -33,6 +33,7 @@
         fmt_internals,
         fmt_helpers_for_derive,
         step_trait,
+        try_trait_v2,
         allocator_api,
         unboxed_closures,
         tuple_trait,
@@ -412,6 +413,7 @@ mod base_prelude {
             // we get an error message).
             clone::Clone,
             cmp::PartialEq,
+            convert::From,
             default::Default,
             iter::{FromIterator, IntoIterator, Iterator},
         },

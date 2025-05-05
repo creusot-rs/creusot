@@ -10,6 +10,7 @@ pub mod collections {
 }
 pub mod char;
 pub mod cmp;
+pub mod convert;
 pub mod default;
 pub mod deque;
 pub mod fmt;

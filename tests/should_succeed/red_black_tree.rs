@@ -1,3 +1,4 @@
+// TIME 5
 #![feature(box_patterns)]
 extern crate creusot_contracts;
 

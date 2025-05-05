@@ -1,4 +1,5 @@
 use crate::*;
+use ::std::convert::Infallible;
 #[cfg(feature = "nightly")]
 use ::std::marker::Tuple;
 pub use ::std::ops::*;
@@ -257,6 +258,72 @@ extern_spec! {
             trait Index<Idx>  where Idx : ?Sized,  Self : ?Sized {
                 #[requires(false)]
                 fn index(&self, ix : Idx) -> &Self::Output;
+            }
+        }
+    }
+}
+
+extern_spec! {
+    mod core {
+        mod option {
+            impl<T> Try for Option<T> {
+                #[ensures(result == Some(output))]
+                fn from_output(output: T) -> Self {
+                    Some(output)
+                }
+
+                #[ensures(match self {
+                    Some(v) => result == ControlFlow::Continue(v),
+                    None => result == ControlFlow::Break(None)
+                })]
+                fn branch(self) -> ControlFlow<Option<Infallible>, T> {
+                    match self {
+                        Some(v) => ControlFlow::Continue(v),
+                        None => ControlFlow::Break(None),
+                    }
+                }
+            }
+
+            impl<T> FromResidual<Option<Infallible>> for Option<T> {
+                #[ensures(result == None)]
+                fn from_residual(residual: Option<Infallible>) -> Self {
+                    match residual {
+                        None => None,
+                    }
+                }
+            }
+        }
+    }
+    mod core {
+        mod result {
+            impl<T, E> Try for Result<T, E> {
+                #[ensures(result == Ok(output))]
+                fn from_output(output: T) -> Self {
+                    Ok(output)
+                }
+
+                #[ensures(match self {
+                    Ok(v) => result == ControlFlow::Continue(v),
+                    Err(e) => result == ControlFlow::Break(Err(e))
+                })]
+                fn branch(self) -> ControlFlow<Result<Infallible, E>, T> {
+                    match self {
+                        Ok(v) => ControlFlow::Continue(v),
+                        Err(e) => ControlFlow::Break(Err(e)),
+                    }
+                }
+            }
+
+            impl<T, E, F: From<E>> FromResidual<Result<Infallible, E>> for Result<T, F> {
+                #[ensures(match (result, residual) {
+                  (Err(result), Err(residual)) => result.comes_from(residual),
+                  _ => false,
+                })]
+                fn from_residual(residual: Result<Infallible, E>) -> Self {
+                    match residual {
+                        Err(e) => Err(::std::convert::From::from(e)),
+                    }
+                }
             }
         }
     }
