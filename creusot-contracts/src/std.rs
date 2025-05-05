@@ -15,6 +15,7 @@ pub mod default;
 pub mod deque;
 pub mod fmt;
 pub mod hint;
+pub mod io;
 pub mod iter;
 pub mod mem;
 pub mod num;

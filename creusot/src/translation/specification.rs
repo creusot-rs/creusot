@@ -270,8 +270,11 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     } else {
         let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
         // TODO: handle the "self" argument better
-        let raw_inputs =
-            if inputs.len() > 0 && inputs[0].0.0 == name::self_() { &inputs[1..] } else { &inputs };
+        let raw_inputs = if !inputs.is_empty() && inputs[0].0.0 == name::self_() {
+            &inputs[1..]
+        } else {
+            &inputs
+        };
         let bound = raw_inputs.iter().map(|(ident, _, _)| ident.0);
         let subst = erased_identity_for_item(ctx.tcx, def_id);
         let mut contract = contract_clauses_of(ctx, def_id)
@@ -279,11 +282,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
             .get_pre(ctx, fn_name, bound)
             .instantiate(ctx.tcx, subst);
 
-        if contract.is_empty()
-            && !def_id.is_local()
-            && ctx.externs.get(def_id.krate).is_none()
-            && ctx.item_type(def_id) == ItemType::Program
-        {
+        if contract.is_empty() && !def_id.is_local() && ctx.item_type(def_id) == ItemType::Program {
             contract.extern_no_spec = true;
             contract.requires.push(Condition {
                 term: Term::mk_false(ctx.tcx),
