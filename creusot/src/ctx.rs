@@ -8,6 +8,7 @@ use crate::{
     creusot_items::{self, CreusotItems},
     error::{CannotFetchThir, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
+    naming::variable_name,
     options::Options,
     pearlite::ScopedTerm,
     specification::{PreSignature, inherited_extern_spec, pre_sig_of},
@@ -549,7 +550,8 @@ impl<'tcx> TranslationCtx<'tcx> {
             .borrow_mut()
             .entry(ident)
             .or_insert_with(|| {
-                let r = Ident::fresh(self.crate_name(), self.hir().name(ident).as_str());
+                let r =
+                    Ident::fresh(self.crate_name(), variable_name(self.hir().name(ident).as_str()));
                 self.corenamer.borrow_mut().insert(r, ident);
                 r
             })
