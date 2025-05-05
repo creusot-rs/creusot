@@ -25,7 +25,6 @@ use super::program::{IntermediateStmt, LoweringState};
 ///                       ---> let _1 = (let Cons(a, b, c) = _1 in Cons(a, b, P)) (tuple)
 /// (*_1).1 = P           ---> let _1 = { _1 with current = ({ * _1 with [[1]] = P })}
 /// ((*_1) as Some).0 = P ---> let _1 = { _1 with current = (let Some(X) = _1 in Some(P) )}
-
 /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
 pub(crate) fn create_assign_inner<'tcx, N: Namer<'tcx>>(
@@ -93,7 +92,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         .iter()
                         .map(|f| {
                             Param::Term(
-                                Ident::fresh_local(&format!("r{}", f.name)),
+                                Ident::fresh_local(format!("r{}", f.name)),
                                 lower.ty(f.ty(lower.ctx.tcx, subst)),
                             )
                         })
@@ -187,7 +186,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let result = Ident::fresh_local("r");
                     let foc = focus.call(is);
                     is.push(IntermediateStmt::Call(
-                        Box::new([Param::Term(result.clone(), elt_ty1.clone())]),
+                        Box::new([Param::Term(result, elt_ty1.clone())]),
                         Name::Global(lower.names.in_pre(PreMod::Slice, "get")),
                         Box::new([Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(ix_exp1)]),
                     ));
@@ -200,7 +199,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let foc = focus1.call(is);
 
                     is.push(IntermediateStmt::Call(
-                        Box::new([Param::Term(out.clone(), ty)]),
+                        Box::new([Param::Term(out, ty)]),
                         Name::Global(lower.names.in_pre(PreMod::Slice, "set")),
                         Box::new([
                             Arg::Ty(elt_ty),

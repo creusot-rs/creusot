@@ -52,7 +52,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     .map(Operand::Move)
                     .unwrap_or_else(|| discr.clone());
 
-                let discriminant = self.translate_operand(&real_discr);
+                let discriminant = self
+                    .translate_operand(&real_discr)
+                    .unwrap_or_else(|err| err.crash(self.ctx, terminator.source_info.span));
                 let ty = real_discr.ty(self.body, self.tcx());
                 let switch =
                     make_switch(self.ctx, terminator.source_info, ty, targets, discriminant);
@@ -68,7 +70,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             need.remove(mp);
                         }
                     }
-                    self.resolve_places(need, &resolved);
+                    if let Err(err) = self.resolve_places(need, &resolved) {
+                        err.crash(self.ctx, span)
+                    }
                     resolved_during = None;
                 }
 
@@ -80,7 +84,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.ctx.fatal_error(fn_span, "unsupported function call type").emit()
                 };
                 if let Some((need, resolved)) = resolved_during.take() {
-                    self.resolve_before_assignment(need, &resolved, location, destination)
+                    if let Err(err) =
+                        self.resolve_before_assignment(need, &resolved, location, destination)
+                    {
+                        err.crash(self.ctx, span)
+                    }
                 }
 
                 if is_snap_from_fn(self.ctx.tcx, fun_def_id) {
@@ -90,12 +98,17 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
                     let mut assertion = self.snapshots.shift_remove(def_id).unwrap();
                     let places = self.tree.visible_places(terminator.source_info.scope);
-                    assertion.subst(inline_pearlite_subst(&self.ctx, &places));
+                    assertion.subst(inline_pearlite_subst(self.ctx, &places));
                     self.check_use_in_logic(&assertion, location);
                     self.emit_snapshot_assign(destination, assertion, span);
                 } else {
-                    let func_args: Box<[_]> =
-                        args.iter().map(|arg| self.translate_operand(&arg.node)).collect();
+                    let func_args: Box<[_]> = args
+                        .iter()
+                        .map(|arg| {
+                            self.translate_operand(&arg.node)
+                                .unwrap_or_else(|err| err.crash(self.ctx, arg.span))
+                        })
+                        .collect();
 
                     if is_box_new(self.tcx(), fun_def_id) {
                         let [arg] = *func_args.into_array().unwrap();
@@ -137,7 +150,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 self.ctx.normalize_erasing_regions(self.typing_env(), subst);
 
                             self.emit_statement(Statement::Call(
-                                self.translate_place(destination.as_ref()),
+                                self.translate_place(destination.as_ref())
+                                    .unwrap_or_else(|err| err.crash(self.ctx, span)),
                                 fun_def_id,
                                 subst,
                                 func_args,
@@ -149,10 +163,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 if let Some(bb) = target {
                     if self.resolver.is_some() {
-                        self.resolve_after_assignment(
-                            target.unwrap().start_location(),
-                            destination,
-                        );
+                        if let Err(err) = self
+                            .resolve_after_assignment(target.unwrap().start_location(), destination)
+                        {
+                            err.crash(self.ctx, span)
+                        }
                     }
 
                     term = mk_goto(bb);
@@ -204,7 +219,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 to_resolve.insert(mpi);
                             }
                         });
-                        self.resolve_places(to_resolve, &resolved);
+                        if let Err(err) = self.resolve_places(to_resolve, &resolved) {
+                            err.crash(self.ctx, span)
+                        }
                     } else {
                         // If the place we drop is not a move path, then the MaybeUninit analysis ignores it. So we do not miss a resolve.
                     }
@@ -223,18 +240,20 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             | TailCall { .. } => unreachable!("{:?}", terminator.kind),
         }
         if let Some((need, resolved)) = resolved_during {
-            self.resolve_places(need, &resolved);
+            if let Err(err) = self.resolve_places(need, &resolved) {
+                err.crash(self.ctx, span)
+            }
         }
         self.emit_terminator(term)
     }
 
     fn get_explanation(&mut self, msg: &mir::AssertKind<Operand<'tcx>>) -> String {
         match msg {
-            AssertKind::BoundsCheck { len: _, index: _ } => format!("expl:index in bounds"),
+            AssertKind::BoundsCheck { len: _, index: _ } => "expl:index in bounds".to_string(),
             AssertKind::Overflow(op, _a, _b) => format!("expl:{op:?} overflow"),
-            AssertKind::OverflowNeg(_op) => format!("expl:negation overflow"),
-            AssertKind::DivisionByZero(_) => format!("expl:division by zero"),
-            AssertKind::RemainderByZero(_) => format!("expl:remainder by zero"),
+            AssertKind::OverflowNeg(_op) => "expl:negation overflow".to_string(),
+            AssertKind::DivisionByZero(_) => "expl:division by zero".to_string(),
+            AssertKind::RemainderByZero(_) => "expl:remainder by zero".to_string(),
             _ => unreachable!("Resume assertions"),
         }
     }
