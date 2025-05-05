@@ -1,3 +1,8 @@
+mod statement;
+mod terminator;
+
+use self::terminator::discriminator_for_switch;
+use super::specification::PreSignature;
 use crate::{
     analysis::NotFinalPlaces,
     backend::ty_inv::is_tyinv_trivial,
@@ -41,12 +46,6 @@ use std::{
     iter::zip,
     ops::FnOnce,
 };
-
-mod statement;
-mod terminator;
-use terminator::discriminator_for_switch;
-
-use super::specification::PreSignature;
 
 /// Translate a function from rustc's MIR to fMIR.
 pub(crate) fn fmir<'tcx>(ctx: &TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
@@ -95,6 +94,23 @@ struct BodyTranslator<'a, 'tcx> {
     locals: HashMap<Local, (rustc_span::Symbol, Ident)>,
 
     vars: LocalDecls<'tcx>,
+}
+
+/// The translator encountered something it cannot handle.
+///
+/// This is bubbled up until we have a span to print the error.
+#[derive(Debug)]
+enum TranslationError {
+    /// Dereference of a raw pointer
+    PtrDeref,
+}
+
+impl TranslationError {
+    fn crash(&self, ctx: &TranslationCtx, span: Span) -> ! {
+        ctx.crash_and_error(span,  match self {
+            TranslationError::PtrDeref => "Dereference of a raw pointer is forbidden in creusot: use `creusot_contracts::PtrOwn` instead",
+        })
+    }
 }
 
 impl<'tcx> HasMoveData<'tcx> for BodyTranslator<'_, 'tcx> {
@@ -201,7 +217,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             {
                 let (_, resolved) = resolver
                     .need_resolve_resolved_places_at(ExtendedLocation::Start(Location::START));
-                self.resolve_places(resolved.clone(), &resolved);
+                if let Err(err) = self.resolve_places(resolved.clone(), &resolved) {
+                    // TODO: what is the appropriate span here?
+                    err.crash(self.ctx, self.body.span);
+                }
             }
 
             let mut invariants = Vec::new();
@@ -210,7 +229,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let info = *self.body.source_info(bb.start_location());
             let places = self.tree.visible_places(info.scope);
             for (kind, mut body) in self.invariants.shift_remove(&bb).unwrap_or_else(Vec::new) {
-                body.subst(&inline_pearlite_subst(&self.ctx, &places));
+                body.subst(inline_pearlite_subst(self.ctx, &places));
                 self.check_use_in_logic(&body, bb.start_location());
                 match kind {
                     LoopSpecKind::Variant => {
@@ -228,12 +247,16 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
             }
 
-            self.resolve_places_between_blocks(bb);
+            if let Err(err) = self.resolve_places_between_blocks(bb) {
+                err.crash(self.ctx, self.basic_block_first_span(bbd))
+            }
 
             let mut loc = bb.start_location();
 
             for statement in &bbd.statements {
-                self.translate_statement(&mut not_final_places, statement, loc);
+                if let Err(err) = self.translate_statement(&mut not_final_places, statement, loc) {
+                    err.crash(self.ctx, statement.source_info.span);
+                }
                 loc = loc.successor_within_block();
             }
 
@@ -265,11 +288,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             || !(ty.has_erased_regions() || ty.still_further_specializable())
     }
 
-    fn emit_resolve(&mut self, pl: PlaceRef<'tcx>) {
+    fn emit_resolve(&mut self, pl: PlaceRef<'tcx>) -> Result<(), TranslationError> {
         let place_ty = pl.ty(self.body, self.tcx());
 
         if self.skip_resolve_type(place_ty.ty) {
-            return;
+            return Ok(());
         }
         if let TyKind::Adt(adt_def, subst) = place_ty.ty.kind()
             && let Some(vi) = place_ty.variant_index
@@ -279,10 +302,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 .iter()
                 .all(|f| self.skip_resolve_type(f.ty(self.tcx(), subst)))
         {
-            return;
+            return Ok(());
         }
 
-        let p = self.translate_place(pl);
+        let p = self.translate_place(pl)?;
 
         if !is_tyinv_trivial(self.tcx(), self.typing_env(), place_ty.ty) {
             self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone() });
@@ -291,6 +314,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         if let Some((did, subst)) = resolve_predicate_of(self.ctx, self.typing_env(), place_ty.ty) {
             self.emit_statement(fmir::Statement::Resolve { did, subst, pl: p });
         }
+        Ok(())
     }
 
     fn emit_terminator(&mut self, t: fmir::Terminator<'tcx>) {
@@ -309,7 +333,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         is_final: Option<usize>,
         span: Span,
     ) {
-        let p = self.translate_place(rhs.as_ref());
+        let p = self.translate_place(rhs.as_ref()).unwrap_or_else(|err| err.crash(self.ctx, span));
 
         let rhs_ty = rhs.ty(self.body, self.tcx()).ty;
         let triv_inv = if is_tyinv_trivial(self.tcx(), self.typing_env(), rhs_ty) {
@@ -334,8 +358,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>, span: Span) {
-        let p = self.translate_place(lhs.as_ref());
-        self.emit_statement(fmir::Statement::Assignment(p, rhs, span));
+        let p = self.translate_place(lhs.as_ref()).unwrap_or_else(|err| err.crash(self.ctx, span));
+        self.emit_statement(fmir::Statement::Assignment(p, rhs, span))
     }
 
     fn resolve_before_assignment(
@@ -344,10 +368,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         resolved: &MixedBitSet<MovePathIndex>,
         location: Location,
         destination: Place<'tcx>,
-    ) {
+    ) -> Result<(), TranslationError> {
         // The assignement may, in theory, modify a variable that needs to be resolved.
         // Hence we resolve before the assignment.
-        self.resolve_places(need, resolved);
+        self.resolve_places(need, resolved)?;
 
         // We resolve the destination place, if necessary
         match self.move_data().rev_lookup.find(destination.as_ref()) {
@@ -365,7 +389,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     // If destination is a reborrow, then mp cannot be in resolved (since
                     // we are writting in it), so we will go through this test.
                     // Otherwise, we resolve only if it is not already resolved.
-                    self.emit_resolve(destination.as_ref());
+                    self.emit_resolve(destination.as_ref())?;
                 }
             }
             LookupResult::Exact(mp) => {
@@ -382,14 +406,19 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                         to_resolve.insert(mp);
                     }
                 });
-                self.resolve_places(to_resolve, &resolved);
+                self.resolve_places(to_resolve, &resolved)?;
             }
         }
+        Ok(())
     }
 
     // Check if the destination is a zombie:
     // If result place is dead after the assignment, emit resolve
-    fn resolve_after_assignment(&mut self, next_loc: Location, destination: Place<'tcx>) {
+    fn resolve_after_assignment(
+        &mut self,
+        next_loc: Location,
+        destination: Place<'tcx>,
+    ) -> Result<(), TranslationError> {
         let live = self.resolver.as_mut().unwrap().live_places_before(next_loc);
         let (_, resolved) = self
             .resolver
@@ -407,10 +436,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 if !live.contains(mp) {
                     if place_contains_borrow_deref(dest, self.body, self.tcx()) {
                         if resolved.contains(mp) {
-                            self.emit_resolve(self.move_data().move_paths[mp].place.as_ref());
+                            self.emit_resolve(self.move_data().move_paths[mp].place.as_ref())?;
                         }
                     } else {
-                        self.emit_resolve(dest)
+                        self.emit_resolve(dest)?;
                     }
                 }
             }
@@ -421,21 +450,34 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                         to_resolve.insert(imp);
                     }
                 });
-                self.resolve_places(to_resolve, &resolved);
+                self.resolve_places(to_resolve, &resolved)?;
             }
+        }
+        Ok(())
+    }
+
+    /// Span for the beginning of the basic block: used in diagnostics.
+    // TODO: does this even make sense?
+    fn basic_block_first_span(&self, bbd: &mir::BasicBlockData) -> Span {
+        match bbd.statements.first() {
+            Some(s) => s.source_info.span,
+            None => match &bbd.terminator {
+                Some(t) => t.source_info.span,
+                None => self.body.span,
+            },
         }
     }
 
     // Inserts resolves for locals which need resolution after a terminator, or
     // died over the course of a goto or switch
-    fn resolve_places_between_blocks(&mut self, bb: BasicBlock) {
+    fn resolve_places_between_blocks(&mut self, bb: BasicBlock) -> Result<(), TranslationError> {
         let Some(resolver) = &mut self.resolver else {
-            return;
+            return Ok(());
         };
         let pred_blocks = &self.body.basic_blocks.predecessors()[bb];
 
         if pred_blocks.is_empty() {
-            return;
+            return Ok(());
         }
 
         let mut resolved_between = pred_blocks
@@ -496,8 +538,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.
         if resolved_between.windows(2).all(|r| r[0] == r[1]) {
             let r = resolved_between.into_iter().next().unwrap();
-            self.resolve_places(r.0, &r.1);
-            return;
+            return self.resolve_places(r.0, &r.1);
         }
 
         for (pred, resolved) in zip(pred_blocks, resolved_between) {
@@ -507,7 +548,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             };
 
             // Otherwise, we emit the resolves and move them to a stand-alone block.
-            self.resolve_places(resolved.0, &resolved.1);
+            self.resolve_places(resolved.0, &resolved.1)?;
             self.emit_terminator(fmir::Terminator::Goto(bb));
             let resolve_block = fmir::Block {
                 variant: None,
@@ -520,6 +561,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.past_blocks.insert(resolve_block_id, resolve_block);
             self.past_blocks.get_mut(pred).unwrap().terminator.retarget(bb, resolve_block_id);
         }
+        Ok(())
     }
 
     fn fresh_block_id(&mut self) -> BasicBlock {
@@ -531,11 +573,14 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     /// We try to coalesce resolutions for places, if possible
     /// TODO: We may actually want to do the opposite: resolve as deeply as possible,
     /// but taking care of type opacity and recursive types.
+    // TODO: this returns an error, but this is mostly because I don't know how to get
+    // the right spans. If you find a function `MovePathIndex -> Span`, feel free to handle
+    // the error in this function.
     fn resolve_places(
         &mut self,
         to_resolve: MixedBitSet<MovePathIndex>,
         resolved: &MixedBitSet<MovePathIndex>,
-    ) {
+    ) -> Result<(), TranslationError> {
         let mut to_resolve_full = to_resolve.clone();
         for mp in to_resolve.iter() {
             let mut all_children = true;
@@ -652,40 +697,58 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         // TODO determine resolution order based on outlives relation?
         v.sort_by_key(|pl| pl.local);
         for pl in v.into_iter().rev() {
-            self.emit_resolve(pl.as_ref())
+            self.emit_resolve(pl.as_ref())?;
         }
+        Ok(())
     }
 
-    // Useful helper to translate an operand
-    fn translate_operand(&self, operand: &Operand<'tcx>) -> fmir::Operand<'tcx> {
-        let kind = match operand {
-            Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(pl.as_ref())),
-            Operand::Move(pl) => fmir::Operand::Move(self.translate_place(pl.as_ref())),
+    /// Useful helper to translate an operand
+    ///
+    /// # Errors
+    ///
+    /// Will error when trying to dereference a raw pointer.
+    fn translate_operand(
+        &self,
+        operand: &Operand<'tcx>,
+    ) -> Result<fmir::Operand<'tcx>, TranslationError> {
+        Ok(match operand {
+            Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(pl.as_ref())?),
+            Operand::Move(pl) => fmir::Operand::Move(self.translate_place(pl.as_ref())?),
             Operand::Constant(c) => from_mir_constant(self.typing_env(), self.ctx, c),
-        };
-        kind
+        })
     }
 
-    fn translate_place(&self, pl: PlaceRef<'tcx>) -> fmir::Place<'tcx> {
+    /// Useful helper to translate a place
+    ///
+    /// # Errors
+    ///
+    /// Will error when trying to dereference a raw pointer.
+    fn translate_place(&self, pl: PlaceRef<'tcx>) -> Result<fmir::Place<'tcx>, TranslationError> {
         let projection = pl
-            .projection
-            .iter()
-            .map(|p| match *p {
-                mir::ProjectionElem::Deref => mir::ProjectionElem::Deref,
-                mir::ProjectionElem::Field(ix, ty) => mir::ProjectionElem::Field(ix, ty),
-                mir::ProjectionElem::Index(l) => mir::ProjectionElem::Index(self.locals[&l].1),
-                mir::ProjectionElem::ConstantIndex { offset, min_length, from_end } => {
-                    mir::ProjectionElem::ConstantIndex { offset, min_length, from_end }
-                }
-                mir::ProjectionElem::Subslice { from, to, from_end } => {
-                    mir::ProjectionElem::Subslice { from, to, from_end }
-                }
-                mir::ProjectionElem::Downcast(s, ix) => mir::ProjectionElem::Downcast(s, ix),
-                mir::ProjectionElem::OpaqueCast(ty) => mir::ProjectionElem::OpaqueCast(ty),
-                mir::ProjectionElem::Subtype(ty) => mir::ProjectionElem::Subtype(ty),
+            .iter_projections()
+            .map(|(p, elem)| {
+                Ok(match elem {
+                    mir::ProjectionElem::Deref => {
+                        if p.ty(self.body, self.tcx()).ty.is_unsafe_ptr() {
+                            return Err(TranslationError::PtrDeref);
+                        }
+                        mir::ProjectionElem::Deref
+                    }
+                    mir::ProjectionElem::Field(ix, ty) => mir::ProjectionElem::Field(ix, ty),
+                    mir::ProjectionElem::Index(l) => mir::ProjectionElem::Index(self.locals[&l].1),
+                    mir::ProjectionElem::ConstantIndex { offset, min_length, from_end } => {
+                        mir::ProjectionElem::ConstantIndex { offset, min_length, from_end }
+                    }
+                    mir::ProjectionElem::Subslice { from, to, from_end } => {
+                        mir::ProjectionElem::Subslice { from, to, from_end }
+                    }
+                    mir::ProjectionElem::Downcast(s, ix) => mir::ProjectionElem::Downcast(s, ix),
+                    mir::ProjectionElem::OpaqueCast(ty) => mir::ProjectionElem::OpaqueCast(ty),
+                    mir::ProjectionElem::Subtype(ty) => mir::ProjectionElem::Subtype(ty),
+                })
             })
-            .collect();
-        fmir::Place { local: self.locals[&pl.local].1, projections: projection }
+            .collect::<Result<Box<_>, _>>()?;
+        Ok(fmir::Place { local: self.locals[&pl.local].1, projections: projection })
     }
 
     fn check_use_in_logic(&mut self, term: &Term<'tcx>, location: Location) {

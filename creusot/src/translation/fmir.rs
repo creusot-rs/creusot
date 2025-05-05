@@ -47,8 +47,7 @@ impl<'tcx> Place<'tcx> {
 
     pub(crate) fn iter_projections(
         &self,
-    ) -> impl Iterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> + DoubleEndedIterator + '_
-    {
+    ) -> impl DoubleEndedIterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> + '_ {
         self.projections.iter().enumerate().map(move |(i, proj)| {
             let base = PlaceRef { local: self.local, projection: &self.projections[..i] };
             (base, *proj)
@@ -64,7 +63,7 @@ impl<'tcx> Place<'tcx> {
     }
 }
 
-impl<'a, 'tcx> PlaceRef<'a, 'tcx> {
+impl<'tcx> PlaceRef<'_, 'tcx> {
     pub(crate) fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> PlaceTy<'tcx> {
         let mut ty = PlaceTy::from_ty(locals[&self.local].ty);
 
@@ -215,7 +214,7 @@ pub enum Branches<'tcx> {
     Bool(BasicBlock, BasicBlock),
 }
 
-impl<'tcx> Terminator<'tcx> {
+impl Terminator<'_> {
     pub fn targets(&self) -> Box<dyn Iterator<Item = BasicBlock> + '_> {
         use std::iter::*;
         match self {
@@ -234,7 +233,7 @@ impl<'tcx> Terminator<'tcx> {
     }
 }
 
-impl<'tcx> Branches<'tcx> {
+impl Branches<'_> {
     pub fn targets_mut(&mut self) -> Box<dyn Iterator<Item = &mut BasicBlock> + '_> {
         use std::iter::*;
         match self {
@@ -478,9 +477,7 @@ pub(crate) trait FmirVisitor<'tcx>: Sized {
         super_visit_terminator(self, terminator);
     }
 
-    fn visit_term(&mut self, _: &Term<'tcx>) {
-        ()
-    }
+    fn visit_term(&mut self, _: &Term<'tcx>) {}
 
     fn visit_rvalue(&mut self, rval: &RValue<'tcx>) {
         super_visit_rvalue(self, rval);
@@ -489,7 +486,7 @@ pub(crate) trait FmirVisitor<'tcx>: Sized {
 
 pub(crate) fn super_visit_body<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, body: &Body<'tcx>) {
     for block in &body.blocks {
-        visitor.visit_block(&block.1);
+        visitor.visit_block(block.1);
     }
 }
 
@@ -541,9 +538,7 @@ pub(crate) fn super_visit_operand<'tcx, V: FmirVisitor<'tcx>>(
     }
 }
 
-pub(crate) fn super_visit_place<'tcx, V: FmirVisitor<'tcx>>(_: &mut V, _: &Place<'tcx>) {
-    ()
-}
+pub(crate) fn super_visit_place<'tcx, V: FmirVisitor<'tcx>>(_: &mut V, _: &Place<'tcx>) {}
 
 pub(crate) fn super_visit_terminator<'tcx, V: FmirVisitor<'tcx>>(
     visitor: &mut V,
