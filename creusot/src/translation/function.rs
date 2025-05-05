@@ -10,7 +10,7 @@ use crate::{
     extended_location::ExtendedLocation,
     fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inline_pearlite_subst},
     gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
-    naming::name,
+    naming::{name, variable_name},
     pearlite::{Ident, Pattern, Term, TermKind, TermVisitorMut, normalize, super_visit_mut_term},
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{specification::contract_of, traits},
@@ -733,17 +733,17 @@ fn translate_vars<'tcx>(
             continue;
         }
         let name = if !d.is_user_variable() {
-            Symbol::intern(&format!("_{}", loc.index()))
+            format!("_{}", loc.index())
         } else {
             let x = body.var_debug_info.iter().find(|var_info| match var_info.value {
                 Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
                 _ => false,
             });
             let debug_info = x.expect("expected user variable to have name");
-            debug_info.name
+            variable_name(debug_info.name.as_str())
         };
-        let ident = ctx.fresh(name.as_str());
-        locals.insert(loc, (name, ident));
+        let ident = ctx.fresh(&name);
+        locals.insert(loc, (Symbol::intern(&name), ident));
         let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
         vars.insert(ident, LocalDecl {
             span: d.source_info.span,
