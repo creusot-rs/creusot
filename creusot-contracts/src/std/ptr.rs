@@ -13,7 +13,7 @@ pub use ::std::ptr::*;
 /// null may still not compare equal to each other."
 #[allow(dead_code)]
 pub struct PtrDeepModel {
-    pub addr: Int,
+    pub addr: usize,
     runtime_metadata: usize,
 }
 
@@ -39,31 +39,13 @@ impl<T: ?Sized> DeepModel for *const T {
     }
 }
 
-impl<T: ?Sized> View for *mut T {
-    type ViewTy = Int;
-    #[logic]
-    #[open]
-    fn view(self) -> Int {
-        self.addr_logic()
-    }
-}
-
-impl<T: ?Sized> View for *const T {
-    type ViewTy = Int;
-    #[logic]
-    #[open]
-    fn view(self) -> Int {
-        self.addr_logic()
-    }
-}
-
 pub trait PointerExt<T: ?Sized>: Sized {
     /// _logical_ address of the pointer
     #[logic]
-    fn addr_logic(self) -> Int;
+    fn addr_logic(self) -> usize;
 
     #[logic]
-    #[ensures(result == (self.addr_logic() == 0))]
+    #[ensures(result == (self.addr_logic() == 0usize))]
     fn is_null_logic(self) -> bool;
 }
 
@@ -71,15 +53,15 @@ impl<T: ?Sized> PointerExt<T> for *const T {
     #[trusted]
     #[logic]
     #[open(self)]
-    fn addr_logic(self) -> Int {
+    fn addr_logic(self) -> usize {
         dead
     }
 
     #[logic]
     #[open]
-    #[ensures(result == (self.addr_logic() == 0))]
+    #[ensures(result == (self.addr_logic() == 0usize))]
     fn is_null_logic(self) -> bool {
-        self.addr_logic() == 0
+        self.addr_logic() == 0usize
     }
 }
 
@@ -87,21 +69,21 @@ impl<T: ?Sized> PointerExt<T> for *mut T {
     #[trusted]
     #[logic]
     #[open(self)]
-    fn addr_logic(self) -> Int {
+    fn addr_logic(self) -> usize {
         dead
     }
 
     #[logic]
     #[open]
-    #[ensures(result == (self.addr_logic() == 0))]
+    #[ensures(result == (self.addr_logic() == 0usize))]
     fn is_null_logic(self) -> bool {
-        self.addr_logic() == 0
+        self.addr_logic() == 0usize
     }
 }
 
 extern_spec! {
     impl<T> *const T {
-        #[ensures(result@ == self.addr_logic())]
+        #[ensures(result == self.addr_logic())]
         fn addr(self) -> usize;
 
         #[ensures(result == self.is_null_logic())]
@@ -109,7 +91,7 @@ extern_spec! {
     }
 
     impl<T> *mut T {
-        #[ensures(result@ == self.addr_logic())]
+        #[ensures(result == self.addr_logic())]
         fn addr(self) -> usize;
 
         #[ensures(result == self.is_null_logic())]
