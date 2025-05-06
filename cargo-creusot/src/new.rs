@@ -2,7 +2,11 @@ use anyhow::Result;
 use cargo_metadata::semver::Version;
 use clap::Parser;
 use creusot_setup::creusot_paths;
-use std::{fs, io::Write, path::Path};
+use std::{
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use crate::helpers::{CREUSOT_CONTRACTS_VERSION, creusot_contracts_path};
 
@@ -144,9 +148,27 @@ pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
         }
         write("src/lib.rs", LIB_TEMPLATE);
     }
-    let why3find_json = paths.config_dir.join("why3find.json");
-    copy(&why3find_json, "why3find.json");
+    if let Some(parent_cargo_toml) = find_parent_cargo_toml() {
+        eprintln!(
+            "Info: It seems that you are in a workspace (found {}), so no why3find.json will be created in the current directory.",
+            parent_cargo_toml.display()
+        );
+    } else {
+        let why3find_json = paths.config_dir.join("why3find.json");
+        copy(&why3find_json, "why3find.json");
+    }
     Ok(())
+}
+
+fn find_parent_cargo_toml() -> Option<PathBuf> {
+    let mut path = std::env::current_dir().ok()?;
+    while path.pop() {
+        let cargo_toml = path.join("Cargo.toml");
+        if cargo_toml.exists() {
+            return Some(cargo_toml);
+        }
+    }
+    None
 }
 
 fn validate_name(name: &str) -> Result<()> {

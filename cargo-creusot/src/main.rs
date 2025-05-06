@@ -1,11 +1,13 @@
-use anyhow::bail;
+use anyhow::{Context as _, bail};
 use cargo_metadata::semver::Version;
 use clap::*;
 use creusot_args::{CREUSOT_RUSTC_ARGS, options::*};
 use creusot_setup as setup;
 use std::{
     env,
+    ffi::OsString,
     io::{IsTerminal as _, Write},
+    os::unix::ffi::OsStringExt as _,
     path::{Display, PathBuf},
     process::{Command, exit},
 };
@@ -24,12 +26,13 @@ fn main() -> Result<()> {
     let cargs = CargoCreusotCmds::parse_from(std::env::args().skip(1));
 
     match cargs.subcommand {
-        None => creusot(None, cargs.args),
-        Some(Creusot(subcmd)) => creusot(Some(subcmd), cargs.args),
+        None => creusot(None, cargs.args, &workspace_root()?),
+        Some(Creusot(subcmd)) => creusot(Some(subcmd), cargs.args, &workspace_root()?),
         Some(Setup { command: SetupSubCommand::Status }) => setup::status(),
         Some(Prove(args)) => {
-            creusot(None, cargs.args)?;
-            why3find_prove(args)
+            let root = workspace_root()?;
+            creusot(None, cargs.args, &root)?;
+            why3find_prove(args, &root)
         }
         Some(New(args)) => new(args),
         Some(Init(args)) => init(args),
@@ -37,7 +40,11 @@ fn main() -> Result<()> {
     }
 }
 
-fn creusot(subcmd: Option<CreusotSubCommand>, args: CargoCreusotArgs) -> Result<()> {
+fn creusot(
+    subcmd: Option<CreusotSubCommand>,
+    args: CargoCreusotArgs,
+    root: &PathBuf,
+) -> Result<()> {
     if !args.no_check_version {
         check_contracts_version()?;
     }
@@ -69,7 +76,7 @@ fn creusot(subcmd: Option<CreusotSubCommand>, args: CargoCreusotArgs) -> Result<
         subcommand: creusot_rustc_subcmd.clone(),
     };
 
-    invoke_cargo(&creusot_args, args.creusot_rustc, args.cargo_flags);
+    invoke_cargo(&creusot_args, args.creusot_rustc, args.cargo_flags, root);
     warn_if_dangling()?;
 
     if let Some((mode, coma_src, args)) = launch_why3 {
@@ -100,7 +107,12 @@ fn creusot(subcmd: Option<CreusotSubCommand>, args: CargoCreusotArgs) -> Result<
     Ok(())
 }
 
-fn invoke_cargo(args: &CreusotArgs, creusot_rustc: Option<PathBuf>, cargo_flags: Vec<String>) {
+fn invoke_cargo(
+    args: &CreusotArgs,
+    creusot_rustc: Option<PathBuf>,
+    cargo_flags: Vec<String>,
+    root: &PathBuf,
+) {
     let cargo_path = env::var("CARGO_PATH").unwrap_or_else(|_| "cargo".to_string());
     let cargo_cmd = match &args.subcommand {
         Some(CreusotSubCommand::Doc { .. }) => "doc",
@@ -139,7 +151,7 @@ fn invoke_cargo(args: &CreusotArgs, creusot_rustc: Option<PathBuf>, cargo_flags:
 
     // Prevent `cargo creusot` and `cargo` from invalidating each other's caches.
     if env::var_os("CARGO_TARGET_DIR").is_none() {
-        cmd.env("CARGO_TARGET_DIR", "target/creusot");
+        cmd.env("CARGO_TARGET_DIR", root.join("target/creusot"));
     }
 
     // Append flags to any pre-existing ones
@@ -167,6 +179,16 @@ fn invoke_cargo(args: &CreusotArgs, creusot_rustc: Option<PathBuf>, cargo_flags:
     if !exit_status.success() {
         exit(exit_status.code().unwrap_or(-1));
     }
+}
+
+fn workspace_root() -> Result<PathBuf> {
+    let mut cargo = Command::new("cargo");
+    cargo.args(["locate-project", "--workspace", "--message-format=plain"]);
+    let mut path = PathBuf::from(OsString::from_vec(
+        cargo.output().context("could not find Cargo.toml")?.stdout,
+    ));
+    path.pop();
+    Ok(path)
 }
 
 #[derive(Debug, Parser)]

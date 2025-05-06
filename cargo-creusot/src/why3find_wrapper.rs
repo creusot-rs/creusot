@@ -1,11 +1,7 @@
 use anyhow::{Result, anyhow};
 use clap::*;
 use creusot_setup::{Paths, creusot_paths};
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
-    str::FromStr,
-};
+use std::{path::PathBuf, process::Command};
 
 #[derive(Debug, Parser)]
 pub struct ProveArgs {
@@ -23,19 +19,26 @@ pub struct ConfigArgs {
     pub args: Vec<String>,
 }
 
-fn why3find_json_exists() -> bool {
-    Path::new("why3find.json").exists()
+fn check_why3find_json_exists(root: &PathBuf) -> Result<()> {
+    let why3find = root.join("why3find.json");
+    if why3find.exists() {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "{} not found. Perhaps you are in the wrong directory, or you need to run `cargo creusot init`.",
+            why3find.display()
+        ))
+    }
 }
 
-fn raw_prove(args: ProveArgs, paths: &Paths) -> Result<()> {
+fn raw_prove(args: ProveArgs, paths: &Paths, root: &PathBuf) -> Result<()> {
     let mut why3find = Command::new(&paths.why3find);
     why3find.arg("prove");
     if args.ide {
         why3find.arg("-i");
     }
     // If there are no file arguments, default to `verif/` to avoid accidentally including random Why3 files elsewhere.
-    let files =
-        if args.files.len() == 0 { vec![PathBuf::from_str("verif").unwrap()] } else { args.files };
+    let files = if args.files.len() == 0 { vec![root.join("verif")] } else { args.files };
     for file in files {
         why3find.arg(file);
     }
@@ -56,12 +59,8 @@ fn raw_prove(args: ProveArgs, paths: &Paths) -> Result<()> {
         )
 }
 
-pub fn why3find_prove(args: ProveArgs) -> Result<()> {
+pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
     let paths = creusot_paths()?;
-    if !why3find_json_exists() {
-        return Err(anyhow::anyhow!(
-            "why3find.json not found. Perhaps you are in the wrong directory, or you need to run `cargo creusot init`."
-        ));
-    }
-    raw_prove(args, &paths)
+    check_why3find_json_exists(root)?;
+    raw_prove(args, &paths, root)
 }
