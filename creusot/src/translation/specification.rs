@@ -270,8 +270,11 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     } else {
         let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
         // TODO: handle the "self" argument better
-        let raw_inputs =
-            if inputs.len() > 0 && inputs[0].0.0 == name::self_() { &inputs[1..] } else { &inputs };
+        let raw_inputs = if !inputs.is_empty() && inputs[0].0.0 == name::self_() {
+            &inputs[1..]
+        } else {
+            &inputs
+        };
         let bound = raw_inputs.iter().map(|(ident, _, _)| ident.0);
         let subst = erased_identity_for_item(ctx.tcx, def_id);
         let mut contract = contract_clauses_of(ctx, def_id)
@@ -447,7 +450,7 @@ pub fn inputs_and_output_from_thir<'tcx>(
     thir: &Thir<'tcx>,
 ) -> (Box<[(PIdent, Span, Ty<'tcx>)]>, Ty<'tcx>) {
     match thir.body_type {
-        BodyTy::Const(ty) => ([].into(), ty.clone()),
+        BodyTy::Const(ty) => ([].into(), ty),
         BodyTy::Fn(fn_sig) => {
             let inputs = thir
                 .params
@@ -458,13 +461,11 @@ pub fn inputs_and_output_from_thir<'tcx>(
                     Some(box Pat { kind, span, ty }) => {
                         let ident = match kind {
                             PatKind::Binding { var, .. } => ctx.rename(var.0),
-                            _ => Ident::fresh_local(&format!("_{ix}")),
+                            _ => Ident::fresh_local(format!("_{ix}")),
                         };
-                        (ident.into(), *span, ty.clone())
+                        (ident.into(), *span, *ty)
                     }
-                    None => {
-                        (Ident::fresh_local(&format!("_{ix}")).into(), DUMMY_SP, param.ty.clone())
-                    }
+                    None => (Ident::fresh_local(format!("_{ix}")).into(), DUMMY_SP, param.ty),
                 })
                 .collect();
             let output = ctx.normalize_erasing_regions(
@@ -478,10 +479,7 @@ pub fn inputs_and_output_from_thir<'tcx>(
 
 /// Normally this information is easier to extract from THIR (using `inputs_and_output_from_thir` above)
 /// but sometimes there is no THIR available (e.g., trait method sigs). Closures also go through this for some reason.
-pub fn inputs_and_output<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-) -> (Box<[(PIdent, Span, Ty<'tcx>)]>, Ty<'tcx>) {
+pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(PIdent, Span, Ty)]>, Ty) {
     let ty = tcx.type_of(def_id).instantiate_identity();
     match ty.kind() {
         TyKind::FnDef(..) => {
@@ -499,7 +497,7 @@ pub fn inputs_and_output<'tcx>(
                     let rustc_span::Ident { name, span } = ident;
                     let name = name.as_str();
                     let ident = if name.is_empty() {
-                        Ident::fresh_local(&format!("_{ix}"))
+                        Ident::fresh_local(format!("_{ix}"))
                     } else {
                         Ident::fresh_local(variable_name(name))
                     };
@@ -522,7 +520,7 @@ pub fn inputs_and_output<'tcx>(
                         let rustc_span::Ident { name, span } = ident;
                         let name = name.as_str();
                         let ident = if name.is_empty() {
-                            Ident::fresh_local(&format!("_{ix}"))
+                            Ident::fresh_local(format!("_{ix}"))
                         } else {
                             Ident::fresh_local(variable_name(name))
                         };

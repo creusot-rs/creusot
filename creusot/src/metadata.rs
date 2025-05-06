@@ -2,7 +2,7 @@ use crate::{creusot_items::CreusotItems, ctx::*, external::ExternSpec, pearlite:
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
 use once_map::unsync::OnceMap;
-use rustc_hir::def_id::{CrateNum, DefId};
+use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::ty::TyCtxt;
 use rustc_session::config::OutputType;
@@ -44,7 +44,7 @@ impl<'tcx> Metadata<'tcx> {
                 return cmeta.1.creusot_item(sym);
             }
         }
-        return None;
+        None
     }
 
     pub(crate) fn extern_spec(&self, id: DefId) -> Option<&ExternSpec<'tcx>> {
@@ -53,11 +53,13 @@ impl<'tcx> Metadata<'tcx> {
 
     pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, String>) {
         for cnum in external_crates(tcx) {
-            let (cmeta, mut ext_specs) = CrateMetadata::load(tcx, overrides, cnum);
+            let Some((cmeta, mut ext_specs)) = CrateMetadata::load(tcx, overrides, cnum) else {
+                continue;
+            };
             self.crates.insert(cnum, cmeta);
 
             for (id, spec) in ext_specs.drain() {
-                if let Some(_) = self.extern_specs.insert(id, spec) {
+                if self.extern_specs.insert(id, spec).is_some() {
                     panic!("duplicate external spec found for {:?} while loading {:?}", id, cnum);
                 }
             }
@@ -98,30 +100,23 @@ impl<'tcx> CrateMetadata<'tcx> {
         tcx: TyCtxt<'tcx>,
         overrides: &HashMap<String, String>,
         cnum: CrateNum,
-    ) -> (Self, ExternSpecs<'tcx>) {
-        let mut meta = CrateMetadata::new();
-
+    ) -> Option<(Self, ExternSpecs<'tcx>)> {
         let base_path = creusot_metadata_base_path(tcx, overrides, cnum);
 
         let binary_path = creusot_metadata_binary_path(base_path.clone());
 
-        let mut externs = Default::default();
-        if let Some(metadata) = load_binary_metadata(tcx, cnum, &binary_path) {
-            // for (def_id, summary) in metadata.dependencies.into_iter() {
-            // meta.dependencies.insert(def_id, summary.into_iter().collect());
-            // }
+        let metadata = load_binary_metadata(tcx, cnum, &binary_path)?;
 
-            for (def_id, summary) in metadata.terms.into_iter() {
-                meta.terms.insert(def_id, summary);
-            }
+        let mut meta = CrateMetadata::new();
 
-            meta.creusot_items = metadata.creusot_items;
-            meta.params_open_inv = metadata.params_open_inv;
-
-            externs = metadata.extern_specs;
+        for (def_id, summary) in metadata.terms.into_iter() {
+            meta.terms.insert(def_id, summary);
         }
 
-        (meta, externs)
+        meta.creusot_items = metadata.creusot_items;
+        meta.params_open_inv = metadata.params_open_inv;
+
+        Some((meta, metadata.extern_specs))
     }
 }
 
@@ -163,9 +158,7 @@ fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
     out.as_ref().map(|s| s.clone().into()).unwrap_or_else(|| {
         let outputs = ctx.output_filenames(());
         let out = outputs.path(OutputType::Metadata);
-        let path = out.as_path().to_owned();
-        let path = path.with_extension("cmeta");
-        path
+        out.as_path().to_owned().with_extension("cmeta")
     })
 }
 
@@ -226,10 +219,8 @@ fn creusot_metadata_binary_path(mut path: PathBuf) -> PathBuf {
 fn external_crates(tcx: TyCtxt<'_>) -> Vec<CrateNum> {
     let mut deps = Vec::new();
     for cr in tcx.crates(()) {
-        if let Some(extern_crate) = tcx.extern_crate(*cr) {
-            if extern_crate.is_direct() {
-                deps.push(*cr);
-            }
+        if *cr != LOCAL_CRATE {
+            deps.push(*cr);
         }
     }
     deps

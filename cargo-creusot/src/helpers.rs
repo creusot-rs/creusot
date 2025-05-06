@@ -68,10 +68,7 @@ pub(crate) fn get_coma(options: &CommonOptions) -> (PathBuf, Option<String>) {
 }
 
 /// Only remember the version string at compile-time
-pub const CREUSOT_CONTRACTS_VERSION: &str = {
-    use const_str::split;
-    split!(split!(include_str!("../../creusot-contracts/Cargo.toml"), "version = \"")[1], "\"")[0]
-};
+pub const CREUSOT_CONTRACTS_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn creusot_contracts_path() -> PathBuf {
     // This must be the dev version of `cargo-creusot`.
