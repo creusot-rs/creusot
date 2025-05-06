@@ -127,13 +127,13 @@ cargo install cargo-release
 
 ## Pre-release versioning
 
-Whenever `creusot-contracts` changes, you should bump all versions to `0.Y+1.0-dev` so that `cargo-creusot`
-can tell the difference from the released version on crates.io and remind you to do a `cargo creusot init` to update dependencies
+Whenever `creusot-contracts` changes, if the current version is `0.Y.0`, you should bump all versions to `0.{Y+1}.0-dev`. The `-dev` prerelease suffix
+lets `cargo-creusot` tell the difference from the released version on crates.io and remind you to do a `cargo creusot init` to update dependencies
 in `Cargo.toml` (or you can run Creusot with `cargo creusot --no-check-version` if you really want to use the released version).
 When that involves a breaking change in `creusot-rustc`, CI will probably fail so that will remind you to do this anyway.
 
 ```shell
-cargo release version 0.Y+1.0-dev --execute
+cargo release version 0.{Y+1}.0-dev --execute
 git add -u
-git commit -m "Bump to version 0.Y+1.0-dev"
+git commit -m "Bump to version 0.{Y+1}.0-dev"
 ```
