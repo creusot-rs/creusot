@@ -64,10 +64,11 @@ pub trait RA: Sized {
 #[ensures(a.incl(c))]
 pub fn incl_transitive<T: RA>(a: T, b: T, c: T) { }
 
+//////////////////////////////////////////
+
 pub struct Excl<T>(pub T);
 
 impl<T> RA for Excl<T>
-    where T: RA
 {
     #[logic]
     #[open]
@@ -375,6 +376,131 @@ impl<T> RA for Option<T>
         }
     }}
 }
+
+pub trait ViewRel {
+    type Auth;
+    type Frac: RA;
+
+    #[logic]
+    fn rel(a: Self::Auth, f: Self::Frac) -> bool;
+
+    #[law]
+    #[requires(Self::rel(a, f1))]
+    #[requires(f2.incl(f1))]
+    #[ensures(Self::rel(a, f2))]
+    fn rel_mono(a: Self::Auth, f1: Self::Frac, f2: Self::Frac);
+}
+
+// NOTE: we could add (discardable) fractions for the auth part
+#[allow(dead_code)]
+pub struct View<R> where R: ViewRel
+{
+    auth: Option<Excl<R::Auth>>,
+    frac: Option<R::Frac>,
+}
+
+impl<R: ViewRel> Invariant for View<R> {
+    #[predicate]
+    #[open]
+    fn invariant(self) -> bool { pearlite!{
+        match (self.auth, self.frac) {
+            (None, None) => true,
+            (Some(_), None) => true,
+            // TODO: why is this necessary?
+            (None, Some(f)) => exists<a: R::Auth> R::rel(a, f),
+            (Some(Excl(a)), Some(f)) => R::rel(a, f),
+        }
+    }}
+}
+
+impl<R> View<R> where R: ViewRel {
+    pub fn mkauth(a: R::Auth) -> Self {
+        Self { auth: Some(Excl(a)), frac: None }
+    }
+
+    #[requires(exists<a: R::Auth> R::rel(a, f))]
+    pub fn mkfrac(f: R::Frac) -> Self {
+        Self { auth: None, frac: Some(f) }
+    }
+}
+
+impl<R> RA for View<R>
+where R: ViewRel, R::Frac: RA
+{
+    #[logic]
+    #[open]
+    fn op(self, other: Self) -> Option<Self> { pearlite!{
+        (self.auth, self.frac).op((other.auth, other.frac)).and_then_logic(|(auth, frac)| {
+            let v = View { auth, frac };
+            if v.invariant() {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }}
+
+    #[logic]
+    #[open]
+    #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
+        (self.auth, self.frac).incl((other.auth, other.frac))
+    }
+
+    #[logic]
+    #[open]
+    #[ensures(result == (self.op(self) == Some(self)))]
+    fn idemp(self) -> bool {
+        (self.auth, self.frac).idemp()
+    }
+
+    #[law]
+    #[open(self)]
+    #[ensures(a.op(b) == b.op(a))]
+    fn commutative(a: Self, b: Self) { }
+
+    #[law]
+    #[open(self)]
+    #[ensures(
+        a.op(b).and_then_logic(|x:Self| x.op(c)) ==
+        b.op(c).and_then_logic(|x:Self| a.op(x))
+    )]
+    fn associative(a: Self, b: Self, c: Self) { }
+
+    #[logic]
+    #[open(self)]
+    #[ensures(
+        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
+        (exists<b: Self> b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
+    )]
+    fn maximal_idemp(self) {
+        self.auth.maximal_idemp();
+        self.frac.maximal_idemp();
+    }
+}
+
+// pub struct Auth<T> {
+//     pub auth: Option<T>,
+//     pub frac: Option<T>,
+// }
+
+// impl<T> Auth<T> {
+//     fn auth(x: T) -> Self {
+//         Auth { auth: Some(x), frac: None }
+//     }
+
+//     fn frac(x: T) -> Self {
+//         Auth { auth: None, frac: Some(x) }
+//     }
+// }
+
+// impl<T> RA for Auth<T>
+//     where T: RA
+// {
+
+
+// }
 
 // always require that we have Sized data in logical APIs?
 // thus remove SizedW from library code; require the end user
