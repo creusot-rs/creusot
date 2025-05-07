@@ -1,4 +1,4 @@
-use anyhow::{Context as _, bail};
+use anyhow::{Context as _, Result, bail};
 use cargo_metadata::semver::Version;
 use clap::*;
 use creusot_args::{CREUSOT_RUSTC_ARGS, options::*};
@@ -11,10 +11,7 @@ use std::{
     path::{Display, PathBuf},
     process::{Command, exit},
 };
-use tempdir::TempDir;
 
-mod helpers;
-use helpers::*;
 mod why3_launcher;
 use why3_launcher::*;
 mod why3find_wrapper;
@@ -37,6 +34,7 @@ fn main() -> Result<()> {
         Some(New(args)) => new(args),
         Some(Init(args)) => init(args),
         Some(Clean(args)) => clean(args),
+        Some(Why3(args)) => why3(args),
     }
 }
 
@@ -48,62 +46,20 @@ fn creusot(
     if !args.no_check_version {
         check_contracts_version()?;
     }
-    let (coma_src, coma_glob) = get_coma(&args.options);
 
-    // subcommand analysis:
-    //   we want to launch Why3 Ide and replay in cargo-creusot not by creusot-rustc.
-    //   however we want to keep the current behavior for other commands: prove
-    // why3session will be put in or next to `coma_src`
-    let (creusot_rustc_subcmd, launch_why3) = match subcmd {
-        Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Ide, args, .. }) => {
-            (None, Some((Why3Mode::Ide, coma_src, args)))
-        }
-        Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Replay, args, .. }) => {
-            let mut basename = coma_src.clone();
-            basename.set_extension(""); // for single-file mode
-            (None, Some((Why3Mode::Replay, basename, args)))
-        }
-        _ => (subcmd, None),
-    };
-
-    // Default output_dir to "." if not specified
-    let include_dir = Some(args.options.output_dir.clone().unwrap_or(".".into()));
     let paths = setup::creusot_paths()?;
     let creusot_args = CreusotArgs {
         options: args.options,
         why3_path: paths.why3.clone(),
         why3_config_file: paths.why3.clone(),
-        subcommand: creusot_rustc_subcmd.clone(),
+        subcommand: match subcmd {
+            Some(CreusotSubCommand::Doc) => Some(LegacyCreusotSubCommand::Doc),
+            None => None,
+        },
     };
 
     invoke_cargo(&creusot_args, args.creusot_rustc, args.cargo_flags, root);
     warn_if_dangling()?;
-
-    if let Some((mode, coma_src, args)) = launch_why3 {
-        let mut coma_files = vec![coma_src];
-        // Glob coma files after creusot-rustc has generated them
-        if let Why3Mode::Ide = mode {
-            if let Some(glob) = coma_glob {
-                if let Ok(paths) = glob::glob(&glob) {
-                    coma_files.extend(paths.filter_map(|p| p.ok()));
-                }
-            }
-        }
-
-        // why3 configuration
-        let why3 = Why3Launcher {
-            why3_path: paths.why3,
-            config_file: paths.why3_config,
-            mode,
-            include_dir,
-            coma_files,
-            args,
-        };
-        let prelude_dir = TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
-        let mut command = why3.make(prelude_dir.path())?;
-        command.status().expect("could not run why3");
-    }
-
     Ok(())
 }
 
@@ -115,7 +71,7 @@ fn invoke_cargo(
 ) {
     let cargo_path = env::var("CARGO_PATH").unwrap_or_else(|_| "cargo".to_string());
     let cargo_cmd = match &args.subcommand {
-        Some(CreusotSubCommand::Doc { .. }) => "doc",
+        Some(LegacyCreusotSubCommand::Doc { .. }) => "doc",
         _ => {
             if std::env::var_os("CREUSOT_CONTINUE").is_some() {
                 "build"
@@ -165,7 +121,7 @@ fn invoke_cargo(
     cargo_encoded_rustflags.push_str(&serde_json::to_string(&args).unwrap());
     cmd.env("CARGO_ENCODED_RUSTFLAGS", cargo_encoded_rustflags);
 
-    if matches!(&args.subcommand, Some(CreusotSubCommand::Doc { .. })) {
+    if matches!(&args.subcommand, Some(LegacyCreusotSubCommand::Doc { .. })) {
         let mut rustdocflags = String::new();
         for &arg in CREUSOT_RUSTC_ARGS {
             rustdocflags.push_str(arg);
@@ -234,8 +190,16 @@ pub enum CargoCreusotSubCommand {
     Init(InitArgs),
     /// Clean dangling files in verif/
     Clean(CleanArgs),
+    /// Run Why3
+    Why3(Why3Args),
 }
 use CargoCreusotSubCommand::*;
+
+#[derive(Debug, Subcommand)]
+pub enum CreusotSubCommand {
+    /// Generates the documentation, including specs, logical functions, etc.
+    Doc,
+}
 
 #[derive(Debug, Parser, Clone)]
 pub enum SetupSubCommand {
@@ -424,4 +388,28 @@ fn get_contracts_version() -> Result<Version> {
         }
     }
     Err(anyhow::anyhow!("creusot-contracts not found in dependencies"))
+}
+
+/// Arguments for `cargo creusot why3`.
+#[derive(Debug, Parser)]
+pub struct Why3Args {
+    /// Why3 subcommand to run
+    #[clap(value_enum)]
+    command: Why3SubCommand,
+    /// Coma file to load
+    #[clap(value_name = "COMA_FILE")]
+    coma_file: PathBuf,
+    /// Extra arguments to pass to why3
+    #[clap(default_value_t = String::default())]
+    args: String,
+}
+
+fn why3(args: Why3Args) -> Result<()> {
+    let mode = match args.command {
+        Why3SubCommand::Prove => bail!("'cargo creusot why3 prove' is deprecated"),
+        Why3SubCommand::Ide => Why3Mode::Ide,
+        Why3SubCommand::Replay => Why3Mode::Replay,
+    };
+    let paths = setup::creusot_paths()?;
+    run_why3(mode, args.coma_file, args.args, paths)
 }
