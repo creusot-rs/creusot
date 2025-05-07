@@ -398,7 +398,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         Ok(())
     }
 
-    /// This visit the special function that is called when calling:
+    /// This visits the special function that is called when calling:
     /// - a default function in a trait (or in a default impl)
     /// - that is logical
     /// - and visible at the point of implementation, that is
@@ -413,6 +413,12 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     ///   termination graph, which is "`f` but specialized in `impl Tr for i32`".
     ///
     /// We use this function, so that only those specialization that are actually called are visited.
+    ///
+    /// # Returns
+    ///
+    /// - `Err(_)` if a typing error occured
+    /// - `Ok(None)` if the conditions outlined earlier are not fulfilled
+    /// - `Ok(Some(id))` else, where `id` is the index of the new specialized node in the graph.
     fn visit_specialized_default_function(
         &mut self,
         ctx: &TranslationCtx<'tcx>,
@@ -432,7 +438,11 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
 
         let impl_id = impl_id.to_def_id();
         let typing_env = ctx.typing_env(impl_id);
-        let term = ctx.term(item_id)?.unwrap();
+        let Some(term) = ctx.term(item_id)? else {
+            // ` ctx.term` can return None if the function we are searching for is not yet implemented.
+            // In this case, there is an Rust error happening: bail out and let the compiler report it normally.
+            return Err(CannotFetchThir);
+        };
         let mut visitor = TermCalls { results: IndexSet::new() };
         visitor.visit_term(&term.1);
 

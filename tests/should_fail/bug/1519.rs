@@ -1,0 +1,67 @@
+extern crate creusot_contracts;
+
+// Previously crashed creusot in the termination check, because of the missing `le` and `idemp` in the impl block.
+
+use creusot_contracts::{logic::Mapping, *};
+
+pub trait OptionExt<T> {
+    #[logic]
+    fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U>;
+}
+
+impl<T> OptionExt<T> for Option<T> {
+    #[logic]
+    #[open]
+    fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U> {
+        match self {
+            None => None,
+            Some(x) => f[x],
+        }
+    }
+}
+
+pub trait RA: Sized {
+    #[logic]
+    fn op(self, other: Self) -> Option<Self>;
+
+    #[logic]
+    #[ensures(
+        (forall<b: Self> ! (b.le(a) && b.idemp())) ||
+        (exists<b: Self> b.le(a) && b.idemp() &&
+           forall<c: Self> c.le(a) && c.idemp() ==> c.le(b))
+    )]
+    fn maximal_idemp(a: Self);
+
+    #[logic]
+    fn le(self, other: Self) -> bool;
+
+    #[logic]
+    fn idemp(self) -> bool;
+}
+
+impl<T, U> RA for (T, U)
+where
+    T: RA,
+    U: RA,
+{
+    #[logic]
+    #[open]
+    fn op(self, other: Self) -> Option<Self> {
+        pearlite! {
+            self.0.op(other.0).and_then_logic(|x:T| {
+                self.1.op(other.1).and_then_logic(|y:U| {
+                    Some((x, y))
+                })
+            })
+        }
+    }
+
+    #[logic]
+    #[open(self)]
+    #[ensures(
+        (forall<b: Self> ! (b.le(a) && b.idemp())) ||
+        (exists<b: Self> b.le(a) && b.idemp() &&
+           forall<c: Self> c.le(a) && c.idemp() ==> c.le(b))
+    )]
+    fn maximal_idemp(a: Self) {}
+}
