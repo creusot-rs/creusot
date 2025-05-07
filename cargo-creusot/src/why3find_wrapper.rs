@@ -80,9 +80,10 @@ pub fn why3find_prove(mut args: ProveArgs, root: &PathBuf) -> Result<()> {
 }
 
 /// Given `file.coma`, create `file/why3session.xml` from `file/proof.json`.
-pub fn try_create_why3session(coma: &PathBuf, replay: bool, paths: &Paths) -> Result<()> {
-    raw_prove(
+pub fn try_create_why3session(coma: &PathBuf, replay: bool, paths: &Paths) -> () {
+    // It's OK if the proof fails.
+    let _ = raw_prove(
         ProveArgs { ide: false, replay, why3session: true, files: vec![coma.clone()] },
         paths,
-    )
+    );
 }

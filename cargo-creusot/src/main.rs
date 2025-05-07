@@ -397,8 +397,8 @@ pub struct Why3Args {
     #[clap(value_enum)]
     command: Why3SubCommand,
     /// Generate why3session.xml from proof.json
-    #[clap(long)]
-    with_proof: Option<WithProof>,
+    #[clap(long, default_value_t = WithProof::Prove)]
+    with_proof: WithProof,
     /// Coma file to load
     #[clap(value_name = "COMA_FILE")]
     coma_file: PathBuf,
@@ -414,6 +414,8 @@ pub enum WithProof {
     Prove,
     /// Use existing proof.json
     Replay,
+    /// Don't generate a why3session.xml
+    None,
 }
 
 fn why3(args: Why3Args) -> Result<()> {
@@ -428,7 +430,7 @@ fn why3(args: Why3Args) -> Result<()> {
             WithProof::Prove => false,
             WithProof::Replay => true,
         };
-        try_create_why3session(&args.coma_file, replay, &paths)?;
+        try_create_why3session(&args.coma_file, replay, &paths);
     }
     // why3 configuration
     let why3 = Why3Launcher {
