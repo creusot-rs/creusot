@@ -3,6 +3,8 @@ use clap::*;
 use creusot_setup::{Paths, creusot_paths};
 use std::{path::PathBuf, process::Command};
 
+use crate::OUTPUT_PREFIX;
+
 #[derive(Debug, Parser)]
 pub struct ProveArgs {
     /// Run Why3 IDE on next unproved goal.
@@ -37,7 +39,7 @@ fn check_why3find_json_exists(root: &PathBuf) -> Result<()> {
     }
 }
 
-fn raw_prove(args: ProveArgs, paths: &Paths, root: &PathBuf) -> Result<()> {
+fn raw_prove(args: ProveArgs, paths: &Paths) -> Result<()> {
     let mut why3find = Command::new(&paths.why3find);
     why3find.arg("prove");
     if args.ide {
@@ -49,11 +51,7 @@ fn raw_prove(args: ProveArgs, paths: &Paths, root: &PathBuf) -> Result<()> {
     if args.why3session {
         why3find.arg("-s");
     }
-    // If there are no file arguments, default to `verif/` to avoid accidentally including random Why3 files elsewhere.
-    let files = if args.files.len() == 0 { vec![root.join("verif")] } else { args.files };
-    for file in files {
-        why3find.arg(file);
-    }
+    why3find.args(&args.files);
     if let Some(why3_path) = paths.why3.parent() {
         let mut path = why3_path.to_path_buf().into_os_string();
         path.push(":");
@@ -71,8 +69,20 @@ fn raw_prove(args: ProveArgs, paths: &Paths, root: &PathBuf) -> Result<()> {
         )
 }
 
-pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
+pub fn why3find_prove(mut args: ProveArgs, root: &PathBuf) -> Result<()> {
     let paths = creusot_paths()?;
     check_why3find_json_exists(root)?;
-    raw_prove(args, &paths, root)
+    // If there are no file arguments, default to `verif/` to avoid accidentally including random Why3 files elsewhere.
+    if args.files.is_empty() {
+        args.files.push(root.join(OUTPUT_PREFIX));
+    }
+    raw_prove(args, &paths)
+}
+
+/// Given `file.coma`, create `file/why3session.xml` from `file/proof.json`.
+pub fn try_create_why3session(coma: &PathBuf, replay: bool, paths: &Paths) -> Result<()> {
+    raw_prove(
+        ProveArgs { ide: false, replay, why3session: true, files: vec![coma.clone()] },
+        paths,
+    )
 }
