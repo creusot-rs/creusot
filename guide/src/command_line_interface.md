@@ -29,7 +29,7 @@ Output Coma code in the `verif/` directory.
 ### `prove`
 
 ```
-cargo creusot prove [-i] [<COMA_FILE>]
+cargo creusot prove [<COMA_FILE>] [-i|--ide-on-fail|--ide-always] [--replay] [--why3session]
 ```
 
 Verify contracts.
@@ -40,8 +40,11 @@ and tries to prove them.
 
 #### Options
 
-- `-i`: Open the Why3 IDE on an unproved file to inspect its proof context.
 - `<COMA_FILE>`: Verify a specific file (corresponding to one Rust function).
+- `-i`, `--ide-on-fail`: Open the Why3 IDE on an unproved file to inspect its proof context.
+- `--ide-always`: Open the Why3 IDE on a single `<COMA_FILE>` regardless of whether the proof succeeded.
+- `--replay`: Don't generate new proofs, only check if the existing proofs are valid.
+- `--why3session`: Generate `why3session.xml` files (implied by `-i` and `--ide-always`).
 
 ### `doc`
 
@@ -71,6 +74,20 @@ otherwise you can remove them with `cargo creusot clean`.
 
 - `--force`: Don't ask for confirmation before removing dangling files.
 - `--dry-run`: Only print the list of files that would be removed by `cargo creusot clean`.
+
+### `why3 ide`
+
+```
+cargo creusot why3 ide <COMA_FILE|why3session.xml>
+```
+
+Run the Why3 IDE on a Coma file or a `why3session.xml`.
+This commands simply invokes `why3 ide` with the
+required options to load Coma files produced by Creusot.
+
+This is a command for experts and for troubleshooting.
+In normal usage, prefer `cargo creusot prove` with `-i` or `--ide-always`,
+which ensures that the Coma artifacts are always up to date.
 
 ## Create and maintain package
 
