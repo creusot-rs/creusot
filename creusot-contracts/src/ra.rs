@@ -20,58 +20,49 @@ pub trait RA: Sized {
 
     #[logic]
     #[ensures(
-        (forall<b: Self> ! (b.le(self) && b.idemp())) ||
-        (exists<b: Self> b.le(self) && b.idemp() &&
-           forall<c: Self> c.le(self) && c.idemp() ==> c.le(b))
+        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
+        (exists<b: Self> b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
     )]
     fn maximal_idemp(self);
 
-    // Derived notions and properties: `le`, `idemp`.
+    // Derived notions and properties: `incl`, `idemp`.
     // Allow the implementor to give a custom definition, that is possibly
     // simpler than the generic one. The custom definition is the one that
     // will be used to prove the RA laws.
 
-    // Following Iris, our definition of `le` is not reflexive.
+    // Following Iris, our definition of `incl` is not reflexive.
     // We could define it to be `self == other || ...`, but doing that
     // loses the following desirable property for the product RA:
     //
-    //   (x, y).le((x', y')) == x.le(x') && y.le(y').
+    //   (x, y).incl((x', y')) == x.incl(x') && y.incl(y').
     //
     // If you need the reflexive closure of the inclusion relation, then
-    // you can use `Some(x).le(Some(y))`. Indeed, `le` on the Option RA
+    // you can use `Some(x).incl(Some(y))`. Indeed, `incl` on the Option RA
     // has the following property:
     //
-    //  Some(x).le(Some(y)) == (x == y || x.le(y))
+    //  Some(x).incl(Some(y)) == (x == y || x.incl(y))
     //
     // Note that the paper on the maximal idempotent axiom uses the
-    // reflexive definition of `le` on paper, but not in its accompanying
+    // reflexive definition of `incl` on paper, but not in its accompanying
     // Iris formalization, where it uses the non-reflexive definition (as
     // we do here).
     #[logic]
     #[ensures(result == exists<c: Self> self.op(c) == Some(other))]
-    fn le(self, other: Self) -> bool;
+    fn incl(self, other: Self) -> bool;
 
     #[logic]
     #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool;
 
-    // `le` is a preorder
-
-    // #[logic]
-    // #[ensures(a.le(a))]
-    // // #[final]
-    // #[open(self)]
-    // fn le_refl(a: Self) { }
-
-    // #[logic]
-    // #[requires(a.le(b) && b.le(c))]
-    // #[ensures(a.le(c))]
-    // // #[final]
-    // #[open(self)]
-    // fn le_trans<T: RA>(a: T, b: T, c: T) { }
-
     // TODO: prédicat fupd
 }
+
+#[logic]
+#[open(self)]
+#[requires(a.incl(b) && b.incl(c))]
+#[ensures(a.incl(c))]
+pub fn incl_transitive<T: RA>(a: T, b: T, c: T) { }
 
 pub struct Excl<T>(pub T);
 
@@ -87,7 +78,7 @@ impl<T> RA for Excl<T>
     #[logic]
     #[open]
     #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
-    fn le(self, other: Self) -> bool {
+    fn incl(self, other: Self) -> bool {
         false
     }
 
@@ -114,9 +105,9 @@ impl<T> RA for Excl<T>
     #[logic]
     #[open(self)]
     #[ensures(
-        (forall<b: Self> ! (b.le(self) && b.idemp())) ||
-        (exists<b: Self> b.le(self) && b.idemp() &&
-           forall<c: Self> c.le(self) && c.idemp() ==> c.le(b))
+        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
+        (exists<b: Self> b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
     )]
     fn maximal_idemp(self) { }
 }
@@ -146,7 +137,7 @@ impl<T> RA for Ag<T>
     #[logic]
     #[open]
     #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
-    fn le(self, other: Self) -> bool {
+    fn incl(self, other: Self) -> bool {
         self == other
     }
 
@@ -166,9 +157,9 @@ impl<T> RA for Ag<T>
     #[logic]
     #[open(self)]
     #[ensures(
-        (forall<b: Self> ! (b.le(self) && b.idemp())) ||
-        (exists<b: Self> b.le(self) && b.idemp() &&
-           forall<c: Self> c.le(self) && c.idemp() ==> c.le(b))
+        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
+        (exists<b: Self> b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
     )]
     fn maximal_idemp(self) { }
 }
@@ -189,15 +180,15 @@ impl<T, U> RA for (T, U)
     #[logic]
     #[open]
     #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
-    fn le(self, other: Self) -> bool {
-        if self.0.le(other.0) && self.1.le(other.1) {
+    fn incl(self, other: Self) -> bool {
+        if self.0.incl(other.0) && self.1.incl(other.1) {
             proof_assert!(exists<c0: T, c1: U>
               self.0.op(c0) == Some(other.0) &&
               self.1.op(c1) == Some(other.1) &&
               self.op((c0, c1)) == Some(other)
             )
         }
-        self.0.le(other.0) && self.1.le(other.1)
+        self.0.incl(other.0) && self.1.incl(other.1)
     }
 
     #[logic]
@@ -223,9 +214,9 @@ impl<T, U> RA for (T, U)
     #[logic]
     #[open(self)]
     #[ensures(
-        (forall<b: Self> ! (b.le(self) && b.idemp())) ||
-        (exists<b: Self> b.le(self) && b.idemp() &&
-           forall<c: Self> c.le(self) && c.idemp() ==> c.le(b))
+        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
+        (exists<b: Self> b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
     )]
     fn maximal_idemp(self) {
         self.0.maximal_idemp();
@@ -257,10 +248,10 @@ impl<T, U> RA for Sum<T, U>
     #[logic]
     #[open]
     #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
-    fn le(self, other: Self) -> bool {
+    fn incl(self, other: Self) -> bool {
         match (self, other) {
-            (Left(x), Left(y)) => x.le(y),
-            (Right(x), Right(y)) => x.le(y),
+            (Left(x), Left(y)) => x.incl(y),
+            (Right(x), Right(y)) => x.incl(y),
             (_, _) => false,
         }
     }
@@ -291,9 +282,9 @@ impl<T, U> RA for Sum<T, U>
     #[logic]
     #[open(self)]
     #[ensures(
-        (forall<b: Self> ! (b.le(self) && b.idemp())) ||
-        (exists<b: Self> b.le(self) && b.idemp() &&
-           forall<c: Self> c.le(self) && c.idemp() ==> c.le(b))
+        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
+        (exists<b: Self> b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
     )]
     fn maximal_idemp(self) {
         match self {
@@ -319,12 +310,12 @@ impl<T> RA for Option<T>
     #[logic]
     #[open]
     #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
-    fn le(self, other: Self) -> bool {
+    fn incl(self, other: Self) -> bool {
         match (self, other) {
             (None, _) => true,
             (_, None) => false,
             (Some(x), Some(y)) => {
-                x == y || x.le(y)
+                x == y || x.incl(y)
             }
         }
     }
@@ -366,19 +357,19 @@ impl<T> RA for Option<T>
     #[logic]
     #[open(self)]
     #[ensures(
-        (forall<b: Self> ! (b.le(self) && b.idemp())) ||
-        (exists<b: Self> b.le(self) && b.idemp() &&
-           forall<c: Self> c.le(self) && c.idemp() ==> c.le(b))
+        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
+        (exists<b: Self> b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
     )]
     fn maximal_idemp(self) { pearlite!{
         match self {
             None => (),
             Some(x) => {
                 x.maximal_idemp();
-                if forall<y: T> ! (y.le(x) && y.idemp()) {
+                if forall<y: T> ! (y.incl(x) && y.idemp()) {
                     // pick None
-                    proof_assert!(None.le(self) && None::<T>.idemp());
-                    proof_assert!(forall<c: Self> c.le(self) && c.idemp() ==> c.le(None));
+                    proof_assert!(None.incl(self) && None::<T>.idemp());
+                    proof_assert!(forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(None));
                 }
             }
         }
