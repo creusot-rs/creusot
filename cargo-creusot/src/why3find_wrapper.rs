@@ -6,8 +6,14 @@ use std::{path::PathBuf, process::Command};
 #[derive(Debug, Parser)]
 pub struct ProveArgs {
     /// Run Why3 IDE on next unproved goal.
-    #[clap(short = 'i', default_value_t = false, action = clap::ArgAction::SetTrue)]
+    #[clap(long, short = 'i')]
     pub ide: bool,
+    /// Replay proofs only, no update.
+    #[clap(long)]
+    pub replay: bool,
+    /// Generate Why3 sessions for why3 ide.
+    #[clap(long)]
+    pub why3session: bool,
     /// Files to prove; default to everything in `verif/`.
     pub files: Vec<PathBuf>,
 }
@@ -36,6 +42,12 @@ fn raw_prove(args: ProveArgs, paths: &Paths, root: &PathBuf) -> Result<()> {
     why3find.arg("prove");
     if args.ide {
         why3find.arg("-i");
+    }
+    if args.replay {
+        why3find.arg("-r");
+    }
+    if args.why3session {
+        why3find.arg("-s");
     }
     // If there are no file arguments, default to `verif/` to avoid accidentally including random Why3 files elsewhere.
     let files = if args.files.len() == 0 { vec![root.join("verif")] } else { args.files };
