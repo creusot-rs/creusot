@@ -71,23 +71,42 @@ fn swap() {
 
 ## Structural Invariants
 
-To determine the invariant of a particular type, Creusot considers both whether the user provided an explicit definition through the `Invariant` trait, as well as any invariants the can be derived automatically based on the type's definition.
-We call those automatically derived invariants *structural invariants*.
-When neither an explicit definition exists, nor a structural invariant, the type has the *trivial* invariant, which does not impose any constraints on the set of valid values.
+To determine the invariant of a particular type, Creusot considers:
+
+- User-provided definitions, defined with the [`Invariant`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/invariant/trait.Invariant.html) trait.
+- Invariants that can be derived automatically based on the type's definition.
+
+The second category is called _structural invariants_.
+When neither an explicit definition exists, nor a structural invariant, the type has the _trivial_ invariant, which does not impose any constraints on the set of valid values.
 
 Here are some examples demonstrating structural invariants of various types:
 
-| Type of `x` | Invariant `inv(x)` |
-|-------------|--------------------|
-| `bool, u8, i32, ...` | `true` |
-| `&mut Foo` | `inv(*x) && inv(^x)` |
-| `&Foo` | `inv(*x)` |
-| `Box<Foo>` | `inv(*x)` |
-| `*const Foo, *mut Foo` | `true` |
-| `(Foo, Bar)` | `inv(x.0) && inv(x.1)` |
-| `struct Foo { f: Bar }` | `inv(x.f)` |
+| Type of `x`                   | Invariant `inv(x)`                           |
+| ----------------------------- | -------------------------------------------- |
+| `bool, u8, i32, ...`          | `true`                                       |
+| `&mut Foo`                    | `inv(*x) && inv(^x)`                         |
+| `&Foo`                        | `inv(*x)`                                    |
+| `Box<Foo>`                    | `inv(*x)`                                    |
+| `*const Foo, *mut Foo`        | `true`                                       |
+| `(Foo, Bar)`                  | `inv(x.0) && inv(x.1)`                       |
+| `struct Foo { f: Bar }`       | `inv(x.f)`                                   |
 | `enum Foo { A(Bar), B(Baz) }` | `match x { A(y) => inv(y), B(z) => inv(z) }` |
-| `Vec<Foo>` | `inv(x[0]) && ... && inv(x[x.len()-1])` |
+| `Vec<Foo>`                    | `inv(x[0]) && ... && inv(x[x.len()-1])`      |
 
+## Logical functions
 
+Creusot decides **not** to add type invariants to the pre- and postconditions of logical functions.
+This means that the following is not provable:
 
+```rust
+#[logic]
+#[ensures(x.a@ + x.b@ == 10)]
+fn no_inv_in_logic(x: SumTo10) {}
+```
+
+Even though the same function in program is provable:
+
+```rust
+#[ensures(x.a@ + x.b@ == 10)]
+fn inv_in_program(x: SumTo10) {}
+```
