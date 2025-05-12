@@ -1,24 +1,29 @@
 use crate::*;
-use crate::logic::FMap;
 
 #[allow(unused_variables)]
 
 pub trait RA: Sized {
     #[logic]
-    fn op(self, other: Self) -> Option<Self>;
+    fn op(self, other: Self) -> Self;
+
+    #[logic]
+    fn valid(self) -> bool;
 
     #[law]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self);
 
     #[law]
-    #[ensures(
-        a.op(b).and_then_logic(|x:Self| x.op(c)) ==
-        b.op(c).and_then_logic(|x:Self| a.op(x))
-    )]
+    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
     fn associative(a: Self, b: Self, c: Self);
 
+    // TODO: should this be a #[law]?
     #[logic]
+    #[ensures(self.op(b).valid() ==> self.valid())]
+    fn valid_op(self, b: Self);
+
+    #[logic]
+    #[requires(self.valid())]
     #[ensures(
         (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
         (exists<b: Self> b.incl(self) && b.idemp() &&
@@ -48,11 +53,11 @@ pub trait RA: Sized {
     // Iris formalization, where it uses the non-reflexive definition (as
     // we do here).
     #[logic]
-    #[ensures(result == exists<c: Self> self.op(c) == Some(other))]
+    #[ensures(result == exists<c: Self> self.op(c) == other)]
     fn incl(self, other: Self) -> bool;
 
     #[logic]
-    #[ensures(result == (self.op(self) == Some(self)))]
+    #[ensures(result == (self.op(self) == self))]
     fn idemp(self) -> bool;
 
     // TODO: prédicat fupd
@@ -66,28 +71,43 @@ pub fn incl_transitive<T: RA>(a: T, b: T, c: T) { }
 
 //////////////////////////////////////////
 
-pub struct Excl<T>(pub T);
+pub enum Excl<T> {
+    Excl(T),
+    ExclBot,
+}
+
+#[allow(unused_imports)]
+use Excl::*;
 
 impl<T> RA for Excl<T>
 {
     #[logic]
     #[open]
-    fn op(self, _other: Self) -> Option<Self> {
-        None
+    fn op(self, _other: Self) -> Self {
+        ExclBot
     }
 
     #[logic]
     #[open]
-    #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
+    fn valid(self) -> bool {
+        match self {
+            Excl(_) => true,
+            ExclBot => false,
+        }
+    }
+
+    #[logic]
+    #[open]
+    #[ensures(result == (exists<c: Self> self.op(c) == other))]
     fn incl(self, other: Self) -> bool {
-        false
+        other == ExclBot
     }
 
     #[logic]
     #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
+    #[ensures(result == (self.op(self) == self))]
     fn idemp(self) -> bool {
-        false
+        self == ExclBot
     }
 
     #[law]
@@ -97,14 +117,17 @@ impl<T> RA for Excl<T>
 
     #[law]
     #[open(self)]
-    #[ensures(
-        a.op(b).and_then_logic(|x:Self| x.op(c)) ==
-        b.op(c).and_then_logic(|x:Self| a.op(x))
-    )]
+    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
     fn associative(a: Self, b: Self, c: Self) { }
 
     #[logic]
     #[open(self)]
+    #[ensures(self.op(b).valid() ==> self.valid())]
+    fn valid_op(self, b: Self) {}
+
+    #[logic]
+    #[open(self)]
+    #[requires(self.valid())]
     #[ensures(
         (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
         (exists<b: Self> b.incl(self) && b.idemp() &&
@@ -113,33 +136,57 @@ impl<T> RA for Excl<T>
     fn maximal_idemp(self) { }
 }
 
-pub struct Ag<T>(pub T);
+pub enum Ag<T> {
+    Ag(T),
+    AgBot,
+}
+
+#[allow(unused_imports)]
+use Ag::*;
 
 impl<T> RA for Ag<T>
-    where T: RA
 {
     #[logic]
     #[open]
-    fn op(self, other: Self) -> Option<Self> {
-        if self == other {
-            Some(self)
-        } else {
-            None
+    fn op(self, other: Self) -> Self {
+        match (self, other) {
+            (Ag(x), Ag(y)) => {
+                if x == y {
+                    Ag(x)
+                } else {
+                    AgBot
+                }
+            },
+            (_, _) =>
+                AgBot,
         }
     }
 
     #[logic]
     #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
+    fn valid(self) -> bool {
+        match self {
+            Ag(_) => true,
+            AgBot => false,
+        }
+    }
+
+    #[logic]
+    #[open]
+    #[ensures(result == (self.op(self) == self))]
     fn idemp(self) -> bool {
         true
     }
 
     #[logic]
     #[open]
-    #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
+    #[ensures(result == (exists<c: Self> self.op(c) == other))]
     fn incl(self, other: Self) -> bool {
-        self == other
+        match (self, other) {
+            (Ag(x), Ag(y)) => x == y,
+            (_, AgBot) => true,
+            (_, Ag(_)) => false,
+        }
     }
 
     #[law]
@@ -149,14 +196,17 @@ impl<T> RA for Ag<T>
 
     #[law]
     #[open(self)]
-    #[ensures(
-        a.op(b).and_then_logic(|x:Self| x.op(c)) ==
-        b.op(c).and_then_logic(|x:Self| a.op(x))
-    )]
+    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
     fn associative(a: Self, b: Self, c: Self) { }
 
     #[logic]
     #[open(self)]
+    #[ensures(self.op(b).valid() ==> self.valid())]
+    fn valid_op(self, b: Self) {}
+
+    #[logic]
+    #[open(self)]
+    #[requires(self.valid())]
     #[ensures(
         (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
         (exists<b: Self> b.incl(self) && b.idemp() &&
@@ -170,23 +220,26 @@ impl<T, U> RA for (T, U)
 {
     #[logic]
     #[open]
-    fn op(self, other: Self) -> Option<Self> { pearlite!{
-        self.0.op(other.0).and_then_logic(|x:T| {
-            self.1.op(other.1).and_then_logic(|y:U| {
-                Some((x, y))
-            })
-        })
-    }}
+    fn op(self, other: Self) -> Self {
+        (self.0.op(other.0), self.1.op(other.1))
+    }
 
     #[logic]
     #[open]
-    #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
+    fn valid(self) -> bool {
+        self.0.valid() && self.1.valid()
+    }
+
+    #[logic]
+    #[open]
+    #[ensures(result == (exists<c: Self> self.op(c) == other))]
     fn incl(self, other: Self) -> bool {
+        // TODO: check if still necessary
         if self.0.incl(other.0) && self.1.incl(other.1) {
             proof_assert!(exists<c0: T, c1: U>
-              self.0.op(c0) == Some(other.0) &&
-              self.1.op(c1) == Some(other.1) &&
-              self.op((c0, c1)) == Some(other)
+              self.0.op(c0) == other.0 &&
+              self.1.op(c1) == other.1 &&
+              self.op((c0, c1)) == other
             )
         }
         self.0.incl(other.0) && self.1.incl(other.1)
@@ -194,7 +247,7 @@ impl<T, U> RA for (T, U)
 
     #[logic]
     #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
+    #[ensures(result == (self.op(self) == self))]
     fn idemp(self) -> bool {
         self.0.idemp() && self.1.idemp()
     }
@@ -206,14 +259,20 @@ impl<T, U> RA for (T, U)
 
     #[law]
     #[open(self)]
-    #[ensures(
-        a.op(b).and_then_logic(|x:Self| x.op(c)) ==
-        b.op(c).and_then_logic(|x:Self| a.op(x))
-    )]
+    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
     fn associative(a: Self, b: Self, c: Self) { }
 
     #[logic]
     #[open(self)]
+    #[ensures(self.op(b).valid() ==> self.valid())]
+    fn valid_op(self, b: Self) {
+        self.0.valid_op(b.0);
+        self.1.valid_op(b.1);
+    }
+
+    #[logic]
+    #[open(self)]
+    #[requires(self.valid())]
     #[ensures(
         (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
         (exists<b: Self> b.incl(self) && b.idemp() &&
@@ -228,42 +287,55 @@ impl<T, U> RA for (T, U)
 pub enum Sum<T, U> {
     Left(T),
     Right(U),
+    SumBot,
 }
 
 #[allow(unused_imports)]
-use Sum::{Left, Right};
+use Sum::*;
 
 impl<T, U> RA for Sum<T, U>
     where T: RA, U: RA
 {
     #[logic]
     #[open]
-    fn op(self, other: Self) -> Option<Self> {
+    fn op(self, other: Self) -> Self {
         match (self, other) {
-            (Left(x), Left(y)) => x.op(y).and_then_logic(|z| Some(Left(z))),
-            (Right(x), Right(y)) => x.op(y).and_then_logic(|z| Some(Right(z))),
-            (_, _) => None,
+            (Left(x), Left(y)) => Left(x.op(y)),
+            (Right(x), Right(y)) => Right(x.op(y)),
+            (_, _) => SumBot,
         }
     }
 
     #[logic]
     #[open]
-    #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
+    fn valid(self) -> bool {
+        match self {
+            Left(x) => x.valid(),
+            Right(x) => x.valid(),
+            SumBot => false,
+        }
+    }
+
+    #[logic]
+    #[open]
+    #[ensures(result == (exists<c: Self> self.op(c) == other))]
     fn incl(self, other: Self) -> bool {
         match (self, other) {
             (Left(x), Left(y)) => x.incl(y),
             (Right(x), Right(y)) => x.incl(y),
+            (_, SumBot) => true,
             (_, _) => false,
         }
     }
 
     #[logic]
     #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
+    #[ensures(result == (self.op(self) == self))]
     fn idemp(self) -> bool {
         match self {
             Left(x) => x.idemp(),
             Right(x) => x.idemp(),
+            SumBot => true,
         }
     }
 
@@ -274,14 +346,20 @@ impl<T, U> RA for Sum<T, U>
 
     #[law]
     #[open(self)]
-    #[ensures(
-        a.op(b).and_then_logic(|x:Self| x.op(c)) ==
-        b.op(c).and_then_logic(|x:Self| a.op(x))
-    )]
+    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
     fn associative(a: Self, b: Self, c: Self) { }
 
     #[logic]
     #[open(self)]
+    #[ensures(self.op(b).valid() ==> self.valid())]
+    fn valid_op(self, b: Self) {
+        let _ = <T as RA>::valid_op;
+        let _ = <U as RA>::valid_op;
+    }
+
+    #[logic]
+    #[open(self)]
+    #[requires(self.valid())]
     #[ensures(
         (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
         (exists<b: Self> b.incl(self) && b.idemp() &&
@@ -291,6 +369,7 @@ impl<T, U> RA for Sum<T, U>
         match self {
             Left(x) => x.maximal_idemp(),
             Right(x) => x.maximal_idemp(),
+            SumBot => (),
         }
     }
 }
@@ -300,17 +379,26 @@ impl<T> RA for Option<T>
 {
     #[logic]
     #[open]
-    fn op(self, other: Self) -> Option<Self> { pearlite!{
+    fn op(self, other: Self) -> Self {
         match (self, other) {
-            (None, _) => Some(other),
-            (_, None) => Some(self),
-            (Some(x), Some(y)) => x.op(y).and_then_logic(|z| Some(Some(z))),
+            (None, _) => other,
+            (_, None) => self,
+            (Some(x), Some(y)) => Some(x.op(y)),
         }
-    }}
+    }
 
     #[logic]
     #[open]
-    #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
+    fn valid(self) -> bool {
+        match self {
+            Some(x) => x.valid(),
+            None => true,
+        }
+    }
+
+    #[logic]
+    #[open]
+    #[ensures(result == (exists<c: Self> self.op(c) == other))]
     fn incl(self, other: Self) -> bool {
         match (self, other) {
             (None, _) => true,
@@ -323,7 +411,7 @@ impl<T> RA for Option<T>
 
     #[logic]
     #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
+    #[ensures(result == (self.op(self) == self))]
     fn idemp(self) -> bool {
         match self {
             None => true,
@@ -340,10 +428,7 @@ impl<T> RA for Option<T>
 
     #[law]
     #[open(self)]
-    #[ensures(
-        a.op(b).and_then_logic(|x:Self| x.op(c)) ==
-        b.op(c).and_then_logic(|x:Self| a.op(x))
-    )]
+    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
     fn associative(a: Self, b: Self, c: Self) { pearlite!{
         match (a, b, c) {
             (None, _, _) => {},
@@ -357,6 +442,14 @@ impl<T> RA for Option<T>
 
     #[logic]
     #[open(self)]
+    #[ensures(self.op(b).valid() ==> self.valid())]
+    fn valid_op(self, b: Self) {
+        let _ = <T as RA>::valid_op;
+    }
+
+    #[logic]
+    #[open(self)]
+    #[requires(self.valid())]
     #[ensures(
         (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
         (exists<b: Self> b.incl(self) && b.idemp() &&
@@ -368,9 +461,15 @@ impl<T> RA for Option<T>
             Some(x) => {
                 x.maximal_idemp();
                 if forall<y: T> ! (y.incl(x) && y.idemp()) {
-                    // pick None
+                    // pick None, show the right-hand side of the postcondition
                     proof_assert!(None.incl(self) && None::<T>.idemp());
                     proof_assert!(forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(None));
+                } else {
+                    // pick Some(y)
+                    proof_assert!(exists<y: T> y.incl(x) && y.idemp() &&
+                      Some(y).incl(self) && Some(y).idemp() &&
+                      (forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(Some(y)))
+                    );
                 }
             }
         }
@@ -395,61 +494,58 @@ pub trait ViewRel {
 #[allow(dead_code)]
 pub struct View<R> where R: ViewRel
 {
-    auth: Option<Excl<R::Auth>>,
-    frac: Option<R::Frac>,
-}
-
-impl<R: ViewRel> Invariant for View<R> {
-    #[predicate]
-    #[open]
-    fn invariant(self) -> bool { pearlite!{
-        match (self.auth, self.frac) {
-            (None, None) => true,
-            (Some(_), None) => true,
-            // TODO: why is this necessary?
-            (None, Some(f)) => exists<a: R::Auth> R::rel(a, f),
-            (Some(Excl(a)), Some(f)) => R::rel(a, f),
-        }
-    }}
+    // TODO: should the fields be priv?
+    pub auth: Option<Excl<R::Auth>>,
+    pub frac: Option<R::Frac>,
 }
 
 impl<R> View<R> where R: ViewRel {
+    #[logic]
+    #[open]
     pub fn mkauth(a: R::Auth) -> Self {
         Self { auth: Some(Excl(a)), frac: None }
     }
 
-    #[requires(exists<a: R::Auth> R::rel(a, f))]
+    #[logic]
+    #[open]
     pub fn mkfrac(f: R::Frac) -> Self {
         Self { auth: None, frac: Some(f) }
     }
 }
 
 impl<R> RA for View<R>
-where R: ViewRel, R::Frac: RA
+where R: ViewRel
 {
     #[logic]
     #[open]
-    fn op(self, other: Self) -> Option<Self> { pearlite!{
-        (self.auth, self.frac).op((other.auth, other.frac)).and_then_logic(|(auth, frac)| {
-            let v = View { auth, frac };
-            if v.invariant() {
-                Some(v)
-            } else {
-                None
-            }
-        })
+    fn op(self, other: Self) -> Self {
+        let (auth, frac) = (self.auth, self.frac).op((other.auth, other.frac));
+        Self { auth, frac }
+    }
+
+    #[logic]
+    #[open]
+    fn valid(self) -> bool { pearlite!{
+        match self {
+            Self { auth: Some(Excl(a)), frac: Some(f) } => f.valid() && R::rel(a, f),
+            // TODO: why is this condition necessary?
+            Self { auth: None, frac: Some(f) } => f.valid() && exists<a: R::Auth> R::rel(a, f),
+            Self { auth: Some(Excl(_)), frac: None } => true,
+            Self { auth: None, frac: None } => true,
+            Self { auth: Some(ExclBot), frac: _ } => false,
+        }
     }}
 
     #[logic]
     #[open]
-    #[ensures(result == (exists<c: Self> self.op(c) == Some(other)))]
+    #[ensures(result == (exists<c: Self> self.op(c) == other))]
     fn incl(self, other: Self) -> bool {
         (self.auth, self.frac).incl((other.auth, other.frac))
     }
 
     #[logic]
     #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
+    #[ensures(result == (self.op(self) == self))]
     fn idemp(self) -> bool {
         (self.auth, self.frac).idemp()
     }
@@ -461,14 +557,19 @@ where R: ViewRel, R::Frac: RA
 
     #[law]
     #[open(self)]
-    #[ensures(
-        a.op(b).and_then_logic(|x:Self| x.op(c)) ==
-        b.op(c).and_then_logic(|x:Self| a.op(x))
-    )]
+    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
     fn associative(a: Self, b: Self, c: Self) { }
 
     #[logic]
     #[open(self)]
+    #[ensures(self.op(b).valid() ==> self.valid())]
+    fn valid_op(self, b: Self) {
+        let _ = <R::Frac as RA>::valid_op;
+    }
+
+    #[logic]
+    #[open(self)]
+    #[requires(self.valid())]
     #[ensures(
         (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
         (exists<b: Self> b.incl(self) && b.idemp() &&
@@ -480,27 +581,103 @@ where R: ViewRel, R::Frac: RA
     }
 }
 
-// pub struct Auth<T> {
-//     pub auth: Option<T>,
-//     pub frac: Option<T>,
-// }
+pub struct AuthViewRel<T>(T);
 
-// impl<T> Auth<T> {
-//     fn auth(x: T) -> Self {
-//         Auth { auth: Some(x), frac: None }
-//     }
+impl<T> ViewRel for AuthViewRel<T>
+where T: RA
+{
+    type Auth = T;
+    type Frac = T;
 
-//     fn frac(x: T) -> Self {
-//         Auth { auth: None, frac: Some(x) }
-//     }
-// }
+    #[logic]
+    #[open]
+    fn rel(a: Self::Auth, f: Self::Frac) -> bool {
+        f.incl(a) && a.valid()
+    }
 
-// impl<T> RA for Auth<T>
-//     where T: RA
-// {
+    #[law]
+    #[open(self)]
+    #[requires(Self::rel(a, f1))]
+    #[requires(f2.incl(f1))]
+    #[ensures(Self::rel(a, f2))]
+    fn rel_mono(a: Self::Auth, f1: Self::Frac, f2: Self::Frac) {}
+}
 
+pub struct Auth<T: RA>(pub View<AuthViewRel<T>>);
 
-// }
+impl<T> Auth<T> where T: RA {
+    #[logic]
+    pub fn mkauth(x: T) -> Self {
+        Auth(View::mkauth(x))
+    }
+
+    #[logic]
+    pub fn mkfrac(x: T) -> Self {
+        Auth(View::mkfrac(x))
+    }
+}
+
+// TODO: open vs open(self) for RA impls? abstraction patterns?
+
+impl<T> RA for Auth<T>
+    where T: RA
+{
+    #[logic]
+    #[open]
+    fn op(self, other: Self) -> Self {
+        Auth(self.0.op(other.0))
+    }
+
+    #[logic]
+    #[open]
+    fn valid(self) -> bool {
+        self.0.valid()
+    }
+
+    #[law]
+    #[open(self)]
+    #[ensures(a.op(b) == b.op(a))]
+    fn commutative(a: Self, b: Self) {}
+
+    #[law]
+    #[open(self)]
+    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
+    fn associative(a: Self, b: Self, c: Self) {}
+
+    // TODO: should this be a #[law]?
+    #[logic]
+    #[open(self)]
+    #[ensures(self.op(b).valid() ==> self.valid())]
+    fn valid_op(self, b: Self) {
+        self.0.valid_op(b.0)
+    }
+
+    #[logic]
+    #[open(self)]
+    #[requires(self.valid())]
+    #[ensures(
+        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
+        (exists<b: Self> b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
+    )]
+    fn maximal_idemp(self) {
+        self.0.maximal_idemp();
+    }
+
+    #[logic]
+    #[open]
+    #[ensures(result == exists<c: Self> self.op(c) == other)]
+    fn incl(self, other: Self) -> bool {
+        self.0.incl(other.0)
+    }
+
+    #[logic]
+    #[open]
+    #[ensures(result == (self.op(self) == self))]
+    fn idemp(self) -> bool {
+        self.0.idemp()
+    }
+}
 
 // always require that we have Sized data in logical APIs?
 // thus remove SizedW from library code; require the end user
@@ -578,7 +755,7 @@ where R: ViewRel, R::Frac: RA
 
 //     #[logic]
 //     #[open]
-//     #[ensures(result == (self.op(self) == Some(self)))]
+//     #[ensures(result == (self.op(self) == self))]
 //     fn idemp(self) -> bool {
 //         true // TODO
 //     }
