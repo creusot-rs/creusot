@@ -300,8 +300,8 @@ impl Name {
 }
 
 // Global names to intern only once.
-pub(crate) static TRUE: LazyLock<Symbol> = LazyLock::new(|| Symbol::intern("true"));
-pub(crate) static FALSE: LazyLock<Symbol> = LazyLock::new(|| Symbol::intern("false"));
+pub(crate) static TRUE: LazyLock<Symbol> = LazyLock::new(|| Symbol::intern("True"));
+pub(crate) static FALSE: LazyLock<Symbol> = LazyLock::new(|| Symbol::intern("False"));
 
 /// A mapping from Why3 keywords to valid identifiers.
 /// We use this to rename identifiers that come from Rust.
@@ -324,6 +324,8 @@ const RESERVED_STR: &[&str] = &[
     "string",  // builtin type
     "real",    // builtin type
     "unit",    // builtin type
+    "True",    // builtin constructor
+    "False",   // builtin constructor
     "current", // creusot prelude
     "final",   // creusot prelude
     "abstract",
