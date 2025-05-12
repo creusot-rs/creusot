@@ -8,8 +8,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::helpers::{CREUSOT_CONTRACTS_VERSION, creusot_contracts_path};
-
 #[derive(Debug, Parser)]
 pub struct NewArgs {
     /// Package name
@@ -250,4 +248,17 @@ fn implicit_table<'a>(toml: &'a mut toml_edit::Table, key: &'a str) -> &'a mut t
         table.set_implicit(true);
         table.into()
     })
+}
+
+/// Only remember the version string at compile-time
+pub const CREUSOT_CONTRACTS_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+fn creusot_contracts_path() -> PathBuf {
+    // This must be the dev version of `cargo-creusot`.
+    // It should have been installed from source and `creusot-contracts`
+    // should be available next to its source.
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.pop();
+    path.push("creusot-contracts");
+    path
 }

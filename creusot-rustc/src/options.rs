@@ -9,9 +9,9 @@ pub trait CreusotArgsExt {
 fn why3_command(
     path: PathBuf,
     config_file: PathBuf,
-    cmd: CreusotSubCommand,
+    cmd: LegacyCreusotSubCommand,
 ) -> options::Why3Command {
-    let CreusotSubCommand::Why3 { command, args, .. } = cmd else {
+    let LegacyCreusotSubCommand::Why3 { command, args, .. } = cmd else {
         unreachable!();
     };
     let sub = match command {
@@ -71,7 +71,7 @@ impl CreusotArgsExt for CreusotArgs {
             prefix: Vec::new(), // to be set in callbacks::ToWhy::set_output_dir
             simple_triggers: self.options.simple_triggers,
             why3_cmd: match self.subcommand {
-                Some(cmd @ CreusotSubCommand::Why3 { .. }) => {
+                Some(cmd @ LegacyCreusotSubCommand::Why3 { .. }) => {
                     Some(why3_command(self.why3_path, self.why3_config_file, cmd))
                 }
                 _ => None,

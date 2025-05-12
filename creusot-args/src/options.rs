@@ -57,11 +57,12 @@ pub struct CreusotArgs {
     #[arg(long)]
     pub why3_config_file: PathBuf,
     #[command(subcommand)]
-    pub subcommand: Option<CreusotSubCommand>,
+    pub subcommand: Option<LegacyCreusotSubCommand>,
 }
 
 #[derive(Debug, Subcommand, Serialize, Deserialize, Clone)]
-pub enum CreusotSubCommand {
+pub enum LegacyCreusotSubCommand {
+    /// Unmaintained command to run Why3 on the generated code. Use `cargo creusot prove` instead.
     Why3 {
         /// Why3 subcommand to run
         #[clap(value_enum)]

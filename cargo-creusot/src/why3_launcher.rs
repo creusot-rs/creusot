@@ -1,12 +1,6 @@
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
-};
-
-use super::helpers::Result;
-use include_dir::{Dir, include_dir};
-
-static PRELUDE: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../prelude");
+use anyhow::{Context as _, Result};
+use creusot_setup::Paths;
+use std::{path::PathBuf, process::Command};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Why3Mode {
@@ -27,24 +21,22 @@ impl std::fmt::Display for Why3Mode {
 pub(crate) struct Why3Launcher {
     pub mode: Why3Mode,
     pub why3_path: PathBuf,
+    pub why3find_path: PathBuf,
     pub config_file: PathBuf,
     pub args: String,
-    pub include_dir: Option<PathBuf>,
-    pub coma_files: Vec<PathBuf>,
+    pub coma_file: PathBuf,
 }
 
 impl Why3Launcher {
-    pub fn make(&self, temp_dir: &Path) -> Result<Command> {
+    pub fn make(&self) -> Result<Command> {
         let mode = self.mode.to_string();
-        let mut prelude_dir: PathBuf = temp_dir.into();
-        prelude_dir.push("creusot");
-        std::fs::create_dir(&prelude_dir)?;
-
-        PRELUDE
-            .extract(prelude_dir)
-            .expect("can't launch why3, could extract prelude into temp dir");
-
         let mut command = Command::new(&self.why3_path);
+        // Assuming that why3find is in an Opam switch `_opam/bin/why3find`,
+        // we guess that the creusot prelude is in `_opam/lib/why3find/packages/creusot`.
+        let mut prelude = self.why3find_path.clone();
+        prelude.pop();
+        prelude.pop();
+        prelude.push("lib/why3find/packages/creusot");
         command
             .args([
                 "--warn-off=unused_variable",
@@ -54,20 +46,10 @@ impl Why3Launcher {
                 &mode,
                 "-L",
             ])
-            .arg(temp_dir.as_os_str());
-
-        match &self.include_dir {
-            Some(dir) => {
-                command.arg("-L").arg(dir.as_os_str());
-            }
-            None => {}
-        }
-
-        for file in &self.coma_files {
-            command.arg(&file);
-        }
-
-        command.arg("-C").arg(&self.config_file);
+            .arg(&prelude)
+            .arg(&self.coma_file)
+            .arg("-C")
+            .arg(&self.config_file);
 
         if !self.args.is_empty() {
             command.args(self.args.split_ascii_whitespace());
@@ -75,4 +57,23 @@ impl Why3Launcher {
 
         Ok(command)
     }
+}
+
+pub(crate) fn run_why3(
+    mode: Why3Mode,
+    coma_file: PathBuf,
+    args: String,
+    paths: Paths,
+) -> Result<()> {
+    let why3 = Why3Launcher {
+        why3_path: paths.why3,
+        why3find_path: paths.why3find,
+        config_file: paths.why3_config,
+        mode,
+        coma_file,
+        args,
+    };
+    let mut command = why3.make()?;
+    command.status().context("could not run why3")?;
+    Ok(())
 }
