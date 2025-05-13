@@ -1,8 +1,8 @@
 use crate::{
     contracts_items::{
-        creusot_clause_attrs, get_fn_mut_impl_unnest, is_fn_impl_postcond, is_fn_mut_impl_postcond,
-        is_fn_mut_impl_unnest, is_fn_once_impl_postcond, is_fn_once_impl_precond,
-        is_open_inv_result,
+        creusot_clause_attrs, get_fn_mut_impl_hist_inv, is_fn_impl_postcond,
+        is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond, is_fn_once_impl_postcond,
+        is_fn_once_impl_precond, is_open_inv_result,
     },
     ctx::*,
     function::ClosSubst,
@@ -397,16 +397,16 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         if kind == ClosureKind::FnMut {
             let args = subst.as_closure().sig().inputs().map_bound(|tys| tys[0]);
             let args = ctx.tcx.instantiate_bound_regions_with_erased(args);
-            let unnest_subst =
+            let hist_inv_subst =
                 ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
 
-            let unnest_id = get_fn_mut_impl_unnest(ctx.tcx);
+            let hist_inv_id = get_fn_mut_impl_hist_inv(ctx.tcx);
 
-            let term = Term::call(ctx.tcx, ctx.typing_env(def_id), unnest_id, unnest_subst, [
+            let term = Term::call(ctx.tcx, ctx.typing_env(def_id), hist_inv_id, hist_inv_subst, [
                 self_.clone().cur(),
                 self_.fin(),
             ]);
-            let expl = "expl:closure unnest post".to_string();
+            let expl = "expl:closure hist_inv post".to_string();
             contract.ensures.push(Condition { term, expl });
         };
 
@@ -418,7 +418,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             && !is_fn_impl_postcond(ctx.tcx, def_id)
             && !is_fn_mut_impl_postcond(ctx.tcx, def_id)
             && !is_fn_once_impl_postcond(ctx.tcx, def_id)
-            && !is_fn_mut_impl_unnest(ctx.tcx, def_id)
+            && !is_fn_mut_impl_hist_inv(ctx.tcx, def_id)
             && !is_fn_once_impl_precond(ctx.tcx, def_id)
         {
             let span = ctx.tcx.def_span(def_id);

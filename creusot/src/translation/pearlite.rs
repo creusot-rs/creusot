@@ -1109,7 +1109,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     //
     // However, this also has to deal with the idea that `* X` access the current value of a borrow in Pearlite.
     // In actuality `&mut ** X` and `*X` are the same thing in THIR (rather the second doesn't exist).
-    // This has a **notable** consequence: an unnesting of a mutable borrow in Pearlite must be the same as its **current value**.
+    // This has a **notable** consequence: an hist_inving of a mutable borrow in Pearlite must be the same as its **current value**.
     // That is: `Y = &mut ** X` means that `* Y = ** X` and `^ Y = ^* X`. This is **unlike** in programs in which the `^` and `*` are
     // swapped. While this difference is not satisfactory, it is a natural consequence of the properties of a logic, in particular stability
     //  under substitution. We are allowed to write the following in Pearlite:

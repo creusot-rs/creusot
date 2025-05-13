@@ -29,22 +29,22 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
     fn postcondition_mut(self, _: Args, _: Self, _: Self::Output) -> bool;
 
     #[predicate(prophetic)]
-    fn unnest(self, _: Self) -> bool;
+    fn hist_inv(self, _: Self) -> bool;
 
     #[law]
     #[requires(self.postcondition_mut(args, res_state, res))]
-    #[ensures(self.unnest(res_state))]
-    fn postcondition_mut_unnest(self, args: Args, res_state: Self, res: Self::Output);
+    #[ensures(self.hist_inv(res_state))]
+    fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output);
 
     #[law]
-    #[ensures(self.unnest(self))]
-    fn unnest_refl(self);
+    #[ensures(self.hist_inv(self))]
+    fn hist_inv_refl(self);
 
     #[law]
-    #[requires(self.unnest(b))]
-    #[requires(b.unnest(c))]
-    #[ensures(self.unnest(c))]
-    fn unnest_trans(self, b: Self, c: Self);
+    #[requires(self.hist_inv(b))]
+    #[requires(b.hist_inv(c))]
+    #[ensures(self.hist_inv(c))]
+    fn hist_inv_trans(self, b: Self, c: Self);
 
     #[law]
     #[ensures(self.postcondition_once(args, res) ==
@@ -70,8 +70,8 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
     fn fn_once(self, args: Args, res: Self::Output);
 
     #[law]
-    #[ensures(self.unnest(res_state) == (self == res_state))]
-    fn fn_unnest(self, res_state: Self);
+    #[ensures(self.hist_inv(res_state) == (self == res_state))]
+    fn fn_hist_inv(self, res_state: Self);
 }
 
 #[cfg(feature = "nightly")]
@@ -108,28 +108,28 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[predicate(prophetic)]
     #[open]
     #[allow(unused_variables)]
-    #[rustc_diagnostic_item = "fn_mut_impl_unnest"]
-    fn unnest(self, result_state: Self) -> bool {
+    #[rustc_diagnostic_item = "fn_mut_impl_hist_inv"]
+    fn hist_inv(self, result_state: Self) -> bool {
         true /* Dummy */
     }
 
     #[trusted]
     #[law]
     #[requires(self.postcondition_mut(args, res_state, res))]
-    #[ensures(self.unnest(res_state))]
-    fn postcondition_mut_unnest(self, args: Args, res_state: Self, res: Self::Output) {}
+    #[ensures(self.hist_inv(res_state))]
+    fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[trusted]
     #[law]
-    #[ensures(self.unnest(self))]
-    fn unnest_refl(self) {}
+    #[ensures(self.hist_inv(self))]
+    fn hist_inv_refl(self) {}
 
     #[trusted]
     #[law]
-    #[requires(self.unnest(b))]
-    #[requires(b.unnest(c))]
-    #[ensures(self.unnest(c))]
-    fn unnest_trans(self, b: Self, c: Self) {}
+    #[requires(self.hist_inv(b))]
+    #[requires(b.hist_inv(c))]
+    #[ensures(self.hist_inv(c))]
+    fn hist_inv_trans(self, b: Self, c: Self) {}
 
     #[law]
     #[trusted]
@@ -160,8 +160,8 @@ impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
 
     #[law]
     #[trusted]
-    #[ensures(self.unnest(res_state) == (self == res_state))]
-    fn fn_unnest(self, res_state: Self) {}
+    #[ensures(self.hist_inv(res_state) == (self == res_state))]
+    fn fn_hist_inv(self, res_state: Self) {}
 }
 
 extern_spec! {

@@ -33,7 +33,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
             // trivial precondition: simplification for sake of proof complexity
             forall<f : F, i : &I::Item> f.precondition((i,)) &&
             // immutable state: simplification for sake of proof complexity
-            (forall<f : F, g : F> f.unnest(g) ==> f == g) &&
+            (forall<f : F, g : F> f.hist_inv(g) ==> f == g) &&
             // precision of postcondition. This is not *necessary*, but simplifies the proof that we have returned *all* elements which evaluate to true.
             // If we remove this we could prove an alternate statement of produces that says we returned `true` for elements in `visited`, and `false` for
             // ones which we didn't remove. *if* the postcondition happened to be precise, these two statements would be equivalent .
@@ -55,7 +55,7 @@ pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
 #[open]
 #[predicate(prophetic)]
 pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f : F, g : F> f.unnest(g) ==> f == g }
+    pearlite! { forall<f : F, g : F> f.hist_inv(g) ==> f == g }
 }
 
 /// Asserts that the postcondition of `f` is *precise*: that there are never two possible values matching the postcondition
@@ -85,7 +85,7 @@ where
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.invariant() ==>
-            self.func().unnest(succ.func()) &&
+            self.func().hist_inv(succ.func()) &&
             // f here is a mapping from indices of `visited` to those of `s`, where `s` is the whole sequence produced by the underlying iterator
             // Interestingly, Z3 guesses `f` quite readily but gives up *totally* on `s`. However, the addition of the final assertions on the correctness of the values
             // blocks z3's guess for `f`.

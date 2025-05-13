@@ -122,11 +122,11 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
   let%span sindex = "../../../creusot-contracts/src/logic/ops/index.rs" 29 8 29 31
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 36
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 31
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 29
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 26
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 28
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
   let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   let%span snum = "../../../creusot-contracts/src/std/num.rs" 25 28 25 33
   
@@ -191,32 +191,32 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
   predicate resolve'1 (_0'1 : closure3) =
     true
   
-  predicate unnest (self : closure3) (result_state : closure3) =
+  predicate hist_inv (self : closure3) (result_state : closure3) =
     [%#s06_knights_tour'6] result_state._0 = self._0
   
   predicate postcondition_mut (self : closure3) (args : tuple) (result_state : closure3) (result : t_Vec) =
     [%#s06_knights_tour'6] (let {_0'0 = _0'1 ; _1 = _1'0} = args in Seq.length (view result)
     = UInt64.t'int result_state._0)
-    /\ unnest self result_state
+    /\ hist_inv self result_state
   
   function fn_mut_once (self : closure3) (args : tuple) (res : t_Vec) : ()
   
   axiom fn_mut_once_spec : forall self : closure3, args : tuple, res : t_Vec . [%#sops'5] postcondition_once self args res
   = (exists res_state : closure3 . postcondition_mut self args res_state res /\ resolve'1 res_state)
   
-  function unnest_trans (self : closure3) (b : closure3) (c : closure3) : ()
+  function hist_inv_trans (self : closure3) (b : closure3) (c : closure3) : ()
   
-  axiom unnest_trans_spec : forall self : closure3, b : closure3, c : closure3 . ([%#sops'2] unnest self b)
-   -> ([%#sops'3] unnest b c)  -> ([%#sops'4] unnest self c)
+  axiom hist_inv_trans_spec : forall self : closure3, b : closure3, c : closure3 . ([%#sops'2] hist_inv self b)
+   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
   
-  function unnest_refl (self : closure3) : ()
+  function hist_inv_refl (self : closure3) : ()
   
-  axiom unnest_refl_spec : forall self : closure3 . [%#sops'1] unnest self self
+  axiom hist_inv_refl_spec : forall self : closure3 . [%#sops'1] hist_inv self self
   
-  function postcondition_mut_unnest (self : closure3) (args : tuple) (res_state : closure3) (res : t_Vec) : ()
+  function postcondition_mut_hist_inv (self : closure3) (args : tuple) (res_state : closure3) (res : t_Vec) : ()
   
-  axiom postcondition_mut_unnest_spec : forall self : closure3, args : tuple, res_state : closure3, res : t_Vec . ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] unnest self res_state)
+  axiom postcondition_mut_hist_inv_spec : forall self : closure3, args : tuple, res_state : closure3, res : t_Vec . ([%#sops] postcondition_mut self args res_state res)
+   -> ([%#sops'0] hist_inv self res_state)
   
   let rec closure3[#"06_knights_tour.rs" 43 16 43 50] (self:MutBorrow.t closure3) (_0'1:UInt64.t) (_1'0:Seq.seq UInt64.t) (return'  (x:t_Vec))= (! bb0
     [ bb0 = s0
@@ -231,7 +231,7 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
     ) [ & _0'2 : t_Vec = Any.any_l () | & _1'1 : MutBorrow.t closure3 = self | & res : t_Vec = Any.any_l () ] 
     [ return''0 (result:t_Vec)-> {[@expl:closure ensures] [%#s06_knights_tour'4] Seq.length (view result)
       = UInt64.t'int (self.final)._0}
-      {[@expl:closure unnest post] unnest self.current self.final}
+      {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return' {result}) ]
   
   
@@ -282,7 +282,7 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
      -> precondition func { _0'0 = e; _1 = produced }
   
   predicate preservation (iter : t_Range) (func : closure3) =
-    [%#smap_inv'0] forall s : Seq.seq UInt64.t, e1 : UInt64.t, e2 : UInt64.t, f : MutBorrow.t closure3, b : t_Vec, i : t_Range . unnest func f.current
+    [%#smap_inv'0] forall s : Seq.seq UInt64.t, e1 : UInt64.t, e2 : UInt64.t, f : MutBorrow.t closure3, b : t_Vec, i : t_Range . hist_inv func f.current
      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
      -> precondition f.current { _0'0 = e1; _1 = s }
      -> postcondition_mut f.current { _0'0 = e1; _1 = s } f.final b
@@ -329,7 +329,7 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
     resolve'4 _0'1
   
   predicate produces'0 [@inline:trivial] (self : t_MapInv) (visited : Seq.seq t_Vec) (succ : t_MapInv) =
-    [%#smap_inv'2] unnest self.t_MapInv__func succ.t_MapInv__func
+    [%#smap_inv'2] hist_inv self.t_MapInv__func succ.t_MapInv__func
     /\ (exists fs : Seq.seq (MutBorrow.t closure3) . Seq.length fs = Seq.length visited
     /\ (exists s : Seq.seq UInt64.t . Seq.length s = Seq.length visited
     /\ produces self.t_MapInv__iter s succ.t_MapInv__iter
@@ -341,7 +341,7 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
       (Seq.get fs 0).current = self.t_MapInv__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_MapInv__func
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest self.t_MapInv__func (Seq.get fs i).current
+     -> hist_inv self.t_MapInv__func (Seq.get fs i).current
     /\ precondition (Seq.get fs i).current { _0'0 = Seq.get s i;
                                              _1 = Seq.(++) self.t_MapInv__produced (Seq.([..]) s 0 i) }
     /\ postcondition_mut (Seq.get fs i).current { _0'0 = Seq.get s i;

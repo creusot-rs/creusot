@@ -326,7 +326,7 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
   let%span smodel'1 = "../../../creusot-contracts/src/model.rs" 54 8 54 22
   let%span smodel'2 = "../../../creusot-contracts/src/model.rs" 82 8 82 12
   let%span sindex = "../../../creusot-contracts/src/logic/ops/index.rs" 52 8 52 31
-  let%span sfilter = "../../../creusot-contracts/src/std/iter/filter.rs" 58 16 58 59
+  let%span sfilter = "../../../creusot-contracts/src/std/iter/filter.rs" 58 16 58 61
   let%span sfilter'0 = "../../../creusot-contracts/src/std/iter/filter.rs" 50 16 50 57
   let%span sfilter'1 = "../../../creusot-contracts/src/std/iter/filter.rs" 65 16 65 126
   let%span sfilter'2 = "../../../creusot-contracts/src/std/iter/filter.rs" 15 14 15 39
@@ -338,11 +338,11 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
   let%span sfilter'8 = "../../../creusot-contracts/src/std/iter/filter.rs" 110 15 110 32
   let%span sfilter'9 = "../../../creusot-contracts/src/std/iter/filter.rs" 111 14 111 42
   let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 36
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 31
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 29
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 26
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 28
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
   let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
   
@@ -395,30 +395,30 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
   predicate resolve'1 (_0 : ()) =
     true
   
-  predicate unnest (self : ()) (result_state : ()) =
+  predicate hist_inv (self : ()) (result_state : ()) =
     [%#siter'11] true
   
   predicate postcondition_mut (self : ()) (args : bool) (result_state : ()) (result : bool) =
-    [%#siter'11] (let b = args in result = b) /\ unnest self result_state
+    [%#siter'11] (let b = args in result = b) /\ hist_inv self result_state
   
   function fn_mut_once (self : ()) (args : bool) (res : bool) : ()
   
   axiom fn_mut_once_spec : forall self : (), args : bool, res : bool . [%#sops'5] postcondition_once self args res
   = (exists res_state : () . postcondition_mut self args res_state res /\ resolve'1 res_state)
   
-  function unnest_trans (self : ()) (b : ()) (c : ()) : ()
+  function hist_inv_trans (self : ()) (b : ()) (c : ()) : ()
   
-  axiom unnest_trans_spec : forall self : (), b : (), c : () . ([%#sops'2] unnest self b)
-   -> ([%#sops'3] unnest b c)  -> ([%#sops'4] unnest self c)
+  axiom hist_inv_trans_spec : forall self : (), b : (), c : () . ([%#sops'2] hist_inv self b)
+   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
   
-  function unnest_refl (self : ()) : ()
+  function hist_inv_refl (self : ()) : ()
   
-  axiom unnest_refl_spec : forall self : () . [%#sops'1] unnest self self
+  axiom hist_inv_refl_spec : forall self : () . [%#sops'1] hist_inv self self
   
-  function postcondition_mut_unnest (self : ()) (args : bool) (res_state : ()) (res : bool) : ()
+  function postcondition_mut_hist_inv (self : ()) (args : bool) (res_state : ()) (res : bool) : ()
   
-  axiom postcondition_mut_unnest_spec : forall self : (), args : bool, res_state : (), res : bool . ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] unnest self res_state)
+  axiom postcondition_mut_hist_inv_spec : forall self : (), args : bool, res_state : (), res : bool . ([%#sops] postcondition_mut self args res_state res)
+   -> ([%#sops'0] hist_inv self res_state)
   
   let rec closure0[#"iter.rs" 14 8 14 33] (self:MutBorrow.t ()) (b:bool) (return'  (x:bool))= (! bb0
     [ bb0 = s0
@@ -426,7 +426,7 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
      ]
     ) [ & _0 : bool = Any.any_l () | & _1 : MutBorrow.t () = self | & b'0 : bool = b | & res : bool = Any.any_l () ] 
     [ return''0 (result:bool)-> {[@expl:closure ensures] [%#siter'2] result = b}
-      {[@expl:closure unnest post] unnest self.current self.final}
+      {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return' {result}) ]
   
   
@@ -434,7 +434,7 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
     { t_Filter__iter: t_Iter; t_Filter__predicate: () }
   
   predicate immutable (_0 : ()) =
-    [%#sfilter] forall f : (), g : () . unnest f g  -> f = g
+    [%#sfilter] forall f : (), g : () . hist_inv f g  -> f = g
   
   predicate precondition (self : ()) (args : bool) =
     [%#siter'11] let b = args in true
@@ -529,7 +529,7 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
   
   predicate produces'0 (self : t_Filter) (visited : Seq.seq bool) (succ : t_Filter) =
     [%#sfilter'5] invariant' self
-     -> unnest (func self) (func succ)
+     -> hist_inv (func self) (func succ)
     /\ (exists s : Seq.seq bool, f : Map.map int int . produces (iter'0 self) s (iter'0 succ)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
     /\ (forall i : int, j : int . 0 <= i /\ i < j /\ j < Seq.length visited  -> Map.get f i < Map.get f j)
@@ -815,14 +815,14 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
   let%span smodel'2 = "../../../creusot-contracts/src/model.rs" 54 8 54 22
   let%span sindex = "../../../creusot-contracts/src/logic/ops/index.rs" 52 8 52 31
   let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 36
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 31
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 29
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 26
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 28
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
   let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
-  let%span sfilter_map = "../../../creusot-contracts/src/std/iter/filter_map.rs" 56 16 56 52
+  let%span sfilter_map = "../../../creusot-contracts/src/std/iter/filter_map.rs" 56 16 56 54
   let%span sfilter_map'0 = "../../../creusot-contracts/src/std/iter/filter_map.rs" 48 16 48 50
   let%span sfilter_map'1 = "../../../creusot-contracts/src/std/iter/filter_map.rs" 63 16 63 135
   let%span sfilter_map'2 = "../../../creusot-contracts/src/std/iter/filter_map.rs" 15 14 15 39
@@ -887,30 +887,30 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
   predicate resolve'1 (_0 : ()) =
     true
   
-  predicate unnest (self : ()) (result_state : ()) =
+  predicate hist_inv (self : ()) (result_state : ()) =
     [%#siter'12] true
   
   predicate postcondition_mut (self : ()) (args : bool) (result_state : ()) (result : t_Option) =
-    [%#siter'12] (let b = args in result = (if b then C_Some false else C_None)) /\ unnest self result_state
+    [%#siter'12] (let b = args in result = (if b then C_Some false else C_None)) /\ hist_inv self result_state
   
   function fn_mut_once (self : ()) (args : bool) (res : t_Option) : ()
   
   axiom fn_mut_once_spec : forall self : (), args : bool, res : t_Option . [%#sops'5] postcondition_once self args res
   = (exists res_state : () . postcondition_mut self args res_state res /\ resolve'1 res_state)
   
-  function unnest_trans (self : ()) (b : ()) (c : ()) : ()
+  function hist_inv_trans (self : ()) (b : ()) (c : ()) : ()
   
-  axiom unnest_trans_spec : forall self : (), b : (), c : () . ([%#sops'2] unnest self b)
-   -> ([%#sops'3] unnest b c)  -> ([%#sops'4] unnest self c)
+  axiom hist_inv_trans_spec : forall self : (), b : (), c : () . ([%#sops'2] hist_inv self b)
+   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
   
-  function unnest_refl (self : ()) : ()
+  function hist_inv_refl (self : ()) : ()
   
-  axiom unnest_refl_spec : forall self : () . [%#sops'1] unnest self self
+  axiom hist_inv_refl_spec : forall self : () . [%#sops'1] hist_inv self self
   
-  function postcondition_mut_unnest (self : ()) (args : bool) (res_state : ()) (res : t_Option) : ()
+  function postcondition_mut_hist_inv (self : ()) (args : bool) (res_state : ()) (res : t_Option) : ()
   
-  axiom postcondition_mut_unnest_spec : forall self : (), args : bool, res_state : (), res : t_Option . ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] unnest self res_state)
+  axiom postcondition_mut_hist_inv_spec : forall self : (), args : bool, res_state : (), res : t_Option . ([%#sops] postcondition_mut self args res_state res)
+   -> ([%#sops'0] hist_inv self res_state)
   
   let rec closure0[#"iter.rs" 24 8 24 65] (self:MutBorrow.t ()) (b:bool) (return'  (x:t_Option))= (! bb0
     [ bb0 = s0 [ s0 = -{resolve'0 _1}- s1 | s1 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ]  ] 
@@ -924,7 +924,7 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
     | & res : t_Option = Any.any_l () ]
     
     [ return''0 (result:t_Option)-> {[@expl:closure ensures] [%#siter'3] result = (if b then C_Some false else C_None)}
-      {[@expl:closure unnest post] unnest self.current self.final}
+      {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return' {result}) ]
   
   
@@ -932,7 +932,7 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
     { t_FilterMap__iter: t_Iter; t_FilterMap__f: () }
   
   predicate immutable (f : ()) =
-    [%#sfilter_map] forall g : () . unnest f g  -> f = g
+    [%#sfilter_map] forall g : () . hist_inv f g  -> f = g
   
   predicate precondition (self : ()) (args : bool) =
     [%#siter'12] let b = args in true
@@ -1023,7 +1023,7 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
   
   predicate produces'0 (self : t_FilterMap) (visited : Seq.seq bool) (succ : t_FilterMap) =
     [%#sfilter_map'5] invariant' self
-     -> unnest (func self) (func succ)
+     -> hist_inv (func self) (func succ)
     /\ (exists s : Seq.seq bool, f : Map.map int int . produces (iter'0 self) s (iter'0 succ)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
     /\ (forall i : int, j : int . 0 <= i /\ i < j /\ j < Seq.length visited  -> Map.get f i < Map.get f j)

@@ -25,7 +25,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
             // trivial precondition: simplification for sake of proof complexity
             forall<f : F, i : &I::Item> f.precondition((i,)) &&
             // immutable state: simplification for sake of proof complexity
-            (forall<f : F, g : F> f.unnest(g) ==> f == g) &&
+            (forall<f : F, g : F> f.hist_inv(g) ==> f == g) &&
             // precision of postcondition. In some sense this is not *necessary*, but without this we cannot prove that we return *all* elements
             // for all elements where the predicate evaluated to true, since we don't actually have access to the closure's return value directly,
             // only what the postcondition says about it.
@@ -64,7 +64,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.invariant() ==>
-            self.func.unnest(succ.func) &&
+            self.func.hist_inv(succ.func) &&
             // f here is a mapping from indices of `visited` to those of `s`, where `s` is the whole sequence produced by the underlying iterator
             // Interestingly, Z3 guesses `f` quite readily but gives up *totally* on `s`. However, the addition of the final assertions on the correctness of the values
             // blocks z3's guess for `f`.
@@ -91,7 +91,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
         #[invariant(self.func == old_self.func)]
         #[invariant(forall<i : _> 0 <= i && i < produced.len() ==> self.func.postcondition_mut((&produced[i],), self.func, false))]
         #[invariant(old_self.iter.produces(*produced, self.iter))]
-        #[invariant(old_self.func.unnest(self.func))]
+        #[invariant(old_self.func.hist_inv(self.func))]
         while let Some(n) = self.iter.next() {
             produced = snapshot! { produced.push_back(n) };
             proof_assert!(old_self.iter.produces(*produced, self.iter));
@@ -136,7 +136,7 @@ pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
 #[open]
 #[predicate(prophetic)]
 pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f : F, g : F> f.unnest(g) ==> f == g }
+    pearlite! { forall<f : F, g : F> f.hist_inv(g) ==> f == g }
 }
 
 #[open]

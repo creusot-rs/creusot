@@ -8,7 +8,7 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     constant::from_mir_constant,
     contracts_items::{
-        get_fn_mut_impl_unnest, get_resolve_function, get_resolve_method, is_snapshot_closure,
+        get_fn_mut_impl_hist_inv, get_resolve_function, get_resolve_method, is_snapshot_closure,
         is_spec,
     },
     ctx::*,
@@ -822,7 +822,7 @@ pub(crate) struct ClosureContract<'tcx> {
     pub(crate) postcond_once: Term<'tcx>,
     pub(crate) postcond_mut: Option<Term<'tcx>>,
     pub(crate) postcond: Option<Term<'tcx>>,
-    pub(crate) unnest: Option<Term<'tcx>>,
+    pub(crate) hist_inv: Option<Term<'tcx>>,
 }
 
 impl<'tcx> TranslationCtx<'tcx> {
@@ -982,11 +982,11 @@ impl<'tcx> TranslationCtx<'tcx> {
                             Fn => unreachable!(),
                         };
 
-                        // Thanks to that, `postcondition_mut_unnest` and `fn_mut` are satisfied
-                        let unnest = {
+                        // Thanks to that, `postcondition_mut_hist_inv` and `fn_mut` are satisfied
+                        let hist_inv = {
                             let subst =
                                 self.mk_args(&[GenericArg::from(arg_ty), GenericArg::from(env_ty)]);
-                            let id = get_fn_mut_impl_unnest(self.tcx);
+                            let id = get_fn_mut_impl_hist_inv(self.tcx);
                             Term::call_no_normalize(self.tcx, id, subst, [
                                 self_.clone(),
                                 result_state.clone(),
@@ -997,7 +997,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                             .conj(bor_self.clone().cur().eq(self.tcx, self_.clone()))
                             .conj(bor_self.clone().fin().eq(self.tcx, result_state))
                             .conj(base)
-                            .conj(unnest)
+                            .conj(hist_inv)
                             .exists((bor_self_ident.into(), bor_self.ty))
                     }
                     FnOnce => {
@@ -1026,21 +1026,21 @@ impl<'tcx> TranslationCtx<'tcx> {
                         to_resolve = vec![];
                         ClosSubst::post_ref(self, def_id, self_.clone(), result_state.clone())
                             .visit_mut_term(&mut post);
-                        let unnest = {
+                        let hist_inv = {
                             let subst =
                                 self.mk_args(&[GenericArg::from(arg_ty), GenericArg::from(env_ty)]);
-                            let id = get_fn_mut_impl_unnest(self.tcx);
+                            let id = get_fn_mut_impl_hist_inv(self.tcx);
                             Term::call_no_normalize(self.tcx, id, subst, [
                                 self_.clone(),
                                 result_state.clone(),
                             ])
                         };
-                        // Thanks to that, `postcondition_mut_unnest` and `fn_mut` are satisfied
-                        // Note that we do not include it in the `target_kind == FnOnce` case, because unnesting
+                        // Thanks to that, `postcondition_mut_hist_inv` and `fn_mut` are satisfied
+                        // Note that we do not include it in the `target_kind == FnOnce` case, because hist_inv
                         // is actually already included and combined with resolution when `ClosSubst::post_owned`
                         // substitutes the post state of &(resp. mut)-captured variables by the final value
                         // (resp. value).
-                        post = post.conj(unnest);
+                        post = post.conj(hist_inv);
                     }
                     FnOnce => {
                         let post_projs: Vec<Option<Term>>;
@@ -1103,20 +1103,20 @@ impl<'tcx> TranslationCtx<'tcx> {
         let postcond_mut = closure_kind.extends(FnMut).then(|| get_postcond(FnMut));
         let postcond_once = get_postcond(FnOnce);
 
-        let unnest = closure_kind.extends(FnMut).then(|| {
+        let hist_inv = closure_kind.extends(FnMut).then(|| {
             let future = Term::var(name::future(), env_ty);
             if closure_kind == Fn {
-                // Make sure `fn_unnest` holds
+                // Make sure `fn_hist_inv` holds
                 return self_.clone().eq(self.tcx, future);
             }
 
-            let mut unnest = Term::true_(self.tcx);
+            let mut hist_inv = Term::true_(self.tcx);
             for ((f, capture), ty) in captures {
                 match capture.info.capture_kind {
-                    // if we captured by value we get no unnesting predicate
+                    // if we captured by value we get no hist_inving predicate
                     UpvarCapture::ByValue => continue,
                     UpvarCapture::ByRef(is_mut) => {
-                        let unnest_one = if is_mut == BorrowKind::Immutable {
+                        let hist_inv_one = if is_mut == BorrowKind::Immutable {
                             future.clone().proj(f, ty).eq(self.tcx, self_.clone().proj(f, ty))
                         } else {
                             future
@@ -1126,15 +1126,15 @@ impl<'tcx> TranslationCtx<'tcx> {
                                 .eq(self.tcx, self_.clone().proj(f, ty).fin())
                         };
 
-                        unnest = unnest.conj(unnest_one);
+                        hist_inv = hist_inv.conj(hist_inv_one);
                     }
                 }
             }
 
-            normalize(self.tcx, typing_env, unnest).span(span)
+            normalize(self.tcx, typing_env, hist_inv).span(span)
         });
 
-        ClosureContract { precond, postcond, postcond_once, postcond_mut, unnest }
+        ClosureContract { precond, postcond, postcond_once, postcond_mut, hist_inv }
     }
 }
 

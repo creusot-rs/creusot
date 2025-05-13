@@ -43,7 +43,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
     #[creusot::why3_attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
-            self.func.unnest(succ.func)
+            self.func.hist_inv(succ.func)
             && exists<fs: Seq<&mut F>> fs.len() == visited.len()
             && exists<s : Seq<I::Item>>
                 #![trigger self.iter.produces(s, succ.iter)]
@@ -53,7 +53,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
             && if visited.len() == 0 { self.func == succ.func }
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
             && forall<i : Int> 0 <= i && i < visited.len() ==>
-                 self.func.unnest(*fs[i])
+                 self.func.hist_inv(*fs[i])
                  && (*fs[i]).precondition((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))))
                  && (*fs[i]).postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
         }
@@ -98,7 +98,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 #![trigger iter.produces(s.push_back(e1).push_back(e2), i),(*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b)]
-                func.unnest(*f) ==>
+                func.hist_inv(*f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 (*f).precondition((e1, Snapshot::new(produced.concat(s)))) ==>
                 (*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b) ==>
@@ -110,7 +110,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
     fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                func.unnest(*f) ==>
+                func.hist_inv(*f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 (*f).precondition((e1, Snapshot::new(s))) ==>
                 (*f).postcondition_mut((e1, Snapshot::new(s)), ^f, b) ==>
