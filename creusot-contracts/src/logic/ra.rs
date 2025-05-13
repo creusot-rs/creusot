@@ -70,6 +70,9 @@ pub trait RA: Sized {
 #[ensures(a.incl(c))]
 pub fn incl_transitive<T: RA>(a: T, b: T, c: T) { }
 
+// TODO: make these definitions part of the trait ?
+// could they have default implementations? is it useful to allow for custom definitions?
+
 #[logic]
 #[open]
 pub fn update<T: RA>(x: T, y: T) -> bool { pearlite!{
