@@ -1846,12 +1846,12 @@ impl<'tcx> IntoSubst<'tcx> for &MapSubstitution<'tcx> {
 }
 
 /// A renaming from `Ident` to `Ident` in a small array.
-pub type SmallRenaming = [(Ident, Ident)];
+pub struct SmallRenaming<const N: usize>(pub [(Ident, Ident); N]);
 
-impl<'tcx> IntoSubst<'tcx> for &SmallRenaming {
+impl<'tcx, const N: usize> IntoSubst<'tcx> for &SmallRenaming<N> {
     fn into_subst(self) -> impl Fn(Ident) -> Option<TermKind<'tcx>> {
         move |x| {
-            for &(from, to) in self {
+            for &(from, to) in &self.0 {
                 if from == x {
                     return Some(TermKind::Var(to.into()));
                 }

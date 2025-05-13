@@ -1,11 +1,11 @@
 use crate::{
+    backend::closures::ClosSubst,
     contracts_items::{
         creusot_clause_attrs, get_fn_mut_impl_hist_inv, is_fn_impl_postcond,
         is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond, is_fn_once_impl_postcond,
         is_fn_once_impl_precond, is_open_inv_result,
     },
     ctx::*,
-    function::ClosSubst,
     naming::{name, variable_name},
     pearlite::{Ident, PIdent, TermVisitorMut},
     translation::pearlite::{Literal, Term, TermKind, normalize, type_invariant_term},
@@ -373,7 +373,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             ClosureKind::FnOnce => self_.clone(),
         };
 
-        let mut pre_subst = ClosSubst::pre(ctx, def_id, self_pre.clone());
+        let mut pre_subst = ClosSubst::pre(ctx, def_id.expect_local(), self_pre.clone());
         for pre in &mut contract.requires {
             pre_subst.visit_mut_term(&mut pre.term);
         }
@@ -383,11 +383,11 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             // are consumed by the closure, and thus we cannot refer to them in
             // the post state.
             let post_owned_projs = repeat(None);
-            ClosSubst::post_owned(ctx, def_id, self_pre, post_owned_projs)
+            ClosSubst::post_owned(ctx, def_id.expect_local(), self_pre, post_owned_projs)
         } else {
             let self_post =
                 if kind == ClosureKind::Fn { self_pre.clone() } else { self_.clone().fin() };
-            ClosSubst::post_ref(ctx, def_id, self_pre, self_post)
+            ClosSubst::post_ref(ctx, def_id.expect_local(), self_pre, self_post)
         };
 
         for post in &mut contract.ensures {

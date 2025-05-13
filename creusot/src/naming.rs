@@ -229,10 +229,7 @@ pub mod name {
 
     static_idents! {
         self_ => "self",
-        result => "result",
-        args => "args",
-        result_state => "result_state",
-        future => "future"
+        result => "result"
     }
 
     macro_rules! static_qnames {

@@ -10,7 +10,7 @@
 
 use crate::{
     backend::{
-        Namer, Why3Generator,
+        clone_map::Namer, Why3Generator,
         clone_map::PreMod,
         dependency::Dependency,
         is_trusted_item,

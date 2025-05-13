@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     backend::{
-        Namer as _, Why3Generator,
+        clone_map::Namer as _, Why3Generator,
         logic::Dependencies,
         signature::lower_contract,
         term::{binop_to_binop, lower_literal, lower_pure},

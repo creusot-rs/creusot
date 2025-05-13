@@ -1246,18 +1246,15 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
      [ return''0 (result:UInt32.t)-> return' {result} ] 
   
   predicate postcondition_once (self : closure0) (args : tuple) (result : UInt32.t) =
-    [%#s03_std_iterators'5] exists result_state : closure0 . (exists bor_self : MutBorrow.t closure0 . bor_self.current
+    [%#s03_std_iterators'5] let {_0'0 = x ; _1 = _prod} = args in exists e : closure0 . (exists bor_self : MutBorrow.t closure0 . bor_self.current
     = self
-    /\ bor_self.final = result_state
-    /\ (let {_0'0 = x ; _1 = _prod} = args in closure0'post'return' bor_self x _prod result)
-    /\ hist_inv self result_state)
-    /\ resolve'3 result_state
+    /\ bor_self.final = e /\ closure0'post'return' bor_self x _prod result /\ hist_inv self e)
+    /\ resolve'3 e
   
   predicate postcondition_mut (self : closure0) (args : tuple) (result_state : closure0) (result : UInt32.t) =
-    [%#s03_std_iterators'5] exists bor_self : MutBorrow.t closure0 . bor_self.current = self
-    /\ bor_self.final = result_state
-    /\ (let {_0'0 = x ; _1 = _prod} = args in closure0'post'return' bor_self x _prod result)
-    /\ hist_inv self result_state
+    [%#s03_std_iterators'5] let {_0'0 = x ; _1 = _prod} = args in exists bor_self : MutBorrow.t closure0 . bor_self.current
+    = self
+    /\ bor_self.final = result_state /\ closure0'post'return' bor_self x _prod result /\ hist_inv self result_state
   
   function fn_mut_once (self : closure0) (args : tuple) (res : UInt32.t) : ()
   
@@ -1318,8 +1315,8 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
     { t_MapInv__iter: t_Iter; t_MapInv__func: closure0; t_MapInv__produced: Seq.seq UInt32.t }
   
   predicate precondition (self : closure0) (args : tuple) =
-    [%#s03_std_iterators'5] forall bor_self : MutBorrow.t closure0 . bor_self.current = self
-     -> (let {_0'0 = x ; _1 = _prod} = args in closure0'pre bor_self x _prod)
+    [%#s03_std_iterators'5] let {_0'0 = x ; _1 = _prod} = args in forall bor_self : MutBorrow.t closure0 . bor_self.current
+    = self  -> closure0'pre bor_self x _prod
   
   predicate resolve'4 (self : MutBorrow.t t_Iter) =
     [%#sresolve] self.final = self.current

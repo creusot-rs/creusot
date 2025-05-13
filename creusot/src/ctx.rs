@@ -2,8 +2,8 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     callbacks,
     contracts_items::{
-        get_inv_function, is_extern_spec, is_logic, is_open_inv_param, is_predicate, is_prophetic,
-        opacity_witness_name,
+        get_inv_function, get_resolve_function, get_resolve_method, is_extern_spec, is_logic,
+        is_open_inv_param, is_predicate, is_prophetic, opacity_witness_name,
     },
     creusot_items::{self, CreusotItems},
     error::{CannotFetchThir, CreusotResult, Error},
@@ -12,12 +12,11 @@ use crate::{
     options::Options,
     pearlite::ScopedTerm,
     specification::{PreSignature, inherited_extern_spec, pre_sig_of},
+    traits::TraitResolved,
     translation::{
         self,
         external::{ExternSpec, extract_extern_specs_from_item},
-        fmir,
-        function::ClosureContract,
-        pearlite,
+        fmir, pearlite,
         specification::ContractClauses,
         traits::TraitImpl,
     },
@@ -162,7 +161,6 @@ pub struct TranslationCtx<'tcx> {
     sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
     bodies: OnceMap<LocalDefId, Box<BodyWithBorrowckFacts<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
-    closure_contract: OnceMap<DefId, Box<ClosureContract<'tcx>>>,
     renamer: RefCell<HashMap<HirId, Ident>>,
     pub corenamer: RefCell<HashMap<Ident, HirId>>,
     crate_name: OnceCell<why3::Symbol>,
@@ -222,7 +220,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             sig: Default::default(),
             bodies: Default::default(),
             opacity: Default::default(),
-            closure_contract: Default::default(),
             params_open_inv,
             renamer: Default::default(),
             corenamer: Default::default(),
@@ -252,8 +249,6 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     queryish!(trait_impl, DefId, TraitImpl<'tcx>, translate_impl);
-
-    queryish!(closure_contract, DefId, ClosureContract<'tcx>, build_closure_contract);
 
     queryish!(fmir_body, BodyId, fmir::Body<'tcx>, translation::function::fmir);
 
@@ -296,9 +291,8 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// This should only be used in [`after_analysis`](crate::translation::after_analysis),
     /// where we are confident that typechecking errors have already been reported.
     pub(crate) fn term_fail_fast(&self, def_id: DefId) -> Option<&ScopedTerm<'tcx>> {
-        let tcx = self.tcx;
         self.term(def_id).unwrap_or_else(|_| {
-            tcx.dcx().abort_if_errors();
+            self.tcx.dcx().abort_if_errors();
             None
         })
     }
@@ -346,6 +340,28 @@ impl<'tcx> TranslationCtx<'tcx> {
             let substs = self.mk_args(&[GenericArg::from(ty)]);
             Some((inv_did, substs))
         }
+    }
+
+    pub(crate) fn resolve(
+        &self,
+        typing_env: TypingEnv<'tcx>,
+        ty: Ty<'tcx>,
+    ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+        let trait_meth_id = get_resolve_method(self.tcx);
+        let substs = self.mk_args(&[GenericArg::from(ty)]);
+
+        // Optimization: if we know there is no Resolve instance for this type, then we do not emit
+        // a resolve
+        if !ty.is_closure()
+            && matches!(
+                TraitResolved::resolve_item(self.tcx, typing_env, trait_meth_id, substs),
+                TraitResolved::NoInstance
+            )
+        {
+            return None;
+        }
+
+        Some((get_resolve_function(self.tcx), substs))
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {

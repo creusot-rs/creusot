@@ -6856,27 +6856,23 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi17145477625495501557__r
   type t_MapInv  =
     { t_MapInv__iter: t_I; t_MapInv__func: t_F; t_MapInv__produced: Seq.seq t_B }
   
-  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : Seq.seq t_B) =
-    true
+  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_F)
   
-  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_F)
-  
-  predicate resolve'1 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_I)
+  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_I)
   
   predicate structural_resolve [#"../../creusot-contracts/src/resolve.rs" 27 0 27 51] (_0 : t_MapInv) =
     match _0 with
-      | {t_MapInv__iter = x0 ; t_MapInv__func = x1 ; t_MapInv__produced = x2} -> resolve x2
-      /\ resolve'0 x1 /\ resolve'1 x0
+      | {t_MapInv__iter = x0 ; t_MapInv__func = x1 ; t_MapInv__produced = x2} -> resolve x1 /\ resolve'0 x0
       end
   
-  predicate resolve'2 [#"../../creusot-contracts/src/std/iter/map_inv.rs" 56 4 56 28] (self : t_MapInv) =
-    [%#smap_inv'2] resolve'1 self.t_MapInv__iter /\ resolve'0 self.t_MapInv__func
+  predicate resolve'1 [#"../../creusot-contracts/src/std/iter/map_inv.rs" 56 4 56 28] (self : t_MapInv) =
+    [%#smap_inv'2] resolve'0 self.t_MapInv__iter /\ resolve self.t_MapInv__func
   
   constant self  : t_MapInv
   
   function resolve_coherence [#"../../creusot-contracts/src/std/iter/map_inv.rs" 64 4 64 31] (self'0 : t_MapInv) : ()
   
-  goal vc_resolve_coherence : ([%#smap_inv] structural_resolve self)  -> ([%#smap_inv'0] resolve'2 self)
+  goal vc_resolve_coherence : ([%#smap_inv] structural_resolve self)  -> ([%#smap_inv'0] resolve'1 self)
 end
 module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__next [#"../../creusot-contracts/src/std/iter/map_inv.rs" 90 4 90 44] (* <std::iter::map_inv::MapInv<I, <I as std::iter::Iterator>::Item, F> as std::iter::Iterator> *)
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
@@ -33442,16 +33438,9 @@ module M_creusot_contracts__stdqy35z1__deque__qyi15330951746891243504__resolve_c
   type t_VecDeque  =
     { t_VecDeque__head: UInt64.t; t_VecDeque__len: UInt64.t; t_VecDeque__buf: t_RawVec }
   
-  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_RawVec) =
-    true
-  
-  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : UInt64.t) =
-    true
-  
   predicate structural_resolve [#"../../creusot-contracts/src/resolve.rs" 27 0 27 51] (_0 : t_VecDeque) =
     match _0 with
-      | {t_VecDeque__head = x0 ; t_VecDeque__len = x1 ; t_VecDeque__buf = x2} -> resolve x2
-      /\ resolve'0 x1 /\ resolve'0 x0
+      | {t_VecDeque__head = x0 ; t_VecDeque__len = x1 ; t_VecDeque__buf = x2} -> true
       end
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_VecDeque)
@@ -33466,18 +33455,18 @@ module M_creusot_contracts__stdqy35z1__deque__qyi15330951746891243504__resolve_c
   
   axiom view_spec : forall self : t_VecDeque . [%#sdeque'1] Seq.length (view self) <= UInt64.t'int (v_MAX : UInt64.t)
   
-  predicate resolve'1 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_T)
+  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_T)
   
   function index_logic [@inline:trivial] [#"../../creusot-contracts/src/std/deque.rs" 43 4 43 47] (self : t_VecDeque) (ix : int) : t_T
   
    =
     [%#sdeque'2] Seq.get (view self) ix
   
-  predicate resolve'2 [#"../../creusot-contracts/src/std/deque.rs" 63 4 63 28] (self : t_VecDeque) =
-    [%#sdeque'0] forall i : int . 0 <= i /\ i < Seq.length (view self)  -> resolve'1 (index_logic self i)
+  predicate resolve'0 [#"../../creusot-contracts/src/std/deque.rs" 63 4 63 28] (self : t_VecDeque) =
+    [%#sdeque'0] forall i : int . 0 <= i /\ i < Seq.length (view self)  -> resolve (index_logic self i)
   
   goal refines : [%#sdeque] forall self : t_VecDeque . structural_resolve self /\ inv self
-   -> structural_resolve self /\ (forall result : () . resolve'2 self  -> resolve'2 self)
+   -> structural_resolve self /\ (forall result : () . resolve'0 self  -> resolve'0 self)
 end
 module M_creusot_contracts__stdqy35z1__iter__cloned__qyi7712864753404203214__resolve_coherence__refines [#"../../creusot-contracts/src/std/iter/cloned.rs" 28 4 28 31] (* <std::iter::Cloned<I> as resolve::Resolve> *)
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
@@ -33580,14 +33569,11 @@ module M_creusot_contracts__stdqy35z1__iter__enumerate__qyi7229971731912667430__
   type t_Enumerate  =
     { t_Enumerate__iter: t_I; t_Enumerate__count: UInt64.t }
   
-  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : UInt64.t) =
-    true
-  
-  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_I)
+  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_I)
   
   predicate structural_resolve [#"../../creusot-contracts/src/resolve.rs" 27 0 27 51] (_0 : t_Enumerate) =
     match _0 with
-      | {t_Enumerate__iter = x0 ; t_Enumerate__count = x1} -> resolve x1 /\ resolve'0 x0
+      | {t_Enumerate__iter = x0 ; t_Enumerate__count = x1} -> resolve x0
       end
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_I)
@@ -33610,11 +33596,11 @@ module M_creusot_contracts__stdqy35z1__iter__enumerate__qyi7229971731912667430__
   
   axiom iter_spec : forall self : t_Enumerate . [%#senumerate'1] inv'0 self  -> inv (iter self)
   
-  predicate resolve'1 [#"../../creusot-contracts/src/std/iter/enumerate.rs" 29 4 29 28] (self : t_Enumerate) =
-    [%#senumerate'0] resolve'0 (iter self)
+  predicate resolve'0 [#"../../creusot-contracts/src/std/iter/enumerate.rs" 29 4 29 28] (self : t_Enumerate) =
+    [%#senumerate'0] resolve (iter self)
   
   goal refines : [%#senumerate] forall self : t_Enumerate . structural_resolve self /\ inv'1 self
-   -> structural_resolve self /\ (forall result : () . resolve'1 self  -> resolve'1 self)
+   -> structural_resolve self /\ (forall result : () . resolve'0 self  -> resolve'0 self)
 end
 module M_creusot_contracts__stdqy35z1__iter__map__qyi7619436869179474426__resolve_coherence__refines [#"../../creusot-contracts/src/std/iter/map.rs" 40 4 40 31] (* <std::iter::Map<I, F> as resolve::Resolve> *)
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
@@ -33687,17 +33673,13 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi17145477625495501557__r
   type t_MapInv  =
     { t_MapInv__iter: t_I; t_MapInv__func: t_F; t_MapInv__produced: Seq.seq t_B }
   
-  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : Seq.seq t_B) =
-    true
+  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_F)
   
-  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_F)
-  
-  predicate resolve'1 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_I)
+  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_I)
   
   predicate structural_resolve [#"../../creusot-contracts/src/resolve.rs" 27 0 27 51] (_0 : t_MapInv) =
     match _0 with
-      | {t_MapInv__iter = x0 ; t_MapInv__func = x1 ; t_MapInv__produced = x2} -> resolve x2
-      /\ resolve'0 x1 /\ resolve'1 x0
+      | {t_MapInv__iter = x0 ; t_MapInv__func = x1 ; t_MapInv__produced = x2} -> resolve x1 /\ resolve'0 x0
       end
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_I)
@@ -33718,11 +33700,11 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi17145477625495501557__r
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_MapInv [inv'2 x] . inv'2 x = invariant' x
   
-  predicate resolve'2 [#"../../creusot-contracts/src/std/iter/map_inv.rs" 56 4 56 28] (self : t_MapInv) =
-    [%#smap_inv'0] resolve'1 self.t_MapInv__iter /\ resolve'0 self.t_MapInv__func
+  predicate resolve'1 [#"../../creusot-contracts/src/std/iter/map_inv.rs" 56 4 56 28] (self : t_MapInv) =
+    [%#smap_inv'0] resolve'0 self.t_MapInv__iter /\ resolve self.t_MapInv__func
   
   goal refines : [%#smap_inv] forall self : t_MapInv . structural_resolve self /\ inv'2 self
-   -> structural_resolve self /\ (forall result : () . resolve'2 self  -> resolve'2 self)
+   -> structural_resolve self /\ (forall result : () . resolve'1 self  -> resolve'1 self)
 end
 module M_creusot_contracts__stdqy35z1__iter__skip__qyi1800235112549046777__resolve_coherence__refines [#"../../creusot-contracts/src/std/iter/skip.rs" 40 4 40 31] (* <std::iter::Skip<I> as resolve::Resolve> *)
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
@@ -33737,14 +33719,11 @@ module M_creusot_contracts__stdqy35z1__iter__skip__qyi1800235112549046777__resol
   type t_Skip  =
     { t_Skip__iter: t_I; t_Skip__n: UInt64.t }
   
-  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : UInt64.t) =
-    true
-  
-  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_I)
+  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_I)
   
   predicate structural_resolve [#"../../creusot-contracts/src/resolve.rs" 27 0 27 51] (_0 : t_Skip) =
     match _0 with
-      | {t_Skip__iter = x0 ; t_Skip__n = x1} -> resolve x1 /\ resolve'0 x0
+      | {t_Skip__iter = x0 ; t_Skip__n = x1} -> resolve x0
       end
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_I)
@@ -33767,11 +33746,11 @@ module M_creusot_contracts__stdqy35z1__iter__skip__qyi1800235112549046777__resol
   
   axiom iter_spec : forall self : t_Skip . [%#sskip'1] inv'0 self  -> inv (iter self)
   
-  predicate resolve'1 [#"../../creusot-contracts/src/std/iter/skip.rs" 30 4 30 28] (self : t_Skip) =
-    [%#sskip'0] resolve'0 (iter self)
+  predicate resolve'0 [#"../../creusot-contracts/src/std/iter/skip.rs" 30 4 30 28] (self : t_Skip) =
+    [%#sskip'0] resolve (iter self)
   
   goal refines : [%#sskip] forall self : t_Skip . structural_resolve self /\ inv'1 self
-   -> structural_resolve self /\ (forall result : () . resolve'1 self  -> resolve'1 self)
+   -> structural_resolve self /\ (forall result : () . resolve'0 self  -> resolve'0 self)
 end
 module M_creusot_contracts__stdqy35z1__iter__take__qyi7846602308660485643__resolve_coherence__refines [#"../../creusot-contracts/src/std/iter/take.rs" 48 4 48 31] (* <std::iter::Take<I> as resolve::Resolve> *)
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
@@ -33786,14 +33765,11 @@ module M_creusot_contracts__stdqy35z1__iter__take__qyi7846602308660485643__resol
   type t_Take  =
     { t_Take__iter: t_I; t_Take__n: UInt64.t }
   
-  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : UInt64.t) =
-    true
-  
-  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_I)
+  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_I)
   
   predicate structural_resolve [#"../../creusot-contracts/src/resolve.rs" 27 0 27 51] (_0 : t_Take) =
     match _0 with
-      | {t_Take__iter = x0 ; t_Take__n = x1} -> resolve x1 /\ resolve'0 x0
+      | {t_Take__iter = x0 ; t_Take__n = x1} -> resolve x0
       end
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_I)
@@ -33816,11 +33792,11 @@ module M_creusot_contracts__stdqy35z1__iter__take__qyi7846602308660485643__resol
   
   axiom iter_spec : forall self : t_Take . [%#stake'1] inv'0 self  -> inv (iter self)
   
-  predicate resolve'1 [#"../../creusot-contracts/src/std/iter/take.rs" 40 4 40 28] (self : t_Take) =
-    [%#stake'0] resolve'0 (iter self)
+  predicate resolve'0 [#"../../creusot-contracts/src/std/iter/take.rs" 40 4 40 28] (self : t_Take) =
+    [%#stake'0] resolve (iter self)
   
   goal refines : [%#stake] forall self : t_Take . structural_resolve self /\ inv'1 self
-   -> structural_resolve self /\ (forall result : () . resolve'1 self  -> resolve'1 self)
+   -> structural_resolve self /\ (forall result : () . resolve'0 self  -> resolve'0 self)
 end
 module M_creusot_contracts__stdqy35z1__slice__qyi6798028551487775744__resolve_coherence__refines [#"../../creusot-contracts/src/std/slice.rs" 475 4 475 31] (* <std::slice::IterMut<'a, T> as resolve::Resolve> *)
   let%span sslice = "../../creusot-contracts/src/std/slice.rs" 475 4 475 31
@@ -33842,19 +33818,9 @@ module M_creusot_contracts__stdqy35z1__slice__qyi6798028551487775744__resolve_co
   type t_IterMut  =
     { t_IterMut__ptr: t_NonNull; t_IterMut__end_or_len: Opaque.ptr; t_IterMut__qy95zmarker: () }
   
-  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : ()) =
-    true
-  
-  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : Opaque.ptr) =
-    true
-  
-  predicate resolve'1 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_NonNull) =
-    true
-  
   predicate structural_resolve [#"../../creusot-contracts/src/resolve.rs" 27 0 27 51] (_0 : t_IterMut) =
     match _0 with
-      | {t_IterMut__ptr = x0 ; t_IterMut__end_or_len = x1 ; t_IterMut__qy95zmarker = x2} -> resolve x2
-      /\ resolve'0 x1 /\ resolve'1 x0
+      | {t_IterMut__ptr = x0 ; t_IterMut__end_or_len = x1 ; t_IterMut__qy95zmarker = x2} -> true
       end
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_IterMut)
@@ -33877,11 +33843,11 @@ module M_creusot_contracts__stdqy35z1__slice__qyi6798028551487775744__resolve_co
   axiom view_spec'0 : forall self : t_IterMut . [%#sslice'1] Seq.length (view (view'0 self).final)
   = Seq.length (view (view'0 self).current)
   
-  predicate resolve'2 [#"../../creusot-contracts/src/std/slice.rs" 466 4 466 28] (self : t_IterMut) =
+  predicate resolve [#"../../creusot-contracts/src/std/slice.rs" 466 4 466 28] (self : t_IterMut) =
     [%#sslice'0] (view'0 self).current = (view'0 self).final
   
   goal refines : [%#sslice] forall self : t_IterMut . structural_resolve self /\ inv self
-   -> structural_resolve self /\ (forall result : () . resolve'2 self  -> resolve'2 self)
+   -> structural_resolve self /\ (forall result : () . resolve self  -> resolve self)
 end
 module M_creusot_contracts__stdqy35z1__vec__qyi16169840827095121464__resolve_coherence__refines [#"../../creusot-contracts/src/std/vec.rs" 61 4 61 31] (* <std::vec::Vec<T, A> as resolve::Resolve> *)
   let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 672 20 672 95
@@ -33918,15 +33884,9 @@ module M_creusot_contracts__stdqy35z1__vec__qyi16169840827095121464__resolve_coh
   type t_Vec  =
     { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : UInt64.t) =
-    true
-  
-  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_RawVec) =
-    true
-  
   predicate structural_resolve [#"../../creusot-contracts/src/resolve.rs" 27 0 27 51] (_0 : t_Vec) =
     match _0 with
-      | {t_Vec__buf = x0 ; t_Vec__len = x1} -> resolve x1 /\ resolve'0 x0
+      | {t_Vec__buf = x0 ; t_Vec__len = x1} -> true
       end
   
   type t_T
@@ -33967,18 +33927,18 @@ module M_creusot_contracts__stdqy35z1__vec__qyi16169840827095121464__resolve_coh
   
   axiom inv_axiom'2 [@rewrite] : forall x : t_Vec [inv'3 x] . inv'3 x = invariant''2 x
   
-  predicate resolve'1 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_T)
+  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_T)
   
   function index_logic [@inline:trivial] [#"../../creusot-contracts/src/logic/ops/index.rs" 28 4 28 47] (self : t_Vec) (ix : int) : t_T
   
    =
     [%#sindex] Seq.get (view self) ix
   
-  predicate resolve'2 [#"../../creusot-contracts/src/std/vec.rs" 53 4 53 28] (self : t_Vec) =
-    [%#svec'0] forall i : int . 0 <= i /\ i < Seq.length (view self)  -> resolve'1 (index_logic self i)
+  predicate resolve'0 [#"../../creusot-contracts/src/std/vec.rs" 53 4 53 28] (self : t_Vec) =
+    [%#svec'0] forall i : int . 0 <= i /\ i < Seq.length (view self)  -> resolve (index_logic self i)
   
   goal refines : [%#svec] forall self : t_Vec . structural_resolve self /\ inv'3 self
-   -> structural_resolve self /\ (forall result : () . resolve'2 self  -> resolve'2 self)
+   -> structural_resolve self /\ (forall result : () . resolve'0 self  -> resolve'0 self)
 end
 module M_creusot_contracts__stdqy35z1__vec__qyi9945000909994515642__resolve_coherence__refines [#"../../creusot-contracts/src/std/vec.rs" 261 4 261 31] (* <std::vec::IntoIter<T, A> as resolve::Resolve> *)
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
@@ -34006,25 +33966,9 @@ module M_creusot_contracts__stdqy35z1__vec__qyi9945000909994515642__resolve_cohe
       t_IntoIter__ptr: t_NonNull;
       t_IntoIter__end: Opaque.ptr }
   
-  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : Opaque.ptr) =
-    true
-  
-  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_NonNull) =
-    true
-  
-  predicate resolve'1 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_ManuallyDrop) =
-    true
-  
-  predicate resolve'2 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : UInt64.t) =
-    true
-  
-  predicate resolve'3 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : ()) =
-    true
-  
   predicate structural_resolve [#"../../creusot-contracts/src/resolve.rs" 27 0 27 51] (_0 : t_IntoIter) =
     match _0 with
-      | {t_IntoIter__buf = x0 ; t_IntoIter__phantom = x1 ; t_IntoIter__cap = x2 ; t_IntoIter__alloc = x3 ; t_IntoIter__ptr = x4 ; t_IntoIter__end = x5} -> resolve x5
-      /\ resolve'0 x4 /\ resolve'1 x3 /\ resolve'2 x2 /\ resolve'3 x1 /\ resolve'0 x0
+      | {t_IntoIter__buf = x0 ; t_IntoIter__phantom = x1 ; t_IntoIter__cap = x2 ; t_IntoIter__alloc = x3 ; t_IntoIter__ptr = x4 ; t_IntoIter__end = x5} -> true
       end
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_A)
@@ -34054,13 +33998,13 @@ module M_creusot_contracts__stdqy35z1__vec__qyi9945000909994515642__resolve_cohe
   
   function view [#"../../creusot-contracts/src/std/vec.rs" 244 4 244 33] (self : t_IntoIter) : Seq.seq t_T
   
-  predicate resolve'4 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_T)
+  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_T)
   
-  predicate resolve'5 [#"../../creusot-contracts/src/std/vec.rs" 253 4 253 28] (self : t_IntoIter) =
-    [%#svec'0] forall i : int . 0 <= i /\ i < Seq.length (view self)  -> resolve'4 (Seq.get (view self) i)
+  predicate resolve'0 [#"../../creusot-contracts/src/std/vec.rs" 253 4 253 28] (self : t_IntoIter) =
+    [%#svec'0] forall i : int . 0 <= i /\ i < Seq.length (view self)  -> resolve (Seq.get (view self) i)
   
   goal refines : [%#svec] forall self : t_IntoIter . structural_resolve self /\ inv'2 self
-   -> structural_resolve self /\ (forall result : () . resolve'5 self  -> resolve'5 self)
+   -> structural_resolve self /\ (forall result : () . resolve'0 self  -> resolve'0 self)
 end
 module M_creusot_contracts__ghost__qyi8064556118965643473__resolve_coherence__refines [#"../../creusot-contracts/src/ghost.rs" 124 4 124 31] (* <ghost::Ghost<T> as resolve::Resolve> *)
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
@@ -34119,12 +34063,9 @@ module M_creusot_contracts__pcell__qyi12897409324816536085__resolve_coherence__r
   type t_PCellOwn  =
     { t_PCellOwn__0: () }
   
-  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : ()) =
-    true
-  
   predicate structural_resolve [#"../../creusot-contracts/src/resolve.rs" 27 0 27 51] (_0 : t_PCellOwn) =
     match _0 with
-      | {t_PCellOwn__0 = x0} -> resolve x0
+      | {t_PCellOwn__0 = x0} -> true
       end
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_PCellOwn)
@@ -34143,21 +34084,21 @@ module M_creusot_contracts__pcell__qyi12897409324816536085__resolve_coherence__r
   
   type t_T
   
-  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_T)
+  predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_T)
   
-  predicate resolve'1 [#"../../creusot-contracts/src/resolve.rs" 67 4 67 28] (self : t_T) =
-    [%#sresolve] resolve'0 self
+  predicate resolve'0 [#"../../creusot-contracts/src/resolve.rs" 67 4 67 28] (self : t_T) =
+    [%#sresolve] resolve self
   
-  predicate resolve'2 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_T) =
-    resolve'1 _0
+  predicate resolve'1 [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_T) =
+    resolve'0 _0
   
   function val' [#"../../creusot-contracts/src/pcell.rs" 97 4 97 33] (self : t_PCellOwn) : t_T
   
-  predicate resolve'3 [#"../../creusot-contracts/src/pcell.rs" 59 4 59 28] (self : t_PCellOwn) =
-    [%#spcell'0] resolve'2 (val' self)
+  predicate resolve'2 [#"../../creusot-contracts/src/pcell.rs" 59 4 59 28] (self : t_PCellOwn) =
+    [%#spcell'0] resolve'1 (val' self)
   
   goal refines : [%#spcell] forall self : t_PCellOwn . structural_resolve self /\ inv'0 self
-   -> structural_resolve self /\ inv'0 self /\ (forall result : () . resolve'3 self  -> resolve'3 self)
+   -> structural_resolve self /\ inv'0 self /\ (forall result : () . resolve'2 self  -> resolve'2 self)
 end
 module M_creusot_contracts__resolve__qyi14648068534830670712__resolve_coherence__refines [#"../../creusot-contracts/src/resolve.rs" 47 4 47 31] (* <(T1, T2) as resolve::Resolve> *)
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18

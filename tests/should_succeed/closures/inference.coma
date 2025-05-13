@@ -291,10 +291,10 @@ module M_inference__closure_fn [#"inference.rs" 22 0 22 19]
     true
   
   predicate postcondition_once (self : ()) (args : Int32.t) (result : Int32.t) =
-    [%#sinference'12] (let x = args in closure0'post'return' self x result) /\ resolve self
+    [%#sinference'12] let x = args in closure0'post'return' self x result /\ resolve self
   
   predicate postcondition_mut (self : ()) (args : Int32.t) (result_state : ()) (result : Int32.t) =
-    [%#sinference'12] (let x = args in closure0'post'return' self x result) /\ self = result_state
+    [%#sinference'12] let x = args in closure0'post'return' self x result /\ self = result_state
   
   function fn_mut_once (self : ()) (args : Int32.t) (res : Int32.t) : ()
   
@@ -459,15 +459,14 @@ module M_inference__closure_fn_mut [#"inference.rs" 30 0 30 23]
   
   
   predicate postcondition_once (self : closure0) (args : Int32.t) (result : Int32.t) =
-    [%#sinference'10] exists result_state : closure0 . (exists bor_self : MutBorrow.t closure0 . bor_self.current = self
-    /\ bor_self.final = result_state
-    /\ (let x = args in closure0'post'return' bor_self x result) /\ hist_inv self result_state)
-    /\ resolve'3 result_state
+    [%#sinference'10] let x = args in exists e : closure0 . (exists bor_self : MutBorrow.t closure0 . bor_self.current
+    = self
+    /\ bor_self.final = e /\ closure0'post'return' bor_self x result /\ hist_inv self e)
+    /\ resolve'3 e
   
   predicate postcondition_mut (self : closure0) (args : Int32.t) (result_state : closure0) (result : Int32.t) =
-    [%#sinference'10] exists bor_self : MutBorrow.t closure0 . bor_self.current = self
-    /\ bor_self.final = result_state
-    /\ (let x = args in closure0'post'return' bor_self x result) /\ hist_inv self result_state
+    [%#sinference'10] let x = args in exists bor_self : MutBorrow.t closure0 . bor_self.current = self
+    /\ bor_self.final = result_state /\ closure0'post'return' bor_self x result /\ hist_inv self result_state
   
   function fn_mut_once (self : closure0) (args : Int32.t) (res : Int32.t) : ()
   
@@ -489,8 +488,8 @@ module M_inference__closure_fn_mut [#"inference.rs" 30 0 30 23]
    -> ([%#sops'0] hist_inv self res_state)
   
   predicate precondition (self : closure0) (args : Int32.t) =
-    [%#sinference'10] forall bor_self : MutBorrow.t closure0 . bor_self.current = self
-     -> (let x = args in closure0'pre bor_self x)
+    [%#sinference'10] let x = args in forall bor_self : MutBorrow.t closure0 . bor_self.current = self
+     -> closure0'pre bor_self x
   
   let rec call_with_one_mut (f:MutBorrow.t closure0) (return'  (x:Int32.t))= {[@expl:call_with_one_mut requires] [%#sinference'6] precondition f.current (1 : Int32.t)}
     any

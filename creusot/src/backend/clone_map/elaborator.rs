@@ -6,8 +6,9 @@ use std::{
 
 use crate::{
     backend::{
-        Namer, TranslationCtx, Why3Generator,
-        clone_map::{CloneNames, Dependency, Kind},
+        TranslationCtx, Why3Generator,
+        clone_map::{CloneNames, Dependency, Kind, Namer},
+        closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve},
         is_trusted_item,
         logic::{lower_logical_defn, spec_axiom},
         program,
@@ -28,7 +29,6 @@ use crate::{
         is_structural_resolve,
     },
     ctx::{BodyId, ItemType},
-    function::closure_resolve,
     naming::name,
     pearlite::{SmallRenaming, Term, normalize},
     traits::{self, TraitResolved},
@@ -41,7 +41,7 @@ use rustc_middle::ty::{
     UnevaluatedConst,
 };
 use rustc_span::{DUMMY_SP, Span};
-use rustc_type_ir::{ConstKind, EarlyBinder};
+use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
 use why3::{
     Ident,
     declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
@@ -488,40 +488,39 @@ fn fn_once_postcond_term<'tcx>(
     let &[self_, args, result] = bound else {
         panic!("postcondition_once must have 3 arguments. This should not happen. Found: {bound:?}")
     };
-    let isubst: &SmallRenaming =
-        &[(name::self_(), self_), (name::args(), args), (name::result(), result)];
-    let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
     let args = Term::var(args, subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(tcx)).inputs[2].2),
+        EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(ctx.tcx)).inputs[2].2),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => {
-            let mut term = ctx.closure_contract(*did).postcond_once.clone();
-            term.subst(isubst);
-            Some(term)
+            let mut post =
+                closure_post(ctx, ClosureKind::FnOnce, did.expect_local(), self_, args, None);
+            post.subst(&SmallRenaming([(name::result(), result)]));
+            Some(post)
         }
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, [
-                self_.clone().cur(),
-                args,
-                self_.fin(),
-                res,
-            ]))
+            Some(Term::call(
+                ctx.tcx,
+                typing_env,
+                get_fn_mut_impl_postcond(ctx.tcx),
+                subst_postcond,
+                [self_.clone().cur(), args, self_.fin(), res],
+            ))
         }
         TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+            Some(Term::call(ctx.tcx, typing_env, get_fn_impl_postcond(ctx.tcx), subst_postcond, [
                 self_.coerce(*cl),
                 args,
                 res,
@@ -531,11 +530,13 @@ fn fn_once_postcond_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = bsubst[0];
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(tcx, typing_env, get_fn_once_impl_postcond(tcx), subst_postcond, [
-                self_.coerce(bsubst.type_at(0)),
-                args,
-                res,
-            ]))
+            Some(Term::call(
+                ctx.tcx,
+                typing_env,
+                get_fn_once_impl_postcond(ctx.tcx),
+                subst_postcond,
+                [self_.coerce(bsubst.type_at(0)), args, res],
+            ))
         }
         _ => None,
     }
@@ -551,12 +552,6 @@ fn fn_mut_postcond_term<'tcx>(
     let &[self_, args, result_state, result] = bound else {
         panic!("postcondition_mut must have 4 arguments. This should not happen. Found: {bound:?}")
     };
-    let isubst: &SmallRenaming = &[
-        (name::self_(), self_),
-        (name::args(), args),
-        (name::result_state(), result_state),
-        (name::result(), result),
-    ];
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
@@ -570,9 +565,16 @@ fn fn_mut_postcond_term<'tcx>(
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => {
-            let mut term = ctx.closure_contract(*did).postcond_mut.clone();
-            term.iter_mut().for_each(|term| term.subst(isubst));
-            term
+            let mut post = closure_post(
+                ctx,
+                ClosureKind::FnMut,
+                did.expect_local(),
+                self_,
+                args,
+                Some(result_state),
+            );
+            post.subst(&SmallRenaming([(name::result(), result)]));
+            Some(post)
         }
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
@@ -626,29 +628,27 @@ fn fn_postcond_term<'tcx>(
     let &[self_, args, result] = bound else {
         panic!("postcondition must have 3 arguments. This should not happen. Found: {bound:?}")
     };
-    let isubst: &SmallRenaming =
-        &[(name::self_(), self_), (name::args(), args), (name::result(), result)];
-    let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
     let args = Term::var(args, subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(tcx)).inputs[2].2),
+        EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(ctx.tcx)).inputs[2].2),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => {
-            let mut term = ctx.closure_contract(*did).postcond.clone();
-            term.iter_mut().for_each(|term| term.subst(isubst));
-            term
+            let mut post =
+                closure_post(ctx, ClosureKind::Fn, did.expect_local(), self_, args, None);
+            post.subst(&SmallRenaming([(name::result(), result)]));
+            Some(post)
         }
         TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+            Some(Term::call(ctx.tcx, typing_env, get_fn_impl_postcond(ctx.tcx), subst_postcond, [
                 self_.clone().coerce(*cl),
                 args,
                 res,
@@ -658,7 +658,7 @@ fn fn_postcond_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = bsubst[0];
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+            Some(Term::call(ctx.tcx, typing_env, get_fn_impl_postcond(ctx.tcx), subst_postcond, [
                 self_.coerce(bsubst.type_at(0)),
                 args,
                 res,
@@ -679,21 +679,16 @@ fn fn_once_precond_term<'tcx>(
         panic!("precondition_once must have 2 arguments. This should not happen. Found: {bound:?}")
     };
     let ty_self = subst.type_at(1);
+    let self_ = Term::var(self_, ty_self);
+    let args = Term::var(args, subst.type_at(0));
 
     match ty_self.kind() {
-        TyKind::Closure(did, _) => {
-            let mut term = ctx.closure_contract(*did).precond.clone();
-            let isubst: &SmallRenaming = &[(name::self_(), self_), (name::args(), args)];
-            term.subst(isubst);
-            return Some(term);
-        }
+        TyKind::Closure(did, _) => Some(closure_pre(ctx, did.expect_local(), self_, args)),
         &TyKind::Ref(_, cl, m) => {
             let mut subst_pre = subst.to_vec();
             subst_pre[1] = GenericArg::from(cl);
             let subst_pre = ctx.mk_args(&subst_pre);
-            let self_ = Term::var(self_, ty_self);
             let self_ = if m == Mutability::Mut { self_.clone().cur() } else { self_.coerce(cl) };
-            let args = Term::var(args, subst.type_at(0));
             Some(Term::call(ctx.tcx, typing_env, get_fn_once_impl_precond(ctx.tcx), subst_pre, [
                 self_, args,
             ]))
@@ -702,10 +697,9 @@ fn fn_once_precond_term<'tcx>(
             let mut subst_pre = subst.to_vec();
             subst_pre[1] = bsubst[0];
             let subst_pre = ctx.mk_args(&subst_pre);
-            let self_ = Term::var(self_, ty_self).coerce(bsubst.type_at(0));
-            let args = Term::var(args, subst.type_at(0));
             Some(Term::call(ctx.tcx, typing_env, get_fn_once_impl_precond(ctx.tcx), subst_pre, [
-                self_, args,
+                self_.coerce(bsubst.type_at(0)),
+                args,
             ]))
         }
         _ => None,
@@ -724,12 +718,12 @@ fn fn_mut_hist_inv_term<'tcx>(
     let ty_self = subst.type_at(1);
 
     match ty_self.kind() {
-        TyKind::Closure(did, _) => {
-            let mut term = ctx.closure_contract(*did).hist_inv.clone().unwrap();
-            let isubst: &SmallRenaming = &[(name::self_(), self_), (name::future(), future)];
-            term.subst(isubst);
-            Some(term)
-        }
+        TyKind::Closure(did, _) => Some(closure_hist_inv(
+            ctx,
+            did.expect_local(),
+            Term::var(self_, ty_self),
+            Term::var(future, ty_self),
+        )),
         TyKind::Ref(_, _, Mutability::Not) => {
             Some(Term::var(self_, ty_self).eq(ctx.tcx, Term::var(future, ty_self)))
         }
@@ -784,7 +778,7 @@ fn term<'tcx>(
                 resolve_term(ctx, typing_env, def_id, subst, bound)
             } else if is_structural_resolve(ctx.tcx, def_id) {
                 let subj = ctx.sig(def_id).inputs[0].0.0;
-                structural_resolve(ctx, subj, subst.type_at(0))
+                structural_resolve(ctx, typing_env, subj, subst.type_at(0))
             } else if is_fn_once_impl_postcond(ctx.tcx, def_id) {
                 fn_once_postcond_term(ctx, typing_env, subst, bound)
             } else if is_fn_mut_impl_postcond(ctx.tcx, def_id) {

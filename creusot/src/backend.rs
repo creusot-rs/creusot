@@ -18,9 +18,8 @@ use std::{
     path::PathBuf,
 };
 
-pub(crate) use clone_map::*;
-
 pub(crate) mod clone_map;
+pub(crate) mod closures;
 pub(crate) mod dependency;
 pub(crate) mod logic;
 pub(crate) mod optimization;

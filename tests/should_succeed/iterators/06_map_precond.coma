@@ -29,20 +29,20 @@ module M_06_map_precond__qyi6490470836283789663__resolve_coherence [#"06_map_pre
   type t_Map  =
     { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
   
-  predicate resolve (_0 : Seq.seq t_Item) =
-    true
+  predicate resolve (_0 : t_F)
   
-  predicate resolve'0 (_0 : t_F)
-  
-  predicate resolve'1 (_0 : t_I)
+  predicate resolve'0 (_0 : t_I)
   
   predicate structural_resolve (_0 : t_Map) =
     match _0 with
-      | {t_Map__iter = x0 ; t_Map__func = x1 ; t_Map__produced = x2} -> resolve x2 /\ resolve'0 x1 /\ resolve'1 x0
+      | {t_Map__iter = x0 ; t_Map__func = x1 ; t_Map__produced = x2} -> resolve x1 /\ resolve'0 x0
       end
   
+  predicate resolve'1 (_0 : Seq.seq t_Item) =
+    true
+  
   predicate resolve'2 [#"06_map_precond.rs" 10 9 10 16] (self : t_Map) =
-    [%#s06_map_precond'0] resolve'1 self.t_Map__iter /\ resolve'0 self.t_Map__func /\ resolve self.t_Map__produced
+    [%#s06_map_precond'0] resolve'0 self.t_Map__iter /\ resolve self.t_Map__func /\ resolve'1 self.t_Map__produced
   
   constant self  : t_Map
   
@@ -1235,15 +1235,14 @@ module M_06_map_precond__identity [#"06_map_precond.rs" 186 0 186 37]
   
   
   predicate postcondition_once (self : ()) (args : tuple) (result : t_Item) =
-    [%#s06_map_precond'1] exists result_state : () . (exists bor_self : MutBorrow.t () . bor_self.current = self
-    /\ bor_self.final = result_state
-    /\ (let {_0 = x ; _1 = _1'0} = args in closure0'post'return' bor_self x _1'0 result) /\ hist_inv self result_state)
-    /\ resolve'1 result_state
+    [%#s06_map_precond'1] let {_0 = x ; _1 = _1'0} = args in exists e : () . (exists bor_self : MutBorrow.t () . bor_self.current
+    = self
+    /\ bor_self.final = e /\ closure0'post'return' bor_self x _1'0 result /\ hist_inv self e)
+    /\ resolve'1 e
   
   predicate postcondition_mut (self : ()) (args : tuple) (result_state : ()) (result : t_Item) =
-    [%#s06_map_precond'1] exists bor_self : MutBorrow.t () . bor_self.current = self
-    /\ bor_self.final = result_state
-    /\ (let {_0 = x ; _1 = _1'0} = args in closure0'post'return' bor_self x _1'0 result) /\ hist_inv self result_state
+    [%#s06_map_precond'1] let {_0 = x ; _1 = _1'0} = args in exists bor_self : MutBorrow.t () . bor_self.current = self
+    /\ bor_self.final = result_state /\ closure0'post'return' bor_self x _1'0 result /\ hist_inv self result_state
   
   function fn_mut_once (self : ()) (args : tuple) (res : t_Item) : ()
   
@@ -1270,8 +1269,8 @@ module M_06_map_precond__identity [#"06_map_precond.rs" 186 0 186 37]
   predicate inv'0 (_0'0 : t_I)
   
   predicate precondition (self : ()) (args : tuple) =
-    [%#s06_map_precond'1] forall bor_self : MutBorrow.t () . bor_self.current = self
-     -> (let {_0 = x ; _1 = _1'0} = args in closure0'pre bor_self x _1'0)
+    [%#s06_map_precond'1] let {_0 = x ; _1 = _1'0} = args in forall bor_self : MutBorrow.t () . bor_self.current = self
+     -> closure0'pre bor_self x _1'0
   
   predicate completed [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_I)
   
@@ -1441,15 +1440,14 @@ module M_06_map_precond__increment [#"06_map_precond.rs" 194 0 194 50]
   
   
   predicate postcondition_once (self : ()) (args : tuple) (result : UInt32.t) =
-    [%#s06_map_precond'11] exists result_state : () . (exists bor_self : MutBorrow.t () . bor_self.current = self
-    /\ bor_self.final = result_state
-    /\ (let {_0 = x ; _1 = _1'0} = args in closure0'post'return' bor_self x _1'0 result) /\ hist_inv self result_state)
-    /\ resolve'1 result_state
+    [%#s06_map_precond'11] let {_0 = x ; _1 = _1'0} = args in exists e : () . (exists bor_self : MutBorrow.t () . bor_self.current
+    = self
+    /\ bor_self.final = e /\ closure0'post'return' bor_self x _1'0 result /\ hist_inv self e)
+    /\ resolve'1 e
   
   predicate postcondition_mut (self : ()) (args : tuple) (result_state : ()) (result : UInt32.t) =
-    [%#s06_map_precond'11] exists bor_self : MutBorrow.t () . bor_self.current = self
-    /\ bor_self.final = result_state
-    /\ (let {_0 = x ; _1 = _1'0} = args in closure0'post'return' bor_self x _1'0 result) /\ hist_inv self result_state
+    [%#s06_map_precond'11] let {_0 = x ; _1 = _1'0} = args in exists bor_self : MutBorrow.t () . bor_self.current = self
+    /\ bor_self.final = result_state /\ closure0'post'return' bor_self x _1'0 result /\ hist_inv self result_state
   
   function fn_mut_once (self : ()) (args : tuple) (res : UInt32.t) : ()
   
@@ -1490,8 +1488,8 @@ module M_06_map_precond__increment [#"06_map_precond.rs" 194 0 194 50]
   axiom produces_refl_spec : forall self : t_U . [%#scommon] produces self (Seq.empty : Seq.seq UInt32.t) self
   
   predicate precondition (self : ()) (args : tuple) =
-    [%#s06_map_precond'11] forall bor_self : MutBorrow.t () . bor_self.current = self
-     -> (let {_0 = x ; _1 = _1'0} = args in closure0'pre bor_self x _1'0)
+    [%#s06_map_precond'11] let {_0 = x ; _1 = _1'0} = args in forall bor_self : MutBorrow.t () . bor_self.current = self
+     -> closure0'pre bor_self x _1'0
   
   predicate completed [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_U)
   
@@ -1747,18 +1745,15 @@ module M_06_map_precond__counter [#"06_map_precond.rs" 205 0 205 48]
      [ return''0 (result:UInt32.t)-> return' {result} ] 
   
   predicate postcondition_once (self : closure0) (args : tuple) (result : UInt32.t) =
-    [%#s06_map_precond'11] exists result_state : closure0 . (exists bor_self : MutBorrow.t closure0 . bor_self.current
+    [%#s06_map_precond'11] let {_0'0 = x ; _1 = _prod} = args in exists e : closure0 . (exists bor_self : MutBorrow.t closure0 . bor_self.current
     = self
-    /\ bor_self.final = result_state
-    /\ (let {_0'0 = x ; _1 = _prod} = args in closure0'post'return' bor_self x _prod result)
-    /\ hist_inv self result_state)
-    /\ resolve'3 result_state
+    /\ bor_self.final = e /\ closure0'post'return' bor_self x _prod result /\ hist_inv self e)
+    /\ resolve'3 e
   
   predicate postcondition_mut (self : closure0) (args : tuple) (result_state : closure0) (result : UInt32.t) =
-    [%#s06_map_precond'11] exists bor_self : MutBorrow.t closure0 . bor_self.current = self
-    /\ bor_self.final = result_state
-    /\ (let {_0'0 = x ; _1 = _prod} = args in closure0'post'return' bor_self x _prod result)
-    /\ hist_inv self result_state
+    [%#s06_map_precond'11] let {_0'0 = x ; _1 = _prod} = args in exists bor_self : MutBorrow.t closure0 . bor_self.current
+    = self
+    /\ bor_self.final = result_state /\ closure0'post'return' bor_self x _prod result /\ hist_inv self result_state
   
   function fn_mut_once (self : closure0) (args : tuple) (res : UInt32.t) : ()
   
@@ -1799,8 +1794,8 @@ module M_06_map_precond__counter [#"06_map_precond.rs" 205 0 205 48]
   axiom produces_refl_spec : forall self : t_I . [%#scommon] produces self (Seq.empty : Seq.seq UInt32.t) self
   
   predicate precondition (self : closure0) (args : tuple) =
-    [%#s06_map_precond'11] forall bor_self : MutBorrow.t closure0 . bor_self.current = self
-     -> (let {_0'0 = x ; _1 = _prod} = args in closure0'pre bor_self x _prod)
+    [%#s06_map_precond'11] let {_0'0 = x ; _1 = _prod} = args in forall bor_self : MutBorrow.t closure0 . bor_self.current
+    = self  -> closure0'pre bor_self x _prod
   
   predicate completed [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_I)
   
@@ -1936,16 +1931,13 @@ module M_06_map_precond__qyi6490470836283789663__resolve_coherence__refines [#"0
   type t_Map  =
     { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
   
-  predicate resolve (_0 : Seq.seq t_Item) =
-    true
+  predicate resolve (_0 : t_F)
   
-  predicate resolve'0 (_0 : t_F)
-  
-  predicate resolve'1 (_0 : t_I)
+  predicate resolve'0 (_0 : t_I)
   
   predicate structural_resolve (_0 : t_Map) =
     match _0 with
-      | {t_Map__iter = x0 ; t_Map__func = x1 ; t_Map__produced = x2} -> resolve x2 /\ resolve'0 x1 /\ resolve'1 x0
+      | {t_Map__iter = x0 ; t_Map__func = x1 ; t_Map__produced = x2} -> resolve x1 /\ resolve'0 x0
       end
   
   predicate inv (_0 : t_I)
@@ -1966,8 +1958,11 @@ module M_06_map_precond__qyi6490470836283789663__resolve_coherence__refines [#"0
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Map [inv'2 x] . inv'2 x = invariant' x
   
+  predicate resolve'1 (_0 : Seq.seq t_Item) =
+    true
+  
   predicate resolve'2 [#"06_map_precond.rs" 10 9 10 16] (self : t_Map) =
-    [%#s06_map_precond'0] resolve'1 self.t_Map__iter /\ resolve'0 self.t_Map__func /\ resolve self.t_Map__produced
+    [%#s06_map_precond'0] resolve'0 self.t_Map__iter /\ resolve self.t_Map__func /\ resolve'1 self.t_Map__produced
   
   goal refines : [%#s06_map_precond] forall self : t_Map . structural_resolve self /\ inv'2 self
    -> structural_resolve self /\ (forall result : () . resolve'2 self  -> resolve'2 self)
