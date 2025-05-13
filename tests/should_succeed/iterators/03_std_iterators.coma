@@ -1095,6 +1095,7 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   let%span s03_std_iterators'2 = "03_std_iterators.rs" 56 20 56 36
   let%span s03_std_iterators'3 = "03_std_iterators.rs" 48 26 48 45
   let%span s03_std_iterators'4 = "03_std_iterators.rs" 49 19 49 20
+  let%span s03_std_iterators'5 = "03_std_iterators.rs" 47 17 47 27
   let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 303 18 303 33
   let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 441 14 441 45
   let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 442 27 442 29
@@ -1132,13 +1133,13 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   let%span smap_inv'6 = "../../../creusot-contracts/src/std/iter/map_inv.rs" 28 15 28 32
   let%span smap_inv'7 = "../../../creusot-contracts/src/std/iter/map_inv.rs" 29 15 29 32
   let%span smap_inv'8 = "../../../creusot-contracts/src/std/iter/map_inv.rs" 30 14 30 42
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 116 15 116 59
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 117 14 117 36
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 122 14 122 31
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 127 15 127 29
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 128 15 128 26
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 129 14 129 28
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 134 14 135 105
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 36
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 31
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 29
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 26
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 28
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.int.UInt64
   use creusot.slice.Slice64
@@ -1222,8 +1223,8 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   predicate resolve'3 (_0'1 : closure0) =
     resolve'2 _0'1._0
   
-  predicate unnest (self : closure0) (_1'0 : closure0) =
-    (_1'0._0).final = (self._0).final
+  predicate unnest (self : closure0) (result_state : closure0) =
+    [%#s03_std_iterators'5] (result_state._0).final = (self._0).final
   
   let rec closure0[#"03_std_iterators.rs" 47 17 47 27] [@coma:extspec] (self:MutBorrow.t closure0) (x:UInt32.t) (_prod:Seq.seq UInt32.t) (return'  (x'0:UInt32.t))= bb0
     [ bb0 = s0
@@ -1245,13 +1246,17 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
      [ return''0 (result:UInt32.t)-> return' {result} ] 
   
   predicate postcondition_once (self : closure0) (args : tuple) (result : UInt32.t) =
-    let {_0'0 = x ; _1 = _prod} = args in exists bor_self : MutBorrow.t closure0 . closure0'post'return' bor_self x _prod result
-    /\ bor_self.current = self
+    [%#s03_std_iterators'5] exists result_state : closure0 . (exists bor_self : MutBorrow.t closure0 . bor_self.current
+    = self
+    /\ bor_self.final = result_state
+    /\ (let {_0'0 = x ; _1 = _prod} = args in closure0'post'return' bor_self x _prod result)
+    /\ unnest self result_state)
+    /\ resolve'3 result_state
   
   predicate postcondition_mut (self : closure0) (args : tuple) (result_state : closure0) (result : UInt32.t) =
-    (let {_0'0 = x ; _1 = _prod} = args in exists bor_self : MutBorrow.t closure0 . closure0'post'return' bor_self x _prod result
-    /\ bor_self.current = self /\ bor_self.final = result_state)
-    /\ unnest self result_state
+    [%#s03_std_iterators'5] exists bor_self : MutBorrow.t closure0 . bor_self.current = self
+    /\ bor_self.final = result_state
+    /\ (let {_0'0 = x ; _1 = _prod} = args in closure0'post'return' bor_self x _prod result) /\ unnest self result_state
   
   function fn_mut_once (self : closure0) (args : tuple) (res : UInt32.t) : ()
   
@@ -1312,8 +1317,8 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
     { t_MapInv__iter: t_Iter; t_MapInv__func: closure0; t_MapInv__produced: Seq.seq UInt32.t }
   
   predicate precondition (self : closure0) (args : tuple) =
-    let {_0'0 = x ; _1 = _prod} = args in forall bor_self : MutBorrow.t closure0 . bor_self.current = self
-     -> closure0'pre bor_self x _prod
+    [%#s03_std_iterators'5] forall bor_self : MutBorrow.t closure0 . bor_self.current = self
+     -> (let {_0'0 = x ; _1 = _prod} = args in closure0'pre bor_self x _prod)
   
   predicate resolve'4 (self : MutBorrow.t t_Iter) =
     [%#sresolve] self.final = self.current

@@ -21,9 +21,9 @@ pub fn structural_resolve<'tcx>(
             Some(resolve_of(ctx, subject.coerce(args.type_at(0))))
         }
         TyKind::Adt(adt, _) if is_trusted(ctx.tcx, adt.did()) => None,
-        TyKind::Adt(adt, _) if is_snap_ty(ctx.tcx, adt.did()) => Some(Term::mk_true(ctx.tcx)),
+        TyKind::Adt(adt, _) if is_snap_ty(ctx.tcx, adt.did()) => Some(Term::true_(ctx.tcx)),
         TyKind::Adt(adt, _) if get_builtin(ctx.tcx, adt.did()).is_some() => {
-            Some(Term::mk_true(ctx.tcx))
+            Some(Term::true_(ctx.tcx))
         }
         TyKind::Adt(adt, args) => {
             let arms = adt
@@ -40,7 +40,7 @@ pub fn structural_resolve<'tcx>(
                         })
                         .unzip();
 
-                    let body = exps.into_iter().rfold(Term::mk_true(ctx.tcx), Term::conj);
+                    let body = exps.into_iter().rfold(Term::true_(ctx.tcx), Term::conj);
                     (Pattern::constructor(varidx, fields, ty), body)
                 })
                 .collect();
@@ -61,7 +61,7 @@ pub fn structural_resolve<'tcx>(
                 })
                 .unzip();
 
-            let body = exps.into_iter().rfold(Term::mk_true(ctx.tcx), Term::conj);
+            let body = exps.into_iter().rfold(Term::true_(ctx.tcx), Term::conj);
 
             Some(Term {
                 ty: ctx.types.bool,
@@ -76,7 +76,7 @@ pub fn structural_resolve<'tcx>(
             Some(subject.clone().fin().eq(ctx.tcx, subject.cur()))
         }
         TyKind::Closure(..) | TyKind::Param(_) => None,
-        _ => Some(Term::mk_true(ctx.tcx)),
+        _ => Some(Term::true_(ctx.tcx)),
     }
 }
 

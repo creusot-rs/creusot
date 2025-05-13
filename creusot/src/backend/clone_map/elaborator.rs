@@ -1,4 +1,5 @@
 use std::{
+    assert_matches::assert_matches,
     cell::RefCell,
     collections::{HashMap, HashSet, VecDeque},
 };
@@ -20,8 +21,9 @@ use crate::{
     },
     constant::from_ty_const,
     contracts_items::{
-        get_builtin, get_fn_impl_postcond, get_fn_mut_impl_postcond, get_fn_once_impl_postcond,
-        get_resolve_method, is_fn_impl_postcond, is_fn_mut_impl_postcond, is_fn_mut_impl_unnest,
+        get_builtin, get_fn_impl_postcond, get_fn_mut_impl_postcond, get_fn_mut_impl_unnest,
+        get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
+        is_fn_impl_postcond, is_fn_mut_impl_postcond, is_fn_mut_impl_unnest,
         is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_resolve_function,
         is_structural_resolve,
     },
@@ -151,7 +153,7 @@ impl DepElab for LogicElab {
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<Decl> {
-        assert!(matches!(dep, Dependency::Item(_, _)));
+        assert_matches!(dep, Dependency::Item(_, _));
 
         let (def_id, subst) = dep.did().unwrap();
 
@@ -470,7 +472,7 @@ fn resolve_term<'tcx>(
             }
             traits::TraitResolved::NoInstance => {
                 // We know there is no instance => body is true
-                Some(Term::mk_true(ctx.tcx))
+                Some(Term::true_(ctx.tcx))
             }
         }
     }
@@ -501,8 +503,8 @@ fn fn_once_postcond_term<'tcx>(
     match ty_self.kind() {
         TyKind::Closure(did, _) => {
             let mut term = ctx.closure_contract(*did).postcond_once.clone();
-            term.iter_mut().for_each(|term| term.subst(isubst));
-            term
+            term.subst(isubst);
+            Some(term)
         }
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
@@ -521,6 +523,16 @@ fn fn_once_postcond_term<'tcx>(
             let subst_postcond = ctx.mk_args(&subst_postcond);
             Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
                 self_.coerce(*cl),
+                args,
+                res,
+            ]))
+        }
+        TyKind::Adt(def, bsubst) if def.is_box() => {
+            let mut subst_postcond = subst.to_vec();
+            subst_postcond[1] = bsubst[0];
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            Some(Term::call(tcx, typing_env, get_fn_once_impl_postcond(tcx), subst_postcond, [
+                self_.coerce(bsubst.type_at(0)),
                 args,
                 res,
             ]))
@@ -589,6 +601,17 @@ fn fn_mut_postcond_term<'tcx>(
                 .conj(self_.eq(ctx.tcx, result_state)),
             )
         }
+        TyKind::Adt(def, bsubst) if def.is_box() => {
+            let mut subst_postcond = subst.to_vec();
+            subst_postcond[1] = bsubst[0];
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            Some(Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, [
+                self_.coerce(bsubst.type_at(0)),
+                args,
+                result_state.coerce(bsubst.type_at(0)),
+                res,
+            ]))
+        }
         _ => None,
     }
 }
@@ -631,6 +654,16 @@ fn fn_postcond_term<'tcx>(
                 res,
             ]))
         }
+        TyKind::Adt(def, bsubst) if def.is_box() => {
+            let mut subst_postcond = subst.to_vec();
+            subst_postcond[1] = bsubst[0];
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+                self_.coerce(bsubst.type_at(0)),
+                args,
+                res,
+            ]))
+        }
         _ => None,
     }
 }
@@ -638,33 +671,93 @@ fn fn_postcond_term<'tcx>(
 /// Generate body of `precondition_once` for `FnOnce` closures.
 fn fn_once_precond_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
     let &[self_, args] = bound else {
         panic!("precondition_once must have 2 arguments. This should not happen. Found: {bound:?}")
     };
-    let isubst: &SmallRenaming = &[(name::self_(), self_), (name::args(), args)];
-    let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
-    let mut term = ctx.closure_contract(*did).precond.clone();
-    term.subst(isubst);
-    Some(term)
+    let ty_self = subst.type_at(1);
+
+    match ty_self.kind() {
+        TyKind::Closure(did, _) => {
+            let mut term = ctx.closure_contract(*did).precond.clone();
+            let isubst: &SmallRenaming = &[(name::self_(), self_), (name::args(), args)];
+            term.subst(isubst);
+            return Some(term);
+        }
+        &TyKind::Ref(_, cl, m) => {
+            let mut subst_pre = subst.to_vec();
+            subst_pre[1] = GenericArg::from(cl);
+            let subst_pre = ctx.mk_args(&subst_pre);
+            let self_ = Term::var(self_, ty_self);
+            let self_ = if m == Mutability::Mut { self_.clone().cur() } else { self_.coerce(cl) };
+            let args = Term::var(args, subst.type_at(0));
+            Some(Term::call(ctx.tcx, typing_env, get_fn_once_impl_precond(ctx.tcx), subst_pre, [
+                self_, args,
+            ]))
+        }
+        &TyKind::Adt(def, bsubst) if def.is_box() => {
+            let mut subst_pre = subst.to_vec();
+            subst_pre[1] = bsubst[0];
+            let subst_pre = ctx.mk_args(&subst_pre);
+            let self_ = Term::var(self_, ty_self).coerce(bsubst.type_at(0));
+            let args = Term::var(args, subst.type_at(0));
+            Some(Term::call(ctx.tcx, typing_env, get_fn_once_impl_precond(ctx.tcx), subst_pre, [
+                self_, args,
+            ]))
+        }
+        _ => None,
+    }
 }
 
-/// Generate body of `unnest` for `FnMut` closures.
 fn fn_mut_unnest_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
     let &[self_, future] = bound else {
         panic!("unnest must have 2 arguments. This should not happen. Found: {bound:?}")
     };
-    let isubst: &SmallRenaming = &[(name::self_(), self_), (name::future(), future)];
-    let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
-    let mut term = ctx.closure_contract(*did).unnest.clone().unwrap();
-    term.subst(isubst);
-    Some(term)
+    let ty_self = subst.type_at(1);
+
+    match ty_self.kind() {
+        TyKind::Closure(did, _) => {
+            let mut term = ctx.closure_contract(*did).unnest.clone().unwrap();
+            let isubst: &SmallRenaming = &[(name::self_(), self_), (name::future(), future)];
+            term.subst(isubst);
+            Some(term)
+        }
+        TyKind::Ref(_, _, Mutability::Not) => {
+            Some(Term::var(self_, ty_self).eq(ctx.tcx, Term::var(future, ty_self)))
+        }
+        TyKind::Ref(_, cl, Mutability::Mut) => {
+            let mut subst_unnest = subst.to_vec();
+            subst_unnest[1] = GenericArg::from(*cl);
+            let subst_unnest = ctx.mk_args(&subst_unnest);
+            Some(
+                Term::call(ctx.tcx, typing_env, get_fn_mut_impl_unnest(ctx.tcx), subst_unnest, [
+                    Term::var(self_, ty_self).cur(),
+                    Term::var(future, ty_self).cur(),
+                ])
+                .conj(
+                    Term::var(self_, ty_self).fin().eq(ctx.tcx, Term::var(future, ty_self).fin()),
+                ),
+            )
+        }
+        TyKind::Adt(def, bsubst) if def.is_box() => {
+            let mut subst_unnest = subst.to_vec();
+            subst_unnest[1] = bsubst[0];
+            let subst_unnest = ctx.mk_args(&subst_unnest);
+            Some(Term::call(ctx.tcx, typing_env, get_fn_mut_impl_unnest(ctx.tcx), subst_unnest, [
+                Term::var(self_, ty_self).coerce(bsubst.type_at(0)),
+                Term::var(future, ty_self).coerce(bsubst.type_at(0)),
+            ]))
+        }
+        _ => None,
+    }
 }
 
 // Returns a resolved and normalized term for a dependency.
@@ -697,9 +790,9 @@ fn term<'tcx>(
             } else if is_fn_impl_postcond(ctx.tcx, def_id) {
                 fn_postcond_term(ctx, typing_env, subst, bound)
             } else if is_fn_once_impl_precond(ctx.tcx, def_id) {
-                fn_once_precond_term(ctx, subst, bound)
+                fn_once_precond_term(ctx, typing_env, subst, bound)
             } else if is_fn_mut_impl_unnest(ctx.tcx, def_id) {
-                fn_mut_unnest_term(ctx, subst, bound)
+                fn_mut_unnest_term(ctx, typing_env, subst, bound)
             } else {
                 let term = ctx.term_fail_fast(def_id).unwrap().rename(bound);
                 let term = normalize(

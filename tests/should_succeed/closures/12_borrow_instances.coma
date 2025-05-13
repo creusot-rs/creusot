@@ -3,15 +3,16 @@ module M_12_borrow_instances__test1 [#"12_borrow_instances.rs" 9 0 9 59]
   let%span s12_borrow_instances'0 = "12_borrow_instances.rs" 7 10 7 112
   let%span s12_borrow_instances'1 = "12_borrow_instances.rs" 8 10 8 82
   let%span s12_borrow_instances'2 = "12_borrow_instances.rs" 9 60 9 62
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 151 14 151 114
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 156 14 156 101
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 116 15 116 59
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 117 14 117 36
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 122 14 122 31
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 127 15 127 29
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 128 15 128 26
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 129 14 129 28
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 134 14 135 105
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 59
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 36
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 31
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 29
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 26
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 28
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.int.UInt32
   
@@ -25,36 +26,40 @@ module M_12_borrow_instances__test1 [#"12_borrow_instances.rs" 9 0 9 59]
   
   function fn_mut_once (self : t_F) (args : UInt32.t) (res : bool) : ()
   
-  axiom fn_mut_once_spec : forall self : t_F, args : UInt32.t, res : bool . [%#sops'7] postcondition_once self args res
+  axiom fn_mut_once_spec : forall self : t_F, args : UInt32.t, res : bool . [%#sops'8] postcondition_once self args res
   = (exists res_state : t_F . postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate unnest (self : t_F) (_1 : t_F)
+  predicate unnest (self : t_F) (result_state : t_F)
   
   function unnest_trans (self : t_F) (b : t_F) (c : t_F) : ()
   
-  axiom unnest_trans_spec : forall self : t_F, b : t_F, c : t_F . ([%#sops'4] unnest self b)
-   -> ([%#sops'5] unnest b c)  -> ([%#sops'6] unnest self c)
+  axiom unnest_trans_spec : forall self : t_F, b : t_F, c : t_F . ([%#sops'5] unnest self b)
+   -> ([%#sops'6] unnest b c)  -> ([%#sops'7] unnest self c)
   
   function unnest_refl (self : t_F) : ()
   
-  axiom unnest_refl_spec : forall self : t_F . [%#sops'3] unnest self self
+  axiom unnest_refl_spec : forall self : t_F . [%#sops'4] unnest self self
   
   function postcondition_mut_unnest (self : t_F) (args : UInt32.t) (res_state : t_F) (res : bool) : ()
   
-  axiom postcondition_mut_unnest_spec : forall self : t_F, args : UInt32.t, res_state : t_F, res : bool . ([%#sops'1] postcondition_mut self args res_state res)
-   -> ([%#sops'2] unnest self res_state)
+  axiom postcondition_mut_unnest_spec : forall self : t_F, args : UInt32.t, res_state : t_F, res : bool . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] unnest self res_state)
+  
+  function fn_unnest (self : t_F) (res_state : t_F) : ()
+  
+  axiom fn_unnest_spec : forall self : t_F, res_state : t_F . [%#sops'1] unnest self res_state = (self = res_state)
   
   predicate postcondition (self : t_F) (args : UInt32.t) (result : bool)
   
   function fn_once (self : t_F) (args : UInt32.t) (res : bool) : ()
   
   axiom fn_once_spec : forall self : t_F, args : UInt32.t, res : bool . [%#sops'0] postcondition_once self args res
-  = (resolve self /\ postcondition self args res)
+  = (postcondition self args res /\ resolve self)
   
   function fn_mut (self : t_F) (args : UInt32.t) (res_state : t_F) (res : bool) : ()
   
   axiom fn_mut_spec : forall self : t_F, args : UInt32.t, res_state : t_F, res : bool . [%#sops] postcondition_mut self args res_state res
-  = (self = res_state /\ postcondition self args res)
+  = (postcondition self args res /\ self = res_state)
   
   predicate postcondition_once'0 (self : t_F) (args : UInt32.t) (result : bool) =
     postcondition self args result
@@ -66,24 +71,29 @@ module M_12_borrow_instances__test1 [#"12_borrow_instances.rs" 9 0 9 59]
   
   function fn_mut_once'0 (self : t_F) (args : UInt32.t) (res : bool) : ()
   
-  axiom fn_mut_once_spec'0 : forall self : t_F, args : UInt32.t, res : bool . [%#sops'7] postcondition_once'0 self args res
+  axiom fn_mut_once_spec'0 : forall self : t_F, args : UInt32.t, res : bool . [%#sops'8] postcondition_once'0 self args res
   = (exists res_state : t_F . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
-  predicate unnest'0 (self : t_F) (_1 : t_F)
+  predicate unnest'0 (self : t_F) (result_state : t_F) =
+    self = result_state
   
   function unnest_trans'0 (self : t_F) (b : t_F) (c : t_F) : ()
   
-  axiom unnest_trans_spec'0 : forall self : t_F, b : t_F, c : t_F . ([%#sops'4] unnest'0 self b)
-   -> ([%#sops'5] unnest'0 b c)  -> ([%#sops'6] unnest'0 self c)
+  axiom unnest_trans_spec'0 : forall self : t_F, b : t_F, c : t_F . ([%#sops'5] unnest'0 self b)
+   -> ([%#sops'6] unnest'0 b c)  -> ([%#sops'7] unnest'0 self c)
   
   function unnest_refl'0 (self : t_F) : ()
   
-  axiom unnest_refl_spec'0 : forall self : t_F . [%#sops'3] unnest'0 self self
+  axiom unnest_refl_spec'0 : forall self : t_F . [%#sops'4] unnest'0 self self
   
   function postcondition_mut_unnest'0 (self : t_F) (args : UInt32.t) (res_state : t_F) (res : bool) : ()
   
-  axiom postcondition_mut_unnest_spec'0 : forall self : t_F, args : UInt32.t, res_state : t_F, res : bool . ([%#sops'1] postcondition_mut'0 self args res_state res)
-   -> ([%#sops'2] unnest'0 self res_state)
+  axiom postcondition_mut_unnest_spec'0 : forall self : t_F, args : UInt32.t, res_state : t_F, res : bool . ([%#sops'2] postcondition_mut'0 self args res_state res)
+   -> ([%#sops'3] unnest'0 self res_state)
+  
+  function fn_unnest'0 (self : t_F) (res_state : t_F) : ()
+  
+  axiom fn_unnest_spec'0 : forall self : t_F, res_state : t_F . [%#sops'1] unnest'0 self res_state = (self = res_state)
   
   predicate postcondition'0 (self : t_F) (args : UInt32.t) (result : bool) =
     postcondition self args result
@@ -91,12 +101,12 @@ module M_12_borrow_instances__test1 [#"12_borrow_instances.rs" 9 0 9 59]
   function fn_once'0 (self : t_F) (args : UInt32.t) (res : bool) : ()
   
   axiom fn_once_spec'0 : forall self : t_F, args : UInt32.t, res : bool . [%#sops'0] postcondition_once'0 self args res
-  = (resolve'0 self /\ postcondition'0 self args res)
+  = (postcondition'0 self args res /\ resolve'0 self)
   
   function fn_mut'0 (self : t_F) (args : UInt32.t) (res_state : t_F) (res : bool) : ()
   
   axiom fn_mut_spec'0 : forall self : t_F, args : UInt32.t, res_state : t_F, res : bool . [%#sops] postcondition_mut'0 self args res_state res
-  = (self = res_state /\ postcondition'0 self args res)
+  = (postcondition'0 self args res /\ self = res_state)
   
   constant x  : t_F
   
@@ -114,13 +124,13 @@ module M_12_borrow_instances__test2 [#"12_borrow_instances.rs" 15 0 15 66]
   let%span s12_borrow_instances = "12_borrow_instances.rs" 13 10 13 130
   let%span s12_borrow_instances'0 = "12_borrow_instances.rs" 14 10 14 93
   let%span s12_borrow_instances'1 = "12_borrow_instances.rs" 15 67 15 69
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 116 15 116 59
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 117 14 117 36
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 122 14 122 31
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 127 15 127 29
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 128 15 128 26
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 129 14 129 28
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 134 14 135 105
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 36
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 31
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 29
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 26
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 28
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
   use creusot.prelude.MutBorrow
@@ -139,7 +149,7 @@ module M_12_borrow_instances__test2 [#"12_borrow_instances.rs" 15 0 15 66]
   axiom fn_mut_once_spec : forall self : t_F, args : UInt32.t, res : bool . [%#sops'5] postcondition_once self args res
   = (exists res_state : t_F . postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate unnest (self : t_F) (_1 : t_F)
+  predicate unnest (self : t_F) (result_state : t_F)
   
   function unnest_trans (self : t_F) (b : t_F) (c : t_F) : ()
   
@@ -174,7 +184,8 @@ module M_12_borrow_instances__test2 [#"12_borrow_instances.rs" 15 0 15 66]
   axiom fn_mut_once_spec'0 : forall self : MutBorrow.t t_F, args : UInt32.t, res : bool . [%#sops'5] postcondition_once'0 self args res
   = (exists res_state : MutBorrow.t t_F . postcondition_mut'0 self args res_state res /\ resolve'1 res_state)
   
-  predicate unnest'0 (self : MutBorrow.t t_F) (_1 : MutBorrow.t t_F)
+  predicate unnest'0 (self : MutBorrow.t t_F) (result_state : MutBorrow.t t_F) =
+    unnest self.current result_state.current /\ self.final = result_state.final
   
   function unnest_trans'0 (self : MutBorrow.t t_F) (b : MutBorrow.t t_F) (c : MutBorrow.t t_F) : ()
   

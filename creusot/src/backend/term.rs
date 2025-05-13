@@ -210,7 +210,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Impl { box lhs, box rhs } => {
                 self.lower_term(lhs).implies(self.lower_term(rhs))
             }
-            TermKind::Old { box term } => Exp::Old(self.lower_term(term).boxed()),
+            TermKind::Old { box term } => {
+                self.ctx.crash_and_error(term.span, "`old` is not allowed here")
+            }
             TermKind::Match { box scrutinee, arms } => {
                 // Pearlite matches are non-empty.
                 if let PatternKind::Bool(b0) = arms[0].0.kind {
@@ -297,15 +299,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 ])
             }
             TermKind::Assert { .. } => Exp::unit(), // Discard cond, use unit
-            TermKind::Precondition { item, args, params } => {
+            TermKind::Precondition { item, subst, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
-                let ident: Ident = self.names.item(*item, args).to_ident();
+                let ident: Ident = self.names.item(*item, subst).to_ident();
                 let name = Name::Local(ident, Some(why3::Symbol::intern("'pre")));
                 Exp::Var(name).app(params)
             }
-            TermKind::Postcondition { item, args, params } => {
+            TermKind::Postcondition { item, subst, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
-                let ident: Ident = self.names.item(*item, args).to_ident();
+                let ident: Ident = self.names.item(*item, subst).to_ident();
                 let name = Name::Local(ident, Some(why3::Symbol::intern("'post'return'")));
                 Exp::Var(name).app(params)
             }

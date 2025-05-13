@@ -5,7 +5,7 @@ use crate::{
         is_open_inv_result,
     },
     ctx::*,
-    function::closure_capture_subst,
+    function::ClosSubst,
     naming::{name, variable_name},
     pearlite::{Ident, PIdent, TermVisitorMut},
     translation::pearlite::{Literal, Term, TermKind, normalize, type_invariant_term},
@@ -19,7 +19,7 @@ use rustc_middle::{
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::ClosureKind;
-use std::collections::HashSet;
+use std::{collections::HashSet, iter::repeat};
 
 /// A term with an "expl:" label (includes the "expl:" prefix)
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
@@ -44,8 +44,7 @@ pub struct PreContract<'tcx> {
 impl<'tcx> PreContract<'tcx> {
     pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> Self {
         for term in self.terms_mut() {
-            *term =
-                normalize(tcx, typing_env, std::mem::replace(term, /*Dummy*/ Term::mk_true(tcx)));
+            *term = normalize(tcx, typing_env, std::mem::replace(term, /*Dummy*/ Term::true_(tcx)));
         }
         self
     }
@@ -78,19 +77,15 @@ impl<'tcx> PreContract<'tcx> {
     pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
         let mut ensures = self.ensures.clone();
 
-        let postcond = ensures.pop().map_or(Term::mk_true(tcx), |cond| cond.term);
-        let postcond =
-            ensures.into_iter().rfold(postcond, |postcond, cond| Term::conj(postcond, cond.term));
-        postcond
+        let postcond = ensures.pop().map_or(Term::true_(tcx), |cond| cond.term);
+        ensures.into_iter().rfold(postcond, |postcond, cond| Term::conj(postcond, cond.term))
     }
 
     pub(crate) fn requires_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
         let mut requires = self.requires.clone();
 
-        let precond = requires.pop().map_or(Term::mk_true(tcx), |cond| cond.term);
-        let precond =
-            requires.into_iter().rfold(precond, |precond, cond| Term::conj(precond, cond.term));
-        precond
+        let precond = requires.pop().map_or(Term::true_(tcx), |cond| cond.term);
+        requires.into_iter().rfold(precond, |precond, cond| Term::conj(precond, cond.term))
     }
 }
 
@@ -289,7 +284,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         {
             contract.extern_no_spec = true;
             contract.requires.push(Condition {
-                term: Term::mk_false(ctx.tcx),
+                term: Term::false_(ctx.tcx),
                 expl: format!("expl:{} requires false", fn_name),
             });
         }
@@ -368,22 +363,35 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
 
     if let TyKind::Closure(_, subst) = fn_ty.kind() {
-        let self_ = name::self_();
         let kind = subst.as_closure().kind();
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
+        let self_ = Term::var(name::self_(), env_ty);
 
-        let self_pre = if env_ty.is_ref() && env_ty.is_mutable_ptr() {
-            Term::var(self_, env_ty).cur()
-        } else if env_ty.is_ref() {
-            Term::var(self_, env_ty).coerce(env_ty.peel_refs())
-        } else {
-            Term::var(self_, env_ty)
+        let self_pre = match kind {
+            ClosureKind::Fn => self_.clone().shr_deref(),
+            ClosureKind::FnMut => self_.clone().cur(),
+            ClosureKind::FnOnce => self_.clone(),
         };
 
-        let mut pre_subst =
-            closure_capture_subst(ctx, def_id, subst, false, None, self_pre.clone());
+        let mut pre_subst = ClosSubst::pre(ctx, def_id, self_pre.clone());
         for pre in &mut contract.requires {
             pre_subst.visit_mut_term(&mut pre.term);
+        }
+
+        let mut post_subst = if kind == ClosureKind::FnOnce {
+            // If this is an FnOnce closure, then variables captured by value
+            // are consumed by the closure, and thus we cannot refer to them in
+            // the post state.
+            let post_owned_projs = repeat(None);
+            ClosSubst::post_owned(ctx, def_id, self_pre, post_owned_projs)
+        } else {
+            let self_post =
+                if kind == ClosureKind::Fn { self_pre.clone() } else { self_.clone().fin() };
+            ClosSubst::post_ref(ctx, def_id, self_pre, self_post)
+        };
+
+        for post in &mut contract.ensures {
+            post_subst.visit_mut_term(&mut post.term);
         }
 
         if kind == ClosureKind::FnMut {
@@ -395,35 +403,12 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             let unnest_id = get_fn_mut_impl_unnest(ctx.tcx);
 
             let term = Term::call(ctx.tcx, ctx.typing_env(def_id), unnest_id, unnest_subst, [
-                Term::var(self_, env_ty).cur(),
-                Term::var(self_, env_ty).fin(),
+                self_.clone().cur(),
+                self_.fin(),
             ]);
-            let expl = "expl:closure unnest".to_string();
+            let expl = "expl:closure unnest post".to_string();
             contract.ensures.push(Condition { term, expl });
         };
-
-        let self_post = match kind {
-            ClosureKind::Fn => Term::var(self_, env_ty).coerce(env_ty.peel_refs()),
-            ClosureKind::FnMut => Term::var(self_, env_ty).fin(),
-            ClosureKind::FnOnce => Term::var(self_, env_ty),
-        };
-
-        let mut post_subst =
-            closure_capture_subst(ctx, def_id, subst, !env_ty.is_ref(), Some(self_pre), self_post);
-
-        for post in &mut contract.ensures {
-            post_subst.visit_mut_term(&mut post.term);
-        }
-
-        if let Some(span) = post_subst.use_of_consumed_var_error
-            && kind == ClosureKind::FnOnce
-        {
-            ctx.fatal_error(
-                span,
-                "Use of a closure capture in a post-condition, but it is consumed by the closure.",
-            )
-            .emit()
-        }
 
         assert!(contract.variant.is_none());
     }

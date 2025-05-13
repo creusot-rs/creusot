@@ -98,13 +98,13 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         if is_tyinv_trivial(self.ctx.tcx, self.typing_env, ty) {
             self.rewrite = true;
             return Some(
-                lhs.eq(self.ctx.tcx, Term::mk_true(self.ctx.tcx)).forall_trig((x_ident, ty), trig),
+                lhs.eq(self.ctx.tcx, Term::true_(self.ctx.tcx)).forall_trig((x_ident, ty), trig),
             );
         }
 
         let mut use_imples = false;
 
-        let mut rhs = Term::mk_true(self.ctx.tcx);
+        let mut rhs = Term::true_(self.ctx.tcx);
 
         match resolve_user_inv(self.ctx.tcx, ty, self.typing_env) {
             TraitResolved::Instance(uinv_did, uinv_subst) => {
@@ -147,14 +147,14 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             resolve_user_inv(self.ctx.tcx, ty, self.typing_env)
             && is_ignore_structural_inv(self.ctx.tcx, uinv_did)
         {
-            return Term::mk_true(self.ctx.tcx);
+            return Term::true_(self.ctx.tcx);
         }
 
         match ty.kind() {
             TyKind::Adt(adt_def, _) => {
                 let adt_did = adt_def.did();
                 if is_trusted(self.ctx.tcx, adt_did) {
-                    Term::mk_true(self.ctx.tcx)
+                    Term::true_(self.ctx.tcx)
                 } else {
                     self.build_inv_term_adt(term)
                 }
@@ -166,7 +166,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     .map(|(i, ty)| (Ident::fresh_local(&format!("x{i}")), ty))
                     .collect();
                 let body =
-                    Box::new(idsty.iter().fold(Term::mk_true(self.ctx.tcx), |acc, &(id, ty)| {
+                    Box::new(idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(id, ty)| {
                         acc.conj(self.mk_inv_call(Term::var(id, ty)))
                     }));
 
@@ -187,7 +187,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     .collect();
 
                 let body =
-                    Box::new(idsty.iter().fold(Term::mk_true(self.ctx.tcx), |acc, &(id, ty)| {
+                    Box::new(idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(id, ty)| {
                         acc.conj(self.mk_inv_call(Term::var(id, ty)))
                     }));
                 let pattern = Pattern::constructor(
@@ -209,7 +209,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         if let Some((inv_id, subst)) = self.ctx.type_invariant(self.typing_env, term.ty) {
             Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, [term])
         } else {
-            Term::mk_true(self.ctx.tcx)
+            Term::true_(self.ctx.tcx)
         }
     }
 
@@ -220,14 +220,14 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
         let variants = adt_def.variants();
         if variants.is_empty() {
-            return Term::mk_false(self.ctx.tcx);
+            return Term::false_(self.ctx.tcx);
         }
         let arms = variants
             .iter_enumerated()
             .map(|(var_idx, var_def)| {
                 let tuple_var = var_def.ctor.is_some();
 
-                let mut exp = Some(Term::mk_true(self.ctx.tcx));
+                let mut exp = Some(Term::true_(self.ctx.tcx));
                 let fields = var_def.fields.iter().enumerate().map(|(field_idx, field_def)| {
                     let field_name = if tuple_var {
                         Ident::fresh_local(&format!("a_{field_idx}"))

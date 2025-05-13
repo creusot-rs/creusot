@@ -1,7 +1,7 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_patterns, extract_if)]
 #![feature(let_chains, never_type, try_blocks)]
-#![feature(closure_lifetime_binder)]
+#![feature(closure_lifetime_binder, assert_matches)]
 #![feature(if_let_guard, slice_take, slice_as_array)]
 
 extern crate either;

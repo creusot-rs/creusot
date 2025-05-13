@@ -62,14 +62,16 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
     fn postcondition(self, _: Args, _: Self::Output) -> bool;
 
     #[law]
-    #[ensures(self.postcondition_mut(args, res_state, res) == (self == res_state && self.postcondition(args, res)))]
+    #[ensures(self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
     fn fn_mut(self, args: Args, res_state: Self, res: Self::Output);
 
     #[law]
-    #[ensures(self.postcondition_once(args, res) == (resolve(&self) && self.postcondition(args, res)))]
-    fn fn_once(self, args: Args, res: Self::Output)
-    where
-        Self: Sized;
+    #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(&self)))]
+    fn fn_once(self, args: Args, res: Self::Output);
+
+    #[law]
+    #[ensures(self.unnest(res_state) == (self == res_state))]
+    fn fn_unnest(self, res_state: Self);
 }
 
 #[cfg(feature = "nightly")]
@@ -107,7 +109,7 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_mut_impl_unnest"]
-    fn unnest(self, _: Self) -> bool {
+    fn unnest(self, result_state: Self) -> bool {
         true /* Dummy */
     }
 
@@ -148,13 +150,18 @@ impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
 
     #[law]
     #[trusted]
-    #[ensures(self.postcondition_mut(args, res_state, res) == (self == res_state && self.postcondition(args, res)))]
+    #[ensures(self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
     fn fn_mut(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[law]
     #[trusted]
-    #[ensures(self.postcondition_once(args, res) == (resolve(&self) && self.postcondition(args, res)))]
+    #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(&self)))]
     fn fn_once(self, args: Args, res: Self::Output) {}
+
+    #[law]
+    #[trusted]
+    #[ensures(self.unnest(res_state) == (self == res_state))]
+    fn fn_unnest(self, res_state: Self) {}
 }
 
 extern_spec! {

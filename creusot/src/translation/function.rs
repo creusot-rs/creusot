@@ -21,8 +21,10 @@ use crate::{
     translation::{specification::contract_of, traits},
 };
 use indexmap::IndexMap;
+use itertools::Itertools;
 use rustc_borrowck::consumers::BorrowSet;
 use rustc_hir::def_id::DefId;
+use rustc_hir_typeck::expr_use_visitor::PlaceBase;
 use rustc_index::{Idx, bit_set::MixedBitSet};
 use rustc_middle::{
     mir::{
@@ -30,8 +32,8 @@ use rustc_middle::{
         TerminatorKind, traversal::reverse_postorder,
     },
     ty::{
-        BorrowKind, ClosureKind, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypeVisitableExt,
-        TypingEnv, UpvarCapture,
+        BorrowKind, CapturedPlace, ClosureKind, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind,
+        TypeVisitableExt, TypingEnv, UpvarCapture,
     },
 };
 use rustc_mir_dataflow::{
@@ -39,11 +41,12 @@ use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
     on_all_children_bits,
 };
-use rustc_span::{DUMMY_SP, Span, Symbol};
+use rustc_span::{Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use std::{
+    assert_matches::assert_matches,
     collections::{HashMap, HashSet},
-    iter::zip,
+    iter::{once, zip},
     ops::FnOnce,
 };
 
@@ -816,7 +819,7 @@ fn mk_goto<'tcx>(bb: BasicBlock) -> fmir::Terminator<'tcx> {
 #[derive(Clone, Debug)]
 pub(crate) struct ClosureContract<'tcx> {
     pub(crate) precond: Term<'tcx>,
-    pub(crate) postcond_once: Option<Term<'tcx>>,
+    pub(crate) postcond_once: Term<'tcx>,
     pub(crate) postcond_mut: Option<Term<'tcx>>,
     pub(crate) postcond: Option<Term<'tcx>>,
     pub(crate) unnest: Option<Term<'tcx>>,
@@ -824,255 +827,314 @@ pub(crate) struct ClosureContract<'tcx> {
 
 impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn build_closure_contract(&self, def_id: DefId) -> ClosureContract<'tcx> {
+        use ClosureKind::*;
+
+        let typing_env = self.typing_env(def_id);
+
         let TyKind::Closure(_, subst) = self.type_of(def_id).instantiate_identity().kind() else {
             unreachable!()
         };
-
-        let kind = subst.as_closure().kind();
-
+        let closure_kind = subst.as_closure().kind();
+        let captures: Vec<((FieldIdx, &&CapturedPlace), Ty)> = (0usize..)
+            .map(|ix| -> FieldIdx { ix.into() })
+            .zip(self.tcx.closure_captures(def_id.expect_local()))
+            .zip_eq(subst.as_closure().upvar_tys())
+            .collect();
         let PreSignature { contract, inputs, output } = contract_of(self, def_id);
 
         let span = self.def_span(def_id);
-
         let arg_ty = Ty::new_tup_from_iter(self.tcx, inputs[1..].iter().map(|&(_, _, ty)| ty));
-        let arg_tuple = Term::var(name::args(), arg_ty);
+        let arg_vars = inputs[1..].iter().map(|&(nm, _, ty)| Term::var(nm, ty));
 
-        let arg_pat = Pattern::tuple(
-            inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
-            arg_ty,
-        );
-
-        let env_ty = self.closure_env_ty(
-            self.type_of(def_id).instantiate_identity(),
-            kind,
-            self.lifetimes.re_erased,
-        );
-        let self_ = Term::var(name::self_(), env_ty);
-        let params: Vec<_> = inputs[1..].iter().map(|&(nm, _, ty)| Term::var(nm, ty)).collect();
-
-        let mut precondition = if contract.is_empty() {
-            self.inferred_precondition_term(
-                def_id,
-                subst,
-                kind,
-                self_.clone(),
-                params.clone(),
-                span,
-            )
-        } else {
-            contract.requires_conj(self.tcx)
-        };
-
-        let postcond = |target_kind| {
-            let postcondition = if contract.is_empty() {
-                let mut ret_params = params.clone();
-                ret_params.push(Term::var(name::result(), output));
-
-                self.inferred_postcondition_term(
-                    def_id,
-                    subst,
-                    kind,
-                    target_kind,
-                    self_.clone(),
-                    ret_params,
-                    span,
-                )
-            } else {
-                contract.ensures_conj(self.tcx)
-            };
-
+        let bind_args = |t: Term<'tcx>| {
+            let pattern = Pattern::tuple(
+                inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
+                arg_ty,
+            );
             Term {
-                span: postcondition.span,
+                span: t.span,
+                ty: t.ty,
                 kind: TermKind::Let {
-                    pattern: arg_pat.clone(),
-                    arg: Box::new(arg_tuple.clone()),
-                    body: Box::new(postcondition),
+                    pattern,
+                    arg: Box::new(Term::var(name::args(), arg_ty)),
+                    body: Box::new(t),
                 },
-                ty: self.types.bool,
             }
         };
 
-        precondition = Term {
-            span: precondition.span,
-            kind: TermKind::Let {
-                pattern: arg_pat.clone(),
-                arg: Box::new(arg_tuple.clone()),
-                body: Box::new(precondition),
-            },
-            ty: self.types.bool,
-        };
-
-        let env_ty = self
-            .closure_env_ty(
-                self.type_of(def_id).instantiate_identity(),
-                kind,
-                self.lifetimes.re_erased,
-            )
-            .peel_refs();
+        let env_ty = self.type_of(def_id).instantiate_identity();
+        let self_ = Term::var(name::self_(), env_ty);
+        let result_state = Term::var(name::result_state(), env_ty);
 
         let precond = {
-            let self_ = Term::var(name::self_(), env_ty);
+            let pre = if contract.is_empty() {
+                // If needed, we build a reference of the type expected by the closure.
+                match closure_kind {
+                    Fn => {
+                        let bor_self = self_.clone().shr_ref(self.tcx);
+                        let params = once(bor_self).chain(arg_vars.clone()).collect();
+                        bind_args(Term {
+                            kind: TermKind::Precondition { item: def_id, subst, params },
+                            ty: self.types.bool,
+                            span,
+                        })
+                    }
+                    FnMut => {
+                        let bor_self_ident = Ident::fresh_local("bor_self");
+                        let bor_self_ty = Ty::new_ref(
+                            self.tcx,
+                            self.lifetimes.re_erased,
+                            env_ty,
+                            Mutability::Mut,
+                        );
+                        let bor_self = Term::var(bor_self_ident, bor_self_ty);
+                        let params = once(bor_self.clone()).chain(arg_vars.clone()).collect();
+                        let base = bind_args(Term {
+                            kind: TermKind::Precondition { item: def_id, subst, params },
+                            ty: self.types.bool,
+                            span,
+                        });
+                        bor_self
+                            .cur()
+                            .eq(self.tcx, self_.clone())
+                            .implies(base)
+                            .forall((bor_self_ident.into(), bor_self_ty))
+                    }
+                    FnOnce => {
+                        let params = once(self_.clone()).chain(arg_vars.clone()).collect();
+                        bind_args(Term {
+                            kind: TermKind::Precondition { item: def_id, subst, params },
+                            ty: self.types.bool,
+                            span,
+                        })
+                    }
+                }
+            } else {
+                let mut pre = bind_args(contract.requires_conj(self.tcx));
+                ClosSubst::pre(self, def_id, self_.clone()).visit_mut_term(&mut pre);
+                pre
+            };
 
-            // Preconditions are the same for every kind of closure
-            let mut subst = closure_capture_subst(self, def_id, subst, false, None, self_.clone());
-
-            let mut precondition = precondition.clone();
-            subst.visit_mut_term(&mut precondition);
-
-            precondition
+            normalize(self.tcx, typing_env, pre).span(span)
         };
 
-        let mut contracts = ClosureContract {
-            precond,
-            postcond: None,
-            postcond_once: None,
-            postcond_mut: None,
-            unnest: None,
+        let get_postcond = |target_kind| {
+            let to_resolve;
+            let post = if contract.is_empty() {
+                match closure_kind {
+                    Fn => {
+                        let bor_self = self_.clone().shr_ref(self.tcx);
+                        let params = once(bor_self)
+                            .chain(arg_vars.clone())
+                            .chain([Term::var(name::result(), output)])
+                            .collect();
+                        let post = bind_args(Term {
+                            kind: TermKind::Postcondition { item: def_id, subst, params },
+                            ty: self.types.bool,
+                            span,
+                        });
+                        match target_kind {
+                            Fn => {
+                                to_resolve = vec![];
+                                post
+                            }
+                            FnMut => {
+                                to_resolve = vec![];
+                                post.conj(self_.clone().eq(self.tcx, result_state.clone()))
+                            }
+                            FnOnce => {
+                                to_resolve = vec![self_.clone()];
+                                post
+                            }
+                        }
+                    }
+                    FnMut => {
+                        let bor_self_ident = Ident::fresh_local("bor_self");
+                        let bor_self = Term::var(
+                            bor_self_ident,
+                            Ty::new_ref(
+                                self.tcx,
+                                self.lifetimes.re_erased,
+                                env_ty,
+                                Mutability::Mut,
+                            ),
+                        );
+                        let params = once(bor_self.clone())
+                            .chain(arg_vars.clone())
+                            .chain([Term::var(name::result(), output)])
+                            .collect();
+                        let base = bind_args(Term {
+                            kind: TermKind::Postcondition { item: def_id, subst, params },
+                            ty: self.types.bool,
+                            span,
+                        });
+
+                        let result_state = match target_kind {
+                            FnMut => {
+                                to_resolve = vec![];
+                                result_state.clone()
+                            }
+                            FnOnce => {
+                                let r = Term::var(Ident::fresh_local("result_state"), env_ty);
+                                to_resolve = vec![r.clone()];
+                                r
+                            }
+                            Fn => unreachable!(),
+                        };
+
+                        // Thanks to that, `postcondition_mut_unnest` and `fn_mut` are satisfied
+                        let unnest = {
+                            let subst =
+                                self.mk_args(&[GenericArg::from(arg_ty), GenericArg::from(env_ty)]);
+                            let id = get_fn_mut_impl_unnest(self.tcx);
+                            Term::call_no_normalize(self.tcx, id, subst, [
+                                self_.clone(),
+                                result_state.clone(),
+                            ])
+                        };
+
+                        Term::true_(self.tcx)
+                            .conj(bor_self.clone().cur().eq(self.tcx, self_.clone()))
+                            .conj(bor_self.clone().fin().eq(self.tcx, result_state))
+                            .conj(base)
+                            .conj(unnest)
+                            .exists((bor_self_ident.into(), bor_self.ty))
+                    }
+                    FnOnce => {
+                        assert_eq!(target_kind, FnOnce);
+                        let params = once(self_.clone())
+                            .chain(arg_vars.clone())
+                            .chain([Term::var(name::result(), output)])
+                            .collect();
+                        to_resolve = vec![];
+                        bind_args(Term {
+                            kind: TermKind::Postcondition { item: def_id, subst, params },
+                            ty: self.types.bool,
+                            span,
+                        })
+                    }
+                }
+            } else {
+                let mut post = bind_args(contract.ensures_conj(self.tcx));
+                match target_kind {
+                    Fn => {
+                        to_resolve = vec![];
+                        ClosSubst::post_ref(self, def_id, self_.clone(), self_.clone())
+                            .visit_mut_term(&mut post);
+                    }
+                    FnMut => {
+                        to_resolve = vec![];
+                        ClosSubst::post_ref(self, def_id, self_.clone(), result_state.clone())
+                            .visit_mut_term(&mut post);
+                        let unnest = {
+                            let subst =
+                                self.mk_args(&[GenericArg::from(arg_ty), GenericArg::from(env_ty)]);
+                            let id = get_fn_mut_impl_unnest(self.tcx);
+                            Term::call_no_normalize(self.tcx, id, subst, [
+                                self_.clone(),
+                                result_state.clone(),
+                            ])
+                        };
+                        // Thanks to that, `postcondition_mut_unnest` and `fn_mut` are satisfied
+                        // Note that we do not include it in the `target_kind == FnOnce` case, because unnesting
+                        // is actually already included and combined with resolution when `ClosSubst::post_owned`
+                        // substitutes the post state of &(resp. mut)-captured variables by the final value
+                        // (resp. value).
+                        post = post.conj(unnest);
+                    }
+                    FnOnce => {
+                        let post_projs: Vec<Option<Term>>;
+                        match closure_kind {
+                            FnOnce => {
+                                // If this is an FnOnce closure, then variables captured by value
+                                // are consumed by the closure, and thus we cannot refer to them in
+                                // the post state.
+                                post_projs = vec![None; captures.len()];
+                                to_resolve = vec![]
+                            }
+                            Fn => {
+                                post_projs = captures
+                                    .iter()
+                                    .map(|&((f, capture), ty)| {
+                                        (capture.info.capture_kind == UpvarCapture::ByValue)
+                                            .then(|| self_.clone().proj(f, ty))
+                                    })
+                                    .collect();
+                                to_resolve = post_projs.iter().filter_map(Clone::clone).collect();
+                            }
+                            FnMut => {
+                                post_projs = captures
+                                    .iter()
+                                    .map(|&((_, capture), ty)| {
+                                        (capture.info.capture_kind == UpvarCapture::ByValue)
+                                            .then(|| Term::var(Ident::fresh_local("x"), ty))
+                                    })
+                                    .collect();
+                                to_resolve = post_projs.iter().filter_map(Clone::clone).collect();
+                            }
+                        };
+                        ClosSubst::post_owned(self, def_id, self_.clone(), post_projs)
+                            .visit_mut_term(&mut post);
+                    }
+                };
+                post
+            };
+
+            // Make sure fn_once and fn_mut_once are satisfied
+            let mut post = to_resolve.iter().fold(post, |p, r| {
+                if let Some((id, subst)) = resolve_predicate_of(self, typing_env, r.ty) {
+                    let r = r.clone().shr_ref(self.tcx);
+                    p.conj(Term::call(self.tcx, typing_env, id, subst, [r]))
+                } else {
+                    p
+                }
+            });
+            if closure_kind == FnMut {
+                post = to_resolve.iter().rfold(post, |p, r| {
+                    let TermKind::Var(sym) = r.kind else { unreachable!() };
+                    p.exists((sym, r.ty))
+                });
+            }
+
+            normalize(self.tcx, typing_env, post).span(span)
         };
 
-        if kind.extends(ClosureKind::Fn) {
-            let self_ = Term::var(name::self_(), env_ty);
-            let mut csubst =
-                closure_capture_subst(self, def_id, subst, false, Some(self_.clone()), self_);
-            let mut postcondition = postcond(ClosureKind::Fn);
-            csubst.visit_mut_term(&mut postcondition);
+        let postcond = closure_kind.extends(Fn).then(|| get_postcond(Fn));
+        let postcond_mut = closure_kind.extends(FnMut).then(|| get_postcond(FnMut));
+        let postcond_once = get_postcond(FnOnce);
 
-            contracts.postcond = Some(postcondition);
-        }
+        let unnest = closure_kind.extends(FnMut).then(|| {
+            let future = Term::var(name::future(), env_ty);
+            if closure_kind == Fn {
+                // Make sure `fn_unnest` holds
+                return self_.clone().eq(self.tcx, future);
+            }
 
-        if kind.extends(ClosureKind::FnMut) {
-            let self_ = Term::var(name::self_(), env_ty);
-            let result_state = Term::var(name::result_state(), env_ty);
-            let mut csubst = closure_capture_subst(
-                self,
-                def_id,
-                subst,
-                false,
-                Some(self_.clone()),
-                result_state.clone(),
-            );
+            let mut unnest = Term::true_(self.tcx);
+            for ((f, capture), ty) in captures {
+                match capture.info.capture_kind {
+                    // if we captured by value we get no unnesting predicate
+                    UpvarCapture::ByValue => continue,
+                    UpvarCapture::ByRef(is_mut) => {
+                        let unnest_one = if is_mut == BorrowKind::Immutable {
+                            future.clone().proj(f, ty).eq(self.tcx, self_.clone().proj(f, ty))
+                        } else {
+                            future
+                                .clone()
+                                .proj(f, ty)
+                                .fin()
+                                .eq(self.tcx, self_.clone().proj(f, ty).fin())
+                        };
 
-            let mut postcondition = postcond(ClosureKind::FnMut);
-            csubst.visit_mut_term(&mut postcondition);
-
-            let args = self.tcx.instantiate_bound_regions_with_erased(
-                subst.as_closure().sig().inputs().map_bound(|l| l[0]),
-            );
-
-            let unnest_subst = self.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
-
-            let unnest_id = get_fn_mut_impl_unnest(self.tcx);
-
-            let mut postcondition: Term<'tcx> = postcondition;
-            postcondition =
-                postcondition.conj(Term::call_no_normalize(self.tcx, unnest_id, unnest_subst, [
-                    self_,
-                    result_state,
-                ]));
-
-            postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
-            contracts.postcond_mut = Some(postcondition);
-
-            let mut unnest = closure_unnest(self.tcx, def_id, subst);
-            unnest = normalize(self.tcx, self.typing_env(def_id), unnest);
-
-            contracts.unnest = Some(unnest);
-        }
-
-        // FnOnce
-        let self_ = Term::var(name::self_(), env_ty);
-        let mut csubst =
-            closure_capture_subst(self, def_id, subst, true, Some(self_.clone()), self_);
-
-        let mut postcondition = postcond(ClosureKind::FnOnce);
-        csubst.visit_mut_term(&mut postcondition);
-        contracts.postcond_once = Some(postcondition);
-
-        contracts
-    }
-
-    fn inferred_precondition_term(
-        &self,
-        item: DefId,
-        args: GenericArgsRef<'tcx>,
-        kind: ClosureKind,
-        closure_env: Term<'tcx>,
-        mut closure_args: Vec<Term<'tcx>>,
-        span: Span,
-    ) -> Term<'tcx> {
-        let env_ty = closure_env.ty;
-        let bor_self_ident = Ident::fresh_local("bor_self");
-
-        let bor_self = Term::var(
-            bor_self_ident,
-            Ty::new_ref(self.tcx, self.tcx.lifetimes.re_erased, env_ty, Mutability::Mut),
-        );
-        // Based on the underlying kind of closure we may need to wrap the call in a quantifier (at least for FnMut ones)
-        match kind {
-            ClosureKind::Fn | ClosureKind::FnOnce => {
-                closure_args.insert(0, closure_env.clone());
-                Term {
-                    kind: TermKind::Precondition { item, args, params: closure_args.into() },
-                    ty: self.types.bool,
-                    span,
+                        unnest = unnest.conj(unnest_one);
+                    }
                 }
             }
-            ClosureKind::FnMut => {
-                closure_args.insert(0, bor_self.clone());
-                let base = Term {
-                    kind: TermKind::Precondition { item, args, params: closure_args.into() },
-                    ty: self.types.bool,
-                    span,
-                };
-                (bor_self.clone().cur().eq(self.tcx, closure_env))
-                    .implies(base)
-                    .forall((bor_self_ident.into(), env_ty))
-            }
-        }
-    }
 
-    /// Infers the `postcond_kind` version of the postcondition predicate for the provided closure.
-    fn inferred_postcondition_term(
-        &self,
-        item: DefId,
-        args: GenericArgsRef<'tcx>,
-        closure_kind: ClosureKind,
-        postcond_kind: ClosureKind,
-        closure_env: Term<'tcx>,
-        mut closure_args: Vec<Term<'tcx>>,
-        span: Span,
-    ) -> Term<'tcx> {
-        let env_ty = closure_env.ty;
+            normalize(self.tcx, typing_env, unnest).span(span)
+        });
 
-        match closure_kind {
-            ClosureKind::Fn | ClosureKind::FnOnce => {
-                closure_args.insert(0, closure_env.clone());
-                Term {
-                    kind: TermKind::Postcondition { item, args, params: closure_args.into() },
-                    ty: self.types.bool,
-                    span,
-                }
-            }
-            ClosureKind::FnMut => {
-                let bor_self_ident = Ident::fresh_local("bor_self");
-                let bor_self = Term::var(bor_self_ident, env_ty);
-                closure_args.insert(0, bor_self.clone());
-
-                let mut base = Term {
-                    kind: TermKind::Postcondition { item, args, params: closure_args.into() },
-                    ty: self.types.bool,
-                    span,
-                };
-
-                base = base.conj(bor_self.clone().cur().eq(self.tcx, closure_env));
-                if postcond_kind == ClosureKind::FnMut {
-                    base = base
-                        .conj(bor_self.fin().eq(self.tcx, Term::var(name::result_state(), env_ty)))
-                }
-
-                base.exists((bor_self_ident.into(), env_ty))
-            }
-        }
+        ClosureContract { precond, postcond, postcond_once, postcond_mut, unnest }
     }
 }
 
@@ -1083,18 +1145,13 @@ pub(crate) fn closure_resolve<'tcx>(
     bound: &[Ident],
 ) -> Term<'tcx> {
     assert! {bound.len() == 1};
-    let mut resolve = Term::mk_true(ctx.tcx);
+    let mut resolve = Term::true_(ctx.tcx);
     let self_ = Term::var(bound[0], ctx.type_of(def_id).instantiate_identity());
     let csubst = subst.as_closure();
     let typing_env = TypingEnv::non_body_analysis(ctx.tcx, def_id);
     for (ix, ty) in csubst.upvar_tys().iter().enumerate() {
-        let proj = Term {
-            ty,
-            kind: TermKind::Projection { lhs: Box::new(self_.clone()), idx: ix.into() },
-            span: DUMMY_SP,
-        };
-
         if let Some((id, subst)) = resolve_predicate_of(ctx, typing_env, ty) {
+            let proj = self_.clone().proj(ix.into(), ty).shr_ref(ctx.tcx);
             resolve = Term::call(ctx.tcx, typing_env, id, subst, [proj]).conj(resolve);
         }
     }
@@ -1102,123 +1159,39 @@ pub(crate) fn closure_resolve<'tcx>(
     resolve
 }
 
-fn closure_unnest<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-    subst: GenericArgsRef<'tcx>,
-) -> Term<'tcx> {
-    let ty = Ty::new_closure(tcx, def_id, subst);
-    let kind = subst.as_closure().kind();
-    let env_ty = tcx.closure_env_ty(ty, kind, tcx.lifetimes.re_erased).peel_refs();
-    let self_ = Term::var(name::self_(), env_ty);
-
-    let captures =
-        tcx.typeck(def_id.expect_local()).closure_min_captures_flattened(def_id.expect_local());
-
-    let mut unnest = Term::mk_true(tcx);
-
-    for (ix, (capture, ty)) in captures.zip(subst.as_closure().upvar_tys()).enumerate() {
-        match capture.info.capture_kind {
-            // if we captured by value we get no unnesting predicate
-            UpvarCapture::ByValue => continue,
-            UpvarCapture::ByRef(is_mut) => {
-                let acc = |lhs: Term<'tcx>| Term {
-                    ty,
-                    kind: TermKind::Projection { lhs: Box::new(lhs), idx: ix.into() },
-                    span: DUMMY_SP,
-                };
-                let cur = self_.clone();
-                let fin = Term::var(name::future(), env_ty);
-
-                use rustc_middle::ty::BorrowKind;
-
-                let unnest_one = match is_mut {
-                    BorrowKind::Immutable => acc(fin).eq(tcx, acc(cur)),
-                    _ => acc(fin).fin().eq(tcx, acc(cur).fin()),
-                };
-
-                unnest = unnest_one.conj(unnest);
-            }
-        }
-    }
-
-    unnest
-}
-
 // Responsible for replacing occurences of captured variables with projections from the closure environment.
 // Must also account for the *kind* of capture and the *kind* of closure involved each time.
-pub(crate) struct ClosureSubst<'a, 'tcx> {
+pub(crate) struct ClosSubst<'tcx, 'a> {
     ctx: &'a TranslationCtx<'tcx>,
-    self_: Term<'tcx>,
-    old_self: Option<Term<'tcx>>,
-    self_consumed: bool,
-    map: IndexMap<Ident, (UpvarCapture, Ty<'tcx>, FieldIdx)>,
+    map_cur: IndexMap<Ident, Option<Term<'tcx>>>,
+    map_old: IndexMap<Ident, Term<'tcx>>,
     bound: HashSet<Ident>,
-    pub use_of_consumed_var_error: Option<Span>,
 }
 
-impl<'tcx> ClosureSubst<'_, 'tcx> {
-    // TODO: Simplify this logic.
-    fn var(&mut self, x: Ident, span: Span) -> Option<Term<'tcx>> {
-        let (ck, ty, idx) = *self.map.get(&x)?;
-
-        let proj = Term {
-            ty,
-            kind: TermKind::Projection { lhs: Box::new(self.self_.clone()), idx },
-            span: DUMMY_SP,
-        };
-
-        match ck {
-            UpvarCapture::ByValue => {
-                if self.self_consumed {
-                    self.use_of_consumed_var_error = Some(span)
-                }
-                Some(proj)
-            }
-            UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
-                if self.self_consumed { Some(proj.fin()) } else { Some(proj.cur()) }
-            }
-            UpvarCapture::ByRef(BorrowKind::Immutable) => {
-                Some(proj.coerce(ty.builtin_deref(false).unwrap()))
-            }
-        }
-    }
-
-    fn old(&self, x: Ident, span: Span) -> Option<Term<'tcx>> {
-        let (ck, ty, idx) = *self.map.get(&x)?;
-
-        let old_self = self.old_self.clone().unwrap_or_else(|| {
-            self.ctx.fatal_error(span, "Cannot use `old` in a precondition.").emit()
-        });
-
-        let proj = Term {
-            ty,
-            kind: TermKind::Projection { lhs: Box::new(old_self), idx },
-            span: DUMMY_SP,
-        };
-
-        match ck {
-            UpvarCapture::ByValue => Some(proj),
-            UpvarCapture::ByRef(_) => Some(proj.cur()),
-        }
-    }
-}
-
-impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'_, 'tcx> {
+impl<'tcx> TermVisitorMut<'tcx> for ClosSubst<'tcx, '_> {
     fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
         match &mut term.kind {
-            TermKind::Old { term: box Term { kind: TermKind::Var(x), .. }, .. } => {
-                if !self.bound.contains(&x.0) {
-                    if let Some(v) = self.old(x.0, term.span) {
-                        *term = v;
-                    }
-                }
+            TermKind::Old { term: box Term { kind: TermKind::Var(x), .. }, .. }
+                if !self.bound.contains(&x.0)
+                    && let Some(v) = self.map_old.get(&x.0) =>
+            {
+                *term = v.clone();
             }
-            TermKind::Var(x) => {
-                if !self.bound.contains(&x.0) {
-                    if let Some(v) = self.var(x.0, term.span) {
-                        *term = v;
-                    }
+            TermKind::Old { .. } => self.ctx.crash_and_error(
+                term.span,
+                "`old` should only be used in post-conditions of closures for captured variables.",
+            ),
+            TermKind::Var(x)
+                if !self.bound.contains(&x.0)
+                    && let Some(v) = self.map_cur.get(&x.0) =>
+            {
+                if let Some(v) = v {
+                    *term = v.clone();
+                } else {
+                    self.ctx.fatal_error(
+                        term.span,
+                        "Use of a closure capture in a post-condition, but it is consumed by the closure.",
+                    ).emit()
                 }
             }
             TermKind::Quant { binder, .. } => {
@@ -1257,45 +1230,118 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'_, 'tcx> {
     }
 }
 
-pub(crate) fn closure_capture_subst<'a, 'tcx>(
-    ctx: &'a TranslationCtx<'tcx>,
-    def_id: DefId,
-    cs: GenericArgsRef<'tcx>,
-    // What kind of substitution we should generate. The same precondition can be used in several ways
-    self_consumed: bool,
-    old_self: Option<Term<'tcx>>,
-    self_: Term<'tcx>,
-) -> ClosureSubst<'a, 'tcx> {
-    // TODO: looks like dead code
-    let mut fun_def_id = def_id;
-    while ctx.is_closure_like(fun_def_id) {
-        fun_def_id = ctx.parent(fun_def_id);
+impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
+    pub(crate) fn pre(ctx: &'a TranslationCtx<'tcx>, def_id: DefId, self_pre: Term<'tcx>) -> Self {
+        let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
+            unreachable!()
+        };
+        let map_cur = ctx
+            .closure_captures(def_id.expect_local())
+            .iter()
+            .zip(subst.as_closure().upvar_tys())
+            .enumerate()
+            .map(|(ix, (cap, ty))| {
+                assert!(cap.place.projections.is_empty());
+                let proj = self_pre.clone().proj(ix.into(), ty);
+                let term = match cap.info.capture_kind {
+                    UpvarCapture::ByValue => proj,
+                    UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
+                        proj.cur()
+                    }
+                    UpvarCapture::ByRef(BorrowKind::Immutable) => proj.shr_deref(),
+                };
+                let hir_id = match cap.place.base {
+                    PlaceBase::Rvalue => todo!(),
+                    PlaceBase::StaticItem => todo!(),
+                    PlaceBase::Local(hir_id) => hir_id,
+                    PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
+                };
+                (ctx.rename(hir_id), Some(term))
+            })
+            .collect();
+        ClosSubst { ctx, map_cur, map_old: Default::default(), bound: Default::default() }
     }
 
-    let captures = ctx.closure_captures(def_id.expect_local());
+    pub(crate) fn post_ref(
+        ctx: &'a TranslationCtx<'tcx>,
+        def_id: DefId,
+        self_pre: Term<'tcx>,
+        self_post: Term<'tcx>,
+    ) -> Self {
+        let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
+            unreachable!()
+        };
+        let (map_old, map_cur) = ctx
+            .closure_captures(def_id.expect_local())
+            .iter()
+            .zip(subst.as_closure().upvar_tys())
+            .enumerate()
+            .map(|(ix, (cap, ty))| {
+                assert!(cap.place.projections.is_empty());
+                let proj_pre = self_pre.clone().proj(ix.into(), ty);
+                let proj_post = self_post.clone().proj(ix.into(), ty);
+                let (term_pre, term_post) = match cap.info.capture_kind {
+                    UpvarCapture::ByValue => (proj_pre, proj_post),
+                    UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
+                        (proj_pre.cur(), proj_post.cur())
+                    }
+                    UpvarCapture::ByRef(BorrowKind::Immutable) => {
+                        (proj_pre.shr_deref(), proj_post.shr_deref())
+                    }
+                };
+                let hir_id = match cap.place.base {
+                    PlaceBase::Rvalue => todo!(),
+                    PlaceBase::StaticItem => todo!(),
+                    PlaceBase::Local(hir_id) => hir_id,
+                    PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
+                };
+                let nm = ctx.rename(hir_id);
+                ((nm, term_pre), (nm, Some(term_post)))
+            })
+            .unzip();
+        ClosSubst { ctx, map_cur, map_old, bound: Default::default() }
+    }
 
-    let map = zip(captures, cs.as_closure().upvar_tys())
-        .enumerate()
-        .map(|(ix, (cap, ty))| {
-            use rustc_middle::hir::place::PlaceBase::*;
-            let hir_id = match cap.place.base {
-                Rvalue => todo!(),
-                StaticItem => todo!(),
-                Local(hir_id) => hir_id,
-                Upvar(upvar_id) => upvar_id.var_path.hir_id,
-            };
-            (ctx.rename(hir_id), (cap.info.capture_kind, ty, ix.into()))
-        })
-        .collect();
-
-    ClosureSubst {
-        old_self,
-        self_,
-        self_consumed,
-        map,
-        bound: Default::default(),
-        ctx,
-        use_of_consumed_var_error: None,
+    pub(crate) fn post_owned(
+        ctx: &'a TranslationCtx<'tcx>,
+        def_id: DefId,
+        self_: Term<'tcx>,
+        post_owned_projs: impl IntoIterator<Item = Option<Term<'tcx>>>,
+    ) -> Self {
+        let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
+            unreachable!()
+        };
+        let (map_old, map_cur) = ctx
+            .closure_captures(def_id.expect_local())
+            .iter()
+            .zip(subst.as_closure().upvar_tys())
+            .zip(post_owned_projs)
+            .enumerate()
+            .map(|(ix, ((cap, ty), post_owned_proj))| {
+                assert!(cap.place.projections.is_empty());
+                let proj = self_.clone().proj(ix.into(), ty);
+                let (term_pre, term_post) = match cap.info.capture_kind {
+                    UpvarCapture::ByValue => (proj, post_owned_proj),
+                    UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
+                        assert_matches!(post_owned_proj, None);
+                        (proj.clone().cur(), Some(proj.fin()))
+                    }
+                    UpvarCapture::ByRef(BorrowKind::Immutable) => {
+                        assert_matches!(post_owned_proj, None);
+                        (proj.clone().shr_deref(), Some(proj.shr_deref()))
+                    }
+                };
+                let hir_id = match cap.place.base {
+                    PlaceBase::Rvalue => todo!(),
+                    PlaceBase::StaticItem => todo!(),
+                    PlaceBase::Local(hir_id) => hir_id,
+                    PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
+                };
+                let nm = ctx.rename(hir_id);
+                ((nm, term_pre), (nm, term_post))
+            })
+            .unzip();
+        ClosSubst { ctx, map_cur, map_old, bound: Default::default() }
     }
 }
 

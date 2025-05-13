@@ -459,7 +459,6 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     Ok(Exp::if_(scrut, arms.remove(0).1, arms.remove(0).1))
                 })
             }
-
             // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
             TermKind::Match { scrutinee, arms } => self.build_wp(scrutinee, &|scrut| {
                 let arms = arms
