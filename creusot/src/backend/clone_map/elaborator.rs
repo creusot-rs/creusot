@@ -25,20 +25,20 @@ use crate::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
         get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
         is_fn_impl_postcond, is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond,
-        is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_resolve_function,
-        is_structural_resolve,
+        is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_predicate,
+        is_resolve_function, is_structural_resolve,
     },
     ctx::{BodyId, ItemType},
     naming::name,
-    pearlite::{SmallRenaming, Term, normalize},
+    pearlite::{Pattern, QuantKind, SmallRenaming, Term, Trigger, normalize},
     traits::{self, TraitResolved},
 };
 use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
-    UnevaluatedConst,
+    AssocItem, AssocItemContainer, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind,
+    TypeFoldable, TypingEnv, UnevaluatedConst,
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
@@ -208,7 +208,64 @@ impl DepElab for LogicElab {
         if !is_opaque && let Some(term) = term(ctx, typing_env, &bound, dep) {
             lower_logical_defn(ctx, &names, sig, kind, term)
         } else {
-            val(sig, kind)
+            let mut decls = val(sig, kind);
+
+            if is_fn_once_impl_precond(ctx.tcx, def_id) {
+                if let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind() {
+                    let args_id = Ident::fresh_local("args").into();
+                    let args = Term::var(args_id, subst.type_at(0));
+                    if let Some(pre) = pre_fndef(ctx, typing_env, did_f, subst_f, args.clone()) {
+                        let call = Term::call(ctx.tcx, typing_env, def_id, subst, [
+                            Term::unit(ctx.tcx).coerce(subst.type_at(1)),
+                            args,
+                        ]);
+                        let trig = Box::new([Trigger(Box::new([call.clone()]))]);
+                        let axiom =
+                            pre.implies(call).forall_trig((args_id, subst.type_at(0)), trig);
+                        decls.push(Decl::Axiom(Axiom {
+                            name: Ident::fresh(ctx.crate_name(), "precondition_fndef"),
+                            rewrite: false,
+                            axiom: lower_pure(ctx, &names, &axiom),
+                        }))
+                    }
+                }
+            } else if is_fn_impl_postcond(ctx.tcx, def_id)
+                || is_fn_mut_impl_postcond(ctx.tcx, def_id)
+                || is_fn_once_impl_postcond(ctx.tcx, def_id)
+            {
+                if let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind() {
+                    let args_id = Ident::fresh_local("args").into();
+                    let args = Term::var(args_id, subst.type_at(0));
+
+                    let res_id = Ident::fresh_local("res").into();
+                    let res_ty = ctx.instantiate_bound_regions_with_erased(
+                        ctx.fn_sig(did_f).instantiate(ctx.tcx, subst_f).output(),
+                    );
+                    let res = Term::var(res_id, res_ty);
+                    if let Some(post) =
+                        post_fndef(ctx, typing_env, did_f, subst_f, args.clone(), res.clone())
+                    {
+                        let mut v = vec![Term::unit(ctx.tcx).coerce(subst.type_at(1)), args, res];
+                        if is_fn_mut_impl_postcond(ctx.tcx, def_id) {
+                            v.insert(2, v[0].clone());
+                        }
+                        let call = Term::call(ctx.tcx, typing_env, def_id, subst, v);
+                        let trig = Box::new([Trigger(Box::new([call.clone()]))]);
+                        let axiom = call.implies(post).quant(
+                            QuantKind::Forall,
+                            Box::new([(args_id, subst.type_at(0)), (res_id, res_ty)]),
+                            trig,
+                        );
+                        decls.push(Decl::Axiom(Axiom {
+                            name: Ident::fresh(ctx.crate_name(), "precondition_fndef"),
+                            rewrite: false,
+                            axiom: lower_pure(ctx, &names, &axiom),
+                        }))
+                    }
+                }
+            }
+
+            decls
         }
     }
 }
@@ -221,13 +278,12 @@ fn expand_ty_inv_axiom<'tcx>(
 ) -> Vec<Decl> {
     let param_env = elab.typing_env;
     let names = elab.namer(Dependency::TyInvAxiom(ty));
-
     let mut elab = InvariantElaborator::new(param_env, ctx);
     let Some(term) = elab.elaborate_inv(ty) else { return vec![] };
     let rewrite = elab.rewrite;
-    let exp = lower_pure(ctx, &names, &term);
+    let axiom = lower_pure(ctx, &names, &term);
     let axiom =
-        Axiom { name: names.dependency(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom: exp };
+        Axiom { name: names.dependency(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom };
     vec![Decl::Axiom(axiom)]
 }
 
@@ -426,20 +482,14 @@ fn val(mut sig: Signature, kind: DeclKind) -> Vec<Decl> {
     if let DeclKind::Predicate = kind {
         sig.retty = None;
     }
-    sig.contract.variant = None;
-
     let ax = if !sig.contract.ensures.is_empty() { Some(spec_axiom(&sig)) } else { None };
-
     sig.contract = Default::default();
-
     let mut d = vec![Decl::LogicDecl(LogicDecl { kind: Some(kind), sig })];
-
     if !matches!(kind, DeclKind::Constant)
         && let Some(ax) = ax
     {
         d.push(Decl::Axiom(ax))
     }
-
     d
 }
 
@@ -538,6 +588,20 @@ fn fn_once_postcond_term<'tcx>(
                 [self_.coerce(bsubst.type_at(0)), args, res],
             ))
         }
+        &TyKind::FnDef(mut did, mut subst) => {
+            if let Some(AssocItem { container: AssocItemContainer::Trait, .. }) =
+                ctx.opt_associated_item(did)
+            {
+                let TraitResolved::Instance(did_i, subst_i) =
+                    TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst)
+                else {
+                    return None;
+                };
+                did = did_i;
+                subst = subst_i;
+            };
+            post_fndef(ctx, typing_env, did, subst, args, res)
+        }
         _ => None,
     }
 }
@@ -614,6 +678,20 @@ fn fn_mut_postcond_term<'tcx>(
                 res,
             ]))
         }
+        &TyKind::FnDef(mut did, mut subst) => {
+            if let Some(AssocItem { container: AssocItemContainer::Trait, .. }) =
+                ctx.opt_associated_item(did)
+            {
+                let TraitResolved::Instance(did_i, subst_i) =
+                    TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst)
+                else {
+                    return None;
+                };
+                did = did_i;
+                subst = subst_i;
+            };
+            post_fndef(ctx, typing_env, did, subst, args, res)
+        }
         _ => None,
     }
 }
@@ -644,12 +722,12 @@ fn fn_postcond_term<'tcx>(
             post.subst(&SmallRenaming([(name::result(), result)]));
             Some(post)
         }
-        TyKind::Ref(_, cl, Mutability::Not) => {
+        &TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
-            subst_postcond[1] = GenericArg::from(*cl);
+            subst_postcond[1] = GenericArg::from(cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             Some(Term::call(ctx.tcx, typing_env, get_fn_impl_postcond(ctx.tcx), subst_postcond, [
-                self_.clone().coerce(*cl),
+                self_.clone().coerce(cl),
                 args,
                 res,
             ]))
@@ -664,8 +742,50 @@ fn fn_postcond_term<'tcx>(
                 res,
             ]))
         }
+        &TyKind::FnDef(mut did, mut subst) => {
+            if let Some(AssocItem { container: AssocItemContainer::Trait, .. }) =
+                ctx.opt_associated_item(did)
+            {
+                let TraitResolved::Instance(did_i, subst_i) =
+                    TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst)
+                else {
+                    return None;
+                };
+                did = did_i;
+                subst = subst_i;
+            };
+            post_fndef(ctx, typing_env, did, subst, args, res)
+        }
         _ => None,
     }
+}
+
+fn post_fndef<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    did: DefId,
+    subst: GenericArgsRef<'tcx>,
+    args: Term<'tcx>,
+    res: Term<'tcx>,
+) -> Option<Term<'tcx>> {
+    if is_predicate(ctx.tcx, did)
+        || is_predicate(ctx.tcx, did)
+        || get_builtin(ctx.tcx, did).is_some()
+    {
+        return None;
+    }
+
+    let mut sig = EarlyBinder::bind(ctx.sig(did).clone())
+        .instantiate(ctx.tcx, subst)
+        .normalize(ctx.tcx, typing_env);
+    sig.add_type_invariant_spec(ctx, did, typing_env);
+    let mut post = sig.contract.ensures_conj(ctx.tcx);
+    post.subst(&HashMap::from([(name::result(), res.kind)]));
+    let pattern = Pattern::tuple(
+        sig.inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
+        args.ty,
+    );
+    Some(Term::let_(pattern, args, post).span(ctx.def_span(did)))
 }
 
 /// Generate body of `precondition_once` for `FnOnce` closures.
@@ -702,8 +822,47 @@ fn fn_once_precond_term<'tcx>(
                 args,
             ]))
         }
+        &TyKind::FnDef(mut did, mut subst) => {
+            if let Some(AssocItem { container: AssocItemContainer::Trait, .. }) =
+                ctx.opt_associated_item(did)
+            {
+                let TraitResolved::Instance(did_i, subst_i) =
+                    TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst)
+                else {
+                    return None;
+                };
+                did = did_i;
+                subst = subst_i;
+            };
+            pre_fndef(ctx, typing_env, did, subst, args)
+        }
         _ => None,
     }
+}
+
+fn pre_fndef<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    did: DefId,
+    subst: GenericArgsRef<'tcx>,
+    args: Term<'tcx>,
+) -> Option<Term<'tcx>> {
+    if is_predicate(ctx.tcx, did)
+        || is_predicate(ctx.tcx, did)
+        || get_builtin(ctx.tcx, did).is_some()
+    {
+        return None;
+    }
+    let mut sig = EarlyBinder::bind(ctx.sig(did).clone())
+        .instantiate(ctx.tcx, subst)
+        .normalize(ctx.tcx, typing_env);
+    sig.add_type_invariant_spec(ctx, did, typing_env);
+    let pre = sig.contract.requires_conj(ctx.tcx);
+    let pattern = Pattern::tuple(
+        sig.inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
+        args.ty,
+    );
+    Some(Term::let_(pattern, args, pre).span(ctx.def_span(did)))
 }
 
 fn fn_mut_hist_inv_term<'tcx>(
@@ -752,6 +911,7 @@ fn fn_mut_hist_inv_term<'tcx>(
                 Term::var(future, ty_self).coerce(bsubst.type_at(0)),
             ]))
         }
+        TyKind::FnDef(_, _) => Some(Term::true_(ctx.tcx)),
         _ => None,
     }
 }

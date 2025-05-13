@@ -165,18 +165,12 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     .enumerate()
                     .map(|(i, ty)| (Ident::fresh_local(&format!("x{i}")), ty))
                     .collect();
-                let body =
-                    Box::new(idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(id, ty)| {
-                        acc.conj(self.mk_inv_call(Term::var(id, ty)))
-                    }));
-
+                let body = idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(id, ty)| {
+                    acc.conj(self.mk_inv_call(Term::var(id, ty)))
+                });
                 let pattern =
                     Pattern::tuple(idsty.iter().map(|&(id, ty)| Pattern::binder(id, ty)), ty);
-                Term {
-                    kind: TermKind::Let { pattern, arg: Box::new(term), body },
-                    ty: self.ctx.types.bool,
-                    span: DUMMY_SP,
-                }
+                Term::let_(pattern, term, body)
             }
             TyKind::Closure(_, substs) => {
                 let tys = substs.as_closure().upvar_tys();
@@ -186,20 +180,15 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     .map(|(i, ty)| (Ident::fresh_local(&format!("x{i}")), ty))
                     .collect();
 
-                let body =
-                    Box::new(idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(id, ty)| {
-                        acc.conj(self.mk_inv_call(Term::var(id, ty)))
-                    }));
+                let body = idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(id, ty)| {
+                    acc.conj(self.mk_inv_call(Term::var(id, ty)))
+                });
                 let pattern = Pattern::constructor(
                     VariantIdx::ZERO,
                     idsty.iter().map(|&(id, ty)| Pattern::binder(id, ty)),
                     ty,
                 );
-                Term {
-                    kind: TermKind::Let { pattern, arg: Box::new(term), body },
-                    ty: self.ctx.types.bool,
-                    span: DUMMY_SP,
-                }
+                Term::let_(pattern, term, body)
             }
             _ => unreachable!(),
         }

@@ -514,12 +514,8 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
         |body: Term<'tcx>, (pattern, (ident, ty))| match pattern.kind {
             PatternKind::Binder(_) | PatternKind::Wildcard => body,
             _ => {
-                let arg = Box::new(Term::var(ident, ty));
-                Term {
-                    ty: body.ty,
-                    span: body.span,
-                    kind: TermKind::Let { pattern, arg, body: Box::new(body) },
-                }
+                let span = body.span;
+                Term::let_(pattern, Term::var(ident, ty), body).span(span)
             }
         },
     );
@@ -588,7 +584,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let Block { ref stmts, expr, .. } = self.thir[block];
                 let mut inner = match expr {
                     Some(e) => self.expr_term(e)?,
-                    None => Term { ty, span, kind: TermKind::Tuple { fields: Box::new([]) } },
+                    None => Term::unit(self.ctx.tcx).span(span),
                 };
 
                 for stmt in stmts.iter().rev().filter(|id| not_spec(self.ctx.tcx, self.thir, **id))
@@ -722,9 +718,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
                         Ok(Term { ty, span, kind: TermKind::Old { term: Box::new(term) } })
                     }
-                    Some(ResultCheck) => {
-                        Ok(Term { ty, span, kind: TermKind::Tuple { fields: Box::new([]) } })
-                    }
+                    Some(ResultCheck) => Ok(Term::unit(self.ctx.tcx).span(span)),
                     Some(Dead) => Err(Error::msg(
                         span,
                         "The `dead` term can only be used for the body of trusted logical functions",
@@ -855,11 +849,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let els = if let Some(els) = else_opt {
                     self.expr_term(els)?
                 } else {
-                    Term {
-                        span,
-                        ty: self.ctx.types.unit,
-                        kind: TermKind::Tuple { fields: Box::new([]) },
-                    }
+                    Term::unit(self.ctx.tcx).span(span)
                 };
                 Ok(Term {
                     ty,
@@ -1053,16 +1043,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     }
                 };
                 let span = self.thir[*expr].span;
-
-                Ok(Term {
-                    ty: inner.ty,
-                    span,
-                    kind: TermKind::Let {
-                        pattern: Pattern::wildcard(arg.ty),
-                        arg: Box::new(arg),
-                        body: Box::new(inner),
-                    },
-                })
+                Ok(Term::let_(Pattern::wildcard(arg.ty), arg, inner).span(span))
             }
             StmtKind::Let { pattern, initializer, init_scope, .. } => {
                 let pattern = self.pattern_term(pattern, false)?;
@@ -1070,15 +1051,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let initializer = self.expr_term(*initializer)?;
                     let span =
                         init_scope.span(self.ctx.tcx, self.ctx.region_scope_tree(self.item_id));
-                    Ok(Term {
-                        ty: inner.ty,
-                        span,
-                        kind: TermKind::Let {
-                            pattern,
-                            arg: Box::new(initializer),
-                            body: Box::new(inner),
-                        },
-                    })
+                    Ok(Term::let_(pattern, initializer, inner).span(span))
                 } else {
                     let span = self.ctx.hir().span(HirId {
                         owner: OwnerId { def_id: self.item_id },
@@ -1470,6 +1443,18 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
 }
 
 impl<'tcx> Term<'tcx> {
+    pub(crate) fn let_(pattern: Pattern<'tcx>, arg: Term<'tcx>, body: Term<'tcx>) -> Self {
+        Term {
+            span: DUMMY_SP,
+            ty: body.ty,
+            kind: TermKind::Let { pattern, arg: Box::new(arg), body: Box::new(body) },
+        }
+    }
+
+    pub(crate) fn unit(tcx: TyCtxt<'tcx>) -> Self {
+        Term { ty: tcx.types.unit, kind: TermKind::Tuple { fields: Box::new([]) }, span: DUMMY_SP }
+    }
+
     pub(crate) fn true_(tcx: TyCtxt<'tcx>) -> Self {
         Term { ty: tcx.types.bool, kind: TermKind::Lit(Literal::Bool(true)), span: DUMMY_SP }
     }

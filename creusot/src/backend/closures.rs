@@ -121,12 +121,7 @@ pub(crate) fn closure_pre<'tcx>(
         inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
         args.ty,
     );
-    pre = Term {
-        span: ctx.def_span(def_id),
-        ty: ctx.types.bool,
-        kind: TermKind::Let { pattern, arg: Box::new(args), body: Box::new(pre) },
-    };
-
+    pre = Term::let_(pattern, args, pre).span(ctx.def_span(def_id));
     normalize(ctx.tcx, ctx.typing_env(def_id.into()), pre)
 }
 
@@ -300,12 +295,7 @@ pub(crate) fn closure_post<'tcx>(
         inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
         args.ty,
     );
-    post = Term {
-        span: ctx.def_span(def_id),
-        ty: ctx.types.bool,
-        kind: TermKind::Let { pattern, arg: Box::new(args), body: Box::new(post) },
-    };
-
+    post = Term::let_(pattern, args, post).span(ctx.def_span(def_id));
     normalize(ctx.tcx, typing_env, post)
 }
 
