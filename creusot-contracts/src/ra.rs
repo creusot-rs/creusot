@@ -233,14 +233,6 @@ where
     #[open]
     #[ensures(result == (exists<c: Self> self.op(c) == other))]
     fn incl(self, other: Self) -> bool {
-        // TODO: check if still necessary
-        if self.0.incl(other.0) && self.1.incl(other.1) {
-            proof_assert!(exists<c0: T, c1: U>
-              self.0.op(c0) == other.0 &&
-              self.1.op(c1) == other.1 &&
-              self.op((c0, c1)) == other
-            )
-        }
         self.0.incl(other.0) && self.1.incl(other.1)
     }
 
