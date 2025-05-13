@@ -390,7 +390,6 @@ pub mod model;
 pub mod pcell;
 pub mod peano;
 pub mod ptr_own;
-pub mod ra;
 pub mod resolve;
 pub mod snapshot;
 pub mod util;
