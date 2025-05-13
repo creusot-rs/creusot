@@ -1,5 +1,5 @@
 use crate::*;
-use crate::logic::ra::RA;
+use crate::logic::ra::*;
 
 impl<T> RA for Option<T>
     where T: RA
