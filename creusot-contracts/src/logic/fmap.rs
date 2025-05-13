@@ -85,30 +85,19 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[trusted]
     #[logic]
     #[ensures(
-        match result {
-            None => {
-              exists<k: K, x: V, y: V>
-                self.get(k) == Some(x) && m.get(k) == Some(y) &&
-                f[(x, y)] == None
-            },
-            Some(res) => {
-              forall<k: K>
-                match (self.get(k), m.get(k)) {
-                  (None, y) => { res.get(k) == y },
-                  (x, None) => { res.get(k) == x },
-                  (Some(x), Some(y)) => {
-                    exists<z: V> f[(x, y)] == Some(z) && res.get(k) == Some(z)
-                  }
-                }
+        forall<k: K>
+            match (self.get(k), m.get(k)) {
+                (None, y) => result.get(k) == y,
+                (x, None) => result.get(k) == x,
+                (Some(x), Some(y)) => result.get(k) == Some(f[(x, y)]),
             }
-        }
     )]
-    pub fn merge_common(
+    pub fn merge(
         self,
         m: FMap<K, V>,
-        f: Mapping<(V, V), Option<V>>
+        f: Mapping<(V, V), V>
     ) ->
-        Option<FMap<K, V>>
+        FMap<K, V>
     where
         V: Sized // XXX
     {
