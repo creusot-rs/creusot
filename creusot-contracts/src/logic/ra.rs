@@ -1,4 +1,5 @@
 use crate::*;
+use crate::logic::Set;
 
 #[allow(unused_variables)]
 
@@ -69,7 +70,18 @@ pub trait RA: Sized {
 #[ensures(a.incl(c))]
 pub fn incl_transitive<T: RA>(a: T, b: T, c: T) { }
 
-//////////////////////////////////////////
+#[logic]
+#[open]
+pub fn update<T: RA>(x: T, y: T) -> bool { pearlite!{
+    forall<z: T> x.op(z).valid() ==> y.op(z).valid()
+}}
+
+#[logic]
+#[open]
+pub fn update_nondet<T: RA>(x: T, s: Set<T>) -> bool { pearlite!{
+    forall<z: T> x.op(z).valid() ==>
+        exists<y: T> s.contains(y) && y.op(z).valid()
+}}
 
 pub mod agree;
 pub mod excl;
