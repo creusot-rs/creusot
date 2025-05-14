@@ -41,12 +41,7 @@ impl Copy for Id {}
 ///
 /// A `PCellOwn` only exists in the ghost world, and it must be used in conjunction with
 /// [`PCell`] in order to read or write the value.
-pub struct PCellOwn<T: ?Sized> {
-    /// Forbid construction
-    _private: PhantomData<()>,
-    pub id: Id,
-    pub val: Box<T>,
-}
+pub struct PCellOwn<T: ?Sized>(PhantomData<T>);
 
 impl<T> View for PCellOwn<T> {
     type ViewTy = T;
@@ -54,7 +49,32 @@ impl<T> View for PCellOwn<T> {
     #[logic]
     #[open]
     fn view(self) -> Self::ViewTy {
-        *self.val
+        *self.val()
+    }
+}
+
+impl<T: ?Sized> Resolve for PCellOwn<T> {
+    #[open]
+    #[predicate(prophetic)]
+    fn resolve(self) -> bool {
+        resolve(&self.val())
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[requires(inv(self))]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
+}
+
+impl<T: Sized> Invariant for PCellOwn<T> {
+    #[predicate(prophetic)]
+    #[open]
+    #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    fn invariant(self) -> bool {
+        pearlite! { invariant::inv(self@) }
     }
 }
 
@@ -66,16 +86,16 @@ where
     ///
     /// To use a [`Pcell`], this and [`PCell::id`] must agree.
     #[logic]
-    #[open]
+    #[trusted]
     pub fn id(self) -> Id {
-        self.id
+        dead
     }
 
     /// Get the logical value.
     #[logic]
-    #[open]
+    #[trusted]
     pub fn val(self) -> SizedW<T> {
-        self.val
+        dead
     }
 
     /// If one owns two `PCellOwn`s in ghost code, then they have different ids.
