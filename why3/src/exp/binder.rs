@@ -33,16 +33,6 @@ impl Binder {
         Binder::Typed(false, Box::new([None]), ty)
     }
 
-    /// Get all the variables defined by this binder.
-    pub fn fvs(&self) -> Vec<Ident> {
-        match self {
-            Binder::Wild => Vec::new(),
-            Binder::UnNamed(_) => Vec::new(),
-            Binder::Named(id) => vec![id.clone()],
-            Binder::Typed(_, ids, _) => ids.iter().flatten().cloned().collect(),
-        }
-    }
-
     pub(crate) fn refresh(&mut self, bound: &mut HashMap<Ident, Ident>) {
         match self {
             Binder::Wild => {}
