@@ -146,7 +146,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
     { t_Layout__size: UInt64.t; t_Layout__align: t_Alignment }
   
   type tuple  =
-    { _0: t_NonNull'0; _1: t_Layout; _2: () }
+    { _p0: t_NonNull'0; _p1: t_Layout; _p2: () }
   
   type t_Option  =
     | C_None
@@ -194,7 +194,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   let rec into_iter (self_:t_HashMap'0) (return'  (x:t_IntoIter'0))= {[@expl:into_iter requires] [%#siter] into_iter_pre self_}
     any [ return''0 (result:t_IntoIter'0)-> {[%#siter'0] into_iter_post self_ result} (! return' {result}) ] 
   
-  predicate resolve (_0'0 : t_IntoIter'0) =
+  predicate resolve (_0 : t_IntoIter'0) =
     true
   
   type t_K
@@ -202,7 +202,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   type t_V
   
   type tuple'0  =
-    { _0'0: t_K; _1'0: t_V }
+    { _p0'0: t_K; _p1'0: t_V }
   
   function len (self : t_FMap) : int
   
@@ -239,17 +239,18 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   
   predicate produces (self : t_IntoIter'0) (visited : Seq.seq tuple'0) (o : t_IntoIter'0) =
     [%#shash_map'0] len (view'0 self) = Seq.length visited + len (view'0 o)
-    /\ (forall k : t_K, v : t_V . contains visited { _0'0 = k; _1'0 = v }
+    /\ (forall k : t_K, v : t_V . contains visited { _p0'0 = k; _p1'0 = v }
      -> get (view'0 self) (deep_model k) = C_Some'0 v /\ get (view'0 o) (deep_model k) = C_None'0)
     /\ (forall k : t_DeepModelTy, v : t_V . get (view'0 o) k = C_Some'0 v
      -> get (view'0 self) k = C_Some'0 v
-    /\ not (exists k2 : t_K, v2 : t_V . deep_model k2 = k /\ contains visited { _0'0 = k2; _1'0 = v2 }))
+    /\ not (exists k2 : t_K, v2 : t_V . deep_model k2 = k /\ contains visited { _p0'0 = k2; _p1'0 = v2 }))
     /\ (forall k : t_DeepModelTy, v : t_V . get (view'0 self) k = C_Some'0 v
-     -> (exists k1 : t_K . deep_model k1 = k /\ contains visited { _0'0 = k1; _1'0 = v })
+     -> (exists k1 : t_K . deep_model k1 = k /\ contains visited { _p0'0 = k1; _p1'0 = v })
     \/ get (view'0 o) k = C_Some'0 v)
     /\ (forall i1 : int, i2 : int . 0 <= i1
     /\ i1 < Seq.length visited
-    /\ 0 <= i2 /\ i2 < Seq.length visited /\ deep_model (Seq.get visited i1)._0'0 = deep_model (Seq.get visited i2)._0'0
+    /\ 0 <= i2
+    /\ i2 < Seq.length visited /\ deep_model (Seq.get visited i1)._p0'0 = deep_model (Seq.get visited i2)._p0'0
      -> i1 = i2)
   
   function produces_trans (a : t_IntoIter'0) (ab : Seq.seq tuple'0) (b : t_IntoIter'0) (bc : Seq.seq tuple'0) (c : t_IntoIter'0) : ()
@@ -292,8 +293,8 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
     = (exists i : int, k1 : t_K . 0 <= i
     /\ i < Seq.length prod
     /\ deep_model k1 = k
-    /\ Seq.get prod i = { _0'0 = k1; _1'0 = v }
-    /\ (forall j : int . i < j /\ j < Seq.length prod  -> deep_model (Seq.get prod j)._0'0 <> k))
+    /\ Seq.get prod i = { _p0'0 = k1; _p1'0 = v }
+    /\ (forall j : int . i < j /\ j < Seq.length prod  -> deep_model (Seq.get prod j)._p0'0 <> k))
   
   let rec collect (self_:t_IntoIter'0) (return'  (x:t_HashMap'0))= any
     [ return''0 (result:t_HashMap'0)-> {[%#siter'1] exists done' : MutBorrow.t t_IntoIter'0, prod : Seq.seq tuple'0 . resolve done'.final
@@ -329,7 +330,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
       [ s0 = {[@expl:assertion] [%#scollections'1] exists prod : Seq.seq tuple'0, it1 : MutBorrow.t t_IntoIter'0 . completed it1
         /\ produces it0 prod it1.current
         /\ (forall k : t_DeepModelTy, v : t_V . get (view r) k = C_Some'0 v
-         -> (exists k1 : t_K . deep_model k1 = k /\ contains prod { _0'0 = k1; _1'0 = v }))}
+         -> (exists k1 : t_K . deep_model k1 = k /\ contains prod { _p0'0 = k1; _p1'0 = v }))}
         s1
       | s1 = bb6 ]
     
@@ -345,12 +346,12 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
         s1
       | s1 = bb8 ]
     
-    | bb8 = s0 [ s0 =  [ &_0'1 <- r ] s1 | s1 = bb9 ] 
+    | bb8 = s0 [ s0 =  [ &_0 <- r ] s1 | s1 = bb9 ] 
     | bb9 = bb10
     | bb10 = bb11
-    | bb11 = return''0 {_0'1} ]
+    | bb11 = return''0 {_0} ]
     )
-    [ & _0'1 : t_HashMap'0 = Any.any_l ()
+    [ & _0 : t_HashMap'0 = Any.any_l ()
     | & xs'0 : t_HashMap'0 = xs
     | & xs_snap : t_HashMap'0 = Any.any_l ()
     | & it : t_IntoIter'0 = Any.any_l ()
@@ -481,7 +482,7 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 34 0 34 97]
   type t_V
   
   type tuple  =
-    { _0: t_K; _1: t_V }
+    { _p0: t_K; _p1: t_V }
   
   function len (self : t_FMap) : int
   
@@ -521,16 +522,18 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 34 0 34 97]
   
   predicate produces (self : t_Iter'0) (visited : Seq.seq tuple) (o : t_Iter'0) =
     [%#shash_map'1] len (view'1 self) = Seq.length visited + len (view'1 o)
-    /\ (forall k : t_K, v : t_V . contains visited { _0 = k; _1 = v }
+    /\ (forall k : t_K, v : t_V . contains visited { _p0 = k; _p1 = v }
      -> get (view'1 self) (deep_model'0 k) = C_Some v /\ get (view'1 o) (deep_model'0 k) = C_None)
     /\ (forall k : t_DeepModelTy, v : t_V . get (view'1 o) k = C_Some v
      -> get (view'1 self) k = C_Some v
-    /\ not (exists k2 : t_K, v2 : t_V . deep_model'0 k2 = k /\ contains visited { _0 = k2; _1 = v2 }))
+    /\ not (exists k2 : t_K, v2 : t_V . deep_model'0 k2 = k /\ contains visited { _p0 = k2; _p1 = v2 }))
     /\ (forall k : t_DeepModelTy, v : t_V . get (view'1 self) k = C_Some v
-     -> (exists k2 : t_K . deep_model'0 k2 = k /\ contains visited { _0 = k2; _1 = v }) \/ get (view'1 o) k = C_Some v)
+     -> (exists k2 : t_K . deep_model'0 k2 = k /\ contains visited { _p0 = k2; _p1 = v })
+    \/ get (view'1 o) k = C_Some v)
     /\ (forall i1 : int, i2 : int . 0 <= i1
     /\ i1 < Seq.length visited
-    /\ 0 <= i2 /\ i2 < Seq.length visited /\ deep_model'0 (Seq.get visited i1)._0 = deep_model'0 (Seq.get visited i2)._0
+    /\ 0 <= i2
+    /\ i2 < Seq.length visited /\ deep_model'0 (Seq.get visited i1)._p0 = deep_model'0 (Seq.get visited i2)._p0
      -> i1 = i2)
   
   function produces_trans (a : t_Iter'0) (ab : Seq.seq tuple) (b : t_Iter'0) (bc : Seq.seq tuple) (c : t_Iter'0) : () =
@@ -597,8 +600,8 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 34 0 34 97]
     = (exists i : int, k1 : t_K . 0 <= i
     /\ i < Seq.length prod
     /\ deep_model'0 k1 = k
-    /\ Seq.get prod i = { _0 = k1; _1 = v }
-    /\ (forall j : int . i < j /\ j < Seq.length prod  -> deep_model'0 (Seq.get prod j)._0 <> k))
+    /\ Seq.get prod i = { _p0 = k1; _p1 = v }
+    /\ (forall j : int . i < j /\ j < Seq.length prod  -> deep_model'0 (Seq.get prod j)._p0 <> k))
   
   let rec collect (self_:t_Iter'0) (return'  (x:t_HashMap'2))= any
     [ return''0 (result:t_HashMap'2)-> {[%#siter] exists done' : MutBorrow.t t_Iter'0, prod : Seq.seq tuple . resolve done'.final
@@ -616,14 +619,14 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 34 0 34 97]
       [ s0 = {[@expl:assertion] [%#scollections'0] exists prod : Seq.seq tuple, it1 : MutBorrow.t t_Iter'0 . completed it1
         /\ produces it0 prod it1.current
         /\ (forall k : t_DeepModelTy, v : t_V . get'0 (view'5 r) k = C_Some'1 v
-         -> (exists k1 : t_K . deep_model'0 k1 = k /\ contains prod { _0 = k1; _1 = v }))}
+         -> (exists k1 : t_K . deep_model'0 k1 = k /\ contains prod { _p0 = k1; _p1 = v }))}
         s1
       | s1 = bb4 ]
     
-    | bb4 = s0 [ s0 =  [ &_0'0 <- r ] s1 | s1 = bb5 ] 
-    | bb5 = return''0 {_0'0} ]
+    | bb4 = s0 [ s0 =  [ &_0 <- r ] s1 | s1 = bb5 ] 
+    | bb5 = return''0 {_0} ]
     )
-    [ & _0'0 : t_HashMap'2 = Any.any_l ()
+    [ & _0 : t_HashMap'2 = Any.any_l ()
     | & xs'0 : t_HashMap'0 = xs
     | & it : t_Iter'0 = Any.any_l ()
     | & it0 : t_Iter'0 = Any.any_l ()
@@ -827,7 +830,7 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
   type t_K
   
   type tuple  =
-    { _0: t_K; _1: MutBorrow.t t_V }
+    { _p0: t_K; _p1: MutBorrow.t t_V }
   
   function len (self : t_FMap'0) : int
   
@@ -853,17 +856,18 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
   
   predicate produces (self : t_IterMut'0) (visited : Seq.seq tuple) (o : t_IterMut'0) =
     [%#shash_map'1] len (view'2 self) = Seq.length visited + len (view'2 o)
-    /\ (forall k : t_K, v : MutBorrow.t t_V . contains'1 visited { _0 = k; _1 = v }
+    /\ (forall k : t_K, v : MutBorrow.t t_V . contains'1 visited { _p0 = k; _p1 = v }
      -> get (view'2 self) (deep_model k) = C_Some'1 v /\ get (view'2 o) (deep_model k) = C_None'1)
     /\ (forall k : t_DeepModelTy, v : MutBorrow.t t_V . get (view'2 o) k = C_Some'1 v
      -> get (view'2 self) k = C_Some'1 v
-    /\ not (exists k2 : t_K, v2 : MutBorrow.t t_V . deep_model'0 k2 = k /\ contains'1 visited { _0 = k2; _1 = v2 }))
+    /\ not (exists k2 : t_K, v2 : MutBorrow.t t_V . deep_model'0 k2 = k /\ contains'1 visited { _p0 = k2; _p1 = v2 }))
     /\ (forall k : t_DeepModelTy, v : MutBorrow.t t_V . get (view'2 self) k = C_Some'1 v
-     -> (exists k1 : t_K . deep_model'0 k1 = k /\ contains'1 visited { _0 = k1; _1 = v })
+     -> (exists k1 : t_K . deep_model'0 k1 = k /\ contains'1 visited { _p0 = k1; _p1 = v })
     \/ get (view'2 o) k = C_Some'1 v)
     /\ (forall i1 : int, i2 : int . 0 <= i1
     /\ i1 < Seq.length visited
-    /\ 0 <= i2 /\ i2 < Seq.length visited /\ deep_model'0 (Seq.get visited i1)._0 = deep_model'0 (Seq.get visited i2)._0
+    /\ 0 <= i2
+    /\ i2 < Seq.length visited /\ deep_model'0 (Seq.get visited i1)._p0 = deep_model'0 (Seq.get visited i2)._p0
      -> i1 = i2)
   
   function produces_trans (a : t_IterMut'0) (ab : Seq.seq tuple) (b : t_IterMut'0) (bc : Seq.seq tuple) (c : t_IterMut'0) : ()
@@ -908,8 +912,8 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
     = (exists i : int, k1 : t_K . 0 <= i
     /\ i < Seq.length prod
     /\ deep_model'0 k1 = k
-    /\ Seq.get prod i = { _0 = k1; _1 = v }
-    /\ (forall j : int . i < j /\ j < Seq.length prod  -> deep_model'0 (Seq.get prod j)._0 <> k))
+    /\ Seq.get prod i = { _p0 = k1; _p1 = v }
+    /\ (forall j : int . i < j /\ j < Seq.length prod  -> deep_model'0 (Seq.get prod j)._p0 <> k))
   
   let rec collect (self_:t_IterMut'0) (return'  (x:t_HashMap'2))= any
     [ return''0 (result:t_HashMap'2)-> {[%#siter] exists done' : MutBorrow.t t_IterMut'0, prod : Seq.seq tuple . resolve done'.final
@@ -920,8 +924,8 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
   predicate resolve'1 (self : MutBorrow.t t_HashMap'0) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0'0 : MutBorrow.t t_HashMap'0) =
-    resolve'1 _0'0
+  predicate resolve'2 (_0 : MutBorrow.t t_HashMap'0) =
+    resolve'1 _0
   
   type t_Option'2  =
     | C_None'2
@@ -951,14 +955,14 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
       [ s0 = {[@expl:assertion] [%#scollections'0] exists prod : Seq.seq tuple, it1 : MutBorrow.t t_IterMut'0 . completed it1
         /\ produces it0 prod it1.current
         /\ (forall k : t_DeepModelTy, v : MutBorrow.t t_V . get (view'4 r) k = C_Some'1 v
-         -> (exists k1 : t_K . deep_model'0 k1 = k /\ contains'1 prod { _0 = k1; _1 = v }))}
+         -> (exists k1 : t_K . deep_model'0 k1 = k /\ contains'1 prod { _p0 = k1; _p1 = v }))}
         s1
       | s1 = bb4 ]
     
-    | bb4 = s0 [ s0 =  [ &_0'0 <- r ] s1 | s1 = bb5 ] 
-    | bb5 = s0 [ s0 = -{resolve'2 xs'0}- s1 | s1 = return''0 {_0'0} ]  ]
+    | bb4 = s0 [ s0 =  [ &_0 <- r ] s1 | s1 = bb5 ] 
+    | bb5 = s0 [ s0 = -{resolve'2 xs'0}- s1 | s1 = return''0 {_0} ]  ]
     )
-    [ & _0'0 : t_HashMap'2 = Any.any_l ()
+    [ & _0 : t_HashMap'2 = Any.any_l ()
     | & xs'0 : MutBorrow.t t_HashMap'0 = xs
     | & it : t_IterMut'0 = Any.any_l ()
     | & _6 : MutBorrow.t t_HashMap'0 = Any.any_l ()
@@ -1107,7 +1111,7 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 66 0 66 90]
     { t_Layout__size: UInt64.t; t_Layout__align: t_Alignment }
   
   type tuple  =
-    { _0: t_NonNull'0; _1: t_Layout; _2: () }
+    { _p0: t_NonNull'0; _p1: t_Layout; _p2: () }
   
   type t_Option  =
     | C_None
@@ -1161,7 +1165,7 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 66 0 66 90]
   let rec into_iter (self_:t_HashSet'0) (return'  (x:t_IntoIter'1))= {[@expl:into_iter requires] [%#siter] into_iter_pre self_}
     any [ return''0 (result:t_IntoIter'1)-> {[%#siter'0] into_iter_post self_ result} (! return' {result}) ] 
   
-  predicate resolve (_0'0 : t_IntoIter'1) =
+  predicate resolve (_0 : t_IntoIter'1) =
     true
   
   type t_T
@@ -1238,10 +1242,10 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 66 0 66 90]
   let rec roundtrip_hashset_into_iter[#"collections.rs" 66 0 66 90] (xs:t_HashSet'0) (return'  (x:t_HashSet'0))= (! bb0
     [ bb0 = bb1
     | bb1 = s0 [ s0 = into_iter {xs'0} (fun (_ret:t_IntoIter'1) ->  [ &_3 <- _ret ] s1) | s1 = bb2 ] 
-    | bb2 = s0 [ s0 = collect {_3} (fun (_ret:t_HashSet'0) ->  [ &_0'0 <- _ret ] s1) | s1 = bb3 ] 
+    | bb2 = s0 [ s0 = collect {_3} (fun (_ret:t_HashSet'0) ->  [ &_0 <- _ret ] s1) | s1 = bb3 ] 
     | bb3 = bb4
-    | bb4 = return''0 {_0'0} ]
-    ) [ & _0'0 : t_HashSet'0 = Any.any_l () | & xs'0 : t_HashSet'0 = xs | & _3 : t_IntoIter'1 = Any.any_l () ] 
+    | bb4 = return''0 {_0} ]
+    ) [ & _0 : t_HashSet'0 = Any.any_l () | & xs'0 : t_HashSet'0 = xs | & _3 : t_IntoIter'1 = Any.any_l () ] 
     [ return''0 (result:t_HashSet'0)-> {[@expl:roundtrip_hashset_into_iter ensures] [%#scollections] view result
       = view xs}
       (! return' {result}) ]

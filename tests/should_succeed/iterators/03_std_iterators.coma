@@ -1212,47 +1212,44 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
     resolve _0'0
   
   type tuple  =
-    { _0'0: UInt32.t; _1: Seq.seq UInt32.t }
+    { _p0: UInt32.t; _p1: Seq.seq UInt32.t }
   
   predicate resolve'1 (self : MutBorrow.t UInt64.t) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0'1 : MutBorrow.t UInt64.t) =
-    resolve'1 _0'1
+  predicate resolve'2 (_0'0 : MutBorrow.t UInt64.t) =
+    resolve'1 _0'0
   
-  predicate resolve'3 (_0'1 : closure0) =
-    resolve'2 _0'1._0
+  predicate resolve'3 (_0'0 : closure0) =
+    resolve'2 _0'0._0
   
   predicate hist_inv (self : closure0) (result_state : closure0) =
     [%#s03_std_iterators'5] (result_state._0).final = (self._0).final
   
   let rec closure0[#"03_std_iterators.rs" 47 17 47 27] [@coma:extspec] (self:MutBorrow.t closure0) (x:UInt32.t) (_prod:Seq.seq UInt32.t) (return'  (x'0:UInt32.t))= bb0
     [ bb0 = s0
-      [ s0 = {[@expl:assertion] [%#s03_std_iterators'3] UInt64.t'int ((_1'0.current)._0).current = Seq.length _prod'0}
-        s1
-      | s1 = UInt64.add {((_1'0.current)._0).current} {[%#s03_std_iterators'4] (1 : UInt64.t)}
-          (fun (_ret:UInt64.t) ->
-             [ &_1'0 <- { _1'0 with current = { _0 = { (_1'0.current)._0 with current = _ret } } } ] 
-            s2)
-      | s2 = -{resolve'0 _1'0}- s3
-      | s3 =  [ &_0'1 <- x'0 ] s4
-      | s4 = return''0 {_0'1} ]
+      [ s0 = {[@expl:assertion] [%#s03_std_iterators'3] UInt64.t'int ((_1.current)._0).current = Seq.length _prod'0} s1
+      | s1 = UInt64.add {((_1.current)._0).current} {[%#s03_std_iterators'4] (1 : UInt64.t)}
+          (fun (_ret:UInt64.t) ->  [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s2)
+      | s2 = -{resolve'0 _1}- s3
+      | s3 =  [ &_0'0 <- x'0 ] s4
+      | s4 = return''0 {_0'0} ]
      ]
     
-    [ & _0'1 : UInt32.t = Any.any_l ()
-    | & _1'0 : MutBorrow.t closure0 = self
+    [ & _0'0 : UInt32.t = Any.any_l ()
+    | & _1 : MutBorrow.t closure0 = self
     | & x'0 : UInt32.t = x
     | & _prod'0 : Seq.seq UInt32.t = _prod ]
      [ return''0 (result:UInt32.t)-> return' {result} ] 
   
   predicate postcondition_once (self : closure0) (args : tuple) (result : UInt32.t) =
-    [%#s03_std_iterators'5] let {_0'0 = x ; _1 = _prod} = args in exists e : closure0 . (exists bor_self : MutBorrow.t closure0 . bor_self.current
+    [%#s03_std_iterators'5] let {_p0 = x ; _p1 = _prod} = args in exists e : closure0 . (exists bor_self : MutBorrow.t closure0 . bor_self.current
     = self
     /\ bor_self.final = e /\ closure0'post'return' bor_self x _prod result /\ hist_inv self e)
     /\ resolve'3 e
   
   predicate postcondition_mut (self : closure0) (args : tuple) (result_state : closure0) (result : UInt32.t) =
-    [%#s03_std_iterators'5] let {_0'0 = x ; _1 = _prod} = args in exists bor_self : MutBorrow.t closure0 . bor_self.current
+    [%#s03_std_iterators'5] let {_p0 = x ; _p1 = _prod} = args in exists bor_self : MutBorrow.t closure0 . bor_self.current
     = self
     /\ bor_self.final = result_state /\ closure0'post'return' bor_self x _prod result /\ hist_inv self result_state
   
@@ -1315,7 +1312,7 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
     { t_MapInv__iter: t_Iter; t_MapInv__func: closure0; t_MapInv__produced: Seq.seq UInt32.t }
   
   predicate precondition (self : closure0) (args : tuple) =
-    [%#s03_std_iterators'5] let {_0'0 = x ; _1 = _prod} = args in forall bor_self : MutBorrow.t closure0 . bor_self.current
+    [%#s03_std_iterators'5] let {_p0 = x ; _p1 = _prod} = args in forall bor_self : MutBorrow.t closure0 . bor_self.current
     = self  -> closure0'pre bor_self x _prod
   
   predicate resolve'4 (self : MutBorrow.t t_Iter) =
@@ -1329,14 +1326,14 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   
   predicate next_precondition (iter'0 : t_Iter) (func : closure0) (produced : Seq.seq UInt32.t) =
     [%#smap_inv'3] forall e : UInt32.t, i : t_Iter . produces iter'0 (Seq.singleton e) i
-     -> precondition func { _0'0 = e; _1 = produced }
+     -> precondition func { _p0 = e; _p1 = produced }
   
   predicate preservation (iter'0 : t_Iter) (func : closure0) =
     [%#smap_inv'0] forall s : Seq.seq UInt32.t, e1 : UInt32.t, e2 : UInt32.t, f : MutBorrow.t closure0, b : UInt32.t, i : t_Iter . hist_inv func f.current
      -> produces iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition f.current { _0'0 = e1; _1 = s }
-     -> postcondition_mut f.current { _0'0 = e1; _1 = s } f.final b
-     -> precondition f.final { _0'0 = e2; _1 = Seq.snoc s e1 }
+     -> precondition f.current { _p0 = e1; _p1 = s }
+     -> postcondition_mut f.current { _p0 = e1; _p1 = s } f.final b
+     -> precondition f.final { _p0 = e2; _p1 = Seq.snoc s e1 }
   
   predicate reinitialize  =
     [%#smap_inv] forall iter'0 : MutBorrow.t t_Iter, func : closure0 . completed iter'0
@@ -1344,7 +1341,7 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   
   predicate invariant' (self : t_MapInv)
   
-  predicate inv (_0'1 : t_MapInv)
+  predicate inv (_0'0 : t_MapInv)
   
   axiom inv_axiom [@rewrite] : forall x : t_MapInv [inv x] . inv x
   = (invariant' x
@@ -1353,7 +1350,7 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
     end)
   
   let rec map_inv (self:t_Iter) (func:closure0) (return'  (x:t_MapInv))= {[@expl:map_inv requires #0] [%#siter] forall e : UInt32.t, i2 : t_Iter . produces self (Seq.singleton e) i2
-     -> precondition func { _0'0 = e; _1 = Seq.empty : Seq.seq UInt32.t }}
+     -> precondition func { _p0 = e; _p1 = Seq.empty : Seq.seq UInt32.t }}
     {[@expl:map_inv requires #1] [%#siter'0] reinitialize}
     {[@expl:map_inv requires #2] [%#siter'1] preservation self func}
     any
@@ -1363,14 +1360,14 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
       (! return' {result}) ]
   
   
-  predicate resolve'5 (_0'1 : t_Iter) =
+  predicate resolve'5 (_0'0 : t_Iter) =
     true
   
   predicate resolve'6 (self : t_MapInv) =
     [%#smap_inv'4] resolve'5 self.t_MapInv__iter /\ resolve'3 self.t_MapInv__func
   
-  predicate resolve'7 (_0'1 : t_MapInv) =
-    resolve'6 _0'1
+  predicate resolve'7 (_0'0 : t_MapInv) =
+    resolve'6 _0'0
   
   predicate produces'0 [@inline:trivial] (self : t_MapInv) (visited : Seq.seq UInt32.t) (succ : t_MapInv) =
     [%#smap_inv'2] hist_inv self.t_MapInv__func succ.t_MapInv__func
@@ -1386,10 +1383,10 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> hist_inv self.t_MapInv__func (Seq.get fs i).current
-    /\ precondition (Seq.get fs i).current { _0'0 = Seq.get s i;
-                                             _1 = Seq.(++) self.t_MapInv__produced (Seq.([..]) s 0 i) }
-    /\ postcondition_mut (Seq.get fs i).current { _0'0 = Seq.get s i;
-                                                  _1 = Seq.(++) self.t_MapInv__produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
+    /\ precondition (Seq.get fs i).current { _p0 = Seq.get s i;
+                                             _p1 = Seq.(++) self.t_MapInv__produced (Seq.([..]) s 0 i) }
+    /\ postcondition_mut (Seq.get fs i).current { _p0 = Seq.get s i;
+                                                  _p1 = Seq.(++) self.t_MapInv__produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
   function produces_trans'1 (a : t_MapInv) (ab : Seq.seq UInt32.t) (b : t_MapInv) (bc : Seq.seq UInt32.t) (c : t_MapInv) : ()
   
@@ -1442,9 +1439,9 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
     
     | bb7 = bb8
     | bb8 = bb9
-    | bb9 = return''0 {_0'1} ]
+    | bb9 = return''0 {_0'0} ]
     )
-    [ & _0'1 : () = Any.any_l ()
+    [ & _0'0 : () = Any.any_l ()
     | & v'0 : t_Vec = v
     | & cnt : UInt64.t = Any.any_l ()
     | & x : t_Vec = Any.any_l ()
@@ -1795,7 +1792,7 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
   
   
   type tuple  =
-    { _0: UInt64.t; _1: UInt64.t }
+    { _p0: UInt64.t; _p1: UInt64.t }
   
   function index_logic [@inline:trivial] (self : Seq.seq tuple) (ix : int) : tuple =
     [%#sindex] Seq.get self ix
@@ -1805,7 +1802,7 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
     /\ (exists s : Seq.seq UInt64.t . produces (iter self) s (iter o)
     /\ Seq.length visited = Seq.length s
     /\ (forall i : int . 0 <= i /\ i < Seq.length s
-     -> UInt64.t'int (Seq.get visited i)._0 = n self + i /\ (Seq.get visited i)._1 = Seq.get s i))
+     -> UInt64.t'int (Seq.get visited i)._p0 = n self + i /\ (Seq.get visited i)._p1 = Seq.get s i))
   
   function produces_trans'0 (a : t_Enumerate) (ab : Seq.seq tuple) (b : t_Enumerate) (bc : Seq.seq tuple) (c : t_Enumerate) : ()
   
@@ -1817,7 +1814,7 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
   
   axiom produces_refl_spec'0 : forall self : t_Enumerate . [%#senumerate'1] produces'0 self (Seq.empty : Seq.seq tuple) self
   
-  predicate inv'1 (_0'0 : Seq.seq tuple)
+  predicate inv'1 (_0 : Seq.seq tuple)
   
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq tuple [inv'1 x] . inv'1 x = true
   
@@ -1828,7 +1825,7 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
   predicate invariant''0 (self : MutBorrow.t t_Enumerate) =
     [%#sinvariant] inv self.current /\ inv self.final
   
-  predicate inv'2 (_0'0 : MutBorrow.t t_Enumerate)
+  predicate inv'2 (_0 : MutBorrow.t t_Enumerate)
   
   axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Enumerate [inv'2 x] . inv'2 x = invariant''0 x
   
@@ -1848,8 +1845,8 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
   predicate resolve'0 (self : MutBorrow.t t_Enumerate) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'1 (_0'0 : MutBorrow.t t_Enumerate) =
-    resolve'0 _0'0
+  predicate resolve'1 (_0 : MutBorrow.t t_Enumerate) =
+    resolve'0 _0
   
   let rec v_Some (input:t_Option) (ret  (field_0:tuple))= any
     [ good (field_0:tuple)-> {C_Some field_0 = input} (! ret {field_0})
@@ -1877,7 +1874,7 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
         {[@expl:for invariant] [%#s03_std_iterators'4] inv iter'0}
         {[@expl:for invariant] [%#s03_std_iterators'4] produces'0 iter_old produced iter'0}
         {[@expl:loop invariant] [%#s03_std_iterators'3] forall i : int . 0 <= i /\ i < Seq.length produced
-         -> (index_logic produced i)._0 = (index_logic produced i)._1}
+         -> (index_logic produced i)._p0 = (index_logic produced i)._p1}
         (! s0) [ s0 = bb6 ] 
         [ bb6 = s0
           [ s0 = {inv iter'0}
@@ -1906,15 +1903,15 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
         
         | bb12 = s0
           [ s0 =  [ &produced <- _19 ] s1
-          | s1 =  [ &ix <- __creusot_proc_iter_elem._0 ] s2
-          | s2 =  [ &x <- __creusot_proc_iter_elem._1 ] s3
+          | s1 =  [ &ix <- __creusot_proc_iter_elem._p0 ] s2
+          | s2 =  [ &x <- __creusot_proc_iter_elem._p1 ] s3
           | s3 = bb5'0 ]
          ]
        ]
     
-    | bb10 = return''0 {_0'0} ]
+    | bb10 = return''0 {_0} ]
     )
-    [ & _0'0 : () = Any.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & iter'0 : t_Enumerate = Any.any_l ()
     | & _2 : t_Enumerate = Any.any_l ()
     | & _3 : t_Range = Any.any_l ()
@@ -2100,7 +2097,7 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
     any [ return''0 (result:t_Zip)-> {[%#siter'3] into_iter_post'0 self_ result} (! return' {result}) ] 
   
   type tuple  =
-    { _0: UInt64.t; _1: UInt64.t }
+    { _p0: UInt64.t; _p1: UInt64.t }
   
   predicate equiv_reverse_range [#"03_std_iterators.rs" 85 0 85 81] (s1 : Seq.seq t_T) (s2 : Seq.seq t_T) (l : int) (u : int) (n : int)
   
@@ -2134,7 +2131,7 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
     [%#szip] exists p1 : Seq.seq UInt64.t, p2 : Seq.seq UInt64.t . Seq.length p1 = Seq.length p2
     /\ Seq.length p2 = Seq.length visited
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> Seq.get visited i = { _0 = Seq.get p1 i; _1 = Seq.get p2 i })
+     -> Seq.get visited i = { _p0 = Seq.get p1 i; _p1 = Seq.get p2 i })
     /\ produces (itera self) p1 (itera o) /\ produces (iterb self) p2 (iterb o)
   
   function produces_trans'0 (a : t_Zip) (ab : Seq.seq tuple) (b : t_Zip) (bc : Seq.seq tuple) (c : t_Zip) : ()
@@ -2146,7 +2143,7 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   
   axiom produces_refl_spec'0 : forall self : t_Zip . [%#szip'2] produces'0 self (Seq.empty : Seq.seq tuple) self
   
-  predicate inv'6 (_0'0 : Seq.seq tuple)
+  predicate inv'6 (_0 : Seq.seq tuple)
   
   axiom inv_axiom'5 [@rewrite] : forall x : Seq.seq tuple [inv'6 x] . inv'6 x = true
   
@@ -2160,14 +2157,14 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   predicate completed (self : MutBorrow.t t_Range) =
     [%#srange'4] resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
   
-  predicate resolve'0 (_0'0 : MutBorrow.t t_Range) =
-    resolve _0'0
+  predicate resolve'0 (_0 : MutBorrow.t t_Range) =
+    resolve _0
   
-  predicate inv'7 (_0'0 : UInt64.t)
+  predicate inv'7 (_0 : UInt64.t)
   
   axiom inv_axiom'6 [@rewrite] : forall x : UInt64.t [inv'7 x] . inv'7 x = true
   
-  predicate resolve'1 (_0'0 : UInt64.t) =
+  predicate resolve'1 (_0 : UInt64.t) =
     true
   
   predicate completed'0 (self : MutBorrow.t t_Zip) =
@@ -2189,8 +2186,8 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   predicate resolve'2 (self : MutBorrow.t t_Zip) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'3 (_0'0 : MutBorrow.t t_Zip) =
-    resolve'2 _0'0
+  predicate resolve'3 (_0 : MutBorrow.t t_Zip) =
+    resolve'2 _0
   
   let rec v_Some (input:t_Option) (ret  (field_0:tuple))= any
     [ good (field_0:tuple)-> {C_Some field_0 = input} (! ret {field_0})
@@ -2200,7 +2197,7 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   predicate invariant''3 (self : MutBorrow.t (Slice64.slice t_T)) =
     [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
-  predicate inv'8 (_0'0 : MutBorrow.t (Slice64.slice t_T))
+  predicate inv'8 (_0 : MutBorrow.t (Slice64.slice t_T))
   
   axiom inv_axiom'7 [@rewrite] : forall x : MutBorrow.t (Slice64.slice t_T) [inv'8 x] . inv'8 x = invariant''3 x
   
@@ -2218,8 +2215,8 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   predicate resolve'4 (self : MutBorrow.t (Slice64.slice t_T)) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'5 (_0'0 : MutBorrow.t (Slice64.slice t_T)) =
-    resolve'4 _0'0
+  predicate resolve'5 (_0 : MutBorrow.t (Slice64.slice t_T)) =
+    resolve'4 _0
   
   meta "compute_max_steps" 1000000
   
@@ -2282,8 +2279,8 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
         
         | bb16 = s0
           [ s0 =  [ &produced <- _35 ] s1
-          | s1 =  [ &i <- __creusot_proc_iter_elem._0 ] s2
-          | s2 =  [ &j <- __creusot_proc_iter_elem._1 ] s3
+          | s1 =  [ &i <- __creusot_proc_iter_elem._p0 ] s2
+          | s2 =  [ &j <- __creusot_proc_iter_elem._p1 ] s3
           | s3 = UInt64.sub {n} {j} (fun (_ret:UInt64.t) ->  [ &_43 <- _ret ] s4)
           | s4 = UInt64.sub {_43} {[%#s03_std_iterators'14] (1 : UInt64.t)}
               (fun (_ret:UInt64.t) ->  [ &_42 <- _ret ] s5)
@@ -2311,10 +2308,10 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
        ]
     
     | bb14 = s0
-      [ s0 = {[@expl:type invariant] inv'8 slice'0} s1 | s1 = -{resolve'5 slice'0}- s2 | s2 = return''0 {_0'0} ]
+      [ s0 = {[@expl:type invariant] inv'8 slice'0} s1 | s1 = -{resolve'5 slice'0}- s2 | s2 = return''0 {_0} ]
      ]
     )
-    [ & _0'0 : () = Any.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & slice'0 : MutBorrow.t (Slice64.slice t_T) = slice
     | & n : UInt64.t = Any.any_l ()
     | & old_v : Seq.seq t_T = Any.any_l ()

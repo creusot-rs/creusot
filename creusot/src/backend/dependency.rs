@@ -97,7 +97,7 @@ impl<'tcx> Dependency<'tcx> {
                 }
             },
             Dependency::ClosureAccessor(_, _, ix) => Some(Symbol::intern(&format!("_{ix}"))),
-            Dependency::TupleField(_, ix) => Some(Symbol::intern(&format!("_{}", ix.as_u32()))),
+            Dependency::TupleField(_, ix) => Some(Symbol::intern(&format!("_p{}", ix.as_u32()))),
             Dependency::TyInvAxiom(..) => Some(Symbol::intern("inv_axiom")),
             Dependency::Eliminator(did, _) => {
                 Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))

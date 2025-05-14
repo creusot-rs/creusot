@@ -100,19 +100,19 @@ module M_branch_borrow_2__g [#"branch_borrow_2.rs" 35 0 35 10]
     { t_MyInt__0: UInt64.t }
   
   type tuple  =
-    { _0: t_MyInt; _1: t_MyInt }
+    { _p0: t_MyInt; _p1: t_MyInt }
   
   predicate resolve (self : MutBorrow.t t_MyInt) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0'0 : MutBorrow.t t_MyInt) =
-    resolve _0'0
+  predicate resolve'0 (_0 : MutBorrow.t t_MyInt) =
+    resolve _0
   
   predicate resolve'1 (self : MutBorrow.t tuple) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0'0 : MutBorrow.t tuple) =
-    resolve'1 _0'0
+  predicate resolve'2 (_0 : MutBorrow.t tuple) =
+    resolve'1 _0
   
   meta "compute_max_steps" 1000000
   
@@ -120,25 +120,25 @@ module M_branch_borrow_2__g [#"branch_borrow_2.rs" 35 0 35 10]
     [ bb0 = s0
       [ s0 =  [ &_2 <- { t_MyInt__0 = ([%#sbranch_borrow_2] (10 : UInt64.t)) } ] s1
       | s1 =  [ &_3 <- { t_MyInt__0 = ([%#sbranch_borrow_2'0] (5 : UInt64.t)) } ] s2
-      | s2 =  [ &a <- { _0 = _2; _1 = _3 } ] s3
+      | s2 =  [ &a <- { _p0 = _2; _p1 = _3 } ] s3
       | s3 = MutBorrow.borrow_mut <tuple> {a} (fun (_ret:MutBorrow.t tuple) ->  [ &b <- _ret ]  [ &a <- _ret.final ] s4)
-      | s4 = MutBorrow.borrow_final <t_MyInt> {(b.current)._1} {MutBorrow.inherit_id (MutBorrow.get_id b) 2}
+      | s4 = MutBorrow.borrow_final <t_MyInt> {(b.current)._p1} {MutBorrow.inherit_id (MutBorrow.get_id b) 2}
           (fun (_ret:MutBorrow.t t_MyInt) ->
              [ &c <- _ret ] 
-             [ &b <- { b with current = { b.current with _1 = _ret.final } } ] 
+             [ &b <- { b with current = { b.current with _p1 = _ret.final } } ] 
             s5)
-      | s5 = MutBorrow.borrow_final <t_MyInt> {(b.current)._0} {MutBorrow.inherit_id (MutBorrow.get_id b) 1}
+      | s5 = MutBorrow.borrow_final <t_MyInt> {(b.current)._p0} {MutBorrow.inherit_id (MutBorrow.get_id b) 1}
           (fun (_ret:MutBorrow.t t_MyInt) ->
              [ &d <- _ret ] 
-             [ &b <- { b with current = { b.current with _0 = _ret.final } } ] 
+             [ &b <- { b with current = { b.current with _p0 = _ret.final } } ] 
             s6)
       | s6 = -{resolve'0 c}- s7
       | s7 = -{resolve'0 d}- s8
       | s8 = -{resolve'2 b}- s9
-      | s9 = return''0 {_0'0} ]
+      | s9 = return''0 {_0} ]
      ]
     )
-    [ & _0'0 : () = Any.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & a : tuple = Any.any_l ()
     | & _2 : t_MyInt = Any.any_l ()
     | & _3 : t_MyInt = Any.any_l ()

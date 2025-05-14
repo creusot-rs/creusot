@@ -89,7 +89,7 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   
   type tuple  =
-    { _0: MutBorrow.t t_T; _1: MutBorrow.t (Slice64.slice t_T) }
+    { _p0: MutBorrow.t t_T; _p1: MutBorrow.t (Slice64.slice t_T) }
   
   type t_Option  =
     | C_None
@@ -98,16 +98,16 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   predicate invariant''4 (self : MutBorrow.t t_T) =
     [%#sinvariant] inv self.current /\ inv self.final
   
-  predicate inv'5 (_0'0 : MutBorrow.t t_T)
+  predicate inv'5 (_0 : MutBorrow.t t_T)
   
   axiom inv_axiom'4 [@rewrite] : forall x : MutBorrow.t t_T [inv'5 x] . inv'5 x = invariant''4 x
   
-  predicate inv'6 (_0'0 : tuple)
+  predicate inv'6 (_0 : tuple)
   
   axiom inv_axiom'5 [@rewrite] : forall x : tuple [inv'6 x] . inv'6 x
-  = (let {_0 = x0 ; _1 = x1} = x in inv'5 x0 /\ inv'3 x1)
+  = (let {_p0 = x0 ; _p1 = x1} = x in inv'5 x0 /\ inv'3 x1)
   
-  predicate inv'7 (_0'0 : t_Option)
+  predicate inv'7 (_0 : t_Option)
   
   axiom inv_axiom'6 [@rewrite] : forall x : t_Option [inv'7 x] . inv'7 x
   = match x with
@@ -125,7 +125,7 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
     any
     [ return''0 (result:t_Option)-> {inv'7 result}
       {[%#sslice'0] match result with
-        | C_Some {_0 = first ; _1 = tail'0} -> first.current = index_logic self_.current 0
+        | C_Some {_p0 = first ; _p1 = tail'0} -> first.current = index_logic self_.current 0
         /\ first.final = index_logic self_.final 0
         /\ Seq.length (view self_.current) > 0
         /\ Seq.length (view self_.final) > 0
@@ -144,14 +144,14 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   predicate resolve (self : MutBorrow.t (Slice64.slice t_T)) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0'0 : MutBorrow.t (Slice64.slice t_T)) =
-    resolve _0'0
+  predicate resolve'0 (_0 : MutBorrow.t (Slice64.slice t_T)) =
+    resolve _0
   
   predicate resolve'1 (self : MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0'0 : MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) =
-    resolve'1 _0'0
+  predicate resolve'2 (_0 : MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) =
+    resolve'1 _0
   
   type t_Option'0  =
     | C_None'0
@@ -160,10 +160,10 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   predicate resolve'3 (self : MutBorrow.t t_T) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'4 (_0'0 : MutBorrow.t t_T) =
-    resolve'3 _0'0
+  predicate resolve'4 (_0 : MutBorrow.t t_T) =
+    resolve'3 _0
   
-  predicate inv'8 (_0'0 : t_Option'0)
+  predicate inv'8 (_0 : t_Option'0)
   
   axiom inv_axiom'7 [@rewrite] : forall x : t_Option'0 [inv'8 x] . inv'8 x
   = match x with
@@ -199,8 +199,8 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
     
     | bb2 = any [ br0 -> {_3 = C_None} (! bb4) | br1 (x0:tuple)-> {_3 = C_Some x0} (! bb5) ] 
     | bb5 = s0
-      [ s0 = v_Some {_3} (fun (r0:tuple) ->  [ &first <- r0._0 ] s1)
-      | s1 = v_Some {_3} (fun (r0:tuple) ->  [ &rem <- r0._1 ] s2)
+      [ s0 = v_Some {_3} (fun (r0:tuple) ->  [ &first <- r0._p0 ] s1)
+      | s1 = v_Some {_3} (fun (r0:tuple) ->  [ &rem <- r0._p1 ] s2)
       | s2 = {inv'2 rem.current}
         MutBorrow.borrow_final <Slice64.slice t_T> {rem.current} {MutBorrow.get_id rem}
           (fun (_ret:MutBorrow.t (Slice64.slice t_T)) ->
@@ -228,7 +228,7 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
             -{inv _ret.final}-
              [ &first <- { first with current = _ret.final } ] 
             s9)
-      | s9 =  [ &_0'0 <- C_Some'0 _12 ] s10
+      | s9 =  [ &_0 <- C_Some'0 _12 ] s10
       | s10 = {[@expl:type invariant] inv'3 rem} s11
       | s11 = -{resolve'0 rem}- s12
       | s12 = {[@expl:type invariant] inv'5 first} s13
@@ -239,14 +239,11 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
     
     | bb4 = s0 [ s0 = {[@expl:type invariant] inv'4 self_'0} s1 | s1 = -{resolve'2 self_'0}- s2 | s2 = bb6 ] 
     | bb6 = s0
-      [ s0 =  [ &_0'0 <- C_None'0 ] s1
-      | s1 = {[@expl:type invariant] inv'3 _5} s2
-      | s2 = -{resolve'0 _5}- s3
-      | s3 = bb7 ]
+      [ s0 =  [ &_0 <- C_None'0 ] s1 | s1 = {[@expl:type invariant] inv'3 _5} s2 | s2 = -{resolve'0 _5}- s3 | s3 = bb7 ]
     
-    | bb7 = return''0 {_0'0} ]
+    | bb7 = return''0 {_0} ]
     )
-    [ & _0'0 : t_Option'0 = Any.any_l ()
+    [ & _0 : t_Option'0 = Any.any_l ()
     | & self_'0 : MutBorrow.t (MutBorrow.t (Slice64.slice t_T)) = self_
     | & _3 : t_Option = Any.any_l ()
     | & _4 : MutBorrow.t (Slice64.slice t_T) = Any.any_l ()

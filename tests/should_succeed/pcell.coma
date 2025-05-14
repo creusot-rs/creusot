@@ -61,9 +61,9 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
     { t_Ghost__0: t_PCellOwn }
   
   type tuple  =
-    { _0: t_PCell; _1: t_Ghost }
+    { _p0: t_PCell; _p1: t_Ghost }
   
-  predicate inv (_0'0 : t_PCellOwn)
+  predicate inv (_0 : t_PCellOwn)
   
   axiom inv_axiom [@rewrite] : forall x : t_PCellOwn [inv x] . inv x = true
   
@@ -73,7 +73,7 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   predicate invariant' (self : t_Ghost) =
     [%#sghost'8] inv (inner_logic self)
   
-  predicate inv'0 (_0'0 : t_Ghost)
+  predicate inv'0 (_0 : t_Ghost)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Ghost [inv'0 x] . inv'0 x
   = (invariant' x
@@ -81,9 +81,9 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
     | {t_Ghost__0 = a_0} -> true
     end)
   
-  predicate inv'1 (_0'0 : tuple)
+  predicate inv'1 (_0 : tuple)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : tuple [inv'1 x] . inv'1 x = (let {_0 = x0 ; _1 = x1} = x in inv'0 x1)
+  axiom inv_axiom'1 [@rewrite] : forall x : tuple [inv'1 x] . inv'1 x = (let {_p0 = x0 ; _p1 = x1} = x in inv'0 x1)
   
   type t_Id
   
@@ -98,8 +98,8 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   
   let rec new (value:Int32.t) (return'  (x:tuple))= any
     [ return''0 (result:tuple)-> {[%#spcell'9] inv'1 result}
-      {[%#spcell'10] id result._0 = id'0 (inner_logic result._1)}
-      {[%#spcell'11] view (inner_logic result._1) = value}
+      {[%#spcell'10] id result._p0 = id'0 (inner_logic result._p1)}
+      {[%#spcell'11] view (inner_logic result._p1) = value}
       (! return' {result}) ]
   
   
@@ -109,11 +109,11 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   predicate invariant''0 (self : t_Ghost) =
     [%#sinvariant] inv'0 self
   
-  predicate inv'2 (_0'0 : t_Ghost)
+  predicate inv'2 (_0 : t_Ghost)
   
   axiom inv_axiom'2 [@rewrite] : forall x : t_Ghost [inv'2 x] . inv'2 x = invariant''0 x
   
-  predicate inv'3 (_0'0 : t_PCellOwn)
+  predicate inv'3 (_0 : t_PCellOwn)
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_PCellOwn [inv'3 x] . inv'3 x = true
   
@@ -123,7 +123,7 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   predicate invariant''1 (self : t_Ghost'0) =
     [%#sghost'8] inv'3 (inner_logic'0 self)
   
-  predicate inv'4 (_0'0 : t_Ghost'0)
+  predicate inv'4 (_0 : t_Ghost'0)
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_Ghost'0 [inv'4 x] . inv'4 x
   = (invariant''1 x
@@ -154,11 +154,11 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   predicate invariant''2 (self : MutBorrow.t t_Ghost) =
     [%#sinvariant'0] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'5 (_0'0 : MutBorrow.t t_Ghost)
+  predicate inv'5 (_0 : MutBorrow.t t_Ghost)
   
   axiom inv_axiom'5 [@rewrite] : forall x : MutBorrow.t t_Ghost [inv'5 x] . inv'5 x = invariant''2 x
   
-  predicate inv'6 (_0'0 : MutBorrow.t t_PCellOwn)
+  predicate inv'6 (_0 : MutBorrow.t t_PCellOwn)
   
   axiom inv_axiom'6 [@rewrite] : forall x : MutBorrow.t t_PCellOwn [inv'6 x] . inv'6 x = true
   
@@ -168,7 +168,7 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   predicate invariant''3 (self : t_Ghost'1) =
     [%#sghost'8] inv'6 (inner_logic'1 self)
   
-  predicate inv'7 (_0'0 : t_Ghost'1)
+  predicate inv'7 (_0 : t_Ghost'1)
   
   axiom inv_axiom'7 [@rewrite] : forall x : t_Ghost'1 [inv'7 x] . inv'7 x
   = (invariant''3 x
@@ -196,8 +196,8 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   predicate resolve (self : MutBorrow.t Int32.t) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0'0 : MutBorrow.t Int32.t) =
-    resolve _0'0
+  predicate resolve'0 (_0 : MutBorrow.t Int32.t) =
+    resolve _0
   
   let rec replace (self:t_PCell) (perm:t_Ghost'1) (val''0:Int32.t) (return'  (x:Int32.t))= {[@expl:replace 'perm' type invariant] [%#spcell'20] inv'7 perm}
     {[@expl:replace requires] [%#spcell'21] id self = id'0 (inner_logic'1 perm).current}
@@ -220,8 +220,8 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   let rec foo[#"pcell.rs" 5 0 5 19] (return'  (x:Int32.t))= (! bb0
     [ bb0 = s0 [ s0 = new {[%#spcell] (1 : Int32.t)} (fun (_ret:tuple) ->  [ &_4 <- _ret ] s1) | s1 = bb1 ] 
     | bb1 = s0
-      [ s0 =  [ &p <- _4._0 ] s1
-      | s1 =  [ &own <- _4._1 ] s2
+      [ s0 =  [ &p <- _4._p0 ] s1
+      | s1 =  [ &own <- _4._p1 ] s2
       | s2 = borrow {own} (fun (_ret:t_Ghost'0) ->  [ &_10 <- _ret ] s3)
       | s3 = bb2 ]
     
@@ -263,13 +263,13 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
       [ s0 =  [ &_27 <- _28 = ([%#spcell'4] (2 : Int32.t)) ] s1
       | s1 = any [ br0 -> {_27 = false} (! bb15) | br1 -> {_27} (! bb14) ]  ]
     
-    | bb14 = s0 [ s0 = into_inner {p} {own} (fun (_ret:Int32.t) ->  [ &_0'0 <- _ret ] s1) | s1 = bb16 ] 
-    | bb16 = return''0 {_0'0}
+    | bb14 = s0 [ s0 = into_inner {p} {own} (fun (_ret:Int32.t) ->  [ &_0 <- _ret ] s1) | s1 = bb16 ] 
+    | bb16 = return''0 {_0}
     | bb15 = {[%#spcell'5] false} any
     | bb11 = {[%#spcell'6] false} any
     | bb5 = {[%#spcell'7] false} any ]
     )
-    [ & _0'0 : Int32.t = Any.any_l ()
+    [ & _0 : Int32.t = Any.any_l ()
     | & p : t_PCell = Any.any_l ()
     | & own : t_Ghost = Any.any_l ()
     | & _4 : tuple = Any.any_l ()

@@ -334,7 +334,7 @@ module M_borrows__tuple [#"borrows.rs" 46 0 46 44]
     { t_NonZero__0: Int32.t }
   
   type tuple  =
-    { _0: t_NonZero; _1: MutBorrow.t t_NonZero }
+    { _p0: t_NonZero; _p1: MutBorrow.t t_NonZero }
   
   function view (self : MutBorrow.t Int32.t) : int =
     [%#smodel] Int32.to_int self.current
@@ -348,13 +348,13 @@ module M_borrows__tuple [#"borrows.rs" 46 0 46 44]
   predicate resolve (self : MutBorrow.t Int32.t) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0'0 : MutBorrow.t Int32.t) =
-    resolve _0'0
+  predicate resolve'0 (_0 : MutBorrow.t Int32.t) =
+    resolve _0
   
   predicate invariant' [#"borrows.rs" 10 4 10 30] (self : t_NonZero) =
     [%#sborrows'5] Int32.to_int self.t_NonZero__0 <> 0
   
-  predicate inv (_0'0 : t_NonZero)
+  predicate inv (_0 : t_NonZero)
   
   axiom inv_axiom [@rewrite] : forall x : t_NonZero [inv x] . inv x
   = (invariant' x
@@ -365,46 +365,46 @@ module M_borrows__tuple [#"borrows.rs" 46 0 46 44]
   predicate invariant''0 (self : MutBorrow.t t_NonZero) =
     [%#sinvariant] inv self.current /\ inv self.final
   
-  predicate inv'0 (_0'0 : MutBorrow.t t_NonZero)
+  predicate inv'0 (_0 : MutBorrow.t t_NonZero)
   
   axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_NonZero [inv'0 x] . inv'0 x = invariant''0 x
   
-  predicate inv'1 (_0'0 : tuple)
+  predicate inv'1 (_0 : tuple)
   
   axiom inv_axiom'1 [@rewrite] : forall x : tuple [inv'1 x] . inv'1 x
-  = (let {_0 = x0 ; _1 = x1} = x in inv x0 /\ inv'0 x1)
+  = (let {_p0 = x0 ; _p1 = x1} = x in inv x0 /\ inv'0 x1)
   
-  predicate resolve'1 (_0'0 : t_NonZero) =
+  predicate resolve'1 (_0 : t_NonZero) =
     true
   
   predicate resolve'2 (self : MutBorrow.t t_NonZero) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'3 (_0'0 : MutBorrow.t t_NonZero) =
-    resolve'2 _0'0
+  predicate resolve'3 (_0 : MutBorrow.t t_NonZero) =
+    resolve'2 _0
   
   predicate resolve'4 (self : tuple) =
-    [%#sresolve'0] resolve'1 self._0 /\ resolve'3 self._1
+    [%#sresolve'0] resolve'1 self._p0 /\ resolve'3 self._p1
   
-  predicate resolve'5 (_0'0 : tuple) =
-    resolve'4 _0'0
+  predicate resolve'5 (_0 : tuple) =
+    resolve'4 _0
   
   meta "compute_max_steps" 1000000
   
   let rec tuple[#"borrows.rs" 46 0 46 44] (x:tuple) (return'  (x'0:()))= {[@expl:tuple 'x' type invariant] [%#sborrows'0] inv'1 x}
-    {[@expl:tuple requires #0] [%#sborrows'1] Int32.to_int ((x._1).current).t_NonZero__0
+    {[@expl:tuple requires #0] [%#sborrows'1] Int32.to_int ((x._p1).current).t_NonZero__0
     < Int32.to_int (v_MAX : Int32.t)}
-    {[@expl:tuple requires #1] [%#sborrows'2] Int32.to_int ((x._1).current).t_NonZero__0 <> - 1}
+    {[@expl:tuple requires #1] [%#sborrows'2] Int32.to_int ((x._p1).current).t_NonZero__0 <> - 1}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &x'0 <- { x'0 with _0 = { t_NonZero__0 = ([%#sborrows] (0 : Int32.t)) } } ] s1
+      [ s0 =  [ &x'0 <- { x'0 with _p0 = { t_NonZero__0 = ([%#sborrows] (0 : Int32.t)) } } ] s1
       | s1 = MutBorrow.borrow_final
           <Int32.t>
-          {((x'0._1).current).t_NonZero__0}
-          {MutBorrow.inherit_id (MutBorrow.get_id x'0._1) 1}
+          {((x'0._p1).current).t_NonZero__0}
+          {MutBorrow.inherit_id (MutBorrow.get_id x'0._p1) 1}
           (fun (_ret:MutBorrow.t Int32.t) ->
              [ &_6 <- _ret ] 
-             [ &x'0 <- { x'0 with _1 = { x'0._1 with current = { t_NonZero__0 = _ret.final } } } ] 
+             [ &x'0 <- { x'0 with _p1 = { x'0._p1 with current = { t_NonZero__0 = _ret.final } } } ] 
             s2)
       | s2 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
           (fun (_ret:MutBorrow.t Int32.t) ->  [ &_5 <- _ret ]  [ &_6 <- { _6 with current = _ret.final } ] s3)
@@ -415,10 +415,10 @@ module M_borrows__tuple [#"borrows.rs" 46 0 46 44]
       [ s0 = -{resolve'0 _6}- s1
       | s1 = {[@expl:type invariant] inv'1 x'0} s2
       | s2 = -{resolve'5 x'0}- s3
-      | s3 = return''0 {_0'0} ]
+      | s3 = return''0 {_0} ]
      ]
     )
-    [ & _0'0 : () = Any.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & x'0 : tuple = x
     | & _4 : () = Any.any_l ()
     | & _5 : MutBorrow.t Int32.t = Any.any_l ()
@@ -446,7 +446,7 @@ module M_borrows__partial_move [#"borrows.rs" 54 0 54 47]
     { t_NonZero__0: Int32.t }
   
   type tuple  =
-    { _0: t_NonZero; _1: MutBorrow.t t_NonZero }
+    { _p0: t_NonZero; _p1: MutBorrow.t t_NonZero }
   
   function view (self : MutBorrow.t Int32.t) : int =
     [%#smodel] Int32.to_int self.current
@@ -460,13 +460,13 @@ module M_borrows__partial_move [#"borrows.rs" 54 0 54 47]
   predicate resolve (self : MutBorrow.t Int32.t) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0'0 : MutBorrow.t Int32.t) =
-    resolve _0'0
+  predicate resolve'0 (_0 : MutBorrow.t Int32.t) =
+    resolve _0
   
   predicate invariant' [#"borrows.rs" 10 4 10 30] (self : t_NonZero) =
     [%#sborrows'5] Int32.to_int self.t_NonZero__0 <> 0
   
-  predicate inv (_0'0 : t_NonZero)
+  predicate inv (_0 : t_NonZero)
   
   axiom inv_axiom [@rewrite] : forall x : t_NonZero [inv x] . inv x
   = (invariant' x
@@ -477,37 +477,37 @@ module M_borrows__partial_move [#"borrows.rs" 54 0 54 47]
   predicate invariant''0 (self : MutBorrow.t t_NonZero) =
     [%#sinvariant] inv self.current /\ inv self.final
   
-  predicate inv'0 (_0'0 : MutBorrow.t t_NonZero)
+  predicate inv'0 (_0 : MutBorrow.t t_NonZero)
   
   axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_NonZero [inv'0 x] . inv'0 x = invariant''0 x
   
   predicate resolve'1 (self : MutBorrow.t t_NonZero) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0'0 : MutBorrow.t t_NonZero) =
-    resolve'1 _0'0
+  predicate resolve'2 (_0 : MutBorrow.t t_NonZero) =
+    resolve'1 _0
   
-  predicate inv'1 (_0'0 : tuple)
+  predicate inv'1 (_0 : tuple)
   
   axiom inv_axiom'1 [@rewrite] : forall x : tuple [inv'1 x] . inv'1 x
-  = (let {_0 = x0 ; _1 = x1} = x in inv x0 /\ inv'0 x1)
+  = (let {_p0 = x0 ; _p1 = x1} = x in inv x0 /\ inv'0 x1)
   
   meta "compute_max_steps" 1000000
   
   let rec partial_move[#"borrows.rs" 54 0 54 47] (x:tuple) (return'  (x'0:()))= {[@expl:partial_move 'x' type invariant] [%#sborrows'0] inv'1 x}
-    {[@expl:partial_move requires #0] [%#sborrows'1] Int32.to_int ((x._1).current).t_NonZero__0
+    {[@expl:partial_move requires #0] [%#sborrows'1] Int32.to_int ((x._p1).current).t_NonZero__0
     < Int32.to_int (v_MAX : Int32.t)}
-    {[@expl:partial_move requires #1] [%#sborrows'2] Int32.to_int ((x._1).current).t_NonZero__0 <> - 1}
+    {[@expl:partial_move requires #1] [%#sborrows'2] Int32.to_int ((x._p1).current).t_NonZero__0 <> - 1}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &a <- x'0._0 ] s1
+      [ s0 =  [ &a <- x'0._p0 ] s1
       | s1 = MutBorrow.borrow_final
           <Int32.t>
-          {((x'0._1).current).t_NonZero__0}
-          {MutBorrow.inherit_id (MutBorrow.get_id x'0._1) 1}
+          {((x'0._p1).current).t_NonZero__0}
+          {MutBorrow.inherit_id (MutBorrow.get_id x'0._p1) 1}
           (fun (_ret:MutBorrow.t Int32.t) ->
              [ &_7 <- _ret ] 
-             [ &x'0 <- { x'0 with _1 = { x'0._1 with current = { t_NonZero__0 = _ret.final } } } ] 
+             [ &x'0 <- { x'0 with _p1 = { x'0._p1 with current = { t_NonZero__0 = _ret.final } } } ] 
             s2)
       | s2 = MutBorrow.borrow_final <Int32.t> {_7.current} {MutBorrow.get_id _7}
           (fun (_ret:MutBorrow.t Int32.t) ->  [ &_6 <- _ret ]  [ &_7 <- { _7 with current = _ret.final } ] s3)
@@ -517,20 +517,20 @@ module M_borrows__partial_move [#"borrows.rs" 54 0 54 47]
     | bb1 = s0
       [ s0 = -{resolve'0 _7}- s1
       | s1 = {[@expl:type invariant] match x'0 with
-          | {_1 = x'1} -> inv'0 x'1
+          | {_p1 = x'1} -> inv'0 x'1
           | _ -> true
           end}
         s2
       | s2 = -{match x'0 with
-          | {_1 = x'1} -> resolve'2 x'1
+          | {_p1 = x'1} -> resolve'2 x'1
           | _ -> true
           end}-
         s3
       | s3 =  [ &a <- { t_NonZero__0 = ([%#sborrows] (0 : Int32.t)) } ] s4
-      | s4 = return''0 {_0'0} ]
+      | s4 = return''0 {_0} ]
      ]
     )
-    [ & _0'0 : () = Any.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & x'0 : tuple = x
     | & a : t_NonZero = Any.any_l ()
     | & _5 : () = Any.any_l ()
@@ -559,7 +559,7 @@ module M_borrows__destruct [#"borrows.rs" 62 0 62 43]
     { t_NonZero__0: Int32.t }
   
   type tuple  =
-    { _0: t_NonZero; _1: MutBorrow.t t_NonZero }
+    { _p0: t_NonZero; _p1: MutBorrow.t t_NonZero }
   
   function view (self : MutBorrow.t Int32.t) : int =
     [%#smodel] Int32.to_int self.current
@@ -573,13 +573,13 @@ module M_borrows__destruct [#"borrows.rs" 62 0 62 43]
   predicate resolve (self : MutBorrow.t Int32.t) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0'0 : MutBorrow.t Int32.t) =
-    resolve _0'0
+  predicate resolve'0 (_0 : MutBorrow.t Int32.t) =
+    resolve _0
   
   predicate invariant' [#"borrows.rs" 10 4 10 30] (self : t_NonZero) =
     [%#sborrows'5] Int32.to_int self.t_NonZero__0 <> 0
   
-  predicate inv (_0'0 : t_NonZero)
+  predicate inv (_0 : t_NonZero)
   
   axiom inv_axiom [@rewrite] : forall x : t_NonZero [inv x] . inv x
   = (invariant' x
@@ -590,31 +590,31 @@ module M_borrows__destruct [#"borrows.rs" 62 0 62 43]
   predicate invariant''0 (self : MutBorrow.t t_NonZero) =
     [%#sinvariant] inv self.current /\ inv self.final
   
-  predicate inv'0 (_0'0 : MutBorrow.t t_NonZero)
+  predicate inv'0 (_0 : MutBorrow.t t_NonZero)
   
   axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_NonZero [inv'0 x] . inv'0 x = invariant''0 x
   
   predicate resolve'1 (self : MutBorrow.t t_NonZero) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0'0 : MutBorrow.t t_NonZero) =
-    resolve'1 _0'0
+  predicate resolve'2 (_0 : MutBorrow.t t_NonZero) =
+    resolve'1 _0
   
-  predicate inv'1 (_0'0 : tuple)
+  predicate inv'1 (_0 : tuple)
   
   axiom inv_axiom'1 [@rewrite] : forall x : tuple [inv'1 x] . inv'1 x
-  = (let {_0 = x0 ; _1 = x1} = x in inv x0 /\ inv'0 x1)
+  = (let {_p0 = x0 ; _p1 = x1} = x in inv x0 /\ inv'0 x1)
   
   meta "compute_max_steps" 1000000
   
   let rec destruct[#"borrows.rs" 62 0 62 43] (x:tuple) (return'  (x'0:()))= {[@expl:destruct 'x' type invariant] [%#sborrows'0] inv'1 x}
-    {[@expl:destruct requires #0] [%#sborrows'1] Int32.to_int ((x._1).current).t_NonZero__0
+    {[@expl:destruct requires #0] [%#sborrows'1] Int32.to_int ((x._p1).current).t_NonZero__0
     < Int32.to_int (v_MAX : Int32.t)}
-    {[@expl:destruct requires #1] [%#sborrows'2] Int32.to_int ((x._1).current).t_NonZero__0 <> - 1}
+    {[@expl:destruct requires #1] [%#sborrows'2] Int32.to_int ((x._p1).current).t_NonZero__0 <> - 1}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &a <- x'0._0 ] s1
-      | s1 =  [ &b <- x'0._1 ] s2
+      [ s0 =  [ &a <- x'0._p0 ] s1
+      | s1 =  [ &b <- x'0._p1 ] s2
       | s2 =  [ &a <- { t_NonZero__0 = ([%#sborrows] (0 : Int32.t)) } ] s3
       | s3 = MutBorrow.borrow_final <Int32.t> {(b.current).t_NonZero__0} {MutBorrow.inherit_id (MutBorrow.get_id b) 1}
           (fun (_ret:MutBorrow.t Int32.t) ->
@@ -630,10 +630,10 @@ module M_borrows__destruct [#"borrows.rs" 62 0 62 43]
       [ s0 = -{resolve'0 _8}- s1
       | s1 = {[@expl:type invariant] inv'0 b} s2
       | s2 = -{resolve'2 b}- s3
-      | s3 = return''0 {_0'0} ]
+      | s3 = return''0 {_0} ]
      ]
     )
-    [ & _0'0 : () = Any.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & x'0 : tuple = x
     | & a : t_NonZero = Any.any_l ()
     | & b : MutBorrow.t t_NonZero = Any.any_l ()
