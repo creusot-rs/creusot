@@ -630,6 +630,26 @@ impl<T> Seq<T> {
     pub fn pop_front_ghost(&mut self) -> Option<T> {
         panic!()
     }
+
+    /// Clears the sequence, removing all values.
+    ///
+    /// # Example
+    /// ```rust,creusot
+    /// use creusot_contracts::{ghost, proof_assert, Seq};
+    ///
+    /// let mut s = Seq::new();
+    /// ghost! {
+    ///     s.push_back_ghost(1);
+    ///     s.push_back_ghost(2);
+    ///     s.push_back_ghost(3);
+    ///     s.clear_ghost();
+    ///     proof_assert!(s == Seq::EMPTY);
+    /// };
+    /// ```
+    #[trusted]
+    #[pure]
+    #[ensures(^self == Self::EMPTY)]
+    pub fn clear_ghost(&mut self) {}
 }
 
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.

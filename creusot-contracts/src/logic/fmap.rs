@@ -467,6 +467,26 @@ impl<K, V: ?Sized> FMap<K, V> {
         let _ = key;
         panic!()
     }
+
+    /// Clears the map, removing all values.
+    ///
+    /// # Example
+    /// ```rust,creusot
+    /// use creusot_contracts::{ghost, proof_assert, logic::FMap};
+    ///
+    /// let mut s = FMap::new();
+    /// ghost! {
+    ///     s.insert_ghost(1, 2);
+    ///     s.insert_ghost(2, 3);
+    ///     s.insert_ghost(3, 42);
+    ///     s.clear_ghost();
+    ///     proof_assert!(s == FMap::empty());
+    /// };
+    /// ```
+    #[trusted]
+    #[pure]
+    #[ensures(^self == Self::empty())]
+    pub fn clear_ghost(&mut self) {}
 }
 
 impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
