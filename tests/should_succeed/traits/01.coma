@@ -1,6 +1,5 @@
 module M_01__uses_generic [#"01.rs" 8 0 8 38]
   let%span s01 = "01.rs" 8 26 8 27
-  let%span s01'0 = "01.rs" 5 17 5 18
   
   use creusot.int.UInt32
   use creusot.prelude.Any
@@ -9,8 +8,17 @@ module M_01__uses_generic [#"01.rs" 8 0 8 38]
   
   predicate inv (_0 : t_T)
   
-  let rec from_b (x:t_T) (return'  (x'0:UInt32.t))= {[@expl:from_b 'x' type invariant] [%#s01'0] inv x}
-    any [ return''0 (result:UInt32.t)-> (! return' {result}) ] 
+  predicate precondition (self : ()) (args : t_T)
+  
+  axiom precondition_fndef : forall args : t_T [precondition () args] . (let x = args in inv x)  -> precondition () args
+  
+  predicate postcondition_once (self : ()) (args : t_T) (result : UInt32.t)
+  
+  axiom postcondition_fndef : forall args : t_T, res : UInt32.t [postcondition_once () args res] . postcondition_once () args res
+   -> (let x = args in true)
+  
+  let rec from_b (x:t_T) (return'  (x'0:UInt32.t))= {[@expl:from_b requires] precondition () x}
+    any [ return''0 (result:UInt32.t)-> {postcondition_once () x result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   

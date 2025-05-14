@@ -1,8 +1,6 @@
 module M_02__omg [#"02.rs" 11 0 11 30]
   let%span s02 = "02.rs" 11 17 11 18
   let%span s02'0 = "02.rs" 10 10 10 24
-  let%span s02'1 = "02.rs" 7 16 7 20
-  let%span s02'2 = "02.rs" 6 14 6 28
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
   
   use creusot.prelude.Any
@@ -18,8 +16,18 @@ module M_02__omg [#"02.rs" 11 0 11 30]
   
   axiom inv_axiom [@rewrite] : forall x : t_T [inv'0 x] . inv'0 x = invariant' x
   
-  let rec is_true (self:t_T) (return'  (x:bool))= {[@expl:is_true 'self' type invariant] [%#s02'1] inv'0 self}
-    any [ return''0 (result:bool)-> {[%#s02'2] result = true} (! return' {result}) ] 
+  predicate precondition (self : ()) (args : t_T)
+  
+  axiom precondition_fndef : forall args : t_T [precondition () args] . (let self = args in inv'0 self)
+   -> precondition () args
+  
+  predicate postcondition_once (self : ()) (args : t_T) (result : bool)
+  
+  axiom postcondition_fndef : forall args : t_T, res : bool [postcondition_once () args res] . postcondition_once () args res
+   -> (let self = args in res = true)
+  
+  let rec is_true (self:t_T) (return'  (x:bool))= {[@expl:is_true requires] precondition () self}
+    any [ return''0 (result:bool)-> {postcondition_once () self result} (! return' {result}) ] 
   
   predicate resolve (_0 : t_T)
   

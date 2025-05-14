@@ -1,9 +1,7 @@
 module M_766__Trait__goo [#"766.rs" 10 4 10 21]
   let%span s766 = "766.rs" 10 16 10 20
-  let%span s766'0 = "766.rs" 8 14 8 18
-  let%span s766'1 = "766.rs" 7 14 7 52
-  let%span smodel = "../../../creusot-contracts/src/model.rs" 63 8 63 28
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span smodel = "../../../creusot-contracts/src/model.rs" 63 8 63 28
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
   
   use creusot.prelude.MutBorrow
@@ -20,6 +18,11 @@ module M_766__Trait__goo [#"766.rs" 10 4 10 21]
   
   axiom inv_axiom [@rewrite] : forall x : MutBorrow.t t_Self [inv'0 x] . inv'0 x = invariant' x
   
+  predicate precondition (self : ()) (args : MutBorrow.t t_Self)
+  
+  axiom precondition_fndef : forall args : MutBorrow.t t_Self [precondition () args] . (let self = args in inv'0 self)
+   -> precondition () args
+  
   type t_FMap
   
   function deep_model (self : t_Self) : t_FMap
@@ -27,14 +30,29 @@ module M_766__Trait__goo [#"766.rs" 10 4 10 21]
   function deep_model'0 (self : MutBorrow.t t_Self) : t_FMap =
     [%#smodel] deep_model self.current
   
-  let rec f (self:MutBorrow.t t_Self) (return'  (x:()))= {[@expl:f 'self' type invariant] [%#s766'0] inv'0 self}
-    any [ return''0 (result:())-> {[%#s766'1] deep_model'0 self = deep_model'0 self} (! return' {result}) ] 
+  predicate postcondition_once (self : ()) (args : MutBorrow.t t_Self) (result : ())
+  
+  axiom postcondition_fndef : forall args : MutBorrow.t t_Self, res : () [postcondition_once () args res] . postcondition_once () args res
+   -> (let self = args in deep_model'0 self = deep_model'0 self)
+  
+  let rec f (self:MutBorrow.t t_Self) (return'  (x:()))= {[@expl:f requires] precondition () self}
+    any [ return''0 (result:())-> {postcondition_once () self result} (! return' {result}) ] 
   
   predicate resolve (self : MutBorrow.t t_Self) =
     [%#sresolve] self.final = self.current
   
   predicate resolve'0 (_0 : MutBorrow.t t_Self) =
     resolve _0
+  
+  predicate precondition'0 (self : ()) (args : MutBorrow.t t_Self)
+  
+  axiom precondition_fndef'0 : forall args : MutBorrow.t t_Self [precondition'0 () args] . (let self = args in inv'0 self)
+   -> precondition'0 () args
+  
+  predicate postcondition_once'0 (self : ()) (args : MutBorrow.t t_Self) (result : ())
+  
+  axiom postcondition_fndef'0 : forall args : MutBorrow.t t_Self, res : () [postcondition_once'0 () args res] . postcondition_once'0 () args res
+   -> (let self = args in true)
   
   meta "compute_max_steps" 1000000
   

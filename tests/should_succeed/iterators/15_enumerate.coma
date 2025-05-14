@@ -148,13 +148,10 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
   let%span s15_enumerate'3 = "15_enumerate.rs" 24 8 24 74
   let%span s15_enumerate'4 = "15_enumerate.rs" 31 12 35 116
   let%span s15_enumerate'5 = "15_enumerate.rs" 75 12 79 79
-  let%span scommon = "common.rs" 27 17 27 21
-  let%span scommon'0 = "common.rs" 27 26 27 44
-  let%span scommon'1 = "common.rs" 23 14 26 5
-  let%span scommon'2 = "common.rs" 14 14 14 45
-  let%span scommon'3 = "common.rs" 18 15 18 32
-  let%span scommon'4 = "common.rs" 19 15 19 32
-  let%span scommon'5 = "common.rs" 20 14 20 42
+  let%span scommon = "common.rs" 14 14 14 45
+  let%span scommon'0 = "common.rs" 18 15 18 32
+  let%span scommon'1 = "common.rs" 19 15 19 32
+  let%span scommon'2 = "common.rs" 20 14 20 42
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
   
@@ -178,12 +175,12 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
   function produces_trans [#"common.rs" 21 4 21 91] (a : t_I) (ab : Seq.seq t_Item) (b : t_I) (bc : Seq.seq t_Item) (c : t_I) : ()
   
   
-  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_Item, b : t_I, bc : Seq.seq t_Item, c : t_I . ([%#scommon'3] produces a ab b)
-   -> ([%#scommon'4] produces b bc c)  -> ([%#scommon'5] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_Item, b : t_I, bc : Seq.seq t_Item, c : t_I . ([%#scommon'0] produces a ab b)
+   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self : t_I) : ()
   
-  axiom produces_refl_spec : forall self : t_I . [%#scommon'2] produces self (Seq.empty : Seq.seq t_Item) self
+  axiom produces_refl_spec : forall self : t_I . [%#scommon] produces self (Seq.empty : Seq.seq t_Item) self
   
   type t_Option  =
     | C_None
@@ -196,6 +193,13 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
   
   axiom inv_axiom [@rewrite] : forall x : MutBorrow.t t_I [inv'0 x] . inv'0 x = invariant' x
   
+  predicate precondition (self : ()) (args : MutBorrow.t t_I)
+  
+  axiom precondition_fndef : forall args : MutBorrow.t t_I [precondition () args] . (let self = args in inv'0 self)
+   -> precondition () args
+  
+  predicate completed [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_I)
+  
   predicate inv'1 (_0 : t_Item)
   
   predicate inv'2 (_0 : t_Option)
@@ -206,17 +210,17 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
     | C_Some a_0 -> inv'1 a_0
     end
   
-  predicate completed [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_I)
+  predicate postcondition_once (self : ()) (args : MutBorrow.t t_I) (result : t_Option)
   
-  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#scommon] inv'0 self}
-    any
-    [ return''0 (result:t_Option)-> {[%#scommon'0] inv'2 result}
-      {[%#scommon'1] match result with
-        | C_None -> completed self
-        | C_Some v -> produces self.current (Seq.singleton v) self.final
-        end}
-      (! return' {result}) ]
+  axiom postcondition_fndef : forall args : MutBorrow.t t_I, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+   -> (let self = args in match res with
+    | C_None -> completed self
+    | C_Some v -> produces self.current (Seq.singleton v) self.final
+    end
+  /\ inv'2 res)
   
+  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self}
+    any [ return''0 (result:t_Option)-> {postcondition_once () self result} (! return' {result}) ] 
   
   let rec v_Some (input:t_Option) (ret  (field_0:t_Item))= any
     [ good (field_0:t_Item)-> {C_Some field_0 = input} (! ret {field_0})

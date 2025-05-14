@@ -2,9 +2,7 @@ module M_bdd__hashmap__qyi1953663170559623169__hash [#"bdd.rs" 79 8 79 29] (* <(
   let%span sbdd = "bdd.rs" 80 66 80 68
   let%span sbdd'0 = "bdd.rs" 79 17 79 21
   let%span sbdd'1 = "bdd.rs" 78 18 78 62
-  let%span sbdd'2 = "bdd.rs" 35 17 35 21
-  let%span sbdd'3 = "bdd.rs" 34 18 34 62
-  let%span sbdd'4 = "bdd.rs" 86 24 86 84
+  let%span sbdd'2 = "bdd.rs" 86 24 86 84
   let%span snum = "../../creusot-contracts/src/std/num.rs" 208 26 208 48
   let%span snum'0 = "../../creusot-contracts/src/std/num.rs" 208 26 208 48
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
@@ -31,6 +29,11 @@ module M_bdd__hashmap__qyi1953663170559623169__hash [#"bdd.rs" 79 8 79 29] (* <(
   
   axiom inv_axiom [@rewrite] : forall x : t_U [inv'0 x] . inv'0 x = invariant' x
   
+  predicate precondition (self : ()) (args : t_U)
+  
+  axiom precondition_fndef : forall args : t_U [precondition () args] . (let self = args in inv'0 self)
+   -> precondition () args
+  
   type t_DeepModelTy
   
   function hash_log [#"bdd.rs" 38 8 38 49] (_0 : t_DeepModelTy) : int
@@ -40,11 +43,13 @@ module M_bdd__hashmap__qyi1953663170559623169__hash [#"bdd.rs" 79 8 79 29] (* <(
   function deep_model'0 (self : t_U) : t_DeepModelTy =
     [%#smodel] deep_model self
   
-  let rec hash (self:t_U) (return'  (x:UInt64.t))= {[@expl:hash 'self' type invariant] [%#sbdd'2] inv'0 self}
-    any
-    [ return''0 (result:UInt64.t)-> {[%#sbdd'3] UInt64.t'int result = hash_log (deep_model'0 self)}
-      (! return' {result}) ]
+  predicate postcondition_once (self : ()) (args : t_U) (result : UInt64.t)
   
+  axiom postcondition_fndef : forall args : t_U, res : UInt64.t [postcondition_once () args res] . postcondition_once () args res
+   -> (let self = args in UInt64.t'int res = hash_log (deep_model'0 self))
+  
+  let rec hash (self:t_U) (return'  (x:UInt64.t))= {[@expl:hash requires] precondition () self}
+    any [ return''0 (result:UInt64.t)-> {postcondition_once () self result} (! return' {result}) ] 
   
   predicate inv'1 (_0 : t_V)
   
@@ -55,6 +60,11 @@ module M_bdd__hashmap__qyi1953663170559623169__hash [#"bdd.rs" 79 8 79 29] (* <(
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_V [inv'2 x] . inv'2 x = invariant''0 x
   
+  predicate precondition'0 (self : ()) (args : t_V)
+  
+  axiom precondition_fndef'0 : forall args : t_V [precondition'0 () args] . (let self = args in inv'2 self)
+   -> precondition'0 () args
+  
   type t_DeepModelTy'0
   
   function hash_log'0 [#"bdd.rs" 38 8 38 49] (_0 : t_DeepModelTy'0) : int
@@ -64,11 +74,13 @@ module M_bdd__hashmap__qyi1953663170559623169__hash [#"bdd.rs" 79 8 79 29] (* <(
   function deep_model'2 (self : t_V) : t_DeepModelTy'0 =
     [%#smodel] deep_model'1 self
   
-  let rec hash'0 (self:t_V) (return'  (x:UInt64.t))= {[@expl:hash 'self' type invariant] [%#sbdd'2] inv'2 self}
-    any
-    [ return''0 (result:UInt64.t)-> {[%#sbdd'3] UInt64.t'int result = hash_log'0 (deep_model'2 self)}
-      (! return' {result}) ]
+  predicate postcondition_once'0 (self : ()) (args : t_V) (result : UInt64.t)
   
+  axiom postcondition_fndef'0 : forall args : t_V, res : UInt64.t [postcondition_once'0 () args res] . postcondition_once'0 () args res
+   -> (let self = args in UInt64.t'int res = hash_log'0 (deep_model'2 self))
+  
+  let rec hash'0 (self:t_V) (return'  (x:UInt64.t))= {[@expl:hash requires] precondition'0 () self}
+    any [ return''0 (result:UInt64.t)-> {postcondition_once'0 () self result} (! return' {result}) ] 
   
   let rec wrapping_mul (self_:UInt64.t) (rhs:UInt64.t) (return'  (x:UInt64.t))= any
     [ return''0 (result:UInt64.t)-> {[%#snum] result = UInt64.mul self_ rhs} (! return' {result}) ]
@@ -96,7 +108,7 @@ module M_bdd__hashmap__qyi1953663170559623169__hash [#"bdd.rs" 79 8 79 29] (* <(
   constant v_MAX : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function hash_log'1 [#"bdd.rs" 85 8 85 48] (x : tuple'0) : int =
-    [%#sbdd'4] Int.mod (hash_log x._p0'0 + hash_log'0 x._p1'0 * 17) (UInt64.t'int (v_MAX : UInt64.t) + 1)
+    [%#sbdd'2] Int.mod (hash_log x._p0'0 + hash_log'0 x._p1'0 * 17) (UInt64.t'int (v_MAX : UInt64.t) + 1)
   
   function deep_model'3 (self : tuple) : tuple'0 =
     [%#stuples] { _p0'0 = deep_model self._p0; _p1'0 = deep_model'1 self._p1 }

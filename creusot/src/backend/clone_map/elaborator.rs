@@ -31,6 +31,7 @@ use crate::{
     ctx::{BodyId, ItemType},
     naming::name,
     pearlite::{Pattern, QuantKind, SmallRenaming, Term, Trigger, normalize},
+    specification::Condition,
     traits::{self, TraitResolved},
 };
 use petgraph::graphmap::DiGraphMap;
@@ -126,7 +127,45 @@ impl DepElab for ProgramElab {
             let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
                 .instantiate(ctx.tcx, subst)
                 .normalize(ctx.tcx, typing_env);
-            pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
+
+            if let Some(AssocItem { container: AssocItemContainer::Trait, .. }) =
+                ctx.opt_associated_item(def_id)
+                && let TraitResolved::UnknownFound = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
+                // These conditions are important to make sure the Fn trait familly is implemented
+                && ctx.fn_sig(def_id).skip_binder().is_fn_trait_compatible()
+                && ctx.codegen_fn_attrs(def_id).target_features.is_empty()
+            {
+                let fn_name = ctx.item_name(def_id);
+
+                let args = Term::tuple(
+                    ctx.tcx,
+                    pre_sig.inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)),
+                );
+                let fndef_ty = Ty::new_fn_def(ctx.tcx, def_id, subst);
+
+                let pre_post_subst =
+                    ctx.mk_args(&[GenericArg::from(args.ty), GenericArg::from(fndef_ty)]);
+
+                let pre_did = get_fn_once_impl_precond(ctx.tcx);
+                let pre = Term::call(ctx.tcx, typing_env, pre_did, pre_post_subst, [
+                    Term::unit(ctx.tcx).coerce(fndef_ty),
+                    args.clone(),
+                ]);
+                let expl_pre = format!("expl:{} requires", fn_name);
+                pre_sig.contract.requires = vec![Condition { term: pre, expl: expl_pre }];
+
+                let post_did = get_fn_once_impl_postcond(ctx.tcx);
+                let post = Term::call(ctx.tcx, typing_env, post_did, pre_post_subst, [
+                    Term::unit(ctx.tcx).coerce(fndef_ty),
+                    args,
+                    Term::var(name::result(), pre_sig.output),
+                ]);
+                let expl_post = format!("expl:{} ensures", fn_name);
+                pre_sig.contract.ensures = vec![Condition { term: post, expl: expl_post }]
+            } else {
+                pre_sig.add_type_invariant_spec(ctx, def_id, typing_env)
+            }
+
             let return_ident = Ident::fresh_local("return");
             let (sig, contract, return_ty) =
                 lower_program_sig(ctx, &names, name, pre_sig, def_id, return_ident);
@@ -257,7 +296,7 @@ impl DepElab for LogicElab {
                             trig,
                         );
                         decls.push(Decl::Axiom(Axiom {
-                            name: Ident::fresh(ctx.crate_name(), "precondition_fndef"),
+                            name: Ident::fresh(ctx.crate_name(), "postcondition_fndef"),
                             rewrite: false,
                             axiom: lower_pure(ctx, &names, &axiom),
                         }))
@@ -782,7 +821,7 @@ fn post_fndef<'tcx>(
     let mut post = sig.contract.ensures_conj(ctx.tcx);
     post.subst(&HashMap::from([(name::result(), res.kind)]));
     let pattern = Pattern::tuple(
-        sig.inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
+        sig.inputs.iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
         args.ty,
     );
     Some(Term::let_(pattern, args, post).span(ctx.def_span(did)))
@@ -859,7 +898,7 @@ fn pre_fndef<'tcx>(
     sig.add_type_invariant_spec(ctx, did, typing_env);
     let pre = sig.contract.requires_conj(ctx.tcx);
     let pattern = Pattern::tuple(
-        sig.inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
+        sig.inputs.iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
         args.ty,
     );
     Some(Term::let_(pattern, args, pre).span(ctx.def_span(did)))

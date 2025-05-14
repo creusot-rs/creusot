@@ -261,13 +261,10 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
   let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
   let%span sops'9 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
-  let%span scommon = "common.rs" 27 17 27 21
-  let%span scommon'0 = "common.rs" 27 26 27 44
-  let%span scommon'1 = "common.rs" 23 14 26 5
-  let%span scommon'2 = "common.rs" 14 14 14 45
-  let%span scommon'3 = "common.rs" 18 15 18 32
-  let%span scommon'4 = "common.rs" 19 15 19 32
-  let%span scommon'5 = "common.rs" 20 14 20 42
+  let%span scommon = "common.rs" 14 14 14 45
+  let%span scommon'0 = "common.rs" 18 15 18 32
+  let%span scommon'1 = "common.rs" 19 15 19 32
+  let%span scommon'2 = "common.rs" 20 14 20 42
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
   
@@ -292,12 +289,12 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   function produces_trans [#"common.rs" 21 4 21 91] (a : t_I) (ab : Seq.seq t_Item) (b : t_I) (bc : Seq.seq t_Item) (c : t_I) : ()
   
   
-  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_Item, b : t_I, bc : Seq.seq t_Item, c : t_I . ([%#scommon'3] produces a ab b)
-   -> ([%#scommon'4] produces b bc c)  -> ([%#scommon'5] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_Item, b : t_I, bc : Seq.seq t_Item, c : t_I . ([%#scommon'0] produces a ab b)
+   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self : t_I) : ()
   
-  axiom produces_refl_spec : forall self : t_I . [%#scommon'2] produces self (Seq.empty : Seq.seq t_Item) self
+  axiom produces_refl_spec : forall self : t_I . [%#scommon] produces self (Seq.empty : Seq.seq t_Item) self
   
   type t_Option  =
     | C_None
@@ -310,6 +307,13 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   
   axiom inv_axiom [@rewrite] : forall x : MutBorrow.t t_I [inv'0 x] . inv'0 x = invariant' x
   
+  predicate precondition (self : ()) (args : MutBorrow.t t_I)
+  
+  axiom precondition_fndef : forall args : MutBorrow.t t_I [precondition () args] . (let self = args in inv'0 self)
+   -> precondition () args
+  
+  predicate completed [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_I)
+  
   predicate inv'1 (_0 : t_Item)
   
   predicate inv'2 (_0 : t_Option)
@@ -320,32 +324,32 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
     | C_Some a_0 -> inv'1 a_0
     end
   
-  predicate completed [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_I)
+  predicate postcondition_once (self : ()) (args : MutBorrow.t t_I) (result : t_Option)
   
-  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#scommon] inv'0 self}
-    any
-    [ return''0 (result:t_Option)-> {[%#scommon'0] inv'2 result}
-      {[%#scommon'1] match result with
-        | C_None -> completed self
-        | C_Some v -> produces self.current (Seq.singleton v) self.final
-        end}
-      (! return' {result}) ]
+  axiom postcondition_fndef : forall args : MutBorrow.t t_I, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+   -> (let self = args in match res with
+    | C_None -> completed self
+    | C_Some v -> produces self.current (Seq.singleton v) self.final
+    end
+  /\ inv'2 res)
   
+  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self}
+    any [ return''0 (result:t_Option)-> {postcondition_once () self result} (! return' {result}) ] 
   
   let rec v_Some (input:t_Option) (ret  (field_0:t_Item))= any
     [ good (field_0:t_Item)-> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_Item [C_Some field_0 : t_Option] . C_Some field_0 <> input} (! {false} any) ]
   
   
-  predicate precondition (self : t_F) (args : t_Item)
+  predicate precondition'0 (self : t_F) (args : t_Item)
   
   type t_B
   
   predicate next_precondition [#"05_map.rs" 77 4 77 50] (iter : t_I) (func : t_F) =
     [%#s05_map'16] forall e : t_Item, i : t_I [produces iter (Seq.singleton e) i] . produces iter (Seq.singleton e) i
-     -> precondition func e
+     -> precondition'0 func e
   
-  predicate postcondition_once (self : t_F) (args : t_Item) (result : t_B)
+  predicate postcondition_once'0 (self : t_F) (args : t_Item) (result : t_B)
   
   predicate resolve (_0 : t_F)
   
@@ -353,7 +357,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   
   function fn_mut_once (self : t_F) (args : t_Item) (res : t_B) : ()
   
-  axiom fn_mut_once_spec : forall self : t_F, args : t_Item, res : t_B . [%#sops'9] postcondition_once self args res
+  axiom fn_mut_once_spec : forall self : t_F, args : t_Item, res : t_B . [%#sops'9] postcondition_once'0 self args res
   = (exists res_state : t_F . postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self : t_F) (result_state : t_F)
@@ -375,7 +379,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   predicate preservation [#"05_map.rs" 87 4 87 45] (iter : t_I) (func : t_F) =
     [%#s05_map'15] forall s : Seq.seq t_Item, e1 : t_Item, e2 : t_Item, f : MutBorrow.t t_F, b : t_B, i : t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current e1 f.final b] . hist_inv func f.current
      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition f.current e1  -> postcondition_mut f.current e1 f.final b  -> precondition f.final e2
+     -> precondition'0 f.current e1  -> postcondition_mut f.current e1 f.final b  -> precondition'0 f.final e2
   
   predicate reinitialize [#"05_map.rs" 100 4 100 29]  =
     [%#s05_map'18] forall iter : MutBorrow.t t_I, func : t_F . completed iter
@@ -413,7 +417,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   
   let rec call_mut (self_:MutBorrow.t t_F) (arg:t_Item) (return'  (x:t_B))= {[@expl:call_mut 'self_' type invariant] [%#sops] inv'4 self_}
     {[@expl:call_mut 'arg' type invariant] [%#sops'0] inv'5 arg}
-    {[@expl:call_mut requires] [%#sops'1] precondition self_.current arg}
+    {[@expl:call_mut requires] [%#sops'1] precondition'0 self_.current arg}
     any
     [ return''0 (result:t_B)-> {inv'6 result}
       {[%#sops'2] postcondition_mut self_.current arg self_.final result}
@@ -471,7 +475,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> hist_inv self.t_Map__func (Seq.get fs i).current
-    /\ precondition (Seq.get fs i).current (Seq.get s i)
+    /\ precondition'0 (Seq.get fs i).current (Seq.get s i)
     /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   predicate produces_one [#"05_map.rs" 125 4 125 57] (self : t_Map) (visited : t_B) (succ : t_Map) =
@@ -479,7 +483,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
     = self.t_Map__func
     /\ f.final = succ.t_Map__func
     /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter
-    /\ precondition f.current e /\ postcondition_mut f.current e f.final visited
+    /\ precondition'0 f.current e /\ postcondition_mut f.current e f.final visited
   
   axiom produces_one_spec : forall self : t_Map, visited : t_B, succ : t_Map . [%#s05_map'12] produces_one self visited succ
   = produces'0 self (Seq.singleton visited) succ
@@ -503,7 +507,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
     | bb3 = bb5
     | bb5 = s0
       [ s0 = v_Some {_3} (fun (r0:t_Item) ->  [ &v <- r0 ] s1)
-      | s1 = {[@expl:assertion] [%#s05_map] precondition (self'0.current).t_Map__func v} s2
+      | s1 = {[@expl:assertion] [%#s05_map] precondition'0 (self'0.current).t_Map__func v} s2
       | s2 = bb6 ]
     
     | bb6 = s0 [ s0 =  [ &_9 <- [%#s05_map'0] () ] s1 | s1 = bb7 ] 

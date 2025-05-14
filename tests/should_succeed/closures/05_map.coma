@@ -1,8 +1,6 @@
 module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map<I, F> as FakeIterator> *)
   let%span s05_map = "05_map.rs" 20 17 20 21
   let%span s05_map'0 = "05_map.rs" 20 26 20 44
-  let%span s05_map'1 = "05_map.rs" 8 17 8 21
-  let%span s05_map'2 = "05_map.rs" 8 26 8 44
   let%span sops = "../../../creusot-contracts/src/std/ops.rs" 183 16 183 17
   let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 185 31 185 34
   let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 183 27 183 52
@@ -46,6 +44,11 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
   
   axiom inv_axiom [@rewrite] : forall x : MutBorrow.t t_I [inv'0 x] . inv'0 x = invariant' x
   
+  predicate precondition (self : ()) (args : MutBorrow.t t_I)
+  
+  axiom precondition_fndef : forall args : MutBorrow.t t_I [precondition () args] . (let self = args in inv'0 self)
+   -> precondition () args
+  
   predicate inv'1 (_0 : t_A)
   
   predicate inv'2 (_0 : t_Option)
@@ -56,8 +59,13 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
     | C_Some a_0 -> inv'1 a_0
     end
   
-  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#s05_map'1] inv'0 self}
-    any [ return''0 (result:t_Option)-> {[%#s05_map'2] inv'2 result} (! return' {result}) ] 
+  predicate postcondition_once (self : ()) (args : MutBorrow.t t_I) (result : t_Option)
+  
+  axiom postcondition_fndef : forall args : MutBorrow.t t_I, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+   -> (let self = args in inv'2 res)
+  
+  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self}
+    any [ return''0 (result:t_Option)-> {postcondition_once () self result} (! return' {result}) ] 
   
   let rec v_Some (input:t_Option) (ret  (field_0:t_A))= any
     [ good (field_0:t_A)-> {C_Some field_0 = input} (! ret {field_0})
@@ -79,11 +87,11 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
   
   axiom inv_axiom'2 [@rewrite] : forall x : t_A [inv'5 x] . inv'5 x = (let x0 = x in inv'1 x0)
   
-  predicate precondition (self : t_F) (args : t_A)
+  predicate precondition'0 (self : t_F) (args : t_A)
   
   predicate inv'6 (_0 : t_B)
   
-  predicate postcondition_once (self : t_F) (args : t_A) (result : t_B)
+  predicate postcondition_once'0 (self : t_F) (args : t_A) (result : t_B)
   
   predicate resolve (_0 : t_F)
   
@@ -91,7 +99,7 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
   
   function fn_mut_once (self : t_F) (args : t_A) (res : t_B) : ()
   
-  axiom fn_mut_once_spec : forall self : t_F, args : t_A, res : t_B . [%#sops'12] postcondition_once self args res
+  axiom fn_mut_once_spec : forall self : t_F, args : t_A, res : t_B . [%#sops'12] postcondition_once'0 self args res
   = (exists res_state : t_F . postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self : t_F) (result_state : t_F)
@@ -118,7 +126,7 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
   
   function fn_once (self : t_F) (args : t_A) (res : t_B) : ()
   
-  axiom fn_once_spec : forall self : t_F, args : t_A, res : t_B . [%#sops'4] postcondition_once self args res
+  axiom fn_once_spec : forall self : t_F, args : t_A, res : t_B . [%#sops'4] postcondition_once'0 self args res
   = (postcondition self args res /\ resolve self)
   
   function fn_mut (self : t_F) (args : t_A) (res_state : t_F) (res : t_B) : ()
@@ -128,7 +136,7 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
   
   let rec call (self_:t_F) (arg:t_A) (return'  (x:t_B))= {[@expl:call 'self_' type invariant] [%#sops] inv'4 self_}
     {[@expl:call 'arg' type invariant] [%#sops'0] inv'5 arg}
-    {[@expl:call requires] [%#sops'1] precondition self_ arg}
+    {[@expl:call requires] [%#sops'1] precondition'0 self_ arg}
     any [ return''0 (result:t_B)-> {inv'6 result} {[%#sops'2] postcondition self_ arg result} (! return' {result}) ] 
   
   predicate inv'7 (_0 : t_Map)

@@ -1,19 +1,26 @@
 module M_resolve_uninit__maybe_uninit [#"resolve_uninit.rs" 5 0 5 51]
   let%span sresolve_uninit = "resolve_uninit.rs" 5 41 5 42
   let%span sresolve_uninit'0 = "resolve_uninit.rs" 5 50 5 51
-  let%span sdefault = "../../creusot-contracts/src/std/default.rs" 31 26 31 45
   
   use creusot.prelude.Any
   
   type t_T
   
-  predicate inv (_0 : t_T)
+  predicate precondition (self : ()) (args : ())
+  
+  axiom precondition_fndef : forall args : () [precondition () args] . (let () = args in true)  -> precondition () args
   
   predicate is_default (self : t_T)
   
-  let rec default (return'  (x:t_T))= any
-    [ return''0 (result:t_T)-> {inv result} {[%#sdefault] is_default result} (! return' {result}) ]
+  predicate inv (_0 : t_T)
   
+  predicate postcondition_once (self : ()) (args : ()) (result : t_T)
+  
+  axiom postcondition_fndef : forall args : (), res : t_T [postcondition_once () args res] . postcondition_once () args res
+   -> (let () = args in is_default res /\ inv res)
+  
+  let rec default (return'  (x:t_T))= {[@expl:default requires] precondition () ()}
+    any [ return''0 (result:t_T)-> {postcondition_once () () result} (! return' {result}) ] 
   
   predicate resolve (_0 : t_T)
   

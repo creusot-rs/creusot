@@ -2369,9 +2369,6 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_l
   let%span scmp'1 = "../../creusot-contracts/src/std/cmp.rs" 35 16 35 17
   let%span scmp'2 = "../../creusot-contracts/src/std/cmp.rs" 36 29 36 34
   let%span scmp'3 = "../../creusot-contracts/src/std/cmp.rs" 35 26 35 76
-  let%span scmp'4 = "../../creusot-contracts/src/std/cmp.rs" 32 16 32 17
-  let%span scmp'5 = "../../creusot-contracts/src/std/cmp.rs" 33 38 33 41
-  let%span scmp'6 = "../../creusot-contracts/src/std/cmp.rs" 32 26 32 91
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 29 14 29 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 40 14 40 61
@@ -2402,23 +2399,31 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_l
   
   type t_Rhs
   
-  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
+  type tuple  =
+    { _p0: t_Self_; _p1: t_Rhs }
   
-  predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Self_) =
+  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  
+  predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Rhs) =
     [%#sinvariant] inv self
   
-  predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
+  predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
   
-  axiom inv_axiom [@rewrite] : forall x : t_Self_ [inv'0 x] . inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite] : forall x : t_Rhs [inv'0 x] . inv'0 x = invariant' x
   
-  predicate inv'1 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  predicate inv'1 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
-  predicate invariant''0 [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Rhs) =
+  predicate invariant''0 [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Self_) =
     [%#sinvariant] inv'1 self
   
-  predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Rhs [inv'2 x] . inv'2 x = invariant''0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Self_ [inv'2 x] . inv'2 x = invariant''0 x
+  
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = rhs} = args in inv'0 rhs
+  /\ inv'2 self_)  -> precondition () args
   
   type t_DeepModelTy
   
@@ -2484,11 +2489,16 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_l
   
   function deep_model'0 [#"../../creusot-contracts/src/model.rs" 27 4 27 45] (self : t_Rhs) : t_DeepModelTy
   
-  let rec partial_cmp (self_:t_Self_) (rhs:t_Rhs) (return'  (x:t_Option))= {[@expl:partial_cmp 'self_' type invariant] [%#scmp'4] inv'0 self_}
-    {[@expl:partial_cmp 'rhs' type invariant] [%#scmp'5] inv'2 rhs}
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : tuple) (result : t_Option)
+  
+  
+  axiom postcondition_fndef : forall args : tuple, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = rhs} = args in res = C_Some (cmp_log (deep_model self_) (deep_model'0 rhs)))
+  
+  let rec partial_cmp (self_:t_Self_) (rhs:t_Rhs) (return'  (x:t_Option))= {[@expl:partial_cmp requires] precondition () { _p0 = self_;
+                                                                                                                           _p1 = rhs }}
     any
-    [ return''0 (result:t_Option)-> {[%#scmp'6] result = C_Some (cmp_log (deep_model self_) (deep_model'0 rhs))}
-      (! return' {result}) ]
+    [ return''0 (result:t_Option)-> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ]
   
   
   let rec v_Some (input:t_Option) (ret  (field_0:t_Ordering))= any
@@ -2504,8 +2514,8 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_l
   
   meta "compute_max_steps" 1000000
   
-  let rec extern_spec_std_cmp_PartialOrd_Rhs_lt_body[#"../../creusot-contracts/src/std/cmp.rs" 27 32 36 18] (self_:t_Self_) (other:t_Rhs) (return'  (x:bool))= {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_lt_body 'self_' type invariant] [%#scmp'1] inv'0 self_}
-    {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_lt_body 'other' type invariant] [%#scmp'2] inv'2 other}
+  let rec extern_spec_std_cmp_PartialOrd_Rhs_lt_body[#"../../creusot-contracts/src/std/cmp.rs" 27 32 36 18] (self_:t_Self_) (other:t_Rhs) (return'  (x:bool))= {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_lt_body 'self_' type invariant] [%#scmp'1] inv'2 self_}
+    {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_lt_body 'other' type invariant] [%#scmp'2] inv'0 other}
     (! bb0
     [ bb0 = s0 [ s0 = partial_cmp {self_'0} {other'0} (fun (_ret:t_Option) ->  [ &_4 <- _ret ] s1) | s1 = bb1 ] 
     | bb1 = any [ br0 -> {_4 = C_None} (! bb8) | br1 (x0:t_Ordering)-> {_4 = C_Some x0} (! bb3) ] 
@@ -2535,9 +2545,6 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_l
   let%span scmp'1 = "../../creusot-contracts/src/std/cmp.rs" 43 16 43 17
   let%span scmp'2 = "../../creusot-contracts/src/std/cmp.rs" 44 29 44 34
   let%span scmp'3 = "../../creusot-contracts/src/std/cmp.rs" 43 26 43 77
-  let%span scmp'4 = "../../creusot-contracts/src/std/cmp.rs" 32 16 32 17
-  let%span scmp'5 = "../../creusot-contracts/src/std/cmp.rs" 33 38 33 41
-  let%span scmp'6 = "../../creusot-contracts/src/std/cmp.rs" 32 26 32 91
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 29 14 29 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 40 14 40 61
@@ -2568,23 +2575,31 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_l
   
   type t_Rhs
   
-  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
+  type tuple  =
+    { _p0: t_Self_; _p1: t_Rhs }
   
-  predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Self_) =
+  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  
+  predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Rhs) =
     [%#sinvariant] inv self
   
-  predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
+  predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
   
-  axiom inv_axiom [@rewrite] : forall x : t_Self_ [inv'0 x] . inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite] : forall x : t_Rhs [inv'0 x] . inv'0 x = invariant' x
   
-  predicate inv'1 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  predicate inv'1 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
-  predicate invariant''0 [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Rhs) =
+  predicate invariant''0 [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Self_) =
     [%#sinvariant] inv'1 self
   
-  predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Rhs [inv'2 x] . inv'2 x = invariant''0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Self_ [inv'2 x] . inv'2 x = invariant''0 x
+  
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = rhs} = args in inv'0 rhs
+  /\ inv'2 self_)  -> precondition () args
   
   type t_DeepModelTy
   
@@ -2650,11 +2665,16 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_l
   
   function deep_model'0 [#"../../creusot-contracts/src/model.rs" 27 4 27 45] (self : t_Rhs) : t_DeepModelTy
   
-  let rec partial_cmp (self_:t_Self_) (rhs:t_Rhs) (return'  (x:t_Option))= {[@expl:partial_cmp 'self_' type invariant] [%#scmp'4] inv'0 self_}
-    {[@expl:partial_cmp 'rhs' type invariant] [%#scmp'5] inv'2 rhs}
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : tuple) (result : t_Option)
+  
+  
+  axiom postcondition_fndef : forall args : tuple, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = rhs} = args in res = C_Some (cmp_log (deep_model self_) (deep_model'0 rhs)))
+  
+  let rec partial_cmp (self_:t_Self_) (rhs:t_Rhs) (return'  (x:t_Option))= {[@expl:partial_cmp requires] precondition () { _p0 = self_;
+                                                                                                                           _p1 = rhs }}
     any
-    [ return''0 (result:t_Option)-> {[%#scmp'6] result = C_Some (cmp_log (deep_model self_) (deep_model'0 rhs))}
-      (! return' {result}) ]
+    [ return''0 (result:t_Option)-> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ]
   
   
   let rec v_Some (input:t_Option) (ret  (field_0:t_Ordering))= any
@@ -2670,8 +2690,8 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_l
   
   meta "compute_max_steps" 1000000
   
-  let rec extern_spec_std_cmp_PartialOrd_Rhs_le_body[#"../../creusot-contracts/src/std/cmp.rs" 27 32 44 18] (self_:t_Self_) (other:t_Rhs) (return'  (x:bool))= {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_le_body 'self_' type invariant] [%#scmp'1] inv'0 self_}
-    {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_le_body 'other' type invariant] [%#scmp'2] inv'2 other}
+  let rec extern_spec_std_cmp_PartialOrd_Rhs_le_body[#"../../creusot-contracts/src/std/cmp.rs" 27 32 44 18] (self_:t_Self_) (other:t_Rhs) (return'  (x:bool))= {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_le_body 'self_' type invariant] [%#scmp'1] inv'2 self_}
+    {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_le_body 'other' type invariant] [%#scmp'2] inv'0 other}
     (! bb0
     [ bb0 = s0 [ s0 = partial_cmp {self_'0} {other'0} (fun (_ret:t_Option) ->  [ &_4 <- _ret ] s1) | s1 = bb1 ] 
     | bb1 = any [ br0 -> {_4 = C_None} (! bb8) | br1 (x0:t_Ordering)-> {_4 = C_Some x0} (! bb3) ] 
@@ -2701,9 +2721,6 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_g
   let%span scmp'1 = "../../creusot-contracts/src/std/cmp.rs" 51 16 51 17
   let%span scmp'2 = "../../creusot-contracts/src/std/cmp.rs" 52 29 52 34
   let%span scmp'3 = "../../creusot-contracts/src/std/cmp.rs" 51 26 51 76
-  let%span scmp'4 = "../../creusot-contracts/src/std/cmp.rs" 32 16 32 17
-  let%span scmp'5 = "../../creusot-contracts/src/std/cmp.rs" 33 38 33 41
-  let%span scmp'6 = "../../creusot-contracts/src/std/cmp.rs" 32 26 32 91
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 29 14 29 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 40 14 40 61
@@ -2734,23 +2751,31 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_g
   
   type t_Rhs
   
-  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
+  type tuple  =
+    { _p0: t_Self_; _p1: t_Rhs }
   
-  predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Self_) =
+  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  
+  predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Rhs) =
     [%#sinvariant] inv self
   
-  predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
+  predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
   
-  axiom inv_axiom [@rewrite] : forall x : t_Self_ [inv'0 x] . inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite] : forall x : t_Rhs [inv'0 x] . inv'0 x = invariant' x
   
-  predicate inv'1 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  predicate inv'1 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
-  predicate invariant''0 [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Rhs) =
+  predicate invariant''0 [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Self_) =
     [%#sinvariant] inv'1 self
   
-  predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Rhs [inv'2 x] . inv'2 x = invariant''0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Self_ [inv'2 x] . inv'2 x = invariant''0 x
+  
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = rhs} = args in inv'0 rhs
+  /\ inv'2 self_)  -> precondition () args
   
   type t_DeepModelTy
   
@@ -2816,11 +2841,16 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_g
   
   function deep_model'0 [#"../../creusot-contracts/src/model.rs" 27 4 27 45] (self : t_Rhs) : t_DeepModelTy
   
-  let rec partial_cmp (self_:t_Self_) (rhs:t_Rhs) (return'  (x:t_Option))= {[@expl:partial_cmp 'self_' type invariant] [%#scmp'4] inv'0 self_}
-    {[@expl:partial_cmp 'rhs' type invariant] [%#scmp'5] inv'2 rhs}
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : tuple) (result : t_Option)
+  
+  
+  axiom postcondition_fndef : forall args : tuple, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = rhs} = args in res = C_Some (cmp_log (deep_model self_) (deep_model'0 rhs)))
+  
+  let rec partial_cmp (self_:t_Self_) (rhs:t_Rhs) (return'  (x:t_Option))= {[@expl:partial_cmp requires] precondition () { _p0 = self_;
+                                                                                                                           _p1 = rhs }}
     any
-    [ return''0 (result:t_Option)-> {[%#scmp'6] result = C_Some (cmp_log (deep_model self_) (deep_model'0 rhs))}
-      (! return' {result}) ]
+    [ return''0 (result:t_Option)-> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ]
   
   
   let rec v_Some (input:t_Option) (ret  (field_0:t_Ordering))= any
@@ -2836,8 +2866,8 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_g
   
   meta "compute_max_steps" 1000000
   
-  let rec extern_spec_std_cmp_PartialOrd_Rhs_gt_body[#"../../creusot-contracts/src/std/cmp.rs" 27 32 52 18] (self_:t_Self_) (other:t_Rhs) (return'  (x:bool))= {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_gt_body 'self_' type invariant] [%#scmp'1] inv'0 self_}
-    {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_gt_body 'other' type invariant] [%#scmp'2] inv'2 other}
+  let rec extern_spec_std_cmp_PartialOrd_Rhs_gt_body[#"../../creusot-contracts/src/std/cmp.rs" 27 32 52 18] (self_:t_Self_) (other:t_Rhs) (return'  (x:bool))= {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_gt_body 'self_' type invariant] [%#scmp'1] inv'2 self_}
+    {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_gt_body 'other' type invariant] [%#scmp'2] inv'0 other}
     (! bb0
     [ bb0 = s0 [ s0 = partial_cmp {self_'0} {other'0} (fun (_ret:t_Option) ->  [ &_4 <- _ret ] s1) | s1 = bb1 ] 
     | bb1 = any [ br0 -> {_4 = C_None} (! bb8) | br1 (x0:t_Ordering)-> {_4 = C_Some x0} (! bb3) ] 
@@ -2867,9 +2897,6 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_g
   let%span scmp'1 = "../../creusot-contracts/src/std/cmp.rs" 59 16 59 17
   let%span scmp'2 = "../../creusot-contracts/src/std/cmp.rs" 60 29 60 34
   let%span scmp'3 = "../../creusot-contracts/src/std/cmp.rs" 59 26 59 77
-  let%span scmp'4 = "../../creusot-contracts/src/std/cmp.rs" 32 16 32 17
-  let%span scmp'5 = "../../creusot-contracts/src/std/cmp.rs" 33 38 33 41
-  let%span scmp'6 = "../../creusot-contracts/src/std/cmp.rs" 32 26 32 91
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 29 14 29 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 40 14 40 61
@@ -2900,23 +2927,31 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_g
   
   type t_Rhs
   
-  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
+  type tuple  =
+    { _p0: t_Self_; _p1: t_Rhs }
   
-  predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Self_) =
+  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  
+  predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Rhs) =
     [%#sinvariant] inv self
   
-  predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
+  predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
   
-  axiom inv_axiom [@rewrite] : forall x : t_Self_ [inv'0 x] . inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite] : forall x : t_Rhs [inv'0 x] . inv'0 x = invariant' x
   
-  predicate inv'1 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  predicate inv'1 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
-  predicate invariant''0 [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Rhs) =
+  predicate invariant''0 [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Self_) =
     [%#sinvariant] inv'1 self
   
-  predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Rhs)
+  predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Rhs [inv'2 x] . inv'2 x = invariant''0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Self_ [inv'2 x] . inv'2 x = invariant''0 x
+  
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = rhs} = args in inv'0 rhs
+  /\ inv'2 self_)  -> precondition () args
   
   type t_DeepModelTy
   
@@ -2982,11 +3017,16 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_g
   
   function deep_model'0 [#"../../creusot-contracts/src/model.rs" 27 4 27 45] (self : t_Rhs) : t_DeepModelTy
   
-  let rec partial_cmp (self_:t_Self_) (rhs:t_Rhs) (return'  (x:t_Option))= {[@expl:partial_cmp 'self_' type invariant] [%#scmp'4] inv'0 self_}
-    {[@expl:partial_cmp 'rhs' type invariant] [%#scmp'5] inv'2 rhs}
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : tuple) (result : t_Option)
+  
+  
+  axiom postcondition_fndef : forall args : tuple, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = rhs} = args in res = C_Some (cmp_log (deep_model self_) (deep_model'0 rhs)))
+  
+  let rec partial_cmp (self_:t_Self_) (rhs:t_Rhs) (return'  (x:t_Option))= {[@expl:partial_cmp requires] precondition () { _p0 = self_;
+                                                                                                                           _p1 = rhs }}
     any
-    [ return''0 (result:t_Option)-> {[%#scmp'6] result = C_Some (cmp_log (deep_model self_) (deep_model'0 rhs))}
-      (! return' {result}) ]
+    [ return''0 (result:t_Option)-> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ]
   
   
   let rec v_Some (input:t_Option) (ret  (field_0:t_Ordering))= any
@@ -3002,8 +3042,8 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_PartialOrd_Rhs_g
   
   meta "compute_max_steps" 1000000
   
-  let rec extern_spec_std_cmp_PartialOrd_Rhs_ge_body[#"../../creusot-contracts/src/std/cmp.rs" 27 32 60 18] (self_:t_Self_) (other:t_Rhs) (return'  (x:bool))= {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_ge_body 'self_' type invariant] [%#scmp'1] inv'0 self_}
-    {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_ge_body 'other' type invariant] [%#scmp'2] inv'2 other}
+  let rec extern_spec_std_cmp_PartialOrd_Rhs_ge_body[#"../../creusot-contracts/src/std/cmp.rs" 27 32 60 18] (self_:t_Self_) (other:t_Rhs) (return'  (x:bool))= {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_ge_body 'self_' type invariant] [%#scmp'1] inv'2 self_}
+    {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_ge_body 'other' type invariant] [%#scmp'2] inv'0 other}
     (! bb0
     [ bb0 = s0 [ s0 = partial_cmp {self_'0} {other'0} (fun (_ret:t_Option) ->  [ &_4 <- _ret ] s1) | s1 = bb1 ] 
     | bb1 = any [ br0 -> {_4 = C_None} (! bb8) | br1 (x0:t_Ordering)-> {_4 = C_Some x0} (! bb3) ] 
@@ -3036,9 +3076,6 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_max_body [#"
   let%span scmp'4 = "../../creusot-contracts/src/std/cmp.rs" 77 26 77 55
   let%span scmp'5 = "../../creusot-contracts/src/std/cmp.rs" 78 26 78 77
   let%span scmp'6 = "../../creusot-contracts/src/std/cmp.rs" 79 26 79 79
-  let%span scmp'7 = "../../creusot-contracts/src/std/cmp.rs" 43 16 43 17
-  let%span scmp'8 = "../../creusot-contracts/src/std/cmp.rs" 44 29 44 34
-  let%span scmp'9 = "../../creusot-contracts/src/std/cmp.rs" 43 26 43 77
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 29 14 29 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 40 14 40 61
@@ -3058,6 +3095,9 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_max_body [#"
   
   type t_Self_
   
+  type tuple  =
+    { _p0: t_Self_; _p1: t_Self_ }
+  
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
   predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Self_) =
@@ -3066,6 +3106,11 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_max_body [#"
   predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
   axiom inv_axiom [@rewrite] : forall x : t_Self_ [inv'0 x] . inv'0 x = invariant' x
+  
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = other} = args in inv'0 other
+  /\ inv'0 self_)  -> precondition () args
   
   type t_DeepModelTy
   
@@ -3137,12 +3182,15 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_max_body [#"
   function deep_model'0 [#"../../creusot-contracts/src/model.rs" 44 4 44 44] (self : t_Self_) : t_DeepModelTy =
     [%#smodel] deep_model self
   
-  let rec le (self_:t_Self_) (other:t_Self_) (return'  (x:bool))= {[@expl:le 'self_' type invariant] [%#scmp'7] inv'0 self_}
-    {[@expl:le 'other' type invariant] [%#scmp'8] inv'0 other}
-    any
-    [ return''0 (result:bool)-> {[%#scmp'9] result = le_log (deep_model'0 self_) (deep_model'0 other)}
-      (! return' {result}) ]
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : tuple) (result : bool)
   
+  
+  axiom postcondition_fndef : forall args : tuple, res : bool [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = other} = args in res = le_log (deep_model'0 self_) (deep_model'0 other))
+  
+  let rec le (self_:t_Self_) (other:t_Self_) (return'  (x:bool))= {[@expl:le requires] precondition () { _p0 = self_;
+                                                                                                         _p1 = other }}
+    any [ return''0 (result:bool)-> {postcondition_once () { _p0 = self_; _p1 = other } result} (! return' {result}) ] 
   
   predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_Self_)
   
@@ -3194,9 +3242,6 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_min_body [#"
   let%span scmp'4 = "../../creusot-contracts/src/std/cmp.rs" 86 26 86 55
   let%span scmp'5 = "../../creusot-contracts/src/std/cmp.rs" 87 26 87 79
   let%span scmp'6 = "../../creusot-contracts/src/std/cmp.rs" 88 26 88 77
-  let%span scmp'7 = "../../creusot-contracts/src/std/cmp.rs" 35 16 35 17
-  let%span scmp'8 = "../../creusot-contracts/src/std/cmp.rs" 36 29 36 34
-  let%span scmp'9 = "../../creusot-contracts/src/std/cmp.rs" 35 26 35 76
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 29 14 29 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 40 14 40 61
@@ -3216,6 +3261,9 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_min_body [#"
   
   type t_Self_
   
+  type tuple  =
+    { _p0: t_Self_; _p1: t_Self_ }
+  
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
   predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Self_) =
@@ -3224,6 +3272,11 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_min_body [#"
   predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
   axiom inv_axiom [@rewrite] : forall x : t_Self_ [inv'0 x] . inv'0 x = invariant' x
+  
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = other} = args in inv'0 other
+  /\ inv'0 self_)  -> precondition () args
   
   type t_DeepModelTy
   
@@ -3295,12 +3348,15 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_min_body [#"
   function deep_model'0 [#"../../creusot-contracts/src/model.rs" 44 4 44 44] (self : t_Self_) : t_DeepModelTy =
     [%#smodel] deep_model self
   
-  let rec lt (self_:t_Self_) (other:t_Self_) (return'  (x:bool))= {[@expl:lt 'self_' type invariant] [%#scmp'7] inv'0 self_}
-    {[@expl:lt 'other' type invariant] [%#scmp'8] inv'0 other}
-    any
-    [ return''0 (result:bool)-> {[%#scmp'9] result = lt_log (deep_model'0 self_) (deep_model'0 other)}
-      (! return' {result}) ]
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : tuple) (result : bool)
   
+  
+  axiom postcondition_fndef : forall args : tuple, res : bool [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = other} = args in res = lt_log (deep_model'0 self_) (deep_model'0 other))
+  
+  let rec lt (self_:t_Self_) (other:t_Self_) (return'  (x:bool))= {[@expl:lt requires] precondition () { _p0 = self_;
+                                                                                                         _p1 = other }}
+    any [ return''0 (result:bool)-> {postcondition_once () { _p0 = self_; _p1 = other } result} (! return' {result}) ] 
   
   predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_Self_)
   
@@ -3353,12 +3409,6 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_clamp_body [
   let%span scmp'5 = "../../creusot-contracts/src/std/cmp.rs" 95 26 95 65
   let%span scmp'6 = "../../creusot-contracts/src/std/cmp.rs" 96 26 96 74
   let%span scmp'7 = "../../creusot-contracts/src/std/cmp.rs" 97 26 101 41
-  let%span scmp'8 = "../../creusot-contracts/src/std/cmp.rs" 51 16 51 17
-  let%span scmp'9 = "../../creusot-contracts/src/std/cmp.rs" 52 29 52 34
-  let%span scmp'10 = "../../creusot-contracts/src/std/cmp.rs" 51 26 51 76
-  let%span scmp'11 = "../../creusot-contracts/src/std/cmp.rs" 35 16 35 17
-  let%span scmp'12 = "../../creusot-contracts/src/std/cmp.rs" 36 29 36 34
-  let%span scmp'13 = "../../creusot-contracts/src/std/cmp.rs" 35 26 35 76
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 29 14 29 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 40 14 40 61
@@ -3378,6 +3428,9 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_clamp_body [
   
   type t_Self_
   
+  type tuple  =
+    { _p0: t_Self_; _p1: t_Self_ }
+  
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
   predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 89 4 89 30] (self : t_Self_) =
@@ -3386,6 +3439,11 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_clamp_body [
   predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Self_)
   
   axiom inv_axiom [@rewrite] : forall x : t_Self_ [inv'0 x] . inv'0 x = invariant' x
+  
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = other} = args in inv'0 other
+  /\ inv'0 self_)  -> precondition () args
   
   type t_DeepModelTy
   
@@ -3457,20 +3515,33 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_Ord_clamp_body [
   function deep_model'0 [#"../../creusot-contracts/src/model.rs" 44 4 44 44] (self : t_Self_) : t_DeepModelTy =
     [%#smodel] deep_model self
   
-  let rec gt (self_:t_Self_) (other:t_Self_) (return'  (x:bool))= {[@expl:gt 'self_' type invariant] [%#scmp'8] inv'0 self_}
-    {[@expl:gt 'other' type invariant] [%#scmp'9] inv'0 other}
-    any
-    [ return''0 (result:bool)-> {[%#scmp'10] result = gt_log (deep_model'0 self_) (deep_model'0 other)}
-      (! return' {result}) ]
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : tuple) (result : bool)
   
+  
+  axiom postcondition_fndef : forall args : tuple, res : bool [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = other} = args in res = gt_log (deep_model'0 self_) (deep_model'0 other))
+  
+  let rec gt (self_:t_Self_) (other:t_Self_) (return'  (x:bool))= {[@expl:gt requires] precondition () { _p0 = self_;
+                                                                                                         _p1 = other }}
+    any [ return''0 (result:bool)-> {postcondition_once () { _p0 = self_; _p1 = other } result} (! return' {result}) ] 
   
   predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_Self_)
   
-  let rec lt (self_:t_Self_) (other:t_Self_) (return'  (x:bool))= {[@expl:lt 'self_' type invariant] [%#scmp'11] inv'0 self_}
-    {[@expl:lt 'other' type invariant] [%#scmp'12] inv'0 other}
+  predicate precondition'0 [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : tuple)
+  
+  axiom precondition_fndef'0 : forall args : tuple [precondition'0 () args] . (let {_p0 = self_ ; _p1 = other} = args in inv'0 other
+  /\ inv'0 self_)  -> precondition'0 () args
+  
+  predicate postcondition_once'0 [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : tuple) (result : bool)
+  
+  
+  axiom postcondition_fndef'0 : forall args : tuple, res : bool [postcondition_once'0 () args res] . postcondition_once'0 () args res
+   -> (let {_p0 = self_ ; _p1 = other} = args in res = lt_log (deep_model'0 self_) (deep_model'0 other))
+  
+  let rec lt (self_:t_Self_) (other:t_Self_) (return'  (x:bool))= {[@expl:lt requires] precondition'0 () { _p0 = self_;
+                                                                                                           _p1 = other }}
     any
-    [ return''0 (result:bool)-> {[%#scmp'13] result = lt_log (deep_model'0 self_) (deep_model'0 other)}
-      (! return' {result}) ]
+    [ return''0 (result:bool)-> {postcondition_once'0 () { _p0 = self_; _p1 = other } result} (! return' {result}) ]
   
   
   meta "compute_max_steps" 1000000
@@ -3548,13 +3619,6 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_max_body [#"../.
   let%span scmp'4 = "../../creusot-contracts/src/std/cmp.rs" 109 22 109 50
   let%span scmp'5 = "../../creusot-contracts/src/std/cmp.rs" 110 22 110 73
   let%span scmp'6 = "../../creusot-contracts/src/std/cmp.rs" 111 22 111 72
-  let%span scmp'7 = "../../creusot-contracts/src/std/cmp.rs" 75 16 75 17
-  let%span scmp'8 = "../../creusot-contracts/src/std/cmp.rs" 80 29 80 30
-  let%span scmp'9 = "../../creusot-contracts/src/std/cmp.rs" 75 26 75 66
-  let%span scmp'10 = "../../creusot-contracts/src/std/cmp.rs" 76 26 76 63
-  let%span scmp'11 = "../../creusot-contracts/src/std/cmp.rs" 77 26 77 55
-  let%span scmp'12 = "../../creusot-contracts/src/std/cmp.rs" 78 26 78 77
-  let%span scmp'13 = "../../creusot-contracts/src/std/cmp.rs" 79 26 79 79
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 29 14 29 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 40 14 40 61
   let%span sord'1 = "../../creusot-contracts/src/logic/ord.rs" 51 14 51 61
@@ -3573,7 +3637,15 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_max_body [#"../.
   
   type t_T
   
+  type tuple  =
+    { _p0: t_T; _p1: t_T }
+  
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_T)
+  
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = o} = args in inv o
+  /\ inv self_)  -> precondition () args
   
   type t_DeepModelTy
   
@@ -3642,17 +3714,17 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_max_body [#"../.
   
   function deep_model [#"../../creusot-contracts/src/model.rs" 27 4 27 45] (self : t_T) : t_DeepModelTy
   
-  let rec max (self_:t_T) (o:t_T) (return'  (x:t_T))= {[@expl:max 'self_' type invariant] [%#scmp'7] inv self_}
-    {[@expl:max 'o' type invariant] [%#scmp'8] inv o}
-    any
-    [ return''0 (result:t_T)-> {inv result}
-      {[%#scmp'9] ge_log (deep_model result) (deep_model self_)}
-      {[%#scmp'10] ge_log (deep_model result) (deep_model o)}
-      {[%#scmp'11] result = self_ \/ result = o}
-      {[%#scmp'12] le_log (deep_model self_) (deep_model o)  -> result = o}
-      {[%#scmp'13] lt_log (deep_model o) (deep_model self_)  -> result = self_}
-      (! return' {result}) ]
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : tuple) (result : t_T)
   
+  
+  axiom postcondition_fndef : forall args : tuple, res : t_T [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = o} = args in (lt_log (deep_model o) (deep_model self_)  -> res = self_)
+  /\ (le_log (deep_model self_) (deep_model o)  -> res = o)
+  /\ (res = self_ \/ res = o)
+  /\ ge_log (deep_model res) (deep_model o) /\ ge_log (deep_model res) (deep_model self_) /\ inv res)
+  
+  let rec max (self_:t_T) (o:t_T) (return'  (x:t_T))= {[@expl:max requires] precondition () { _p0 = self_; _p1 = o }}
+    any [ return''0 (result:t_T)-> {postcondition_once () { _p0 = self_; _p1 = o } result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
@@ -3689,13 +3761,6 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_min_body [#"../.
   let%span scmp'4 = "../../creusot-contracts/src/std/cmp.rs" 120 22 120 50
   let%span scmp'5 = "../../creusot-contracts/src/std/cmp.rs" 121 22 121 72
   let%span scmp'6 = "../../creusot-contracts/src/std/cmp.rs" 122 22 122 73
-  let%span scmp'7 = "../../creusot-contracts/src/std/cmp.rs" 84 16 84 17
-  let%span scmp'8 = "../../creusot-contracts/src/std/cmp.rs" 89 29 89 30
-  let%span scmp'9 = "../../creusot-contracts/src/std/cmp.rs" 84 26 84 66
-  let%span scmp'10 = "../../creusot-contracts/src/std/cmp.rs" 85 26 85 63
-  let%span scmp'11 = "../../creusot-contracts/src/std/cmp.rs" 86 26 86 55
-  let%span scmp'12 = "../../creusot-contracts/src/std/cmp.rs" 87 26 87 79
-  let%span scmp'13 = "../../creusot-contracts/src/std/cmp.rs" 88 26 88 77
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 29 14 29 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 40 14 40 61
   let%span sord'1 = "../../creusot-contracts/src/logic/ord.rs" 51 14 51 61
@@ -3714,7 +3779,15 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_min_body [#"../.
   
   type t_T
   
+  type tuple  =
+    { _p0: t_T; _p1: t_T }
+  
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_T)
+  
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = o} = args in inv o
+  /\ inv self_)  -> precondition () args
   
   type t_DeepModelTy
   
@@ -3783,17 +3856,17 @@ module M_creusot_contracts__stdqy35z1__cmp__extern_spec_std_cmp_min_body [#"../.
   
   function deep_model [#"../../creusot-contracts/src/model.rs" 27 4 27 45] (self : t_T) : t_DeepModelTy
   
-  let rec min (self_:t_T) (o:t_T) (return'  (x:t_T))= {[@expl:min 'self_' type invariant] [%#scmp'7] inv self_}
-    {[@expl:min 'o' type invariant] [%#scmp'8] inv o}
-    any
-    [ return''0 (result:t_T)-> {inv result}
-      {[%#scmp'9] le_log (deep_model result) (deep_model self_)}
-      {[%#scmp'10] le_log (deep_model result) (deep_model o)}
-      {[%#scmp'11] result = self_ \/ result = o}
-      {[%#scmp'12] lt_log (deep_model self_) (deep_model o)  -> result = self_}
-      {[%#scmp'13] le_log (deep_model o) (deep_model self_)  -> result = o}
-      (! return' {result}) ]
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : tuple) (result : t_T)
   
+  
+  axiom postcondition_fndef : forall args : tuple, res : t_T [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = o} = args in (le_log (deep_model o) (deep_model self_)  -> res = o)
+  /\ (lt_log (deep_model self_) (deep_model o)  -> res = self_)
+  /\ (res = self_ \/ res = o)
+  /\ le_log (deep_model res) (deep_model o) /\ le_log (deep_model res) (deep_model self_) /\ inv res)
+  
+  let rec min (self_:t_T) (o:t_T) (return'  (x:t_T))= {[@expl:min requires] precondition () { _p0 = self_; _p1 = o }}
+    any [ return''0 (result:t_T)-> {postcondition_once () { _p0 = self_; _p1 = o } result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
@@ -6882,12 +6955,10 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi17145477625495501557__r
 end
 module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__next [#"../../creusot-contracts/src/std/iter/map_inv.rs" 90 4 90 44] (* <std::iter::map_inv::MapInv<I, <I as std::iter::Iterator>::Item, F> as std::iter::Iterator> *)
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
-  let%span siter = "../../creusot-contracts/src/std/iter.rs" 122 16 122 17
-  let%span siter'0 = "../../creusot-contracts/src/std/iter.rs" 122 26 125 17
-  let%span siter'1 = "../../creusot-contracts/src/std/iter.rs" 42 14 42 45
-  let%span siter'2 = "../../creusot-contracts/src/std/iter.rs" 46 15 46 32
-  let%span siter'3 = "../../creusot-contracts/src/std/iter.rs" 47 15 47 32
-  let%span siter'4 = "../../creusot-contracts/src/std/iter.rs" 48 14 48 42
+  let%span siter = "../../creusot-contracts/src/std/iter.rs" 42 14 42 45
+  let%span siter'0 = "../../creusot-contracts/src/std/iter.rs" 46 15 46 32
+  let%span siter'1 = "../../creusot-contracts/src/std/iter.rs" 47 15 47 32
+  let%span siter'2 = "../../creusot-contracts/src/std/iter.rs" 48 14 48 42
   let%span sops = "../../creusot-contracts/src/std/ops.rs" 177 16 177 17
   let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 179 39 179 42
   let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 177 27 177 52
@@ -6959,6 +7030,26 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__ne
   
   axiom inv_axiom [@rewrite] : forall x : MutBorrow.t t_I [inv'0 x] . inv'0 x = invariant' x
   
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : MutBorrow.t t_I)
+  
+  axiom precondition_fndef : forall args : MutBorrow.t t_I [precondition () args] . (let self_ = args in inv'0 self_)
+   -> precondition () args
+  
+  predicate produces [#"../../creusot-contracts/src/std/iter.rs" 36 4 36 65] (self : t_I) (visited : Seq.seq t_Item) (o : t_I)
+  
+  
+  function produces_trans [#"../../creusot-contracts/src/std/iter.rs" 49 4 49 91] (a : t_I) (ab : Seq.seq t_Item) (b : t_I) (bc : Seq.seq t_Item) (c : t_I) : ()
+  
+  
+  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_Item, b : t_I, bc : Seq.seq t_Item, c : t_I . ([%#siter'0] produces a ab b)
+   -> ([%#siter'1] produces b bc c)  -> ([%#siter'2] produces a (Seq.(++) ab bc) c)
+  
+  function produces_refl [#"../../creusot-contracts/src/std/iter.rs" 43 4 43 27] (self : t_I) : ()
+  
+  axiom produces_refl_spec : forall self : t_I . [%#siter] produces self (Seq.empty : Seq.seq t_Item) self
+  
+  predicate completed [#"../../creusot-contracts/src/std/iter.rs" 39 4 39 36] (self : MutBorrow.t t_I)
+  
   predicate inv'1 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Item)
   
   predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Option)
@@ -6969,30 +7060,18 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__ne
     | C_Some a_0 -> inv'1 a_0
     end
   
-  predicate produces [#"../../creusot-contracts/src/std/iter.rs" 36 4 36 65] (self : t_I) (visited : Seq.seq t_Item) (o : t_I)
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : MutBorrow.t t_I) (result : t_Option)
   
   
-  function produces_trans [#"../../creusot-contracts/src/std/iter.rs" 49 4 49 91] (a : t_I) (ab : Seq.seq t_Item) (b : t_I) (bc : Seq.seq t_Item) (c : t_I) : ()
+  axiom postcondition_fndef : forall args : MutBorrow.t t_I, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+   -> (let self_ = args in match res with
+    | C_None -> completed self_
+    | C_Some v -> produces self_.current (Seq.singleton v) self_.final
+    end
+  /\ inv'2 res)
   
-  
-  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_Item, b : t_I, bc : Seq.seq t_Item, c : t_I . ([%#siter'2] produces a ab b)
-   -> ([%#siter'3] produces b bc c)  -> ([%#siter'4] produces a (Seq.(++) ab bc) c)
-  
-  function produces_refl [#"../../creusot-contracts/src/std/iter.rs" 43 4 43 27] (self : t_I) : ()
-  
-  axiom produces_refl_spec : forall self : t_I . [%#siter'1] produces self (Seq.empty : Seq.seq t_Item) self
-  
-  predicate completed [#"../../creusot-contracts/src/std/iter.rs" 39 4 39 36] (self : MutBorrow.t t_I)
-  
-  let rec next (self_:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next 'self_' type invariant] [%#siter] inv'0 self_}
-    any
-    [ return''0 (result:t_Option)-> {inv'2 result}
-      {[%#siter'0] match result with
-        | C_None -> completed self_
-        | C_Some v -> produces self_.current (Seq.singleton v) self_.final
-        end}
-      (! return' {result}) ]
-  
+  let rec next (self_:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self_}
+    any [ return''0 (result:t_Option)-> {postcondition_once () self_ result} (! return' {result}) ] 
   
   let rec v_Some (input:t_Option) (ret  (field_0:t_Item))= any
     [ good (field_0:t_Item)-> {C_Some field_0 = input} (! ret {field_0})
@@ -7002,7 +7081,7 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__ne
   type tuple  =
     { _p0: t_Item; _p1: Seq.seq t_Item }
   
-  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : t_F) (args : tuple)
+  predicate precondition'0 [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : t_F) (args : tuple)
   
   predicate inv'3 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_F)
   
@@ -7021,7 +7100,7 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__ne
   
   predicate inv'6 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_B)
   
-  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : t_F) (args : tuple) (result : t_B)
+  predicate postcondition_once'0 [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : t_F) (args : tuple) (result : t_B)
   
   
   predicate resolve [#"../../creusot-contracts/src/resolve.rs" 19 0 19 40] (_0 : t_F)
@@ -7032,7 +7111,7 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__ne
   function fn_mut_once [#"../../creusot-contracts/src/std/ops.rs" 138 4 138 55] (self : t_F) (args : tuple) (res : t_B) : ()
   
   
-  axiom fn_mut_once_spec : forall self : t_F, args : tuple, res : t_B . [%#sops'9] postcondition_once self args res
+  axiom fn_mut_once_spec : forall self : t_F, args : tuple, res : t_B . [%#sops'9] postcondition_once'0 self args res
   = (exists res_state : t_F . postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv [#"../../creusot-contracts/src/std/ops.rs" 112 4 112 49] (self : t_F) (result_state : t_F)
@@ -7054,7 +7133,7 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__ne
   
   let rec call_mut (self_:MutBorrow.t t_F) (arg:tuple) (return'  (x:t_B))= {[@expl:call_mut 'self_' type invariant] [%#sops] inv'4 self_}
     {[@expl:call_mut 'arg' type invariant] [%#sops'0] inv'5 arg}
-    {[@expl:call_mut requires] [%#sops'1] precondition self_.current arg}
+    {[@expl:call_mut requires] [%#sops'1] precondition'0 self_.current arg}
     any
     [ return''0 (result:t_B)-> {inv'6 result}
       {[%#sops'2] postcondition_mut self_.current arg self_.final result}
@@ -7065,14 +7144,14 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__ne
   
    =
     [%#smap_inv'20] forall e : t_Item, i : t_I . produces iter (Seq.singleton e) i
-     -> precondition func { _p0 = e; _p1 = produced }
+     -> precondition'0 func { _p0 = e; _p1 = produced }
   
   predicate preservation [#"../../creusot-contracts/src/std/iter/map_inv.rs" 138 4 138 49] (iter : t_I) (func : t_F) =
     [%#smap_inv'29] forall s : Seq.seq t_Item, e1 : t_Item, e2 : t_Item, f : MutBorrow.t t_F, b : t_B, i : t_I . hist_inv func f.current
      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition f.current { _p0 = e1; _p1 = s }
+     -> precondition'0 f.current { _p0 = e1; _p1 = s }
      -> postcondition_mut f.current { _p0 = e1; _p1 = s } f.final b
-     -> precondition f.final { _p0 = e2; _p1 = Seq.snoc s e1 }
+     -> precondition'0 f.final { _p0 = e2; _p1 = Seq.snoc s e1 }
   
   predicate reinitialize [#"../../creusot-contracts/src/std/iter/map_inv.rs" 151 4 151 33]  =
     [%#smap_inv'28] forall iter : MutBorrow.t t_I, func : t_F . completed iter
@@ -7083,9 +7162,9 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__ne
    =
     [%#smap_inv'19] forall s : Seq.seq t_Item, e1 : t_Item, e2 : t_Item, f : MutBorrow.t t_F, b : t_B, i : t_I . hist_inv func f.current
      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition f.current { _p0 = e1; _p1 = Seq.(++) produced s }
+     -> precondition'0 f.current { _p0 = e1; _p1 = Seq.(++) produced s }
      -> postcondition_mut f.current { _p0 = e1; _p1 = Seq.(++) produced s } f.final b
-     -> precondition f.final { _p0 = e2; _p1 = Seq.snoc (Seq.(++) produced s) e1 }
+     -> precondition'0 f.final { _p0 = e2; _p1 = Seq.snoc (Seq.(++) produced s) e1 }
   
   axiom preservation_inv_spec : forall iter : t_I, func : t_F, produced : Seq.seq t_Item . [%#smap_inv'18] produced
   = (Seq.empty : Seq.seq t_Item)  -> preservation_inv iter func produced = preservation iter func
@@ -7121,8 +7200,8 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__ne
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> hist_inv self.t_MapInv__func (Seq.get fs i).current
-    /\ precondition (Seq.get fs i).current { _p0 = Seq.get s i;
-                                             _p1 = Seq.(++) self.t_MapInv__produced (Seq.([..]) s 0 i) }
+    /\ precondition'0 (Seq.get fs i).current { _p0 = Seq.get s i;
+                                               _p1 = Seq.(++) self.t_MapInv__produced (Seq.([..]) s 0 i) }
     /\ postcondition_mut (Seq.get fs i).current { _p0 = Seq.get s i;
                                                   _p1 = Seq.(++) self.t_MapInv__produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
@@ -7146,7 +7225,7 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__ne
     /\ f.final = succ.t_MapInv__func
     /\ produces self.t_MapInv__iter (Seq.singleton e) succ.t_MapInv__iter
     /\ succ.t_MapInv__produced = Seq.snoc self.t_MapInv__produced e
-    /\ precondition f.current { _p0 = e; _p1 = self.t_MapInv__produced }
+    /\ precondition'0 f.current { _p0 = e; _p1 = self.t_MapInv__produced }
     /\ postcondition_mut f.current { _p0 = e; _p1 = self.t_MapInv__produced } f.final visited
   
   axiom produces_one_spec : forall self : t_MapInv, visited : t_B, succ : t_MapInv . [%#smap_inv'14] produces_one self visited succ
@@ -7213,8 +7292,8 @@ module M_creusot_contracts__stdqy35z1__iter__map_inv__qyi8002351551305542163__ne
     | bb4 = bb6
     | bb6 = s0
       [ s0 = v_Some {_5} (fun (r0:t_Item) ->  [ &v <- r0 ] s1)
-      | s1 = {[@expl:assertion] [%#smap_inv'0] precondition (self'0.current).t_MapInv__func { _p0 = v;
-                                                                                              _p1 = (self'0.current).t_MapInv__produced }}
+      | s1 = {[@expl:assertion] [%#smap_inv'0] precondition'0 (self'0.current).t_MapInv__func { _p0 = v;
+                                                                                                _p1 = (self'0.current).t_MapInv__produced }}
         s2
       | s2 = bb7 ]
     
@@ -8885,20 +8964,28 @@ module M_creusot_contracts__stdqy35z1__mem__extern_spec_std_mem_take_body [#"../
   let%span smem'4 = "../../creusot-contracts/src/std/mem.rs" 10 40 10 43
   let%span smem'5 = "../../creusot-contracts/src/std/mem.rs" 8 22 8 34
   let%span smem'6 = "../../creusot-contracts/src/std/mem.rs" 9 22 9 37
-  let%span sdefault = "../../creusot-contracts/src/std/default.rs" 31 26 31 45
   
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_T
   
-  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_T)
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : ())
+  
+  axiom precondition_fndef : forall args : () [precondition () args] . (let () = args in true)  -> precondition () args
   
   predicate is_default [#"../../creusot-contracts/src/std/default.rs" 24 4 24 32] (self : t_T)
   
-  let rec default (return'  (x:t_T))= any
-    [ return''0 (result:t_T)-> {inv result} {[%#sdefault] is_default result} (! return' {result}) ]
+  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_T)
   
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : ()) (result : t_T)
+  
+  
+  axiom postcondition_fndef : forall args : (), res : t_T [postcondition_once () args res] . postcondition_once () args res
+   -> (let () = args in is_default res /\ inv res)
+  
+  let rec default (return'  (x:t_T))= {[@expl:default requires] precondition () ()}
+    any [ return''0 (result:t_T)-> {postcondition_once () () result} (! return' {result}) ] 
   
   predicate invariant' [#"../../creusot-contracts/src/invariant.rs" 99 4 99 30] (self : MutBorrow.t t_T) =
     [%#sinvariant] inv self.current /\ inv self.final
@@ -9303,8 +9390,6 @@ module M_creusot_contracts__stdqy35z1__ops__extern_spec_core_result_T_E_F_FromRe
   let%span sops = "../../creusot-contracts/src/std/ops.rs" 329 33 329 41
   let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 324 75 324 87
   let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 325 26 328 17
-  let%span sconvert = "../../creusot-contracts/src/std/convert.rs" 15 24 15 29
-  let%span sconvert'0 = "../../creusot-contracts/src/std/convert.rs" 14 26 14 50
   
   use creusot.prelude.Any
   
@@ -9323,12 +9408,23 @@ module M_creusot_contracts__stdqy35z1__ops__extern_spec_core_result_T_E_F_FromRe
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_E)
   
-  predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_F)
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : t_E)
+  
+  axiom precondition_fndef : forall args : t_E [precondition () args] . (let value = args in inv value)
+   -> precondition () args
   
   predicate comes_from [#"../../creusot-contracts/src/std/convert.rs" 7 4 7 42] (self : t_F) (value : t_E)
   
-  let rec from (value:t_E) (return'  (x:t_F))= {[@expl:from 'value' type invariant] [%#sconvert] inv value}
-    any [ return''0 (result:t_F)-> {inv'0 result} {[%#sconvert'0] comes_from result value} (! return' {result}) ] 
+  predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_F)
+  
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : t_E) (result : t_F)
+  
+  
+  axiom postcondition_fndef : forall args : t_E, res : t_F [postcondition_once () args res] . postcondition_once () args res
+   -> (let value = args in comes_from res value /\ inv'0 res)
+  
+  let rec from (value:t_E) (return'  (x:t_F))= {[@expl:from requires] precondition () value}
+    any [ return''0 (result:t_F)-> {postcondition_once () value result} (! return' {result}) ] 
   
   type t_T
   
@@ -10587,7 +10683,6 @@ module M_creusot_contracts__stdqy35z1__option__extern_spec_std_option_T_Option_T
 
 end
 module M_creusot_contracts__stdqy35z1__option__extern_spec_std_option_T_Option_T_unwrap_or_default_body [#"../../creusot-contracts/src/std/option.rs" 171 16 173 30]
-  let%span sdefault = "../../creusot-contracts/src/std/default.rs" 31 26 31 45
   let%span soption = "../../creusot-contracts/src/std/option.rs" 169 16 169 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 171 46 171 47
   let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 169 26 169 62
@@ -10606,13 +10701,22 @@ module M_creusot_contracts__stdqy35z1__option__extern_spec_std_option_T_Option_T
     | bad -> {forall field_0 : t_T [C_Some field_0 : t_Option] . C_Some field_0 <> input} (! {false} any) ]
   
   
-  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_T)
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : ())
+  
+  axiom precondition_fndef : forall args : () [precondition () args] . (let () = args in true)  -> precondition () args
   
   predicate is_default [#"../../creusot-contracts/src/std/default.rs" 24 4 24 32] (self : t_T)
   
-  let rec default (return'  (x:t_T))= any
-    [ return''0 (result:t_T)-> {inv result} {[%#sdefault] is_default result} (! return' {result}) ]
+  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_T)
   
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : ()) (result : t_T)
+  
+  
+  axiom postcondition_fndef : forall args : (), res : t_T [postcondition_once () args res] . postcondition_once () args res
+   -> (let () = args in is_default res /\ inv res)
+  
+  let rec default (return'  (x:t_T))= {[@expl:default requires] precondition () ()}
+    any [ return''0 (result:t_T)-> {postcondition_once () () result} (! return' {result}) ] 
   
   predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_Option)
   
@@ -13251,8 +13355,6 @@ module M_creusot_contracts__stdqy35z1__option__extern_spec_std_option_T_Optionqy
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 493 35 493 44
   let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 491 26 491 57
   let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 492 26 492 93
-  let%span sclone = "../../creusot-contracts/src/std/clone.rs" 15 16 15 17
-  let%span sclone'0 = "../../creusot-contracts/src/std/clone.rs" 15 26 15 41
   
   use creusot.prelude.Any
   
@@ -13276,8 +13378,19 @@ module M_creusot_contracts__stdqy35z1__option__extern_spec_std_option_T_Optionqy
   
   axiom inv_axiom [@rewrite] : forall x : t_T [inv'0 x] . inv'0 x = invariant' x
   
-  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone 'self_' type invariant] [%#sclone] inv'0 self_}
-    any [ return''0 (result:t_T)-> {inv result} {[%#sclone'0] result = self_} (! return' {result}) ] 
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : t_T)
+  
+  axiom precondition_fndef : forall args : t_T [precondition () args] . (let self_ = args in inv'0 self_)
+   -> precondition () args
+  
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : t_T) (result : t_T)
+  
+  
+  axiom postcondition_fndef : forall args : t_T, res : t_T [postcondition_once () args res] . postcondition_once () args res
+   -> (let self_ = args in res = self_ /\ inv res)
+  
+  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_T)-> {postcondition_once () self_ result} (! return' {result}) ] 
   
   type t_Option'0  =
     | C_None'0
@@ -13417,8 +13530,6 @@ module M_creusot_contracts__stdqy35z1__option__extern_spec_std_option_T_Optionqy
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 524 35 524 44
   let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 519 26 519 57
   let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 521 20 522 93
-  let%span sclone = "../../creusot-contracts/src/std/clone.rs" 15 16 15 17
-  let%span sclone'0 = "../../creusot-contracts/src/std/clone.rs" 15 26 15 41
   
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -13443,8 +13554,19 @@ module M_creusot_contracts__stdqy35z1__option__extern_spec_std_option_T_Optionqy
   
   axiom inv_axiom [@rewrite] : forall x : t_T [inv'0 x] . inv'0 x = invariant' x
   
-  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone 'self_' type invariant] [%#sclone] inv'0 self_}
-    any [ return''0 (result:t_T)-> {inv result} {[%#sclone'0] result = self_} (! return' {result}) ] 
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : t_T)
+  
+  axiom precondition_fndef : forall args : t_T [precondition () args] . (let self_ = args in inv'0 self_)
+   -> precondition () args
+  
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : t_T) (result : t_T)
+  
+  
+  axiom postcondition_fndef : forall args : t_T, res : t_T [postcondition_once () args res] . postcondition_once () args res
+   -> (let self_ = args in res = self_ /\ inv res)
+  
+  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_T)-> {postcondition_once () self_ result} (! return' {result}) ] 
   
   predicate invariant''0 [#"../../creusot-contracts/src/invariant.rs" 99 4 99 30] (self : MutBorrow.t t_T) =
     [%#sinvariant] inv self.current /\ inv self.final
@@ -15511,8 +15633,6 @@ module M_creusot_contracts__num_rational__qyi7156484438548626841__eq_cmp [#"../.
 end
 module M_creusot_contracts__ghost__qyi11517682701084838082__clone [#"../../creusot-contracts/src/ghost.rs" 48 4 48 27] (* <ghost::Ghost<T> as std::clone::Clone> *)
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  let%span sclone = "../../creusot-contracts/src/std/clone.rs" 15 16 15 17
-  let%span sclone'0 = "../../creusot-contracts/src/std/clone.rs" 15 26 15 41
   let%span sghost = "../../creusot-contracts/src/ghost.rs" 48 14 48 18
   let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 48 23 48 27
   let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 47 14 47 29
@@ -15535,8 +15655,19 @@ module M_creusot_contracts__ghost__qyi11517682701084838082__clone [#"../../creus
   
   axiom inv_axiom [@rewrite] : forall x : t_T [inv'0 x] . inv'0 x = invariant' x
   
-  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone 'self_' type invariant] [%#sclone] inv'0 self_}
-    any [ return''0 (result:t_T)-> {inv result} {[%#sclone'0] result = self_} (! return' {result}) ] 
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : t_T)
+  
+  axiom precondition_fndef : forall args : t_T [precondition () args] . (let self_ = args in inv'0 self_)
+   -> precondition () args
+  
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : t_T) (result : t_T)
+  
+  
+  axiom postcondition_fndef : forall args : t_T, res : t_T [postcondition_once () args res] . postcondition_once () args res
+   -> (let self_ = args in res = self_ /\ inv res)
+  
+  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_T)-> {postcondition_once () self_ result} (! return' {result}) ] 
   
   function inner_logic [#"../../creusot-contracts/src/ghost.rs" 233 4 233 33] (self : t_Ghost) : t_T =
     [%#sghost'3] self.t_Ghost__0
@@ -22080,7 +22211,6 @@ end
 module M_creusot_contracts__pcell__qyi14846468513926953542__take [#"../../creusot-contracts/src/pcell.rs" 283 4 283 65] (* pcell::PCell<T> *)
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
-  let%span sdefault = "../../creusot-contracts/src/std/default.rs" 31 26 31 45
   let%span sghost = "../../creusot-contracts/src/ghost.rs" 234 8 234 14
   let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 109 8 109 31
   let%span spcell = "../../creusot-contracts/src/pcell.rs" 283 24 283 28
@@ -22106,13 +22236,22 @@ module M_creusot_contracts__pcell__qyi14846468513926953542__take [#"../../creuso
   
   type t_T
   
-  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_T)
+  predicate precondition [#"../../creusot-contracts/src/std/ops.rs" 85 4 85 45] (self : ()) (args : ())
+  
+  axiom precondition_fndef : forall args : () [precondition () args] . (let () = args in true)  -> precondition () args
   
   predicate is_default [#"../../creusot-contracts/src/std/default.rs" 24 4 24 32] (self : t_T)
   
-  let rec default (return'  (x:t_T))= any
-    [ return''0 (result:t_T)-> {inv result} {[%#sdefault] is_default result} (! return' {result}) ]
+  predicate inv [#"../../creusot-contracts/src/invariant.rs" 111 0 111 35] (_0 : t_T)
   
+  predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 93 4 93 73] (self : ()) (args : ()) (result : t_T)
+  
+  
+  axiom postcondition_fndef : forall args : (), res : t_T [postcondition_once () args res] . postcondition_once () args res
+   -> (let () = args in is_default res /\ inv res)
+  
+  let rec default (return'  (x:t_T))= {[@expl:default requires] precondition () ()}
+    any [ return''0 (result:t_T)-> {postcondition_once () () result} (! return' {result}) ] 
   
   type t_UnsafeCell  =
     { t_UnsafeCell__value: t_T }
@@ -22217,8 +22356,8 @@ module M_creusot_contracts__pcell__qyi14846468513926953542__take [#"../../creuso
 
 end
 module M_creusot_contracts__peano__qyi18263836234684628832__clone [#"../../creusot-contracts/src/peano.rs" 35 9 35 14] (* <peano::PeanoInt as std::clone::Clone> *)
-  let%span sclone = "../../creusot-contracts/src/std/clone.rs" 15 26 15 41
   let%span speano = "../../creusot-contracts/src/peano.rs" 35 9 35 14
+  let%span sclone = "../../creusot-contracts/src/std/clone.rs" 15 26 15 41
   
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -22247,8 +22386,8 @@ module M_creusot_contracts__peano__qyi18263836234684628832__clone [#"../../creus
      [ return''0 (result:t_PeanoInt)-> {[@expl:clone ensures] [%#speano] result = self} (! return' {result}) ] 
 end
 module M_creusot_contracts__peano__qyi17635635094782400840__default [#"../../creusot-contracts/src/peano.rs" 35 22 35 29] (* <peano::PeanoInt as std::default::Default> *)
-  let%span sdefault = "../../creusot-contracts/src/std/default.rs" 31 26 31 45
   let%span speano = "../../creusot-contracts/src/peano.rs" 35 22 35 29
+  let%span sdefault = "../../creusot-contracts/src/std/default.rs" 31 26 31 45
   let%span snum = "../../creusot-contracts/src/std/num.rs" 33 28 33 41
   
   use creusot.int.UInt64

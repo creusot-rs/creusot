@@ -98,8 +98,6 @@ module M_two_phase__qyi14099956410468907124__insert [#"two_phase.rs" 21 4 21 28]
   let%span sindex = "../../../creusot-contracts/src/logic/ops/index.rs" 29 8 29 31
   let%span smodel = "../../../creusot-contracts/src/model.rs" 72 8 72 22
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
-  let%span sclone = "../../../creusot-contracts/src/std/clone.rs" 15 16 15 17
-  let%span sclone'0 = "../../../creusot-contracts/src/std/clone.rs" 15 26 15 41
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
   let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 672 20 672 95
@@ -144,8 +142,18 @@ module M_two_phase__qyi14099956410468907124__insert [#"two_phase.rs" 21 4 21 28]
   
   axiom inv_axiom [@rewrite] : forall x : t_K [inv'0 x] . inv'0 x = invariant' x
   
-  let rec clone' (self_:t_K) (return'  (x:t_K))= {[@expl:clone 'self_' type invariant] [%#sclone] inv'0 self_}
-    any [ return''0 (result:t_K)-> {inv result} {[%#sclone'0] result = self_} (! return' {result}) ] 
+  predicate precondition (self : ()) (args : t_K)
+  
+  axiom precondition_fndef : forall args : t_K [precondition () args] . (let self_ = args in inv'0 self_)
+   -> precondition () args
+  
+  predicate postcondition_once (self : ()) (args : t_K) (result : t_K)
+  
+  axiom postcondition_fndef : forall args : t_K, res : t_K [postcondition_once () args res] . postcondition_once () args res
+   -> (let self_ = args in res = self_ /\ inv res)
+  
+  let rec clone' (self_:t_K) (return'  (x:t_K))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_K)-> {postcondition_once () self_ result} (! return' {result}) ] 
   
   predicate invariant''0 (self : t_K) =
     [%#sboxed] inv self

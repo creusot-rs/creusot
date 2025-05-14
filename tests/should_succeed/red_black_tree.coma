@@ -4310,9 +4310,6 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec [#"red_black_tree.rs
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
-  let%span scmp = "../../creusot-contracts/src/std/cmp.rs" 72 16 72 17
-  let%span scmp'0 = "../../creusot-contracts/src/std/cmp.rs" 73 30 73 33
-  let%span scmp'1 = "../../creusot-contracts/src/std/cmp.rs" 72 26 72 85
   
   use creusot.prelude.MutBorrow
   use mach.int.Int
@@ -4445,12 +4442,20 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec [#"red_black_tree.rs
     | C_Equal
     | C_Greater
   
+  type tuple  =
+    { _p0: t_K; _p1: t_K }
+  
   predicate invariant''2 (self : t_K) =
     [%#sinvariant'0] inv self
   
   predicate inv'7 (_0 : t_K)
   
   axiom inv_axiom'5 [@rewrite] : forall x : t_K [inv'7 x] . inv'7 x = invariant''2 x
+  
+  predicate precondition (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = rhs} = args in inv'7 rhs
+  /\ inv'7 self_)  -> precondition () args
   
   function cmp_log (self : t_DeepModelTy) (other : t_DeepModelTy) : t_Ordering
   
@@ -4502,11 +4507,15 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec [#"red_black_tree.rs
   
   axiom cmp_le_log_spec : forall x : t_DeepModelTy, y : t_DeepModelTy . [%#sord] le_log x y = (cmp_log x y <> C_Greater)
   
-  let rec cmp (self_:t_K) (rhs:t_K) (return'  (x:t_Ordering))= {[@expl:cmp 'self_' type invariant] [%#scmp] inv'7 self_}
-    {[@expl:cmp 'rhs' type invariant] [%#scmp'0] inv'7 rhs}
+  predicate postcondition_once (self : ()) (args : tuple) (result : t_Ordering)
+  
+  axiom postcondition_fndef : forall args : tuple, res : t_Ordering [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = rhs} = args in res = cmp_log (deep_model self_) (deep_model rhs))
+  
+  let rec cmp (self_:t_K) (rhs:t_K) (return'  (x:t_Ordering))= {[@expl:cmp requires] precondition () { _p0 = self_;
+                                                                                                       _p1 = rhs }}
     any
-    [ return''0 (result:t_Ordering)-> {[%#scmp'1] result = cmp_log (deep_model self_) (deep_model rhs)}
-      (! return' {result}) ]
+    [ return''0 (result:t_Ordering)-> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ]
   
   
   predicate resolve'10 (_0 : t_K)
@@ -6554,9 +6563,6 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
   let%span soption'8 = "../../creusot-contracts/src/std/option.rs" 74 26 74 58
   let%span soption'9 = "../../creusot-contracts/src/std/option.rs" 76 20 76 89
   let%span soption'10 = "../../creusot-contracts/src/std/option.rs" 569 20 569 32
-  let%span scmp = "../../creusot-contracts/src/std/cmp.rs" 72 16 72 17
-  let%span scmp'0 = "../../creusot-contracts/src/std/cmp.rs" 73 30 73 33
-  let%span scmp'1 = "../../creusot-contracts/src/std/cmp.rs" 72 26 72 85
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   
   use creusot.prelude.MutBorrow
@@ -6685,12 +6691,20 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
     | C_Equal
     | C_Greater
   
+  type tuple  =
+    { _p0: t_K; _p1: t_K }
+  
   predicate invariant''3 (self : t_K) =
     [%#sinvariant'0] inv self
   
   predicate inv'9 (_0 : t_K)
   
   axiom inv_axiom'7 [@rewrite] : forall x : t_K [inv'9 x] . inv'9 x = invariant''3 x
+  
+  predicate precondition (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = rhs} = args in inv'9 rhs
+  /\ inv'9 self_)  -> precondition () args
   
   type t_DeepModelTy
   
@@ -6746,11 +6760,15 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
   
   function deep_model (self : t_K) : t_DeepModelTy
   
-  let rec cmp (self_:t_K) (rhs:t_K) (return'  (x:t_Ordering))= {[@expl:cmp 'self_' type invariant] [%#scmp] inv'9 self_}
-    {[@expl:cmp 'rhs' type invariant] [%#scmp'0] inv'9 rhs}
+  predicate postcondition_once (self : ()) (args : tuple) (result : t_Ordering)
+  
+  axiom postcondition_fndef : forall args : tuple, res : t_Ordering [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = rhs} = args in res = cmp_log (deep_model self_) (deep_model rhs))
+  
+  let rec cmp (self_:t_K) (rhs:t_K) (return'  (x:t_Ordering))= {[@expl:cmp requires] precondition () { _p0 = self_;
+                                                                                                       _p1 = rhs }}
     any
-    [ return''0 (result:t_Ordering)-> {[%#scmp'1] result = cmp_log (deep_model self_) (deep_model rhs)}
-      (! return' {result}) ]
+    [ return''0 (result:t_Ordering)-> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ]
   
   
   predicate invariant''4 (self : t_Tree) =
@@ -6840,8 +6858,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
   axiom height_spec'0 : forall self : t_Node . [%#sred_black_tree'90] forall node : t_Node . self = node
    -> height'0 self = height { t_Tree__node = C_Some node }
   
-  type tuple  =
-    { _p0: t_Tree; _p1: t_Tree; _p2: t_Tree }
+  type tuple'0  =
+    { _p0'0: t_Tree; _p1'0: t_Tree; _p2: t_Tree }
   
   let rec rotate_right (self:MutBorrow.t t_Node) (return'  (x:()))= {[@expl:rotate_right 'self' type invariant] [%#sred_black_tree'13] inv'8 self}
     {[@expl:rotate_right requires #0] [%#sred_black_tree'14] internal_invariant self.current}
@@ -6855,18 +6873,18 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
       {[%#sred_black_tree'21] (self.final).t_Node__color = (self.current).t_Node__color}
       {[%#sred_black_tree'22] exists l : t_Node, r : t_Node . ((self.current).t_Node__left).t_Tree__node = C_Some l
       /\ ((self.final).t_Node__right).t_Tree__node = C_Some r
-      /\ { _p0 = (self.final).t_Node__left; _p1 = r.t_Node__left; _p2 = r.t_Node__right }
-      = { _p0 = l.t_Node__left; _p1 = l.t_Node__right; _p2 = (self.current).t_Node__right }
+      /\ { _p0'0 = (self.final).t_Node__left; _p1'0 = r.t_Node__left; _p2 = r.t_Node__right }
+      = { _p0'0 = l.t_Node__left; _p1'0 = l.t_Node__right; _p2 = (self.current).t_Node__right }
       /\ r.t_Node__key = (self.current).t_Node__key}
       (! return' {result}) ]
   
   
-  type tuple'0  =
-    { _p0'0: t_K; _p1'0: t_V }
+  type tuple'1  =
+    { _p0'1: t_K; _p1'1: t_V }
   
   type t_Option'1  =
     | C_None'1
-    | C_Some'1 tuple'0
+    | C_Some'1 tuple'1
   
   predicate invariant''5 (self : t_Option) =
     [%#sinvariant'0] inv'2 self
@@ -7023,24 +7041,24 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
   predicate internal_invariant'0 [#"red_black_tree.rs" 386 4 386 39] (self : t_Tree) =
     [%#sred_black_tree'80] bst_invariant self /\ height_invariant self
   
-  predicate inv'15 (_0 : tuple'0)
+  predicate inv'15 (_0 : tuple'1)
   
-  axiom inv_axiom'13 [@rewrite] : forall x : tuple'0 [inv'15 x] . inv'15 x
-  = (let {_p0'0 = x0 ; _p1'0 = x1} = x in inv x0 /\ inv'0 x1)
+  axiom inv_axiom'13 [@rewrite] : forall x : tuple'1 [inv'15 x] . inv'15 x
+  = (let {_p0'1 = x0 ; _p1'1 = x1} = x in inv x0 /\ inv'0 x1)
   
-  let rec delete_min_rec (self:MutBorrow.t t_Tree) (return'  (x:tuple'0))= {[@expl:delete_min_rec 'self' type invariant] [%#sred_black_tree'37] inv'12 self}
+  let rec delete_min_rec (self:MutBorrow.t t_Tree) (return'  (x:tuple'1))= {[@expl:delete_min_rec 'self' type invariant] [%#sred_black_tree'37] inv'12 self}
     {[@expl:delete_min_rec requires #0] [%#sred_black_tree'38] internal_invariant'0 self.current}
     {[@expl:delete_min_rec requires #1] [%#sred_black_tree'39] match_t (C_CPL (C_Red)) self.current
     \/ match_t (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.current}
     any
-    [ return''0 (result:tuple'0)-> {[%#sred_black_tree'40] inv'15 result}
+    [ return''0 (result:tuple'1)-> {[%#sred_black_tree'40] inv'15 result}
       {[%#sred_black_tree'41] internal_invariant'0 self.final}
       {[%#sred_black_tree'42] height self.current = height self.final}
-      {[%#sred_black_tree'43] has_mapping self.current (deep_model result._p0'0) result._p1'0}
+      {[%#sred_black_tree'43] has_mapping self.current (deep_model result._p0'1) result._p1'1}
       {[%#sred_black_tree'44] forall k : t_DeepModelTy, v : t_V . has_mapping self.current k v
-       -> le_log (deep_model result._p0'0) k}
+       -> le_log (deep_model result._p0'1) k}
       {[%#sred_black_tree'45] forall k : t_DeepModelTy, v : t_V . has_mapping self.final k v
-      = (deep_model result._p0'0 <> k /\ has_mapping self.current k v)}
+      = (deep_model result._p0'1 <> k /\ has_mapping self.current k v)}
       {[%#sred_black_tree'46] color_invariant self.final}
       {[%#sred_black_tree'47] color self.current = C_Black  -> color self.final = C_Black}
       (! return' {result}) ]
@@ -7336,7 +7354,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
           | _ -> true
           end}-
         s4
-      | s4 =  [ &_60 <- { _p0'0 = node'0.t_Node__key; _p1'0 = node'0.t_Node__val } ] s5
+      | s4 =  [ &_60 <- { _p0'1 = node'0.t_Node__key; _p1'1 = node'0.t_Node__val } ] s5
       | s5 = bb41 ]
     
     | bb41 = bb42
@@ -7406,7 +7424,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
             -{inv'1 _ret.final}-
              [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] 
             s1)
-      | s1 = delete_min_rec {_74} (fun (_ret:tuple'0) ->  [ &kv <- _ret ] s2)
+      | s1 = delete_min_rec {_74} (fun (_ret:tuple'1) ->  [ &kv <- _ret ] s2)
       | s2 = bb54 ]
     
     | bb54 = s0 [ s0 =  [ &_75 <- [%#sred_black_tree] () ] s1 | s1 = bb55 ] 
@@ -7418,12 +7436,12 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
             -{inv _ret.final}-
              [ &node <- { node with current = { node.current with t_Node__key = _ret.final } } ] 
             s1)
-      | s1 = {inv kv._p0'0}
-        MutBorrow.borrow_mut <t_K> {kv._p0'0}
+      | s1 = {inv kv._p0'1}
+        MutBorrow.borrow_mut <t_K> {kv._p0'1}
           (fun (_ret:MutBorrow.t t_K) ->
              [ &_81 <- _ret ] 
             -{inv _ret.final}-
-             [ &kv <- { kv with _p0'0 = _ret.final } ] 
+             [ &kv <- { kv with _p0'1 = _ret.final } ] 
             s2)
       | s2 = {inv _79.current}
         MutBorrow.borrow_final <t_K> {_79.current} {MutBorrow.get_id _79}
@@ -7454,12 +7472,12 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
             -{inv'0 _ret.final}-
              [ &node <- { node with current = { node.current with t_Node__val = _ret.final } } ] 
             s5)
-      | s5 = {inv'0 kv._p1'0}
-        MutBorrow.borrow_mut <t_V> {kv._p1'0}
+      | s5 = {inv'0 kv._p1'1}
+        MutBorrow.borrow_mut <t_V> {kv._p1'1}
           (fun (_ret:MutBorrow.t t_V) ->
              [ &_86 <- _ret ] 
             -{inv'0 _ret.final}-
-             [ &kv <- { kv with _p1'0 = _ret.final } ] 
+             [ &kv <- { kv with _p1'1 = _ret.final } ] 
             s6)
       | s6 = {inv'0 _84.current}
         MutBorrow.borrow_final <t_V> {_84.current} {MutBorrow.get_id _84}
@@ -7612,14 +7630,14 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
     | & _57 : t_Option = Any.any_l ()
     | & _58 : MutBorrow.t t_Option = Any.any_l ()
     | & _59 : MutBorrow.t t_Option = Any.any_l ()
-    | & _60 : tuple'0 = Any.any_l ()
+    | & _60 : tuple'1 = Any.any_l ()
     | & _64 : bool = Any.any_l ()
     | & _66 : t_Node = Any.any_l ()
     | & _67 : t_Option'2 = Any.any_l ()
     | & _69 : MutBorrow.t t_Node = Any.any_l ()
     | & _70 : MutBorrow.t t_Node = Any.any_l ()
     | & _71 : MutBorrow.t t_Node = Any.any_l ()
-    | & kv : tuple'0 = Any.any_l ()
+    | & kv : tuple'1 = Any.any_l ()
     | & _74 : MutBorrow.t t_Tree = Any.any_l ()
     | & _75 : () = Any.any_l ()
     | & _77 : () = Any.any_l ()
@@ -7643,7 +7661,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
       {[@expl:delete_rec ensures #1] [%#sred_black_tree'6] height self.current = height self.final}
       {[@expl:delete_rec ensures #2] [%#sred_black_tree'7] match result with
         | C_None'1 -> forall v : t_V . not has_mapping self.current (deep_model'0 key) v
-        | C_Some'1 {_p0'0 = k ; _p1'0 = v} -> deep_model'0 key = deep_model k
+        | C_Some'1 {_p0'1 = k ; _p1'1 = v} -> deep_model'0 key = deep_model k
         /\ has_mapping self.current (deep_model k) v
         end}
       {[@expl:delete_rec ensures #3] [%#sred_black_tree'8] forall k : t_DeepModelTy, v : t_V . has_mapping self.final k v
@@ -10388,9 +10406,6 @@ module M_red_black_tree__qyi1722927563742988856__get [#"red_black_tree.rs" 890 4
   let%span sord'11 = "../../creusot-contracts/src/logic/ord.rs" 95 14 95 59
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
-  let%span scmp = "../../creusot-contracts/src/std/cmp.rs" 72 16 72 17
-  let%span scmp'0 = "../../creusot-contracts/src/std/cmp.rs" 73 30 73 33
-  let%span scmp'1 = "../../creusot-contracts/src/std/cmp.rs" 72 26 72 85
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 54 8 54 22
   
@@ -10590,6 +10605,9 @@ module M_red_black_tree__qyi1722927563742988856__get [#"red_black_tree.rs" 890 4
     | bad -> {forall field_0 : t_Node [C_Some field_0 : t_Option] . C_Some field_0 <> input} (! {false} any) ]
   
   
+  type tuple  =
+    { _p0: t_K; _p1: t_K }
+  
   predicate invariant''1 (self : t_K) =
     [%#sinvariant] inv self
   
@@ -10597,11 +10615,20 @@ module M_red_black_tree__qyi1722927563742988856__get [#"red_black_tree.rs" 890 4
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_K [inv'6 x] . inv'6 x = invariant''1 x
   
-  let rec cmp (self_:t_K) (rhs:t_K) (return'  (x:t_Ordering))= {[@expl:cmp 'self_' type invariant] [%#scmp] inv'6 self_}
-    {[@expl:cmp 'rhs' type invariant] [%#scmp'0] inv'6 rhs}
+  predicate precondition (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = rhs} = args in inv'6 rhs
+  /\ inv'6 self_)  -> precondition () args
+  
+  predicate postcondition_once (self : ()) (args : tuple) (result : t_Ordering)
+  
+  axiom postcondition_fndef : forall args : tuple, res : t_Ordering [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = rhs} = args in res = cmp_log (deep_model self_) (deep_model rhs))
+  
+  let rec cmp (self_:t_K) (rhs:t_K) (return'  (x:t_Ordering))= {[@expl:cmp requires] precondition () { _p0 = self_;
+                                                                                                       _p1 = rhs }}
     any
-    [ return''0 (result:t_Ordering)-> {[%#scmp'1] result = cmp_log (deep_model self_) (deep_model rhs)}
-      (! return' {result}) ]
+    [ return''0 (result:t_Ordering)-> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ]
   
   
   type t_Option'1  =
@@ -10806,9 +10833,6 @@ module M_red_black_tree__qyi1722927563742988856__get_mut [#"red_black_tree.rs" 9
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
-  let%span scmp = "../../creusot-contracts/src/std/cmp.rs" 72 16 72 17
-  let%span scmp'0 = "../../creusot-contracts/src/std/cmp.rs" 73 30 73 33
-  let%span scmp'1 = "../../creusot-contracts/src/std/cmp.rs" 72 26 72 85
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 72 8 72 22
   
@@ -11058,6 +11082,9 @@ module M_red_black_tree__qyi1722927563742988856__get_mut [#"red_black_tree.rs" 9
     | bad -> {forall field_0 : t_Node [C_Some field_0 : t_Option] . C_Some field_0 <> input} (! {false} any) ]
   
   
+  type tuple  =
+    { _p0: t_K; _p1: t_K }
+  
   predicate invariant''1 (self : t_K) =
     [%#sinvariant'0] inv self
   
@@ -11065,11 +11092,20 @@ module M_red_black_tree__qyi1722927563742988856__get_mut [#"red_black_tree.rs" 9
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_K [inv'6 x] . inv'6 x = invariant''1 x
   
-  let rec cmp (self_:t_K) (rhs:t_K) (return'  (x:t_Ordering))= {[@expl:cmp 'self_' type invariant] [%#scmp] inv'6 self_}
-    {[@expl:cmp 'rhs' type invariant] [%#scmp'0] inv'6 rhs}
+  predicate precondition (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self_ ; _p1 = rhs} = args in inv'6 rhs
+  /\ inv'6 self_)  -> precondition () args
+  
+  predicate postcondition_once (self : ()) (args : tuple) (result : t_Ordering)
+  
+  axiom postcondition_fndef : forall args : tuple, res : t_Ordering [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = rhs} = args in res = cmp_log (deep_model self_) (deep_model rhs))
+  
+  let rec cmp (self_:t_K) (rhs:t_K) (return'  (x:t_Ordering))= {[@expl:cmp requires] precondition () { _p0 = self_;
+                                                                                                       _p1 = rhs }}
     any
-    [ return''0 (result:t_Ordering)-> {[%#scmp'1] result = cmp_log (deep_model self_) (deep_model rhs)}
-      (! return' {result}) ]
+    [ return''0 (result:t_Ordering)-> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ]
   
   
   predicate resolve (self : MutBorrow.t t_Tree) =

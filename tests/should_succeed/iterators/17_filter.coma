@@ -242,13 +242,10 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 86 4 86 41] (*
   let%span s17_filter'10 = "17_filter.rs" 44 12 46 43
   let%span s17_filter'11 = "17_filter.rs" 66 12 78 17
   let%span s17_filter'12 = "17_filter.rs" 26 12 32 122
-  let%span scommon = "common.rs" 27 17 27 21
-  let%span scommon'0 = "common.rs" 27 26 27 44
-  let%span scommon'1 = "common.rs" 23 14 26 5
-  let%span scommon'2 = "common.rs" 14 14 14 45
-  let%span scommon'3 = "common.rs" 18 15 18 32
-  let%span scommon'4 = "common.rs" 19 15 19 32
-  let%span scommon'5 = "common.rs" 20 14 20 42
+  let%span scommon = "common.rs" 14 14 14 45
+  let%span scommon'0 = "common.rs" 18 15 18 32
+  let%span scommon'1 = "common.rs" 19 15 19 32
+  let%span scommon'2 = "common.rs" 20 14 20 42
   let%span sops = "../../../creusot-contracts/src/std/ops.rs" 177 16 177 17
   let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 179 39 179 42
   let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 177 27 177 52
@@ -280,12 +277,12 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 86 4 86 41] (*
   function produces_trans [#"common.rs" 21 4 21 91] (a : t_I) (ab : Seq.seq t_Item) (b : t_I) (bc : Seq.seq t_Item) (c : t_I) : ()
   
   
-  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_Item, b : t_I, bc : Seq.seq t_Item, c : t_I . ([%#scommon'3] produces a ab b)
-   -> ([%#scommon'4] produces b bc c)  -> ([%#scommon'5] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_Item, b : t_I, bc : Seq.seq t_Item, c : t_I . ([%#scommon'0] produces a ab b)
+   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self : t_I) : ()
   
-  axiom produces_refl_spec : forall self : t_I . [%#scommon'2] produces self (Seq.empty : Seq.seq t_Item) self
+  axiom produces_refl_spec : forall self : t_I . [%#scommon] produces self (Seq.empty : Seq.seq t_Item) self
   
   type t_F
   
@@ -360,6 +357,13 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 86 4 86 41] (*
   
   axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_I [inv'3 x] . inv'3 x = invariant''1 x
   
+  predicate precondition'0 (self : ()) (args : MutBorrow.t t_I)
+  
+  axiom precondition_fndef : forall args : MutBorrow.t t_I [precondition'0 () args] . (let self = args in inv'3 self)
+   -> precondition'0 () args
+  
+  predicate completed [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_I)
+  
   predicate inv'4 (_0 : t_Item)
   
   predicate inv'5 (_0 : t_Option)
@@ -370,17 +374,17 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 86 4 86 41] (*
     | C_Some a_0 -> inv'4 a_0
     end
   
-  predicate completed [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_I)
+  predicate postcondition_once'0 (self : ()) (args : MutBorrow.t t_I) (result : t_Option)
   
-  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#scommon] inv'3 self}
-    any
-    [ return''0 (result:t_Option)-> {[%#scommon'0] inv'5 result}
-      {[%#scommon'1] match result with
-        | C_None -> completed self
-        | C_Some v -> produces self.current (Seq.singleton v) self.final
-        end}
-      (! return' {result}) ]
+  axiom postcondition_fndef : forall args : MutBorrow.t t_I, res : t_Option [postcondition_once'0 () args res] . postcondition_once'0 () args res
+   -> (let self = args in match res with
+    | C_None -> completed self
+    | C_Some v -> produces self.current (Seq.singleton v) self.final
+    end
+  /\ inv'5 res)
   
+  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition'0 () self}
+    any [ return''0 (result:t_Option)-> {postcondition_once'0 () self result} (! return' {result}) ] 
   
   let rec v_Some (input:t_Option) (ret  (field_0:t_Item))= any
     [ good (field_0:t_Item)-> {C_Some field_0 = input} (! ret {field_0})

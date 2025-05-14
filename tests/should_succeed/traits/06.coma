@@ -2,8 +2,6 @@ module M_06__test [#"06.rs" 9 0 11 15]
   let%span s06 = "06.rs" 13 9 13 10
   let%span s06'0 = "06.rs" 9 19 9 20
   let%span s06'1 = "06.rs" 9 29 9 35
-  let%span s06'2 = "06.rs" 6 11 6 15
-  let%span s06'3 = "06.rs" 6 31 6 40
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
   
   use creusot.int.UInt64
@@ -12,6 +10,9 @@ module M_06__test [#"06.rs" 9 0 11 15]
   type t_Tgt
   
   type t_T
+  
+  type tuple  =
+    { _p0: t_T; _p1: UInt64.t }
   
   predicate inv (_0 : t_T)
   
@@ -22,10 +23,21 @@ module M_06__test [#"06.rs" 9 0 11 15]
   
   axiom inv_axiom [@rewrite] : forall x : t_T [inv'0 x] . inv'0 x = invariant' x
   
+  predicate precondition (self : ()) (args : tuple)
+  
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self ; _p1 = ix} = args in inv'0 self)
+   -> precondition () args
+  
   predicate inv'1 (_0 : t_Tgt)
   
-  let rec ix (self:t_T) (ix'0:UInt64.t) (return'  (x:t_Tgt))= {[@expl:ix 'self' type invariant] [%#s06'2] inv'0 self}
-    any [ return''0 (result:t_Tgt)-> {[%#s06'3] inv'1 result} (! return' {result}) ] 
+  predicate postcondition_once (self : ()) (args : tuple) (result : t_Tgt)
+  
+  axiom postcondition_fndef : forall args : tuple, res : t_Tgt [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self ; _p1 = ix} = args in inv'1 res)
+  
+  let rec ix (self:t_T) (ix'0:UInt64.t) (return'  (x:t_Tgt))= {[@expl:ix requires] precondition () { _p0 = self;
+                                                                                                     _p1 = ix'0 }}
+    any [ return''0 (result:t_Tgt)-> {postcondition_once () { _p0 = self; _p1 = ix'0 } result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   

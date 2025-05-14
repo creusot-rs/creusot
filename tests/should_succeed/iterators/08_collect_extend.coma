@@ -12,14 +12,12 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
   let%span siter = "../../../creusot-contracts/src/std/iter.rs" 206 16 206 17
   let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 206 27 206 47
   let%span siter'1 = "../../../creusot-contracts/src/std/iter.rs" 207 26 207 53
-  let%span siter'2 = "../../../creusot-contracts/src/std/iter.rs" 122 16 122 17
-  let%span siter'3 = "../../../creusot-contracts/src/std/iter.rs" 122 26 125 17
-  let%span siter'4 = "../../../creusot-contracts/src/std/iter.rs" 86 20 86 24
-  let%span siter'5 = "../../../creusot-contracts/src/std/iter.rs" 92 8 92 19
-  let%span siter'6 = "../../../creusot-contracts/src/std/iter.rs" 42 14 42 45
-  let%span siter'7 = "../../../creusot-contracts/src/std/iter.rs" 46 15 46 32
-  let%span siter'8 = "../../../creusot-contracts/src/std/iter.rs" 47 15 47 32
-  let%span siter'9 = "../../../creusot-contracts/src/std/iter.rs" 48 14 48 42
+  let%span siter'2 = "../../../creusot-contracts/src/std/iter.rs" 86 20 86 24
+  let%span siter'3 = "../../../creusot-contracts/src/std/iter.rs" 92 8 92 19
+  let%span siter'4 = "../../../creusot-contracts/src/std/iter.rs" 42 14 42 45
+  let%span siter'5 = "../../../creusot-contracts/src/std/iter.rs" 46 15 46 32
+  let%span siter'6 = "../../../creusot-contracts/src/std/iter.rs" 47 15 47 32
+  let%span siter'7 = "../../../creusot-contracts/src/std/iter.rs" 48 14 48 42
   let%span smodel = "../../../creusot-contracts/src/model.rs" 72 8 72 22
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 54 8 54 22
   let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 50 20 50 39
@@ -45,10 +43,10 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
   predicate inv (_0 : t_I)
   
   predicate into_iter_pre (self : t_I) =
-    [%#siter'4] true
+    [%#siter'2] true
   
   predicate into_iter_post (self : t_I) (res : t_I) =
-    [%#siter'5] self = res
+    [%#siter'3] self = res
   
   let rec into_iter (self_:t_I) (return'  (x:t_I))= {[@expl:into_iter 'self_' type invariant] [%#siter] inv self_}
     {[@expl:into_iter requires] [%#siter'0] into_iter_pre self_}
@@ -123,12 +121,12 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
   
   function produces_trans (a : t_I) (ab : Seq.seq t_T) (b : t_I) (bc : Seq.seq t_T) (c : t_I) : ()
   
-  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_T, b : t_I, bc : Seq.seq t_T, c : t_I . ([%#siter'7] produces a ab b)
-   -> ([%#siter'8] produces b bc c)  -> ([%#siter'9] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_T, b : t_I, bc : Seq.seq t_T, c : t_I . ([%#siter'5] produces a ab b)
+   -> ([%#siter'6] produces b bc c)  -> ([%#siter'7] produces a (Seq.(++) ab bc) c)
   
   function produces_refl (self : t_I) : ()
   
-  axiom produces_refl_spec : forall self : t_I . [%#siter'6] produces self (Seq.empty : Seq.seq t_T) self
+  axiom produces_refl_spec : forall self : t_I . [%#siter'4] produces self (Seq.empty : Seq.seq t_T) self
   
   type t_Option  =
     | C_None
@@ -141,6 +139,13 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
   
   axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t t_I [inv'5 x] . inv'5 x = invariant''3 x
   
+  predicate precondition (self : ()) (args : MutBorrow.t t_I)
+  
+  axiom precondition_fndef : forall args : MutBorrow.t t_I [precondition () args] . (let self_ = args in inv'5 self_)
+   -> precondition () args
+  
+  predicate completed (self : MutBorrow.t t_I)
+  
   predicate inv'6 (_0 : t_Option)
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_Option [inv'6 x] . inv'6 x
@@ -149,17 +154,17 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
     | C_Some a_0 -> inv'0 a_0
     end
   
-  predicate completed (self : MutBorrow.t t_I)
+  predicate postcondition_once (self : ()) (args : MutBorrow.t t_I) (result : t_Option)
   
-  let rec next (self_:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next 'self_' type invariant] [%#siter'2] inv'5 self_}
-    any
-    [ return''0 (result:t_Option)-> {inv'6 result}
-      {[%#siter'3] match result with
-        | C_None -> completed self_
-        | C_Some v -> produces self_.current (Seq.singleton v) self_.final
-        end}
-      (! return' {result}) ]
+  axiom postcondition_fndef : forall args : MutBorrow.t t_I, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+   -> (let self_ = args in match res with
+    | C_None -> completed self_
+    | C_Some v -> produces self_.current (Seq.singleton v) self_.final
+    end
+  /\ inv'6 res)
   
+  let rec next (self_:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self_}
+    any [ return''0 (result:t_Option)-> {postcondition_once () self_ result} (! return' {result}) ] 
   
   predicate resolve (self : MutBorrow.t t_I) =
     [%#sresolve] self.final = self.current
@@ -295,14 +300,12 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
   let%span siter = "../../../creusot-contracts/src/std/iter.rs" 206 16 206 17
   let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 206 27 206 47
   let%span siter'1 = "../../../creusot-contracts/src/std/iter.rs" 207 26 207 53
-  let%span siter'2 = "../../../creusot-contracts/src/std/iter.rs" 122 16 122 17
-  let%span siter'3 = "../../../creusot-contracts/src/std/iter.rs" 122 26 125 17
-  let%span siter'4 = "../../../creusot-contracts/src/std/iter.rs" 86 20 86 24
-  let%span siter'5 = "../../../creusot-contracts/src/std/iter.rs" 92 8 92 19
-  let%span siter'6 = "../../../creusot-contracts/src/std/iter.rs" 42 14 42 45
-  let%span siter'7 = "../../../creusot-contracts/src/std/iter.rs" 46 15 46 32
-  let%span siter'8 = "../../../creusot-contracts/src/std/iter.rs" 47 15 47 32
-  let%span siter'9 = "../../../creusot-contracts/src/std/iter.rs" 48 14 48 42
+  let%span siter'2 = "../../../creusot-contracts/src/std/iter.rs" 86 20 86 24
+  let%span siter'3 = "../../../creusot-contracts/src/std/iter.rs" 92 8 92 19
+  let%span siter'4 = "../../../creusot-contracts/src/std/iter.rs" 42 14 42 45
+  let%span siter'5 = "../../../creusot-contracts/src/std/iter.rs" 46 15 46 32
+  let%span siter'6 = "../../../creusot-contracts/src/std/iter.rs" 47 15 47 32
+  let%span siter'7 = "../../../creusot-contracts/src/std/iter.rs" 48 14 48 42
   let%span smodel = "../../../creusot-contracts/src/model.rs" 72 8 72 22
   let%span svec = "../../../creusot-contracts/src/std/vec.rs" 80 26 80 44
   let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 21 14 21 41
@@ -380,10 +383,10 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
   predicate inv'3 (_0 : t_I)
   
   predicate into_iter_pre (self : t_I) =
-    [%#siter'4] true
+    [%#siter'2] true
   
   predicate into_iter_post (self : t_I) (res : t_I) =
-    [%#siter'5] self = res
+    [%#siter'3] self = res
   
   let rec into_iter (self_:t_I) (return'  (x:t_I))= {[@expl:into_iter 'self_' type invariant] [%#siter] inv'3 self_}
     {[@expl:into_iter requires] [%#siter'0] into_iter_pre self_}
@@ -393,12 +396,12 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
   
   function produces_trans (a : t_I) (ab : Seq.seq t_Item) (b : t_I) (bc : Seq.seq t_Item) (c : t_I) : ()
   
-  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_Item, b : t_I, bc : Seq.seq t_Item, c : t_I . ([%#siter'7] produces a ab b)
-   -> ([%#siter'8] produces b bc c)  -> ([%#siter'9] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_Item, b : t_I, bc : Seq.seq t_Item, c : t_I . ([%#siter'5] produces a ab b)
+   -> ([%#siter'6] produces b bc c)  -> ([%#siter'7] produces a (Seq.(++) ab bc) c)
   
   function produces_refl (self : t_I) : ()
   
-  axiom produces_refl_spec : forall self : t_I . [%#siter'6] produces self (Seq.empty : Seq.seq t_Item) self
+  axiom produces_refl_spec : forall self : t_I . [%#siter'4] produces self (Seq.empty : Seq.seq t_Item) self
   
   type t_Option  =
     | C_None
@@ -411,6 +414,13 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
   
   axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_I [inv'4 x] . inv'4 x = invariant''2 x
   
+  predicate precondition (self : ()) (args : MutBorrow.t t_I)
+  
+  axiom precondition_fndef : forall args : MutBorrow.t t_I [precondition () args] . (let self_ = args in inv'4 self_)
+   -> precondition () args
+  
+  predicate completed (self : MutBorrow.t t_I)
+  
   predicate inv'5 (_0 : t_Option)
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_Option [inv'5 x] . inv'5 x
@@ -419,17 +429,17 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
     | C_Some a_0 -> inv a_0
     end
   
-  predicate completed (self : MutBorrow.t t_I)
+  predicate postcondition_once (self : ()) (args : MutBorrow.t t_I) (result : t_Option)
   
-  let rec next (self_:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next 'self_' type invariant] [%#siter'2] inv'4 self_}
-    any
-    [ return''0 (result:t_Option)-> {inv'5 result}
-      {[%#siter'3] match result with
-        | C_None -> completed self_
-        | C_Some v -> produces self_.current (Seq.singleton v) self_.final
-        end}
-      (! return' {result}) ]
+  axiom postcondition_fndef : forall args : MutBorrow.t t_I, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+   -> (let self_ = args in match res with
+    | C_None -> completed self_
+    | C_Some v -> produces self_.current (Seq.singleton v) self_.final
+    end
+  /\ inv'5 res)
   
+  let rec next (self_:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self_}
+    any [ return''0 (result:t_Option)-> {postcondition_once () self_ result} (! return' {result}) ] 
   
   predicate resolve (self : MutBorrow.t t_I) =
     [%#sresolve] self.final = self.current
