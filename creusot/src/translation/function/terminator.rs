@@ -1,5 +1,6 @@
 use super::BodyTranslator;
 use crate::{
+    analysis::NotFinalPlaces,
     contracts_items::{is_box_new, is_snap_from_fn},
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
@@ -23,6 +24,7 @@ use rustc_middle::{
     ty::{self, AssocItem, GenericArgKind, GenericArgsRef, Ty, TyKind, TypingEnv, TypingMode},
 };
 use rustc_mir_dataflow::{
+    ResultsCursor,
     move_paths::{HasMoveData, LookupResult},
     on_all_children_bits,
 };
@@ -37,14 +39,19 @@ use std::collections::{HashMap, HashSet};
 // patterns in match expressions.
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
-    pub fn translate_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: Location) {
+    pub fn translate_terminator(
+        &mut self,
+        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
+        terminator: &mir::Terminator<'tcx>,
+        location: Location,
+    ) {
+        let span = terminator.source_info.span;
+        self.activate_two_phase(not_final_borrows, location, span);
         let mut resolved_during = self
             .resolver
             .as_mut()
             .map(|r| r.resolved_places_during(ExtendedLocation::End(location)));
         let term;
-
-        let span = terminator.source_info.span;
         match &terminator.kind {
             Goto { target } => term = mk_goto(*target),
             SwitchInt { discr, targets, .. } => {
