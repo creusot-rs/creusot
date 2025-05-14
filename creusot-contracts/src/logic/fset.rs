@@ -446,6 +446,26 @@ impl<T: ?Sized> FSet<T> {
         let _ = value;
         panic!()
     }
+
+    /// Clears the set, removing all values.
+    ///
+    /// # Example
+    /// ```rust,creusot
+    /// use creusot_contracts::{ghost, proof_assert, logic::FSet};
+    ///
+    /// let mut s = FSet::new();
+    /// ghost! {
+    ///     s.insert_ghost(1);
+    ///     s.insert_ghost(2);
+    ///     s.insert_ghost(3);
+    ///     s.clear_ghost();
+    ///     proof_assert!(s == FSet::EMPTY);
+    /// };
+    /// ```
+    #[trusted]
+    #[pure]
+    #[ensures(^self == Self::EMPTY)]
+    pub fn clear_ghost(&mut self) {}
 }
 
 impl<T: Clone + Copy> Clone for FSet<T> {
