@@ -202,6 +202,9 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
       | s3 = bb5 ]
     
     | bb5 = s0
+      [ s0 =  [ &_17 <- own2 ] s1 | s1 = deref {_17} (fun (_ret:t_PtrOwn) ->  [ &_15 <- _ret ] s2) | s2 = bb6 ]
+    
+    | bb6 = s0
       [ s0 = {inv _11.current}
         MutBorrow.borrow_final <t_PtrOwn> {_11.current} {MutBorrow.get_id _11}
           (fun (_ret:MutBorrow.t t_PtrOwn) ->
@@ -209,11 +212,9 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
             -{inv _ret.final}-
              [ &_11 <- { _11 with current = _ret.final } ] 
             s1)
-      | s1 =  [ &_17 <- own2 ] s2
-      | s2 = deref {_17} (fun (_ret:t_PtrOwn) ->  [ &_15 <- _ret ] s3)
-      | s3 = bb6 ]
+      | s1 = disjoint_lemma {_10} {_15} (fun (_ret:()) ->  [ &_9 <- _ret ] s2)
+      | s2 = bb7 ]
     
-    | bb6 = s0 [ s0 = disjoint_lemma {_10} {_15} (fun (_ret:()) ->  [ &_9 <- _ret ] s1) | s1 = bb7 ] 
     | bb7 = s0
       [ s0 = {[@expl:type invariant] inv'2 _13} s1
       | s1 = -{resolve'0 _13}- s2
