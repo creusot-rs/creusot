@@ -102,3 +102,13 @@ impl View for String {
         dead
     }
 }
+
+impl DeepModel for std::cmp::Ordering {
+    type DeepModelTy = std::cmp::Ordering;
+
+    #[logic]
+    #[open]
+    fn deep_model(self) -> Self::DeepModelTy {
+        self
+    }
+}
