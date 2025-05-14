@@ -228,7 +228,7 @@ impl<T> Ghost<T> {
     ///
     /// You should prefer the dereference operator `*` instead.
     #[logic]
-    #[open(self)]
+    #[open]
     #[rustc_diagnostic_item = "ghost_inner_logic"]
     pub fn inner_logic(self) -> T {
         self.0
