@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{ptr_own::{PtrOwn, RawPtr}, *};
 pub use ::std::ptr::*;
 
 /// We conservatively model raw pointers as having an address *plus some hidden
@@ -81,6 +81,64 @@ impl<T: ?Sized> PointerExt<T> for *mut T {
     }
 }
 
+pub trait SizedPointerExt<T> {
+    /// Logic version of `add` for pointers.
+    #[logic]
+    fn add_logic(self, offset: usize) -> RawPtr<T>;
+
+    /// Restriction of `add` that requires evidence that the addition is safe. See contracts in implementations below.
+    /// All addresses between `self` and `self.add(offset)` must be valid within the same allocated object.
+    ///
+    /// From https://doc.rust-lang.org/std/primitive.pointer.html#method.add:
+    ///
+    /// > If any of the following conditions are violated, the result is Undefined Behavior:
+    /// > - The offset in bytes, `count * size_of::<T>()`, computed on mathematical
+    /// >   integers (without “wrapping around”), must fit in an `isize`.
+    /// > - If the computed offset is non-zero, then `self` must be derived from a
+    /// >   pointer to some allocated object, and the entire memory range between
+    /// >   `self` and the result must be in bounds of that allocated object.
+    /// >   In particular, this range must not “wrap around” the edge of the address space.
+    ///
+    /// The current encoding of the second condition is a big hack (TODO: is it sound or can it be made so?).
+    /// We only check that  `self.add_logic(offset) == own_offset.ptr()`, because it turns out that
+    /// this can only ever be proved for pointers that are derived from a pointer to some allocated object.
+    unsafe fn add_own(self, offset: usize, own_offset: Ghost<&PtrOwn<T>>) -> Self;
+}
+
+impl<T> SizedPointerExt<T> for *const T {
+    #[trusted]
+    #[logic]
+    #[open(self)]
+    fn add_logic(self, offset: usize) -> RawPtr<T> {
+        dead
+    }
+
+    // TODO: The offset in bytes, `count * size_of::<T>()`, must fit in an `isize`.
+    #[trusted]
+    #[requires(self.add_logic(offset) == own_offset.ptr())]
+    #[ensures(result == self.add_logic(offset))]
+    unsafe fn add_own(self, offset: usize, own_offset: Ghost<&PtrOwn<T>>) -> Self {
+        self.add(offset)
+    }
+}
+
+impl<T> SizedPointerExt<T> for *mut T {
+    #[trusted]
+    #[logic]
+    #[open(self)]
+    fn add_logic(self, offset: usize) -> RawPtr<T> {
+        dead
+    }
+
+    // TODO: The offset in bytes, `count * size_of::<T>()`, must fit in an `isize`.
+    #[trusted]
+    #[requires(self.add_logic(offset) == own_offset.ptr())]
+    // #[ensures(result as RawPtr<T> == self.add_logic(offset))]
+    unsafe fn add_own(self, offset: usize, own_offset: Ghost<&PtrOwn<T>>) -> Self {
+        self.add(offset)
+    }
+}
+
 extern_spec! {
     impl<T> *const T {
         #[ensures(result == self.addr_logic())]
@@ -116,4 +174,16 @@ extern_spec! {
                 T: ?Sized, U: ?Sized;
         }
     }
+}
+
+/// Restriction of ptr::swap to pointers to non-overlapping values; this is guaranteed by the mutable borrows of `PtrOwn`.
+/// Specifying `ptr::swap` so that it allows overlapping values is future work.
+#[allow(unused_variables)]
+#[trusted]
+#[requires(a == own_a.ptr() && b == own_b.ptr())]
+#[ensures((^own_a.inner_logic()).ptr() == own_a.ptr() && (^own_a.inner_logic()).val() == own_b.val())]
+#[ensures((^own_b.inner_logic()).ptr() == own_b.ptr() && (^own_b.inner_logic()).val() == own_a.val())]
+pub unsafe fn swap_disjoint<T>(a: RawPtr<T>, b: RawPtr<T>, own_a: Ghost<&mut PtrOwn<T>>, own_b: Ghost<&mut PtrOwn<T>>) {
+    // SAFETY: `a` and `b` are disjoint pointers, so this is safe.
+    unsafe { ::std::ptr::swap(a.cast_mut(), b.cast_mut()) }
 }
