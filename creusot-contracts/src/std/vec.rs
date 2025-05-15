@@ -277,9 +277,6 @@ mod impls {
     }
     impl<T> Resolve for Vec<T> {}
     impl<T> Invariant for Vec<T> {}
-    impl<T> IntoIterator for Vec<T> {}
-    impl<T> IntoIterator for &Vec<T> {}
-    impl<T> IntoIterator for &mut Vec<T> {}
     impl<T> View for std::vec::IntoIter<T> {
         type ViewTy = Seq<T>;
     }
