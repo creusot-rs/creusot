@@ -13,7 +13,7 @@ use crate::{
     },
     contracts_items::get_snap_ty,
     ctx::TranslationCtx,
-    pearlite::{Ident, Term, mk_projection},
+    pearlite::{Ident, Term},
     translation::fmir,
 };
 use petgraph::Direction;
@@ -114,9 +114,7 @@ fn place_to_term<'tcx>(
                     t = t.cur();
                 }
             }
-            ProjectionElem::Field(ix, _) => {
-                t = Term { kind: mk_projection(t, *ix), ty: res_ty.ty, span: DUMMY_SP };
-            }
+            ProjectionElem::Field(ix, _) => t = t.proj(*ix, res_ty.ty),
             ProjectionElem::Index(_) => return None,
             ProjectionElem::ConstantIndex { .. } => return None,
             ProjectionElem::Subslice { .. } => return None,

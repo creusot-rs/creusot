@@ -25,7 +25,6 @@ module M_impl_trait__main [#"impl_trait.rs" 21 0 21 13]
   let%span simpl_trait = "impl_trait.rs" 24 18 24 19
   let%span simpl_trait'0 = "impl_trait.rs" 20 10 20 14
   let%span simpl_trait'1 = "impl_trait.rs" 16 29 16 41
-  let%span simpl_trait'2 = "impl_trait.rs" 6 10 6 14
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   
   use creusot.prelude.Any
@@ -45,8 +44,18 @@ module M_impl_trait__main [#"impl_trait.rs" 21 0 21 13]
   
   axiom inv_axiom [@rewrite] : forall x : opaque0 [inv'0 x] . inv'0 x = invariant' x
   
-  let rec a (self:opaque0) (return'  (x:bool))= {[@expl:a 'self' type invariant] [%#simpl_trait'2] inv'0 self}
-    any [ return''0 (result:bool)-> (! return' {result}) ] 
+  predicate precondition (self : ()) (args : opaque0)
+  
+  axiom precondition_fndef : forall args : opaque0 [precondition () args] . (let self = args in inv'0 self)
+   -> precondition () args
+  
+  predicate postcondition_once (self : ()) (args : opaque0) (result : bool)
+  
+  axiom postcondition_fndef : forall args : opaque0, res : bool [postcondition_once () args res] . postcondition_once () args res
+   -> (let self = args in true)
+  
+  let rec a (self:opaque0) (return'  (x:bool))= {[@expl:a requires] precondition () self}
+    any [ return''0 (result:bool)-> {postcondition_once () self result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   

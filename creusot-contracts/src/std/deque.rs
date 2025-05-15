@@ -124,33 +124,23 @@ extern_spec! {
                 #[ensures((^self)@ == self@.push_back(value))]
                 fn push_back(&mut self, value: T);
             }
-
-            impl<T, A: Allocator> Index<usize> for VecDeque<T> {
-                #[ensures(*result == self@[i@])]
-                fn index(&self, i: usize) -> &T;
-            }
-
-            impl<T, A: Allocator> IndexMut<usize> for VecDeque<T> {
-                #[ensures(*result == (*self)@[i@])]
-                #[ensures(^result == (^self)@[i@])]
-                fn index_mut(&mut self, i: usize) -> &mut T;
-            }
         }
     }
-}
 
-#[cfg(feature = "nightly")]
-impl<T, A: Allocator> IntoIterator for &VecDeque<T, A> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
+    impl<T, A: Allocator> Index<usize> for VecDeque<T, A> {
+        #[ensures(*result == self@[i@])]
+        fn index(&self, i: usize) -> &T;
     }
 
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self@ == res@@ }
+    impl<T, A: Allocator> IndexMut<usize> for VecDeque<T, A> {
+        #[ensures(*result == (*self)@[i@])]
+        #[ensures(^result == (^self)@[i@])]
+        fn index_mut(&mut self, i: usize) -> &mut T;
+    }
+
+    impl<'a, T, A: Allocator> IntoIterator for &'a VecDeque<T, A> {
+        #[ensures(self@ == result@@)]
+        fn into_iter(self) -> Iter<'a, T>;
     }
 }
 
@@ -208,5 +198,4 @@ mod impls {
     impl<T> IndexLogic<usize> for VecDeque<T> {
         type Item = T;
     }
-    impl<T> IntoIterator for &VecDeque<T> {}
 }

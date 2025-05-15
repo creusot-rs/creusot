@@ -102,7 +102,7 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
   let%span sresult'99 = "../../../creusot-contracts/src/std/result.rs" 74 26 74 68
   let%span sresult'100 = "../../../creusot-contracts/src/std/result.rs" 75 26 75 77
   let%span sresult'101 = "../../../creusot-contracts/src/std/result.rs" 79 26 79 68
-  let%span sresult'102 = "../../../creusot-contracts/src/std/result.rs" 80 26 80 79
+  let%span sresult'102 = "../../../creusot-contracts/src/std/result.rs" 80 26 80 96
   let%span sresult'103 = "../../../creusot-contracts/src/std/result.rs" 86 26 86 72
   let%span sresult'104 = "../../../creusot-contracts/src/std/result.rs" 87 26 87 74
   let%span sresult'105 = "../../../creusot-contracts/src/std/result.rs" 91 26 91 72
@@ -122,7 +122,17 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
   let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 137 26 137 46
   let%span soption'1 = "../../../creusot-contracts/src/std/option.rs" 65 26 65 51
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
-  let%span snum = "../../../creusot-contracts/src/std/num.rs" 33 28 33 41
+  let%span snum = "../../../creusot-contracts/src/std/num.rs" 30 26 30 41
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
@@ -221,12 +231,61 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
       (! return' {result}) ]
   
   
-  predicate is_default (self : Int32.t) =
-    [%#snum] self = (0 : Int32.t)
+  predicate postcondition_once (self : ()) (args : ()) (result : Int32.t) =
+    let () = args in result = (0 : Int32.t)
+  
+  predicate resolve'1 (_0 : ()) =
+    true
+  
+  predicate postcondition_mut (self : ()) (args : ()) (result_state : ()) (result : Int32.t) =
+    let () = args in result = (0 : Int32.t)
+  
+  function fn_mut_once (self : ()) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec : forall self : (), args : (), res : Int32.t . [%#sops'8] postcondition_once self args res
+  = (exists res_state : () . postcondition_mut self args res_state res /\ resolve'1 res_state)
+  
+  predicate hist_inv (self : ()) (result_state : ()) =
+    true
+  
+  function hist_inv_trans (self : ()) (b : ()) (c : ()) : ()
+  
+  axiom hist_inv_trans_spec : forall self : (), b : (), c : () . ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self : ()) : ()
+  
+  axiom hist_inv_refl_spec : forall self : () . [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : ()) (args : ()) (res_state : ()) (res : Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : (), args : (), res_state : (), res : Int32.t . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self : ()) (res_state : ()) : ()
+  
+  axiom fn_hist_inv_spec : forall self : (), res_state : () . [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self : ()) (args : ()) (result : Int32.t) =
+    let () = args in result = (0 : Int32.t)
+  
+  function fn_once (self : ()) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_once_spec : forall self : (), args : (), res : Int32.t . [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve'1 self)
+  
+  function fn_mut (self : ()) (args : ()) (res_state : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_spec : forall self : (), args : (), res_state : (), res : Int32.t . [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  let rec default (return'  (x:Int32.t))= any
+    [ return''0 (result:Int32.t)-> {[%#snum] result = (0 : Int32.t)} (! return' {result}) ]
+  
   
   let rec unwrap_or_default (self_:t_Result) (return'  (x:Int32.t))= any
     [ return''0 (result:Int32.t)-> {[%#sresult'101] forall t : Int32.t . self_ = C_Ok t  -> result = t}
-      {[%#sresult'102] (exists e : Int32.t . self_ = C_Err e)  -> is_default result}
+      {[%#sresult'102] (exists e : Int32.t . self_ = C_Err e)  -> postcondition () () result}
       (! return' {result}) ]
   
   

@@ -22,24 +22,24 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
   type t_T
   
   type tuple  =
-    { _0: t_T; _1: t_List }
+    { _p0: t_T; _p1: t_List }
   with t_List  =
     | C_Nil
     | C_Cons tuple
   
-  predicate inv (_0'0 : t_T)
+  predicate inv (_0 : t_T)
   
-  predicate inv'0 (_0'0 : tuple)
+  predicate inv'0 (_0 : tuple)
   
-  predicate inv'1 (_0'0 : t_List)
+  predicate inv'1 (_0 : t_List)
   
   axiom inv_axiom [@rewrite] : forall x : tuple [inv'0 x] . inv'0 x
-  = (let {_0 = x0 ; _1 = x1} = x in inv x0 /\ inv'1 x1)
+  = (let {_p0 = x0 ; _p1 = x1} = x in inv x0 /\ inv'1 x1)
   
   predicate invariant' (self : tuple) =
     [%#sboxed] inv'0 self
   
-  predicate inv'2 (_0'0 : tuple)
+  predicate inv'2 (_0 : tuple)
   
   axiom inv_axiom'0 [@rewrite] : forall x : tuple [inv'2 x] . inv'2 x = invariant' x
   
@@ -52,7 +52,7 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
   predicate invariant''0 (self : MutBorrow.t t_List) =
     [%#sinvariant] inv'1 self.current /\ inv'1 self.final
   
-  predicate inv'3 (_0'0 : MutBorrow.t t_List)
+  predicate inv'3 (_0 : MutBorrow.t t_List)
   
   axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_List [inv'3 x] . inv'3 x = invariant''0 x
   
@@ -68,7 +68,7 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
   function rev_append [#"inplace_list_reversal.rs" 16 0 16 55] (n : t_List) (o : t_List) : t_List =
     [%#sinplace_list_reversal'5] match n with
       | C_Nil -> o
-      | C_Cons {_0 = hd ; _1 = tl} -> rev_append tl (C_Cons { _0 = hd; _1 = o })
+      | C_Cons {_p0 = hd ; _p1 = tl} -> rev_append tl (C_Cons { _p0 = hd; _p1 = o })
       end
   
   let rec v_Cons (input:t_List) (ret  (field_0:tuple))= any
@@ -76,28 +76,28 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
     | bad -> {forall field_0 : tuple [C_Cons field_0 : t_List] . C_Cons field_0 <> input} (! {false} any) ]
   
   
-  predicate resolve (_0'0 : t_T)
+  predicate resolve (_0 : t_T)
   
-  predicate resolve'0 (_0'0 : t_List) =
+  predicate resolve'0 (_0 : t_List) =
     true
   
   predicate resolve'1 (self : tuple) =
-    [%#sresolve'1] resolve self._0 /\ resolve'0 self._1
+    [%#sresolve'1] resolve self._p0 /\ resolve'0 self._p1
   
-  predicate resolve'2 (_0'0 : tuple) =
-    resolve'1 _0'0
+  predicate resolve'2 (_0 : tuple) =
+    resolve'1 _0
   
   predicate resolve'3 (self : tuple) =
     [%#sresolve] resolve'2 self
   
-  predicate resolve'4 (_0'0 : tuple) =
-    resolve'3 _0'0
+  predicate resolve'4 (_0 : tuple) =
+    resolve'3 _0
   
   predicate resolve'5 (self : MutBorrow.t t_List) =
     [%#sresolve'0] self.final = self.current
   
-  predicate resolve'6 (_0'0 : MutBorrow.t t_List) =
-    resolve'5 _0'0
+  predicate resolve'6 (_0 : MutBorrow.t t_List) =
+    resolve'5 _0
   
   meta "compute_max_steps" 1000000
   
@@ -129,9 +129,9 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
         | bb7 = any [ br0 -> {head = C_Nil} (! bb21) | br1 (x0:tuple)-> {head = C_Cons x0} (! bb8) ] 
         | bb8 = bb9
         | bb9 = s0
-          [ s0 = v_Cons {head} (fun (r0:tuple) ->  [ &curr <- r0 ] s1) | s1 =  [ &next <- curr._1 ] s2 | s2 = bb10 ]
+          [ s0 = v_Cons {head} (fun (r0:tuple) ->  [ &curr <- r0 ] s1) | s1 =  [ &next <- curr._p1 ] s2 | s2 = bb10 ]
         
-        | bb10 = s0 [ s0 =  [ &curr <- { curr with _1 = prev } ] s1 | s1 = bb12 ] 
+        | bb10 = s0 [ s0 =  [ &curr <- { curr with _p1 = prev } ] s1 | s1 = bb12 ] 
         | bb12 = s0 [ s0 =  [ &_19 <- C_Cons curr ] s1 | s1 = bb13 ] 
         | bb13 = bb14
         | bb14 = s0 [ s0 =  [ &prev <- _19 ] s1 | s1 = bb16 ] 
@@ -168,9 +168,9 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
     
     | bb25 = bb26
     | bb26 = bb27
-    | bb27 = return''0 {_0'0} ]
+    | bb27 = return''0 {_0} ]
     )
-    [ & _0'0 : () = Any.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & l'0 : MutBorrow.t t_List = l
     | & old_l : MutBorrow.t t_List = Any.any_l ()
     | & prev : t_List = Any.any_l ()

@@ -9,15 +9,16 @@ module M_06_fn_specs__weaken_std [#"06_fn_specs.rs" 8 0 8 62]
   let%span s06_fn_specs'6 = "06_fn_specs.rs" 12 11 12 28
   let%span s06_fn_specs'7 = "06_fn_specs.rs" 14 54 14 63
   let%span s06_fn_specs'8 = "06_fn_specs.rs" 13 10 13 74
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 151 14 151 114
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 156 14 156 101
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 116 15 116 59
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 117 14 117 36
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 122 14 122 31
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 127 15 127 29
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 128 15 128 26
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 129 14 129 28
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 134 14 135 105
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.prelude.Any
   
@@ -43,24 +44,24 @@ module M_06_fn_specs__weaken_std [#"06_fn_specs.rs" 8 0 8 62]
   
   function fn_mut_once (self : t_F) (args : t_A) (res : t_Output) : ()
   
-  axiom fn_mut_once_spec : forall self : t_F, args : t_A, res : t_Output . [%#sops'7] postcondition_once self args res
+  axiom fn_mut_once_spec : forall self : t_F, args : t_A, res : t_Output . [%#sops'8] postcondition_once self args res
   = (exists res_state : t_F . postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate unnest (self : t_F) (_1 : t_F)
+  predicate hist_inv (self : t_F) (result_state : t_F)
   
-  function unnest_trans (self : t_F) (b : t_F) (c : t_F) : ()
+  function hist_inv_trans (self : t_F) (b : t_F) (c : t_F) : ()
   
-  axiom unnest_trans_spec : forall self : t_F, b : t_F, c : t_F . ([%#sops'4] unnest self b)
-   -> ([%#sops'5] unnest b c)  -> ([%#sops'6] unnest self c)
+  axiom hist_inv_trans_spec : forall self : t_F, b : t_F, c : t_F . ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
   
-  function unnest_refl (self : t_F) : ()
+  function hist_inv_refl (self : t_F) : ()
   
-  axiom unnest_refl_spec : forall self : t_F . [%#sops'3] unnest self self
+  axiom hist_inv_refl_spec : forall self : t_F . [%#sops'4] hist_inv self self
   
-  function postcondition_mut_unnest (self : t_F) (args : t_A) (res_state : t_F) (res : t_Output) : ()
+  function postcondition_mut_hist_inv (self : t_F) (args : t_A) (res_state : t_F) (res : t_Output) : ()
   
-  axiom postcondition_mut_unnest_spec : forall self : t_F, args : t_A, res_state : t_F, res : t_Output . ([%#sops'1] postcondition_mut self args res_state res)
-   -> ([%#sops'2] unnest self res_state)
+  axiom postcondition_mut_hist_inv_spec : forall self : t_F, args : t_A, res_state : t_F, res : t_Output . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
   
   let rec weaken_2_std (f:t_F) (a:t_A) (return'  (x:t_Output))= {[@expl:weaken_2_std 'f' type invariant] [%#s06_fn_specs'4] inv f}
     {[@expl:weaken_2_std 'a' type invariant] [%#s06_fn_specs'5] inv'0 a}
@@ -71,17 +72,21 @@ module M_06_fn_specs__weaken_std [#"06_fn_specs.rs" 8 0 8 62]
       (! return' {result}) ]
   
   
+  function fn_hist_inv (self : t_F) (res_state : t_F) : ()
+  
+  axiom fn_hist_inv_spec : forall self : t_F, res_state : t_F . [%#sops'1] hist_inv self res_state = (self = res_state)
+  
   predicate postcondition (self : t_F) (args : t_A) (result : t_Output)
   
   function fn_once (self : t_F) (args : t_A) (res : t_Output) : ()
   
   axiom fn_once_spec : forall self : t_F, args : t_A, res : t_Output . [%#sops'0] postcondition_once self args res
-  = (resolve self /\ postcondition self args res)
+  = (postcondition self args res /\ resolve self)
   
   function fn_mut (self : t_F) (args : t_A) (res_state : t_F) (res : t_Output) : ()
   
   axiom fn_mut_spec : forall self : t_F, args : t_A, res_state : t_F, res : t_Output . [%#sops] postcondition_mut self args res_state res
-  = (self = res_state /\ postcondition self args res)
+  = (postcondition self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
@@ -112,13 +117,13 @@ module M_06_fn_specs__weaken_2_std [#"06_fn_specs.rs" 14 0 14 63]
   let%span s06_fn_specs'6 = "06_fn_specs.rs" 18 11 18 28
   let%span s06_fn_specs'7 = "06_fn_specs.rs" 20 55 20 64
   let%span s06_fn_specs'8 = "06_fn_specs.rs" 19 10 19 41
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 116 15 116 59
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 117 14 117 36
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 122 14 122 31
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 127 15 127 29
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 128 15 128 26
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 129 14 129 28
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 134 14 135 105
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.prelude.Any
   
@@ -156,21 +161,21 @@ module M_06_fn_specs__weaken_2_std [#"06_fn_specs.rs" 14 0 14 63]
   axiom fn_mut_once_spec : forall self : t_F, args : t_A, res : t_Output . [%#sops'5] postcondition_once self args res
   = (exists res_state : t_F . postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate unnest (self : t_F) (_1 : t_F)
+  predicate hist_inv (self : t_F) (result_state : t_F)
   
-  function unnest_trans (self : t_F) (b : t_F) (c : t_F) : ()
+  function hist_inv_trans (self : t_F) (b : t_F) (c : t_F) : ()
   
-  axiom unnest_trans_spec : forall self : t_F, b : t_F, c : t_F . ([%#sops'2] unnest self b)
-   -> ([%#sops'3] unnest b c)  -> ([%#sops'4] unnest self c)
+  axiom hist_inv_trans_spec : forall self : t_F, b : t_F, c : t_F . ([%#sops'2] hist_inv self b)
+   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
   
-  function unnest_refl (self : t_F) : ()
+  function hist_inv_refl (self : t_F) : ()
   
-  axiom unnest_refl_spec : forall self : t_F . [%#sops'1] unnest self self
+  axiom hist_inv_refl_spec : forall self : t_F . [%#sops'1] hist_inv self self
   
-  function postcondition_mut_unnest (self : t_F) (args : t_A) (res_state : t_F) (res : t_Output) : ()
+  function postcondition_mut_hist_inv (self : t_F) (args : t_A) (res_state : t_F) (res : t_Output) : ()
   
-  axiom postcondition_mut_unnest_spec : forall self : t_F, args : t_A, res_state : t_F, res : t_Output . ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] unnest self res_state)
+  axiom postcondition_mut_hist_inv_spec : forall self : t_F, args : t_A, res_state : t_F, res : t_Output . ([%#sops] postcondition_mut self args res_state res)
+   -> ([%#sops'0] hist_inv self res_state)
   
   meta "compute_max_steps" 1000000
   
@@ -196,10 +201,10 @@ module M_06_fn_specs__weaken_3_std [#"06_fn_specs.rs" 20 0 20 64]
   let%span s06_fn_specs'1 = "06_fn_specs.rs" 18 11 18 28
   let%span s06_fn_specs'2 = "06_fn_specs.rs" 20 55 20 64
   let%span s06_fn_specs'3 = "06_fn_specs.rs" 19 10 19 41
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 164 16 164 17
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 166 35 166 38
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 164 27 164 49
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 165 26 165 62
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 171 16 171 17
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 173 35 173 38
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 171 27 171 49
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 172 26 172 62
   
   use creusot.prelude.Any
   
@@ -250,9 +255,9 @@ module M_06_fn_specs__fn_once_user [#"06_fn_specs.rs" 26 0 26 43]
   let%span s06_fn_specs = "06_fn_specs.rs" 27 6 27 7
   let%span s06_fn_specs'0 = "06_fn_specs.rs" 26 38 26 39
   let%span s06_fn_specs'1 = "06_fn_specs.rs" 25 11 25 36
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 164 16 164 17
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 164 27 164 49
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 165 26 165 62
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 171 16 171 17
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 171 27 171 49
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 172 26 172 62
   
   use creusot.int.UInt64
   use creusot.prelude.Any

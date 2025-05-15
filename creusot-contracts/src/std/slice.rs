@@ -58,22 +58,6 @@ pub fn slice_len<T>(x: [T]) -> Int {
     pearlite! { x@.len() }
 }
 
-impl<T> Default for &mut [T] {
-    #[open]
-    #[predicate(prophetic)]
-    fn is_default(self) -> bool {
-        pearlite! { self@ == Seq::EMPTY && (^self)@ == Seq::EMPTY }
-    }
-}
-
-impl<T> Default for &[T] {
-    #[open]
-    #[predicate]
-    fn is_default(self) -> bool {
-        pearlite! { self@ == Seq::EMPTY }
-    }
-}
-
 pub trait SliceExt<T> {
     #[logic]
     fn to_mut_seq(&mut self) -> Seq<&mut T>;
@@ -366,6 +350,27 @@ extern_spec! {
         fn index(&self, ix: I) -> &<[T] as Index<I>>::Output;
     }
 
+    impl<'a, T> IntoIterator for &'a [T] {
+        #[ensures(self == result@)]
+        fn into_iter(self) -> Iter<'a, T>;
+    }
+
+    impl<'a, T> IntoIterator for &'a mut [T] {
+        #[ensures(self == result@)]
+        fn into_iter(self) -> IterMut<'a, T>;
+    }
+
+    impl<'a, T> Default for &'a mut [T] {
+        #[ensures((*result)@ == Seq::EMPTY)]
+        #[ensures((^result)@ == Seq::EMPTY)]
+        fn default() -> &'a mut [T];
+    }
+
+    impl<'a, T> Default for &'a [T] {
+        #[ensures(result@ == Seq::EMPTY)]
+        fn default() -> &'a [T];
+    }
+
     mod std {
         mod slice {
             #[pure]
@@ -380,34 +385,6 @@ extern_spec! {
             #[ensures((^result)@[0] == ^s)]
             fn from_mut<T>(s: &mut T) -> &mut [T];
         }
-    }
-}
-
-impl<T> IntoIterator for &[T] {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self == res@ }
-    }
-}
-
-impl<T> IntoIterator for &mut [T] {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self == res@ }
     }
 }
 

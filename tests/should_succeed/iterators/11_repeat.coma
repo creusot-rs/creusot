@@ -87,8 +87,6 @@ module M_11_repeat__qyi12123383775959562970__next [#"11_repeat.rs" 47 4 47 35] (
   let%span s11_repeat'1 = "11_repeat.rs" 43 14 46 5
   let%span s11_repeat'2 = "11_repeat.rs" 19 20 19 25
   let%span s11_repeat'3 = "11_repeat.rs" 26 12 27 85
-  let%span sclone = "../../../creusot-contracts/src/std/clone.rs" 15 16 15 17
-  let%span sclone'0 = "../../../creusot-contracts/src/std/clone.rs" 15 26 15 41
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
   let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
@@ -112,8 +110,18 @@ module M_11_repeat__qyi12123383775959562970__next [#"11_repeat.rs" 47 4 47 35] (
   
   axiom inv_axiom [@rewrite] : forall x : t_A [inv'0 x] . inv'0 x = invariant' x
   
-  let rec clone' (self_:t_A) (return'  (x:t_A))= {[@expl:clone 'self_' type invariant] [%#sclone] inv'0 self_}
-    any [ return''0 (result:t_A)-> {inv result} {[%#sclone'0] result = self_} (! return' {result}) ] 
+  predicate precondition (self : ()) (args : t_A)
+  
+  axiom precondition_fndef : forall args : t_A [precondition () args] . (let self_ = args in inv'0 self_)
+   -> precondition () args
+  
+  predicate postcondition_once (self : ()) (args : t_A) (result : t_A)
+  
+  axiom postcondition_fndef : forall args : t_A, res : t_A [postcondition_once () args res] . postcondition_once () args res
+   -> (let self_ = args in res = self_ /\ inv res)
+  
+  let rec clone' (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_A)-> {postcondition_once () self_ result} (! return' {result}) ] 
   
   predicate inv'1 (_0 : t_Repeat)
   

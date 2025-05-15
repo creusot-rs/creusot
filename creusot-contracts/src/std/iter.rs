@@ -65,34 +65,6 @@ pub trait Iterator: ::std::iter::Iterator {
     }
 }
 
-pub trait IntoIterator: ::std::iter::IntoIterator
-where
-    Self::IntoIter: Iterator,
-{
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate(prophetic)]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool;
-}
-
-impl<I: Iterator> IntoIterator for I {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self) -> bool {
-        self == res
-    }
-}
-
 pub trait FromIterator<A>: ::std::iter::FromIterator<A> {
     #[predicate]
     fn from_iter_post(prod: Seq<A>, res: Self) -> bool;
@@ -182,9 +154,9 @@ extern_spec! {
                 fn fuse(self) -> Fuse<Self>;
 
                 #[pure]
-                #[requires(other.into_iter_pre())]
+                #[requires(U::into_iter.precondition((other,)))]
                 #[ensures(result.itera() == self)]
-                #[ensures(other.into_iter_post(result.iterb()))]
+                #[ensures(U::into_iter.postcondition((other,), result.iterb()))]
                 fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U::IntoIter>
                     where U::IntoIter: Iterator;
 
@@ -200,21 +172,12 @@ extern_spec! {
                     where Self: Sized + DoubleEndedIterator;
             }
 
-            trait IntoIterator
-                where Self: IntoIterator {
-
-                #[requires(self.into_iter_pre())]
-                #[ensures(self.into_iter_post(result))]
-                fn into_iter(self) -> Self::IntoIter
-                    where Self::IntoIter: Iterator;
-            }
-
             trait FromIterator<A>
                 where Self: FromIterator<A> {
 
-                #[requires(iter.into_iter_pre())]
+                #[requires(T::into_iter.precondition((iter,)))]
                 #[ensures(exists<into_iter: T::IntoIter, done: &mut T::IntoIter, prod: Seq<A>>
-                            iter.into_iter_post(into_iter) &&
+                            T::into_iter.postcondition((iter,), into_iter) &&
                             into_iter.produces(prod, *done) && done.completed() && resolve(&^done) &&
                             Self_::from_iter_post(prod, result))]
                 fn from_iter<T>(iter: T) -> Self
@@ -241,6 +204,11 @@ extern_spec! {
                 fn next_back(&mut self) -> Option<Self::Item>;
             }
         }
+    }
+
+    impl<I: Iterator> IntoIterator for I {
+        #[ensures(result == self)]
+        fn into_iter(self) -> I;
     }
 }
 

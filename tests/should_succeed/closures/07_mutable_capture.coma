@@ -5,14 +5,15 @@ module M_07_mutable_capture__test_fnmut [#"07_mutable_capture.rs" 5 0 5 29]
   let%span s07_mutable_capture'2 = "07_mutable_capture.rs" 11 12 11 13
   let%span s07_mutable_capture'3 = "07_mutable_capture.rs" 7 19 7 33
   let%span s07_mutable_capture'4 = "07_mutable_capture.rs" 8 18 8 35
+  let%span s07_mutable_capture'5 = "07_mutable_capture.rs" 8 8 8 37
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 116 15 116 59
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 117 14 117 36
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 122 14 122 31
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 127 15 127 29
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 128 15 128 26
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 129 14 129 28
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 134 14 135 105
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
@@ -30,7 +31,7 @@ module M_07_mutable_capture__test_fnmut [#"07_mutable_capture.rs" 5 0 5 29]
     resolve _0'0
   
   predicate postcondition_once (self : closure1) (args : ()) (result : Int32.t) =
-    [%#s07_mutable_capture'4] let () = args in UInt32.t'int (self._0).final = UInt32.t'int (self._0).current + 1
+    [%#s07_mutable_capture'5] let () = args in UInt32.t'int (self._0).final = UInt32.t'int (self._0).current + 1
   
   predicate resolve'1 (self : MutBorrow.t UInt32.t) =
     [%#sresolve] self.final = self.current
@@ -41,31 +42,32 @@ module M_07_mutable_capture__test_fnmut [#"07_mutable_capture.rs" 5 0 5 29]
   predicate resolve'3 (_0'0 : closure1) =
     resolve'2 _0'0._0
   
-  predicate unnest (self : closure1) (_1 : closure1) =
-    (_1._0).final = (self._0).final
+  predicate hist_inv (self : closure1) (result_state : closure1) =
+    [%#s07_mutable_capture'5] (result_state._0).final = (self._0).final
   
   predicate postcondition_mut (self : closure1) (args : ()) (result_state : closure1) (result : Int32.t) =
-    (let () = args in UInt32.t'int (result_state._0).current = UInt32.t'int (self._0).current + 1)
-    /\ unnest self result_state
+    [%#s07_mutable_capture'5] let () = args in UInt32.t'int (result_state._0).current
+    = UInt32.t'int (self._0).current + 1
+    /\ hist_inv self result_state
   
   function fn_mut_once (self : closure1) (args : ()) (res : Int32.t) : ()
   
   axiom fn_mut_once_spec : forall self : closure1, args : (), res : Int32.t . [%#sops'5] postcondition_once self args res
   = (exists res_state : closure1 . postcondition_mut self args res_state res /\ resolve'3 res_state)
   
-  function unnest_trans (self : closure1) (b : closure1) (c : closure1) : ()
+  function hist_inv_trans (self : closure1) (b : closure1) (c : closure1) : ()
   
-  axiom unnest_trans_spec : forall self : closure1, b : closure1, c : closure1 . ([%#sops'2] unnest self b)
-   -> ([%#sops'3] unnest b c)  -> ([%#sops'4] unnest self c)
+  axiom hist_inv_trans_spec : forall self : closure1, b : closure1, c : closure1 . ([%#sops'2] hist_inv self b)
+   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
   
-  function unnest_refl (self : closure1) : ()
+  function hist_inv_refl (self : closure1) : ()
   
-  axiom unnest_refl_spec : forall self : closure1 . [%#sops'1] unnest self self
+  axiom hist_inv_refl_spec : forall self : closure1 . [%#sops'1] hist_inv self self
   
-  function postcondition_mut_unnest (self : closure1) (args : ()) (res_state : closure1) (res : Int32.t) : ()
+  function postcondition_mut_hist_inv (self : closure1) (args : ()) (res_state : closure1) (res : Int32.t) : ()
   
-  axiom postcondition_mut_unnest_spec : forall self : closure1, args : (), res_state : closure1, res : Int32.t . ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] unnest self res_state)
+  axiom postcondition_mut_hist_inv_spec : forall self : closure1, args : (), res_state : closure1, res : Int32.t . ([%#sops] postcondition_mut self args res_state res)
+   -> ([%#sops'0] hist_inv self res_state)
   
   let rec closure1[#"07_mutable_capture.rs" 8 8 8 37] (self:MutBorrow.t closure1) (return'  (x:Int32.t))= {[@expl:closure requires] [%#s07_mutable_capture'3] UInt32.t'int ((self.current)._0).current
     < 1000000}
@@ -87,7 +89,7 @@ module M_07_mutable_capture__test_fnmut [#"07_mutable_capture.rs" 5 0 5 29]
     
     [ return''0 (result:Int32.t)-> {[@expl:closure ensures] [%#s07_mutable_capture'4] UInt32.t'int ((self.final)._0).current
       = UInt32.t'int ((self.current)._0).current + 1}
-      {[@expl:closure unnest] unnest self.current self.final}
+      {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return' {result}) ]
   
   
@@ -127,5 +129,945 @@ module M_07_mutable_capture__test_fnmut [#"07_mutable_capture.rs" 5 0 5 29]
     | & _8 : Int32.t = Any.any_l ()
     | & _9 : MutBorrow.t closure1 = Any.any_l ()
     | & _10 : () = Any.any_l () ]
+     [ return''0 (result:())-> (! return' {result}) ] 
+end
+module M_07_mutable_capture__call_fnmut [#"07_mutable_capture.rs" 26 0 26 49]
+  let%span s07_mutable_capture = "07_mutable_capture.rs" 26 37 26 38
+  let%span s07_mutable_capture'0 = "07_mutable_capture.rs" 20 11 20 29
+  let%span s07_mutable_capture'1 = "07_mutable_capture.rs" 21 11 21 88
+  let%span s07_mutable_capture'2 = "07_mutable_capture.rs" 22 10 25 17
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 177 16 177 17
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 177 27 177 52
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 178 26 178 71
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
+  
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv (_0 : t_F)
+  
+  predicate invariant' (self : MutBorrow.t t_F) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  predicate inv'0 (_0 : MutBorrow.t t_F)
+  
+  axiom inv_axiom [@rewrite] : forall x : MutBorrow.t t_F [inv'0 x] . inv'0 x = invariant' x
+  
+  predicate precondition (self : t_F) (args : ())
+  
+  predicate postcondition_once (self : t_F) (args : ()) (result : Int32.t)
+  
+  predicate resolve (_0 : t_F)
+  
+  predicate postcondition_mut (self : t_F) (args : ()) (result_state : t_F) (result : Int32.t)
+  
+  function fn_mut_once (self : t_F) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec : forall self : t_F, args : (), res : Int32.t . [%#sops'8] postcondition_once self args res
+  = (exists res_state : t_F . postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self : t_F) (result_state : t_F)
+  
+  function hist_inv_trans (self : t_F) (b : t_F) (c : t_F) : ()
+  
+  axiom hist_inv_trans_spec : forall self : t_F, b : t_F, c : t_F . ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self : t_F) : ()
+  
+  axiom hist_inv_refl_spec : forall self : t_F . [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : t_F) (args : ()) (res_state : t_F) (res : Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : t_F, args : (), res_state : t_F, res : Int32.t . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  let rec call_mut (self_:MutBorrow.t t_F) (arg:()) (return'  (x:Int32.t))= {[@expl:call_mut 'self_' type invariant] [%#sops] inv'0 self_}
+    {[@expl:call_mut requires] [%#sops'0] precondition self_.current arg}
+    any
+    [ return''0 (result:Int32.t)-> {[%#sops'1] postcondition_mut self_.current arg self_.final result}
+      (! return' {result}) ]
+  
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec call_fnmut[#"07_mutable_capture.rs" 26 0 26 49] (f:t_F) (return'  (x:Int32.t))= {[@expl:call_fnmut 'f' type invariant] [%#s07_mutable_capture] inv f}
+    {[@expl:call_fnmut requires #0] [%#s07_mutable_capture'0] precondition f ()}
+    {[@expl:call_fnmut requires #1] [%#s07_mutable_capture'1] forall st1 : t_F, r : Int32.t . postcondition_mut f () st1 r
+     -> precondition st1 ()}
+    (! bb0
+    [ bb0 = bb1
+    | bb1 = bb2
+    | bb2 = bb3
+    | bb3 = s0
+      [ s0 = {inv f'0}
+        MutBorrow.borrow_mut <t_F> {f'0}
+          (fun (_ret:MutBorrow.t t_F) ->  [ &_6 <- _ret ] -{inv _ret.final}-  [ &f'0 <- _ret.final ] s1)
+      | s1 = call_mut {_6} {_7} (fun (_ret:Int32.t) ->  [ &_5 <- _ret ] s2)
+      | s2 = bb4 ]
+    
+    | bb4 = s0
+      [ s0 = {inv f'0}
+        MutBorrow.borrow_mut <t_F> {f'0}
+          (fun (_ret:MutBorrow.t t_F) ->  [ &_8 <- _ret ] -{inv _ret.final}-  [ &f'0 <- _ret.final ] s1)
+      | s1 = call_mut {_8} {_9} (fun (_ret:Int32.t) ->  [ &_0 <- _ret ] s2)
+      | s2 = bb5 ]
+    
+    | bb5 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb6 ] 
+    | bb6 = return''0 {_0} ]
+    )
+    [ & _0 : Int32.t = Any.any_l ()
+    | & f'0 : t_F = f
+    | & _5 : Int32.t = Any.any_l ()
+    | & _6 : MutBorrow.t t_F = Any.any_l ()
+    | & _7 : () = Any.any_l ()
+    | & _8 : MutBorrow.t t_F = Any.any_l ()
+    | & _9 : () = Any.any_l () ]
+    
+    [ return''0 (result:Int32.t)-> {[@expl:call_fnmut ensures] [%#s07_mutable_capture'2] exists st1 : t_F, st2 : t_F, r : Int32.t . postcondition_mut f () st1 r
+      /\ postcondition_mut st1 () st2 result /\ resolve st2}
+      (! return' {result}) ]
+
+end
+module M_07_mutable_capture__call_fnonce [#"07_mutable_capture.rs" 33 0 33 47]
+  let%span s07_mutable_capture = "07_mutable_capture.rs" 33 35 33 36
+  let%span s07_mutable_capture'0 = "07_mutable_capture.rs" 31 11 31 29
+  let%span s07_mutable_capture'1 = "07_mutable_capture.rs" 32 10 32 42
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 171 16 171 17
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 171 27 171 49
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 172 26 172 62
+  
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv (_0 : t_F)
+  
+  predicate precondition (self : t_F) (args : ())
+  
+  predicate postcondition_once (self : t_F) (args : ()) (result : Int32.t)
+  
+  let rec call_once (self_:t_F) (arg:()) (return'  (x:Int32.t))= {[@expl:call_once 'self_' type invariant] [%#sops] inv self_}
+    {[@expl:call_once requires] [%#sops'0] precondition self_ arg}
+    any [ return''0 (result:Int32.t)-> {[%#sops'1] postcondition_once self_ arg result} (! return' {result}) ] 
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec call_fnonce[#"07_mutable_capture.rs" 33 0 33 47] (f:t_F) (return'  (x:Int32.t))= {[@expl:call_fnonce 'f' type invariant] [%#s07_mutable_capture] inv f}
+    {[@expl:call_fnonce requires] [%#s07_mutable_capture'0] precondition f ()}
+    (! bb0
+    [ bb0 = bb1
+    | bb1 = bb2
+    | bb2 = s0 [ s0 = call_once {f'0} {_5} (fun (_ret:Int32.t) ->  [ &_0 <- _ret ] s1) | s1 = bb3 ] 
+    | bb3 = bb4
+    | bb4 = return''0 {_0} ]
+    ) [ & _0 : Int32.t = Any.any_l () | & f'0 : t_F = f | & _5 : () = Any.any_l () ] 
+    [ return''0 (result:Int32.t)-> {[@expl:call_fnonce ensures] [%#s07_mutable_capture'1] postcondition_once f () result}
+      (! return' {result}) ]
+
+end
+module M_07_mutable_capture__test_fnmut2 [#"07_mutable_capture.rs" 38 0 38 30]
+  let%span s07_mutable_capture = "07_mutable_capture.rs" 49 20 49 33
+  let%span s07_mutable_capture'0 = "07_mutable_capture.rs" 37 11 37 24
+  let%span s07_mutable_capture'1 = "07_mutable_capture.rs" 43 17 43 18
+  let%span s07_mutable_capture'2 = "07_mutable_capture.rs" 44 12 44 13
+  let%span s07_mutable_capture'3 = "07_mutable_capture.rs" 40 19 40 33
+  let%span s07_mutable_capture'4 = "07_mutable_capture.rs" 41 18 41 35
+  let%span s07_mutable_capture'5 = "07_mutable_capture.rs" 20 11 20 29
+  let%span s07_mutable_capture'6 = "07_mutable_capture.rs" 21 11 21 88
+  let%span s07_mutable_capture'7 = "07_mutable_capture.rs" 22 10 25 17
+  let%span s07_mutable_capture'8 = "07_mutable_capture.rs" 41 8 41 37
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
+  
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt32
+  use creusot.int.Int32
+  use mach.int.Int
+  use creusot.prelude.Any
+  
+  type closure1  =
+    { _0: MutBorrow.t UInt32.t }
+  
+  predicate resolve (self : MutBorrow.t closure1) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0'0 : MutBorrow.t closure1) =
+    resolve _0'0
+  
+  predicate postcondition_once (self : closure1) (args : ()) (result : Int32.t) =
+    [%#s07_mutable_capture'8] let () = args in UInt32.t'int (self._0).final = UInt32.t'int (self._0).current + 1
+  
+  predicate resolve'1 (self : MutBorrow.t UInt32.t) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'2 (_0'0 : MutBorrow.t UInt32.t) =
+    resolve'1 _0'0
+  
+  predicate resolve'3 (_0'0 : closure1) =
+    resolve'2 _0'0._0
+  
+  predicate hist_inv (self : closure1) (result_state : closure1) =
+    [%#s07_mutable_capture'8] (result_state._0).final = (self._0).final
+  
+  predicate postcondition_mut (self : closure1) (args : ()) (result_state : closure1) (result : Int32.t) =
+    [%#s07_mutable_capture'8] let () = args in UInt32.t'int (result_state._0).current
+    = UInt32.t'int (self._0).current + 1
+    /\ hist_inv self result_state
+  
+  function fn_mut_once (self : closure1) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec : forall self : closure1, args : (), res : Int32.t . [%#sops'5] postcondition_once self args res
+  = (exists res_state : closure1 . postcondition_mut self args res_state res /\ resolve'3 res_state)
+  
+  function hist_inv_trans (self : closure1) (b : closure1) (c : closure1) : ()
+  
+  axiom hist_inv_trans_spec : forall self : closure1, b : closure1, c : closure1 . ([%#sops'2] hist_inv self b)
+   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+  
+  function hist_inv_refl (self : closure1) : ()
+  
+  axiom hist_inv_refl_spec : forall self : closure1 . [%#sops'1] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : closure1) (args : ()) (res_state : closure1) (res : Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : closure1, args : (), res_state : closure1, res : Int32.t . ([%#sops] postcondition_mut self args res_state res)
+   -> ([%#sops'0] hist_inv self res_state)
+  
+  let rec closure1[#"07_mutable_capture.rs" 41 8 41 37] (self:MutBorrow.t closure1) (return'  (x:Int32.t))= {[@expl:closure requires] [%#s07_mutable_capture'3] UInt32.t'int ((self.current)._0).current
+    < 1000000}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = UInt32.add {((_1.current)._0).current} {[%#s07_mutable_capture'1] (1 : UInt32.t)}
+          (fun (_ret:UInt32.t) ->  [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s1)
+      | s1 = -{resolve'0 _1}- s2
+      | s2 =  [ &res'0 <- [%#s07_mutable_capture'2] (5 : Int32.t) ] s3
+      | s3 =  [ &res <- res'0 ] s4
+      | s4 =  [ &_0'0 <- res ] s5
+      | s5 = return''0 {_0'0} ]
+     ]
+    )
+    [ & _0'0 : Int32.t = Any.any_l ()
+    | & _1 : MutBorrow.t closure1 = self
+    | & res : Int32.t = Any.any_l ()
+    | & res'0 : Int32.t = Any.any_l () ]
+    
+    [ return''0 (result:Int32.t)-> {[@expl:closure ensures] [%#s07_mutable_capture'4] UInt32.t'int ((self.final)._0).current
+      = UInt32.t'int ((self.current)._0).current + 1}
+      {[@expl:closure hist_inv post] hist_inv self.current self.final}
+      (! return' {result}) ]
+  
+  
+  predicate precondition (self : closure1) (args : ()) =
+    [%#s07_mutable_capture'8] let () = args in UInt32.t'int (self._0).current < 1000000
+  
+  predicate precondition'0 (self : MutBorrow.t closure1) (args : ()) =
+    precondition self.current args
+  
+  predicate postcondition_once'0 (self : MutBorrow.t closure1) (args : ()) (result : Int32.t) =
+    postcondition_mut self.current args self.final result
+  
+  predicate postcondition_mut'0 (self : MutBorrow.t closure1) (args : ()) (result_state : MutBorrow.t closure1) (result : Int32.t)
+  
+   =
+    postcondition_mut self.current args result_state.current result /\ self.final = result_state.final
+  
+  function fn_mut_once'0 (self : MutBorrow.t closure1) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec'0 : forall self : MutBorrow.t closure1, args : (), res : Int32.t . [%#sops'5] postcondition_once'0 self args res
+  = (exists res_state : MutBorrow.t closure1 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate hist_inv'0 (self : MutBorrow.t closure1) (result_state : MutBorrow.t closure1) =
+    hist_inv self.current result_state.current /\ self.final = result_state.final
+  
+  function hist_inv_trans'0 (self : MutBorrow.t closure1) (b : MutBorrow.t closure1) (c : MutBorrow.t closure1) : ()
+  
+  axiom hist_inv_trans_spec'0 : forall self : MutBorrow.t closure1, b : MutBorrow.t closure1, c : MutBorrow.t closure1 . ([%#sops'2] hist_inv'0 self b)
+   -> ([%#sops'3] hist_inv'0 b c)  -> ([%#sops'4] hist_inv'0 self c)
+  
+  function hist_inv_refl'0 (self : MutBorrow.t closure1) : ()
+  
+  axiom hist_inv_refl_spec'0 : forall self : MutBorrow.t closure1 . [%#sops'1] hist_inv'0 self self
+  
+  function postcondition_mut_hist_inv'0 (self : MutBorrow.t closure1) (args : ()) (res_state : MutBorrow.t closure1) (res : Int32.t) : ()
+  
+  
+  axiom postcondition_mut_hist_inv_spec'0 : forall self : MutBorrow.t closure1, args : (), res_state : MutBorrow.t closure1, res : Int32.t . ([%#sops] postcondition_mut'0 self args res_state res)
+   -> ([%#sops'0] hist_inv'0 self res_state)
+  
+  let rec call_fnmut (f:MutBorrow.t closure1) (return'  (x:Int32.t))= {[@expl:call_fnmut requires #0] [%#s07_mutable_capture'5] precondition'0 f ()}
+    {[@expl:call_fnmut requires #1] [%#s07_mutable_capture'6] forall st1 : MutBorrow.t closure1, r : Int32.t . postcondition_mut'0 f () st1 r
+     -> precondition'0 st1 ()}
+    any
+    [ return''0 (result:Int32.t)-> {[%#s07_mutable_capture'7] exists st1 : MutBorrow.t closure1, st2 : MutBorrow.t closure1, r : Int32.t . postcondition_mut'0 f () st1 r
+      /\ postcondition_mut'0 st1 () st2 result /\ resolve'0 st2}
+      (! return' {result}) ]
+  
+  
+  let rec call_fnmut'0 (f:closure1) (return'  (x:Int32.t))= {[@expl:call_fnmut requires #0] [%#s07_mutable_capture'5] precondition f ()}
+    {[@expl:call_fnmut requires #1] [%#s07_mutable_capture'6] forall st1 : closure1, r : Int32.t . postcondition_mut f () st1 r
+     -> precondition st1 ()}
+    any
+    [ return''0 (result:Int32.t)-> {[%#s07_mutable_capture'7] exists st1 : closure1, st2 : closure1, r : Int32.t . postcondition_mut f () st1 r
+      /\ postcondition_mut st1 () st2 result /\ resolve'3 st2}
+      (! return' {result}) ]
+  
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec test_fnmut2[#"07_mutable_capture.rs" 38 0 38 30] (x:UInt32.t) (return'  (x'0:()))= {[@expl:test_fnmut2 requires] [%#s07_mutable_capture'0] UInt32.t'int x
+    = 100000}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x'0}
+          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_4 <- _ret ]  [ &x'0 <- _ret.final ] s1)
+      | s1 =  [ &c <- { _0 = _4 } ] s2
+      | s2 = MutBorrow.borrow_mut <closure1> {c}
+          (fun (_ret:MutBorrow.t closure1) ->  [ &_6 <- _ret ]  [ &c <- _ret.final ] s3)
+      | s3 = call_fnmut {_6} (fun (_ret:Int32.t) ->  [ &_5 <- _ret ] s4)
+      | s4 = bb1 ]
+    
+    | bb1 = s0 [ s0 = call_fnmut'0 {c} (fun (_ret:Int32.t) ->  [ &_7 <- _ret ] s1) | s1 = bb2 ] 
+    | bb2 = s0
+      [ s0 = {[@expl:assertion] [%#s07_mutable_capture] UInt32.t'int x'0 = 100004} s1 | s1 = return''0 {_0'0} ]
+     ]
+    )
+    [ & _0'0 : () = Any.any_l ()
+    | & x'0 : UInt32.t = x
+    | & c : closure1 = Any.any_l ()
+    | & _4 : MutBorrow.t UInt32.t = Any.any_l ()
+    | & _5 : Int32.t = Any.any_l ()
+    | & _6 : MutBorrow.t closure1 = Any.any_l ()
+    | & _7 : Int32.t = Any.any_l () ]
+     [ return''0 (result:())-> (! return' {result}) ] 
+end
+module M_07_mutable_capture__test_fnmut3 [#"07_mutable_capture.rs" 53 0 53 30]
+  let%span s07_mutable_capture = "07_mutable_capture.rs" 60 20 60 33
+  let%span s07_mutable_capture'0 = "07_mutable_capture.rs" 52 11 52 24
+  let%span s07_mutable_capture'1 = "07_mutable_capture.rs" 55 13 55 14
+  let%span s07_mutable_capture'2 = "07_mutable_capture.rs" 56 8 56 9
+  let%span s07_mutable_capture'3 = "07_mutable_capture.rs" 31 11 31 29
+  let%span s07_mutable_capture'4 = "07_mutable_capture.rs" 32 10 32 42
+  let%span s07_mutable_capture'5 = "07_mutable_capture.rs" 54 16 54 18
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
+  
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt32
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type closure0  =
+    { _0: MutBorrow.t UInt32.t }
+  
+  predicate resolve (self : MutBorrow.t closure0) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0'0 : MutBorrow.t closure0) =
+    resolve _0'0
+  
+  predicate resolve'1 (self : MutBorrow.t UInt32.t) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'2 (_0'0 : MutBorrow.t UInt32.t) =
+    resolve'1 _0'0
+  
+  predicate resolve'3 (_0'0 : closure0) =
+    resolve'2 _0'0._0
+  
+  predicate hist_inv (self : closure0) (result_state : closure0) =
+    [%#s07_mutable_capture'5] (result_state._0).final = (self._0).final
+  
+  let rec closure0[#"07_mutable_capture.rs" 54 16 54 18] [@coma:extspec] (self:MutBorrow.t closure0) (return'  (x:Int32.t))= bb0
+    [ bb0 = s0
+      [ s0 = UInt32.add {((_1.current)._0).current} {[%#s07_mutable_capture'1] (1 : UInt32.t)}
+          (fun (_ret:UInt32.t) ->  [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s1)
+      | s1 = -{resolve'0 _1}- s2
+      | s2 =  [ &_0'0 <- [%#s07_mutable_capture'2] (5 : Int32.t) ] s3
+      | s3 = return''0 {_0'0} ]
+     ]
+     [ & _0'0 : Int32.t = Any.any_l () | & _1 : MutBorrow.t closure0 = self ] 
+    [ return''0 (result:Int32.t)-> return' {result} ]
+  
+  
+  predicate postcondition_once (self : closure0) (args : ()) (result : Int32.t) =
+    [%#s07_mutable_capture'5] let () = args in exists e : closure0 . (exists bor_self : MutBorrow.t closure0 . bor_self.current
+    = self
+    /\ bor_self.final = e /\ closure0'post'return' bor_self result /\ hist_inv self e)
+    /\ resolve'3 e
+  
+  predicate postcondition_mut (self : closure0) (args : ()) (result_state : closure0) (result : Int32.t) =
+    [%#s07_mutable_capture'5] let () = args in exists bor_self : MutBorrow.t closure0 . bor_self.current = self
+    /\ bor_self.final = result_state /\ closure0'post'return' bor_self result /\ hist_inv self result_state
+  
+  function fn_mut_once (self : closure0) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec : forall self : closure0, args : (), res : Int32.t . [%#sops'5] postcondition_once self args res
+  = (exists res_state : closure0 . postcondition_mut self args res_state res /\ resolve'3 res_state)
+  
+  function hist_inv_trans (self : closure0) (b : closure0) (c : closure0) : ()
+  
+  axiom hist_inv_trans_spec : forall self : closure0, b : closure0, c : closure0 . ([%#sops'2] hist_inv self b)
+   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+  
+  function hist_inv_refl (self : closure0) : ()
+  
+  axiom hist_inv_refl_spec : forall self : closure0 . [%#sops'1] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : closure0) (args : ()) (res_state : closure0) (res : Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : closure0, args : (), res_state : closure0, res : Int32.t . ([%#sops] postcondition_mut self args res_state res)
+   -> ([%#sops'0] hist_inv self res_state)
+  
+  predicate precondition (self : closure0) (args : ()) =
+    [%#s07_mutable_capture'5] let () = args in forall bor_self : MutBorrow.t closure0 . bor_self.current = self
+     -> closure0'pre bor_self
+  
+  predicate precondition'0 (self : MutBorrow.t closure0) (args : ()) =
+    precondition self.current args
+  
+  predicate postcondition_once'0 (self : MutBorrow.t closure0) (args : ()) (result : Int32.t) =
+    postcondition_mut self.current args self.final result
+  
+  let rec call_fnonce (f:MutBorrow.t closure0) (return'  (x:Int32.t))= {[@expl:call_fnonce requires] [%#s07_mutable_capture'3] precondition'0 f ()}
+    any
+    [ return''0 (result:Int32.t)-> {[%#s07_mutable_capture'4] postcondition_once'0 f () result} (! return' {result}) ]
+  
+  
+  let rec call_fnonce'0 (f:closure0) (return'  (x:Int32.t))= {[@expl:call_fnonce requires] [%#s07_mutable_capture'3] precondition f ()}
+    any
+    [ return''0 (result:Int32.t)-> {[%#s07_mutable_capture'4] postcondition_once f () result} (! return' {result}) ]
+  
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec test_fnmut3[#"07_mutable_capture.rs" 53 0 53 30] (x:UInt32.t) (return'  (x'0:()))= {[@expl:test_fnmut3 requires] [%#s07_mutable_capture'0] UInt32.t'int x
+    = 100000}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x'0}
+          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_4 <- _ret ]  [ &x'0 <- _ret.final ] s1)
+      | s1 =  [ &c <- { _0 = _4 } ] s2
+      | s2 = MutBorrow.borrow_mut <closure0> {c}
+          (fun (_ret:MutBorrow.t closure0) ->  [ &_6 <- _ret ]  [ &c <- _ret.final ] s3)
+      | s3 = call_fnonce {_6} (fun (_ret:Int32.t) ->  [ &_5 <- _ret ] s4)
+      | s4 = bb1 ]
+    
+    | bb1 = s0 [ s0 = call_fnonce'0 {c} (fun (_ret:Int32.t) ->  [ &_7 <- _ret ] s1) | s1 = bb2 ] 
+    | bb2 = s0
+      [ s0 = {[@expl:assertion] [%#s07_mutable_capture] UInt32.t'int x'0 = 100002} s1 | s1 = return''0 {_0'0} ]
+     ]
+    )
+    [ & _0'0 : () = Any.any_l ()
+    | & x'0 : UInt32.t = x
+    | & c : closure0 = Any.any_l ()
+    | & _4 : MutBorrow.t UInt32.t = Any.any_l ()
+    | & _5 : Int32.t = Any.any_l ()
+    | & _6 : MutBorrow.t closure0 = Any.any_l ()
+    | & _7 : Int32.t = Any.any_l () ]
+     [ return''0 (result:())-> (! return' {result}) ] 
+end
+module M_07_mutable_capture__test_fnmut2box [#"07_mutable_capture.rs" 64 0 64 33]
+  let%span s07_mutable_capture = "07_mutable_capture.rs" 75 20 75 33
+  let%span s07_mutable_capture'0 = "07_mutable_capture.rs" 63 11 63 24
+  let%span s07_mutable_capture'1 = "07_mutable_capture.rs" 69 17 69 18
+  let%span s07_mutable_capture'2 = "07_mutable_capture.rs" 70 12 70 13
+  let%span s07_mutable_capture'3 = "07_mutable_capture.rs" 66 19 66 33
+  let%span s07_mutable_capture'4 = "07_mutable_capture.rs" 67 18 67 35
+  let%span s07_mutable_capture'5 = "07_mutable_capture.rs" 20 11 20 29
+  let%span s07_mutable_capture'6 = "07_mutable_capture.rs" 21 11 21 88
+  let%span s07_mutable_capture'7 = "07_mutable_capture.rs" 22 10 25 17
+  let%span s07_mutable_capture'8 = "07_mutable_capture.rs" 67 8 67 37
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sresolve'0 = "../../../creusot-contracts/src/resolve.rs" 68 8 68 23
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
+  
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt32
+  use creusot.int.Int32
+  use mach.int.Int
+  use creusot.prelude.Any
+  
+  type closure1  =
+    { _0: MutBorrow.t UInt32.t }
+  
+  predicate resolve (self : MutBorrow.t closure1) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0'0 : MutBorrow.t closure1) =
+    resolve _0'0
+  
+  predicate postcondition_once (self : closure1) (args : ()) (result : Int32.t) =
+    [%#s07_mutable_capture'8] let () = args in UInt32.t'int (self._0).final = UInt32.t'int (self._0).current + 1
+  
+  predicate resolve'1 (self : MutBorrow.t UInt32.t) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'2 (_0'0 : MutBorrow.t UInt32.t) =
+    resolve'1 _0'0
+  
+  predicate resolve'3 (_0'0 : closure1) =
+    resolve'2 _0'0._0
+  
+  predicate hist_inv (self : closure1) (result_state : closure1) =
+    [%#s07_mutable_capture'8] (result_state._0).final = (self._0).final
+  
+  predicate postcondition_mut (self : closure1) (args : ()) (result_state : closure1) (result : Int32.t) =
+    [%#s07_mutable_capture'8] let () = args in UInt32.t'int (result_state._0).current
+    = UInt32.t'int (self._0).current + 1
+    /\ hist_inv self result_state
+  
+  function fn_mut_once (self : closure1) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec : forall self : closure1, args : (), res : Int32.t . [%#sops'5] postcondition_once self args res
+  = (exists res_state : closure1 . postcondition_mut self args res_state res /\ resolve'3 res_state)
+  
+  function hist_inv_trans (self : closure1) (b : closure1) (c : closure1) : ()
+  
+  axiom hist_inv_trans_spec : forall self : closure1, b : closure1, c : closure1 . ([%#sops'2] hist_inv self b)
+   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+  
+  function hist_inv_refl (self : closure1) : ()
+  
+  axiom hist_inv_refl_spec : forall self : closure1 . [%#sops'1] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : closure1) (args : ()) (res_state : closure1) (res : Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : closure1, args : (), res_state : closure1, res : Int32.t . ([%#sops] postcondition_mut self args res_state res)
+   -> ([%#sops'0] hist_inv self res_state)
+  
+  let rec closure1[#"07_mutable_capture.rs" 67 8 67 37] (self:MutBorrow.t closure1) (return'  (x:Int32.t))= {[@expl:closure requires] [%#s07_mutable_capture'3] UInt32.t'int ((self.current)._0).current
+    < 1000000}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = UInt32.add {((_1.current)._0).current} {[%#s07_mutable_capture'1] (1 : UInt32.t)}
+          (fun (_ret:UInt32.t) ->  [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s1)
+      | s1 = -{resolve'0 _1}- s2
+      | s2 =  [ &res'0 <- [%#s07_mutable_capture'2] (5 : Int32.t) ] s3
+      | s3 =  [ &res <- res'0 ] s4
+      | s4 =  [ &_0'0 <- res ] s5
+      | s5 = return''0 {_0'0} ]
+     ]
+    )
+    [ & _0'0 : Int32.t = Any.any_l ()
+    | & _1 : MutBorrow.t closure1 = self
+    | & res : Int32.t = Any.any_l ()
+    | & res'0 : Int32.t = Any.any_l () ]
+    
+    [ return''0 (result:Int32.t)-> {[@expl:closure ensures] [%#s07_mutable_capture'4] UInt32.t'int ((self.final)._0).current
+      = UInt32.t'int ((self.current)._0).current + 1}
+      {[@expl:closure hist_inv post] hist_inv self.current self.final}
+      (! return' {result}) ]
+  
+  
+  predicate precondition (self : closure1) (args : ()) =
+    [%#s07_mutable_capture'8] let () = args in UInt32.t'int (self._0).current < 1000000
+  
+  predicate precondition'0 (self : MutBorrow.t closure1) (args : ()) =
+    precondition self.current args
+  
+  predicate precondition'1 (self : MutBorrow.t closure1) (args : ()) =
+    precondition'0 self args
+  
+  predicate postcondition_once'0 (self : MutBorrow.t closure1) (args : ()) (result : Int32.t) =
+    postcondition_mut self.current args self.final result
+  
+  predicate postcondition_once'1 (self : MutBorrow.t closure1) (args : ()) (result : Int32.t) =
+    postcondition_once'0 self args result
+  
+  predicate resolve'4 (self : MutBorrow.t closure1) =
+    [%#sresolve'0] resolve'0 self
+  
+  predicate resolve'5 (_0'0 : MutBorrow.t closure1) =
+    resolve'4 _0'0
+  
+  predicate postcondition_mut'0 (self : MutBorrow.t closure1) (args : ()) (result_state : MutBorrow.t closure1) (result : Int32.t)
+  
+   =
+    postcondition_mut self.current args result_state.current result /\ self.final = result_state.final
+  
+  function fn_mut_once'0 (self : MutBorrow.t closure1) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec'0 : forall self : MutBorrow.t closure1, args : (), res : Int32.t . [%#sops'5] postcondition_once'0 self args res
+  = (exists res_state : MutBorrow.t closure1 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate hist_inv'0 (self : MutBorrow.t closure1) (result_state : MutBorrow.t closure1) =
+    hist_inv self.current result_state.current /\ self.final = result_state.final
+  
+  function hist_inv_trans'0 (self : MutBorrow.t closure1) (b : MutBorrow.t closure1) (c : MutBorrow.t closure1) : ()
+  
+  axiom hist_inv_trans_spec'0 : forall self : MutBorrow.t closure1, b : MutBorrow.t closure1, c : MutBorrow.t closure1 . ([%#sops'2] hist_inv'0 self b)
+   -> ([%#sops'3] hist_inv'0 b c)  -> ([%#sops'4] hist_inv'0 self c)
+  
+  function hist_inv_refl'0 (self : MutBorrow.t closure1) : ()
+  
+  axiom hist_inv_refl_spec'0 : forall self : MutBorrow.t closure1 . [%#sops'1] hist_inv'0 self self
+  
+  function postcondition_mut_hist_inv'0 (self : MutBorrow.t closure1) (args : ()) (res_state : MutBorrow.t closure1) (res : Int32.t) : ()
+  
+  
+  axiom postcondition_mut_hist_inv_spec'0 : forall self : MutBorrow.t closure1, args : (), res_state : MutBorrow.t closure1, res : Int32.t . ([%#sops] postcondition_mut'0 self args res_state res)
+   -> ([%#sops'0] hist_inv'0 self res_state)
+  
+  predicate postcondition_mut'1 (self : MutBorrow.t closure1) (args : ()) (result_state : MutBorrow.t closure1) (result : Int32.t)
+  
+   =
+    postcondition_mut'0 self args result_state result
+  
+  function fn_mut_once'1 (self : MutBorrow.t closure1) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec'1 : forall self : MutBorrow.t closure1, args : (), res : Int32.t . [%#sops'5] postcondition_once'1 self args res
+  = (exists res_state : MutBorrow.t closure1 . postcondition_mut'1 self args res_state res /\ resolve'5 res_state)
+  
+  predicate hist_inv'1 (self : MutBorrow.t closure1) (result_state : MutBorrow.t closure1) =
+    hist_inv'0 self result_state
+  
+  function hist_inv_trans'1 (self : MutBorrow.t closure1) (b : MutBorrow.t closure1) (c : MutBorrow.t closure1) : ()
+  
+  axiom hist_inv_trans_spec'1 : forall self : MutBorrow.t closure1, b : MutBorrow.t closure1, c : MutBorrow.t closure1 . ([%#sops'2] hist_inv'1 self b)
+   -> ([%#sops'3] hist_inv'1 b c)  -> ([%#sops'4] hist_inv'1 self c)
+  
+  function hist_inv_refl'1 (self : MutBorrow.t closure1) : ()
+  
+  axiom hist_inv_refl_spec'1 : forall self : MutBorrow.t closure1 . [%#sops'1] hist_inv'1 self self
+  
+  function postcondition_mut_hist_inv'1 (self : MutBorrow.t closure1) (args : ()) (res_state : MutBorrow.t closure1) (res : Int32.t) : ()
+  
+  
+  axiom postcondition_mut_hist_inv_spec'1 : forall self : MutBorrow.t closure1, args : (), res_state : MutBorrow.t closure1, res : Int32.t . ([%#sops] postcondition_mut'1 self args res_state res)
+   -> ([%#sops'0] hist_inv'1 self res_state)
+  
+  let rec call_fnmut (f:MutBorrow.t closure1) (return'  (x:Int32.t))= {[@expl:call_fnmut requires #0] [%#s07_mutable_capture'5] precondition'1 f ()}
+    {[@expl:call_fnmut requires #1] [%#s07_mutable_capture'6] forall st1 : MutBorrow.t closure1, r : Int32.t . postcondition_mut'1 f () st1 r
+     -> precondition'1 st1 ()}
+    any
+    [ return''0 (result:Int32.t)-> {[%#s07_mutable_capture'7] exists st1 : MutBorrow.t closure1, st2 : MutBorrow.t closure1, r : Int32.t . postcondition_mut'1 f () st1 r
+      /\ postcondition_mut'1 st1 () st2 result /\ resolve'5 st2}
+      (! return' {result}) ]
+  
+  
+  predicate precondition'2 (self : closure1) (args : ()) =
+    precondition self args
+  
+  predicate precondition'3 (self : closure1) (args : ()) =
+    precondition'2 self args
+  
+  predicate postcondition_once'2 (self : closure1) (args : ()) (result : Int32.t) =
+    postcondition_once self args result
+  
+  predicate postcondition_once'3 (self : closure1) (args : ()) (result : Int32.t) =
+    postcondition_once'2 self args result
+  
+  predicate resolve'6 (self : closure1) =
+    [%#sresolve'0] resolve'3 self
+  
+  predicate resolve'7 (_0'0 : closure1) =
+    resolve'6 _0'0
+  
+  predicate resolve'8 (self : closure1) =
+    [%#sresolve'0] resolve'7 self
+  
+  predicate resolve'9 (_0'0 : closure1) =
+    resolve'8 _0'0
+  
+  predicate postcondition_mut'2 (self : closure1) (args : ()) (result_state : closure1) (result : Int32.t) =
+    postcondition_mut self args result_state result
+  
+  function fn_mut_once'2 (self : closure1) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec'2 : forall self : closure1, args : (), res : Int32.t . [%#sops'5] postcondition_once'2 self args res
+  = (exists res_state : closure1 . postcondition_mut'2 self args res_state res /\ resolve'7 res_state)
+  
+  predicate hist_inv'2 (self : closure1) (result_state : closure1) =
+    hist_inv self result_state
+  
+  function hist_inv_trans'2 (self : closure1) (b : closure1) (c : closure1) : ()
+  
+  axiom hist_inv_trans_spec'2 : forall self : closure1, b : closure1, c : closure1 . ([%#sops'2] hist_inv'2 self b)
+   -> ([%#sops'3] hist_inv'2 b c)  -> ([%#sops'4] hist_inv'2 self c)
+  
+  function hist_inv_refl'2 (self : closure1) : ()
+  
+  axiom hist_inv_refl_spec'2 : forall self : closure1 . [%#sops'1] hist_inv'2 self self
+  
+  function postcondition_mut_hist_inv'2 (self : closure1) (args : ()) (res_state : closure1) (res : Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_spec'2 : forall self : closure1, args : (), res_state : closure1, res : Int32.t . ([%#sops] postcondition_mut'2 self args res_state res)
+   -> ([%#sops'0] hist_inv'2 self res_state)
+  
+  predicate postcondition_mut'3 (self : closure1) (args : ()) (result_state : closure1) (result : Int32.t) =
+    postcondition_mut'2 self args result_state result
+  
+  function fn_mut_once'3 (self : closure1) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec'3 : forall self : closure1, args : (), res : Int32.t . [%#sops'5] postcondition_once'3 self args res
+  = (exists res_state : closure1 . postcondition_mut'3 self args res_state res /\ resolve'9 res_state)
+  
+  predicate hist_inv'3 (self : closure1) (result_state : closure1) =
+    hist_inv'2 self result_state
+  
+  function hist_inv_trans'3 (self : closure1) (b : closure1) (c : closure1) : ()
+  
+  axiom hist_inv_trans_spec'3 : forall self : closure1, b : closure1, c : closure1 . ([%#sops'2] hist_inv'3 self b)
+   -> ([%#sops'3] hist_inv'3 b c)  -> ([%#sops'4] hist_inv'3 self c)
+  
+  function hist_inv_refl'3 (self : closure1) : ()
+  
+  axiom hist_inv_refl_spec'3 : forall self : closure1 . [%#sops'1] hist_inv'3 self self
+  
+  function postcondition_mut_hist_inv'3 (self : closure1) (args : ()) (res_state : closure1) (res : Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_spec'3 : forall self : closure1, args : (), res_state : closure1, res : Int32.t . ([%#sops] postcondition_mut'3 self args res_state res)
+   -> ([%#sops'0] hist_inv'3 self res_state)
+  
+  let rec call_fnmut'0 (f:closure1) (return'  (x:Int32.t))= {[@expl:call_fnmut requires #0] [%#s07_mutable_capture'5] precondition'3 f ()}
+    {[@expl:call_fnmut requires #1] [%#s07_mutable_capture'6] forall st1 : closure1, r : Int32.t . postcondition_mut'3 f () st1 r
+     -> precondition'3 st1 ()}
+    any
+    [ return''0 (result:Int32.t)-> {[%#s07_mutable_capture'7] exists st1 : closure1, st2 : closure1, r : Int32.t . postcondition_mut'3 f () st1 r
+      /\ postcondition_mut'3 st1 () st2 result /\ resolve'9 st2}
+      (! return' {result}) ]
+  
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec test_fnmut2box[#"07_mutable_capture.rs" 64 0 64 33] (x:UInt32.t) (return'  (x'0:()))= {[@expl:test_fnmut2box requires] [%#s07_mutable_capture'0] UInt32.t'int x
+    = 100000}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x'0}
+          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_4 <- _ret ]  [ &x'0 <- _ret.final ] s1)
+      | s1 =  [ &c <- { _0 = _4 } ] s2
+      | s2 = MutBorrow.borrow_mut <closure1> {c}
+          (fun (_ret:MutBorrow.t closure1) ->  [ &_7 <- _ret ]  [ &c <- _ret.final ] s3)
+      | s3 = bb1 ]
+    
+    | bb1 = s0 [ s0 = call_fnmut {_7} (fun (_ret:Int32.t) ->  [ &_5 <- _ret ] s1) | s1 = bb2 ] 
+    | bb2 = bb3
+    | bb3 = bb4
+    | bb4 = s0 [ s0 = call_fnmut'0 {c} (fun (_ret:Int32.t) ->  [ &_8 <- _ret ] s1) | s1 = bb5 ] 
+    | bb5 = s0
+      [ s0 = {[@expl:assertion] [%#s07_mutable_capture] UInt32.t'int x'0 = 100004} s1 | s1 = return''0 {_0'0} ]
+     ]
+    )
+    [ & _0'0 : () = Any.any_l ()
+    | & x'0 : UInt32.t = x
+    | & c : closure1 = Any.any_l ()
+    | & _4 : MutBorrow.t UInt32.t = Any.any_l ()
+    | & _5 : Int32.t = Any.any_l ()
+    | & _7 : MutBorrow.t closure1 = Any.any_l ()
+    | & _8 : Int32.t = Any.any_l () ]
+     [ return''0 (result:())-> (! return' {result}) ] 
+end
+module M_07_mutable_capture__test_fnmut3box [#"07_mutable_capture.rs" 79 0 79 33]
+  let%span s07_mutable_capture = "07_mutable_capture.rs" 86 20 86 33
+  let%span s07_mutable_capture'0 = "07_mutable_capture.rs" 78 11 78 24
+  let%span s07_mutable_capture'1 = "07_mutable_capture.rs" 81 13 81 14
+  let%span s07_mutable_capture'2 = "07_mutable_capture.rs" 82 8 82 9
+  let%span s07_mutable_capture'3 = "07_mutable_capture.rs" 31 11 31 29
+  let%span s07_mutable_capture'4 = "07_mutable_capture.rs" 32 10 32 42
+  let%span s07_mutable_capture'5 = "07_mutable_capture.rs" 80 16 80 18
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
+  
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt32
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type closure0  =
+    { _0: MutBorrow.t UInt32.t }
+  
+  predicate resolve (self : MutBorrow.t closure0) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0'0 : MutBorrow.t closure0) =
+    resolve _0'0
+  
+  predicate resolve'1 (self : MutBorrow.t UInt32.t) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'2 (_0'0 : MutBorrow.t UInt32.t) =
+    resolve'1 _0'0
+  
+  predicate resolve'3 (_0'0 : closure0) =
+    resolve'2 _0'0._0
+  
+  predicate hist_inv (self : closure0) (result_state : closure0) =
+    [%#s07_mutable_capture'5] (result_state._0).final = (self._0).final
+  
+  let rec closure0[#"07_mutable_capture.rs" 80 16 80 18] [@coma:extspec] (self:MutBorrow.t closure0) (return'  (x:Int32.t))= bb0
+    [ bb0 = s0
+      [ s0 = UInt32.add {((_1.current)._0).current} {[%#s07_mutable_capture'1] (1 : UInt32.t)}
+          (fun (_ret:UInt32.t) ->  [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s1)
+      | s1 = -{resolve'0 _1}- s2
+      | s2 =  [ &_0'0 <- [%#s07_mutable_capture'2] (5 : Int32.t) ] s3
+      | s3 = return''0 {_0'0} ]
+     ]
+     [ & _0'0 : Int32.t = Any.any_l () | & _1 : MutBorrow.t closure0 = self ] 
+    [ return''0 (result:Int32.t)-> return' {result} ]
+  
+  
+  predicate postcondition_once (self : closure0) (args : ()) (result : Int32.t) =
+    [%#s07_mutable_capture'5] let () = args in exists e : closure0 . (exists bor_self : MutBorrow.t closure0 . bor_self.current
+    = self
+    /\ bor_self.final = e /\ closure0'post'return' bor_self result /\ hist_inv self e)
+    /\ resolve'3 e
+  
+  predicate postcondition_mut (self : closure0) (args : ()) (result_state : closure0) (result : Int32.t) =
+    [%#s07_mutable_capture'5] let () = args in exists bor_self : MutBorrow.t closure0 . bor_self.current = self
+    /\ bor_self.final = result_state /\ closure0'post'return' bor_self result /\ hist_inv self result_state
+  
+  function fn_mut_once (self : closure0) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec : forall self : closure0, args : (), res : Int32.t . [%#sops'5] postcondition_once self args res
+  = (exists res_state : closure0 . postcondition_mut self args res_state res /\ resolve'3 res_state)
+  
+  function hist_inv_trans (self : closure0) (b : closure0) (c : closure0) : ()
+  
+  axiom hist_inv_trans_spec : forall self : closure0, b : closure0, c : closure0 . ([%#sops'2] hist_inv self b)
+   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+  
+  function hist_inv_refl (self : closure0) : ()
+  
+  axiom hist_inv_refl_spec : forall self : closure0 . [%#sops'1] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : closure0) (args : ()) (res_state : closure0) (res : Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : closure0, args : (), res_state : closure0, res : Int32.t . ([%#sops] postcondition_mut self args res_state res)
+   -> ([%#sops'0] hist_inv self res_state)
+  
+  predicate precondition (self : closure0) (args : ()) =
+    [%#s07_mutable_capture'5] let () = args in forall bor_self : MutBorrow.t closure0 . bor_self.current = self
+     -> closure0'pre bor_self
+  
+  predicate precondition'0 (self : MutBorrow.t closure0) (args : ()) =
+    precondition self.current args
+  
+  predicate precondition'1 (self : MutBorrow.t (MutBorrow.t closure0)) (args : ()) =
+    precondition'0 self.current args
+  
+  predicate postcondition_once'0 (self : MutBorrow.t closure0) (args : ()) (result : Int32.t) =
+    postcondition_mut self.current args self.final result
+  
+  predicate postcondition_mut'0 (self : MutBorrow.t closure0) (args : ()) (result_state : MutBorrow.t closure0) (result : Int32.t)
+  
+   =
+    postcondition_mut self.current args result_state.current result /\ self.final = result_state.final
+  
+  function fn_mut_once'0 (self : MutBorrow.t closure0) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec'0 : forall self : MutBorrow.t closure0, args : (), res : Int32.t . [%#sops'5] postcondition_once'0 self args res
+  = (exists res_state : MutBorrow.t closure0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate hist_inv'0 (self : MutBorrow.t closure0) (result_state : MutBorrow.t closure0) =
+    hist_inv self.current result_state.current /\ self.final = result_state.final
+  
+  function hist_inv_trans'0 (self : MutBorrow.t closure0) (b : MutBorrow.t closure0) (c : MutBorrow.t closure0) : ()
+  
+  axiom hist_inv_trans_spec'0 : forall self : MutBorrow.t closure0, b : MutBorrow.t closure0, c : MutBorrow.t closure0 . ([%#sops'2] hist_inv'0 self b)
+   -> ([%#sops'3] hist_inv'0 b c)  -> ([%#sops'4] hist_inv'0 self c)
+  
+  function hist_inv_refl'0 (self : MutBorrow.t closure0) : ()
+  
+  axiom hist_inv_refl_spec'0 : forall self : MutBorrow.t closure0 . [%#sops'1] hist_inv'0 self self
+  
+  function postcondition_mut_hist_inv'0 (self : MutBorrow.t closure0) (args : ()) (res_state : MutBorrow.t closure0) (res : Int32.t) : ()
+  
+  
+  axiom postcondition_mut_hist_inv_spec'0 : forall self : MutBorrow.t closure0, args : (), res_state : MutBorrow.t closure0, res : Int32.t . ([%#sops] postcondition_mut'0 self args res_state res)
+   -> ([%#sops'0] hist_inv'0 self res_state)
+  
+  predicate postcondition_once'1 (self : MutBorrow.t (MutBorrow.t closure0)) (args : ()) (result : Int32.t) =
+    postcondition_mut'0 self.current args self.final result
+  
+  let rec call_fnonce (f:MutBorrow.t (MutBorrow.t closure0)) (return'  (x:Int32.t))= {[@expl:call_fnonce requires] [%#s07_mutable_capture'3] precondition'1 f ()}
+    any
+    [ return''0 (result:Int32.t)-> {[%#s07_mutable_capture'4] postcondition_once'1 f () result} (! return' {result}) ]
+  
+  
+  predicate precondition'2 (self : closure0) (args : ()) =
+    precondition self args
+  
+  predicate precondition'3 (self : closure0) (args : ()) =
+    precondition'2 self args
+  
+  predicate postcondition_once'2 (self : closure0) (args : ()) (result : Int32.t) =
+    postcondition_once self args result
+  
+  predicate postcondition_once'3 (self : closure0) (args : ()) (result : Int32.t) =
+    postcondition_once'2 self args result
+  
+  let rec call_fnonce'0 (f:closure0) (return'  (x:Int32.t))= {[@expl:call_fnonce requires] [%#s07_mutable_capture'3] precondition'3 f ()}
+    any
+    [ return''0 (result:Int32.t)-> {[%#s07_mutable_capture'4] postcondition_once'3 f () result} (! return' {result}) ]
+  
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec test_fnmut3box[#"07_mutable_capture.rs" 79 0 79 33] (x:UInt32.t) (return'  (x'0:()))= {[@expl:test_fnmut3box requires] [%#s07_mutable_capture'0] UInt32.t'int x
+    = 100000}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x'0}
+          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_4 <- _ret ]  [ &x'0 <- _ret.final ] s1)
+      | s1 =  [ &c <- { _0 = _4 } ] s2
+      | s2 = MutBorrow.borrow_mut <closure0> {c}
+          (fun (_ret:MutBorrow.t closure0) ->  [ &_7 <- _ret ]  [ &c <- _ret.final ] s3)
+      | s3 = MutBorrow.borrow_mut <MutBorrow.t closure0> {_7}
+          (fun (_ret:MutBorrow.t (MutBorrow.t closure0)) ->  [ &_6 <- _ret ]  [ &_7 <- _ret.final ] s4)
+      | s4 = call_fnonce {_6} (fun (_ret:Int32.t) ->  [ &_5 <- _ret ] s5)
+      | s5 = bb1 ]
+    
+    | bb1 = s0 [ s0 = -{resolve'0 _7}- s1 | s1 = bb2 ] 
+    | bb2 = bb3
+    | bb3 = s0 [ s0 = call_fnonce'0 {c} (fun (_ret:Int32.t) ->  [ &_8 <- _ret ] s1) | s1 = bb4 ] 
+    | bb4 = s0
+      [ s0 = {[@expl:assertion] [%#s07_mutable_capture] UInt32.t'int x'0 = 100002} s1 | s1 = return''0 {_0'0} ]
+     ]
+    )
+    [ & _0'0 : () = Any.any_l ()
+    | & x'0 : UInt32.t = x
+    | & c : closure0 = Any.any_l ()
+    | & _4 : MutBorrow.t UInt32.t = Any.any_l ()
+    | & _5 : Int32.t = Any.any_l ()
+    | & _6 : MutBorrow.t (MutBorrow.t closure0) = Any.any_l ()
+    | & _7 : MutBorrow.t closure0 = Any.any_l ()
+    | & _8 : Int32.t = Any.any_l () ]
      [ return''0 (result:())-> (! return' {result}) ] 
 end

@@ -10,8 +10,8 @@
 
 use crate::{
     backend::{
-        Namer, Why3Generator,
-        clone_map::PreMod,
+        Why3Generator,
+        clone_map::{Namer, PreMod},
         dependency::Dependency,
         is_trusted_item,
         optimization::{gather_usage, infer_proph_invariants, simplify_fmir},

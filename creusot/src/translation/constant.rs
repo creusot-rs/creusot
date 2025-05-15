@@ -33,11 +33,7 @@ fn from_mir_constant_kind<'tcx>(
     }
 
     if ck.ty().is_unit() {
-        return Operand::Constant(Term {
-            kind: TermKind::Tuple { fields: Box::new([]) },
-            ty: ck.ty(),
-            span,
-        });
+        return Operand::Constant(Term::unit(ctx.tcx));
     }
     //
     // let ck = ck.normalize(ctx.tcx, env);

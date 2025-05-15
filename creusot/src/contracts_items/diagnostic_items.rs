@@ -101,8 +101,8 @@ contracts_items! {{
         is_fn_once_impl_postcond        get_fn_once_impl_postcond
     fn FnMutExt::postcondition_mut       ["fn_mut_impl_postcond"]
         is_fn_mut_impl_postcond         get_fn_mut_impl_postcond
-    fn FnMutExt::unnest                  ["fn_mut_impl_unnest"]
-        is_fn_mut_impl_unnest           get_fn_mut_impl_unnest
+    fn FnMutExt::hist_inv                  ["fn_mut_impl_hist_inv"]
+        is_fn_mut_impl_hist_inv           get_fn_mut_impl_hist_inv
     fn Fn::postcondition                 ["fn_impl_postcond"]
         is_fn_impl_postcond             get_fn_impl_postcond
     type Int                             ["creusot_int"]

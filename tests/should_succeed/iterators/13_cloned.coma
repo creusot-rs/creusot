@@ -125,13 +125,10 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
   let%span s13_cloned'1 = "13_cloned.rs" 50 14 53 5
   let%span s13_cloned'2 = "13_cloned.rs" 24 8 24 43
   let%span s13_cloned'3 = "13_cloned.rs" 31 12 34 79
-  let%span scommon = "common.rs" 27 17 27 21
-  let%span scommon'0 = "common.rs" 27 26 27 44
-  let%span scommon'1 = "common.rs" 23 14 26 5
-  let%span scommon'2 = "common.rs" 14 14 14 45
-  let%span scommon'3 = "common.rs" 18 15 18 32
-  let%span scommon'4 = "common.rs" 19 15 19 32
-  let%span scommon'5 = "common.rs" 20 14 20 42
+  let%span scommon = "common.rs" 14 14 14 45
+  let%span scommon'0 = "common.rs" 18 15 18 32
+  let%span scommon'1 = "common.rs" 19 15 19 32
+  let%span scommon'2 = "common.rs" 20 14 20 42
   let%span soption = "../../../creusot-contracts/src/std/option.rs" 491 16 491 17
   let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 491 26 491 57
   let%span soption'1 = "../../../creusot-contracts/src/std/option.rs" 492 26 492 93
@@ -158,12 +155,12 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
   function produces_trans [#"common.rs" 21 4 21 91] (a : t_I) (ab : Seq.seq t_T) (b : t_I) (bc : Seq.seq t_T) (c : t_I) : ()
   
   
-  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_T, b : t_I, bc : Seq.seq t_T, c : t_I . ([%#scommon'3] produces a ab b)
-   -> ([%#scommon'4] produces b bc c)  -> ([%#scommon'5] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : t_I, ab : Seq.seq t_T, b : t_I, bc : Seq.seq t_T, c : t_I . ([%#scommon'0] produces a ab b)
+   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self : t_I) : ()
   
-  axiom produces_refl_spec : forall self : t_I . [%#scommon'2] produces self (Seq.empty : Seq.seq t_T) self
+  axiom produces_refl_spec : forall self : t_I . [%#scommon] produces self (Seq.empty : Seq.seq t_T) self
   
   type t_Option  =
     | C_None
@@ -175,6 +172,13 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
   predicate inv'0 (_0 : MutBorrow.t t_I)
   
   axiom inv_axiom [@rewrite] : forall x : MutBorrow.t t_I [inv'0 x] . inv'0 x = invariant' x
+  
+  predicate precondition (self : ()) (args : MutBorrow.t t_I)
+  
+  axiom precondition_fndef : forall args : MutBorrow.t t_I [precondition () args] . (let self = args in inv'0 self)
+   -> precondition () args
+  
+  predicate completed [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_I)
   
   predicate inv'1 (_0 : t_T)
   
@@ -193,17 +197,17 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
     | C_Some a_0 -> inv'2 a_0
     end
   
-  predicate completed [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_I)
+  predicate postcondition_once (self : ()) (args : MutBorrow.t t_I) (result : t_Option)
   
-  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#scommon] inv'0 self}
-    any
-    [ return''0 (result:t_Option)-> {[%#scommon'0] inv'3 result}
-      {[%#scommon'1] match result with
-        | C_None -> completed self
-        | C_Some v -> produces self.current (Seq.singleton v) self.final
-        end}
-      (! return' {result}) ]
+  axiom postcondition_fndef : forall args : MutBorrow.t t_I, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+   -> (let self = args in match res with
+    | C_None -> completed self
+    | C_Some v -> produces self.current (Seq.singleton v) self.final
+    end
+  /\ inv'3 res)
   
+  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self}
+    any [ return''0 (result:t_Option)-> {postcondition_once () self result} (! return' {result}) ] 
   
   predicate inv'4 (_0 : t_Cloned)
   

@@ -128,7 +128,7 @@ impl<T, E> OwnResult<T, E> {
     }
 
     #[ensures(forall<t: T> self == OwnResult::Ok(t) ==> result == t)]
-    #[ensures((exists<e: E> self == OwnResult::Err(e)) ==> result.is_default())]
+    #[ensures((exists<e: E> self == OwnResult::Err(e)) ==> T::default.postcondition((), result))]
     pub fn unwrap_or_default(self) -> T
     where
         T: Default,

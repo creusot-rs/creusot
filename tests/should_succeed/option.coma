@@ -82,7 +82,7 @@ module M_option__unwrap [#"option.rs" 12 0 12 15]
   let%span soption'24 = "../../creusot-contracts/src/std/option.rs" 127 26 127 46
   let%span soption'25 = "../../creusot-contracts/src/std/option.rs" 146 26 146 60
   let%span soption'26 = "../../creusot-contracts/src/std/option.rs" 147 26 147 85
-  let%span soption'27 = "../../creusot-contracts/src/std/option.rs" 169 26 169 62
+  let%span soption'27 = "../../creusot-contracts/src/std/option.rs" 169 26 169 79
   let%span soption'28 = "../../creusot-contracts/src/std/option.rs" 170 26 170 62
   let%span soption'29 = "../../creusot-contracts/src/std/option.rs" 155 27 155 62
   let%span soption'30 = "../../creusot-contracts/src/std/option.rs" 156 26 159 17
@@ -91,7 +91,17 @@ module M_option__unwrap [#"option.rs" 12 0 12 15]
   let%span soption'33 = "../../creusot-contracts/src/std/option.rs" 182 26 182 46
   let%span soption'34 = "option.rs" 25 32 25 34
   let%span soption'35 = "option.rs" 26 32 26 34
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 33 28 33 41
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 30 26 30 41
+  let%span sops = "../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 163 14 163 61
+  let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'4 = "../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'5 = "../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -116,11 +126,60 @@ module M_option__unwrap [#"option.rs" 12 0 12 15]
       (! return' {result}) ]
   
   
-  predicate is_default (self : Int32.t) =
-    [%#snum] self = (0 : Int32.t)
+  predicate postcondition_once (self : ()) (args : ()) (result : Int32.t) =
+    let () = args in result = (0 : Int32.t)
+  
+  predicate resolve'0 (_0 : ()) =
+    true
+  
+  predicate postcondition_mut (self : ()) (args : ()) (result_state : ()) (result : Int32.t) =
+    let () = args in result = (0 : Int32.t)
+  
+  function fn_mut_once (self : ()) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once_spec : forall self : (), args : (), res : Int32.t . [%#sops'8] postcondition_once self args res
+  = (exists res_state : () . postcondition_mut self args res_state res /\ resolve'0 res_state)
+  
+  predicate hist_inv (self : ()) (result_state : ()) =
+    true
+  
+  function hist_inv_trans (self : ()) (b : ()) (c : ()) : ()
+  
+  axiom hist_inv_trans_spec : forall self : (), b : (), c : () . ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self : ()) : ()
+  
+  axiom hist_inv_refl_spec : forall self : () . [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : ()) (args : ()) (res_state : ()) (res : Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : (), args : (), res_state : (), res : Int32.t . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self : ()) (res_state : ()) : ()
+  
+  axiom fn_hist_inv_spec : forall self : (), res_state : () . [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self : ()) (args : ()) (result : Int32.t) =
+    let () = args in result = (0 : Int32.t)
+  
+  function fn_once (self : ()) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_once_spec : forall self : (), args : (), res : Int32.t . [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve'0 self)
+  
+  function fn_mut (self : ()) (args : ()) (res_state : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_spec : forall self : (), args : (), res_state : (), res : Int32.t . [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  let rec default (return'  (x:Int32.t))= any
+    [ return''0 (result:Int32.t)-> {[%#snum] result = (0 : Int32.t)} (! return' {result}) ]
+  
   
   let rec unwrap_or_default (self_:t_Option) (return'  (x:Int32.t))= any
-    [ return''0 (result:Int32.t)-> {[%#soption'27] self_ = C_None  -> is_default result}
+    [ return''0 (result:Int32.t)-> {[%#soption'27] self_ = C_None  -> postcondition () () result}
       {[%#soption'28] self_ = C_None \/ self_ = C_Some result}
       (! return' {result}) ]
   
@@ -132,14 +191,14 @@ module M_option__unwrap [#"option.rs" 12 0 12 15]
   predicate precondition (self : ()) (args : ()) =
     [%#soption'34] let () = args in closure0'pre self
   
-  predicate postcondition_once (self : ()) (args : ()) (result : Int32.t) =
+  predicate postcondition_once'0 (self : ()) (args : ()) (result : Int32.t) =
     [%#soption'34] let () = args in closure0'post'return' self result
   
   let rec unwrap_or_else (self_:t_Option) (f:()) (return'  (x:Int32.t))= {[@expl:unwrap_or_else requires] [%#soption'29] self_
     = C_None  -> precondition f ()}
     any
     [ return''0 (result:Int32.t)-> {[%#soption'30] match self_ with
-        | C_None -> postcondition_once f () result
+        | C_None -> postcondition_once'0 f () result
         | C_Some t -> result = t
         end}
       (! return' {result}) ]
@@ -152,14 +211,14 @@ module M_option__unwrap [#"option.rs" 12 0 12 15]
   predicate precondition'0 (self : ()) (args : ()) =
     [%#soption'35] let () = args in closure1'pre self
   
-  predicate postcondition_once'0 (self : ()) (args : ()) (result : Int32.t) =
+  predicate postcondition_once'1 (self : ()) (args : ()) (result : Int32.t) =
     [%#soption'35] let () = args in closure1'post'return' self result
   
   let rec unwrap_or_else'0 (self_:t_Option) (f:()) (return'  (x:Int32.t))= {[@expl:unwrap_or_else requires] [%#soption'29] self_
     = C_None  -> precondition'0 f ()}
     any
     [ return''0 (result:Int32.t)-> {[%#soption'30] match self_ with
-        | C_None -> postcondition_once'0 f () result
+        | C_None -> postcondition_once'1 f () result
         | C_Some t -> result = t
         end}
       (! return' {result}) ]
@@ -291,7 +350,7 @@ module M_option__map [#"option.rs" 31 0 31 12]
   let%span soption'11 = "option.rs" 36 21 36 24
   let%span soption'12 = "option.rs" 37 21 37 24
   let%span soption'13 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span stuples = "../../creusot-contracts/src/std/tuples.rs" 9 20 9 22
   
@@ -501,7 +560,7 @@ module M_option__inspect [#"option.rs" 40 0 40 16]
   let%span soption'7 = "option.rs" 44 25 44 28
   let%span soption'8 = "option.rs" 45 25 45 28
   let%span soption'9 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   
   use creusot.int.Int32
@@ -1359,7 +1418,7 @@ module M_option__and_or_xor [#"option.rs" 108 0 108 19]
   let%span soption'28 = "option.rs" 124 38 124 39
   let%span soption'29 = "option.rs" 125 35 125 36
   let%span soption'30 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 82 8 85 9
   
@@ -1468,47 +1527,43 @@ module M_option__and_or_xor [#"option.rs" 108 0 108 19]
   
   
   type tuple  =
-    { _0: t_Option; _1: t_Option }
+    { _p0: t_Option; _p1: t_Option }
   
   let rec xor (self_:t_Option) (optb:t_Option) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#soption'27] match { _0 = self_; _1 = optb } with
-        | {_0 = C_None ; _1 = C_None} -> result = C_None
-        | {_0 = C_Some t1 ; _1 = C_Some t2} -> result = C_None /\ resolve t1 /\ resolve t2
-        | {_0 = C_Some t ; _1 = C_None} -> result = C_Some t
-        | {_0 = C_None ; _1 = C_Some t} -> result = C_Some t
+    [ return''0 (result:t_Option)-> {[%#soption'27] match { _p0 = self_; _p1 = optb } with
+        | {_p0 = C_None ; _p1 = C_None} -> result = C_None
+        | {_p0 = C_Some t1 ; _p1 = C_Some t2} -> result = C_None /\ resolve t1 /\ resolve t2
+        | {_p0 = C_Some t ; _p1 = C_None} -> result = C_Some t
+        | {_p0 = C_None ; _p1 = C_Some t} -> result = C_Some t
         end}
       (! return' {result}) ]
   
   
   let rec promoted3__and_or_xor (return'  (x:t_Option))= bb0
-    [ bb0 = s0 [ s0 =  [ &_1'0 <- C_None ] s1 | s1 =  [ &_0'0 <- _1'0 ] s2 | s2 = return''0 {_0'0} ]  ]
-     [ & _0'0 : t_Option = Any.any_l () | & _1'0 : t_Option = Any.any_l () ] 
+    [ bb0 = s0 [ s0 =  [ &_1 <- C_None ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return''0 {_0} ]  ]
+     [ & _0 : t_Option = Any.any_l () | & _1 : t_Option = Any.any_l () ] 
     [ return''0 (result:t_Option)-> return' {result} ]
   
   
   let rec promoted2__and_or_xor (return'  (x:t_Option))= bb0
     [ bb0 = s0
-      [ s0 =  [ &_1'0 <- C_Some ([%#soption'28] (2 : Int32.t)) ] s1
-      | s1 =  [ &_0'0 <- _1'0 ] s2
-      | s2 = return''0 {_0'0} ]
+      [ s0 =  [ &_1 <- C_Some ([%#soption'28] (2 : Int32.t)) ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return''0 {_0} ]
      ]
-     [ & _0'0 : t_Option = Any.any_l () | & _1'0 : t_Option = Any.any_l () ] 
+     [ & _0 : t_Option = Any.any_l () | & _1 : t_Option = Any.any_l () ] 
     [ return''0 (result:t_Option)-> return' {result} ]
   
   
   let rec promoted1__and_or_xor (return'  (x:t_Option))= bb0
     [ bb0 = s0
-      [ s0 =  [ &_1'0 <- C_Some ([%#soption'29] (1 : Int32.t)) ] s1
-      | s1 =  [ &_0'0 <- _1'0 ] s2
-      | s2 = return''0 {_0'0} ]
+      [ s0 =  [ &_1 <- C_Some ([%#soption'29] (1 : Int32.t)) ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return''0 {_0} ]
      ]
-     [ & _0'0 : t_Option = Any.any_l () | & _1'0 : t_Option = Any.any_l () ] 
+     [ & _0 : t_Option = Any.any_l () | & _1 : t_Option = Any.any_l () ] 
     [ return''0 (result:t_Option)-> return' {result} ]
   
   
   let rec promoted0__and_or_xor (return'  (x:t_Option))= bb0
-    [ bb0 = s0 [ s0 =  [ &_1'0 <- C_None ] s1 | s1 =  [ &_0'0 <- _1'0 ] s2 | s2 = return''0 {_0'0} ]  ]
-     [ & _0'0 : t_Option = Any.any_l () | & _1'0 : t_Option = Any.any_l () ] 
+    [ bb0 = s0 [ s0 =  [ &_1 <- C_None ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return''0 {_0} ]  ]
+     [ & _0 : t_Option = Any.any_l () | & _1 : t_Option = Any.any_l () ] 
     [ return''0 (result:t_Option)-> return' {result} ]
   
   
@@ -1628,7 +1683,7 @@ module M_option__and_or_xor [#"option.rs" 108 0 108 19]
       | s2 = bb46 ]
     
     | bb46 = any [ br0 -> {_103 = false} (! bb48) | br1 -> {_103} (! bb47) ] 
-    | bb47 = return''0 {_0'0}
+    | bb47 = return''0 {_0}
     | bb48 = {[%#soption'6] false} any
     | bb44 = {[%#soption'7] false} any
     | bb40 = {[%#soption'8] false} any
@@ -1642,7 +1697,7 @@ module M_option__and_or_xor [#"option.rs" 108 0 108 19]
     | bb8 = {[%#soption'16] false} any
     | bb4 = {[%#soption'17] false} any ]
     )
-    [ & _0'0 : () = Any.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & none : t_Option = Any.any_l ()
     | & some : t_Option = Any.any_l ()
     | & _4 : bool = Any.any_l ()
@@ -1703,8 +1758,9 @@ module M_option__and_then [#"option.rs" 129 0 129 17]
   let%span soption'9 = "option.rs" 136 8 137 38
   let%span soption'10 = "option.rs" 142 41 142 45
   let%span soption'11 = "option.rs" 134 26 134 44
-  let%span soption'12 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span soption'12 = "option.rs" 135 15 138 6
+  let%span soption'13 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   
   use creusot.int.Int32
@@ -1751,7 +1807,7 @@ module M_option__and_then [#"option.rs" 129 0 129 17]
     [%#snum] Int32.to_int self
   
   function deep_model'0 (self : t_Option) : t_Option'0 =
-    [%#soption'12] match self with
+    [%#soption'13] match self with
       | C_Some t -> C_Some'0 (deep_model t)
       | C_None -> C_None'0
       end
@@ -1789,10 +1845,10 @@ module M_option__and_then [#"option.rs" 129 0 129 17]
   
   
   predicate precondition'0 (self : ()) (args : Int32.t) =
-    let x = args in true
+    [%#soption'12] let x = args in true
   
   predicate postcondition_once'0 (self : ()) (args : Int32.t) (result : t_Option) =
-    [%#soption'9] let x = args in Int32.to_int x = 1
+    [%#soption'12] let x = args in Int32.to_int x = 1
     /\ (exists y : Int32.t . result = C_Some y /\ Int32.to_int y = Int32.to_int x + 1)
     \/ Int32.to_int x <> 1 /\ result = C_None
   
@@ -1894,7 +1950,7 @@ module M_option__filter [#"option.rs" 146 0 146 15]
   let%span soption'10 = "option.rs" 151 24 151 27
   let%span soption'11 = "option.rs" 152 24 152 27
   let%span soption'12 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   
   use creusot.int.Int32
@@ -2220,7 +2276,7 @@ module M_option__or_else [#"option.rs" 165 0 165 16]
   let%span soption'10 = "option.rs" 170 25 170 27
   let%span soption'11 = "option.rs" 171 25 171 27
   let%span soption'12 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   
   use creusot.int.Int32
@@ -2406,7 +2462,7 @@ module M_option__insert [#"option.rs" 174 0 174 15]
   let%span soption'13 = "../../creusot-contracts/src/std/option.rs" 23 26 23 75
   let%span soption'14 = "option.rs" 185 25 185 26
   let%span soption'15 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
@@ -2567,7 +2623,7 @@ module M_option__get_or_insert [#"option.rs" 188 0 188 22]
   let%span soption'28 = "option.rs" 206 37 206 39
   let%span soption'29 = "option.rs" 210 37 210 39
   let%span soption'30 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
@@ -2909,7 +2965,7 @@ module M_option__take_if [#"option.rs" 226 0 226 16]
   let%span soption'14 = "option.rs" 231 25 231 28
   let%span soption'15 = "option.rs" 234 21 234 24
   let%span soption'16 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
@@ -3409,10 +3465,10 @@ module M_option__zip_unzip [#"option.rs" 259 0 259 18]
   let%span soption'16 = "option.rs" 277 33 277 34
   let%span soption'17 = "option.rs" 278 33 278 37
   let%span soption'18 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 82 8 82 12
-  let%span stuples = "../../creusot-contracts/src/std/tuples.rs" 29 28 29 57
+  let%span stuples = "../../creusot-contracts/src/std/tuples.rs" 21 28 21 57
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 82 8 85 9
   
   use creusot.int.Int32
@@ -3427,16 +3483,16 @@ module M_option__zip_unzip [#"option.rs" 259 0 259 18]
     | C_Some'0 bool
   
   type tuple  =
-    { _0: Int32.t; _1: bool }
+    { _p0: Int32.t; _p1: bool }
   
   type t_Option'1  =
     | C_None'1
     | C_Some'1 tuple
   
   type tuple'0  =
-    { _0'0: t_Option; _1'0: t_Option'0 }
+    { _p0'0: t_Option; _p1'0: t_Option'0 }
   
-  predicate resolve (_0'1 : bool) =
+  predicate resolve (_0 : bool) =
     true
   
   predicate resolve'0 (self : t_Option'0) =
@@ -3445,7 +3501,7 @@ module M_option__zip_unzip [#"option.rs" 259 0 259 18]
       | C_None'0 -> true
       end
   
-  predicate resolve'1 (_0'1 : Int32.t) =
+  predicate resolve'1 (_0 : Int32.t) =
     true
   
   predicate resolve'2 (self : t_Option) =
@@ -3455,22 +3511,22 @@ module M_option__zip_unzip [#"option.rs" 259 0 259 18]
       end
   
   let rec zip (self_:t_Option) (other:t_Option'0) (return'  (x:t_Option'1))= any
-    [ return''0 (result:t_Option'1)-> {[%#soption'11] match { _0'0 = self_; _1'0 = other } with
-        | {_0'0 = C_None} -> result = C_None'1 /\ resolve'0 other
-        | {_1'0 = C_None'0} -> result = C_None'1 /\ resolve'2 self_
-        | {_0'0 = C_Some t ; _1'0 = C_Some'0 u} -> result = C_Some'1 { _0 = t; _1 = u }
+    [ return''0 (result:t_Option'1)-> {[%#soption'11] match { _p0'0 = self_; _p1'0 = other } with
+        | {_p0'0 = C_None} -> result = C_None'1 /\ resolve'0 other
+        | {_p1'0 = C_None'0} -> result = C_None'1 /\ resolve'2 self_
+        | {_p0'0 = C_Some t ; _p1'0 = C_Some'0 u} -> result = C_Some'1 { _p0 = t; _p1 = u }
         end}
       (! return' {result}) ]
   
   
   let rec promoted7__zip_unzip (return'  (x:t_Option'1))= bb0
-    [ bb0 = s0 [ s0 =  [ &_1'1 <- C_None'1 ] s1 | s1 =  [ &_0'1 <- _1'1 ] s2 | s2 = return''0 {_0'1} ]  ]
-     [ & _0'1 : t_Option'1 = Any.any_l () | & _1'1 : t_Option'1 = Any.any_l () ] 
+    [ bb0 = s0 [ s0 =  [ &_1 <- C_None'1 ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return''0 {_0} ]  ]
+     [ & _0 : t_Option'1 = Any.any_l () | & _1 : t_Option'1 = Any.any_l () ] 
     [ return''0 (result:t_Option'1)-> return' {result} ]
   
   
   type tuple'1  =
-    { _0'1: int; _1'1: bool }
+    { _p0'1: int; _p1'1: bool }
   
   type t_Option'2  =
     | C_None'2
@@ -3483,7 +3539,7 @@ module M_option__zip_unzip [#"option.rs" 259 0 259 18]
     [%#smodel'0] self
   
   function deep_model'1 (self : tuple) : tuple'1 =
-    [%#stuples] { _0'1 = deep_model self._0; _1'1 = deep_model'0 self._1 }
+    [%#stuples] { _p0'1 = deep_model self._p0; _p1'1 = deep_model'0 self._p1 }
   
   function deep_model'2 (self : t_Option'1) : t_Option'2 =
     [%#soption'18] match self with
@@ -3499,39 +3555,39 @@ module M_option__zip_unzip [#"option.rs" 259 0 259 18]
   
   
   let rec promoted6__zip_unzip (return'  (x:t_Option'1))= bb0
-    [ bb0 = s0 [ s0 =  [ &_1'2 <- C_None'1 ] s1 | s1 =  [ &_0'2 <- _1'2 ] s2 | s2 = return''0 {_0'2} ]  ]
-     [ & _0'2 : t_Option'1 = Any.any_l () | & _1'2 : t_Option'1 = Any.any_l () ] 
+    [ bb0 = s0 [ s0 =  [ &_1 <- C_None'1 ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return''0 {_0} ]  ]
+     [ & _0 : t_Option'1 = Any.any_l () | & _1 : t_Option'1 = Any.any_l () ] 
     [ return''0 (result:t_Option'1)-> return' {result} ]
   
   
   let rec promoted5__zip_unzip (return'  (x:t_Option'1))= bb0
-    [ bb0 = s0 [ s0 =  [ &_1'2 <- C_None'1 ] s1 | s1 =  [ &_0'2 <- _1'2 ] s2 | s2 = return''0 {_0'2} ]  ]
-     [ & _0'2 : t_Option'1 = Any.any_l () | & _1'2 : t_Option'1 = Any.any_l () ] 
+    [ bb0 = s0 [ s0 =  [ &_1 <- C_None'1 ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return''0 {_0} ]  ]
+     [ & _0 : t_Option'1 = Any.any_l () | & _1 : t_Option'1 = Any.any_l () ] 
     [ return''0 (result:t_Option'1)-> return' {result} ]
   
   
   let rec promoted4__zip_unzip (return'  (x:t_Option'1))= bb0
     [ bb0 = s0
-      [ s0 =  [ &_2 <- { _0 = ([%#soption'13] (1 : Int32.t)); _1 = ([%#soption'14] true) } ] s1
-      | s1 =  [ &_1'2 <- C_Some'1 _2 ] s2
-      | s2 =  [ &_0'2 <- _1'2 ] s3
-      | s3 = return''0 {_0'2} ]
+      [ s0 =  [ &_2 <- { _p0 = ([%#soption'13] (1 : Int32.t)); _p1 = ([%#soption'14] true) } ] s1
+      | s1 =  [ &_1 <- C_Some'1 _2 ] s2
+      | s2 =  [ &_0 <- _1 ] s3
+      | s3 = return''0 {_0} ]
      ]
-     [ & _0'2 : t_Option'1 = Any.any_l () | & _1'2 : t_Option'1 = Any.any_l () | & _2 : tuple = Any.any_l () ] 
+     [ & _0 : t_Option'1 = Any.any_l () | & _1 : t_Option'1 = Any.any_l () | & _2 : tuple = Any.any_l () ] 
     [ return''0 (result:t_Option'1)-> return' {result} ]
   
   
   let rec unzip (self_:t_Option'1) (return'  (x:tuple'0))= any
     [ return''0 (result:tuple'0)-> {[%#soption'15] match self_ with
-        | C_None'1 -> result = { _0'0 = C_None; _1'0 = C_None'0 }
-        | C_Some'1 {_0 = t ; _1 = u} -> result = { _0'0 = C_Some t; _1'0 = C_Some'0 u }
+        | C_None'1 -> result = { _p0'0 = C_None; _p1'0 = C_None'0 }
+        | C_Some'1 {_p0 = t ; _p1 = u} -> result = { _p0'0 = C_Some t; _p1'0 = C_Some'0 u }
         end}
       (! return' {result}) ]
   
   
   let rec promoted3__zip_unzip (return'  (x:t_Option))= bb0
-    [ bb0 = s0 [ s0 =  [ &_1'2 <- C_None ] s1 | s1 =  [ &_0'2 <- _1'2 ] s2 | s2 = return''0 {_0'2} ]  ]
-     [ & _0'2 : t_Option = Any.any_l () | & _1'2 : t_Option = Any.any_l () ] 
+    [ bb0 = s0 [ s0 =  [ &_1 <- C_None ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return''0 {_0} ]  ]
+     [ & _0 : t_Option = Any.any_l () | & _1 : t_Option = Any.any_l () ] 
     [ return''0 (result:t_Option)-> return' {result} ]
   
   
@@ -3553,8 +3609,8 @@ module M_option__zip_unzip [#"option.rs" 259 0 259 18]
   
   
   let rec promoted2__zip_unzip (return'  (x:t_Option'0))= bb0
-    [ bb0 = s0 [ s0 =  [ &_1'2 <- C_None'0 ] s1 | s1 =  [ &_0'2 <- _1'2 ] s2 | s2 = return''0 {_0'2} ]  ]
-     [ & _0'2 : t_Option'0 = Any.any_l () | & _1'2 : t_Option'0 = Any.any_l () ] 
+    [ bb0 = s0 [ s0 =  [ &_1 <- C_None'0 ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return''0 {_0} ]  ]
+     [ & _0 : t_Option'0 = Any.any_l () | & _1 : t_Option'0 = Any.any_l () ] 
     [ return''0 (result:t_Option'0)-> return' {result} ]
   
   
@@ -3573,19 +3629,15 @@ module M_option__zip_unzip [#"option.rs" 259 0 259 18]
   
   let rec promoted1__zip_unzip (return'  (x:t_Option))= bb0
     [ bb0 = s0
-      [ s0 =  [ &_1'2 <- C_Some ([%#soption'16] (1 : Int32.t)) ] s1
-      | s1 =  [ &_0'2 <- _1'2 ] s2
-      | s2 = return''0 {_0'2} ]
+      [ s0 =  [ &_1 <- C_Some ([%#soption'16] (1 : Int32.t)) ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return''0 {_0} ]
      ]
-     [ & _0'2 : t_Option = Any.any_l () | & _1'2 : t_Option = Any.any_l () ] 
+     [ & _0 : t_Option = Any.any_l () | & _1 : t_Option = Any.any_l () ] 
     [ return''0 (result:t_Option)-> return' {result} ]
   
   
   let rec promoted0__zip_unzip (return'  (x:t_Option'0))= bb0
-    [ bb0 = s0
-      [ s0 =  [ &_1'2 <- C_Some'0 ([%#soption'17] true) ] s1 | s1 =  [ &_0'2 <- _1'2 ] s2 | s2 = return''0 {_0'2} ]
-     ]
-     [ & _0'2 : t_Option'0 = Any.any_l () | & _1'2 : t_Option'0 = Any.any_l () ] 
+    [ bb0 = s0 [ s0 =  [ &_1 <- C_Some'0 ([%#soption'17] true) ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return''0 {_0} ]  ]
+     [ & _0 : t_Option'0 = Any.any_l () | & _1 : t_Option'0 = Any.any_l () ] 
     [ return''0 (result:t_Option'0)-> return' {result} ]
   
   
@@ -3629,7 +3681,7 @@ module M_option__zip_unzip [#"option.rs" 259 0 259 18]
     | bb14 = any [ br0 -> {_33 = false} (! bb16) | br1 -> {_33} (! bb15) ] 
     | bb15 = s0
       [ s0 =  [ &none_zipped <- C_None'1 ] s1
-      | s1 =  [ &_44 <- { _0 = ([%#soption'1] (1 : Int32.t)); _1 = ([%#soption'2] true) } ] s2
+      | s1 =  [ &_44 <- { _p0 = ([%#soption'1] (1 : Int32.t)); _p1 = ([%#soption'2] true) } ] s2
       | s2 =  [ &some_zipped <- C_Some'1 _44 ] s3
       | s3 = unzip {none_zipped} (fun (_ret:tuple'0) ->  [ &none_unzip <- _ret ] s4)
       | s4 = bb17 ]
@@ -3637,29 +3689,29 @@ module M_option__zip_unzip [#"option.rs" 259 0 259 18]
     | bb17 = s0 [ s0 = unzip {some_zipped} (fun (_ret:tuple'0) ->  [ &some_unzip <- _ret ] s1) | s1 = bb18 ] 
     | bb18 = s0
       [ s0 = promoted3__zip_unzip (fun (pr3:t_Option) ->  [ &_76 <- pr3 ] s1)
-      | s1 = eq'0 {none_unzip._0'0} {_76} (fun (_ret:bool) ->  [ &_50 <- _ret ] s2)
+      | s1 = eq'0 {none_unzip._p0'0} {_76} (fun (_ret:bool) ->  [ &_50 <- _ret ] s2)
       | s2 = bb19 ]
     
     | bb19 = any [ br0 -> {_50 = false} (! bb21) | br1 -> {_50} (! bb20) ] 
     | bb20 = s0
       [ s0 = promoted2__zip_unzip (fun (pr2:t_Option'0) ->  [ &_75 <- pr2 ] s1)
-      | s1 = eq'1 {none_unzip._1'0} {_75} (fun (_ret:bool) ->  [ &_56 <- _ret ] s2)
+      | s1 = eq'1 {none_unzip._p1'0} {_75} (fun (_ret:bool) ->  [ &_56 <- _ret ] s2)
       | s2 = bb22 ]
     
     | bb22 = any [ br0 -> {_56 = false} (! bb24) | br1 -> {_56} (! bb23) ] 
     | bb23 = s0
       [ s0 = promoted1__zip_unzip (fun (pr1:t_Option) ->  [ &_74 <- pr1 ] s1)
-      | s1 = eq'0 {some_unzip._0'0} {_74} (fun (_ret:bool) ->  [ &_62 <- _ret ] s2)
+      | s1 = eq'0 {some_unzip._p0'0} {_74} (fun (_ret:bool) ->  [ &_62 <- _ret ] s2)
       | s2 = bb25 ]
     
     | bb25 = any [ br0 -> {_62 = false} (! bb27) | br1 -> {_62} (! bb26) ] 
     | bb26 = s0
       [ s0 = promoted0__zip_unzip (fun (pr0:t_Option'0) ->  [ &_73 <- pr0 ] s1)
-      | s1 = eq'1 {some_unzip._1'0} {_73} (fun (_ret:bool) ->  [ &_68 <- _ret ] s2)
+      | s1 = eq'1 {some_unzip._p1'0} {_73} (fun (_ret:bool) ->  [ &_68 <- _ret ] s2)
       | s2 = bb28 ]
     
     | bb28 = any [ br0 -> {_68 = false} (! bb30) | br1 -> {_68} (! bb29) ] 
-    | bb29 = return''0 {_0'2}
+    | bb29 = return''0 {_0}
     | bb30 = {[%#soption'3] false} any
     | bb27 = {[%#soption'4] false} any
     | bb24 = {[%#soption'5] false} any
@@ -3669,7 +3721,7 @@ module M_option__zip_unzip [#"option.rs" 259 0 259 18]
     | bb8 = {[%#soption'9] false} any
     | bb4 = {[%#soption'10] false} any ]
     )
-    [ & _0'2 : () = Any.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & none_int : t_Option = Any.any_l ()
     | & none_bool : t_Option'0 = Any.any_l ()
     | & some_int : t_Option = Any.any_l ()
@@ -3712,7 +3764,7 @@ module M_option__transpose [#"option.rs" 281 0 281 18]
   let%span soption'6 = "../../creusot-contracts/src/std/option.rs" 23 26 23 75
   let%span soption'7 = "option.rs" 287 49 287 50
   let%span soption'8 = "../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span sresult = "../../creusot-contracts/src/std/result.rs" 53 27 53 53
   let%span sresult'0 = "../../creusot-contracts/src/std/result.rs" 54 26 54 44
@@ -4089,14 +4141,14 @@ module M_option__resolve [#"option.rs" 300 0 300 16]
   
   
   type tuple  =
-    { _0: t_Option; _1: t_Option }
+    { _p0: t_Option; _p1: t_Option }
   
   let rec xor (self_:t_Option) (optb:t_Option) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#soption'50] match { _0 = self_; _1 = optb } with
-        | {_0 = C_None ; _1 = C_None} -> result = C_None
-        | {_0 = C_Some t1 ; _1 = C_Some t2} -> result = C_None /\ resolve'0 t1 /\ resolve'0 t2
-        | {_0 = C_Some t ; _1 = C_None} -> result = C_Some t
-        | {_0 = C_None ; _1 = C_Some t} -> result = C_Some t
+    [ return''0 (result:t_Option)-> {[%#soption'50] match { _p0 = self_; _p1 = optb } with
+        | {_p0 = C_None ; _p1 = C_None} -> result = C_None
+        | {_p0 = C_Some t1 ; _p1 = C_Some t2} -> result = C_None /\ resolve'0 t1 /\ resolve'0 t2
+        | {_p0 = C_Some t ; _p1 = C_None} -> result = C_Some t
+        | {_p0 = C_None ; _p1 = C_Some t} -> result = C_Some t
         end}
       (! return' {result}) ]
   
@@ -4113,8 +4165,8 @@ module M_option__resolve [#"option.rs" 300 0 300 16]
   predicate resolve'5 (self : MutBorrow.t (MutBorrow.t Int32.t)) =
     [%#sresolve'0] self.final = self.current
   
-  predicate resolve'6 (_0'0 : MutBorrow.t (MutBorrow.t Int32.t)) =
-    resolve'5 _0'0
+  predicate resolve'6 (_0 : MutBorrow.t (MutBorrow.t Int32.t)) =
+    resolve'5 _0
   
   let rec get_or_insert (self_:MutBorrow.t t_Option) (value:MutBorrow.t Int32.t) (return'  (x:MutBorrow.t (MutBorrow.t Int32.t)))= any
     [ return''0 (result:MutBorrow.t (MutBorrow.t Int32.t))-> {[%#soption'53] match self_.current with
@@ -4125,29 +4177,29 @@ module M_option__resolve [#"option.rs" 300 0 300 16]
   
   
   type tuple'0  =
-    { _0'0: MutBorrow.t Int32.t; _1'0: Int32.t }
+    { _p0'0: MutBorrow.t Int32.t; _p1'0: Int32.t }
   
   type t_Option'1  =
     | C_None'1
     | C_Some'1 tuple'0
   
   type tuple'1  =
-    { _0'1: t_Option; _1'1: t_Option'0 }
+    { _p0'1: t_Option; _p1'1: t_Option'0 }
   
   let rec zip (self_:t_Option) (other:t_Option'0) (return'  (x:t_Option'1))= any
-    [ return''0 (result:t_Option'1)-> {[%#soption'54] match { _0'1 = self_; _1'1 = other } with
-        | {_0'1 = C_None} -> result = C_None'1 /\ resolve'2 other
-        | {_1'1 = C_None'0} -> result = C_None'1 /\ resolve'3 self_
-        | {_0'1 = C_Some t ; _1'1 = C_Some'0 u} -> result = C_Some'1 { _0'0 = t; _1'0 = u }
+    [ return''0 (result:t_Option'1)-> {[%#soption'54] match { _p0'1 = self_; _p1'1 = other } with
+        | {_p0'1 = C_None} -> result = C_None'1 /\ resolve'2 other
+        | {_p1'1 = C_None'0} -> result = C_None'1 /\ resolve'3 self_
+        | {_p0'1 = C_Some t ; _p1'1 = C_Some'0 u} -> result = C_Some'1 { _p0'0 = t; _p1'0 = u }
         end}
       (! return' {result}) ]
   
   
   predicate resolve'7 (self : tuple'0) =
-    [%#sresolve'1] resolve'0 self._0'0 /\ resolve'1 self._1'0
+    [%#sresolve'1] resolve'0 self._p0'0 /\ resolve'1 self._p1'0
   
-  predicate resolve'8 (_0'2 : tuple'0) =
-    resolve'7 _0'2
+  predicate resolve'8 (_0 : tuple'0) =
+    resolve'7 _0
   
   predicate resolve'9 (self : t_Option'1) =
     [%#sresolve] match self with
@@ -4155,8 +4207,8 @@ module M_option__resolve [#"option.rs" 300 0 300 16]
       | C_None'1 -> true
       end
   
-  predicate resolve'10 (_0'2 : t_Option'1) =
-    resolve'9 _0'2
+  predicate resolve'10 (_0 : t_Option'1) =
+    resolve'9 _0
   
   let rec copied (self_:t_Option) (return'  (x:t_Option'0))= any
     [ return''0 (result:t_Option'0)-> {[%#soption'55] self_ = C_None  -> result = C_None'0}
@@ -4349,7 +4401,7 @@ module M_option__resolve [#"option.rs" 300 0 300 16]
       [ s0 =  [ &_114 <- x'7 = ([%#soption'28] (1 : Int32.t)) ] s1
       | s1 = any [ br0 -> {_114 = false} (! bb44) | br1 -> {_114} (! bb43) ]  ]
     
-    | bb43 = return''0 {_0'2}
+    | bb43 = return''0 {_0}
     | bb44 = {[%#soption'29] false} any
     | bb41 = {[%#soption'30] false} any
     | bb38 = {[%#soption'31] false} any
@@ -4370,7 +4422,7 @@ module M_option__resolve [#"option.rs" 300 0 300 16]
     | bb5 = {[%#soption'38] false} any
     | bb3 = {[%#soption'39] false} any ]
     )
-    [ & _0'2 : () = Any.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & x : Int32.t = Any.any_l ()
     | & opt : t_Option = Any.any_l ()
     | & _3 : MutBorrow.t Int32.t = Any.any_l ()

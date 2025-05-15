@@ -3,15 +3,16 @@ module M_692__incorrect [#"692.rs" 9 0 9 76]
   let%span s692'0 = "692.rs" 9 66 9 72
   let%span s692'1 = "692.rs" 6 11 7 84
   let%span s692'2 = "692.rs" 8 10 8 15
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 151 14 151 114
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 156 14 156 101
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 116 15 116 59
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 117 14 117 36
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 122 14 122 31
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 127 15 127 29
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 128 15 128 26
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 129 14 129 28
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 134 14 135 105
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.prelude.Any
   
@@ -37,36 +38,40 @@ module M_692__incorrect [#"692.rs" 9 0 9 76]
   
   function fn_mut_once (self : t_C) (args : ()) (res : bool) : ()
   
-  axiom fn_mut_once_spec : forall self : t_C, args : (), res : bool . [%#sops'7] postcondition_once self args res
+  axiom fn_mut_once_spec : forall self : t_C, args : (), res : bool . [%#sops'8] postcondition_once self args res
   = (exists res_state : t_C . postcondition_mut self args res_state res /\ resolve'0 res_state)
   
-  predicate unnest (self : t_C) (_1 : t_C)
+  predicate hist_inv (self : t_C) (result_state : t_C)
   
-  function unnest_trans (self : t_C) (b : t_C) (c : t_C) : ()
+  function hist_inv_trans (self : t_C) (b : t_C) (c : t_C) : ()
   
-  axiom unnest_trans_spec : forall self : t_C, b : t_C, c : t_C . ([%#sops'4] unnest self b)
-   -> ([%#sops'5] unnest b c)  -> ([%#sops'6] unnest self c)
+  axiom hist_inv_trans_spec : forall self : t_C, b : t_C, c : t_C . ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
   
-  function unnest_refl (self : t_C) : ()
+  function hist_inv_refl (self : t_C) : ()
   
-  axiom unnest_refl_spec : forall self : t_C . [%#sops'3] unnest self self
+  axiom hist_inv_refl_spec : forall self : t_C . [%#sops'4] hist_inv self self
   
-  function postcondition_mut_unnest (self : t_C) (args : ()) (res_state : t_C) (res : bool) : ()
+  function postcondition_mut_hist_inv (self : t_C) (args : ()) (res_state : t_C) (res : bool) : ()
   
-  axiom postcondition_mut_unnest_spec : forall self : t_C, args : (), res_state : t_C, res : bool . ([%#sops'1] postcondition_mut self args res_state res)
-   -> ([%#sops'2] unnest self res_state)
+  axiom postcondition_mut_hist_inv_spec : forall self : t_C, args : (), res_state : t_C, res : bool . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self : t_C) (res_state : t_C) : ()
+  
+  axiom fn_hist_inv_spec : forall self : t_C, res_state : t_C . [%#sops'1] hist_inv self res_state = (self = res_state)
   
   predicate postcondition (self : t_C) (args : ()) (result : bool)
   
   function fn_once (self : t_C) (args : ()) (res : bool) : ()
   
   axiom fn_once_spec : forall self : t_C, args : (), res : bool . [%#sops'0] postcondition_once self args res
-  = (resolve'0 self /\ postcondition self args res)
+  = (postcondition self args res /\ resolve'0 self)
   
   function fn_mut (self : t_C) (args : ()) (res_state : t_C) (res : bool) : ()
   
   axiom fn_mut_spec : forall self : t_C, args : (), res_state : t_C, res : bool . [%#sops] postcondition_mut self args res_state res
-  = (self = res_state /\ postcondition self args res)
+  = (postcondition self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
@@ -100,15 +105,18 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
   let%span s692'5 = "692.rs" 16 27 16 62
   let%span s692'6 = "692.rs" 6 11 7 84
   let%span s692'7 = "692.rs" 8 10 8 15
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 116 15 116 59
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 117 14 117 36
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 122 14 122 31
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 127 15 127 29
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 128 15 128 26
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 129 14 129 28
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 134 14 135 105
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 151 14 151 114
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 156 14 156 101
+  let%span s692'8 = "692.rs" 16 17 16 64
+  let%span s692'9 = "692.rs" 14 15 14 47
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 61
   let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
   let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
   let%span sord'1 = "../../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
@@ -200,7 +208,7 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
     resolve _0'1
   
   predicate postcondition_once (self : closure2) (args : bool) (result : ()) =
-    [%#s692'5] let b = args in b /\ (self._0'0).final = (2 : UInt32.t) \/ not b /\ (self._0'0).final = (1 : UInt32.t)
+    [%#s692'8] let b = args in b /\ (self._0'0).final = (2 : UInt32.t) \/ not b /\ (self._0'0).final = (1 : UInt32.t)
   
   predicate resolve'1 (self : MutBorrow.t UInt32.t) =
     [%#sresolve] self.final = self.current
@@ -211,32 +219,32 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
   predicate resolve'3 (_0'1 : closure2) =
     resolve'2 _0'1._0'0
   
-  predicate unnest (self : closure2) (_1 : closure2) =
-    (_1._0'0).final = (self._0'0).final
+  predicate hist_inv (self : closure2) (result_state : closure2) =
+    [%#s692'8] (result_state._0'0).final = (self._0'0).final
   
   predicate postcondition_mut (self : closure2) (args : bool) (result_state : closure2) (result : ()) =
-    (let b = args in b /\ (result_state._0'0).current = (2 : UInt32.t)
+    [%#s692'8] let b = args in (b /\ (result_state._0'0).current = (2 : UInt32.t)
     \/ not b /\ (result_state._0'0).current = (1 : UInt32.t))
-    /\ unnest self result_state
+    /\ hist_inv self result_state
   
   function fn_mut_once (self : closure2) (args : bool) (res : ()) : ()
   
   axiom fn_mut_once_spec : forall self : closure2, args : bool, res : () . [%#sops'5] postcondition_once self args res
   = (exists res_state : closure2 . postcondition_mut self args res_state res /\ resolve'3 res_state)
   
-  function unnest_trans (self : closure2) (b : closure2) (c : closure2) : ()
+  function hist_inv_trans (self : closure2) (b : closure2) (c : closure2) : ()
   
-  axiom unnest_trans_spec : forall self : closure2, b : closure2, c : closure2 . ([%#sops'2] unnest self b)
-   -> ([%#sops'3] unnest b c)  -> ([%#sops'4] unnest self c)
+  axiom hist_inv_trans_spec : forall self : closure2, b : closure2, c : closure2 . ([%#sops'2] hist_inv self b)
+   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
   
-  function unnest_refl (self : closure2) : ()
+  function hist_inv_refl (self : closure2) : ()
   
-  axiom unnest_refl_spec : forall self : closure2 . [%#sops'1] unnest self self
+  axiom hist_inv_refl_spec : forall self : closure2 . [%#sops'1] hist_inv self self
   
-  function postcondition_mut_unnest (self : closure2) (args : bool) (res_state : closure2) (res : ()) : ()
+  function postcondition_mut_hist_inv (self : closure2) (args : bool) (res_state : closure2) (res : ()) : ()
   
-  axiom postcondition_mut_unnest_spec : forall self : closure2, args : bool, res_state : closure2, res : () . ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] unnest self res_state)
+  axiom postcondition_mut_hist_inv_spec : forall self : closure2, args : bool, res_state : closure2, res : () . ([%#sops] postcondition_mut self args res_state res)
+   -> ([%#sops'0] hist_inv self res_state)
   
   let rec closure2[#"692.rs" 16 17 16 64] (self:MutBorrow.t closure2) (b:bool) (return'  (x:()))= (! bb0
     [ bb0 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ] 
@@ -255,59 +263,64 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
     
     [ return''0 (result:())-> {[@expl:closure ensures] [%#s692'5] b /\ ((self.final)._0'0).current = (2 : UInt32.t)
       \/ not b /\ ((self.final)._0'0).current = (1 : UInt32.t)}
-      {[@expl:closure unnest] unnest self.current self.final}
+      {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return' {result}) ]
   
   
   predicate precondition (self : closure1) (args : ()) =
-    let () = args in true
+    [%#s692'9] let () = args in true
   
   predicate precondition'0 (self : closure2) (args : bool) =
-    let b = args in true
+    [%#s692'8] let b = args in true
   
   predicate postcondition_once'0 (self : closure1) (args : ()) (result : bool) =
-    [%#s692'2] let () = args in result = UInt32.gt self._0 (7 : UInt32.t)
+    [%#s692'9] let () = args in result = UInt32.gt self._0 (7 : UInt32.t)
   
   predicate resolve'4 (_0'1 : closure1) =
     true
   
-  predicate unnest'0 (self : closure1) (_1 : closure1) =
-    _1._0 = self._0
+  predicate hist_inv'0 (self : closure1) (result_state : closure1) =
+    self = result_state
   
   predicate postcondition_mut'0 (self : closure1) (args : ()) (result_state : closure1) (result : bool) =
-    (let () = args in result = UInt32.gt result_state._0 (7 : UInt32.t)) /\ unnest'0 self result_state
+    [%#s692'9] let () = args in result = UInt32.gt result_state._0 (7 : UInt32.t) /\ hist_inv'0 self result_state
   
   function fn_mut_once'0 (self : closure1) (args : ()) (res : bool) : ()
   
   axiom fn_mut_once_spec'0 : forall self : closure1, args : (), res : bool . [%#sops'5] postcondition_once'0 self args res
   = (exists res_state : closure1 . postcondition_mut'0 self args res_state res /\ resolve'4 res_state)
   
-  function unnest_trans'0 (self : closure1) (b : closure1) (c : closure1) : ()
+  function hist_inv_trans'0 (self : closure1) (b : closure1) (c : closure1) : ()
   
-  axiom unnest_trans_spec'0 : forall self : closure1, b : closure1, c : closure1 . ([%#sops'2] unnest'0 self b)
-   -> ([%#sops'3] unnest'0 b c)  -> ([%#sops'4] unnest'0 self c)
+  axiom hist_inv_trans_spec'0 : forall self : closure1, b : closure1, c : closure1 . ([%#sops'2] hist_inv'0 self b)
+   -> ([%#sops'3] hist_inv'0 b c)  -> ([%#sops'4] hist_inv'0 self c)
   
-  function unnest_refl'0 (self : closure1) : ()
+  function hist_inv_refl'0 (self : closure1) : ()
   
-  axiom unnest_refl_spec'0 : forall self : closure1 . [%#sops'1] unnest'0 self self
+  axiom hist_inv_refl_spec'0 : forall self : closure1 . [%#sops'1] hist_inv'0 self self
   
-  function postcondition_mut_unnest'0 (self : closure1) (args : ()) (res_state : closure1) (res : bool) : ()
+  function postcondition_mut_hist_inv'0 (self : closure1) (args : ()) (res_state : closure1) (res : bool) : ()
   
-  axiom postcondition_mut_unnest_spec'0 : forall self : closure1, args : (), res_state : closure1, res : bool . ([%#sops] postcondition_mut'0 self args res_state res)
-   -> ([%#sops'0] unnest'0 self res_state)
+  axiom postcondition_mut_hist_inv_spec'0 : forall self : closure1, args : (), res_state : closure1, res : bool . ([%#sops] postcondition_mut'0 self args res_state res)
+   -> ([%#sops'0] hist_inv'0 self res_state)
+  
+  function fn_hist_inv (self : closure1) (res_state : closure1) : ()
+  
+  axiom fn_hist_inv_spec : forall self : closure1, res_state : closure1 . [%#sops'8] hist_inv'0 self res_state
+  = (self = res_state)
   
   predicate postcondition (self : closure1) (args : ()) (result : bool) =
-    [%#s692'2] let () = args in result = UInt32.gt self._0 (7 : UInt32.t)
+    [%#s692'9] let () = args in result = UInt32.gt self._0 (7 : UInt32.t)
   
   function fn_once (self : closure1) (args : ()) (res : bool) : ()
   
   axiom fn_once_spec : forall self : closure1, args : (), res : bool . [%#sops'7] postcondition_once'0 self args res
-  = (resolve'4 self /\ postcondition self args res)
+  = (postcondition self args res /\ resolve'4 self)
   
   function fn_mut (self : closure1) (args : ()) (res_state : closure1) (res : bool) : ()
   
   axiom fn_mut_spec : forall self : closure1, args : (), res_state : closure1, res : bool . [%#sops'6] postcondition_mut'0 self args res_state res
-  = (self = res_state /\ postcondition self args res)
+  = (postcondition self args res /\ self = res_state)
   
   let rec incorrect (cond:closure1) (branch:closure2) (return'  (x:()))= {[@expl:incorrect requires] [%#s692'6] precondition cond ()
     /\ (forall b : bool . precondition'0 branch b

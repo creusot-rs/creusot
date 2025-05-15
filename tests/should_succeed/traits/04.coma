@@ -3,17 +3,14 @@ module M_04__user [#"04.rs" 14 0 14 39]
   let%span s04'0 = "04.rs" 14 18 14 19
   let%span s04'1 = "04.rs" 14 25 14 26
   let%span s04'2 = "04.rs" 13 10 13 25
-  let%span s04'3 = "04.rs" 8 14 8 18
-  let%span s04'4 = "04.rs" 8 20 8 21
-  let%span s04'5 = "04.rs" 9 14 9 18
-  let%span s04'6 = "04.rs" 9 20 9 21
-  let%span s04'7 = "04.rs" 10 14 10 18
-  let%span s04'8 = "04.rs" 10 20 10 21
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
   
   use creusot.prelude.Any
   
   type t_T
+  
+  type tuple  =
+    { _p0: t_T; _p1: t_T }
   
   predicate inv (_0 : t_T)
   
@@ -24,17 +21,46 @@ module M_04__user [#"04.rs" 14 0 14 39]
   
   axiom inv_axiom [@rewrite] : forall x : t_T [inv'0 x] . inv'0 x = invariant' x
   
-  let rec func1 (self:t_T) (o:t_T) (return'  (x:bool))= {[@expl:func1 'self' type invariant] [%#s04'3] inv'0 self}
-    {[@expl:func1 'o' type invariant] [%#s04'4] inv'0 o}
-    any [ return''0 (result:bool)-> (! return' {result}) ] 
+  predicate precondition (self : ()) (args : tuple)
   
-  let rec func2 (self:t_T) (o:t_T) (return'  (x:bool))= {[@expl:func2 'self' type invariant] [%#s04'5] inv'0 self}
-    {[@expl:func2 'o' type invariant] [%#s04'6] inv'0 o}
-    any [ return''0 (result:bool)-> (! return' {result}) ] 
+  axiom precondition_fndef : forall args : tuple [precondition () args] . (let {_p0 = self ; _p1 = o} = args in inv'0 o
+  /\ inv'0 self)  -> precondition () args
   
-  let rec func3 (self:t_T) (o:t_T) (return'  (x:bool))= {[@expl:func3 'self' type invariant] [%#s04'7] inv'0 self}
-    {[@expl:func3 'o' type invariant] [%#s04'8] inv'0 o}
-    any [ return''0 (result:bool)-> (! return' {result}) ] 
+  predicate postcondition_once (self : ()) (args : tuple) (result : bool)
+  
+  axiom postcondition_fndef : forall args : tuple, res : bool [postcondition_once () args res] . postcondition_once () args res
+   -> (let {_p0 = self ; _p1 = o} = args in true)
+  
+  let rec func1 (self:t_T) (o:t_T) (return'  (x:bool))= {[@expl:func1 requires] precondition () { _p0 = self; _p1 = o }}
+    any [ return''0 (result:bool)-> {postcondition_once () { _p0 = self; _p1 = o } result} (! return' {result}) ] 
+  
+  predicate precondition'0 (self : ()) (args : tuple)
+  
+  axiom precondition_fndef'0 : forall args : tuple [precondition'0 () args] . (let {_p0 = self ; _p1 = o} = args in inv'0 o
+  /\ inv'0 self)  -> precondition'0 () args
+  
+  predicate postcondition_once'0 (self : ()) (args : tuple) (result : bool)
+  
+  axiom postcondition_fndef'0 : forall args : tuple, res : bool [postcondition_once'0 () args res] . postcondition_once'0 () args res
+   -> (let {_p0 = self ; _p1 = o} = args in true)
+  
+  let rec func2 (self:t_T) (o:t_T) (return'  (x:bool))= {[@expl:func2 requires] precondition'0 () { _p0 = self;
+                                                                                                    _p1 = o }}
+    any [ return''0 (result:bool)-> {postcondition_once'0 () { _p0 = self; _p1 = o } result} (! return' {result}) ] 
+  
+  predicate precondition'1 (self : ()) (args : tuple)
+  
+  axiom precondition_fndef'1 : forall args : tuple [precondition'1 () args] . (let {_p0 = self ; _p1 = o} = args in inv'0 o
+  /\ inv'0 self)  -> precondition'1 () args
+  
+  predicate postcondition_once'1 (self : ()) (args : tuple) (result : bool)
+  
+  axiom postcondition_fndef'1 : forall args : tuple, res : bool [postcondition_once'1 () args res] . postcondition_once'1 () args res
+   -> (let {_p0 = self ; _p1 = o} = args in true)
+  
+  let rec func3 (self:t_T) (o:t_T) (return'  (x:bool))= {[@expl:func3 requires] precondition'1 () { _p0 = self;
+                                                                                                    _p1 = o }}
+    any [ return''0 (result:bool)-> {postcondition_once'1 () { _p0 = self; _p1 = o } result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   

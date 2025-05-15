@@ -943,7 +943,6 @@ impl Print for Exp {
             Exp::Ascribe(e, t) => {
                 parens!(alloc, scope, self, e).append(" : ").append(t.pretty(alloc, scope)).group()
             }
-            Exp::Old(e) => alloc.text("old").append(e.pretty(alloc, scope).parens()),
             Exp::RecUp { record, updates } => {
                 alloc
                     .space()

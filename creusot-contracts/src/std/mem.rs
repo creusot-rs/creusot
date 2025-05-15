@@ -19,7 +19,7 @@ extern_spec! {
             fn swap<T>(x: &mut T, y: &mut T);
 
             #[ensures(result == *dest)]
-            #[ensures((^dest).is_default())]
+            #[ensures(T::default.postcondition((), ^dest))]
             fn take<T: Default>(dest: &mut T) -> T {
                 replace(dest, T::default())
             }

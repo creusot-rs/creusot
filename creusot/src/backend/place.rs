@@ -1,5 +1,5 @@
 use crate::{
-    backend::Namer,
+    backend::clone_map::Namer,
     ctx::PreMod,
     fmir::{Place, ProjectionElem},
     naming::name,

@@ -1,6 +1,6 @@
 use crate::{
     logic::FMap,
-    std::iter::{FromIterator, IntoIterator, Iterator},
+    std::iter::{FromIterator, Iterator},
     *,
 };
 use ::std::{
@@ -28,11 +28,30 @@ extern_spec! {
                     #[ensures(self@ == result@)]
                     fn iter(&self) -> Iter<'_, K, V>;
 
-                    #[ensures(self.into_iter_post(result))]
+                    #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == (^self)@.contains(k))]
+                    #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == result@.contains(k))]
+                    #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) ==> (*self)@[k] == *result@[k] && (^self)@[k] == ^result@[k])]
                     fn iter_mut(&mut self) -> IterMut<'_, K, V>;
                 }
             }
         }
+    }
+
+    impl<K: DeepModel, V, S> IntoIterator for HashMap<K, V, S> {
+        #[ensures(self@ == result@)]
+        fn into_iter(self) -> IntoIter<K, V>;
+    }
+
+    impl<'a, K: DeepModel, V, S> IntoIterator for &'a HashMap<K, V, S> {
+        #[ensures(self@ == result@)]
+        fn into_iter(self) -> Iter<'a, K, V>;
+    }
+
+    impl<'a, K: DeepModel, V, S> IntoIterator for &'a mut HashMap<K, V, S> {
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == (^self)@.contains(k))]
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == result@.contains(k))]
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) ==> (*self)@[k] == *result@[k] && (^self)@[k] == ^result@[k])]
+        fn into_iter(self) -> IterMut<'a, K, V>;
     }
 }
 
@@ -189,50 +208,6 @@ impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         proof_assert! { forall<i: Int> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
-    }
-}
-
-impl<K: DeepModel, V, S> IntoIterator for HashMap<K, V, S> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self@ == res@ }
-    }
-}
-
-impl<K: DeepModel, V, S> IntoIterator for &HashMap<K, V, S> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self@ == res@ }
-    }
-}
-
-impl<K: DeepModel, V, S> IntoIterator for &mut HashMap<K, V, S> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate(prophetic)]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { forall<k: K::DeepModelTy> (*self)@.contains(k) == (^self)@.contains(k)
-        && (forall<k: K::DeepModelTy> (*self)@.contains(k) == res@.contains(k))
-        && forall<k: K::DeepModelTy> (*self)@.contains(k) ==> (*self)@[k] == *res@[k] && (^self)@[k] == ^res@[k] }
     }
 }
 

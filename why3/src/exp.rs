@@ -128,7 +128,6 @@ pub enum Exp {
     IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
     Ascribe(Box<Exp>, Type),
     // Predicates
-    Old(Box<Exp>),
     Impl(Box<Exp>, Box<Exp>),
     Forall(Box<[(Ident, Type)]>, Box<[Trigger]>, Box<Exp>),
     Exists(Box<[(Ident, Type)]>, Box<[Trigger]>, Box<Exp>),
@@ -179,7 +178,6 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(r)
         }
         Exp::Ascribe(e, _) => f.visit_mut(e),
-        Exp::Old(e) => f.visit_mut(e),
         Exp::Impl(l, r) => {
             f.visit_mut(l);
             f.visit_mut(r)
@@ -314,7 +312,6 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(r)
         }
         Exp::Ascribe(e, _) => f.visit(e),
-        Exp::Old(e) => f.visit(e),
         Exp::Impl(l, r) => {
             f.visit(l);
             f.visit(r)
@@ -609,37 +606,21 @@ pub(crate) enum Precedence {
     IfLet,
     Attr,
     Cast,
-    /// -> / <-> / by / so
-    Impl,
-    /// \/ / ||
-    Disj,
-    /// /\ / &&
-    Conj,
-    /// not
-    Not,
-    /// infix-op level 1 (right-assoc)
-    Infix1,
-    AtOld,
-    /// infix-op level 2 (left-assoc)
-    Infix2,
-    /// infix-op level 3 (left-assoc)
-    Infix3,
-    /// infix-op level 4 (left-assoc)
-    Infix4,
-    /// prefix-op
-    Prefix,
-    /// Function abstraction
-    Abs,
-    /// Function application
-    App,
-    /// Record field accesses (from observing the why3 parser)
-    Field,
-    /// Brackets ([_])
-    Brackets,
-    /// Syntactically closed or atomic expressions
-    Atom,
-    /// !
-    BangOp,
+    Impl,     // -> / <-> / by / so
+    Disj,     // \/ / ||
+    Conj,     // /\ / &&
+    Not,      // not
+    Infix1,   // infix-op level 1 (right-assoc)
+    Infix2,   // infix-op level 2 (left-assoc)
+    Infix3,   // infix-op level 3 (left-assoc)
+    Infix4,   // infix-op level 4 (left-assoc)
+    Prefix,   // prefix-op
+    Abs,      // Function abstraction
+    App,      // Function application
+    Field,    // Record field accesses (from observing the why3 parser)
+    Brackets, // Brackets ([_])
+    Atom,     // Syntactically closed or atomic expressions
+    BangOp,   // !
 }
 
 #[derive(PartialEq, Debug)]
@@ -658,8 +639,7 @@ impl Precedence {
             Precedence::Disj => Precedence::Conj,
             Precedence::Conj => Precedence::Not,
             Precedence::Not => Precedence::Infix1,
-            Precedence::Infix1 => Precedence::AtOld,
-            Precedence::AtOld => Precedence::Infix2,
+            Precedence::Infix1 => Precedence::Infix2,
             Precedence::Infix2 => Precedence::Infix3,
             Precedence::Infix3 => Precedence::Infix4,
             Precedence::Infix4 => Precedence::Prefix,
@@ -714,7 +694,6 @@ impl Exp {
             Exp::Forall(_, _, _) => IfLet,
             Exp::Exists(_, _, _) => IfLet,
             Exp::Ascribe(_, _) => Cast,
-            Exp::Old(_) => AtOld,
             Exp::Attr(_, _) => Attr,
             Exp::Record { fields: _ } => Atom,
         }

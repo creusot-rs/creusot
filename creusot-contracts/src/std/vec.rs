@@ -1,5 +1,4 @@
 use crate::{
-    Default,
     invariant::*,
     resolve::structural_resolve,
     std::{
@@ -35,14 +34,6 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
               ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         dead
-    }
-}
-
-impl<T> Default for Vec<T> {
-    #[predicate]
-    #[open]
-    fn is_default(self) -> bool {
-        pearlite! { self.view().len() == 0 }
     }
 }
 
@@ -142,10 +133,10 @@ extern_spec! {
             }
 
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
-                #[requires(iter.into_iter_pre())]
+                #[requires(I::into_iter.precondition((iter,)))]
                 #[ensures(exists<start_ : I::IntoIter, done : &mut I::IntoIter, prod: Seq<T>>
                     inv(start_) && inv(done) && inv(prod) &&
-                    iter.into_iter_post(start_) &&
+                    I::into_iter.postcondition((iter,), start_) &&
                     done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
                 )]
                 fn extend<I>(&mut self, iter: I)
@@ -188,50 +179,25 @@ extern_spec! {
             fn from_elem<T : Clone>(elem : T, n : usize) -> Vec<T>;
         }
     }
-}
 
-#[cfg(feature = "nightly")]
-impl<T, A: Allocator> IntoIterator for Vec<T, A> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
+    impl<T, A: Allocator> IntoIterator for Vec<T, A> {
+        #[ensures(self@ == result@)]
+        fn into_iter(self) -> IntoIter<T, A>;
     }
 
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self@ == res@ }
-    }
-}
-
-#[cfg(feature = "nightly")]
-impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
+    impl<'a, T, A: Allocator> IntoIterator for &'a Vec<T, A> {
+        #[ensures(self@ == result@@)]
+        fn into_iter(self) -> std::slice::Iter<'a, T>;
     }
 
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self@ == res@@ }
-    }
-}
-
-#[cfg(feature = "nightly")]
-impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
+    impl<'a, T, A: Allocator> IntoIterator for &'a mut Vec<T, A> {
+        #[ensures(self@ == result@@)]
+        fn into_iter(self) -> std::slice::IterMut<'a, T>;
     }
 
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self@ == res@@ }
+    impl<T> Default for Vec<T> {
+        #[ensures(result@ == Seq::EMPTY)]
+        fn default() -> Vec<T>;
     }
 }
 
@@ -311,9 +277,6 @@ mod impls {
     }
     impl<T> Resolve for Vec<T> {}
     impl<T> Invariant for Vec<T> {}
-    impl<T> IntoIterator for Vec<T> {}
-    impl<T> IntoIterator for &Vec<T> {}
-    impl<T> IntoIterator for &mut Vec<T> {}
     impl<T> View for std::vec::IntoIter<T> {
         type ViewTy = Seq<T>;
     }

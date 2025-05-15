@@ -1,10 +1,10 @@
 use rustc_ast::Mutability;
-use rustc_middle::ty::{GenericArg, Ty};
+use rustc_middle::ty::{Ty, TypingEnv};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::TyKind;
 
 use crate::{
-    contracts_items::{get_builtin, get_resolve_function, is_snap_ty, is_trusted},
+    contracts_items::{get_builtin, is_snap_ty, is_trusted},
     pearlite::{Ident, Pattern, Term, TermKind},
 };
 
@@ -12,18 +12,19 @@ use super::Why3Generator;
 
 pub fn structural_resolve<'tcx>(
     ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     subject: Ident,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     let subject = Term::var(subject, ty);
     match ty.kind() {
         TyKind::Adt(adt, args) if adt.is_box() => {
-            Some(resolve_of(ctx, subject.coerce(args.type_at(0))))
+            Some(resolve_of(ctx, typing_env, subject.coerce(args.type_at(0))))
         }
         TyKind::Adt(adt, _) if is_trusted(ctx.tcx, adt.did()) => None,
-        TyKind::Adt(adt, _) if is_snap_ty(ctx.tcx, adt.did()) => Some(Term::mk_true(ctx.tcx)),
+        TyKind::Adt(adt, _) if is_snap_ty(ctx.tcx, adt.did()) => Some(Term::true_(ctx.tcx)),
         TyKind::Adt(adt, _) if get_builtin(ctx.tcx, adt.did()).is_some() => {
-            Some(Term::mk_true(ctx.tcx))
+            Some(Term::true_(ctx.tcx))
         }
         TyKind::Adt(adt, args) => {
             let arms = adt
@@ -36,11 +37,14 @@ pub fn structural_resolve<'tcx>(
                         .map(|(ix, f)| {
                             let sym = Ident::fresh_local(&format!("x{}", ix.as_usize()));
                             let fty = f.ty(ctx.tcx, args);
-                            (Pattern::binder(sym, fty), resolve_of(ctx, Term::var(sym, fty)))
+                            (
+                                Pattern::binder(sym, fty),
+                                resolve_of(ctx, typing_env, Term::var(sym, fty)),
+                            )
                         })
                         .unzip();
 
-                    let body = exps.into_iter().rfold(Term::mk_true(ctx.tcx), Term::conj);
+                    let body = exps.into_iter().rfold(Term::true_(ctx.tcx), Term::conj);
                     (Pattern::constructor(varidx, fields, ty), body)
                 })
                 .collect();
@@ -57,11 +61,11 @@ pub fn structural_resolve<'tcx>(
                 .enumerate()
                 .map(|(i, ty)| {
                     let sym = Ident::fresh_local(&format!("x{i}"));
-                    (Pattern::binder(sym, ty), resolve_of(ctx, Term::var(sym, ty)))
+                    (Pattern::binder(sym, ty), resolve_of(ctx, typing_env, Term::var(sym, ty)))
                 })
                 .unzip();
 
-            let body = exps.into_iter().rfold(Term::mk_true(ctx.tcx), Term::conj);
+            let body = exps.into_iter().rfold(Term::true_(ctx.tcx), Term::conj);
 
             Some(Term {
                 ty: ctx.types.bool,
@@ -76,13 +80,15 @@ pub fn structural_resolve<'tcx>(
             Some(subject.clone().fin().eq(ctx.tcx, subject.cur()))
         }
         TyKind::Closure(..) | TyKind::Param(_) => None,
-        _ => Some(Term::mk_true(ctx.tcx)),
+        _ => Some(Term::true_(ctx.tcx)),
     }
 }
 
-fn resolve_of<'tcx>(ctx: &Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
-    let trait_meth_id = get_resolve_function(ctx.tcx);
-    let substs = ctx.mk_args(&[GenericArg::from(term.ty)]);
-
-    Term::call_no_normalize(ctx.tcx, trait_meth_id, substs, [term])
+fn resolve_of<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    term: Term<'tcx>,
+) -> Term<'tcx> {
+    let Some((did, subst)) = ctx.resolve(typing_env, term.ty) else { return Term::true_(ctx.tcx) };
+    Term::call_no_normalize(ctx.tcx, did, subst, [term])
 }

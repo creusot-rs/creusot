@@ -10,7 +10,7 @@ use crate::{
     },
     pearlite::{Term, TermKind, UnOp},
     resolve::HasMoveDataExt,
-    translation::{fmir::*, function::mk_goto, traits},
+    translation::{fmir::*, traits},
 };
 use itertools::Itertools;
 use rustc_hir::def_id::DefId;
@@ -53,7 +53,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             .map(|r| r.resolved_places_during(ExtendedLocation::End(location)));
         let term;
         match &terminator.kind {
-            Goto { target } => term = mk_goto(*target),
+            Goto { target } => term = Terminator::Goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let real_discr = discriminator_for_switch(&self.body.basic_blocks[location.block])
                     .map(Operand::Move)
@@ -177,7 +177,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         }
                     }
 
-                    term = mk_goto(bb);
+                    term = Terminator::Goto(bb);
                 } else {
                     term = Terminator::Abort(terminator.source_info.span);
                 }
@@ -207,7 +207,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
                 let msg = self.get_explanation(msg);
                 self.emit_statement(Statement::Assertion { cond, msg, trusted: false });
-                term = mk_goto(*target)
+                term = Terminator::Goto(*target)
             }
             Drop { target, place, .. } => {
                 if self.resolver.is_some() {
@@ -234,10 +234,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     }
                 }
 
-                term = mk_goto(*target);
+                term = Terminator::Goto(*target)
             }
 
-            FalseUnwind { real_target, .. } => term = mk_goto(*real_target),
+            FalseUnwind { real_target, .. } => term = Terminator::Goto(*real_target),
             FalseEdge { .. }
             | CoroutineDrop
             | UnwindResume

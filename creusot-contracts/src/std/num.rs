@@ -1,5 +1,4 @@
 use crate::{
-    Default,
     logic::ops::{AddLogic, MulLogic, NegLogic, SubLogic},
     *,
 };
@@ -26,11 +25,10 @@ macro_rules! mach_int {
             }
         }
 
-        impl Default for $t {
-            #[predicate]
-            #[open]
-            fn is_default(self) -> bool {
-                pearlite! { self == $zero }
+        extern_spec! {
+            impl Default for $t {
+                #[ensures(result == $zero)]
+                fn default() -> $t;
             }
         }
 

@@ -53,7 +53,7 @@ pub fn no_precondition<A, B, F: FnMut(A) -> Option<B>>(f: F) -> bool {
 #[open]
 #[predicate(prophetic)]
 pub fn immutable<A, B, F: FnMut(A) -> Option<B>>(f: F) -> bool {
-    pearlite! { forall<g : F> f.unnest(g) ==> f == g }
+    pearlite! { forall<g : F> f.hist_inv(g) ==> f == g }
 }
 
 /// Asserts that the postcondition of `f` is *precise*: that there are never two possible values matching the postcondition
@@ -83,7 +83,7 @@ where
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.invariant() ==>
-            self.func().unnest(succ.func()) &&
+            self.func().hist_inv(succ.func()) &&
             // f here is a mapping from indices of `visited` to those of `s`, where `s` is the whole sequence produced by the underlying iterator
             // Interestingly, Z3 guesses `f` quite readily but gives up *totally* on `s`. However, the addition of the final assertions on the correctness of the values
             // blocks z3's guess for `f`.

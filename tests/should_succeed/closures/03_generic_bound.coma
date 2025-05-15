@@ -1,18 +1,19 @@
 module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   let%span s03_generic_bound = "03_generic_bound.rs" 6 8 6 9
   let%span s03_generic_bound'0 = "03_generic_bound.rs" 5 29 5 30
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 176 16 176 17
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 176 27 176 52
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 177 26 177 60
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 151 14 151 114
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 156 14 156 101
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 116 15 116 59
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 117 14 117 36
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 122 14 122 31
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 127 15 127 29
-  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 128 15 128 26
-  let%span sops'9 = "../../../creusot-contracts/src/std/ops.rs" 129 14 129 28
-  let%span sops'10 = "../../../creusot-contracts/src/std/ops.rs" 134 14 135 105
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 183 16 183 17
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 183 27 183 52
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 184 26 184 60
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 61
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'9 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'10 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'11 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
   
   use creusot.int.UInt32
@@ -39,36 +40,40 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   
   function fn_mut_once (self : t_F) (args : UInt32.t) (res : ()) : ()
   
-  axiom fn_mut_once_spec : forall self : t_F, args : UInt32.t, res : () . [%#sops'10] postcondition_once self args res
+  axiom fn_mut_once_spec : forall self : t_F, args : UInt32.t, res : () . [%#sops'11] postcondition_once self args res
   = (exists res_state : t_F . postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate unnest (self : t_F) (_1 : t_F)
+  predicate hist_inv (self : t_F) (result_state : t_F)
   
-  function unnest_trans (self : t_F) (b : t_F) (c : t_F) : ()
+  function hist_inv_trans (self : t_F) (b : t_F) (c : t_F) : ()
   
-  axiom unnest_trans_spec : forall self : t_F, b : t_F, c : t_F . ([%#sops'7] unnest self b)
-   -> ([%#sops'8] unnest b c)  -> ([%#sops'9] unnest self c)
+  axiom hist_inv_trans_spec : forall self : t_F, b : t_F, c : t_F . ([%#sops'8] hist_inv self b)
+   -> ([%#sops'9] hist_inv b c)  -> ([%#sops'10] hist_inv self c)
   
-  function unnest_refl (self : t_F) : ()
+  function hist_inv_refl (self : t_F) : ()
   
-  axiom unnest_refl_spec : forall self : t_F . [%#sops'6] unnest self self
+  axiom hist_inv_refl_spec : forall self : t_F . [%#sops'7] hist_inv self self
   
-  function postcondition_mut_unnest (self : t_F) (args : UInt32.t) (res_state : t_F) (res : ()) : ()
+  function postcondition_mut_hist_inv (self : t_F) (args : UInt32.t) (res_state : t_F) (res : ()) : ()
   
-  axiom postcondition_mut_unnest_spec : forall self : t_F, args : UInt32.t, res_state : t_F, res : () . ([%#sops'4] postcondition_mut self args res_state res)
-   -> ([%#sops'5] unnest self res_state)
+  axiom postcondition_mut_hist_inv_spec : forall self : t_F, args : UInt32.t, res_state : t_F, res : () . ([%#sops'5] postcondition_mut self args res_state res)
+   -> ([%#sops'6] hist_inv self res_state)
+  
+  function fn_hist_inv (self : t_F) (res_state : t_F) : ()
+  
+  axiom fn_hist_inv_spec : forall self : t_F, res_state : t_F . [%#sops'4] hist_inv self res_state = (self = res_state)
   
   predicate postcondition (self : t_F) (args : UInt32.t) (result : ())
   
   function fn_once (self : t_F) (args : UInt32.t) (res : ()) : ()
   
   axiom fn_once_spec : forall self : t_F, args : UInt32.t, res : () . [%#sops'3] postcondition_once self args res
-  = (resolve self /\ postcondition self args res)
+  = (postcondition self args res /\ resolve self)
   
   function fn_mut (self : t_F) (args : UInt32.t) (res_state : t_F) (res : ()) : ()
   
   axiom fn_mut_spec : forall self : t_F, args : UInt32.t, res_state : t_F, res : () . [%#sops'2] postcondition_mut self args res_state res
-  = (self = res_state /\ postcondition self args res)
+  = (postcondition self args res /\ self = res_state)
   
   let rec call (self_:t_F) (arg:UInt32.t) (return'  (x:()))= {[@expl:call 'self_' type invariant] [%#sops] inv'0 self_}
     {[@expl:call requires] [%#sops'0] precondition self_ arg}
