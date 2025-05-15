@@ -1,5 +1,10 @@
 use crate::{
-    contracts_items::get_fn_mut_impl_hist_inv, ctx::*, naming::name, pearlite::{normalize, super_visit_mut_term, Ident, Pattern, Term, TermKind, TermVisitorMut}, specification::PreSignature, translation::specification::contract_of
+    contracts_items::get_fn_mut_impl_hist_inv,
+    ctx::*,
+    naming::name,
+    pearlite::{Ident, Pattern, Term, TermKind, TermVisitorMut, normalize, super_visit_mut_term},
+    specification::PreSignature,
+    translation::specification::contract_of,
 };
 use indexmap::IndexMap;
 use itertools::Itertools;

@@ -1468,9 +1468,9 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn tuple(tcx: TyCtxt<'tcx>, fields: impl IntoIterator<Item = Term<'tcx>>) -> Self {
-        let fields : Box<[_]> = fields.into_iter().collect();
+        let fields: Box<[_]> = fields.into_iter().collect();
         let ty = Ty::new_tup_from_iter(tcx, fields.iter().map(|t| t.ty));
-        Term { ty, kind: TermKind::Tuple{ fields }, span: DUMMY_SP }
+        Term { ty, kind: TermKind::Tuple { fields }, span: DUMMY_SP }
     }
 
     pub(crate) fn call_no_normalize(

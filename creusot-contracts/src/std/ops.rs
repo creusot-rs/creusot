@@ -323,8 +323,8 @@ extern_spec! {
 
             impl<T, E, F: From<E>> FromResidual<Result<Infallible, E>> for Result<T, F> {
                 #[ensures(match (result, residual) {
-                  (Err(result), Err(residual)) => result.comes_from(residual),
-                  _ => false,
+                   (Err(result), Err(residual)) => F::from.postcondition((residual,), result),
+                    _ => false,
                 })]
                 fn from_residual(residual: Result<Infallible, E>) -> Self {
                     match residual {

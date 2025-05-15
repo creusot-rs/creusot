@@ -279,7 +279,7 @@ where
     #[requires(self.id() == perm.id())]
     #[ensures(self.id() == (^perm.inner_logic()).id())]
     #[ensures(result == (*perm.inner_logic())@)]
-    #[ensures((^perm.inner_logic())@.is_default())]
+    #[ensures(T::default.postcondition((), (^perm.inner_logic())@))]
     pub unsafe fn take(&self, perm: Ghost<&mut PCellOwn<T>>) -> T {
         unsafe { self.replace(perm, T::default()) }
     }

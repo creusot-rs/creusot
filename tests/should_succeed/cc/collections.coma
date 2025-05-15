@@ -5,20 +5,17 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   let%span scollections'2 = "collections.rs" 28 20 28 87
   let%span scollections'3 = "collections.rs" 29 20 29 69
   let%span scollections'4 = "collections.rs" 14 10 14 24
-  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 206 27 206 47
-  let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 207 26 207 53
-  let%span siter'1 = "../../../creusot-contracts/src/std/iter.rs" 192 26 193 120
-  let%span shash_map = "../../../creusot-contracts/src/std/collections/hash_map.rs" 73 20 73 54
-  let%span shash_map'0 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 56 12 66 29
-  let%span shash_map'1 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 199 20 199 24
-  let%span shash_map'2 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 205 20 205 33
-  let%span shash_map'3 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 245 20 247 86
-  let%span shash_map'4 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 78 14 78 45
-  let%span shash_map'5 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 79 27 79 29
-  let%span shash_map'6 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 83 15 83 32
-  let%span shash_map'7 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 84 15 84 32
-  let%span shash_map'8 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 85 14 85 42
-  let%span shash_map'9 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 87 8 87 104
+  let%span shash_map = "../../../creusot-contracts/src/std/collections/hash_map.rs" 41 18 41 34
+  let%span shash_map'0 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 92 20 92 54
+  let%span shash_map'1 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 75 12 85 29
+  let%span shash_map'2 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 220 20 222 86
+  let%span shash_map'3 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 97 14 97 45
+  let%span shash_map'4 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 98 27 98 29
+  let%span shash_map'5 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 102 15 102 32
+  let%span shash_map'6 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 103 15 103 32
+  let%span shash_map'7 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 104 14 104 42
+  let%span shash_map'8 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 106 8 106 104
+  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 164 26 165 120
   let%span sfmap = "../../../creusot-contracts/src/logic/fmap.rs" 93 8 96 9
   let%span sfmap'0 = "../../../creusot-contracts/src/logic/fmap.rs" 133 8 133 35
   let%span sfmap'1 = "../../../creusot-contracts/src/logic/fmap.rs" 229 8 229 24
@@ -179,20 +176,15 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   type t_HashMap'0  =
     { t_HashMap__base: t_HashMap }
   
-  predicate into_iter_pre (self : t_HashMap'0) =
-    [%#shash_map'1] true
-  
   type t_FMap
   
   function view (self : t_HashMap'0) : t_FMap
   
   function view'0 (self : t_IntoIter'0) : t_FMap
   
-  predicate into_iter_post (self : t_HashMap'0) (res : t_IntoIter'0) =
-    [%#shash_map'2] view self = view'0 res
+  let rec into_iter (self_:t_HashMap'0) (return'  (x:t_IntoIter'0))= any
+    [ return''0 (result:t_IntoIter'0)-> {[%#shash_map] view self_ = view'0 result} (! return' {result}) ]
   
-  let rec into_iter (self_:t_HashMap'0) (return'  (x:t_IntoIter'0))= {[@expl:into_iter requires] [%#siter] into_iter_pre self_}
-    any [ return''0 (result:t_IntoIter'0)-> {[%#siter'0] into_iter_post self_ result} (! return' {result}) ] 
   
   predicate resolve (_0 : t_IntoIter'0) =
     true
@@ -238,7 +230,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   function deep_model (self : t_K) : t_DeepModelTy
   
   predicate produces (self : t_IntoIter'0) (visited : Seq.seq tuple'0) (o : t_IntoIter'0) =
-    [%#shash_map'0] len (view'0 self) = Seq.length visited + len (view'0 o)
+    [%#shash_map'1] len (view'0 self) = Seq.length visited + len (view'0 o)
     /\ (forall k : t_K, v : t_V . contains visited { _p0'0 = k; _p1'0 = v }
      -> get (view'0 self) (deep_model k) = C_Some'0 v /\ get (view'0 o) (deep_model k) = C_None'0)
     /\ (forall k : t_DeepModelTy, v : t_V . get (view'0 o) k = C_Some'0 v
@@ -256,15 +248,15 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   function produces_trans (a : t_IntoIter'0) (ab : Seq.seq tuple'0) (b : t_IntoIter'0) (bc : Seq.seq tuple'0) (c : t_IntoIter'0) : ()
   
    =
-    [%#shash_map'9] let _ = () in ()
+    [%#shash_map'8] let _ = () in ()
   
-  axiom produces_trans_spec : forall a : t_IntoIter'0, ab : Seq.seq tuple'0, b : t_IntoIter'0, bc : Seq.seq tuple'0, c : t_IntoIter'0 . ([%#shash_map'6] produces a ab b)
-   -> ([%#shash_map'7] produces b bc c)  -> ([%#shash_map'8] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : t_IntoIter'0, ab : Seq.seq tuple'0, b : t_IntoIter'0, bc : Seq.seq tuple'0, c : t_IntoIter'0 . ([%#shash_map'5] produces a ab b)
+   -> ([%#shash_map'6] produces b bc c)  -> ([%#shash_map'7] produces a (Seq.(++) ab bc) c)
   
   function produces_refl (self : t_IntoIter'0) : () =
-    [%#shash_map'5] ()
+    [%#shash_map'4] ()
   
-  axiom produces_refl_spec : forall self : t_IntoIter'0 . [%#shash_map'4] produces self (Seq.empty : Seq.seq tuple'0) self
+  axiom produces_refl_spec : forall self : t_IntoIter'0 . [%#shash_map'3] produces self (Seq.empty : Seq.seq tuple'0) self
   
   predicate resolve'0 (self : MutBorrow.t t_IntoIter'0) =
     [%#sresolve] self.final = self.current
@@ -286,10 +278,10 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
     [%#smodel] view'0 self.current
   
   predicate completed (self : MutBorrow.t t_IntoIter'0) =
-    [%#shash_map] resolve'0 self /\ is_empty (view'2 self)
+    [%#shash_map'0] resolve'0 self /\ is_empty (view'2 self)
   
   predicate from_iter_post (prod : Seq.seq tuple'0) (res : t_HashMap'0) =
-    [%#shash_map'3] forall k : t_DeepModelTy, v : t_V . (get (view res) k = C_Some'0 v)
+    [%#shash_map'2] forall k : t_DeepModelTy, v : t_V . (get (view res) k = C_Some'0 v)
     = (exists i : int, k1 : t_K . 0 <= i
     /\ i < Seq.length prod
     /\ deep_model k1 = k
@@ -297,7 +289,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
     /\ (forall j : int . i < j /\ j < Seq.length prod  -> deep_model (Seq.get prod j)._p0'0 <> k))
   
   let rec collect (self_:t_IntoIter'0) (return'  (x:t_HashMap'0))= any
-    [ return''0 (result:t_HashMap'0)-> {[%#siter'1] exists done' : MutBorrow.t t_IntoIter'0, prod : Seq.seq tuple'0 . resolve done'.final
+    [ return''0 (result:t_HashMap'0)-> {[%#siter] exists done' : MutBorrow.t t_IntoIter'0, prod : Seq.seq tuple'0 . resolve done'.final
       /\ completed done' /\ produces self_ prod done'.current /\ from_iter_post prod result}
       (! return' {result}) ]
   
@@ -367,17 +359,17 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 34 0 34 97]
   let%span scollections = "collections.rs" 36 14 36 30
   let%span scollections'0 = "collections.rs" 40 4 43 77
   let%span scollections'1 = "collections.rs" 33 10 33 98
-  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 192 26 193 120
   let%span shash_map = "../../../creusot-contracts/src/std/collections/hash_map.rs" 28 30 28 46
-  let%span shash_map'0 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 125 20 125 54
-  let%span shash_map'1 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 108 12 118 29
-  let%span shash_map'2 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 245 20 247 86
-  let%span shash_map'3 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 130 14 130 45
-  let%span shash_map'4 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 131 27 131 29
-  let%span shash_map'5 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 135 15 135 32
-  let%span shash_map'6 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 136 15 136 32
-  let%span shash_map'7 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 137 14 137 42
-  let%span shash_map'8 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 139 8 139 104
+  let%span shash_map'0 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 144 20 144 54
+  let%span shash_map'1 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 127 12 137 29
+  let%span shash_map'2 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 220 20 222 86
+  let%span shash_map'3 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 149 14 149 45
+  let%span shash_map'4 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 150 27 150 29
+  let%span shash_map'5 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 154 15 154 32
+  let%span shash_map'6 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 155 15 155 32
+  let%span shash_map'7 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 156 14 156 42
+  let%span shash_map'8 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 158 8 158 104
+  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 164 26 165 120
   let%span sfmap = "../../../creusot-contracts/src/logic/fmap.rs" 93 8 96 9
   let%span sfmap'0 = "../../../creusot-contracts/src/logic/fmap.rs" 140 8 140 34
   let%span sfmap'1 = "../../../creusot-contracts/src/logic/fmap.rs" 49 14 49 25
@@ -644,18 +636,19 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
   let%span scollections'1 = "collections.rs" 47 10 47 128
   let%span scollections'2 = "collections.rs" 48 10 48 107
   let%span scollections'3 = "collections.rs" 49 10 49 110
-  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 192 26 193 120
-  let%span shash_map = "../../../creusot-contracts/src/std/collections/hash_map.rs" 31 30 31 57
-  let%span shash_map'0 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 177 20 177 54
-  let%span shash_map'1 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 160 12 170 29
-  let%span shash_map'2 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 233 20 235 112
-  let%span shash_map'3 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 245 20 247 86
-  let%span shash_map'4 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 182 14 182 45
-  let%span shash_map'5 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 183 27 183 29
-  let%span shash_map'6 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 187 15 187 32
-  let%span shash_map'7 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 188 15 188 32
-  let%span shash_map'8 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 189 14 189 42
-  let%span shash_map'9 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 191 8 191 104
+  let%span shash_map = "../../../creusot-contracts/src/std/collections/hash_map.rs" 31 30 31 100
+  let%span shash_map'0 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 32 30 32 99
+  let%span shash_map'1 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 33 30 33 137
+  let%span shash_map'2 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 196 20 196 54
+  let%span shash_map'3 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 179 12 189 29
+  let%span shash_map'4 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 220 20 222 86
+  let%span shash_map'5 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 201 14 201 45
+  let%span shash_map'6 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 202 27 202 29
+  let%span shash_map'7 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 206 15 206 32
+  let%span shash_map'8 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 207 15 207 32
+  let%span shash_map'9 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 208 14 208 42
+  let%span shash_map'10 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 210 8 210 104
+  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 164 26 165 120
   let%span sfmap = "../../../creusot-contracts/src/logic/fmap.rs" 93 8 96 9
   let%span sfmap'0 = "../../../creusot-contracts/src/logic/fmap.rs" 133 8 133 35
   let%span sfmap'1 = "../../../creusot-contracts/src/logic/fmap.rs" 229 8 229 24
@@ -804,15 +797,14 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
   function index_logic'0 [@inline:trivial] (self : t_FMap'0) (key : t_DeepModelTy) : MutBorrow.t t_V =
     [%#sfmap'1] lookup'0 self key
   
-  predicate into_iter_post (self : MutBorrow.t t_HashMap'0) (res : t_IterMut'0) =
-    [%#shash_map'2] forall k : t_DeepModelTy . contains (view'0 self.current) k = contains (view'0 self.final) k
-    /\ (forall k'0 : t_DeepModelTy . contains (view'0 self.current) k'0 = contains'0 (view'2 res) k'0)
-    /\ (forall k'0 : t_DeepModelTy . contains (view'0 self.current) k'0
-     -> index_logic (view'0 self.current) k'0 = (index_logic'0 (view'2 res) k'0).current
-    /\ index_logic (view'0 self.final) k'0 = (index_logic'0 (view'2 res) k'0).final)
-  
   let rec iter_mut (self_:MutBorrow.t t_HashMap'0) (return'  (x:t_IterMut'0))= any
-    [ return''0 (result:t_IterMut'0)-> {[%#shash_map] into_iter_post self_ result} (! return' {result}) ]
+    [ return''0 (result:t_IterMut'0)-> {[%#shash_map] forall k : t_DeepModelTy . contains (view'0 self_.current) k
+      = contains (view'0 self_.final) k}
+      {[%#shash_map'0] forall k : t_DeepModelTy . contains (view'0 self_.current) k = contains'0 (view'2 result) k}
+      {[%#shash_map'1] forall k : t_DeepModelTy . contains (view'0 self_.current) k
+       -> index_logic (view'0 self_.current) k = (index_logic'0 (view'2 result) k).current
+      /\ index_logic (view'0 self_.final) k = (index_logic'0 (view'2 result) k).final}
+      (! return' {result}) ]
   
   
   type t_RawTable'0  =
@@ -855,7 +847,7 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
     [%#smodel] deep_model self
   
   predicate produces (self : t_IterMut'0) (visited : Seq.seq tuple) (o : t_IterMut'0) =
-    [%#shash_map'1] len (view'2 self) = Seq.length visited + len (view'2 o)
+    [%#shash_map'3] len (view'2 self) = Seq.length visited + len (view'2 o)
     /\ (forall k : t_K, v : MutBorrow.t t_V . contains'1 visited { _p0 = k; _p1 = v }
      -> get (view'2 self) (deep_model k) = C_Some'1 v /\ get (view'2 o) (deep_model k) = C_None'1)
     /\ (forall k : t_DeepModelTy, v : MutBorrow.t t_V . get (view'2 o) k = C_Some'1 v
@@ -873,15 +865,15 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
   function produces_trans (a : t_IterMut'0) (ab : Seq.seq tuple) (b : t_IterMut'0) (bc : Seq.seq tuple) (c : t_IterMut'0) : ()
   
    =
-    [%#shash_map'9] let _ = () in ()
+    [%#shash_map'10] let _ = () in ()
   
-  axiom produces_trans_spec : forall a : t_IterMut'0, ab : Seq.seq tuple, b : t_IterMut'0, bc : Seq.seq tuple, c : t_IterMut'0 . ([%#shash_map'6] produces a ab b)
-   -> ([%#shash_map'7] produces b bc c)  -> ([%#shash_map'8] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : t_IterMut'0, ab : Seq.seq tuple, b : t_IterMut'0, bc : Seq.seq tuple, c : t_IterMut'0 . ([%#shash_map'7] produces a ab b)
+   -> ([%#shash_map'8] produces b bc c)  -> ([%#shash_map'9] produces a (Seq.(++) ab bc) c)
   
   function produces_refl (self : t_IterMut'0) : () =
-    [%#shash_map'5] ()
+    [%#shash_map'6] ()
   
-  axiom produces_refl_spec : forall self : t_IterMut'0 . [%#shash_map'4] produces self (Seq.empty : Seq.seq tuple) self
+  axiom produces_refl_spec : forall self : t_IterMut'0 . [%#shash_map'5] produces self (Seq.empty : Seq.seq tuple) self
   
   predicate resolve'0 (self : MutBorrow.t t_IterMut'0) =
     [%#sresolve] self.final = self.current
@@ -903,12 +895,12 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
     [%#smodel'0] view'2 self.current
   
   predicate completed (self : MutBorrow.t t_IterMut'0) =
-    [%#shash_map'0] resolve'0 self /\ is_empty (view'3 self)
+    [%#shash_map'2] resolve'0 self /\ is_empty (view'3 self)
   
   function view'4 (self : t_HashMap'2) : t_FMap'0
   
   predicate from_iter_post (prod : Seq.seq tuple) (res : t_HashMap'2) =
-    [%#shash_map'3] forall k : t_DeepModelTy, v : MutBorrow.t t_V . (get (view'4 res) k = C_Some'1 v)
+    [%#shash_map'4] forall k : t_DeepModelTy, v : MutBorrow.t t_V . (get (view'4 res) k = C_Some'1 v)
     = (exists i : int, k1 : t_K . 0 <= i
     /\ i < Seq.length prod
     /\ deep_model'0 k1 = k
@@ -980,29 +972,26 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
 end
 module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 66 0 66 90]
   let%span scollections = "collections.rs" 65 10 65 24
-  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 206 27 206 47
-  let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 207 26 207 53
-  let%span siter'1 = "../../../creusot-contracts/src/std/iter.rs" 192 26 193 120
+  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 164 26 165 120
   let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 362 20 362 77
   let%span sseq'0 = "../../../creusot-contracts/src/logic/seq.rs" 389 14 390 65
   let%span sseq'1 = "../../../creusot-contracts/src/logic/seq.rs" 394 4 395 5
   let%span smodel = "../../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span shash_set = "../../../creusot-contracts/src/std/collections/hash_set.rs" 166 20 166 24
-  let%span shash_set'0 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 172 20 172 33
-  let%span shash_set'1 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 105 20 105 38
-  let%span shash_set'2 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 99 8 99 38
-  let%span shash_set'3 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 194 20 194 121
-  let%span shash_set'4 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 110 14 110 45
-  let%span shash_set'5 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 111 27 111 29
-  let%span shash_set'6 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 115 15 115 32
-  let%span shash_set'7 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 116 15 116 32
-  let%span shash_set'8 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 117 14 117 42
-  let%span shash_set'9 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 119 8 119 43
-  let%span shash_set'10 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 67 16 74 23
-  let%span shash_set'11 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 80 11 80 33
-  let%span shash_set'12 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 81 11 81 33
-  let%span shash_set'13 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 82 10 82 43
-  let%span shash_set'14 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 90 4 90 31
+  let%span shash_set = "../../../creusot-contracts/src/std/collections/hash_set.rs" 49 18 49 34
+  let%span shash_set'0 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 115 20 115 38
+  let%span shash_set'1 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 109 8 109 38
+  let%span shash_set'2 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 176 20 176 121
+  let%span shash_set'3 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 120 14 120 45
+  let%span shash_set'4 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 121 27 121 29
+  let%span shash_set'5 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 125 15 125 32
+  let%span shash_set'6 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 126 15 126 32
+  let%span shash_set'7 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 127 14 127 42
+  let%span shash_set'8 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 129 8 129 43
+  let%span shash_set'9 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 77 16 84 23
+  let%span shash_set'10 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 90 11 90 33
+  let%span shash_set'11 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 91 11 91 33
+  let%span shash_set'12 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 92 10 92 43
+  let%span shash_set'13 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 100 4 100 31
   let%span sfset = "../../../creusot-contracts/src/logic/fset.rs" 47 8 47 26
   
   use creusot.int.UInt16
@@ -1150,20 +1139,15 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 66 0 66 90]
   type t_HashSet'0  =
     { t_HashSet__base: t_HashSet }
   
-  predicate into_iter_pre (self : t_HashSet'0) =
-    [%#shash_set] true
-  
   type t_DeepModelTy
   
   function view (self : t_HashSet'0) : Fset.fset t_DeepModelTy
   
   function view'0 (self : t_IntoIter'1) : Fset.fset t_DeepModelTy
   
-  predicate into_iter_post (self : t_HashSet'0) (res : t_IntoIter'1) =
-    [%#shash_set'0] view self = view'0 res
+  let rec into_iter (self_:t_HashSet'0) (return'  (x:t_IntoIter'1))= any
+    [ return''0 (result:t_IntoIter'1)-> {[%#shash_set] view self_ = view'0 result} (! return' {result}) ]
   
-  let rec into_iter (self_:t_HashSet'0) (return'  (x:t_IntoIter'1))= {[@expl:into_iter requires] [%#siter] into_iter_pre self_}
-    any [ return''0 (result:t_IntoIter'1)-> {[%#siter'0] into_iter_post self_ result} (! return' {result}) ] 
   
   predicate resolve (_0 : t_IntoIter'1) =
     true
@@ -1179,7 +1163,7 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 66 0 66 90]
     [%#sseq] exists i : int . 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
   predicate set_produces (start : t_IntoIter'1) (visited : Seq.seq t_T) (end' : t_IntoIter'1) =
-    [%#shash_set'10] Fset.cardinal (view'0 start) = Seq.length visited + Fset.cardinal (view'0 end')
+    [%#shash_set'9] Fset.cardinal (view'0 start) = Seq.length visited + Fset.cardinal (view'0 end')
     /\ (forall x : t_DeepModelTy . contains (view'0 start) x
      -> (exists x1 : t_T . deep_model x1 = x /\ contains'0 visited x1) \/ contains (view'0 end') x)
     /\ (forall x : t_T . contains'0 visited x
@@ -1200,39 +1184,39 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 66 0 66 90]
   function set_produces_trans (a : t_IntoIter'1) (ab : Seq.seq t_T) (b : t_IntoIter'1) (bc : Seq.seq t_T) (c : t_IntoIter'1) : ()
   
    =
-    [%#shash_set'14] let _ = concat_contains in let _ = let _ = () in () in let _ = let _ = () in () in ()
+    [%#shash_set'13] let _ = concat_contains in let _ = let _ = () in () in let _ = let _ = () in () in ()
   
-  axiom set_produces_trans_spec : forall a : t_IntoIter'1, ab : Seq.seq t_T, b : t_IntoIter'1, bc : Seq.seq t_T, c : t_IntoIter'1 . ([%#shash_set'11] set_produces a ab b)
-   -> ([%#shash_set'12] set_produces b bc c)  -> ([%#shash_set'13] set_produces a (Seq.(++) ab bc) c)
+  axiom set_produces_trans_spec : forall a : t_IntoIter'1, ab : Seq.seq t_T, b : t_IntoIter'1, bc : Seq.seq t_T, c : t_IntoIter'1 . ([%#shash_set'10] set_produces a ab b)
+   -> ([%#shash_set'11] set_produces b bc c)  -> ([%#shash_set'12] set_produces a (Seq.(++) ab bc) c)
   
   predicate produces (self : t_IntoIter'1) (visited : Seq.seq t_T) (o : t_IntoIter'1) =
-    [%#shash_set'2] set_produces self visited o
+    [%#shash_set'1] set_produces self visited o
   
   function produces_trans (a : t_IntoIter'1) (ab : Seq.seq t_T) (b : t_IntoIter'1) (bc : Seq.seq t_T) (c : t_IntoIter'1) : ()
   
    =
-    [%#shash_set'9] let _ = set_produces_trans a ab b bc c in ()
+    [%#shash_set'8] let _ = set_produces_trans a ab b bc c in ()
   
-  axiom produces_trans_spec : forall a : t_IntoIter'1, ab : Seq.seq t_T, b : t_IntoIter'1, bc : Seq.seq t_T, c : t_IntoIter'1 . ([%#shash_set'6] produces a ab b)
-   -> ([%#shash_set'7] produces b bc c)  -> ([%#shash_set'8] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : t_IntoIter'1, ab : Seq.seq t_T, b : t_IntoIter'1, bc : Seq.seq t_T, c : t_IntoIter'1 . ([%#shash_set'5] produces a ab b)
+   -> ([%#shash_set'6] produces b bc c)  -> ([%#shash_set'7] produces a (Seq.(++) ab bc) c)
   
   function produces_refl (self : t_IntoIter'1) : () =
-    [%#shash_set'5] ()
+    [%#shash_set'4] ()
   
-  axiom produces_refl_spec : forall self : t_IntoIter'1 . [%#shash_set'4] produces self (Seq.empty : Seq.seq t_T) self
+  axiom produces_refl_spec : forall self : t_IntoIter'1 . [%#shash_set'3] produces self (Seq.empty : Seq.seq t_T) self
   
   function view'1 (self : MutBorrow.t t_IntoIter'1) : Fset.fset t_DeepModelTy =
     [%#smodel] view'0 self.current
   
   predicate completed (self : MutBorrow.t t_IntoIter'1) =
-    [%#shash_set'1] Fset.is_empty (view'1 self)
+    [%#shash_set'0] Fset.is_empty (view'1 self)
   
   predicate from_iter_post (prod : Seq.seq t_T) (res : t_HashSet'0) =
-    [%#shash_set'3] forall x : t_DeepModelTy . contains (view res) x
+    [%#shash_set'2] forall x : t_DeepModelTy . contains (view res) x
     = (exists x1 : t_T . deep_model x1 = x /\ contains'0 prod x1)
   
   let rec collect (self_:t_IntoIter'1) (return'  (x:t_HashSet'0))= any
-    [ return''0 (result:t_HashSet'0)-> {[%#siter'1] exists done' : MutBorrow.t t_IntoIter'1, prod : Seq.seq t_T . resolve done'.final
+    [ return''0 (result:t_HashSet'0)-> {[%#siter] exists done' : MutBorrow.t t_IntoIter'1, prod : Seq.seq t_T . resolve done'.final
       /\ completed done' /\ produces self_ prod done'.current /\ from_iter_post prod result}
       (! return' {result}) ]
   
@@ -1253,7 +1237,7 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 66 0 66 90]
 end
 module M_collections__roundtrip_hashset_iter [#"collections.rs" 71 0 71 87]
   let%span scollections = "collections.rs" 70 10 70 24
-  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 192 26 193 120
+  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 164 26 165 120
   let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 362 20 362 77
   let%span sseq'0 = "../../../creusot-contracts/src/logic/seq.rs" 389 14 390 65
   let%span sseq'1 = "../../../creusot-contracts/src/logic/seq.rs" 394 4 395 5
@@ -1261,20 +1245,20 @@ module M_collections__roundtrip_hashset_iter [#"collections.rs" 71 0 71 87]
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 72 8 72 22
   let%span smodel'1 = "../../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span shash_set = "../../../creusot-contracts/src/std/collections/hash_set.rs" 24 30 24 46
-  let%span shash_set'0 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 144 20 144 38
-  let%span shash_set'1 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 138 8 138 38
-  let%span shash_set'2 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 194 20 194 121
-  let%span shash_set'3 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 149 14 149 45
-  let%span shash_set'4 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 150 27 150 29
-  let%span shash_set'5 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 154 15 154 32
-  let%span shash_set'6 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 155 15 155 32
-  let%span shash_set'7 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 156 14 156 42
-  let%span shash_set'8 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 158 8 158 43
-  let%span shash_set'9 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 67 16 74 23
-  let%span shash_set'10 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 80 11 80 33
-  let%span shash_set'11 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 81 11 81 33
-  let%span shash_set'12 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 82 10 82 43
-  let%span shash_set'13 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 90 4 90 31
+  let%span shash_set'0 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 154 20 154 38
+  let%span shash_set'1 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 148 8 148 38
+  let%span shash_set'2 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 176 20 176 121
+  let%span shash_set'3 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 159 14 159 45
+  let%span shash_set'4 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 160 27 160 29
+  let%span shash_set'5 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 164 15 164 32
+  let%span shash_set'6 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 165 15 165 32
+  let%span shash_set'7 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 166 14 166 42
+  let%span shash_set'8 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 168 8 168 43
+  let%span shash_set'9 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 77 16 84 23
+  let%span shash_set'10 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 90 11 90 33
+  let%span shash_set'11 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 91 11 91 33
+  let%span shash_set'12 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 92 10 92 43
+  let%span shash_set'13 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 100 4 100 31
   let%span sfset = "../../../creusot-contracts/src/logic/fset.rs" 47 8 47 26
   
   use creusot.int.UInt16
@@ -1456,8 +1440,8 @@ module M_collections__roundtrip_hashset_iter [#"collections.rs" 71 0 71 87]
 end
 module M_collections__hashset_intersection [#"collections.rs" 76 0 79 15]
   let%span scollections = "collections.rs" 75 10 75 42
-  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 143 26 143 47
-  let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 192 26 193 120
+  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 115 26 115 47
+  let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 164 26 165 120
   let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 362 20 362 77
   let%span sseq'0 = "../../../creusot-contracts/src/logic/seq.rs" 389 14 390 65
   let%span sseq'1 = "../../../creusot-contracts/src/logic/seq.rs" 394 4 395 5
@@ -1466,20 +1450,20 @@ module M_collections__hashset_intersection [#"collections.rs" 76 0 79 15]
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 72 8 72 22
   let%span smodel'1 = "../../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span shash_set = "../../../creusot-contracts/src/std/collections/hash_set.rs" 32 30 32 67
-  let%span shash_set'0 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 194 20 194 121
-  let%span shash_set'1 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 230 20 230 56
-  let%span shash_set'2 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 224 8 224 38
-  let%span shash_set'3 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 235 14 235 45
-  let%span shash_set'4 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 236 27 236 29
-  let%span shash_set'5 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 240 15 240 32
-  let%span shash_set'6 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 241 15 241 32
-  let%span shash_set'7 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 242 14 242 42
-  let%span shash_set'8 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 244 8 244 43
-  let%span shash_set'9 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 67 16 74 23
-  let%span shash_set'10 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 80 11 80 33
-  let%span shash_set'11 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 81 11 81 33
-  let%span shash_set'12 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 82 10 82 43
-  let%span shash_set'13 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 90 4 90 31
+  let%span shash_set'0 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 176 20 176 121
+  let%span shash_set'1 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 212 20 212 56
+  let%span shash_set'2 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 206 8 206 38
+  let%span shash_set'3 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 217 14 217 45
+  let%span shash_set'4 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 218 27 218 29
+  let%span shash_set'5 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 222 15 222 32
+  let%span shash_set'6 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 223 15 223 32
+  let%span shash_set'7 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 224 14 224 42
+  let%span shash_set'8 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 226 8 226 43
+  let%span shash_set'9 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 77 16 84 23
+  let%span shash_set'10 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 90 11 90 33
+  let%span shash_set'11 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 91 11 91 33
+  let%span shash_set'12 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 92 10 92 43
+  let%span shash_set'13 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 100 4 100 31
   let%span sfset = "../../../creusot-contracts/src/logic/fset.rs" 47 8 47 26
   let%span scopied = "../../../creusot-contracts/src/std/iter/copied.rs" 11 14 11 39
   let%span scopied'0 = "../../../creusot-contracts/src/std/iter/copied.rs" 40 12 40 105
@@ -1719,8 +1703,8 @@ module M_collections__hashset_intersection [#"collections.rs" 76 0 79 15]
 end
 module M_collections__hashset_difference [#"collections.rs" 84 0 87 15]
   let%span scollections = "collections.rs" 83 10 83 40
-  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 143 26 143 47
-  let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 192 26 193 120
+  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 115 26 115 47
+  let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 164 26 165 120
   let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 362 20 362 77
   let%span sseq'0 = "../../../creusot-contracts/src/logic/seq.rs" 389 14 390 65
   let%span sseq'1 = "../../../creusot-contracts/src/logic/seq.rs" 394 4 395 5
@@ -1729,20 +1713,20 @@ module M_collections__hashset_difference [#"collections.rs" 84 0 87 15]
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 72 8 72 22
   let%span smodel'1 = "../../../creusot-contracts/src/model.rs" 45 8 45 28
   let%span shash_set = "../../../creusot-contracts/src/std/collections/hash_set.rs" 35 30 35 65
-  let%span shash_set'0 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 194 20 194 121
-  let%span shash_set'1 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 258 20 258 56
-  let%span shash_set'2 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 252 8 252 38
-  let%span shash_set'3 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 263 14 263 45
-  let%span shash_set'4 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 264 27 264 29
-  let%span shash_set'5 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 268 15 268 32
-  let%span shash_set'6 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 269 15 269 32
-  let%span shash_set'7 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 270 14 270 42
-  let%span shash_set'8 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 272 8 272 43
-  let%span shash_set'9 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 67 16 74 23
-  let%span shash_set'10 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 80 11 80 33
-  let%span shash_set'11 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 81 11 81 33
-  let%span shash_set'12 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 82 10 82 43
-  let%span shash_set'13 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 90 4 90 31
+  let%span shash_set'0 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 176 20 176 121
+  let%span shash_set'1 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 240 20 240 56
+  let%span shash_set'2 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 234 8 234 38
+  let%span shash_set'3 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 245 14 245 45
+  let%span shash_set'4 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 246 27 246 29
+  let%span shash_set'5 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 250 15 250 32
+  let%span shash_set'6 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 251 15 251 32
+  let%span shash_set'7 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 252 14 252 42
+  let%span shash_set'8 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 254 8 254 43
+  let%span shash_set'9 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 77 16 84 23
+  let%span shash_set'10 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 90 11 90 33
+  let%span shash_set'11 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 91 11 91 33
+  let%span shash_set'12 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 92 10 92 43
+  let%span shash_set'13 = "../../../creusot-contracts/src/std/collections/hash_set.rs" 100 4 100 31
   let%span sfset = "../../../creusot-contracts/src/logic/fset.rs" 47 8 47 26
   let%span scopied = "../../../creusot-contracts/src/std/iter/copied.rs" 11 14 11 39
   let%span scopied'0 = "../../../creusot-contracts/src/std/iter/copied.rs" 40 12 40 105

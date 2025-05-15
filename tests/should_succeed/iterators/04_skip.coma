@@ -157,10 +157,20 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
   let%span scommon'1 = "common.rs" 19 15 19 32
   let%span scommon'2 = "common.rs" 20 14 20 42
   let%span smem = "../../../creusot-contracts/src/std/mem.rs" 21 22 21 37
-  let%span smem'0 = "../../../creusot-contracts/src/std/mem.rs" 22 22 22 42
+  let%span smem'0 = "../../../creusot-contracts/src/std/mem.rs" 22 22 22 57
   let%span sindex = "../../../creusot-contracts/src/logic/ops/index.rs" 96 8 96 33
-  let%span snum = "../../../creusot-contracts/src/std/num.rs" 33 28 33 41
+  let%span snum = "../../../creusot-contracts/src/std/num.rs" 30 26 30 41
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
   
   use creusot.prelude.MutBorrow
@@ -174,20 +184,69 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
   type t_Skip  =
     { t_Skip__iter: t_I; t_Skip__n: UInt64.t }
   
-  predicate is_default (self : UInt64.t) =
-    [%#snum] self = (0 : UInt64.t)
+  predicate postcondition_once (self : ()) (args : ()) (result : UInt64.t) =
+    let () = args in result = (0 : UInt64.t)
+  
+  predicate resolve (_0 : ()) =
+    true
+  
+  predicate postcondition_mut (self : ()) (args : ()) (result_state : ()) (result : UInt64.t) =
+    let () = args in result = (0 : UInt64.t)
+  
+  function fn_mut_once (self : ()) (args : ()) (res : UInt64.t) : ()
+  
+  axiom fn_mut_once_spec : forall self : (), args : (), res : UInt64.t . [%#sops'8] postcondition_once self args res
+  = (exists res_state : () . postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self : ()) (result_state : ()) =
+    true
+  
+  function hist_inv_trans (self : ()) (b : ()) (c : ()) : ()
+  
+  axiom hist_inv_trans_spec : forall self : (), b : (), c : () . ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self : ()) : ()
+  
+  axiom hist_inv_refl_spec : forall self : () . [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : ()) (args : ()) (res_state : ()) (res : UInt64.t) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : (), args : (), res_state : (), res : UInt64.t . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self : ()) (res_state : ()) : ()
+  
+  axiom fn_hist_inv_spec : forall self : (), res_state : () . [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self : ()) (args : ()) (result : UInt64.t) =
+    let () = args in result = (0 : UInt64.t)
+  
+  function fn_once (self : ()) (args : ()) (res : UInt64.t) : ()
+  
+  axiom fn_once_spec : forall self : (), args : (), res : UInt64.t . [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self : ()) (args : ()) (res_state : ()) (res : UInt64.t) : ()
+  
+  axiom fn_mut_spec : forall self : (), args : (), res_state : (), res : UInt64.t . [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  let rec default (return'  (x:UInt64.t))= any
+    [ return''0 (result:UInt64.t)-> {[%#snum] result = (0 : UInt64.t)} (! return' {result}) ]
+  
   
   let rec take (dest:MutBorrow.t UInt64.t) (return'  (x:UInt64.t))= any
     [ return''0 (result:UInt64.t)-> {[%#smem] result = dest.current}
-      {[%#smem'0] is_default dest.final}
+      {[%#smem'0] postcondition () () dest.final}
       (! return' {result}) ]
   
   
-  predicate resolve (self : MutBorrow.t UInt64.t) =
+  predicate resolve'0 (self : MutBorrow.t UInt64.t) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0 : MutBorrow.t UInt64.t) =
-    resolve _0
+  predicate resolve'1 (_0 : MutBorrow.t UInt64.t) =
+    resolve'0 _0
   
   type t_Item
   
@@ -203,7 +262,7 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
   
   axiom produces_refl_spec : forall self : t_I . [%#scommon] produces self (Seq.empty : Seq.seq t_Item) self
   
-  predicate resolve'1 (_0 : t_Item)
+  predicate resolve'2 (_0 : t_Item)
   
   function index_logic [@inline:trivial] (self : Seq.seq t_Item) (ix : int) : t_Item =
     [%#sindex] Seq.get self ix
@@ -252,9 +311,9 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
     | C_Some a_0 -> inv'3 a_0
     end
   
-  predicate postcondition_once (self : ()) (args : MutBorrow.t t_I) (result : t_Option)
+  predicate postcondition_once'0 (self : ()) (args : MutBorrow.t t_I) (result : t_Option)
   
-  axiom postcondition_fndef : forall args : MutBorrow.t t_I, res : t_Option [postcondition_once () args res] . postcondition_once () args res
+  axiom postcondition_fndef : forall args : MutBorrow.t t_I, res : t_Option [postcondition_once'0 () args res] . postcondition_once'0 () args res
    -> (let self = args in match res with
     | C_None -> completed self
     | C_Some v -> produces self.current (Seq.singleton v) self.final
@@ -262,24 +321,24 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
   /\ inv'4 res)
   
   let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self}
-    any [ return''0 (result:t_Option)-> {postcondition_once () self result} (! return' {result}) ] 
+    any [ return''0 (result:t_Option)-> {postcondition_once'0 () self result} (! return' {result}) ] 
   
   let rec v_Some (input:t_Option) (ret  (field_0:t_Item))= any
     [ good (field_0:t_Item)-> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_Item [C_Some field_0 : t_Option] . C_Some field_0 <> input} (! {false} any) ]
   
   
-  predicate resolve'2 (self : MutBorrow.t t_Skip) =
+  predicate resolve'3 (self : MutBorrow.t t_Skip) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'3 (_0 : MutBorrow.t t_Skip) =
-    resolve'2 _0
+  predicate resolve'4 (_0 : MutBorrow.t t_Skip) =
+    resolve'3 _0
   
   predicate completed'0 [#"04_skip.rs" 24 4 24 35] (self : MutBorrow.t t_Skip) =
     [%#s04_skip'12] UInt64.t'int (self.final).t_Skip__n = 0
     /\ (exists s : Seq.seq t_Item, i : MutBorrow.t t_I . Seq.length s <= UInt64.t'int (self.current).t_Skip__n
     /\ produces (self.current).t_Skip__iter s i.current
-    /\ (forall i'0 : int . 0 <= i'0 /\ i'0 < Seq.length s  -> resolve'1 (Seq.get s i'0))
+    /\ (forall i'0 : int . 0 <= i'0 /\ i'0 < Seq.length s  -> resolve'2 (Seq.get s i'0))
     /\ completed i /\ i.final = (self.final).t_Skip__iter)
   
   predicate produces'0 [#"04_skip.rs" 38 4 38 64] (self : t_Skip) (visited : Seq.seq t_Item) (o : t_Skip) =
@@ -288,7 +347,7 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
     /\ Seq.length visited > 0
     /\ (exists s : Seq.seq t_Item . Seq.length s = UInt64.t'int self.t_Skip__n
     /\ produces self.t_Skip__iter (Seq.(++) s visited) o.t_Skip__iter
-    /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> resolve'1 (Seq.get s i)))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> resolve'2 (Seq.get s i)))
   
   meta "compute_max_steps" 1000000
   
@@ -310,7 +369,7 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
       | s3 = bb2 ]
     
     | bb2 = s0
-      [ s0 = -{resolve'0 _7}- s1 | s1 =  [ &skipped <- [%#s04_skip'0] Seq.empty : Seq.seq t_Item ] s2 | s2 = bb3 ]
+      [ s0 = -{resolve'1 _7}- s1 | s1 =  [ &skipped <- [%#s04_skip'0] Seq.empty : Seq.seq t_Item ] s2 | s2 = bb3 ]
     
     | bb3 = s0 [ s0 =  [ &old_4_0 <- self'0 ] s1 | s1 = bb4 ] 
     | bb4 = bb4'0
@@ -320,7 +379,7 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
         = UInt64.t'int (old_self.current).t_Skip__n}
         {[@expl:loop invariant #2] [%#s04_skip'3] produces (old_self.current).t_Skip__iter skipped (self'0.current).t_Skip__iter}
         {[@expl:loop invariant #3] [%#s04_skip'2] forall i : int . 0 <= i /\ i < Seq.length skipped
-         -> resolve'1 (index_logic skipped i)}
+         -> resolve'2 (index_logic skipped i)}
         {[@expl:loop invariant #4] [%#s04_skip'1] UInt64.t'int (self'0.current).t_Skip__n = 0}
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
@@ -343,7 +402,7 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
         | bb11 = s0
           [ s0 = v_Some {r} (fun (r0:t_Item) ->  [ &x <- r0 ] s1)
           | s1 = {[@expl:type invariant] inv'3 x} s2
-          | s2 = -{resolve'1 x}- s3
+          | s2 = -{resolve'2 x}- s3
           | s3 =  [ &_26 <- [%#s04_skip'7] Seq.(++) skipped (Seq.singleton x) ] s4
           | s4 = bb12 ]
         
@@ -358,13 +417,13 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
     
     | bb7 = s0
       [ s0 = {[@expl:type invariant] inv'1 self'0} s1
-      | s1 = -{resolve'3 self'0}- s2
+      | s1 = -{resolve'4 self'0}- s2
       | s2 =  [ &_0 <- r ] s3
       | s3 = bb15 ]
     
     | bb9 = s0
       [ s0 = {[@expl:type invariant] inv'1 self'0} s1
-      | s1 = -{resolve'3 self'0}- s2
+      | s1 = -{resolve'4 self'0}- s2
       | s2 =  [ &_0 <- r ] s3
       | s3 = bb15 ]
     

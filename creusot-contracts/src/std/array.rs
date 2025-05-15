@@ -1,8 +1,4 @@
-use crate::{
-    invariant::*,
-    std::iter::{IntoIterator, Iterator},
-    *,
-};
+use crate::{invariant::*, std::iter::Iterator, *};
 use ::std::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
@@ -82,16 +78,9 @@ impl<T, const N: usize> Iterator for IntoIter<T, N> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-impl<T, const N: usize> IntoIterator for [T; N] {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate(prophetic)]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self@ == res@ }
+extern_spec! {
+    impl<T, const N: usize> IntoIterator for [T; N] {
+        #[ensures(self@ == result@)]
+        fn into_iter(self) -> std::array::IntoIter<T, N>;
     }
 }

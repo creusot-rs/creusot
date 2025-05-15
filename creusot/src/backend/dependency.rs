@@ -11,7 +11,10 @@ use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 use rustc_type_ir::AliasTyKind;
 
-use crate::{ctx::PreMod, naming::{item_symb, translate_accessor_name, translate_name, type_name, value_name}};
+use crate::{
+    ctx::PreMod,
+    naming::{item_symb, translate_accessor_name, translate_name, type_name, value_name},
+};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.

@@ -1,6 +1,7 @@
 use crate::{
     backend::{
-        clone_map::Namer, Why3Generator,
+        Why3Generator,
+        clone_map::Namer,
         logic::function_call,
         term::{lower_condition, lower_pure},
         ty::translate_ty,

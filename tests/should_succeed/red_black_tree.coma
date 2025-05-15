@@ -1069,7 +1069,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right [#"red_black_tree.
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   let%span smem = "../../creusot-contracts/src/std/mem.rs" 23 32 23 36
   let%span smem'0 = "../../creusot-contracts/src/std/mem.rs" 21 22 21 37
-  let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 22 22 22 42
+  let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 22 22 22 57
   let%span smem'2 = "../../creusot-contracts/src/std/mem.rs" 19 23 19 24
   let%span smem'3 = "../../creusot-contracts/src/std/mem.rs" 19 34 19 35
   let%span smem'4 = "../../creusot-contracts/src/std/mem.rs" 17 22 17 30
@@ -1077,7 +1077,17 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right [#"red_black_tree.
   let%span soption = "../../creusot-contracts/src/std/option.rs" 135 16 135 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 136 27 136 39
   let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 137 26 137 46
-  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 569 20 569 32
+  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 581 18 581 32
+  let%span sops = "../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 163 14 163 61
+  let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'4 = "../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'5 = "../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.prelude.MutBorrow
   use mach.int.Int
@@ -1140,22 +1150,71 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right [#"red_black_tree.
   
   axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t t_Option [inv'5 x] . inv'5 x = invariant''0 x
   
-  predicate is_default (self : t_Option) =
-    [%#soption'2] self = C_None
+  predicate postcondition_once (self : ()) (args : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  predicate resolve (_0 : ()) =
+    true
+  
+  predicate postcondition_mut (self : ()) (args : ()) (result_state : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  function fn_mut_once (self : ()) (args : ()) (res : t_Option) : ()
+  
+  axiom fn_mut_once_spec : forall self : (), args : (), res : t_Option . [%#sops'8] postcondition_once self args res
+  = (exists res_state : () . postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self : ()) (result_state : ()) =
+    true
+  
+  function hist_inv_trans (self : ()) (b : ()) (c : ()) : ()
+  
+  axiom hist_inv_trans_spec : forall self : (), b : (), c : () . ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self : ()) : ()
+  
+  axiom hist_inv_refl_spec : forall self : () . [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : ()) (args : ()) (res_state : ()) (res : t_Option) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : (), args : (), res_state : (), res : t_Option . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self : ()) (res_state : ()) : ()
+  
+  axiom fn_hist_inv_spec : forall self : (), res_state : () . [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self : ()) (args : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  function fn_once (self : ()) (args : ()) (res : t_Option) : ()
+  
+  axiom fn_once_spec : forall self : (), args : (), res : t_Option . [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self : ()) (args : ()) (res_state : ()) (res : t_Option) : ()
+  
+  axiom fn_mut_spec : forall self : (), args : (), res_state : (), res : t_Option . [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  let rec default (return'  (x:t_Option))= any
+    [ return''0 (result:t_Option)-> {inv'2 result} {[%#soption'2] result = C_None} (! return' {result}) ]
+  
   
   let rec take (dest:MutBorrow.t t_Option) (return'  (x:t_Option))= {[@expl:take 'dest' type invariant] [%#smem] inv'5 dest}
     any
     [ return''0 (result:t_Option)-> {inv'2 result}
       {[%#smem'0] result = dest.current}
-      {[%#smem'1] is_default dest.final}
+      {[%#smem'1] postcondition () () dest.final}
       (! return' {result}) ]
   
   
-  predicate resolve (self : MutBorrow.t t_Option) =
+  predicate resolve'0 (self : MutBorrow.t t_Option) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0 : MutBorrow.t t_Option) =
-    resolve _0
+  predicate resolve'1 (_0 : MutBorrow.t t_Option) =
+    resolve'0 _0
   
   let rec unwrap (self_:t_Option) (return'  (x:t_Node))= {[@expl:unwrap 'self_' type invariant] [%#soption] inv'2 self_}
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None}
@@ -1174,11 +1233,11 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right [#"red_black_tree.
     [ return''0 (result:())-> {[%#smem'4] x.final = y.current} {[%#smem'5] y.final = x.current} (! return' {result}) ]
   
   
-  predicate resolve'1 (self : MutBorrow.t t_Tree) =
+  predicate resolve'2 (self : MutBorrow.t t_Tree) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0 : MutBorrow.t t_Tree) =
-    resolve'1 _0
+  predicate resolve'3 (_0 : MutBorrow.t t_Tree) =
+    resolve'2 _0
   
   predicate invariant''2 (self : MutBorrow.t t_Node) =
     [%#sinvariant] inv'3 self.current /\ inv'3 self.final
@@ -1200,21 +1259,21 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right [#"red_black_tree.
   
   axiom inv_axiom'6 [@rewrite] : forall x : MutBorrow.t t_Node [inv'8 x] . inv'8 x = invariant''3 x
   
-  predicate resolve'3 (self : MutBorrow.t t_Node) =
+  predicate resolve'4 (self : MutBorrow.t t_Node) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'4 (_0 : MutBorrow.t t_Node) =
-    resolve'3 _0
+  predicate resolve'5 (_0 : MutBorrow.t t_Node) =
+    resolve'4 _0
   
   let rec swap'1 (x:MutBorrow.t t_Color) (y:MutBorrow.t t_Color) (return'  (x'0:()))= any
     [ return''0 (result:())-> {[%#smem'4] x.final = y.current} {[%#smem'5] y.final = x.current} (! return' {result}) ]
   
   
-  predicate resolve'5 (self : MutBorrow.t t_Color) =
+  predicate resolve'6 (self : MutBorrow.t t_Color) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'6 (_0 : MutBorrow.t t_Color) =
-    resolve'5 _0
+  predicate resolve'7 (_0 : MutBorrow.t t_Color) =
+    resolve'6 _0
   
   type t_DeepModelTy
   
@@ -1227,19 +1286,19 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right [#"red_black_tree.
       \/ has_mapping right k v \/ k = deep_model key /\ v = val'
       end
   
-  predicate resolve'7 (_0 : t_V)
+  predicate resolve'8 (_0 : t_V)
   
-  predicate resolve'8 [#"red_black_tree.rs" 178 4 178 28] (self : t_Tree) =
-    [%#sred_black_tree'17] forall k : t_DeepModelTy, v : t_V . has_mapping self k v  -> resolve'7 v
+  predicate resolve'9 [#"red_black_tree.rs" 178 4 178 28] (self : t_Tree) =
+    [%#sred_black_tree'17] forall k : t_DeepModelTy, v : t_V . has_mapping self k v  -> resolve'8 v
   
-  predicate resolve'9 (_0 : t_Tree) =
-    resolve'8 _0
+  predicate resolve'10 (_0 : t_Tree) =
+    resolve'9 _0
   
-  predicate resolve'10 (self : MutBorrow.t t_Node) =
+  predicate resolve'11 (self : MutBorrow.t t_Node) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'11 (_0 : MutBorrow.t t_Node) =
-    resolve'10 _0
+  predicate resolve'12 (_0 : MutBorrow.t t_Node) =
+    resolve'11 _0
   
   type t_Ordering  =
     | C_Less
@@ -1398,7 +1457,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right [#"red_black_tree.
     
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv'5 _16} s1
-      | s1 = -{resolve'0 _16}- s2
+      | s1 = -{resolve'1 _16}- s2
       | s2 = unwrap {_14} (fun (_ret:t_Node) ->  [ &x <- _ret ] s3)
       | s3 = bb3 ]
     
@@ -1436,9 +1495,9 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right [#"red_black_tree.
     
     | bb4 = s0
       [ s0 = {[@expl:type invariant] inv'6 _21} s1
-      | s1 = -{resolve'2 _21}- s2
+      | s1 = -{resolve'3 _21}- s2
       | s2 = {[@expl:type invariant] inv'6 _19} s3
-      | s3 = -{resolve'2 _19}- s4
+      | s3 = -{resolve'3 _19}- s4
       | s4 = {inv'4 x}
         MutBorrow.borrow_mut <t_Node> {x}
           (fun (_ret:MutBorrow.t t_Node) ->  [ &_25 <- _ret ] -{inv'4 _ret.final}-  [ &x <- _ret.final ] s5)
@@ -1461,7 +1520,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right [#"red_black_tree.
     
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'8 _25} s1
-      | s1 = -{resolve'4 _25}- s2
+      | s1 = -{resolve'5 _25}- s2
       | s2 = MutBorrow.borrow_final
           <t_Color>
           {(self'0.current).t_Node__color}
@@ -1480,8 +1539,8 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right [#"red_black_tree.
       | s7 = bb6 ]
     
     | bb6 = s0
-      [ s0 = -{resolve'6 _30}- s1
-      | s1 = -{resolve'6 _28}- s2
+      [ s0 = -{resolve'7 _30}- s1
+      | s1 = -{resolve'7 _28}- s2
       | s2 = {[@expl:assertion] [%#sred_black_tree'0] has_mapping (old_self.current).t_Node__left (deep_model (self'0.current).t_Node__key) (self'0.current).t_Node__val}
         s3
       | s3 =  [ &_34 <- C_Some x ] s4
@@ -1496,13 +1555,13 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right [#"red_black_tree.
           end}
         s1
       | s1 = -{match self'0 with
-          | {current = {t_Node__right = x'0}} -> resolve'9 x'0
+          | {current = {t_Node__right = x'0}} -> resolve'10 x'0
           | _ -> true
           end}-
         s2
       | s2 =  [ &self'0 <- { self'0 with current = { self'0.current with t_Node__right = _33 } } ] s3
       | s3 = {[@expl:type invariant] inv'7 self'0} s4
-      | s4 = -{resolve'11 self'0}- s5
+      | s4 = -{resolve'12 self'0}- s5
       | s5 = bb11 ]
     
     | bb11 = bb12
@@ -1595,7 +1654,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left [#"red_black_tree.r
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   let%span smem = "../../creusot-contracts/src/std/mem.rs" 23 32 23 36
   let%span smem'0 = "../../creusot-contracts/src/std/mem.rs" 21 22 21 37
-  let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 22 22 22 42
+  let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 22 22 22 57
   let%span smem'2 = "../../creusot-contracts/src/std/mem.rs" 19 23 19 24
   let%span smem'3 = "../../creusot-contracts/src/std/mem.rs" 19 34 19 35
   let%span smem'4 = "../../creusot-contracts/src/std/mem.rs" 17 22 17 30
@@ -1603,7 +1662,17 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left [#"red_black_tree.r
   let%span soption = "../../creusot-contracts/src/std/option.rs" 135 16 135 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 136 27 136 39
   let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 137 26 137 46
-  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 569 20 569 32
+  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 581 18 581 32
+  let%span sops = "../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 163 14 163 61
+  let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'4 = "../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'5 = "../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.prelude.MutBorrow
   use mach.int.Int
@@ -1666,22 +1735,71 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left [#"red_black_tree.r
   
   axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t t_Option [inv'5 x] . inv'5 x = invariant''0 x
   
-  predicate is_default (self : t_Option) =
-    [%#soption'2] self = C_None
+  predicate postcondition_once (self : ()) (args : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  predicate resolve (_0 : ()) =
+    true
+  
+  predicate postcondition_mut (self : ()) (args : ()) (result_state : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  function fn_mut_once (self : ()) (args : ()) (res : t_Option) : ()
+  
+  axiom fn_mut_once_spec : forall self : (), args : (), res : t_Option . [%#sops'8] postcondition_once self args res
+  = (exists res_state : () . postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self : ()) (result_state : ()) =
+    true
+  
+  function hist_inv_trans (self : ()) (b : ()) (c : ()) : ()
+  
+  axiom hist_inv_trans_spec : forall self : (), b : (), c : () . ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self : ()) : ()
+  
+  axiom hist_inv_refl_spec : forall self : () . [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : ()) (args : ()) (res_state : ()) (res : t_Option) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : (), args : (), res_state : (), res : t_Option . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self : ()) (res_state : ()) : ()
+  
+  axiom fn_hist_inv_spec : forall self : (), res_state : () . [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self : ()) (args : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  function fn_once (self : ()) (args : ()) (res : t_Option) : ()
+  
+  axiom fn_once_spec : forall self : (), args : (), res : t_Option . [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self : ()) (args : ()) (res_state : ()) (res : t_Option) : ()
+  
+  axiom fn_mut_spec : forall self : (), args : (), res_state : (), res : t_Option . [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  let rec default (return'  (x:t_Option))= any
+    [ return''0 (result:t_Option)-> {inv'2 result} {[%#soption'2] result = C_None} (! return' {result}) ]
+  
   
   let rec take (dest:MutBorrow.t t_Option) (return'  (x:t_Option))= {[@expl:take 'dest' type invariant] [%#smem] inv'5 dest}
     any
     [ return''0 (result:t_Option)-> {inv'2 result}
       {[%#smem'0] result = dest.current}
-      {[%#smem'1] is_default dest.final}
+      {[%#smem'1] postcondition () () dest.final}
       (! return' {result}) ]
   
   
-  predicate resolve (self : MutBorrow.t t_Option) =
+  predicate resolve'0 (self : MutBorrow.t t_Option) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0 : MutBorrow.t t_Option) =
-    resolve _0
+  predicate resolve'1 (_0 : MutBorrow.t t_Option) =
+    resolve'0 _0
   
   let rec unwrap (self_:t_Option) (return'  (x:t_Node))= {[@expl:unwrap 'self_' type invariant] [%#soption] inv'2 self_}
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None}
@@ -1700,11 +1818,11 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left [#"red_black_tree.r
     [ return''0 (result:())-> {[%#smem'4] x.final = y.current} {[%#smem'5] y.final = x.current} (! return' {result}) ]
   
   
-  predicate resolve'1 (self : MutBorrow.t t_Tree) =
+  predicate resolve'2 (self : MutBorrow.t t_Tree) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0 : MutBorrow.t t_Tree) =
-    resolve'1 _0
+  predicate resolve'3 (_0 : MutBorrow.t t_Tree) =
+    resolve'2 _0
   
   predicate invariant''2 (self : MutBorrow.t t_Node) =
     [%#sinvariant] inv'3 self.current /\ inv'3 self.final
@@ -1726,21 +1844,21 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left [#"red_black_tree.r
   
   axiom inv_axiom'6 [@rewrite] : forall x : MutBorrow.t t_Node [inv'8 x] . inv'8 x = invariant''3 x
   
-  predicate resolve'3 (self : MutBorrow.t t_Node) =
+  predicate resolve'4 (self : MutBorrow.t t_Node) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'4 (_0 : MutBorrow.t t_Node) =
-    resolve'3 _0
+  predicate resolve'5 (_0 : MutBorrow.t t_Node) =
+    resolve'4 _0
   
   let rec swap'1 (x:MutBorrow.t t_Color) (y:MutBorrow.t t_Color) (return'  (x'0:()))= any
     [ return''0 (result:())-> {[%#smem'4] x.final = y.current} {[%#smem'5] y.final = x.current} (! return' {result}) ]
   
   
-  predicate resolve'5 (self : MutBorrow.t t_Color) =
+  predicate resolve'6 (self : MutBorrow.t t_Color) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'6 (_0 : MutBorrow.t t_Color) =
-    resolve'5 _0
+  predicate resolve'7 (_0 : MutBorrow.t t_Color) =
+    resolve'6 _0
   
   type t_DeepModelTy
   
@@ -1753,19 +1871,19 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left [#"red_black_tree.r
       \/ has_mapping right k v \/ k = deep_model key /\ v = val'
       end
   
-  predicate resolve'7 (_0 : t_V)
+  predicate resolve'8 (_0 : t_V)
   
-  predicate resolve'8 [#"red_black_tree.rs" 178 4 178 28] (self : t_Tree) =
-    [%#sred_black_tree'17] forall k : t_DeepModelTy, v : t_V . has_mapping self k v  -> resolve'7 v
+  predicate resolve'9 [#"red_black_tree.rs" 178 4 178 28] (self : t_Tree) =
+    [%#sred_black_tree'17] forall k : t_DeepModelTy, v : t_V . has_mapping self k v  -> resolve'8 v
   
-  predicate resolve'9 (_0 : t_Tree) =
-    resolve'8 _0
+  predicate resolve'10 (_0 : t_Tree) =
+    resolve'9 _0
   
-  predicate resolve'10 (self : MutBorrow.t t_Node) =
+  predicate resolve'11 (self : MutBorrow.t t_Node) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'11 (_0 : MutBorrow.t t_Node) =
-    resolve'10 _0
+  predicate resolve'12 (_0 : MutBorrow.t t_Node) =
+    resolve'11 _0
   
   type t_Ordering  =
     | C_Less
@@ -1924,7 +2042,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left [#"red_black_tree.r
     
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv'5 _16} s1
-      | s1 = -{resolve'0 _16}- s2
+      | s1 = -{resolve'1 _16}- s2
       | s2 = unwrap {_14} (fun (_ret:t_Node) ->  [ &x <- _ret ] s3)
       | s3 = bb3 ]
     
@@ -1962,9 +2080,9 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left [#"red_black_tree.r
     
     | bb4 = s0
       [ s0 = {[@expl:type invariant] inv'6 _21} s1
-      | s1 = -{resolve'2 _21}- s2
+      | s1 = -{resolve'3 _21}- s2
       | s2 = {[@expl:type invariant] inv'6 _19} s3
-      | s3 = -{resolve'2 _19}- s4
+      | s3 = -{resolve'3 _19}- s4
       | s4 = {inv'4 x}
         MutBorrow.borrow_mut <t_Node> {x}
           (fun (_ret:MutBorrow.t t_Node) ->  [ &_25 <- _ret ] -{inv'4 _ret.final}-  [ &x <- _ret.final ] s5)
@@ -1987,7 +2105,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left [#"red_black_tree.r
     
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'8 _25} s1
-      | s1 = -{resolve'4 _25}- s2
+      | s1 = -{resolve'5 _25}- s2
       | s2 = MutBorrow.borrow_final
           <t_Color>
           {(self'0.current).t_Node__color}
@@ -2006,8 +2124,8 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left [#"red_black_tree.r
       | s7 = bb6 ]
     
     | bb6 = s0
-      [ s0 = -{resolve'6 _30}- s1
-      | s1 = -{resolve'6 _28}- s2
+      [ s0 = -{resolve'7 _30}- s1
+      | s1 = -{resolve'7 _28}- s2
       | s2 = {[@expl:assertion] [%#sred_black_tree'0] has_mapping (old_self.current).t_Node__right (deep_model (self'0.current).t_Node__key) (self'0.current).t_Node__val}
         s3
       | s3 =  [ &_34 <- C_Some x ] s4
@@ -2022,13 +2140,13 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left [#"red_black_tree.r
           end}
         s1
       | s1 = -{match self'0 with
-          | {current = {t_Node__left = x'0}} -> resolve'9 x'0
+          | {current = {t_Node__left = x'0}} -> resolve'10 x'0
           | _ -> true
           end}-
         s2
       | s2 =  [ &self'0 <- { self'0 with current = { self'0.current with t_Node__left = _33 } } ] s3
       | s3 = {[@expl:type invariant] inv'7 self'0} s4
-      | s4 = -{resolve'11 self'0}- s5
+      | s4 = -{resolve'12 self'0}- s5
       | s5 = bb11 ]
     
     | bb11 = bb12
@@ -4951,7 +5069,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec [#"red_black_tre
   let%span sboxed'2 = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   let%span smem = "../../creusot-contracts/src/std/mem.rs" 23 32 23 36
   let%span smem'0 = "../../creusot-contracts/src/std/mem.rs" 21 22 21 37
-  let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 22 22 22 42
+  let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 22 22 22 57
   let%span soption = "../../creusot-contracts/src/std/option.rs" 85 16 85 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 86 26 86 75
   let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 88 20 89 100
@@ -4961,7 +5079,17 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec [#"red_black_tre
   let%span soption'5 = "../../creusot-contracts/src/std/option.rs" 73 16 73 17
   let%span soption'6 = "../../creusot-contracts/src/std/option.rs" 74 26 74 58
   let%span soption'7 = "../../creusot-contracts/src/std/option.rs" 76 20 76 89
-  let%span soption'8 = "../../creusot-contracts/src/std/option.rs" 569 20 569 32
+  let%span soption'8 = "../../creusot-contracts/src/std/option.rs" 581 18 581 32
+  let%span sops = "../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 163 14 163 61
+  let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'4 = "../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'5 = "../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.prelude.MutBorrow
   use mach.int.Int
@@ -5397,34 +5525,83 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec [#"red_black_tre
   predicate resolve'4 (_0 : MutBorrow.t t_Tree) =
     resolve'3 _0
   
-  predicate is_default (self : t_Option) =
-    [%#soption'8] self = C_None
+  predicate postcondition_once (self : ()) (args : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  predicate resolve'5 (_0 : ()) =
+    true
+  
+  predicate postcondition_mut (self : ()) (args : ()) (result_state : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  function fn_mut_once (self : ()) (args : ()) (res : t_Option) : ()
+  
+  axiom fn_mut_once_spec : forall self : (), args : (), res : t_Option . [%#sops'8] postcondition_once self args res
+  = (exists res_state : () . postcondition_mut self args res_state res /\ resolve'5 res_state)
+  
+  predicate hist_inv (self : ()) (result_state : ()) =
+    true
+  
+  function hist_inv_trans (self : ()) (b : ()) (c : ()) : ()
+  
+  axiom hist_inv_trans_spec : forall self : (), b : (), c : () . ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self : ()) : ()
+  
+  axiom hist_inv_refl_spec : forall self : () . [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : ()) (args : ()) (res_state : ()) (res : t_Option) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : (), args : (), res_state : (), res : t_Option . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self : ()) (res_state : ()) : ()
+  
+  axiom fn_hist_inv_spec : forall self : (), res_state : () . [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self : ()) (args : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  function fn_once (self : ()) (args : ()) (res : t_Option) : ()
+  
+  axiom fn_once_spec : forall self : (), args : (), res : t_Option . [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve'5 self)
+  
+  function fn_mut (self : ()) (args : ()) (res_state : ()) (res : t_Option) : ()
+  
+  axiom fn_mut_spec : forall self : (), args : (), res_state : (), res : t_Option . [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  let rec default (return'  (x:t_Option))= any
+    [ return''0 (result:t_Option)-> {inv'2 result} {[%#soption'8] result = C_None} (! return' {result}) ]
+  
   
   let rec take (dest:MutBorrow.t t_Option) (return'  (x:t_Option))= {[@expl:take 'dest' type invariant] [%#smem] inv'5 dest}
     any
     [ return''0 (result:t_Option)-> {inv'2 result}
       {[%#smem'0] result = dest.current}
-      {[%#smem'1] is_default dest.final}
+      {[%#smem'1] postcondition () () dest.final}
       (! return' {result}) ]
   
   
-  predicate resolve'5 (self : MutBorrow.t t_Option) =
+  predicate resolve'6 (self : MutBorrow.t t_Option) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'6 (_0 : MutBorrow.t t_Option) =
-    resolve'5 _0
+  predicate resolve'7 (_0 : MutBorrow.t t_Option) =
+    resolve'6 _0
   
   let rec unwrap'1 (self_:t_Option) (return'  (x:t_Node))= {[@expl:unwrap 'self_' type invariant] [%#soption'2] inv'2 self_}
     {[@expl:unwrap requires] [%#soption'3] self_ <> C_None}
     any [ return''0 (result:t_Node)-> {inv'4 result} {[%#soption'4] C_Some result = self_} (! return' {result}) ] 
   
-  predicate resolve'7 (_0 : t_V)
+  predicate resolve'8 (_0 : t_V)
   
-  predicate resolve'8 [#"red_black_tree.rs" 178 4 178 28] (self : t_Tree) =
-    [%#sred_black_tree'65] forall k : t_DeepModelTy, v : t_V . has_mapping self k v  -> resolve'7 v
+  predicate resolve'9 [#"red_black_tree.rs" 178 4 178 28] (self : t_Tree) =
+    [%#sred_black_tree'65] forall k : t_DeepModelTy, v : t_V . has_mapping self k v  -> resolve'8 v
   
-  predicate resolve'9 (_0 : t_Tree) =
-    resolve'8 _0
+  predicate resolve'10 (_0 : t_Tree) =
+    resolve'9 _0
   
   predicate internal_invariant'0 [#"red_black_tree.rs" 386 4 386 39] (self : t_Tree) =
     [%#sred_black_tree'49] bst_invariant self /\ height_invariant self
@@ -5581,7 +5758,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec [#"red_black_tre
     
     | bb11 = s0
       [ s0 = {[@expl:type invariant] inv'5 _26} s1
-      | s1 = -{resolve'6 _26}- s2
+      | s1 = -{resolve'7 _26}- s2
       | s2 = {[@expl:type invariant] inv'13 self'0} s3
       | s3 = -{resolve'4 self'0}- s4
       | s4 = unwrap'1 {_24} (fun (_ret:t_Node) ->  [ &node'0 <- _ret ] s5)
@@ -5594,7 +5771,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec [#"red_black_tre
           end}
         s1
       | s1 = -{match node'0 with
-          | {t_Node__right = x} -> resolve'9 x
+          | {t_Node__right = x} -> resolve'10 x
           | _ -> true
           end}-
         s2
@@ -5604,7 +5781,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec [#"red_black_tre
           end}
         s3
       | s3 = -{match node'0 with
-          | {t_Node__left = x} -> resolve'9 x
+          | {t_Node__left = x} -> resolve'10 x
           | _ -> true
           end}-
         s4
@@ -5743,7 +5920,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec [#"red_black_tre
   let%span sboxed'2 = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   let%span smem = "../../creusot-contracts/src/std/mem.rs" 23 32 23 36
   let%span smem'0 = "../../creusot-contracts/src/std/mem.rs" 21 22 21 37
-  let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 22 22 22 42
+  let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 22 22 22 57
   let%span soption = "../../creusot-contracts/src/std/option.rs" 85 16 85 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 86 26 86 75
   let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 88 20 89 100
@@ -5753,7 +5930,17 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec [#"red_black_tre
   let%span soption'5 = "../../creusot-contracts/src/std/option.rs" 73 16 73 17
   let%span soption'6 = "../../creusot-contracts/src/std/option.rs" 74 26 74 58
   let%span soption'7 = "../../creusot-contracts/src/std/option.rs" 76 20 76 89
-  let%span soption'8 = "../../creusot-contracts/src/std/option.rs" 569 20 569 32
+  let%span soption'8 = "../../creusot-contracts/src/std/option.rs" 581 18 581 32
+  let%span sops = "../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 163 14 163 61
+  let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'4 = "../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'5 = "../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   
   use creusot.prelude.MutBorrow
   use mach.int.Int
@@ -6168,34 +6355,83 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec [#"red_black_tre
   predicate resolve'4 (_0 : MutBorrow.t t_Tree) =
     resolve'3 _0
   
-  predicate is_default (self : t_Option) =
-    [%#soption'8] self = C_None
+  predicate postcondition_once (self : ()) (args : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  predicate resolve'5 (_0 : ()) =
+    true
+  
+  predicate postcondition_mut (self : ()) (args : ()) (result_state : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  function fn_mut_once (self : ()) (args : ()) (res : t_Option) : ()
+  
+  axiom fn_mut_once_spec : forall self : (), args : (), res : t_Option . [%#sops'8] postcondition_once self args res
+  = (exists res_state : () . postcondition_mut self args res_state res /\ resolve'5 res_state)
+  
+  predicate hist_inv (self : ()) (result_state : ()) =
+    true
+  
+  function hist_inv_trans (self : ()) (b : ()) (c : ()) : ()
+  
+  axiom hist_inv_trans_spec : forall self : (), b : (), c : () . ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self : ()) : ()
+  
+  axiom hist_inv_refl_spec : forall self : () . [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : ()) (args : ()) (res_state : ()) (res : t_Option) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : (), args : (), res_state : (), res : t_Option . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self : ()) (res_state : ()) : ()
+  
+  axiom fn_hist_inv_spec : forall self : (), res_state : () . [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self : ()) (args : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  function fn_once (self : ()) (args : ()) (res : t_Option) : ()
+  
+  axiom fn_once_spec : forall self : (), args : (), res : t_Option . [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve'5 self)
+  
+  function fn_mut (self : ()) (args : ()) (res_state : ()) (res : t_Option) : ()
+  
+  axiom fn_mut_spec : forall self : (), args : (), res_state : (), res : t_Option . [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  let rec default (return'  (x:t_Option))= any
+    [ return''0 (result:t_Option)-> {inv'2 result} {[%#soption'8] result = C_None} (! return' {result}) ]
+  
   
   let rec take (dest:MutBorrow.t t_Option) (return'  (x:t_Option))= {[@expl:take 'dest' type invariant] [%#smem] inv'5 dest}
     any
     [ return''0 (result:t_Option)-> {inv'2 result}
       {[%#smem'0] result = dest.current}
-      {[%#smem'1] is_default dest.final}
+      {[%#smem'1] postcondition () () dest.final}
       (! return' {result}) ]
   
   
-  predicate resolve'5 (self : MutBorrow.t t_Option) =
+  predicate resolve'6 (self : MutBorrow.t t_Option) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'6 (_0 : MutBorrow.t t_Option) =
-    resolve'5 _0
+  predicate resolve'7 (_0 : MutBorrow.t t_Option) =
+    resolve'6 _0
   
   let rec unwrap'1 (self_:t_Option) (return'  (x:t_Node))= {[@expl:unwrap 'self_' type invariant] [%#soption'2] inv'2 self_}
     {[@expl:unwrap requires] [%#soption'3] self_ <> C_None}
     any [ return''0 (result:t_Node)-> {inv'4 result} {[%#soption'4] C_Some result = self_} (! return' {result}) ] 
   
-  predicate resolve'7 (_0 : t_V)
+  predicate resolve'8 (_0 : t_V)
   
-  predicate resolve'8 [#"red_black_tree.rs" 178 4 178 28] (self : t_Tree) =
-    [%#sred_black_tree'55] forall k : t_DeepModelTy, v : t_V . has_mapping self k v  -> resolve'7 v
+  predicate resolve'9 [#"red_black_tree.rs" 178 4 178 28] (self : t_Tree) =
+    [%#sred_black_tree'55] forall k : t_DeepModelTy, v : t_V . has_mapping self k v  -> resolve'8 v
   
-  predicate resolve'9 (_0 : t_Tree) =
-    resolve'8 _0
+  predicate resolve'10 (_0 : t_Tree) =
+    resolve'9 _0
   
   predicate internal_invariant'0 [#"red_black_tree.rs" 386 4 386 39] (self : t_Tree) =
     [%#sred_black_tree'39] bst_invariant self /\ height_invariant self
@@ -6336,7 +6572,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec [#"red_black_tre
     
     | bb6 = s0
       [ s0 = {[@expl:type invariant] inv'5 _22} s1
-      | s1 = -{resolve'6 _22}- s2
+      | s1 = -{resolve'7 _22}- s2
       | s2 = {[@expl:type invariant] inv'13 self'0} s3
       | s3 = -{resolve'4 self'0}- s4
       | s4 = unwrap'1 {_20} (fun (_ret:t_Node) ->  [ &node'0 <- _ret ] s5)
@@ -6349,7 +6585,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec [#"red_black_tre
           end}
         s1
       | s1 = -{match node'0 with
-          | {t_Node__right = x} -> resolve'9 x
+          | {t_Node__right = x} -> resolve'10 x
           | _ -> true
           end}-
         s2
@@ -6359,7 +6595,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec [#"red_black_tre
           end}
         s3
       | s3 = -{match node'0 with
-          | {t_Node__left = x} -> resolve'9 x
+          | {t_Node__left = x} -> resolve'10 x
           | _ -> true
           end}-
         s4
@@ -6546,7 +6782,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
   let%span sboxed'2 = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   let%span smem = "../../creusot-contracts/src/std/mem.rs" 23 32 23 36
   let%span smem'0 = "../../creusot-contracts/src/std/mem.rs" 21 22 21 37
-  let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 22 22 22 42
+  let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 22 22 22 57
   let%span smem'2 = "../../creusot-contracts/src/std/mem.rs" 19 23 19 24
   let%span smem'3 = "../../creusot-contracts/src/std/mem.rs" 19 34 19 35
   let%span smem'4 = "../../creusot-contracts/src/std/mem.rs" 17 22 17 30
@@ -6562,7 +6798,17 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
   let%span soption'7 = "../../creusot-contracts/src/std/option.rs" 73 16 73 17
   let%span soption'8 = "../../creusot-contracts/src/std/option.rs" 74 26 74 58
   let%span soption'9 = "../../creusot-contracts/src/std/option.rs" 76 20 76 89
-  let%span soption'10 = "../../creusot-contracts/src/std/option.rs" 569 20 569 32
+  let%span soption'10 = "../../creusot-contracts/src/std/option.rs" 581 18 581 32
+  let%span sops = "../../creusot-contracts/src/std/ops.rs" 153 14 153 114
+  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 158 14 158 101
+  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 163 14 163 61
+  let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 118 15 118 59
+  let%span sops'3 = "../../creusot-contracts/src/std/ops.rs" 119 14 119 38
+  let%span sops'4 = "../../creusot-contracts/src/std/ops.rs" 124 14 124 33
+  let%span sops'5 = "../../creusot-contracts/src/std/ops.rs" 129 15 129 31
+  let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 130 15 130 28
+  let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 131 14 131 30
+  let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 136 14 137 105
   let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 28
   
   use creusot.prelude.MutBorrow
@@ -6902,22 +7148,71 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
   predicate resolve'2 (_0 : MutBorrow.t t_Node) =
     resolve'1 _0
   
-  predicate is_default (self : t_Option) =
-    [%#soption'10] self = C_None
+  predicate postcondition_once'0 (self : ()) (args : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  predicate resolve'3 (_0 : ()) =
+    true
+  
+  predicate postcondition_mut (self : ()) (args : ()) (result_state : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  function fn_mut_once (self : ()) (args : ()) (res : t_Option) : ()
+  
+  axiom fn_mut_once_spec : forall self : (), args : (), res : t_Option . [%#sops'8] postcondition_once'0 self args res
+  = (exists res_state : () . postcondition_mut self args res_state res /\ resolve'3 res_state)
+  
+  predicate hist_inv (self : ()) (result_state : ()) =
+    true
+  
+  function hist_inv_trans (self : ()) (b : ()) (c : ()) : ()
+  
+  axiom hist_inv_trans_spec : forall self : (), b : (), c : () . ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self : ()) : ()
+  
+  axiom hist_inv_refl_spec : forall self : () . [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self : ()) (args : ()) (res_state : ()) (res : t_Option) : ()
+  
+  axiom postcondition_mut_hist_inv_spec : forall self : (), args : (), res_state : (), res : t_Option . ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self : ()) (res_state : ()) : ()
+  
+  axiom fn_hist_inv_spec : forall self : (), res_state : () . [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self : ()) (args : ()) (result : t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  function fn_once (self : ()) (args : ()) (res : t_Option) : ()
+  
+  axiom fn_once_spec : forall self : (), args : (), res : t_Option . [%#sops'0] postcondition_once'0 self args res
+  = (postcondition self args res /\ resolve'3 self)
+  
+  function fn_mut (self : ()) (args : ()) (res_state : ()) (res : t_Option) : ()
+  
+  axiom fn_mut_spec : forall self : (), args : (), res_state : (), res : t_Option . [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  let rec default (return'  (x:t_Option))= any
+    [ return''0 (result:t_Option)-> {inv'2 result} {[%#soption'10] result = C_None} (! return' {result}) ]
+  
   
   let rec take (dest:MutBorrow.t t_Option) (return'  (x:t_Option))= {[@expl:take 'dest' type invariant] [%#smem] inv'5 dest}
     any
     [ return''0 (result:t_Option)-> {inv'2 result}
       {[%#smem'0] result = dest.current}
-      {[%#smem'1] is_default dest.final}
+      {[%#smem'1] postcondition () () dest.final}
       (! return' {result}) ]
   
   
-  predicate resolve'3 (self : MutBorrow.t t_Option) =
+  predicate resolve'4 (self : MutBorrow.t t_Option) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'4 (_0 : MutBorrow.t t_Option) =
-    resolve'3 _0
+  predicate resolve'5 (_0 : MutBorrow.t t_Option) =
+    resolve'4 _0
   
   predicate invariant''6 (self : MutBorrow.t t_Tree) =
     [%#sinvariant] inv'1 self.current /\ inv'1 self.final
@@ -6926,23 +7221,23 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
   
   axiom inv_axiom'10 [@rewrite] : forall x : MutBorrow.t t_Tree [inv'12 x] . inv'12 x = invariant''6 x
   
-  predicate resolve'5 (self : MutBorrow.t t_Tree) =
+  predicate resolve'6 (self : MutBorrow.t t_Tree) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'6 (_0 : MutBorrow.t t_Tree) =
-    resolve'5 _0
+  predicate resolve'7 (_0 : MutBorrow.t t_Tree) =
+    resolve'6 _0
   
   let rec unwrap'0 (self_:t_Option) (return'  (x:t_Node))= {[@expl:unwrap 'self_' type invariant] [%#soption'2] inv'2 self_}
     {[@expl:unwrap requires] [%#soption'3] self_ <> C_None}
     any [ return''0 (result:t_Node)-> {inv'4 result} {[%#soption'4] C_Some result = self_} (! return' {result}) ] 
   
-  predicate resolve'7 (_0 : t_V)
+  predicate resolve'8 (_0 : t_V)
   
-  predicate resolve'8 [#"red_black_tree.rs" 178 4 178 28] (self : t_Tree) =
-    [%#sred_black_tree'92] forall k : t_DeepModelTy, v : t_V . has_mapping self k v  -> resolve'7 v
+  predicate resolve'9 [#"red_black_tree.rs" 178 4 178 28] (self : t_Tree) =
+    [%#sred_black_tree'92] forall k : t_DeepModelTy, v : t_V . has_mapping self k v  -> resolve'8 v
   
-  predicate resolve'9 (_0 : t_Tree) =
-    resolve'8 _0
+  predicate resolve'10 (_0 : t_Tree) =
+    resolve'9 _0
   
   type t_Option'2  =
     | C_None'2
@@ -7133,11 +7428,11 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
     [ return''0 (result:())-> {[%#smem'4] x.final = y.current} {[%#smem'5] y.final = x.current} (! return' {result}) ]
   
   
-  predicate resolve'10 (self : MutBorrow.t t_K) =
+  predicate resolve'11 (self : MutBorrow.t t_K) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'11 (_0 : MutBorrow.t t_K) =
-    resolve'10 _0
+  predicate resolve'12 (_0 : MutBorrow.t t_K) =
+    resolve'11 _0
   
   predicate invariant''9 (self : MutBorrow.t t_V) =
     [%#sinvariant] inv'0 self.current /\ inv'0 self.final
@@ -7152,11 +7447,11 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
     [ return''0 (result:())-> {[%#smem'4] x.final = y.current} {[%#smem'5] y.final = x.current} (! return' {result}) ]
   
   
-  predicate resolve'12 (self : MutBorrow.t t_V) =
+  predicate resolve'13 (self : MutBorrow.t t_V) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'13 (_0 : MutBorrow.t t_V) =
-    resolve'12 _0
+  predicate resolve'14 (_0 : MutBorrow.t t_V) =
+    resolve'13 _0
   
   let rec move_red_left (self:MutBorrow.t t_Node) (return'  (x:MutBorrow.t t_Node))= {[@expl:move_red_left 'self' type invariant] [%#sred_black_tree'53] inv'8 self}
     {[@expl:move_red_left requires #0] [%#sred_black_tree'54] ((self.current).t_Node__right).t_Tree__node <> C_None}
@@ -7327,9 +7622,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
     
     | bb39 = s0
       [ s0 = {[@expl:type invariant] inv'5 _59} s1
-      | s1 = -{resolve'4 _59}- s2
+      | s1 = -{resolve'5 _59}- s2
       | s2 = {[@expl:type invariant] inv'12 self'0} s3
-      | s3 = -{resolve'6 self'0}- s4
+      | s3 = -{resolve'7 self'0}- s4
       | s4 = unwrap'0 {_57} (fun (_ret:t_Node) ->  [ &node'0 <- _ret ] s5)
       | s5 = bb40 ]
     
@@ -7340,7 +7635,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
           end}
         s1
       | s1 = -{match node'0 with
-          | {t_Node__right = x} -> resolve'9 x
+          | {t_Node__right = x} -> resolve'10 x
           | _ -> true
           end}-
         s2
@@ -7350,7 +7645,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
           end}
         s3
       | s3 = -{match node'0 with
-          | {t_Node__left = x} -> resolve'9 x
+          | {t_Node__left = x} -> resolve'10 x
           | _ -> true
           end}-
         s4
@@ -7361,7 +7656,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
     | bb42 = s0 [ s0 =  [ &_0 <- C_Some'1 _60 ] s1 | s1 = bb43 ] 
     | bb43 = bb72
     | bb72 = bb73
-    | bb36 = s0 [ s0 = {[@expl:type invariant] inv'12 self'0} s1 | s1 = -{resolve'6 self'0}- s2 | s2 = bb37 ] 
+    | bb36 = s0 [ s0 = {[@expl:type invariant] inv'12 self'0} s1 | s1 = -{resolve'7 self'0}- s2 | s2 = bb37 ] 
     | bb37 = s0 [ s0 =  [ &_0 <- C_None'1 ] s1 | s1 = bb73 ] 
     | bb73 = bb74
     | bb44 = s0
@@ -7462,9 +7757,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
     
     | bb56 = s0
       [ s0 = {[@expl:type invariant] inv'16 _81} s1
-      | s1 = -{resolve'11 _81}- s2
+      | s1 = -{resolve'12 _81}- s2
       | s2 = {[@expl:type invariant] inv'16 _79} s3
-      | s3 = -{resolve'11 _79}- s4
+      | s3 = -{resolve'12 _79}- s4
       | s4 = {inv'0 (node.current).t_Node__val}
         MutBorrow.borrow_mut <t_V> {(node.current).t_Node__val}
           (fun (_ret:MutBorrow.t t_V) ->
@@ -7498,9 +7793,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
     
     | bb57 = s0
       [ s0 = {[@expl:type invariant] inv'17 _86} s1
-      | s1 = -{resolve'13 _86}- s2
+      | s1 = -{resolve'14 _86}- s2
       | s2 = {[@expl:type invariant] inv'17 _84} s3
-      | s3 = -{resolve'13 _84}- s4
+      | s3 = -{resolve'14 _84}- s4
       | s4 =  [ &_87 <- C_Some'1 kv ] s5
       | s5 = bb58 ]
     
@@ -7518,7 +7813,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
       [ s0 = {[@expl:type invariant] inv'8 node} s1
       | s1 = -{resolve'2 node}- s2
       | s2 = {[@expl:type invariant] inv'12 self'0} s3
-      | s3 = -{resolve'6 self'0}- s4
+      | s3 = -{resolve'7 self'0}- s4
       | s4 =  [ &_0 <- C_None'1 ] s5
       | s5 = bb74 ]
     
@@ -7591,7 +7886,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec [#"red_black_tree.rs
       [ s0 = {[@expl:type invariant] inv'8 node} s1
       | s1 = -{resolve'2 node}- s2
       | s2 = {[@expl:type invariant] inv'12 self'0} s3
-      | s3 = -{resolve'6 self'0}- s4
+      | s3 = -{resolve'7 self'0}- s4
       | s4 =  [ &_0 <- r ] s5
       | s5 = bb71 ]
     

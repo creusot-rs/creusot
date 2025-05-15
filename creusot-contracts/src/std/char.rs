@@ -1,4 +1,4 @@
-use crate::{Default, *};
+use crate::*;
 pub use ::std::char::*;
 
 impl View for char {
@@ -20,11 +20,10 @@ impl DeepModel for char {
     }
 }
 
-impl Default for char {
-    #[predicate]
-    #[open]
-    fn is_default(self) -> bool {
-        pearlite! { self@ == 0 }
+extern_spec! {
+    impl Default for char {
+        #[ensures(result@ == 0)]
+        fn default() -> char;
     }
 }
 

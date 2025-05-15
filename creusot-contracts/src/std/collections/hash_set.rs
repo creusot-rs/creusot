@@ -1,6 +1,6 @@
 use crate::{
     logic::FSet,
-    std::iter::{FromIterator, IntoIterator, Iterator},
+    std::iter::{FromIterator, Iterator},
     *,
 };
 use ::std::{borrow::Borrow, collections::hash_set::*, hash::*};
@@ -43,6 +43,16 @@ extern_spec! {
                 }
             }
         }
+    }
+
+    impl<T: DeepModel, S> IntoIterator for HashSet<T, S> {
+        #[ensures(self@ == result@)]
+        fn into_iter(self) -> IntoIter<T>;
+    }
+
+    impl<'a, T: DeepModel, S> IntoIterator for &'a HashSet<T, S> {
+        #[ensures(self@ == result@)]
+        fn into_iter(self) -> Iter<'a, T>;
     }
 }
 
@@ -156,34 +166,6 @@ impl<'a, T: DeepModel> Iterator for Iter<'a, T> {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         set_produces_trans(a, ab, b, bc, c);
-    }
-}
-
-impl<T: DeepModel, S> IntoIterator for HashSet<T, S> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self@ == res@ }
-    }
-}
-
-impl<T: DeepModel, S> IntoIterator for &HashSet<T, S> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self@ == res@ }
     }
 }
 

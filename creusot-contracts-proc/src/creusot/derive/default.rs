@@ -18,29 +18,20 @@ pub fn derive_default(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 
     quote! {
         impl #impl_generics ::std::default::Default for #name #ty_generics #where_clause {
-            #[::creusot_contracts::ensures(result.is_default())]
+            #[::creusot_contracts::ensures(#body_spec)]
             fn default() -> Self {
                 #body_code
-            }
-        }
-
-        impl #impl_generics ::creusot_contracts::std::default::Default for #name #ty_generics #where_clause {
-            #[::creusot_contracts::predicate(prophetic)]
-            #[::creusot_contracts::open]
-            fn is_default(self) -> bool {
-                use ::creusot_contracts::std::default::Default as _;
-                #body_spec
             }
         }
     }
     .into()
 }
 
-/// Add `creusot_contracts::Default` to these bounds.
+/// Add `::std::defaut::Default` to these bounds.
 fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
-            type_param.bounds.push(parse_quote!(::creusot_contracts::std::default::Default));
+            type_param.bounds.push(parse_quote!(::std::default::Default));
         }
     }
     generics
@@ -82,14 +73,14 @@ fn fields_set_to_default(fields: &Fields) -> TokenStream {
             let fs = fields.named.iter().map(|f| {
                 let name = &f.ident;
                 let ty = &f.ty;
-                quote_spanned! { f.span() => #name : <#ty>::default() }
+                quote_spanned! { f.span() => #name : <#ty as ::std::default::Default>::default() }
             });
             quote! { { #(#fs),* } }
         }
         Fields::Unnamed(fields) => {
             let fs = fields.unnamed.iter().map(|f| {
                 let ty = &f.ty;
-                quote_spanned! { f.span() => <#ty>::default() }
+                quote_spanned! { f.span() => <#ty as ::std::default::Default>::default() }
             });
             quote! { ( #(#fs),* ) }
         }
@@ -97,7 +88,7 @@ fn fields_set_to_default(fields: &Fields) -> TokenStream {
     }
 }
 
-/// The body of `is_default`.
+/// The body of the ensures clause.
 fn default_spec(data: &Data) -> TokenStream {
     match data {
         Data::Struct(data_struct) => fields_are_default(&data_struct.fields, true),
@@ -133,7 +124,7 @@ fn default_spec(data: &Data) -> TokenStream {
 
             let expr = fields_are_default(&default_variant.fields, false);
 
-            quote!( match self { Self :: #var_name #pat => #expr , _ => false } )
+            quote!( match result { Self :: #var_name #pat => #expr , _ => false } )
         }
         Data::Union(_) => {
             syn::Error::new(Span::call_site(), "this trait cannot be derived for unions")
@@ -142,31 +133,33 @@ fn default_spec(data: &Data) -> TokenStream {
     }
 }
 
-/// If `with_self` is `true`, we are accessing `self`.
+/// If `with_result` is `true`, we are accessing `result`.
 ///
 /// Else, this is a struct in an enum case. In the case of a tuple struct, assume that the
 /// variables are named `x1 ... xn`.
-fn fields_are_default(fields: &Fields, with_self: bool) -> TokenStream {
+fn fields_are_default(fields: &Fields, with_result: bool) -> TokenStream {
     match fields {
         Fields::Named(fields) => {
             let fs = fields.named.iter().map(|f| {
                 let name = &f.ident;
-                if with_self {
-                    quote_spanned! { f.span() => self.#name.is_default() }
+                let ty = &f.ty;
+                if with_result {
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(<#ty as ::std::default::Default>::default, (), result.#name) }
                 } else {
-                    quote_spanned! { f.span() => #name.is_default() }
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(<#ty as ::std::default::Default>::default, (), #name) }
                 }
             });
             quote! { true #(&& #fs)* }
         }
         Fields::Unnamed(fields) => {
             let fs = fields.unnamed.iter().enumerate().map(|(i, f)| {
-                if with_self {
+                let ty = &f.ty;
+                if with_result {
                     let i = syn::LitInt::new(&format!("{i}"), f.span());
-                    quote_spanned! { f.span() => self.#i.is_default() }
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(<#ty as ::std::default::Default>::default, (), result.#i) }
                 } else {
                     let name = Ident::new(&format!("x{i}"), f.span());
-                    quote_spanned! { f.span() => #name.is_default() }
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(<#ty as ::std::default::Default>::default, (), #name) }
                 }
             });
             quote! { true #(&& #fs)* }

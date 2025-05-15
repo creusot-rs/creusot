@@ -25,9 +25,7 @@
 //! overflow the backing integer. Since ghost code is not executed, the time argument is
 //! not applicable.
 
-#[cfg(creusot)]
-use crate::Default;
-use crate::{Clone, *};
+use crate::{Clone, Default, *};
 
 /// A peano integer wrapping a 64-bits integer.
 ///
@@ -105,62 +103,30 @@ impl PeanoInt {
     }
 }
 
-impl ::std::convert::From<PeanoInt> for u64 {
+impl From<PeanoInt> for u64 {
     #[ensures(result@ == val@)]
     fn from(val: PeanoInt) -> Self {
         val.to_u64()
     }
 }
 
-impl ::std::convert::From<PeanoInt> for i64 {
+impl From<PeanoInt> for i64 {
     #[ensures(result@ == val@)]
     fn from(val: PeanoInt) -> Self {
         val.to_i64()
     }
 }
 
-impl ::std::convert::From<PeanoInt> for u128 {
+impl From<PeanoInt> for u128 {
     #[ensures(result@ == val@)]
     fn from(val: PeanoInt) -> Self {
         val.to_u128()
     }
 }
 
-impl ::std::convert::From<PeanoInt> for i128 {
+impl From<PeanoInt> for i128 {
     #[ensures(result@ == val@)]
     fn from(val: PeanoInt) -> Self {
         val.to_i128()
-    }
-}
-
-impl From<PeanoInt> for u64 {
-    #[predicate]
-    #[open]
-    fn comes_from(self, val: PeanoInt) -> bool {
-        pearlite! { self@ == val@ }
-    }
-}
-
-impl From<PeanoInt> for u128 {
-    #[predicate]
-    #[open]
-    fn comes_from(self, val: PeanoInt) -> bool {
-        pearlite! { self@ == val@ }
-    }
-}
-
-impl From<PeanoInt> for i64 {
-    #[predicate]
-    #[open]
-    fn comes_from(self, val: PeanoInt) -> bool {
-        pearlite! { self@ == val@ }
-    }
-}
-
-impl From<PeanoInt> for i128 {
-    #[predicate]
-    #[open]
-    fn comes_from(self, val: PeanoInt) -> bool {
-        pearlite! { self@ == val@ }
     }
 }

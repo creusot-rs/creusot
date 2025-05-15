@@ -17,8 +17,8 @@ use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     mir::{
-        self, AssertKind, BasicBlockData, Local, Location, Operand, Place, Rvalue,
-        SourceInfo, StatementKind, SwitchTargets,
+        self, AssertKind, BasicBlockData, Local, Location, Operand, Place, Rvalue, SourceInfo,
+        StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
     ty::{self, AssocItem, GenericArgKind, GenericArgsRef, Ty, TyKind, TypingEnv, TypingMode},

@@ -166,7 +166,7 @@ extern_spec! {
                     }
                 }
 
-                #[ensures(self == None ==> result.is_default())]
+                #[ensures(self == None ==> T::default.postcondition((), result))]
                 #[ensures(self == None || self == Some(result))]
                 fn unwrap_or_default(self) -> T
                 where
@@ -560,13 +560,26 @@ extern_spec! {
             }
         }
     }
-}
 
-impl<T> Default for Option<T> {
-    #[open]
-    #[predicate]
-    fn is_default(self) -> bool {
-        pearlite! { self == None }
+    impl<T> IntoIterator for Option<T>{
+        #[ensures(self == result@)]
+        fn into_iter(self) -> IntoIter<T>;
+    }
+
+    impl<'a, T> IntoIterator for &'a Option<T>{
+        #[ensures(*self == match result@ { None => None, Some(r) => Some(*r) })]
+        fn into_iter(self) -> Iter<'a, T>;
+    }
+
+    impl<'a, T> IntoIterator for &'a mut Option<T>{
+        #[ensures(*self == match result@ { None => None, Some(r) => Some(*r) })]
+        #[ensures(^self == match result@ { None => None, Some(r) => Some(^r) })]
+        fn into_iter(self) -> IterMut<'a, T>;
+    }
+
+    impl<T> Default for Option<T> {
+        #[ensures(result == None)]
+        fn default() -> Option<T>;
     }
 }
 
@@ -624,20 +637,6 @@ impl<T> Iterator for IntoIter<T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-impl<T> IntoIterator for Option<T> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self == res@ }
-    }
-}
-
 impl<'a, T> View for Iter<'a, T> {
     type ViewTy = Option<&'a T>;
 
@@ -677,23 +676,6 @@ impl<T> Iterator for Iter<'_, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-impl<T> IntoIterator for &'_ Option<T> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! {
-            (*self == None ==> res@ == None) &&
-            (*self == None || exists<r: &T> res@ == Some(r) && *self == Some(*r))
-        }
-    }
-}
-
 impl<'a, T> View for IterMut<'a, T> {
     type ViewTy = Option<&'a mut T>;
 
@@ -731,21 +713,4 @@ impl<T> Iterator for IterMut<'_, T> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
-}
-
-impl<T> IntoIterator for &'_ mut Option<T> {
-    #[predicate]
-    #[open]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
-
-    #[predicate(prophetic)]
-    #[open]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! {
-            (*self == None ==> res@ == None && ^self == None) &&
-            (*self == None || exists<r: &mut T> res@ == Some(r) && *self == Some(*r) && ^self == Some(^r))
-        }
-    }
 }

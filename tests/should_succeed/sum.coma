@@ -12,11 +12,8 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 235 26 235 49
   let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 236 26 236 91
   let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 220 14 220 86
-  let%span siter = "../../creusot-contracts/src/std/iter.rs" 206 27 206 47
-  let%span siter'0 = "../../creusot-contracts/src/std/iter.rs" 207 26 207 53
-  let%span siter'1 = "../../creusot-contracts/src/std/iter.rs" 122 26 125 17
-  let%span siter'2 = "../../creusot-contracts/src/std/iter.rs" 86 20 86 24
-  let%span siter'3 = "../../creusot-contracts/src/std/iter.rs" 92 8 92 19
+  let%span siter = "../../creusot-contracts/src/std/iter.rs" 210 18 210 32
+  let%span siter'0 = "../../creusot-contracts/src/std/iter.rs" 94 26 97 17
   let%span srange = "../../creusot-contracts/src/std/iter/range.rs" 97 12 101 76
   let%span srange'0 = "../../creusot-contracts/src/std/iter/range.rs" 107 14 107 45
   let%span srange'1 = "../../creusot-contracts/src/std/iter/range.rs" 108 27 108 29
@@ -27,7 +24,7 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   let%span srange'6 = "../../creusot-contracts/src/std/iter/range.rs" 75 10 75 43
   let%span srange'7 = "../../creusot-contracts/src/std/iter/range.rs" 78 8 79 74
   let%span srange'8 = "../../creusot-contracts/src/std/iter/range.rs" 89 12 89 57
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
   use creusot.int.UInt32
@@ -58,14 +55,9 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
       (! return' {result}) ]
   
   
-  predicate into_iter_pre (self : t_RangeInclusive) =
-    [%#siter'2] true
+  let rec into_iter (self_:t_RangeInclusive) (return'  (x:t_RangeInclusive))= any
+    [ return''0 (result:t_RangeInclusive)-> {[%#siter] result = self_} (! return' {result}) ]
   
-  predicate into_iter_post (self : t_RangeInclusive) (res : t_RangeInclusive) =
-    [%#siter'3] self = res
-  
-  let rec into_iter (self_:t_RangeInclusive) (return'  (x:t_RangeInclusive))= {[@expl:into_iter requires] [%#siter] into_iter_pre self_}
-    any [ return''0 (result:t_RangeInclusive)-> {[%#siter'0] into_iter_post self_ result} (! return' {result}) ] 
   
   function range_inclusive_len (r : t_RangeInclusive) : int =
     [%#srange'7] if is_empty_log r then 0 else deep_model (end_log r) - deep_model (start_log r) + 1
@@ -109,7 +101,7 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
     [%#srange'8] is_empty_log self.current /\ is_empty_log self.final
   
   let rec next (self_:MutBorrow.t t_RangeInclusive) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#siter'1] match result with
+    [ return''0 (result:t_Option)-> {[%#siter'0] match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
