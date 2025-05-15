@@ -13,7 +13,7 @@ use std::{
     iter::once,
 };
 
-use crate::extended_location::ExtendedLocation;
+use crate::{extended_location::ExtendedLocation, fmir::BorrowKind};
 
 type PlaceId = usize;
 
@@ -147,36 +147,36 @@ impl<'tcx> NotFinalPlaces<'tcx> {
     /// `place` is a final reborrow.
     ///
     /// # Returns
-    /// - If the reborrow is final, return the position of the dereference of the
+    /// - If the reborrow is final, return `Final` with the position of the dereference of the
     /// original borrow in `place.projection`.
     ///
     ///   For example, if the reborrow `&mut (*x.0)` is final, then the projections are
-    /// `[Field(0), Deref]`, and so we return `Some(1)`.
+    /// `[Field(0), Deref]`, and so we return `Final(1)`.
     ///
     ///   `Deref` of a box is not considered as a dereference of a borrow.
-    /// - Else, return `None`.
+    /// - Else, return `Mut`.
     pub fn is_final_at(
         cursor: &mut ResultsCursor<'_, 'tcx, Self>,
         place: &Place<'tcx>,
         location: Location,
-    ) -> Option<usize> {
+    ) -> BorrowKind {
         let body = cursor.body();
         let tcx = cursor.analysis().tcx;
 
         let deref_position = match Self::place_get_last_deref(place.as_ref(), body, tcx) {
             Some(p) => p,
             // `p` is not a reborrow
-            None => return None,
+            None => return BorrowKind::Mut,
         };
 
-        ExtendedLocation::Start(location.successor_within_block()).seek_to(cursor);
+        ExtendedLocation::Start(location).seek_to(cursor);
         let analysis: &Self = cursor.analysis();
 
         let id = analysis.infos[&place.as_ref()].id;
         if cursor.get().contains(id) {
-            return None;
+            return BorrowKind::Mut;
         }
-        Some(deref_position)
+        BorrowKind::Final(deref_position)
     }
 
     /// Helper function: gets the index of the last projection of `place` that is a deref,

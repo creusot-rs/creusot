@@ -259,8 +259,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
                 loc = loc.successor_within_block();
             }
-
-            self.translate_terminator(bbd.terminator(), loc);
+            self.translate_terminator(&mut not_final_places, bbd.terminator(), loc);
 
             let block = fmir::Block {
                 invariants,
@@ -330,7 +329,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         &mut self,
         lhs: &Place<'tcx>,
         rhs: &Place<'tcx>,
-        is_final: Option<usize>,
+        is_final: fmir::BorrowKind,
         span: Span,
     ) {
         let p = self.translate_place(rhs.as_ref()).unwrap_or_else(|err| err.crash(self.ctx, span));
@@ -342,15 +341,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             TrivialInv::NonTrivial
         };
 
-        self.emit_assignment(
-            lhs,
-            if let Some(deref_index) = is_final {
-                fmir::RValue::Borrow(fmir::BorrowKind::Final(deref_index), p, triv_inv)
-            } else {
-                fmir::RValue::Borrow(fmir::BorrowKind::Mut, p, triv_inv)
-            },
-            span,
-        );
+        self.emit_assignment(lhs, fmir::RValue::Borrow(is_final, p, triv_inv), span);
     }
 
     fn emit_snapshot_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {

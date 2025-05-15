@@ -17,6 +17,7 @@ use rustc_middle::{
     ty::{TyKind, adjustment::PointerCoercion},
 };
 use rustc_mir_dataflow::ResultsCursor;
+use rustc_span::Span;
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
     pub(super) fn translate_statement(
@@ -25,6 +26,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         statement: &'_ Statement<'tcx>,
         loc: Location,
     ) -> Result<(), TranslationError> {
+        let si = statement.source_info;
+        self.activate_two_phase(not_final_borrows, loc, si.span);
         match statement.kind {
             StatementKind::Assign(box (pl, ref rv)) => {
                 if let Some(resolver) = &mut self.resolver {
@@ -33,7 +36,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.resolve_before_assignment(need, &resolved, loc, pl)?;
                 }
 
-                self.translate_assign(not_final_borrows, statement.source_info, &pl, rv, loc)?;
+                self.translate_assign(not_final_borrows, si, &pl, rv, loc)?;
 
                 if self.resolver.is_some() {
                     self.resolve_after_assignment(loc.successor_within_block(), pl)?;
@@ -108,17 +111,17 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     if self.erased_locals.contains(pl.local) {
                         return Ok(());
                     }
-
-                    RValue::Operand(Operand::Copy(
-                        self.translate_place(self.compute_ref_place(*pl, loc).as_ref())?,
-                    ))
+                    RValue::Operand(Operand::Copy(self.translate_place(pl.as_ref())?))
                 }
                 Mut { .. } => {
-                    if self.erased_locals.contains(pl.local) {
+                    if self.erased_locals.contains(pl.local) || self.is_two_phase(loc) {
                         return Ok(());
                     }
-
-                    let is_final = NotFinalPlaces::is_final_at(not_final_borrows, pl, loc);
+                    let is_final = NotFinalPlaces::is_final_at(
+                        not_final_borrows,
+                        pl,
+                        loc.successor_within_block(),
+                    );
                     self.emit_borrow(place, pl, is_final, span);
                     return Ok(());
                 }
@@ -244,41 +247,25 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         Ok(())
     }
 
-    fn compute_ref_place(&self, pl: Place<'tcx>, loc: Location) -> Place<'tcx> {
-        let Some(borrows) = &self.borrows else { return pl };
+    fn is_two_phase(&self, loc: Location) -> bool {
+        let Some(borrows) = &self.borrows else { return false };
+        borrows.location_map().get(&loc).iter().any(|borrow| {
+            matches!(borrow.activation_location(), TwoPhaseActivation::ActivatedAt(_))
+        })
+    }
 
-        let dom = self.body.basic_blocks.dominators();
-        let two_phase = borrows
-            .local_map()
-            .get(&pl.local)
-            .iter()
-            .flat_map(|is| is.iter())
-            .filter(|i| {
-                let res_loc = borrows[**i].reserve_location();
-                if res_loc.block == loc.block {
-                    res_loc.statement_index <= loc.statement_index
-                } else {
-                    dom.dominates(res_loc.block, loc.block)
-                }
-            })
-            .find(|i| {
-                if let TwoPhaseActivation::ActivatedAt(act_loc) = borrows[**i].activation_location()
-                {
-                    if act_loc.block == loc.block {
-                        loc.statement_index < act_loc.statement_index
-                    } else {
-                        dom.dominates(loc.block, act_loc.block)
-                    }
-                } else {
-                    false
-                }
-            });
-
-        if let Some(two_phase) = two_phase {
-            let place = borrows[*two_phase].assigned_place();
-            self.ctx.mk_place_deref(place)
-        } else {
-            pl
+    pub(super) fn activate_two_phase(
+        &mut self,
+        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
+        loc: Location,
+        span: Span,
+    ) {
+        let Some(borrows) = self.borrows else { return };
+        for i in borrows.activation_map().get(&loc).iter().flat_map(|is| is.iter()) {
+            let borrow = &borrows[*i];
+            let borrowed = borrow.borrowed_place();
+            let is_final = NotFinalPlaces::is_final_at(not_final_borrows, &borrowed, loc);
+            self.emit_borrow(&borrow.assigned_place(), &borrowed, is_final, span)
         }
     }
 }
