@@ -1,4 +1,7 @@
-use crate::{ptr_own::{PtrOwn, RawPtr}, *};
+use crate::{
+    ptr_own::{PtrOwn, RawPtr},
+    *,
+};
 pub use ::std::ptr::*;
 
 /// We conservatively model raw pointers as having an address *plus some hidden

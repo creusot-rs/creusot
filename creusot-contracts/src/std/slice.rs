@@ -1,5 +1,9 @@
 use crate::{
-    invariant::*, ptr_own::{PtrOwn, RawPtr}, resolve::structural_resolve, std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive}, *
+    invariant::*,
+    ptr_own::{PtrOwn, RawPtr},
+    resolve::structural_resolve,
+    std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
+    *,
 };
 #[cfg(feature = "nightly")]
 use ::std::alloc::Allocator;
