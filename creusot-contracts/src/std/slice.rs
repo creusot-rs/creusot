@@ -1,5 +1,6 @@
 use crate::{
     invariant::*,
+    ptr_own::{PtrOwn, RawPtr},
     resolve::structural_resolve,
     std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
     *,
@@ -64,6 +65,12 @@ pub trait SliceExt<T> {
 
     #[logic]
     fn to_ref_seq(&self) -> Seq<&T>;
+
+    #[pure]
+    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<Seq<&PtrOwn<T>>>);
+
+    #[pure]
+    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<Seq<&mut PtrOwn<T>>>);
 }
 
 impl<T> SliceExt<T> for [T] {
@@ -82,6 +89,28 @@ impl<T> SliceExt<T> for [T] {
     #[ensures(forall<i : _> 0 <= i && i < result.len() ==> result[i] == &self[i])]
     fn to_ref_seq(&self) -> Seq<&T> {
         dead
+    }
+
+    #[trusted]
+    #[pure]
+    #[ensures(result.1.len() == self@.len())]
+    #[ensures(forall<i: Int> 0 <= i && i < self@.len()
+        ==> result.0.offset_logic(i) == result.1[i].ptr()
+        && *result.1[i].val() == self@[i])]
+    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<Seq<&PtrOwn<T>>>) {
+        (self.as_ptr(), Ghost::conjure())
+    }
+
+    #[trusted]
+    #[pure]
+    #[ensures(result.1.len() == self@.len())]
+    #[ensures((^self)@.len() == self@.len())]
+    #[ensures(forall<i: Int> 0 <= i && i < self@.len()
+        ==> result.0.offset_logic(i) == result.1[i].ptr()
+        && *result.1[i].val() == (*self)[i]
+        && *(^(*result.1)[i]).val() == (^self)[i])]
+    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<Seq<&mut PtrOwn<T>>>) {
+        (self.as_ptr(), Ghost::conjure())
     }
 }
 
