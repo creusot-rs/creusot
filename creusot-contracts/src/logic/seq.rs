@@ -702,3 +702,17 @@ pub fn flat_map_push_back<A, B>(xs: Seq<A>) {
         proof_assert! { forall<x: A> xs.tail().push_back(x) == xs.push_back(x).tail() }
     }
 }
+
+impl<T> Resolve for Seq<T> {
+    #[predicate(prophetic)]
+    #[open]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i : Int> resolve(&self.get(i)) }
+    }
+
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
+}
