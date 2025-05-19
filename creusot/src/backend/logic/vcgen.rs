@@ -308,6 +308,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     k(Exp::Var(item_name))
                 }
             }
+            TermKind::ConstParam(id) => {
+                k(Exp::Var(self.names.const_param(*id)))
+            }
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
             TermKind::Assert { cond } => {
                 self.build_wp(cond, &|exp| Ok(exp.lazy_and(k(Exp::unit())?)))

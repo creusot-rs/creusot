@@ -128,8 +128,9 @@ impl DepElab for ProgramElab {
         let names = elab.namer(dep);
         let name = names.dependency(dep).ident();
 
+        use DefKind::*;
         if let Dependency::Item(def_id, subst) = dep
-            && !matches!(ctx.def_kind(def_id), DefKind::Closure | DefKind::Const)
+            && !matches!(ctx.def_kind(def_id), Closure | Const | InlineConst)
         {
             let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
                 .instantiate(ctx.tcx, subst)
