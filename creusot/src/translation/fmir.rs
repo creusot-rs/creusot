@@ -109,6 +109,7 @@ pub enum RValue<'tcx> {
     Snapshot(Term<'tcx>),
     Borrow(BorrowKind, Place<'tcx>, TrivialInv),
     Operand(Operand<'tcx>),
+    ConstBlock(DefId, GenericArgsRef<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
     UnaryOp(UnOp, Operand<'tcx>),
     Constructor(DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>),
@@ -125,6 +126,7 @@ impl RValue<'_> {
     pub fn is_pure(&self) -> bool {
         match self {
             RValue::Operand(_) => true,
+            RValue::ConstBlock(_, _) => false,
             RValue::BinOp(
                 BinOp::Add
                 | BinOp::AddUnchecked
@@ -179,6 +181,7 @@ pub enum Operand<'tcx> {
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
     Constant(Term<'tcx>),
+    ConstBlock(DefId, GenericArgsRef<'tcx>, Ty<'tcx>),
     Promoted(Promoted, Ty<'tcx>),
 }
 
@@ -188,6 +191,7 @@ impl<'tcx> Operand<'tcx> {
             Operand::Move(pl) => pl.ty(tcx, locals),
             Operand::Copy(pl) => pl.ty(tcx, locals),
             Operand::Constant(t) => t.ty,
+            Operand::ConstBlock(_, _, ty) => *ty,
             Operand::Promoted(_, ty) => *ty,
         }
     }
@@ -533,7 +537,8 @@ pub(crate) fn super_visit_operand<'tcx, V: FmirVisitor<'tcx>>(
         Operand::Copy(place) | Operand::Move(place) => {
             visitor.visit_place(place);
         }
-        Operand::Constant(_) => (),
+        Operand::Constant(_) |
+        Operand::ConstBlock(_, _, _) |
         Operand::Promoted(_, _) => (),
     }
 }
@@ -565,6 +570,7 @@ pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rv
         RValue::Operand(op) => {
             visitor.visit_operand(op);
         }
+        RValue::ConstBlock(_, _) => {}
         RValue::BinOp(_, op1, op2) => {
             visitor.visit_operand(op1);
             visitor.visit_operand(op2);

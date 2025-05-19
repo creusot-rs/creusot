@@ -116,14 +116,8 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
                 self.read_place(p);
                 self.read_place(p)
             }
-            RValue::Operand(op) => match op {
-                Operand::Move(p) | Operand::Copy(p) => {
-                    self.read_place(p);
-                    // self.move_chain(p.local);
-                }
-                Operand::Constant(t) => self.visit_term(t),
-                Operand::Promoted(_, _) => {}
-            },
+            RValue::Operand(op) => self.visit_operand(op),
+            RValue::ConstBlock(_, _) => {}
             RValue::BinOp(_, l, r) => {
                 self.visit_operand(l);
                 self.visit_operand(r)
@@ -148,6 +142,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
             Operand::Move(p) => self.read_place(p),
             Operand::Copy(p) => self.read_place(p),
             Operand::Constant(t) => self.visit_term(t),
+            Operand::ConstBlock(_, _, _) => {}
             Operand::Promoted(_, _) => {}
         }
     }
@@ -305,6 +300,7 @@ impl<'tcx> SimplePropagator<'tcx> {
                 assert!(self.prop.get(&p.local).is_none(), "Trying to propagate borrowed variable")
             }
             RValue::Operand(op) => self.visit_operand(op),
+            RValue::ConstBlock(_, _) => {}
             RValue::BinOp(_, l, r) => {
                 self.visit_operand(l);
                 self.visit_operand(r)
@@ -331,8 +327,7 @@ impl<'tcx> SimplePropagator<'tcx> {
                     *op = v;
                 }
             }
-            Operand::Constant(_) => {}
-            Operand::Promoted(_, _) => {}
+            Operand::Constant(_) | Operand::ConstBlock(_, _, _) | Operand::Promoted(_, _) => {}
         }
     }
 
