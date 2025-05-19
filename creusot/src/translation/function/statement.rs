@@ -198,6 +198,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::Repeat(op, len) => RValue::Repeat(
                 self.translate_operand(op)?,
                 Operand::Constant(
+                    // TODO
                     crate::constant::from_ty_const(
                         self.ctx,
                         *len,

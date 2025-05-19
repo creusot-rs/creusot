@@ -69,6 +69,11 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(node).name()
     }
 
+    fn const_param(&self, def_id: DefId) -> Name {
+        debug!("const_param: {:?}", def_id);
+        self.item(def_id, List::empty())
+    }
+
     fn item_ident(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
         let node = Dependency::Item(def_id, subst);
         self.dependency(node).ident()

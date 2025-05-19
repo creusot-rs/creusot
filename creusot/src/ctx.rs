@@ -551,10 +551,11 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
+        use DefKind::*;
         match self.tcx.def_kind(def_id) {
-            DefKind::Trait => ItemType::Trait,
-            DefKind::Impl { .. } => ItemType::Impl,
-            DefKind::Fn | DefKind::AssocFn => {
+            Trait => ItemType::Trait,
+            Impl { .. } => ItemType::Impl,
+            Fn | AssocFn => {
                 if is_predicate(self.tcx, def_id) {
                     ItemType::Predicate { prophetic: is_prophetic(self.tcx, def_id) }
                 } else if is_logic(self.tcx, def_id) {
@@ -563,13 +564,13 @@ impl<'tcx> TranslationCtx<'tcx> {
                     ItemType::Program
                 }
             }
-            DefKind::AssocConst | DefKind::Const => ItemType::Constant,
-            DefKind::Closure => ItemType::Closure,
-            DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,
-            DefKind::AssocTy => ItemType::AssocTy,
-            DefKind::Field => ItemType::Field,
-            DefKind::AnonConst => panic!(),
-            DefKind::Variant => ItemType::Variant,
+            AssocConst | Const | ConstParam | InlineConst => ItemType::Constant,
+            Closure => ItemType::Closure,
+            Struct | Enum | Union => ItemType::Type,
+            AssocTy => ItemType::AssocTy,
+            Field => ItemType::Field,
+            AnonConst => panic!(),
+            Variant => ItemType::Variant,
             dk => ItemType::Unsupported(dk),
         }
     }

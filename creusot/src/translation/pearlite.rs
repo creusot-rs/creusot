@@ -166,6 +166,7 @@ pub enum TermKind<'tcx> {
     },
     Item(DefId, GenericArgsRef<'tcx>),
     NamedConst(DefId, GenericArgsRef<'tcx>),
+    ConstParam(DefId),
     Assert {
         cond: Box<Term<'tcx>>,
     },
@@ -945,6 +946,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     "Casts from ! are not supported in Pearlite, because Why3 types are always inhabited.",
                 ))
             }
+            ExprKind::ConstParam { def_id, param } => {
+              debug!{"{def_id:?} {param:?} {:?}", self.ctx.tcx.def_path(def_id)};
+              Ok(Term {
+                ty,
+                span,
+                kind: TermKind::ConstParam(def_id),
+            })}
             ref ek => todo!("lower_expr: {:?}", ek),
         };
         Ok(Term { ty, ..res? })
@@ -1364,7 +1372,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::Lit(_) => {}
         TermKind::Cast { arg } => visitor.visit_term(arg),
         TermKind::Coerce { arg } => visitor.visit_term(arg),
-        TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
+        TermKind::Item(_, _) | TermKind::NamedConst(_, _) | TermKind::ConstParam(_) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_term(lhs);
             visitor.visit_term(rhs);
@@ -1421,7 +1429,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::Lit(_) => {}
         TermKind::Cast { arg } => visitor.visit_mut_term(&mut *arg),
         TermKind::Coerce { arg } => visitor.visit_mut_term(arg),
-        TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
+        TermKind::Item(_, _) | TermKind::NamedConst(_, _) | TermKind::ConstParam(_) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_mut_term(&mut *lhs);
             visitor.visit_mut_term(&mut *rhs);
@@ -1692,7 +1700,7 @@ impl<'tcx> Term<'tcx> {
             TermKind::Lit(_) => {}
             TermKind::Cast { arg } => arg.subst_with(bound, subst),
             TermKind::Coerce { arg } => arg.subst_with(bound, subst),
-            TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
+            TermKind::Item(_, _) | TermKind::NamedConst(_, _) | TermKind::ConstParam(_) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.subst_with(bound, subst);
                 rhs.subst_with(bound, subst)
@@ -1781,7 +1789,7 @@ impl<'tcx> Term<'tcx> {
             TermKind::Lit(_) => {}
             TermKind::Cast { arg } => arg.free_vars_inner(bound, free),
             TermKind::Coerce { arg } => arg.free_vars_inner(bound, free),
-            TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
+            TermKind::Item(_, _) | TermKind::NamedConst(_, _) | TermKind::ConstParam(_) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.free_vars_inner(bound, free);
                 rhs.free_vars_inner(bound, free)
