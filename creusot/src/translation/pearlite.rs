@@ -166,6 +166,7 @@ pub enum TermKind<'tcx> {
         arg: Box<Term<'tcx>>,
     },
     Item(DefId, GenericArgsRef<'tcx>),
+    NamedConst(DefId, GenericArgsRef<'tcx>),
     Assert {
         cond: Box<Term<'tcx>>,
     },
@@ -275,6 +276,31 @@ impl<'tcx> TermKind<'tcx> {
                     if us.has_escaping_bound_vars() { s } else { us }
                 });
                 Self::Item(def_id, subst)
+            }
+        }
+    }
+
+    pub fn named_const(
+        def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+        user_ty: &Option<Box<CanonicalUserType<'tcx>>>,
+        tcx: TyCtxt<'tcx>,
+    ) -> Self {
+        let Some(user_ty) = user_ty else { return Self::NamedConst(def_id, subst) };
+        assert!(user_ty.value.bounds.is_empty());
+        match user_ty.value.kind {
+            UserTypeKind::Ty(_) => Self::NamedConst(def_id, subst),
+            UserTypeKind::TypeOf(def_id2, u_subst) => {
+                assert_eq!(def_id, def_id2);
+                if u_subst.args.len() != subst.len() {
+                    return Self::NamedConst(def_id, subst);
+                }
+                let subst = GenericArgs::for_item(tcx, def_id, |x, _| {
+                    let s = subst[x.index as usize];
+                    let us = u_subst.args[x.index as usize];
+                    if us.has_escaping_bound_vars() { s } else { us }
+                });
+                Self::NamedConst(def_id, subst)
             }
         }
     }
@@ -913,7 +939,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 _ => Err(Error::msg(thir_term.span, "unhandled literal expression")),
             },
             ExprKind::NamedConst { def_id, args, ref user_ty, .. } => {
-                Ok(Term { ty, span, kind: TermKind::item(def_id, args, user_ty, self.ctx.tcx) })
+                debug!("{def_id:?}");
+                Ok(Term { ty, span, kind: TermKind::named_const(def_id, args, user_ty, self.ctx.tcx) })
             }
             ExprKind::ZstLiteral { ref user_ty, .. } => match ty.kind() {
                 TyKind::FnDef(def_id, subst) => Ok(Term {
@@ -1367,7 +1394,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::SeqLiteral(fields) => fields.iter().for_each(|a| visitor.visit_term(a)),
         TermKind::Cast { arg } => visitor.visit_term(arg),
         TermKind::Coerce { arg } => visitor.visit_term(arg),
-        TermKind::Item(_, _) => {}
+        TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_term(lhs);
             visitor.visit_term(rhs);
@@ -1425,7 +1452,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
         TermKind::Cast { arg } => visitor.visit_mut_term(&mut *arg),
         TermKind::Coerce { arg } => visitor.visit_mut_term(arg),
-        TermKind::Item(_, _) => {}
+        TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_mut_term(&mut *lhs);
             visitor.visit_mut_term(&mut *rhs);
@@ -1699,7 +1726,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Cast { arg } => arg.subst_with(bound, subst),
             TermKind::Coerce { arg } => arg.subst_with(bound, subst),
-            TermKind::Item(_, _) => {}
+            TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.subst_with(bound, subst);
                 rhs.subst_with(bound, subst)
@@ -1791,7 +1818,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Cast { arg } => arg.free_vars_inner(bound, free),
             TermKind::Coerce { arg } => arg.free_vars_inner(bound, free),
-            TermKind::Item(_, _) => {}
+            TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.free_vars_inner(bound, free);
                 rhs.free_vars_inner(bound, free)

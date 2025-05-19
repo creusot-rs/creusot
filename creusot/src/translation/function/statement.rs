@@ -205,7 +205,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.ctx.types.usize,
                     self.typing_env(),
                     si.span,
-                )),
+                ).expect("unexpected const")),
             ),
             Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize, _), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true)

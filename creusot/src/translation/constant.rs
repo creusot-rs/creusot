@@ -27,7 +27,7 @@ fn from_mir_constant_kind<'tcx>(
     span: Span,
 ) -> Operand<'tcx> {
     if let mir::Const::Ty(ty, c) = ck {
-        return Operand::Constant(from_ty_const(ctx, c, ty, env, span));
+        return Operand::Constant(from_ty_const(ctx, c, ty, env, span).expect("unexpected const"));
     }
 
     if ck.ty().is_unit() {
@@ -58,11 +58,15 @@ fn from_mir_constant_kind<'tcx>(
         return Operand::Promoted(p, ck.ty());
     }
 
-    Operand::Constant(Term {
-        kind: TermKind::Lit(try_to_bits(ctx, env, ck.ty(), span, ck)),
-        ty: ck.ty(),
-        span,
-    })
+    if let Some(lit) = try_to_bits(ctx, env, ck.ty(), span, ck) {
+        return Operand::Constant(Term {
+            kind: TermKind::Lit(lit),
+            ty: ck.ty(),
+            span,
+        })
+    }
+
+    const_block(ctx, span, ck)
 }
 
 pub(crate) fn from_ty_const<'tcx>(
@@ -71,20 +75,25 @@ pub(crate) fn from_ty_const<'tcx>(
     ty: Ty<'tcx>,
     env: TypingEnv<'tcx>,
     span: Span,
-) -> Term<'tcx> {
+) -> Option<Term<'tcx>> {
+    debug!("{c}");
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind()
         && get_builtin(ctx.tcx, u.def).is_some()
     {
-        return Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty, span };
+        return Some(Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty, span });
     };
 
     if let ConstKind::Param(_) = c.kind() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
 
-    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, ty, span, c)), ty, span };
+    if let Some(lit) = try_to_bits(ctx, env, ty, span, c) {
+        return Some(Term { kind: TermKind::Lit(lit), ty, span });
+    }
+
+    None
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
@@ -93,16 +102,13 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
     ty: Ty<'tcx>,
     span: Span,
     c: C,
-) -> Literal<'tcx> {
+) -> Option<Literal<'tcx>> {
     use rustc_middle::ty::{FloatTy, IntTy, UintTy};
     use rustc_type_ir::TyKind::{Bool, Char, Float, FnDef, Int, Uint};
-    let Some(bits) = c.get_bits(ctx.tcx, env, ty) else {
-        ctx.fatal_error(span, &format!("Could not determine value of constant. Creusot currently does not support generic associated constants.")).emit()
-    };
-
+    let bits = c.get_bits(ctx.tcx, env, ty)?;
     let target_width = ctx.tcx.sess.target.pointer_width;
 
-    match ty.kind() {
+    Some(match ty.kind() {
         Char => Literal::Char(
             char::from_u32(bits as u32)
                 .unwrap_or_else(|| ctx.crash_and_error(span, "can't convert to char")),
@@ -116,7 +122,6 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
                 IntTy::I64 => bits as i64 as i128,
                 IntTy::I128 => bits as i128,
             };
-
             Literal::MachSigned(bits, *ity)
         }
         Uint(uty) => {
@@ -157,7 +162,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
         _ => {
             ctx.crash_and_error(span, &format!("unsupported constant expression"));
         }
-    }
+    })
 }
 
 trait ToBits<'tcx> {
@@ -182,5 +187,21 @@ impl<'tcx> ToBits<'tcx> for Const<'tcx> {
 impl<'tcx> ToBits<'tcx> for mir::Const<'tcx> {
     fn get_bits(&self, tcx: TyCtxt<'tcx>, env: TypingEnv<'tcx>, _: Ty<'tcx>) -> Option<u128> {
         self.try_eval_bits(tcx, env)
+    }
+}
+
+fn const_block<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    span: Span,
+    ck: mir::Const<'tcx>,
+) -> fmir::Operand<'tcx> {
+    match ck {
+        mir::Const::Unevaluated(UnevaluatedConst{ def, args, .. }, ty) => {
+            return Operand::ConstBlock(def, args, ty);
+        }
+        _ => ctx.crash_and_error(
+            span,
+            "unsupported const {ck}",
+        ),
     }
 }

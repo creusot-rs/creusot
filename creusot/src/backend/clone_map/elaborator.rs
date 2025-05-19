@@ -197,7 +197,7 @@ impl DepElab for LogicElab {
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<Decl> {
-        assert_matches!(dep, Dependency::Item(_, _));
+        assert_matches!(dep, Dependency::Item(_, _) | Dependency::LogicConst(_, _));
 
         let (def_id, subst) = dep.did().unwrap();
 
@@ -443,7 +443,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         let decls = match dep {
             Dependency::Type(_) => TyElab::expand(self, ctx, dep),
             Dependency::Item(def_id, subst) => {
-                if ctx.is_logical(def_id) || matches!(ctx.item_type(def_id), ItemType::Constant) {
+                if ctx.is_logical(def_id) {
                     LogicElab::expand(self, ctx, dep)
                 } else if matches!(ctx.def_kind(def_id), DefKind::Field | DefKind::Variant) {
                     self.namer(dep).def_ty(ctx.parent(def_id), subst);
@@ -452,6 +452,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                     ProgramElab::expand(self, ctx, dep)
                 }
             }
+            Dependency::LogicConst(_, _) => LogicElab::expand(self, ctx, dep),
             Dependency::TyInvAxiom(ty) => expand_ty_inv_axiom(self, ctx, ty),
             Dependency::ClosureAccessor(_, _, _) | Dependency::TupleField(_, _) => vec![],
             Dependency::PreMod(b) => {
@@ -1027,10 +1028,12 @@ fn term<'tcx>(
             if matches!(ctx.item_type(def_id), ItemType::Constant) {
                 let ct = UnevaluatedConst::new(def_id, subst);
                 let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(ct));
+
                 let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
                 let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
                 let span = ctx.def_span(def_id);
-                let res = from_ty_const(&ctx.ctx, constant, ty, typing_env, span);
+                let Some(res) = from_ty_const(&ctx.ctx, constant, ty, typing_env, span)
+                  else { ctx.crash_and_error(span, &format!("term: unhandled const {constant}")) };
                 Some(res)
             } else if is_resolve_function(ctx.tcx, def_id) {
                 resolve_term(ctx, typing_env, def_id, subst, bound)
@@ -1056,6 +1059,16 @@ fn term<'tcx>(
                 );
                 Some(term)
             }
+        }
+        Dependency::LogicConst(def_id, subst) => {
+            let ct = UnevaluatedConst::new(def_id, subst);
+            let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(ct));
+            let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
+            let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
+            let span = ctx.def_span(def_id);
+            let Some(res) = from_ty_const(&ctx.ctx, constant, ty, typing_env, span)
+              else { ctx.crash_and_error(span, &format!("term: unhandled const {constant}")) };
+            Some(res)
         }
         _ => unreachable!(),
     }

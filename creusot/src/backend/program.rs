@@ -326,6 +326,13 @@ impl<'tcx> Operand<'tcx> {
         match self {
             Operand::Move(pl) | Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
+            Operand::ConstBlock(id, subst, ty) => {
+                let ret_ident = Ident::fresh_local("_const");
+                let ty = lower.ty(ty);
+                let fun_qname = const_block_to_why3(lower, id, subst);
+                istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, []));
+                Exp::var(ret_ident)
+            }
             Operand::Promoted(pid, ty) => {
                 let var = Ident::fresh_local(format!("pr{}", pid.as_usize()));
                 istmts.push(IntermediateStmt::call(
@@ -610,7 +617,7 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(res_ident)
             }
             RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t),
-            RValue::Borrow(_, _, _) => unreachable!(), // Handled in Statement::to_why
+            RValue::Borrow(_, _, _) | RValue::ConstBlock(_, _) => unreachable!(), // Handled in Statement::to_why
             RValue::UnaryOp(UnOp::PtrMetadata, op) => {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {
                     TyKind::Ref(_, ty, mu) => {
@@ -1096,6 +1103,14 @@ impl<'tcx> Statement<'tcx> {
                 let new_rhs = rhs_constr(&mut istmts, reassign);
                 istmts.push(IntermediateStmt::Assign(rhs.local, new_rhs));
             }
+            Statement::Assignment(lhs, RValue::ConstBlock(id, subst), _span) => {
+                let ret_ident = Ident::fresh_local("_ret");
+                let ty = lhs.ty(lower.ctx.tcx, lower.locals);
+                let ty = lower.ty(ty);
+                let fun_qname = const_block_to_why3(lower, id, subst);
+                istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, []));
+                lower.assignment(&lhs, Exp::var(ret_ident), &mut istmts);
+            }
             Statement::Assignment(lhs, e, _span) => {
                 let rhs = e.into_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
                 lower.assignment(&lhs, rhs, &mut istmts);
@@ -1246,4 +1261,12 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
     };
 
     (lower.names.item(id, subst), args)
+}
+
+fn const_block_to_why3<'tcx, N: Namer<'tcx>>(
+    lower: &mut LoweringState<'_, 'tcx, N>,
+    id: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> Name {
+    lower.names.item(id, subst)
 }
