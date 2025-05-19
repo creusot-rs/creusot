@@ -537,9 +537,7 @@ pub(crate) fn super_visit_operand<'tcx, V: FmirVisitor<'tcx>>(
         Operand::Copy(place) | Operand::Move(place) => {
             visitor.visit_place(place);
         }
-        Operand::Constant(_) |
-        Operand::ConstBlock(_, _, _) |
-        Operand::Promoted(_, _) => (),
+        Operand::Constant(_) | Operand::ConstBlock(_, _, _) | Operand::Promoted(_, _) => (),
     }
 }
 

@@ -24,7 +24,7 @@ use crate::{
         },
         wto::{Component, weak_topological_order},
     },
-    ctx::{BodyId, Dependencies},
+    ctx::{BodyId, Constness, Dependencies},
     naming::name,
     translated_item::FileModule,
     translation::{
@@ -66,7 +66,8 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     }
 
     let name = names.item_ident(names.self_id, names.self_subst);
-    let body = Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), None)));
+    let body =
+        Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), Constness::None)));
 
     let mut decls = names.provide_deps(ctx);
     decls.push(Decl::Meta(Meta {
@@ -169,7 +170,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         })
         .collect();
 
-    let (mut sig, contract, return_ty) = if body_id.promoted.is_none() {
+    let (mut sig, contract, return_ty) = if !body_id.constness.is_const() {
         let def_id = body_id.def_id();
         let typing_env = ctx.typing_env(def_id);
         let mut pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
@@ -219,8 +220,8 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     let open_body =
         // a closure with no contract
         inferred_closure_spec
-        // a promoted item
-        || body_id.promoted.is_some();
+        // a constitem
+        || body_id.constness.is_const();
 
     let ensures = contract.ensures.into_iter().map(Condition::labelled_exp);
     let mut postcond = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);

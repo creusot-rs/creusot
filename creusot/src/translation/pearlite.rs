@@ -940,7 +940,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             },
             ExprKind::NamedConst { def_id, args, ref user_ty, .. } => {
                 debug!("{def_id:?}");
-                Ok(Term { ty, span, kind: TermKind::named_const(def_id, args, user_ty, self.ctx.tcx) })
+                Ok(Term {
+                    ty,
+                    span,
+                    kind: TermKind::named_const(def_id, args, user_ty, self.ctx.tcx),
+                })
             }
             ExprKind::ZstLiteral { ref user_ty, .. } => match ty.kind() {
                 TyKind::FnDef(def_id, subst) => Ok(Term {

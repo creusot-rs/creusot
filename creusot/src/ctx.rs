@@ -70,12 +70,25 @@ macro_rules! queryish {
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub struct BodyId {
     pub def_id: LocalDefId,
-    pub promoted: Option<Promoted>,
+    pub constness: Constness,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
+pub enum Constness {
+    None,
+    Const,
+    Promoted(Promoted),
+}
+
+impl Constness {
+    pub fn is_const(self) -> bool {
+        matches!(self, Constness::Const | Constness::Promoted(_))
+    }
 }
 
 impl BodyId {
-    pub fn new(def_id: LocalDefId, promoted: Option<Promoted>) -> Self {
-        BodyId { def_id, promoted }
+    pub fn new(def_id: LocalDefId, constness: Constness) -> Self {
+        BodyId { def_id, constness }
     }
 
     pub fn def_id(self) -> DefId {

@@ -27,7 +27,7 @@ use crate::{
         is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_predicate,
         is_resolve_function, is_structural_resolve,
     },
-    ctx::{BodyId, ItemType},
+    ctx::{BodyId, Constness, ItemType},
     naming::name,
     translation::{
         constant::from_ty_const,
@@ -129,7 +129,7 @@ impl DepElab for ProgramElab {
         let name = names.dependency(dep).ident();
 
         if let Dependency::Item(def_id, subst) = dep
-            && ctx.def_kind(def_id) != DefKind::Closure
+            && !matches!(ctx.def_kind(def_id), DefKind::Closure | DefKind::Const)
         {
             let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
                 .instantiate(ctx.tcx, subst)
@@ -179,8 +179,17 @@ impl DepElab for ProgramElab {
 
         // Inline the body of closures and promoted
         let bid = match dep {
-            Dependency::Item(def_id, _) => BodyId { def_id: def_id.expect_local(), promoted: None },
-            Dependency::Promoted(def_id, prom) => BodyId { def_id, promoted: Some(prom) },
+            Dependency::Item(def_id, _) => {
+                let constness = if matches!(ctx.def_kind(def_id), DefKind::Const) {
+                    Constness::Const
+                } else {
+                    Constness::None
+                };
+                BodyId { def_id: def_id.expect_local(), constness }
+            }
+            Dependency::Promoted(def_id, prom) => {
+                BodyId { def_id, constness: Constness::Promoted(prom) }
+            }
             _ => unreachable!(),
         };
 
@@ -1032,8 +1041,9 @@ fn term<'tcx>(
                 let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
                 let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
                 let span = ctx.def_span(def_id);
-                let Some(res) = from_ty_const(&ctx.ctx, constant, ty, typing_env, span)
-                  else { ctx.crash_and_error(span, &format!("term: unhandled const {constant}")) };
+                let Some(res) = from_ty_const(&ctx.ctx, constant, ty, typing_env, span) else {
+                    ctx.crash_and_error(span, &format!("term: unhandled const {constant}"))
+                };
                 Some(res)
             } else if is_resolve_function(ctx.tcx, def_id) {
                 resolve_term(ctx, typing_env, def_id, subst, bound)
@@ -1066,8 +1076,9 @@ fn term<'tcx>(
             let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
             let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
             let span = ctx.def_span(def_id);
-            let Some(res) = from_ty_const(&ctx.ctx, constant, ty, typing_env, span)
-              else { ctx.crash_and_error(span, &format!("term: unhandled const {constant}")) };
+            let Some(res) = from_ty_const(&ctx.ctx, constant, ty, typing_env, span) else {
+                ctx.crash_and_error(span, &format!("term: unhandled const {constant}"))
+            };
             Some(res)
         }
         _ => unreachable!(),

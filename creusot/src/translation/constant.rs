@@ -59,11 +59,7 @@ fn from_mir_constant_kind<'tcx>(
     }
 
     if let Some(lit) = try_to_bits(ctx, env, ck.ty(), span, ck) {
-        return Operand::Constant(Term {
-            kind: TermKind::Lit(lit),
-            ty: ck.ty(),
-            span,
-        })
+        return Operand::Constant(Term { kind: TermKind::Lit(lit), ty: ck.ty(), span });
     }
 
     const_block(ctx, span, ck)
@@ -196,12 +192,9 @@ fn const_block<'tcx>(
     ck: mir::Const<'tcx>,
 ) -> fmir::Operand<'tcx> {
     match ck {
-        mir::Const::Unevaluated(UnevaluatedConst{ def, args, .. }, ty) => {
+        mir::Const::Unevaluated(UnevaluatedConst { def, args, .. }, ty) => {
             return Operand::ConstBlock(def, args, ty);
         }
-        _ => ctx.crash_and_error(
-            span,
-            "unsupported const {ck}",
-        ),
+        _ => ctx.crash_and_error(span, "unsupported const {ck}"),
     }
 }
