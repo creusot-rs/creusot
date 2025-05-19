@@ -13,3 +13,33 @@ module M_const__foo [#"const.rs" 8 0 8 21]
     [ return''0 (result:UInt64.t)-> {[@expl:foo ensures] [%#sconst'0] result = (42 : UInt64.t)} (! return' {result}) ]
 
 end
+module M_const__array [#"const.rs" 12 0 12 28]
+  let%span sconst = "const.rs" 13 27 13 28
+  let%span sconst'0 = "const.rs" 13 30 13 31
+
+  use creusot.slice.Slice64
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+
+  let rec v_A (return'  (x:Slice64.array UInt64.t))= bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp:Slice64.array UInt64.t)-> (! -{Seq.get __arr_temp.Slice64.elts 0
+          = ([%#sconst] (0 : UInt64.t))
+          /\ Seq.get __arr_temp.Slice64.elts 1 = ([%#sconst'0] (1 : UInt64.t))
+          /\ Seq.length __arr_temp.Slice64.elts = 2}-
+           [ &_0 <- __arr_temp ]
+          s1) ]
+
+      | s1 = return''0 {_0} ]
+     ]
+     [ & _0 : Slice64.array UInt64.t = Any.any_l () ]  [ return''0 (result:Slice64.array UInt64.t)-> return' {result} ]
+
+  meta "compute_max_steps" 1000000
+
+  let rec array[#"const.rs" 12 0 12 28] (return'  (x:Slice64.array UInt64.t))= (! bb0
+    [ bb0 = s0 [ s0 = v_A (fun (_const:Slice64.array UInt64.t) ->  [ &_0 <- _const ] s1) | s1 = return''0 {_0} ]  ]
+    ) [ & _0 : Slice64.array UInt64.t = Any.any_l () ]
+    [ return''0 (result:Slice64.array UInt64.t)-> (! return' {result}) ]
+
+end
