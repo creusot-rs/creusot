@@ -8,3 +8,8 @@ const FOO: usize = 42;
 pub fn foo() -> usize {
     FOO
 }
+
+pub fn array() -> [usize; 2] {
+    const A: [usize; 2] = [0, 1];
+    A
+}
