@@ -1,9 +1,11 @@
-use crate::*;
-use crate::logic::FMap;
-use crate::logic::ra::RA;
+use crate::{
+    logic::{FMap, ra::RA},
+    *,
+};
 
 impl<K, V> RA for FMap<K, V>
-    where V: RA
+where
+    V: RA,
 {
     #[logic]
     #[open]
@@ -13,24 +15,30 @@ impl<K, V> RA for FMap<K, V>
 
     #[logic]
     #[open]
-    fn valid(self) -> bool { pearlite!{
-        forall<k: K> self.get(k).valid()
-    }}
+    fn valid(self) -> bool {
+        pearlite! {
+            forall<k: K> self.get(k).valid()
+        }
+    }
 
     #[logic]
     #[open]
     #[ensures(result == exists<c: Self> self.op(c) == other)]
     #[trusted] // TODO
-    fn incl(self, other: Self) -> bool { pearlite!{
-        forall<k: K> self.get(k).incl(other.get(k))
-    }}
+    fn incl(self, other: Self) -> bool {
+        pearlite! {
+            forall<k: K> self.get(k).incl(other.get(k))
+        }
+    }
 
     #[logic]
     #[open]
     #[ensures(result == (self.op(self) == self))]
-    fn idemp(self) -> bool { pearlite!{
-        forall<k: K> self.get(k).idemp()
-    }}
+    fn idemp(self) -> bool {
+        pearlite! {
+            forall<k: K> self.get(k).idemp()
+        }
+    }
 
     #[law]
     #[open(self)]

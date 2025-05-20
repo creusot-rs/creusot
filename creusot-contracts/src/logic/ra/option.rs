@@ -1,7 +1,8 @@
 use crate::logic::ra::*;
 
 impl<T> RA for Option<T>
-    where T: RA
+where
+    T: RA,
 {
     #[logic]
     #[open]
@@ -29,9 +30,7 @@ impl<T> RA for Option<T>
         match (self, other) {
             (None, _) => true,
             (_, None) => false,
-            (Some(x), Some(y)) => {
-                x == y || x.incl(y)
-            }
+            (Some(x), Some(y)) => x == y || x.incl(y),
         }
     }
 
@@ -55,16 +54,18 @@ impl<T> RA for Option<T>
     #[law]
     #[open(self)]
     #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
-    fn associative(a: Self, b: Self, c: Self) { pearlite!{
-        match (a, b, c) {
-            (None, _, _) => {},
-            (_, None, _) => {},
-            (_, _, None) => {},
-            (Some(aa), Some(bb), Some(cc)) => {
-                <T as RA>::associative(aa, bb, cc)
+    fn associative(a: Self, b: Self, c: Self) {
+        pearlite! {
+            match (a, b, c) {
+                (None, _, _) => {},
+                (_, None, _) => {},
+                (_, _, None) => {},
+                (Some(aa), Some(bb), Some(cc)) => {
+                    <T as RA>::associative(aa, bb, cc)
+                }
             }
         }
-    }}
+    }
 
     #[logic]
     #[open(self)]
@@ -81,23 +82,25 @@ impl<T> RA for Option<T>
         (exists<b: Self> b.incl(self) && b.idemp() &&
            forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
     )]
-    fn maximal_idemp(self) { pearlite!{
-        match self {
-            None => (),
-            Some(x) => {
-                x.maximal_idemp();
-                if forall<y: T> ! (y.incl(x) && y.idemp()) {
-                    // pick None, show the right-hand side of the postcondition
-                    proof_assert!(None.incl(self) && None::<T>.idemp());
-                    proof_assert!(forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(None));
-                } else {
-                    // pick Some(y)
-                    proof_assert!(exists<y: T> y.incl(x) && y.idemp() &&
-                      Some(y).incl(self) && Some(y).idemp() &&
-                      (forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(Some(y)))
-                    );
+    fn maximal_idemp(self) {
+        pearlite! {
+            match self {
+                None => (),
+                Some(x) => {
+                    x.maximal_idemp();
+                    if forall<y: T> ! (y.incl(x) && y.idemp()) {
+                        // pick None, show the right-hand side of the postcondition
+                        proof_assert!(None.incl(self) && None::<T>.idemp());
+                        proof_assert!(forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(None));
+                    } else {
+                        // pick Some(y)
+                        proof_assert!(exists<y: T> y.incl(x) && y.idemp() &&
+                          Some(y).incl(self) && Some(y).idemp() &&
+                          (forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(Some(y)))
+                        );
+                    }
                 }
             }
         }
-    }}
+    }
 }

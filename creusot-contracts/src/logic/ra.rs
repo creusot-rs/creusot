@@ -1,7 +1,21 @@
-use crate::*;
-use crate::logic::Set;
+mod agree;
+mod auth;
+mod excl;
+mod fmap;
+mod option;
+mod prod;
+mod sum;
+mod view;
 
-#[allow(unused_variables)]
+pub use self::{
+    agree::Ag,
+    auth::Auth,
+    excl::Excl,
+    sum::Sum,
+    view::{View, ViewRel},
+};
+
+use crate::{logic::Set, *};
 
 pub trait RA: Sized {
     #[logic]
@@ -68,32 +82,27 @@ pub trait RA: Sized {
 #[open(self)]
 #[requires(a.incl(b) && b.incl(c))]
 #[ensures(a.incl(c))]
-pub fn incl_transitive<T: RA>(a: T, b: T, c: T) { }
+pub fn incl_transitive<T: RA>(a: T, b: T, c: T) {}
 
 // TODO: make these definitions part of the trait ?
 // could they have default implementations? is it useful to allow for custom definitions?
 
 #[logic]
 #[open]
-pub fn update<T: RA>(x: T, y: T) -> bool { pearlite!{
-    forall<z: T> x.op(z).valid() ==> y.op(z).valid()
-}}
+pub fn update<T: RA>(x: T, y: T) -> bool {
+    pearlite! {
+        forall<z: T> x.op(z).valid() ==> y.op(z).valid()
+    }
+}
 
 #[logic]
 #[open]
-pub fn update_nondet<T: RA>(x: T, s: Set<T>) -> bool { pearlite!{
-    forall<z: T> x.op(z).valid() ==>
-        exists<y: T> s.contains(y) && y.op(z).valid()
-}}
-
-pub mod agree;
-pub mod excl;
-pub mod prod;
-pub mod sum;
-pub mod option;
-pub mod view;
-pub mod auth;
-pub mod fmap;
+pub fn update_nondet<T: RA>(x: T, s: Set<T>) -> bool {
+    pearlite! {
+        forall<z: T> x.op(z).valid() ==>
+            exists<y: T> s.contains(y) && y.op(z).valid()
+    }
+}
 
 // NOTE: always require that we have Sized data in logical APIs?
 // thus remove SizedW from library code; require the end user
