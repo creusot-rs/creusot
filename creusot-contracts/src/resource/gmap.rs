@@ -78,7 +78,7 @@ impl<K, V> GMap<K, V> {
     pub fn auth(self) -> FMap<K, V> {
         match self.0.val().auth {
             None => FMap::empty(),
-            Some(Excl::ExclBot) => FMap::empty(),
+            Some(Excl::Bot) => FMap::empty(),
             Some(Excl::Excl(auth)) => auth,
         }
     }
@@ -98,7 +98,7 @@ impl<K, V> GMap<K, V> {
     pub fn frac(self) -> FMap<K, V> {
         self.frac_agree().map_filter(|v| match v {
             Ag::Ag(v) => Some(v),
-            Ag::AgBot => None,
+            Ag::Bot => None,
         })
     }
 }

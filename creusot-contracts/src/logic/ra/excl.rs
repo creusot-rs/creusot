@@ -7,25 +7,23 @@ use crate::{logic::ra::RA, *};
 /// [`Resource`](crate::resource::Resource)) will be able to exists at a given moment.
 pub enum Excl<T> {
     Excl(T),
-    ExclBot,
+    /// The invalid value
+    Bot,
 }
-
-#[allow(unused_imports)]
-use Excl::*;
 
 impl<T> RA for Excl<T> {
     #[logic]
     #[open]
     fn op(self, _other: Self) -> Self {
-        ExclBot
+        Self::Bot
     }
 
     #[logic]
     #[open]
     fn valid(self) -> bool {
         match self {
-            Excl(_) => true,
-            ExclBot => false,
+            Self::Excl(_) => true,
+            Self::Bot => false,
         }
     }
 
@@ -33,14 +31,14 @@ impl<T> RA for Excl<T> {
     #[open]
     #[ensures(result == (exists<c: Self> self.op(c) == other))]
     fn incl(self, other: Self) -> bool {
-        other == ExclBot
+        other == Self::Bot
     }
 
     #[logic]
     #[open]
     #[ensures(result == (self.op(self) == self))]
     fn idemp(self) -> bool {
-        self == ExclBot
+        self == Self::Bot
     }
 
     #[law]
