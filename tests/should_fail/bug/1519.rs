@@ -2,23 +2,7 @@ extern crate creusot_contracts;
 
 // Previously crashed creusot in the termination check, because of the missing `le` and `idemp` in the impl block.
 
-use creusot_contracts::{logic::Mapping, *};
-
-pub trait OptionExt<T> {
-    #[logic]
-    fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U>;
-}
-
-impl<T> OptionExt<T> for Option<T> {
-    #[logic]
-    #[open]
-    fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U> {
-        match self {
-            None => None,
-            Some(x) => f[x],
-        }
-    }
-}
+use creusot_contracts::*;
 
 pub trait RA: Sized {
     #[logic]
