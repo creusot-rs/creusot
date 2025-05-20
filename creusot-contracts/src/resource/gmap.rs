@@ -1,5 +1,8 @@
 #[cfg(creusot)]
-use crate::logic::ra::{Excl, RA as _};
+use crate::logic::{
+    Id,
+    ra::{Excl, RA as _},
+};
 use crate::{
     logic::{
         FMap,
@@ -48,7 +51,7 @@ impl<K, V> GMap<K, V> {
     /// Id of the underlying [`Resource`].
     #[logic]
     #[open(self)]
-    pub fn id(self) -> pcell::Id {
+    pub fn id(self) -> Id {
         self.0.id()
     }
 
