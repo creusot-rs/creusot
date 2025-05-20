@@ -1035,17 +1035,7 @@ fn term<'tcx>(
 ) -> Option<Term<'tcx>> {
     match dep {
         Dependency::Item(def_id, subst) => {
-            if matches!(ctx.item_type(def_id), ItemType::Constant) {
-                let ct = UnevaluatedConst::new(def_id, subst);
-                let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(ct));
-                let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
-                let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
-                let span = ctx.def_span(def_id);
-                let Some(res) = from_ty_const(&ctx.ctx, typing_env, constant, ty, span) else {
-                    ctx.crash_and_error(span, &format!("term: unhandled const {constant}"))
-                };
-                Some(res)
-            } else if is_resolve_function(ctx.tcx, def_id) {
+            if is_resolve_function(ctx.tcx, def_id) {
                 resolve_term(ctx, typing_env, def_id, subst, bound)
             } else if is_structural_resolve(ctx.tcx, def_id) {
                 let subj = ctx.sig(def_id).inputs[0].0.0;
