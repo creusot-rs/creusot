@@ -1,45 +1,229 @@
-module M_const__foo [#"const.rs" 8 0 8 21]
+module M_const__foo [#"const.rs" 8 0 8 27]
   let%span sconst = "const.rs" 9 4 9 7
   let%span sconst'0 = "const.rs" 7 10 7 27
   
   use creusot.int.UInt64
   use creusot.prelude.Any
-  
+
   meta "compute_max_steps" 1000000
-  
-  let rec foo[#"const.rs" 8 0 8 21] (return'  (x:UInt64.t))= (! bb0
+
+  let rec foo[#"const.rs" 8 0 8 27] (return'  (x:UInt64.t))= (! bb0
     [ bb0 = s0 [ s0 =  [ &_0 <- [%#sconst] (42 : UInt64.t) ] s1 | s1 = return''0 {_0} ]  ]
-    ) [ & _0 : UInt64.t = Any.any_l () ] 
+    ) [ & _0 : UInt64.t = Any.any_l () ]
     [ return''0 (result:UInt64.t)-> {[@expl:foo ensures] [%#sconst'0] result = (42 : UInt64.t)} (! return' {result}) ]
 
 end
-module M_const__array [#"const.rs" 12 0 12 28]
-  let%span sconst = "const.rs" 13 27 13 28
-  let%span sconst'0 = "const.rs" 13 30 13 31
+module M_const__array [#"const.rs" 13 0 13 29]
+  let%span sconst = "const.rs" 12 10 12 26
+  let%span sconst'0 = "const.rs" 14 24 14 30
+  let%span sconst'1 = "const.rs" 14 25 14 26
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 238 18 238 40
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 27 14 27 41
+  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 28 14 28 42
+  let%span smodel = "../../../creusot-contracts/src/model.rs" 54 8 54 22
 
   use creusot.slice.Slice64
+  use creusot.int.Int32
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use seq.Seq
+  use mach.int.Int
 
-  let rec v_A (return'  (x:Slice64.array UInt64.t))= bb0
+  let rec v_X (return'  (x:Slice64.array Int32.t))= bb0
     [ bb0 = s0
-      [ s0 = any
-        [ any_ (__arr_temp:Slice64.array UInt64.t)-> (! -{Seq.get __arr_temp.Slice64.elts 0
-          = ([%#sconst] (0 : UInt64.t))
-          /\ Seq.get __arr_temp.Slice64.elts 1 = ([%#sconst'0] (1 : UInt64.t))
-          /\ Seq.length __arr_temp.Slice64.elts = 2}-
-           [ &_0 <- __arr_temp ]
-          s1) ]
-
+      [ s0 = Slice64.create <Int32.t> {[%#sconst'0] (9 : UInt64.t)} {fun (_ : int) -> [%#sconst'1] (1 : Int32.t)}
+          (fun (_res:Slice64.array Int32.t) ->  [ &_0 <- _res ] s1)
       | s1 = return''0 {_0} ]
      ]
-     [ & _0 : Slice64.array UInt64.t = Any.any_l () ]  [ return''0 (result:Slice64.array UInt64.t)-> return' {result} ]
+     [ & _0 : Slice64.array Int32.t = Any.any_l () ]  [ return''0 (result:Slice64.array Int32.t)-> return' {result} ]
+
+  let rec promoted0__array (return'  (x:Slice64.array Int32.t))= bb0
+    [ bb0 = s0 [ s0 = v_X (fun (_CONST:Slice64.array Int32.t) ->  [ &_0 <- _CONST ] s1) | s1 = return''0 {_0} ]  ]
+     [ & _0 : Slice64.array Int32.t = Any.any_l () ]  [ return''0 (result:Slice64.array Int32.t)-> return' {result} ]
+
+  constant v_MAX : UInt64.t = (18446744073709551615 : UInt64.t)
+
+  function view (self : Slice64.slice Int32.t) : Seq.seq Int32.t
+
+  axiom view_spec : forall self : Slice64.slice Int32.t . ([%#sslice'0] Seq.length (view self)
+  <= UInt64.t'int (v_MAX : UInt64.t))
+  && ([%#sslice'1] view self = Slice64.id self)
+
+  function view'0 (self : Slice64.slice Int32.t) : Seq.seq Int32.t =
+    [%#smodel] view self
+
+  let rec len (self_:Slice64.slice Int32.t) (return'  (x:UInt64.t))= any
+    [ return''0 (result:UInt64.t)-> {[%#sslice] Seq.length (view'0 self_) = UInt64.t'int result} (! return' {result}) ]
+
 
   meta "compute_max_steps" 1000000
 
-  let rec array[#"const.rs" 12 0 12 28] (return'  (x:Slice64.array UInt64.t))= (! bb0
-    [ bb0 = s0 [ s0 = v_A (fun (_const:Slice64.array UInt64.t) ->  [ &_0 <- _const ] s1) | s1 = return''0 {_0} ]  ]
-    ) [ & _0 : Slice64.array UInt64.t = Any.any_l () ]
-    [ return''0 (result:Slice64.array UInt64.t)-> (! return' {result}) ]
+  let rec array[#"const.rs" 13 0 13 29] (return'  (x:UInt64.t))= (! bb0
+    [ bb0 = s0
+      [ s0 = promoted0__array (fun (pr0:Slice64.array Int32.t) ->  [ &_5 <- pr0 ] s1)
+      | s1 = len {_5} (fun (_ret:UInt64.t) ->  [ &_0 <- _ret ] s2)
+      | s2 = bb1 ]
+
+    | bb1 = return''0 {_0} ]
+    ) [ & _0 : UInt64.t = Any.any_l () | & _5 : Slice64.array Int32.t = Any.any_l () ]
+    [ return''0 (result:UInt64.t)-> {[@expl:array ensures] [%#sconst] result = (9 : UInt64.t)} (! return' {result}) ]
+
+end
+module M_const__array_param [#"const.rs" 19 0 19 51]
+  let%span sconst = "const.rs" 18 10 18 21
+  let%span sconst'0 = "const.rs" 20 30 20 36
+  let%span sconst'1 = "const.rs" 20 31 20 32
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 238 18 238 40
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 27 14 27 41
+  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 28 14 28 42
+  let%span smodel = "../../../creusot-contracts/src/model.rs" 54 8 54 22
+
+  use creusot.slice.Slice64
+  use creusot.int.UInt32
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use seq.Seq
+  use mach.int.Int
+
+  constant v_N [#"const.rs" 19 25 19 39]  : UInt64.t
+
+  let rec _const (return'  (x:Slice64.array UInt32.t))= bb0
+    [ bb0 = s0
+      [ s0 = Slice64.create <UInt32.t> {[%#sconst'0] v_N} {fun (_ : int) -> [%#sconst'1] (1 : UInt32.t)}
+          (fun (_res:Slice64.array UInt32.t) ->  [ &_0 <- _res ] s1)
+      | s1 = return''0 {_0} ]
+     ]
+     [ & _0 : Slice64.array UInt32.t = Any.any_l () ]  [ return''0 (result:Slice64.array UInt32.t)-> return' {result} ]
+
+  constant v_MAX : UInt64.t = (18446744073709551615 : UInt64.t)
+
+  function view (self : Slice64.slice UInt32.t) : Seq.seq UInt32.t
+
+  axiom view_spec : forall self : Slice64.slice UInt32.t . ([%#sslice'0] Seq.length (view self)
+  <= UInt64.t'int (v_MAX : UInt64.t))
+  && ([%#sslice'1] view self = Slice64.id self)
+
+  function view'0 (self : Slice64.slice UInt32.t) : Seq.seq UInt32.t =
+    [%#smodel] view self
+
+  let rec len (self_:Slice64.slice UInt32.t) (return'  (x:UInt64.t))= any
+    [ return''0 (result:UInt64.t)-> {[%#sslice] Seq.length (view'0 self_) = UInt64.t'int result} (! return' {result}) ]
+
+
+  meta "compute_max_steps" 1000000
+
+  let rec array_param[#"const.rs" 19 0 19 51] (return'  (x:UInt64.t))= (! bb0
+    [ bb0 = s0
+      [ s0 = _const (fun (_CONST:Slice64.array UInt32.t) ->  [ &x <- _CONST ] s1)
+      | s1 = len {x} (fun (_ret:UInt64.t) ->  [ &_0 <- _ret ] s2)
+      | s2 = bb1 ]
+
+    | bb1 = return''0 {_0} ]
+    ) [ & _0 : UInt64.t = Any.any_l () | & x : Slice64.array UInt32.t = Any.any_l () ]
+    [ return''0 (result:UInt64.t)-> {[@expl:array_param ensures] [%#sconst] result = v_N} (! return' {result}) ]
+
+end
+module M_const__add_one [#"const.rs" 26 0 26 47]
+  let%span sconst = "const.rs" 24 11 24 25
+  let%span sconst'0 = "const.rs" 25 10 25 27
+  let%span sconst'1 = "const.rs" 27 16 27 17
+  let%span sconst'2 = "const.rs" 27 12 27 13
+  let%span sconst'3 = "const.rs" 27 12 27 17
+  let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
+  let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
+  let%span sord'1 = "../../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
+  let%span sord'2 = "../../../creusot-contracts/src/logic/ord.rs" 144 39 144 89
+  let%span sord'3 = "../../../creusot-contracts/src/logic/ord.rs" 149 39 149 70
+  let%span sord'4 = "../../../creusot-contracts/src/logic/ord.rs" 154 40 154 57
+  let%span sord'5 = "../../../creusot-contracts/src/logic/ord.rs" 155 40 155 57
+  let%span sord'6 = "../../../creusot-contracts/src/logic/ord.rs" 156 39 156 56
+  let%span sord'7 = "../../../creusot-contracts/src/logic/ord.rs" 161 40 161 70
+  let%span sord'8 = "../../../creusot-contracts/src/logic/ord.rs" 162 39 162 72
+  let%span sord'9 = "../../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
+  let%span sord'10 = "../../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
+  let%span sord'11 = "../../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
+  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
+
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use mach.int.Int
+
+  constant v_N [#"const.rs" 26 21 26 35]  : UInt64.t
+
+  type tuple  =
+    { _p0: UInt64.t; _p1: bool }
+
+  let rec _const (return'  (x:UInt64.t))= bb0
+    [ bb0 = s0
+      [ s0 =
+        [ &_1 <- let (fst, snd) = UInt64.add_with_overflow ([%#sconst'2] v_N) ([%#sconst'1] (1 : UInt64.t)) in { _p0 = fst;
+                                                                                                                 _p1 = snd } ]
+
+        s1
+      | s1 = {[@expl:Add overflow] [%#sconst'3] not _1._p1} s2
+      | s2 = bb1 ]
+
+    | bb1 = s0 [ s0 =  [ &_0 <- _1._p0 ] s1 | s1 = return''0 {_0} ]  ]
+     [ & _0 : UInt64.t = Any.any_l () | & _1 : tuple = Any.any_l () ]
+    [ return''0 (result:UInt64.t)-> return' {result} ]
+
+
+  type t_Ordering  =
+    | C_Less
+    | C_Equal
+    | C_Greater
+
+  function cmp_log (self : UInt64.t) (o : UInt64.t) : t_Ordering =
+    [%#sord'12] if UInt64.lt self o then C_Less else if self = o then C_Equal else C_Greater
+
+  function eq_cmp (x : UInt64.t) (y : UInt64.t) : ()
+
+  axiom eq_cmp_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'11] (x = y) = (cmp_log x y = C_Equal)
+
+  function antisym2 (x : UInt64.t) (y : UInt64.t) : ()
+
+  axiom antisym2_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord'9] cmp_log x y = C_Greater)
+   -> ([%#sord'10] cmp_log y x = C_Less)
+
+  function antisym1 (x : UInt64.t) (y : UInt64.t) : ()
+
+  axiom antisym1_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord'7] cmp_log x y = C_Less)
+   -> ([%#sord'8] cmp_log y x = C_Greater)
+
+  function trans (x : UInt64.t) (y : UInt64.t) (z : UInt64.t) (o : t_Ordering) : ()
+
+  axiom trans_spec : forall x : UInt64.t, y : UInt64.t, z : UInt64.t, o : t_Ordering . ([%#sord'4] cmp_log x y = o)
+   -> ([%#sord'5] cmp_log y z = o)  -> ([%#sord'6] cmp_log x z = o)
+
+  function refl (x : UInt64.t) : ()
+
+  axiom refl_spec : forall x : UInt64.t . [%#sord'3] cmp_log x x = C_Equal
+
+  function cmp_gt_log (x : UInt64.t) (y : UInt64.t) : ()
+
+  axiom cmp_gt_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'2] UInt64.gt x y = (cmp_log x y = C_Greater)
+
+  function cmp_ge_log (x : UInt64.t) (y : UInt64.t) : ()
+
+  axiom cmp_ge_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'1] UInt64.ge x y = (cmp_log x y <> C_Less)
+
+  function cmp_lt_log (x : UInt64.t) (y : UInt64.t) : ()
+
+  axiom cmp_lt_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'0] UInt64.lt x y = (cmp_log x y = C_Less)
+
+  function cmp_le_log (x : UInt64.t) (y : UInt64.t) : ()
+
+  axiom cmp_le_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord] UInt64.le x y = (cmp_log x y <> C_Greater)
+
+  constant v_MAX : UInt64.t = (18446744073709551615 : UInt64.t)
+
+  meta "compute_max_steps" 1000000
+
+  let rec add_one[#"const.rs" 26 0 26 47] (return'  (x:UInt64.t))= {[@expl:add_one requires] [%#sconst] UInt64.lt v_N (v_MAX : UInt64.t)}
+    (! bb0 [ bb0 = s0 [ s0 = _const (fun (_CONST:UInt64.t) ->  [ &_0 <- _CONST ] s1) | s1 = return''0 {_0} ]  ] )
+    [ & _0 : UInt64.t = Any.any_l () ]
+
+    [ return''0 (result:UInt64.t)-> {[@expl:add_one ensures] [%#sconst'0] UInt64.t'int result = UInt64.t'int v_N + 1}
+      (! return' {result}) ]
 
 end

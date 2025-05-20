@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::ensures;
+use creusot_contracts::*;
 
 const FOO: usize = 42;
 
@@ -21,6 +21,7 @@ pub const fn array_param<const N: usize>() -> usize {
     x.len()
 }
 
+#[requires(N < usize::MAX)]
 #[ensures(result@ == N@ + 1)]
 pub const fn add_one<const N: usize>() -> usize {
     const { N + 1 }
