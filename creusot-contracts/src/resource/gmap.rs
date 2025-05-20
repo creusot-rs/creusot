@@ -58,7 +58,7 @@ impl<K, V> GMap<K, V> {
     #[predicate]
     #[open(self)]
     pub fn is_auth(self) -> bool {
-        self.0.inner().auth != None
+        self.0.val().auth != None
     }
 
     /// True if this is a fragment of the map.
@@ -69,14 +69,14 @@ impl<K, V> GMap<K, V> {
     #[predicate]
     #[open(self)]
     pub fn is_frac(self) -> bool {
-        self.0.inner().frac != None
+        self.0.val().frac != None
     }
 
     /// Get the authoritative version of the map, or the empty map.
     #[logic]
     #[open(self)]
     pub fn auth(self) -> FMap<K, V> {
-        match self.0.inner().auth {
+        match self.0.val().auth {
             None => FMap::empty(),
             Some(Excl::ExclBot) => FMap::empty(),
             Some(Excl::Excl(auth)) => auth,
@@ -86,7 +86,7 @@ impl<K, V> GMap<K, V> {
     #[logic]
     #[open(self)]
     fn frac_agree(self) -> FMap<K, Ag<V>> {
-        match self.0.inner().frac {
+        match self.0.val().frac {
             None => FMap::empty(),
             Some(frac) => frac,
         }
@@ -109,7 +109,8 @@ impl<K, V> GMap<K, V> {
     #[ensures(!result.is_frac())]
     #[ensures(result.auth() == FMap::empty())]
     pub fn new() -> Ghost<Self> {
-        ghost!(Self(Resource::alloc(snapshot!(View::mkauth(FMap::empty()))).into_inner()))
+        let resource = Resource::alloc(snapshot!(View::mkauth(FMap::empty())));
+        ghost!(Self(resource.into_inner()))
     }
 
     /// If we have the authoritative version, insert a new element and return the
@@ -147,11 +148,11 @@ impl<K, V> GMap<K, V> {
     #[allow(unused_variables)]
     pub fn contains(&self, frac: &Self) {
         let new_resource = self.0.join_shared(&frac.0);
-        let new_frac = snapshot!(match new_resource.inner().frac {
+        let new_frac = snapshot!(match new_resource@.frac {
             None => FMap::empty(),
             Some(map) => map,
         });
-        let old_frac = snapshot!(match frac.0.inner().frac {
+        let old_frac = snapshot!(match frac.0@.frac {
             None => FMap::empty(),
             Some(map) => map,
         });
