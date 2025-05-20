@@ -7,12 +7,9 @@ use crate::{logic::ra::RA, *};
 pub enum Sum<T, U> {
     Left(T),
     Right(U),
-    /// The invalid element for this RA.
-    SumBot,
+    /// The invalid value
+    Bot,
 }
-
-#[allow(unused_imports)]
-use Sum::*;
 
 impl<T, U> RA for Sum<T, U>
 where
@@ -23,9 +20,9 @@ where
     #[open]
     fn op(self, other: Self) -> Self {
         match (self, other) {
-            (Left(x), Left(y)) => Left(x.op(y)),
-            (Right(x), Right(y)) => Right(x.op(y)),
-            (_, _) => SumBot,
+            (Self::Left(x), Self::Left(y)) => Self::Left(x.op(y)),
+            (Self::Right(x), Self::Right(y)) => Self::Right(x.op(y)),
+            (_, _) => Self::Bot,
         }
     }
 
@@ -33,9 +30,9 @@ where
     #[open]
     fn valid(self) -> bool {
         match self {
-            Left(x) => x.valid(),
-            Right(x) => x.valid(),
-            SumBot => false,
+            Self::Left(x) => x.valid(),
+            Self::Right(x) => x.valid(),
+            Self::Bot => false,
         }
     }
 
@@ -44,9 +41,9 @@ where
     #[ensures(result == (exists<c: Self> self.op(c) == other))]
     fn incl(self, other: Self) -> bool {
         match (self, other) {
-            (Left(x), Left(y)) => x.incl(y),
-            (Right(x), Right(y)) => x.incl(y),
-            (_, SumBot) => true,
+            (Self::Left(x), Self::Left(y)) => x.incl(y),
+            (Self::Right(x), Self::Right(y)) => x.incl(y),
+            (_, Self::Bot) => true,
             (_, _) => false,
         }
     }
@@ -56,9 +53,9 @@ where
     #[ensures(result == (self.op(self) == self))]
     fn idemp(self) -> bool {
         match self {
-            Left(x) => x.idemp(),
-            Right(x) => x.idemp(),
-            SumBot => true,
+            Self::Left(x) => x.idemp(),
+            Self::Right(x) => x.idemp(),
+            Self::Bot => true,
         }
     }
 
@@ -90,9 +87,9 @@ where
     )]
     fn maximal_idemp(self) {
         match self {
-            Left(x) => x.maximal_idemp(),
-            Right(x) => x.maximal_idemp(),
-            SumBot => (),
+            Self::Left(x) => x.maximal_idemp(),
+            Self::Right(x) => x.maximal_idemp(),
+            Self::Bot => (),
         }
     }
 }
