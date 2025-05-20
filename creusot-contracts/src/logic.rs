@@ -6,6 +6,7 @@
 
 mod fmap;
 pub mod fset;
+mod id;
 mod int;
 mod mapping;
 pub mod ops;
@@ -14,10 +15,6 @@ pub mod ra;
 pub mod seq;
 mod set;
 
-pub use fmap::FMap;
-pub use fset::FSet;
-pub use int::Int;
-pub use mapping::Mapping;
-pub use ord::OrdLogic;
-pub use seq::Seq;
-pub use set::Set;
+pub use self::{
+    fmap::FMap, fset::FSet, id::Id, int::Int, mapping::Mapping, ord::OrdLogic, seq::Seq, set::Set,
+};
