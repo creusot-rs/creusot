@@ -20,7 +20,8 @@ use rustc_hir::def_id::DefId;
 use rustc_index::{Idx, bit_set::MixedBitSet};
 use rustc_middle::{
     mir::{
-        self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place, PlaceRef, TerminatorKind, START_BLOCK
+        self, BasicBlock, Body, Local, Location, Operand, Place, PlaceRef, START_BLOCK,
+        TerminatorKind, traversal::reverse_postorder,
     },
     ty::{self, Ty, TyCtxt, TyKind, TypeVisitableExt, TypingEnv},
 };
@@ -755,7 +756,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     pub(crate) fn param_const(&self, p: ty::ParamConst) -> Ident {
-        *self.param_consts.borrow_mut().entry(p).or_insert_with(|| Ident::fresh_local(p.name.as_str()))
+        *self
+            .param_consts
+            .borrow_mut()
+            .entry(p)
+            .or_insert_with(|| Ident::fresh_local(p.name.as_str()))
     }
 }
 
