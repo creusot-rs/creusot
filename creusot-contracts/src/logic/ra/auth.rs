@@ -1,13 +1,18 @@
-use crate::*;
-use crate::logic::ra::RA;
-use crate::logic::ra::view::{View, ViewRel};
+use crate::{
+    logic::ra::{
+        RA,
+        view::{View, ViewRel},
+    },
+    *,
+};
 
 // TODO: open vs open(self) for RA impls? abstraction patterns?
 
 pub struct AuthViewRel<T>(T);
 
 impl<T> ViewRel for AuthViewRel<T>
-where T: RA
+where
+    T: RA,
 {
     type Auth = T;
     type Frac = T;
@@ -28,7 +33,10 @@ where T: RA
 
 pub struct Auth<T: RA>(pub View<AuthViewRel<T>>);
 
-impl<T> Auth<T> where T: RA {
+impl<T> Auth<T>
+where
+    T: RA,
+{
     #[logic]
     #[open]
     pub fn mkauth(x: T) -> Self {
@@ -43,7 +51,8 @@ impl<T> Auth<T> where T: RA {
 }
 
 impl<T> RA for Auth<T>
-    where T: RA
+where
+    T: RA,
 {
     #[logic]
     #[open]

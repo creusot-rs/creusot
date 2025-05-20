@@ -1,5 +1,4 @@
-use crate::*;
-use crate::logic::ra::RA;
+use crate::{logic::ra::RA, *};
 
 pub enum Ag<T> {
     Ag(T),
@@ -9,8 +8,7 @@ pub enum Ag<T> {
 #[allow(unused_imports)]
 use Ag::*;
 
-impl<T> RA for Ag<T>
-{
+impl<T> RA for Ag<T> {
     #[logic]
     #[open]
     fn op(self, other: Self) -> Self {
@@ -21,9 +19,8 @@ impl<T> RA for Ag<T>
                 } else {
                     AgBot
                 }
-            },
-            (_, _) =>
-                AgBot,
+            }
+            (_, _) => AgBot,
         }
     }
 
@@ -57,12 +54,12 @@ impl<T> RA for Ag<T>
     #[law]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
-    fn commutative(a: Self, b: Self) { }
+    fn commutative(a: Self, b: Self) {}
 
     #[law]
     #[open(self)]
     #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
-    fn associative(a: Self, b: Self, c: Self) { }
+    fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic]
     #[open(self)]
@@ -77,5 +74,5 @@ impl<T> RA for Ag<T>
         (exists<b: Self> b.incl(self) && b.idemp() &&
            forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
     )]
-    fn maximal_idemp(self) { }
+    fn maximal_idemp(self) {}
 }

@@ -1,8 +1,9 @@
-use crate::*;
-use crate::logic::ra::RA;
+use crate::{logic::ra::RA, *};
 
 impl<T, U> RA for (T, U)
-    where T: RA, U: RA
+where
+    T: RA,
+    U: RA,
 {
     #[logic]
     #[open]
@@ -33,12 +34,12 @@ impl<T, U> RA for (T, U)
     #[law]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
-    fn commutative(a: Self, b: Self) { }
+    fn commutative(a: Self, b: Self) {}
 
     #[law]
     #[open(self)]
     #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
-    fn associative(a: Self, b: Self, c: Self) { }
+    fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic]
     #[open(self)]

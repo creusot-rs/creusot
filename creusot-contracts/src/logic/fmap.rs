@@ -80,8 +80,6 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
-
-
     #[trusted]
     #[logic]
     #[ensures(
@@ -92,14 +90,9 @@ impl<K, V: ?Sized> FMap<K, V> {
                 (Some(x), Some(y)) => result.get(k) == Some(f[(x, y)]),
             }
     )]
-    pub fn merge(
-        self,
-        m: FMap<K, V>,
-        f: Mapping<(V, V), V>
-    ) ->
-        FMap<K, V>
+    pub fn merge(self, m: FMap<K, V>, f: Mapping<(V, V), V>) -> FMap<K, V>
     where
-        V: Sized // XXX
+        V: Sized, // XXX
     {
         dead
     }
@@ -115,7 +108,8 @@ impl<K, V: ?Sized> FMap<K, V> {
           }
     )]
     pub fn fmapi<U>(self, f: Mapping<(K, V), Option<U>>) -> FMap<K, U>
-        where V: Sized
+    where
+        V: Sized,
     {
         dead
     }
