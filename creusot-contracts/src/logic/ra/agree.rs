@@ -6,25 +6,23 @@ use crate::{logic::ra::RA, *};
 /// (they 'agree').
 pub enum Ag<T> {
     Ag(T),
-    AgBot,
+    /// The invalid value
+    Bot,
 }
-
-#[allow(unused_imports)]
-use Ag::*;
 
 impl<T> RA for Ag<T> {
     #[logic]
     #[open]
     fn op(self, other: Self) -> Self {
         match (self, other) {
-            (Ag(x), Ag(y)) => {
+            (Self::Ag(x), Self::Ag(y)) => {
                 if x == y {
-                    Ag(x)
+                    Self::Ag(x)
                 } else {
-                    AgBot
+                    Self::Bot
                 }
             }
-            (_, _) => AgBot,
+            (_, _) => Self::Bot,
         }
     }
 
@@ -32,8 +30,8 @@ impl<T> RA for Ag<T> {
     #[open]
     fn valid(self) -> bool {
         match self {
-            Ag(_) => true,
-            AgBot => false,
+            Self::Ag(_) => true,
+            Self::Bot => false,
         }
     }
 
@@ -49,9 +47,9 @@ impl<T> RA for Ag<T> {
     #[ensures(result == (exists<c: Self> self.op(c) == other))]
     fn incl(self, other: Self) -> bool {
         match (self, other) {
-            (Ag(x), Ag(y)) => x == y,
-            (_, AgBot) => true,
-            (_, Ag(_)) => false,
+            (Self::Ag(x), Self::Ag(y)) => x == y,
+            (_, Self::Bot) => true,
+            (_, Self::Ag(_)) => false,
         }
     }
 
