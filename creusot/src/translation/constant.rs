@@ -3,9 +3,10 @@ use crate::{
     ctx::TranslationCtx, ctx::TranslationCtx,
     translation::{fmir::Operand, pearlite::Literal, traits::TraitResolved},
 };
+use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{self, ConstOperand, interpret::AllocRange, ConstValue, UnevaluatedConst},
-    ty::{Const, ConstKind, Ty, TyCtxt, TypingEnv},
+    mir::{self, ConstOperand, interpret::AllocRange, ConstValue, UnevaluatedConst, BasicBlock, Statement, StatementKind},
+    ty::{Const, ConstKind, AssocItem, AssocItemContainer, EarlyBinder, Ty, TyCtxt, TypingEnv},
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::Size;
@@ -65,36 +66,37 @@ impl<'tcx> super::function::BodyTranslator<'_, 'tcx> {
         ty: ty::Ty<'tcx>,
         span: Span,
     ) -> Term<'tcx> {
-        if let Some(t) = from_ty_const(self.ctx, self.typing_env(), c, ty, span) {
+        if let Some(t) = try_eval_const(self.ctx, self.typing_env(), c, ty, span) {
             return t;
         }
-        self.translate_const_(c, span)
+        translate_const(self.ctx, self.typing_env(), self.def_id(), c, span)
     }
 
-    fn translate_const_(&self, c: ty::Const<'tcx>, span: Span) -> Term<'tcx> {
-        use rustc_type_ir::ConstKind::*;
-        match c.kind() {
-            Param(p) => {
-                let def_id =
-                    self.ctx.generics_of(self.def_id()).const_param(p, self.ctx.tcx).def_id;
-                Term {
-                    kind: TermKind::ConstParam(def_id),
-                    ty: p.find_ty_from_env(self.typing_env().param_env),
-                    span,
-                }
+}
+
+fn translate_const<'tcx>(ctx: &TranslationCtx<'tcx>, typing_env: TypingEnv<'tcx>, body_id: DefId, c: ty::Const<'tcx>, span: Span) -> Term<'tcx> {
+    use rustc_type_ir::ConstKind::*;
+    match c.kind() {
+        Param(p) => {
+            let def_id = ctx.generics_of(body_id).const_param(p, ctx.tcx).def_id;
+            Term {
+                kind: TermKind::ConstParam(def_id),
+                ty: p.find_ty_from_env(typing_env.param_env),
+                span,
             }
-            Infer(_) => todo!(),
-            Bound(_, _) => todo!(),
-            Placeholder(_) => todo!(),
-            Unevaluated(_) => todo!(),
-            Value(ty, v) => todo!(),
-            Error(_) => todo!(),
-            Expr(_) => todo!(),
         }
+        Infer(_) => todo!(),
+        Bound(_, _) => todo!(),
+        Placeholder(_) => todo!(),
+        Unevaluated(_) => todo!(),
+        Value(ty, v) => todo!(),
+        Error(_) => todo!(),
+        Expr(_) => todo!(),
     }
 }
 
-pub(crate) fn from_ty_const<'tcx>(
+/// Try to evaluate a `const` expression to a literal.
+pub(crate) fn try_eval_const<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     env: TypingEnv<'tcx>,
     c: Const<'tcx>,
@@ -114,6 +116,47 @@ pub(crate) fn from_ty_const<'tcx>(
     }
 
     None
+}
+
+/// Handle associated const definitions of the form `const N = M;` where `M` is another constant.
+pub(crate) fn try_const_synonym<'tcx>(ctx: &TranslationCtx<'tcx>, typing_env: TypingEnv<'tcx>, body_id: DefId, def_id: DefId, subst: ty::GenericArgsRef<'tcx>) -> Option<Term<'tcx>> {
+    if !matches!(ctx.def_kind(def_id), rustc_hir::def::DefKind::AssocConst) {
+        return None
+    }
+    let ty::Instance { def, args } = ty::Instance::try_resolve(ctx.tcx, typing_env, def_id, subst).ok()??;
+    let body = ctx.instance_mir(def);
+    let (c, ty) = body_const(body)?;
+    match c {
+        ConstKind::Param(p) => {
+            let c = args.const_at(p.index as usize);
+            Some(translate_const(ctx, typing_env, body_id, c, DUMMY_SP))
+        }
+        ConstKind::Unevaluated(u) => {
+            let (u, ty) = EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args);
+            Some(Term {
+                kind: TermKind::NamedConst(u.def, u.args),
+                ty,
+                span: DUMMY_SP,
+            })
+        }
+        _ => None,
+    }
+}
+
+/// Extract constant from MIR body. It should be a single assignment `_0 = const M`.
+/// Otherwise return `None`.
+fn body_const<'tcx>(body: &mir::Body<'tcx>) -> Option<(ConstKind<'tcx>, Ty<'tcx>)> {
+    if body.basic_blocks.len() != 1 { return None }
+    let block = &body.basic_blocks[BasicBlock::from_usize(0)];
+    if block.statements.len() != 1 { return None }
+    let StatementKind::Assign(box (lhs, rhs)) = &block.statements[0].kind else { return None };
+    if lhs.local != mir::Local::from_u32(0) || lhs.projection.len() != 0 { return None }
+    let mir::Rvalue::Use(mir::Operand::Constant(rhs)) = rhs else { return None };
+    match rhs.const_ {
+        mir::Const::Ty(ty, c) => Some((c.kind(), ty)),
+        mir::Const::Unevaluated(u, ty) => Some((rustc_type_ir::ConstKind::Unevaluated(u.shrink()), ty)),
+        k => panic!("{k:?}"),
+    }
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
