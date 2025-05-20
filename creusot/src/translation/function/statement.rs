@@ -1,12 +1,8 @@
 use super::{BodyTranslator, TranslationError};
 use crate::{
-    analysis::NotFinalPlaces,
-    contracts_items::{
+    analysis::NotFinalPlaces, contracts_items::{
         is_assertion, is_before_loop, is_invariant, is_snapshot_closure, is_spec, is_variant,
-    },
-    extended_location::ExtendedLocation,
-    fmir::Operand,
-    translation::fmir::{self, RValue, inline_pearlite_subst},
+    }, extended_location::ExtendedLocation, fmir::Operand, pearlite::Term, translation::fmir::{self, inline_pearlite_subst, RValue}
 };
 use rustc_borrowck::consumers::TwoPhaseActivation;
 use rustc_middle::{
@@ -14,7 +10,7 @@ use rustc_middle::{
         BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
-    ty::{TyKind, adjustment::PointerCoercion},
+    ty::{self, adjustment::PointerCoercion, TyKind},
 };
 use rustc_mir_dataflow::ResultsCursor;
 use rustc_span::Span;
@@ -197,17 +193,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Repeat(op, len) => RValue::Repeat(
                 self.translate_operand(op)?,
-                Operand::Constant(
-                    // TODO
-                    crate::constant::from_ty_const(
-                        self.ctx,
-                        *len,
-                        self.ctx.types.usize,
-                        self.typing_env(),
-                        si.span,
-                    )
-                    .expect("unexpected const"),
-                ),
+                Operand::Constant(self.translate_const(
+                    *len,
+                    self.ctx.types.usize,
+                    si.span,
+                )),
             ),
             Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize, _), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true)

@@ -4,7 +4,6 @@ mod terminator;
 use crate::{
     analysis::NotFinalPlaces,
     backend::ty_inv::is_tyinv_trivial,
-    constant::from_mir_constant,
     contracts_items::{is_snapshot_closure, is_spec},
     ctx::*,
     extended_location::ExtendedLocation,
@@ -21,10 +20,9 @@ use rustc_hir::def_id::DefId;
 use rustc_index::{Idx, bit_set::MixedBitSet};
 use rustc_middle::{
     mir::{
-        self, BasicBlock, Body, Local, Location, Operand, Place, PlaceRef, START_BLOCK,
-        TerminatorKind, traversal::reverse_postorder,
+        self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place, PlaceRef, TerminatorKind, START_BLOCK
     },
-    ty::{Ty, TyCtxt, TyKind, TypeVisitableExt, TypingEnv},
+    ty::{self, Ty, TyCtxt, TyKind, TypeVisitableExt, TypingEnv},
 };
 use rustc_mir_dataflow::{
     Analysis as _,
@@ -33,7 +31,7 @@ use rustc_mir_dataflow::{
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
-use std::{collections::HashMap, iter::zip, ops::FnOnce};
+use std::{cell::RefCell, collections::HashMap, iter::zip, ops::FnOnce};
 
 /// Translate a function from rustc's MIR to fMIR.
 pub(crate) fn fmir<'tcx>(ctx: &TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
@@ -42,7 +40,7 @@ pub(crate) fn fmir<'tcx>(ctx: &TranslationCtx<'tcx>, body_id: BodyId) -> fmir::B
 
 /// Translate a MIR body (rustc) to FMIR (creusot).
 // TODO: Split this into several sub-contexts: Core, Analysis, Results?
-struct BodyTranslator<'a, 'tcx> {
+pub(super) struct BodyTranslator<'a, 'tcx> {
     body_id: BodyId,
 
     body: &'a Body<'tcx>,
@@ -63,7 +61,7 @@ struct BodyTranslator<'a, 'tcx> {
     past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
-    ctx: &'a TranslationCtx<'tcx>,
+    pub(super) ctx: &'a TranslationCtx<'tcx>,
 
     // Fresh BlockId
     fresh_id: usize,
@@ -80,7 +78,7 @@ struct BodyTranslator<'a, 'tcx> {
 
     // Translated locals: Symbol for debugging and user-facing error messages, and actual unique Ident
     locals: HashMap<Local, (rustc_span::Symbol, Ident)>,
-
+    param_consts: RefCell<IndexMap<rustc_middle::ty::ParamConst, Ident>>,
     vars: LocalDecls<'tcx>,
 }
 
@@ -164,6 +162,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             typing_env,
             locals,
             vars,
+            param_consts: Default::default(),
             erased_locals,
             current_block: (Vec::new(), None),
             past_blocks: Default::default(),
@@ -260,7 +259,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         }
     }
 
-    fn typing_env(&self) -> TypingEnv<'tcx> {
+    pub(crate) fn typing_env(&self) -> TypingEnv<'tcx> {
         self.ctx.typing_env(self.body_id.def_id())
     }
 
@@ -693,7 +692,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         Ok(match operand {
             Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(pl.as_ref())?),
             Operand::Move(pl) => fmir::Operand::Move(self.translate_place(pl.as_ref())?),
-            Operand::Constant(c) => from_mir_constant(self.typing_env(), self.ctx, c),
+            Operand::Constant(c) => self.from_mir_constant(c),
         })
     }
 
@@ -749,6 +748,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
             }
         }
+    }
+
+    pub(crate) fn param_const(&self, p: ty::ParamConst) -> Ident {
+        *self.param_consts.borrow_mut().entry(p).or_insert_with(|| Ident::fresh_local(p.name.as_str()))
     }
 }
 
