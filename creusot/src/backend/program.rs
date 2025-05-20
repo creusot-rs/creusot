@@ -143,12 +143,6 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     let inner_return = outer_return.refresh();
 
     let mut body = ctx.fmir_body(body_id).clone();
-    let block_idents: IndexMap<BasicBlock, Ident> = body
-        .blocks
-        .iter()
-        .map(|(blk, _)| (*blk, Ident::fresh_local(format!("bb{}", blk.as_usize()))))
-        .collect();
-
     // Remember the index of every argument before removing unused variables in simplify_fmir
     let arg_index = body
         .locals
@@ -160,15 +154,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
 
     simplify_fmir(gather_usage(&body), &mut body);
 
-    let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
-    infer_proph_invariants(ctx, &mut body);
-
-    let blocks: Box<[Defn]> = wto
-        .into_iter()
-        .map(|c| {
-            component_to_defn(&mut body, ctx, names, body_id.def_id, &block_idents, inner_return, c)
-        })
-        .collect();
+    let (entry, blocks) = body_exp(ctx, names, inner_return, body_id, &mut body);
 
     let (mut sig, contract, return_ty) = if !body_id.constness.is_const() {
         let def_id = body_id.def_id();
@@ -211,7 +197,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         })
         .collect();
 
-    let mut body = Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks);
+    let mut body = Expr::Defn(entry, true, blocks);
 
     let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
         && !ctx.sig(body_id.def_id()).contract.has_user_contract;
@@ -257,6 +243,25 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         body = requires.rfold(body, |acc, req| Expr::assert(req, acc));
     }
     Defn { prototype: sig, body }
+}
+
+fn body_exp<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N, inner_return: Ident, body_id: BodyId, body: &mut Body<'tcx>) -> (Box<Expr>, Box<[Defn]>) {
+    let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
+    infer_proph_invariants(ctx, body);
+
+    let block_idents: IndexMap<BasicBlock, Ident> = body
+        .blocks
+        .iter()
+        .map(|(blk, _)| (*blk, Ident::fresh_local(format!("bb{}", blk.as_usize()))))
+        .collect();
+
+    let blocks: Box<[Defn]> = wto
+        .into_iter()
+        .map(|c| {
+            component_to_defn(body, ctx, names, body_id.def_id, &block_idents, inner_return, c)
+        })
+        .collect();
+    (Expr::var(block_idents[0]).boxed(), blocks)
 }
 
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
