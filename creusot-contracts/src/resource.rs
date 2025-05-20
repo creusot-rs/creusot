@@ -1,3 +1,5 @@
+pub mod gmap;
+
 use crate::{
     Ghost, Snapshot,
     logic::{Set, ra::RA},
