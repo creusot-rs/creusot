@@ -1,15 +1,11 @@
 pub mod gmap;
 
+#[cfg(creusot)]
+use crate::logic::{Id, ra};
 use crate::{
     Ghost, Snapshot,
     logic::{Set, ra::RA},
     *,
-};
-#[cfg(creusot)]
-use crate::{
-    logic::ra,
-    // TODO: move to a separate file
-    pcell::Id,
 };
 use ::std::marker::PhantomData;
 
