@@ -15,11 +15,11 @@ use ::std::marker::PhantomData;
 
 /// A ghost wrapper around a [resource algebra](RA).
 ///
-/// This structure is meant to be manipulated in [`ghost`] code. It is guaranteed to
-/// always contain a [`valid`](RA::valid) resource.
+/// This structure is meant to be manipulated in [`ghost`](mod@ghost) code. It is
+/// guaranteed to always contain a [`valid`](RA::valid) resource.
 ///
 /// The usual usage is this:
-/// - [Create](Self::new) some ghost resource
+/// - [Create](Self::alloc) some ghost resource
 /// - [Split](Self::split) it into multiple parts, some of which may be [duplicable](RA::idemp)
 /// - [Join](Self::join) these parts later. By the validity invariant, this allows
 ///   one to learn information about one part from the other.
@@ -138,7 +138,7 @@ impl<R: RA> Resource<R> {
     ///
     /// # Corresponding reasoning
     ///
-    /// `Own(a, γ) ∗ Own(b, γ) ⊢ Own(c, γ)` if `c = a ⋅ b`
+    /// `⌜c = a ⋅ b⌝ ∗ Own(a, γ) ∗ Own(b, γ) ⊢ Own(c, γ)`
     #[trusted]
     #[pure]
     #[requires(self.id() == other.id())]
@@ -162,7 +162,7 @@ impl<R: RA> Resource<R> {
     ///
     /// # Corresponding reasoning
     ///
-    /// `Own(a, γ) ∧ Own(b, γ) ⊢ Own(c, γ)` where `a ≼ c` and `b ≼ c`.
+    /// `⌜a ≼ c⌝ ∧ ⌜b ≼ c⌝ ∧ Own(a, γ) ∧ Own(b, γ) ⊢ Own(c, γ)`
     #[trusted]
     #[pure]
     #[requires(self.id() == other.id())]
