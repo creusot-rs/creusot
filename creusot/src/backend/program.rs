@@ -409,6 +409,9 @@ impl<'tcx> RValue<'tcx> {
                     Rem => ("rem", false),
                     Shl | ShlUnchecked => ("shl", false),
                     Shr | ShrUnchecked => ("shr", false),
+                    AddWithOverflow => ("add_with_overflow", false),
+                    SubWithOverflow => ("sub_with_overflow", false),
+                    MulWithOverflow => ("mul_with_overflow", false),
 
                     Eq => ("eq", true),
                     Ne => ("ne", true),
@@ -420,7 +423,7 @@ impl<'tcx> RValue<'tcx> {
                     BitAnd => ("bw_and", true),
                     BitOr => ("bw_or", true),
 
-                    Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => todo!(),
+                    Cmp => todo!(),
                     Offset => unimplemented!("pointer offsets are unsupported"),
                 };
 

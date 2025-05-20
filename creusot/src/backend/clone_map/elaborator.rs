@@ -6,35 +6,21 @@ use std::{
 
 use crate::{
     backend::{
-        TranslationCtx, Why3Generator,
-        clone_map::{CloneNames, Dependency, Kind, Namer},
-        closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve},
-        is_trusted_item,
-        logic::{lower_logical_defn, spec_axiom},
-        program,
-        signature::{lower_logic_sig, lower_program_sig},
-        structural_resolve::structural_resolve,
-        term::lower_pure,
-        ty::{
+        clone_map::{CloneNames, Dependency, Kind, Namer}, closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve}, is_trusted_item, logic::{lower_logical_defn, spec_axiom}, program, signature::{lower_logic_sig, lower_program_sig}, structural_resolve::structural_resolve, term::lower_pure, ty::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
-        },
-        ty_inv::InvariantElaborator,
-    },
-    contracts_items::{
+        }, ty_inv::InvariantElaborator, TranslationCtx, Why3Generator
+    }, contracts_items::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
         get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
         is_fn_impl_postcond, is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond,
         is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_predicate,
         is_resolve_function, is_structural_resolve,
-    },
-    ctx::{BodyId, Constness, ItemType},
-    naming::name,
-    translation::{
-        constant::from_ty_const,
-        pearlite::{Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
-        specification::Condition,
-        traits::TraitResolved,
-    },
+    }, ctx::{BodyId, Constness, ItemType}, naming::name, translation::{
+    constant::from_ty_const,
+    pearlite::{normalize, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger},
+    specification::Condition,
+    traits::TraitResolved,
+}
 };
 use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
@@ -1041,7 +1027,7 @@ fn term<'tcx>(
                 let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
                 let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
                 let span = ctx.def_span(def_id);
-                let Some(res) = from_ty_const(&ctx.ctx, constant, ty, typing_env, span) else {
+                let Some(res) = from_ty_const(&ctx.ctx, typing_env, constant, ty, span) else {
                     ctx.crash_and_error(span, &format!("term: unhandled const {constant}"))
                 };
                 Some(res)
@@ -1076,7 +1062,7 @@ fn term<'tcx>(
             let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
             let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
             let span = ctx.def_span(def_id);
-            let Some(res) = from_ty_const(&ctx.ctx, constant, ty, typing_env, span) else {
+            let Some(res) = from_ty_const(&ctx.ctx, typing_env, constant, ty, span) else {
                 ctx.crash_and_error(span, &format!("term: unhandled const {constant}"))
             };
             Some(res)

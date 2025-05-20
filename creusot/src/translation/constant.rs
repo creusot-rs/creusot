@@ -12,64 +12,80 @@ use rustc_target::abi::Size;
 
 use super::pearlite::{Term, TermKind};
 
-pub(crate) fn from_mir_constant<'tcx>(
-    env: TypingEnv<'tcx>,
-    ctx: &TranslationCtx<'tcx>,
-    c: &ConstOperand<'tcx>,
-) -> Operand<'tcx> {
-    from_mir_constant_kind(ctx, c.const_, env, c.span)
-}
+impl<'tcx> super::function::BodyTranslator<'_, 'tcx> {
+    pub(crate) fn from_mir_constant(
+        &self,
+        c: &rustc_middle::mir::ConstOperand<'tcx>,
+    ) -> fmir::Operand<'tcx> {
+        let env = self.typing_env();
+        let ck = c.const_;
+        let span = c.span;
+        if let mir::Const::Ty(ty, c) = ck {
+            return Operand::Constant(self.translate_const(c, ty, span));
+        }
 
-fn from_mir_constant_kind<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
-    ck: mir::Const<'tcx>,
-    env: TypingEnv<'tcx>,
-    span: Span,
-) -> Operand<'tcx> {
-    if let mir::Const::Ty(ty, c) = ck {
-        return Operand::Constant(from_ty_const(ctx, c, ty, env, span).expect("unexpected const"));
+        if ck.ty().is_unit() {
+            return Operand::Constant(Term::unit(self.ctx.tcx));
+        }
+        //
+        // let ck = ck.normalize(ctx.tcx, env);
+
+        if ck.ty().peel_refs().is_str() {
+            if let mir::Const::Val(ConstValue::Slice { data, meta }, _) = ck {
+                let start = Size::from_bytes(0);
+                let size = Size::from_bytes(meta);
+                let bytes = data
+                    .inner()
+                    .get_bytes_strip_provenance(&self.ctx.tcx, AllocRange { start, size })
+                    .unwrap();
+                let string = std::str::from_utf8(bytes).unwrap();
+
+                return Operand::Constant(Term {
+                    kind: TermKind::Lit(Literal::String(string.into())),
+                    ty: ck.ty(),
+                    span,
+                });
+            }
+        }
+
+        if let mir::Const::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
+            return Operand::Promoted(p, ck.ty());
+        }
+
+        if let Some(lit) = try_to_bits(self.ctx, env, ck.ty(), span, ck) {
+            return Operand::Constant(Term { kind: TermKind::Lit(lit), ty: ck.ty(), span });
+        }
+
+        const_block(self.ctx, span, ck)
     }
 
-    if ck.ty().is_unit() {
-        return Operand::Constant(Term::unit(ctx.tcx));
+    pub(crate) fn translate_const(&self, c: ty::Const<'tcx>, ty: ty::Ty<'tcx>, span: Span) -> Term<'tcx> {
+        if let Some(t) = from_ty_const(self.ctx, self.typing_env(), c, ty, span) {
+            return t;
+        }
+        self.translate_const_(c, span)
     }
-    //
-    // let ck = ck.normalize(ctx.tcx, env);
 
-    if ck.ty().peel_refs().is_str() {
-        if let mir::Const::Val(ConstValue::Slice { data, meta }, _) = ck {
-            let start = Size::from_bytes(0);
-            let size = Size::from_bytes(meta);
-            let bytes = data
-                .inner()
-                .get_bytes_strip_provenance(&ctx.tcx, AllocRange { start, size })
-                .unwrap();
-            let string = std::str::from_utf8(bytes).unwrap();
-
-            return Operand::Constant(Term {
-                kind: TermKind::Lit(Literal::String(string.into())),
-                ty: ck.ty(),
-                span,
-            });
+    fn translate_const_(&self, c: ty::Const<'tcx>, span: Span) -> Term<'tcx> {
+        use rustc_type_ir::ConstKind::*;
+        match c.kind() {
+            Param(p) => Term::var(self.param_const(p), p.find_ty_from_env(self.typing_env().param_env)),
+            Infer(_) => todo!(),
+            Bound(_, _) => todo!(),
+            Placeholder(_) => todo!(),
+            Unevaluated(_) => todo!(),
+            Value(ty, v) => todo!(),
+            Error(_) => todo!(),
+            Expr(_) => todo!(),
         }
     }
-
-    if let mir::Const::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
-        return Operand::Promoted(p, ck.ty());
-    }
-
-    if let Some(lit) = try_to_bits(ctx, env, ck.ty(), span, ck) {
-        return Operand::Constant(Term { kind: TermKind::Lit(lit), ty: ck.ty(), span });
-    }
-
-    const_block(ctx, span, ck)
 }
 
 pub(crate) fn from_ty_const<'tcx>(
     ctx: &TranslationCtx<'tcx>,
+    env: TypingEnv<'tcx>,
     c: Const<'tcx>,
     ty: Ty<'tcx>,
-    env: TypingEnv<'tcx>,
     span: Span,
 ) -> Option<Term<'tcx>> {
     // Check if a constant is builtin and thus should not be evaluated further

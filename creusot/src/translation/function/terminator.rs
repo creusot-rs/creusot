@@ -187,16 +187,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Assert { cond, expected, msg, target, unwind: _ } => {
                 let mut cond = match cond {
                     Operand::Copy(pl) | Operand::Move(pl) => {
-                        if let Some(locl) = pl.as_local() {
-                            Term {
-                                // hack
-                                kind: TermKind::Var(self.locals[&locl].1.into()),
-                                span,
-                                ty: cond.ty(self.body, self.tcx()),
-                            }
-                        } else {
-                            unreachable!("assertion contains something other than local")
-                        }
+                        self.place_to_term(pl, cond.span(&self.body.local_decls))
                     }
                     Operand::Constant(_) => todo!(),
                 };
@@ -265,6 +256,29 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             AssertKind::RemainderByZero(_) => "expl:remainder by zero".to_string(),
             _ => unreachable!("Resume assertions"),
         }
+    }
+
+    /// Convert `PlaceRef` to `Term`. We only need to support simple tuple projections here
+    /// because this is only used for arithmetic in `const` contexts. It uses an `AddWithOverflow`
+    /// operator which creates a tuple `(usize, bool)` where the `bool` indicates overflow.
+    fn place_to_term(&self, place: &Place<'tcx>, span: Span) -> Term<'tcx> {
+        let mut term = Term::var(self.locals[&place.local].1, self.body.local_decls[place.local].ty);
+        for p in place.projection.iter() {
+            match p {
+                mir::ProjectionElem::Field(idx, ty) => {
+                    term = Term {
+                        ty,
+                        span,
+                        kind: TermKind::Projection {
+                            lhs: Box::new(term),
+                            idx,
+                        },
+                    };
+                }
+                _ => self.ctx.crash_and_error(span, "Unsupported projection"),
+            }
+        }
+        term
     }
 }
 
