@@ -117,7 +117,6 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
                 self.read_place(p)
             }
             RValue::Operand(op) => self.visit_operand(op),
-            RValue::ConstBlock(_, _) => {}
             RValue::BinOp(_, l, r) => {
                 self.visit_operand(l);
                 self.visit_operand(r)
@@ -300,7 +299,6 @@ impl<'tcx> SimplePropagator<'tcx> {
                 assert!(self.prop.get(&p.local).is_none(), "Trying to propagate borrowed variable")
             }
             RValue::Operand(op) => self.visit_operand(op),
-            RValue::ConstBlock(_, _) => {}
             RValue::BinOp(_, l, r) => {
                 self.visit_operand(l);
                 self.visit_operand(r)
