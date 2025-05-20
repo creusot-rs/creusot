@@ -113,6 +113,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.ctx.tcx
     }
 
+    pub(crate) fn def_id(&self) -> DefId {
+        self.body_id.def_id()
+    }
+
     fn with_context<R, F: for<'b> FnOnce(BodyTranslator<'b, 'tcx>) -> R>(
         ctx: &'body TranslationCtx<'tcx>,
         body_id: BodyId,

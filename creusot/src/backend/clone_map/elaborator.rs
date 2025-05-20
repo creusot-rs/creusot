@@ -1057,6 +1057,9 @@ fn term<'tcx>(
             }
         }
         Dependency::LogicConst(def_id, subst) => {
+            if ctx.def_kind(def_id) == DefKind::ConstParam {
+                return None;
+            }
             let ct = UnevaluatedConst::new(def_id, subst);
             let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(ct));
             let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);

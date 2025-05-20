@@ -300,7 +300,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 }
             }
             TermKind::NamedConst(id, sub) => {
-                let item_name = self.names.logic_const(*id, sub);
+                let item_name = self.names.assoc_constant(*id, sub);
                 if get_builtin(self.ctx.tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
                     k(Exp::Var(item_name).ascribe(self.ty(t.ty)))
@@ -309,7 +309,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 }
             }
             TermKind::ConstParam(id) => {
-                k(Exp::Var(self.names.const_param(*id)))
+                k(Exp::Var(self.names.constant(*id)))
             }
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
             TermKind::Assert { cond } => {

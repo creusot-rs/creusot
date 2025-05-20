@@ -69,7 +69,14 @@ impl<'tcx> super::function::BodyTranslator<'_, 'tcx> {
     fn translate_const_(&self, c: ty::Const<'tcx>, span: Span) -> Term<'tcx> {
         use rustc_type_ir::ConstKind::*;
         match c.kind() {
-            Param(p) => Term::var(self.param_const(p), p.find_ty_from_env(self.typing_env().param_env)),
+            Param(p) => {
+                let def_id = self.ctx.generics_of(self.def_id()).const_param(p, self.ctx.tcx).def_id;
+                Term {
+                    kind: TermKind::ConstParam(def_id),
+                    ty: p.find_ty_from_env(self.typing_env().param_env),
+                    span,
+                }
+            },
             Infer(_) => todo!(),
             Bound(_, _) => todo!(),
             Placeholder(_) => todo!(),

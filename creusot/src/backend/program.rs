@@ -401,27 +401,29 @@ impl<'tcx> RValue<'tcx> {
                 };
 
                 use BinOp::*;
-                let (opname, logic) = match op {
-                    Add | AddUnchecked => ("add", false),
-                    Sub | SubUnchecked => ("sub", false),
-                    Mul | MulUnchecked => ("mul", false),
-                    Div => ("div", false),
-                    Rem => ("rem", false),
-                    Shl | ShlUnchecked => ("shl", false),
-                    Shr | ShrUnchecked => ("shr", false),
-                    AddWithOverflow => ("add_with_overflow", false),
-                    SubWithOverflow => ("sub_with_overflow", false),
-                    MulWithOverflow => ("mul_with_overflow", false),
+                enum OpKind { Program, Logic, LogicPair } // See `match kind` below
+                use OpKind::*;
+                let (opname, kind) = match op {
+                    Add | AddUnchecked => ("add", Program),
+                    Sub | SubUnchecked => ("sub", Program),
+                    Mul | MulUnchecked => ("mul", Program),
+                    Div => ("div", Program),
+                    Rem => ("rem", Program),
+                    Shl | ShlUnchecked => ("shl", Program),
+                    Shr | ShrUnchecked => ("shr", Program),
 
-                    Eq => ("eq", true),
-                    Ne => ("ne", true),
-                    Lt => ("lt", true),
-                    Le => ("le", true),
-                    Ge => ("ge", true),
-                    Gt => ("gt", true),
-                    BitXor => ("bw_xor", true),
-                    BitAnd => ("bw_and", true),
-                    BitOr => ("bw_or", true),
+                    Eq => ("eq", Logic),
+                    Ne => ("ne", Logic),
+                    Lt => ("lt", Logic),
+                    Le => ("le", Logic),
+                    Ge => ("ge", Logic),
+                    Gt => ("gt", Logic),
+                    BitXor => ("bw_xor", Logic),
+                    BitAnd => ("bw_and", Logic),
+                    BitOr => ("bw_or", Logic),
+                    AddWithOverflow => ("add_with_overflow", LogicPair),
+                    SubWithOverflow => ("sub_with_overflow", LogicPair),
+                    MulWithOverflow => ("mul_with_overflow", LogicPair),
 
                     Cmp => todo!(),
                     Offset => unimplemented!("pointer offsets are unsupported"),
@@ -430,17 +432,38 @@ impl<'tcx> RValue<'tcx> {
                 let fname = lower.names.in_pre(prelude, opname);
                 let args = [l.into_why(lower, istmts), r];
 
-                if logic {
-                    Exp::qvar(fname).app(args)
-                } else {
-                    let ret_ident = Ident::fresh_local("_ret");
-                    istmts.push(IntermediateStmt::call(
-                        ret_ident,
-                        lower.ty(ty),
-                        Name::Global(fname),
-                        args.map(Arg::Term),
-                    ));
-                    Exp::var(ret_ident)
+                match kind {
+                    Logic => Exp::qvar(fname).app(args),
+                    // A logic function which outputs a pair; rewrap it into the local pair type.
+                    LogicPair => {
+                        let TyKind::Tuple(tys) = ty.kind() else { unreachable!() };
+                        let fst = Ident::fresh_local("fst");
+                        let snd = Ident::fresh_local("snd");
+                        use why3::exp::Pattern::{VarP, TupleP};
+                        Exp::Let { pattern: TupleP([VarP(fst), VarP(snd)].into()), arg: Exp::qvar(fname).app(args).boxed(), body:
+                            Exp::Record {
+                                fields: [(0usize, fst), (1, snd)]
+                                    .into_iter()
+                                    .map(|(ix, f)| {
+                                        (
+                                            Name::local(lower.names.tuple_field(tys, ix.into())),
+                                            Exp::var(f),
+                                        )
+                                    })
+                                    .collect(),
+                            }.boxed()
+                            }
+                    }
+                    Program => {
+                        let ret_ident = Ident::fresh_local("_ret");
+                        istmts.push(IntermediateStmt::call(
+                            ret_ident,
+                            lower.ty(ty),
+                            Name::Global(fname),
+                            args.map(Arg::Term),
+                        ));
+                        Exp::var(ret_ident)
+                    }
                 }
             }
             RValue::UnaryOp(UnOp::Not, arg) => {

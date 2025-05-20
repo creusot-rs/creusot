@@ -976,8 +976,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     "Casts from ! are not supported in Pearlite, because Why3 types are always inhabited.",
                 ))
             }
-            ExprKind::ConstParam { def_id, param } => {
-              debug!{"{def_id:?} {param:?} {:?}", self.ctx.tcx.def_path(def_id)};
+            ExprKind::ConstParam { def_id, param:_ } => {
               Ok(Term {
                 ty,
                 span,
