@@ -31,18 +31,25 @@ where
     fn rel_mono(a: Self::Auth, f1: Self::Frac, f2: Self::Frac) {}
 }
 
+/// The 'authority' Resource Algebra.
+///
+/// This is a specialisation of [`View`], where:
+/// - both `Auth` and `Frac` are the same type
+/// - the relation between the two is that `Frac` must always be included in `Auth`
 pub struct Auth<T: RA>(pub View<AuthViewRel<T>>);
 
 impl<T> Auth<T>
 where
     T: RA,
 {
+    /// Create a new `Auth` containing an authoritative version of `x`.
     #[logic]
     #[open]
     pub fn mkauth(x: T) -> Self {
         Auth(View::mkauth(x))
     }
 
+    /// Create a new `Auth` containing a fractional version of `x`.
     #[logic]
     #[open]
     pub fn mkfrac(x: T) -> Self {

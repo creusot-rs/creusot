@@ -1,8 +1,13 @@
 use crate::{logic::ra::RA, *};
 
+/// The 'sum' (or 'either') Resource Algebra.
+///
+/// This represents a resource that is in two possible states. Combining a `Left` with
+/// a `Right` will yield an invalid element.
 pub enum Sum<T, U> {
     Left(T),
     Right(U),
+    /// The invalid element for this RA.
     SumBot,
 }
 
