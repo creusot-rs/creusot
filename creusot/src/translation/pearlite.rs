@@ -940,7 +940,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 _ => Err(Error::msg(thir_term.span, "unhandled literal expression")),
             },
             ExprKind::NamedConst { def_id, args, ref user_ty, .. } => {
-                debug!("{def_id:?}");
                 Ok(Term {
                     ty,
                     span,

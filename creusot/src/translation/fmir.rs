@@ -109,7 +109,6 @@ pub enum RValue<'tcx> {
     Snapshot(Term<'tcx>),
     Borrow(BorrowKind, Place<'tcx>, TrivialInv),
     Operand(Operand<'tcx>),
-    ConstBlock(DefId, GenericArgsRef<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
     UnaryOp(UnOp, Operand<'tcx>),
     Constructor(DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>),
@@ -126,7 +125,6 @@ impl RValue<'_> {
     pub fn is_pure(&self) -> bool {
         match self {
             RValue::Operand(_) => true,
-            RValue::ConstBlock(_, _) => false,
             RValue::BinOp(
                 BinOp::Add
                 | BinOp::AddUnchecked
@@ -568,7 +566,6 @@ pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rv
         RValue::Operand(op) => {
             visitor.visit_operand(op);
         }
-        RValue::ConstBlock(_, _) => {}
         RValue::BinOp(_, op1, op2) => {
             visitor.visit_operand(op1);
             visitor.visit_operand(op2);
