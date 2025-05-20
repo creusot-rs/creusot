@@ -1,5 +1,10 @@
-use crate::*;
-use crate::logic::ra::{RA, excl::{Excl, Excl::*}};
+use crate::{
+    logic::ra::{
+        RA,
+        excl::{Excl, Excl::*},
+    },
+    *,
+};
 
 pub trait ViewRel {
     type Auth;
@@ -17,14 +22,19 @@ pub trait ViewRel {
 
 // NOTE: we could add (discardable) fractions for the auth part
 #[allow(dead_code)]
-pub struct View<R> where R: ViewRel
+pub struct View<R>
+where
+    R: ViewRel,
 {
     // TODO: should the fields be priv?
     pub auth: Option<Excl<R::Auth>>,
     pub frac: Option<R::Frac>,
 }
 
-impl<R> View<R> where R: ViewRel {
+impl<R> View<R>
+where
+    R: ViewRel,
+{
     #[logic]
     #[open]
     pub fn mkauth(a: R::Auth) -> Self {
@@ -39,7 +49,8 @@ impl<R> View<R> where R: ViewRel {
 }
 
 impl<R> RA for View<R>
-where R: ViewRel
+where
+    R: ViewRel,
 {
     #[logic]
     #[open]
@@ -50,16 +61,18 @@ where R: ViewRel
 
     #[logic]
     #[open]
-    fn valid(self) -> bool { pearlite!{
-        match self {
-            Self { auth: Some(Excl(a)), frac: Some(f) } => f.valid() && R::rel(a, f),
-            // TODO: why is this condition necessary?
-            Self { auth: None, frac: Some(f) } => f.valid() && exists<a: R::Auth> R::rel(a, f),
-            Self { auth: Some(Excl(_)), frac: None } => true,
-            Self { auth: None, frac: None } => true,
-            Self { auth: Some(ExclBot), frac: _ } => false,
+    fn valid(self) -> bool {
+        pearlite! {
+            match self {
+                Self { auth: Some(Excl(a)), frac: Some(f) } => f.valid() && R::rel(a, f),
+                // TODO: why is this condition necessary?
+                Self { auth: None, frac: Some(f) } => f.valid() && exists<a: R::Auth> R::rel(a, f),
+                Self { auth: Some(Excl(_)), frac: None } => true,
+                Self { auth: None, frac: None } => true,
+                Self { auth: Some(ExclBot), frac: _ } => false,
+            }
         }
-    }}
+    }
 
     #[logic]
     #[open]
@@ -78,12 +91,12 @@ where R: ViewRel
     #[law]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
-    fn commutative(a: Self, b: Self) { }
+    fn commutative(a: Self, b: Self) {}
 
     #[law]
     #[open(self)]
     #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
-    fn associative(a: Self, b: Self, c: Self) { }
+    fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic]
     #[open(self)]
