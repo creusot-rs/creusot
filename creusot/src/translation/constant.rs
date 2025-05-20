@@ -72,7 +72,6 @@ pub(crate) fn from_ty_const<'tcx>(
     env: TypingEnv<'tcx>,
     span: Span,
 ) -> Option<Term<'tcx>> {
-    debug!("{c}");
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind()

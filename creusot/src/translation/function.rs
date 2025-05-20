@@ -123,7 +123,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let body_with_facts = ctx.body_with_facts(body_id.def_id);
         let (body, move_data, resolver, borrows);
         match body_id.constness {
-            Constness::None => {
+            Constness::None | Constness::Const => {
                 body = &body_with_facts.body;
                 move_data = MoveData::gather_moves(body, tcx, |_| true);
                 resolver = Some(Resolver::new(
@@ -137,12 +137,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
             Constness::Promoted(promoted) => {
                 body = body_with_facts.promoted.get(promoted).unwrap();
-                move_data = MoveData::gather_moves(body, tcx, |_| true);
-                resolver = None;
-                borrows = None;
-            }
-            Constness::Const => {
-                body = &body_with_facts.body;
                 move_data = MoveData::gather_moves(body, tcx, |_| true);
                 resolver = None;
                 borrows = None;

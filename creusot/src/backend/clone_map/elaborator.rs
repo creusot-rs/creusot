@@ -1038,7 +1038,6 @@ fn term<'tcx>(
             if matches!(ctx.item_type(def_id), ItemType::Constant) {
                 let ct = UnevaluatedConst::new(def_id, subst);
                 let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(ct));
-
                 let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
                 let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
                 let span = ctx.def_span(def_id);
