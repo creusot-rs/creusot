@@ -251,6 +251,29 @@ impl<K, V: ?Sized> FMap<K, V> {
     pub fn ext_eq(self, other: Self) -> bool {
         self.view() == other.view()
     }
+
+    /// Map every value in `self` according to `f`. Keys are unchanged.
+    #[logic]
+    #[trusted]
+    #[ensures(forall<k: K> result.get(k) == match self.get_unsized(k) {
+        None => None,
+        Some(v) => Some(f[*v]),
+    })]
+    pub fn map<V2>(self, f: Mapping<V, V2>) -> FMap<K, V2> {
+        dead
+    }
+
+    /// Map every value in `self` according to `f`. Keys are unchanged.
+    /// If `f` returns `false`, remove the key-value from the map.
+    #[logic]
+    #[trusted]
+    #[ensures(forall<k: K> result.get(k) == match self.get_unsized(k) {
+        None => None,
+        Some(v) => f[*v],
+    })]
+    pub fn map_filter<V2>(self, f: Mapping<V, Option<V2>>) -> FMap<K, V2> {
+        dead
+    }
 }
 
 impl<K, V> IndexLogic<K> for FMap<K, V> {
