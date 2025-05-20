@@ -4,7 +4,7 @@ use crate::{
     translation::{fmir::Operand, pearlite::Literal, traits::TraitResolved},
 };
 use rustc_middle::{
-    mir::{self, ConstOperand, ConstValue, UnevaluatedConst, interpret::AllocRange},
+    mir::{self, ConstOperand, interpret::AllocRange, ConstValue, UnevaluatedConst},
     ty::{Const, ConstKind, Ty, TyCtxt, TypingEnv},
 };
 use rustc_span::{DUMMY_SP, Span};
@@ -59,7 +59,12 @@ impl<'tcx> super::function::BodyTranslator<'_, 'tcx> {
         const_block(self.ctx, span, ck)
     }
 
-    pub(crate) fn translate_const(&self, c: ty::Const<'tcx>, ty: ty::Ty<'tcx>, span: Span) -> Term<'tcx> {
+    pub(crate) fn translate_const(
+        &self,
+        c: ty::Const<'tcx>,
+        ty: ty::Ty<'tcx>,
+        span: Span,
+    ) -> Term<'tcx> {
         if let Some(t) = from_ty_const(self.ctx, self.typing_env(), c, ty, span) {
             return t;
         }
@@ -70,13 +75,14 @@ impl<'tcx> super::function::BodyTranslator<'_, 'tcx> {
         use rustc_type_ir::ConstKind::*;
         match c.kind() {
             Param(p) => {
-                let def_id = self.ctx.generics_of(self.def_id()).const_param(p, self.ctx.tcx).def_id;
+                let def_id =
+                    self.ctx.generics_of(self.def_id()).const_param(p, self.ctx.tcx).def_id;
                 Term {
                     kind: TermKind::ConstParam(def_id),
                     ty: p.find_ty_from_env(self.typing_env().param_env),
                     span,
                 }
-            },
+            }
             Infer(_) => todo!(),
             Bound(_, _) => todo!(),
             Placeholder(_) => todo!(),

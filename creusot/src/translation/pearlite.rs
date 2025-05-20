@@ -939,13 +939,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
                 _ => Err(Error::msg(thir_term.span, "unhandled literal expression")),
             },
-            ExprKind::NamedConst { def_id, args, ref user_ty, .. } => {
-                Ok(Term {
-                    ty,
-                    span,
-                    kind: TermKind::named_const(def_id, args, user_ty, self.ctx.tcx),
-                })
-            }
+            ExprKind::NamedConst { def_id, args, ref user_ty, .. } => Ok(Term {
+                ty,
+                span,
+                kind: TermKind::named_const(def_id, args, user_ty, self.ctx.tcx),
+            }),
             ExprKind::ZstLiteral { ref user_ty, .. } => match ty.kind() {
                 TyKind::FnDef(def_id, subst) => Ok(Term {
                     ty,
@@ -976,12 +974,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     "Casts from ! are not supported in Pearlite, because Why3 types are always inhabited.",
                 ))
             }
-            ExprKind::ConstParam { def_id, param:_ } => {
-              Ok(Term {
-                ty,
-                span,
-                kind: TermKind::ConstParam(def_id),
-            })}
+            ExprKind::ConstParam { def_id, param: _ } => {
+                Ok(Term { ty, span, kind: TermKind::ConstParam(def_id) })
+            }
             ref ek => todo!("lower_expr: {:?}", ek),
         };
         Ok(Term { ty, ..res? })

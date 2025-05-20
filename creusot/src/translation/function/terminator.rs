@@ -262,18 +262,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     /// because this is only used for arithmetic in `const` contexts. It uses an `AddWithOverflow`
     /// operator which creates a tuple `(usize, bool)` where the `bool` indicates overflow.
     fn place_to_term(&self, place: &Place<'tcx>, span: Span) -> Term<'tcx> {
-        let mut term = Term::var(self.locals[&place.local].1, self.body.local_decls[place.local].ty);
+        let mut term =
+            Term::var(self.locals[&place.local].1, self.body.local_decls[place.local].ty);
         for p in place.projection.iter() {
             match p {
                 mir::ProjectionElem::Field(idx, ty) => {
-                    term = Term {
-                        ty,
-                        span,
-                        kind: TermKind::Projection {
-                            lhs: Box::new(term),
-                            idx,
-                        },
-                    };
+                    term =
+                        Term { ty, span, kind: TermKind::Projection { lhs: Box::new(term), idx } };
                 }
                 _ => self.ctx.crash_and_error(span, "Unsupported projection"),
             }

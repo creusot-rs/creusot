@@ -401,7 +401,12 @@ impl<'tcx> RValue<'tcx> {
                 };
 
                 use BinOp::*;
-                enum OpKind { Program, Logic, LogicPair } // See `match kind` below
+                enum OpKind {
+                    Program,
+                    Logic,
+                    // A logic function which outputs a pair; we rewrap it into the local pair type from Rust.
+                    LogicPair,
+                } // See `match kind` below
                 use OpKind::*;
                 let (opname, kind) = match op {
                     Add | AddUnchecked => ("add", Program),
@@ -434,14 +439,15 @@ impl<'tcx> RValue<'tcx> {
 
                 match kind {
                     Logic => Exp::qvar(fname).app(args),
-                    // A logic function which outputs a pair; rewrap it into the local pair type.
                     LogicPair => {
                         let TyKind::Tuple(tys) = ty.kind() else { unreachable!() };
                         let fst = Ident::fresh_local("fst");
                         let snd = Ident::fresh_local("snd");
-                        use why3::exp::Pattern::{VarP, TupleP};
-                        Exp::Let { pattern: TupleP([VarP(fst), VarP(snd)].into()), arg: Exp::qvar(fname).app(args).boxed(), body:
-                            Exp::Record {
+                        use why3::exp::Pattern::{TupleP, VarP};
+                        Exp::Let {
+                            pattern: TupleP([VarP(fst), VarP(snd)].into()),
+                            arg: Exp::qvar(fname).app(args).boxed(),
+                            body: Exp::Record {
                                 fields: [(0usize, fst), (1, snd)]
                                     .into_iter()
                                     .map(|(ix, f)| {
@@ -451,8 +457,9 @@ impl<'tcx> RValue<'tcx> {
                                         )
                                     })
                                     .collect(),
-                            }.boxed()
                             }
+                            .boxed(),
+                        }
                     }
                     Program => {
                         let ret_ident = Ident::fresh_local("_ret");
