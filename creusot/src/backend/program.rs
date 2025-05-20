@@ -328,7 +328,7 @@ impl<'tcx> Operand<'tcx> {
             Operand::Move(pl) | Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::ConstBlock(id, subst, ty) => {
-                let ret_ident = Ident::fresh_local("_const");
+                let ret_ident = Ident::fresh_local("_CONST");
                 let ty = lower.ty(ty);
                 let fun_qname = const_block_to_why3(lower, id, subst);
                 istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, []));

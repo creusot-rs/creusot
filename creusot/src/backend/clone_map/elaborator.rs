@@ -167,10 +167,10 @@ impl DepElab for ProgramElab {
         // Inline the body of closures and promoted
         let bid = match dep {
             Dependency::Item(def_id, _) => {
-                let constness = if matches!(ctx.def_kind(def_id), DefKind::Const) {
-                    Constness::Const
-                } else {
-                    Constness::None
+                use DefKind::*;
+                let constness = match ctx.def_kind(def_id) {
+                    Const | AssocConst | InlineConst | AnonConst => Constness::Const,
+                    _ => Constness::None,
                 };
                 BodyId { def_id: def_id.expect_local(), constness }
             }
