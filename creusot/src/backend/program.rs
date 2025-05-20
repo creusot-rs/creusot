@@ -153,7 +153,8 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         .collect::<HashMap<_, _>>();
 
     simplify_fmir(gather_usage(&body), &mut body);
-    let body_ = body_exp(ctx, names, inner_return, body_id, &mut body);
+
+    let (entry, blocks) = body_exp(ctx, names, inner_return, body_id, &mut body);
 
     let (mut sig, contract, return_ty) = if !body_id.constness.is_const() {
         let def_id = body_id.def_id();
@@ -196,7 +197,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         })
         .collect();
 
-    let mut body = body_;
+    let mut body = Expr::Defn(entry, true, blocks);
 
     let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
         && !ctx.sig(body_id.def_id()).contract.has_user_contract;
@@ -244,7 +245,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     Defn { prototype: sig, body }
 }
 
-fn body_exp<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N, inner_return: Ident, body_id: BodyId, body: &mut Body<'tcx>) -> Expr {
+fn body_exp<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N, inner_return: Ident, body_id: BodyId, body: &mut Body<'tcx>) -> (Box<Expr>, Box<[Defn]>) {
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
     infer_proph_invariants(ctx, body);
 
@@ -260,8 +261,7 @@ fn body_exp<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N, inner_re
             component_to_defn(body, ctx, names, body_id.def_id, &block_idents, inner_return, c)
         })
         .collect();
-
-    Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks)
+    (Expr::var(block_idents[0]).boxed(), blocks)
 }
 
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
@@ -332,11 +332,12 @@ impl<'tcx> Operand<'tcx> {
         match self {
             Operand::Move(pl) | Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
-            Operand::ConstBlock(id, _subst, ty) => {
-                let val = Ident::fresh_local("_CONST");
-                let (expr, ret) = const_block_to_why3(lower, id);
-                istmts.push(IntermediateStmt::Block(expr, Prototype{ name: ret, attrs: [].into(), params: [Param::Term(val, lower.ty(ty))].into() }));
-                Exp::var(val)
+            Operand::ConstBlock(id, subst, ty) => {
+                let ret_ident = Ident::fresh_local("_CONST");
+                let ty = lower.ty(ty);
+                let fun_qname = const_block_to_why3(lower, id, subst);
+                istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, []));
+                Exp::var(ret_ident)
             }
             Operand::Promoted(pid, ty) => {
                 let var = Ident::fresh_local(format!("pr{}", pid.as_usize()));
@@ -967,24 +968,6 @@ where
         IntermediateStmt::Assign(id, exp) => tail.assign(id, exp),
         IntermediateStmt::Call(params, fun, args) => Expr::Name(fun)
             .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, tail.boxed()))])),
-        IntermediateStmt::Block(e, exit) =>{
-            let entry = Ident::fresh_local("const_block");
-            Expr::Defn(
-                Expr::var(entry).boxed(),
-                false,
-                [Defn {
-                    prototype: Prototype {
-                        name: entry,
-                        attrs: vec![],
-                        params: [].into(),
-                    },
-                    body: e,
-                }, Defn { prototype: exit,
-                    body: tail,
-                }]
-                .into(),
-            )
-        }
         IntermediateStmt::Assume(e) => Expr::assume(e, tail),
         IntermediateStmt::Assert(e) => Expr::assert(e, tail),
         IntermediateStmt::Any(id, ty) => Expr::Defn(
@@ -1043,12 +1026,6 @@ pub(crate) enum IntermediateStmt {
     Assign(Ident, Exp),
     // E [ARGS] (id : ty -> K)
     Call(Box<[Param]>, Name, Box<[Arg]>),
-    /// `entry [ entry -> bb0 [ bb0 = ... | bbn = id ] | H -> K ]`
-    /// where
-    /// - the first field contains `bb0 [ bb0 = ... | bbn = id ]`
-    /// - the second field contains the binder for `H`
-    /// It's up to the consumer of this constructor to provide the `entry` handler and the `K` continuation.
-    Block(Expr, Prototype),
     // -{ E }- K
     Assume(Exp),
     // { E } K
@@ -1320,10 +1297,7 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
 fn const_block_to_why3<'tcx, N: Namer<'tcx>>(
     lower: &mut LoweringState<'_, 'tcx, N>,
     id: DefId,
-) -> (Expr, Ident) {
-    let body_id = BodyId::new(id.expect_local(), Constness::Const);
-    let mut body = lower.ctx.fmir_body(body_id).clone();
-    let ret = Ident::fresh_local("_CONST");
-    let expr = body_exp(lower.ctx, lower.names, ret, body_id, &mut body);
-    (expr, ret)
+    subst: GenericArgsRef<'tcx>,
+) -> Name {
+    lower.names.item(id, subst)
 }
