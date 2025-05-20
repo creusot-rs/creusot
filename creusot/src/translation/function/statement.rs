@@ -6,7 +6,6 @@ use crate::{
     },
     extended_location::ExtendedLocation,
     fmir::Operand,
-    pearlite::Term,
     translation::fmir::{self, RValue, inline_pearlite_subst},
 };
 use rustc_borrowck::consumers::TwoPhaseActivation;
@@ -15,7 +14,7 @@ use rustc_middle::{
         BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
-    ty::{self, TyKind, adjustment::PointerCoercion},
+    ty::{TyKind, adjustment::PointerCoercion},
 };
 use rustc_mir_dataflow::ResultsCursor;
 use rustc_span::Span;

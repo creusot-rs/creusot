@@ -1,6 +1,6 @@
 use crate::{
     contracts_items::get_builtin,
-    ctx::{self, TranslationCtx},
+    ctx::TranslationCtx,
     fmir::{self, Operand},
     traits::TraitResolved,
     translation::pearlite::Literal,
