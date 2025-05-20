@@ -6,21 +6,11 @@ use std::{
 
 use crate::{
     backend::{
-        TranslationCtx, Why3Generator,
-        clone_map::{CloneNames, Dependency, Kind, Namer},
-        closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve},
-        is_trusted_item,
-        logic::{lower_logical_defn, spec_axiom},
-        program,
-        signature::{lower_logic_sig, lower_program_sig},
-        structural_resolve::structural_resolve,
-        term::lower_pure,
-        ty::{
+        clone_map::{CloneNames, Dependency, Kind, Namer}, closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve}, is_trusted_item, logic::{lower_logical_defn, spec_axiom}, program, signature::{lower_logic_sig, lower_program_sig}, structural_resolve::structural_resolve, term::lower_pure, ty::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
-        },
-        ty_inv::InvariantElaborator,
+        }, ty_inv::InvariantElaborator, TranslationCtx, Why3Generator
     },
-    constant::from_ty_const,
+    constant::{try_const_synonym, try_eval_const},
     contracts_items::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
         get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
@@ -30,7 +20,7 @@ use crate::{
     },
     ctx::{BodyId, Constness, ItemType},
     naming::name,
-    pearlite::{Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
+    pearlite::{normalize, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger},
     specification::Condition,
     traits::{self, TraitResolved},
 };
@@ -44,8 +34,7 @@ use rustc_middle::ty::{
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
 use why3::{
-    Ident,
-    declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
+    coma::{Arg, Defn, Expr, Param, Prototype}, declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use}, Exp, Ident
 };
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
@@ -62,7 +51,7 @@ pub(super) struct Expander<'a, 'tcx> {
     graph: DiGraphMap<Dependency<'tcx>, Strength>,
     dep_bodies: HashMap<Dependency<'tcx>, Vec<Decl>>,
     namer: &'a mut CloneNames<'tcx>,
-    self_key: Dependency<'tcx>,
+    self_item: (DefId, GenericArgsRef<'tcx>),
     typing_env: TypingEnv<'tcx>,
     expansion_queue: VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>,
 }
@@ -126,7 +115,7 @@ impl DepElab for ProgramElab {
 
         use DefKind::*;
         if let Dependency::Item(def_id, subst) = dep
-            && !matches!(ctx.def_kind(def_id), Closure | Const | InlineConst)
+            && !matches!(ctx.def_kind(def_id), Closure | Const | InlineConst | AssocConst)
         {
             let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
                 .instantiate(ctx.tcx, subst)
@@ -176,6 +165,11 @@ impl DepElab for ProgramElab {
             return vec![program::val(sig, contract, return_ident, return_ty)];
         }
 
+        if let Dependency::Item(def_id, subst) = dep
+            && matches!(ctx.def_kind(def_id), AssocConst) {
+            return expand_assoc_const(ctx, &names, name, def_id, subst)
+        }
+
         // Inline the body of closures and promoted
         let bid = match dep {
             Dependency::Item(def_id, _) => {
@@ -195,6 +189,29 @@ impl DepElab for ProgramElab {
         let coma = program::to_why(ctx, &names, name, bid);
         vec![Decl::Coma(coma)]
     }
+}
+
+/// Associated constants declarations are translated to a constant function
+/// which returns a logic constant value.
+/// This is very simplistic, but it is enough for the most common use cases where
+/// an associated constant is equal to either a literal or another constant.
+fn expand_assoc_const<'tcx, N: Namer<'tcx>>(
+        ctx: &Why3Generator<'tcx>,
+        names: &N,
+        name: Ident,
+        def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+    ) -> Vec<Decl> {
+    let logic_name = names.assoc_constant(def_id, subst);
+    let ret = Ident::fresh_local("ret");
+    let x = Ident::fresh_local("x");
+    let span = ctx.def_span(def_id);
+    let ty = translate_ty(ctx, names, span, ctx.type_of(def_id).instantiate(ctx.tcx, subst));
+    let ret_param = Param::Cont(ret, [].into(), [Param::Term(x, ty)].into());
+    let coma = Defn {
+        prototype: Prototype { name, attrs: [].into(), params: [ret_param].into() },
+        body: Expr::app(Expr::var(ret), [Arg::Term(Exp::Var(logic_name))]) };
+    vec![Decl::Coma(coma)]
 }
 
 struct LogicElab;
@@ -248,16 +265,17 @@ impl DepElab for LogicElab {
             .trait_of_item(def_id)
             .map(|_| traits::TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst));
 
+        let self_id = elab.self_item.0;
         let is_opaque = matches!(
             trait_resol,
             Some(traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound)
-        ) || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0)
+        ) || !ctx.is_transparent_from(def_id, self_id)
             || is_trusted_item(ctx.tcx, def_id);
 
         let names = elab.namer(dep);
         let name = names.dependency(dep).ident();
         let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
-        if !is_opaque && let Some(term) = term(ctx, typing_env, &bound, dep) {
+        if !is_opaque && let Some(term) = term(ctx, typing_env, &bound, self_id, dep) {
             lower_logical_defn(ctx, &names, sig, kind, term)
         } else {
             let mut decls = val(sig, kind);
@@ -400,7 +418,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         Self {
             graph: Default::default(),
             namer,
-            self_key,
+            self_item: self_key.did().unwrap(),
             typing_env,
             expansion_queue: initial.map(|b| (self_key, Strength::Strong, b)).collect(),
             dep_bodies: Default::default(),
@@ -494,7 +512,7 @@ fn expand_laws<'tcx>(
     ctx: &Why3Generator<'tcx>,
     dep: Dependency<'tcx>,
 ) {
-    let (self_did, self_subst) = elab.self_key.did().unwrap();
+    let (self_did, self_subst) = elab.self_item;
     let Some((item_did, item_subst)) = dep.did() else {
         return;
     };
@@ -1040,6 +1058,7 @@ fn term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     bound: &[Ident],
+    body_id: DefId,
     dep: Dependency<'tcx>,
 ) -> Option<Term<'tcx>> {
     match dep {
@@ -1078,10 +1097,14 @@ fn term<'tcx>(
             let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
             let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
             let span = ctx.def_span(def_id);
-            let Some(res) = from_ty_const(&ctx.ctx, typing_env, constant, ty, span) else {
-                ctx.crash_and_error(span, &format!("term: unhandled const {constant}"))
-            };
-            Some(res)
+            if let Some(res) = try_eval_const(&ctx.ctx, typing_env, constant, ty, span) {
+                return Some(res)
+            }
+            // const N = M;
+            if let Some(res) = try_const_synonym(ctx, typing_env, body_id, def_id, subst) {
+                return Some(res)
+            }
+            ctx.crash_and_error(span, &format!("term: unhandled const {constant:?}"))
         }
         _ => unreachable!(),
     }

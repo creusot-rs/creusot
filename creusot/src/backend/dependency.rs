@@ -98,8 +98,12 @@ impl<'tcx> Dependency<'tcx> {
                     Some(Symbol::intern(&name))
                 }
                 DefKind::Variant => Some(item_symb(tcx, did, rustc_hir::def::Namespace::ValueNS)),
+                DefKind::InlineConst | DefKind::AnonConst => Some(Symbol::intern("_const_block")),
+                DefKind::Const | DefKind::AssocConst => Some(Symbol::intern(&format!("_get_{}",
+                    &translate_name(tcx.item_name(did).as_str()),
+                ))),
                 _ => match tcx.opt_item_name(did) {
-                    None => Some(Symbol::intern("_const")),
+                    None => Some(Symbol::intern("_unknown")),
                     Some(item_name) => {
                         Some(Symbol::intern(&value_name(&translate_name(item_name.as_str()))))
                     }
