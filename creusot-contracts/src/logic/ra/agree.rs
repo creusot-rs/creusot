@@ -1,5 +1,9 @@
 use crate::{logic::ra::RA, *};
 
+/// The 'agreement' Resource Algebra.
+///
+/// This has the property that all resource with the same id have the same value
+/// (they 'agree').
 pub enum Ag<T> {
     Ag(T),
     AgBot,

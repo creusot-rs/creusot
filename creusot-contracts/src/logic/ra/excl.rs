@@ -1,5 +1,10 @@
 use crate::{logic::ra::RA, *};
 
+/// The 'exclusive' Resource Algebra.
+///
+/// Combining those resource with [`RA::op`] **never** yields valid elements.
+/// As such, only one version of this resource (when using
+/// [`Resource`](crate::resource::Resource)) will be able to exists at a given moment.
 pub enum Excl<T> {
     Excl(T),
     ExclBot,
