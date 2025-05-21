@@ -1,10 +1,10 @@
 pub mod fmap_view;
 
 #[cfg(creusot)]
-use crate::logic::{Id, ra};
+use crate::logic::ra;
 use crate::{
     Ghost, Snapshot,
-    logic::{Set, ra::RA},
+    logic::{Id, Set, ra::RA},
     *,
 };
 use ::std::marker::PhantomData;
@@ -62,6 +62,16 @@ impl<R: RA> Resource<R> {
     #[trusted]
     pub fn id(self) -> Id {
         dead
+    }
+
+    /// Get the id for this resource.
+    ///
+    /// This is the same as [`Self::id`], but for ghost code.
+    #[pure]
+    #[trusted]
+    #[ensures(result == self.id())]
+    pub fn id_ghost(&self) -> Id {
+        panic!("ghost code only")
     }
 
     /// Get the RA contained in this resource.
@@ -146,6 +156,7 @@ impl<R: RA> Resource<R> {
 
     /// Same as [`Self::join`], but put the result into `self`.
     #[pure]
+    #[trusted]
     #[requires(self.id() == other.id())]
     #[ensures((^self).id() == self.id())]
     #[ensures((^self)@ == self@.op(other@))]
@@ -167,6 +178,7 @@ impl<R: RA> Resource<R> {
         panic!("ghost code only")
     }
 
+    /// Transforms `self` into `target`, given that `target` is included in `self`.
     #[trusted]
     #[pure]
     #[requires(target.incl(self@))]
