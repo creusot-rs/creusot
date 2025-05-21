@@ -43,6 +43,7 @@ macro_rules! contracts_items {
     };
     (@kind fn) => { "function" };
     (@kind type) => { "type" };
+    (@kind trait) => { "trait" };
     (@are_contracts_loaded #[$std_items:meta] $($symbol:literal)*) => {};
     (@are_contracts_loaded $($symbol:literal)*) => {
         /// Call this at the earlist point possible: if `creusot-contracts` is not loaded, we
@@ -111,6 +112,10 @@ contracts_items! {{
         is_snap_ty                      get_snap_ty
     type Ghost                           ["ghost_ty"]
         is_ghost_ty                     get_ghost_ty
+    type FnPureWrapper                   ["fn_pure_ty"]
+        is_fn_pure_ty                   get_fn_pure_ty
+    trait FnPure                         ["fn_pure_trait"]
+        is_fn_pure_trait                get_fn_pure_trait
 }}
 
 contracts_items! { #[std_items] {
