@@ -1,5 +1,6 @@
 mod contractless_external_function;
 mod experimental_types;
+mod trusted;
 
 use rustc_lint::LintStore;
 use rustc_macros::LintDiagnostic;
@@ -14,6 +15,8 @@ pub(crate) use contractless_external_function::CONTRACTLESS_EXTERNAL_FUNCTION;
 // are defined in `creusot/messages.ftl`
 #[derive(Debug, LintDiagnostic)]
 pub(crate) enum Diagnostics {
+    #[diag(creusot_trusted_code)]
+    TrustedAttribute,
     /// Usually lints are emitted by implementing lint passes with the `impl_lint_pass!` macro.
     ///
     /// Since the lint is emmited at a "weird" time (during translation to
@@ -35,7 +38,9 @@ pub fn register_lints(_sess: &Session, store: &mut LintStore) {
     store.register_lints(&[
         experimental_types::EXPERIMENTAL,
         contractless_external_function::CONTRACTLESS_EXTERNAL_FUNCTION,
+        trusted::TRUSTED_CODE,
     ]);
     store.register_late_pass(move |_| Box::new(crate::validate::GhostValidate {}));
     store.register_late_pass(move |_| Box::new(experimental_types::Experimental {}));
+    store.register_late_pass(move |_| Box::new(trusted::TrustedCode {}));
 }
