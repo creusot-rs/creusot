@@ -10,6 +10,7 @@ use crate::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
         }, ty_inv::InvariantElaborator, TranslationCtx, Why3Generator
     },
+    constant::const_eval,
     contracts_items::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
         get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
@@ -1085,18 +1086,9 @@ fn term<'tcx>(
                 return None;
             }
             let ct = UnevaluatedConst::new(def_id, subst);
-            let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(ct));
             let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
             let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
-            let span = ctx.def_span(def_id);
-            if let Some(res) = try_eval_const(&ctx.ctx, typing_env, constant, ty, span) {
-                return Some(res)
-            }
-            // const N = M;
-            if let Some(res) = try_const_synonym(ctx, typing_env, body_id, def_id, subst) {
-                return Some(res)
-            }
-            ctx.crash_and_error(span, &format!("term: unhandled const {constant:?}"))
+            Some(const_eval(ctx, typing_env, body_id, ty, def_id, subst))
         }
         _ => unreachable!(),
     }

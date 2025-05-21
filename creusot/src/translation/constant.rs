@@ -6,7 +6,7 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{self, ConstOperand, interpret::AllocRange, ConstValue, UnevaluatedConst, BasicBlock, Statement, StatementKind},
-    ty::{Const, ConstKind, AssocItem, AssocItemContainer, EarlyBinder, Ty, TyCtxt, TypingEnv},
+    ty::{Const, ConstKind, AssocItem, AssocItemContainer, EarlyBinder, ScalarInt, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::Size;
@@ -18,46 +18,7 @@ impl<'tcx> super::function::BodyTranslator<'_, 'tcx> {
         &self,
         c: &rustc_middle::mir::ConstOperand<'tcx>,
     ) -> fmir::Operand<'tcx> {
-        let env = self.typing_env();
-        let ck = c.const_;
-        let span = c.span;
-        if let mir::Const::Ty(ty, c) = ck {
-            return Operand::Constant(self.translate_const(c, ty, span));
-        }
-
-        if ck.ty().is_unit() {
-            return Operand::Constant(Term::unit(self.ctx.tcx));
-        }
-        //
-        // let ck = ck.normalize(ctx.tcx, env);
-
-        if ck.ty().peel_refs().is_str() {
-            if let mir::Const::Val(ConstValue::Slice { data, meta }, _) = ck {
-                let start = Size::from_bytes(0);
-                let size = Size::from_bytes(meta);
-                let bytes = data
-                    .inner()
-                    .get_bytes_strip_provenance(&self.ctx.tcx, AllocRange { start, size })
-                    .unwrap();
-                let string = std::str::from_utf8(bytes).unwrap();
-
-                return Operand::Constant(Term {
-                    kind: TermKind::Lit(Literal::String(string.into())),
-                    ty: ck.ty(),
-                    span,
-                });
-            }
-        }
-
-        if let mir::Const::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
-            return Operand::Promoted(p, ck.ty());
-        }
-
-        if let Some(lit) = try_to_bits(self.ctx, env, ck.ty(), span, ck) {
-            return Operand::Constant(Term { kind: TermKind::Lit(lit), ty: ck.ty(), span });
-        }
-
-        const_block(self.ctx, span, ck)
+        mir_const_to_operand(self.ctx, self.typing_env(), self.def_id(), c.const_, c.span)
     }
 
     pub(crate) fn translate_const(
@@ -66,15 +27,77 @@ impl<'tcx> super::function::BodyTranslator<'_, 'tcx> {
         ty: ty::Ty<'tcx>,
         span: Span,
     ) -> Term<'tcx> {
-        if let Some(t) = try_eval_const(self.ctx, self.typing_env(), c, ty, span) {
-            return t;
-        }
-        translate_const(self.ctx, self.typing_env(), self.def_id(), c, span)
+        const_to_term(self.ctx, self.typing_env(), self.def_id(), c, span)
     }
-
 }
 
-fn translate_const<'tcx>(ctx: &TranslationCtx<'tcx>, typing_env: TypingEnv<'tcx>, body_id: DefId, c: ty::Const<'tcx>, span: Span) -> Term<'tcx> {
+fn mir_const_to_operand<'tcx>(ctx: &TranslationCtx<'tcx>, typing_env: TypingEnv<'tcx>, body_id: DefId, c: mir::Const<'tcx>, span: Span) -> fmir::Operand<'tcx> {
+    use mir::Const::*;
+    match c {
+        Ty(_ty, c) => Operand::Constant(const_to_term(ctx, typing_env, body_id, c, span)),
+        Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, ty) => Operand::Promoted(p, ty),
+        // Try to get a literal value
+        Unevaluated(uneval, ty) => match ctx.const_eval_resolve(typing_env, uneval, span) {
+            Ok(val) => Operand::Constant(const_value_to_term(ctx, typing_env, span, val, ty)),
+            Err(_) => Operand::ConstBlock(uneval.def, uneval.args, ty),
+        },
+        Val(val, ty) => Operand::Constant(const_value_to_term(ctx, typing_env, span, val, ty)),
+    }
+}
+
+pub fn const_eval<'tcx>(ctx: &TranslationCtx<'tcx>, typing_env: TypingEnv<'tcx>, body_id: DefId, ty: Ty<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Term<'tcx> {
+    let span = ctx.def_span(def_id);
+    let uneval = ty::UnevaluatedConst::new(def_id, args);
+    match ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
+        Ok(Ok(val)) => value_to_term(ctx, typing_env, span, ty, val),
+        _ => try_const_synonym(ctx, typing_env, body_id, def_id, args).unwrap_or_else(|| {
+            let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(uneval));
+            ctx.crash_and_error(span, &format!("unsupported const {constant:?}"))
+        }),
+    }
+}
+
+fn value_to_term<'tcx>(ctx: &TranslationCtx<'tcx>, typing_env: TypingEnv<'tcx>, span: Span, ty: Ty<'tcx>, val: ty::ValTree<'tcx>) -> Term<'tcx> {
+    if let ty::ValTree::Leaf(scalar) = val {
+        return Term { kind: TermKind::Lit(scalar_to_literal(ctx, typing_env, span, ty, scalar)), ty, span }
+    }
+    let ty::DestructuredConst { variant, fields } = ctx.destructure_const(ty::Const::new_value(ctx.tcx, val, ty));
+    let fields = fields.into_iter().map(|field| {
+        let ty::ConstKind::Value(ty, val) = field.kind() else { unreachable!() };
+        value_to_term(ctx, typing_env, span, ty, val)
+    }).collect();
+    let kind = match ty.kind() {
+        TyKind::Tuple(_) => TermKind::Tuple { fields },
+        TyKind::Adt(adt, _) => TermKind::Constructor { typ: adt.did(), variant: variant.unwrap(), fields },
+        _ => ctx.crash_and_error(span, &format!("unsupported destructured const {val:?}")),
+    };
+    Term { kind, ty, span }
+}
+
+fn const_value_to_term<'tcx>(ctx: &TranslationCtx<'tcx>, typing_env: TypingEnv<'tcx>, span: Span, val: mir::ConstValue<'tcx>, ty: Ty<'tcx>) -> Term<'tcx> {
+    use mir::ConstValue::*;
+    use mir::interpret::Scalar;
+    match val {
+        Scalar(Scalar::Int(scalar)) => Term {
+            kind: TermKind::Lit(scalar_to_literal(ctx, typing_env, span, ty, scalar)),
+            ty,
+            span,
+        },
+        ZeroSized => Term { kind: TermKind::Lit(Literal::ZST), ty, span },
+        Slice { data, meta } if ty.peel_refs().is_str() => {
+            let start = Size::from_bytes(0);
+            let size = Size::from_bytes(meta);
+            let bytes = data.inner().get_bytes_strip_provenance(&ctx.tcx, AllocRange { start, size })
+                .unwrap();
+            let string = std::str::from_utf8(bytes).unwrap();
+            let kind = TermKind::Lit(Literal::String(string.into()));
+            Term { kind, ty, span }
+        }
+        _ => ctx.crash_and_error(span, &format!("unsupported const value {val:?}")),
+    }
+}
+
+pub fn const_to_term<'tcx>(ctx: &TranslationCtx<'tcx>, typing_env: TypingEnv<'tcx>, body_id: DefId, c: ty::Const<'tcx>, span: Span) -> Term<'tcx> {
     use rustc_type_ir::ConstKind::*;
     match c.kind() {
         Param(p) => {
@@ -89,33 +112,10 @@ fn translate_const<'tcx>(ctx: &TranslationCtx<'tcx>, typing_env: TypingEnv<'tcx>
         Bound(_, _) => todo!(),
         Placeholder(_) => todo!(),
         Unevaluated(_) => todo!(),
-        Value(ty, v) => todo!(),
+        Value(ty, v) => value_to_term(ctx, typing_env, span, ty, v),
         Error(_) => todo!(),
         Expr(_) => todo!(),
     }
-}
-
-/// Try to evaluate a `const` expression to a literal.
-pub(crate) fn try_eval_const<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
-    env: TypingEnv<'tcx>,
-    c: Const<'tcx>,
-    ty: Ty<'tcx>,
-    span: Span,
-) -> Option<Term<'tcx>> {
-    // Check if a constant is builtin and thus should not be evaluated further
-    // Builtin constants are given a body which panics
-    if let ConstKind::Unevaluated(u) = c.kind()
-        && get_builtin(ctx.tcx, u.def).is_some()
-    {
-        return Some(Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty, span });
-    };
-
-    if let Some(lit) = try_to_bits(ctx, env, ty, span, c) {
-        return Some(Term { kind: TermKind::Lit(lit), ty, span });
-    }
-
-    None
 }
 
 /// Handle associated const definitions of the form `const N = M;` where `M` is another constant.
@@ -129,7 +129,7 @@ pub(crate) fn try_const_synonym<'tcx>(ctx: &TranslationCtx<'tcx>, typing_env: Ty
     match c {
         ConstKind::Param(p) => {
             let c = args.const_at(p.index as usize);
-            Some(translate_const(ctx, typing_env, body_id, c, DUMMY_SP))
+            Some(const_to_term(ctx, typing_env, body_id, c, DUMMY_SP))
         }
         ConstKind::Unevaluated(u) => {
             let (u, ty) = EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args);
@@ -159,48 +159,43 @@ fn body_const<'tcx>(body: &mir::Body<'tcx>) -> Option<(ConstKind<'tcx>, Ty<'tcx>
     }
 }
 
-fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
+fn scalar_to_literal<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     env: TypingEnv<'tcx>,
-    ty: Ty<'tcx>,
     span: Span,
-    c: C,
-) -> Option<Literal<'tcx>> {
-    use rustc_middle::ty::{FloatTy, IntTy, UintTy};
-    use rustc_type_ir::TyKind::{Bool, Char, Float, FnDef, Int, Uint};
-    let bits = c.get_bits(ctx.tcx, env, ty)?;
-    let target_width = ctx.tcx.sess.target.pointer_width;
+    ty: Ty<'tcx>,
+    scalar: ty::ScalarInt,
+) -> Literal<'tcx> {
+    try_scalar_to_literal(ctx, env, span, ty, scalar).unwrap_or_else(||
+        ctx.crash_and_error(span, &format!("can't convert {scalar:?} to {ty:?}"))
+    )
+}
 
+fn try_scalar_to_literal<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    env: TypingEnv<'tcx>,
+    span: Span,
+    ty: Ty<'tcx>,
+    scalar: ty::ScalarInt,
+) -> Option<Literal<'tcx>> {
+    use rustc_middle::ty::FloatTy;
+    use rustc_type_ir::TyKind::{Bool, Char, Float, FnDef, Int, Uint};
+    let target_width = ctx.tcx.sess.target.pointer_width;
     Some(match ty.kind() {
-        Char => Literal::Char(
-            char::from_u32(bits as u32)
-                .unwrap_or_else(|| ctx.crash_and_error(span, "can't convert to char")),
-        ),
+        Char => Literal::Char(char::try_from(scalar).ok()?),
         Int(ity) => {
-            let bits: i128 = match ity.normalize(target_width) {
-                IntTy::Isize => unreachable!(),
-                IntTy::I8 => bits as i8 as i128,
-                IntTy::I16 => bits as i16 as i128,
-                IntTy::I32 => bits as i32 as i128,
-                IntTy::I64 => bits as i64 as i128,
-                IntTy::I128 => bits as i128,
-            };
+            let size = Size::from_bits(ity.normalize(target_width).bit_width().unwrap());
+            let bits = size.sign_extend(scalar.try_to_bits(size).ok()?);
             Literal::MachSigned(bits, *ity)
         }
         Uint(uty) => {
-            let bits: u128 = match uty.normalize(target_width) {
-                UintTy::Usize => unreachable!(),
-                UintTy::U8 => bits as u8 as u128,
-                UintTy::U16 => bits as u16 as u128,
-                UintTy::U32 => bits as u32 as u128,
-                UintTy::U64 => bits as u64 as u128,
-                UintTy::U128 => bits as u128,
-            };
+            let size = Size::from_bits(uty.normalize(target_width).bit_width().unwrap());
+            let bits = scalar.try_to_bits(size).ok()?;
             Literal::MachUnsigned(bits, *uty)
         }
-        Bool => Literal::Bool(bits == 1),
+        Bool => Literal::Bool(scalar.try_to_bool().unwrap_or_else(|_|  ctx.crash_and_error(span, "can't convert {scalar:?} to bool"))),
         Float(FloatTy::F32) => {
-            let float = f32::from_bits(bits as u32);
+            let float = f32::from_bits(scalar.try_to_bits(Size::from_bits(32)).ok()? as u32);
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
@@ -208,7 +203,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
             }
         }
         Float(FloatTy::F64) => {
-            let float = f64::from_bits(bits as u64);
+            let float = f64::from_bits(scalar.try_to_bits(Size::from_bits(64)).ok()? as u64);
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
