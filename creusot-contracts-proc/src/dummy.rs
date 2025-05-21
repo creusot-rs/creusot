@@ -1,3 +1,4 @@
+use crate::common::ContractSubject;
 use proc_macro::TokenStream as TS1;
 use quote::ToTokens as _;
 use syn::visit_mut::VisitMut;
@@ -30,13 +31,13 @@ pub fn ghost(body: TS1) -> TS1 {
 // #[proc_macro_attribute]
 
 pub fn requires(_: TS1, tokens: TS1) -> TS1 {
-    let mut item = syn::parse_macro_input!(tokens as syn::ImplItemFn);
+    let mut item = syn::parse_macro_input!(tokens as ContractSubject);
     delete_invariants(&mut item);
     TS1::from(item.into_token_stream())
 }
 
 pub fn ensures(_: TS1, tokens: TS1) -> TS1 {
-    let mut item = syn::parse_macro_input!(tokens as syn::ImplItemFn);
+    let mut item = syn::parse_macro_input!(tokens as ContractSubject);
     delete_invariants(&mut item);
     TS1::from(item.into_token_stream())
 }
@@ -123,14 +124,15 @@ impl VisitMut for DeleteInvariants {
 }
 
 // `invariant` or `creusot_contracts::invariant` or `::creusot_contracts::invariant`
-fn is_invariant(path: &syn::Path) -> bool {
-    if path.is_ident("invariant") {
-        return true;
-    }
+fn is(name: &str, path: &syn::Path) -> bool {
+    path.is_ident(name) || is_qualified(name, path)
+}
+
+fn is_qualified(name: &str, path: &syn::Path) -> bool {
     let mut segments = path.segments.iter();
     if let Some(first) = segments.next() {
         if let Some(second) = segments.next() {
-            return first.ident == "creusot_contracts" && second.ident == "invariant";
+            return first.ident == "creusot_contracts" && second.ident == name;
         }
     }
     false
@@ -138,10 +140,30 @@ fn is_invariant(path: &syn::Path) -> bool {
 
 fn delete_invariants_attrs(attrs: &mut Vec<syn::Attribute>) {
     attrs.retain(|attr| {
-        if let syn::Meta::List(meta) = &attr.meta { !is_invariant(&meta.path) } else { true }
+        if let syn::Meta::List(meta) = &attr.meta { !is("invariant", &meta.path) } else { true }
     });
 }
 
-fn delete_invariants(item: &mut syn::ImplItemFn) {
-    DeleteInvariants.visit_impl_item_fn_mut(item);
+fn delete_contracts(attrs: &mut Vec<syn::Attribute>) {
+    attrs.retain(|attr| {
+        if let syn::Meta::List(meta) = &attr.meta {
+            !is("requires", &meta.path) && !is("ensures", &meta.path)
+        } else {
+            true
+        }
+    });
+}
+
+// Also delete other contracts to avoid redundant passes
+fn delete_invariants(item: &mut ContractSubject) {
+    match item {
+        ContractSubject::FnOrMethod(fn_or_method) => {
+            delete_contracts(&mut fn_or_method.attrs);
+            fn_or_method.body.iter_mut().for_each(|body| DeleteInvariants.visit_block_mut(body));
+        }
+        ContractSubject::Closure(expr) => {
+            delete_contracts(&mut expr.attrs);
+            DeleteInvariants.visit_expr_closure_mut(expr);
+        }
+    }
 }
