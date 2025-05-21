@@ -101,6 +101,7 @@ pub trait SizedPointerExt<T> {
     /// >   pointer to some allocated object, and the entire memory range between
     /// >   `self` and the result must be in bounds of that allocated object.
     /// >   In particular, this range must not “wrap around” the edge of the address space.
+    #[requires(self.offset_logic(offset@) == own_offset.ptr())]
     unsafe fn add_own(self, offset: usize, own_offset: Ghost<&PtrOwn<T>>) -> Self;
 }
 
