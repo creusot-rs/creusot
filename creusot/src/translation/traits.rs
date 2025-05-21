@@ -176,15 +176,10 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
         let predicate = infcx.tcx.erase_regions(predicate);
         let cause = ObligationCause::dummy_with_span(sp);
         let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
-        // holds &= infcx.predicate_may_hold(&obligation);
-        fulfill_cx.register_predicate_obligation(&infcx, obligation);
+        fulfill_cx.register_predicate_obligation(infcx, obligation);
     }
-    let errors = fulfill_cx.select_all_or_error(&infcx);
-    if !errors.is_empty() {
-        return Err(errors);
-    } else {
-        return Ok(());
-    }
+    let errors = fulfill_cx.select_all_or_error(infcx);
+    if !errors.is_empty() { Err(errors) } else { Ok(()) }
 }
 
 /// The result of [`Self::resolve_assoc_item_opt`]: given the id of a trait item and some
@@ -240,12 +235,11 @@ impl<'tcx> TraitResolved<'tcx> {
             tcx.codegen_select_candidate(typing_env.as_query_input(trait_ref))
         {
             source
+        } else if still_specializable(tcx, typing_env.param_env, trait_item_def_id, trait_ref, None)
+        {
+            return TraitResolved::UnknownNotFound;
         } else {
-            if still_specializable(tcx, typing_env.param_env, trait_item_def_id, trait_ref, None) {
-                return TraitResolved::UnknownNotFound;
-            } else {
-                return TraitResolved::NoInstance;
-            }
+            return TraitResolved::NoInstance;
         };
         trace!("TraitResolved::resolve {source:?}",);
 
@@ -440,5 +434,5 @@ fn still_specializable<'tcx>(
         stack.extend(get_children(node));
     }
 
-    return false;
+    false
 }
