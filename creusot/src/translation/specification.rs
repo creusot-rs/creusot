@@ -240,6 +240,18 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         Some(fn_name) => fn_name.as_str(),
         None => "closure",
     };
+
+    let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
+    // TODO: handle the "self" argument better
+    let raw_inputs =
+        if !inputs.is_empty() && inputs[0].0.0 == name::self_() { &inputs[1..] } else { &inputs };
+    let bound = raw_inputs.iter().map(|(ident, _, _)| ident.0);
+    let subst = erased_identity_for_item(ctx.tcx, def_id);
+    let mut contract = contract_clauses_of(ctx, def_id)
+        .unwrap()
+        .get_pre(ctx, fn_name, bound)
+        .instantiate(ctx.tcx, subst);
+
     if let Some(spec) = ctx.extern_spec(def_id).cloned() {
         // We do NOT normalize the contract here. See below.
         let bound = spec.inputs.iter().map(|(ident, _, _)| ident.0);
@@ -249,7 +261,9 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
             output: EarlyBinder::bind(spec.output).instantiate(ctx.tcx, spec.subst),
             contract,
         }
-    } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
+    } else if contract.is_empty()
+        && let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id)
+    {
         let spec = ctx.extern_spec(parent_id).cloned().unwrap();
         let bound = spec.inputs.iter().map(|(ident, _, _)| ident.0);
         // We do NOT normalize the contract here: indeed, we do not have a valid non-redundant param
@@ -263,20 +277,6 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
             contract,
         }
     } else {
-        let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
-        // TODO: handle the "self" argument better
-        let raw_inputs = if !inputs.is_empty() && inputs[0].0.0 == name::self_() {
-            &inputs[1..]
-        } else {
-            &inputs
-        };
-        let bound = raw_inputs.iter().map(|(ident, _, _)| ident.0);
-        let subst = erased_identity_for_item(ctx.tcx, def_id);
-        let mut contract = contract_clauses_of(ctx, def_id)
-            .unwrap()
-            .get_pre(ctx, fn_name, bound)
-            .instantiate(ctx.tcx, subst);
-
         if contract.is_empty()
             && !def_id.is_local()
             && ctx.externs.get(def_id.krate).is_none()
