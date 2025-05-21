@@ -57,6 +57,8 @@ attribute_functions! {
     [creusot::trusted_ignore_structural_inv] => is_ignore_structural_inv
     [creusot::trusted_is_tyinv_trivial_if_param_trivial] => is_tyinv_trivial_if_param_trivial
     [creusot::clause::variant]               => has_variant_clause
+    [creusot::clause::terminates]            => is_terminates
+    [creusot::clause::no_panic]              => is_no_panic
     [creusot::bitwise]                       => is_bitwise
 }
 
@@ -119,7 +121,7 @@ pub(crate) fn get_creusot_item(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     )
 }
 
-pub(crate) fn is_open_inv_param<'tcx>(tcx: TyCtxt<'tcx>, p: &Param) -> bool {
+pub(crate) fn is_open_inv_param(tcx: TyCtxt, p: &Param) -> bool {
     let mut found = false;
     for a in &p.attrs {
         if a.is_doc_comment() {
@@ -147,7 +149,7 @@ pub(crate) fn is_open_inv_param<'tcx>(tcx: TyCtxt<'tcx>, p: &Param) -> bool {
         }
     }
 
-    return found;
+    found
 }
 
 fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
@@ -173,15 +175,11 @@ fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
     matched
 }
 
-fn get_attr<'a, 'tcx>(
-    tcx: TyCtxt<'tcx>,
-    attrs: &'a [Attribute],
-    path: &[&str],
-) -> Option<&'a Attribute> {
+fn get_attr<'a>(tcx: TyCtxt, attrs: &'a [Attribute], path: &[&str]) -> Option<&'a Attribute> {
     let matched = get_attrs(attrs, path);
     match matched.len() {
-        0 => return None,
-        1 => return Some(matched[0]),
+        0 => None,
+        1 => Some(matched[0]),
         _ => tcx.dcx().span_fatal(matched[0].span, "Unexpected duplicate attribute.".to_string()),
     }
 }
