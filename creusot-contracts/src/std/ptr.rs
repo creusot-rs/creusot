@@ -84,9 +84,10 @@ impl<T: ?Sized> PointerExt<T> for *mut T {
     }
 }
 
-pub trait SizedPointerExt<T> {
+pub trait SizedPointerExt<T>: PointerExt<T> {
     /// Logic version of `add` for pointers.
     #[logic]
+    #[ensures(self.addr_logic()@ + offset < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset)]
     fn offset_logic(self, offset: Int) -> RawPtr<T>;
 
     /// Restriction of `add` that requires evidence that the addition is safe.
@@ -109,6 +110,7 @@ impl<T> SizedPointerExt<T> for *const T {
     #[trusted]
     #[logic]
     #[open(self)]
+    #[ensures(self.addr_logic()@ + offset < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset)]
     fn offset_logic(self, offset: Int) -> RawPtr<T> {
         let _ = offset;
         dead
@@ -127,6 +129,7 @@ impl<T> SizedPointerExt<T> for *mut T {
     #[trusted]
     #[logic]
     #[open(self)]
+    #[ensures(self.addr_logic()@ + offset < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset)]
     fn offset_logic(self, offset: Int) -> RawPtr<T> {
         let _ = offset;
         dead
