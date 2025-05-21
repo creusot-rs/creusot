@@ -12,6 +12,12 @@ mod private {
 #[cfg_attr(creusot, rustc_diagnostic_item = "fn_pure_trait")]
 pub trait FnPure: private::_Sealed {}
 
+// In non-creusot mode, FnPure does nothing
+#[cfg(not(creusot))]
+impl<F> private::_Sealed for F {}
+#[cfg(not(creusot))]
+impl<F> FnPure for F {}
+
 /// Structure that implements [`FnPure`].
 ///
 /// This cannot be built by itself: instead, it automatically wraps `#[pure]` closures.
@@ -27,6 +33,7 @@ impl<F: Clone> Clone for FnPureWrapper<F> {
 }
 impl<F: Copy> Copy for FnPureWrapper<F> {}
 
+#[cfg(creusot)]
 impl<I: ::std::marker::Tuple, F: FnOnce<I>> FnOnce<I> for FnPureWrapper<F> {
     type Output = F::Output;
 
@@ -38,7 +45,7 @@ impl<I: ::std::marker::Tuple, F: FnOnce<I>> FnOnce<I> for FnPureWrapper<F> {
         self.0.call_once(args)
     }
 }
-
+#[cfg(creusot)]
 impl<I: ::std::marker::Tuple, F: FnMut<I>> FnMut<I> for FnPureWrapper<F> {
     #[requires((*self).precondition(args))]
     #[ensures((*self).postcondition_mut(args, ^self, result))]
@@ -48,7 +55,7 @@ impl<I: ::std::marker::Tuple, F: FnMut<I>> FnMut<I> for FnPureWrapper<F> {
         self.0.call_mut(args)
     }
 }
-
+#[cfg(creusot)]
 impl<I: ::std::marker::Tuple, F: Fn<I>> Fn<I> for FnPureWrapper<F> {
     #[requires((*self).precondition(args))]
     #[ensures((*self).postcondition(args, result))]
@@ -77,5 +84,7 @@ impl<F> View for FnPureWrapper<F> {
         self.0
     }
 }
+#[cfg(creusot)]
 impl<F> private::_Sealed for FnPureWrapper<F> {}
+#[cfg(creusot)]
 impl<F> FnPure for FnPureWrapper<F> {}
