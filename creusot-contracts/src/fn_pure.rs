@@ -7,13 +7,14 @@ mod private {
 
 /// Marker trait for functions that are [`pure`].
 ///
-/// To create such a function, the easiest way is to use [`clos_pure`].
+/// Right now, this is automatically implemented for `#[pure]` closures, but not
+/// functions or methods.
 #[cfg_attr(creusot, rustc_diagnostic_item = "fn_pure_trait")]
 pub trait FnPure: private::_Sealed {}
 
 /// Structure that implements [`FnPure`].
 ///
-/// This cannot be built by itself: instead, you should use the [`clos_pure`] macro.
+/// This cannot be built by itself: instead, it automatically wraps `#[pure]` closures.
 #[doc(hidden)]
 #[cfg_attr(creusot, rustc_diagnostic_item = "fn_pure_ty")]
 pub struct FnPureWrapper<F>(F);
@@ -59,8 +60,8 @@ impl<I: ::std::marker::Tuple, F: Fn<I>> Fn<I> for FnPureWrapper<F> {
 }
 
 impl<F> FnPureWrapper<F> {
-    /// DO NOT CALL THIS FUNCTION! This is an implementation detail, required to make
-    /// `clos_pure` work.
+    /// DO NOT CALL THIS FUNCTION! This is an implementation detail, used by the `#[pure]`
+    /// attribute.
     #[doc(hidden)]
     #[pure]
     #[ensures(result@ == f)]
@@ -78,28 +79,3 @@ impl<F> View for FnPureWrapper<F> {
 }
 impl<F> private::_Sealed for FnPureWrapper<F> {}
 impl<F> FnPure for FnPureWrapper<F> {}
-
-/// Create a closure marked with [`pure`], that will implement [`FnPure`].
-///
-/// # Example
-///
-/// ```rust
-/// # use creusot_contracts::*;
-///
-/// #[pure]
-/// #[requires(f.precondition((x,)))]
-/// #[ensures(f.postcondition_once((x,), result))]
-/// fn call_pure(f: Fn() -> i32 + FnPure, x: i32) -> i32 { f(x) }
-/// let f = clos_pure!(|x: i32| x + 1);
-/// let y = call_pure(f);
-/// assert!(y == 3);
-/// ```
-#[macro_export]
-macro_rules! clos_pure {
-    ($c:expr) => {
-        $crate::fn_pure::FnPureWrapper::__new(
-            #[pure]
-            $c,
-        )
-    };
-}

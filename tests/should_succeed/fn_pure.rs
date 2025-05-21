@@ -2,9 +2,8 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 pub fn foo() {
-    let f = clos_pure! {
-        |x: i32| x + 1
-    };
+    let f = #[pure]
+    |x: i32| x + 1;
     let result = takes_pure_fn(f);
     assert!(result == 2);
     let result = takes_pure_fnmut(f);

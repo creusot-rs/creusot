@@ -406,25 +406,38 @@ pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
 
 pub fn pure(_: TS1, tokens: TS1) -> TS1 {
     let documentation = document_spec("pure", doc::LogicBody::None);
-    if let Ok(item) = syn::parse::<ImplItemFn>(tokens.clone()) {
-        if let Some(def) = item.defaultness {
-            return syn::Error::new(
-                def.span(),
-                "`pure` functions cannot use the `default` modifier",
-            )
-            .into_compile_error()
-            .into();
+    let item = tokens.clone();
+    let item = parse_macro_input!(item as ContractSubject);
+    let is_closure = match item {
+        ContractSubject::FnOrMethod(fn_or_method) => {
+            if let Some(def) = fn_or_method.defaultness {
+                return syn::Error::new(
+                    def.span(),
+                    "`pure` functions cannot use the `default` modifier",
+                )
+                .into_compile_error()
+                .into();
+            } else {
+                false
+            }
         }
+        ContractSubject::Closure(_) => true,
     };
     let Attributes { attrs, rest } = syn::parse(tokens).unwrap();
-    quote! {
+    let mut result = quote! {
         #[creusot::clause::no_panic]
         #[creusot::clause::terminates]
         #(#attrs)*
         #documentation
         #rest
+    };
+    if is_closure {
+        // Implement `FnPure` on the closure
+        result = quote! {
+            ::creusot_contracts::fn_pure::FnPureWrapper::__new(#result)
+        }
     }
-    .into()
+    result.into()
 }
 
 pub fn ghost(body: TS1) -> TS1 {
