@@ -1,8 +1,5 @@
 use crate::{
-    logic::ra::{
-        RA,
-        excl::{Excl, Excl::*},
-    },
+    logic::ra::{RA, excl::Excl},
     *,
 };
 
@@ -50,7 +47,7 @@ where
     #[logic]
     #[open]
     pub fn mkauth(a: R::Auth) -> Self {
-        Self { auth: Some(Excl(a)), frac: None }
+        Self { auth: Some(Excl::Excl(a)), frac: None }
     }
 
     /// Create a new `View` containing a fractional version of `x`.
@@ -77,12 +74,12 @@ where
     fn valid(self) -> bool {
         pearlite! {
             match self {
-                Self { auth: Some(Excl(a)), frac: Some(f) } => f.valid() && R::rel(a, f),
+                Self { auth: Some(Excl::Excl(a)), frac: Some(f) } => f.valid() && R::rel(a, f),
                 // TODO: why is this condition necessary?
                 Self { auth: None, frac: Some(f) } => f.valid() && exists<a: R::Auth> R::rel(a, f),
-                Self { auth: Some(Excl(_)), frac: None } => true,
+                Self { auth: Some(Excl::Excl(_)), frac: None } => true,
                 Self { auth: None, frac: None } => true,
-                Self { auth: Some(ExclBot), frac: _ } => false,
+                Self { auth: Some(Excl::Bot), frac: _ } => false,
             }
         }
     }
