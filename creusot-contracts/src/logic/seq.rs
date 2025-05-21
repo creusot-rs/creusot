@@ -579,20 +579,6 @@ impl<T> Seq<T> {
         panic!()
     }
 
-    /// Get mutable references to multiple elements in a sequence simultaneously.
-    #[trusted]
-    #[pure]
-    #[requires(forall<i: Int> 0 <= i && i < indices.len() ==> 0 <= indices[i] && indices[i] < self.len())]
-    #[requires(forall<i: Int, j: Int> 0 <= i && i < indices.len() && 0 <= j && j < indices.len() && i != j ==> indices[i] != indices[j])]
-    #[ensures(result.len() == indices.len())]
-    #[ensures(self.len() == (^self).len())]
-    #[ensures(forall<i: Int> 0 <= i && i < indices.len() ==> (*self)[indices[i]] == *result[i] && (^self)[indices[i]] == ^result[i])]
-    #[ensures(forall<i: Int> !indices.contains(i) ==> (*self).get(i) == (^self).get(i))]
-    pub fn get_mut_slice_ghost(&mut self, indices: Seq<Int>) -> Seq<&mut T> {
-        let _ = indices;
-        todo!()
-    }
-
     /// Removes the last element from a vector and returns it, or `None` if it is empty.
     ///
     /// # Example
@@ -710,6 +696,7 @@ impl<T> Resolve for Seq<T> {
         pearlite! { forall<i : Int> resolve(&self.get(i)) }
     }
 
+    #[trusted]
     #[logic(prophetic)]
     #[open(self)]
     #[requires(structural_resolve(self))]

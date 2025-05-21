@@ -104,19 +104,6 @@ pub trait SizedPointerExt<T> {
     unsafe fn add_own(self, offset: usize, own_offset: Ghost<&PtrOwn<T>>) -> Self;
 }
 
-extern_spec! {
-    mod creusot_contracts {
-        mod std {
-            mod ptr {
-                trait SizedPointerExt<T> {
-                    #[requires(self.offset_logic(offset@) == own_offset.ptr())]
-                    unsafe fn add_own(self, offset: usize, own_offset: Ghost<&PtrOwn<T>>) -> Self;
-                }
-            }
-        }
-    }
-}
-
 impl<T> SizedPointerExt<T> for *const T {
     #[trusted]
     #[logic]
