@@ -3,7 +3,7 @@ use crate::{
     contracts_items::{
         creusot_clause_attrs, get_fn_mut_impl_hist_inv, is_fn_impl_postcond,
         is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond, is_fn_once_impl_postcond,
-        is_fn_once_impl_precond, is_open_inv_result,
+        is_fn_once_impl_precond, is_no_panic, is_open_inv_result, is_terminates,
     },
     ctx::*,
     naming::{name, variable_name},
@@ -207,8 +207,8 @@ pub(crate) fn contract_clauses_of(
             return Err(MultipleVariant { id: def_id });
         }
     }
-    let terminates = creusot_clause_attrs(ctx.tcx, def_id, "terminates").next().is_some();
-    let no_panic = creusot_clause_attrs(ctx.tcx, def_id, "no_panic").next().is_some();
+    let terminates = is_terminates(ctx.tcx, def_id);
+    let no_panic = is_no_panic(ctx.tcx, def_id);
 
     Ok(ContractClauses { requires, ensures, variant, terminates, no_panic })
 }
