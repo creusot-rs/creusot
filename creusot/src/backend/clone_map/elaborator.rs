@@ -78,14 +78,17 @@ impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, 'tcx> {
         self.namer.normalize(ctx, ty)
     }
 
-    fn dependency(&self, dep: Dependency<'tcx>) -> &Kind {
-        let dep = dep.erase_regions(self.tcx());
+    fn raw_dependency(&self, dep: Dependency<'tcx>) -> &Kind {
         self.expansion_queue.borrow_mut().push_back((self.source, Strength::Strong, dep));
-        self.namer.dependency(dep)
+        self.namer.raw_dependency(dep)
     }
 
     fn tcx(&self) -> TyCtxt<'tcx> {
         self.namer.tcx()
+    }
+
+    fn typing_env(&self) -> TypingEnv<'tcx> {
+        self.namer.typing_env()
     }
 
     fn span(&self, span: Span) -> Option<Attribute> {
@@ -408,15 +411,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         ctx: &Why3Generator<'tcx>,
     ) -> (DiGraphMap<Dependency<'tcx>, Strength>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
         let mut visited = HashSet::new();
-        while let Some((s, strength, mut t)) = self.expansion_queue.pop_front() {
-            if let Dependency::Item(item, substs) = t
-                && ctx.trait_of_item(item).is_some()
-                && let TraitResolved::Instance(did, subst) =
-                    TraitResolved::resolve_item(ctx.tcx, self.typing_env, item, substs)
-            {
-                t = ctx.normalize_erasing_regions(self.typing_env, Dependency::Item(did, subst))
-            }
-
+        while let Some((s, strength, t)) = self.expansion_queue.pop_front() {
             if let Some(old) = self.graph.add_edge(s, t, strength)
                 && old > strength
             {
@@ -512,8 +507,9 @@ fn expand_laws<'tcx>(
     }
 
     for law in ctx.laws(item_container) {
+        let law_dep = elab.namer(dep).resolve_dependency(Dependency::Item(*law, item_subst));
         // We add a weak dep from `dep` to make sure it appears close to the triggering item
-        elab.expansion_queue.push_back((dep, Strength::Weak, Dependency::Item(*law, item_subst)));
+        elab.expansion_queue.push_back((dep, Strength::Weak, law_dep));
     }
 }
 
