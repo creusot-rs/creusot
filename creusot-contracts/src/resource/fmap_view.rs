@@ -39,15 +39,15 @@ impl<K, V> ViewRel for MapRelation<K, V> {
     fn rel_mono(a: Self::Auth, f1: Self::Frac, f2: Self::Frac) {}
 }
 
-/// Wrapper around a [`Resource`], that allows to agree on the values of the map.
+/// Wrapper around a [`Resource`], that allows to agree on the values of a [`FMap`].
 ///
-/// One of the GMap will be the _authoritative_ version: it is unique and nonduplicable.
+/// One of the `FMapView` will be the _authoritative_ version: it is unique and nonduplicable.
 ///
 /// Then, one may obtain _fragments_ of this authoritative version, asserting that some
 /// `(key, value)` pairs are indeed in the map.
-pub struct GMap<K, V>(Resource<View<MapRelation<K, V>>>);
+pub struct FMapView<K, V>(Resource<View<MapRelation<K, V>>>);
 
-impl<K, V> GMap<K, V> {
+impl<K, V> FMapView<K, V> {
     /// Id of the underlying [`Resource`].
     #[logic]
     #[open(self)]
@@ -106,7 +106,7 @@ impl<K, V> GMap<K, V> {
     }
 }
 
-impl<K, V> GMap<K, V> {
+impl<K, V> FMapView<K, V> {
     /// Create a new, empty authoritative map.
     #[ensures(result.is_auth())]
     #[ensures(!result.is_frac())]
@@ -159,7 +159,6 @@ impl<K, V> GMap<K, V> {
             None => FMap::empty(),
             Some(map) => map,
         });
-        proof_assert!(old_frac.incl(*new_frac));
         proof_assert!(forall<k: _> match frac.frac().get(k) {
             Some(v) => new_frac.get(k) == Some(Ag::Ag(v)),
             None => true,

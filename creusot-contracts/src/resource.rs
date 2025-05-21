@@ -1,4 +1,4 @@
-pub mod gmap;
+pub mod fmap_view;
 
 #[cfg(creusot)]
 use crate::logic::{Id, ra};
