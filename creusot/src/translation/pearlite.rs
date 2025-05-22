@@ -35,8 +35,7 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind,
-        TypeFoldable, TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind, int_ty, uint_ty,
+        self, int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -167,7 +166,6 @@ pub enum TermKind<'tcx> {
     },
     Item(DefId, GenericArgsRef<'tcx>),
     NamedConst(DefId, GenericArgsRef<'tcx>),
-    ConstParam(DefId),
     Assert {
         cond: Box<Term<'tcx>>,
     },
@@ -304,6 +302,10 @@ impl<'tcx> TermKind<'tcx> {
                 Self::NamedConst(def_id, subst)
             }
         }
+    }
+
+    pub fn const_param(def_id: DefId) -> Self {
+        TermKind::NamedConst(def_id, ty::List::empty())
     }
 }
 
@@ -975,7 +977,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 ))
             }
             ExprKind::ConstParam { def_id, param: _ } => {
-                Ok(Term { ty, span, kind: TermKind::ConstParam(def_id) })
+                Ok(Term { ty, span, kind: TermKind::const_param(def_id) })
             }
             ref ek => todo!("lower_expr: {:?}", ek),
         };
@@ -1399,7 +1401,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::SeqLiteral(fields) => fields.iter().for_each(|a| visitor.visit_term(a)),
         TermKind::Cast { arg } => visitor.visit_term(arg),
         TermKind::Coerce { arg } => visitor.visit_term(arg),
-        TermKind::Item(_, _) | TermKind::NamedConst(_, _) | TermKind::ConstParam(_) => {}
+        TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_term(lhs);
             visitor.visit_term(rhs);
@@ -1457,7 +1459,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
         TermKind::Cast { arg } => visitor.visit_mut_term(&mut *arg),
         TermKind::Coerce { arg } => visitor.visit_mut_term(arg),
-        TermKind::Item(_, _) | TermKind::NamedConst(_, _) | TermKind::ConstParam(_) => {}
+        TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_mut_term(&mut *lhs);
             visitor.visit_mut_term(&mut *rhs);
@@ -1731,7 +1733,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Cast { arg } => arg.subst_with(bound, subst),
             TermKind::Coerce { arg } => arg.subst_with(bound, subst),
-            TermKind::Item(_, _) | TermKind::NamedConst(_, _) | TermKind::ConstParam(_) => {}
+            TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.subst_with(bound, subst);
                 rhs.subst_with(bound, subst)
@@ -1823,7 +1825,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Cast { arg } => arg.free_vars_inner(bound, free),
             TermKind::Coerce { arg } => arg.free_vars_inner(bound, free),
-            TermKind::Item(_, _) | TermKind::NamedConst(_, _) | TermKind::ConstParam(_) => {}
+            TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.free_vars_inner(bound, free);
                 rhs.free_vars_inner(bound, free)

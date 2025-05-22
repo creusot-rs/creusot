@@ -6,11 +6,21 @@ use std::{
 
 use crate::{
     backend::{
-        clone_map::{CloneNames, Dependency, Kind, Namer}, closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve}, is_trusted_item, logic::{lower_logical_defn, spec_axiom}, program, signature::{lower_logic_sig, lower_program_sig}, structural_resolve::structural_resolve, term::lower_pure, ty::{
+        TranslationCtx, Why3Generator,
+        clone_map::{CloneNames, Dependency, Kind, Namer},
+        closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve},
+        is_trusted_item,
+        logic::{lower_logical_defn, spec_axiom},
+        program,
+        signature::{lower_logic_sig, lower_program_sig},
+        structural_resolve::structural_resolve,
+        term::lower_pure,
+        ty::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
-        }, ty_inv::InvariantElaborator, TranslationCtx, Why3Generator
+        },
+        ty_inv::InvariantElaborator,
     },
-    constant::const_eval,
+    constant::logic_const,
     contracts_items::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
         get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
@@ -23,7 +33,7 @@ use crate::{
     constant::{try_const_synonym, try_eval_const},
     translation::{
         constant::from_ty_const,
-        pearlite::{normalize, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger},
+        pearlite::{Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
         specification::Condition,
         traits::TraitResolved,
     },
@@ -38,7 +48,9 @@ use rustc_middle::ty::{
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
 use why3::{
-    coma::{Arg, Defn, Expr, Param, Prototype}, declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use}, Exp, Ident
+    Exp, Ident,
+    coma::{Arg, Defn, Expr, Param, Prototype},
+    declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
 };
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
@@ -170,8 +182,9 @@ impl DepElab for ProgramElab {
         }
 
         if let Dependency::Item(def_id, subst) = dep
-            && matches!(ctx.def_kind(def_id), AssocConst) {
-            return expand_assoc_const(ctx, &names, name, def_id, subst)
+            && matches!(ctx.def_kind(def_id), AssocConst)
+        {
+            return expand_assoc_const(ctx, &names, name, def_id, subst);
         }
 
         // Inline the body of closures and promoted
@@ -200,13 +213,13 @@ impl DepElab for ProgramElab {
 /// This is very simplistic, but it is enough for the most common use cases where
 /// an associated constant is equal to either a literal or another constant.
 fn expand_assoc_const<'tcx, N: Namer<'tcx>>(
-        ctx: &Why3Generator<'tcx>,
-        names: &N,
-        name: Ident,
-        def_id: DefId,
-        subst: GenericArgsRef<'tcx>,
-    ) -> Vec<Decl> {
-    let logic_name = names.assoc_constant(def_id, subst);
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    name: Ident,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> Vec<Decl> {
+    let logic_name = names.constant(def_id, subst);
     let ret = Ident::fresh_local("ret");
     let x = Ident::fresh_local("x");
     let span = ctx.def_span(def_id);
@@ -214,7 +227,8 @@ fn expand_assoc_const<'tcx, N: Namer<'tcx>>(
     let ret_param = Param::Cont(ret, [].into(), [Param::Term(x, ty)].into());
     let coma = Defn {
         prototype: Prototype { name, attrs: [].into(), params: [ret_param].into() },
-        body: Expr::app(Expr::var(ret), [Arg::Term(Exp::Var(logic_name))]) };
+        body: Expr::app(Expr::var(ret), [Arg::Term(Exp::Var(logic_name))]),
+    };
     vec![Decl::Coma(coma)]
 }
 
@@ -1081,15 +1095,7 @@ fn term<'tcx>(
                 Some(term)
             }
         }
-        Dependency::LogicConst(def_id, subst) => {
-            if ctx.def_kind(def_id) == DefKind::ConstParam {
-                return None;
-            }
-            let ct = UnevaluatedConst::new(def_id, subst);
-            let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
-            let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
-            Some(const_eval(ctx, typing_env, body_id, ty, def_id, subst))
-        }
+        Dependency::LogicConst(def_id, subst) => logic_const(ctx, typing_env, body_id, def_id, subst),
         _ => unreachable!(),
     }
 }

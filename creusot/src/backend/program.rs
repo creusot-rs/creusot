@@ -245,7 +245,13 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     Defn { prototype: sig, body }
 }
 
-fn body_exp<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N, inner_return: Ident, body_id: BodyId, body: &mut Body<'tcx>) -> (Box<Expr>, Box<[Defn]>) {
+fn body_exp<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    inner_return: Ident,
+    body_id: BodyId,
+    body: &mut Body<'tcx>,
+) -> (Box<Expr>, Box<[Defn]>) {
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
     infer_proph_invariants(ctx, body);
 
