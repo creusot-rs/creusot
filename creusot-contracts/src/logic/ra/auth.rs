@@ -6,8 +6,6 @@ use crate::{
     *,
 };
 
-// TODO: open vs open(self) for RA impls? abstraction patterns?
-
 pub struct AuthViewRel<T>(T);
 
 impl<T> ViewRel for AuthViewRel<T>

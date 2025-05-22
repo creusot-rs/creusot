@@ -95,7 +95,6 @@ pub trait RA: Sized {
     #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
     fn associative(a: Self, b: Self, c: Self);
 
-    // TODO: should this be a #[law]?
     /// Validity cannot be lost by splitting a resource.
     #[logic]
     #[ensures(self.op(b).valid() ==> self.valid())]
@@ -114,14 +113,12 @@ pub trait RA: Sized {
 }
 
 /// [`RA::incl`] is transitive.
+// TODO: with sealed trait functions, it would be possible to pull this inside the trait as a law.
 #[logic]
 #[open(self)]
 #[requires(a.incl(b) && b.incl(c))]
 #[ensures(a.incl(c))]
 pub fn incl_transitive<T: RA>(a: T, b: T, c: T) {}
-
-// TODO: make these definitions part of the trait ?
-// could they have default implementations? is it useful to allow for custom definitions?
 
 /// Ensures that we can go from `x` to `y` without making composition with the frame invalid.
 ///
@@ -143,7 +140,3 @@ pub fn update_nondet<T: RA>(x: T, s: Set<T>) -> bool {
             exists<y: T> s.contains(y) && y.op(z).valid()
     }
 }
-
-// NOTE: always require that we have Sized data in logical APIs?
-// thus remove SizedW from library code; require the end user
-// to manually box if they need to.

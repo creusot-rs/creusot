@@ -32,8 +32,6 @@ use ::std::marker::PhantomData;
 /// // And now we remember: the only way this works is if `part` contained `1`!
 /// proof_assert!(part@ == Ag::Ag(1));
 /// ```
-// TODO: explicit fields ? but, could the user mutate them?
-// TODO: other definition?
 pub struct Resource<R>(PhantomData<R>);
 
 impl<R: RA> View for Resource<R> {

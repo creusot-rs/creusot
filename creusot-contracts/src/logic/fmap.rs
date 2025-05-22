@@ -80,40 +80,6 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
-    #[trusted]
-    #[logic]
-    #[ensures(
-        forall<k: K>
-            match (self.get(k), m.get(k)) {
-                (None, y) => result.get(k) == y,
-                (x, None) => result.get(k) == x,
-                (Some(x), Some(y)) => result.get(k) == Some(f[(x, y)]),
-            }
-    )]
-    pub fn merge(self, m: FMap<K, V>, f: Mapping<(V, V), V>) -> FMap<K, V>
-    where
-        V: Sized, // XXX
-    {
-        dead
-    }
-
-    #[trusted]
-    #[logic]
-    #[ensures(
-        forall<k: K>
-          result.get(k) ==
-          match self.get(k) {
-              None => None,
-              Some(x) => f[(k, x)],
-          }
-    )]
-    pub fn fmapi<U>(self, f: Mapping<(K, V), Option<U>>) -> FMap<K, U>
-    where
-        V: Sized,
-    {
-        dead
-    }
-
     /// Get the value associated with key `k` in the map.
     ///
     /// If no value is present, returns [`None`].
@@ -252,14 +218,58 @@ impl<K, V: ?Sized> FMap<K, V> {
         self.view() == other.view()
     }
 
+    /// Merge the two maps together
+    ///
+    /// If both map contain the same key, the entry for the result is determined by `f`.
+    #[trusted]
+    #[logic]
+    #[ensures(
+        forall<k: K>
+            match (self.get(k), m.get(k)) {
+                (None, y) => result.get(k) == y,
+                (x, None) => result.get(k) == x,
+                (Some(x), Some(y)) => result.get(k) == Some(f[(x, y)]),
+            }
+    )]
+    pub fn merge(self, m: FMap<K, V>, f: Mapping<(V, V), V>) -> FMap<K, V>
+    where
+        V: Sized, // XXX
+    {
+        dead
+    }
+
     /// Map every value in `self` according to `f`. Keys are unchanged.
     #[logic]
     #[trusted]
-    #[ensures(forall<k: K> result.get(k) == match self.get_unsized(k) {
+    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
         None => None,
-        Some(v) => Some(f[*v]),
+        Some(v) => Some(f[(k, v)]),
     })]
-    pub fn map<V2>(self, f: Mapping<V, V2>) -> FMap<K, V2> {
+    pub fn map<V2>(self, f: Mapping<(K, V), V2>) -> FMap<K, V2>
+    where
+        V: Sized,
+    {
+        // TODO: this needs the VCGen to support closures
+        // self.filter_map(|(k, v)| Some(f[(k, v)]))
+        dead
+    }
+
+    /// Filter key-values in `self` according to `p`.
+    ///
+    /// A key-value pair will be in the result map if and only if it is in `self` and
+    /// `p` returns `true` on this pair.
+    #[logic]
+    #[trusted]
+    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
+        None => None,
+        Some(v) => if p[(k, v)] { Some(v) } else { None },
+    })]
+    pub fn filter(self, p: Mapping<(K, V), bool>) -> Self
+    where
+        V: Sized,
+    {
+        // TODO: this needs the VCGen to support closures
+        // self.filter_map(|(k, v)| if p[(k, v)] { Some(v) } else { None })
         dead
     }
 
@@ -267,11 +277,14 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// If `f` returns `false`, remove the key-value from the map.
     #[logic]
     #[trusted]
-    #[ensures(forall<k: K> result.get(k) == match self.get_unsized(k) {
+    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
         None => None,
-        Some(v) => f[*v],
+        Some(v) => f[(k, v)],
     })]
-    pub fn map_filter<V2>(self, f: Mapping<V, Option<V2>>) -> FMap<K, V2> {
+    pub fn filter_map<V2>(self, f: Mapping<(K, V), Option<V2>>) -> FMap<K, V2>
+    where
+        V: Sized,
+    {
         dead
     }
 }
