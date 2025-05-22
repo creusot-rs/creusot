@@ -191,8 +191,6 @@ module M_const__add_one [#"const.rs" 32 0 32 47]
     [ return''0 (result:UInt64.t)-> return' {result} ]
 
 
-  constant v_MAX : UInt64.t = (18446744073709551615 : UInt64.t)
-
   type t_Ordering  =
     | C_Less
     | C_Equal
@@ -201,44 +199,46 @@ module M_const__add_one [#"const.rs" 32 0 32 47]
   function cmp_log (self : UInt64.t) (o : UInt64.t) : t_Ordering =
     [%#sord'12] if UInt64.lt self o then C_Less else if self = o then C_Equal else C_Greater
 
-  function cmp_le_log (x : UInt64.t) (y : UInt64.t) : ()
+  function eq_cmp (x : UInt64.t) (y : UInt64.t) : ()
 
-  axiom cmp_le_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord] UInt64.le x y = (cmp_log x y <> C_Greater)
-
-  function cmp_lt_log (x : UInt64.t) (y : UInt64.t) : ()
-
-  axiom cmp_lt_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'0] UInt64.lt x y = (cmp_log x y = C_Less)
-
-  function cmp_ge_log (x : UInt64.t) (y : UInt64.t) : ()
-
-  axiom cmp_ge_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'1] UInt64.ge x y = (cmp_log x y <> C_Less)
-
-  function cmp_gt_log (x : UInt64.t) (y : UInt64.t) : ()
-
-  axiom cmp_gt_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'2] UInt64.gt x y = (cmp_log x y = C_Greater)
-
-  function refl (x : UInt64.t) : ()
-
-  axiom refl_spec : forall x : UInt64.t . [%#sord'3] cmp_log x x = C_Equal
-
-  function trans (x : UInt64.t) (y : UInt64.t) (z : UInt64.t) (o : t_Ordering) : ()
-
-  axiom trans_spec : forall x : UInt64.t, y : UInt64.t, z : UInt64.t, o : t_Ordering . ([%#sord'4] cmp_log x y = o)
-   -> ([%#sord'5] cmp_log y z = o)  -> ([%#sord'6] cmp_log x z = o)
-
-  function antisym1 (x : UInt64.t) (y : UInt64.t) : ()
-
-  axiom antisym1_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord'7] cmp_log x y = C_Less)
-   -> ([%#sord'8] cmp_log y x = C_Greater)
+  axiom eq_cmp_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'11] (x = y) = (cmp_log x y = C_Equal)
 
   function antisym2 (x : UInt64.t) (y : UInt64.t) : ()
 
   axiom antisym2_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord'9] cmp_log x y = C_Greater)
    -> ([%#sord'10] cmp_log y x = C_Less)
 
-  function eq_cmp (x : UInt64.t) (y : UInt64.t) : ()
+  function antisym1 (x : UInt64.t) (y : UInt64.t) : ()
 
-  axiom eq_cmp_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'11] (x = y) = (cmp_log x y = C_Equal)
+  axiom antisym1_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord'7] cmp_log x y = C_Less)
+   -> ([%#sord'8] cmp_log y x = C_Greater)
+
+  function trans (x : UInt64.t) (y : UInt64.t) (z : UInt64.t) (o : t_Ordering) : ()
+
+  axiom trans_spec : forall x : UInt64.t, y : UInt64.t, z : UInt64.t, o : t_Ordering . ([%#sord'4] cmp_log x y = o)
+   -> ([%#sord'5] cmp_log y z = o)  -> ([%#sord'6] cmp_log x z = o)
+
+  function refl (x : UInt64.t) : ()
+
+  axiom refl_spec : forall x : UInt64.t . [%#sord'3] cmp_log x x = C_Equal
+
+  function cmp_gt_log (x : UInt64.t) (y : UInt64.t) : ()
+
+  axiom cmp_gt_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'2] UInt64.gt x y = (cmp_log x y = C_Greater)
+
+  function cmp_ge_log (x : UInt64.t) (y : UInt64.t) : ()
+
+  axiom cmp_ge_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'1] UInt64.ge x y = (cmp_log x y <> C_Less)
+
+  function cmp_lt_log (x : UInt64.t) (y : UInt64.t) : ()
+
+  axiom cmp_lt_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord'0] UInt64.lt x y = (cmp_log x y = C_Less)
+
+  function cmp_le_log (x : UInt64.t) (y : UInt64.t) : ()
+
+  axiom cmp_le_log_spec : forall x : UInt64.t, y : UInt64.t . [%#sord] UInt64.le x y = (cmp_log x y <> C_Greater)
+
+  constant v_MAX : UInt64.t = (18446744073709551615 : UInt64.t)
 
   meta "compute_max_steps" 1000000
 
