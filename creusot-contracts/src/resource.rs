@@ -91,6 +91,16 @@ impl<R: RA> Resource<R> {
         Ghost::conjure()
     }
 
+    /// Duplicate a resource if it is idempotent.
+    #[trusted]
+    #[requires(self@.idemp())]
+    #[ensures(result == *self)]
+    #[pure]
+    #[allow(clippy::should_implement_trait)]
+    pub fn clone(&self) -> Self {
+        panic!("ghost code only")
+    }
+
     // NOTE: couldn't we somehow make the logical model of Snapshot<T> to be T?
     // (so we could get rid of these extra * in specs)
 
