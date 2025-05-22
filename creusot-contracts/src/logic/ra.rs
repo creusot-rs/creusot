@@ -144,6 +144,12 @@ pub trait RA: Sized {
 })]
 pub fn incl_transitive<T: RA>(a: T, b: T, c: T) {}
 
+#[logic]
+#[open]
+pub fn incl_eq<T: RA>(this: T, other: T) -> Option<T> {
+    if this == other { Some(this) } else { this.incl(other) }
+}
+
 /// Ensures that we can go from `x` to `y` without making composition with the frame invalid.
 ///
 /// This is used in [`Resource::update`](crate::resource::Resource::update).
