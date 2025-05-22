@@ -211,7 +211,7 @@ pub(crate) fn try_const_synonym<'tcx>(
         }
         ConstKind::Unevaluated(u) => {
             let (u, ty) = EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args);
-            Some(Term { kind: TermKind::Const(u.def, u.args), ty, span: DUMMY_SP })
+            Some(Term { kind: TermKind::Item(u.def, u.args), ty, span: DUMMY_SP })
         }
         _ => None,
     }

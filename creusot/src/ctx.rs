@@ -551,28 +551,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
-        use DefKind::*;
-        match self.tcx.def_kind(def_id) {
-            Trait => ItemType::Trait,
-            Impl { .. } => ItemType::Impl,
-            Fn | AssocFn => {
-                if is_predicate(self.tcx, def_id) {
-                    ItemType::Predicate { prophetic: is_prophetic(self.tcx, def_id) }
-                } else if is_logic(self.tcx, def_id) {
-                    ItemType::Logic { prophetic: is_prophetic(self.tcx, def_id) }
-                } else {
-                    ItemType::Program
-                }
-            }
-            AssocConst | Const | ConstParam | InlineConst => ItemType::Constant,
-            Closure => ItemType::Closure,
-            Struct | Enum | Union => ItemType::Type,
-            AssocTy => ItemType::AssocTy,
-            Field => ItemType::Field,
-            AnonConst => panic!(),
-            Variant => ItemType::Variant,
-            dk => ItemType::Unsupported(dk),
-        }
+        item_type(self.tcx, def_id)
     }
 
     pub(crate) fn rename(&self, ident: HirId) -> Ident {
@@ -589,6 +568,31 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn fresh(&self, name: impl AsRef<str>) -> Ident {
         Ident::fresh(self.crate_name(), name)
+    }
+}
+
+pub fn item_type(tcx: TyCtxt, def_id: DefId) -> ItemType {
+    use DefKind::*;
+    match tcx.def_kind(def_id) {
+        Trait => ItemType::Trait,
+        Impl { .. } => ItemType::Impl,
+        Fn | AssocFn => {
+            if is_predicate(tcx, def_id) {
+                ItemType::Predicate { prophetic: is_prophetic(tcx, def_id) }
+            } else if is_logic(tcx, def_id) {
+                ItemType::Logic { prophetic: is_prophetic(tcx, def_id) }
+            } else {
+                ItemType::Program
+            }
+        }
+        AssocConst | Const | ConstParam | InlineConst => ItemType::Constant,
+        Closure => ItemType::Closure,
+        Struct | Enum | Union => ItemType::Type,
+        AssocTy => ItemType::AssocTy,
+        Field => ItemType::Field,
+        AnonConst => unreachable!(),
+        Variant => ItemType::Variant,
+        dk => ItemType::Unsupported(dk),
     }
 }
 

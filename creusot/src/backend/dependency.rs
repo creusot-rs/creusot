@@ -26,7 +26,9 @@ use crate::{
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, GenericArgsRef<'tcx>),
-    LogicConst(DefId, GenericArgsRef<'tcx>),
+    // TODO: move all logic `Item` into `Logic`. Currently, `Logic` is only used for constants,
+    // because there are both program- and logic translations of constants.
+    Logic(DefId, GenericArgsRef<'tcx>),
     TyInvAxiom(Ty<'tcx>),
     ClosureAccessor(DefId, GenericArgsRef<'tcx>, u32),
     TupleField(&'tcx List<Ty<'tcx>>, FieldIdx),
@@ -38,7 +40,7 @@ pub(crate) enum Dependency<'tcx> {
 impl<'tcx> Dependency<'tcx> {
     pub(crate) fn did(self) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
-            Dependency::Item(def_id, subst) | Dependency::LogicConst(def_id, subst) => {
+            Dependency::Item(def_id, subst) | Dependency::Logic(def_id, subst) => {
                 Some((def_id, subst))
             }
             Dependency::Type(t) => match t.kind() {
@@ -110,7 +112,7 @@ impl<'tcx> Dependency<'tcx> {
                     }
                 },
             },
-            Dependency::LogicConst(did, _) => {
+            Dependency::Logic(did, _) => {
                 Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
             }
             Dependency::ClosureAccessor(_, _, ix) => Some(Symbol::intern(&format!("_{ix}"))),

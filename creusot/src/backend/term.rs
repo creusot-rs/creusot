@@ -128,23 +128,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Coerce { arg } => self.lower_term(arg),
             // FIXME: this is a weird dance.
             TermKind::Item(id, subst) => {
-                let method = (*id, *subst);
-                debug!("resolved_method={:?}", method);
-                let clone = self.names.item(*id, subst);
-                let item = match self.ctx.type_of(id).instantiate_identity().kind() {
-                    TyKind::FnDef(_, _) => Exp::unit(),
-                    _ => Exp::Var(clone),
-                };
-
-                if matches!(self.ctx.def_kind(*id), DefKind::AssocConst) {
-                    let ty = translate_ty(self.ctx, self.names, term.span, term.ty);
-                    item.ascribe(ty)
+                debug!("resolved_method={:?}", (*id, *subst));
+                let clone = if matches!(self.ctx.item_type(*id), ItemType::Constant) {
+                    self.names.constant(*id, subst)
                 } else {
-                    item
-                }
-            }
-            TermKind::Const(id, subst) => {
-                let clone = self.names.constant(*id, subst);
+                    self.names.item(*id, subst)
+                };
                 let item = match self.ctx.type_of(id).instantiate_identity().kind() {
                     TyKind::FnDef(_, _) => Exp::unit(),
                     _ => Exp::Var(clone),

@@ -240,7 +240,7 @@ impl DepElab for LogicElab {
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<Decl> {
-        assert_matches!(dep, Dependency::Item(_, _) | Dependency::LogicConst(_, _));
+        assert_matches!(dep, Dependency::Item(_, _) | Dependency::Logic(_, _));
 
         let (def_id, subst) = dep.did().unwrap();
 
@@ -496,7 +496,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                     ProgramElab::expand(self, ctx, dep)
                 }
             }
-            Dependency::LogicConst(_, _) => LogicElab::expand(self, ctx, dep),
+            Dependency::Logic(_, _) => LogicElab::expand(self, ctx, dep),
             Dependency::TyInvAxiom(ty) => expand_ty_inv_axiom(self, ctx, ty),
             Dependency::ClosureAccessor(_, _, _) | Dependency::TupleField(_, _) => vec![],
             Dependency::PreMod(b) => {
@@ -1095,7 +1095,7 @@ fn term<'tcx>(
                 Some(term)
             }
         }
-        Dependency::LogicConst(def_id, subst) => logic_const(ctx, typing_env, body_id, def_id, subst),
+        Dependency::Logic(def_id, subst) => logic_const(ctx, typing_env, body_id, def_id, subst),
         _ => unreachable!(),
     }
 }

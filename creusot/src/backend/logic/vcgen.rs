@@ -5,20 +5,13 @@ use std::{
 
 use crate::{
     backend::{
-        Why3Generator,
-        clone_map::Namer as _,
-        logic::Dependencies,
-        signature::lower_contract,
-        term::{binop_to_binop, lower_literal, lower_pure},
-        ty::{constructor, is_int, ity_to_prelude, translate_ty, ty_to_prelude, uty_to_prelude},
+        clone_map::Namer as _, logic::Dependencies, signature::lower_contract, term::{binop_to_binop, lower_literal, lower_pure}, ty::{constructor, is_int, ity_to_prelude, translate_ty, ty_to_prelude, uty_to_prelude}, Why3Generator
     },
     contracts_items::get_builtin,
-    ctx::PreMod,
+    ctx::{item_type, ItemType, PreMod},
     naming::name,
     translation::pearlite::{
-        BinOp, Literal, Pattern, PatternKind, QuantKind, Term, TermKind, TermVisitor, UnOp,
-        super_visit_term,
-    },
+        BinOp, Literal, Pattern, PatternKind, QuantKind, Term, TermKind, TermVisitor, UnOp, super_visit_term, },
     util::erased_identity_for_item,
 };
 use rustc_ast::Mutability;
@@ -290,17 +283,11 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // Items are just global names so
             // VC(i, Q) = Q(i)
             TermKind::Item(id, sub) => {
-                let item_name = self.names.item(*id, sub);
-
-                if get_builtin(self.ctx.tcx, *id).is_some() {
-                    // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
-                    k(Exp::Var(item_name).ascribe(self.ty(t.ty)))
+                let item_name = if matches!(item_type(self.ctx.tcx, *id), ItemType::Constant) {
+                    self.names.constant(*id, sub)
                 } else {
-                    k(Exp::Var(item_name))
-                }
-            }
-            TermKind::Const(id, sub) => {
-                let item_name = self.names.constant(*id, sub);
+                    self.names.item(*id, sub)
+                };
                 if get_builtin(self.ctx.tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
                     k(Exp::Var(item_name).ascribe(self.ty(t.ty)))

@@ -60,12 +60,12 @@ pub enum PreMod {
 
 pub(crate) trait Namer<'tcx> {
     fn item(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
-        let node = Dependency::Item(def_id, subst);
+        let node: Dependency<'_> = Dependency::Item(def_id, subst);
         self.dependency(node).name()
     }
 
     fn constant(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
-        let node = Dependency::LogicConst(def_id, subst);
+        let node = Dependency::Logic(def_id, subst);
         self.dependency(node).name()
     }
 
