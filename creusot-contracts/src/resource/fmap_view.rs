@@ -99,7 +99,7 @@ impl<K, V> FMapView<K, V> {
     #[logic]
     #[open(self)]
     pub fn frac(self) -> FMap<K, V> {
-        self.frac_agree().map_filter(|v| match v {
+        self.frac_agree().filter_map(|(_, v)| match v {
             Ag::Ag(v) => Some(v),
             Ag::Bot => None,
         })
