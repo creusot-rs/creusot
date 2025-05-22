@@ -1,3 +1,12 @@
+//! A resource wrapping a [`FMap`] in a [`View`].
+//!
+//! This module defines a specialization of [`Resource`] for the case where you want:
+//! - A single, authoritative version of a [`FMap`]
+//! - Multiple fragments of such a map, that each assert that some key-value is in the
+//!   map.
+//!
+//! These are the [`Authority`] and [`Fragment`] types respectively.
+
 #[cfg(creusot)]
 use crate::logic::{
     Id,
@@ -13,7 +22,8 @@ use crate::{
 };
 use ::std::marker::PhantomData;
 
-struct MapRelation<K, V>(PhantomData<(K, V)>);
+/// The relation used to relate an [`Authority`] with a [`Fragment`].
+pub struct MapRelation<K, V>(PhantomData<(K, V)>);
 
 impl<K, V> ViewRel for MapRelation<K, V> {
     type Auth = FMap<K, V>;
@@ -39,15 +49,55 @@ impl<K, V> ViewRel for MapRelation<K, V> {
     fn rel_mono(a: Self::Auth, f1: Self::Frag, f2: Self::Frag) {}
 }
 
+/// Inner value for [`Resource`] and [`Fragment`].
+type FMapView<K, V> = Resource<View<MapRelation<K, V>>>;
+
 /// Wrapper around a [`Resource`], that allows to agree on the values of a [`FMap`].
 ///
-/// One of the `FMapView` will be the _authoritative_ version: it is unique and nonduplicable.
-///
-/// Then, one may obtain _fragments_ of this authoritative version, asserting that some
-/// `(key, value)` pairs are indeed in the map.
-pub struct FMapView<K, V>(Resource<View<MapRelation<K, V>>>);
+/// This is the authoritative version
+pub struct Authority<K, V>(FMapView<K, V>);
 
-impl<K, V> FMapView<K, V> {
+/// Wrapper around a [`Resource`], that allows to agree on the values of a [`FMap`].
+///
+/// This is the fragment version
+pub struct Fragment<K, V>(FMapView<K, V>);
+
+impl<K, V> Invariant for Authority<K, V> {
+    #[predicate]
+    #[open(self)]
+    fn invariant(self) -> bool {
+        pearlite! { self.0@.auth != None && self.0@.frag == None }
+    }
+}
+impl<K, V> Invariant for Fragment<K, V> {
+    #[predicate]
+    #[open(self)]
+    fn invariant(self) -> bool {
+        pearlite! { self.0@.auth == None && match self.0@.frag {
+            Some(f) => f.len() == 1,
+            None => false,
+        } }
+    }
+}
+
+impl<K, V> crate::View for Authority<K, V> {
+    type ViewTy = FMap<K, V>;
+    #[logic]
+    #[open]
+    fn view(self) -> FMap<K, V> {
+        self.auth()
+    }
+}
+impl<K, V> crate::View for Fragment<K, V> {
+    type ViewTy = (K, V);
+    #[logic]
+    #[open]
+    fn view(self) -> (K, V) {
+        self.frag()
+    }
+}
+
+impl<K, V> Authority<K, V> {
     /// Id of the underlying [`Resource`].
     #[logic]
     #[open(self)]
@@ -55,27 +105,9 @@ impl<K, V> FMapView<K, V> {
         self.0.id()
     }
 
-    /// True if this is the authoritative version of the map.
+    /// Get the authoritative version of the map.
     ///
-    /// Use [`Self::auth`] to get the actual authoritative version.
-    #[predicate]
-    #[open(self)]
-    pub fn is_auth(self) -> bool {
-        self.0.val().auth != None
-    }
-
-    /// True if this is a fragment of the map.
-    ///
-    /// This is _not_ incompatible with [`Self::is_auth`].
-    ///
-    /// Use [`Self::frag`] to get the actual fragment version.
-    #[predicate]
-    #[open(self)]
-    pub fn is_frag(self) -> bool {
-        self.0.val().frag != None
-    }
-
-    /// Get the authoritative version of the map, or the empty map.
+    /// This can also be accessed using the [`view`](crate::View::view) operator `@`.
     #[logic]
     #[open(self)]
     pub fn auth(self) -> FMap<K, V> {
@@ -86,70 +118,36 @@ impl<K, V> FMapView<K, V> {
         }
     }
 
-    #[logic]
-    #[open(self)]
-    fn frag_agree(self) -> FMap<K, Ag<V>> {
-        match self.0.val().frag {
-            None => FMap::empty(),
-            Some(frag) => frag,
-        }
-    }
-
-    /// Get the fragment version of the map, or the empty map.
-    #[logic]
-    #[open(self)]
-    pub fn frag(self) -> FMap<K, V> {
-        self.frag_agree().filter_map(|(_, v)| match v {
-            Ag::Ag(v) => Some(v),
-            Ag::Bot => None,
-        })
-    }
-}
-
-impl<K, V> FMapView<K, V> {
     /// Create a new, empty authoritative map.
-    #[ensures(result.is_auth())]
-    #[ensures(!result.is_frag())]
-    #[ensures(result.auth() == FMap::empty())]
+    #[ensures(result@ == FMap::empty())]
     pub fn new() -> Ghost<Self> {
         let resource = Resource::alloc(snapshot!(View::mkauth(FMap::empty())));
         ghost!(Self(resource.into_inner()))
     }
 
-    /// If we have the authoritative version, insert a new element and return the
-    /// corresponding fragment.
-    #[requires(self.is_auth() && !self.auth().contains(*k))]
-    #[ensures((^self).is_auth() && (^self).auth() == self.auth().insert(*k, *v))]
-    #[ensures((^self).is_frag() == self.is_frag() && (^self).frag() == self.frag())]
+    /// Insert a new element in the authoritative map and return the corresponding
+    /// fragment.
+    #[requires(!self@.contains(*k))]
+    #[ensures((^self)@ == self@.insert(*k, *v))]
     #[ensures((^self).id() == self.id())]
-    #[ensures(!result.is_auth() && result.is_frag())]
-    #[ensures(result.frag() == FMap::empty().insert(*k, *v))]
+    #[ensures(result@ == (*k, *v))]
     #[ensures(result.id() == self.id())]
     #[pure]
     #[allow(unused_variables)]
-    pub fn insert(&mut self, k: Snapshot<K>, v: Snapshot<V>) -> Self {
+    pub fn insert(&mut self, k: Snapshot<K>, v: Snapshot<V>) -> Fragment<K, V> {
         let new_auth = snapshot!(View::mkauth(self.auth().insert(*k, *v)));
-        let new_total = snapshot!(match self.0@.frag {
-            None => *new_auth,
-            Some(frag) => new_auth.op(View::mkfrag(frag)),
-        });
-        self.0.update(new_total);
+        self.0.update(new_auth);
         let right = snapshot!(self.0@);
         let left = snapshot!(View::mkfrag(FMap::empty().insert(*k, Ag::Ag(*v))));
-        Self(self.0.split_off(right, left))
+        Fragment(self.0.split_off(right, left))
     }
 
-    /// Asserts that the fragment part of `frag` is contained in the authoritative
-    /// part of `self` (if both exist).
+    /// Asserts that the fragment represented by `frag` is contained in `self`.
     #[requires(self.id() == frag.id())]
-    #[requires(self.is_auth() && frag.is_frag())]
-    #[ensures(forall<k: _> match frag.frag().get(k) {
-            Some(v) => self.auth().get(k) == Some(v),
-            _ => true,
-        })]
+    #[ensures(self.auth().get(frag@.0) == Some(frag@.1))]
     #[pure]
     #[allow(unused_variables)]
-    pub fn contains(&self, frag: &Self) {
+    pub fn contains(&self, frag: &Fragment<K, V>) {
         let new_resource = self.0.join_shared(&frag.0);
         let new_frag = snapshot!(match new_resource@.frag {
             None => FMap::empty(),
@@ -159,9 +157,35 @@ impl<K, V> FMapView<K, V> {
             None => FMap::empty(),
             Some(map) => map,
         });
-        proof_assert!(forall<k: _> match frag.frag().get(k) {
-            Some(v) => new_frag.get(k) == Some(Ag::Ag(v)),
-            None => true,
-        });
+    }
+}
+
+impl<K, V> Fragment<K, V> {
+    /// Id of the underlying [`Resource`].
+    #[logic]
+    #[open(self)]
+    pub fn id(self) -> Id {
+        self.0.id()
+    }
+
+    /// Get the fragment of the map represented by this resource.
+    ///
+    /// This can also be accessed using the [`view`](crate::View::view) operator `@`.
+    #[logic]
+    #[open(self)]
+    pub fn frag(self) -> (K, V) {
+        let frag_agree = match self.0.val().frag {
+            None => FMap::empty(),
+            Some(frag) => frag,
+        };
+        such_that(|(k, v)| frag_agree.get(k) == Some(Ag::Ag(v)))
+    }
+}
+
+impl<K, V> Clone for Fragment<K, V> {
+    #[pure]
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
     }
 }
