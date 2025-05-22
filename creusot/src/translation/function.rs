@@ -4,7 +4,6 @@ mod terminator;
 use crate::{
     analysis::NotFinalPlaces,
     backend::ty_inv::is_tyinv_trivial,
-    constant::from_mir_constant,
     contracts_items::{is_snapshot_closure, is_spec},
     ctx::*,
     extended_location::ExtendedLocation,
@@ -42,7 +41,7 @@ pub(crate) fn fmir<'tcx>(ctx: &TranslationCtx<'tcx>, body_id: BodyId) -> fmir::B
 
 /// Translate a MIR body (rustc) to FMIR (creusot).
 // TODO: Split this into several sub-contexts: Core, Analysis, Results?
-struct BodyTranslator<'a, 'tcx> {
+pub(super) struct BodyTranslator<'a, 'tcx> {
     body_id: BodyId,
 
     body: &'a Body<'tcx>,
@@ -63,7 +62,7 @@ struct BodyTranslator<'a, 'tcx> {
     past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
-    ctx: &'a TranslationCtx<'tcx>,
+    pub(super) ctx: &'a TranslationCtx<'tcx>,
 
     // Fresh BlockId
     fresh_id: usize,
@@ -112,6 +111,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.ctx.tcx
     }
 
+    pub(crate) fn def_id(&self) -> DefId {
+        self.body_id.def_id()
+    }
+
     fn with_context<R, F: for<'b> FnOnce(BodyTranslator<'b, 'tcx>) -> R>(
         ctx: &'body TranslationCtx<'tcx>,
         body_id: BodyId,
@@ -120,8 +123,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let tcx = ctx.tcx;
         let body_with_facts = ctx.body_with_facts(body_id.def_id);
         let (body, move_data, resolver, borrows);
-        match body_id.promoted {
-            None => {
+        match body_id.constness {
+            Constness::None | Constness::Const => {
                 body = &body_with_facts.body;
                 move_data = MoveData::gather_moves(body, tcx, |_| true);
                 resolver = Some(Resolver::new(
@@ -133,7 +136,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 ));
                 borrows = Some(&body_with_facts.borrow_set)
             }
-            Some(promoted) => {
+            Constness::Promoted(promoted) => {
                 body = body_with_facts.promoted.get(promoted).unwrap();
                 move_data = MoveData::gather_moves(body, tcx, |_| true);
                 resolver = None;
@@ -260,7 +263,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         }
     }
 
-    fn typing_env(&self) -> TypingEnv<'tcx> {
+    pub(crate) fn typing_env(&self) -> TypingEnv<'tcx> {
         self.ctx.typing_env(self.body_id.def_id())
     }
 
@@ -693,7 +696,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         Ok(match operand {
             Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(pl.as_ref())?),
             Operand::Move(pl) => fmir::Operand::Move(self.translate_place(pl.as_ref())?),
-            Operand::Constant(c) => from_mir_constant(self.typing_env(), self.ctx, c),
+            Operand::Constant(c) => self.from_mir_constant(c),
         })
     }
 

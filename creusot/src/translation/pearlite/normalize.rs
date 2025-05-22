@@ -1,7 +1,5 @@
 use crate::{
-    contracts_items::{get_builtin, is_box_new},
-    pearlite::{BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp, super_visit_mut_term},
-    traits::TraitResolved,
+    contracts_items::{get_builtin, is_box_new}, ctx::{item_type, ItemType}, pearlite::{super_visit_mut_term, BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp}, traits::TraitResolved
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{GenericArgsRef, TyCtxt, TypingEnv};
@@ -40,7 +38,7 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
                     optimize_builtin(self.tcx, *id, subst, std::mem::replace(args, Box::new([])));
             }
             TermKind::Item(id, subst) => {
-                if self.tcx.trait_of_item(*id).is_some() {
+                if !matches!(item_type(self.tcx, *id), ItemType::Constant) && self.tcx.trait_of_item(*id).is_some() {
                     let method = TraitResolved::resolve_item(self.tcx, self.typing_env, *id, subst)
                         .to_opt(*id, subst)
                         .unwrap_or_else(|| {

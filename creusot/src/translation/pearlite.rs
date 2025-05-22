@@ -17,6 +17,7 @@ use crate::{
         get_ghost_inner_logic, get_index_logic, is_assertion, is_deref, is_ghost_ty, is_snap_ty,
         is_spec,
     },
+    ctx::{item_type, ItemType},
     error::{CannotFetchThir, CreusotResult, Error},
     translation::TranslationCtx,
 };
@@ -35,8 +36,7 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind,
-        TypeFoldable, TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind, int_ty, uint_ty,
+        self, int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -259,6 +259,7 @@ impl<'tcx> TermKind<'tcx> {
         user_ty: &Option<Box<CanonicalUserType<'tcx>>>,
         tcx: TyCtxt<'tcx>,
     ) -> Self {
+        assert!(!matches!(item_type(tcx, def_id), ItemType::Constant));
         let Some(user_ty) = user_ty else { return Self::Item(def_id, subst) };
         assert!(user_ty.value.bounds.is_empty());
         match user_ty.value.kind {
@@ -276,6 +277,37 @@ impl<'tcx> TermKind<'tcx> {
                 Self::Item(def_id, subst)
             }
         }
+    }
+
+    pub fn named_const(
+        def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+        user_ty: &Option<Box<CanonicalUserType<'tcx>>>,
+        tcx: TyCtxt<'tcx>,
+    ) -> Self {
+        assert!(matches!(item_type(tcx, def_id), ItemType::Constant));
+        let Some(user_ty) = user_ty else { return Self::Item(def_id, subst) };
+        assert!(user_ty.value.bounds.is_empty());
+        match user_ty.value.kind {
+            UserTypeKind::Ty(_) => Self::Item(def_id, subst),
+            UserTypeKind::TypeOf(def_id2, u_subst) => {
+                assert_eq!(def_id, def_id2);
+                if u_subst.args.len() != subst.len() {
+                    return Self::Item(def_id, subst);
+                }
+                let subst = GenericArgs::for_item(tcx, def_id, |x, _| {
+                    let s = subst[x.index as usize];
+                    let us = u_subst.args[x.index as usize];
+                    if us.has_escaping_bound_vars() { s } else { us }
+                });
+                Self::Item(def_id, subst)
+            }
+        }
+    }
+
+    pub fn const_param(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Self {
+        assert!(matches!(ctx.item_type(def_id), ItemType::Constant));
+        Self::Item(def_id, ty::List::empty())
     }
 }
 
@@ -881,8 +913,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
                 _ => Err(Error::msg(thir_term.span, "unhandled literal expression")),
             },
-            ExprKind::NamedConst { def_id, args, ref user_ty, .. } => {
-                Ok(Term { ty, span, kind: TermKind::item(def_id, args, user_ty, self.ctx.tcx) })
+            ExprKind::NamedConst { def_id, args, ref user_ty, .. } => Ok(Term {
+                ty,
+                span,
+                kind: TermKind::named_const(def_id, args, user_ty, self.ctx.tcx),
+            }),
+            ExprKind::ConstParam { def_id, param: _ } => {
+                Ok(Term { ty, span, kind: TermKind::const_param(self.ctx, def_id) })
             }
             ExprKind::ZstLiteral { ref user_ty, .. } => match ty.kind() {
                 TyKind::FnDef(def_id, subst) => Ok(Term {
