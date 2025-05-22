@@ -37,8 +37,9 @@ where
 {
     /// Authoritative part of the view
     ///
-    /// Note the [`Excl`], which guarantees that only one [`Resource`] wrapping a
-    /// [`View`] may have the authority part.
+    /// Note the [`Excl`], which guarantees that only one
+    /// [`Resource`](crate::resource::Resource) wrapping a [`View`] may have the
+    /// authoritative part.
     pub auth: Option<Excl<R::Auth>>,
     /// Fragment part of the view
     pub frag: Option<R::Frag>,
