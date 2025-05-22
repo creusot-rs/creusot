@@ -23,14 +23,16 @@ use ::std::marker::PhantomData;
 /// # Example
 ///
 /// ```rust
-/// use creusot_contracts::{*, logic::ra::{Resource, agree::Ag}};
-/// let mut res = Resource::new(snapshot!(Ag::Ag(1)));
+/// use creusot_contracts::{*, resource::Resource, logic::ra::Ag};
+/// let mut res: Ghost<Resource<Ag<Int>>> = Resource::alloc(snapshot!(Ag::Ag(1)));
 ///
-/// let part = res.split_off(snapshot!(Ag::Ag(1)), snapshot!(Ag::Ag(1)));
-/// // Pass `part` around, forget what it contained...
-/// let _ = res.join_shared(&part);
-/// // And now we remember: the only way this works is if `part` contained `1`!
-/// proof_assert!(part@ == Ag::Ag(1));
+/// ghost! {
+///     let part = res.split_off(snapshot!(Ag::Ag(1)), snapshot!(Ag::Ag(1)));
+///     // Pass `part` around, forget what it contained...
+///     let _ = res.join_shared(&part);
+///     // And now we remember: the only way this works is if `part` contained `1`!
+///     proof_assert!(part@ == Ag::Ag(1));
+/// };
 /// ```
 pub struct Resource<R>(PhantomData<R>);
 
