@@ -1,0 +1,161 @@
+module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
+  let%span sexcl = "excl.rs" 9 16 9 21
+  let%span sexcl'0 = "excl.rs" 9 8 9 22
+  let%span sexcl'1 = "excl.rs" 6 19 6 20
+  let%span sexcl'2 = "excl.rs" 6 48 6 49
+  let%span sexcl'3 = "excl.rs" 4 10 4 26
+  let%span sexcl'4 = "excl.rs" 5 10 5 18
+  let%span sexcl'5 = "../../../creusot-contracts/src/logic/ra/excl.rs" 24 8 27 9
+  let%span sexcl'6 = "../../../creusot-contracts/src/logic/ra/excl.rs" 18 8 18 17
+  let%span sexcl'7 = "../../../creusot-contracts/src/logic/ra/excl.rs" 52 14 52 32
+  let%span sexcl'8 = "../../../creusot-contracts/src/logic/ra/excl.rs" 57 14 57 44
+  let%span sresource = "../../../creusot-contracts/src/resource.rs" 76 21 76 25
+  let%span sresource'0 = "../../../creusot-contracts/src/resource.rs" 75 14 75 33
+  let%span sresource'1 = "../../../creusot-contracts/src/resource.rs" 235 29 235 33
+  let%span sresource'2 = "../../../creusot-contracts/src/resource.rs" 235 35 235 40
+  let%span sresource'3 = "../../../creusot-contracts/src/resource.rs" 232 15 232 38
+  let%span sresource'4 = "../../../creusot-contracts/src/resource.rs" 233 14 233 28
+  let%span sresource'5 = "../../../creusot-contracts/src/resource.rs" 234 14 234 38
+  let%span sresource'6 = "../../../creusot-contracts/src/resource.rs" 55 8 55 26
+  let%span sresource'7 = "../../../creusot-contracts/src/resource.rs" 47 8 47 18
+  let%span sid = "../../../creusot-contracts/src/logic/id.rs" 29 14 29 41
+  let%span smodel = "../../../creusot-contracts/src/model.rs" 62 8 62 22
+  let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 44 8 44 22
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
+  let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
+  
+  use creusot.int.Int32
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  
+  type t_Id
+  
+  type t_Resource  =
+    { t_Resource__0: () }
+  
+  type t_Excl  =
+    | C_Excl Int32.t
+    | C_Bot
+  
+  function op (self: t_Excl) (_other: t_Excl) : t_Excl =
+    [%#sexcl'6] C_Bot
+  
+  function associative (a: t_Excl) (b: t_Excl) (c: t_Excl) : ()
+  
+  axiom associative_spec: forall a: t_Excl, b: t_Excl, c: t_Excl. [%#sexcl'8] op (op a b) c = op a (op b c)
+  
+  function commutative (a: t_Excl) (b: t_Excl) : ()
+  
+  axiom commutative_spec: forall a: t_Excl, b: t_Excl. [%#sexcl'7] op a b = op b a
+  
+  function valid (self: t_Excl) : bool =
+    [%#sexcl'5] match self with
+      | C_Excl _ -> true
+      | C_Bot -> false
+      end
+  
+  function val' (self: t_Resource) : t_Excl
+  
+  predicate invariant' (self: t_Resource) =
+    [%#sresource'6] valid (val' self)
+  
+  predicate inv (_0: t_Resource)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Resource [inv x]. inv x
+  = (invariant' x
+  /\ match x with
+    | {t_Resource__0 = a_0} -> true
+    end)
+  
+  predicate invariant''0 (self: t_Resource) =
+    [%#sinvariant'0] inv self
+  
+  predicate inv'0 (_0: t_Resource)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Resource [inv'0 x]. inv'0 x = invariant''0 x
+  
+  function id (self: t_Resource) : t_Id
+  
+  let rec id_ghost (self:t_Resource) (return'  (x:t_Id))= {[@expl:id_ghost 'self' type invariant] [%#sresource] inv'0 self}
+    any [ return''0 (result:t_Id)-> {[%#sresource'0] result = id self} (! return' {result}) ] 
+  
+  let rec eq (self:t_Id) (other:t_Id) (return'  (x:bool))= any
+    [ return''0 (result:bool)-> {[%#sid] result = (self = other)} (! return' {result}) ]
+  
+  
+  predicate invariant''1 (self: MutBorrow.t t_Resource) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  predicate inv'1 (_0: MutBorrow.t t_Resource)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_Resource [inv'1 x]. inv'1 x = invariant''1 x
+  
+  function view (self: t_Resource) : t_Excl =
+    [%#sresource'7] val' self
+  
+  function view'0 (self: MutBorrow.t t_Resource) : t_Excl =
+    [%#smodel] view self.current
+  
+  function view'1 (self: t_Resource) : t_Excl =
+    [%#smodel'0] view self
+  
+  let rec valid_shared (self:MutBorrow.t t_Resource) (other:t_Resource) (return'  (x:()))= {[@expl:valid_shared 'self' type invariant] [%#sresource'1] inv'1 self}
+    {[@expl:valid_shared 'other' type invariant] [%#sresource'2] inv'0 other}
+    {[@expl:valid_shared requires] [%#sresource'3] id self.current = id other}
+    any
+    [ return''0 (result:())-> {[%#sresource'4] self.final = self.current}
+      {[%#sresource'5] valid (op (view'0 self) (view'1 other))}
+      (! return' {result}) ]
+  
+  
+  predicate resolve (self: MutBorrow.t t_Resource) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0: MutBorrow.t t_Resource) =
+    resolve _0
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec exclusivity[#"excl.rs" 6 0 6 72] (x:MutBorrow.t t_Resource) (y:t_Resource) (return'  (x'0:()))= {[@expl:exclusivity 'x' type invariant] [%#sexcl'1] inv'1 x}
+    {[@expl:exclusivity 'y' type invariant] [%#sexcl'2] inv'0 y}
+    (! bb0
+    [ bb0 = s0 [ s0 = id_ghost {x'0.current} (fun (_ret:t_Id) ->  [ &_7 <- _ret ] s1) | s1 = bb1 ] 
+    | bb1 = s0 [ s0 = id_ghost {y'0} (fun (_ret:t_Id) ->  [ &_10 <- _ret ] s1) | s1 = bb2 ] 
+    | bb2 = s0 [ s0 = eq {_7} {_10} (fun (_ret:bool) ->  [ &_5 <- _ret ] s1) | s1 = bb3 ] 
+    | bb3 = any [ br0 -> {_5 = false} (! bb8) | br1 -> {_5} (! bb4) ] 
+    | bb4 = s0
+      [ s0 = {inv x'0.current}
+        MutBorrow.borrow_final <t_Resource> {x'0.current} {MutBorrow.get_id x'0}
+          (fun (_ret:MutBorrow.t t_Resource) ->
+             [ &_13 <- _ret ] 
+            -{inv _ret.final}-
+             [ &x'0 <- { x'0 with current = _ret.final } ] 
+            s1)
+      | s1 = valid_shared {_13} {y'0} (fun (_ret:()) ->  [ &_12 <- _ret ] s2)
+      | s2 = bb5 ]
+    
+    | bb5 = s0
+      [ s0 = {[@expl:type invariant] inv'1 x'0} s1
+      | s1 = -{resolve'0 x'0}- s2
+      | s2 = any [ br0 -> {([%#sexcl] false) = false} (! bb6) | br1 -> {[%#sexcl] false} (! bb7) ]  ]
+    
+    | bb7 = bb9
+    | bb6 = {[%#sexcl'0] false} any
+    | bb8 = s0 [ s0 = {[@expl:type invariant] inv'1 x'0} s1 | s1 = -{resolve'0 x'0}- s2 | s2 = bb9 ] 
+    | bb9 = return''0 {_0} ]
+    )
+    [ & _0: () = Any.any_l ()
+    | & x'0: MutBorrow.t t_Resource = x
+    | & y'0: t_Resource = y
+    | & _5: bool = Any.any_l ()
+    | & _7: t_Id = Any.any_l ()
+    | & _10: t_Id = Any.any_l ()
+    | & _12: () = Any.any_l ()
+    | & _13: MutBorrow.t t_Resource = Any.any_l () ]
+    
+    [ return''0 (result:())-> {[@expl:exclusivity ensures #0] [%#sexcl'3] id x.current <> id y}
+      {[@expl:exclusivity ensures #1] [%#sexcl'4] x.current = x.final}
+      (! return' {result}) ]
+
+end

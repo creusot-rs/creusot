@@ -132,6 +132,7 @@ impl<K, V> Authority<K, V> {
     }
 
     /// Create a new, empty authoritative map.
+    #[pure]
     #[ensures(result@ == FMap::empty())]
     pub fn new() -> Ghost<Self> {
         let resource = Resource::alloc(snapshot!(View::mkauth(FMap::empty())));
