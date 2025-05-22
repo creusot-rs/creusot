@@ -13,7 +13,7 @@ use std::{
     iter::once,
 };
 
-use crate::{extended_location::ExtendedLocation, fmir::BorrowKind};
+use crate::{extended_location::ExtendedLocation, translation::fmir::BorrowKind};
 
 type PlaceId = usize;
 

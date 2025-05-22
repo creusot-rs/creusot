@@ -1,8 +1,8 @@
 use crate::{
     backend::clone_map::Namer,
     ctx::PreMod,
-    fmir::{Place, ProjectionElem},
     naming::name,
+    translation::fmir::{Place, ProjectionElem},
 };
 use rustc_middle::{
     mir::tcx::PlaceTy,

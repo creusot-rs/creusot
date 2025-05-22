@@ -25,11 +25,15 @@ use crate::{
         wto::{Component, weak_topological_order},
     },
     ctx::{BodyId, Dependencies},
-    fmir::{Body, BorrowKind, Operand, TrivialInv},
     naming::name,
-    pearlite::Pattern,
     translated_item::FileModule,
-    translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
+    translation::{
+        fmir::{
+            Block, Body, BorrowKind, Branches, LocalDecls, Operand, Place, RValue, Statement,
+            Terminator, TrivialInv,
+        },
+        pearlite::Pattern,
+    },
 };
 use indexmap::IndexMap;
 use petgraph::graphmap::DiGraphMap;

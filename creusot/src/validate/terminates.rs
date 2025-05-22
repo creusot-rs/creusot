@@ -35,8 +35,10 @@ use crate::{
     contracts_items::{has_variant_clause, is_no_translate, is_pearlite},
     ctx::TranslationCtx,
     error::CannotFetchThir,
-    pearlite::{TermKind, TermVisitor},
-    traits::TraitResolved,
+    translation::{
+        pearlite::{Term, TermKind, TermVisitor, super_visit_term},
+        traits::TraitResolved,
+    },
     util::erased_identity_for_item,
 };
 use indexmap::{IndexMap, IndexSet};
@@ -311,14 +313,10 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         call_span: Span,
     ) -> Result<(), CannotFetchThir> {
         let tcx = ctx.tcx;
-        let (called_id, generic_args) = if TraitResolved::is_trait_item(tcx, called_id) {
-            match TraitResolved::resolve_item(tcx, typing_env, called_id, generic_args) {
-                TraitResolved::Instance(def_id, subst) => (def_id, subst),
-                _ => (called_id, generic_args),
-            }
-        } else {
-            (called_id, generic_args)
-        };
+        let (called_id, generic_args) =
+            TraitResolved::resolve_item(tcx, typing_env, called_id, generic_args)
+                .to_opt(called_id, generic_args)
+                .unwrap();
 
         // TODO: this code is kind of a soup, rework or refactor into a function
         let (called_node, bounds, impl_self_bound) = 'bl: {
@@ -744,8 +742,8 @@ struct TermCalls<'tcx> {
 }
 
 impl<'tcx> TermVisitor<'tcx> for TermCalls<'tcx> {
-    fn visit_term(&mut self, term: &crate::pearlite::Term<'tcx>) {
-        crate::pearlite::super_visit_term(term, self);
+    fn visit_term(&mut self, term: &Term<'tcx>) {
+        super_visit_term(term, self);
         if let TermKind::Call { id, subst, args: _ } = &term.kind {
             self.results.insert((*id, subst, term.span));
         }

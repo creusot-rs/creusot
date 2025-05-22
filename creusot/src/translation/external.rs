@@ -59,7 +59,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     let (id, subst) = visit.items.pop().unwrap();
 
-    let (id, _) = if ctx.trait_of_item(id).is_some() {
+    let (id, _) =
         TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id_), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
                 ctx.def_span(def_id_),
@@ -68,10 +68,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
             err.span_warn(ctx.def_span(def_id_), "the bounds on an external specification must be at least as strong as the original impl bounds");
             err.emit()
-        })
-    } else {
-        (id, subst)
-    };
+        });
 
     // Generics of the actual item.
     let mut inner_subst = erased_identity_for_item(ctx.tcx, id).to_vec();

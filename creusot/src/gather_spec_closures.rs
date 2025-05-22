@@ -3,7 +3,7 @@ use crate::{
         get_invariant_expl, is_assertion, is_before_loop, is_loop_variant, is_snapshot_closure,
     },
     ctx::TranslationCtx,
-    pearlite::Term,
+    translation::pearlite::Term,
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::def_id::DefId;

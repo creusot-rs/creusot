@@ -6,6 +6,7 @@ use crate::{
     contracts_items::{get_builtin, get_inv_function, is_bitwise},
     ctx::*,
     options::SpanMode,
+    translation::traits::TraitResolved,
     util::{erased_identity_for_item, path_of_span},
 };
 use elaborator::Strength;
@@ -181,9 +182,29 @@ pub(crate) trait Namer<'tcx> {
             .without_search_path()
     }
 
-    fn dependency(&self, dep: Dependency<'tcx>) -> &Kind;
+    // TODO: get rid of this. `erase_regions` should be the responsibility of the callers.
+    // NOTE: should `Namer::ty()` be asserting with `has_erasable_regions` instead?
+    fn raw_dependency(&self, dep: Dependency<'tcx>) -> &Kind;
+
+    fn dependency(&self, dep: Dependency<'tcx>) -> &Kind {
+        self.raw_dependency(dep.erase_regions(self.tcx()))
+    }
+
+    fn resolve_dependency(&self, dep: Dependency<'tcx>) -> Dependency<'tcx> {
+        let ctx = self.tcx();
+        if let Dependency::Item(def, args) = dep {
+            let (def, args) = TraitResolved::resolve_item(ctx, self.typing_env(), def, args)
+                .to_opt(def, args)
+                .unwrap();
+            Dependency::Item(def, args)
+        } else {
+            dep
+        }
+    }
 
     fn tcx(&self) -> TyCtxt<'tcx>;
+
+    fn typing_env(&self) -> TypingEnv<'tcx>;
 
     fn span(&self, span: Span) -> Option<Attribute>;
 
@@ -196,13 +217,28 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
         self.tcx().normalize_erasing_regions(self.typing_env, ty)
     }
 
-    fn dependency(&self, key: Dependency<'tcx>) -> &Kind {
-        let key = key.erase_regions(self.tcx);
-        self.insert(self.tcx, key)
+    fn raw_dependency(&self, key: Dependency<'tcx>) -> &Kind {
+        self.names.insert(key, |_| {
+            if let Some((did, _)) = key.did()
+                && let Some(why3_modl) = get_builtin(self.tcx, did)
+            {
+                let why3_modl =
+                    why3_modl.as_str().replace("$BW$", if self.bitwise_mode { "BW" } else { "" });
+                let qname = QName::parse(&why3_modl);
+                return Box::new(Kind::UsedBuiltin(qname));
+            }
+            Box::new(key.base_ident(self.tcx).map_or(Kind::Unnamed, |base| {
+                Kind::Named(Ident::fresh(crate_name(self.tcx), base.as_str()))
+            }))
+        })
     }
 
     fn tcx(&self) -> TyCtxt<'tcx> {
         self.tcx
+    }
+
+    fn typing_env(&self) -> TypingEnv<'tcx> {
+        self.typing_env
     }
 
     fn span(&self, span: Span) -> Option<Attribute> {
@@ -222,22 +258,6 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
 }
 
 impl<'tcx> CloneNames<'tcx> {
-    fn insert(&self, tcx: TyCtxt<'tcx>, key: Dependency<'tcx>) -> &Kind {
-        self.names.insert(key, |_| {
-            if let Some((did, _)) = key.did()
-                && let Some(why3_modl) = get_builtin(tcx, did)
-            {
-                let why3_modl =
-                    why3_modl.as_str().replace("$BW$", if self.bitwise_mode { "BW" } else { "" });
-                let qname = QName::parse(&why3_modl);
-                return Box::new(Kind::UsedBuiltin(qname));
-            }
-            Box::new(key.base_ident(tcx).map_or(Kind::Unnamed, |base| {
-                Kind::Named(Ident::fresh(crate_name(tcx), base.as_str()))
-            }))
-        })
-    }
-
     fn bitwise_mode(&self) -> bool {
         self.bitwise_mode
     }
@@ -252,10 +272,13 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         self.tcx
     }
 
-    fn dependency(&self, key: Dependency<'tcx>) -> &Kind {
-        let key = key.erase_regions(self.tcx);
+    fn typing_env(&self) -> TypingEnv<'tcx> {
+        self.names.typing_env()
+    }
+
+    fn raw_dependency(&self, key: Dependency<'tcx>) -> &Kind {
         self.dep_set.borrow_mut().insert(key);
-        self.names.dependency(key)
+        self.names.raw_dependency(key)
     }
 
     fn span(&self, span: Span) -> Option<Attribute> {

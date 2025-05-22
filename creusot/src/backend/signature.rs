@@ -7,7 +7,7 @@ use crate::{
         ty::translate_ty,
     },
     contracts_items::{should_replace_trigger, why3_attrs},
-    specification::{PreContract, PreSignature},
+    translation::specification::{PreContract, PreSignature},
 };
 use rustc_hir::def_id::DefId;
 use why3::{

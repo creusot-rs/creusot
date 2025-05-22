@@ -6,8 +6,12 @@ use crate::{
     },
     ctx::*,
     naming::name,
-    pearlite::{BinOp, Literal, Pattern, PatternKind, QuantKind, Term, TermKind, Trigger, UnOp},
-    specification::Condition,
+    translation::{
+        pearlite::{
+            BinOp, Literal, Pattern, PatternKind, QuantKind, Term, TermKind, Trigger, UnOp,
+        },
+        specification::Condition,
+    },
 };
 use rustc_ast::Mutability;
 use rustc_hir::def::DefKind;

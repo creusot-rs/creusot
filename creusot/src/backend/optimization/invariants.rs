@@ -13,8 +13,10 @@ use crate::{
     },
     contracts_items::get_snap_ty,
     ctx::TranslationCtx,
-    pearlite::{Ident, Term},
-    translation::fmir,
+    translation::{
+        fmir,
+        pearlite::{Ident, Term},
+    },
 };
 use petgraph::Direction;
 

@@ -5,11 +5,9 @@ use crate::{
         is_tyinv_trivial_if_param_trivial,
     },
     naming::variable_name,
-    pearlite::{Ident, Trigger},
-    traits::TraitResolved,
     translation::{
-        pearlite::{Pattern, Term, TermKind},
-        traits,
+        pearlite::{Ident, Literal, Pattern, Term, TermKind, Trigger},
+        traits::TraitResolved,
     },
 };
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
@@ -32,12 +30,10 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
 
         let user_inv = resolve_user_inv(tcx, ty, typing_env);
         match user_inv {
+            TraitResolved::NotATraitItem => unreachable!(),
             TraitResolved::NoInstance => (),
             TraitResolved::Instance(uinv_did, _)
-                if is_tyinv_trivial_if_param_trivial(tcx, uinv_did) =>
-            {
-                ()
-            }
+                if is_tyinv_trivial_if_param_trivial(tcx, uinv_did) => {}
             _ => return false,
         }
 
@@ -107,20 +103,21 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         let mut rhs = Term::true_(self.ctx.tcx);
 
         match resolve_user_inv(self.ctx.tcx, ty, self.typing_env) {
+            TraitResolved::NotATraitItem => unreachable!(),
             TraitResolved::Instance(uinv_did, uinv_subst) => {
                 rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, uinv_did, uinv_subst, [
                     subject.clone(),
                 ]))
             }
-            TraitResolved::UnknownNotFound => use_imples = true,
-            TraitResolved::NoInstance => (),
-            _ => {
+            TraitResolved::UnknownFound => {
                 let trait_item_did = get_invariant_method(self.ctx.tcx);
                 let subst = self.ctx.tcx.mk_args(&[GenericArg::from(ty)]);
                 rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, trait_item_did, subst, [
                     subject.clone(),
                 ]))
             }
+            TraitResolved::UnknownNotFound => use_imples = true,
+            TraitResolved::NoInstance => (),
         }
 
         if matches!(ty.kind(), TyKind::Alias(..) | TyKind::Param(_)) {
@@ -130,7 +127,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         }
 
         let term = if use_imples {
-            if matches!(rhs.kind, TermKind::Lit(crate::pearlite::Literal::Bool(true))) {
+            if matches!(rhs.kind, TermKind::Lit(Literal::Bool(true))) {
                 return None;
             }
             Term::implies(lhs, rhs)
@@ -249,9 +246,11 @@ fn resolve_user_inv<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
     typing_env: TypingEnv<'tcx>,
-) -> traits::TraitResolved<'tcx> {
-    let trait_item_did = get_invariant_method(tcx);
-    let subst = tcx.mk_args(&[GenericArg::from(ty)]);
-
-    traits::TraitResolved::resolve_item(tcx, typing_env, trait_item_did, subst)
+) -> TraitResolved<'tcx> {
+    TraitResolved::resolve_item(
+        tcx,
+        typing_env,
+        get_invariant_method(tcx),
+        tcx.mk_args(&[GenericArg::from(ty)]),
+    )
 }
