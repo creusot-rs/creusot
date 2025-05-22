@@ -135,7 +135,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             TermKind::NamedConst(id, subst) => {
-                let clone = self.names.assoc_constant(*id, subst);
+                let clone = self.names.constant(*id, subst);
                 let item = match self.ctx.type_of(id).instantiate_identity().kind() {
                     TyKind::FnDef(_, _) => Exp::unit(),
                     _ => Exp::Var(clone),
@@ -148,7 +148,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::ConstParam(id) => Exp::Var(self.names.constant(*id)),
             TermKind::Var(v) => Exp::var(v.0),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
