@@ -264,6 +264,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     fn place_to_term(&self, place: &Place<'tcx>, span: Span) -> Term<'tcx> {
         let mut term =
             Term::var(self.locals[&place.local].1, self.body.local_decls[place.local].ty);
+        term.span = span;
         for p in place.projection.iter() {
             match p {
                 mir::ProjectionElem::Field(idx, ty) => {
