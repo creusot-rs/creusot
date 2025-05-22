@@ -17,6 +17,7 @@ use crate::{
         get_ghost_inner_logic, get_index_logic, is_assertion, is_deref, is_ghost_ty, is_snap_ty,
         is_spec,
     },
+    ctx::ItemType,
     error::{CreusotResult, Error},
     translation::TranslationCtx,
 };
@@ -165,7 +166,7 @@ pub enum TermKind<'tcx> {
         arg: Box<Term<'tcx>>,
     },
     Item(DefId, GenericArgsRef<'tcx>),
-    NamedConst(DefId, GenericArgsRef<'tcx>),
+    Const(DefId, GenericArgsRef<'tcx>),
     Assert {
         cond: Box<Term<'tcx>>,
     },
@@ -280,32 +281,34 @@ impl<'tcx> TermKind<'tcx> {
     }
 
     pub fn named_const(
+        ctx: &TranslationCtx<'tcx>,
         def_id: DefId,
         subst: GenericArgsRef<'tcx>,
         user_ty: &Option<Box<CanonicalUserType<'tcx>>>,
-        tcx: TyCtxt<'tcx>,
     ) -> Self {
-        let Some(user_ty) = user_ty else { return Self::NamedConst(def_id, subst) };
+        assert!(matches!(ctx.item_type(def_id), ItemType::Constant));
+        let Some(user_ty) = user_ty else { return Self::Const(def_id, subst) };
         assert!(user_ty.value.bounds.is_empty());
         match user_ty.value.kind {
-            UserTypeKind::Ty(_) => Self::NamedConst(def_id, subst),
+            UserTypeKind::Ty(_) => Self::Const(def_id, subst),
             UserTypeKind::TypeOf(def_id2, u_subst) => {
                 assert_eq!(def_id, def_id2);
                 if u_subst.args.len() != subst.len() {
-                    return Self::NamedConst(def_id, subst);
+                    return Self::Const(def_id, subst);
                 }
-                let subst = GenericArgs::for_item(tcx, def_id, |x, _| {
+                let subst = GenericArgs::for_item(ctx.tcx, def_id, |x, _| {
                     let s = subst[x.index as usize];
                     let us = u_subst.args[x.index as usize];
                     if us.has_escaping_bound_vars() { s } else { us }
                 });
-                Self::NamedConst(def_id, subst)
+                Self::Const(def_id, subst)
             }
         }
     }
 
-    pub fn const_param(def_id: DefId) -> Self {
-        TermKind::NamedConst(def_id, ty::List::empty())
+    pub fn const_param(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Self {
+        assert!(matches!(ctx.item_type(def_id), ItemType::Constant));
+        Self::Const(def_id, ty::List::empty())
     }
 }
 
@@ -944,8 +947,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::NamedConst { def_id, args, ref user_ty, .. } => Ok(Term {
                 ty,
                 span,
-                kind: TermKind::named_const(def_id, args, user_ty, self.ctx.tcx),
+                kind: TermKind::named_const(self.ctx, def_id, args, user_ty),
             }),
+            ExprKind::ConstParam { def_id, param: _ } => {
+                Ok(Term { ty, span, kind: TermKind::const_param(self.ctx, def_id) })
+            }
             ExprKind::ZstLiteral { ref user_ty, .. } => match ty.kind() {
                 TyKind::FnDef(def_id, subst) => Ok(Term {
                     ty,
@@ -975,9 +981,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     thir_term.span,
                     "Casts from ! are not supported in Pearlite, because Why3 types are always inhabited.",
                 ))
-            }
-            ExprKind::ConstParam { def_id, param: _ } => {
-                Ok(Term { ty, span, kind: TermKind::const_param(def_id) })
             }
             ref ek => todo!("lower_expr: {:?}", ek),
         };
@@ -1401,7 +1404,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::SeqLiteral(fields) => fields.iter().for_each(|a| visitor.visit_term(a)),
         TermKind::Cast { arg } => visitor.visit_term(arg),
         TermKind::Coerce { arg } => visitor.visit_term(arg),
-        TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
+        TermKind::Item(_, _) | TermKind::Const(_, _) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_term(lhs);
             visitor.visit_term(rhs);
@@ -1459,7 +1462,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
         TermKind::Cast { arg } => visitor.visit_mut_term(&mut *arg),
         TermKind::Coerce { arg } => visitor.visit_mut_term(arg),
-        TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
+        TermKind::Item(_, _) | TermKind::Const(_, _) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_mut_term(&mut *lhs);
             visitor.visit_mut_term(&mut *rhs);
@@ -1733,7 +1736,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Cast { arg } => arg.subst_with(bound, subst),
             TermKind::Coerce { arg } => arg.subst_with(bound, subst),
-            TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
+            TermKind::Item(_, _) | TermKind::Const(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.subst_with(bound, subst);
                 rhs.subst_with(bound, subst)
@@ -1825,7 +1828,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Cast { arg } => arg.free_vars_inner(bound, free),
             TermKind::Coerce { arg } => arg.free_vars_inner(bound, free),
-            TermKind::Item(_, _) | TermKind::NamedConst(_, _) => {}
+            TermKind::Item(_, _) | TermKind::Const(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.free_vars_inner(bound, free);
                 rhs.free_vars_inner(bound, free)

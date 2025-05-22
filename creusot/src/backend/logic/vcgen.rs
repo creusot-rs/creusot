@@ -299,7 +299,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     k(Exp::Var(item_name))
                 }
             }
-            TermKind::NamedConst(id, sub) => {
+            TermKind::Const(id, sub) => {
                 let item_name = self.names.constant(*id, sub);
                 if get_builtin(self.ctx.tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.

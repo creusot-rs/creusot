@@ -174,7 +174,7 @@ pub fn const_to_term<'tcx>(
         Param(p) => {
             let def_id = ctx.generics_of(body_id).const_param(p, ctx.tcx).def_id;
             Term {
-                kind: TermKind::const_param(def_id),
+                kind: TermKind::const_param(ctx, def_id),
                 ty: p.find_ty_from_env(typing_env.param_env),
                 span,
             }
@@ -211,7 +211,7 @@ pub(crate) fn try_const_synonym<'tcx>(
         }
         ConstKind::Unevaluated(u) => {
             let (u, ty) = EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args);
-            Some(Term { kind: TermKind::NamedConst(u.def, u.args), ty, span: DUMMY_SP })
+            Some(Term { kind: TermKind::Const(u.def, u.args), ty, span: DUMMY_SP })
         }
         _ => None,
     }

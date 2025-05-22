@@ -143,7 +143,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::NamedConst(id, subst) => {
+            TermKind::Const(id, subst) => {
                 let clone = self.names.constant(*id, subst);
                 let item = match self.ctx.type_of(id).instantiate_identity().kind() {
                     TyKind::FnDef(_, _) => Exp::unit(),
