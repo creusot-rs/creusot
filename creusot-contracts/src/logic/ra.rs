@@ -23,6 +23,25 @@ use crate::{logic::Set, *};
 ///
 /// Resource algebras are a concept inspired by [Iris](https://iris-project.org/). Used in
 /// conjunction with [`Resource`](crate::resource::Resource)s, they unlock new reasonings.
+///
+/// # Notes on the definition of resource algebras
+///
+/// Our definition of resource algebras differs from the one in Iris in that it
+/// does not require RAs to define a "core" function. Instead, we follow "Idempotent
+/// Resources in Separation Logic --- The Heart of core in Iris" by Gratzer, Møller &
+/// Birkedal (GMB), and require RAs to satisfy a "maximal idempotent" axiom.
+///
+/// We allow RAs to contain junk values and equip RAs with a validity predicate. This
+/// is unlike the paper definitions of GMB (who instead take `op` to be a partial
+/// function), but like in Iris and the Iris mechanization of GMB (cf the artifact of
+/// the paper). This is because Creusot does not support subset types in the logic,
+/// which would be required to define e.g. the Auth RA if we were to disallow junk
+/// values. (The Iris formalization also makes this choice for practical formalization
+/// reasons, as far as we know.)
+/// The downside is that junk values pollute the definition of some RAs and higher-order
+/// order agreement is harder to define (according to GMB, but we only need first-order
+/// agreement in Creusot anyway). On the plus side, working with a total `op` instead of
+/// chaining operations in the Option monad is often nicer.
 pub trait RA: Sized {
     /// The operation of this resource algebra.
     ///
@@ -68,7 +87,7 @@ pub trait RA: Sized {
     /// Some(x).incl(Some(y)) == (x == y || x.incl(y))
     /// ```
     ///
-    /// Note that the paper on the maximal idempotent axiom uses the
+    /// Note that the paper on the maximal idempotent axiom (GMB) uses the
     /// reflexive definition of `incl` on paper, but not in its accompanying
     /// Iris formalization, where it uses the non-reflexive definition (as
     /// we do here).
