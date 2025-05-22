@@ -20,7 +20,6 @@ use crate::{
         },
         ty_inv::InvariantElaborator,
     },
-    constant::from_ty_const,
     contracts_items::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
         get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
@@ -30,16 +29,19 @@ use crate::{
     },
     ctx::{BodyId, ItemType},
     naming::name,
-    pearlite::{Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
-    specification::Condition,
-    traits::{self, TraitResolved},
+    translation::{
+        constant::from_ty_const,
+        pearlite::{Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
+        specification::Condition,
+        traits::TraitResolved,
+    },
 };
 use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    AssocItem, AssocItemContainer, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind,
-    TypeFoldable, TypingEnv, UnevaluatedConst,
+    Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
+    UnevaluatedConst,
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
@@ -131,9 +133,7 @@ impl DepElab for ProgramElab {
                 .instantiate(ctx.tcx, subst)
                 .normalize(ctx.tcx, typing_env);
 
-            if let Some(AssocItem { container: AssocItemContainer::Trait, .. }) =
-                ctx.opt_associated_item(def_id)
-                && let TraitResolved::UnknownFound = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
+            if let TraitResolved::UnknownFound = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
                 // These conditions are important to make sure the Fn trait familly is implemented
                 && ctx.fn_sig(def_id).skip_binder().is_fn_trait_compatible()
                 && ctx.codegen_fn_attrs(def_id).target_features.is_empty()
@@ -233,21 +233,23 @@ impl DepElab for LogicElab {
             .normalize(ctx.tcx, typing_env);
         let bound: Box<[Ident]> = pre_sig.inputs.iter().map(|(ident, _, _)| ident.0).collect();
 
-        let trait_resol = ctx
-            .tcx
-            .trait_of_item(def_id)
-            .map(|_| traits::TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst));
-
-        let is_opaque = matches!(
+        let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
+        assert_matches!(
             trait_resol,
-            Some(traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound)
-        ) || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0)
+            TraitResolved::NotATraitItem
+            | TraitResolved::Instance(..) // The default impl is known to be the final instance
+            | TraitResolved::UnknownFound // Unresolved trait method
+        );
+        // The other case are impossible, because that would mean we are  not guaranteed to have an instance
+
+        let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
+            || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0)
             || is_trusted_item(ctx.tcx, def_id);
 
         let names = elab.namer(dep);
         let name = names.dependency(dep).ident();
         let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
-        if !is_opaque && let Some(term) = term(ctx, typing_env, &bound, dep) {
+        if !opaque && let Some(term) = term(ctx, typing_env, &bound, dep) {
             lower_logical_defn(ctx, &names, sig, kind, term)
         } else {
             let mut decls = val(sig, kind);
@@ -546,16 +548,17 @@ fn resolve_term<'tcx>(
     if let &TyKind::Closure(def_id, subst) = subst[0].as_type().unwrap().kind() {
         Some(closure_resolve(ctx, def_id, subst, bound))
     } else {
-        match traits::TraitResolved::resolve_item(ctx.tcx, typing_env, trait_meth_id, subst) {
-            traits::TraitResolved::Instance(meth_did, meth_substs) => {
+        match TraitResolved::resolve_item(ctx.tcx, typing_env, trait_meth_id, subst) {
+            TraitResolved::NotATraitItem => unreachable!(),
+            TraitResolved::Instance(meth_did, meth_substs) => {
                 // We know the instance => body points to it
                 Some(Term::call(ctx.tcx, typing_env, meth_did, meth_substs, [arg]))
             }
-            traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound => {
+            TraitResolved::UnknownFound | TraitResolved::UnknownNotFound => {
                 // We don't know the instance => body is opaque
                 None
             }
-            traits::TraitResolved::NoInstance => {
+            TraitResolved::NoInstance => {
                 // We know there is no instance => body is true
                 Some(Term::true_(ctx.tcx))
             }
@@ -641,17 +644,12 @@ fn fn_once_postcond_term<'tcx>(
             ))
         }
         &TyKind::FnDef(mut did, mut subst) => {
-            if let Some(AssocItem { container: AssocItemContainer::Trait, .. }) =
-                ctx.opt_associated_item(did)
-            {
-                let TraitResolved::Instance(did_i, subst_i) =
-                    TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst)
-                else {
-                    return None;
-                };
-                did = did_i;
-                subst = subst_i;
-            };
+            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
+                TraitResolved::NotATraitItem => (),
+                TraitResolved::Instance(did_i, subst_i) => (did, subst) = (did_i, subst_i),
+                TraitResolved::UnknownFound => return None,
+                TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
+            }
             post_fndef(ctx, typing_env, did, subst, args, res)
         }
         _ => None,
@@ -753,17 +751,12 @@ fn fn_mut_postcond_term<'tcx>(
             ]))
         }
         &TyKind::FnDef(mut did, mut subst) => {
-            if let Some(AssocItem { container: AssocItemContainer::Trait, .. }) =
-                ctx.opt_associated_item(did)
-            {
-                let TraitResolved::Instance(did_i, subst_i) =
-                    TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst)
-                else {
-                    return None;
-                };
-                did = did_i;
-                subst = subst_i;
-            };
+            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
+                TraitResolved::NotATraitItem => (),
+                TraitResolved::Instance(did_i, subst_i) => (did, subst) = (did_i, subst_i),
+                TraitResolved::UnknownFound => return None,
+                TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
+            }
             post_fndef(ctx, typing_env, did, subst, args, res)
         }
         _ => None,
@@ -834,17 +827,12 @@ fn fn_postcond_term<'tcx>(
             ]))
         }
         &TyKind::FnDef(mut did, mut subst) => {
-            if let Some(AssocItem { container: AssocItemContainer::Trait, .. }) =
-                ctx.opt_associated_item(did)
-            {
-                let TraitResolved::Instance(did_i, subst_i) =
-                    TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst)
-                else {
-                    return None;
-                };
-                did = did_i;
-                subst = subst_i;
-            };
+            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
+                TraitResolved::NotATraitItem => (),
+                TraitResolved::Instance(did_i, subst_i) => (did, subst) = (did_i, subst_i),
+                TraitResolved::UnknownFound => return None,
+                TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
+            }
             post_fndef(ctx, typing_env, did, subst, args, res)
         }
         _ => None,
@@ -915,17 +903,12 @@ fn fn_once_precond_term<'tcx>(
             ]))
         }
         &TyKind::FnDef(mut did, mut subst) => {
-            if let Some(AssocItem { container: AssocItemContainer::Trait, .. }) =
-                ctx.opt_associated_item(did)
-            {
-                let TraitResolved::Instance(did_i, subst_i) =
-                    TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst)
-                else {
-                    return None;
-                };
-                did = did_i;
-                subst = subst_i;
-            };
+            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
+                TraitResolved::NotATraitItem => (),
+                TraitResolved::Instance(did_i, subst_i) => (did, subst) = (did_i, subst_i),
+                TraitResolved::UnknownFound => return None,
+                TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
+            }
             pre_fndef(ctx, typing_env, did, subst, args)
         }
         // Handle `FnPureWrapper`

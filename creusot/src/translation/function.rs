@@ -4,16 +4,18 @@ mod terminator;
 use crate::{
     analysis::NotFinalPlaces,
     backend::ty_inv::is_tyinv_trivial,
-    constant::from_mir_constant,
     contracts_items::{is_snapshot_closure, is_spec},
     ctx::*,
     extended_location::ExtendedLocation,
-    fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inline_pearlite_subst},
     gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
     naming::variable_name,
-    pearlite::{Ident, Term},
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
-    translation::function::terminator::discriminator_for_switch,
+    translation::{
+        constant::from_mir_constant,
+        fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inline_pearlite_subst},
+        function::terminator::discriminator_for_switch,
+        pearlite::{Ident, Term},
+    },
 };
 use indexmap::IndexMap;
 use rustc_borrowck::consumers::BorrowSet;

@@ -1,4 +1,8 @@
-use crate::{creusot_items::CreusotItems, ctx::*, external::ExternSpec, pearlite::ScopedTerm};
+use crate::{
+    creusot_items::CreusotItems,
+    ctx::*,
+    translation::{external::ExternSpec, pearlite::ScopedTerm},
+};
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
 use once_map::unsync::OnceMap;

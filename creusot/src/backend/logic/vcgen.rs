@@ -15,7 +15,10 @@ use crate::{
     contracts_items::get_builtin,
     ctx::PreMod,
     naming::name,
-    pearlite::{Literal, Pattern, PatternKind, Term, TermVisitor, super_visit_term},
+    translation::pearlite::{
+        BinOp, Literal, Pattern, PatternKind, QuantKind, Term, TermKind, TermVisitor, UnOp,
+        super_visit_term,
+    },
     util::erased_identity_for_item,
 };
 use rustc_ast::Mutability;
@@ -24,7 +27,7 @@ use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::Span;
 use why3::{
     Exp, Ident, Name,
-    exp::{BinOp, Pattern as WPattern, UnOp as WUnOp},
+    exp::{Pattern as WPattern, UnOp as WUnOp},
     ty::Type,
 };
 
@@ -96,7 +99,6 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
         decreasing_args: HashSet<Ident>,
         orig_args: Vec<Ident>,
     }
-    use crate::pearlite::TermKind;
 
     impl StructuralRecursion {
         fn valid(&self) -> bool {
@@ -225,7 +227,6 @@ impl<'tcx> VCGen<'_, 'tcx> {
     }
 
     fn build_wp(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Result<Exp, VCError<'tcx>> {
-        use crate::pearlite::*;
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => k(Exp::var(v.0)),
@@ -623,8 +624,8 @@ impl<'tcx> VCGen<'_, 'tcx> {
         if is_int(self.ctx.tcx, variant_ty) {
             self.names.import_prelude_module(PreMod::Int);
             let orig_variant = orig_variant.boxed();
-            Ok(Exp::BinaryOp(BinOp::Le, Exp::int(0).boxed(), orig_variant.clone())
-                .log_and(Exp::BinaryOp(BinOp::Lt, rec_var_exp.boxed(), orig_variant)))
+            Ok(Exp::BinaryOp(why3::exp::BinOp::Le, Exp::int(0).boxed(), orig_variant.clone())
+                .log_and(Exp::BinaryOp(why3::exp::BinOp::Lt, rec_var_exp.boxed(), orig_variant)))
         } else {
             Err(VCError::UnsupportedVariant(variant_ty, span))
         }

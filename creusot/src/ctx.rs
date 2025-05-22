@@ -10,15 +10,13 @@ use crate::{
     metadata::{BinaryMetadata, Metadata},
     naming::variable_name,
     options::Options,
-    pearlite::ScopedTerm,
-    specification::{PreSignature, inherited_extern_spec, pre_sig_of},
-    traits::TraitResolved,
     translation::{
         self,
         external::{ExternSpec, extract_extern_specs_from_item},
         fmir, pearlite,
-        specification::ContractClauses,
-        traits::TraitImpl,
+        pearlite::ScopedTerm,
+        specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
+        traits::{TraitImpl, TraitResolved},
     },
     util::{erased_identity_for_item, parent_module},
 };

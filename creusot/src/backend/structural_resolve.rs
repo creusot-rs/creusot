@@ -5,7 +5,7 @@ use rustc_type_ir::TyKind;
 
 use crate::{
     contracts_items::{get_builtin, is_snap_ty, is_trusted},
-    pearlite::{Ident, Pattern, Term, TermKind},
+    translation::pearlite::{Ident, Pattern, Term, TermKind},
 };
 
 use super::Why3Generator;

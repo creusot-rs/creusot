@@ -57,7 +57,6 @@ mod resolve;
 mod run_why3;
 mod translated_item;
 mod translation;
-use translation::*;
 mod util;
 mod validate;
 mod very_stable_hash;

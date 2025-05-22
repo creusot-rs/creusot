@@ -7,8 +7,9 @@ use crate::{
     },
     ctx::*,
     naming::{name, variable_name},
-    pearlite::{Ident, PIdent, TermVisitorMut},
-    translation::pearlite::{Literal, Term, TermKind, normalize, type_invariant_term},
+    translation::pearlite::{
+        Ident, Literal, PIdent, Term, TermKind, TermVisitorMut, normalize, type_invariant_term,
+    },
     util::erased_identity_for_item,
 };
 use rustc_hir::{AttrArgs, Safety, def_id::DefId};
