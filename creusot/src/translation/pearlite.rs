@@ -727,6 +727,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         span,
                         "Triggers can only be used directly inside quantifiers",
                     )),
+                    Some(NatFunLit) => {
+                        _
+                    }
                     None => {
                         let fun = self.expr_term(fun)?;
                         let (id, subst) = if let TermKind::Item(id, subst) = fun.kind {
@@ -1277,6 +1280,7 @@ pub(crate) enum Stub {
     Old,
     ResultCheck,
     Dead,
+    NatFunLit,
 }
 
 pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
@@ -1293,6 +1297,7 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
             "old" => Some(Stub::Old),
             "dead" => Some(Stub::Dead),
             "closure_result_constraint" => Some(Stub::ResultCheck),
+            "nat_fun_lit" => Some(Stub::NatFunLit),
             _ => None,
         }
     } else {

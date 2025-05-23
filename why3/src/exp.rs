@@ -117,6 +117,7 @@ pub enum Exp {
     RecField { record: Box<Exp>, label: Name },
     Tuple(Box<[Exp]>),
     Constructor { ctor: Name, args: Box<[Exp]> },
+    NatFunction(Box<[Exp]>),
     Const(Constant),
     BinaryOp(BinOp, Box<Exp>, Box<Exp>),
     UnaryOp(UnOp, Box<Exp>),
@@ -157,6 +158,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
         Exp::RecField { record, label: _ } => f.visit_mut(record),
         Exp::Tuple(exps) => exps.iter_mut().for_each(|e| f.visit_mut(e)),
         Exp::Constructor { ctor: _, args } => args.iter_mut().for_each(|e| f.visit_mut(e)),
+        Exp::NatFunction(exps) => exps.iter_mut().for_each(|e| f.visit_mut(e)),
         Exp::Const(_) => {}
         Exp::BinaryOp(_, l, r) => {
             f.visit_mut(l);
@@ -291,6 +293,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
         Exp::RecField { record, label: _ } => f.visit(record),
         Exp::Tuple(exps) => exps.iter().for_each(|e| f.visit(e)),
         Exp::Constructor { ctor: _, args } => args.iter().for_each(|e| f.visit(e)),
+        Exp::NatFunction(exps) => exps.iter().for_each(|e| f.visit(e)),
         Exp::Const(_) => {}
         Exp::BinaryOp(_, l, r) => {
             f.visit(l);
@@ -683,6 +686,7 @@ impl Exp {
             Exp::RecField { .. } => Field,
             Exp::Tuple(_) => Atom,
             Exp::Constructor { .. } => App,
+            Exp::NatFunction(_) => Atom,
             Exp::Match(_, _) => Abs,
             Exp::IfThenElse(_, _, _) => IfLet,
             Exp::Const(_) => Atom,

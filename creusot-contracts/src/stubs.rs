@@ -78,3 +78,10 @@ pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> crate::Snapshot<T>>(_: F) -> crate
 pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
     dead
 }
+
+#[logic]
+#[creusot::no_translate]
+#[rustc_diagnostic_item = "natfunlit"]
+pub fn nat_fun_lit<T>(_: &[T]) -> Mappiong<Int, T> {
+    dead
+}
