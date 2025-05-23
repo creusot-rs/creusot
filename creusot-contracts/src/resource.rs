@@ -85,6 +85,7 @@ impl<R: RA> Resource<R> {
     ///
     /// `⌜valid(value)⌝ ⊢ ∃γ, Own(value, γ)`
     #[trusted]
+    #[pure]
     #[requires(r.valid())]
     #[ensures(result@ == *r)]
     pub fn alloc(r: Snapshot<R>) -> Ghost<Self> {
@@ -100,9 +101,6 @@ impl<R: RA> Resource<R> {
     pub fn clone(&self) -> Self {
         panic!("ghost code only")
     }
-
-    // NOTE: couldn't we somehow make the logical model of Snapshot<T> to be T?
-    // (so we could get rid of these extra * in specs)
 
     /// Split a resource into two parts, described by `a` and `b`.
     ///
@@ -121,18 +119,19 @@ impl<R: RA> Resource<R> {
         panic!("ghost code only")
     }
 
-    // TODO: we want this, but nothing guarantees that the results will not change the id
-    // #[trusted]
-    // #[pure]
-    // #[requires(self@ == a.op(*b))]
-    // #[ensures(result.0.id() == self.id() && result.1.id() == self.id())]
-    // #[ensures(result.0@ == *a)]
-    // #[ensures(result.1@ == *b)]
-    // #[ensures((^self).id() == self.id())]
-    // #[ensures((^self)@ == (^result.0)@.op((^result.1)@))]
-    // pub fn split_mut(&mut self, a: Snapshot<R>, b: Snapshot<R>) -> (&mut Self, &mut Self) {
-    //     panic!("ghost code only")
-    // }
+    /// Split a resource into two, and join it again once the mutable borrows are dropped.
+    #[trusted]
+    #[pure]
+    #[requires(self@ == a.op(*b))]
+    #[ensures(result.0.id() == self.id() && result.1.id() == self.id())]
+    #[ensures(result.0@ == *a)]
+    #[ensures(result.1@ == *b)]
+    #[ensures((^result.0).id() == self.id() && (^result.1).id() == self.id() ==>
+        (^self).id() == self.id() &&
+        (^self)@ == (^result.0)@.op((^result.1)@))]
+    pub fn split_mut(&mut self, a: Snapshot<R>, b: Snapshot<R>) -> (&mut Self, &mut Self) {
+        panic!("ghost code only")
+    }
 
     /// Remove `b` from `self` and return it, leaving `a` inside `self`.
     #[trusted]
