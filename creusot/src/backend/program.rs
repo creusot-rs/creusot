@@ -14,7 +14,7 @@ use crate::{
         clone_map::{Namer, PreMod},
         dependency::Dependency,
         is_trusted_item,
-        optimization::{gather_usage, infer_proph_invariants, simplify_fmir},
+        optimization::{infer_proph_invariants, simplify_fmir},
         projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::lower_program_sig,
         term::{lower_pat, lower_pure},
@@ -157,7 +157,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         .map(|(i, k)| (k, i))
         .collect::<HashMap<_, _>>();
 
-    simplify_fmir(gather_usage(&body), &mut body);
+    simplify_fmir(&mut body);
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
     infer_proph_invariants(ctx, &mut body, body_id);

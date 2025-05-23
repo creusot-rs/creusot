@@ -20,16 +20,18 @@ use super::pearlite::TermKind;
 
 pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<Ident, Ty<'tcx>>;
 
+/// The equivalent of [`mir::Place`], but for fMIR
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Place<'tcx> {
     pub(crate) local: Ident,
     pub(crate) projections: Box<[ProjectionElem<'tcx>]>,
 }
 
+/// The equivalent of [`mir::PlaceRef`], but for fMIR
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct PlaceRef<'a, 'tcx> {
-    pub local: Ident,
-    pub projection: &'a [ProjectionElem<'tcx>],
+pub(crate) struct PlaceRef<'a, 'tcx> {
+    pub(crate) local: Ident,
+    pub(crate) projection: &'a [ProjectionElem<'tcx>],
 }
 
 impl<'tcx> Place<'tcx> {

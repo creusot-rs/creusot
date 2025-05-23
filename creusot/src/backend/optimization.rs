@@ -1,68 +1,77 @@
-use std::collections::HashMap;
+mod invariants;
 
-use rustc_middle::mir;
-use std::collections::HashSet;
+pub(crate) use invariants::infer_proph_invariants;
 
 use crate::translation::{
     fmir::*,
     pearlite::{Ident, Term, TermKind, TermVisitor, super_visit_term},
 };
+use rustc_middle::mir;
+use std::collections::{HashMap, HashSet};
 
-pub mod invariants;
-
-pub use invariants::*;
-
-pub(crate) struct LocalUsage<'a, 'tcx> {
-    locals: &'a LocalDecls<'tcx>,
-    return_place: Ident,
-    pub(crate) usages: HashMap<Ident, Usage>,
+/// Simplify the given fMIR body
+/// - Propagate constants
+/// - Eliminate dead variables
+pub(crate) fn simplify_fmir(body: &mut Body) {
+    let usage = gather_usage(body);
+    SimplePropagator { usage, prop: HashMap::new(), dead: HashSet::new() }.visit_body(body);
 }
 
+/// A visitor that collect informations about locals.
+struct LocalUsage<'a, 'tcx> {
+    locals: &'a LocalDecls<'tcx>,
+    /// The local used for the return value
+    return_place: Ident,
+    usages: HashMap<Ident, Usage>,
+}
+
+/// Used to record read and writes of a variable
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
-pub(crate) enum ZeroOneMany {
+enum ZeroOneMany {
     #[default]
     Zero,
-    One(Whole),
+    One {
+        whole: bool,
+    },
     Many,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Whole {
-    Whole,
-    Part,
-}
-
 impl ZeroOneMany {
-    fn inc(&mut self, whole: Whole) {
+    /// Increase `self`, using `whole` when going into [`ZeroOneMany::One`].
+    fn inc(&mut self, whole: bool) {
         *self = match self {
-            ZeroOneMany::Zero => ZeroOneMany::One(whole),
-            ZeroOneMany::One(_) => ZeroOneMany::Many,
+            ZeroOneMany::Zero => ZeroOneMany::One { whole },
+            ZeroOneMany::One { .. } => ZeroOneMany::Many,
             ZeroOneMany::Many => ZeroOneMany::Many,
         }
     }
 }
 
+/// Gathers usages of a fMIR local in a fMIR body.
 #[derive(Clone, Copy, Default, Debug)]
 pub(crate) struct Usage {
+    /// Is this local written to?
     write: ZeroOneMany,
+    /// Is this local read?
     read: ZeroOneMany,
     temp_var: bool,
-    // Is this local used in a place where we need a `Term`?
+    /// Is this local used in a place where we need a `Term`?
     used_in_pure_ctx: bool,
-    // Is this local being used in a move chain as in: _x = _y
+    /// Is this local being used in a move chain as in: `_x = _y`?
     is_move_chain: bool,
 }
 
-pub(crate) fn gather_usage(b: &Body) -> HashMap<Ident, Usage> {
-    let return_place = *b.locals.get_index(0).unwrap().0;
-    let mut usage = LocalUsage { locals: &b.locals, return_place, usages: HashMap::new() };
+/// Analyzes `body` to gather informations about locals.
+fn gather_usage(body: &Body) -> HashMap<Ident, Usage> {
+    let return_place = *body.locals.get_index(0).unwrap().0;
+    let mut usage = LocalUsage { locals: &body.locals, return_place, usages: HashMap::new() };
 
-    usage.visit_body(b);
+    usage.visit_body(body);
     usage.usages
 }
 
 impl<'tcx> LocalUsage<'_, 'tcx> {
-    pub(crate) fn visit_body(&mut self, b: &Body<'tcx>) {
+    fn visit_body(&mut self, b: &Body<'tcx>) {
         b.blocks.values().for_each(|b| self.visit_block(b));
     }
 
@@ -141,8 +150,6 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
         }
     }
 
-    // fn visit_term(&mut self, t: &Term<'tcx>) {}
-
     fn visit_operand(&mut self, op: &Operand<'tcx>) {
         match op {
             Operand::Move(p) => self.read_place(p),
@@ -152,6 +159,8 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
         }
     }
 
+    /// Mark the place `p` as read: this will gather information about the concerned
+    /// variables.
     fn read_place(&mut self, p: &Place<'tcx>) {
         self.read(p.local, p.projections.is_empty());
         p.projections.iter().for_each(|p| {
@@ -161,10 +170,13 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
         })
     }
 
+    /// Mark the place `p` as written to: this will gather information about the
+    /// concerned variables.
     fn write_place(&mut self, p: &Place<'tcx>) {
         self.write(p.local, p.projections.is_empty());
         p.projections.iter().for_each(|p| {
             if let mir::ProjectionElem::Index(l) = p {
+                // Indices (like `i` is `x[i] = ...`) are merely read
                 self.read(*l, true)
             }
         })
@@ -178,7 +190,7 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
 
     fn read(&mut self, local: Ident, whole: bool) {
         if let Some(usage) = self.get(local) {
-            usage.read.inc(if whole { Whole::Whole } else { Whole::Part })
+            usage.read.inc(whole)
         };
     }
 
@@ -202,7 +214,7 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
     }
     fn write(&mut self, local: Ident, whole: bool) {
         if let Some(usage) = self.get(local) {
-            usage.write.inc(if whole { Whole::Whole } else { Whole::Part })
+            usage.write.inc(whole)
         };
     }
 
@@ -225,17 +237,19 @@ impl<'tcx> TermVisitor<'tcx> for LocalUsage<'_, 'tcx> {
     }
 }
 
+/// fMIR visitor that:
+/// - propagate constants
+/// - removes dead variables
 #[derive(Debug)]
 struct SimplePropagator<'tcx> {
     /// Tracks how many reads and writes each variable has
     usage: HashMap<Ident, Usage>,
+    /// Variables for which we can apply constant propagation
     prop: HashMap<Ident, Operand<'tcx>>,
+    /// Unused variables
     dead: HashSet<Ident>,
 }
 
-pub(crate) fn simplify_fmir(usage: HashMap<Ident, Usage>, body: &mut Body) {
-    SimplePropagator { usage, prop: HashMap::new(), dead: HashSet::new() }.visit_body(body);
-}
 impl<'tcx> SimplePropagator<'tcx> {
     fn visit_body(&mut self, b: &mut Body<'tcx>) {
         for b in b.blocks.values_mut() {
@@ -348,23 +362,17 @@ impl<'tcx> SimplePropagator<'tcx> {
     }
 
     fn should_propagate(&self, l: Ident) -> bool {
-        self.usage
-            .get(&l)
-            .map(|u| {
-                u.read == ZeroOneMany::One(Whole::Whole)
-                    && u.write == ZeroOneMany::One(Whole::Whole)
-                    && u.temp_var
-                    && u.is_move_chain
-            })
-            .unwrap_or(false)
+        self.usage.get(&l).is_some_and(|u| {
+            u.read == ZeroOneMany::One { whole: true }
+                && u.write == ZeroOneMany::One { whole: true }
+                && u.temp_var
+                && u.is_move_chain
+        })
     }
 
     fn should_erase(&self, l: Ident) -> bool {
-        self.usage
-            .get(&l)
-            .map(|u| {
-                u.read == ZeroOneMany::Zero && matches!(u.write, ZeroOneMany::One(_)) && u.temp_var
-            })
-            .unwrap_or(false)
+        self.usage.get(&l).is_some_and(|u| {
+            u.read == ZeroOneMany::Zero && matches!(u.write, ZeroOneMany::One { .. }) && u.temp_var
+        })
     }
 }

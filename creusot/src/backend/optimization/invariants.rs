@@ -1,3 +1,9 @@
+//! fMIR transformations
+//!
+//! This module defines a fMIR transformation which analyzes the body for
+//! 1. types with invariants being mutated inside of a loop
+//! 2. mutable borrows being mutated inside of a loop.
+
 use crate::{
     backend::{
         program::node_graph,
@@ -7,7 +13,7 @@ use crate::{
     contracts_items::get_snap_ty,
     ctx::{BodyId, TranslationCtx},
     translation::{
-        fmir::{self, StatementKind},
+        fmir::{self, Block, FmirVisitor, Place, RValue, Statement, StatementKind, Terminator},
         pearlite::{Ident, Term},
     },
 };
@@ -19,14 +25,7 @@ use rustc_middle::{
 };
 use rustc_span::DUMMY_SP;
 
-use crate::translation::fmir::{Block, FmirVisitor, Place, RValue, Statement, Terminator};
-
-/// fMIR transformations
-///
-/// This module defines a fMIR transformation which analyzes the body for
-///
-/// (1) types with invariants being mutated inside of a loop
-/// (2) mutable borrows being mutated inside of a loop.
+/// Add loop invariants to `body` for each mutable borrow that is _not_ modified in a loop.
 pub fn infer_proph_invariants<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     body: &mut fmir::Body<'tcx>,
