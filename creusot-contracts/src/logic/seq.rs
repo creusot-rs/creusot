@@ -688,3 +688,10 @@ pub fn flat_map_push_back<A, B>(xs: Seq<A>) {
         proof_assert! { forall<x: A> xs.tail().push_back(x) == xs.push_back(x).tail() }
     }
 }
+
+/// A sequence literal `seq![a, b, c]`.
+#[macro_export]
+macro_rules! seq {
+    ($($items:expr),+) => { creusot_contracts::__stubs::seq_literal(&[$($items),+]) };
+    () => { Seq::EMPTY };
+}

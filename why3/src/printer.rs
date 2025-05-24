@@ -802,6 +802,9 @@ impl Print for Exp {
                     ))
                 })
             }
+            Exp::FunLiteral(exps) => alloc
+                .intersperse(exps.iter().map(|e| parens!(alloc, scope, Precedence::IfLet, e)), ";")
+                .enclose("[|", "|]"),
             Exp::Const(c) => c.pretty(alloc, scope),
 
             Exp::UnaryOp(UnOp::Not, op) => {

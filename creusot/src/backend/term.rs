@@ -63,6 +63,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
             TermKind::Lit(l) => lower_literal(self.ctx, self.names, l),
+            TermKind::SeqLiteral(elts) => {
+                let elts: Box<[Exp]> = elts.iter().map(|elt| self.lower_term(elt)).collect();
+                Exp::qvar(name::seq_create())
+                    .app([Exp::int(elts.len() as i128), Exp::FunLiteral(elts)])
+            }
             TermKind::Cast { box arg } => match arg.ty.kind() {
                 TyKind::Bool => {
                     let (fct_name, prelude_kind) = match term.ty.kind() {

@@ -232,6 +232,10 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Var(v) => k(Exp::var(v.0)),
             // VC(l, Q) = Q(l)
             TermKind::Lit(l) => k(self.lower_literal(l)),
+            TermKind::SeqLiteral(elts) => self.build_wp_slice(elts, &|elts: Box<[Exp]>| {
+                k(Exp::qvar(name::seq_create())
+                    .app([Exp::int(elts.len() as i128), Exp::FunLiteral(elts)]))
+            }),
             TermKind::Cast { arg } => match arg.ty.kind() {
                 TyKind::Bool => self.build_wp(arg, &|arg| {
                     let (fct_name, prelude_kind) = match t.ty.kind() {
