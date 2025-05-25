@@ -149,14 +149,7 @@ impl<K, V> Authority<K, V> {
     #[allow(unused_variables)]
     pub fn contains(&self, frag: &Fragment<K, V>) {
         let new_resource = self.0.join_shared(&frag.0);
-        let new_frag = snapshot!(match new_resource@.frag {
-            None => FMap::empty(),
-            Some(map) => map,
-        });
-        let old_frag = snapshot!(match frag.0@.frag {
-            None => FMap::empty(),
-            Some(map) => map,
-        });
+        proof_assert!(frag.0@.incl(new_resource@) != None);
     }
 }
 
