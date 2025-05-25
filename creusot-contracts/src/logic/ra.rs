@@ -11,7 +11,7 @@ mod view;
 
 pub use self::{
     agree::Ag,
-    auth::Auth,
+    auth::{Auth, AuthViewRel},
     excl::Excl,
     sum::Sum,
     view::{View, ViewRel},
