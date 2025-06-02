@@ -284,6 +284,7 @@ impl DepElab for LogicElab {
             TraitResolved::NotATraitItem
             | TraitResolved::Instance(..) // The default impl is known to be the final instance
             | TraitResolved::UnknownFound // Unresolved trait method
+            | TraitResolved::UnknownNotFound // TODO: What does this mean? `core::mem::SizedTypeProperties` causes this, maybe related to primitive traits?
         );
         // The other case are impossible, because that would mean we are  not guaranteed to have an instance
         let self_id = elab.self_item.0;

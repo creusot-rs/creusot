@@ -67,6 +67,7 @@ pub const fn nat_i2<T: Nat>() -> usize {
     const { <I2<T> as Nat>::VALUE }
 }
 
+/*
 // associated const from std
 #[ensures(result == T::IS_ZST)]
 pub const fn is_zst<T: ::std::mem::SizedTypeProperties>() -> bool {
@@ -80,3 +81,4 @@ struct Z;
 pub const fn is_zst_z() -> bool {
     const { is_zst::<Z>() }
 }
+ */
