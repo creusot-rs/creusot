@@ -82,3 +82,21 @@ pub const fn is_zst_z() -> bool {
     const { is_zst::<Z>() }
 }
  */
+
+const N: (usize, i32) = (42, 24);
+
+#[requires(N.0 == 42usize)]
+#[ensures(N.1 == 24i32)]
+pub const fn tuple() -> (usize, i32) {
+    N
+}
+
+struct I3<T: Nat>(T);
+
+impl<T: Nat> Nat for I3<T> {
+    const VALUE: usize = const { T::VALUE + T::VALUE };
+}
+
+pub const fn nat_i3<T: Nat>() -> usize {
+    const { <I3<T> as Nat>::VALUE }
+}

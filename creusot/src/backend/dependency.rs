@@ -112,9 +112,12 @@ impl<'tcx> Dependency<'tcx> {
                     }
                 },
             },
-            Dependency::Logic(did, _) => {
-                Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
-            }
+            Dependency::Logic(did, _) => match tcx.opt_item_name(did) {
+                Some(item_name) => {
+                    Some(Symbol::intern(&value_name(&translate_name(item_name.as_str()))))
+                }
+                None => Some(Symbol::intern("logic_const")),
+            },
             Dependency::ClosureAccessor(_, _, ix) => Some(Symbol::intern(&format!("_{ix}"))),
             Dependency::TupleField(_, ix) => Some(Symbol::intern(&format!("_p{}", ix.as_u32()))),
             Dependency::TyInvAxiom(..) => Some(Symbol::intern("inv_axiom")),
