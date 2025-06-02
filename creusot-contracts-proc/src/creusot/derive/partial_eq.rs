@@ -17,7 +17,7 @@ pub fn derive_partial_eq(input: proc_macro::TokenStream) -> proc_macro::TokenStr
 
     let expanded = quote! {
         impl #impl_generics ::std::cmp::PartialEq for #name #ty_generics #where_clause {
-            #[ensures(result == (::creusot_contracts::model::DeepModel::deep_model(self) ==
+            #[::creusot_contracts::ensures(result == (::creusot_contracts::model::DeepModel::deep_model(self) ==
                                  ::creusot_contracts::model::DeepModel::deep_model(rhs)))]
             fn eq(&self, rhs: &Self) -> bool {
                 #eq
@@ -44,9 +44,7 @@ fn partial_eq(base_ident: &Ident, data: &Data) -> TokenStream {
             Fields::Named(ref fields) => {
                 let recurse = fields.named.iter().map(|f| {
                     let name = &f.ident;
-                    quote_spanned! {f.span()=>
-                        self.#name.eq(&rhs.#name)
-                    }
+                    quote_spanned! {f.span()=> self.#name == rhs.#name }
                 });
                 quote! {
                     #(#recurse)&&*
@@ -55,13 +53,9 @@ fn partial_eq(base_ident: &Ident, data: &Data) -> TokenStream {
             Fields::Unnamed(ref fields) => {
                 let recurse = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = Index::from(i);
-                    quote_spanned! {f.span()=>
-                        self.#index.eq(&rhs.#index)
-                    }
+                    quote_spanned! {f.span()=> self.#index == rhs.#index }
                 });
-                quote! {
-                    #(#recurse)&&*
-                }
+                quote! { #(#recurse)&&* }
             }
             Fields::Unit => {
                 quote!(true)
@@ -119,7 +113,7 @@ fn gen_match_arm<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmAcc {
         let name_1 = format_ident!("{}_1", name_base);
         let name_2 = format_ident!("{}_2", name_base);
 
-        let cmp_expr = quote!(#name_1.eq(#name_2));
+        let cmp_expr = quote!(*#name_1 == *#name_2);
 
         let body = acc.body;
         acc.body = quote! { #cmp_expr && #body };
