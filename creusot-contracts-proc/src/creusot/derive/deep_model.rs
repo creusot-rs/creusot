@@ -34,9 +34,9 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let eq = deep_model(&name, &deep_model_ty_name, &input.data);
 
     let open = match vis {
-        syn::Visibility::Public(_) => quote! {#[open]},
-        syn::Visibility::Restricted(res) => quote! { #[open(#res)] },
-        syn::Visibility::Inherited => quote! { #[open(self)] },
+        syn::Visibility::Public(_) => quote! {#[::creusot_contracts::open]},
+        syn::Visibility::Restricted(res) => quote! { #[::creusot_contracts::open(#res)] },
+        syn::Visibility::Inherited => quote! { #[::creusot_contracts::open(self)] },
     };
 
     let expanded = quote! {
@@ -45,7 +45,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
         impl #impl_generics ::creusot_contracts::DeepModel for #name #ty_generics #where_clause {
             type DeepModelTy = #deep_model_ty_name #ty_generics;
 
-            #[logic]
+            #[::creusot_contracts::logic]
             #open
             fn deep_model(self) -> Self::DeepModelTy {
                 #eq
@@ -141,7 +141,7 @@ fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> TokenStream {
                 let recurse = fields.named.iter().map(|f| {
                     let name = &f.ident;
                     quote_spanned! {f.span()=>
-                        #name: self.#name.deep_model()
+                        #name: ::creusot_contracts::DeepModel::deep_model(self.#name)
                     }
                 });
                 quote! {
@@ -152,7 +152,7 @@ fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> TokenStream {
                 let recurse = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = Index::from(i);
                     quote_spanned! {f.span()=>
-                        self.#index.deep_model()
+                        ::creusot_contracts::DeepModel::deep_model(self.#index)
                     }
                 });
                 quote! {
