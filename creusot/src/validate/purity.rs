@@ -184,11 +184,13 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                 if let &FnDef(func_did, subst) = self.thir[fun].ty.kind() {
                     // try to specialize the called function if it is a trait method.
                     let subst = self.ctx.erase_regions(subst);
-                    let func_did =
+                    let Some((func_did, _)) =
                         TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, func_did, subst)
                             .to_opt(func_did, subst)
-                            .unwrap()
-                            .0;
+                    else {
+                        self.thir_failed = true;
+                        return;
+                    };
 
                     let fn_purity = self.purity(fun, func_did, args);
                     if !(self.context.can_call(fn_purity)
