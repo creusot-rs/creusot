@@ -43,7 +43,6 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
-use why3;
 
 mod normalize;
 
@@ -1285,7 +1284,7 @@ pub(crate) fn type_invariant_term<'tcx>(
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     let args = Box::new([Term { ty, span, kind: TermKind::Var(ident.into()) }]);
-    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(typing_env, ty)?;
+    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(typing_env, ty, span)?;
     Some(Term {
         ty: ctx.types.bool,
         span,

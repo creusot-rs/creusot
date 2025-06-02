@@ -296,7 +296,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let p = self.translate_place(pl)?;
 
-        if !is_tyinv_trivial(self.tcx(), self.typing_env(), place_ty.ty) {
+        if !is_tyinv_trivial(
+            self.tcx(),
+            self.typing_env(),
+            place_ty.ty,
+            self.tcx().def_span(self.body_id.def_id()),
+        ) {
             self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone() });
         }
 
@@ -325,7 +330,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let p = self.translate_place(rhs.as_ref()).unwrap_or_else(|err| err.crash(self.ctx, span));
 
         let rhs_ty = rhs.ty(self.body, self.tcx()).ty;
-        let triv_inv = if is_tyinv_trivial(self.tcx(), self.typing_env(), rhs_ty) {
+        let triv_inv = if is_tyinv_trivial(
+            self.tcx(),
+            self.typing_env(),
+            rhs_ty,
+            self.tcx().def_span(self.body_id.def_id()),
+        ) {
             TrivialInv::Trivial
         } else {
             TrivialInv::NonTrivial

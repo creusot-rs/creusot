@@ -174,7 +174,7 @@ impl<'tcx> Deref for TranslationCtx<'tcx> {
 
 fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
     struct VisitFns<'tcx, 'a>(TyCtxt<'tcx>, HashMap<DefId, Vec<usize>>, &'a ResolverAstLowering);
-    impl<'tcx, 'a> Visitor<'a> for VisitFns<'tcx, 'a> {
+    impl<'a> Visitor<'a> for VisitFns<'_, 'a> {
         fn visit_fn(&mut self, fk: FnKind<'a>, _: Span, node: NodeId) {
             let decl = match fk {
                 FnKind::Fn(_, _, _, Fn { sig: FnSig { decl, .. }, .. }) => decl,
@@ -325,13 +325,15 @@ impl<'tcx> TranslationCtx<'tcx> {
         })
     }
 
+    /// `span` is used for diagnostics.
     pub(crate) fn type_invariant(
         &self,
         typing_env: TypingEnv<'tcx>,
         ty: Ty<'tcx>,
+        span: Span,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         let ty = self.normalize_erasing_regions(typing_env, ty);
-        if is_tyinv_trivial(self.tcx, typing_env, ty) {
+        if is_tyinv_trivial(self.tcx, typing_env, ty, span) {
             None
         } else {
             let inv_did = get_inv_function(self.tcx);
@@ -560,16 +562,11 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn rename(&self, ident: HirId) -> Ident {
-        self.renamer
-            .borrow_mut()
-            .entry(ident)
-            .or_insert_with(|| {
-                let r =
-                    Ident::fresh(self.crate_name(), variable_name(self.hir().name(ident).as_str()));
-                self.corenamer.borrow_mut().insert(r, ident);
-                r
-            })
-            .clone()
+        *self.renamer.borrow_mut().entry(ident).or_insert_with(|| {
+            let r = Ident::fresh(self.crate_name(), variable_name(self.hir().name(ident).as_str()));
+            self.corenamer.borrow_mut().insert(r, ident);
+            r
+        })
     }
 
     pub(crate) fn crate_name(&self) -> why3::Symbol {

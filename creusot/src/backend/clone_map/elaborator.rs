@@ -67,6 +67,8 @@ pub(super) struct Expander<'a, 'tcx> {
     self_key: Dependency<'tcx>,
     typing_env: TypingEnv<'tcx>,
     expansion_queue: VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>,
+    /// Span for the item we are expanding
+    root_span: Span,
 }
 
 struct ExpansionProxy<'a, 'tcx> {
@@ -321,9 +323,10 @@ fn expand_ty_inv_axiom<'tcx>(
     ty: Ty<'tcx>,
 ) -> Vec<Decl> {
     let param_env = elab.typing_env;
+    let span = elab.root_span;
     let names = elab.namer(Dependency::TyInvAxiom(ty));
     let mut elab = InvariantElaborator::new(param_env, ctx);
-    let Some(term) = elab.elaborate_inv(ty) else { return vec![] };
+    let Some(term) = elab.elaborate_inv(ty, span) else { return vec![] };
     let rewrite = elab.rewrite;
     let axiom = lower_pure(ctx, &names, &term);
     let axiom =
@@ -383,11 +386,15 @@ impl DepElab for TyElab {
 }
 
 impl<'a, 'tcx> Expander<'a, 'tcx> {
+    /// # Parameters
+    ///
+    /// `span`: span of the item being expanded
     pub fn new(
         namer: &'a mut CloneNames<'tcx>,
         self_key: Dependency<'tcx>,
         typing_env: TypingEnv<'tcx>,
         initial: impl Iterator<Item = Dependency<'tcx>>,
+        span: Span,
     ) -> Self {
         Self {
             graph: Default::default(),
@@ -396,6 +403,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             typing_env,
             expansion_queue: initial.map(|b| (self_key, Strength::Strong, b)).collect(),
             dep_bodies: Default::default(),
+            root_span: span,
         }
     }
 

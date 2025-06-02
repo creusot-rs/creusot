@@ -244,7 +244,7 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
     fn span(&self, span: Span) -> Option<Attribute> {
         let path = path_of_span(self.tcx, span, &self.span_mode)?;
         let ident = self.spans.insert(span, |_| {
-            Box::new(Ident::fresh_local(&format!(
+            Box::new(Ident::fresh_local(format!(
                 "s{}",
                 path.file_stem().unwrap().to_str().unwrap()
             )))
@@ -390,6 +390,7 @@ impl<'tcx> Dependencies<'tcx> {
             self_node,
             typing_env,
             self.dep_set.into_inner().into_iter(),
+            self.tcx.def_span(self.self_id),
         );
 
         // Update the clone graph with any new entries.
@@ -423,7 +424,7 @@ impl<'tcx> Dependencies<'tcx> {
                         if let Some((did, _)) = node.did()
                             && get_builtin(self.tcx, did).is_some()
                         {
-                            return false;
+                            false
                         } else {
                             match node {
                                 Dependency::TupleField(..)
@@ -511,14 +512,12 @@ impl<'tcx> Dependencies<'tcx> {
             })
             .collect();
 
-        let dependencies = if spans.is_empty() {
+        if spans.is_empty() {
             decls
         } else {
             let mut tmp = vec![Decl::LetSpans(spans)];
             tmp.extend(decls);
             tmp
-        };
-
-        dependencies
+        }
     }
 }
