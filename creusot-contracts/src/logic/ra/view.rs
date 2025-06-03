@@ -16,7 +16,7 @@ pub trait ViewRel {
 
     #[law]
     #[requires(Self::rel(a, f1))]
-    #[requires(f2.incl(f1))]
+    #[requires(f2.incl(f1) != None)]
     #[ensures(Self::rel(a, f2))]
     fn rel_mono(a: Self::Auth, f1: Self::Frag, f2: Self::Frag);
 }
@@ -92,9 +92,15 @@ where
 
     #[logic]
     #[open]
-    #[ensures(result == (exists<c: Self> self.op(c) == other))]
-    fn incl(self, other: Self) -> bool {
-        (self.auth, self.frag).incl((other.auth, other.frag))
+    #[ensures(match result {
+        Some(c) => self.op(c) == other,
+        None => forall<c: Self> self.op(c) != other,
+    })]
+    fn incl(self, other: Self) -> Option<Self> {
+        match (self.auth, self.frag).incl((other.auth, other.frag)) {
+            Some((auth, frag)) => Some(Self { auth, frag }),
+            None => None,
+        }
     }
 
     #[logic]
@@ -124,13 +130,15 @@ where
     #[logic]
     #[open(self)]
     #[requires(self.valid())]
-    #[ensures(
-        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
-        (exists<b: Self> b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
-    )]
-    fn maximal_idemp(self) {
-        self.auth.maximal_idemp();
-        self.frag.maximal_idemp();
+    #[ensures(match result {
+        Some(b) => b.incl(self) != None && b.idemp() &&
+           forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(b) != None,
+        None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
+    })]
+    fn maximal_idemp(self) -> Option<Self> {
+        match (self.auth.maximal_idemp(), self.frag.maximal_idemp()) {
+            (Some(auth), Some(frag)) => Some(Self { auth, frag }),
+            _ => None,
+        }
     }
 }

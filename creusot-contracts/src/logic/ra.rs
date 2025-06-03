@@ -92,8 +92,11 @@ pub trait RA: Sized {
     /// Iris formalization, where it uses the non-reflexive definition (as
     /// we do here).
     #[logic]
-    #[ensures(result == exists<c: Self> self.op(c) == other)]
-    fn incl(self, other: Self) -> bool;
+    #[ensures(match result {
+        Some(c) => self.op(c) == other,
+        None => forall<c: Self> self.op(c) != other,
+    })]
+    fn incl(self, other: Self) -> Option<Self>;
 
     /// Identifies an element as _idempotent_.
     ///
@@ -123,20 +126,22 @@ pub trait RA: Sized {
     /// of `self` that is [`Self::idemp`].
     #[logic]
     #[requires(self.valid())]
-    #[ensures(
-        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
-        (exists<b: Self> b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
-    )]
-    fn maximal_idemp(self);
+    #[ensures(match result {
+        Some(b) => b.incl(self) != None && b.idemp() &&
+           forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(b) != None,
+        None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
+    })]
+    fn maximal_idemp(self) -> Option<Self>;
 }
 
 /// [`RA::incl`] is transitive.
 // TODO: with sealed trait functions, it would be possible to pull this inside the trait as a law.
 #[logic]
 #[open(self)]
-#[requires(a.incl(b) && b.incl(c))]
-#[ensures(a.incl(c))]
+#[ensures(match (a.incl(b), b.incl(c)) {
+    (Some(_), Some(_)) => a.incl(c) != None,
+    _ => true,
+})]
 pub fn incl_transitive<T: RA>(a: T, b: T, c: T) {}
 
 /// Ensures that we can go from `x` to `y` without making composition with the frame invalid.

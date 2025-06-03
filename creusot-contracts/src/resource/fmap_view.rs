@@ -43,10 +43,20 @@ impl<K, V> ViewRel for MapRelation<K, V> {
 
     #[law]
     #[requires(Self::rel(a, f1))]
-    #[requires(f2.incl(f1))]
+    #[requires(f2.incl(f1) != None)]
     #[ensures(Self::rel(a, f2))]
     #[open]
-    fn rel_mono(a: Self::Auth, f1: Self::Frag, f2: Self::Frag) {}
+    fn rel_mono(a: Self::Auth, f1: Self::Frag, f2: Self::Frag) {
+        match f2.incl(f1) {
+            None => {}
+            Some(_) => {
+                proof_assert!(forall<k: K> match f2.get(k) {
+                    Some(Ag::Ag(v)) => f1.get(k) == Some(Ag::Ag(v)),
+                    _ => true,
+                });
+            }
+        }
+    }
 }
 
 /// Inner value for [`Resource`] and [`Fragment`].
