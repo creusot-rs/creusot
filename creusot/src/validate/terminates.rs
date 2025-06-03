@@ -550,7 +550,7 @@ impl CallGraph {
             if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
                 continue;
             }
-            let (thir, expr) = ctx.thir_body(local_id).unwrap();
+            let Ok((thir, expr)) = ctx.thir_body(local_id) else { return Err(CannotFetchThir) };
             let thir = thir.borrow();
             let mut visitor = GhostLoops {
                 thir: &thir,
