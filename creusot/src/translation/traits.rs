@@ -328,7 +328,7 @@ fn instantiate_params_with_infer<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
         tys: HashMap<ParamTy, Ty<'tcx>>,
         consts: HashMap<ParamConst, Const<'tcx>>,
     }
-    impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for Folder<'a, 'tcx> {
+    impl<'tcx> TypeFolder<TyCtxt<'tcx>> for Folder<'_, 'tcx> {
         fn cx(&self) -> TyCtxt<'tcx> {
             self.ctx.tcx
         }
@@ -361,11 +361,15 @@ fn still_specializable<'tcx>(
     trait_ref: TraitRef<'tcx>,
     source: Option<&ImplSource<'tcx, ()>>,
 ) -> bool {
-    let start_node;
-    let graph = tcx.specialization_graph_of(trait_ref.def_id).unwrap();
+    let Ok(graph) = tcx.specialization_graph_of(trait_ref.def_id) else {
+        // TODO: the proper way to do this would be to bubble the error up
+        // so that we can continue for a bit, and maybe report other errors
+        tcx.dcx().abort_if_errors();
+        unreachable!()
+    };
 
     // Search for the least specialized node that applies to this trait_ref
-    if let Some(ImplSource::UserDefined(ud)) = source {
+    let start_node = if let Some(ImplSource::UserDefined(ud)) = source {
         let trait_def = tcx.trait_def(trait_ref.def_id);
         let leaf = trait_def
             .ancestors(tcx, ud.impl_def_id)
@@ -379,10 +383,10 @@ fn still_specializable<'tcx>(
             return false;
         }
 
-        start_node = leaf.defining_node.def_id();
+        leaf.defining_node.def_id()
     } else {
-        start_node = trait_ref.def_id;
-    }
+        trait_ref.def_id
+    };
 
     // Check whether we know all the nodes.
     // We take inspiration from rustc_next_solver::cohenrence::trait_ref_is_knowable,
