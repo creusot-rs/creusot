@@ -152,7 +152,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
 
     simplify_fmir(gather_usage(&body), &mut body);
 
-    let (entry, blocks) = body_exp(ctx, names, inner_return, body_id, &mut body);
+    let (entry, blocks) = body_exp(ctx, names, inner_return, body_id.def_id.to_def_id(), &mut body);
 
     let (mut sig, contract, return_ty) = if !body_id.constness.is_const() {
         let def_id = body_id.def_id();
@@ -251,11 +251,11 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     Defn { prototype: sig, body }
 }
 
-fn body_exp<'tcx, N: Namer<'tcx>>(
+pub(crate) fn body_exp<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     inner_return: Ident,
-    body_id: BodyId,
+    def_id: DefId,
     body: &mut Body<'tcx>,
 ) -> (Box<Expr>, Box<[Defn]>) {
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
@@ -270,7 +270,7 @@ fn body_exp<'tcx, N: Namer<'tcx>>(
     let blocks: Box<[Defn]> = wto
         .into_iter()
         .map(|c| {
-            component_to_defn(body, ctx, names, body_id.def_id, &block_idents, inner_return, c)
+            component_to_defn(body, ctx, names, def_id, &block_idents, inner_return, c)
         })
         .collect();
     (Expr::var(block_idents[0]).boxed(), blocks)
@@ -280,7 +280,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    def_id: LocalDefId,
+    def_id: DefId,
     block_idents: &IndexMap<BasicBlock, Ident>,
     return_ident: Ident,
     c: Component<BasicBlock>,
@@ -320,7 +320,7 @@ pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) ctx: &'a Why3Generator<'tcx>,
     pub(super) names: &'a N,
     pub(super) locals: &'a LocalDecls<'tcx>,
-    pub(super) def_id: LocalDefId,
+    pub(super) def_id: DefId,
     block_idents: &'a IndexMap<BasicBlock, Ident>,
     return_ident: Ident,
 }
@@ -350,7 +350,7 @@ impl<'tcx> Operand<'tcx> {
                 istmts.push(IntermediateStmt::call(
                     var,
                     lower.ty(ty),
-                    Name::local(lower.names.promoted(lower.def_id, pid)),
+                    Name::local(lower.names.promoted(lower.def_id.as_local().unwrap(), pid)),
                     [],
                 ));
                 Exp::var(var)
