@@ -17,7 +17,7 @@ use crate::{
         get_ghost_inner_logic, get_index_logic, is_assertion, is_deref, is_ghost_ty, is_snap_ty,
         is_spec,
     },
-    error::{CannotFetchThir, CreusotResult, Error},
+    error::{CreusotResult, Error},
     translation::TranslationCtx,
 };
 use itertools::Itertools;
