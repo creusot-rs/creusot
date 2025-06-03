@@ -17,7 +17,7 @@ use crate::{
         get_ghost_inner_logic, get_index_logic, is_assertion, is_deref, is_ghost_ty, is_snap_ty,
         is_spec,
     },
-    error::{CannotFetchThir, CreusotResult, Error},
+    error::{CreusotResult, Error},
     translation::TranslationCtx,
 };
 use itertools::Itertools;
@@ -43,7 +43,6 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
-use why3;
 
 mod normalize;
 
@@ -463,7 +462,10 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
     let (thir, expr) = ctx.fetch_thir(id)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
-        return Err(Error::TypeCheck(CannotFetchThir));
+        // TODO: why does it not just return `()`?
+        return Err(Error::TypeCheck(
+            ctx.dcx().span_err(ctx.def_span(id), "Empty body is not allowed").into(),
+        ));
     };
     let lower = ThirTerm { ctx, item_id: id, thir: &thir };
 
@@ -1285,7 +1287,7 @@ pub(crate) fn type_invariant_term<'tcx>(
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     let args = Box::new([Term { ty, span, kind: TermKind::Var(ident.into()) }]);
-    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(typing_env, ty)?;
+    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(typing_env, ty, span)?;
     Some(Term {
         ty: ctx.types.bool,
         span,

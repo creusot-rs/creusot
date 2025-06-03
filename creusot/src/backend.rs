@@ -61,8 +61,6 @@ impl<'tcx> Why3Generator<'tcx> {
     pub(crate) fn translate(&mut self, def_id: DefId) -> Result<(), CannotFetchThir> {
         debug!("translating {:?}", def_id);
 
-        // eprintln!("{:?}", self.param_env(def_id));
-
         match self.item_type(def_id) {
             ItemType::Impl if self.tcx.impl_trait_ref(def_id).is_some() => {
                 let modls = traits::lower_impl(self, def_id);

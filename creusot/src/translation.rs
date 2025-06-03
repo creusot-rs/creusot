@@ -13,7 +13,7 @@ use crate::{
         AreContractsLoaded, are_contracts_loaded, is_logic, is_no_translate, is_predicate, is_spec,
     },
     ctx::{self},
-    error::{Error, InternalError},
+    error::{CannotFetchThir, Error, InternalError},
     metadata,
     options::Output,
     translated_item::FileModule,
@@ -56,26 +56,36 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn st
     match ctx.load_extern_specs() {
         Ok(()) => {}
         Err(Error::MustPrint(msg)) => msg.emit(ctx.tcx),
-        Err(Error::TypeCheck(_)) => ctx.tcx.dcx().abort_if_errors(),
+        Err(Error::TypeCheck(err)) => err.abort(ctx.tcx),
     };
 
+    // Collect eventual errors
+    let mut err = None;
+
     for def_id in ctx.tcx.hir().body_owners() {
-        // OK to ignore this error, because we abort after the loop.
-        let _ = validate_purity(ctx, def_id);
+        if let Err(e) = validate_purity(ctx, def_id) {
+            // we will abort after the loop.
+            CannotFetchThir::merge_opt(&mut err, e);
+        }
 
         let def_id = def_id.to_def_id();
         if (is_spec(ctx.tcx, def_id) || is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
             && !is_trusted_item(ctx.tcx, def_id)
         {
-            // OK to ignore this error, because we abort after the loop.
-            let _ = ctx.term(def_id);
-            let _ = validate_opacity(ctx, def_id);
+            if let Err(e) = ctx.term(def_id) {
+                CannotFetchThir::merge_opt(&mut err, e);
+            }
+            if let Err(e) = validate_opacity(ctx, def_id) {
+                CannotFetchThir::merge_opt(&mut err, e);
+            }
         }
     }
-    ctx.tcx.dcx().abort_if_errors();
-    // OK to ignore this error, because we abort right after.
-    let _ = validate_terminates(ctx);
-    ctx.tcx.dcx().abort_if_errors();
+    if let Some(err) = err {
+        err.abort(ctx.tcx);
+    }
+    if let Err(err) = validate_terminates(ctx) {
+        err.abort(ctx.tcx);
+    }
 
     // Check that all trait laws are well-formed
     validate_traits(ctx);
@@ -104,6 +114,7 @@ fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
 pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
     let mut why3 = Why3Generator::new(ctx);
 
+    let mut err = None;
     let start = Instant::now();
     for def_id in why3.hir().body_owners() {
         let def_id = def_id.to_def_id();
@@ -119,16 +130,22 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::err
 
         info!("Translating body {:?}", def_id);
         // Ok to ignore, because we call `abort_if_errors` at the end of the next loop
-        let _ = why3.translate(def_id);
+        if let Err(e) = why3.translate(def_id) {
+            CannotFetchThir::merge_opt(&mut err, e);
+        }
     }
 
     for impls in why3.all_local_trait_impls(()).values() {
         for impl_id in impls {
             // Ok to ignore, because we call `abort_if_errors` at the end of the loop
-            let _ = why3.translate(impl_id.to_def_id());
+            if let Err(e) = why3.translate(impl_id.to_def_id()) {
+                CannotFetchThir::merge_opt(&mut err, e);
+            }
         }
     }
-    why3.tcx.dcx().abort_if_errors();
+    if let Some(err) = err {
+        err.abort(why3.tcx);
+    }
 
     debug!("after_analysis_translate: {:?}", start.elapsed());
     let start = Instant::now();
@@ -214,7 +231,7 @@ fn remove_coma_files(dir: &PathBuf) -> std::io::Result<()> {
             if path.is_dir() {
                 remove_coma_files(&path)?;
                 let _ = std::fs::remove_dir(path); // remove the directory if it's empty, do nothing otherwise
-            } else if path.extension().map_or(false, |ext| ext == "coma") {
+            } else if path.extension().is_some_and(|ext| ext == "coma") {
                 std::fs::remove_file(&path)?;
             }
         }
