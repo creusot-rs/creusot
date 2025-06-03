@@ -129,14 +129,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             // FIXME: this is a weird dance.
             TermKind::Item(id, subst) => {
                 debug!("resolved_method={:?}", (*id, *subst));
-                let clone = if matches!(self.ctx.item_type(*id), ItemType::Constant) {
-                    self.names.constant(*id, subst)
-                } else {
-                    self.names.item(*id, subst)
-                };
                 let item = match self.ctx.type_of(id).instantiate_identity().kind() {
                     TyKind::FnDef(_, _) => Exp::unit(),
-                    _ => Exp::Var(clone),
+                    _ => Exp::Var(self.names.item(*id, subst)),
                 };
 
                 if matches!(self.ctx.def_kind(*id), DefKind::AssocConst) {

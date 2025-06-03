@@ -283,11 +283,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // Items are just global names so
             // VC(i, Q) = Q(i)
             TermKind::Item(id, sub) => {
-                let item_name = if matches!(item_type(self.ctx.tcx, *id), ItemType::Constant) {
-                    self.names.constant(*id, sub)
-                } else {
-                    self.names.item(*id, sub)
-                };
+                let item_name = self.names.item(*id, sub);
                 if get_builtin(self.ctx.tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
                     k(Exp::Var(item_name).ascribe(self.ty(t.ty)))

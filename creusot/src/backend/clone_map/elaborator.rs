@@ -11,7 +11,7 @@ use crate::{
         closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve},
         is_trusted_item,
         logic::{lower_logical_defn, spec_axiom},
-        program,
+        program::{self, to_why},
         signature::{lower_logic_sig, lower_program_sig},
         structural_resolve::structural_resolve,
         term::lower_pure,
@@ -42,15 +42,14 @@ use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
-    UnevaluatedConst,
+    GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
 use why3::{
     Exp, Ident,
     coma::{Arg, Defn, Expr, Param, Prototype},
-    declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
+    declaration::{Attribute, Axiom, Constant, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
 };
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
@@ -181,21 +180,10 @@ impl DepElab for ProgramElab {
             return vec![program::val(sig, contract, return_ident, return_ty)];
         }
 
-        if let Dependency::Item(def_id, subst) = dep
-            && matches!(ctx.def_kind(def_id), AssocConst)
-        {
-            return expand_assoc_const(ctx, &names, name, def_id, subst);
-        }
-
         // Inline the body of closures and promoted
         let bid = match dep {
             Dependency::Item(def_id, _) => {
-                use DefKind::*;
-                let constness = match ctx.def_kind(def_id) {
-                    Const | AssocConst | InlineConst | AnonConst => Constness::Const,
-                    _ => Constness::None,
-                };
-                BodyId { def_id: def_id.expect_local(), constness }
+                BodyId { def_id: def_id.expect_local(), constness: Constness::None }
             }
             Dependency::Promoted(def_id, prom) => {
                 BodyId { def_id, constness: Constness::Promoted(prom) }
@@ -219,7 +207,7 @@ fn expand_assoc_const<'tcx, N: Namer<'tcx>>(
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Vec<Decl> {
-    let logic_name = names.constant(def_id, subst);
+    let logic_name = names.item(def_id, subst);
     let ret = Ident::fresh_local("ret");
     let x = Ident::fresh_local("x");
     let span = ctx.def_span(def_id);
@@ -240,9 +228,9 @@ impl DepElab for LogicElab {
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<Decl> {
-        assert_matches!(dep, Dependency::Item(_, _) | Dependency::Logic(_, _));
-
-        let (def_id, subst) = dep.did().unwrap();
+        let Dependency::Item(def_id, subst) = dep else {
+            panic!("Bad dependency for LogicElab: {dep:?}");
+        };
 
         if is_inv_function(ctx.tcx, def_id) {
             elab.expansion_queue.push_back((
@@ -296,7 +284,7 @@ impl DepElab for LogicElab {
         let names = elab.namer(dep);
         let name = names.dependency(dep).ident();
         let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
-        if !opaque && let Some(term) = term(ctx, typing_env, &bound, self_id, dep) {
+        if !opaque && let Some(term) = term(ctx, typing_env, &bound, dep) {
             lower_logical_defn(ctx, &names, sig, kind, term)
         } else {
             let mut decls = val(sig, kind);
@@ -430,27 +418,49 @@ impl DepElab for TyElab {
     }
 }
 
+fn expand_const<'tcx>(
+    elab: &mut Expander<'_, 'tcx>,
+    ctx: &Why3Generator<'tcx>,
+    dep: Dependency<'tcx>,
+) -> Vec<Decl> {
+    let Dependency::Item(def_id, subst) = dep else {
+        panic!("expand_const: bad dependency {dep:?}");
+    };
+    let names = &elab.namer(dep);
+    let ident = names.dependency(dep).ident();
+    let setter_ident = Ident::fresh_local("setter");
+    let body_id = BodyId { def_id: def_id.expect_local(), constness: Constness::Const(ident) };
+    let def = to_why(ctx, names, setter_ident, body_id);
+    let type_ = {
+        let typing_env = ctx.typing_env(def_id);
+        let pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
+        let span = ctx.def_span(def_id);
+        translate_ty(ctx, names, span, pre_sig.output)
+    };
+    vec![Decl::ConstantDecl(Constant { name: ident, type_, body: None }), Decl::Coma(def)]
+}
+
 impl<'a, 'tcx> Expander<'a, 'tcx> {
     /// # Parameters
     ///
     /// `span`: span of the item being expanded
     pub fn new(
-        namer: &'a mut CloneNames<'tcx>,
-        self_key: Dependency<'tcx>,
-        typing_env: TypingEnv<'tcx>,
-        initial: impl Iterator<Item = Dependency<'tcx>>,
-        span: Span,
-    ) -> Self {
-        Self {
-            graph: Default::default(),
-            namer,
-            self_item: self_key.did().unwrap(),
-            typing_env,
-            expansion_queue: initial.map(|b| (self_key, Strength::Strong, b)).collect(),
-            dep_bodies: Default::default(),
-            root_span: span,
-        }
+    namer: &'a mut CloneNames<'tcx>,
+    self_key: Dependency<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    initial: impl Iterator<Item = Dependency<'tcx>>,
+    span: Span,
+) -> Self {
+    Self {
+        graph: Default::default(),
+        namer,
+        self_item: self_key.did().unwrap(),
+        typing_env,
+        expansion_queue: initial.map(|b| (self_key, Strength::Strong, b)).collect(),
+        dep_bodies: Default::default(),
+        root_span: span,
     }
+}
 
     fn namer(&mut self, source: Dependency<'tcx>) -> ExpansionProxy<'_, 'tcx> {
         ExpansionProxy {
@@ -462,25 +472,25 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
     /// Expand the graph with new entries
     pub fn update_graph(
-        mut self,
-        ctx: &Why3Generator<'tcx>,
-    ) -> (DiGraphMap<Dependency<'tcx>, Strength>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
-        let mut visited = HashSet::new();
-        while let Some((s, strength, t)) = self.expansion_queue.pop_front() {
-            if let Some(old) = self.graph.add_edge(s, t, strength)
-                && old > strength
-            {
-                self.graph.add_edge(s, t, old);
-            }
-
-            if !visited.insert(t) {
-                continue;
-            }
-            self.expand(ctx, t);
+    mut self,
+    ctx: &Why3Generator<'tcx>,
+) -> (DiGraphMap<Dependency<'tcx>, Strength>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
+    let mut visited = HashSet::new();
+    while let Some((s, strength, t)) = self.expansion_queue.pop_front() {
+        if let Some(old) = self.graph.add_edge(s, t, strength)
+            && old > strength
+        {
+            self.graph.add_edge(s, t, old);
         }
 
-        (self.graph, self.dep_bodies)
+        if !visited.insert(t) {
+            continue;
+        }
+        self.expand(ctx, t);
     }
+
+    (self.graph, self.dep_bodies)
+}
 
     fn expand(&mut self, ctx: &Why3Generator<'tcx>, dep: Dependency<'tcx>) {
         expand_laws(self, ctx, dep);
@@ -490,14 +500,20 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             Dependency::Item(def_id, subst) => {
                 if ctx.is_logical(def_id) {
                     LogicElab::expand(self, ctx, dep)
-                } else if matches!(ctx.def_kind(def_id), DefKind::Field | DefKind::Variant) {
-                    self.namer(dep).def_ty(ctx.parent(def_id), subst);
-                    vec![]
                 } else {
-                    ProgramElab::expand(self, ctx, dep)
+                    match ctx.def_kind(def_id) {
+                        DefKind::Field | DefKind::Variant => {
+                            self.namer(dep).def_ty(ctx.parent(def_id), subst);
+                            vec![]
+                        }
+                        DefKind::Const
+                        | DefKind::AssocConst
+                        | DefKind::InlineConst
+                        | DefKind::ConstParam => expand_const(self, ctx, dep),
+                        _ => ProgramElab::expand(self, ctx, dep),
+                    }
                 }
             }
-            Dependency::Logic(_, _) => LogicElab::expand(self, ctx, dep),
             Dependency::TyInvAxiom(ty) => expand_ty_inv_axiom(self, ctx, ty),
             Dependency::ClosureAccessor(_, _, _) | Dependency::TupleField(_, _) => vec![],
             Dependency::PreMod(b) => {
@@ -1066,7 +1082,6 @@ fn term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     bound: &[Ident],
-    body_id: DefId,
     dep: Dependency<'tcx>,
 ) -> Option<Term<'tcx>> {
     match dep {
@@ -1096,7 +1111,6 @@ fn term<'tcx>(
                 Some(term)
             }
         }
-        Dependency::Logic(def_id, subst) => logic_const(ctx, typing_env, body_id, def_id, subst),
         _ => unreachable!(),
     }
 }

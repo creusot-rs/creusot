@@ -66,15 +66,13 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     }
 
     let name = names.item_ident(names.self_id, names.self_subst);
-    let body =
-        Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), Constness::None)));
-
-    let mut decls = names.provide_deps(ctx);
+    let body = to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), Constness::None));
+    let (mut decls, setters) = names.provide_deps(ctx);
     decls.push(Decl::Meta(Meta {
         name: MetaIdent::String("compute_max_steps".into()),
         args: [MetaArg::Integer(1_000_000)].into(),
     }));
-    decls.push(body);
+    decls.push(Decl::Coma(setters.insert_into(body)));
 
     let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();
     let meta = ctx.display_impl_of(def_id);
@@ -210,12 +208,20 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         || body_id.constness.is_const();
 
     let ensures = contract.ensures.into_iter().map(Condition::labelled_exp);
-    let mut postcond = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
-    if !open_body {
-        postcond = postcond.black_box();
-        postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
-
-        body = body.black_box()
+    let postcond = match body_id.constness {
+        Constness::Const(const_ident) => Expr::Assume(
+            Exp::var(const_ident).eq(Exp::var(name::result())).boxed(),
+            Expr::var(outer_return).boxed(),
+        ),
+        _ => {
+            let mut postcond = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
+            if !open_body {
+                postcond = postcond.black_box();
+                postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
+                body = body.black_box()
+            };
+            postcond
+        }
     };
 
     if inferred_closure_spec {
@@ -338,13 +344,7 @@ impl<'tcx> Operand<'tcx> {
         match self {
             Operand::Move(pl) | Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
-            Operand::ConstBlock(id, subst, ty) => {
-                let ret_ident = Ident::fresh_local("_CONST");
-                let ty = lower.ty(ty);
-                let fun_qname = const_block_to_why3(lower, id, subst);
-                istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, []));
-                Exp::var(ret_ident)
-            }
+            Operand::ConstBlock(id, subst, _ty) => Exp::Var(lower.names.item(id, subst)),
             Operand::Promoted(pid, ty) => {
                 let var = Ident::fresh_local(format!("pr{}", pid.as_usize()));
                 istmts.push(IntermediateStmt::call(

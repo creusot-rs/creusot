@@ -67,22 +67,22 @@ macro_rules! queryish {
     };
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct BodyId {
     pub def_id: LocalDefId,
     pub constness: Constness,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Constness {
     None,
-    Const,
+    Const(Ident),
     Promoted(Promoted),
 }
 
 impl Constness {
     pub fn is_const(self) -> bool {
-        matches!(self, Constness::Const | Constness::Promoted(_))
+        matches!(self, Constness::Const(_) | Constness::Promoted(_))
     }
 }
 

@@ -26,9 +26,6 @@ use crate::{
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, GenericArgsRef<'tcx>),
-    // TODO: move all logic `Item` into `Logic`. Currently, `Logic` is only used for constants,
-    // because there are both program- and logic translations of constants.
-    Logic(DefId, GenericArgsRef<'tcx>),
     TyInvAxiom(Ty<'tcx>),
     ClosureAccessor(DefId, GenericArgsRef<'tcx>, u32),
     TupleField(&'tcx List<Ty<'tcx>>, FieldIdx),
@@ -40,9 +37,7 @@ pub(crate) enum Dependency<'tcx> {
 impl<'tcx> Dependency<'tcx> {
     pub(crate) fn did(self) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
-            Dependency::Item(def_id, subst) | Dependency::Logic(def_id, subst) => {
-                Some((def_id, subst))
-            }
+            Dependency::Item(def_id, subst) => Some((def_id, subst)),
             Dependency::Type(t) => match t.kind() {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
@@ -102,7 +97,7 @@ impl<'tcx> Dependency<'tcx> {
                 DefKind::Variant => Some(item_symb(tcx, did, rustc_hir::def::Namespace::ValueNS)),
                 DefKind::InlineConst | DefKind::AnonConst => Some(Symbol::intern("_const_block")),
                 DefKind::Const | DefKind::AssocConst => Some(Symbol::intern(&format!(
-                    "_get_{}",
+                    "c_{}",
                     &translate_name(tcx.item_name(did).as_str()),
                 ))),
                 _ => match tcx.opt_item_name(did) {
@@ -111,12 +106,6 @@ impl<'tcx> Dependency<'tcx> {
                         Some(Symbol::intern(&value_name(&translate_name(item_name.as_str()))))
                     }
                 },
-            },
-            Dependency::Logic(did, _) => match tcx.opt_item_name(did) {
-                Some(item_name) => {
-                    Some(Symbol::intern(&value_name(&translate_name(item_name.as_str()))))
-                }
-                None => Some(Symbol::intern("logic_const")),
             },
             Dependency::ClosureAccessor(_, _, ix) => Some(Symbol::intern(&format!("_{ix}"))),
             Dependency::TupleField(_, ix) => Some(Symbol::intern(&format!("_p{}", ix.as_u32()))),

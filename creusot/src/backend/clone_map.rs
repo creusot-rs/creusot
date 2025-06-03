@@ -29,6 +29,7 @@ use rustc_span::Span;
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
     Ident, Name, QName, Symbol,
+    coma::Defn,
     declaration::{Attribute, Decl, Span as WSpan, TyDecl},
 };
 
@@ -61,11 +62,6 @@ pub enum PreMod {
 pub(crate) trait Namer<'tcx> {
     fn item(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
         let node: Dependency<'_> = Dependency::Item(def_id, subst);
-        self.dependency(node).name()
-    }
-
-    fn constant(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
-        let node = Dependency::Logic(def_id, subst);
         self.dependency(node).name()
     }
 
@@ -383,7 +379,10 @@ impl<'tcx> Dependencies<'tcx> {
         deps
     }
 
-    pub(crate) fn provide_deps(mut self, ctx: &Why3Generator<'tcx>) -> Vec<Decl> {
+    pub(crate) fn provide_deps(
+        mut self,
+        ctx: &Why3Generator<'tcx>,
+    ) -> (Vec<Decl>, ConstantSetters) {
         trace!("emitting dependencies for {:?}", self.self_id);
         let mut decls = Vec::new();
 
@@ -523,6 +522,26 @@ impl<'tcx> Dependencies<'tcx> {
             let mut tmp = vec![Decl::LetSpans(spans)];
             tmp.extend(decls);
             tmp
-        }
+        };
+        let setters = ConstantSetters(vec![]);
+        (dependencies, setters)
+    }
+}
+
+pub struct ConstantSetters(Vec<Ident>);
+
+impl ConstantSetters {
+    pub(crate) fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Constants are compiled into an abstract constant declaration and a "constant setter" which is a
+    /// program function that computes its value and assumes that the constant is equal to the computed value.
+    ///
+    /// This inserts calls to those constant setters into a program body.
+    /// This must be called only after `provide_deps`.
+    pub(crate) fn insert_into(self, defn: Defn) -> Defn {
+        eprintln!("TODO insert_constant_setters");
+        defn
     }
 }

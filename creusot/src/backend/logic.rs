@@ -106,7 +106,7 @@ pub(crate) fn translate_logic_or_predicate(
     let vc_ident = sig.name.refresh_with(|s| format!("vc_{s}"));
     body_decls.push(Decl::Goal(Goal { name: vc_ident, goal }));
 
-    let mut decls = names.provide_deps(ctx);
+    let (mut decls, setters) = names.provide_deps(ctx);
     decls.extend(body_decls);
 
     let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();
