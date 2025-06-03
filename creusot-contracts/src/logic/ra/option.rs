@@ -25,12 +25,24 @@ where
 
     #[logic]
     #[open]
-    #[ensures(result == (exists<c: Self> self.op(c) == other))]
-    fn incl(self, other: Self) -> bool {
+    #[ensures(match result {
+        Some(c) => self.op(c) == other,
+        None => forall<c: Self> self.op(c) != other,
+    })]
+    fn incl(self, other: Self) -> Option<Self> {
         match (self, other) {
-            (None, _) => true,
-            (_, None) => false,
-            (Some(x), Some(y)) => x == y || x.incl(y),
+            (None, x) => Some(x),
+            (_, None) => None,
+            (Some(x), Some(y)) => match x.incl(y) {
+                Some(z) => Some(Some(z)),
+                None => {
+                    if x == y {
+                        Some(None)
+                    } else {
+                        None
+                    }
+                }
+            },
         }
     }
 
@@ -77,27 +89,19 @@ where
     #[logic]
     #[open(self)]
     #[requires(self.valid())]
-    #[ensures(
-        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
-        (exists<b: Self> b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
-    )]
-    fn maximal_idemp(self) {
+    #[ensures(match result {
+        Some(b) => b.incl(self) != None && b.idemp() &&
+           forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(b) != None,
+        None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
+    })]
+    fn maximal_idemp(self) -> Option<Self> {
         pearlite! {
             match self {
-                None => (),
+                None => Some(None),
                 Some(x) => {
-                    x.maximal_idemp();
-                    if forall<y: T> ! (y.incl(x) && y.idemp()) {
-                        // pick None, show the right-hand side of the postcondition
-                        proof_assert!(None.incl(self) && None::<T>.idemp());
-                        proof_assert!(forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(None));
-                    } else {
-                        // pick Some(y)
-                        proof_assert!(exists<y: T> y.incl(x) && y.idemp() &&
-                          Some(y).incl(self) && Some(y).idemp() &&
-                          (forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(Some(y)))
-                        );
+                    match x.maximal_idemp() {
+                        None => Some(None),
+                        Some(y) => Some(Some(y)),
                     }
                 }
             }

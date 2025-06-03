@@ -38,13 +38,22 @@ where
 
     #[logic]
     #[open]
-    #[ensures(result == (exists<c: Self> self.op(c) == other))]
-    fn incl(self, other: Self) -> bool {
+    #[ensures(match result {
+        Some(c) => self.op(c) == other,
+        None => forall<c: Self> self.op(c) != other,
+    })]
+    fn incl(self, other: Self) -> Option<Self> {
         match (self, other) {
-            (Self::Left(x), Self::Left(y)) => x.incl(y),
-            (Self::Right(x), Self::Right(y)) => x.incl(y),
-            (_, Self::Bot) => true,
-            (_, _) => false,
+            (Self::Left(x), Self::Left(y)) => match x.incl(y) {
+                None => None,
+                Some(z) => Some(Self::Left(z)),
+            },
+            (Self::Right(x), Self::Right(y)) => match x.incl(y) {
+                None => None,
+                Some(z) => Some(Self::Right(z)),
+            },
+            (_, Self::Bot) => Some(Self::Bot),
+            (_, _) => None,
         }
     }
 
@@ -80,16 +89,22 @@ where
     #[logic]
     #[open(self)]
     #[requires(self.valid())]
-    #[ensures(
-        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
-        (exists<b: Self> b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
-    )]
-    fn maximal_idemp(self) {
+    #[ensures(match result {
+        Some(b) => b.incl(self) != None && b.idemp() &&
+           forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(b) != None,
+        None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
+    })]
+    fn maximal_idemp(self) -> Option<Self> {
         match self {
-            Self::Left(x) => x.maximal_idemp(),
-            Self::Right(x) => x.maximal_idemp(),
-            Self::Bot => (),
+            Self::Left(x) => match x.maximal_idemp() {
+                None => None,
+                Some(y) => Some(Self::Left(y)),
+            },
+            Self::Right(x) => match x.maximal_idemp() {
+                None => None,
+                Some(y) => Some(Self::Right(y)),
+            },
+            Self::Bot => None,
         }
     }
 }
