@@ -731,7 +731,11 @@ impl<T> Iterator for IterMut<'_, T> {
 pub trait OptionExt<T> {
     /// Same as [`Option::and_then`], but in logic.
     #[logic]
-    pub fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U>;
+    fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U>;
+
+    /// Same as [`Option::map`], but in logic.
+    #[logic]
+    fn map_logic<U>(self, f: Mapping<T, U>) -> Option<U>;
 }
 
 impl<T> OptionExt<T> for Option<T> {
@@ -741,6 +745,15 @@ impl<T> OptionExt<T> for Option<T> {
         match self {
             None => None,
             Some(x) => f.get(x),
+        }
+    }
+
+    #[logic]
+    #[open]
+    fn map_logic<U>(self, f: Mapping<T, U>) -> Option<U> {
+        match self {
+            None => None,
+            Some(x) => Some(f.get(x)),
         }
     }
 }

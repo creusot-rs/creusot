@@ -19,9 +19,15 @@ where
 
     #[logic]
     #[open]
-    #[ensures(result == (exists<c: Self> self.op(c) == other))]
-    fn incl(self, other: Self) -> bool {
-        self.0.incl(other.0) && self.1.incl(other.1)
+    #[ensures(match result {
+        Some(c) => self.op(c) == other,
+        None => forall<c: Self> self.op(c) != other,
+    })]
+    fn incl(self, other: Self) -> Option<Self> {
+        match (self.0.incl(other.0), self.1.incl(other.1)) {
+            (Some(x), Some(y)) => Some((x, y)),
+            _ => None,
+        }
     }
 
     #[logic]
@@ -52,13 +58,15 @@ where
     #[logic]
     #[open(self)]
     #[requires(self.valid())]
-    #[ensures(
-        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
-        (exists<b: Self> b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
-    )]
-    fn maximal_idemp(self) {
-        self.0.maximal_idemp();
-        self.1.maximal_idemp();
+    #[ensures(match result {
+        Some(b) => b.incl(self) != None && b.idemp() &&
+           forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(b) != None,
+        None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
+    })]
+    fn maximal_idemp(self) -> Option<Self> {
+        match (self.0.maximal_idemp(), self.1.maximal_idemp()) {
+            (Some(x), Some(y)) => Some((x, y)),
+            _ => None,
+        }
     }
 }

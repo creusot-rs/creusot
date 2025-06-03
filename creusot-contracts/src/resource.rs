@@ -180,7 +180,7 @@ impl<R: RA> Resource<R> {
     #[pure]
     #[requires(self.id() == other.id())]
     #[ensures(result.id() == self.id())]
-    #[ensures(self@.incl(result@) && other@.incl(result@))]
+    #[ensures(self@.incl(result@) != None && other@.incl(result@) != None)]
     pub fn join_shared<'a>(&'a self, other: &'a Self) -> &'a Self {
         panic!("ghost code only")
     }
@@ -188,7 +188,7 @@ impl<R: RA> Resource<R> {
     /// Transforms `self` into `target`, given that `target` is included in `self`.
     #[trusted]
     #[pure]
-    #[requires(target.incl(self@))]
+    #[requires(target.incl(self@) != None)]
     #[ensures((^self).id() == self.id())]
     #[ensures((^self)@ == *target)]
     pub fn weaken(&mut self, target: Snapshot<R>) {

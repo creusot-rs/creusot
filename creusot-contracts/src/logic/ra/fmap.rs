@@ -23,9 +23,12 @@ where
 
     #[logic]
     #[open(self)]
-    #[ensures(result == exists<c: Self> self.op(c) == other)]
-    fn incl(self, other: Self) -> bool {
-        let res = pearlite! { forall<k: K> self.get(k).incl(other.get(k)) };
+    #[ensures(match result {
+        Some(c) => self.op(c) == other,
+        None => forall<c: Self> self.op(c) != other,
+    })]
+    fn incl(self, other: Self) -> Option<Self> {
+        let res = pearlite! { forall<k: K> self.get(k).incl(other.get(k)) != None };
         if res {
             let missing_part = missing_part(self, other);
             proof_assert!(forall<k: K> match (other.get(k), self.get(k)) {
@@ -35,8 +38,10 @@ where
                 _ => true,
             });
             proof_assert!(self.op(missing_part).ext_eq(other));
+            Some(missing_part)
+        } else {
+            None
         }
-        res
     }
 
     #[logic]
@@ -70,18 +75,21 @@ where
     #[logic]
     #[open(self)]
     #[requires(self.valid())]
-    #[ensures(
-        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
-        (exists<b: Self> b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
-    )]
-    fn maximal_idemp(self) {
+    #[ensures(match result {
+        Some(b) => b.incl(self) != None && b.idemp() &&
+           forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(b) != None,
+        None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
+    })]
+    fn maximal_idemp(self) -> Option<Self> {
         let _ = <V as RA>::maximal_idemp;
         pearlite! {
-            if !(forall<b: Self> ! (b.incl(self) && b.idemp())) {
+            if !(forall<b: Self> ! (b.incl(self) != None && b.idemp())) {
                 let included = maximal_idemp_part(self);
-                proof_assert!(included.incl(self) && included.idemp() &&
-                    forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(included));
+                proof_assert!(included.incl(self) != None && included.idemp() &&
+                    forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(included) != None);
+                Some(included)
+            } else {
+                None
             }
         }
     }
@@ -106,10 +114,10 @@ fn missing_part<K, V: RA>(this: FMap<K, V>, other: FMap<K, V>) -> FMap<K, V> {
 #[logic]
 fn maximal_idemp_part<K, V: RA>(this: FMap<K, V>) -> FMap<K, V> {
     pearlite! {
-        this.filter_map(|(_, v)| if forall<v2: V> ! (v2.incl(v) && v2.idemp()) {
+        this.filter_map(|(_, v)| if forall<v2: V> ! (v2.incl(v) != None && v2.idemp()) {
             None
         } else {
-            Some(such_that(|v2: V| v2.incl(v) && v2.idemp() && forall<c: V> c.incl(v) && c.idemp() ==> c.incl(v2)))
+            Some(such_that(|v2: V| v2.incl(v) != None && v2.idemp() && forall<c: V> c.incl(v) != None && c.idemp() ==> c.incl(v2) != None))
         })
     }
 }

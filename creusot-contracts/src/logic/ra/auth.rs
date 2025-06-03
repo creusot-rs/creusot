@@ -27,13 +27,13 @@ where
     #[logic]
     #[open]
     fn rel(a: Self::Auth, f: Self::Frag) -> bool {
-        f.incl(a) && a.valid()
+        f.incl(a) != None && a.valid()
     }
 
     #[law]
     #[open(self)]
     #[requires(Self::rel(a, f1))]
-    #[requires(f2.incl(f1))]
+    #[requires(f2.incl(f1) != None)]
     #[ensures(Self::rel(a, f2))]
     fn rel_mono(a: Self::Auth, f1: Self::Frag, f2: Self::Frag) {}
 }

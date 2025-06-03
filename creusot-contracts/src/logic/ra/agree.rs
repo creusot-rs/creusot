@@ -44,12 +44,21 @@ impl<T> RA for Ag<T> {
 
     #[logic]
     #[open]
-    #[ensures(result == (exists<c: Self> self.op(c) == other))]
-    fn incl(self, other: Self) -> bool {
+    #[ensures(match result {
+        Some(c) => self.op(c) == other,
+        None => forall<c: Self> self.op(c) != other,
+    })]
+    fn incl(self, other: Self) -> Option<Self> {
         match (self, other) {
-            (Self::Ag(x), Self::Ag(y)) => x == y,
-            (_, Self::Bot) => true,
-            (_, Self::Ag(_)) => false,
+            (Self::Ag(x), Self::Ag(y)) => {
+                if x == y {
+                    Some(Self::Ag(x))
+                } else {
+                    None
+                }
+            }
+            (_, Self::Bot) => Some(Self::Bot),
+            (_, Self::Ag(_)) => None,
         }
     }
 
@@ -71,10 +80,15 @@ impl<T> RA for Ag<T> {
     #[logic]
     #[open(self)]
     #[requires(self.valid())]
-    #[ensures(
-        (forall<b: Self> ! (b.incl(self) && b.idemp())) ||
-        (exists<b: Self> b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b))
-    )]
-    fn maximal_idemp(self) {}
+    #[ensures(match result {
+        Some(b) => b.incl(self) != None && b.idemp() &&
+           forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(b) != None,
+        None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
+    })]
+    fn maximal_idemp(self) -> Option<Self> {
+        match self {
+            Self::Ag(_) => Some(self),
+            Self::Bot => None,
+        }
+    }
 }
