@@ -1,5 +1,5 @@
 use rustc_middle::ty::TyCtxt;
-use rustc_span::{DUMMY_SP, Span};
+use rustc_span::{DUMMY_SP, ErrorGuaranteed, Span};
 
 pub type CreusotResult<T> = Result<T, Error>;
 
@@ -43,12 +43,51 @@ impl From<CannotFetchThir> for Error {
     }
 }
 
-/// This error is raised when fetching a function's THIR failed, because of a typechecking error.
+/// This error should be raised when fetching a function's THIR failed, because of a
+/// typechecking error.
 ///
-/// It should usually be bubbled up to the caller, which should then throw it away and
-/// proceed to call `tcx.dcx().abort_if_errors()`.
+/// In this case, you can call `.into()` on the raised [`ErrorGuaranteed`].
+///
+/// The error should usually be bubbled up to the caller, which should then proceed to
+/// call [`Self::abort`].
+///
+/// Not doing this will cause a crash when the error is dropped.
 #[derive(Debug)]
-pub(crate) struct CannotFetchThir;
+pub(crate) struct CannotFetchThir(());
+
+impl From<ErrorGuaranteed> for CannotFetchThir {
+    fn from(_: ErrorGuaranteed) -> Self {
+        Self(())
+    }
+}
+
+impl CannotFetchThir {
+    /// Abort the program.
+    pub(crate) fn abort(self, tcx: TyCtxt) {
+        std::mem::forget(self);
+        // Some of those errors may not show up until after `before_analysis` terminates
+        tcx.dcx().abort_if_errors();
+        // TODO: ideally this point should be unreachable: investigate why it isn't.
+    }
+
+    /// Merge two errors together, so that more errors may be reported.
+    pub(crate) fn merge(&mut self, other: Self) {
+        std::mem::forget(other)
+    }
+
+    pub(crate) fn merge_opt(opt: &mut Option<Self>, other: Self) {
+        match opt {
+            None => *opt = Some(other),
+            Some(err) => err.merge(other),
+        }
+    }
+}
+
+impl Drop for CannotFetchThir {
+    fn drop(&mut self) {
+        panic!("internal error: all thir error should be handled");
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct InternalError(pub &'static str);

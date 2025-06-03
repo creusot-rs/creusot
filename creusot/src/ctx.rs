@@ -242,7 +242,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     > {
         match self.tcx.thir_body(local_id) {
             Ok(body) => Ok(body),
-            Err(_) => Err(CannotFetchThir),
+            Err(err) => Err(err.into()),
         }
     }
 

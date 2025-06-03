@@ -462,7 +462,10 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
     let (thir, expr) = ctx.fetch_thir(id)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
-        return Err(Error::TypeCheck(CannotFetchThir));
+        // TODO: why does it not just return `()`?
+        return Err(Error::TypeCheck(
+            ctx.dcx().span_err(ctx.def_span(id), "Empty body is not allowed").into(),
+        ));
     };
     let lower = ThirTerm { ctx, item_id: id, thir: &thir };
 

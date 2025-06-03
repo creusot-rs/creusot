@@ -53,7 +53,7 @@ use rustc_middle::{
     thir,
     ty::{Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, TyCtxt, TypingEnv, TypingMode},
 };
-use rustc_span::Span;
+use rustc_span::{ErrorGuaranteed, Span};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
 
 /// Validate that a `#[terminates]` function cannot loop indefinitely. This includes:
@@ -439,7 +439,19 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         let Some(term) = ctx.term(item_id)? else {
             // ` ctx.term` can return None if the function we are searching for is not yet implemented.
             // In this case, there is an Rust error happening: bail out and let the compiler report it normally.
-            return Err(CannotFetchThir);
+            if let Some(err) = ctx.dcx().has_errors() {
+                return Err(err.into());
+            }
+            // or not :(
+            return Err(ctx
+                .dcx()
+                .struct_span_err(
+                    ctx.def_span(item_id),
+                    format!("Could not generate a term for {}", ctx.def_path_str(item_id)),
+                )
+                .with_span_note(ctx.def_span(impl_id), "The trait function is not implemented here")
+                .emit()
+                .into());
         };
         let mut visitor = TermCalls { results: IndexSet::new() };
         visitor.visit_term(&term.1);
@@ -550,7 +562,7 @@ impl CallGraph {
             if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
                 continue;
             }
-            let Ok((thir, expr)) = ctx.thir_body(local_id) else { return Err(CannotFetchThir) };
+            let (thir, expr) = ctx.thir_body(local_id)?;
             let thir = thir.borrow();
             let mut visitor = GhostLoops {
                 thir: &thir,
@@ -587,12 +599,12 @@ impl CallGraph {
                 tcx,
                 calls: IndexSet::new(),
                 has_loops: None,
-                thir_failed: false,
+                thir_failed: None,
             };
             <FunctionCalls as thir::visit::Visitor>::visit_expr(&mut visitor, &thir[expr]);
 
-            if visitor.thir_failed {
-                return Err(CannotFetchThir);
+            if let Some(err) = visitor.thir_failed {
+                return Err(err.into());
             }
 
             build_call_graph.additional_data[&node].has_loops = visitor.has_loops;
@@ -628,8 +640,8 @@ struct FunctionCalls<'thir, 'tcx> {
     calls: IndexSet<(DefId, &'tcx GenericArgs<'tcx>, Span)>,
     /// `Some` if the function contains a loop construct.
     has_loops: Option<Span>,
-    /// If `true`, we should error with a [`CannotFetchThir`] error.
-    thir_failed: bool,
+    /// If `Some`, we should error with a [`CannotFetchThir`] error.
+    thir_failed: Option<ErrorGuaranteed>,
 }
 
 impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tcx> {
@@ -645,9 +657,12 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                 }
             }
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
-                let Ok((thir, expr)) = self.tcx.thir_body(closure_id) else {
-                    self.thir_failed = true;
-                    return;
+                let (thir, expr) = match self.tcx.thir_body(closure_id) {
+                    Ok(t) => t,
+                    Err(err) => {
+                        self.thir_failed = Some(err);
+                        return;
+                    }
                 };
                 let thir = thir.borrow();
 
@@ -656,11 +671,11 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                     tcx: self.tcx,
                     calls: std::mem::take(&mut self.calls),
                     has_loops: None,
-                    thir_failed: false,
+                    thir_failed: None,
                 };
                 thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
-                if closure_visitor.thir_failed {
-                    self.thir_failed = true;
+                if let Some(err) = closure_visitor.thir_failed.take() {
+                    self.thir_failed = Some(err);
                     return;
                 }
                 self.calls.extend(closure_visitor.calls);
