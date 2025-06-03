@@ -72,7 +72,8 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
         name: MetaIdent::String("compute_max_steps".into()),
         args: [MetaArg::Integer(1_000_000)].into(),
     }));
-    decls.push(Decl::Coma(setters.insert_into(body)));
+    let body = Defn { prototype: body.prototype, body: setters.call_setters_then(body.body) }; // TODO do we want to put the setters under the black box?
+    decls.push(Decl::Coma(body));
 
     let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();
     let meta = ctx.display_impl_of(def_id);
@@ -157,9 +158,10 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     let (mut sig, contract, return_ty) = if !body_id.constness.is_const() {
         let def_id = body_id.def_id();
         let typing_env = ctx.typing_env(def_id);
-        let mut pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
-        pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
-        lower_program_sig(ctx, names, name, pre_sig, def_id, outer_return)
+        let span = ctx.tcx.def_span(def_id);
+        let pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
+        let return_ty = translate_ty(ctx, names, span, pre_sig.output);
+        (Prototype { name, attrs: [].into(), params: [Param::Cont(outer_return, [].into(), [].into())].into() }, Contract::default(), return_ty)
     } else {
         let ret = body.locals.first().map(|(_, decl)| decl.clone()).unwrap();
         let ret_ty = translate_ty(ctx, names, ret.span, ret.ty);

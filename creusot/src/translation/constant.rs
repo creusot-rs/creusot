@@ -34,6 +34,7 @@ impl<'tcx> super::function::BodyTranslator<'_, 'tcx> {
     }
 }
 
+// TODO: don't try to simplify in mir-to-fmir?
 fn mir_const_to_operand<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -65,7 +66,7 @@ fn try_eval_mir_const<'tcx>(
 }
 
 /// Translate the body of a logic constant.
-/// - `None` if this is a parameter
+/// - `None` if there is no body or the constant can't be represented as a term.
 /// - `Some`
 pub fn logic_const<'tcx>(
     ctx: &TranslationCtx<'tcx>,
@@ -82,11 +83,11 @@ pub fn logic_const<'tcx>(
     let span = ctx.def_span(def_id);
     let uneval = ty::UnevaluatedConst::new(def_id, subst);
     match ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
-        Ok(Ok(val)) => Some(value_to_term(ctx, typing_env, span, ty, val)),
-        _ => try_const_synonym(ctx, typing_env, body_id, def_id, subst).or_else(|| {
-            let constant = Const::new(ctx.tcx, ty::ConstKind::Unevaluated(uneval));
-            ctx.crash_and_error(span, &format!("unsupported const {constant:?}"))
-        }),
+        Ok(Ok(val)) => value_to_term(ctx, typing_env, span, ty, val),
+        _ => try_const_synonym(ctx, typing_env, body_id, def_id, subst), // .or_else(|| {
+            // let constant = Const::new(ctx.tcx, ty::ConstKind::Unevaluated(uneval));
+            // ctx.crash_and_error(span, &format!("unsupported const {constant:?}"))
+        // }),
     }
 }
 
@@ -96,13 +97,13 @@ fn value_to_term<'tcx>(
     span: Span,
     ty: Ty<'tcx>,
     val: ty::ValTree<'tcx>,
-) -> Term<'tcx> {
+) -> Option<Term<'tcx>> {
     if let ty::ValTree::Leaf(scalar) = val {
-        return Term {
+        return Some(Term {
             kind: TermKind::Lit(scalar_to_literal(ctx, typing_env, span, ty, scalar)),
             ty,
             span,
-        };
+        })
     }
     let ty::DestructuredConst { variant, fields } =
         ctx.destructure_const(ty::Const::new_value(ctx.tcx, val, ty));
@@ -112,15 +113,15 @@ fn value_to_term<'tcx>(
             let ty::ConstKind::Value(ty, val) = field.kind() else { unreachable!() };
             value_to_term(ctx, typing_env, span, ty, val)
         })
-        .collect();
+        .collect::<Option<Box<[_]>>>()?;
     let kind = match ty.kind() {
         TyKind::Tuple(_) => TermKind::Tuple { fields },
         TyKind::Adt(adt, _) => {
             TermKind::Constructor { typ: adt.did(), variant: variant.unwrap(), fields }
         }
-        _ => ctx.crash_and_error(span, &format!("unsupported destructured const {val:?}")),
+        _ => return None,
     };
-    Term { kind, ty, span }
+    Some(Term { kind, ty, span })
 }
 
 fn const_value_to_term<'tcx>(
@@ -183,7 +184,9 @@ pub fn const_to_term<'tcx>(
         Bound(_, _) => todo!(),
         Placeholder(_) => todo!(),
         Unevaluated(_) => todo!(),
-        Value(ty, v) => value_to_term(ctx, typing_env, span, ty, v),
+        Value(ty, v) => value_to_term(ctx, typing_env, span, ty, v).unwrap_or_else(|| {
+            ctx.crash_and_error(span, &format!("unsupported constant value {v:?}"))
+        }),
         Error(_) => todo!(),
         Expr(_) => todo!(),
     }
