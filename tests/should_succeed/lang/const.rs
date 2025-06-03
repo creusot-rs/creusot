@@ -67,6 +67,31 @@ pub const fn nat_i2<T: Nat>() -> usize {
     const { <I2<T> as Nat>::VALUE }
 }
 
+const TUP: (usize, i32) = (42, 24);
+
+#[requires(TUP.0 == 42usize)]
+#[ensures(TUP.1 == 24i32)]
+pub const fn tuple() -> (usize, i32) {
+    TUP
+}
+
+pub const fn inline_tuple() {
+    const ITUP: (usize, i32) = (42, 24);
+    proof_assert!(ITUP == TUP);
+}
+
+struct I3<T: Nat>(T);
+
+impl<T: Nat> Nat for I3<T> {
+    const VALUE: usize = const { T::VALUE + T::VALUE };
+}
+
+pub const fn nat_i3<T: Nat>() {
+    proof_assert!{ <I3<T> as Nat>::VALUE@ == T::VALUE@ + T::VALUE@  };
+}
+
+// TODO use const in logic functions
+
 /*
 // associated const from std
 #[ensures(result == T::IS_ZST)]
@@ -82,21 +107,3 @@ pub const fn is_zst_z() -> bool {
     const { is_zst::<Z>() }
 }
  */
-
-const N: (usize, i32) = (42, 24);
-
-#[requires(N.0 == 42usize)]
-#[ensures(N.1 == 24i32)]
-pub const fn tuple() -> (usize, i32) {
-    N
-}
-
-struct I3<T: Nat>(T);
-
-impl<T: Nat> Nat for I3<T> {
-    const VALUE: usize = const { T::VALUE + T::VALUE };
-}
-
-pub const fn nat_i3<T: Nat>() -> usize {
-    const { <I3<T> as Nat>::VALUE }
-}
