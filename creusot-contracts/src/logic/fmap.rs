@@ -1,6 +1,7 @@
 use crate::{
     logic::{Mapping, ops::IndexLogic},
-    util::*,
+    std::option::OptionExt as _,
+    util::{MakeSized as _, SizedW},
     *,
 };
 
@@ -122,7 +123,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[open]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn lookup_unsized(self, k: K) -> SizedW<V> {
-        unwrap(self.get_unsized(k))
+        self.get_unsized(k).unwrap_logic()
     }
 
     /// Returns `true` if the map contains a value for the specified key.

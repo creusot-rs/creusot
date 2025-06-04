@@ -7,11 +7,6 @@
 //!
 //! These are the [`Authority`] and [`Fragment`] types respectively.
 
-#[cfg(creusot)]
-use crate::logic::{
-    Id,
-    ra::{Excl, RA as _},
-};
 use crate::{
     logic::{
         FMap,
@@ -19,6 +14,14 @@ use crate::{
     },
     resource::Resource,
     *,
+};
+#[cfg(creusot)]
+use crate::{
+    logic::{
+        Id,
+        ra::{Excl, RA as _},
+    },
+    std::option::OptionExt as _,
 };
 use ::std::marker::PhantomData;
 
@@ -177,10 +180,7 @@ impl<K, V> Fragment<K, V> {
     #[logic]
     #[open(self)]
     pub fn frag(self) -> (K, V) {
-        let frag_agree = match self.0.val().frag {
-            None => FMap::empty(),
-            Some(frag) => frag,
-        };
+        let frag_agree = self.0.val().frag.unwrap_logic();
         such_that(|(k, v)| frag_agree.get(k) == Some(Ag::Ag(v)))
     }
 }
