@@ -156,6 +156,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     let (entry, blocks) = body_exp(ctx, names, inner_return, body_id.def_id.to_def_id(), &mut body);
 
     let (mut sig, contract, return_ty) = if !body_id.constness.is_const() {
+        // OOPS swapped
         let def_id = body_id.def_id();
         let typing_env = ctx.typing_env(def_id);
         let span = ctx.tcx.def_span(def_id);
