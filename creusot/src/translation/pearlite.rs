@@ -184,6 +184,9 @@ pub enum TermKind<'tcx> {
         trigger: Box<[Trigger<'tcx>]>,
         body: Box<Term<'tcx>>,
     },
+    /// A function call.
+    ///
+    /// Be careful when building this case, that it respects [logical aliases](TranslationCtx::logical_alias).
     // TODO: Get rid of (id, subst).
     Call {
         id: DefId,
@@ -280,7 +283,7 @@ impl<'tcx> TermKind<'tcx> {
     }
 }
 
-impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
+impl<I: Interner> TypeFoldable<I> for Literal<'_> {
     fn try_fold_with<F: rustc_middle::ty::FallibleTypeFolder<I>>(
         self,
         _: &mut F,
@@ -289,23 +292,25 @@ impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
     }
 }
 
-impl<'tcx, I: Interner> TypeVisitable<I> for Literal<'tcx> {
+impl<I: Interner> TypeVisitable<I> for Literal<'_> {
     fn visit_with<V: rustc_middle::ty::TypeVisitor<I>>(&self, _: &mut V) -> V::Result {
         V::Result::output()
     }
 }
 
 pub fn visit_projections<V, T>(v: &Projections<V, T>, mut f: impl FnMut(&V)) {
-    v.iter().for_each(|elem| match elem {
-        ProjectionElem::Index(v) => f(v),
-        _ => {}
+    v.iter().for_each(|elem| {
+        if let ProjectionElem::Index(v) = elem {
+            f(v)
+        }
     })
 }
 
 pub fn visit_projections_mut<V, T>(v: &mut Projections<V, T>, mut f: impl FnMut(&mut V)) {
-    v.iter_mut().for_each(|elem| match elem {
-        ProjectionElem::Index(v) => f(v),
-        _ => {}
+    v.iter_mut().for_each(|elem| {
+        if let ProjectionElem::Index(v) = elem {
+            f(v)
+        }
     })
 }
 
@@ -505,7 +510,7 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
         .map(|(idx, pat)| {
             let ident = match pat.kind {
                 PatternKind::Binder(var) => var,
-                _ => Ident::fresh_local(&format!("__{}", idx)).into(),
+                _ => Ident::fresh_local(format!("__{}", idx)).into(),
             };
             (
                 ident,
@@ -534,7 +539,7 @@ struct ThirTerm<'a, 'tcx> {
 
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
-impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
+impl<'tcx> ThirTerm<'_, 'tcx> {
     fn body_term(&self, expr: ExprId) -> CreusotResult<(Box<[Trigger<'tcx>]>, Term<'tcx>)> {
         let mut triggers = vec![];
         let expr = self.collect_triggers(expr, &mut triggers)?;
@@ -751,7 +756,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                                 _ => {
                                     return Err(Error::msg(
                                         span,
-                                        &format!("Bad seq! This should not happen."),
+                                        "Bad seq! This should not happen.",
                                     ));
                                 }
                             }
@@ -787,6 +792,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                                 .iter()
                                 .map(|arg| self.expr_term(*arg))
                                 .collect::<Result<_, _>>()?;
+                            let id = match self.ctx.logical_alias(id) {
+                                None => id,
+                                Some(alias_id) => alias_id,
+                            };
                             Ok(Term::call_no_normalize(self.ctx.tcx, id, subst, args).span(span))
                         }
                     }
@@ -1025,7 +1034,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let defaults = adt_def.variants()[0usize.into()]
                         .fields
                         .iter_enumerated()
-                        .map(|(idx, f)| (idx, Pattern::wildcard(f.ty(self.ctx.tcx, &substs))));
+                        .map(|(idx, f)| (idx, Pattern::wildcard(f.ty(self.ctx.tcx, substs))));
 
                     let fields = defaults
                         .merge_join_by(fields, |i: &(FieldIdx, _), j: &(FieldIdx, _)| i.0.cmp(&j.0))
@@ -1508,6 +1517,7 @@ impl<'tcx> Term<'tcx> {
         Term { ty, kind: TermKind::Tuple { fields }, span: DUMMY_SP }
     }
 
+    /// Same as [`Self::call`], but does not normalize the type of the result.
     pub(crate) fn call_no_normalize(
         tcx: TyCtxt<'tcx>,
         def_id: DefId,
@@ -1520,6 +1530,11 @@ impl<'tcx> Term<'tcx> {
         Term { ty: result, span: DUMMY_SP, kind: TermKind::Call { id: def_id, subst, args } }
     }
 
+    /// Generate a [`TermKind::Call`] for a special function described by `(def_id, subst)`
+    /// (e.g. `resolve`, `inv`, etc)
+    ///
+    /// Note that this should not be used for regular function calls, in particular because
+    /// it does not consider [logical aliases](TranslationCtx::logical_alias).
     pub(crate) fn call(
         tcx: TyCtxt<'tcx>,
         typing_env: TypingEnv<'tcx>,

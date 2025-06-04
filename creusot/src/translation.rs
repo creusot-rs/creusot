@@ -59,6 +59,10 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn st
         Err(Error::TypeCheck(err)) => err.abort(ctx.tcx),
     };
 
+    if let Err(err) = ctx.load_logical_aliases() {
+        err.abort(ctx.tcx);
+    }
+
     // Collect eventual errors
     let mut err = None;
 
