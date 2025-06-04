@@ -3,10 +3,7 @@ use crate::{
     *,
 };
 
-impl<K, V> RA for FMap<K, V>
-where
-    V: RA,
-{
+impl<K, V: RA> RA for FMap<K, V> {
     #[logic]
     #[open]
     fn op(self, other: Self) -> Self {
@@ -22,26 +19,14 @@ where
     }
 
     #[logic]
-    #[open(self)]
+    #[open]
     #[ensures(match result {
         Some(c) => self.op(c) == other,
         None => forall<c: Self> self.op(c) != other,
     })]
     fn incl(self, other: Self) -> Option<Self> {
-        let res = pearlite! { forall<k: K> self.get(k).incl(other.get(k)) != None };
-        if res {
-            let missing_part = missing_part(self, other);
-            proof_assert!(forall<k: K> match (other.get(k), self.get(k)) {
-                (Some(vo), Some(vs)) => if vo == vs { true } else {
-                    exists<v: V> vs.op(v) == vo && missing_part.get(k) == Some(v)
-                }
-                _ => true,
-            });
-            proof_assert!(self.op(missing_part).ext_eq(other));
-            Some(missing_part)
-        } else {
-            None
-        }
+        let res = self.missing_part(other);
+        if self.op(res).ext_eq(other) { Some(res) } else { None }
     }
 
     #[logic]
@@ -73,7 +58,7 @@ where
     }
 
     #[logic]
-    #[open(self)]
+    #[open]
     #[requires(self.valid())]
     #[ensures(match result {
         Some(b) => b.incl(self) != None && b.idemp() &&
@@ -81,43 +66,25 @@ where
         None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
     })]
     fn maximal_idemp(self) -> Option<Self> {
-        let _ = <V as RA>::maximal_idemp;
-        pearlite! {
-            if !(forall<b: Self> ! (b.incl(self) != None && b.idemp())) {
-                let included = maximal_idemp_part(self);
-                proof_assert!(included.incl(self) != None && included.idemp() &&
-                    forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(included) != None);
-                Some(included)
-            } else {
-                None
-            }
-        }
+        Some(self.maximal_idemp_part())
     }
 }
 
-/// Used in `<FMap as RA>::incl`.
-#[logic]
-fn missing_part<K, V: RA>(this: FMap<K, V>, other: FMap<K, V>) -> FMap<K, V> {
-    other.filter_map(|(k, vo)| match this.get(k) {
-        None => Some(vo),
-        Some(vs) => {
-            if vs == vo {
-                None
-            } else {
-                Some(such_that(|v| vs.op(v) == vo))
-            }
-        }
-    })
-}
-
-/// Used in `<FMap as RA>::maximal_idemp`.
-#[logic]
-fn maximal_idemp_part<K, V: RA>(this: FMap<K, V>) -> FMap<K, V> {
-    pearlite! {
-        this.filter_map(|(_, v)| if forall<v2: V> ! (v2.incl(v) != None && v2.idemp()) {
-            None
-        } else {
-            Some(such_that(|v2: V| v2.incl(v) != None && v2.idemp() && forall<c: V> c.incl(v) != None && c.idemp() ==> c.incl(v2) != None))
+impl<K, V: RA> FMap<K, V> {
+    /// Used in `<FMap as RA>::incl`.
+    #[logic]
+    #[open]
+    pub fn missing_part(self, other: Self) -> Self {
+        other.filter_map(|(k, vo)| match self.get(k).incl(Some(vo)) {
+            Some(r) => r,
+            None => None,
         })
+    }
+
+    /// Used in `<FMap as RA>::maximal_idemp`.
+    #[logic]
+    #[open]
+    pub fn maximal_idemp_part(self) -> Self {
+        self.filter_map(|(_, v): (K, V)| v.maximal_idemp())
     }
 }
