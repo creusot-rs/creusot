@@ -215,6 +215,12 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             .unwrap();
 
                     let fn_purity = self.purity(func_did, args);
+                    let fn_purity = match self.ctx.logical_alias(func_did) {
+                        Some(alias_did) if !self.context.can_call(fn_purity) => {
+                            self.purity(alias_did, args)
+                        }
+                        _ => fn_purity,
+                    };
                     if matches!(self.context, Purity::Logic { .. })
                         && (
                             // These methods are allowed to cheat the purity restrictions

@@ -74,6 +74,7 @@ pub(crate) fn after_analysis<'tcx>(
     let start = Instant::now();
     let mut ctx = TranslationCtx::new(tcx, opts.clone(), thir, params_open_inv);
     ctx.load_extern_specs();
+    ctx.load_logical_aliases();
     ctx.load_erasures();
     validate(&ctx);
     ctx.dcx().abort_if_errors();

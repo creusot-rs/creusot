@@ -2,8 +2,8 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     callbacks,
     contracts_items::{
-        Intrinsic, gather_intrinsics, get_creusot_item, is_extern_spec, is_logic, is_opaque,
-        is_open_inv_param, is_prophetic, opacity_witness_name,
+        Intrinsic, function_has_logical_alias, gather_intrinsics, get_creusot_item, is_extern_spec,
+        is_logic, is_opaque, is_open_inv_param, is_prophetic, opacity_witness_name,
     },
     metadata::{BinaryMetadata, Metadata, encode_def_ids, get_erasure_required},
     naming::variable_name,
@@ -191,6 +191,9 @@ pub struct TranslationCtx<'tcx> {
     erasures_to_check: Vec<(LocalDefId, Erasure<'tcx>)>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
+    /// Maps the [`DefId`] of a program function `f` with a `#[has_logical_alias(f')]`
+    /// attribute to the logical function `f'`
+    logical_aliases: HashMap<DefId, DefId>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
     terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
     trait_impl: OnceMap<DefId, Box<Vec<Refinement<'tcx>>>>,
@@ -263,6 +266,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             did2intrinsic,
             laws: Default::default(),
             externs,
+            logical_aliases: Default::default(),
             terms: Default::default(),
             creusot_items,
             variant_calls: RefCell::new(IndexMap::new()),
@@ -316,6 +320,31 @@ impl<'tcx> TranslationCtx<'tcx> {
         &self,
     ) -> impl Iterator<Item = (&LocalDefId, &(thir::Thir<'tcx>, thir::ExprId))> {
         self.local_thir.iter()
+    }
+
+    /// Get the _logical alias_ of the given program function, if any.
+    ///
+    /// Logical aliases are defined with the `#[has_logical_alias(...)]` attribute.
+    pub(crate) fn logical_alias(&self, def_id: DefId) -> Option<DefId> {
+        self.logical_aliases.get(&def_id).copied()
+    }
+
+    pub(crate) fn load_logical_aliases(&mut self) {
+        // FIXME: what about functions from another crate?
+        // FIXME: ensure here that the functions have the correct purity (program & logical)
+        for def_id in self.hir_body_owners() {
+            match function_has_logical_alias(self, def_id.to_def_id()) {
+                Some(aliased) => {
+                    trace!(
+                        "`{}` is an alias for `{}`",
+                        self.def_path_str(def_id),
+                        self.def_path_str(aliased),
+                    );
+                    self.logical_aliases.insert(def_id.to_def_id(), aliased);
+                }
+                None => {}
+            }
+        }
     }
 
     queryish!(trait_impl, DefId, Vec<Refinement<'tcx>>, translate_impl);

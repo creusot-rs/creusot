@@ -1,5 +1,6 @@
 //! Defines all the internal creusot attributes.
 
+use crate::ctx::{HasTyCtxt as _, TranslationCtx};
 use rustc_ast::{
     LitKind, MetaItemInner, Param,
     token::TokenKind,
@@ -12,8 +13,6 @@ use why3::{
     Name,
     declaration::{Attribute as WAttribute, Meta, MetaArg, MetaIdent},
 };
-
-use crate::ctx::HasTyCtxt as _;
 
 /// Helper macro, converts `creusot::foo::bar` into `["creusot", "foo", "bar"]`.
 macro_rules! path_to_str {
@@ -256,6 +255,37 @@ pub(crate) fn is_open_inv_param(tcx: TyCtxt, p: &Param) -> bool {
     }
 
     found
+}
+
+/// If a function is annotated with `#[has_logical_alias(f)]`, return the [`DefId`] of `f`.
+pub(crate) fn function_has_logical_alias(ctx: &mut TranslationCtx, def_id: DefId) -> Option<DefId> {
+    let attrs = get_attrs(ctx.get_all_attrs(def_id), &["creusot", "decl", "logical_alias_path"]);
+    let attr = match attrs.as_slice() {
+        [] => return None,
+        [a] => a,
+        _ => {
+            ctx.dcx().span_err(
+                attrs.iter().map(|attr| attr.span()).collect::<Vec<_>>(),
+                "A function cannot have multiple logical aliases",
+            );
+            return None;
+        }
+    };
+    let symbol = match &attr.get_normal_item().args {
+        AttrArgs::Eq { expr, .. } => expr.symbol,
+        _ => unreachable!(),
+    };
+    // the `ensures(result == f(args))` clause
+    let ensures_def_id = ctx.creusot_item(symbol).unwrap();
+    let ensures_body =
+        ctx.term(ensures_def_id).expect("no ensures clause associated with this alias");
+    match &ensures_body.1.kind {
+        crate::translation::pearlite::TermKind::Binary { rhs, .. } => match &rhs.kind {
+            crate::translation::pearlite::TermKind::Call { id, .. } => Some(*id),
+            _ => unreachable!("this should be a function call"),
+        },
+        _ => unreachable!("this should be an equality"),
+    }
 }
 
 fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
