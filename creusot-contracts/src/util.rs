@@ -48,14 +48,3 @@ pub fn such_that<T>(p: crate::logic::Mapping<T, bool>) -> T {
 pub fn unreachable<T>() -> T {
     unreachable()
 }
-
-/// Returns the inner value of an [`Option`], given that it is not `None`
-#[logic]
-#[requires(op != None)]
-#[ensures(Some(result) == op)]
-pub fn unwrap<T>(op: Option<T>) -> T {
-    match op {
-        Some(t) => t,
-        None => unreachable(),
-    }
-}
