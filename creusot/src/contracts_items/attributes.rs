@@ -4,7 +4,7 @@ use crate::{ctx::TranslationCtx, error::CannotFetchThir};
 use rustc_ast::Param;
 use rustc_hir::{AttrArgs, Attribute, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
-use rustc_span::Symbol;
+use rustc_span::{Span, Symbol};
 use why3::declaration::Attribute as WAttribute;
 
 /// Helper macro, converts `creusot::foo::bar` into `["creusot", "foo", "bar"]`.
@@ -157,7 +157,7 @@ pub(crate) fn is_open_inv_param(tcx: TyCtxt, p: &Param) -> bool {
 pub(crate) fn function_has_logical_alias(
     ctx: &mut TranslationCtx,
     def_id: DefId,
-) -> Result<Option<DefId>, CannotFetchThir> {
+) -> Result<Option<(Span, DefId)>, CannotFetchThir> {
     let mut attrs =
         get_attrs(ctx.get_attrs_unchecked(def_id), &["creusot", "decl", "logical_alias_path"]);
     if attrs.len() >= 2 {
@@ -179,7 +179,7 @@ pub(crate) fn function_has_logical_alias(
     let ensures_body = ctx.term(ensures_def_id)?.unwrap();
     match &ensures_body.1.kind {
         crate::translation::pearlite::TermKind::Binary { rhs, .. } => match &rhs.kind {
-            crate::translation::pearlite::TermKind::Call { id, .. } => Ok(Some(*id)),
+            crate::translation::pearlite::TermKind::Call { id, .. } => Ok(Some((attr.span(), *id))),
             _ => unreachable!(),
         },
         _ => unreachable!(),

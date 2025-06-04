@@ -159,7 +159,7 @@ fn ensures_inner(attr: TS1, tokens: TS1, logical_alias_path: bool) -> TS1 {
     let ens_name = generate_unique_ident(&item.name());
     let name_tag = format!("{}", quote! { #ens_name });
     let logical_alias = if logical_alias_path {
-        quote!(#[creusot::decl::logical_alias_path = #name_tag])
+        quote_spanned!(term.span() => #[creusot::decl::logical_alias_path = #name_tag])
     } else {
         quote!()
     };
@@ -624,7 +624,7 @@ pub fn has_logical_alias(attr: TS1, tokens: TS1) -> TS1 {
             quote!(#pat)
         }
     });
-    let ensures_contract = quote!(result == #logic_path(#(#args),*));
+    let ensures_contract = quote_spanned!(logic_path.span() => result == #logic_path(#(#args),*));
     ensures_inner(ensures_contract.into(), tokens, true)
 }
 

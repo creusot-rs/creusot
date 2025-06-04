@@ -156,7 +156,7 @@ pub struct TranslationCtx<'tcx> {
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     /// Maps the [`DefId`] of a program function `f` with a `#[has_logical_alias(f')]`
     /// attribute to the logical function `f'`
-    logical_aliases: HashMap<DefId, DefId>,
+    logical_aliases: HashMap<DefId, (Span, DefId)>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
     terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
     trait_impl: OnceMap<DefId, Box<TraitImpl<'tcx>>>,
@@ -237,23 +237,24 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// Get the _logical alias_ of the given program function, if any.
     ///
     /// Logical aliases are defined with the `#[has_logical_alias(...)]` attribute.
-    pub(crate) fn logical_alias(&self, def_id: DefId) -> Option<DefId> {
+    ///
+    /// The returned span is the span of the attribute.
+    pub(crate) fn logical_alias(&self, def_id: DefId) -> Option<(Span, DefId)> {
         self.logical_aliases.get(&def_id).copied()
     }
 
     pub(crate) fn load_logical_aliases(&mut self) -> Result<(), CannotFetchThir> {
         // FIXME: what about functions from another crate?
-        // FIXME: ensure here that the functions have the correct purity (program & logical)
         let mut err = None;
         for def_id in self.tcx.hir().body_owners() {
             match function_has_logical_alias(self, def_id.to_def_id()) {
-                Ok(Some(aliased)) => {
+                Ok(Some((span, aliased))) => {
                     trace!(
                         "`{}` is an alias for `{}`",
                         self.def_path_str(def_id),
                         self.def_path_str(aliased),
                     );
-                    self.logical_aliases.insert(def_id.to_def_id(), aliased);
+                    self.logical_aliases.insert(def_id.to_def_id(), (span, aliased));
                 }
                 Ok(None) => {}
                 Err(e) => CannotFetchThir::merge_opt(&mut err, e),
