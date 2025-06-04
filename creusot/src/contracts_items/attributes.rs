@@ -258,7 +258,10 @@ pub(crate) fn is_open_inv_param(tcx: TyCtxt, p: &Param) -> bool {
 }
 
 /// If a function is annotated with `#[has_logical_alias(f)]`, return the [`DefId`] of `f`.
-pub(crate) fn function_has_logical_alias(ctx: &mut TranslationCtx, def_id: DefId) -> Option<DefId> {
+pub(crate) fn function_has_logical_alias(
+    ctx: &mut TranslationCtx,
+    def_id: DefId,
+) -> Option<(Span, DefId)> {
     let attrs = get_attrs(ctx.get_all_attrs(def_id), &["creusot", "decl", "logical_alias_path"]);
     let attr = match attrs.as_slice() {
         [] => return None,
@@ -281,7 +284,7 @@ pub(crate) fn function_has_logical_alias(ctx: &mut TranslationCtx, def_id: DefId
         ctx.term(ensures_def_id).expect("no ensures clause associated with this alias");
     match &ensures_body.1.kind {
         crate::translation::pearlite::TermKind::Binary { rhs, .. } => match &rhs.kind {
-            crate::translation::pearlite::TermKind::Call { id, .. } => Some(*id),
+            crate::translation::pearlite::TermKind::Call { id, .. } => Some((attr.span(), *id)),
             _ => unreachable!("this should be a function call"),
         },
         _ => unreachable!("this should be an equality"),

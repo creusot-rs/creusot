@@ -81,9 +81,25 @@ pub(crate) fn validate_purity<'tcx>(
     if ctx.tcx.is_closure_like(def_id) {
         return;
     }
-
     if !is_logic(ctx.tcx, def_id) && is_trusted_item(ctx.tcx, def_id) {
         return;
+    }
+    if let Some((span, alias_id)) = ctx.logical_alias(def_id) {
+        if is_logic(ctx.tcx, def_id) {
+            ctx.dcx()
+                .struct_span_err(
+                    ctx.def_ident_span(def_id).unwrap_or_default(),
+                    "Only program functions can use `#[has_logical_alias(...)]`",
+                )
+                .with_span_label(span, "alias defined here")
+                .emit();
+        }
+        if !is_logic(ctx.tcx, alias_id) {
+            ctx.dcx()
+                .struct_span_err(span, "Only logic functions can be aliased")
+                .with_note(format!("{} is not a logic function", ctx.def_path_str(alias_id)))
+                .emit();
+        }
     }
 
     let typing_env = ctx.typing_env(def_id);
@@ -216,7 +232,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
 
                     let fn_purity = self.purity(func_did, args);
                     let fn_purity = match self.ctx.logical_alias(func_did) {
-                        Some(alias_did) if !self.context.can_call(fn_purity) => {
+                        Some((_, alias_did)) if !self.context.can_call(fn_purity) => {
                             self.purity(alias_did, args)
                         }
                         _ => fn_purity,

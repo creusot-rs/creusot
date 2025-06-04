@@ -801,7 +801,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                                 .collect::<Result<_, _>>()?;
                             let id = match self.ctx.logical_alias(id) {
                                 None => id,
-                                Some(alias_id) => alias_id,
+                                Some((_, alias_id)) => alias_id,
                             };
                             Ok(Term::call_no_normalize(self.ctx.tcx, id, subst, args).span(span))
                         }

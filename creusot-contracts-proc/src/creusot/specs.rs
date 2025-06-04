@@ -10,7 +10,7 @@ use crate::{
 use pearlite_syn::{Term, TermPath};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
-use quote::quote;
+use quote::{quote, quote_spanned};
 use syn::{
     Attribute, Ident, Item, Path, ReturnType, Signature, Stmt, Token, Type, parenthesized,
     parse::{self, Parse},
@@ -85,7 +85,7 @@ fn ensures_inner(attr: TS1, tokens: TS1, logical_alias_path: bool) -> TS1 {
     let ens_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
     let name_tag = ens_name.to_string();
     let logical_alias = if logical_alias_path {
-        quote!(#[creusot::decl::logical_alias_path = #name_tag])
+        quote_spanned! {term.span()=> #[creusot::decl::logical_alias_path = #name_tag]}
     } else {
         quote!()
     };
@@ -256,7 +256,7 @@ pub fn has_logical_alias(attr: TS1, tokens: TS1) -> TS1 {
             quote!(#pat)
         }
     });
-    let ensures_contract = quote!(result == #logic_path(#(#args),*));
+    let ensures_contract = quote_spanned! {logic_path.span()=> result == #logic_path(#(#args),*)};
     ensures_inner(ensures_contract.into(), tokens, true)
 }
 
