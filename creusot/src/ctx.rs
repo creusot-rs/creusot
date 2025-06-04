@@ -2,8 +2,9 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     callbacks,
     contracts_items::{
-        get_inv_function, get_resolve_function, get_resolve_method, is_extern_spec, is_logic,
-        is_open_inv_param, is_predicate, is_prophetic, opacity_witness_name,
+        function_has_logical_alias, get_inv_function, get_resolve_function, get_resolve_method,
+        is_extern_spec, is_logic, is_open_inv_param, is_predicate, is_prophetic,
+        opacity_witness_name,
     },
     creusot_items::{self, CreusotItems},
     error::{CannotFetchThir, CreusotResult, Error},
@@ -13,8 +14,8 @@ use crate::{
     translation::{
         self,
         external::{ExternSpec, extract_extern_specs_from_item},
-        fmir, pearlite,
-        pearlite::ScopedTerm,
+        fmir,
+        pearlite::{self, ScopedTerm},
         specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
         traits::{TraitImpl, TraitResolved},
     },
@@ -153,6 +154,9 @@ pub struct TranslationCtx<'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
+    /// Maps the [`DefId`] of a program function `f` with a `#[has_logical_alias(f')]`
+    /// attribute to the logical function `f'`
+    logical_aliases: HashMap<DefId, (Span, DefId)>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
     terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
     trait_impl: OnceMap<DefId, Box<TraitImpl<'tcx>>>,
@@ -207,6 +211,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         Self {
             tcx,
             laws: Default::default(),
+            logical_aliases: Default::default(),
             externs: Default::default(),
             terms: Default::default(),
             creusot_items,
@@ -227,6 +232,38 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn load_metadata(&mut self) {
         self.externs.load(self.tcx, &self.opts.extern_paths);
+    }
+
+    /// Get the _logical alias_ of the given program function, if any.
+    ///
+    /// Logical aliases are defined with the `#[has_logical_alias(...)]` attribute.
+    ///
+    /// The returned span is the span of the attribute.
+    pub(crate) fn logical_alias(&self, def_id: DefId) -> Option<(Span, DefId)> {
+        self.logical_aliases.get(&def_id).copied()
+    }
+
+    pub(crate) fn load_logical_aliases(&mut self) -> Result<(), CannotFetchThir> {
+        // FIXME: what about functions from another crate?
+        let mut err = None;
+        for def_id in self.tcx.hir().body_owners() {
+            match function_has_logical_alias(self, def_id.to_def_id()) {
+                Ok(Some((span, aliased))) => {
+                    trace!(
+                        "`{}` is an alias for `{}`",
+                        self.def_path_str(def_id),
+                        self.def_path_str(aliased),
+                    );
+                    self.logical_aliases.insert(def_id.to_def_id(), (span, aliased));
+                }
+                Ok(None) => {}
+                Err(e) => CannotFetchThir::merge_opt(&mut err, e),
+            }
+        }
+        match err {
+            None => Ok(()),
+            Some(err) => Err(err),
+        }
     }
 
     /// Fetch the THIR of the given function.

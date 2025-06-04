@@ -103,6 +103,22 @@ pub(crate) fn validate_purity(
 
     let def_id = def_id.to_def_id();
     let purity = Purity::of_def_id(ctx, def_id);
+    if let Some((span, alias_id)) = ctx.logical_alias(def_id) {
+        if !matches!(purity, Purity::Program { .. }) {
+            ctx.error(
+                ctx.def_ident_span(def_id).unwrap_or_default(),
+                "Only program functions can use `#[has_logical_alias(...)]`",
+            )
+            .with_span_label(span, "alias defined here")
+            .emit();
+        }
+        let alias_purity = Purity::of_def_id(ctx, alias_id);
+        if !matches!(alias_purity, Purity::Logic { .. }) {
+            ctx.error(span, "Only logic functions can be aliased")
+                .with_note(format!("{} is not a logic function", ctx.def_path_str(alias_id)))
+                .emit();
+        }
+    }
     if matches!(purity, Purity::Program { .. })
         && (is_no_translate(ctx.tcx, def_id) || is_trusted_item(ctx.tcx, def_id))
     {
@@ -197,8 +213,13 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     };
 
                     let fn_purity = self.purity(fun, func_did, args);
+                    let fn_alias_purity = match self.ctx.logical_alias(func_did) {
+                        Some((_, alias_did)) => self.purity(fun, alias_did, args),
+                        None => fn_purity,
+                    };
                     if !(self.context.can_call(fn_purity)
-                        || self.context.is_logic() && is_overloaded_item(self.ctx.tcx, func_did))
+                        || self.context.can_call(fn_alias_purity)
+                        || (self.context.is_logic() && is_overloaded_item(self.ctx.tcx, func_did)))
                     {
                         // Emit a nicer error specifically for calls of ghost functions.
                         if fn_purity == Purity::Ghost
