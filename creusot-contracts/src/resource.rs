@@ -1,11 +1,14 @@
 pub mod fmap_view;
 
-#[cfg(creusot)]
-use crate::logic::ra;
 use crate::{
     Ghost, Snapshot,
     logic::{Id, Set, ra::RA},
     *,
+};
+#[cfg(creusot)]
+use crate::{
+    logic::ra::{self, incl_eq},
+    std::option::OptionExt as _,
 };
 use ::std::marker::PhantomData;
 
@@ -92,6 +95,14 @@ impl<R: RA> Resource<R> {
         Ghost::conjure()
     }
 
+    /// Dummy resource used to prove some of these functions.
+    #[trusted]
+    #[pure]
+    #[ensures(true)]
+    fn dummy() -> Self {
+        Self(PhantomData)
+    }
+
     /// Duplicate a resource if it is idempotent.
     #[trusted]
     #[requires(self@.idemp())]
@@ -134,7 +145,6 @@ impl<R: RA> Resource<R> {
     }
 
     /// Remove `b` from `self` and return it, leaving `a` inside `self`.
-    #[trusted]
     #[pure]
     #[requires(self@ == a.op(*b))]
     #[ensures((^self).id() == self.id())]
@@ -142,7 +152,10 @@ impl<R: RA> Resource<R> {
     #[ensures((^self)@ == *a)]
     #[ensures(result@ == *b)]
     pub fn split_off(&mut self, a: Snapshot<R>, b: Snapshot<R>) -> Self {
-        panic!("ghost code only")
+        let this = std::mem::replace(self, Self::dummy());
+        let (a, b) = this.split(a, b);
+        let _ = std::mem::replace(self, a);
+        b
     }
 
     /// Join two owned resources together.
@@ -162,13 +175,14 @@ impl<R: RA> Resource<R> {
     }
 
     /// Same as [`Self::join`], but put the result into `self`.
-    #[trusted]
     #[pure]
     #[requires(self.id() == other.id())]
     #[ensures((^self).id() == self.id())]
     #[ensures((^self)@ == self@.op(other@))]
     pub fn join_mut(&mut self, other: Self) {
-        panic!("ghost code only")
+        let this = std::mem::replace(self, Self::dummy());
+        let this = this.join(other);
+        let _ = std::mem::replace(self, this);
     }
 
     /// Join two shared resources together.
@@ -186,13 +200,14 @@ impl<R: RA> Resource<R> {
     }
 
     /// Transforms `self` into `target`, given that `target` is included in `self`.
-    #[trusted]
     #[pure]
     #[requires(target.incl(self@) != None)]
     #[ensures((^self).id() == self.id())]
     #[ensures((^self)@ == *target)]
     pub fn weaken(&mut self, target: Snapshot<R>) {
-        panic!("ghost code only")
+        let this = std::mem::replace(self, Self::dummy());
+        let (this, _) = this.split(target, snapshot!(target.incl(self@).unwrap_logic()));
+        let _ = std::mem::replace(self, this);
     }
 
     /// Transform `self` into `target`.
