@@ -90,13 +90,20 @@ pub const fn nat_i3<T: Nat>() {
     proof_assert!{ <I3<T> as Nat>::VALUE@ == T::VALUE@ + T::VALUE@  };
 }
 
+/*
+const STR : &'static [usize] = &[1,2,3];
+
+pub fn str() -> &'static [usize] {
+    STR
+}
+ */
+
 // TODO use const in logic functions
 
-/*
 // associated const from std
-#[ensures(result == T::IS_ZST)]
-pub const fn is_zst<T: ::std::mem::SizedTypeProperties>() -> bool {
-    const { T::IS_ZST }
+#[ensures(result == <T as ::std::mem::SizedTypeProperties>::IS_ZST)]
+pub const fn is_zst<T>() -> bool {
+    const { <T as ::std::mem::SizedTypeProperties>::IS_ZST }
 }
 
 struct Z;
@@ -106,4 +113,3 @@ struct Z;
 pub const fn is_zst_z() -> bool {
     const { is_zst::<Z>() }
 }
- */
