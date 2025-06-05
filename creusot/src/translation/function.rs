@@ -11,7 +11,6 @@ use crate::{
     naming::variable_name,
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
-        constant::from_mir_constant,
         fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inline_pearlite_subst},
         function::terminator::discriminator_for_switch,
         pearlite::{Ident, Term},
@@ -42,10 +41,18 @@ pub(crate) fn fmir<'tcx>(ctx: &TranslationCtx<'tcx>, body_id: BodyId) -> fmir::B
     BodyTranslator::with_context(ctx, body_id, |func_translator| func_translator.translate())
 }
 
+pub(crate) fn fmir_from_body<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    def_id: DefId,
+    body: &Body<'tcx>,
+) -> fmir::Body<'tcx> {
+    BodyTranslator::with_context_(ctx, def_id, body, |func_translator| func_translator.translate())
+}
+
 /// Translate a MIR body (rustc) to FMIR (creusot).
 // TODO: Split this into several sub-contexts: Core, Analysis, Results?
-struct BodyTranslator<'a, 'tcx> {
-    body_id: BodyId,
+pub(super) struct BodyTranslator<'a, 'tcx> {
+    body_id: DefId,
 
     body: &'a Body<'tcx>,
     tree: &'a fmir::ScopeTree<'tcx>,
@@ -65,7 +72,7 @@ struct BodyTranslator<'a, 'tcx> {
     past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
-    ctx: &'a TranslationCtx<'tcx>,
+    pub(super) ctx: &'a TranslationCtx<'tcx>,
 
     // Fresh BlockId
     fresh_id: usize,
@@ -114,6 +121,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.ctx.tcx
     }
 
+    pub(crate) fn def_id(&self) -> DefId {
+        self.body_id
+    }
+
     fn with_context<R, F: for<'b> FnOnce(BodyTranslator<'b, 'tcx>) -> R>(
         ctx: &'body TranslationCtx<'tcx>,
         body_id: BodyId,
@@ -122,8 +133,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let tcx = ctx.tcx;
         let body_with_facts = ctx.body_with_facts(body_id.def_id);
         let (body, move_data, resolver, borrows);
-        match body_id.promoted {
-            None => {
+        match body_id.constness {
+            Constness::None | Constness::Const(_) => {
                 body = &body_with_facts.body;
                 move_data = MoveData::gather_moves(body, tcx, |_| true);
                 resolver = Some(Resolver::new(
@@ -135,7 +146,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 ));
                 borrows = Some(&body_with_facts.borrow_set)
             }
-            Some(promoted) => {
+            Constness::Promoted(promoted) => {
                 body = body_with_facts.promoted.get(promoted).unwrap();
                 move_data = MoveData::gather_moves(body, tcx, |_| true);
                 resolver = None;
@@ -159,7 +170,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, body);
         f(BodyTranslator {
             body,
-            body_id,
+            body_id: body_id.def_id.to_def_id(),
             resolver,
             move_data: &move_data,
             tree: &fmir::ScopeTree::build(body, ctx.tcx, &locals),
@@ -176,6 +187,51 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             assertions,
             snapshots,
             borrows,
+        })
+    }
+
+    fn with_context_<R, F: for<'b> FnOnce(BodyTranslator<'b, 'tcx>) -> R>(
+        ctx: &'body TranslationCtx<'tcx>,
+        def_id: DefId,
+        body: &'body Body<'tcx>,
+        f: F,
+    ) -> R {
+        eprintln!("with_context_ for {def_id:?}");
+        let tcx = ctx.tcx;
+        let move_data = MoveData::gather_moves(body, tcx, |_| true);
+        let typing_env = ctx.typing_env(body.source.def_id());
+        let mut erased_locals = MixedBitSet::new_empty(body.local_decls.len());
+
+        body.local_decls.iter_enumerated().for_each(|(local, decl)| {
+            if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
+                if is_spec(tcx, *def_id) || is_snapshot_closure(tcx, *def_id) {
+                    erased_locals.insert(local);
+                }
+            }
+        });
+
+        let (vars, locals) = translate_vars(ctx, body, &erased_locals);
+        let invariants = corrected_invariant_names_and_locations(ctx, body);
+        let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, body);
+        f(BodyTranslator {
+            body,
+            body_id: def_id,
+            resolver: None,
+            move_data: &move_data,
+            tree: &fmir::ScopeTree::build(body, ctx.tcx, &locals),
+            typing_env,
+            locals,
+            vars,
+            erased_locals,
+            current_block: (Vec::new(), None),
+            past_blocks: Default::default(),
+            ctx,
+            fresh_id: body.basic_blocks.len(),
+            invariants: invariants.loop_headers,
+            invariant_assertions: invariants.assertions,
+            assertions,
+            snapshots,
+            borrows: None,
         })
     }
 
@@ -262,8 +318,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         }
     }
 
-    fn typing_env(&self) -> TypingEnv<'tcx> {
-        self.ctx.typing_env(self.body_id.def_id())
+    pub(crate) fn typing_env(&self) -> TypingEnv<'tcx> {
+        self.ctx.typing_env(self.body_id)
     }
 
     fn emit_statement(&mut self, s: fmir::Statement<'tcx>) {
@@ -300,7 +356,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.tcx(),
             self.typing_env(),
             place_ty.ty,
-            self.tcx().def_span(self.body_id.def_id()),
+            self.tcx().def_span(self.body_id),
         ) {
             self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone() });
         }
@@ -334,7 +390,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.tcx(),
             self.typing_env(),
             rhs_ty,
-            self.tcx().def_span(self.body_id.def_id()),
+            self.tcx().def_span(self.body_id),
         ) {
             TrivialInv::Trivial
         } else {
@@ -705,7 +761,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         Ok(match operand {
             Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(pl.as_ref())?),
             Operand::Move(pl) => fmir::Operand::Move(self.translate_place(pl.as_ref())?),
-            Operand::Constant(c) => from_mir_constant(self.typing_env(), self.ctx, c),
+            Operand::Constant(c) => self.from_mir_constant(c),
         })
     }
 

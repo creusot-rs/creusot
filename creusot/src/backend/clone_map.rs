@@ -28,8 +28,7 @@ use rustc_middle::{
 use rustc_span::Span;
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
-    Ident, Name, QName, Symbol,
-    declaration::{Attribute, Decl, Span as WSpan, TyDecl},
+    coma::{Arg, Defn, Expr}, declaration::{Attribute, Decl, Span as WSpan, TyDecl}, Ident, Name, QName, Symbol
 };
 
 mod elaborator;
@@ -60,7 +59,7 @@ pub enum PreMod {
 
 pub(crate) trait Namer<'tcx> {
     fn item(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
-        let node = Dependency::Item(def_id, subst);
+        let node: Dependency<'_> = Dependency::Item(def_id, subst);
         self.dependency(node).name()
     }
 
@@ -378,7 +377,10 @@ impl<'tcx> Dependencies<'tcx> {
         deps
     }
 
-    pub(crate) fn provide_deps(mut self, ctx: &Why3Generator<'tcx>) -> Vec<Decl> {
+    pub(crate) fn provide_deps(
+        mut self,
+        ctx: &Why3Generator<'tcx>,
+    ) -> (Vec<Decl>, ConstantSetters) {
         trace!("emitting dependencies for {:?}", self.self_id);
         let mut decls = Vec::new();
 
@@ -394,7 +396,7 @@ impl<'tcx> Dependencies<'tcx> {
         );
 
         // Update the clone graph with any new entries.
-        let (graph, mut bodies) = graph.update_graph(ctx);
+        let (graph, mut bodies, setters) = graph.update_graph(ctx);
 
         for scc in petgraph::algo::tarjan_scc(&graph).into_iter() {
             if scc.iter().any(|node| node == &self_node) {
@@ -512,12 +514,31 @@ impl<'tcx> Dependencies<'tcx> {
             })
             .collect();
 
-        if spans.is_empty() {
+        let decls = if spans.is_empty() {
             decls
         } else {
             let mut tmp = vec![Decl::LetSpans(spans)];
             tmp.extend(decls);
             tmp
-        }
+        };
+
+        (decls, setters)
+    }
+}
+
+pub struct ConstantSetters(Vec<Ident>);
+
+impl ConstantSetters {
+    pub(crate) fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Constants are compiled into an abstract constant declaration and a "constant setter" which is a
+    /// program function that computes its value and assumes that the constant is equal to the computed value.
+    ///
+    /// This inserts calls to those constant setters into a program body.
+    /// This must be called only after `provide_deps`.
+    pub(crate) fn call_setters_then(self, body: Expr) -> Expr {
+        self.0.into_iter().fold(body, |body, setter| Expr::App(Expr::var(setter).into(), Arg::Cont(body).into()))
     }
 }

@@ -30,7 +30,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
         if goal.is_true() {
             continue;
         }
-        let mut decls = names.provide_deps(ctx);
+        let (mut decls, setters) = names.provide_deps(ctx);
         let refines = Ident::fresh(ctx.crate_name(), "refines");
         decls.push(Decl::Goal(Goal { name: refines, goal }));
 

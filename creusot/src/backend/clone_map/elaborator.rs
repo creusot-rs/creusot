@@ -6,19 +6,9 @@ use std::{
 
 use crate::{
     backend::{
-        TranslationCtx, Why3Generator,
-        clone_map::{CloneNames, Dependency, Kind, Namer},
-        closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve},
-        is_trusted_item,
-        logic::{lower_logical_defn, spec_axiom},
-        program,
-        signature::{lower_logic_sig, lower_program_sig},
-        structural_resolve::structural_resolve,
-        term::lower_pure,
-        ty::{
+        clone_map::{CloneNames, Dependency, Kind, Namer, ConstantSetters}, closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve}, is_trusted_item, logic::{lower_logical_defn, spec_axiom}, program::{self, to_why}, signature::{lower_logic_sig, lower_program_sig}, structural_resolve::structural_resolve, term::lower_pure, ty::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
-        },
-        ty_inv::InvariantElaborator,
+        }, ty_inv::InvariantElaborator, TranslationCtx, Why3Generator
     },
     contracts_items::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
@@ -27,27 +17,26 @@ use crate::{
         is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_predicate,
         is_resolve_function, is_structural_resolve,
     },
-    ctx::{BodyId, ItemType},
+    ctx::{BodyId, Constness, ItemType},
     naming::name,
     translation::{
-        constant::from_ty_const,
-        pearlite::{Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
-        specification::Condition,
-        traits::TraitResolved,
+        constant::{logic_const, try_const_synonym},
+        function::fmir_from_body,
+        pearlite::{normalize, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger}, specification::Condition, traits::TraitResolved
     },
 };
 use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{
-    Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
-    UnevaluatedConst,
-};
+use rustc_middle::{mir, ty::{
+    self, GenericArg, GenericArgsRef, InstanceKind, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv
+}};
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
 use why3::{
-    Ident,
-    declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
+    Exp, Ident,
+    coma::{Arg, Defn, Expr, Param, Prototype},
+    declaration::{Attribute, Axiom, Constant, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
 };
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
@@ -63,8 +52,9 @@ pub enum Strength {
 pub(super) struct Expander<'a, 'tcx> {
     graph: DiGraphMap<Dependency<'tcx>, Strength>,
     dep_bodies: HashMap<Dependency<'tcx>, Vec<Decl>>,
+    constant_setters: ConstantSetters,
     namer: &'a mut CloneNames<'tcx>,
-    self_key: Dependency<'tcx>,
+    self_item: (DefId, GenericArgsRef<'tcx>),
     typing_env: TypingEnv<'tcx>,
     expansion_queue: VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>,
     /// Span for the item we are expanding
@@ -128,8 +118,9 @@ impl DepElab for ProgramElab {
         let names = elab.namer(dep);
         let name = names.dependency(dep).ident();
 
+        use DefKind::*;
         if let Dependency::Item(def_id, subst) = dep
-            && ctx.def_kind(def_id) != DefKind::Closure
+            && !matches!(ctx.def_kind(def_id), Closure | Const | InlineConst | AssocConst)
         {
             let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
                 .instantiate(ctx.tcx, subst)
@@ -179,8 +170,12 @@ impl DepElab for ProgramElab {
 
         // Inline the body of closures and promoted
         let bid = match dep {
-            Dependency::Item(def_id, _) => BodyId { def_id: def_id.expect_local(), promoted: None },
-            Dependency::Promoted(def_id, prom) => BodyId { def_id, promoted: Some(prom) },
+            Dependency::Item(def_id, _) => {
+                BodyId { def_id: def_id.expect_local(), constness: Constness::None }
+            }
+            Dependency::Promoted(def_id, prom) => {
+                BodyId { def_id, constness: Constness::Promoted(prom) }
+            }
             _ => unreachable!(),
         };
 
@@ -197,9 +192,9 @@ impl DepElab for LogicElab {
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<Decl> {
-        assert_matches!(dep, Dependency::Item(_, _));
-
-        let (def_id, subst) = dep.did().unwrap();
+        let Dependency::Item(def_id, subst) = dep else {
+            panic!("Bad dependency for LogicElab: {dep:?}");
+        };
 
         if is_inv_function(ctx.tcx, def_id) {
             elab.expansion_queue.push_back((
@@ -216,19 +211,6 @@ impl DepElab for LogicElab {
             _ => unreachable!(),
         };
 
-        if get_builtin(ctx.tcx, def_id).is_some() {
-            match elab.namer.dependency(dep) {
-                Kind::Named(_) => return vec![],
-                Kind::UsedBuiltin(qname) => {
-                    return vec![Decl::UseDecls(Box::new([Use {
-                        name: qname.module.clone(),
-                        export: false,
-                    }]))];
-                }
-                Kind::Unnamed => unreachable!(),
-            }
-        }
-
         let typing_env = elab.typing_env;
         let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
             .instantiate(ctx.tcx, subst)
@@ -241,12 +223,14 @@ impl DepElab for LogicElab {
             TraitResolved::NotATraitItem
             | TraitResolved::Instance(..) // The default impl is known to be the final instance
             | TraitResolved::UnknownFound // Unresolved trait method
+            | TraitResolved::UnknownNotFound // TODO: What does this mean? `core::mem::SizedTypeProperties` causes this, maybe related to primitive traits?
         );
         // The other case are impossible, because that would mean we are  not guaranteed to have an instance
+        let self_id = elab.self_item.0;
 
         let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
-            || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0)
-            || is_trusted_item(ctx.tcx, def_id);
+        || !ctx.is_transparent_from(def_id, self_id)
+        || is_trusted_item(ctx.tcx, def_id);
 
         let names = elab.namer(dep);
         let name = names.dependency(dep).ident();
@@ -385,27 +369,82 @@ impl DepElab for TyElab {
     }
 }
 
+fn expand_const<'tcx>(
+    elab: &mut Expander<'_, 'tcx>,
+    ctx: &Why3Generator<'tcx>,
+    dep: Dependency<'tcx>,
+) -> Vec<Decl> {
+    let Dependency::Item(def_id, subst) = dep else {
+        panic!("expand_const: bad dependency {dep:?}");
+    };
+    let typing_env = elab.typing_env;
+    let self_id = elab.self_item.0;
+    let names = &elab.namer(dep);
+    let name = names.dependency(dep).ident();
+    let span = ctx.def_span(def_id);
+    let ty = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env).output;
+    let type_ = translate_ty(ctx, names, span, ty);
+    if let DefKind::ConstParam = ctx.def_kind(def_id) {
+        return vec![Decl::ConstantDecl(Constant { name, type_, body: None })]
+    }
+    if let Some(term) = logic_const(&ctx.ctx, typing_env, self_id, def_id, subst) {
+        return vec![Decl::ConstantDecl(Constant { name, type_, body: Some(lower_pure(ctx, names, &term)) })]
+    }
+    let setter_ident = Ident::fresh_local("setter"); // TODO
+    let Some(ty::Instance { def, args: _ }) =
+        ty::Instance::try_resolve(ctx.tcx, typing_env, def_id, subst).unwrap() else {
+        return vec![Decl::ConstantDecl(Constant { name, type_, body: None })]
+    };
+    let InstanceKind::Item(def_id) = def else {
+        panic!("must be a const")
+    };
+    let def = match def_id.as_local() {
+        None => {
+            let body = ctx.instance_mir(def).clone();
+            todo!("external consts {def_id:?}");
+            let mut body = fmir_from_body(ctx, def_id, &body);
+            let inner_return = Ident::fresh_local("inner_return");
+            let (entry, blocks) = program::body_exp(ctx, names, inner_return, def_id, &mut body);
+            let body = Expr::Defn(entry, true, blocks);
+            let prototype = Prototype { name: setter_ident, attrs: vec![], params: [Param::Cont(
+                inner_return,
+                [].into(),
+                [].into(),
+            )].into() };
+            let def = Defn { prototype, body };
+            def
+        }
+        Some(def_id) => {
+            let body_id = BodyId { def_id, constness: Constness::Const(name) };
+            program::to_why(ctx, names, setter_ident, body_id)
+        }
+    };
+    elab.constant_setters.0.push(setter_ident);
+    vec![Decl::ConstantDecl(Constant { name, type_, body: None }), Decl::Coma(def)]
+}
+
 impl<'a, 'tcx> Expander<'a, 'tcx> {
     /// # Parameters
     ///
     /// `span`: span of the item being expanded
     pub fn new(
-        namer: &'a mut CloneNames<'tcx>,
-        self_key: Dependency<'tcx>,
-        typing_env: TypingEnv<'tcx>,
-        initial: impl Iterator<Item = Dependency<'tcx>>,
-        span: Span,
-    ) -> Self {
-        Self {
-            graph: Default::default(),
-            namer,
-            self_key,
-            typing_env,
-            expansion_queue: initial.map(|b| (self_key, Strength::Strong, b)).collect(),
-            dep_bodies: Default::default(),
-            root_span: span,
-        }
-    }
+namer: &'a mut CloneNames<'tcx>,
+self_key: Dependency<'tcx>,
+typing_env: TypingEnv<'tcx>,
+initial: impl Iterator<Item = Dependency<'tcx>>,
+span: Span,
+) -> Self {
+Self {
+    graph: Default::default(),
+    namer,
+    self_item: self_key.did().unwrap(),
+    typing_env,
+    expansion_queue: initial.map(|b| (self_key, Strength::Strong, b)).collect(),
+    dep_bodies: Default::default(),
+    root_span: span,
+    constant_setters: ConstantSetters(vec![]),
+}
+}
 
     fn namer(&mut self, source: Dependency<'tcx>) -> ExpansionProxy<'_, 'tcx> {
         ExpansionProxy {
@@ -417,25 +456,25 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
     /// Expand the graph with new entries
     pub fn update_graph(
-        mut self,
-        ctx: &Why3Generator<'tcx>,
-    ) -> (DiGraphMap<Dependency<'tcx>, Strength>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
-        let mut visited = HashSet::new();
-        while let Some((s, strength, t)) = self.expansion_queue.pop_front() {
-            if let Some(old) = self.graph.add_edge(s, t, strength)
-                && old > strength
-            {
-                self.graph.add_edge(s, t, old);
-            }
-
-            if !visited.insert(t) {
-                continue;
-            }
-            self.expand(ctx, t);
-        }
-
-        (self.graph, self.dep_bodies)
+mut self,
+ctx: &Why3Generator<'tcx>,
+) -> (DiGraphMap<Dependency<'tcx>, Strength>, HashMap<Dependency<'tcx>, Vec<Decl>>, ConstantSetters) {
+let mut visited = HashSet::new();
+while let Some((s, strength, t)) = self.expansion_queue.pop_front() {
+    if let Some(old) = self.graph.add_edge(s, t, strength)
+        && old > strength
+    {
+        self.graph.add_edge(s, t, old);
     }
+
+    if !visited.insert(t) {
+        continue;
+    }
+    self.expand(ctx, t);
+}
+
+(self.graph, self.dep_bodies, self.constant_setters)
+}
 
     fn expand(&mut self, ctx: &Why3Generator<'tcx>, dep: Dependency<'tcx>) {
         expand_laws(self, ctx, dep);
@@ -443,13 +482,22 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         let decls = match dep {
             Dependency::Type(_) => TyElab::expand(self, ctx, dep),
             Dependency::Item(def_id, subst) => {
-                if ctx.is_logical(def_id) || matches!(ctx.item_type(def_id), ItemType::Constant) {
+                if get_builtin(ctx.tcx, def_id).is_some() {
+                    expand_builtin(self, dep)
+                } else if ctx.is_logical(def_id) {
                     LogicElab::expand(self, ctx, dep)
-                } else if matches!(ctx.def_kind(def_id), DefKind::Field | DefKind::Variant) {
-                    self.namer(dep).def_ty(ctx.parent(def_id), subst);
-                    vec![]
                 } else {
-                    ProgramElab::expand(self, ctx, dep)
+                    match ctx.def_kind(def_id) {
+                        DefKind::Field | DefKind::Variant => {
+                            self.namer(dep).def_ty(ctx.parent(def_id), subst);
+                            vec![]
+                        }
+                        DefKind::Const
+                        | DefKind::AssocConst
+                        | DefKind::InlineConst
+                        | DefKind::ConstParam => expand_const(self, ctx, dep),
+                        _ => ProgramElab::expand(self, ctx, dep),
+                    }
                 }
             }
             Dependency::TyInvAxiom(ty) => expand_ty_inv_axiom(self, ctx, ty),
@@ -467,6 +515,19 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         };
 
         self.dep_bodies.insert(dep, decls);
+    }
+}
+
+fn expand_builtin<'a, 'tcx>(elab: &mut Expander<'a, 'tcx>, dep: Dependency<'tcx>) -> Vec<Decl> {
+    match elab.namer.dependency(dep) {
+        Kind::Named(_) => return vec![],
+        Kind::UsedBuiltin(qname) => {
+            return vec![Decl::UseDecls(Box::new([Use {
+                name: qname.module.clone(),
+                export: false,
+            }]))];
+        }
+        Kind::Unnamed => unreachable!(),
     }
 }
 
@@ -493,7 +554,7 @@ fn expand_laws<'tcx>(
     ctx: &Why3Generator<'tcx>,
     dep: Dependency<'tcx>,
 ) {
-    let (self_did, self_subst) = elab.self_key.did().unwrap();
+    let (self_did, self_subst) = elab.self_item;
     let Some((item_did, item_subst)) = dep.did() else {
         return;
     };
@@ -1024,15 +1085,7 @@ fn term<'tcx>(
 ) -> Option<Term<'tcx>> {
     match dep {
         Dependency::Item(def_id, subst) => {
-            if matches!(ctx.item_type(def_id), ItemType::Constant) {
-                let ct = UnevaluatedConst::new(def_id, subst);
-                let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(ct));
-                let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
-                let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
-                let span = ctx.def_span(def_id);
-                let res = from_ty_const(&ctx.ctx, constant, ty, typing_env, span);
-                Some(res)
-            } else if is_resolve_function(ctx.tcx, def_id) {
+            if is_resolve_function(ctx.tcx, def_id) {
                 resolve_term(ctx, typing_env, def_id, subst, bound)
             } else if is_structural_resolve(ctx.tcx, def_id) {
                 let subj = ctx.sig(def_id).inputs[0].0.0;

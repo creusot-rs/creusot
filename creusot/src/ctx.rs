@@ -33,7 +33,6 @@ use rustc_hir::{
     def_id::{DefId, LOCAL_CRATE, LocalDefId},
 };
 use rustc_infer::traits::ObligationCause;
-use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Promoted, TerminatorKind},
     thir,
@@ -67,15 +66,28 @@ macro_rules! queryish {
     };
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct BodyId {
     pub def_id: LocalDefId,
-    pub promoted: Option<Promoted>,
+    pub constness: Constness,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum Constness {
+    None,
+    Const(Ident),
+    Promoted(Promoted),
+}
+
+impl Constness {
+    pub fn is_const(self) -> bool {
+        matches!(self, Constness::Const(_) | Constness::Promoted(_))
+    }
 }
 
 impl BodyId {
-    pub fn new(def_id: LocalDefId, promoted: Option<Promoted>) -> Self {
-        BodyId { def_id, promoted }
+    pub fn new(def_id: LocalDefId, constness: Constness) -> Self {
+        BodyId { def_id, constness }
     }
 
     pub fn def_id(self) -> DefId {
@@ -507,27 +519,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
-        match self.tcx.def_kind(def_id) {
-            DefKind::Trait => ItemType::Trait,
-            DefKind::Impl { .. } => ItemType::Impl,
-            DefKind::Fn | DefKind::AssocFn => {
-                if is_predicate(self.tcx, def_id) {
-                    ItemType::Predicate { prophetic: is_prophetic(self.tcx, def_id) }
-                } else if is_logic(self.tcx, def_id) {
-                    ItemType::Logic { prophetic: is_prophetic(self.tcx, def_id) }
-                } else {
-                    ItemType::Program
-                }
-            }
-            DefKind::AssocConst | DefKind::Const => ItemType::Constant,
-            DefKind::Closure => ItemType::Closure,
-            DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,
-            DefKind::AssocTy => ItemType::AssocTy,
-            DefKind::Field => ItemType::Field,
-            DefKind::AnonConst => panic!(),
-            DefKind::Variant => ItemType::Variant,
-            dk => ItemType::Unsupported(dk),
-        }
+        item_type(self.tcx, def_id)
     }
 
     pub(crate) fn rename(&self, ident: HirId) -> Ident {
@@ -544,6 +536,31 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn fresh(&self, name: impl AsRef<str>) -> Ident {
         Ident::fresh(self.crate_name(), name)
+    }
+}
+
+pub fn item_type(tcx: TyCtxt, def_id: DefId) -> ItemType {
+    use DefKind::*;
+    match tcx.def_kind(def_id) {
+        Trait => ItemType::Trait,
+        Impl { .. } => ItemType::Impl,
+        Fn | AssocFn => {
+            if is_predicate(tcx, def_id) {
+                ItemType::Predicate { prophetic: is_prophetic(tcx, def_id) }
+            } else if is_logic(tcx, def_id) {
+                ItemType::Logic { prophetic: is_prophetic(tcx, def_id) }
+            } else {
+                ItemType::Program
+            }
+        }
+        AssocConst | Const | ConstParam | InlineConst => ItemType::Constant,
+        Closure => ItemType::Closure,
+        Struct | Enum | Union => ItemType::Type,
+        AssocTy => ItemType::AssocTy,
+        Field => ItemType::Field,
+        AnonConst => unreachable!(),
+        Variant => ItemType::Variant,
+        dk => ItemType::Unsupported(dk),
     }
 }
 

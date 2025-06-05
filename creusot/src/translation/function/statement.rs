@@ -5,10 +5,7 @@ use crate::{
         is_assertion, is_before_loop, is_invariant, is_snapshot_closure, is_spec, is_variant,
     },
     extended_location::ExtendedLocation,
-    translation::{
-        constant::from_ty_const,
-        fmir::{self, Operand, RValue, inline_pearlite_subst},
-    },
+    translation::fmir::{self, Operand, RValue, inline_pearlite_subst},
 };
 use rustc_borrowck::consumers::TwoPhaseActivation;
 use rustc_middle::{
@@ -199,13 +196,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Repeat(op, len) => RValue::Repeat(
                 self.translate_operand(op)?,
-                Operand::Constant(from_ty_const(
-                    self.ctx,
-                    *len,
-                    self.ctx.types.usize,
-                    self.typing_env(),
-                    si.span,
-                )),
+                Operand::Constant(self.translate_const(*len, self.ctx.types.usize, si.span)),
             ),
             Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize, _), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true)

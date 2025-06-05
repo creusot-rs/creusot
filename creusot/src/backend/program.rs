@@ -24,7 +24,7 @@ use crate::{
         },
         wto::{Component, weak_topological_order},
     },
-    ctx::{BodyId, Dependencies},
+    ctx::{BodyId, Constness, Dependencies},
     naming::name,
     translated_item::FileModule,
     translation::{
@@ -40,7 +40,7 @@ use petgraph::graphmap::DiGraphMap;
 use rustc_hir::{
     Safety,
     def::DefKind,
-    def_id::{DefId, LocalDefId},
+    def_id::DefId,
 };
 use rustc_middle::{
     mir::{BasicBlock, BinOp, ProjectionElem, START_BLOCK, UnOp, tcx::PlaceTy},
@@ -66,14 +66,14 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     }
 
     let name = names.item_ident(names.self_id, names.self_subst);
-    let body = Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), None)));
-
-    let mut decls = names.provide_deps(ctx);
+    let body = to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), Constness::None));
+    let (mut decls, setters) = names.provide_deps(ctx);
     decls.push(Decl::Meta(Meta {
         name: MetaIdent::String("compute_max_steps".into()),
         args: [MetaArg::Integer(1_000_000)].into(),
     }));
-    decls.push(body);
+    let body = Defn { prototype: body.prototype, body: setters.call_setters_then(body.body) }; // TODO do we want to put the setters under the black box?
+    decls.push(Decl::Coma(body));
 
     let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();
     let meta = ctx.display_impl_of(def_id);
@@ -142,12 +142,6 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     let inner_return = outer_return.refresh();
 
     let mut body = ctx.fmir_body(body_id).clone();
-    let block_idents: IndexMap<BasicBlock, Ident> = body
-        .blocks
-        .iter()
-        .map(|(blk, _)| (*blk, Ident::fresh_local(format!("bb{}", blk.as_usize()))))
-        .collect();
-
     // Remember the index of every argument before removing unused variables in simplify_fmir
     let arg_index = body
         .locals
@@ -159,17 +153,10 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
 
     simplify_fmir(gather_usage(&body), &mut body);
 
-    let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
-    infer_proph_invariants(ctx, &mut body);
+    let (entry, blocks) = body_exp(ctx, names, inner_return, body_id.def_id.to_def_id(), &mut body);
 
-    let blocks: Box<[Defn]> = wto
-        .into_iter()
-        .map(|c| {
-            component_to_defn(&mut body, ctx, names, body_id.def_id, &block_idents, inner_return, c)
-        })
-        .collect();
-
-    let (mut sig, contract, return_ty) = if body_id.promoted.is_none() {
+    let (mut sig, contract, return_ty) = if !body_id.constness.is_const() {
+        // OOPS swapped
         let def_id = body_id.def_id();
         let typing_env = ctx.typing_env(def_id);
         let mut pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
@@ -185,7 +172,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
                 params: [Param::Cont(
                     outer_return,
                     [].into(),
-                    [Param::Term(Ident::fresh_local("x"), ret_ty.clone())].into(), // argument that has to be named for useless reasons (difficult to fix in Coma/Why3 parser)
+                    [].into(),
                 )]
                 .into(),
             },
@@ -210,7 +197,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         })
         .collect();
 
-    let mut body = Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks);
+    let mut body = Expr::Defn(entry, true, blocks);
 
     let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
         && !ctx.sig(body_id.def_id()).contract.has_user_contract;
@@ -219,16 +206,24 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     let open_body =
         // a closure with no contract
         inferred_closure_spec
-        // a promoted item
-        || body_id.promoted.is_some();
+        // a constitem
+        || body_id.constness.is_const();
 
     let ensures = contract.ensures.into_iter().map(Condition::labelled_exp);
-    let mut postcond = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
-    if !open_body {
-        postcond = postcond.black_box();
-        postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
-
-        body = body.black_box()
+    let postcond = match body_id.constness {
+        Constness::Const(const_ident) => Expr::Assume(
+            Exp::var(const_ident).eq(Exp::var(name::result())).boxed(),
+            Expr::var(outer_return).boxed(),
+        ),
+        _ => {
+            let mut postcond = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
+            if !open_body {
+                postcond = postcond.black_box();
+                postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
+                body = body.black_box()
+            };
+            postcond
+        }
     };
 
     if inferred_closure_spec {
@@ -258,11 +253,36 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     Defn { prototype: sig, body }
 }
 
+pub(crate) fn body_exp<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    inner_return: Ident,
+    def_id: DefId,
+    body: &mut Body<'tcx>,
+) -> (Box<Expr>, Box<[Defn]>) {
+    let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
+    infer_proph_invariants(ctx, body);
+
+    let block_idents: IndexMap<BasicBlock, Ident> = body
+        .blocks
+        .iter()
+        .map(|(blk, _)| (*blk, Ident::fresh_local(format!("bb{}", blk.as_usize()))))
+        .collect();
+
+    let blocks: Box<[Defn]> = wto
+        .into_iter()
+        .map(|c| {
+            component_to_defn(body, ctx, names, def_id, &block_idents, inner_return, c)
+        })
+        .collect();
+    (Expr::var(block_idents[0]).boxed(), blocks)
+}
+
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    def_id: LocalDefId,
+    def_id: DefId,
     block_idents: &IndexMap<BasicBlock, Ident>,
     return_ident: Ident,
     c: Component<BasicBlock>,
@@ -302,7 +322,7 @@ pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) ctx: &'a Why3Generator<'tcx>,
     pub(super) names: &'a N,
     pub(super) locals: &'a LocalDecls<'tcx>,
-    pub(super) def_id: LocalDefId,
+    pub(super) def_id: DefId,
     block_idents: &'a IndexMap<BasicBlock, Ident>,
     return_ident: Ident,
 }
@@ -326,12 +346,13 @@ impl<'tcx> Operand<'tcx> {
         match self {
             Operand::Move(pl) | Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
+            Operand::ConstBlock(id, subst, _ty) => Exp::Var(lower.names.item(id, subst)),
             Operand::Promoted(pid, ty) => {
                 let var = Ident::fresh_local(format!("pr{}", pid.as_usize()));
                 istmts.push(IntermediateStmt::call(
                     var,
                     lower.ty(ty),
-                    Name::local(lower.names.promoted(lower.def_id, pid)),
+                    Name::local(lower.names.promoted(lower.def_id.as_local().unwrap(), pid)),
                     [],
                 ));
                 Exp::var(var)
@@ -393,43 +414,76 @@ impl<'tcx> RValue<'tcx> {
                 };
 
                 use BinOp::*;
-                let (opname, logic) = match op {
-                    Add | AddUnchecked => ("add", false),
-                    Sub | SubUnchecked => ("sub", false),
-                    Mul | MulUnchecked => ("mul", false),
-                    Div => ("div", false),
-                    Rem => ("rem", false),
-                    Shl | ShlUnchecked => ("shl", false),
-                    Shr | ShrUnchecked => ("shr", false),
+                enum OpKind {
+                    Program,
+                    Logic,
+                    // A logic function which outputs a pair; we rewrap it into the local pair type from Rust.
+                    LogicPair,
+                } // See `match kind` below
+                use OpKind::*;
+                let (opname, kind) = match op {
+                    Add | AddUnchecked => ("add", Program),
+                    Sub | SubUnchecked => ("sub", Program),
+                    Mul | MulUnchecked => ("mul", Program),
+                    Div => ("div", Program),
+                    Rem => ("rem", Program),
+                    Shl | ShlUnchecked => ("shl", Program),
+                    Shr | ShrUnchecked => ("shr", Program),
 
-                    Eq => ("eq", true),
-                    Ne => ("ne", true),
-                    Lt => ("lt", true),
-                    Le => ("le", true),
-                    Ge => ("ge", true),
-                    Gt => ("gt", true),
-                    BitXor => ("bw_xor", true),
-                    BitAnd => ("bw_and", true),
-                    BitOr => ("bw_or", true),
+                    Eq => ("eq", Logic),
+                    Ne => ("ne", Logic),
+                    Lt => ("lt", Logic),
+                    Le => ("le", Logic),
+                    Ge => ("ge", Logic),
+                    Gt => ("gt", Logic),
+                    BitXor => ("bw_xor", Logic),
+                    BitAnd => ("bw_and", Logic),
+                    BitOr => ("bw_or", Logic),
+                    AddWithOverflow => ("add_with_overflow", LogicPair),
+                    SubWithOverflow => ("sub_with_overflow", LogicPair),
+                    MulWithOverflow => ("mul_with_overflow", LogicPair),
 
-                    Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => todo!(),
+                    Cmp => todo!(),
                     Offset => unimplemented!("pointer offsets are unsupported"),
                 };
 
                 let fname = lower.names.in_pre(prelude, opname);
                 let args = [l.into_why(lower, istmts), r];
 
-                if logic {
-                    Exp::qvar(fname).app(args)
-                } else {
-                    let ret_ident = Ident::fresh_local("_ret");
-                    istmts.push(IntermediateStmt::call(
-                        ret_ident,
-                        lower.ty(ty),
-                        Name::Global(fname),
-                        args.map(Arg::Term),
-                    ));
-                    Exp::var(ret_ident)
+                match kind {
+                    Logic => Exp::qvar(fname).app(args),
+                    LogicPair => {
+                        let TyKind::Tuple(tys) = ty.kind() else { unreachable!() };
+                        let fst = Ident::fresh_local("fst");
+                        let snd = Ident::fresh_local("snd");
+                        use why3::exp::Pattern::{TupleP, VarP};
+                        Exp::Let {
+                            pattern: TupleP([VarP(fst), VarP(snd)].into()),
+                            arg: Exp::qvar(fname).app(args).boxed(),
+                            body: Exp::Record {
+                                fields: [(0usize, fst), (1, snd)]
+                                    .into_iter()
+                                    .map(|(ix, f)| {
+                                        (
+                                            Name::local(lower.names.tuple_field(tys, ix.into())),
+                                            Exp::var(f),
+                                        )
+                                    })
+                                    .collect(),
+                            }
+                            .boxed(),
+                        }
+                    }
+                    Program => {
+                        let ret_ident = Ident::fresh_local("_ret");
+                        istmts.push(IntermediateStmt::call(
+                            ret_ident,
+                            lower.ty(ty),
+                            Name::Global(fname),
+                            args.map(Arg::Term),
+                        ));
+                        Exp::var(ret_ident)
+                    }
                 }
             }
             RValue::UnaryOp(UnOp::Not, arg) => {
@@ -1246,4 +1300,12 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
     };
 
     (lower.names.item(id, subst), args)
+}
+
+fn const_block_to_why3<'tcx, N: Namer<'tcx>>(
+    lower: &mut LoweringState<'_, 'tcx, N>,
+    id: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> Name {
+    lower.names.item(id, subst)
 }
