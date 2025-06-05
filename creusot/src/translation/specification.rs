@@ -128,7 +128,7 @@ impl ContractClauses {
         let mut requires = Vec::new();
         for req_id in self.requires {
             log::trace!("require clause {:?}", req_id);
-            let term = ctx.term_fail_fast(req_id).unwrap().rename(bound);
+            let term = ctx.term(req_id).unwrap().rename(bound);
             let expl = if n_requires == 1 {
                 format!("expl:{} requires", fn_name)
             } else {
@@ -141,7 +141,7 @@ impl ContractClauses {
         let mut ensures = Vec::new();
         for ens_id in self.ensures {
             log::trace!("ensures clause {:?}", ens_id);
-            let term = ctx.term_fail_fast(ens_id).unwrap().rename(bound_with_result);
+            let term = ctx.term(ens_id).unwrap().rename(bound_with_result);
             let expl = if n_ensures == 1 {
                 format!("expl:{} ensures", fn_name)
             } else {
@@ -153,7 +153,7 @@ impl ContractClauses {
         let mut variant = None;
         if let Some(var_id) = self.variant {
             log::trace!("variant clause {:?}", var_id);
-            let term = ctx.term_fail_fast(var_id).unwrap().rename(bound);
+            let term = ctx.term(var_id).unwrap().rename(bound);
             variant = Some(term);
         };
         log::trace!("no_panic: {}", self.no_panic);
@@ -167,10 +167,6 @@ impl ContractClauses {
             extern_no_spec: false,
             has_user_contract,
         })
-    }
-
-    pub(crate) fn iter_ids(&self) -> impl Iterator<Item = DefId> + '_ {
-        self.requires.iter().chain(self.ensures.iter()).chain(self.variant.iter()).cloned()
     }
 }
 

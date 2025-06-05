@@ -1048,7 +1048,7 @@ fn term<'tcx>(
             } else if is_fn_mut_impl_hist_inv(ctx.tcx, def_id) {
                 fn_mut_hist_inv_term(ctx, typing_env, subst, bound)
             } else {
-                let term = ctx.term_fail_fast(def_id).unwrap().rename(bound);
+                let term = ctx.term(def_id).unwrap().rename(bound);
                 let term = normalize(
                     ctx.tcx,
                     typing_env,

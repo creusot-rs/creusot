@@ -459,14 +459,7 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
 ) -> CreusotResult<(Box<[(PIdent, Ty<'tcx>)]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
-    let (thir, expr) = ctx.fetch_thir(id)?;
-    let thir = thir.borrow();
-    if thir.exprs.is_empty() {
-        // TODO: why does it not just return `()`?
-        return Err(Error::TypeCheck(
-            ctx.dcx().span_err(ctx.def_span(id), "Empty body is not allowed").into(),
-        ));
-    };
+    let Some((thir, expr)) = ctx.get_thir(id) else { return Err(Error::ErrorGuaranteed) };
     let lower = ThirTerm { ctx, item_id: id, thir: &thir };
 
     let (triggers, body) = lower.body_term(expr)?;
@@ -483,8 +476,9 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
         // Preconditions and variants have all of their variables bound in the parent function.
         // Postconditions also bind a `result` variable.
         let parent = ctx.tcx.parent(did).expect_local();
-        let (parent_thir, _) = ctx.fetch_thir(parent)?;
-        let parent_thir: &Thir = &parent_thir.borrow();
+        let Some((parent_thir, _)) = ctx.get_thir(parent) else {
+            return Err(Error::ErrorGuaranteed);
+        };
         // Parameters of the parent function plus maybe the `result` parameter from the current closure
         parent_thir
             .params

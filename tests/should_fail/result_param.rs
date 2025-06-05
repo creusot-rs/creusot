@@ -3,4 +3,4 @@ use creusot_contracts::*;
 
 // Should fail saying result is not a valid parameter name
 #[ensures(result == result)]
-fn result_arg(result: u32) {}
+pub fn result_arg(result: u32) {}

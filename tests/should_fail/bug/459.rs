@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-enum A {
+pub enum A {
     Cons(Box<A>),
     Nil,
 }

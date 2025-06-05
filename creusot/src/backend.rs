@@ -6,7 +6,6 @@ use why3::declaration::Attribute;
 use crate::{
     contracts_items::{is_resolve_function, is_spec, is_trusted},
     ctx::{ItemType, TranslatedItem, TranslationCtx},
-    error::CannotFetchThir,
     naming::ModulePath,
     options::SpanMode,
     run_why3::SpanMap,
@@ -58,7 +57,7 @@ impl<'tcx> Why3Generator<'tcx> {
         Why3Generator { ctx, functions: Default::default(), span_map: Default::default() }
     }
 
-    pub(crate) fn translate(&mut self, def_id: DefId) -> Result<(), CannotFetchThir> {
+    pub(crate) fn translate(&mut self, def_id: DefId) {
         debug!("translating {:?}", def_id);
 
         match self.item_type(def_id) {
@@ -70,7 +69,7 @@ impl<'tcx> Why3Generator<'tcx> {
                 self.functions.push(TranslatedItem::Logic { proof_modl: None });
             }
             ItemType::Logic { .. } | ItemType::Predicate { .. } => {
-                let proof_modl = logic::translate_logic_or_predicate(self, def_id)?;
+                let proof_modl = logic::translate_logic_or_predicate(self, def_id);
                 self.functions.push(TranslatedItem::Logic { proof_modl });
             }
             ItemType::Program => {
@@ -84,7 +83,6 @@ impl<'tcx> Why3Generator<'tcx> {
             ),
             _ => (),
         }
-        Ok(())
     }
 
     pub(crate) fn modules(&mut self) -> impl Iterator<Item = TranslatedItem> + '_ {

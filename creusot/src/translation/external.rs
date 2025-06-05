@@ -1,6 +1,5 @@
 use crate::{
     ctx::*,
-    error::CreusotResult,
     translation::{
         pearlite::PIdent,
         specification::{ContractClauses, contract_clauses_of},
@@ -45,18 +44,13 @@ impl<'tcx> ExternSpec<'tcx> {
 pub(crate) fn extract_extern_specs_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: LocalDefId,
-) -> CreusotResult<(DefId, ExternSpec<'tcx>)> {
+    &(ref thir, expr): &(Thir<'tcx>, thir::ExprId),
+) -> (DefId, ExternSpec<'tcx>) {
     let def_id_ = def_id.to_def_id();
     let span = ctx.def_span(def_id_);
     let contract = contract_clauses_of(ctx, def_id_).unwrap();
-    // Handle error gracefully
-    let (thir, expr) = ctx.fetch_thir(def_id)?;
-    let thir = thir.borrow();
-
     let mut visit = ExtractExternItems::new(&thir);
-
     visit.visit_expr(&thir[expr]);
-
     let (id, subst) = visit.items.pop().unwrap();
 
     let (id, _) =
@@ -157,7 +151,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .collect();
 
     let (inputs, output) = inputs_and_output_from_thir(ctx, def_id_, &thir);
-    Ok((id, ExternSpec { contract, additional_predicates, subst, inputs, output }))
+    (id, ExternSpec { contract, additional_predicates, subst, inputs, output })
 }
 
 // We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.
