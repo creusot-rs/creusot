@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-trait Foo {
+pub trait Foo {
     #[terminates]
     fn f() {}
     #[terminates]

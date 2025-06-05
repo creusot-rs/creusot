@@ -6,7 +6,6 @@ use crate::{
         is_snapshot_deref, is_spec,
     },
     ctx::TranslationCtx,
-    error::CannotFetchThir,
     translation::{
         pearlite::{Stub, pearlite_stub},
         traits::TraitResolved,
@@ -19,7 +18,6 @@ use rustc_middle::{
     thir::{self, ClosureExpr, ExprKind, Thir},
     ty::{FnDef, TypingEnv},
 };
-use rustc_span::ErrorGuaranteed;
 use rustc_trait_selection::infer::InferCtxtExt;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -90,30 +88,22 @@ impl Purity {
     }
 }
 
-pub(crate) fn validate_purity(
-    ctx: &TranslationCtx,
+pub(crate) fn validate_purity<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
     def_id: LocalDefId,
-) -> Result<(), CannotFetchThir> {
-    let (thir, expr) = ctx.fetch_thir(def_id)?;
-    let thir = thir.borrow();
-    if thir.exprs.is_empty() {
-        // TODO: put this inside `fetch_thir`?
-        return Err(ctx.dcx().span_err(ctx.def_span(def_id), "Empty body is not allowed").into());
-    }
-
+    &(ref thir, expr): &(thir::Thir<'tcx>, thir::ExprId),
+) {
     let def_id = def_id.to_def_id();
     let purity = Purity::of_def_id(ctx, def_id);
     if matches!(purity, Purity::Program { .. })
         && (is_no_translate(ctx.tcx, def_id) || is_trusted_item(ctx.tcx, def_id))
     {
-        return Ok(());
+        return;
     }
     let typing_env = ctx.typing_env(def_id);
 
-    let mut visitor =
-        PurityVisitor { ctx, thir: &thir, context: purity, typing_env, thir_failed: None };
-    thir::visit::walk_expr(&mut visitor, &thir[expr]);
-    if let Some(err) = visitor.thir_failed { Err(err.into()) } else { Ok(()) }
+    let mut visitor = PurityVisitor { ctx, thir, context: purity, typing_env };
+    thir::visit::walk_expr(&mut visitor, &thir[expr])
 }
 
 struct PurityVisitor<'a, 'tcx> {
@@ -122,8 +112,6 @@ struct PurityVisitor<'a, 'tcx> {
     context: Purity,
     /// Typing environment of the caller function
     typing_env: TypingEnv<'tcx>,
-    // If `Some`, we should error with a [`CannotFetchThir`] error.
-    thir_failed: Option<ErrorGuaranteed>,
 }
 
 impl PurityVisitor<'_, '_> {
@@ -189,10 +177,10 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                         TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, func_did, subst)
                             .to_opt(func_did, subst)
                     else {
-                        self.thir_failed = Some(self.ctx.dcx().span_err(
+                        self.ctx.dcx().span_err(
                             fn_span,
                             format!("no instance of {} found", self.ctx.def_path_str(func_did)),
-                        ));
+                        );
                         return;
                     };
 
@@ -260,28 +248,15 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                 if is_spec(self.ctx.tcx, closure_id.into()) {
                     return;
                 }
-
-                let (thir, expr) = match self.ctx.thir_body(closure_id) {
-                    Ok(t) => t,
-                    Err(err) => {
-                        self.thir_failed = Some(err);
-                        return;
-                    }
-                };
-                let thir = thir.borrow();
-
+                // If this is None there must be a type error that will be reported later so we can skip this silently.
+                let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
                 let mut visitor = PurityVisitor {
                     ctx: self.ctx,
                     thir: &thir,
                     context: self.context,
                     typing_env: self.typing_env,
-                    thir_failed: None,
                 };
                 thir::visit::walk_expr(&mut visitor, &thir[expr]);
-                if let Some(err) = visitor.thir_failed {
-                    self.thir_failed = Some(err);
-                    return;
-                }
             }
             ExprKind::Scope {
                 region_scope: _,

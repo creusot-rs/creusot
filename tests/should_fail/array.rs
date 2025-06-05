@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 fn main() {
-    let x = [0; 8];
+    let _ = [0; 8];
 }
 
 // Checks that array expressions are not allowed in specificatiosn

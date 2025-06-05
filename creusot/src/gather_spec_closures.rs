@@ -35,10 +35,10 @@ impl<'tcx> SpecClosures<'tcx> {
         let mut snapshots = IndexMap::new();
         for clos in visitor.closures.into_iter() {
             if is_assertion(ctx.tcx, clos) {
-                let term = ctx.term_fail_fast(clos).unwrap().1.clone();
+                let term = ctx.term(clos).unwrap().1.clone();
                 assertions.insert(clos, term);
             } else if is_snapshot_closure(ctx.tcx, clos) {
-                let term = ctx.term_fail_fast(clos).unwrap().1.clone();
+                let term = ctx.term(clos).unwrap().1.clone();
                 snapshots.insert(clos, term);
             }
         }
@@ -140,7 +140,7 @@ impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
                 }
                 return;
             };
-            let term = self.ctx.term_fail_fast(*id).unwrap().1.clone();
+            let term = self.ctx.term(*id).unwrap().1.clone();
             match self.find_loop_header(loc) {
                 None if let LoopSpecKind::Invariant(expl) = kind => {
                     self.ctx.warn(

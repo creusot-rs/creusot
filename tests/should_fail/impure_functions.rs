@@ -6,6 +6,6 @@ fn x<T>(v: &Vec<T>) -> Int {
     pearlite! { v.len()@ }
 }
 
-fn y() {
+pub fn y() {
     let _ = x(&Vec::<()>::new());
 }

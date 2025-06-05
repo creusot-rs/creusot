@@ -5,13 +5,12 @@ use rustc_span::Span;
 use crate::{
     contracts_items::{is_spec, opacity_witness_name},
     ctx::TranslationCtx,
-    error::CannotFetchThir,
     translation::pearlite::{ScopedTerm, TermKind, TermVisitor, super_visit_term},
     util::parent_module,
 };
 
 /// Validates that an `#[open]` function is not made visible in a less opened one.
-pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) -> Result<(), CannotFetchThir> {
+pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) {
     struct OpacityVisitor<'a, 'tcx> {
         ctx: &'a TranslationCtx<'tcx>,
         opacity: Option<DefId>,
@@ -61,10 +60,10 @@ pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) -> Result<(), 
     }
 
     if is_spec(ctx.tcx, item) {
-        return Ok(());
+        return;
     }
 
-    let Some(ScopedTerm(_, term)) = ctx.term(item)? else { return Ok(()) };
+    let Some(ScopedTerm(_, term)) = ctx.term(item) else { return };
 
     if ctx.visibility(item) != Visibility::Restricted(parent_module(ctx.tcx, item))
         && opacity_witness_name(ctx.tcx, item).is_none()
@@ -74,5 +73,4 @@ pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) -> Result<(), 
 
     let opacity = ctx.opacity(item).scope();
     OpacityVisitor { opacity, ctx, source_item: item }.visit_term(term);
-    Ok(())
 }
