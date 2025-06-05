@@ -235,19 +235,6 @@ impl DepElab for LogicElab {
             _ => unreachable!(),
         };
 
-        if get_builtin(ctx.tcx, def_id).is_some() {
-            match elab.namer.dependency(dep) {
-                Kind::Named(_) => return vec![],
-                Kind::UsedBuiltin(qname) => {
-                    return vec![Decl::UseDecls(Box::new([Use {
-                        name: qname.module.clone(),
-                        export: false,
-                    }]))];
-                }
-                Kind::Unnamed => unreachable!(),
-            }
-        }
-
         let typing_env = elab.typing_env;
         let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
             .instantiate(ctx.tcx, subst)
@@ -519,7 +506,9 @@ while let Some((s, strength, t)) = self.expansion_queue.pop_front() {
         let decls = match dep {
             Dependency::Type(_) => TyElab::expand(self, ctx, dep),
             Dependency::Item(def_id, subst) => {
-                if ctx.is_logical(def_id) {
+                if get_builtin(ctx.tcx, def_id).is_some() {
+                    expand_builtin(self, dep)
+                } else if ctx.is_logical(def_id) {
                     LogicElab::expand(self, ctx, dep)
                 } else {
                     match ctx.def_kind(def_id) {
@@ -550,6 +539,19 @@ while let Some((s, strength, t)) = self.expansion_queue.pop_front() {
         };
 
         self.dep_bodies.insert(dep, decls);
+    }
+}
+
+fn expand_builtin<'a, 'tcx>(elab: &mut Expander<'a, 'tcx>, dep: Dependency<'tcx>) -> Vec<Decl> {
+    match elab.namer.dependency(dep) {
+        Kind::Named(_) => return vec![],
+        Kind::UsedBuiltin(qname) => {
+            return vec![Decl::UseDecls(Box::new([Use {
+                name: qname.module.clone(),
+                export: false,
+            }]))];
+        }
+        Kind::Unnamed => unreachable!(),
     }
 }
 
