@@ -159,10 +159,9 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         // OOPS swapped
         let def_id = body_id.def_id();
         let typing_env = ctx.typing_env(def_id);
-        let span = ctx.tcx.def_span(def_id);
-        let pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
-        let return_ty = translate_ty(ctx, names, span, pre_sig.output);
-        (Prototype { name, attrs: [].into(), params: [Param::Cont(outer_return, [].into(), [].into())].into() }, Contract::default(), return_ty)
+        let mut pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
+        pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
+        lower_program_sig(ctx, names, name, pre_sig, def_id, outer_return)
     } else {
         let ret = body.locals.first().map(|(_, decl)| decl.clone()).unwrap();
         let ret_ty = translate_ty(ctx, names, ret.span, ret.ty);
