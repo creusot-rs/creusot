@@ -172,7 +172,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
                 params: [Param::Cont(
                     outer_return,
                     [].into(),
-                    [Param::Term(Ident::fresh_local("x"), ret_ty.clone())].into(), // argument that has to be named for useless reasons (difficult to fix in Coma/Why3 parser)
+                    [].into(),
                 )]
                 .into(),
             },

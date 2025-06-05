@@ -184,30 +184,6 @@ impl DepElab for ProgramElab {
     }
 }
 
-/// Associated constants declarations are translated to a constant function
-/// which returns a logic constant value.
-/// This is very simplistic, but it is enough for the most common use cases where
-/// an associated constant is equal to either a literal or another constant.
-fn expand_assoc_const<'tcx, N: Namer<'tcx>>(
-    ctx: &Why3Generator<'tcx>,
-    names: &N,
-    name: Ident,
-    def_id: DefId,
-    subst: GenericArgsRef<'tcx>,
-) -> Vec<Decl> {
-    let logic_name = names.item(def_id, subst);
-    let ret = Ident::fresh_local("ret");
-    let x = Ident::fresh_local("x");
-    let span = ctx.def_span(def_id);
-    let ty = translate_ty(ctx, names, span, ctx.type_of(def_id).instantiate(ctx.tcx, subst));
-    let ret_param = Param::Cont(ret, [].into(), [Param::Term(x, ty)].into());
-    let coma = Defn {
-        prototype: Prototype { name, attrs: [].into(), params: [ret_param].into() },
-        body: Expr::app(Expr::var(ret), [Arg::Term(Exp::Var(logic_name))]),
-    };
-    vec![Decl::Coma(coma)]
-}
-
 struct LogicElab;
 
 impl DepElab for LogicElab {
