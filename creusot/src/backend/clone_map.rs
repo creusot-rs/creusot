@@ -514,7 +514,7 @@ impl<'tcx> Dependencies<'tcx> {
             })
             .collect();
 
-        if spans.is_empty() {
+        let decls = if spans.is_empty() {
             decls
         } else {
             let mut tmp = vec![Decl::LetSpans(spans)];
@@ -522,7 +522,7 @@ impl<'tcx> Dependencies<'tcx> {
             tmp
         };
 
-        (dependencies, setters)
+        (decls, setters)
     }
 }
 

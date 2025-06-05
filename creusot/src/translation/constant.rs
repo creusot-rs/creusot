@@ -1,13 +1,12 @@
 use crate::{
-    contracts_items::get_builtin,
-    ctx::TranslationCtx, ctx::TranslationCtx,
-    translation::{fmir::Operand, pearlite::Literal, traits::TraitResolved},
+    ctx::TranslationCtx,
+    translation::{fmir::{self, Operand}, pearlite::Literal, traits::TraitResolved},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{
-        self, ConstOperand, interpret::AllocRange, ConstValue, UnevaluatedConst, BasicBlock, Statement, StatementKind, },
-    ty::{Const, ConstKind, AssocItem, AssocItemContainer, EarlyBinder, ScalarInt, Ty, TyCtxt,
+        self, interpret::AllocRange, UnevaluatedConst, BasicBlock, StatementKind, },
+    ty::{self, Const, ConstKind, EarlyBinder, Ty, TyCtxt,
         TyKind, TypingEnv,
     },
 };

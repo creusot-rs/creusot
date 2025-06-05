@@ -1,5 +1,5 @@
 use crate::{
-    contracts_items::{get_builtin, is_box_new}, ctx::{item_type, ItemType}, pearlite::{super_visit_mut_term, BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp}, traits::TraitResolved
+    contracts_items::{get_builtin, is_box_new}, ctx::{item_type, ItemType}, translation::{pearlite::{super_visit_mut_term, BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp}, traits::TraitResolved}
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{GenericArgsRef, TyCtxt, TypingEnv};

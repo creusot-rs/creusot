@@ -5,8 +5,7 @@ use crate::{
         is_assertion, is_before_loop, is_invariant, is_snapshot_closure, is_spec, is_variant,
     },
     extended_location::ExtendedLocation,
-    fmir::Operand,
-    translation::fmir::{self, RValue, inline_pearlite_subst},
+    translation::fmir::{self, Operand, RValue, inline_pearlite_subst},
 };
 use rustc_borrowck::consumers::TwoPhaseActivation;
 use rustc_middle::{

@@ -33,7 +33,6 @@ use rustc_hir::{
     def_id::{DefId, LOCAL_CRATE, LocalDefId},
 };
 use rustc_infer::traits::ObligationCause;
-use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Promoted, TerminatorKind},
     thir,

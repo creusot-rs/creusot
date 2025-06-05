@@ -40,7 +40,7 @@ use petgraph::graphmap::DiGraphMap;
 use rustc_hir::{
     Safety,
     def::DefKind,
-    def_id::{DefId, LocalDefId},
+    def_id::DefId,
 };
 use rustc_middle::{
     mir::{BasicBlock, BinOp, ProjectionElem, START_BLOCK, UnOp, tcx::PlaceTy},

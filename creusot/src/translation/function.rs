@@ -11,7 +11,6 @@ use crate::{
     naming::variable_name,
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
-        constant::from_mir_constant,
         fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inline_pearlite_subst},
         function::terminator::discriminator_for_switch,
         pearlite::{Ident, Term},
@@ -357,7 +356,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.tcx(),
             self.typing_env(),
             place_ty.ty,
-            self.tcx().def_span(self.body_id.def_id()),
+            self.tcx().def_span(self.body_id),
         ) {
             self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone() });
         }
@@ -391,7 +390,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.tcx(),
             self.typing_env(),
             rhs_ty,
-            self.tcx().def_span(self.body_id.def_id()),
+            self.tcx().def_span(self.body_id),
         ) {
             TrivialInv::Trivial
         } else {

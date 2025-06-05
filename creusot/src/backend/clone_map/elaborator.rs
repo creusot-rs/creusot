@@ -10,7 +10,6 @@ use crate::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
         }, ty_inv::InvariantElaborator, TranslationCtx, Why3Generator
     },
-    constant::logic_const,
     contracts_items::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
         get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
@@ -20,10 +19,8 @@ use crate::{
     },
     ctx::{BodyId, Constness, ItemType},
     naming::name,
-    constant::{try_const_synonym, try_eval_const},
     translation::{
-        constant::from_ty_const,
-        constant::logic_const,
+        constant::{logic_const, try_const_synonym},
         function::fmir_from_body,
         pearlite::{normalize, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger}, specification::Condition, traits::TraitResolved
     },
