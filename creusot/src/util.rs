@@ -1,5 +1,4 @@
-use std::{hash::Hash as _, path::Path};
-
+use creusot_args::options::SpanMode;
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, DefPathHash, LOCAL_CRATE},
@@ -14,8 +13,7 @@ use rustc_middle::{
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{Span, Symbol};
-
-use creusot_args::options::SpanMode;
+use std::{hash::Hash as _, path::Path};
 
 pub(crate) fn erased_identity_for_item(tcx: TyCtxt, did: DefId) -> GenericArgsRef {
     tcx.erase_and_anonymize_regions(GenericArgs::identity_for_item(tcx, did))
