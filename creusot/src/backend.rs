@@ -22,7 +22,7 @@ pub(crate) mod closures;
 pub(crate) mod dependency;
 pub(crate) mod logic;
 pub(crate) mod optimization;
-pub(crate) mod place;
+pub(crate) mod projections;
 pub(crate) mod program;
 pub(crate) mod signature;
 pub(crate) mod structural_resolve;

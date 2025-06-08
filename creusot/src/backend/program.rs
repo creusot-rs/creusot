@@ -15,7 +15,7 @@ use crate::{
         dependency::Dependency,
         is_trusted_item,
         optimization::{gather_usage, infer_proph_invariants, simplify_fmir},
-        place::{Focus, create_assign_inner, projections_to_expr, rplace_to_expr},
+        projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::lower_program_sig,
         term::{lower_pat, lower_pure},
         ty::{
@@ -313,7 +313,35 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
     }
 
     fn assignment(&self, lhs: &Place<'tcx>, rhs: Term, istmts: &mut Vec<IntermediateStmt>) {
-        create_assign_inner(self, lhs, rhs, istmts)
+        let local_ty = PlaceTy::from_ty(self.locals[&lhs.local].ty);
+        let (_, _, constructor) = projections_to_expr(
+            self.ctx,
+            self.names,
+            Some(istmts),
+            local_ty,
+            Focus::new(|_| Exp::var(lhs.local)),
+            Box::new(|_, x| x),
+            &lhs.projections,
+            |ix| Exp::var(*ix),
+        );
+
+        let rhs = constructor(Some(istmts), rhs);
+        istmts.push(IntermediateStmt::Assign(lhs.local, rhs));
+    }
+
+    fn rplace_to_expr(&self, pl: &Place<'tcx>, istmts: &mut Vec<IntermediateStmt>) -> Exp {
+        let local_ty = PlaceTy::from_ty(self.locals[&pl.local].ty);
+        let (_, rhs, _) = projections_to_expr(
+            self.ctx,
+            self.names,
+            Some(istmts),
+            local_ty,
+            Focus::new(|_| Exp::var(pl.local)),
+            Box::new(|_, _| unreachable!()),
+            &pl.projections,
+            |ix| Exp::var(*ix),
+        );
+        rhs.call(Some(istmts))
     }
 }
 
@@ -324,7 +352,7 @@ impl<'tcx> Operand<'tcx> {
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
         match self {
-            Operand::Move(pl) | Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
+            Operand::Move(pl) | Operand::Copy(pl) => lower.rplace_to_expr(&pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::Promoted(pid, ty) => {
                 let var = Ident::fresh_local(format!("pr{}", pid.as_usize()));
@@ -642,7 +670,7 @@ impl<'tcx> RValue<'tcx> {
                     let lhs = Exp::qvar(lower.names.in_pre(PreMod::Slice, "slice_ptr_len"))
                         .app([Exp::var(ptr_ident)]); // TODO This was not caught by the test suite
                     let rhs = Exp::qvar(lower.names.in_pre(PreMod::Slice, "length"))
-                        .app([rplace_to_expr(lower, &pl, istmts)]);
+                        .app([lower.rplace_to_expr(&pl, istmts)]);
                     istmts.push(IntermediateStmt::Assume(lhs.eq(rhs)));
                 }
 
@@ -940,40 +968,6 @@ where
     })
 }
 
-pub(crate) fn borrow_generated_id<'tcx, V: Debug, N: Namer<'tcx>>(
-    names: &N,
-    original_borrow: Exp,
-    projections: &[ProjectionElem<V, Ty<'tcx>>],
-    mut translate_index: impl FnMut(&V) -> Exp,
-) -> Exp {
-    let mut borrow_id = Exp::qvar(names.in_pre(PreMod::MutBor, "get_id")).app([original_borrow]);
-    for proj in projections {
-        match proj {
-            ProjectionElem::Deref => {
-                // TODO: If this is a deref of a mutable borrow, the id should change !
-            }
-            ProjectionElem::Field(idx, _) => {
-                borrow_id = Exp::qvar(names.in_pre(PreMod::MutBor, "inherit_id"))
-                    .app([borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))]);
-            }
-            ProjectionElem::Index(x) => {
-                borrow_id = Exp::qvar(names.in_pre(PreMod::MutBor, "inherit_id"))
-                    .app([borrow_id, translate_index(x)]);
-            }
-
-            ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
-                // those should inherit a different id instead
-                todo!("Unsupported projection {proj:?} in reborrow")
-            }
-            // Nothing to do
-            ProjectionElem::Downcast(..)
-            | ProjectionElem::OpaqueCast(_)
-            | ProjectionElem::Subtype(_) => {}
-        }
-    }
-    borrow_id
-}
-
 #[derive(Debug)]
 pub(crate) enum IntermediateStmt {
     // [ id = E] K
@@ -1026,27 +1020,31 @@ impl<'tcx> Statement<'tcx> {
                 if let BorrowKind::Final(deref_index) = bor_kind {
                     let (original_borrow_ty, original_borrow, original_borrow_constr) =
                         projections_to_expr(
-                            lower,
-                            &mut istmts,
+                            lower.ctx,
+                            lower.names,
+                            Some(&mut istmts),
                             rhs_local_ty,
                             Focus::new(|_| Exp::var(rhs.local)),
                             Box::new(|_, x| x),
                             &rhs.projections[..deref_index],
+                            |ix| Exp::var(*ix),
                         );
                     let (_, foc, constr) = projections_to_expr(
-                        lower,
-                        &mut istmts,
+                        lower.ctx,
+                        lower.names,
+                        Some(&mut istmts),
                         original_borrow_ty,
                         original_borrow.clone(),
                         original_borrow_constr,
                         &rhs.projections[deref_index..],
+                        |ix| Exp::var(*ix),
                     );
-                    rhs_rplace = foc.call(&mut istmts);
+                    rhs_rplace = foc.call(Some(&mut istmts));
                     rhs_constr = constr;
 
                     let borrow_id = borrow_generated_id(
                         lower.names,
-                        original_borrow.call(&mut istmts),
+                        original_borrow.call(Some(&mut istmts)),
                         &rhs.projections[deref_index + 1..],
                         |sym| {
                             Exp::qvar(
@@ -1061,14 +1059,16 @@ impl<'tcx> Statement<'tcx> {
                     bor_id_arg = Some(Arg::Term(borrow_id));
                 } else {
                     let (_, foc, constr) = projections_to_expr(
-                        lower,
-                        &mut istmts,
+                        lower.ctx,
+                        lower.names,
+                        Some(&mut istmts),
                         rhs_local_ty,
                         Focus::new(|_| Exp::var(rhs.local)),
                         Box::new(|_, x| x),
                         &rhs.projections,
+                        |ix| Exp::var(*ix),
                     );
-                    rhs_rplace = foc.call(&mut istmts);
+                    rhs_rplace = foc.call(Some(&mut istmts));
                     rhs_constr = constr;
                     bor_id_arg = None;
                 }
@@ -1093,7 +1093,7 @@ impl<'tcx> Statement<'tcx> {
                     istmts.push(IntermediateStmt::Assume(rhs_inv_fun.app([reassign.clone()])));
                 }
 
-                let new_rhs = rhs_constr(&mut istmts, reassign);
+                let new_rhs = rhs_constr(Some(&mut istmts), reassign);
                 istmts.push(IntermediateStmt::Assign(rhs.local, new_rhs));
             }
             Statement::Assignment(lhs, e, _span) => {
