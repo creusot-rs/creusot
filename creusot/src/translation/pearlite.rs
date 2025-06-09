@@ -1124,7 +1124,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         // eprintln!("{}", PrintExpr(self.thir, rebor_id));
         // Handle every other case.
         let (inner, projections) = self.logical_reborrow_inner(rebor_id)?;
-
         Ok(TermKind::Reborrow { inner: Box::new(inner), projections: projections.into() })
     }
 

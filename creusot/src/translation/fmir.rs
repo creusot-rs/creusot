@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{backend::projections::projection_ty, ctx::TranslationCtx, translation::pearlite::Term};
+use crate::{
+    backend::projections::projection_ty, ctx::TranslationCtx, translation::pearlite::Term,
+};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{

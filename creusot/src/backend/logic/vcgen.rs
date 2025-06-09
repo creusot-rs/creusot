@@ -602,21 +602,21 @@ impl<'tcx> VCGen<'_, 'tcx> {
         t: &[Term<'tcx>],
         k: PostCont<'_, 'tcx, Box<[Exp]>>,
     ) -> Result<Exp, VCError<'tcx>> {
-        self.build_wp_slice_inner(t.len(), t, k)
+        self.build_wp_slice_inner(0, t, k)
     }
 
     fn build_wp_slice_inner(
         &self,
-        len: usize,
+        i: usize,
         t: &[Term<'tcx>],
         k: PostCont<'_, 'tcx, Box<[Exp]>>,
     ) -> Result<Exp, VCError<'tcx>> {
         if t.is_empty() {
-            k(repeat_n(/* Dummy */ Exp::mk_true(), len).collect())
+            k(repeat_n(/* Dummy */ Exp::mk_true(), i).collect())
         } else {
             self.build_wp(&t[0], &|v| {
-                self.build_wp_slice_inner(len, &t[1..], &|mut args| {
-                    args[len - t.len()] = v.clone();
+                self.build_wp_slice_inner(i + 1, &t[1..], &|mut args| {
+                    args[i] = v.clone();
                     k(args)
                 })
             })
@@ -628,21 +628,21 @@ impl<'tcx> VCGen<'_, 'tcx> {
         projs: &[ProjectionElem<Term<'tcx>, Ty<'tcx>>],
         k: PostCont<'_, 'tcx, Box<[ProjectionElem<Exp, Ty<'tcx>>]>>,
     ) -> Result<Exp, VCError<'tcx>> {
-        self.build_wp_projections_inner(projs.len(), projs, k)
+        self.build_wp_projections_inner(0, projs, k)
     }
 
     fn build_wp_projections_inner(
         &self,
-        len: usize,
+        i: usize,
         projs: &[ProjectionElem<Term<'tcx>, Ty<'tcx>>],
         k: PostCont<'_, 'tcx, Box<[ProjectionElem<Exp, Ty<'tcx>>]>>,
     ) -> Result<Exp, VCError<'tcx>> {
         if projs.is_empty() {
-            k(repeat_n(/* Dummy */ ProjectionElem::Deref, len).collect())
+            k(repeat_n(/* Dummy */ ProjectionElem::Deref, i).collect())
         } else {
             let def = |p: ProjectionElem<Exp, Ty<'tcx>>| {
-                self.build_wp_projections_inner(len, &projs[1..], &|mut projs| {
-                    projs[len - projs.len()] = p.clone();
+                self.build_wp_projections_inner(i + 1, &projs[1..], &|mut projs| {
+                    projs[i] = p.clone();
                     k(projs)
                 })
             };
@@ -654,8 +654,8 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         idx = Exp::qvar(qname).app([idx])
                     }
 
-                    self.build_wp_projections_inner(len, &projs[1..], &|mut projs| {
-                        projs[len - projs.len()] = ProjectionElem::Index(idx.clone());
+                    self.build_wp_projections_inner(i + 1, &projs[1..], &|mut projs| {
+                        projs[i] = ProjectionElem::Index(idx.clone());
                         k(projs)
                     })
                 }),

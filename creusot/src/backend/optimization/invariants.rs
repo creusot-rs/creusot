@@ -7,8 +7,8 @@ use rustc_span::DUMMY_SP;
 
 use crate::{
     backend::{
-        projections::projection_ty,
         program::node_graph,
+        projections::projection_ty,
         wto::{Component, weak_topological_order},
     },
     contracts_items::get_snap_ty,

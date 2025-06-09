@@ -197,7 +197,10 @@ pub(crate) fn closure_post<'tcx>(
                 let hist_inv = {
                     let subst = ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from));
                     let id = get_fn_mut_impl_hist_inv(ctx.tcx);
-                    Term::call_no_normalize(ctx.tcx, id, subst, [self_.clone(), result_state.clone()])
+                    Term::call_no_normalize(ctx.tcx, id, subst, [
+                        self_.clone(),
+                        result_state.clone(),
+                    ])
                 };
 
                 post = Term::true_(ctx.tcx)
