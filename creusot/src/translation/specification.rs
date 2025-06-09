@@ -394,8 +394,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         if kind == ClosureKind::FnMut {
             let args = subst.as_closure().sig().inputs().map_bound(|tys| tys[0]);
             let args = ctx.tcx.instantiate_bound_regions_with_erased(args);
-            let hist_inv_subst =
-                ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
+            let hist_inv_subst = ctx.mk_args(&[args, env_ty.peel_refs()].map(GenericArg::from));
 
             let hist_inv_id = get_fn_mut_impl_hist_inv(ctx.tcx);
 

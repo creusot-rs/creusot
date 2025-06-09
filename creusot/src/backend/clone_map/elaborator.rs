@@ -148,8 +148,7 @@ impl DepElab for ProgramElab {
                 );
                 let fndef_ty = Ty::new_fn_def(ctx.tcx, def_id, subst);
 
-                let pre_post_subst =
-                    ctx.mk_args(&[GenericArg::from(args.ty), GenericArg::from(fndef_ty)]);
+                let pre_post_subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
 
                 let pre_did = get_fn_once_impl_precond(ctx.tcx);
                 let pre = Term::call(ctx.tcx, typing_env, pre_did, pre_post_subst, [

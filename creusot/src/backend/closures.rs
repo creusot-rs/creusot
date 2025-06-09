@@ -195,8 +195,7 @@ pub(crate) fn closure_post<'tcx>(
 
                 // Thanks to that, `postcondition_mut_hist_inv` and `fn_mut` are satisfied
                 let hist_inv = {
-                    let subst =
-                        ctx.mk_args(&[GenericArg::from(args.ty), GenericArg::from(self_.ty)]);
+                    let subst = ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from));
                     let id = get_fn_mut_impl_hist_inv(ctx.tcx);
                     Term::call_no_normalize(ctx.tcx, id, subst, [
                         self_.clone(),
@@ -205,7 +204,7 @@ pub(crate) fn closure_post<'tcx>(
                 };
 
                 post = Term::true_(ctx.tcx)
-                    .conj(bor_self.clone().cur().eq(ctx.tcx, self_.clone()))
+                    .conj(bor_self.clone().cur().eq(ctx.tcx, self_))
                     .conj(bor_self.fin().eq(ctx.tcx, result_state))
                     .conj(post)
                     .conj(hist_inv)
@@ -235,8 +234,7 @@ pub(crate) fn closure_post<'tcx>(
                 ClosSubst::post_ref(ctx, def_id, self_.clone(), result_state.clone())
                     .visit_mut_term(&mut post);
                 let hist_inv = {
-                    let subst =
-                        ctx.mk_args(&[GenericArg::from(args.ty), GenericArg::from(self_.ty)]);
+                    let subst = ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from));
                     let id = get_fn_mut_impl_hist_inv(ctx.tcx);
                     Term::call_no_normalize(ctx.tcx, id, subst, [self_, result_state])
                 };

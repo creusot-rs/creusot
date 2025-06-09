@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{backend::place::projection_ty, ctx::TranslationCtx, translation::pearlite::Term};
+use crate::{
+    backend::projections::projection_ty, ctx::TranslationCtx, translation::pearlite::Term,
+};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
@@ -35,7 +37,7 @@ impl<'tcx> Place<'tcx> {
         let mut ty = PlaceTy::from_ty(locals[&self.local].ty);
 
         for p in self.projections.iter() {
-            ty = projection_ty(ty, tcx, *p);
+            ty = projection_ty(ty, tcx, p);
         }
 
         ty.ty
@@ -68,7 +70,7 @@ impl<'tcx> PlaceRef<'_, 'tcx> {
         let mut ty = PlaceTy::from_ty(locals[&self.local].ty);
 
         for p in self.projection.iter() {
-            ty = projection_ty(ty, tcx, *p);
+            ty = projection_ty(ty, tcx, p);
         }
 
         ty
