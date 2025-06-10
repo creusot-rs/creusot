@@ -250,5 +250,6 @@ pub mod name {
         final_ => ["final"],
         seq_get => ["Seq", "get"],
         seq_length => ["Seq", "length"],
+        seq_create => ["Seq", "create"],
     }
 }

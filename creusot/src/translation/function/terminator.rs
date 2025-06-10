@@ -4,13 +4,15 @@ use crate::{
     contracts_items::{is_box_new, is_snap_from_fn},
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
-    fmir,
     lints::contractless_external_function::{
         CONTRACTLESS_EXTERNAL_FUNCTION, ContractlessExternalFunction,
     },
-    pearlite::{Term, TermKind, UnOp},
     resolve::HasMoveDataExt,
-    translation::{fmir::*, traits},
+    translation::{
+        fmir::{self, *},
+        pearlite::{Term, TermKind, UnOp},
+        traits::{self, TraitResolved},
+    },
 };
 use itertools::Itertools;
 use rustc_hir::def_id::DefId;
@@ -21,7 +23,7 @@ use rustc_middle::{
         StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
-    ty::{self, AssocItem, GenericArgKind, GenericArgsRef, Ty, TyKind, TypingEnv, TypingMode},
+    ty::{self, GenericArgKind, GenericArgsRef, Ty, TyKind, TypingEnv, TypingMode},
 };
 use rustc_mir_dataflow::{
     ResultsCursor,
@@ -277,10 +279,8 @@ fn resolve_function<'tcx>(
     report_location: (&mir::Body<'tcx>, Span, Location),
 ) -> (DefId, GenericArgsRef<'tcx>) {
     let res;
-    if let Some(AssocItem { container: ty::AssocItemContainer::Trait, .. }) =
-        ctx.opt_associated_item(def_id)
-    {
-        res = traits::TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
+    if ctx.trait_of_item(def_id).is_some() {
+        res = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
             .to_opt(def_id, subst)
             .expect("could not find instance")
     } else {

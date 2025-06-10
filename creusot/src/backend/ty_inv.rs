@@ -5,39 +5,44 @@ use crate::{
         is_tyinv_trivial_if_param_trivial,
     },
     naming::variable_name,
-    pearlite::{Ident, Trigger},
-    traits::TraitResolved,
     translation::{
-        pearlite::{Pattern, Term, TermKind},
-        traits,
+        pearlite::{Ident, Literal, Pattern, Term, TermKind, Trigger},
+        traits::TraitResolved,
     },
 };
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
-use rustc_span::DUMMY_SP;
+use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::VariantIdx;
 use std::collections::HashSet;
 
+/// # Errors
+///
+/// This will error (and stop the compilation) if an unsupported type is
+/// encountered.
+///
+/// # Parameters
+///
+/// - `span`: used for error message
 pub(crate) fn is_tyinv_trivial<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: TypingEnv<'tcx>,
     ty: Ty<'tcx>,
+    span: Span,
 ) -> bool {
     // we cannot use a TypeWalker as it does not visit ADT field types
     let mut visited_tys = HashSet::new();
     let mut stack = vec![ty];
     while let Some(ty) = stack.pop() {
-        if !visited_tys.insert(ty.clone()) {
+        if !visited_tys.insert(ty) {
             continue;
         }
 
         let user_inv = resolve_user_inv(tcx, ty, typing_env);
         match user_inv {
+            TraitResolved::NotATraitItem => unreachable!(),
             TraitResolved::NoInstance => (),
             TraitResolved::Instance(uinv_did, _)
-                if is_tyinv_trivial_if_param_trivial(tcx, uinv_did) =>
-            {
-                ()
-            }
+                if is_tyinv_trivial_if_param_trivial(tcx, uinv_did) => {}
             _ => return false,
         }
 
@@ -70,7 +75,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
             | TyKind::FnDef(_, _)
             | TyKind::FnPtr(..)
             | TyKind::RawPtr(_, _) => (),
-            _ => unimplemented!("{ty:?}"),
+            _ => tcx.dcx().span_fatal(span, format!("Unsupported type: {ty}")),
         }
     }
     true
@@ -87,7 +92,8 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         InvariantElaborator { typing_env, ctx, rewrite: false }
     }
 
-    pub(crate) fn elaborate_inv(&mut self, ty: Ty<'tcx>) -> Option<Term<'tcx>> {
+    /// `span` is used for diagnostics.
+    pub(crate) fn elaborate_inv(&mut self, ty: Ty<'tcx>, span: Span) -> Option<Term<'tcx>> {
         let x_ident = Ident::fresh_local("x").into();
         let subject = Term::var(x_ident, ty);
         let inv_id = get_inv_function(self.ctx.tcx);
@@ -95,7 +101,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         let lhs = Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, [subject.clone()]);
         let trig = Box::new([Trigger(Box::new([lhs.clone()]))]);
 
-        if is_tyinv_trivial(self.ctx.tcx, self.typing_env, ty) {
+        if is_tyinv_trivial(self.ctx.tcx, self.typing_env, ty, span) {
             self.rewrite = true;
             return Some(
                 lhs.eq(self.ctx.tcx, Term::true_(self.ctx.tcx)).forall_trig((x_ident, ty), trig),
@@ -107,20 +113,21 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         let mut rhs = Term::true_(self.ctx.tcx);
 
         match resolve_user_inv(self.ctx.tcx, ty, self.typing_env) {
+            TraitResolved::NotATraitItem => unreachable!(),
             TraitResolved::Instance(uinv_did, uinv_subst) => {
                 rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, uinv_did, uinv_subst, [
                     subject.clone(),
                 ]))
             }
-            TraitResolved::UnknownNotFound => use_imples = true,
-            TraitResolved::NoInstance => (),
-            _ => {
+            TraitResolved::UnknownFound => {
                 let trait_item_did = get_invariant_method(self.ctx.tcx);
                 let subst = self.ctx.tcx.mk_args(&[GenericArg::from(ty)]);
                 rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, trait_item_did, subst, [
                     subject.clone(),
                 ]))
             }
+            TraitResolved::UnknownNotFound => use_imples = true,
+            TraitResolved::NoInstance => (),
         }
 
         if matches!(ty.kind(), TyKind::Alias(..) | TyKind::Param(_)) {
@@ -130,7 +137,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         }
 
         let term = if use_imples {
-            if matches!(rhs.kind, TermKind::Lit(crate::pearlite::Literal::Bool(true))) {
+            if matches!(rhs.kind, TermKind::Lit(Literal::Bool(true))) {
                 return None;
             }
             Term::implies(lhs, rhs)
@@ -163,7 +170,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                 let idsty: Vec<_> = tys
                     .iter()
                     .enumerate()
-                    .map(|(i, ty)| (Ident::fresh_local(&format!("x{i}")), ty))
+                    .map(|(i, ty)| (Ident::fresh_local(format!("x{i}")), ty))
                     .collect();
                 let body = idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(id, ty)| {
                     acc.conj(self.mk_inv_call(Term::var(id, ty)))
@@ -177,7 +184,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                 let idsty: Vec<_> = tys
                     .iter()
                     .enumerate()
-                    .map(|(i, ty)| (Ident::fresh_local(&format!("x{i}")), ty))
+                    .map(|(i, ty)| (Ident::fresh_local(format!("x{i}")), ty))
                     .collect();
 
                 let body = idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(id, ty)| {
@@ -195,7 +202,8 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
     }
 
     pub(crate) fn mk_inv_call(&mut self, term: Term<'tcx>) -> Term<'tcx> {
-        if let Some((inv_id, subst)) = self.ctx.type_invariant(self.typing_env, term.ty) {
+        if let Some((inv_id, subst)) = self.ctx.type_invariant(self.typing_env, term.ty, term.span)
+        {
             Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, [term])
         } else {
             Term::true_(self.ctx.tcx)
@@ -219,7 +227,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                 let mut exp = Some(Term::true_(self.ctx.tcx));
                 let fields = var_def.fields.iter().enumerate().map(|(field_idx, field_def)| {
                     let field_name = if tuple_var {
-                        Ident::fresh_local(&format!("a_{field_idx}"))
+                        Ident::fresh_local(format!("a_{field_idx}"))
                     } else {
                         Ident::fresh_local(variable_name(
                             field_def.ident(self.ctx.tcx).name.as_str(),
@@ -229,7 +237,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     let field_ty = field_def.ty(self.ctx.tcx, substs);
 
                     let f_exp = self.mk_inv_call(Term::var(field_name, field_ty));
-                    exp = Some(std::mem::replace(&mut exp, None).unwrap().conj(f_exp));
+                    exp = Some(exp.take().unwrap().conj(f_exp));
                     Pattern::binder(field_name, field_ty)
                 });
 
@@ -249,9 +257,11 @@ fn resolve_user_inv<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
     typing_env: TypingEnv<'tcx>,
-) -> traits::TraitResolved<'tcx> {
-    let trait_item_did = get_invariant_method(tcx);
-    let subst = tcx.mk_args(&[GenericArg::from(ty)]);
-
-    traits::TraitResolved::resolve_item(tcx, typing_env, trait_item_did, subst)
+) -> TraitResolved<'tcx> {
+    TraitResolved::resolve_item(
+        tcx,
+        typing_env,
+        get_invariant_method(tcx),
+        tcx.mk_args(&[GenericArg::from(ty)]),
+    )
 }

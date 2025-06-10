@@ -8,19 +8,12 @@ pub(crate) mod specification;
 pub(crate) mod traits;
 
 use crate::{
-    backend::{Why3Generator, is_trusted_item},
-    contracts_items::{
-        AreContractsLoaded, are_contracts_loaded, is_logic, is_no_translate, is_predicate, is_spec,
-    },
-    ctx::{self},
-    error::{Error, InternalError},
-    metadata,
+    backend::Why3Generator,
+    contracts_items::{AreContractsLoaded, are_contracts_loaded, is_no_translate},
+    ctx, metadata,
     options::Output,
     translated_item::FileModule,
-    validate::{
-        validate_impls, validate_opacity, validate_purity, validate_terminates, validate_traits,
-        validate_trusted,
-    },
+    validate::validate,
 };
 use ctx::TranslationCtx;
 use rustc_hir::{def::DefKind, def_id::DefId};
@@ -52,35 +45,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn st
         },
     }
 
-    ctx.load_metadata();
-    match ctx.load_extern_specs() {
-        Ok(()) => {}
-        Err(Error::MustPrint(msg)) => msg.emit(ctx.tcx),
-        Err(Error::TypeCheck(_)) => ctx.tcx.dcx().abort_if_errors(),
-    };
-
-    for def_id in ctx.tcx.hir().body_owners() {
-        // OK to ignore this error, because we abort after the loop.
-        let _ = validate_purity(ctx, def_id);
-
-        let def_id = def_id.to_def_id();
-        if (is_spec(ctx.tcx, def_id) || is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
-            && !is_trusted_item(ctx.tcx, def_id)
-        {
-            // OK to ignore this error, because we abort after the loop.
-            let _ = ctx.term(def_id);
-            let _ = validate_opacity(ctx, def_id);
-        }
-    }
-    ctx.tcx.dcx().abort_if_errors();
-    // OK to ignore this error, because we abort right after.
-    let _ = validate_terminates(ctx);
-    ctx.tcx.dcx().abort_if_errors();
-
-    // Check that all trait laws are well-formed
-    validate_traits(ctx);
-    validate_impls(ctx);
-    validate_trusted(ctx);
+    ctx.clone_all_thir();
 
     debug!("before_analysis: {:?}", start.elapsed());
     Ok(())
@@ -101,10 +66,16 @@ fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
 }
 
 // TODO: Move the main loop out of `translation.rs`
-pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
-    let mut why3 = Why3Generator::new(ctx);
+pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
+    let start = Instant::now();
+    ctx.load_metadata();
+    ctx.load_extern_specs();
+    validate(&ctx);
+    ctx.dcx().abort_if_errors();
+    debug!("after_analysis_validate: {:?}", start.elapsed());
 
     let start = Instant::now();
+    let mut why3 = Why3Generator::new(ctx);
     for def_id in why3.hir().body_owners() {
         let def_id = def_id.to_def_id();
 
@@ -118,24 +89,18 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::err
         }
 
         info!("Translating body {:?}", def_id);
-        // Ok to ignore, because we call `abort_if_errors` at the end of the next loop
-        let _ = why3.translate(def_id);
+        why3.translate(def_id);
     }
 
     for impls in why3.all_local_trait_impls(()).values() {
         for impl_id in impls {
-            // Ok to ignore, because we call `abort_if_errors` at the end of the loop
-            let _ = why3.translate(impl_id.to_def_id());
+            why3.translate(impl_id.to_def_id());
         }
     }
-    why3.tcx.dcx().abort_if_errors();
+    why3.dcx().abort_if_errors();
 
     debug!("after_analysis_translate: {:?}", start.elapsed());
     let start = Instant::now();
-
-    if why3.dcx().has_errors().is_some() {
-        return Err(Box::new(InternalError("Failed to generate correct why3")));
-    }
 
     if why3.should_export() {
         metadata::dump_exports(&mut why3);
@@ -214,7 +179,7 @@ fn remove_coma_files(dir: &PathBuf) -> std::io::Result<()> {
             if path.is_dir() {
                 remove_coma_files(&path)?;
                 let _ = std::fs::remove_dir(path); // remove the directory if it's empty, do nothing otherwise
-            } else if path.extension().map_or(false, |ext| ext == "coma") {
+            } else if path.extension().is_some_and(|ext| ext == "coma") {
                 std::fs::remove_file(&path)?;
             }
         }

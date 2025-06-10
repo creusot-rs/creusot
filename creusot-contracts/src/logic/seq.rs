@@ -703,3 +703,10 @@ impl<T> Resolve for Seq<T> {
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
 }
+
+/// A sequence literal `seq![a, b, c]`.
+#[macro_export]
+macro_rules! seq {
+    ($($items:expr),+) => { creusot_contracts::__stubs::seq_literal(&[$($items),+]) };
+    () => { Seq::EMPTY };
+}

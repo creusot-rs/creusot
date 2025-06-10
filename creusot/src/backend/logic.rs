@@ -1,7 +1,7 @@
 use crate::{
     backend::{
-        CannotFetchThir, Why3Generator, is_trusted_item, logic::vcgen::wp,
-        signature::lower_logic_sig, term::lower_pure, ty::translate_ty,
+        Why3Generator, is_trusted_item, logic::vcgen::wp, signature::lower_logic_sig,
+        term::lower_pure, ty::translate_ty,
     },
     contracts_items::get_builtin,
     ctx::*,
@@ -21,12 +21,12 @@ mod vcgen;
 pub(crate) fn translate_logic_or_predicate(
     ctx: &Why3Generator,
     def_id: DefId,
-) -> Result<Option<FileModule>, CannotFetchThir> {
+) -> Option<FileModule> {
     let mut names = Dependencies::new(ctx, def_id);
     let pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, ctx.typing_env(def_id));
 
     if pre_sig.contract.is_empty() {
-        return Ok(None);
+        return None;
     }
 
     // Check that we don't have both `builtins` and a contract at the same time (which are contradictory)
@@ -38,7 +38,7 @@ pub(crate) fn translate_logic_or_predicate(
     }
 
     if !def_id.is_local() || is_trusted_item(ctx.tcx, def_id) || !ctx.has_body(def_id) {
-        return Ok(None);
+        return None;
     }
 
     let mut body_decls = Vec::new();
@@ -86,7 +86,7 @@ pub(crate) fn translate_logic_or_predicate(
 
     let postcondition = sig.contract.ensures_conj();
 
-    let term = ctx.ctx.term(def_id)?.unwrap().rename(&bound);
+    let term = ctx.ctx.term(def_id).unwrap().rename(&bound);
     let wp = wp(
         ctx,
         &mut names,
@@ -113,7 +113,7 @@ pub(crate) fn translate_logic_or_predicate(
     let meta = ctx.display_impl_of(def_id);
     let path = ctx.module_path(def_id);
     let name = path.why3_ident();
-    Ok(Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } }))
+    Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } })
 }
 
 /// Translate a logical term to why3.

@@ -1,7 +1,9 @@
 use crate::{
     contracts_items::{get_builtin, is_box_new},
-    pearlite::{BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp, super_visit_mut_term},
-    traits::TraitResolved,
+    translation::{
+        pearlite::{BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp, super_visit_mut_term},
+        traits::TraitResolved,
+    },
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{GenericArgsRef, TyCtxt, TypingEnv};
@@ -26,29 +28,20 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
         super_visit_mut_term(term, self);
         match &mut term.kind {
             TermKind::Call { id, subst, args } => {
-                if self.tcx.trait_of_item(*id).is_some() {
-                    let method = TraitResolved::resolve_item(self.tcx, self.typing_env, *id, subst)
-                        .to_opt(*id, subst)
-                        .unwrap_or_else(|| {
-                            panic!("could not resolve trait instance {:?}", (*id, *subst))
-                        });
-                    *id = method.0;
-                    *subst = method.1;
-                }
-
+                (*id, *subst) = TraitResolved::resolve_item(self.tcx, self.typing_env, *id, subst)
+                    .to_opt(*id, subst)
+                    .unwrap_or_else(|| {
+                        panic!("could not resolve trait instance {:?}", (*id, *subst))
+                    });
                 term.kind =
                     optimize_builtin(self.tcx, *id, subst, std::mem::replace(args, Box::new([])));
             }
             TermKind::Item(id, subst) => {
-                if self.tcx.trait_of_item(*id).is_some() {
-                    let method = TraitResolved::resolve_item(self.tcx, self.typing_env, *id, subst)
-                        .to_opt(*id, subst)
-                        .unwrap_or_else(|| {
-                            panic!("could not resolve trait instance {:?}", (*id, *subst))
-                        });
-                    *id = method.0;
-                    *subst = method.1;
-                }
+                (*id, *subst) = TraitResolved::resolve_item(self.tcx, self.typing_env, *id, subst)
+                    .to_opt(*id, subst)
+                    .unwrap_or_else(|| {
+                        panic!("could not resolve trait instance {:?}", (*id, *subst))
+                    })
             }
             _ => {}
         }

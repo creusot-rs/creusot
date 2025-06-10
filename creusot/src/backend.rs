@@ -6,7 +6,6 @@ use why3::declaration::Attribute;
 use crate::{
     contracts_items::{is_resolve_function, is_spec, is_trusted},
     ctx::{ItemType, TranslatedItem, TranslationCtx},
-    error::CannotFetchThir,
     naming::ModulePath,
     options::SpanMode,
     run_why3::SpanMap,
@@ -23,8 +22,8 @@ pub(crate) mod closures;
 pub(crate) mod dependency;
 pub(crate) mod logic;
 pub(crate) mod optimization;
-pub(crate) mod place;
 pub(crate) mod program;
+pub(crate) mod projections;
 pub(crate) mod signature;
 pub(crate) mod structural_resolve;
 pub(crate) mod term;
@@ -58,10 +57,8 @@ impl<'tcx> Why3Generator<'tcx> {
         Why3Generator { ctx, functions: Default::default(), span_map: Default::default() }
     }
 
-    pub(crate) fn translate(&mut self, def_id: DefId) -> Result<(), CannotFetchThir> {
+    pub(crate) fn translate(&mut self, def_id: DefId) {
         debug!("translating {:?}", def_id);
-
-        // eprintln!("{:?}", self.param_env(def_id));
 
         match self.item_type(def_id) {
             ItemType::Impl if self.tcx.impl_trait_ref(def_id).is_some() => {
@@ -72,7 +69,7 @@ impl<'tcx> Why3Generator<'tcx> {
                 self.functions.push(TranslatedItem::Logic { proof_modl: None });
             }
             ItemType::Logic { .. } | ItemType::Predicate { .. } => {
-                let proof_modl = logic::translate_logic_or_predicate(self, def_id)?;
+                let proof_modl = logic::translate_logic_or_predicate(self, def_id);
                 self.functions.push(TranslatedItem::Logic { proof_modl });
             }
             ItemType::Program => {
@@ -86,7 +83,6 @@ impl<'tcx> Why3Generator<'tcx> {
             ),
             _ => (),
         }
-        Ok(())
     }
 
     pub(crate) fn modules(&mut self) -> impl Iterator<Item = TranslatedItem> + '_ {

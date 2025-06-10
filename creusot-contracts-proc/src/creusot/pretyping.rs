@@ -35,12 +35,12 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         // or we don't translate parameters, but then we let the user write non-pearlite code
         // in pearlite...
         RT::Macro(ExprMacro { mac, .. }) => {
-            if mac.path.is_ident("proof_assert") || mac.path.is_ident("pearlite") {
+            if ["proof_assert", "pearlite", "seq"].iter().any(|i| mac.path.is_ident(i)) {
                 Ok(term.to_token_stream())
             } else {
                 Err(EncodeError::Unsupported(
                     term.span(),
-                    "macros other than `pearlite!` or `proof_assert!` are unsupported in pearlite code".into(),
+                    "macros other than `pearlite!` or `proof_assert!` or `seq!` are unsupported in pearlite code".into(),
                 ))
             }
         }

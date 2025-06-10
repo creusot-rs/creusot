@@ -5,8 +5,10 @@ use crate::{
         is_assertion, is_before_loop, is_invariant, is_snapshot_closure, is_spec, is_variant,
     },
     extended_location::ExtendedLocation,
-    fmir::Operand,
-    translation::fmir::{self, RValue, inline_pearlite_subst},
+    translation::{
+        constant::from_ty_const,
+        fmir::{self, Operand, RValue, inline_pearlite_subst},
+    },
 };
 use rustc_borrowck::consumers::TwoPhaseActivation;
 use rustc_middle::{
@@ -197,7 +199,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Repeat(op, len) => RValue::Repeat(
                 self.translate_operand(op)?,
-                Operand::Constant(crate::constant::from_ty_const(
+                Operand::Constant(from_ty_const(
                     self.ctx,
                     *len,
                     self.ctx.types.usize,

@@ -1,17 +1,24 @@
 use crate::{
     backend::{
         Why3Generator,
-        program::borrow_generated_id,
+        projections::{Focus, borrow_generated_id, projections_to_expr},
         ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude},
     },
     ctx::*,
     naming::name,
-    pearlite::{BinOp, Literal, Pattern, PatternKind, QuantKind, Term, TermKind, Trigger, UnOp},
-    specification::Condition,
+    translation::{
+        pearlite::{
+            BinOp, Literal, Pattern, PatternKind, QuantKind, Term, TermKind, Trigger, UnOp,
+        },
+        specification::Condition,
+    },
 };
 use rustc_ast::Mutability;
 use rustc_hir::def::DefKind;
-use rustc_middle::ty::{Ty, TyKind};
+use rustc_middle::{
+    mir::tcx::PlaceTy,
+    ty::{Ty, TyKind},
+};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
@@ -59,6 +66,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
             TermKind::Lit(l) => lower_literal(self.ctx, self.names, l),
+            TermKind::SeqLiteral(elts) => {
+                let elts: Box<[Exp]> = elts.iter().map(|elt| self.lower_term(elt)).collect();
+                Exp::qvar(name::seq_create())
+                    .app([Exp::int(elts.len() as i128), Exp::FunLiteral(elts)])
+            }
             TermKind::Cast { box arg } => match arg.ty.kind() {
                 TyKind::Bool => {
                     let (fct_name, prelude_kind) = match term.ty.kind() {
@@ -280,23 +292,40 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let body = self.lower_term(&*body);
                 Exp::Lam(binders, body.boxed())
             }
-            TermKind::Reborrow { cur, fin, inner, projection } => {
+            TermKind::Reborrow { inner, projections } => {
+                let ty = self.names.normalize(self.ctx, inner.ty);
+                let ty = PlaceTy::from_ty(ty.builtin_deref(false).unwrap());
+
                 let inner = self.lower_term(&*inner);
-                let borrow_id = borrow_generated_id(self.names, inner, &projection, |x| {
-                    if matches!(x.ty.kind(), TyKind::Uint(UintTy::Usize)) {
+                let idx_conv = |ix: &Term<'tcx>| {
+                    if matches!(ix.ty.kind(), TyKind::Uint(UintTy::Usize)) {
                         let qname =
                             self.names.in_pre(uty_to_prelude(self.ctx.tcx, UintTy::Usize), "t'int");
-                        Exp::qvar(qname).app([self.lower_term(x)])
+                        Exp::qvar(qname).app([self.lower_term(ix)])
                     } else {
-                        self.lower_term(x)
+                        self.lower_term(ix)
                     }
+                };
+
+                // TODO: if inner is large, do not clone it, use a "let" instead
+                let borrow_id =
+                    borrow_generated_id(self.names, inner.clone(), &projections, idx_conv);
+                let [cur, fin] = [name::current(), name::final_()].map(|nm| {
+                    let (_, foc, _) = projections_to_expr(
+                        self.ctx,
+                        self.names,
+                        None,
+                        ty,
+                        Focus::new(|_| inner.clone().field(Name::Global(nm))),
+                        Box::new(|_, _| unreachable!()),
+                        projections,
+                        idx_conv,
+                    );
+                    foc.call(None)
                 });
 
-                Exp::qvar(self.names.in_pre(PreMod::MutBor, "borrow_logic")).app([
-                    self.lower_term(&*cur),
-                    self.lower_term(&*fin),
-                    borrow_id,
-                ])
+                Exp::qvar(self.names.in_pre(PreMod::MutBor, "borrow_logic"))
+                    .app([cur, fin, borrow_id])
             }
             TermKind::Assert { .. } => Exp::unit(), // Discard cond, use unit
             TermKind::Precondition { item, subst, params } => {

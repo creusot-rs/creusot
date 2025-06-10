@@ -4,16 +4,18 @@ mod terminator;
 use crate::{
     analysis::NotFinalPlaces,
     backend::ty_inv::is_tyinv_trivial,
-    constant::from_mir_constant,
     contracts_items::{is_snapshot_closure, is_spec},
     ctx::*,
     extended_location::ExtendedLocation,
-    fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inline_pearlite_subst},
     gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
     naming::variable_name,
-    pearlite::{Ident, Term},
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
-    translation::function::terminator::discriminator_for_switch,
+    translation::{
+        constant::from_mir_constant,
+        fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inline_pearlite_subst},
+        function::terminator::discriminator_for_switch,
+        pearlite::{Ident, Term},
+    },
 };
 use indexmap::IndexMap;
 use rustc_borrowck::consumers::BorrowSet;
@@ -294,7 +296,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let p = self.translate_place(pl)?;
 
-        if !is_tyinv_trivial(self.tcx(), self.typing_env(), place_ty.ty) {
+        if !is_tyinv_trivial(
+            self.tcx(),
+            self.typing_env(),
+            place_ty.ty,
+            self.tcx().def_span(self.body_id.def_id()),
+        ) {
             self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone() });
         }
 
@@ -323,7 +330,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let p = self.translate_place(rhs.as_ref()).unwrap_or_else(|err| err.crash(self.ctx, span));
 
         let rhs_ty = rhs.ty(self.body, self.tcx()).ty;
-        let triv_inv = if is_tyinv_trivial(self.tcx(), self.typing_env(), rhs_ty) {
+        let triv_inv = if is_tyinv_trivial(
+            self.tcx(),
+            self.typing_env(),
+            rhs_ty,
+            self.tcx().def_span(self.body_id.def_id()),
+        ) {
             TrivialInv::Trivial
         } else {
             TrivialInv::NonTrivial

@@ -34,9 +34,10 @@ use crate::{
     backend::is_trusted_item,
     contracts_items::{has_variant_clause, is_no_translate, is_pearlite},
     ctx::TranslationCtx,
-    error::CannotFetchThir,
-    pearlite::{TermKind, TermVisitor},
-    traits::TraitResolved,
+    translation::{
+        pearlite::{Term, TermKind, TermVisitor, super_visit_term},
+        traits::TraitResolved,
+    },
     util::erased_identity_for_item,
 };
 use indexmap::{IndexMap, IndexSet};
@@ -61,11 +62,13 @@ use rustc_trait_selection::traits::normalize_param_env_or_error;
 ///
 /// Note that for logical functions, these are relaxed: we don't check loops, nor simple
 /// recursion, because why3 will handle it for us.
-pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> Result<(), CannotFetchThir> {
-    ctx.tcx.dcx().abort_if_errors(); // There may have been errors before, if a `#[terminates]` calls a non-`#[terminates]`.
-
-    let CallGraph { graph: mut call_graph, additional_data, loops_in_ghost } =
-        CallGraph::build(ctx)?;
+pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
+    // If this is None there must be a type error that will be reported later so we can skip this silently.
+    let Some(CallGraph { graph: mut call_graph, additional_data, loops_in_ghost }) =
+        CallGraph::build(ctx)
+    else {
+        return;
+    };
 
     for loop_in_ghost in loops_in_ghost {
         ctx.error(loop_in_ghost, "`ghost!` blocks must not contain loops.").emit();
@@ -178,9 +181,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> Result<(), CannotFetc
 
         error.emit();
     }
-
     ctx.tcx.dcx().abort_if_errors();
-    Ok(())
 }
 
 struct CallGraph {
@@ -309,16 +310,12 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         called_id: DefId,
         generic_args: GenericArgsRef<'tcx>,
         call_span: Span,
-    ) -> Result<(), CannotFetchThir> {
+    ) {
         let tcx = ctx.tcx;
-        let (called_id, generic_args) = if TraitResolved::is_trait_item(tcx, called_id) {
-            match TraitResolved::resolve_item(tcx, typing_env, called_id, generic_args) {
-                TraitResolved::Instance(def_id, subst) => (def_id, subst),
-                _ => (called_id, generic_args),
-            }
-        } else {
-            (called_id, generic_args)
-        };
+        let (called_id, generic_args) =
+            TraitResolved::resolve_item(tcx, typing_env, called_id, generic_args)
+                .to_opt(called_id, generic_args)
+                .unwrap();
 
         // TODO: this code is kind of a soup, rework or refactor into a function
         let (called_node, bounds, impl_self_bound) = 'bl: {
@@ -354,7 +351,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                     default_function: called_id,
                     impl_block: spec_impl_id,
                 };
-                let Some(node) = self.visit_specialized_default_function(ctx, default_node)? else {
+                let Some(node) = self.visit_specialized_default_function(ctx, default_node) else {
                     break 'not_default;
                 };
                 let bounds = self.default_functions_bounds[&node];
@@ -395,7 +392,6 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 );
             }
         }
-        Ok(())
     }
 
     /// This visits the special function that is called when calling:
@@ -416,21 +412,20 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     ///
     /// # Returns
     ///
-    /// - `Err(_)` if a typing error occured
-    /// - `Ok(None)` if the conditions outlined earlier are not fulfilled
-    /// - `Ok(Some(id))` else, where `id` is the index of the new specialized node in the graph.
+    /// - `None` if the conditions outlined earlier are not fulfilled
+    /// - `Some(id)` else, where `id` is the index of the new specialized node in the graph.
     fn visit_specialized_default_function(
         &mut self,
         ctx: &TranslationCtx<'tcx>,
         graph_node: ImplDefaultTransparent,
-    ) -> Result<Option<graph::NodeIndex>, CannotFetchThir> {
+    ) -> Option<graph::NodeIndex> {
         let Some(&node) =
             self.graph_node_to_index.get(&GraphNode::ImplDefaultTransparent(graph_node))
         else {
-            return Ok(None);
+            return None;
         };
         if !self.visited_default_specialization.insert(node) {
-            return Ok(Some(node));
+            return Some(node);
         }
         let tcx = ctx.tcx;
         let ImplDefaultTransparent { default_function: item_id, impl_block: impl_id } = graph_node;
@@ -438,10 +433,22 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
 
         let impl_id = impl_id.to_def_id();
         let typing_env = ctx.typing_env(impl_id);
-        let Some(term) = ctx.term(item_id)? else {
+        let Some(term) = ctx.term(item_id) else {
             // ` ctx.term` can return None if the function we are searching for is not yet implemented.
             // In this case, there is an Rust error happening: bail out and let the compiler report it normally.
-            return Err(CannotFetchThir);
+            ctx.dcx()
+                .has_errors()
+                .unwrap_or_else(||
+                // or not :(
+                ctx
+                .dcx()
+                .struct_span_err(
+                    ctx.def_span(item_id),
+                    format!("Could not generate a term for {}", ctx.def_path_str(item_id)),
+                )
+                .with_span_note(ctx.def_span(impl_id), "The trait function is not implemented here")
+                .emit())
+                .raise_fatal()
         };
         let mut visitor = TermCalls { results: IndexSet::new() };
         visitor.visit_term(&term.1);
@@ -479,9 +486,9 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 EarlyBinder::bind(generic_args),
             );
 
-            self.function_call(ctx, node, typing_env, called_id, actual_args, call_span)?;
+            self.function_call(ctx, node, typing_env, called_id, actual_args, call_span);
         }
-        Ok(Some(node))
+        Some(node)
     }
 }
 
@@ -490,7 +497,7 @@ impl CallGraph {
     /// exclusively for the purpose of termination checking.
     ///
     /// In particular, this means it only contains `#[terminates]` functions.
-    fn build(ctx: &TranslationCtx) -> Result<Self, CannotFetchThir> {
+    fn build(ctx: &TranslationCtx) -> Option<Self> {
         let tcx = ctx.tcx;
         let mut build_call_graph = BuildFunctionsGraph::default();
 
@@ -552,11 +559,10 @@ impl CallGraph {
             if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
                 continue;
             }
-            let (thir, expr) = ctx.thir_body(local_id).unwrap();
-            let thir = thir.borrow();
+            let (thir, expr) = ctx.get_thir(local_id)?;
             let mut visitor = GhostLoops {
                 thir: &thir,
-                tcx,
+                ctx,
                 thir_failed: false,
                 loops_in_ghost: Vec::new(),
                 is_in_ghost: false,
@@ -581,21 +587,11 @@ impl CallGraph {
             }
 
             let typing_env = ctx.typing_env(def_id);
-            let (thir, expr) = ctx.thir_body(local_id).unwrap();
-            let thir = thir.borrow();
+            let (thir, expr) = ctx.get_thir(local_id)?;
             // Collect functions called by this function
-            let mut visitor = FunctionCalls {
-                thir: &thir,
-                tcx,
-                calls: IndexSet::new(),
-                has_loops: None,
-                thir_failed: false,
-            };
+            let mut visitor =
+                FunctionCalls { thir: &thir, ctx, calls: IndexSet::new(), has_loops: None };
             <FunctionCalls as thir::visit::Visitor>::visit_expr(&mut visitor, &thir[expr]);
-
-            if visitor.thir_failed {
-                return Err(CannotFetchThir);
-            }
 
             build_call_graph.additional_data[&node].has_loops = visitor.has_loops;
 
@@ -607,11 +603,11 @@ impl CallGraph {
                     called_id,
                     generic_args,
                     call_span,
-                )?;
+                );
             }
         }
 
-        Ok(Self {
+        Some(Self {
             graph: build_call_graph.graph,
             additional_data: build_call_graph.additional_data,
             loops_in_ghost,
@@ -620,9 +616,9 @@ impl CallGraph {
 }
 
 /// Gather the functions calls that appear in a particular function, and store them in `calls`.
-struct FunctionCalls<'thir, 'tcx> {
-    thir: &'thir thir::Thir<'tcx>,
-    tcx: TyCtxt<'tcx>,
+struct FunctionCalls<'a, 'tcx> {
+    thir: &'a thir::Thir<'tcx>,
+    ctx: &'a TranslationCtx<'tcx>,
     /// Contains:
     /// - The id of the _called_ function.
     /// - The generic args for this call.
@@ -630,16 +626,14 @@ struct FunctionCalls<'thir, 'tcx> {
     calls: IndexSet<(DefId, &'tcx GenericArgs<'tcx>, Span)>,
     /// `Some` if the function contains a loop construct.
     has_loops: Option<Span>,
-    /// If `true`, we should error with a [`CannotFetchThir`] error.
-    thir_failed: bool,
 }
 
-impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tcx> {
-    fn thir(&self) -> &'thir thir::Thir<'tcx> {
+impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
+    fn thir(&self) -> &'a thir::Thir<'tcx> {
         self.thir
     }
 
-    fn visit_expr(&mut self, expr: &'thir thir::Expr<'tcx>) {
+    fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
         match expr.kind {
             thir::ExprKind::Call { fun, fn_span, .. } => {
                 if let &FnDef(def_id, generic_args) = self.thir[fun].ty.kind() {
@@ -647,24 +641,15 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                 }
             }
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
-                let Ok((thir, expr)) = self.tcx.thir_body(closure_id) else {
-                    self.thir_failed = true;
-                    return;
-                };
-                let thir = thir.borrow();
-
+                // If this is None there must be a type error that will be reported later so we can skip this silently.
+                let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
                 let mut closure_visitor = FunctionCalls {
                     thir: &thir,
-                    tcx: self.tcx,
+                    ctx: self.ctx,
                     calls: std::mem::take(&mut self.calls),
                     has_loops: None,
-                    thir_failed: false,
                 };
                 thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
-                if closure_visitor.thir_failed {
-                    self.thir_failed = true;
-                    return;
-                }
                 self.calls.extend(closure_visitor.calls);
                 self.has_loops = self.has_loops.or(closure_visitor.has_loops);
             }
@@ -680,7 +665,7 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
 /// Gather the loops in `ghost!` code for a given function.
 struct GhostLoops<'thir, 'tcx> {
     thir: &'thir thir::Thir<'tcx>,
-    tcx: TyCtxt<'tcx>,
+    ctx: &'thir TranslationCtx<'tcx>,
     /// loop constructs in ghost code are forbidden for now.
     loops_in_ghost: Vec<Span>,
     is_in_ghost: bool,
@@ -696,15 +681,11 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> 
     fn visit_expr(&mut self, expr: &'thir thir::Expr<'tcx>) {
         match expr.kind {
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
-                let Ok((thir, expr)) = self.tcx.thir_body(closure_id) else {
-                    self.thir_failed = true;
-                    return;
-                };
-                let thir = thir.borrow();
-
+                // If this is None there must be a type error that will be reported later so we can skip this silently.
+                let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
                 let mut closure_visitor = GhostLoops {
                     thir: &thir,
-                    tcx: self.tcx,
+                    ctx: self.ctx,
                     loops_in_ghost: Vec::new(),
                     is_in_ghost: self.is_in_ghost,
                     thir_failed: false,
@@ -726,7 +707,7 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> 
                 lint_level: thir::LintLevel::Explicit(hir_id),
                 value: _,
             } => {
-                if super::is_ghost_block(self.tcx, hir_id) {
+                if super::is_ghost_block(self.ctx.tcx, hir_id) {
                     let old_is_ghost = std::mem::replace(&mut self.is_in_ghost, true);
                     thir::visit::walk_expr(self, expr);
                     self.is_in_ghost = old_is_ghost;
@@ -744,8 +725,8 @@ struct TermCalls<'tcx> {
 }
 
 impl<'tcx> TermVisitor<'tcx> for TermCalls<'tcx> {
-    fn visit_term(&mut self, term: &crate::pearlite::Term<'tcx>) {
-        crate::pearlite::super_visit_term(term, self);
+    fn visit_term(&mut self, term: &Term<'tcx>) {
+        super_visit_term(term, self);
         if let TermKind::Call { id, subst, args: _ } = &term.kind {
             self.results.insert((*id, subst, term.span));
         }

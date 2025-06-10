@@ -13,6 +13,6 @@ extern_spec! {
     }
 }
 
-fn main() {
+pub fn main() {
     let _: Vec<bool> = Vec::new();
 }

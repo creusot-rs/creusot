@@ -306,8 +306,7 @@ pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
 }
 
 pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N) -> MlT {
-    let int_id = get_int_ty(ctx.tcx);
-    let ty = ctx.type_of(int_id).no_bound_vars().unwrap();
+    let ty = ctx.type_of(get_int_ty(ctx.tcx)).no_bound_vars().unwrap();
     translate_ty(ctx, names, DUMMY_SP, ty)
 }
 

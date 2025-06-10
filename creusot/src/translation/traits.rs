@@ -12,9 +12,8 @@ use rustc_infer::{
     traits::{Obligation, ObligationCause, TraitEngine},
 };
 use rustc_middle::ty::{
-    AssocItemContainer, Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv,
-    ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv,
-    TypingMode,
+    Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv, ParamTy, Predicate,
+    TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv, TypingMode,
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::{
@@ -186,6 +185,7 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
 /// type parameters, we might find an actual implementation of the item.
 #[derive(Debug)]
 pub(crate) enum TraitResolved<'tcx> {
+    NotATraitItem,
     /// An instance (like `impl Clone for i32 { ... }`) exists for the given type parameters.
     Instance(DefId, GenericArgsRef<'tcx>),
     /// A known instance exists, but we don't know which one.
@@ -200,14 +200,6 @@ pub(crate) enum TraitResolved<'tcx> {
 }
 
 impl<'tcx> TraitResolved<'tcx> {
-    /// Returns `true` if `def_id` is an item inside a trait definition.
-    ///
-    /// Use this on an arbitrary `def_id` to avoid panics in [`Self::resolve_item`].
-    pub(crate) fn is_trait_item(tcx: TyCtxt<'tcx>, def_id: DefId) -> bool {
-        let Some(assoc) = tcx.opt_associated_item(def_id) else { return false };
-        assoc.container == AssocItemContainer::Trait
-    }
-
     /// Try to resolve a trait item to the item in an `impl` block, given some typing context.
     ///
     /// # Parameters
@@ -223,12 +215,12 @@ impl<'tcx> TraitResolved<'tcx> {
         substs: GenericArgsRef<'tcx>,
     ) -> Self {
         trace!("TraitResolved::resolve {:?} {:?}", trait_item_def_id, substs);
-        let assoc = tcx.opt_associated_item(trait_item_def_id).unwrap();
 
-        assert!(assoc.container == AssocItemContainer::Trait);
-
-        let trait_ref =
-            TraitRef::from_method(tcx, tcx.trait_of_item(trait_item_def_id).unwrap(), substs);
+        let trait_ref = if let Some(did) = tcx.trait_of_item(trait_item_def_id) {
+            TraitRef::from_method(tcx, did, substs)
+        } else {
+            return TraitResolved::NotATraitItem;
+        };
         let trait_ref = tcx.normalize_erasing_regions(typing_env, trait_ref);
 
         let source = if let Ok(source) =
@@ -255,14 +247,14 @@ impl<'tcx> TraitResolved<'tcx> {
                     return TraitResolved::UnknownFound;
                 }
 
-                let trait_def = tcx.trait_def(trait_ref.def_id);
                 // Find the id of the actual associated method we will be running
-                let leaf_def = trait_def
+                let leaf_def = tcx
+                    .trait_def(trait_ref.def_id)
                     .ancestors(tcx, impl_data.impl_def_id)
                     .unwrap()
-                    .leaf_def(tcx, assoc.def_id)
+                    .leaf_def(tcx, trait_item_def_id)
                     .unwrap_or_else(|| {
-                        panic!("{:?} not found in {:?}", assoc, impl_data.impl_def_id);
+                        panic!("{:?} not found in {:?}", trait_item_def_id, impl_data.impl_def_id);
                     });
 
                 // Translate the original substitution into one on the selected impl method
@@ -321,7 +313,7 @@ impl<'tcx> TraitResolved<'tcx> {
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
             TraitResolved::Instance(did, substs) => Some((did, substs)),
-            TraitResolved::UnknownFound => Some((did, substs)),
+            TraitResolved::NotATraitItem | TraitResolved::UnknownFound => Some((did, substs)),
             _ => None,
         }
     }
@@ -336,7 +328,7 @@ fn instantiate_params_with_infer<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
         tys: HashMap<ParamTy, Ty<'tcx>>,
         consts: HashMap<ParamConst, Const<'tcx>>,
     }
-    impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for Folder<'a, 'tcx> {
+    impl<'tcx> TypeFolder<TyCtxt<'tcx>> for Folder<'_, 'tcx> {
         fn cx(&self) -> TyCtxt<'tcx> {
             self.ctx.tcx
         }
@@ -369,11 +361,15 @@ fn still_specializable<'tcx>(
     trait_ref: TraitRef<'tcx>,
     source: Option<&ImplSource<'tcx, ()>>,
 ) -> bool {
-    let start_node;
-    let graph = tcx.specialization_graph_of(trait_ref.def_id).unwrap();
+    let Ok(graph) = tcx.specialization_graph_of(trait_ref.def_id) else {
+        // TODO: the proper way to do this would be to bubble the error up
+        // so that we can continue for a bit, and maybe report other errors
+        tcx.dcx().abort_if_errors();
+        unreachable!()
+    };
 
     // Search for the least specialized node that applies to this trait_ref
-    if let Some(ImplSource::UserDefined(ud)) = source {
+    let start_node = if let Some(ImplSource::UserDefined(ud)) = source {
         let trait_def = tcx.trait_def(trait_ref.def_id);
         let leaf = trait_def
             .ancestors(tcx, ud.impl_def_id)
@@ -387,10 +383,10 @@ fn still_specializable<'tcx>(
             return false;
         }
 
-        start_node = leaf.defining_node.def_id();
+        leaf.defining_node.def_id()
     } else {
-        start_node = trait_ref.def_id;
-    }
+        trait_ref.def_id
+    };
 
     // Check whether we know all the nodes.
     // We take inspiration from rustc_next_solver::cohenrence::trait_ref_is_knowable,

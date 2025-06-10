@@ -5,7 +5,7 @@ pub type CreusotResult<T> = Result<T, Error>;
 
 pub(crate) enum Error {
     MustPrint(Message),
-    TypeCheck(CannotFetchThir),
+    ErrorGuaranteed,
 }
 
 // TODO: make this a vector of spans and strings
@@ -30,6 +30,16 @@ impl Error {
     pub(crate) fn msg(span: Span, msg: impl Into<String>) -> Self {
         Self::MustPrint(Message { span, msg: msg.into() })
     }
+
+    pub(crate) fn abort(self, tcx: TyCtxt) -> ! {
+        match self {
+            Error::MustPrint(msg) => msg.emit(tcx),
+            Error::ErrorGuaranteed => {
+                tcx.dcx().abort_if_errors();
+                tcx.dcx().bug("unexpected ErrorGuaranteed")
+            }
+        }
+    }
 }
 
 impl From<Message> for Error {
@@ -37,18 +47,6 @@ impl From<Message> for Error {
         Self::MustPrint(value)
     }
 }
-impl From<CannotFetchThir> for Error {
-    fn from(value: CannotFetchThir) -> Self {
-        Self::TypeCheck(value)
-    }
-}
-
-/// This error is raised when fetching a function's THIR failed, because of a typechecking error.
-///
-/// It should usually be bubbled up to the caller, which should then throw it away and
-/// proceed to call `tcx.dcx().abort_if_errors()`.
-#[derive(Debug)]
-pub(crate) struct CannotFetchThir;
 
 #[derive(Debug, Clone)]
 pub struct InternalError(pub &'static str);

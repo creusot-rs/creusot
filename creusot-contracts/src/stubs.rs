@@ -78,3 +78,11 @@ pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> crate::Snapshot<T>>(_: F) -> crate
 pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
     dead
 }
+
+#[logic]
+#[trusted]
+#[creusot::no_translate]
+#[rustc_diagnostic_item = "seq_literal"]
+pub fn seq_literal<T>(_: &[T]) -> crate::logic::Seq<T> {
+    dead
+}

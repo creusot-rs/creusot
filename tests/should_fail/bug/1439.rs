@@ -1,5 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[requires(match opt { })]
-fn foo(opt: Option<i32>) {}
+pub enum Empty {}
+
+#[requires(match empty { })]
+pub fn foo(empty: Empty) {}

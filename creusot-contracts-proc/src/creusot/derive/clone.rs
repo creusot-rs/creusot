@@ -17,7 +17,7 @@ pub fn derive_clone(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let expanded = quote! {
         impl #impl_generics ::std::clone::Clone for #name #ty_generics #where_clause {
-            #[ensures(result == *self)]
+            #[::creusot_contracts::ensures(result == *self)]
             fn clone(&self) -> Self {
                 #eq
             }
@@ -43,7 +43,7 @@ fn clone(base_ident: &Ident, data: &Data) -> TokenStream {
                 let recurse = fields.named.iter().map(|f| {
                     let name = &f.ident;
                     quote_spanned! {f.span()=>
-                        #name: Clone::clone(&self.#name)
+                        #name: ::std::clone::Clone::clone(&self.#name)
                     }
                 });
                 quote! {
@@ -54,7 +54,7 @@ fn clone(base_ident: &Ident, data: &Data) -> TokenStream {
                 let recurse = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = Index::from(i);
                     quote_spanned! {f.span()=>
-                        Clone::clone(&self.#index)
+                        ::std::clone::Clone::clone(&self.#index)
                     }
                 });
                 quote! {
@@ -111,7 +111,7 @@ fn gen_match_arm<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmAcc {
         };
         let name_1 = format_ident!("{}_1", name_base);
 
-        let call = quote!(Clone::clone(&#name_1));
+        let call = quote!(::std::clone::Clone::clone(&#name_1));
         if named {
             acc.fields.push(quote!(#name_base: #name_1));
             acc.body.push(quote!(#name_base: #call));

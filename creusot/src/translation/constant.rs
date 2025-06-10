@@ -1,12 +1,10 @@
 use crate::{
     contracts_items::get_builtin,
     ctx::TranslationCtx,
-    fmir::{self, Operand},
-    traits::TraitResolved,
-    translation::pearlite::Literal,
+    translation::{fmir::Operand, pearlite::Literal, traits::TraitResolved},
 };
 use rustc_middle::{
-    mir::{self, ConstValue, UnevaluatedConst, interpret::AllocRange},
+    mir::{self, ConstOperand, ConstValue, UnevaluatedConst, interpret::AllocRange},
     ty::{Const, ConstKind, Ty, TyCtxt, TypingEnv},
 };
 use rustc_span::{DUMMY_SP, Span};
@@ -17,8 +15,8 @@ use super::pearlite::{Term, TermKind};
 pub(crate) fn from_mir_constant<'tcx>(
     env: TypingEnv<'tcx>,
     ctx: &TranslationCtx<'tcx>,
-    c: &rustc_middle::mir::ConstOperand<'tcx>,
-) -> fmir::Operand<'tcx> {
+    c: &ConstOperand<'tcx>,
+) -> Operand<'tcx> {
     from_mir_constant_kind(ctx, c.const_, env, c.span)
 }
 
@@ -27,7 +25,7 @@ fn from_mir_constant_kind<'tcx>(
     ck: mir::Const<'tcx>,
     env: TypingEnv<'tcx>,
     span: Span,
-) -> fmir::Operand<'tcx> {
+) -> Operand<'tcx> {
     if let mir::Const::Ty(ty, c) = ck {
         return Operand::Constant(from_ty_const(ctx, c, ty, env, span));
     }

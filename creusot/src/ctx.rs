@@ -6,22 +6,20 @@ use crate::{
         is_open_inv_param, is_predicate, is_prophetic, opacity_witness_name,
     },
     creusot_items::{self, CreusotItems},
-    error::{CannotFetchThir, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
     naming::variable_name,
     options::Options,
-    pearlite::ScopedTerm,
-    specification::{PreSignature, inherited_extern_spec, pre_sig_of},
-    traits::TraitResolved,
     translation::{
         self,
         external::{ExternSpec, extract_extern_specs_from_item},
         fmir, pearlite,
-        specification::ContractClauses,
-        traits::TraitImpl,
+        pearlite::ScopedTerm,
+        specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
+        traits::{TraitImpl, TraitResolved},
     },
     util::{erased_identity_for_item, parent_module},
 };
+use indexmap::IndexMap;
 use once_map::unsync::OnceMap;
 use rustc_ast::{
     Fn, FnSig, NodeId,
@@ -151,6 +149,7 @@ pub struct TranslationCtx<'tcx> {
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
     creusot_items: CreusotItems,
+    pub(crate) thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
@@ -176,7 +175,7 @@ impl<'tcx> Deref for TranslationCtx<'tcx> {
 
 fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
     struct VisitFns<'tcx, 'a>(TyCtxt<'tcx>, HashMap<DefId, Vec<usize>>, &'a ResolverAstLowering);
-    impl<'tcx, 'a> Visitor<'a> for VisitFns<'tcx, 'a> {
+    impl<'a> Visitor<'a> for VisitFns<'_, 'a> {
         fn visit_fn(&mut self, fk: FnKind<'a>, _: Span, node: NodeId) {
             let decl = match fk {
                 FnKind::Fn(_, _, _, Fn { sig: FnSig { decl, .. }, .. }) => decl,
@@ -224,6 +223,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             renamer: Default::default(),
             corenamer: Default::default(),
             crate_name: Default::default(),
+            thir: Default::default(),
         }
     }
 
@@ -231,21 +231,21 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.externs.load(self.tcx, &self.opts.extern_paths);
     }
 
-    /// Fetch the THIR of the given function.
-    ///
-    /// If type-checking this function fails, this will return [`CannotFetchThir`], which
-    /// should then be bubbled up the stack.
-    pub(crate) fn fetch_thir(
-        &self,
-        local_id: LocalDefId,
-    ) -> Result<
-        (&'tcx rustc_data_structures::steal::Steal<thir::Thir<'tcx>>, thir::ExprId),
-        CannotFetchThir,
-    > {
-        match self.tcx.thir_body(local_id) {
-            Ok(body) => Ok(body),
-            Err(_) => Err(CannotFetchThir),
+    /// Clone all THIR bodies before they are stolen by `analysis`
+    pub(crate) fn clone_all_thir(&mut self) {
+        for def_id in self.tcx.hir().body_owners() {
+            // If a body is missing, it means that there was an error, and we know that because `Err` is `ErrorGuaranteed`.
+            // Keep going. We will abort later in `translation::after_analysis` after doing more checks that could raise more errors.
+            if let Ok((thir, expr0)) = self.tcx.thir_body(def_id) {
+                self.thir.insert(def_id, (thir.borrow().clone(), expr0));
+            }
         }
+    }
+
+    /// If this returns `None`, there must have been a type error in the body.
+    /// Callers can then skip whatever they were doing silently because Creusot will abort in the end (in `after_analysis`).
+    pub(crate) fn get_thir(&self, def_id: LocalDefId) -> Option<(&thir::Thir<'tcx>, thir::ExprId)> {
+        self.thir.get(&def_id).map(|&(ref thir, expr)| (thir, expr))
     }
 
     queryish!(trait_impl, DefId, TraitImpl<'tcx>, translate_impl);
@@ -255,46 +255,30 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// Compute the pearlite term associated with `def_id`.
     ///
     /// # Returns
-    /// - `Ok(None)` if `def_id` does not have a body
-    /// - `Ok(Some(term))` if `def_id` has a body, in this crate or in a dependency.
-    /// - `Err(CannotFetchThir)` if typechecking the body of `def_id` failed.
-    pub(crate) fn term<'a>(
-        &'a self,
-        def_id: DefId,
-    ) -> Result<Option<&'a ScopedTerm<'tcx>>, CannotFetchThir> {
+    /// - `None` if `def_id` does not have a body
+    /// - `Some(term)` if `def_id` has a body, in this crate or in a dependency.
+    pub(crate) fn term<'a>(&'a self, def_id: DefId) -> Option<&'a ScopedTerm<'tcx>> {
         let Some(local_id) = def_id.as_local() else {
-            return Ok(self.externs.term(def_id));
+            return self.externs.term(def_id);
         };
 
         self.terms
-            .try_insert(def_id, |_| {
+            .insert(def_id, |_| {
                 if self.tcx.hir().maybe_body_owned_by(local_id).is_some() {
                     let (bound, term) = match pearlite::pearlite(self, local_id) {
                         Ok(t) => t,
-                        Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
-                        Err(Error::TypeCheck(thir)) => return Err(thir),
+                        Err(err) => err.abort(self.tcx),
                     };
                     let bound = bound.iter().map(|b| b.0).collect();
-                    Ok(Box::new(Some(ScopedTerm(
+                    Box::new(Some(ScopedTerm(
                         bound,
                         pearlite::normalize(self.tcx, self.typing_env(def_id), term),
-                    ))))
+                    )))
                 } else {
-                    Ok(Box::new(None))
+                    Box::new(None)
                 }
             })
-            .map(|x| x.as_ref())
-    }
-
-    /// Same as [`Self::term`], but aborts if an error was found.
-    ///
-    /// This should only be used in [`after_analysis`](crate::translation::after_analysis),
-    /// where we are confident that typechecking errors have already been reported.
-    pub(crate) fn term_fail_fast(&self, def_id: DefId) -> Option<&ScopedTerm<'tcx>> {
-        self.term(def_id).unwrap_or_else(|_| {
-            self.tcx.dcx().abort_if_errors();
-            None
-        })
+            .as_ref()
     }
 
     pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&Vec<usize>> {
@@ -327,13 +311,15 @@ impl<'tcx> TranslationCtx<'tcx> {
         })
     }
 
+    /// `span` is used for diagnostics.
     pub(crate) fn type_invariant(
         &self,
         typing_env: TypingEnv<'tcx>,
         ty: Ty<'tcx>,
+        span: Span,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         let ty = self.normalize_erasing_regions(typing_env, ty);
-        if is_tyinv_trivial(self.tcx, typing_env, ty) {
+        if is_tyinv_trivial(self.tcx, typing_env, ty, span) {
             None
         } else {
             let inv_did = get_inv_function(self.tcx);
@@ -471,25 +457,22 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.tcx.hir().maybe_body_owned_by(local_id).is_some()
         } else {
             match self.item_type(def_id) {
-                ItemType::Logic { .. } | ItemType::Predicate { .. } => {
-                    matches!(self.term(def_id), Ok(Some(_)))
-                }
+                ItemType::Logic { .. } | ItemType::Predicate { .. } => self.term(def_id).is_some(),
                 _ => false,
             }
         }
     }
 
-    pub(crate) fn load_extern_specs(&mut self) -> CreusotResult<()> {
+    pub(crate) fn load_extern_specs(&mut self) {
         let mut traits_or_impls = Vec::new();
 
-        for def_id in self.tcx.hir().body_owners() {
+        for (&def_id, thir) in self.thir.iter() {
             if is_extern_spec(self.tcx, def_id.to_def_id()) {
                 if let Some(container) = self.opt_associated_item(def_id.to_def_id()) {
                     traits_or_impls.push(container.def_id)
                 }
 
-                let (i, es) = extract_extern_specs_from_item(self, def_id)?;
-                let c = es.contract.clone();
+                let (i, es) = extract_extern_specs_from_item(self, def_id, thir);
 
                 if self.extern_spec(i).is_some() {
                     self.crash_and_error(
@@ -501,19 +484,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 let _ = self.extern_specs.insert(i, es);
 
                 self.extern_spec_items.insert(def_id, i);
-
-                for id in c.iter_ids() {
-                    self.term(id)?.unwrap();
-                }
             }
-        }
-
-        // Force extern spec items to get loaded so we export them properly
-        let need_to_load: Vec<_> =
-            self.extern_specs.values().flat_map(|e| e.contract.iter_ids()).collect();
-
-        for id in need_to_load {
-            self.term(id)?;
         }
 
         for def_id in traits_or_impls {
@@ -533,8 +504,6 @@ impl<'tcx> TranslationCtx<'tcx> {
                 additional_predicates,
             });
         }
-
-        Ok(())
     }
 
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
@@ -562,16 +531,11 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn rename(&self, ident: HirId) -> Ident {
-        self.renamer
-            .borrow_mut()
-            .entry(ident)
-            .or_insert_with(|| {
-                let r =
-                    Ident::fresh(self.crate_name(), variable_name(self.hir().name(ident).as_str()));
-                self.corenamer.borrow_mut().insert(r, ident);
-                r
-            })
-            .clone()
+        *self.renamer.borrow_mut().entry(ident).or_insert_with(|| {
+            let r = Ident::fresh(self.crate_name(), variable_name(self.hir().name(ident).as_str()));
+            self.corenamer.borrow_mut().insert(r, ident);
+            r
+        })
     }
 
     pub(crate) fn crate_name(&self) -> why3::Symbol {

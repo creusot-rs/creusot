@@ -6,8 +6,8 @@ mod purity;
 mod terminates;
 mod traits;
 
-pub(crate) use self::{
-    ghost::GhostValidate,
+pub(crate) use self::ghost::GhostValidate;
+use self::{
     opacity::validate_opacity,
     purity::validate_purity,
     terminates::validate_terminates,
@@ -19,14 +19,16 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 
 use crate::{
+    backend::is_trusted_item,
     contracts_items::{
-        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_snapshot_deref, is_trusted,
+        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_logic, is_predicate, is_snapshot_deref,
+        is_spec, is_trusted,
     },
     ctx::TranslationCtx,
 };
 
 /// Validate that creusot buitins are annotated with `#[trusted]`.
-pub(crate) fn validate_trusted(ctx: &TranslationCtx) {
+fn validate_trusted(ctx: &TranslationCtx) {
     for def_id in ctx.hir_crate_items(()).definitions() {
         let def_id = def_id.to_def_id();
         if get_builtin(ctx.tcx, def_id).is_some() && !is_trusted(ctx.tcx, def_id) {
@@ -60,4 +62,20 @@ fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
     attrs
         .iter()
         .any(|a| a.path_matches(&[Symbol::intern("creusot"), Symbol::intern("ghost_block")]))
+}
+
+pub(crate) fn validate(ctx: &TranslationCtx) {
+    for (&def_id, thir) in ctx.thir.iter() {
+        validate_purity(ctx, def_id, thir);
+        let def_id = def_id.to_def_id();
+        if (is_spec(ctx.tcx, def_id) || is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
+            && !is_trusted_item(ctx.tcx, def_id)
+        {
+            validate_opacity(ctx, def_id);
+        }
+    }
+    validate_terminates(ctx);
+    validate_traits(ctx);
+    validate_impls(ctx);
+    validate_trusted(ctx);
 }

@@ -72,15 +72,13 @@ fn fields_set_to_default(fields: &Fields) -> TokenStream {
         Fields::Named(fields) => {
             let fs = fields.named.iter().map(|f| {
                 let name = &f.ident;
-                let ty = &f.ty;
-                quote_spanned! { f.span() => #name : <#ty as ::std::default::Default>::default() }
+                quote_spanned! { f.span() => #name : ::std::default::Default::default() }
             });
             quote! { { #(#fs),* } }
         }
         Fields::Unnamed(fields) => {
             let fs = fields.unnamed.iter().map(|f| {
-                let ty = &f.ty;
-                quote_spanned! { f.span() => <#ty as ::std::default::Default>::default() }
+                quote_spanned! { f.span() => ::std::default::Default::default() }
             });
             quote! { ( #(#fs),* ) }
         }
@@ -142,24 +140,22 @@ fn fields_are_default(fields: &Fields, with_result: bool) -> TokenStream {
         Fields::Named(fields) => {
             let fs = fields.named.iter().map(|f| {
                 let name = &f.ident;
-                let ty = &f.ty;
                 if with_result {
-                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(<#ty as ::std::default::Default>::default, (), result.#name) }
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::std::default::Default::default, (), result.#name) }
                 } else {
-                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(<#ty as ::std::default::Default>::default, (), #name) }
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::std::default::Default::default, (), #name) }
                 }
             });
             quote! { true #(&& #fs)* }
         }
         Fields::Unnamed(fields) => {
             let fs = fields.unnamed.iter().enumerate().map(|(i, f)| {
-                let ty = &f.ty;
                 if with_result {
                     let i = syn::LitInt::new(&format!("{i}"), f.span());
-                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(<#ty as ::std::default::Default>::default, (), result.#i) }
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::std::default::Default::default, (), result.#i) }
                 } else {
                     let name = Ident::new(&format!("x{i}"), f.span());
-                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(<#ty as ::std::default::Default>::default, (), #name) }
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::std::default::Default::default, (), #name) }
                 }
             });
             quote! { true #(&& #fs)* }

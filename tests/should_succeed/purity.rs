@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{pcell::Id, *};
 
 // This tests showcases specialization of purity attribute when calling trait implementations.
 
@@ -38,4 +38,10 @@ pub fn calls_g() -> Int {
 
 pub fn result() {
     proof_assert!(calls_g() == 1);
+}
+
+// Shows that a trait impl in an external crate (creusot_contracts) is correctly specialized.
+#[pure]
+pub fn clone_id(i: Id) {
+    let _ = i.clone();
 }

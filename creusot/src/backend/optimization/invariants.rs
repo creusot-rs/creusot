@@ -7,14 +7,16 @@ use rustc_span::DUMMY_SP;
 
 use crate::{
     backend::{
-        place::projection_ty,
         program::node_graph,
+        projections::projection_ty,
         wto::{Component, weak_topological_order},
     },
     contracts_items::get_snap_ty,
     ctx::TranslationCtx,
-    pearlite::{Ident, Term},
-    translation::fmir,
+    translation::{
+        fmir,
+        pearlite::{Ident, Term},
+    },
 };
 use petgraph::Direction;
 
@@ -107,7 +109,7 @@ fn place_to_term<'tcx>(
     let mut pty = PlaceTy::from_ty(locals[&p.local].ty);
 
     for proj in &p.projections {
-        let res_ty = projection_ty(pty, tcx, *proj);
+        let res_ty = projection_ty(pty, tcx, proj);
         match proj {
             ProjectionElem::Deref => {
                 if pty.ty.is_mutable_ptr() {
@@ -226,12 +228,12 @@ impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
 
         let mut bty = PlaceTy::from_ty(self.locals[&pl.local].ty);
         let mut proj = vec![];
-        for &pr in &pl.projections {
+        for pr in &pl.projections {
             let b = Place { projections: proj.clone().into(), ..*pl };
             if matches!(pr, ProjectionElem::Deref) && bty.ty.is_ref() && bty.ty.is_mutable_ptr() {
                 self.active_borrows.insert(b.clone());
             }
-            proj.push(pr);
+            proj.push(*pr);
             bty = projection_ty(bty, self.tcx, pr);
         }
     }

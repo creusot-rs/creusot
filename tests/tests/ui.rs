@@ -99,6 +99,7 @@ fn main() {
             });
         out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
         writeln!(&mut out, "{failed} failures out of {total} tests").unwrap();
+        out.reset().unwrap();
         drop(out);
         std::process::exit(1);
     }
@@ -147,9 +148,18 @@ fn translate_creusot_contracts(
         ])
         .env("CREUSOT_CONTINUE", "true");
 
+    let is_tty = std::io::stdout().is_terminal();
+    let mut out = StandardStream::stdout(if args.force_color || is_tty {
+        ColorChoice::Always
+    } else {
+        ColorChoice::Never
+    });
     let output = creusot_contracts.output().expect("could not translate `creusot_contracts`");
     if !output.status.success() {
-        eprintln!("Translation of creusot-contracts failed");
+        out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+        writeln!(&mut out, "could not translate").unwrap();
+        out.reset().unwrap();
+        out.flush().unwrap();
         eprintln!("{}", String::from_utf8(output.stderr).unwrap());
         std::process::exit(1);
     }
@@ -159,12 +169,6 @@ fn translate_creusot_contracts(
     }
 
     let expect = PathBuf::from("tests/creusot-contracts/creusot-contracts.coma");
-    let is_tty = std::io::stdout().is_terminal();
-    let mut out = StandardStream::stdout(if args.force_color || is_tty {
-        ColorChoice::Always
-    } else {
-        ColorChoice::Never
-    });
     let mut succeeded = true;
     let (success, buf) = differ(output.clone(), &expect, None, true, is_tty).unwrap();
 
@@ -174,7 +178,8 @@ fn translate_creusot_contracts(
         out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
         writeln!(&mut out, "warnings").unwrap();
         out.reset().unwrap();
-        writeln!(&mut out, "{}", std::str::from_utf8(&output.stderr).unwrap()).unwrap();
+        out.flush().unwrap();
+        eprintln!("{}", std::str::from_utf8(&output.stderr).unwrap());
         succeeded = false;
     }
 

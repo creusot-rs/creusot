@@ -1,7 +1,10 @@
 use anyhow::{Context as _, Result, bail};
 use cargo_metadata::semver::Version;
 use clap::*;
-use creusot_args::{CREUSOT_RUSTC_ARGS, options::*};
+use creusot_args::{
+    CREUSOT_RUSTC_ARGS,
+    options::{CommonOptions, CreusotArgs, LegacyCreusotSubCommand, Why3SubCommand},
+};
 use creusot_setup as setup;
 use std::{
     env,
