@@ -160,7 +160,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
 
 impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant for Map<I, F> {
     #[predicate(prophetic)]
-    #[open(self)]
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&

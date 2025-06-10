@@ -31,12 +31,10 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     }
 
     #[law]
-    #[open(self)]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -58,12 +56,10 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for Range<Idx
     }
 
     #[law]
-    #[open(self)]
     #[ensures(self.produces_back(Seq::EMPTY, self))]
     fn produces_back_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces_back(ab, b))]
     #[requires(b.produces_back(bc, c))]
     #[ensures(a.produces_back(ab.concat(bc), c))]

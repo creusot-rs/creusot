@@ -31,14 +31,12 @@ pub struct PtrOwn<T: ?Sized> {
 impl<T: ?Sized> PtrOwn<T> {
     /// The raw pointer whose ownership is tracked by this `PtrOwn`
     #[logic]
-    #[open(self)]
     pub fn ptr(&self) -> RawPtr<T> {
         self.ptr
     }
 
     /// The value currently stored at address [`self.ptr()`](Self::ptr)
     #[logic]
-    #[open(self)]
     pub fn val(&self) -> SizedW<T> {
         self.val
     }

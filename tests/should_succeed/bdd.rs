@@ -80,7 +80,6 @@ mod hashmap {
             self.0.hash().wrapping_add(self.1.hash().wrapping_mul(17))
         }
 
-        #[open(self)]
         #[logic]
         fn hash_log(x: Self::DeepModelTy) -> Int {
             pearlite! { (U::hash_log(x.0) + V::hash_log(x.1) * 17) % (u64::MAX@ + 1) }
@@ -126,7 +125,6 @@ impl<'arena> hashmap::Hash for Node<'arena> {
         }
     }
 
-    #[open(self)]
     #[logic]
     fn hash_log(x: Self::DeepModelTy) -> Int {
         pearlite! {
@@ -146,7 +144,6 @@ impl<'arena> hashmap::Hash for Bdd<'arena> {
         self.1
     }
 
-    #[open(self)]
     #[logic]
     fn hash_log(x: Self::DeepModelTy) -> Int {
         pearlite! { x@ }
@@ -156,7 +153,6 @@ impl<'arena> hashmap::Hash for Bdd<'arena> {
 impl<'arena> DeepModel for Node<'arena> {
     type DeepModelTy = NodeLog;
 
-    #[open(self)]
     #[logic]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! {
@@ -173,7 +169,6 @@ impl<'arena> DeepModel for Node<'arena> {
 impl<'arena> View for Node<'arena> {
     type ViewTy = NodeLog;
 
-    #[open(self)]
     #[logic]
     fn view(self) -> Self::ViewTy {
         pearlite! { self.deep_model() }
@@ -183,7 +178,6 @@ impl<'arena> View for Node<'arena> {
 impl<'arena> DeepModel for Bdd<'arena> {
     type DeepModelTy = u64;
 
-    #[open(self)]
     #[logic]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { self.1 }
@@ -193,7 +187,6 @@ impl<'arena> DeepModel for Bdd<'arena> {
 impl<'arena> View for Bdd<'arena> {
     type ViewTy = u64;
 
-    #[open(self)]
     #[logic]
     fn view(self) -> Self::ViewTy {
         pearlite! { self.deep_model() }
@@ -260,7 +253,6 @@ pub struct Context<'arena> {
 }
 
 impl<'arena> Invariant for Context<'arena> {
-    #[open(self)]
     #[predicate]
     fn invariant(self) -> bool {
         pearlite! {
@@ -294,7 +286,6 @@ impl<'arena> Invariant for Context<'arena> {
 }
 
 impl<'arena> Context<'arena> {
-    #[open(self)]
     #[predicate(prophetic)]
     pub fn grows(&mut self) -> bool {
         pearlite! {
@@ -307,7 +298,6 @@ impl<'arena> Context<'arena> {
         }
     }
 
-    #[open(self)]
     #[predicate]
     pub fn is_valid_bdd(self, b: Bdd<'arena>) -> bool {
         pearlite! {
@@ -332,14 +322,12 @@ impl<'arena> Context<'arena> {
     }
 
     #[logic]
-    #[open(self)]
     #[requires(self.grows())]
     #[requires(self.is_valid_bdd(b))]
     #[ensures((^self).is_valid_bdd(b))]
     pub fn grows_is_valid_bdd(&mut self, b: Bdd<'arena>) {}
 
     #[logic]
-    #[open(self)]
     #[requires(self.grows())]
     #[requires(o.grows())]
     #[requires(^self == *o)]
@@ -414,7 +402,6 @@ impl<'arena> Context<'arena> {
     }
 
     #[logic]
-    #[open(self)]
     #[requires(inv(self))]
     #[requires(self.is_valid_bdd(a))]
     #[requires(self.is_valid_bdd(b))]

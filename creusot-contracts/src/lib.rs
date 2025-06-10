@@ -351,7 +351,6 @@ pub mod macros {
     /// mod inner {
     ///     use creusot_contracts::*;
     ///     #[logic]
-    ///     #[open(self)]
     ///     #[ensures(result == x + 1)]
     ///     pub(super) fn foo(x: Int) -> Int {
     ///         // ...

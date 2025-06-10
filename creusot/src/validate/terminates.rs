@@ -400,10 +400,10 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     /// - and visible at the point of implementation, that is
     ///   ```ignore
     ///   trait Tr {
-    ///       #[logic] #[open(self)] fn f() {}
+    ///       #[logic] fn f() {}
     ///   }
     ///   impl Tr for i32 { }
-    ///   #[logic] #[open(self)] fn g() { <i32 as Tr>::f(); }
+    ///   #[logic] fn g() { <i32 as Tr>::f(); }
     ///   ```
     ///   Here the implementation `<i32 as Tr>` generates an additional node in the
     ///   termination graph, which is "`f` but specialized in `impl Tr for i32`".

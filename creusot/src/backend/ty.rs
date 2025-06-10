@@ -44,9 +44,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
             let cons = MlT::TConstructor(names.ty(ty));
             cons.tapp(s.types().map(|t| translate_ty(ctx, names, span, t)))
         }
-        Adt(def, _) if def.is_struct() && def.non_enum_variant().fields.is_empty() => {
-            MlT::unit()
-        }
+        Adt(def, _) if def.is_struct() && def.non_enum_variant().fields.is_empty() => MlT::unit(),
         Adt(def, _) if def.is_enum() && def.variants().is_empty() => MlT::unit(),
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
