@@ -1,12 +1,13 @@
 use crate::{
     invariant::*,
-    ptr_own::{PtrOwn, RawPtr},
+    ptr_own::{BlockOwn, PtrOwn, RawPtr},
     resolve::structural_resolve,
     std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
     *,
 };
 #[cfg(feature = "nightly")]
 use ::std::alloc::Allocator;
+use ::std::ptr;
 pub use ::std::slice::*;
 
 impl<T> Invariant for [T] {
@@ -67,10 +68,10 @@ pub trait SliceExt<T> {
     fn to_ref_seq(&self) -> Seq<&T>;
 
     #[pure]
-    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<Seq<&PtrOwn<T>>>);
+    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<&BlockOwn<T>>);
 
     #[pure]
-    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<Seq<&mut PtrOwn<T>>>);
+    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<&mut BlockOwn<T>>);
 }
 
 impl<T> SliceExt<T> for [T] {
@@ -93,25 +94,54 @@ impl<T> SliceExt<T> for [T] {
 
     #[trusted]
     #[pure]
-    #[ensures(result.1.len() == self@.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < self@.len()
-        ==> result.0.offset_logic(i) == result.1[i].ptr()
-        && *result.1[i].val() == self@[i])]
-    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<Seq<&PtrOwn<T>>>) {
+    #[ensures(result.0 == result.1.ptr())]
+    #[ensures(result.1.contents() == self@)]
+    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<&BlockOwn<T>>) {
         (self.as_ptr(), Ghost::conjure())
     }
 
     #[trusted]
     #[pure]
-    #[ensures(result.1.len() == self@.len())]
-    #[ensures((^self)@.len() == self@.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < self@.len()
-        ==> result.0.offset_logic(i) == result.1[i].ptr()
-        && *result.1[i].val() == (*self)[i]
-        && *(^(*result.1)[i]).val() == (^self)[i])]
-    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<Seq<&mut PtrOwn<T>>>) {
+    #[ensures(result.0 == result.1.ptr())]
+    #[ensures(result.0 == (^result.1.inner_logic()).ptr())]
+    #[ensures(result.1.contents() == self@)]
+    #[ensures((^result.1.inner_logic()).contents() == (^self)@)]
+    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<&mut BlockOwn<T>>) {
         (self.as_ptr(), Ghost::conjure())
     }
+}
+
+#[allow(unused_variables)]
+#[trusted] // TODO: verify implementation
+#[requires(own.ptr() == data.raw())]
+#[requires(len@ == own.len())]
+#[ensures(result.0.addr_logic() == own.ptr().addr_logic())]
+#[ensures(result.1.ptr() == result.0.raw())]
+#[ensures(result.1.val()@ == own.contents())]
+pub fn slice_from_raw_parts<T>(
+    data: *const T,
+    len: usize,
+    own: Ghost<&BlockOwn<T>>,
+) -> (*const [T], Ghost<&PtrOwn<[T]>>) {
+    (ptr::from_raw_parts(data, len), Ghost::conjure())
+}
+
+#[allow(unused_variables)]
+#[trusted] // TODO: verify implementation
+#[requires(own.ptr() == data.raw())]
+#[requires(len@ == own.len())]
+#[ensures(result.0.addr_logic() == own.ptr().addr_logic())]
+#[ensures(result.1.ptr() == result.0.raw())]
+#[ensures(result.1.val()@ == own.contents())]
+#[ensures((^own.inner_logic()).ptr() == data.raw())]
+#[ensures((^result.1.inner_logic()).ptr() == result.0.raw())]
+#[ensures((^result.1.inner_logic()).val()@ == (^own.inner_logic()).contents())]
+pub fn slice_from_raw_parts_mut<T>(
+    data: *mut T,
+    len: usize,
+    own: Ghost<&mut BlockOwn<T>>,
+) -> (*mut [T], Ghost<&mut PtrOwn<[T]>>) {
+    (ptr::from_raw_parts_mut(data, len), Ghost::conjure())
 }
 
 pub trait SliceIndex<T: ?Sized>: ::std::slice::SliceIndex<T>

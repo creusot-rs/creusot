@@ -142,3 +142,100 @@ impl<T: ?Sized> PtrOwn<T> {
     #[allow(unused_variables)]
     pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {}
 }
+
+impl<T> PtrOwn<T> {
+    #[trusted]
+    #[pure]
+    #[ensures(result.ptr() == self.ptr())]
+    #[ensures(result.contents() == Seq::singleton(*self.val()))]
+    pub fn as_block_own_ref(&self) -> Ghost<&BlockOwn<T>> {
+        Ghost::conjure()
+    }
+
+    #[trusted]
+    #[pure]
+    #[ensures(result.ptr() == self.ptr())]
+    #[ensures(result.contents() == Seq::singleton(*self.val()))]
+    // TODO resolve
+    pub fn as_block_own_mut(&mut self) -> Ghost<&mut BlockOwn<T>> {
+        Ghost::conjure()
+    }
+}
+
+/// Represents ownership of a block of memory containing a sequence of `T` values.
+#[allow(dead_code)]
+pub struct BlockOwn<T> {
+    ptr: RawPtr<T>,
+    block: Seq<T>,
+}
+
+impl<T> BlockOwn<T> {
+    #[logic]
+    #[open(self)]
+    pub fn ptr(&self) -> RawPtr<T> {
+        self.ptr
+    }
+
+    #[logic]
+    #[open]
+    pub fn len(&self) -> Int {
+        self.contents().len()
+    }
+
+    #[logic]
+    #[open(self)]
+    pub fn get(&self, index: Int) -> Option<T> {
+        self.block.get(index)
+    }
+
+    #[allow(unused_variables)]
+    #[trusted] // TODO
+    #[pure]
+    pub fn get_ptr_own_ref(&self, index: Int) -> &PtrOwn<T> {
+        todo!()
+    }
+
+    #[allow(unused_variables)]
+    #[trusted] // TODO
+    #[pure]
+    pub fn get_ptr_own_mut(&mut self, index: Int) -> &mut PtrOwn<T> {
+        todo!()
+    }
+
+    #[logic]
+    #[open(self)]
+    pub fn contents(&self) -> Seq<T> {
+        self.block
+    }
+
+    #[allow(unused_variables)]
+    #[trusted]
+    #[pure]
+    #[requires(index <= self.len())]
+    #[ensures(result.0.ptr() == self.ptr() && result.1.ptr() == self.ptr().offset_logic(index))]
+    #[ensures((^self).ptr() == self.ptr() && (^result.inner_logic().0).ptr() == result.0.ptr() && (^result.inner_logic().1).ptr() == result.1.ptr())]
+    #[ensures(result.0.contents() == self.contents().subsequence(0, index) && (^result.inner_logic().0).contents() == (^self).contents().subsequence(0, index))]
+    #[ensures(result.1.contents() == self.contents().subsequence(index, self.len()) && (^result.inner_logic().1).contents() == (^self).contents().subsequence(index, self.len()))]
+    pub fn split_at_mut(&mut self, index: Int) -> Ghost<(&mut Self, &mut Self)> {
+        Ghost::conjure()
+    }
+
+    #[trusted]
+    #[pure]
+    #[requires(self.len() > 0)]
+    #[ensures(result.ptr() == self.ptr())]
+    #[ensures(Some(*result.val()) == self.get(0))]
+    pub fn as_ptr_own_ref(&self) -> Ghost<&PtrOwn<T>> {
+        Ghost::conjure()
+    }
+
+    #[trusted]
+    #[pure]
+    #[requires(self.len() > 0)]
+    #[ensures(result.ptr() == self.ptr())]
+    #[ensures(Some(*result.val()) == self.get(0))]
+    // TODO resolve
+    pub fn as_ptr_own_mut(&mut self) -> Ghost<&mut PtrOwn<T>> {
+        Ghost::conjure()
+    }
+}

@@ -1,5 +1,5 @@
 use crate::{
-    ptr_own::{PtrOwn, RawPtr},
+    ptr_own::{BlockOwn, RawPtr},
     *,
 };
 pub use ::std::ptr::*;
@@ -50,6 +50,10 @@ pub trait PointerExt<T: ?Sized>: Sized {
     #[logic]
     #[ensures(result == (self.addr_logic() == 0usize))]
     fn is_null_logic(self) -> bool;
+
+    #[logic]
+    #[ensures(result.addr_logic() == self.addr_logic())]
+    fn raw(self) -> RawPtr<T>;
 }
 
 impl<T: ?Sized> PointerExt<T> for *const T {
@@ -65,6 +69,14 @@ impl<T: ?Sized> PointerExt<T> for *const T {
     #[ensures(result == (self.addr_logic() == 0usize))]
     fn is_null_logic(self) -> bool {
         self.addr_logic() == 0usize
+    }
+
+    #[trusted] // TODO cast *const to *const
+    #[logic]
+    #[open]
+    #[ensures(result.addr_logic() == self.addr_logic())]
+    fn raw(self) -> RawPtr<T> {
+        self as RawPtr<T>
     }
 }
 
@@ -82,6 +94,14 @@ impl<T: ?Sized> PointerExt<T> for *mut T {
     fn is_null_logic(self) -> bool {
         self.addr_logic() == 0usize
     }
+
+    #[trusted] // TODO cast *mut to *const
+    #[logic]
+    #[open]
+    #[ensures(result.addr_logic() == self.addr_logic())]
+    fn raw(self) -> RawPtr<T> {
+        self as RawPtr<T>
+    }
 }
 
 pub trait SizedPointerExt<T>: PointerExt<T> {
@@ -91,7 +111,8 @@ pub trait SizedPointerExt<T>: PointerExt<T> {
     fn offset_logic(self, offset: Int) -> RawPtr<T>;
 
     /// Restriction of `add` that requires evidence that the addition is safe.
-    /// See contracts in implementations below.
+    /// We simply require a borrow of the `BlockOwn` token for the result pointer.
+    /// In particular, this accounts for one-past-the-end pointers, which point to a zero-sized block.
     ///
     /// From https://doc.rust-lang.org/std/primitive.pointer.html#method.add:
     ///
@@ -102,8 +123,9 @@ pub trait SizedPointerExt<T>: PointerExt<T> {
     /// >   pointer to some allocated object, and the entire memory range between
     /// >   `self` and the result must be in bounds of that allocated object.
     /// >   In particular, this range must not “wrap around” the edge of the address space.
-    #[requires(self.offset_logic(offset@) == own_offset.ptr())]
-    unsafe fn add_own(self, offset: usize, own_offset: Ghost<&PtrOwn<T>>) -> Self;
+    #[requires(own.ptr() == self.offset_logic(offset@))]
+    #[ensures(own.ptr() == result.raw())]
+    unsafe fn add_own(self, offset: usize, own: Ghost<&BlockOwn<T>>) -> Self;
 }
 
 impl<T> SizedPointerExt<T> for *const T {
@@ -116,11 +138,10 @@ impl<T> SizedPointerExt<T> for *const T {
         dead
     }
 
-    // TODO: The offset in bytes, `count * size_of::<T>()`, must fit in an `isize`.
     #[trusted]
-    #[requires(self.offset_logic(offset@) == own_offset.ptr())]
-    #[ensures(self.offset_logic(offset@) == result)]
-    unsafe fn add_own(self, offset: usize, own_offset: Ghost<&PtrOwn<T>>) -> Self {
+    #[requires(own.ptr() == self.offset_logic(offset@))]
+    #[ensures(own.ptr() == result.raw())]
+    unsafe fn add_own(self, offset: usize, own: Ghost<&BlockOwn<T>>) -> Self {
         self.add(offset)
     }
 }
@@ -135,11 +156,10 @@ impl<T> SizedPointerExt<T> for *mut T {
         dead
     }
 
-    // TODO: The offset in bytes, `count * size_of::<T>()`, must fit in an `isize`.
     #[trusted]
-    #[requires(self.offset_logic(offset@) == own_offset.ptr())]
-    // #[ensures(result as RawPtr<T> == self.offset_logic(offset))] // TODO: cast *mut to RawPtr ?
-    unsafe fn add_own(self, offset: usize, own_offset: Ghost<&PtrOwn<T>>) -> Self {
+    #[requires(own.ptr() == self.offset_logic(offset@))]
+    #[ensures(own.ptr() == result.raw())]
+    unsafe fn add_own(self, offset: usize, own: Ghost<&BlockOwn<T>>) -> Self {
         self.add(offset)
     }
 }
