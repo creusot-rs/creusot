@@ -3,7 +3,6 @@ use creusot_contracts::*;
 
 pub trait Foo {
     #[logic]
-    #[open(self)]
     fn f() {}
     #[logic]
     fn g();
@@ -22,7 +21,6 @@ pub mod inner {
 
 impl Foo for () {
     #[logic]
-    #[open(self)]
     fn g() {
         <Self as Foo>::f();
     }
@@ -30,7 +28,6 @@ impl Foo for () {
 
 impl<T> Foo for Box<T> {
     #[logic]
-    #[open(self)]
     fn g() {
         <Self as Foo>::f();
     }
@@ -38,7 +35,6 @@ impl<T> Foo for Box<T> {
 
 impl inner::Bar for () {
     #[logic]
-    #[open(self)]
     fn g() {
         <Self as inner::Bar>::f();
     }

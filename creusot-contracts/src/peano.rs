@@ -36,7 +36,6 @@ pub struct PeanoInt(u64);
 impl View for PeanoInt {
     type ViewTy = Int;
     #[logic]
-    #[open(self)]
     fn view(self) -> Int {
         self.0.view()
     }

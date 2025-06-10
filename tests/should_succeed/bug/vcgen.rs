@@ -2,7 +2,6 @@ extern crate creusot_contracts;
 use creusot_contracts::{logic::FSet, *};
 
 #[logic]
-#[open(self)]
 #[requires(!s.is_empty())]
 #[variant(s.len())]
 #[ensures(s.contains(result))]

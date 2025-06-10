@@ -154,7 +154,6 @@ impl<K: DeepModel, V> View for Node<K, V> {
     type ViewTy = Mapping<K::DeepModelTy, Option<V>>;
 
     #[logic]
-    #[open(self)]
     fn view(self) -> Self::ViewTy {
         pearlite! {
             self.right.model_acc(self.left.view().set(self.key.deep_model(), Some(self.val)))
@@ -166,14 +165,12 @@ impl<K: DeepModel, V> View for Tree<K, V> {
     type ViewTy = Mapping<K::DeepModelTy, Option<V>>;
 
     #[logic]
-    #[open(self)]
     fn view(self) -> Self::ViewTy {
         pearlite! { self.model_acc(Mapping::cst(None)) }
     }
 }
 
 impl<K: DeepModel, V> Resolve for Tree<K, V> {
-    #[open(self)]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
@@ -181,7 +178,6 @@ impl<K: DeepModel, V> Resolve for Tree<K, V> {
         }
     }
 
-    #[open(self)]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
@@ -189,7 +185,6 @@ impl<K: DeepModel, V> Resolve for Tree<K, V> {
 }
 
 impl<K: DeepModel, V> Resolve for Node<K, V> {
-    #[open(self)]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
@@ -197,7 +192,6 @@ impl<K: DeepModel, V> Resolve for Node<K, V> {
         }
     }
 
-    #[open(self)]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
@@ -381,7 +375,6 @@ impl<K: DeepModel, V> Tree<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
-    #[open(self)]
     #[predicate]
     fn internal_invariant(self) -> bool {
         pearlite! {
@@ -394,7 +387,6 @@ impl<K: DeepModel, V> Node<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
-    #[open(self)]
     #[predicate]
     // TODO
     // This might be made a proper type invariant, but move_red_left/move_red_right need to be
@@ -757,7 +749,6 @@ impl<K: DeepModel, V> View for Map<K, V> {
     type ViewTy = Mapping<K::DeepModelTy, Option<V>>;
 
     #[logic]
-    #[open(self)]
     fn view(self) -> Self::ViewTy {
         pearlite! { self.0@ }
     }
@@ -768,7 +759,6 @@ where
     K::DeepModelTy: OrdLogic,
 {
     #[predicate]
-    #[open(self)]
     fn invariant(self) -> bool {
         pearlite! {
             self.0.internal_invariant() && self.0.color_invariant() && self.0.color() == Black
@@ -787,7 +777,6 @@ where
     }
 
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     #[allow(path_statements)]

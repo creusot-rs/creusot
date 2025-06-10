@@ -7,7 +7,7 @@ mod common;
 use common::Iterator;
 
 #[derive(Resolve)]
-pub struct Once<T>(Option<T>);
+pub struct Once<T>(pub Option<T>);
 
 impl<T> Iterator for Once<T> {
     type Item = T;

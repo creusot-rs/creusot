@@ -22,7 +22,6 @@ mod implementation {
     impl<T> DeepModel for Element<T> {
         type DeepModelTy = usize;
         #[logic]
-        #[open(self)]
         fn deep_model(self) -> usize {
             self.0.addr_logic()
         }
@@ -73,7 +72,6 @@ mod implementation {
 
     impl<T> Invariant for UnionFind<T> {
         #[predicate]
-        #[open(self)]
         #[creusot::why3_attr = "inline:trivial"]
         fn invariant(self) -> bool {
             let domain = self.domain;
@@ -124,7 +122,6 @@ mod implementation {
 
         /// Returns all the element that are handled by this union-find structure.
         #[logic]
-        #[open(self)]
         #[requires(inv(self))]
         #[ensures(forall<e1: Element<T>, e2: Element<T>> result.contains(e1) && result.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2)]
         pub fn domain(self) -> FSet<Element<T>> {
@@ -136,7 +133,6 @@ mod implementation {
         /// For each element, this describes the unique root element of the associated set.
         /// The root element of a root is itself.
         #[logic]
-        #[open(self)]
         #[requires(inv(self))]
         #[ensures(forall<e: Element<T>> self.domain.contains(e) ==> result[e] == result[result[e]])]
         pub fn root_of(self) -> Mapping<Element<T>, Element<T>> {
@@ -145,7 +141,6 @@ mod implementation {
 
         /// Returns the values associated with each element.
         #[logic]
-        #[open(self)]
         #[requires(inv(self))]
         #[ensures(forall<e: Element<T>> self.domain.contains(e) ==> result[e] == result[self.root_of()[e]])]
         pub fn values(self) -> Mapping<Element<T>, T> {

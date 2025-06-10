@@ -7,7 +7,7 @@ use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Repeat<A> {
-    element: A,
+    pub element: A,
 }
 
 impl<A: Clone> Iterator for Repeat<A> {

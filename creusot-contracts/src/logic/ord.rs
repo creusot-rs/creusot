@@ -107,15 +107,15 @@ pub trait OrdLogic {
 /// struct MyInt(Int);
 ///
 /// impl OrdLogic for MyInt {
-///     #[logic] #[open(self)]
+///     #[logic]
 ///     fn cmp_log(self, other: Self) -> Ordering { todo!() }
-///     #[predicate] #[open(self)]
+///     #[predicate]
 ///     fn le_log(self, other: Self) -> bool { todo!() }
-///     #[predicate] #[open(self)]
+///     #[predicate]
 ///     fn lt_log(self, other: Self) -> bool { todo!() }
-///     #[predicate] #[open(self)]
+///     #[predicate]
 ///     fn ge_log(self, other: Self) -> bool { todo!() }
-///     #[predicate] #[open(self)]
+///     #[predicate]
 ///     fn gt_log(self, other: Self) -> bool { todo!() }
 ///
 ///     ord_laws_impl! {}

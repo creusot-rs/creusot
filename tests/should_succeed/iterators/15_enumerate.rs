@@ -8,8 +8,8 @@ use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Enumerate<I: Iterator> {
-    iter: I,
-    count: usize,
+    pub iter: I,
+    pub count: usize,
 }
 
 impl<I> Iterator for Enumerate<I>

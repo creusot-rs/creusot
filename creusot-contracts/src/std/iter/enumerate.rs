@@ -38,7 +38,6 @@ impl<I> Resolve for Enumerate<I> {
 }
 
 impl<I: Iterator> Invariant for Enumerate<I> {
-    #[open(self)]
     #[predicate(prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
@@ -78,12 +77,10 @@ where
     }
 
     #[law]
-    #[open(self)]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

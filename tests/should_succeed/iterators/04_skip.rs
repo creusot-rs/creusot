@@ -9,8 +9,8 @@ use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Skip<I: Iterator> {
-    iter: I,
-    n: usize,
+    pub iter: I,
+    pub n: usize,
 }
 
 impl<I> Iterator for Skip<I>

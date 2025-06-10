@@ -27,7 +27,7 @@ use crate::std::ops::Deref;
 /// ```
 #[trusted]
 #[cfg_attr(creusot, rustc_diagnostic_item = "snapshot_ty", creusot::builtins = "")]
-pub struct Snapshot<T: ?Sized>(pub(crate) std::marker::PhantomData<T>);
+pub struct Snapshot<T: ?Sized>(std::marker::PhantomData<T>);
 
 #[cfg(creusot)]
 impl<T: ?Sized> Deref for Snapshot<T> {

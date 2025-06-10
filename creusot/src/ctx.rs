@@ -84,16 +84,7 @@ impl BodyId {
 }
 
 #[derive(Copy, Clone)]
-pub(crate) struct Opacity(Visibility<DefId>);
-
-impl Opacity {
-    pub(crate) fn scope(self) -> Option<DefId> {
-        match self.0 {
-            Visibility::Public => None,
-            Visibility::Restricted(modl) => Some(modl),
-        }
-    }
-}
+pub(crate) struct Opacity(pub Visibility<DefId>);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ItemType {
@@ -385,17 +376,17 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     queryish!(opacity, DefId, Opacity, mk_opacity);
 
-    /// We encodes the opacity of functions using 'witnesses', funcitons that have the target opacity
+    /// We encodes the opacity of functions using 'witnesses', functions that have the target opacity
     /// set as their *visibility*.
     fn mk_opacity(&self, item: DefId) -> Opacity {
         if !matches!(self.item_type(item), ItemType::Predicate { .. } | ItemType::Logic { .. }) {
             return Opacity(Visibility::Public);
         };
 
-        let witness = opacity_witness_name(self.tcx, item)
-            .and_then(|nm| self.creusot_item(nm))
-            .map(|id| self.visibility(id))
-            .unwrap_or_else(|| Visibility::Restricted(parent_module(self.tcx, item)));
+        let witness = opacity_witness_name(self.tcx, item).map_or_else(
+            || Visibility::Restricted(parent_module(self.tcx, item)),
+            |nm| self.visibility(self.creusot_item(nm).unwrap()),
+        );
         Opacity(witness)
     }
 

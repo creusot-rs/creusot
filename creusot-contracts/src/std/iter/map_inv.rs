@@ -19,12 +19,10 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
     }
 
     #[law]
-    #[open(self)]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -58,7 +56,6 @@ impl<I, B, F> Resolve for MapInv<I, B, F> {
     }
 
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
@@ -67,7 +64,6 @@ impl<I, B, F> Resolve for MapInv<I, B, F> {
 impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant
     for MapInv<I, I::Item, F>
 {
-    #[open(self)]
     #[predicate(prophetic)]
     fn invariant(self) -> bool {
         pearlite! {

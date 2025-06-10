@@ -27,7 +27,6 @@ impl<I, F> FilterMapExt<I, F> for FilterMap<I, F> {
 
 impl<B, I: Iterator, F: FnMut(I::Item) -> Option<B>> Invariant for FilterMap<I, F> {
     #[predicate(prophetic)]
-    #[open(self)]
     fn invariant(self) -> bool {
         pearlite! {
             // trivial precondition: simplification for sake of proof complexity
@@ -100,12 +99,10 @@ where
     }
 
     #[law]
-    #[open(self)]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

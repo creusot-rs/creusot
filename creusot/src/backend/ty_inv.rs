@@ -12,7 +12,7 @@ use crate::{
 };
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
 use rustc_span::{DUMMY_SP, Span};
-use rustc_target::abi::VariantIdx;
+use rustc_target::abi::{FieldIdx, VariantIdx};
 use std::collections::HashSet;
 
 /// # Errors
@@ -184,15 +184,15 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                 let idsty: Vec<_> = tys
                     .iter()
                     .enumerate()
-                    .map(|(i, ty)| (Ident::fresh_local(format!("x{i}")), ty))
+                    .map(|(i, ty)| (FieldIdx::from(i), Ident::fresh_local(format!("x{i}")), ty))
                     .collect();
 
-                let body = idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(id, ty)| {
+                let body = idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(_, id, ty)| {
                     acc.conj(self.mk_inv_call(Term::var(id, ty)))
                 });
                 let pattern = Pattern::constructor(
                     VariantIdx::ZERO,
-                    idsty.iter().map(|&(id, ty)| Pattern::binder(id, ty)),
+                    idsty.iter().map(|&(fld, id, ty)| (fld, Pattern::binder(id, ty))),
                     ty,
                 );
                 Term::let_(pattern, term, body)
@@ -238,7 +238,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
                     let f_exp = self.mk_inv_call(Term::var(field_name, field_ty));
                     exp = Some(exp.take().unwrap().conj(f_exp));
-                    Pattern::binder(field_name, field_ty)
+                    (field_idx.into(), Pattern::binder(field_name, field_ty))
                 });
 
                 (Pattern::constructor(var_idx, fields, term.ty), exp.unwrap())

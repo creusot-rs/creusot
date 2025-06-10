@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{invariant::Invariant, *};
 
-pub struct NonZeroU32(u32);
+pub struct NonZeroU32(pub u32);
 
 impl Invariant for NonZeroU32 {
     #[open]

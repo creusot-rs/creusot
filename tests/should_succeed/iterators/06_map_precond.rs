@@ -9,9 +9,9 @@ use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Map<I: Iterator, F> {
-    iter: I,
-    func: F,
-    produced: Snapshot<Seq<I::Item>>,
+    pub iter: I,
+    pub func: F,
+    pub produced: Snapshot<Seq<I::Item>>,
 }
 
 impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator for Map<I, F> {
@@ -160,7 +160,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
 
 impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant for Map<I, F> {
     #[predicate(prophetic)]
-    #[open(self)]
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&
