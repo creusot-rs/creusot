@@ -667,6 +667,7 @@ impl<T: Clone + Copy> Copy for Seq<T> {}
 impl<T: ?Sized> Invariant for Seq<T> {
     #[predicate(prophetic)]
     #[open]
+    #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<i:Int> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }

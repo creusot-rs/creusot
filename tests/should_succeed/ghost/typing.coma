@@ -6,19 +6,12 @@ module M_typing__ghost_enter_ghost [#"typing.rs" 14 0 14 26]
   let%span styping'3 = "typing.rs" 25 18 25 30
   let%span styping'4 = "typing.rs" 26 18 26 29
   let%span styping'5 = "typing.rs" 10 20 10 27
-  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 191 4 191 28
-  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 189 14 189 26
-  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 67 14 67 18
-  let%span sghost'2 = "../../../creusot-contracts/src/ghost.rs" 66 14 66 46
-  let%span sghost'3 = "../../../creusot-contracts/src/ghost.rs" 84 22 84 26
-  let%span sghost'4 = "../../../creusot-contracts/src/ghost.rs" 82 14 82 46
-  let%span sghost'5 = "../../../creusot-contracts/src/ghost.rs" 83 14 83 46
-  let%span sghost'6 = "../../../creusot-contracts/src/ghost.rs" 101 8 101 22
-  let%span sghost'7 = "../../../creusot-contracts/src/ghost.rs" 234 8 234 14
-  let%span sghost'8 = "../../../creusot-contracts/src/ghost.rs" 109 8 109 31
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 158 14 158 26
+  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 65 14 65 43
+  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 75 14 75 31
+  let%span sghost'2 = "../../../creusot-contracts/src/ghost.rs" 76 14 76 31
+  let%span sghost'3 = "../../../creusot-contracts/src/ghost.rs" 87 8 87 22
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
   
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
@@ -27,54 +20,17 @@ module M_typing__ghost_enter_ghost [#"typing.rs" 14 0 14 26]
   type t_NonCopy  =
     { t_NonCopy__0: Int32.t }
   
-  type t_Ghost  =
-    { t_Ghost__0: t_NonCopy }
-  
-  predicate inv (_0 : t_NonCopy)
-  
-  axiom inv_axiom [@rewrite] : forall x : t_NonCopy [inv x] . inv x = true
-  
-  function inner_logic (self : t_Ghost) : t_NonCopy =
-    [%#sghost'7] self.t_Ghost__0
-  
-  predicate invariant' (self : t_Ghost) =
-    [%#sghost'8] inv (inner_logic self)
-  
-  predicate inv'0 (_0 : t_Ghost)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Ghost [inv'0 x] . inv'0 x
-  = (invariant' x
-  /\ match x with
-    | {t_Ghost__0 = a_0} -> true
-    end)
-  
-  let rec new (x:t_NonCopy) (return'  (x'0:t_Ghost))= any
-    [ return''0 (result:t_Ghost)-> {[%#sghost] inv'0 result}
-      {[%#sghost'0] inner_logic result = x}
-      (! return' {result}) ]
+  let rec new (x:t_NonCopy) (return'  (x'0: t_NonCopy))= any
+    [ return''0 (result: t_NonCopy)-> {[%#sghost] result = x} (! return' {result}) ]
   
   
-  predicate invariant''0 (self : t_Ghost) =
-    [%#sinvariant] inv'0 self
+  let rec deref (self: t_NonCopy) (return'  (x:t_NonCopy))= any
+    [ return''0 (result:t_NonCopy)-> {[%#sghost'0] self = result} (! return' {result}) ]
   
-  predicate inv'1 (_0 : t_Ghost)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Ghost [inv'1 x] . inv'1 x = invariant''0 x
-  
-  let rec deref (self:t_Ghost) (return'  (x:t_NonCopy))= {[@expl:deref 'self' type invariant] [%#sghost'1] inv'1 self}
-    any [ return''0 (result:t_NonCopy)-> {[%#sghost'2] inner_logic self = result} (! return' {result}) ] 
-  
-  predicate invariant''1 (self : MutBorrow.t t_Ghost) =
-    [%#sinvariant'0] inv'0 self.current /\ inv'0 self.final
-  
-  predicate inv'2 (_0 : MutBorrow.t t_Ghost)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Ghost [inv'2 x] . inv'2 x = invariant''1 x
-  
-  let rec deref_mut (self:MutBorrow.t t_Ghost) (return'  (x:MutBorrow.t t_NonCopy))= {[@expl:deref_mut 'self' type invariant] [%#sghost'3] inv'2 self}
-    any
-    [ return''0 (result:MutBorrow.t t_NonCopy)-> {[%#sghost'4] result.current = inner_logic self.current}
-      {[%#sghost'5] result.final = inner_logic self.final}
+  let rec deref_mut (self:MutBorrow.t ( t_NonCopy)) (return'  (x:MutBorrow.t t_NonCopy))= any
+    [ return''0 (result:MutBorrow.t t_NonCopy)-> {[%#sghost'1] result.current = self.current}
+      {[%#sghost'2] result.final = self.final}
       (! return' {result}) ]
   
   
@@ -84,70 +40,46 @@ module M_typing__ghost_enter_ghost [#"typing.rs" 14 0 14 26]
   predicate resolve'0 (_0 : MutBorrow.t t_NonCopy) =
     resolve _0
   
-  type t_Ghost'0  =
-    { t_Ghost__0'0: () }
-  
-  predicate inv'3 (_0 : ())
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : () [inv'3 x] . inv'3 x = true
-  
-  function inner_logic'0 (self : t_Ghost'0) : () =
-    [%#sghost'7] self.t_Ghost__0'0
-  
-  predicate invariant''2 (self : t_Ghost'0) =
-    [%#sghost'8] inv'3 (inner_logic'0 self)
-  
-  predicate inv'4 (_0 : t_Ghost'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Ghost'0 [inv'4 x] . inv'4 x
-  = (invariant''2 x
-  /\ match x with
-    | {t_Ghost__0'0 = a_0} -> true
-    end)
-  
-  let rec new'0 (x:()) (return'  (x'0:t_Ghost'0))= any
-    [ return''0 (result:t_Ghost'0)-> {[%#sghost] inv'4 result}
-      {[%#sghost'0] inner_logic'0 result = x}
-      (! return' {result}) ]
+  let rec new'0 (x:()) (return'  (x'0: ()))= any
+    [ return''0 (result: ())-> {[%#sghost] result = x} (! return' {result}) ]
   
   
   function view [#"typing.rs" 9 4 9 33] (self : t_NonCopy) : int =
     [%#styping'5] Int32.to_int self.t_NonCopy__0
   
-  function view'0 (self : t_Ghost) : int =
-    [%#sghost'6] view (inner_logic self)
+  function view'0 (self :  t_NonCopy) : int =
+    [%#sghost'3] view self
   
   meta "compute_max_steps" 1000000
   
   let rec ghost_enter_ghost[#"typing.rs" 14 0 14 26] (return'  (x:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &_2 <- { t_NonCopy__0 = ([%#styping] (1 : Int32.t)) } ] s1
-      | s1 = new {_2} (fun (_ret:t_Ghost) ->  [ &g_move <- _ret ] s2)
+      | s1 = new {_2} (fun (_ret: t_NonCopy) ->  [ &g_move <- _ret ] s2)
       | s2 = bb1 ]
     
     | bb1 = s0
       [ s0 =  [ &_4 <- { t_NonCopy__0 = ([%#styping'0] (2 : Int32.t)) } ] s1
-      | s1 = new {_4} (fun (_ret:t_Ghost) ->  [ &g_read <- _ret ] s2)
+      | s1 = new {_4} (fun (_ret: t_NonCopy) ->  [ &g_read <- _ret ] s2)
       | s2 = bb2 ]
     
     | bb2 = s0
       [ s0 =  [ &_6 <- { t_NonCopy__0 = ([%#styping'1] (3 : Int32.t)) } ] s1
-      | s1 = new {_6} (fun (_ret:t_Ghost) ->  [ &g_mut <- _ret ] s2)
+      | s1 = new {_6} (fun (_ret: t_NonCopy) ->  [ &g_mut <- _ret ] s2)
       | s2 = bb3 ]
     
     | bb3 = s0 [ s0 = deref {g_read} (fun (_ret:t_NonCopy) ->  [ &_9 <- _ret ] s1) | s1 = bb4 ] 
     | bb4 = s0
       [ s0 =  [ &_11 <- { t_NonCopy__0 = ([%#styping'2] (4 : Int32.t)) } ] s1
-      | s1 = {inv'0 g_mut}
-        MutBorrow.borrow_mut <t_Ghost> {g_mut}
-          (fun (_ret:MutBorrow.t t_Ghost) ->  [ &_13 <- _ret ] -{inv'0 _ret.final}-  [ &g_mut <- _ret.final ] s2)
+      | s1 = MutBorrow.borrow_mut < t_NonCopy> {g_mut}
+          (fun (_ret:MutBorrow.t ( t_NonCopy)) ->  [ &_13 <- _ret ]  [ &g_mut <- _ret.final ] s2)
       | s2 = deref_mut {_13} (fun (_ret:MutBorrow.t t_NonCopy) ->  [ &_12 <- _ret ] s3)
       | s3 = bb5 ]
     
     | bb5 = s0
       [ s0 =  [ &_12 <- { _12 with current = _11 } ] s1
       | s1 = -{resolve'0 _12}- s2
-      | s2 = new'0 {_8} (fun (_ret:t_Ghost'0) ->  [ &_7 <- _ret ] s3)
+      | s2 = new'0 {_8} (fun (_ret: ()) ->  [ &_7 <- _ret ] s3)
       | s3 = bb6 ]
     
     | bb6 = s0
@@ -157,18 +89,18 @@ module M_typing__ghost_enter_ghost [#"typing.rs" 14 0 14 26]
      ]
     )
     [ & _0 : () = Any.any_l ()
-    | & g_move : t_Ghost = Any.any_l ()
+    | & g_move :  t_NonCopy = Any.any_l ()
     | & _2 : t_NonCopy = Any.any_l ()
-    | & g_read : t_Ghost = Any.any_l ()
+    | & g_read :  t_NonCopy = Any.any_l ()
     | & _4 : t_NonCopy = Any.any_l ()
-    | & g_mut : t_Ghost = Any.any_l ()
+    | & g_mut :  t_NonCopy = Any.any_l ()
     | & _6 : t_NonCopy = Any.any_l ()
-    | & _7 : t_Ghost'0 = Any.any_l ()
+    | & _7 :  () = Any.any_l ()
     | & _8 : () = Any.any_l ()
     | & _9 : t_NonCopy = Any.any_l ()
     | & _11 : t_NonCopy = Any.any_l ()
     | & _12 : MutBorrow.t t_NonCopy = Any.any_l ()
-    | & _13 : MutBorrow.t t_Ghost = Any.any_l () ]
+    | & _13 : MutBorrow.t ( t_NonCopy) = Any.any_l () ]
      [ return''0 (result:())-> (! return' {result}) ] 
 end
 module M_typing__snapshot_enter_ghost [#"typing.rs" 29 0 29 29]
@@ -179,10 +111,7 @@ module M_typing__snapshot_enter_ghost [#"typing.rs" 29 0 29 29]
   let%span styping'3 = "typing.rs" 40 18 40 30
   let%span styping'4 = "typing.rs" 41 18 41 29
   let%span styping'5 = "typing.rs" 10 20 10 27
-  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 191 4 191 28
-  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 189 14 189 26
-  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 234 8 234 14
-  let%span sghost'2 = "../../../creusot-contracts/src/ghost.rs" 109 8 109 31
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 158 14 158 26
   let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 50 20 50 39
   let%span smodel = "../../../creusot-contracts/src/model.rs" 54 8 54 22
   
@@ -201,31 +130,8 @@ module M_typing__snapshot_enter_ghost [#"typing.rs" 29 0 29 29]
   function view'1 (self : t_NonCopy) : int =
     [%#ssnapshot] view'0 self
   
-  type t_Ghost  =
-    { t_Ghost__0: () }
-  
-  predicate inv (_0 : ())
-  
-  axiom inv_axiom [@rewrite] : forall x : () [inv x] . inv x = true
-  
-  function inner_logic (self : t_Ghost) : () =
-    [%#sghost'1] self.t_Ghost__0
-  
-  predicate invariant' (self : t_Ghost) =
-    [%#sghost'2] inv (inner_logic self)
-  
-  predicate inv'0 (_0 : t_Ghost)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Ghost [inv'0 x] . inv'0 x
-  = (invariant' x
-  /\ match x with
-    | {t_Ghost__0 = a_0} -> true
-    end)
-  
-  let rec new (x:()) (return'  (x'0:t_Ghost))= any
-    [ return''0 (result:t_Ghost)-> {[%#sghost] inv'0 result}
-      {[%#sghost'0] inner_logic result = x}
-      (! return' {result}) ]
+  let rec new (x:()) (return'  (x'0: ()))= any
+    [ return''0 (result: ())-> {[%#sghost] result = x} (! return' {result}) ]
   
   
   meta "compute_max_steps" 1000000
@@ -239,7 +145,7 @@ module M_typing__snapshot_enter_ghost [#"typing.rs" 29 0 29 29]
       | s2 =  [ &_10 <- [%#styping'2] { t_NonCopy__0 = (4 : Int32.t) } ] s3
       | s3 = bb3 ]
     
-    | bb3 = s0 [ s0 =  [ &g_mut <- _10 ] s1 | s1 = new {_5} (fun (_ret:t_Ghost) ->  [ &_4 <- _ret ] s2) | s2 = bb4 ] 
+    | bb3 = s0 [ s0 =  [ &g_mut <- _10 ] s1 | s1 = new {_5} (fun (_ret: ()) ->  [ &_4 <- _ret ] s2) | s2 = bb4 ] 
     | bb4 = s0
       [ s0 = {[@expl:assertion] [%#styping'3] view'1 g_read = 1} s1
       | s1 = {[@expl:assertion] [%#styping'4] view'1 g_mut = 4} s2
@@ -249,7 +155,7 @@ module M_typing__snapshot_enter_ghost [#"typing.rs" 29 0 29 29]
     [ & _0 : () = Any.any_l ()
     | & g_read : t_NonCopy = Any.any_l ()
     | & g_mut : t_NonCopy = Any.any_l ()
-    | & _4 : t_Ghost = Any.any_l ()
+    | & _4 :  () = Any.any_l ()
     | & _5 : () = Any.any_l ()
     | & _6 : t_NonCopy = Any.any_l ()
     | & _10 : t_NonCopy = Any.any_l () ]
@@ -261,10 +167,7 @@ module M_typing__copy_enter_ghost [#"typing.rs" 44 0 44 25]
   let%span styping'1 = "typing.rs" 47 19 47 21
   let%span styping'2 = "typing.rs" 54 18 54 25
   let%span styping'3 = "typing.rs" 55 18 55 47
-  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 191 4 191 28
-  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 189 14 189 26
-  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 234 8 234 14
-  let%span sghost'2 = "../../../creusot-contracts/src/ghost.rs" 109 8 109 31
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 158 14 158 26
   
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -272,31 +175,8 @@ module M_typing__copy_enter_ghost [#"typing.rs" 44 0 44 25]
   type tuple  =
     { _p0: Int32.t; _p1: Int32.t }
   
-  type t_Ghost  =
-    { t_Ghost__0: () }
-  
-  predicate inv (_0 : ())
-  
-  axiom inv_axiom [@rewrite] : forall x : () [inv x] . inv x = true
-  
-  function inner_logic (self : t_Ghost) : () =
-    [%#sghost'1] self.t_Ghost__0
-  
-  predicate invariant' (self : t_Ghost) =
-    [%#sghost'2] inv (inner_logic self)
-  
-  predicate inv'0 (_0 : t_Ghost)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Ghost [inv'0 x] . inv'0 x
-  = (invariant' x
-  /\ match x with
-    | {t_Ghost__0 = a_0} -> true
-    end)
-  
-  let rec new (x:()) (return'  (x'0:t_Ghost))= any
-    [ return''0 (result:t_Ghost)-> {[%#sghost] inv'0 result}
-      {[%#sghost'0] inner_logic result = x}
-      (! return' {result}) ]
+  let rec new (x:()) (return'  (x'0: ()))= any
+    [ return''0 (result: ())-> {[%#sghost] result = x} (! return' {result}) ]
   
   
   meta "compute_max_steps" 1000000
@@ -307,7 +187,7 @@ module M_typing__copy_enter_ghost [#"typing.rs" 44 0 44 25]
       | s1 =  [ &pair <- { _p0 = ([%#styping'0] (6 : Int32.t)); _p1 = ([%#styping'1] (42 : Int32.t)) } ] s2
       | s2 =  [ &_x <- x ] s3
       | s3 =  [ &_pair <- pair ] s4
-      | s4 = new {_5} (fun (_ret:t_Ghost) ->  [ &_4 <- _ret ] s5)
+      | s4 = new {_5} (fun (_ret: ()) ->  [ &_4 <- _ret ] s5)
       | s5 = bb1 ]
     
     | bb1 = s0
@@ -319,7 +199,7 @@ module M_typing__copy_enter_ghost [#"typing.rs" 44 0 44 25]
     [ & _0 : () = Any.any_l ()
     | & x : Int32.t = Any.any_l ()
     | & pair : tuple = Any.any_l ()
-    | & _4 : t_Ghost = Any.any_l ()
+    | & _4 :  () = Any.any_l ()
     | & _5 : () = Any.any_l ()
     | & _x : Int32.t = Any.any_l ()
     | & _pair : tuple = Any.any_l () ]

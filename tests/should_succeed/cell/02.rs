@@ -65,7 +65,7 @@ pub struct Fib {
     ix: usize,
 }
 impl Inv<Option<usize>> for Fib {
-    #[open]
+    #[open(crate)]
     #[predicate]
     fn inv(&self, v: Option<usize>) -> bool {
         pearlite! {
@@ -79,7 +79,7 @@ impl Inv<Option<usize>> for Fib {
 
 pub type FibCache = Vec<Cell<Option<usize>, Fib>>;
 
-#[open]
+#[open(crate)]
 #[predicate]
 fn fib_cell(v: FibCache) -> bool {
     pearlite! {

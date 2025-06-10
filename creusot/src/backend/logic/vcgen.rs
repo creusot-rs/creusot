@@ -487,17 +487,16 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(&mut (*A).f, Q) = VC(A, |a| Q(&mut (*a).f))
             TermKind::Reborrow { inner, projections } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, inner.ty);
-                let ty = PlaceTy::from_ty(ty.builtin_deref(false).unwrap());
                 self.build_wp(inner, &|inner| {
                     self.build_wp_projections(projections, &|projs| {
                         let borrow_id =
                             borrow_generated_id(self.names, inner.clone(), &projs, Clone::clone);
                         let [cur, fin] = [name::current(), name::final_()].map(|nm| {
-                            let (_, foc, _) = projections_to_expr(
+                            let (foc, _) = projections_to_expr(
                                 self.ctx,
                                 self.names,
                                 None,
-                                ty,
+                                &mut PlaceTy::from_ty(ty.builtin_deref(false).unwrap()),
                                 Focus::new(|_| inner.clone().field(Name::Global(nm))),
                                 Box::new(|_, _| unreachable!()),
                                 &projs,
@@ -543,21 +542,25 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     TyKind::Closure(did, subst) => (did, subst),
                     _ => unreachable!(),
                 };
-                let flds = fields.iter().map(|pat| self.build_pattern_inner(pat));
+                let flds = fields.iter().map(|(fld, pat)| (*fld, self.build_pattern_inner(pat)));
                 if self.ctx.def_kind(var_did) == DefKind::Variant {
-                    WPattern::ConsP(
-                        Name::local(self.names.constructor(var_did, subst)),
-                        flds.collect(),
-                    )
+                    let mut pats: Box<[_]> = ty.ty_adt_def().unwrap().variants()[*variant]
+                        .fields
+                        .indices()
+                        .map(|_| WPattern::Wildcard)
+                        .collect();
+
+                    for (idx, pat) in flds {
+                        pats[idx.as_usize()] = pat
+                    }
+                    WPattern::ConsP(Name::local(self.names.constructor(var_did, subst)), pats)
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {
                     let flds: Box<[_]> = flds
-                        .enumerate()
-                        .map(|(i, f)| (Name::local(self.names.field(var_did, subst, i.into())), f))
-                        .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
+                        .map(|(fld, p)| (Name::local(self.names.field(var_did, subst, fld)), p))
                         .collect();
-                    if flds.is_empty() { WPattern::Wildcard } else { WPattern::RecP(flds) }
+                    WPattern::RecP(flds)
                 }
             }
             PatternKind::Wildcard => WPattern::Wildcard,

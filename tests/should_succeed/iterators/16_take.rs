@@ -8,8 +8,8 @@ use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Take<I: Iterator> {
-    iter: I,
-    n: usize,
+    pub iter: I,
+    pub n: usize,
 }
 
 impl<I> Iterator for Take<I>

@@ -8,7 +8,7 @@ use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Copied<I> {
-    iter: I,
+    pub iter: I,
 }
 
 impl<'a, I, T: 'a> Iterator for Copied<I>

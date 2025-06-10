@@ -599,9 +599,9 @@ module M_bdd__qyi13535665294507397779__size [#"bdd.rs" 227 4 227 24] (* Bdd<'are
   function size [#"bdd.rs" 227 4 227 24] (self'0 : t_Bdd) : int
   
   goal vc_size : match self with
-    | {t_Bdd__0 = C_True} -> [%#sbdd] 0 >= 0
-    | {t_Bdd__0 = C_False} -> [%#sbdd] 0 >= 0
-    | {t_Bdd__0 = C_If _ childt childf} -> ([%#sbdd] size childt >= 0)
+    | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> [%#sbdd] 0 >= 0
+    | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> [%#sbdd] 0 >= 0
+    | {t_Bdd__0 = C_If _ childt childf ; t_Bdd__1 = _} -> ([%#sbdd] size childt >= 0)
      -> (let ht = size childt in ([%#sbdd] size childf >= 0)  -> (let hf = size childf in [%#sbdd] 1 + ht + hf >= 0))
     end
 end
@@ -840,9 +840,9 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
   
   function leastvar [#"bdd.rs" 242 4 242 28] (self : t_Bdd) : int =
     [%#sbdd'5] match self with
-      | {t_Bdd__0 = C_True} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_False} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_If v _ _} -> view'2 v
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_If v _ _ ; t_Bdd__1 = _} -> view'2 v
       end
   
   predicate is_valid_node [#"bdd.rs" 319 4 319 51] (self : t_Context) (n : t_Node) =
@@ -905,9 +905,13 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
   
   function interp [#"bdd.rs" 212 4 212 53] (self : t_Bdd) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd'6] match self with
-      | {t_Bdd__0 = C_True} -> true
-      | {t_Bdd__0 = C_False} -> false
-      | {t_Bdd__0 = C_If v childt childf} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> true
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> false
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if Map.get vars v then
+        interp childt vars
+      else
+        interp childf vars
+      
       end
   
   type tuple  =
@@ -965,7 +969,7 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
    -> ([%#sbdd'0] is_valid_bdd self a)
    -> ([%#sbdd'1] UInt64.t'int x < leastvar a)
    -> match a with
-    | {t_Bdd__0 = C_If _ childt childf} -> (([@expl:set_irrelevent_var requires #0] [%#sbdd] inv self)
+    | {t_Bdd__0 = C_If _ childt childf ; t_Bdd__1 = _} -> (([@expl:set_irrelevent_var requires #0] [%#sbdd] inv self)
     && ([@expl:set_irrelevent_var requires #1] [%#sbdd'0] is_valid_bdd self childt)
     && ([@expl:set_irrelevent_var requires #2] [%#sbdd'1] UInt64.t'int x < leastvar childt))
     /\ (([%#sbdd'2] interp childt v = interp childt (Map.set v x b))
@@ -1075,9 +1079,9 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
   
   function leastvar [#"bdd.rs" 242 4 242 28] (self : t_Bdd) : int =
     [%#sbdd'15] match self with
-      | {t_Bdd__0 = C_True} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_False} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_If v _ _} -> view'2 v
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_If v _ _ ; t_Bdd__1 = _} -> view'2 v
       end
   
   predicate is_valid_node [#"bdd.rs" 319 4 319 51] (self : t_Context) (n : t_Node) =
@@ -1140,9 +1144,13 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
   
   function interp [#"bdd.rs" 212 4 212 53] (self : t_Bdd) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd'7] match self with
-      | {t_Bdd__0 = C_True} -> true
-      | {t_Bdd__0 = C_False} -> false
-      | {t_Bdd__0 = C_If v childt childf} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> true
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> false
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if Map.get vars v then
+        interp childt vars
+      else
+        interp childf vars
+      
       end
   
   type tuple  =
@@ -1185,9 +1193,9 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
   
   function size [#"bdd.rs" 227 4 227 24] (self : t_Bdd) : int =
     [%#sbdd'9] match self with
-      | {t_Bdd__0 = C_True} -> 0
-      | {t_Bdd__0 = C_False} -> 0
-      | {t_Bdd__0 = C_If _ childt childf} -> let ht = size childt in let hf = size childf in 1 + ht + hf
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> 0
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> 0
+      | {t_Bdd__0 = C_If _ childt childf ; t_Bdd__1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
   axiom size_spec : forall self : t_Bdd . [%#sbdd'8] size self >= 0
@@ -1196,7 +1204,7 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
   
    =
     [%#sbdd'14] match a with
-      | {t_Bdd__0 = C_If _ childt childf} -> let _ = set_irrelevent_var self childt x v b in let _ = set_irrelevent_var self childf x v b in ()
+      | {t_Bdd__0 = C_If _ childt childf ; t_Bdd__1 = _} -> let _ = set_irrelevent_var self childt x v b in let _ = set_irrelevent_var self childf x v b in ()
       | _ -> ()
       end
   
@@ -1219,7 +1227,7 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
    -> ([%#sbdd'2] a <> b)
    -> (let _ = set_irrelevent_var in if leastvar a < leastvar b then
     match a with
-      | {t_Bdd__0 = C_If v childt childf} -> if childf <> b then
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if childf <> b then
         ((([@expl:discr_valuation requires #0] [%#sbdd] inv self)
         && ([@expl:discr_valuation requires #1] [%#sbdd'0] is_valid_bdd self childf)
         && ([@expl:discr_valuation requires #2] [%#sbdd'1] is_valid_bdd self b)
@@ -1243,7 +1251,7 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
   else
     if leastvar a > leastvar b then
       match b with
-        | {t_Bdd__0 = C_If v childt childf} -> if childf <> a then
+        | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if childf <> a then
           ((([@expl:discr_valuation requires #0] [%#sbdd] inv self)
           && ([@expl:discr_valuation requires #1] [%#sbdd'0] is_valid_bdd self a)
           && ([@expl:discr_valuation requires #2] [%#sbdd'1] is_valid_bdd self childf)
@@ -1266,8 +1274,8 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
         end
     else
       match a with
-        | {t_Bdd__0 = C_If v childta childfa} -> match b with
-          | {t_Bdd__0 = C_If _ childtb childfb} -> if childfa <> childfb then
+        | {t_Bdd__0 = C_If v childta childfa ; t_Bdd__1 = _} -> match b with
+          | {t_Bdd__0 = C_If _ childtb childfb ; t_Bdd__1 = _} -> if childfa <> childfb then
             ((([@expl:discr_valuation requires #0] [%#sbdd] inv self)
             && ([@expl:discr_valuation requires #1] [%#sbdd'0] is_valid_bdd self childfa)
             && ([@expl:discr_valuation requires #2] [%#sbdd'1] is_valid_bdd self childfb)
@@ -1401,9 +1409,9 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
   
   function leastvar [#"bdd.rs" 242 4 242 28] (self : t_Bdd) : int =
     [%#sbdd'21] match self with
-      | {t_Bdd__0 = C_True} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_False} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_If v _ _} -> view'2 v
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_If v _ _ ; t_Bdd__1 = _} -> view'2 v
       end
   
   predicate is_valid_node [#"bdd.rs" 319 4 319 51] (self : t_Context) (n : t_Node) =
@@ -1466,9 +1474,13 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
   
   function interp [#"bdd.rs" 212 4 212 53] (self : t_Bdd) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd'6] match self with
-      | {t_Bdd__0 = C_True} -> true
-      | {t_Bdd__0 = C_False} -> false
-      | {t_Bdd__0 = C_If v childt childf} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> true
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> false
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if Map.get vars v then
+        interp childt vars
+      else
+        interp childf vars
+      
       end
   
   type tuple  =
@@ -1511,9 +1523,9 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
   
   function size [#"bdd.rs" 227 4 227 24] (self : t_Bdd) : int =
     [%#sbdd'15] match self with
-      | {t_Bdd__0 = C_True} -> 0
-      | {t_Bdd__0 = C_False} -> 0
-      | {t_Bdd__0 = C_If _ childt childf} -> let ht = size childt in let hf = size childf in 1 + ht + hf
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> 0
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> 0
+      | {t_Bdd__0 = C_If _ childt childf ; t_Bdd__1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
   axiom size_spec : forall self : t_Bdd . [%#sbdd'14] size self >= 0
@@ -1522,7 +1534,7 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
   
    =
     [%#sbdd'20] match a with
-      | {t_Bdd__0 = C_If _ childt childf} -> let _ = set_irrelevent_var self childt x v b in let _ = set_irrelevent_var self childf x v b in ()
+      | {t_Bdd__0 = C_If _ childt childf ; t_Bdd__1 = _} -> let _ = set_irrelevent_var self childt x v b in let _ = set_irrelevent_var self childf x v b in ()
       | _ -> ()
       end
   
@@ -1539,7 +1551,7 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
    -> discr_valuation self a b
   = ([%#sbdd'13] let _ = () in if leastvar a < leastvar b then
     match a with
-      | {t_Bdd__0 = C_If v childt childf} -> if childf <> b then
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if childf <> b then
         Map.set (discr_valuation self childf b) v false
       else
         Map.set (discr_valuation self childt b) v true
@@ -1549,7 +1561,7 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
   else
     if leastvar a > leastvar b then
       match b with
-        | {t_Bdd__0 = C_If v childt childf} -> if childf <> a then
+        | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if childf <> a then
           Map.set (discr_valuation self a childf) v false
         else
           Map.set (discr_valuation self a childt) v true
@@ -1558,8 +1570,8 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
         end
     else
       match a with
-        | {t_Bdd__0 = C_If v childta childfa} -> match b with
-          | {t_Bdd__0 = C_If _ childtb childfb} -> if childfa <> childfb then
+        | {t_Bdd__0 = C_If v childta childfa ; t_Bdd__1 = _} -> match b with
+          | {t_Bdd__0 = C_If _ childtb childfb ; t_Bdd__1 = _} -> if childfa <> childfb then
             Map.set (discr_valuation self childfa childfb) v false
           else
             Map.set (discr_valuation self childta childtb) v true
@@ -1702,9 +1714,9 @@ module M_bdd__qyi11078426090797403070__new [#"bdd.rs" 430 4 430 52] (* Context<'
   
   function leastvar [#"bdd.rs" 242 4 242 28] (self : t_Bdd) : int =
     [%#sbdd'7] match self with
-      | {t_Bdd__0 = C_True} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_False} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_If v _ _} -> view'4 v
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_If v _ _ ; t_Bdd__1 = _} -> view'4 v
       end
   
   predicate is_valid_node [#"bdd.rs" 319 4 319 51] (self : t_Context) (n : t_Node) =
@@ -1765,9 +1777,13 @@ module M_bdd__qyi11078426090797403070__new [#"bdd.rs" 430 4 430 52] (* Context<'
   
   function interp [#"bdd.rs" 212 4 212 53] (self : t_Bdd) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd'6] match self with
-      | {t_Bdd__0 = C_True} -> true
-      | {t_Bdd__0 = C_False} -> false
-      | {t_Bdd__0 = C_If v childt childf} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> true
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> false
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if Map.get vars v then
+        interp childt vars
+      else
+        interp childf vars
+      
       end
   
   predicate invariant' [#"bdd.rs" 265 4 265 30] (self : t_Context) =
@@ -1978,9 +1994,9 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
   
   function leastvar [#"bdd.rs" 242 4 242 28] (self : t_Bdd) : int =
     [%#sbdd'17] match self with
-      | {t_Bdd__0 = C_True} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_False} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_If v _ _} -> view'4 v
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_If v _ _ ; t_Bdd__1 = _} -> view'4 v
       end
   
   predicate is_valid_node [#"bdd.rs" 319 4 319 51] (self : t_Context) (n : t_Node) =
@@ -2043,9 +2059,13 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
   
   function interp [#"bdd.rs" 212 4 212 53] (self : t_Bdd) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd'19] match self with
-      | {t_Bdd__0 = C_True} -> true
-      | {t_Bdd__0 = C_False} -> false
-      | {t_Bdd__0 = C_If v childt childf} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> true
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> false
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if Map.get vars v then
+        interp childt vars
+      else
+        interp childf vars
+      
       end
   
   type tuple  =
@@ -2323,9 +2343,9 @@ module M_bdd__qyi11078426090797403070__node [#"bdd.rs" 471 4 471 87] (* Context<
   
   function leastvar [#"bdd.rs" 242 4 242 28] (self : t_Bdd) : int =
     [%#sbdd'14] match self with
-      | {t_Bdd__0 = C_True} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_False} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_If v _ _} -> view'4 v
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_If v _ _ ; t_Bdd__1 = _} -> view'4 v
       end
   
   predicate is_valid_node [#"bdd.rs" 319 4 319 51] (self : t_Context) (n : t_Node) =
@@ -2388,9 +2408,13 @@ module M_bdd__qyi11078426090797403070__node [#"bdd.rs" 471 4 471 87] (* Context<
   
   function interp [#"bdd.rs" 212 4 212 53] (self : t_Bdd) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd'16] match self with
-      | {t_Bdd__0 = C_True} -> true
-      | {t_Bdd__0 = C_False} -> false
-      | {t_Bdd__0 = C_If v childt childf} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> true
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> false
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if Map.get vars v then
+        interp childt vars
+      else
+        interp childf vars
+      
       end
   
   type tuple  =
@@ -2605,9 +2629,9 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
   
   function leastvar [#"bdd.rs" 242 4 242 28] (self : t_Bdd) : int =
     [%#sbdd'12] match self with
-      | {t_Bdd__0 = C_True} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_False} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_If v _ _} -> view'2 v
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_If v _ _ ; t_Bdd__1 = _} -> view'2 v
       end
   
   predicate is_valid_node [#"bdd.rs" 319 4 319 51] (self : t_Context) (n : t_Node) =
@@ -2670,9 +2694,13 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
   
   function interp [#"bdd.rs" 212 4 212 53] (self : t_Bdd) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd'11] match self with
-      | {t_Bdd__0 = C_True} -> true
-      | {t_Bdd__0 = C_False} -> false
-      | {t_Bdd__0 = C_If v childt childf} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> true
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> false
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if Map.get vars v then
+        interp childt vars
+      else
+        interp childf vars
+      
       end
   
   type tuple  =
@@ -2870,9 +2898,9 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
   
   function leastvar [#"bdd.rs" 242 4 242 28] (self : t_Bdd) : int =
     [%#sbdd'12] match self with
-      | {t_Bdd__0 = C_True} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_False} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_If v _ _} -> view'2 v
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_If v _ _ ; t_Bdd__1 = _} -> view'2 v
       end
   
   predicate is_valid_node [#"bdd.rs" 319 4 319 51] (self : t_Context) (n : t_Node) =
@@ -2935,9 +2963,13 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
   
   function interp [#"bdd.rs" 212 4 212 53] (self : t_Bdd) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd'11] match self with
-      | {t_Bdd__0 = C_True} -> true
-      | {t_Bdd__0 = C_False} -> false
-      | {t_Bdd__0 = C_If v childt childf} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> true
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> false
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if Map.get vars v then
+        interp childt vars
+      else
+        interp childf vars
+      
       end
   
   type tuple  =
@@ -3147,9 +3179,9 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
   
   function leastvar [#"bdd.rs" 242 4 242 28] (self : t_Bdd) : int =
     [%#sbdd'24] match self with
-      | {t_Bdd__0 = C_True} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_False} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_If v _ _} -> view'2 v
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_If v _ _ ; t_Bdd__1 = _} -> view'2 v
       end
   
   predicate is_valid_node [#"bdd.rs" 319 4 319 51] (self : t_Context) (n : t_Node) =
@@ -3212,9 +3244,13 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
   
   function interp [#"bdd.rs" 212 4 212 53] (self : t_Bdd) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd'23] match self with
-      | {t_Bdd__0 = C_True} -> true
-      | {t_Bdd__0 = C_False} -> false
-      | {t_Bdd__0 = C_If v childt childf} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> true
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> false
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if Map.get vars v then
+        interp childt vars
+      else
+        interp childf vars
+      
       end
   
   type tuple  =
@@ -3511,9 +3547,9 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
   
   function leastvar [#"bdd.rs" 242 4 242 28] (self : t_Bdd) : int =
     [%#sbdd'29] match self with
-      | {t_Bdd__0 = C_True} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_False} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_If v _ _} -> view'4 v
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_If v _ _ ; t_Bdd__1 = _} -> view'4 v
       end
   
   predicate is_valid_node [#"bdd.rs" 319 4 319 51] (self : t_Context) (n : t_Node) =
@@ -3574,9 +3610,13 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
   
   function interp [#"bdd.rs" 212 4 212 53] (self : t_Bdd) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd'28] match self with
-      | {t_Bdd__0 = C_True} -> true
-      | {t_Bdd__0 = C_False} -> false
-      | {t_Bdd__0 = C_If v childt childf} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> true
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> false
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if Map.get vars v then
+        interp childt vars
+      else
+        interp childf vars
+      
       end
   
   type tuple  =
@@ -3684,9 +3724,9 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
   
   function size [#"bdd.rs" 227 4 227 24] (self : t_Bdd) : int =
     [%#sbdd'31] match self with
-      | {t_Bdd__0 = C_True} -> 0
-      | {t_Bdd__0 = C_False} -> 0
-      | {t_Bdd__0 = C_If _ childt childf} -> let ht = size childt in let hf = size childf in 1 + ht + hf
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> 0
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> 0
+      | {t_Bdd__0 = C_If _ childt childf ; t_Bdd__1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
   axiom size_spec : forall self : t_Bdd . [%#sbdd'30] size self >= 0
@@ -3994,9 +4034,9 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
   
   function leastvar [#"bdd.rs" 242 4 242 28] (self : t_Bdd) : int =
     [%#sbdd'26] match self with
-      | {t_Bdd__0 = C_True} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_False} -> UInt64.t'int (v_MAX : UInt64.t) + 1
-      | {t_Bdd__0 = C_If v _ _} -> view'4 v
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> UInt64.t'int (v_MAX : UInt64.t) + 1
+      | {t_Bdd__0 = C_If v _ _ ; t_Bdd__1 = _} -> view'4 v
       end
   
   predicate is_valid_node [#"bdd.rs" 319 4 319 51] (self : t_Context) (n : t_Node) =
@@ -4059,9 +4099,13 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
   
   function interp [#"bdd.rs" 212 4 212 53] (self : t_Bdd) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd'25] match self with
-      | {t_Bdd__0 = C_True} -> true
-      | {t_Bdd__0 = C_False} -> false
-      | {t_Bdd__0 = C_If v childt childf} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> true
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> false
+      | {t_Bdd__0 = C_If v childt childf ; t_Bdd__1 = _} -> if Map.get vars v then
+        interp childt vars
+      else
+        interp childf vars
+      
       end
   
   predicate invariant' [#"bdd.rs" 265 4 265 30] (self : t_Context) =
@@ -4213,9 +4257,9 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
   
   function size [#"bdd.rs" 227 4 227 24] (self : t_Bdd) : int =
     [%#sbdd'28] match self with
-      | {t_Bdd__0 = C_True} -> 0
-      | {t_Bdd__0 = C_False} -> 0
-      | {t_Bdd__0 = C_If _ childt childf} -> let ht = size childt in let hf = size childf in 1 + ht + hf
+      | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> 0
+      | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> 0
+      | {t_Bdd__0 = C_If _ childt childf ; t_Bdd__1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
   axiom size_spec : forall self : t_Bdd . [%#sbdd'27] size self >= 0

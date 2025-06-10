@@ -9,7 +9,7 @@ impl View for Foo {
     type ViewTy = <HashMap<u64, u8> as View>::ViewTy; //FMap<Int, u8>;
 
     #[logic]
-    #[open]
+    #[open(crate)]
     fn view(self) -> Self::ViewTy {
         self.0.view()
     }

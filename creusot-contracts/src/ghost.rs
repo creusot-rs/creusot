@@ -15,6 +15,8 @@
 //! There are restrictions on the values that can enter/exit a `ghost!` block: see
 //! [`Ghost`] and [`ghost!`] for more details.
 
+use ::std::marker::PhantomData;
+
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{
@@ -40,20 +42,16 @@ use crate::{
 /// }
 /// let value: i32 = b.into_inner(); // compile error !
 /// ```
-#[cfg_attr(creusot, rustc_diagnostic_item = "ghost_ty")]
-pub struct Ghost<T>(#[cfg(creusot)] T, #[cfg(not(creusot))] std::marker::PhantomData<T>);
+#[trusted]
+#[cfg_attr(creusot, rustc_diagnostic_item = "ghost_ty", creusot::builtins = "")]
+pub struct Ghost<T>(PhantomData<T>);
 
 impl<T: Clone> Clone for Ghost<T> {
+    #[trusted]
+    #[pure]
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
-        #[cfg(creusot)]
-        {
-            Self(self.0.clone())
-        }
-        #[cfg(not(creusot))]
-        {
-            Self(std::marker::PhantomData)
-        }
+        Self::conjure()
     }
 }
 
@@ -62,34 +60,22 @@ impl<T> Deref for Ghost<T> {
 
     /// This function can only be called in `ghost!` context
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_deref")]
+    #[trusted]
     #[pure]
-    #[ensures((*self).inner_logic() == *result)]
+    #[ensures(self.inner_logic() == *result)]
     fn deref(&self) -> &Self::Target {
-        #[cfg(creusot)]
-        {
-            &self.0
-        }
-        #[cfg(not(creusot))]
-        {
-            panic!()
-        }
+        panic!()
     }
 }
 impl<T> DerefMut for Ghost<T> {
     /// This function can only be called in `ghost!` context
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_deref_mut")]
+    #[trusted]
     #[pure]
-    #[ensures(*result == (*self).inner_logic())]
-    #[ensures(^result == (^self).inner_logic())]
+    #[ensures(*result == **self)]
+    #[ensures(^result == *^self)]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        #[cfg(creusot)]
-        {
-            &mut self.0
-        }
-        #[cfg(not(creusot))]
-        {
-            panic!()
-        }
+        panic!()
     }
 }
 
@@ -105,8 +91,10 @@ impl<T: View> View for Ghost<T> {
 impl<T> Invariant for Ghost<T> {
     #[predicate(prophetic)]
     #[open]
+    #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        inv(self.inner_logic())
+        inv(*self)
     }
 }
 
@@ -114,44 +102,32 @@ impl<T> Resolve for Ghost<T> {
     #[open]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        resolve(&self.inner_logic())
+        resolve(&*self)
     }
 
+    #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
 }
 
 impl<T> Ghost<T> {
-    /// Transforms a `&Ghost<T>` into `Ghost<&T>`.
+    /// Transforms a `&Ghost<T>` into `Ghost<&T>`
+    #[trusted]
     #[pure]
     #[ensures(**result == **self)]
     pub fn borrow(&self) -> Ghost<&T> {
-        #[cfg(creusot)]
-        {
-            Ghost(&self.0)
-        }
-        #[cfg(not(creusot))]
-        {
-            Ghost(std::marker::PhantomData)
-        }
+        Ghost::conjure()
     }
 
     /// Transforms a `&mut Ghost<T>` into a `Ghost<&mut T>`.
+    #[trusted]
     #[pure]
-    #[ensures(*result.inner_logic() == (*self).inner_logic())]
-    #[ensures(^result.inner_logic() == (^self).inner_logic())]
+    #[ensures(*result.inner_logic() == **self)]
+    #[ensures(^result.inner_logic() == *^self)]
     pub fn borrow_mut(&mut self) -> Ghost<&mut T> {
-        #[cfg(creusot)]
-        {
-            Ghost(&mut self.0)
-        }
-        #[cfg(not(creusot))]
-        {
-            Ghost(std::marker::PhantomData)
-        }
+        Ghost::conjure()
     }
 
     /// Conjures a `Ghost<T>` out of thin air.
@@ -160,24 +136,18 @@ impl<T> Ghost<T> {
     /// This function is nevertheless useful to create a `Ghost` in "trusted"
     /// contexts, when axiomatizing an API that is believed to be sound for
     /// external reasons.
+    #[trusted]
     #[pure]
     #[requires(false)]
     pub fn conjure() -> Self {
-        #[cfg(creusot)]
-        {
-            panic!()
-        }
-        #[cfg(not(creusot))]
-        {
-            Ghost(std::marker::PhantomData)
-        }
+        Ghost(PhantomData)
     }
 
     // Internal function to easily create a `Ghost` in non-creusot mode.
     #[cfg(not(creusot))]
     #[doc(hidden)]
     pub fn from_fn(_: impl FnOnce() -> T) -> Self {
-        Ghost(std::marker::PhantomData)
+        Ghost::conjure()
     }
 }
 
@@ -185,53 +155,42 @@ impl<T> Ghost<T> {
     /// Creates a new ghost variable.
     ///
     /// This function can only be called in `ghost!` code.
+    #[trusted]
     #[pure]
     #[ensures(*result == x)]
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_new")]
     pub fn new(x: T) -> Self {
-        #[cfg(creusot)]
-        {
-            Self(x)
-        }
-        #[cfg(not(creusot))]
-        {
-            let _ = x;
-            Self(std::marker::PhantomData)
-        }
+        let _ = x;
+        panic!()
     }
 
+    #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(*result == x)]
     pub fn new_logic(x: T) -> Self {
-        Self(x)
+        dead
     }
 
     /// Returns the inner value of the `Ghost`.
     ///
     /// This function can only be called in `ghost!` context.
+    #[trusted]
     #[pure]
     #[ensures(result == *self)]
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_into_inner")]
     pub fn into_inner(self) -> T {
-        #[cfg(creusot)]
-        {
-            self.0
-        }
-        #[cfg(not(creusot))]
-        {
-            panic!()
-        }
+        panic!()
     }
 
     /// Returns the inner value of the `Ghost`.
     ///
     /// You should prefer the dereference operator `*` instead.
+    #[trusted]
     #[logic]
-    #[open]
-    #[rustc_diagnostic_item = "ghost_inner_logic"]
+    #[creusot::builtins = "identity"]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_inner_logic")]
     pub fn inner_logic(self) -> T {
-        self.0
+        dead
     }
 }
 
