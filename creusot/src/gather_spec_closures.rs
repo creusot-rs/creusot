@@ -85,8 +85,13 @@ impl<'tcx> Visitor<'tcx> for Closures<'tcx> {
     }
 }
 
-pub(crate) struct Invariants<'tcx> {
-    pub(crate) loop_headers: HashMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
+pub(crate) struct InvariantsAndVariants<'tcx> {
+    /// Invariants placed at the beginning of their respective loops.
+    ///
+    /// The string is a description for Why3.
+    pub(crate) invariants: HashMap<BasicBlock, Vec<(String, Term<'tcx>)>>,
+    /// Variants placed at the beginning of their respective loops.
+    pub(crate) variants: HashMap<BasicBlock, Term<'tcx>>,
     /// Invariants for which we couldn't find a loop header are translated as assertions.
     pub(crate) assertions: HashMap<DefId, (Term<'tcx>, String)>,
 }
@@ -95,11 +100,20 @@ struct InvariantsVisitor<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     body: &'a Body<'tcx>,
     before_loop: HashSet<BasicBlock>,
-    invariants: Invariants<'tcx>,
+    invariants_and_variants: InvariantsAndVariants<'tcx>,
 }
 
-impl<'a, 'tcx> InvariantsVisitor<'a, 'tcx> {
-    // Search backwards for the loop header: it should have more than one predecessor.
+impl InvariantsVisitor<'_, '_> {
+    /// Detect if a loop really loops.
+    ///
+    /// This searches for a loop header: a special marker inserted just before
+    /// a loop.
+    ///
+    /// `loc` should be the MIR location of an (in)variant: that is, it should be
+    /// right after the loop entry.
+    ///
+    /// If the loop really loops, its entry should have more than one
+    /// predecessor: so we search backward for such a block.
     fn find_loop_header(&self, loc: Location) -> Option<BasicBlock> {
         let mut block = loc.block;
         if self.before_loop.contains(&block) {
@@ -127,13 +141,12 @@ impl<'a, 'tcx> InvariantsVisitor<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
+impl<'tcx> Visitor<'tcx> for InvariantsVisitor<'_, 'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
             let kind = if let Some(expl) = get_invariant_expl(self.ctx.tcx, *id) {
                 LoopSpecKind::Invariant(expl)
             } else if is_loop_variant(self.ctx.tcx, *id) {
-                self.warn(self.ctx.def_span(id), "Loop variants are currently unsupported.");
                 LoopSpecKind::Variant
             } else {
                 if is_before_loop(self.ctx.tcx, *id) {
@@ -148,17 +161,28 @@ impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
                         self.ctx.def_span(id),
                         "This loop does not loop. This invariant could just be an assertion.",
                     );
-                    let assertions = &mut self.invariants.assertions;
-                    assertions.insert(*id, (term, expl));
+                    self.invariants_and_variants.assertions.insert(*id, (term, expl));
                 }
                 None => self.ctx.warn(
                     self.ctx.def_span(id),
                     "This loop does not loop. This variant will be ignored.",
                 ),
-                Some(target) => {
-                    let loop_headers = &mut self.invariants.loop_headers;
-                    loop_headers.entry(target).or_insert_with(Vec::new).push((kind, term))
-                }
+                Some(target) => match kind {
+                    LoopSpecKind::Invariant(desc) => self
+                        .invariants_and_variants
+                        .invariants
+                        .entry(target)
+                        .or_default()
+                        .push((desc, term)),
+                    LoopSpecKind::Variant => {
+                        if self.invariants_and_variants.variants.insert(target, term).is_some() {
+                            self.ctx.crash_and_error(
+                                self.body.span,
+                                "Only one variant can be provided for each loop",
+                            );
+                        }
+                    }
+                },
             }
         }
         self.super_rvalue(rvalue, loc);
@@ -171,17 +195,21 @@ impl<'a, 'tcx> HasTyCtxt<'tcx> for InvariantsVisitor<'a, 'tcx> {
     }
 }
 
-// Calculate the *actual* location of invariants in MIR
+/// Calculate the *actual* location of invariants in MIR
 pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     body: &Body<'tcx>,
-) -> Invariants<'tcx> {
+) -> InvariantsAndVariants<'tcx> {
     let mut invs_gather = InvariantsVisitor {
         ctx,
         body,
         before_loop: HashSet::new(),
-        invariants: Invariants { loop_headers: HashMap::new(), assertions: HashMap::new() },
+        invariants_and_variants: InvariantsAndVariants {
+            invariants: HashMap::new(),
+            variants: HashMap::new(),
+            assertions: HashMap::new(),
+        },
     };
     invs_gather.visit_body(body);
-    invs_gather.invariants
+    invs_gather.invariants_and_variants
 }

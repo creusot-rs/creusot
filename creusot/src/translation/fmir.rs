@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-
 use crate::{
     backend::projections::projection_ty,
     ctx::HasTyCtxt as _,
-    translation::pearlite::{PIdent, Term},
+    translation::pearlite::{PIdent, Term, TermKind},
 };
 use indexmap::IndexMap;
 use rustc_abi::VariantIdx;
@@ -18,9 +16,8 @@ use rustc_middle::{
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TypeFoldable, TypeVisitable},
 };
 use rustc_span::{Span, Symbol};
+use std::collections::HashMap;
 use why3::Ident;
-
-use super::pearlite::TermKind;
 
 pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<PIdent, Ty<'tcx>>;
 
@@ -330,10 +327,22 @@ pub struct Invariant<'tcx> {
     pub(crate) expl: String,
 }
 
+/// A loop variant
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
+pub(crate) struct Variant<'tcx> {
+    /// The term that should decrease
+    pub(crate) term: Term<'tcx>,
+    /// The name of the variable that holds the previous value of the term.
+    pub(crate) old_name: PIdent,
+}
+
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct Block<'tcx> {
     pub(crate) invariants: Vec<Invariant<'tcx>>,
-    pub(crate) variant: Option<Term<'tcx>>,
+    /// An eventual variant that should be checked before `continue`ing a loop.
+    ///
+    /// This is `Some` when the block is the loop head.
+    pub(crate) variant: Option<Variant<'tcx>>,
     pub(crate) stmts: Vec<Statement<'tcx>>,
     pub(crate) terminator: Terminator<'tcx>,
 }
@@ -356,6 +365,8 @@ pub struct Body<'tcx> {
     // TODO: Split into return local, args, and true locals?
     // TODO: Remove usage of `LocalIdent`.
     pub(crate) locals: LocalDecls<'tcx>,
+    /// Locals that hold the previous values of loop variants
+    pub(crate) variant_locals: Vec<(PIdent, Ty<'tcx>, Span)>,
     pub(crate) arg_count: usize,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
     pub(crate) fresh: usize,
@@ -384,6 +395,7 @@ impl<'tcx> TypeFoldable<TyCtxt<'tcx>> for Body<'tcx> {
     {
         Self {
             arg_count: self.arg_count,
+            variant_locals: self.variant_locals.fold_with(f),
             fresh: self.fresh,
             locals: self.locals.into_iter().map(|(k, v)| (k, v.fold_with(f))).collect(),
             blocks: self.blocks.into_iter().map(|(k, v)| (k, v.fold_with(f))).collect(),
@@ -397,6 +409,7 @@ impl<'tcx> TypeFoldable<TyCtxt<'tcx>> for Body<'tcx> {
     {
         Ok(Self {
             arg_count: self.arg_count,
+            variant_locals: self.variant_locals.try_fold_with(f)?,
             fresh: self.fresh,
             locals: self
                 .locals

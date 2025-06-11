@@ -20,8 +20,8 @@ use crate::{
         signature::lower_program_sig,
         term::{lower_pure, unsupported_cast},
         ty::{
-            constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, ty_to_prelude,
-            uty_to_prelude,
+            constructor, floatty_to_prelude, int_ty, is_int, ity_to_prelude, translate_ty,
+            ty_to_prelude, uty_to_prelude,
         },
         wto::{Component, weak_topological_order},
     },
@@ -34,7 +34,7 @@ use crate::{
             Block, Body, BorrowKind, Branches, LocalDecls, Operand, Place, RValue, Statement,
             StatementKind, Terminator, TrivialInv,
         },
-        pearlite::Term,
+        pearlite::{self, Term},
     },
 };
 use indexmap::IndexMap;
@@ -249,10 +249,23 @@ pub fn why_body<'tcx, N: Namer<'tcx>>(
             };
             Var(id, ty.clone(), init, IsRef::Ref)
         })
+        .chain(body.variant_locals.into_iter().map(|(ident, ty, span)| {
+            let ty = translate_ty(ctx, names, span, ty);
+            Var(
+                ident.0,
+                ty,
+                Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()]),
+                IsRef::Ref,
+            )
+        }))
         .collect();
     Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks).let_(vars)
 }
 
+/// Translate the group of blocks `c` to a coma definition.
+///
+/// Such groups of blocks will typically be loops, that need to be separated
+/// into their own group of handlers.
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
     ctx: &Why3Generator<'tcx>,
@@ -273,6 +286,34 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     };
 
     let block = body.blocks.shift_remove(&head).unwrap();
+    let variant = block.variant.clone().map(|variant| {
+        let ty = variant.term.ty;
+        let span = variant.term.span;
+        let mut variant_decreases = variant.term.clone().bin_op(
+            lower.ctx.types.bool,
+            pearlite::BinOp::Lt,
+            pearlite::Term::var(variant.old_name, ty),
+        );
+        // Hack to accept variants of type `Int`
+        if is_int(lower.ctx.tcx, ty) {
+            variant_decreases = variant_decreases.bin_op(
+                lower.ctx.types.bool,
+                pearlite::BinOp::And,
+                variant.term.bin_op(
+                    lower.ctx.types.bool,
+                    pearlite::BinOp::Ge,
+                    pearlite::Term {
+                        ty,
+                        kind: pearlite::TermKind::Lit(pearlite::Literal::Integer(0)),
+                        span,
+                    },
+                ),
+            );
+        }
+
+        lower_pure(lower.ctx, lower.names, &variant_decreases)
+            .with_attr(Attribute::Attr("expl:loop variant".to_string()))
+    });
     let mut block = block.into_why(&lower, head);
 
     let defns = tl
@@ -284,12 +325,38 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
         block.body = block.body.black_box();
     }
 
+    // We separate a loop into three components:
+    // - the loop entry itself, only used from outside (bbx)
+    // - the loop variant, check on reentry in the loop (bbx'0, shadowing of bbx)
+    // - the loop invariant, check on every entry in the loop (bbxinvariant)
+    //
+    // So the coma code looks like
+    // ```coma
+    // bbx = bbxinvariant
+    // [ bbx'0 = { check variant } bbxinvariant |
+    //   bbxinvariant = { check invariant } ( ! loop_body )
+    // ]
+    // ```
+    // where `loop_body` may jump to bbx'0
     let inner = block.body.boxed().where_(defns);
-    block.body = Expr::Defn(
-        Expr::var(block.prototype.name).boxed(),
-        true,
-        [Defn::simple(block.prototype.name, inner)].into(),
-    );
+    if let Some(variant) = variant {
+        let new_name =
+            Ident::fresh_local(format!("{}invariant", block.prototype.name.name().to_string()));
+        let variant_expr = Expr::assert(variant, Expr::Name(Name::Local(new_name, None)));
+        block.body = Expr::Defn(
+            Expr::var(new_name).boxed(),
+            true,
+            [Defn::simple(block.prototype.name, variant_expr), Defn::simple(new_name, inner)]
+                .into(),
+        );
+    } else {
+        block.body = Expr::Defn(
+            Expr::var(block.prototype.name).boxed(),
+            true,
+            [Defn::simple(block.prototype.name, inner)].into(),
+        );
+    };
+
     block
 }
 
@@ -628,7 +695,7 @@ impl<'tcx> RValue<'tcx> {
                                     .app([e.into_why(lower, istmts)])
                             }
                             PtrCastKind::Unknown => {
-                                unsupported_cast(&lower.ctx, span, source, target)
+                                unsupported_cast(lower.ctx, span, source, target)
                             }
                         }
                     }
@@ -900,6 +967,7 @@ fn mk_switch_branches(
 }
 
 impl<'tcx> Block<'tcx> {
+    /// Translate a FMIR block to coma.
     fn into_why<N: Namer<'tcx>>(self, lower: &LoweringState<'_, 'tcx, N>, id: BasicBlock) -> Defn {
         let mut statements = vec![];
 
@@ -918,6 +986,10 @@ impl<'tcx> Block<'tcx> {
         statements.push(Defn::simple(cont, body));
 
         let mut body = Expr::var(cont0);
+        if let Some(variant) = &self.variant {
+            let term = lower_pure(lower.ctx, lower.names, &variant.term);
+            body = body.assign(variant.old_name.0, term);
+        }
         if !self.invariants.is_empty() {
             body = body.black_box();
         }
@@ -1224,9 +1296,5 @@ pub fn ptr_cast_kind<'tcx>(
 /// If `true`, this is definitely an unsized type, so pointers to it must be fat.
 /// If `false`, nothing is known for sure.
 pub fn is_unsized(ty: &Ty) -> bool {
-    use rustc_type_ir::TyKind::*;
-    match ty.kind() {
-        Str | Slice(_) | Dynamic(_, _, DynKind::Dyn) => true,
-        _ => false,
-    }
+    matches!(ty.kind(), TyKind::Str | TyKind::Slice(_) | TyKind::Dynamic(_, _, DynKind::Dyn))
 }

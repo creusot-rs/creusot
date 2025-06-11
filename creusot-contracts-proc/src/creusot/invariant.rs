@@ -13,7 +13,7 @@ enum InvariantKind {
 }
 use InvariantKind::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Tag {
     Invariant(InvariantKind),
     Variant,
@@ -91,12 +91,16 @@ fn desugar(tag: Tag, invariant0: TokenStream, expr: TokenStream) -> Result<Token
         Expr::ForLoop(mut expr) => Ok(desugar_for(invariants(&mut expr.attrs)?, expr)),
         Expr::While(mut expr) => Ok(desugar_while(invariants(&mut expr.attrs)?, expr)),
         Expr::Loop(mut expr) => Ok(desugar_loop(invariants(&mut expr.attrs)?, expr)),
-        _ => {
-            return Err(Error::new_spanned(
-                expr,
-                "invariants must be attached to either a `for`, `loop` or `while`",
-            ));
-        }
+        _ => Err(Error::new_spanned(
+            expr,
+            format!(
+                "{} must be attached to either a `for`, `loop` or `while`",
+                match tag {
+                    Tag::Invariant(_) => "invariant",
+                    Tag::Variant => "variant",
+                }
+            ),
+        )),
     }
 }
 
@@ -286,10 +290,9 @@ pub(crate) fn desugar_variant(attr: TokenStream, tokens: TokenStream) -> Result<
 }
 
 fn variant_to_tokens(span: Span, p: &pearlite_syn::Term) -> (String, TokenStream) {
-    let var_body = pretyping::encode_term(p).unwrap_or_else(|e| {
-        return e.into_tokens();
-    });
+    let var_body = pretyping::encode_term(p).unwrap_or_else(|e| e.into_tokens());
     let name_tag = crate::creusot::generate_unique_string("variant");
+
     let variant_tokens = quote_spanned! {span=>
         #[allow(let_underscore_drop)]
         let _ =
