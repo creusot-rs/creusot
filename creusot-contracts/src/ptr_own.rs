@@ -156,7 +156,8 @@ impl<T> PtrOwn<T> {
     #[pure]
     #[ensures(result.ptr() == self.ptr())]
     #[ensures(result.contents() == Seq::singleton(*self.val()))]
-    // TODO resolve
+    #[ensures((^self).ptr() == self.ptr())]
+    #[ensures((^result.inner_logic()).contents() == Seq::singleton(*(^self).val()))]
     pub fn as_block_own_mut(&mut self) -> Ghost<&mut BlockOwn<T>> {
         Ghost::conjure()
     }
@@ -234,7 +235,9 @@ impl<T> BlockOwn<T> {
     #[requires(self.len() > 0)]
     #[ensures(result.ptr() == self.ptr())]
     #[ensures(Some(*result.val()) == self.get(0))]
-    // TODO resolve
+    #[ensures((^self).ptr() == self.ptr() && (^result.inner_logic()).ptr() == result.ptr())] // Are these necessary?
+    #[ensures((^self).contents()[0] == *(^result.inner_logic()).val())]
+    #[ensures(forall<i: Int> i < 0 && i < self.len() ==> (^self).contents()[i] == self.contents()[i])]
     pub fn as_ptr_own_mut(&mut self) -> Ghost<&mut PtrOwn<T>> {
         Ghost::conjure()
     }
