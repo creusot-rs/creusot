@@ -19,8 +19,8 @@ use crate::{
         signature::lower_program_sig,
         term::{lower_pat, lower_pure, unsupported_cast},
         ty::{
-            constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, ty_to_prelude,
-            uty_to_prelude,
+            constructor, floatty_to_prelude, int_ty, is_int, ity_to_prelude, translate_ty,
+            ty_to_prelude, uty_to_prelude,
         },
         wto::{Component, weak_topological_order},
     },
@@ -32,7 +32,7 @@ use crate::{
             Block, Body, BorrowKind, Branches, LocalDecls, Operand, Place, RValue, Statement,
             StatementKind, Terminator, TrivialInv,
         },
-        pearlite::Pattern,
+        pearlite::{self, Pattern},
     },
 };
 use indexmap::IndexMap;
@@ -207,6 +207,15 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
             };
             Var(id, ty.clone(), init, IsRef::Ref)
         })
+        .chain(body.variant_locals.into_iter().map(|(ident, ty, span)| {
+            let ty = translate_ty(ctx, names, span, ty);
+            Var(
+                ident,
+                ty,
+                Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()]),
+                IsRef::Ref,
+            )
+        }))
         .collect();
 
     let mut body = Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks);
@@ -257,6 +266,10 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     Defn { prototype: sig, body }
 }
 
+/// Translate the group of blocks `c` to a coma definition.
+///
+/// Such groups of blocks will typically be loops, that need to be separated
+/// into their own group of handlers.
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
     ctx: &Why3Generator<'tcx>,
@@ -936,6 +949,10 @@ impl<'tcx> Block<'tcx> {
         statements.push(Defn::simple(cont, body));
 
         let mut body = Expr::var(cont0);
+        if let Some((term, old_name)) = &self.variant_target {
+            let term = lower_pure(lower.ctx, lower.names, term);
+            body = body.assign(*old_name, term);
+        }
         if !self.invariants.is_empty() {
             body = body.black_box();
         }
@@ -947,9 +964,71 @@ impl<'tcx> Block<'tcx> {
             );
         }
 
+        for v in self.variants {
+            let mut variant_decreases = v.term.clone().bin_op(
+                lower.ctx.types.bool,
+                pearlite::BinOp::Lt,
+                pearlite::Term::var(v.old_name, v.term.ty),
+            );
+            // Hack to accept variants of type `Int`
+            if is_int(lower.ctx.tcx, v.term.ty) {
+                variant_decreases = variant_decreases.bin_op(
+                    lower.ctx.types.bool,
+                    pearlite::BinOp::And,
+                    v.term.clone().bin_op(
+                        lower.ctx.types.bool,
+                        pearlite::BinOp::Ge,
+                        pearlite::Term {
+                            ty: v.term.ty,
+                            kind: pearlite::TermKind::Lit(pearlite::Literal::Integer(0)),
+                            span: v.term.span,
+                        },
+                    ),
+                );
+            }
+
+            let variant_assertion = lower_pure(lower.ctx, lower.names, &variant_decreases)
+                .with_attr(Attribute::Attr("expl:loop variant".to_string()));
+            for s in &mut statements {
+                assert_before(&mut s.body, &lower.block_idents[&v.loop_head], &variant_assertion);
+            }
+        }
+
         body = body.where_(statements.into());
 
         Defn::simple(*lower.block_idents.get(&id).unwrap(), body)
+    }
+}
+
+/// Insert the assertion right before each jump to `label`.
+fn assert_before(e: &mut Expr, label: &Ident, assertion: &Exp) {
+    match e {
+        Expr::Name(Name::Local(i, None)) if i == label => {
+            *e = Expr::assert(assertion.clone(), std::mem::replace(e, Expr::Any));
+        }
+        Expr::Name(_) => {}
+        Expr::Any => {}
+        Expr::App(expr, arg) => {
+            assert_before(expr, label, assertion);
+            let arg: &mut Arg = &mut *arg;
+            match arg {
+                Arg::Cont(expr) => assert_before(expr, label, assertion),
+                Arg::Ty(_) | Arg::Term(_) | Arg::Ref(_) => {}
+            }
+        }
+        Expr::Defn(expr, _, defns) => {
+            assert_before(expr, label, assertion);
+            for d in defns {
+                assert_before(&mut d.body, label, assertion);
+            }
+        }
+        Expr::Lambda(_, expr)
+        | Expr::Assign(expr, _)
+        | Expr::Let(expr, _)
+        | Expr::Assert(_, expr)
+        | Expr::Assume(_, expr)
+        | Expr::BlackBox(expr)
+        | Expr::WhiteBox(expr) => assert_before(expr, label, assertion),
     }
 }
 

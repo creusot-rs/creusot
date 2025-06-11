@@ -7,12 +7,12 @@ use crate::{
     contracts_items::{is_snapshot_closure, is_spec},
     ctx::*,
     extended_location::ExtendedLocation,
-    gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
+    gather_spec_closures::{SpecClosures, corrected_invariant_names_and_locations},
     naming::variable_name,
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
         constant::from_mir_constant,
-        fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inline_pearlite_subst},
+        fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, Variant, inline_pearlite_subst},
         function::terminator::discriminator_for_switch,
         pearlite::{Ident, Term},
     },
@@ -72,7 +72,20 @@ struct BodyTranslator<'a, 'tcx> {
     // Fresh BlockId
     fresh_id: usize,
 
-    invariants: IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
+    /// Store invariants.
+    ///
+    /// The basic block is the loop entry. It then contains a series of
+    /// invariants, each with a possible description for Why3.
+    invariants: IndexMap<BasicBlock, Vec<(String, Term<'tcx>)>>,
+    /// Maps a basic block to a list that contains:
+    /// - a term that should be checked to have decreased
+    /// - the name for the old value of the term
+    /// - the loop head.
+    ///
+    /// See [`InvariantsAndVariants::variants`](crate::gather_spec_closure::InvariantsAndVariants).
+    variants: IndexMap<BasicBlock, Vec<(Term<'tcx>, Ident, BasicBlock)>>,
+    /// Maps a basic block representing a loop head to the variant of the loop.
+    variants_targets: IndexMap<BasicBlock, (Term<'tcx>, Ident)>,
     /// Invariants to translate as assertions.
     invariant_assertions: IndexMap<DefId, (Term<'tcx>, String)>,
     /// Map of the `proof_assert!` blocks to their translated version.
@@ -161,6 +174,16 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let (vars, locals) = translate_vars(ctx, body, &erased_locals);
         let invariants = corrected_invariant_names_and_locations(ctx, body);
+        let mut variants: IndexMap<BasicBlock, Vec<_>> = IndexMap::new();
+        let mut variants_targets = IndexMap::new();
+        for (loop_head, (continues, term)) in invariants.variants {
+            let variant_old_name =
+                Ident::fresh_local(format!("variant_old_bb{}", loop_head.as_usize()));
+            for bb in continues {
+                variants.entry(bb).or_default().push((term.clone(), variant_old_name, loop_head));
+            }
+            variants_targets.insert(loop_head, (term, variant_old_name));
+        }
         let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, body);
         f(BodyTranslator {
             body,
@@ -177,7 +200,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             retarget_blocks: vec![],
             ctx,
             fresh_id: body.basic_blocks.len(),
-            invariants: invariants.loop_headers,
+            invariants: invariants.invariants,
+            variants,
+            variants_targets,
             invariant_assertions: invariants.assertions,
             assertions,
             snapshots,
@@ -207,29 +232,33 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
             }
 
-            let mut invariants = Vec::new();
-            let mut variant = None;
-
             let info = *self.body.source_info(bb.start_location());
             let places = self.tree.visible_places(info.scope);
-            for (kind, mut body) in self.invariants.shift_remove(&bb).unwrap_or_else(Vec::new) {
+
+            let mut invariants = Vec::new();
+            // compute invariants assertions to insert in this basic block
+            for (expl, mut body) in self.invariants.shift_remove(&bb).into_iter().flatten() {
                 body.subst(inline_pearlite_subst(self.ctx, &places));
                 self.check_use_in_logic(&body, bb.start_location());
-                match kind {
-                    LoopSpecKind::Variant => {
-                        if variant.is_some() {
-                            self.ctx.crash_and_error(
-                                body.span,
-                                "Only one variant can be provided for each loop",
-                            );
-                        }
-                        variant = Some(body);
-                    }
-                    LoopSpecKind::Invariant(expl) => {
-                        invariants.push(fmir::Invariant { body, expl });
-                    }
-                }
+                invariants.push(fmir::Invariant { body, expl });
             }
+
+            let mut variants = Vec::new();
+            for (mut term, old_name, loop_head) in
+                self.variants.shift_remove(&bb).into_iter().flatten()
+            {
+                term.subst(inline_pearlite_subst(self.ctx, &places));
+                self.check_use_in_logic(&term, bb.start_location());
+                variants.push(Variant { term, old_name, loop_head })
+            }
+
+            let variant_target = match self.variants_targets.shift_remove(&bb) {
+                Some((mut t, v)) => Some({
+                    t.subst(inline_pearlite_subst(self.ctx, &places));
+                    (t, v)
+                }),
+                None => None,
+            };
 
             if let Err(err) = self.resolve_places_between_blocks(bb) {
                 err.crash(self.ctx, self.basic_block_first_span(bbd))
@@ -247,7 +276,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             let block = fmir::Block {
                 invariants,
-                variant,
+                variants,
+                variant_target,
                 stmts: std::mem::take(&mut self.current_block.0),
                 terminator: self.current_block.1.take().unwrap(),
             };
@@ -263,8 +293,15 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         assert!(self.snapshots.is_empty(), "unused snapshots");
         assert!(self.invariants.is_empty(), "unused invariants");
 
+        let variant_locals = self
+            .past_blocks
+            .values()
+            .filter_map(|b| b.variant_target.as_ref().map(|(t, i)| (*i, t.ty, t.span)))
+            .collect();
+
         fmir::Body {
             locals: self.vars,
+            variant_locals,
             arg_count: self.body.arg_count,
             blocks: self.past_blocks,
             fresh: self.fresh_id,
@@ -553,8 +590,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.resolve_places(resolved.0, &resolved.1)?;
             self.emit_terminator(fmir::Terminator::Goto(bb));
             let resolve_block = fmir::Block {
-                variant: None,
-                invariants: vec![],
+                variants: Vec::new(),
+                invariants: Vec::new(),
+                variant_target: None,
                 stmts: std::mem::take(&mut self.current_block.0),
                 terminator: self.current_block.1.take().unwrap(),
             };

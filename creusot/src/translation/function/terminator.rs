@@ -53,9 +53,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             .resolver
             .as_mut()
             .map(|r| r.resolved_places_during(ExtendedLocation::End(location)));
-        let term;
-        match &terminator.kind {
-            Goto { target } => term = Terminator::Goto(*target),
+        let term = match &terminator.kind {
+            Goto { target } => Terminator::Goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let real_discr = discriminator_for_switch(&self.body.basic_blocks[location.block])
                     .map(Operand::Move)
@@ -65,9 +64,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     .translate_operand(&real_discr)
                     .unwrap_or_else(|err| err.crash(self.ctx, terminator.source_info.span));
                 let ty = real_discr.ty(self.body, self.tcx());
-                let switch =
-                    make_switch(self.ctx, terminator.source_info, ty, targets, discriminant);
-                term = switch;
+                make_switch(self.ctx, terminator.source_info, ty, targets, discriminant)
             }
             Return => {
                 if let Some(resolver) = &mut self.resolver {
@@ -85,9 +82,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     resolved_during = None;
                 }
 
-                term = Terminator::Return
+                Terminator::Return
             }
-            Unreachable => term = Terminator::Abort(terminator.source_info.span),
+            Unreachable => Terminator::Abort(terminator.source_info.span),
             &Call { ref func, ref args, destination, mut target, fn_span, .. } => {
                 let Some((fun_def_id, subst)) = func_defid(func) else {
                     self.ctx.fatal_error(fn_span, "unsupported function call type").emit()
@@ -181,9 +178,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         }
                     }
 
-                    term = Terminator::Goto(bb);
+                    Terminator::Goto(bb)
                 } else {
-                    term = Terminator::Abort(terminator.source_info.span);
+                    Terminator::Abort(terminator.source_info.span)
                 }
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
@@ -216,7 +213,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     kind: fmir::StatementKind::Assertion { cond, msg, trusted: false },
                     span,
                 });
-                term = Terminator::Goto(*target)
+                Terminator::Goto(*target)
             }
             Drop { target, place, .. } => {
                 if self.resolver.is_some() {
@@ -243,10 +240,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     }
                 }
 
-                term = Terminator::Goto(*target)
+                Terminator::Goto(*target)
             }
 
-            FalseUnwind { real_target, .. } => term = Terminator::Goto(*real_target),
+            FalseUnwind { real_target, .. } => Terminator::Goto(*real_target),
             FalseEdge { .. }
             | CoroutineDrop
             | UnwindResume
@@ -254,7 +251,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             | Yield { .. }
             | InlineAsm { .. }
             | TailCall { .. } => unreachable!("{:?}", terminator.kind),
-        }
+        };
         if let Some((need, resolved)) = resolved_during {
             if let Err(err) = self.resolve_places(need, &resolved) {
                 err.crash(self.ctx, span)

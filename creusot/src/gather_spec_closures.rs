@@ -84,8 +84,17 @@ impl<'tcx> Visitor<'tcx> for Closures<'tcx> {
     }
 }
 
-pub(crate) struct Invariants<'tcx> {
-    pub(crate) loop_headers: IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
+pub(crate) struct InvariantsAndVariants<'tcx> {
+    /// Invariants placed at the beginning of their respective loops.
+    ///
+    /// The string is a description for Why3.
+    pub(crate) invariants: IndexMap<BasicBlock, Vec<(String, Term<'tcx>)>>,
+    /// Variants for loops.
+    ///
+    /// This maps the head of a loop to its variant. The `Vec` of `BasicBlock`s
+    /// is the list of blocks that loop back to the beginning of the loop: the
+    /// variant assertions should be inserted here.
+    pub(crate) variants: IndexMap<BasicBlock, (Vec<BasicBlock>, Term<'tcx>)>,
     /// Invariants for which we couldn't find a loop header are translated as assertions.
     pub(crate) assertions: IndexMap<DefId, (Term<'tcx>, String)>,
 }
@@ -94,11 +103,17 @@ struct InvariantsVisitor<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     body: &'a Body<'tcx>,
     before_loop: IndexSet<BasicBlock>,
-    invariants: Invariants<'tcx>,
+    invariants_and_variants: InvariantsAndVariants<'tcx>,
 }
 
-impl<'a, 'tcx> InvariantsVisitor<'a, 'tcx> {
-    // Search backwards for the loop header: it should have more than one predecessor.
+impl InvariantsVisitor<'_, '_> {
+    /// Search for the basic block corresponding to a loop header.
+    ///
+    /// `loc` should be the MIR location of an (in)variant: that is, it should be
+    /// right after the loop entry.
+    ///
+    /// If the loop really loops, its entry should have more than one
+    /// predecessor: so we search backward for such a block.
     fn find_loop_header(&self, loc: Location) -> Option<BasicBlock> {
         let mut block = loc.block;
         if self.before_loop.contains(&block) {
@@ -126,13 +141,12 @@ impl<'a, 'tcx> InvariantsVisitor<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
+impl<'tcx> Visitor<'tcx> for InvariantsVisitor<'_, 'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
             let kind = if let Some(expl) = get_invariant_expl(self.ctx.tcx, *id) {
                 LoopSpecKind::Invariant(expl)
             } else if is_loop_variant(self.ctx.tcx, *id) {
-                self.ctx.warn(self.ctx.def_span(id), "Loop variants are currently unsupported.");
                 LoopSpecKind::Variant
             } else {
                 if is_before_loop(self.ctx.tcx, *id) {
@@ -147,34 +161,66 @@ impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
                         self.ctx.def_span(id),
                         "This loop does not loop. This invariant could just be an assertion.",
                     );
-                    let assertions = &mut self.invariants.assertions;
-                    assertions.insert(*id, (term, expl));
+                    self.invariants_and_variants.assertions.insert(*id, (term, expl));
                 }
                 None => self.ctx.warn(
                     self.ctx.def_span(id),
                     "This loop does not loop. This variant will be ignored.",
                 ),
-                Some(target) => {
-                    let loop_headers = &mut self.invariants.loop_headers;
-                    loop_headers.entry(target).or_insert_with(Vec::new).push((kind, term))
-                }
+                Some(target) => match kind {
+                    LoopSpecKind::Invariant(desc) => self
+                        .invariants_and_variants
+                        .invariants
+                        .entry(target)
+                        .or_insert_with(Vec::new)
+                        .push((desc, term)),
+                    LoopSpecKind::Variant => {
+                        let mut has_met_before_loop = false;
+                        let preds = self.body.basic_blocks.predecessors()[target]
+                            .iter()
+                            .filter(|p| {
+                                let res = !self.before_loop.contains(*p);
+                                if !res && std::mem::replace(&mut has_met_before_loop, true) {
+                                    self.ctx.dcx().span_bug(self.body.span, "a basic block is marked as the entry for multiple loops: this should not happen.")
+                                }
+                                res
+                            })
+                            .copied()
+                            .collect();
+                        if self
+                            .invariants_and_variants
+                            .variants
+                            .insert(target, (preds, term))
+                            .is_some()
+                        {
+                            self.ctx.crash_and_error(
+                                self.body.span,
+                                "Only one variant can be provided for each loop",
+                            );
+                        }
+                    }
+                },
             }
         }
         self.super_rvalue(rvalue, loc);
     }
 }
 
-// Calculate the *actual* location of invariants in MIR
+/// Calculate the *actual* location of invariants in MIR
 pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     body: &Body<'tcx>,
-) -> Invariants<'tcx> {
+) -> InvariantsAndVariants<'tcx> {
     let mut invs_gather = InvariantsVisitor {
         ctx,
         body,
         before_loop: IndexSet::new(),
-        invariants: Invariants { loop_headers: IndexMap::new(), assertions: IndexMap::new() },
+        invariants_and_variants: InvariantsAndVariants {
+            invariants: IndexMap::new(),
+            variants: IndexMap::new(),
+            assertions: IndexMap::new(),
+        },
     };
     invs_gather.visit_body(body);
-    invs_gather.invariants
+    invs_gather.invariants_and_variants
 }
