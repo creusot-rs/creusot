@@ -1,6 +1,7 @@
-use std::collections::HashMap;
-
-use crate::{backend::projections::projection_ty, translation::pearlite::Term};
+use crate::{
+    backend::projections::projection_ty,
+    translation::pearlite::{Term, TermKind},
+};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable};
@@ -13,9 +14,8 @@ use rustc_middle::{
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
+use std::collections::HashMap;
 use why3::Ident;
-
-use super::pearlite::TermKind;
 
 pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<Ident, Ty<'tcx>>;
 
@@ -284,10 +284,22 @@ pub struct Invariant<'tcx> {
     pub(crate) expl: String,
 }
 
+/// A loop variant
+#[derive(Clone, Debug)]
+pub(crate) struct Variant<'tcx> {
+    /// The term that should decrease
+    pub(crate) term: Term<'tcx>,
+    /// The name of the variable that holds the previous value of the term.
+    pub(crate) old_name: Ident,
+}
+
 #[derive(Clone, Debug)]
 pub struct Block<'tcx> {
     pub(crate) invariants: Vec<Invariant<'tcx>>,
-    pub(crate) variant: Option<Term<'tcx>>,
+    /// An eventual variant that should be checked before `continue`ing a loop.
+    ///
+    /// This is `Some` when the block is the loop head.
+    pub(crate) variant: Option<Variant<'tcx>>,
     pub(crate) stmts: Vec<Statement<'tcx>>,
     pub(crate) terminator: Terminator<'tcx>,
 }
@@ -310,6 +322,8 @@ pub struct Body<'tcx> {
     // TODO: Split into return local, args, and true locals?
     // TODO: Remove usage of `LocalIdent`.
     pub(crate) locals: LocalDecls<'tcx>,
+    /// Locals that hold the previous values of loop variants
+    pub(crate) variant_locals: Vec<(Ident, Ty<'tcx>, Span)>,
     pub(crate) arg_count: usize,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
     pub(crate) fresh: usize,
