@@ -46,7 +46,6 @@ impl<K: DeepModel, V> List<(K, V)> {
 }
 
 impl<K: DeepModel, V> Resolve for List<(K, V)> {
-    #[open(self)]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         // FIXME: we don't resolve keys because we only have access to their deep model.
@@ -55,7 +54,6 @@ impl<K: DeepModel, V> Resolve for List<(K, V)> {
         }
     }
 
-    #[open(self)]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
@@ -90,7 +88,6 @@ struct MyHashMap<K, V> {
 impl<K: Hash, V> View for MyHashMap<K, V> {
     type ViewTy = Mapping<K::DeepModelTy, Option<V>>;
 
-    #[open(self)]
     #[logic]
     fn view(self) -> Self::ViewTy {
         |k| self.bucket(k).get(k)
@@ -98,7 +95,6 @@ impl<K: Hash, V> View for MyHashMap<K, V> {
 }
 
 impl<K: Hash, V> Resolve for MyHashMap<K, V> {
-    #[open(self)]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         // FIXME: we don't resolve keys because we only have access to their deep model.
@@ -107,7 +103,6 @@ impl<K: Hash, V> Resolve for MyHashMap<K, V> {
         }
     }
 
-    #[open(self)]
     #[logic(prophetic)]
     #[requires(inv(self))]
     #[requires(structural_resolve(self))]
@@ -136,7 +131,6 @@ impl<K: Hash, V> MyHashMap<K, V> {
 
 impl<K: Hash, V> Invariant for MyHashMap<K, V> {
     #[predicate]
-    #[open(self)]
     fn invariant(self) -> bool {
         pearlite! {
             0 < self.buckets@.len() &&

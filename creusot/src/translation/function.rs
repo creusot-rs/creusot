@@ -637,9 +637,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                             }
                         }
                     } else {
-                        let var = adt_def.variant(VariantIdx::new(0));
                         // TODO: idem
-                        for (fi, fd) in var.fields.iter_enumerated() {
+                        for (fi, fd) in adt_def.non_enum_variant().fields.iter_enumerated() {
                             insert(self.ctx.mk_place_field(pl, fi, fd.ty(self.tcx(), subst)));
                         }
                     }

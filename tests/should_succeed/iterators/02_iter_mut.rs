@@ -12,7 +12,7 @@ use common::Iterator;
 
 #[derive(Resolve)]
 struct IterMut<'a, T> {
-    inner: &'a mut [T],
+    pub inner: &'a mut [T],
 }
 
 impl<'a, T> Invariant for IterMut<'a, T> {

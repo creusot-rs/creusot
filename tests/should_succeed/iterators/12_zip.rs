@@ -8,8 +8,8 @@ use common::Iterator;
 #[allow(dead_code)]
 #[derive(Resolve)]
 struct Zip<A: Iterator, B: Iterator> {
-    a: A,
-    b: B,
+    pub a: A,
+    pub b: B,
 }
 
 impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {

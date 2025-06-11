@@ -11,8 +11,8 @@ mod common;
 use common::Iterator;
 
 struct Range {
-    start: isize,
-    end: isize,
+    pub start: isize,
+    pub end: isize,
 }
 
 impl Iterator for Range {

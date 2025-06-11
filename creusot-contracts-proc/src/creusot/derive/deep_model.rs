@@ -86,7 +86,7 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
                 let ty = &f.ty;
                 let vis = &f.vis;
                 quote_spanned! {f.span()=>
-                    #vis #name: < #ty as creusot_contracts::DeepModel> :: DeepModelTy
+                    #vis #name: < #ty as ::creusot_contracts::DeepModel> :: DeepModelTy
                 }
             });
             quote! {
@@ -98,7 +98,7 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
                 let ty = &f.ty;
                 let vis = &f.vis;
                 quote_spanned! {f.span()=>
-                   #vis < #ty as creusot_contracts::DeepModel> :: DeepModelTy
+                   #vis < #ty as ::creusot_contracts::DeepModel> :: DeepModelTy
                 }
             });
             quote! {

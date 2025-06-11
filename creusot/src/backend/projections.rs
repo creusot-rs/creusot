@@ -47,27 +47,38 @@ impl<'a> Focus<'a> {
 
 type Constructor<'a> = Box<dyn FnOnce(Option<&mut Vec<IntermediateStmt>>, Exp) -> Exp + 'a>;
 
+pub(crate) fn iter_projections_ty<'tcx, 'a, V: Debug>(
+    tcx: TyCtxt<'tcx>,
+    proj: &'a [ProjectionElem<V, Ty<'tcx>>],
+    place_ty: &'a mut PlaceTy<'tcx>,
+) -> impl Iterator<Item = (&'a ProjectionElem<V, Ty<'tcx>>, PlaceTy<'tcx>)> {
+    proj.iter().map(move |elem| {
+        // Code in pearlite.rs does not insert a projection when seeing
+        // a deref of a snapshot. Thus we remove this from the type if a snapshot appears.
+        while let TyKind::Adt(d, subst) = place_ty.ty.kind()
+            && is_snap_ty(tcx, d.did())
+        {
+            assert_matches!(place_ty.variant_index, None);
+            place_ty.ty = subst.type_at(0);
+        }
+        let r = (elem, *place_ty);
+        *place_ty = projection_ty(*place_ty, tcx, elem);
+        r
+    })
+}
+
 pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,
     mut istmts: Option<&mut Vec<IntermediateStmt>>,
-    mut place_ty: PlaceTy<'tcx>,
+    place_ty: &mut PlaceTy<'tcx>,
     // The term holding the currently 'focused' portion of the place
     mut focus: Focus<'a>,
     mut constructor: Constructor<'a>,
     proj: &'a [ProjectionElem<V, Ty<'tcx>>],
     mut translate_index: impl FnMut(&V) -> Exp,
-) -> (PlaceTy<'tcx>, Focus<'a>, Constructor<'a>) {
-    for elem in proj {
-        // Code in pearlite.rs does not insert a projection when seeing
-        // a deref of a snapshot. Thus we remove this from the type if a snapshot appears.
-        while let TyKind::Adt(d, subst) = place_ty.ty.kind()
-            && is_snap_ty(ctx.tcx, d.did())
-        {
-            assert_matches!(place_ty.variant_index, None);
-            place_ty.ty = subst.type_at(0);
-        }
-
+) -> (Focus<'a>, Constructor<'a>) {
+    for (elem, place_ty) in iter_projections_ty(ctx.tcx, proj, place_ty) {
         // TODO: name hygiene
         match elem {
             ProjectionElem::Deref => {
@@ -238,10 +249,9 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
             ProjectionElem::OpaqueCast(_) => todo!(),
             ProjectionElem::Subtype(_) => todo!(),
         }
-        place_ty = projection_ty(place_ty, names.tcx(), elem);
     }
 
-    (place_ty, focus, constructor)
+    (focus, constructor)
 }
 
 pub(crate) fn projection_ty<'tcx, V: Debug>(

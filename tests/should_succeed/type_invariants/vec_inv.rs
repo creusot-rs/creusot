@@ -2,8 +2,8 @@ extern crate creusot_contracts;
 use creusot_contracts::{invariant::Invariant, *};
 
 pub struct SumTo10 {
-    a: i32,
-    b: i32,
+    pub a: i32,
+    pub b: i32,
 }
 
 impl Invariant for SumTo10 {

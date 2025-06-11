@@ -7,7 +7,7 @@ use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Fuse<I: Iterator> {
-    iter: Option<I>,
+    pub iter: Option<I>,
 }
 
 impl<I: Iterator> Iterator for Fuse<I> {

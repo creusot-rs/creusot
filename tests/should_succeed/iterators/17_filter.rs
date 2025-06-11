@@ -19,7 +19,6 @@ pub struct Filter<I: Iterator, F: FnMut(&I::Item) -> bool> {
 
 impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
     #[predicate(prophetic)]
-    #[open(self)]
     fn invariant(self) -> bool {
         pearlite! {
             // trivial precondition: simplification for sake of proof complexity

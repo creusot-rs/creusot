@@ -79,7 +79,6 @@ impl<F> FnPureWrapper<F> {
 impl<F> View for FnPureWrapper<F> {
     type ViewTy = F;
     #[logic]
-    #[open(self)]
     fn view(self) -> Self::ViewTy {
         self.0
     }

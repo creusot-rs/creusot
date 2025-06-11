@@ -41,7 +41,6 @@ impl<T1, T2: ?Sized> Resolve for (T1, T2) {
     }
 
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
@@ -55,7 +54,6 @@ impl<T: ?Sized> Resolve for &mut T {
     }
 
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
@@ -69,7 +67,6 @@ impl<T: ?Sized> Resolve for Box<T> {
     }
 
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
@@ -86,7 +83,6 @@ impl<T> Resolve for Option<T> {
     }
 
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}

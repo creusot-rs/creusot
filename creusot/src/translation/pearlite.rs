@@ -13,14 +13,10 @@ use std::{
 };
 
 use crate::{
-    contracts_items::{
-        get_ghost_inner_logic, is_assertion, is_deref, is_ghost_ty, is_index_logic, is_snap_ty,
-        is_spec,
-    },
+    contracts_items::{is_assertion, is_deref, is_ghost_ty, is_index_logic, is_snap_ty, is_spec},
     error::{CreusotResult, Error},
     translation::TranslationCtx,
 };
-use itertools::Itertools;
 use log::*;
 use rustc_ast::{ByRef, LitIntType, LitKind, Mutability, visit::VisitorResult};
 use rustc_hir::{
@@ -191,7 +187,6 @@ pub enum TermKind<'tcx> {
         args: Box<[Term<'tcx>]>,
     },
     Constructor {
-        typ: DefId,
         variant: VariantIdx,
         fields: Box<[Term<'tcx>]>,
     },
@@ -353,7 +348,8 @@ pub struct Pattern<'tcx> {
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum PatternKind<'tcx> {
-    Constructor(VariantIdx, Box<[Pattern<'tcx>]>),
+    // Subpatterns are always sorted by field index
+    Constructor(VariantIdx, Box<[(FieldIdx, Pattern<'tcx>)]>),
     /// Matches the pointed element of a pointer, so for `Box<T>` it matches `T`,
     /// for mutable borrows it matches the *current* value
     Deref(Box<Pattern<'tcx>>),
@@ -364,6 +360,11 @@ pub enum PatternKind<'tcx> {
 }
 
 impl<'tcx> Pattern<'tcx> {
+    pub(crate) fn span(mut self, sp: Span) -> Self {
+        self.span = sp;
+        self
+    }
+
     pub(crate) fn bool(tcx: TyCtxt<'tcx>, b: bool) -> Self {
         Pattern { ty: tcx.types.bool, kind: PatternKind::Bool(b), span: DUMMY_SP }
     }
@@ -386,7 +387,7 @@ impl<'tcx> Pattern<'tcx> {
 
     pub(crate) fn constructor(
         variant: VariantIdx,
-        fields: impl IntoIterator<Item = Pattern<'tcx>>,
+        fields: impl IntoIterator<Item = (FieldIdx, Pattern<'tcx>)>,
         ty: Ty<'tcx>,
     ) -> Self {
         Pattern {
@@ -410,7 +411,7 @@ impl<'tcx> Pattern<'tcx> {
     pub(crate) fn rename_binds(&mut self, binders: &mut HashMap<Ident, Ident>) {
         match &mut self.kind {
             PatternKind::Constructor(_, fields) => {
-                fields.iter_mut().for_each(|f| f.rename_binds(binders))
+                fields.iter_mut().for_each(|(_, f)| f.rename_binds(binders))
             }
             PatternKind::Tuple(fields) => fields.iter_mut().for_each(|f| f.rename_binds(binders)),
             PatternKind::Wildcard => {}
@@ -426,7 +427,9 @@ impl<'tcx> Pattern<'tcx> {
 
     pub(crate) fn binds(&self, binders: &mut HashSet<Ident>) {
         match &self.kind {
-            PatternKind::Constructor(_, fields) => fields.iter().for_each(|f| f.binds(binders)),
+            PatternKind::Constructor(_, fields) => {
+                fields.iter().for_each(|(_, f)| f.binds(binders))
+            }
             PatternKind::Tuple(fields) => fields.iter().for_each(|f| f.binds(binders)),
             PatternKind::Wildcard => {}
             PatternKind::Binder(s) => {
@@ -697,21 +700,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Some(Neq) => {
                         let lhs = self.expr_term(args[0])?;
                         let rhs = self.expr_term(args[1])?;
-
-                        Ok(Term {
-                            ty,
-                            span,
-                            kind: TermKind::Binary {
-                                op: BinOp::Ne,
-                                lhs: Box::new(lhs),
-                                rhs: Box::new(rhs),
-                            },
-                        })
+                        Ok(lhs.bin_op(ty, BinOp::Ne, rhs).span(span))
                     }
                     Some(VariantCheck) => self.expr_term(args[0]),
                     Some(Old) => {
                         let term = self.expr_term(args[0])?;
-
                         Ok(Term { ty, span, kind: TermKind::Old { term: Box::new(term) } })
                     }
                     Some(ResultCheck) => Ok(Term::unit(self.ctx.tcx).span(span)),
@@ -752,28 +745,15 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     }
                     None => {
                         let fun = self.expr_term(fun)?;
-                        let (id, subst) = if let TermKind::Item(id, subst) = fun.kind {
-                            (id, subst)
-                        } else {
+                        let TermKind::Item(id, subst) = fun.kind else {
                             unreachable!("Call on non-function type");
                         };
                         // HACK: allow dereferencing of `Ghost` in pearlite
-                        if let Some(new_subst) = is_ghost_ty_deref(
-                            self.ctx.tcx,
-                            id,
-                            subst.first().and_then(|arg| arg.as_type()),
-                        ) {
-                            let term = self.expr_term(args[0])?;
-                            let inner_id = get_ghost_inner_logic(self.ctx.tcx);
-                            Ok(Term {
-                                ty,
-                                span,
-                                kind: TermKind::Call {
-                                    id: inner_id,
-                                    subst: new_subst,
-                                    args: Box::new([term]),
-                                },
-                            })
+                        if is_deref(self.ctx.tcx, id)
+                            && let Some(adt) = subst.type_at(0).ty_adt_def()
+                            && is_ghost_ty(self.ctx.tcx, adt.did())
+                        {
+                            Ok(self.expr_term(args[0])?.coerce(ty).span(span))
                         } else {
                             let args: Box<[_]> = args
                                 .iter()
@@ -834,11 +814,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(Term {
                     ty,
                     span,
-                    kind: TermKind::Constructor {
-                        typ: adt_def.did(),
-                        variant: variant_index,
-                        fields,
-                    },
+                    kind: TermKind::Constructor { variant: variant_index, fields },
                 })
             }
             ExprKind::Deref { arg } => {
@@ -974,60 +950,23 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let ident = self.rename(var.0);
                 Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Binder(ident) })
             }
-            PatKind::Variant { subpatterns, adt_def, variant_index, args, .. } => {
-                let mut fields: Vec<_> = subpatterns
+            PatKind::Variant { subpatterns, variant_index, .. } => {
+                let fields = subpatterns
                     .iter()
                     .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern, mut_allowed)?)))
-                    .collect::<Result<_, Error>>()?;
-                fields.sort_by_key(|f| f.0);
-
-                let defaults = adt_def.variants()[*variant_index]
-                    .fields
-                    .iter_enumerated()
-                    .map(|(idx, f)| (idx, Pattern::wildcard(f.ty(self.ctx.tcx, args))));
-
-                let fields = defaults
-                    .merge_join_by(fields, |i: &(FieldIdx, _), j: &(FieldIdx, _)| i.0.cmp(&j.0))
-                    .map(|el| el.reduce(|_, a| a).1)
-                    .collect();
-
-                Ok(Pattern {
-                    ty: pat.ty,
-                    span: pat.span,
-                    kind: PatternKind::Constructor(*variant_index, fields),
-                })
+                    .collect::<Result<Vec<_>, Error>>()?;
+                Ok(Pattern::constructor(*variant_index, fields, pat.ty).span(pat.span))
             }
             PatKind::Leaf { subpatterns } => {
-                let mut fields: Vec<_> = subpatterns
+                let fields = subpatterns
                     .iter()
                     .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern, mut_allowed)?)))
-                    .collect::<Result<_, Error>>()?;
-                fields.sort_by_key(|f| f.0);
+                    .collect::<Result<Vec<_>, Error>>()?;
 
                 if let TyKind::Tuple(_) = pat.ty.kind() {
-                    let fields = fields.into_iter().map(|a| a.1).collect();
-                    Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Tuple(fields) })
+                    Ok(Pattern::tuple(fields.into_iter().map(|a| a.1), pat.ty).span(pat.span))
                 } else {
-                    let (adt_def, substs) = if let TyKind::Adt(def, substs) = pat.ty.kind() {
-                        (def, substs)
-                    } else {
-                        unreachable!()
-                    };
-
-                    let defaults = adt_def.variants()[0usize.into()]
-                        .fields
-                        .iter_enumerated()
-                        .map(|(idx, f)| (idx, Pattern::wildcard(f.ty(self.ctx.tcx, &substs))));
-
-                    let fields = defaults
-                        .merge_join_by(fields, |i: &(FieldIdx, _), j: &(FieldIdx, _)| i.0.cmp(&j.0))
-                        .map(|el| el.reduce(|_, a| a).1)
-                        .collect();
-                    Ok(Pattern {
-                        ty: pat.ty,
-                        span: pat.span,
-                        kind: PatternKind::Constructor(VariantIdx::ZERO, fields),
-                    })
+                    Ok(Pattern::constructor(VariantIdx::ZERO, fields, pat.ty).span(pat.span))
                 }
             }
             PatKind::Deref { subpattern } => Ok(Pattern {
@@ -1213,23 +1152,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     }
 }
 
-fn is_ghost_ty_deref<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    fn_id: DefId,
-    ty: Option<Ty<'tcx>>,
-) -> Option<&'tcx GenericArgs<'tcx>> {
-    let ty = ty?;
-    if !is_deref(tcx, fn_id) {
-        return None;
-    }
-    match ty.kind() {
-        rustc_type_ir::TyKind::Adt(containing_type, new_subst) => {
-            if is_ghost_ty(tcx, containing_type.did()) { Some(new_subst) } else { None }
-        }
-        _ => None,
-    }
-}
-
 pub(crate) fn type_invariant_term<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -1307,14 +1229,19 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
     }
 }
 
-pub trait TermVisitor<'tcx> {
-    fn visit_term(&mut self, term: &Term<'tcx>);
+pub trait TermVisitor<'tcx>: Sized {
+    fn visit_term(&mut self, term: &Term<'tcx>) {
+        super_visit_term(term, self);
+    }
+
+    fn visit_pattern(&mut self, pat: &Pattern<'tcx>) {
+        super_visit_pattern(pat, self);
+    }
 }
 
 pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: &mut V) {
     match &term.kind {
-        TermKind::Var(_) => {}
-        TermKind::Lit(_) => {}
+        TermKind::Var(_) | TermKind::Lit(_) => (),
         TermKind::SeqLiteral(fields) => fields.iter().for_each(|a| visitor.visit_term(a)),
         TermKind::Cast { arg } => visitor.visit_term(arg),
         TermKind::Coerce { arg } => visitor.visit_term(arg),
@@ -1329,7 +1256,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(body)
         }
         TermKind::Call { id: _, subst: _, args } => args.iter().for_each(|a| visitor.visit_term(a)),
-        TermKind::Constructor { typ: _, variant: _, fields } => {
+        TermKind::Constructor { variant: _, fields } => {
             fields.iter().for_each(|a| visitor.visit_term(a))
         }
         TermKind::Tuple { fields } => fields.iter().for_each(|a| visitor.visit_term(a)),
@@ -1360,8 +1287,21 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
     }
 }
 
-pub trait TermVisitorMut<'tcx> {
-    fn visit_mut_term(&mut self, term: &mut Term<'tcx>);
+pub fn super_visit_pattern<'tcx, V: TermVisitor<'tcx>>(pattern: &Pattern<'tcx>, visitor: &mut V) {
+    match &pattern.kind {
+        PatternKind::Constructor(_, patterns) => {
+            patterns.iter().for_each(|(_, p)| visitor.visit_pattern(p))
+        }
+        PatternKind::Deref(pattern) => visitor.visit_pattern(pattern),
+        PatternKind::Tuple(patterns) => patterns.iter().for_each(|p| visitor.visit_pattern(p)),
+        PatternKind::Wildcard | PatternKind::Binder(_) | PatternKind::Bool(_) => (),
+    }
+}
+
+pub trait TermVisitorMut<'tcx>: Sized {
+    fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
+        super_visit_mut_term(term, self);
+    }
 }
 
 pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
@@ -1369,25 +1309,24 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
     visitor: &mut V,
 ) {
     match &mut term.kind {
-        TermKind::Var(_) => {}
-        TermKind::Lit(_) => {}
+        TermKind::Var(_) | TermKind::Lit(_) => (),
         TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
         TermKind::Cast { arg } => visitor.visit_mut_term(&mut *arg),
         TermKind::Coerce { arg } => visitor.visit_mut_term(arg),
-        TermKind::Item(_, _) => {}
-        TermKind::Binary { op: _, lhs, rhs } => {
+        TermKind::Item(..) => {}
+        TermKind::Binary { lhs, rhs, .. } => {
             visitor.visit_mut_term(&mut *lhs);
             visitor.visit_mut_term(&mut *rhs);
         }
-        TermKind::Unary { op: _, arg } => visitor.visit_mut_term(&mut *arg),
+        TermKind::Unary { arg, .. } => visitor.visit_mut_term(&mut *arg),
         TermKind::Quant { body, trigger, .. } => {
             trigger.iter_mut().flat_map(|x| &mut x.0).for_each(|x| visitor.visit_mut_term(x));
             visitor.visit_mut_term(&mut *body)
         }
-        TermKind::Call { id: _, subst: _, args } => {
+        TermKind::Call { args, .. } => {
             args.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
         }
-        TermKind::Constructor { typ: _, variant: _, fields } => {
+        TermKind::Constructor { fields, .. } => {
             fields.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
         }
         TermKind::Tuple { fields } => {

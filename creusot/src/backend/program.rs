@@ -313,12 +313,11 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
     }
 
     fn assignment(&self, lhs: &Place<'tcx>, rhs: Term, istmts: &mut Vec<IntermediateStmt>) {
-        let local_ty = PlaceTy::from_ty(self.locals[&lhs.local].ty);
-        let (_, _, constructor) = projections_to_expr(
+        let (_, constructor) = projections_to_expr(
             self.ctx,
             self.names,
             Some(istmts),
-            local_ty,
+            &mut PlaceTy::from_ty(self.locals[&lhs.local].ty),
             Focus::new(|_| Exp::var(lhs.local)),
             Box::new(|_, x| x),
             &lhs.projections,
@@ -330,12 +329,11 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
     }
 
     fn rplace_to_expr(&self, pl: &Place<'tcx>, istmts: &mut Vec<IntermediateStmt>) -> Exp {
-        let local_ty = PlaceTy::from_ty(self.locals[&pl.local].ty);
-        let (_, rhs, _) = projections_to_expr(
+        let (rhs, _) = projections_to_expr(
             self.ctx,
             self.names,
             Some(istmts),
-            local_ty,
+            &mut PlaceTy::from_ty(self.locals[&pl.local].ty),
             Focus::new(|_| Exp::var(pl.local)),
             Box::new(|_, _| unreachable!()),
             &pl.projections,
@@ -1000,7 +998,7 @@ impl<'tcx> Statement<'tcx> {
                 let lhs_ty_low = lower.ty(lhs_ty);
                 let rhs_ty = rhs.ty(lower.ctx.tcx, lower.locals);
                 let rhs_ty_low = lower.ty(rhs_ty);
-                let rhs_local_ty = PlaceTy::from_ty(lower.locals[&rhs.local].ty);
+                let mut place_ty = PlaceTy::from_ty(lower.locals[&rhs.local].ty);
 
                 let rhs_inv_fun = if matches!(triv_inv, TrivialInv::NonTrivial) {
                     Some(Exp::var(lower.names.ty_inv(rhs_ty)))
@@ -1018,22 +1016,21 @@ impl<'tcx> Statement<'tcx> {
                 let rhs_constr;
 
                 if let BorrowKind::Final(deref_index) = bor_kind {
-                    let (original_borrow_ty, original_borrow, original_borrow_constr) =
-                        projections_to_expr(
-                            lower.ctx,
-                            lower.names,
-                            Some(&mut istmts),
-                            rhs_local_ty,
-                            Focus::new(|_| Exp::var(rhs.local)),
-                            Box::new(|_, x| x),
-                            &rhs.projections[..deref_index],
-                            |ix| Exp::var(*ix),
-                        );
-                    let (_, foc, constr) = projections_to_expr(
+                    let (original_borrow, original_borrow_constr) = projections_to_expr(
                         lower.ctx,
                         lower.names,
                         Some(&mut istmts),
-                        original_borrow_ty,
+                        &mut place_ty,
+                        Focus::new(|_| Exp::var(rhs.local)),
+                        Box::new(|_, x| x),
+                        &rhs.projections[..deref_index],
+                        |ix| Exp::var(*ix),
+                    );
+                    let (foc, constr) = projections_to_expr(
+                        lower.ctx,
+                        lower.names,
+                        Some(&mut istmts),
+                        &mut place_ty,
                         original_borrow.clone(),
                         original_borrow_constr,
                         &rhs.projections[deref_index..],
@@ -1058,11 +1055,11 @@ impl<'tcx> Statement<'tcx> {
 
                     bor_id_arg = Some(Arg::Term(borrow_id));
                 } else {
-                    let (_, foc, constr) = projections_to_expr(
+                    let (foc, constr) = projections_to_expr(
                         lower.ctx,
                         lower.names,
                         Some(&mut istmts),
-                        rhs_local_ty,
+                        &mut place_ty,
                         Focus::new(|_| Exp::var(rhs.local)),
                         Box::new(|_, x| x),
                         &rhs.projections,
@@ -1169,34 +1166,15 @@ fn pattern_of_place<'tcx>(
         let ty = pl.ty(tcx, locals);
         match el {
             ProjectionElem::Deref => pat = pat.deref(ty.ty),
-            ProjectionElem::Field(fidx, _) => match ty.ty.kind() {
-                TyKind::Adt(adt, substs) => {
-                    let variant = ty.variant_index.unwrap_or(VariantIdx::ZERO);
-                    let mut fields: Box<[_]> = adt.variants()[variant]
-                        .fields
-                        .iter()
-                        .map(|f| Pattern::wildcard(f.ty(tcx, substs)))
-                        .collect();
-                    fields[fidx.as_usize()] = pat;
-                    pat = Pattern::constructor(variant, fields, ty.ty)
-                }
-                TyKind::Tuple(tys) => {
-                    let mut fields: Box<[_]> = tys.iter().map(Pattern::wildcard).collect();
-                    fields[fidx.as_usize()] = pat;
-                    pat = Pattern::tuple(fields, ty.ty)
-                }
-                TyKind::Closure(_, substs) => {
-                    let mut fields: Box<[_]> = substs
-                        .as_closure()
-                        .upvar_tys()
-                        .into_iter()
-                        .map(Pattern::wildcard)
-                        .collect();
-                    fields[fidx.as_usize()] = pat;
-                    pat = Pattern::constructor(VariantIdx::ZERO, fields, ty.ty)
-                }
-                _ => unreachable!(),
-            },
+            ProjectionElem::Field(fidx, _) if let TyKind::Tuple(tys) = ty.ty.kind() => {
+                let mut fields: Box<[_]> = tys.iter().map(Pattern::wildcard).collect();
+                fields[fidx.as_usize()] = pat;
+                pat = Pattern::tuple(fields, ty.ty)
+            }
+            ProjectionElem::Field(fidx, _) => {
+                let variant = ty.variant_index.unwrap_or(VariantIdx::ZERO);
+                pat = Pattern::constructor(variant, [(fidx, pat)], ty.ty)
+            }
             ProjectionElem::Downcast(_, _) => {}
             ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
                 todo!("Array and slice patterns are currently not supported")

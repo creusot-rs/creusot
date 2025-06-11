@@ -4,7 +4,7 @@ use rustc_span::DUMMY_SP;
 use rustc_type_ir::TyKind;
 
 use crate::{
-    contracts_items::{get_builtin, is_snap_ty, is_trusted},
+    contracts_items::{get_builtin, is_trusted},
     translation::pearlite::{Ident, Pattern, Term, TermKind},
 };
 
@@ -22,11 +22,8 @@ pub fn structural_resolve<'tcx>(
             Some(resolve_of(ctx, typing_env, subject.coerce(args.type_at(0))))
         }
         TyKind::Adt(adt, _) if is_trusted(ctx.tcx, adt.did()) => None,
-        TyKind::Adt(adt, _) if is_snap_ty(ctx.tcx, adt.did()) => Some(Term::true_(ctx.tcx)),
-        TyKind::Adt(adt, _) if get_builtin(ctx.tcx, adt.did()).is_some() => {
-            Some(Term::true_(ctx.tcx))
-        }
         TyKind::Adt(adt, args) => {
+            assert!(get_builtin(ctx.tcx, adt.did()).is_none());
             let arms = adt
                 .variants()
                 .iter_enumerated()
@@ -38,7 +35,7 @@ pub fn structural_resolve<'tcx>(
                             let sym = Ident::fresh_local(&format!("x{}", ix.as_usize()));
                             let fty = f.ty(ctx.tcx, args);
                             (
-                                Pattern::binder(sym, fty),
+                                (ix, Pattern::binder(sym, fty)),
                                 resolve_of(ctx, typing_env, Term::var(sym, fty)),
                             )
                         })

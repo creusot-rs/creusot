@@ -19,7 +19,6 @@ pub struct List<T> {
 }
 
 impl<T> Invariant for List<T> {
-    #[open]
     #[predicate]
     fn invariant(self) -> bool {
         pearlite! {
@@ -42,7 +41,6 @@ impl<T> View for List<T> {
     type ViewTy = Seq<T>;
 
     #[logic]
-    #[open(self)]
     fn view(self) -> Self::ViewTy {
         pearlite! {
             seq_map(*self.seq, |ptr_own: PtrOwn<Cell<T>>| ptr_own.val().v)
@@ -51,7 +49,6 @@ impl<T> View for List<T> {
 }
 
 #[logic]
-#[open(self)]
 pub fn seq_map<T, U>(s: Seq<T>, f: logic::Mapping<T, U>) -> Seq<U> {
     Seq::create(s.len(), |i| f.get(s[i]))
 }

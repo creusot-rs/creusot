@@ -15,7 +15,6 @@ const NULL: Ptr = usize::MAX;
 impl IndexLogic<Ptr> for Memory {
     type Item = Ptr;
 
-    #[open(self)]
     #[logic]
     fn index_logic(self, i: Ptr) -> Ptr {
         pearlite! { self.0[i] }
@@ -44,13 +43,11 @@ impl IndexMut<Ptr> for Memory {
 }
 
 impl Memory {
-    #[open(self)]
     #[predicate]
     pub fn nonnull_ptr(self, i: Ptr) -> bool {
         pearlite! { self.0@.len() <= usize::MAX@ && i@ < self.0@.len() }
     }
 
-    #[open(self)]
     #[predicate]
     pub fn mem_is_well_formed(self) -> bool {
         pearlite! {
@@ -86,7 +83,6 @@ impl Memory {
         }
     }
 
-    #[open(self)]
     #[predicate]
     pub fn list(self, first: Ptr, s: Seq<Ptr>) -> bool {
         pearlite! {
@@ -111,7 +107,6 @@ impl Memory {
         return r;
     }
 
-    #[open(self)]
     #[predicate]
     pub fn loop_(self, first: Ptr, s: Seq<Ptr>) -> bool {
         pearlite! {
@@ -146,7 +141,6 @@ impl Memory {
         return r;
     }
 
-    #[open(self)]
     #[predicate]
     pub fn lasso(self, first: Ptr, s1: Seq<Ptr>, s2: Seq<Ptr>) -> bool {
         pearlite! {
@@ -260,7 +254,6 @@ impl Memory {
     }
 
     #[logic]
-    #[open(self)]
     #[requires(self.mem_is_well_formed())]
     #[requires(first == NULL || self.nonnull_ptr(first))]
     #[ensures(match result {
