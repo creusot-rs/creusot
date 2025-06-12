@@ -142,26 +142,28 @@ impl<T: ?Sized> PtrOwn<T> {
 }
 
 impl<T> PtrOwn<T> {
+    // Convert `&PtrOwn<T>` into `&SliceOwn<T>` representing a singleton slice.
     #[trusted]
     #[pure]
     #[ensures(result.ptr() == self.ptr())]
     #[ensures(result.contents() == Seq::singleton(*self.val()))]
-    pub fn as_slice_own_ref(&self) -> Ghost<&SliceOwn<T>> {
-        Ghost::conjure()
+    pub fn as_slice_own_ref_ghost(&self) -> &SliceOwn<T> {
+        unreachable!("ghost primitive")
     }
 
+    // Convert `&mut PtrOwn<T>` into `&mut SliceOwn<T>` representing a singleton slice.
     #[trusted]
     #[pure]
     #[ensures(result.ptr() == self.ptr())]
     #[ensures(result.contents() == Seq::singleton(*self.val()))]
     #[ensures((^self).ptr() == self.ptr())]
-    #[ensures((^result.inner_logic()).contents() == Seq::singleton(*(^self).val()))]
-    pub fn as_slice_own_mut(&mut self) -> Ghost<&mut SliceOwn<T>> {
-        Ghost::conjure()
+    #[ensures((^result).contents() == Seq::singleton(*(^self).val()))]
+    pub fn as_slice_own_mut_ghost(&mut self) -> &mut SliceOwn<T> {
+        unreachable!("ghost primitive")
     }
 }
 
-/// Represents ownership of a block of memory containing a sequence of `T` values.
+/// Ownership of a slice: a block of memory containing a sequence of `T` values.
 #[allow(dead_code)]
 pub struct SliceOwn<T> {
     ptr: RawPtr<T>,
@@ -169,51 +171,35 @@ pub struct SliceOwn<T> {
 }
 
 impl<T> SliceOwn<T> {
+    /// The raw pointer whose ownership is tracked by this `SliceOwn`.
     #[logic]
     #[open(self)]
     pub fn ptr(&self) -> RawPtr<T> {
         self.ptr
     }
 
+    /// The sequence of values stored at address [`self.ptr()`](Self::ptr).
     #[logic]
     #[open(self)]
     pub fn contents(&self) -> Seq<T> {
         self.block
     }
 
+    /// The number of elements in the slice.
     #[logic]
     #[open]
     pub fn len(&self) -> Int {
         self.contents().len()
     }
 
+    /// Access the logical element at the given index. `None` if out of bounds.
     #[logic]
     #[open(self)]
     pub fn get(&self, index: Int) -> Option<T> {
         self.block.get(index)
     }
 
-    #[pure]
-    #[requires(0 <= index && index < self.len())]
-    #[ensures(result.ptr() == self.ptr().offset_logic(index))]
-    #[ensures(*result.val() == self.contents()[index])]
-    pub fn index_ptr_own_ref_ghost(&self, index: Int) -> &PtrOwn<T> {
-        self.split_at_ghost(index).1.as_ptr_own_ref_ghost()
-    }
-
-    #[pure]
-    #[requires(0 <= index && index < self.len())]
-    #[ensures(result.ptr() == self.ptr().offset_logic(index))]
-    #[ensures(*result.val() == self.contents()[index])]
-    #[ensures((^self).ptr() == self.ptr())]
-    #[ensures((^self).len() == self.len())]
-    #[ensures(*(^result).val() == (^self).contents()[index])]
-    #[ensures(forall<k: Int> k != index ==> (^self).contents().get(k) == self.contents().get(k))]
-    pub fn index_ptr_own_mut_ghost(&mut self, index: Int) -> &mut PtrOwn<T> {
-        self.split_at_mut_ghost(index).1.as_ptr_own_mut_ghost()
-    }
-
-
+    /// Split a `&SliceOwn` into two subslices.
     #[trusted]
     #[pure]
     #[requires(0 <= index && index <= self.len())]
@@ -222,41 +208,66 @@ impl<T> SliceOwn<T> {
     #[ensures(result.1.contents() == self.contents().subsequence(index, self.len()))]
     pub fn split_at_ghost(&self, index: Int) -> (&Self, &Self) {
         let _ = index;
-        panic!()
+        unreachable!("ghost primitive")
     }
 
+    /// Split a `&mut SliceOwn` into two subslices.
     #[trusted]
     #[pure]
     #[requires(0 <= index && index <= self.len())]
     #[ensures(result.0.ptr() == self.ptr() && result.1.ptr() == self.ptr().offset_logic(index))]
-    #[ensures((^self).ptr() == self.ptr() && (^result.0).ptr() == result.0.ptr() && (^result.1).ptr() == result.1.ptr())]
-    #[ensures((^self).len() == self.len())]
     #[ensures(result.0.contents() == self.contents().subsequence(0, index) && (^result.0).contents() == (^self).contents().subsequence(0, index))]
     #[ensures(result.1.contents() == self.contents().subsequence(index, self.len()) && (^result.1).contents() == (^self).contents().subsequence(index, self.len()))]
+    #[ensures((^self).ptr() == self.ptr())]
+    #[ensures((^self).len() == self.len())]
     pub fn split_at_mut_ghost(&mut self, index: Int) -> (&mut Self, &mut Self) {
         let _ = index;
-        panic!()
+        unreachable!("ghost primitive")
     }
 
+    /// Convert a `&SliceOwn` into a `&PtrOwn` for the first element.
     #[trusted]
     #[pure]
     #[requires(self.len() > 0)]
     #[ensures(result.ptr() == self.ptr())]
     #[ensures(*result.val() == self.contents()[0])]
     pub fn as_ptr_own_ref_ghost(&self) -> &PtrOwn<T> {
-        panic!()
+        unreachable!("ghost primitive")
     }
 
+    /// Convert a `&mut SliceOwn` into a `&mut PtrOwn` for the first element.
     #[trusted]
     #[pure]
     #[requires(self.len() > 0)]
     #[ensures(result.ptr() == self.ptr())]
     #[ensures(*result.val() == self.contents()[0])]
+    #[ensures(*(^result).val() == (^self).contents()[0])]
     #[ensures((^self).ptr() == self.ptr())]
     #[ensures((^self).len() == self.len())]
-    #[ensures(*(^result).val() == (^self).contents()[0])]
     #[ensures(forall<i: Int> 0 < i && i < self.len() ==> (^self).contents()[i] == self.contents()[i])]
     pub fn as_ptr_own_mut_ghost(&mut self) -> &mut PtrOwn<T> {
-        panic!()
+        unreachable!("ghost primitive")
+    }
+
+    /// Convert a `&SliceOwn` into a `&PtrOwn` for the element at the given index.
+    #[pure]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(result.ptr() == self.ptr().offset_logic(index))]
+    #[ensures(*result.val() == self.contents()[index])]
+    pub fn index_ptr_own_ref_ghost(&self, index: Int) -> &PtrOwn<T> {
+        self.split_at_ghost(index).1.as_ptr_own_ref_ghost()
+    }
+
+    /// Convert a `&mut SliceOwn` into a `&mut PtrOwn` for the element at the given index.
+    #[pure]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(result.ptr() == self.ptr().offset_logic(index))]
+    #[ensures(*result.val() == self.contents()[index])]
+    #[ensures(*(^result).val() == (^self).contents()[index])]
+    #[ensures((^self).ptr() == self.ptr())]
+    #[ensures((^self).len() == self.len())]
+    #[ensures(forall<k: Int> k != index ==> (^self).contents().get(k) == self.contents().get(k))]
+    pub fn index_ptr_own_mut_ghost(&mut self, index: Int) -> &mut PtrOwn<T> {
+        self.split_at_mut_ghost(index).1.as_ptr_own_mut_ghost()
     }
 }
