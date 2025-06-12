@@ -1,5 +1,5 @@
 use crate::{
-    ptr_own::{BlockOwn, RawPtr},
+    ptr_own::{SliceOwn, RawPtr},
     *,
 };
 pub use ::std::ptr::*;
@@ -106,7 +106,7 @@ pub trait SizedPointerExt<T>: PointerExt<T> {
     fn offset_logic(self, offset: Int) -> RawPtr<T>;
 
     /// Restriction of `add` that requires evidence that the addition is safe.
-    /// We simply require a borrow of the `BlockOwn` token for the result pointer.
+    /// We simply require a borrow of the `SliceOwn` token for the result pointer.
     /// In particular, this accounts for one-past-the-end pointers, which point to a zero-sized block.
     ///
     /// From https://doc.rust-lang.org/std/primitive.pointer.html#method.add:
@@ -120,7 +120,7 @@ pub trait SizedPointerExt<T>: PointerExt<T> {
     /// >   In particular, this range must not “wrap around” the edge of the address space.
     #[requires(own.ptr() == self.offset_logic(offset@))]
     #[ensures(own.ptr() == result.raw())]
-    unsafe fn add_own(self, offset: usize, own: Ghost<&BlockOwn<T>>) -> Self;
+    unsafe fn add_own(self, offset: usize, own: Ghost<&SliceOwn<T>>) -> Self;
 }
 
 impl<T> SizedPointerExt<T> for *const T {
@@ -136,7 +136,7 @@ impl<T> SizedPointerExt<T> for *const T {
     #[trusted]
     #[requires(own.ptr() == self.offset_logic(offset@))]
     #[ensures(own.ptr() == result.raw())]
-    unsafe fn add_own(self, offset: usize, own: Ghost<&BlockOwn<T>>) -> Self {
+    unsafe fn add_own(self, offset: usize, own: Ghost<&SliceOwn<T>>) -> Self {
         self.add(offset)
     }
 }
@@ -154,7 +154,7 @@ impl<T> SizedPointerExt<T> for *mut T {
     #[trusted]
     #[requires(own.ptr() == self.offset_logic(offset@))]
     #[ensures(own.ptr() == result.raw())]
-    unsafe fn add_own(self, offset: usize, own: Ghost<&BlockOwn<T>>) -> Self {
+    unsafe fn add_own(self, offset: usize, own: Ghost<&SliceOwn<T>>) -> Self {
         self.add(offset)
     }
 }

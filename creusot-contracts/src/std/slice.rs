@@ -1,6 +1,6 @@
 use crate::{
     invariant::*,
-    ptr_own::{BlockOwn, PtrOwn, RawPtr},
+    ptr_own::{SliceOwn, PtrOwn, RawPtr},
     resolve::structural_resolve,
     std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
     *,
@@ -68,10 +68,10 @@ pub trait SliceExt<T> {
     fn to_ref_seq(&self) -> Seq<&T>;
 
     #[pure]
-    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<&BlockOwn<T>>);
+    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<&SliceOwn<T>>);
 
     #[pure]
-    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<&mut BlockOwn<T>>);
+    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<&mut SliceOwn<T>>);
 }
 
 impl<T> SliceExt<T> for [T] {
@@ -96,7 +96,7 @@ impl<T> SliceExt<T> for [T] {
     #[pure]
     #[ensures(result.0 == result.1.ptr())]
     #[ensures(result.1.contents() == self@)]
-    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<&BlockOwn<T>>) {
+    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<&SliceOwn<T>>) {
         (self.as_ptr(), Ghost::conjure())
     }
 
@@ -106,7 +106,7 @@ impl<T> SliceExt<T> for [T] {
     #[ensures(result.0 == (^result.1.inner_logic()).ptr())]
     #[ensures(result.1.contents() == self@)]
     #[ensures((^result.1.inner_logic()).contents() == (^self)@)]
-    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<&mut BlockOwn<T>>) {
+    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<&mut SliceOwn<T>>) {
         (self.as_ptr(), Ghost::conjure())
     }
 }
@@ -121,7 +121,7 @@ impl<T> SliceExt<T> for [T] {
 pub fn slice_from_raw_parts<T>(
     data: *const T,
     len: usize,
-    own: Ghost<&BlockOwn<T>>,
+    own: Ghost<&SliceOwn<T>>,
 ) -> (*const [T], Ghost<&PtrOwn<[T]>>) {
     (ptr::from_raw_parts(data, len), Ghost::conjure())
 }
@@ -139,7 +139,7 @@ pub fn slice_from_raw_parts<T>(
 pub fn slice_from_raw_parts_mut<T>(
     data: *mut T,
     len: usize,
-    own: Ghost<&mut BlockOwn<T>>,
+    own: Ghost<&mut SliceOwn<T>>,
 ) -> (*mut [T], Ghost<&mut PtrOwn<[T]>>) {
     (ptr::from_raw_parts_mut(data, len), Ghost::conjure())
 }

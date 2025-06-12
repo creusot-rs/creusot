@@ -146,7 +146,7 @@ impl<T> PtrOwn<T> {
     #[pure]
     #[ensures(result.ptr() == self.ptr())]
     #[ensures(result.contents() == Seq::singleton(*self.val()))]
-    pub fn as_block_own_ref(&self) -> Ghost<&BlockOwn<T>> {
+    pub fn as_slice_own_ref(&self) -> Ghost<&SliceOwn<T>> {
         Ghost::conjure()
     }
 
@@ -156,19 +156,19 @@ impl<T> PtrOwn<T> {
     #[ensures(result.contents() == Seq::singleton(*self.val()))]
     #[ensures((^self).ptr() == self.ptr())]
     #[ensures((^result.inner_logic()).contents() == Seq::singleton(*(^self).val()))]
-    pub fn as_block_own_mut(&mut self) -> Ghost<&mut BlockOwn<T>> {
+    pub fn as_slice_own_mut(&mut self) -> Ghost<&mut SliceOwn<T>> {
         Ghost::conjure()
     }
 }
 
 /// Represents ownership of a block of memory containing a sequence of `T` values.
 #[allow(dead_code)]
-pub struct BlockOwn<T> {
+pub struct SliceOwn<T> {
     ptr: RawPtr<T>,
     block: Seq<T>,
 }
 
-impl<T> BlockOwn<T> {
+impl<T> SliceOwn<T> {
     #[logic]
     #[open(self)]
     pub fn ptr(&self) -> RawPtr<T> {
