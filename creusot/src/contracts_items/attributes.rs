@@ -46,6 +46,7 @@ attribute_functions! {
     [creusot::before_loop]                   => is_before_loop
     [creusot::spec::assert]                  => is_assertion
     [creusot::spec::snapshot]                => is_snapshot_closure
+    [creusot::logic_closure]                 => is_logic_closure // marks `forall`, `exists`, and mappings
     [creusot::decl::logic]                   => is_logic
     [creusot::decl::logic::prophetic]        => is_prophetic
     [creusot::decl::predicate]               => is_predicate
@@ -70,6 +71,7 @@ pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
 pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
     is_predicate(tcx, def_id)
         || is_spec(tcx, def_id)
+        || is_logic_closure(tcx, def_id)
         || is_logic(tcx, def_id)
         || is_assertion(tcx, def_id)
         || is_snapshot_closure(tcx, def_id)
