@@ -193,15 +193,14 @@ impl<T> BlockOwn<T> {
         self.block.get(index)
     }
 
-    #[allow(unused_variables)]
-    #[trusted] // TODO
     #[pure]
-    pub fn get_ptr_own_ref(&self, index: Int) -> &PtrOwn<T> {
-        todo!()
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(result.ptr() == self.ptr().offset_logic(index))]
+    #[ensures(*result.val() == self.contents()[index])]
+    pub fn index_ptr_own_ref_ghost(&self, index: Int) -> &PtrOwn<T> {
+        self.split_at_ghost(index).1.as_ptr_own_ref_ghost()
     }
 
-    #[allow(unused_variables)]
-    #[trusted] // TODO
     #[pure]
     #[requires(0 <= index && index < self.len())]
     #[ensures(result.ptr() == self.ptr().offset_logic(index))]
@@ -210,41 +209,54 @@ impl<T> BlockOwn<T> {
     #[ensures((^self).len() == self.len())]
     #[ensures(*(^result).val() == (^self).contents()[index])]
     #[ensures(forall<k: Int> k != index ==> (^self).contents().get(k) == self.contents().get(k))]
-    pub fn get_ptr_own_mut(&mut self, index: Int) -> &mut PtrOwn<T> {
-        todo!()
+    pub fn index_ptr_own_mut_ghost(&mut self, index: Int) -> &mut PtrOwn<T> {
+        self.split_at_mut_ghost(index).1.as_ptr_own_mut_ghost()
     }
 
-    #[allow(unused_variables)]
+
     #[trusted]
     #[pure]
-    #[requires(index <= self.len())]
+    #[requires(0 <= index && index <= self.len())]
     #[ensures(result.0.ptr() == self.ptr() && result.1.ptr() == self.ptr().offset_logic(index))]
-    #[ensures((^self).ptr() == self.ptr() && (^result.inner_logic().0).ptr() == result.0.ptr() && (^result.inner_logic().1).ptr() == result.1.ptr())]
-    #[ensures(result.0.contents() == self.contents().subsequence(0, index) && (^result.inner_logic().0).contents() == (^self).contents().subsequence(0, index))]
-    #[ensures(result.1.contents() == self.contents().subsequence(index, self.len()) && (^result.inner_logic().1).contents() == (^self).contents().subsequence(index, self.len()))]
-    pub fn split_at_mut(&mut self, index: Int) -> Ghost<(&mut Self, &mut Self)> {
-        Ghost::conjure()
+    #[ensures(result.0.contents() == self.contents().subsequence(0, index))]
+    #[ensures(result.1.contents() == self.contents().subsequence(index, self.len()))]
+    pub fn split_at_ghost(&self, index: Int) -> (&Self, &Self) {
+        let _ = index;
+        panic!()
+    }
+
+    #[trusted]
+    #[pure]
+    #[requires(0 <= index && index <= self.len())]
+    #[ensures(result.0.ptr() == self.ptr() && result.1.ptr() == self.ptr().offset_logic(index))]
+    #[ensures((^self).ptr() == self.ptr() && (^result.0).ptr() == result.0.ptr() && (^result.1).ptr() == result.1.ptr())]
+    #[ensures((^self).len() == self.len())]
+    #[ensures(result.0.contents() == self.contents().subsequence(0, index) && (^result.0).contents() == (^self).contents().subsequence(0, index))]
+    #[ensures(result.1.contents() == self.contents().subsequence(index, self.len()) && (^result.1).contents() == (^self).contents().subsequence(index, self.len()))]
+    pub fn split_at_mut_ghost(&mut self, index: Int) -> (&mut Self, &mut Self) {
+        let _ = index;
+        panic!()
     }
 
     #[trusted]
     #[pure]
     #[requires(self.len() > 0)]
     #[ensures(result.ptr() == self.ptr())]
-    #[ensures(Some(*result.val()) == self.get(0))]
-    pub fn as_ptr_own_ref(&self) -> Ghost<&PtrOwn<T>> {
-        Ghost::conjure()
+    #[ensures(*result.val() == self.contents()[0])]
+    pub fn as_ptr_own_ref_ghost(&self) -> &PtrOwn<T> {
+        panic!()
     }
 
     #[trusted]
     #[pure]
     #[requires(self.len() > 0)]
     #[ensures(result.ptr() == self.ptr())]
-    #[ensures(Some(*result.val()) == self.get(0))]
+    #[ensures(*result.val() == self.contents()[0])]
     #[ensures((^self).ptr() == self.ptr())]
     #[ensures((^self).len() == self.len())]
-    #[ensures((^self).contents()[0] == *(^result.inner_logic()).val())]
-    #[ensures(forall<i: Int> i < 0 && i < self.len() ==> (^self).contents()[i] == self.contents()[i])]
-    pub fn as_ptr_own_mut(&mut self) -> Ghost<&mut PtrOwn<T>> {
-        Ghost::conjure()
+    #[ensures(*(^result).val() == (^self).contents()[0])]
+    #[ensures(forall<i: Int> 0 < i && i < self.len() ==> (^self).contents()[i] == self.contents()[i])]
+    pub fn as_ptr_own_mut_ghost(&mut self) -> &mut PtrOwn<T> {
+        panic!()
     }
 }
