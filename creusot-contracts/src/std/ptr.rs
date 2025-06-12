@@ -45,10 +45,12 @@ pub trait PointerExt<T: ?Sized>: Sized {
     #[logic]
     fn addr_logic(self) -> usize;
 
+    /// `true` if the pointer is null.
     #[logic]
     #[ensures(result == (self.addr_logic() == 0usize))]
     fn is_null_logic(self) -> bool;
 
+    /// Convert a pointer to `RawPtr<T>`.
     #[logic]
     #[ensures(result.addr_logic() == self.addr_logic())]
     fn raw(self) -> RawPtr<T>;
@@ -100,9 +102,10 @@ impl<T: ?Sized> PointerExt<T> for *mut T {
 }
 
 pub trait SizedPointerExt<T>: PointerExt<T> {
-    /// Logic version of `add` for pointers.
+    /// Logic version of `offset` for pointers.
     #[logic]
-    #[ensures(self.addr_logic()@ + offset < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset)]
+    // TODO: size_of
+    // #[ensures(self.addr_logic()@ + offset < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset * size_of::<T>()@)]
     fn offset_logic(self, offset: Int) -> RawPtr<T>;
 
     /// Restriction of `add` that requires evidence that the addition is safe.
@@ -127,7 +130,8 @@ impl<T> SizedPointerExt<T> for *const T {
     #[trusted]
     #[logic]
     #[open(self)]
-    #[ensures(self.addr_logic()@ + offset < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset)]
+    // TODO: size_of
+    // #[ensures(self.addr_logic()@ + offset < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset * size_of::<T>()@)]
     fn offset_logic(self, offset: Int) -> RawPtr<T> {
         let _ = offset;
         dead
@@ -145,7 +149,8 @@ impl<T> SizedPointerExt<T> for *mut T {
     #[trusted]
     #[logic]
     #[open(self)]
-    #[ensures(self.addr_logic()@ + offset < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset)]
+    // TODO: size_of
+    // #[ensures(self.addr_logic()@ + offset < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset * size_of::<T>()@)]
     fn offset_logic(self, offset: Int) -> RawPtr<T> {
         let _ = offset;
         dead

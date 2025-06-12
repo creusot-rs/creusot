@@ -92,6 +92,7 @@ impl<T> SliceExt<T> for [T] {
         dead
     }
 
+    /// Convert `&[T]` to `*const T` and a shared ownership token.
     #[trusted]
     #[pure]
     #[ensures(result.0 == result.1.ptr())]
@@ -100,7 +101,7 @@ impl<T> SliceExt<T> for [T] {
         (self.as_ptr(), Ghost::conjure())
     }
 
-    /// Convert `&mut [T]` to `*mut T` along with mutable ownership tokens.
+    /// Convert `&mut [T]` to `*mut T` and a mutable ownership token.
     #[trusted]
     #[pure]
     #[ensures(result.0 == result.1.ptr())]
@@ -112,9 +113,9 @@ impl<T> SliceExt<T> for [T] {
     }
 }
 
-/// Convert `*const T` to `*const [T]` along with shared ownership tokens.
+/// Combine `*const T` and a slice length into `*const [T]` along with shared ownership tokens.
 ///
-/// This is part of the construction of a `&[T]` from a raw pointer.
+/// This is part of the construction of a `&[T]` from a raw pointer. Use `PtrOwn::as_ref`.
 #[allow(unused_variables)]
 #[trusted] // TODO: verify implementation
 #[requires(own.ptr() == data.raw())]
@@ -130,9 +131,9 @@ pub fn slice_from_raw_parts<T>(
     (ptr::from_raw_parts(data, len), Ghost::conjure())
 }
 
-/// Convert `*mut T` to `*mut [T]` along with mutable ownership tokens.
+/// Combine `*mut T` and a slice length into to `*mut [T]` along with mutable ownership tokens.
 ///
-/// This is part of the construction of a `&mut [T]` from a raw pointer.
+/// This is part of the construction of a `&mut [T]` from a raw pointer. Use `PtrOwn::as_mut`.
 #[allow(unused_variables)]
 #[trusted] // TODO: verify implementation
 #[requires(own.ptr() == data.raw())]
