@@ -294,6 +294,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             ts = quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::#quant_token(
                     #[creusot::no_translate]
+                    #[creusot::logic_closure]
                     |#args| { #ts }
                 )
             };
@@ -305,9 +306,8 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let inputs = &clos.inputs;
             let retty = &clos.output;
             let clos = encode_term(&clos.body)?;
-
             Ok(
-                quote_spanned! {sp=> ::creusot_contracts::__stubs::mapping_from_fn(#[creusot::no_translate] |#inputs| #retty #clos)},
+                quote_spanned! {sp=> ::creusot_contracts::__stubs::mapping_from_fn(#[creusot::no_translate] #[creusot::logic_closure] |#inputs| #retty #clos)},
             )
         }
         RT::__Nonexhaustive => todo!(),
