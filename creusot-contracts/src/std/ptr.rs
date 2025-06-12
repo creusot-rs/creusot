@@ -68,12 +68,11 @@ impl<T: ?Sized> PointerExt<T> for *const T {
         self.addr_logic() == 0usize
     }
 
-    #[trusted] // TODO cast *const to *const
     #[logic]
     #[open]
     #[ensures(result.addr_logic() == self.addr_logic())]
     fn raw(self) -> RawPtr<T> {
-        self as RawPtr<T>
+        self
     }
 }
 

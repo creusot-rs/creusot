@@ -176,6 +176,12 @@ impl<T> BlockOwn<T> {
     }
 
     #[logic]
+    #[open(self)]
+    pub fn contents(&self) -> Seq<T> {
+        self.block
+    }
+
+    #[logic]
     #[open]
     pub fn len(&self) -> Int {
         self.contents().len()
@@ -197,14 +203,15 @@ impl<T> BlockOwn<T> {
     #[allow(unused_variables)]
     #[trusted] // TODO
     #[pure]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(result.ptr() == self.ptr().offset_logic(index))]
+    #[ensures(*result.val() == self.contents()[index])]
+    #[ensures((^self).ptr() == self.ptr())]
+    #[ensures((^self).len() == self.len())]
+    #[ensures(*(^result).val() == (^self).contents()[index])]
+    #[ensures(forall<k: Int> k != index ==> (^self).contents().get(k) == self.contents().get(k))]
     pub fn get_ptr_own_mut(&mut self, index: Int) -> &mut PtrOwn<T> {
         todo!()
-    }
-
-    #[logic]
-    #[open(self)]
-    pub fn contents(&self) -> Seq<T> {
-        self.block
     }
 
     #[allow(unused_variables)]
@@ -233,7 +240,8 @@ impl<T> BlockOwn<T> {
     #[requires(self.len() > 0)]
     #[ensures(result.ptr() == self.ptr())]
     #[ensures(Some(*result.val()) == self.get(0))]
-    #[ensures((^self).ptr() == self.ptr() && (^result.inner_logic()).ptr() == result.ptr())] // Are these necessary?
+    #[ensures((^self).ptr() == self.ptr())]
+    #[ensures((^self).len() == self.len())]
     #[ensures((^self).contents()[0] == *(^result.inner_logic()).val())]
     #[ensures(forall<i: Int> i < 0 && i < self.len() ==> (^self).contents()[i] == self.contents()[i])]
     pub fn as_ptr_own_mut(&mut self) -> Ghost<&mut PtrOwn<T>> {
