@@ -148,7 +148,7 @@ impl<T> PtrOwn<T> {
     #[ensures(result.ptr() == self.ptr())]
     #[ensures(result.contents() == Seq::singleton(*self.val()))]
     pub fn as_slice_own_ref_ghost(&self) -> &SliceOwn<T> {
-        unreachable!("ghost primitive")
+        unreachable!("BUG: called ghost function in normal code")
     }
 
     // Convert `&mut PtrOwn<T>` into `&mut SliceOwn<T>` representing a singleton slice.
@@ -159,7 +159,7 @@ impl<T> PtrOwn<T> {
     #[ensures((^self).ptr() == self.ptr())]
     #[ensures((^result).contents() == Seq::singleton(*(^self).val()))]
     pub fn as_slice_own_mut_ghost(&mut self) -> &mut SliceOwn<T> {
-        unreachable!("ghost primitive")
+        unreachable!("BUG: called ghost function in normal code")
     }
 }
 
@@ -208,7 +208,7 @@ impl<T> SliceOwn<T> {
     #[ensures(result.1.contents() == self.contents().subsequence(index, self.len()))]
     pub fn split_at_ghost(&self, index: Int) -> (&Self, &Self) {
         let _ = index;
-        unreachable!("ghost primitive")
+        unreachable!("BUG: called ghost function in normal code")
     }
 
     /// Split a `&mut SliceOwn` into two subslices.
@@ -222,7 +222,7 @@ impl<T> SliceOwn<T> {
     #[ensures((^self).len() == self.len())]
     pub fn split_at_mut_ghost(&mut self, index: Int) -> (&mut Self, &mut Self) {
         let _ = index;
-        unreachable!("ghost primitive")
+        unreachable!("BUG: called ghost function in normal code")
     }
 
     /// Convert a `&SliceOwn` into a `&PtrOwn` for the first element.
@@ -232,7 +232,7 @@ impl<T> SliceOwn<T> {
     #[ensures(result.ptr() == self.ptr())]
     #[ensures(*result.val() == self.contents()[0])]
     pub fn as_ptr_own_ref_ghost(&self) -> &PtrOwn<T> {
-        unreachable!("ghost primitive")
+        unreachable!("BUG: called ghost function in normal code")
     }
 
     /// Convert a `&mut SliceOwn` into a `&mut PtrOwn` for the first element.
@@ -246,7 +246,7 @@ impl<T> SliceOwn<T> {
     #[ensures((^self).len() == self.len())]
     #[ensures(forall<i: Int> 0 < i && i < self.len() ==> (^self).contents()[i] == self.contents()[i])]
     pub fn as_ptr_own_mut_ghost(&mut self) -> &mut PtrOwn<T> {
-        unreachable!("ghost primitive")
+        unreachable!("BUG: called ghost function in normal code")
     }
 
     /// Convert a `&SliceOwn` into a `&PtrOwn` for the element at the given index.

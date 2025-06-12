@@ -124,6 +124,10 @@ pub trait SizedPointerExt<T>: PointerExt<T> {
     #[requires(own.ptr() == self.offset_logic(offset@))]
     #[ensures(own.ptr() == result.raw())]
     unsafe fn add_own(self, offset: usize, own: Ghost<&SliceOwn<T>>) -> Self;
+
+    #[law]
+    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
+    fn offset_logic_hom(self, offset1: Int, offset2: Int);
 }
 
 impl<T> SizedPointerExt<T> for *const T {
@@ -143,6 +147,11 @@ impl<T> SizedPointerExt<T> for *const T {
     unsafe fn add_own(self, offset: usize, own: Ghost<&SliceOwn<T>>) -> Self {
         self.add(offset)
     }
+
+    #[trusted]
+    #[law]
+    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
+    fn offset_logic_hom(self, offset1: Int, offset2: Int) {}
 }
 
 impl<T> SizedPointerExt<T> for *mut T {
@@ -162,6 +171,11 @@ impl<T> SizedPointerExt<T> for *mut T {
     unsafe fn add_own(self, offset: usize, own: Ghost<&SliceOwn<T>>) -> Self {
         self.add(offset)
     }
+
+    #[trusted]
+    #[law]
+    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
+    fn offset_logic_hom(self, offset1: Int, offset2: Int) {}
 }
 
 extern_spec! {
