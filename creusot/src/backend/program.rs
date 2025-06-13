@@ -19,11 +19,12 @@ use crate::{
         signature::lower_program_sig,
         term::{lower_pat, lower_pure, unsupported_cast},
         ty::{
-            constructor, floatty_to_prelude, int_ty, is_int, ity_to_prelude, translate_ty,
-            ty_to_prelude, uty_to_prelude,
+            constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, ty_to_prelude,
+            uty_to_prelude,
         },
         wto::{Component, weak_topological_order},
     },
+    contracts_items::get_wf_relation,
     ctx::{BodyId, Dependencies},
     naming::name,
     translated_item::FileModule,
@@ -33,6 +34,7 @@ use crate::{
             StatementKind, Terminator, TrivialInv,
         },
         pearlite::{self, Pattern},
+        traits::TraitResolved,
     },
 };
 use indexmap::IndexMap;
@@ -44,7 +46,7 @@ use rustc_hir::{
 };
 use rustc_middle::{
     mir::{BasicBlock, BinOp, ProjectionElem, START_BLOCK, UnOp, tcx::PlaceTy},
-    ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
+    ty::{self, AdtDef, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::VariantIdx;
@@ -965,27 +967,20 @@ impl<'tcx> Block<'tcx> {
         }
 
         for v in self.variants {
-            let mut variant_decreases = v.term.clone().bin_op(
-                lower.ctx.types.bool,
-                pearlite::BinOp::Lt,
-                pearlite::Term::var(v.old_name, v.term.ty),
-            );
-            // Hack to accept variants of type `Int`
-            if is_int(lower.ctx.tcx, v.term.ty) {
-                variant_decreases = variant_decreases.bin_op(
-                    lower.ctx.types.bool,
-                    pearlite::BinOp::And,
-                    v.term.clone().bin_op(
-                        lower.ctx.types.bool,
-                        pearlite::BinOp::Ge,
-                        pearlite::Term {
-                            ty: v.term.ty,
-                            kind: pearlite::TermKind::Lit(pearlite::Literal::Integer(0)),
-                            span: v.term.span,
-                        },
-                    ),
-                );
-            }
+            let wf_relation = get_wf_relation(lower.ctx.tcx);
+            let typing_env = lower.ctx.typing_env(lower.def_id.to_def_id());
+            assert_eq!(GenericArgs::identity_for_item(lower.ctx.tcx, wf_relation).len(), 1); // sanity check
+            let subst = lower.ctx.tcx.mk_args(&[v.term.ty.into()]);
+
+            let (wf_relation, subst) =
+                TraitResolved::resolve_item(lower.ctx.tcx, typing_env, wf_relation, subst)
+                    .to_opt(wf_relation, subst)
+                    .unwrap_or((wf_relation, subst));
+            let variant_decreases =
+                pearlite::Term::call_no_normalize(lower.ctx.tcx, wf_relation, subst, [
+                    pearlite::Term::var(v.old_name, v.term.ty),
+                    v.term.clone(),
+                ]);
 
             let variant_assertion = lower_pure(lower.ctx, lower.names, &variant_decreases)
                 .with_attr(Attribute::Attr("expl:loop variant".to_string()));
