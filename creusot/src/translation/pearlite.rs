@@ -31,8 +31,7 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        CanonicalUserType, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable,
-        TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind, int_ty, uint_ty,
+        adjustment::PointerCoercion, int_ty, uint_ty, CanonicalUserType, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -913,6 +912,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     "Casts from ! are not supported in Pearlite, because Why3 types are always inhabited.",
                 ))
             }
+            ExprKind::PointerCoercion { cast: PointerCoercion::MutToConstPointer, source, .. } => {
+                let arg = self.expr_term(source)?.into();
+                Ok(Term { ty, span, kind: TermKind::Coerce { arg } })
+            },
             ref ek => todo!("lower_expr: {:?}", ek),
         };
         Ok(Term { ty, ..res? })

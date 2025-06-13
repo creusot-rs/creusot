@@ -123,9 +123,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                     Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([self.lower_term(arg)])])
                 }
+                TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = term.ty.kind() && ty1 == ty2 => {
+                    self.lower_term(arg)
+                }
                 _ => self.ctx.crash_and_error(
                     DUMMY_SP,
-                    "casting from a type other than booleans and integers is not supported",
+                    "unsupported cast in Pearlite (allowed: cast from boolean, integer, or pointer)",
                 ),
             },
             TermKind::Coerce { arg } => self.lower_term(arg),
