@@ -1,42 +1,112 @@
-//! Well-founded orders
+#[cfg(creusot)]
+use crate::logic::Mapping;
 use crate::*;
 
-// Instances of this trait are types which are allowed as variants of recursive definitions.
-#[trusted]
-pub trait WellFounded {}
+/// Instances of this trait are types which are allowed as variants of recursive definitions.
+pub trait WellFounded: Sized {
+    /// Relation used to specify well-foundedness.
+    #[logic]
+    #[rustc_diagnostic_item = "creusot_wf_relation"]
+    fn well_founded_relation(self, other: Self) -> bool;
 
-// FIXME: Int is NOT well-founded. But this is required for induction over integers
-#[trusted]
-impl WellFounded for Int {}
+    /// Being well-founded means that there is no infinitely decreasing sequence.
+    ///
+    /// If you can map your type to another that already implements `WellFounded`
+    /// (and the mapping preserves `well_founded_relation`), this lemma is quite
+    /// easy to prove:
+    ///
+    /// ```
+    /// # use creusot_contracts::{*, well_founded::WellFounded};
+    /// struct MyInt(Int);
+    /// impl WellFounded for MyInt {
+    ///     #[logic]
+    ///     #[open]
+    ///     fn well_founded_relation(self, other: Self) -> bool {
+    ///         Int::well_founded_relation(self.0, other.0)
+    ///     }
+    ///
+    ///     #[logic]
+    ///     #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
+    ///     fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
+    ///         Int::no_infinite_decreasing_sequence(|i| s[i].0)
+    ///     }
+    /// }
+    /// ```
+    #[logic]
+    #[ensures(result >= 0)]
+    #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
+    fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int;
+}
 
-#[trusted]
-impl WellFounded for u8 {}
-#[trusted]
-impl WellFounded for u16 {}
-#[trusted]
-impl WellFounded for u32 {}
-#[trusted]
-impl WellFounded for u64 {}
-#[trusted]
-impl WellFounded for u128 {}
-#[trusted]
-impl WellFounded for usize {}
+impl WellFounded for Int {
+    #[logic]
+    #[open]
+    fn well_founded_relation(self, other: Self) -> bool {
+        self >= 0 && self > other
+    }
 
-#[trusted]
-impl WellFounded for i8 {}
-#[trusted]
-impl WellFounded for i16 {}
-#[trusted]
-impl WellFounded for i32 {}
-#[trusted]
-impl WellFounded for i64 {}
-#[trusted]
-impl WellFounded for i128 {}
-#[trusted]
-impl WellFounded for isize {}
+    #[trusted]
+    #[logic]
+    #[ensures(result >= 0)]
+    #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
+    fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
+        dead
+    }
+}
 
-#[trusted]
-impl<T: WellFounded> WellFounded for &T {}
+macro_rules! impl_well_founded {
+    ($($t:ty),*) => {
+        $(
 
-#[trusted]
-impl<T: WellFounded> WellFounded for &mut T {}
+        impl WellFounded for $t {
+            #[logic]
+            #[open]
+            fn well_founded_relation(self, other: Self) -> bool {
+                self > other
+            }
+
+            #[logic]
+            #[ensures(result >= 0)]
+            #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
+            fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
+                pearlite! {
+                    Int::no_infinite_decreasing_sequence(|i| s[i]@ - $t::MIN@)
+                }
+            }
+        }
+
+        )*
+    };
+}
+
+impl_well_founded!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+
+impl<T: WellFounded> WellFounded for &T {
+    #[logic]
+    #[open]
+    fn well_founded_relation(self, other: Self) -> bool {
+        T::well_founded_relation(*self, *other)
+    }
+
+    #[logic]
+    #[ensures(result >= 0)]
+    #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
+    fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
+        T::no_infinite_decreasing_sequence(|i| *s[i])
+    }
+}
+
+impl<T: WellFounded> WellFounded for Box<T> {
+    #[logic]
+    #[open]
+    fn well_founded_relation(self, other: Self) -> bool {
+        T::well_founded_relation(*self, *other)
+    }
+
+    #[logic]
+    #[ensures(result >= 0)]
+    #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
+    fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
+        T::no_infinite_decreasing_sequence(|i| *s[i])
+    }
+}
