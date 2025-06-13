@@ -116,6 +116,8 @@ contracts_items! {{
         is_fn_pure_ty                   get_fn_pure_ty
     trait FnPure                         ["fn_pure_trait"]
         is_fn_pure_trait                get_fn_pure_trait
+    fn size_of_logic                     ["size_of_logic"]
+        is_size_of_logic                get_size_of_logic
 }}
 
 contracts_items! { #[std_items] {

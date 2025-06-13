@@ -16,7 +16,8 @@ use crate::{
         structural_resolve::structural_resolve,
         term::lower_pure,
         ty::{
-            eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
+            eliminator, int_ty, translate_closure_ty, translate_tuple_ty, translate_ty,
+            translate_tydecl,
         },
         ty_inv::InvariantElaborator,
     },
@@ -25,7 +26,7 @@ use crate::{
         get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
         is_fn_impl_postcond, is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond,
         is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_predicate,
-        is_resolve_function, is_structural_resolve,
+        is_resolve_function, is_size_of_logic, is_structural_resolve,
     },
     ctx::{BodyId, ItemType},
     naming::name,
@@ -40,14 +41,15 @@ use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
+    self, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
     UnevaluatedConst,
 };
-use rustc_span::{DUMMY_SP, Span};
+use rustc_span::{DUMMY_SP, Span, Symbol};
+use rustc_target::abi::HasDataLayout as _;
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
 use why3::{
-    Ident,
-    declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
+    Exp, Ident,
+    declaration::{Attribute, Axiom, Constant, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
 };
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
@@ -252,6 +254,8 @@ impl DepElab for LogicElab {
         let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
         if !opaque && let Some(term) = term(ctx, typing_env, &bound, dep) {
             lower_logical_defn(ctx, &names, sig, kind, term)
+        } else if let Some(decl) = try_expand_size_of_logic(&names, ctx, name, def_id, subst) {
+            vec![decl]
         } else {
             let mut decls = val(sig, kind);
 
@@ -331,6 +335,108 @@ fn expand_ty_inv_axiom<'tcx>(
     let axiom =
         Axiom { name: names.dependency(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom };
     vec![Decl::Axiom(axiom)]
+}
+
+/// Special definition for `::creusot_contracts::std::mem::size_of_logic`.
+fn try_expand_size_of_logic<'tcx, N: Namer<'tcx>>(
+    names: &N,
+    ctx: &Why3Generator<'tcx>,
+    name: Ident,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> Option<Decl> {
+    if !is_size_of_logic(ctx.tcx, def_id) {
+        return None;
+    }
+    Some(expand_size_of_logic(names, ctx, name, def_id, subst.type_at(0)))
+}
+
+/// The specification of sizes is documented at [`size_of`].
+/// Note: at this point we are guaranteed to have a `Sized` type.
+///
+/// [`size_of`]: https://doc.rust-lang.org/std/mem/fn.size_of.html
+fn expand_size_of_logic<'tcx, N: Namer<'tcx>>(
+    names: &N,
+    ctx: &Why3Generator<'tcx>,
+    name: Ident,
+    def_id: DefId,
+    ty: Ty<'tcx>,
+) -> Decl {
+    use rustc_type_ir::TyKind::*;
+    let body = match ty.kind() {
+        Bool | Char | Int(_) | Uint(_) | Float(_) => {
+            Some(Exp::int(ty.primitive_size(ctx.tcx).bytes() as i128))
+        }
+        // "The types *const T, &T, Box<T>, Option<&T>, and Option<Box<T>> all have the same size. If T is Sized, all of those types have the same size as usize.
+        // The mutability of a pointer does not change its size. As such, &T and &mut T have the same size. Likewise for *const T and *mut T."
+        RawPtr(t, _) | Ref(_, t, _) if t.is_sized(ctx.tcx, names.typing_env()) => {
+            Some(pointer_size(ctx.tcx))
+        }
+        Adt(def, args) if is_pointer_adt(ctx.tcx, names.typing_env(), def, args) => {
+            Some(pointer_size(ctx.tcx))
+        }
+        Tuple(t) if t.len() == 0 => Some(Exp::int(0)),
+        Adt(_, _) => None, // TODO
+        Array(t, n) => size_of_array(names, ctx, def_id, t, n),
+        _ => None,
+    };
+    let type_ = int_ty(ctx, names);
+    Decl::ConstantDecl(Constant { name, type_, body })
+}
+
+/// `Box<T>`, `Option<&T>`, or `Option<Box<T>>` with `T: Sized`
+fn is_pointer_adt<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    def: &ty::AdtDef<'tcx>,
+    args: GenericArgsRef<'tcx>,
+) -> bool {
+    let is_box = def.is_box() && args.type_at(0).is_sized(tcx, typing_env);
+    let is_option_ref =
+        || is_option(tcx, def) && is_ref_or_box_of_sized(tcx, typing_env, &args.type_at(0));
+    is_box || is_option_ref()
+}
+
+fn is_option(tcx: TyCtxt, def: &ty::AdtDef) -> bool {
+    tcx.is_diagnostic_item(Symbol::intern("Option"), def.did())
+}
+
+fn is_ref_or_box_of_sized<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    ty: &Ty<'tcx>,
+) -> bool {
+    use rustc_type_ir::TyKind::*;
+    match ty.kind() {
+        Ref(_, t, _) => t.is_sized(tcx, typing_env),
+        Adt(def, args) => def.is_box() && args.type_at(0).is_sized(tcx, typing_env),
+        _ => false,
+    }
+}
+
+fn pointer_size(tcx: TyCtxt) -> Exp {
+    Exp::int(tcx.data_layout().ptr_sized_integer().size().bytes() as i128)
+}
+
+fn size_of_array<'tcx, N: Namer<'tcx>>(
+    names: &N,
+    ctx: &Why3Generator<'tcx>,
+    def_id: DefId,
+    ty: &Ty<'tcx>,
+    n: &Const<'tcx>,
+) -> Option<Exp> {
+    let n = match n.kind() {
+        ConstKind::Value(_, ty::ValTree::Leaf(scalar)) => scalar.to_target_usize(ctx.tcx) as i128,
+        // TODO: ConstKind::Param
+        _ => return None,
+    };
+    if n == 0 {
+        Some(Exp::int(0))
+    } else {
+        let s = names
+            .item(def_id, ty::GenericArgs::for_item(ctx.tcx, def_id, |_, _| ty.clone().into()));
+        Some(Exp::BinaryOp(why3::exp::BinOp::Mul, Exp::Var(s).boxed(), Exp::int(n).boxed()))
+    }
 }
 
 struct TyElab;
