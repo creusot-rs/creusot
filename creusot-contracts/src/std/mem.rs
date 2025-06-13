@@ -31,6 +31,21 @@ extern_spec! {
             #[pure]
             #[ensures(resolve(&t))]
             fn forget<T>(t: T) {}
+
+            #[pure]
+            #[ensures(result@ == size_of_logic::<T>())]
+            fn size_of<T>() -> usize;
         }
     }
+}
+
+/// `size_of` as a logic `Int` value.
+///
+/// This is a special function with a compiler-provided definition.
+#[logic]
+#[trusted]
+#[rustc_diagnostic_item = "size_of_logic"]
+#[ensures(0 <= result)]
+pub fn size_of_logic<T>() -> Int {
+    dead
 }
