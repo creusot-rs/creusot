@@ -3,8 +3,13 @@ use pearlite_syn::*;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, quote, quote_spanned};
+use std::{
+    iter::{once, repeat},
+    mem::take,
+};
 use syn::{
     parse::{Parse, Result},
+    punctuated::Punctuated,
     spanned::Spanned,
     *,
 };
@@ -109,7 +114,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
     match item {
         ContractSubject::FnOrMethod(mut fn_or_meth) if fn_or_meth.is_trait_signature() => {
-            let attrs = std::mem::take(&mut fn_or_meth.attrs);
+            let attrs = take(&mut fn_or_meth.attrs);
             let requires_tokens = sig_spec_item(req_name, fn_or_meth.sig.clone(), term);
             TS1::from(quote! {
               #requires_tokens
@@ -120,7 +125,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
         ContractSubject::FnOrMethod(mut f) => {
-            let attrs = std::mem::take(&mut f.attrs);
+            let attrs = take(&mut f.attrs);
             let requires_tokens = fn_spec_item(req_name, None, term);
 
             if let Some(b) = f.body.as_mut() {
@@ -157,7 +162,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
 
     match item {
         ContractSubject::FnOrMethod(mut s) if s.is_trait_signature() => {
-            let attrs = std::mem::take(&mut s.attrs);
+            let attrs = take(&mut s.attrs);
             let result = match s.sig.output {
                 ReturnType::Default => parse_quote! { result : () },
                 ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
@@ -175,7 +180,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
         ContractSubject::FnOrMethod(mut f) => {
-            let attrs = std::mem::take(&mut f.attrs);
+            let attrs = take(&mut f.attrs);
             let result = match f.sig.output {
                 ReturnType::Default => parse_quote! { result : () },
                 ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
@@ -409,67 +414,122 @@ impl LogicInput {
 }
 
 enum LogicKind {
-    None,
-    Prophetic,
+    Logic,
+    Predicate,
     Law,
 }
 
-impl ToTokens for LogicKind {
+enum LogicTag {
+    Law,
+    Logic,
+    Predicate,
+    Prophetic,
+    Sealed,
+}
+
+impl ToTokens for LogicTag {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            Self::None | Self::Law => {}
+            Self::Logic => tokens.extend(quote!(#[creusot::decl::logic])),
+            Self::Predicate => tokens.extend(quote!(#[creusot::decl::predicate])),
             Self::Prophetic => tokens.extend(quote!(#[creusot::decl::logic::prophetic])),
+            Self::Sealed => tokens.extend(quote!(#[creusot::decl::logic::sealed])),
+            Self::Law => tokens.extend(
+                quote!(#[creusot::decl::logic] #[creusot::decl::law] #[creusot::decl::no_trigger]),
+            ),
         }
     }
 }
 
-pub fn logic(kind: TS1, tokens: TS1) -> TS1 {
-    let kind = if kind.is_empty() {
-        LogicKind::None
-    } else {
-        let t = parse_macro_input!(kind as Ident);
-        if t == "prophetic" {
-            LogicKind::Prophetic
-        } else if t == "law" {
-            LogicKind::Law
-        } else {
-            return syn::Error::new(
-                t.span(),
-                "unsupported modifier. The only supported modifier at the moment is `prophetic`",
-            )
-            .into_compile_error()
-            .into();
-        }
-    };
+fn logic_gen(tags: TS1, tokens: TS1, kind: LogicKind) -> TS1 {
+    let tags = parse_macro_input!(tags with Punctuated<Ident, Token![,]>::parse_terminated);
+    let tags: Result<Vec<LogicTag>> = tags
+        .into_pairs()
+        .map(|p| {
+            let t = p.into_value();
+            if t == "prophetic" {
+                Ok(LogicTag::Prophetic)
+            } else if t == "sealed" {
+                Ok(LogicTag::Sealed)
+            } else {
+                Err(syn::Error::new(
+                    t.span(),
+                    "unsupported modifier. The only supported modifiers are `prophetic` and `sealed`",
+                ))
+            }
+        })
+        .collect();
+
+    let Ok(mut tags) = tags else { return tags.err().unwrap().into_compile_error().into() };
     let log = parse_macro_input!(tokens as LogicInput);
+
+    if matches!(kind, LogicKind::Predicate) {
+        let sig = match &log {
+            LogicInput::Item(LogicItem { sig, .. }) => sig,
+            LogicInput::Sig(TraitItemSignature { sig, .. }) => sig,
+        };
+
+        let is_bool = match &sig.output {
+            ReturnType::Default => false,
+            ReturnType::Type(_, ty) => *ty == parse_quote! { bool },
+        };
+
+        if !is_bool {
+            let sp = match sig.output {
+                ReturnType::Default => sig.span(),
+                ReturnType::Type(_, _) => sig.output.span(),
+            };
+            return quote_spanned! {sp=> compile_error!("Predicates must have boolean return types"); }
+            .into();
+        };
+    }
+
+    let mut doc_str: String = match kind {
+        LogicKind::Logic => "logic".into(),
+        LogicKind::Predicate => "predicate".into(),
+        LogicKind::Law => "law".into(),
+    };
+    if !tags.is_empty() {
+        doc_str.push('(');
+        for (t, sep) in tags.iter().zip(once("").chain(repeat(", "))) {
+            doc_str.push_str(sep);
+            match t {
+                LogicTag::Prophetic => doc_str.push_str("prophetic"),
+                LogicTag::Sealed => doc_str.push_str("sealed"),
+                LogicTag::Law | LogicTag::Logic | LogicTag::Predicate => unreachable!(),
+            }
+        }
+        doc_str.push(')')
+    }
     let documentation = document_spec(
-        match kind {
-            LogicKind::None => "logic",
-            LogicKind::Prophetic => "logic(prophetic)",
-            LogicKind::Law => "law",
-        },
+        &doc_str,
         if matches!(kind, LogicKind::Law) { doc::LogicBody::None } else { log.logic_body() },
     );
+
+    match kind {
+        LogicKind::Law => tags.push(LogicTag::Law),
+        LogicKind::Logic => tags.push(LogicTag::Logic),
+        LogicKind::Predicate => tags.push(LogicTag::Predicate),
+    }
     match log {
-        LogicInput::Item(log) => logic_item(log, kind, documentation),
-        LogicInput::Sig(sig) => logic_sig(sig, kind, documentation),
+        LogicInput::Item(log) => logic_item(log, tags, documentation),
+        LogicInput::Sig(sig) => logic_sig(sig, tags, documentation),
     }
 }
 
-fn logic_sig(mut sig: TraitItemSignature, kind: LogicKind, documentation: TokenStream) -> TS1 {
+fn logic_sig(mut sig: TraitItemSignature, tags: Vec<LogicTag>, documentation: TokenStream) -> TS1 {
     let span = sig.span();
-    let attrs = std::mem::take(&mut sig.attrs);
+    let attrs = take(&mut sig.attrs);
 
     TS1::from(quote_spanned! {span =>
-        #[creusot::decl::logic]
-        #kind
+        #(#tags)*
         #(#attrs)*
         #documentation
         #sig
     })
 }
 
-fn logic_item(log: LogicItem, kind: LogicKind, documentation: TokenStream) -> TS1 {
+fn logic_item(log: LogicItem, tags: Vec<LogicTag>, documentation: TokenStream) -> TS1 {
     let span = log.sig.span();
 
     let term = log.body;
@@ -480,103 +540,23 @@ fn logic_item(log: LogicItem, kind: LogicKind, documentation: TokenStream) -> TS
     let req_body = pretyping::encode_block(&term).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote_spanned! {span =>
-        #[creusot::decl::logic]
-        #kind
+        #(#tags)*
         #(#attrs)*
         #documentation
-        #vis #def #sig {
-            #req_body
-        }
+        #vis #def #sig { #req_body }
     })
 }
 
-pub fn law(_: TS1, tokens: TS1) -> TS1 {
-    let tokens = TokenStream::from(tokens);
-    TS1::from(quote! {
-        #[creusot::decl::law]
-        #[creusot::decl::no_trigger]
-        #[::creusot_contracts::logic(law)]
-        #tokens
-    })
+pub fn logic(tags: TS1, tokens: TS1) -> TS1 {
+    logic_gen(tags, tokens, LogicKind::Logic)
 }
 
-pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
-    let prophetic = if prophetic.is_empty() {
-        None
-    } else {
-        let t = parse_macro_input!(prophetic as Ident);
-        if t == "prophetic" { Some(quote!(#[creusot::decl::logic::prophetic])) } else { None }
-    };
-
-    let pred = parse_macro_input!(tokens as LogicInput);
-
-    let sig = match &pred {
-        LogicInput::Item(LogicItem { sig, .. }) => sig,
-        LogicInput::Sig(TraitItemSignature { sig, .. }) => sig,
-    };
-
-    let is_bool = match &sig.output {
-        ReturnType::Default => false,
-        ReturnType::Type(_, ty) => *ty == parse_quote! { bool },
-    };
-
-    if !is_bool {
-        let sp = match sig.output {
-            ReturnType::Default => sig.span(),
-            ReturnType::Type(_, _) => sig.output.span(),
-        };
-        return quote_spanned! {sp=> compile_error!("Predicates must have boolean return types"); }
-            .into();
-    };
-
-    let documentation = document_spec(
-        if prophetic.is_some() { "logic(prophetic)" } else { "logic" },
-        pred.logic_body(),
-    );
-
-    match pred {
-        LogicInput::Item(log) => predicate_item(log, prophetic, documentation),
-        LogicInput::Sig(sig) => predicate_sig(sig, prophetic, documentation),
-    }
+pub fn law(tags: TS1, tokens: TS1) -> TS1 {
+    logic_gen(tags, tokens, LogicKind::Law)
 }
 
-fn predicate_sig(
-    mut sig: TraitItemSignature,
-    prophetic: Option<TokenStream>,
-    documentation: TokenStream,
-) -> TS1 {
-    let span = sig.span();
-    let attrs = std::mem::take(&mut sig.attrs);
-    TS1::from(quote_spanned! {span =>
-        #[creusot::decl::predicate]
-        #prophetic
-        #(#attrs)*
-        #documentation
-        #sig
-    })
-}
-
-fn predicate_item(
-    log: LogicItem,
-    prophetic: Option<TokenStream>,
-    documentation: TokenStream,
-) -> TS1 {
-    let span = log.sig.span();
-    let term = log.body;
-    let vis = log.vis;
-    let def = log.defaultness;
-    let sig = log.sig;
-    let attrs = log.attrs;
-
-    let req_body = pretyping::encode_block(&term).unwrap_or_else(|e| e.into_tokens());
-
-    TS1::from(quote_spanned! {span =>
-        #[creusot::decl::predicate]
-        #prophetic
-        #(#attrs)*
-        #documentation
-        #vis #def #sig #req_body
-    })
+pub fn predicate(tags: TS1, tokens: TS1) -> TS1 {
+    logic_gen(tags, tokens, LogicKind::Predicate)
 }
 
 pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {

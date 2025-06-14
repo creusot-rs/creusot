@@ -49,6 +49,7 @@ attribute_functions! {
     [creusot::logic_closure]                 => is_logic_closure // marks `forall`, `exists`, and mappings
     [creusot::decl::logic]                   => is_logic
     [creusot::decl::logic::prophetic]        => is_prophetic
+    [creusot::decl::logic::sealed]           => is_sealed
     [creusot::decl::predicate]               => is_predicate
     [creusot::decl::trusted]                 => is_trusted
     [creusot::decl::law]                     => is_law
