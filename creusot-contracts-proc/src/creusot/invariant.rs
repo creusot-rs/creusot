@@ -80,10 +80,12 @@ impl ToTokens for Variant {
     }
 }
 
+/// Desugars a loop invariant
 pub fn desugar_invariant(invariant0: TokenStream, expr: TokenStream) -> Result<TokenStream> {
     desugar(Tag::Invariant(LoopInvariant(Some(0))), invariant0, expr)
 }
 
+/// Desugars a loop (in)variant
 fn desugar(tag: Tag, invariant0: TokenStream, expr: TokenStream) -> Result<TokenStream> {
     let expr: Expr = syn::parse2(expr)?;
     let invariants = |attrs| filter_invariants(tag, invariant0, attrs);
@@ -196,7 +198,7 @@ fn desugar_loop(
     let span = l.span();
     let variant = if let Some(variant) = variant { quote!(#variant) } else { TokenStream::new() };
 
-    l.body.stmts.insert(0, Stmt::Expr(Expr::Verbatim(quote! { #(#invariants)* #variant }), None));
+    l.body.stmts.insert(0, Stmt::Expr(Expr::Verbatim(quote! { #variant #(#invariants)* }), None));
     quote_spanned! { span => {
         #[allow(let_underscore_drop)]
         let _ = { #[creusot::no_translate] #[creusot::before_loop] || {} };
@@ -261,8 +263,8 @@ fn desugar_for(
         #lbl
         loop {
             #(#inner)*
-            #(#invariants)*
             #variant
+            #(#invariants)*
             match ::std::iter::Iterator::next(&mut #it) {
                 Some(#elem) => {
                     #[allow(unused_assignments)]
@@ -276,6 +278,7 @@ fn desugar_for(
     } }
 }
 
+/// Desugar a variant. This can be attached to either a function or a loop.
 pub(crate) fn desugar_variant(attr: TokenStream, tokens: TokenStream) -> Result<TokenStream> {
     match syn::parse2(tokens.clone()) {
         Ok(f) => desugar_variant_fn(attr, f),
@@ -283,6 +286,7 @@ pub(crate) fn desugar_variant(attr: TokenStream, tokens: TokenStream) -> Result<
     }
 }
 
+/// Generate the specification item corresponding to a function variant
 fn variant_to_tokens(span: Span, p: &pearlite_syn::Term) -> (String, TokenStream) {
     let var_name = crate::creusot::generate_unique_ident("variant");
     let var_body = pretyping::encode_term(p).unwrap_or_else(|e| e.into_tokens());
@@ -301,6 +305,7 @@ fn variant_to_tokens(span: Span, p: &pearlite_syn::Term) -> (String, TokenStream
     (name_tag, variant_tokens)
 }
 
+/// Desugars a function variant
 fn desugar_variant_fn(attr: TokenStream, mut f: ItemFn) -> Result<TokenStream> {
     let span = attr.span();
     let p = syn::parse2(attr)?;
