@@ -12,10 +12,10 @@ use crate::{
     translation::{
         self,
         external::{ExternSpec, extract_extern_specs_from_item},
-        fmir, pearlite,
-        pearlite::ScopedTerm,
+        fmir,
+        pearlite::{self, ScopedTerm},
         specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
-        traits::{TraitImpl, TraitResolved},
+        traits::{Refinement, TraitResolved},
     },
     util::{erased_identity_for_item, parent_module},
 };
@@ -147,7 +147,7 @@ pub struct TranslationCtx<'tcx> {
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
     terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
-    trait_impl: OnceMap<DefId, Box<TraitImpl<'tcx>>>,
+    trait_impl: OnceMap<DefId, Box<Vec<Refinement<'tcx>>>>,
     sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
     bodies: OnceMap<LocalDefId, Box<BodyWithBorrowckFacts<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
@@ -239,7 +239,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.thir.get(&def_id).map(|&(ref thir, expr)| (thir, expr))
     }
 
-    queryish!(trait_impl, DefId, TraitImpl<'tcx>, translate_impl);
+    queryish!(trait_impl, DefId, Vec<Refinement<'tcx>>, translate_impl);
 
     queryish!(fmir_body, BodyId, fmir::Body<'tcx>, translation::function::fmir);
 
