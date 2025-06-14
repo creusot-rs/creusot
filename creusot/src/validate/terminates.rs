@@ -38,7 +38,7 @@ use std::iter::repeat;
 
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{has_variant_clause, is_no_translate, is_pearlite},
+    contracts_items::{has_variant_clause, is_loop_variant, is_no_translate, is_pearlite},
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{
         pearlite::{Term, TermKind, TermVisitor, super_visit_term},
@@ -66,8 +66,7 @@ use rustc_trait_selection::traits::{
 };
 
 /// Validate that a `#[check(terminates)]` function cannot loop indefinitely. This includes:
-/// - forbidding program function from using loops of any kind (this should be relaxed
-///   later).
+/// - forbidding program function from using loops without a variant.
 /// - forbidding (mutual) recursive calls, especially when traits are involved.
 ///
 /// Note that for logical functions, these are relaxed: we don't check loops, nor simple
@@ -80,7 +79,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
             continue;
         }
         let (thir, expr) = ctx.get_thir(local_id).unwrap();
-        let mut visitor = GhostLoops { thir: &thir, ctx, is_in_ghost: false };
+        let mut visitor = GhostLoops { thir, ctx, is_in_ghost: false };
         visitor.visit_expr(&thir[expr]);
     }
 
@@ -392,7 +391,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         let bounds = impl_param_env.caller_bounds().iter().chain(
             item_bounds
                 .iter()
-                .filter(|b| !defimpl_bounds.contains(&b))
+                .filter(|b| !defimpl_bounds.contains(b))
                 .map(|b| EarlyBinder::bind(b).instantiate(ctx.tcx, func_impl_args)),
         );
 
@@ -448,7 +447,7 @@ impl CallGraph {
 
             // Collect functions called by this function
             let calls = &mut IndexSet::new();
-            FunctionCalls { def_id, thir: &thir, ctx, calls }.visit_expr(&thir[expr]);
+            FunctionCalls { def_id, thir, ctx, calls }.visit_expr(&thir[expr]);
 
             for &(called_id, generic_args, call_span) in calls.iter() {
                 build_call_graph.function_call(
@@ -467,6 +466,8 @@ impl CallGraph {
 }
 
 /// Gather the functions calls that appear in a particular function, and store them in `calls`.
+///
+/// This will also flag loops without variants in `#[check(terminates)]` functions.
 struct FunctionCalls<'a, 'tcx> {
     def_id: DefId,
     thir: &'a thir::Thir<'tcx>,
@@ -492,16 +493,43 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
             }
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
-                let Some((ref thir, expr)) = self.ctx.get_thir(closure_id) else { return };
+                let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
                 FunctionCalls { thir, calls: self.calls, ..*self }.visit_expr(&thir[expr]);
             }
-            thir::ExprKind::Loop { .. } => {
-                let fun_span = self.ctx.def_span(self.def_id);
-                let mut error = self
-                    .ctx
-                    .error(fun_span, "`#[check(terminates)]` function must not contain loops.");
-                error.span_note(expr.span, "looping occurs here");
-                error.emit();
+            thir::ExprKind::Loop { body } => {
+                let body = &self.thir.exprs[body];
+                let block = match body.kind {
+                    thir::ExprKind::Block { block } => block,
+                    _ => unreachable!(),
+                };
+                let has_variant = if let Some(&s) = self.thir.blocks[block].stmts.first() {
+                    let s = &self.thir.stmts[s];
+                    match &s.kind {
+                        thir::StmtKind::Expr { .. } => false,
+                        thir::StmtKind::Let { pattern, .. } => {
+                            matches!(pattern.ty.kind(), rustc_type_ir::TyKind::Closure(clos_id, _) if is_loop_variant(self.ctx.tcx, *clos_id))
+                        }
+                    }
+                } else {
+                    false
+                };
+                if !has_variant {
+                    let fun_span = self.ctx.tcx.def_span(self.def_id);
+                    let suggestion_span = expr.span.shrink_to_lo();
+                    self.ctx
+                        .error(
+                            fun_span,
+                            "`#[check(terminates)]` function must not contain loops without variants.",
+                        )
+                        .with_span_note(expr.span, "looping occurs here")
+                        .with_span_suggestion(
+                            suggestion_span,
+                            "Add a variant here",
+                            "#[variant(...)]",
+                            rustc_errors::Applicability::HasPlaceholders,
+                        )
+                        .emit();
+                }
             }
             _ => {}
         }
@@ -525,11 +553,40 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> {
         match expr.kind {
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
-                let Some((ref thir, expr)) = self.ctx.get_thir(closure_id) else { return };
+                let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
                 GhostLoops { thir, ..*self }.visit_expr(&thir[expr]);
             }
-            thir::ExprKind::Loop { .. } if self.is_in_ghost => {
-                self.ctx.error(expr.span, "`ghost!` blocks must not contain loops.").emit();
+            thir::ExprKind::Loop { body } if self.is_in_ghost => {
+                let body = &self.thir.exprs[body];
+                let block = match body.kind {
+                    thir::ExprKind::Block { block } => block,
+                    _ => unreachable!(),
+                };
+                let has_variant = if let Some(&s) = self.thir.blocks[block].stmts.first() {
+                    let s = &self.thir.stmts[s];
+                    match &s.kind {
+                        thir::StmtKind::Expr { .. } => false,
+                        thir::StmtKind::Let { pattern, .. } => {
+                            matches!(pattern.ty.kind(), rustc_type_ir::TyKind::Closure(clos_id, _) if is_loop_variant(self.ctx.tcx, *clos_id))
+                        }
+                    }
+                } else {
+                    false
+                };
+                if !has_variant {
+                    self.ctx
+                        .error(
+                            expr.span,
+                            "`ghost!` blocks must not contain loops without variants.",
+                        )
+                        .with_span_suggestion(
+                            expr.span.shrink_to_lo(),
+                            "add a variant here",
+                            "#[variant(...)]",
+                            rustc_errors::Applicability::HasPlaceholders,
+                        )
+                        .emit();
+                }
             }
             thir::ExprKind::Scope { lint_level: thir::LintLevel::Explicit(hir_id), .. } => {
                 if super::is_ghost_block(self.ctx.tcx, hir_id) {
