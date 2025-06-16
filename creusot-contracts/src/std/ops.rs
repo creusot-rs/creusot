@@ -78,39 +78,43 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
 impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
+    #[trusted]
     #[predicate(prophetic)]
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_once_impl_precond"]
     fn precondition(self, args: Args) -> bool {
-        true /* Dummy */
+        dead
     }
 
+    #[trusted]
     #[predicate(prophetic)]
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_once_impl_postcond"]
     fn postcondition_once(self, args: Args, result: Self::Output) -> bool {
-        true /* Dummy */
+        dead
     }
 }
 
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
+    #[trusted]
     #[predicate(prophetic)]
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
     fn postcondition_mut(self, args: Args, result_state: Self, result: Self::Output) -> bool {
-        true /* Dummy */
+        dead
     }
 
+    #[trusted]
     #[predicate(prophetic)]
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_mut_impl_hist_inv"]
     fn hist_inv(self, result_state: Self) -> bool {
-        true /* Dummy */
+        dead
     }
 
     #[trusted]
@@ -140,12 +144,13 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
+    #[trusted]
     #[predicate]
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_impl_postcond"]
     fn postcondition(self, args: Args, result: Self::Output) -> bool {
-        true /* Dummy */
+        dead
     }
 
     #[law]
