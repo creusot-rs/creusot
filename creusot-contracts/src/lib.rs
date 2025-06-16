@@ -430,6 +430,8 @@ mod base_prelude {
     };
 
     #[cfg(creusot)]
+    pub use crate::std::mem::size_of_logic;
+    #[cfg(creusot)]
     pub use crate::util::such_that;
 }
 pub mod prelude {

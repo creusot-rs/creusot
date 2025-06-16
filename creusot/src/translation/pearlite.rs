@@ -1555,6 +1555,10 @@ impl<'tcx> Term<'tcx> {
         self.coerce(ty.builtin_deref(false).unwrap())
     }
 
+    pub(crate) fn int(int_ty: Ty<'tcx>, int: i128) -> Self {
+        Term { ty: int_ty, kind: TermKind::Lit(Literal::Integer(int)), span: DUMMY_SP }
+    }
+
     pub(crate) fn span(mut self, sp: Span) -> Self {
         self.span = sp;
         self

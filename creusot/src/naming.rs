@@ -82,7 +82,7 @@ pub fn variable_name(name: &str) -> String {
 }
 
 /// Mangle a string to consist only of ASCII alphanumerics and underscores. Code point `123` becomes `"_123_"`.
-fn to_alphanumeric(n: &str) -> String {
+pub(crate) fn to_alphanumeric(n: &str) -> String {
     let mut dest = String::new();
     for c in n.chars() {
         if c.is_ascii_alphanumeric() || c == '_' {

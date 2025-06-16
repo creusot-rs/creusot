@@ -5,15 +5,18 @@ use rustc_hir::{
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::Promoted,
-    ty::{GenericArgsRef, List, Ty, TyCtxt, TyKind},
+    ty::{GenericArgKind, GenericArgsRef, List, Ty, TyCtxt, TyKind, ValTree},
 };
 use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 use rustc_type_ir::AliasTyKind;
 
 use crate::{
+    contracts_items::is_size_of_logic,
     ctx::PreMod,
-    naming::{item_symb, translate_accessor_name, translate_name, type_name, value_name},
+    naming::{
+        item_symb, to_alphanumeric, translate_accessor_name, translate_name, type_name, value_name,
+    },
 };
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
@@ -80,7 +83,7 @@ impl<'tcx> Dependency<'tcx> {
                 TyKind::Tuple(_) => Some(Symbol::intern("tuple")),
                 _ => None,
             },
-            Dependency::Item(did, _) => match tcx.def_kind(did) {
+            Dependency::Item(did, subst) => match tcx.def_kind(did) {
                 DefKind::Impl { .. } => Some(tcx.item_name(tcx.trait_id_of_impl(did).unwrap())),
                 DefKind::Closure => Some(Symbol::intern(&format!(
                     "closure{}",
@@ -95,6 +98,9 @@ impl<'tcx> Dependency<'tcx> {
                     Some(Symbol::intern(&name))
                 }
                 DefKind::Variant => Some(item_symb(tcx, did, rustc_hir::def::Namespace::ValueNS)),
+                _ if is_size_of_logic(tcx, did) => {
+                    Some(Symbol::intern(&type_string(tcx, "size_of".into(), subst.type_at(0))))
+                }
                 _ => {
                     Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
                 }
@@ -117,4 +123,80 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::PreMod(_) => None,
         }
     }
+}
+
+/// Append stringified type to prefix.
+///
+/// Examples: with `"size_of"` as the prefix,
+/// `Option<T>` becomes `"size_of_Option_T"`; `(T, U)` becomes `"size_of_tuple_T_U"`.
+///
+/// No need to be too rigorous. This is just used to generate more meaningful Why3 identifiers.
+fn type_string(tcx: TyCtxt, mut prefix: String, ty: Ty) -> String {
+    type_string_walk(tcx, &mut prefix, ty);
+    prefix
+}
+
+fn type_string_walk(tcx: TyCtxt, prefix: &mut String, ty: Ty) {
+    use rustc_type_ir::TyKind::*;
+    match ty.kind() {
+        Int(int_ty) => push_(prefix, int_ty.name_str()),
+        Uint(uint_ty) => push_(prefix, uint_ty.name_str()),
+        Float(float_ty) => push_(prefix, float_ty.name_str()),
+        Bool => push_(prefix, "bool"),
+        Char => push_(prefix, "char"),
+        Str => push_(prefix, "str"),
+        Array(ty, len) => {
+            push_(prefix, "array");
+            type_string_walk(tcx, prefix, *ty);
+            match len.kind() {
+                rustc_type_ir::ConstKind::Value(_, ValTree::Leaf(scalar)) => {
+                    push_(prefix, &scalar.to_target_usize(tcx).to_string())
+                }
+                _ => push_(prefix, "n"),
+            }
+        }
+        Slice(ty) => {
+            push_(prefix, "slice");
+            type_string_walk(tcx, prefix, *ty)
+        }
+        RawPtr(ty, _) => {
+            push_(prefix, "ptr");
+            type_string_walk(tcx, prefix, *ty)
+        }
+        Ref(_, ty, _) => {
+            push_(prefix, "ref");
+            type_string_walk(tcx, prefix, *ty)
+        }
+        Tuple(args) if args.len() == 0 => {
+            push_(prefix, "unit");
+        }
+        Tuple(args) => {
+            push_(prefix, "tup");
+            prefix.push_str(&args.len().to_string());
+            for ty in args.iter() {
+                type_string_walk(tcx, prefix, ty)
+            }
+        }
+        Param(p) => push_(prefix, &to_alphanumeric(p.name.as_str())),
+        Adt(def, args) => {
+            match tcx.def_key(def.did()).get_opt_name() {
+                None => push_(prefix, "x"),
+                Some(name) => push_(prefix, &to_alphanumeric(name.as_str())),
+            };
+            for arg in args.iter() {
+                let GenericArgKind::Type(ty) = arg.unpack() else { continue };
+                type_string_walk(tcx, prefix, ty)
+            }
+        }
+        Alias(_, t) => match tcx.def_key(t.def_id).get_opt_name() {
+            None => push_(prefix, "x"),
+            Some(name) => push_(prefix, &to_alphanumeric(name.as_str())),
+        },
+        _ => push_(prefix, "x"), // Unhandled types appear as "x"
+    };
+}
+
+fn push_(prefix: &mut String, str: &str) {
+    prefix.push('_');
+    prefix.push_str(str);
 }
