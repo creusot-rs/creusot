@@ -57,6 +57,34 @@ impl<T> PtrOwn<T> {
     pub fn new(v: T) -> (RawPtr<T>, Ghost<PtrOwn<T>>) {
         Self::from_box(Box::new(v))
     }
+
+    /// If one owns two `PtrOwn`s in ghost code, with a non-zero sized type, then they are for different pointers.
+    #[trusted]
+    #[pure]
+    #[ensures(size_of_logic::<T>() != 0 ==> own1.ptr() != own2.ptr())]
+    #[ensures(*own1 == ^own1)]
+    #[allow(unused_variables)]
+    pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {}
+
+    /// Convert `&PtrOwn<T>` into `&PtrOwn<[T]><T>` representing a singleton slice.
+    #[trusted]
+    #[pure]
+    #[ensures(result.ptr() == self.ptr())]
+    #[ensures(result.val()@ == Seq::singleton(*self.val()))]
+    pub fn as_slice_own_ref_ghost(&self) -> &PtrOwn<[T]> {
+        unreachable!("BUG: called ghost function in normal code")
+    }
+
+    /// Convert `&mut PtrOwn<T>` into `&mut PtrOwn<[T]><T>` representing a singleton slice.
+    #[trusted]
+    #[pure]
+    #[ensures(result.ptr() == self.ptr())]
+    #[ensures(result.val()@ == Seq::singleton(*self.val()))]
+    #[ensures((^self).ptr() == self.ptr())]
+    #[ensures((^result).val()@ == Seq::singleton(*(^self).val()))]
+    pub fn as_slice_own_mut_ghost(&mut self) -> &mut PtrOwn<[T]> {
+        unreachable!("BUG: called ghost function in normal code")
+    }
 }
 
 impl<T: ?Sized> PtrOwn<T> {
@@ -131,93 +159,49 @@ impl<T: ?Sized> PtrOwn<T> {
     pub unsafe fn drop(ptr: RawPtr<T>, own: Ghost<PtrOwn<T>>) {
         let _ = Self::to_box(ptr, own);
     }
-
-    /// If one owns two `PtrOwn`s in ghost code, then they are for different pointers.
-    #[trusted]
-    #[pure]
-    #[ensures(own1.ptr().addr_logic() != own2.ptr().addr_logic())]
-    #[ensures(*own1 == ^own1)]
-    #[allow(unused_variables)]
-    pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {}
 }
 
-impl<T> PtrOwn<T> {
-    // Convert `&PtrOwn<T>` into `&SliceOwn<T>` representing a singleton slice.
-    #[trusted]
-    #[pure]
-    #[ensures(result.ptr() == self.ptr())]
-    #[ensures(result.contents() == Seq::singleton(*self.val()))]
-    pub fn as_slice_own_ref_ghost(&self) -> &SliceOwn<T> {
-        unreachable!("BUG: called ghost function in normal code")
-    }
-
-    // Convert `&mut PtrOwn<T>` into `&mut SliceOwn<T>` representing a singleton slice.
-    #[trusted]
-    #[pure]
-    #[ensures(result.ptr() == self.ptr())]
-    #[ensures(result.contents() == Seq::singleton(*self.val()))]
-    #[ensures((^self).ptr() == self.ptr())]
-    #[ensures((^result).contents() == Seq::singleton(*(^self).val()))]
-    pub fn as_slice_own_mut_ghost(&mut self) -> &mut SliceOwn<T> {
-        unreachable!("BUG: called ghost function in normal code")
-    }
-}
-
-/// Ownership of a slice: a block of memory containing a sequence of `T` values.
-#[allow(dead_code)]
-pub struct SliceOwn<T> {
-    ptr: RawPtr<T>,
-    block: Seq<T>,
-}
-
-impl<T> SliceOwn<T> {
-    /// The raw pointer whose ownership is tracked by this `SliceOwn`.
+impl<T> PtrOwn<[T]> {
+    /// Raw pointer to the slice buffer.
     #[logic]
-    #[open(self)]
-    pub fn ptr(&self) -> RawPtr<T> {
-        self.ptr
-    }
-
-    /// The sequence of values stored at address [`self.ptr()`](Self::ptr).
-    #[logic]
-    #[open(self)]
-    pub fn contents(&self) -> Seq<T> {
-        self.block
+    #[open]
+    pub fn as_ptr(&self) -> RawPtr<T> {
+        pearlite!{ self.ptr() as RawPtr<T> }
     }
 
     /// The number of elements in the slice.
     #[logic]
     #[open]
     pub fn len(&self) -> Int {
-        self.contents().len()
+        pearlite!{ self.val()@.len() }
     }
 
     /// Access the logical element at the given index. `None` if out of bounds.
     #[logic]
     #[open(self)]
     pub fn get(&self, index: Int) -> Option<T> {
-        self.block.get(index)
+        pearlite!{ self.val()@.get(index) }
     }
 
-    /// Split a `&SliceOwn` into two subslices.
+    /// Split a `&PtrOwn<[T]>` into two subslices.
     #[trusted]
     #[pure]
     #[requires(0 <= index && index <= self.len())]
     #[ensures(result.0.ptr() == self.ptr() && result.1.ptr() == self.ptr().offset_logic(index))]
-    #[ensures(result.0.contents() == self.contents().subsequence(0, index))]
-    #[ensures(result.1.contents() == self.contents().subsequence(index, self.len()))]
+    #[ensures(result.0.val()@ == self.val()@.subsequence(0, index))]
+    #[ensures(result.1.val()@ == self.val()@.subsequence(index, self.len()))]
     pub fn split_at_ghost(&self, index: Int) -> (&Self, &Self) {
         let _ = index;
         unreachable!("BUG: called ghost function in normal code")
     }
 
-    /// Split a `&mut SliceOwn` into two subslices.
+    /// Split a `&mut PtrOwn<[T]>` into two subslices.
     #[trusted]
     #[pure]
     #[requires(0 <= index && index <= self.len())]
-    #[ensures(result.0.ptr() == self.ptr() && result.1.ptr() == self.ptr().offset_logic(index))]
-    #[ensures(result.0.contents() == self.contents().subsequence(0, index) && (^result.0).contents() == (^self).contents().subsequence(0, index))]
-    #[ensures(result.1.contents() == self.contents().subsequence(index, self.len()) && (^result.1).contents() == (^self).contents().subsequence(index, self.len()))]
+    #[ensures(result.0.ptr().as_ptr_logic() == self.ptr().as_ptr_logic() && result.1.ptr().as_ptr_logic() == self.ptr().as_ptr_logic().offset_logic(index))]
+    #[ensures(result.0.val()@ == self.val()@.subsequence(0, index) && (^result.0).val()@ == (^self).val()@.subsequence(0, index))]
+    #[ensures(result.1.val()@ == self.val()@.subsequence(index, self.len()) && (^result.1).val()@ == (^self).val()@.subsequence(index, self.len()))]
     #[ensures((^self).ptr() == self.ptr())]
     #[ensures((^self).len() == self.len())]
     pub fn split_at_mut_ghost(&mut self, index: Int) -> (&mut Self, &mut Self) {
@@ -225,48 +209,48 @@ impl<T> SliceOwn<T> {
         unreachable!("BUG: called ghost function in normal code")
     }
 
-    /// Convert a `&SliceOwn` into a `&PtrOwn` for the first element.
+    /// Convert a `&PtrOwn<[T]>` for a non-empty slice into a `&PtrOwn<T>` for the first element.
     #[trusted]
     #[pure]
     #[requires(self.len() > 0)]
-    #[ensures(result.ptr() == self.ptr())]
-    #[ensures(*result.val() == self.contents()[0])]
+    #[ensures(result.ptr().as_ptr_logic() == self.ptr())]
+    #[ensures(*result.val() == self.val()@[0])]
     pub fn as_ptr_own_ref_ghost(&self) -> &PtrOwn<T> {
         unreachable!("BUG: called ghost function in normal code")
     }
 
-    /// Convert a `&mut SliceOwn` into a `&mut PtrOwn` for the first element.
+    /// Convert a `&mut PtrOwn<[T]>` for a non-empty slice into a `&mut PtrOwn<T>` for the first element.
     #[trusted]
     #[pure]
     #[requires(self.len() > 0)]
-    #[ensures(result.ptr() == self.ptr())]
-    #[ensures(*result.val() == self.contents()[0])]
-    #[ensures(*(^result).val() == (^self).contents()[0])]
+    #[ensures(result.ptr().as_ptr_logic() == self.ptr())]
+    #[ensures(*result.val() == self.val()@[0])]
+    #[ensures(*(^result).val() == (^self).val()@[0])]
     #[ensures((^self).ptr() == self.ptr())]
     #[ensures((^self).len() == self.len())]
-    #[ensures(forall<i: Int> 0 < i && i < self.len() ==> (^self).contents()[i] == self.contents()[i])]
+    #[ensures(forall<i: Int> 0 < i && i < self.len() ==> (^self).val()@[i] == self.val()@[i])]
     pub fn as_ptr_own_mut_ghost(&mut self) -> &mut PtrOwn<T> {
         unreachable!("BUG: called ghost function in normal code")
     }
 
-    /// Convert a `&SliceOwn` into a `&PtrOwn` for the element at the given index.
+    /// Convert a `&PtrOwn<[T]>` for a non-empty slice into a `&PtrOwn<T>` for the element at the given index.
     #[pure]
     #[requires(0 <= index && index < self.len())]
-    #[ensures(result.ptr() == self.ptr().offset_logic(index))]
-    #[ensures(*result.val() == self.contents()[index])]
+    #[ensures(result.ptr().as_ptr_logic() == self.ptr().offset_logic(index))]
+    #[ensures(*result.val() == self.val()@[index])]
     pub fn index_ptr_own_ref_ghost(&self, index: Int) -> &PtrOwn<T> {
         self.split_at_ghost(index).1.as_ptr_own_ref_ghost()
     }
 
-    /// Convert a `&mut SliceOwn` into a `&mut PtrOwn` for the element at the given index.
+    /// Convert a `&mut PtrOwn<[T]>` for a non-empty slice into a `&mut PtrOwn<T>` for the element at the given index.
     #[pure]
     #[requires(0 <= index && index < self.len())]
-    #[ensures(result.ptr() == self.ptr().offset_logic(index))]
-    #[ensures(*result.val() == self.contents()[index])]
-    #[ensures(*(^result).val() == (^self).contents()[index])]
+    #[ensures(result.ptr().as_ptr_logic() == self.ptr().offset_logic(index))]
+    #[ensures(*result.val() == self.val()@[index])]
+    #[ensures(*(^result).val() == (^self).val()@[index])]
     #[ensures((^self).ptr() == self.ptr())]
     #[ensures((^self).len() == self.len())]
-    #[ensures(forall<k: Int> k != index ==> (^self).contents().get(k) == self.contents().get(k))]
+    #[ensures(forall<k: Int> k != index ==> (^self).val()@.get(k) == self.val()@.get(k))]
     pub fn index_ptr_own_mut_ghost(&mut self, index: Int) -> &mut PtrOwn<T> {
         self.split_at_mut_ghost(index).1.as_ptr_own_mut_ghost()
     }
