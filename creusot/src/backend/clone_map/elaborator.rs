@@ -244,8 +244,7 @@ impl DepElab for LogicElab {
         // The other case are impossible, because that would mean we are  not guaranteed to have an instance
 
         let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
-            || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0)
-            || is_trusted_item(ctx.tcx, def_id);
+            || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0);
 
         let names = elab.namer(dep);
         let name = names.dependency(dep).ident();
@@ -1021,41 +1020,38 @@ fn term<'tcx>(
     bound: &[Ident],
     dep: Dependency<'tcx>,
 ) -> Option<Term<'tcx>> {
-    match dep {
-        Dependency::Item(def_id, subst) => {
-            if matches!(ctx.item_type(def_id), ItemType::Constant) {
-                let ct = UnevaluatedConst::new(def_id, subst);
-                let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(ct));
-                let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
-                let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
-                let span = ctx.def_span(def_id);
-                let res = from_ty_const(&ctx.ctx, constant, ty, typing_env, span);
-                Some(res)
-            } else if is_resolve_function(ctx.tcx, def_id) {
-                resolve_term(ctx, typing_env, def_id, subst, bound)
-            } else if is_structural_resolve(ctx.tcx, def_id) {
-                let subj = ctx.sig(def_id).inputs[0].0.0;
-                structural_resolve(ctx, typing_env, subj, subst.type_at(0))
-            } else if is_fn_once_impl_postcond(ctx.tcx, def_id) {
-                fn_once_postcond_term(ctx, typing_env, subst, bound)
-            } else if is_fn_mut_impl_postcond(ctx.tcx, def_id) {
-                fn_mut_postcond_term(ctx, typing_env, subst, bound)
-            } else if is_fn_impl_postcond(ctx.tcx, def_id) {
-                fn_postcond_term(ctx, typing_env, subst, bound)
-            } else if is_fn_once_impl_precond(ctx.tcx, def_id) {
-                fn_once_precond_term(ctx, typing_env, subst, bound)
-            } else if is_fn_mut_impl_hist_inv(ctx.tcx, def_id) {
-                fn_mut_hist_inv_term(ctx, typing_env, subst, bound)
-            } else {
-                let term = ctx.term(def_id).unwrap().rename(bound);
-                let term = normalize(
-                    ctx.tcx,
-                    typing_env,
-                    EarlyBinder::bind(term).instantiate(ctx.tcx, subst),
-                );
-                Some(term)
-            }
+    let Dependency::Item(def_id, subst) = dep else { unreachable!() };
+    if is_trusted_item(ctx.tcx, def_id) {
+        if is_resolve_function(ctx.tcx, def_id) {
+            resolve_term(ctx, typing_env, def_id, subst, bound)
+        } else if is_structural_resolve(ctx.tcx, def_id) {
+            let subj = ctx.sig(def_id).inputs[0].0.0;
+            structural_resolve(ctx, typing_env, subj, subst.type_at(0))
+        } else if is_fn_once_impl_postcond(ctx.tcx, def_id) {
+            fn_once_postcond_term(ctx, typing_env, subst, bound)
+        } else if is_fn_mut_impl_postcond(ctx.tcx, def_id) {
+            fn_mut_postcond_term(ctx, typing_env, subst, bound)
+        } else if is_fn_impl_postcond(ctx.tcx, def_id) {
+            fn_postcond_term(ctx, typing_env, subst, bound)
+        } else if is_fn_once_impl_precond(ctx.tcx, def_id) {
+            fn_once_precond_term(ctx, typing_env, subst, bound)
+        } else if is_fn_mut_impl_hist_inv(ctx.tcx, def_id) {
+            fn_mut_hist_inv_term(ctx, typing_env, subst, bound)
+        } else {
+            None
         }
-        _ => unreachable!(),
+    } else if matches!(ctx.item_type(def_id), ItemType::Constant) {
+        let ct = UnevaluatedConst::new(def_id, subst);
+        let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(ct));
+        let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
+        let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
+        let span = ctx.def_span(def_id);
+        let res = from_ty_const(&ctx.ctx, constant, ty, typing_env, span);
+        Some(res)
+    } else {
+        let term = ctx.term(def_id).unwrap().rename(bound);
+        let term =
+            normalize(ctx.tcx, typing_env, EarlyBinder::bind(term).instantiate(ctx.tcx, subst));
+        Some(term)
     }
 }
