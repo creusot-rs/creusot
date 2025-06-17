@@ -64,6 +64,8 @@ struct BodyTranslator<'a, 'tcx> {
 
     past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
 
+    retarget_blocks: Vec<(BasicBlock, BasicBlock, BasicBlock)>,
+
     // Type translation context
     ctx: &'a TranslationCtx<'tcx>,
 
@@ -169,6 +171,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             erased_locals,
             current_block: (Vec::new(), None),
             past_blocks: Default::default(),
+            retarget_blocks: vec![],
             ctx,
             fresh_id: body.basic_blocks.len(),
             invariants: invariants.loop_headers,
@@ -180,18 +183,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn translate(mut self) -> fmir::Body<'tcx> {
-        self.translate_body();
-
-        let arg_count = self.body.arg_count;
-
-        assert!(self.assertions.is_empty(), "unused assertions");
-        assert!(self.snapshots.is_empty(), "unused snapshots");
-        assert!(self.invariants.is_empty(), "unused invariants");
-
-        fmir::Body { locals: self.vars, arg_count, blocks: self.past_blocks, fresh: self.fresh_id }
-    }
-
-    fn translate_body(&mut self) {
         let mut not_final_places = NotFinalPlaces::new(self.tcx(), self.body)
             .iterate_to_fixpoint(self.tcx(), self.body, None)
             .into_results_cursor(self.body);
@@ -259,6 +250,21 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             };
 
             self.past_blocks.insert(bb, block);
+        }
+
+        for (pred, bb, resolve_block_id) in self.retarget_blocks {
+            self.past_blocks.get_mut(&pred).unwrap().terminator.retarget(bb, resolve_block_id);
+        }
+
+        assert!(self.assertions.is_empty(), "unused assertions");
+        assert!(self.snapshots.is_empty(), "unused snapshots");
+        assert!(self.invariants.is_empty(), "unused invariants");
+
+        fmir::Body {
+            locals: self.vars,
+            arg_count: self.body.arg_count,
+            blocks: self.past_blocks,
+            fresh: self.fresh_id,
         }
     }
 
@@ -550,7 +556,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             let resolve_block_id = self.fresh_block_id();
             self.past_blocks.insert(resolve_block_id, resolve_block);
-            self.past_blocks.get_mut(pred).unwrap().terminator.retarget(bb, resolve_block_id);
+            self.retarget_blocks.push((*pred, bb, resolve_block_id));
         }
         Ok(())
     }
