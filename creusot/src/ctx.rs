@@ -423,7 +423,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             let clauses = base_predicates
                 .chain(additional_predicates)
                 .map(Predicate::expect_clause)
-                .collect::<Vec<_>>();
+                .collect::<Box<_>>();
             let res = ParamEnv::new(self.mk_clauses(&clauses));
             let res = normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy());
             res

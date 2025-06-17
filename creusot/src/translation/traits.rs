@@ -181,7 +181,7 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
 pub(crate) enum TraitResolved<'tcx> {
     NotATraitItem,
     /// An instance (like `impl Clone for i32 { ... }`) exists for the given type parameters.
-    Instance(DefId, GenericArgsRef<'tcx>),
+    Instance(Instance<'tcx>),
     /// A known instance exists, but we don't know which one.
     UnknownFound,
     /// We don't know if an instance exists.
@@ -191,6 +191,12 @@ pub(crate) enum TraitResolved<'tcx> {
     /// For example, in `fn<T> f(x: T) { let _ = x.clone() }`, we  don't have an
     /// instance for `T::clone` until we know more about `T`.
     NoInstance,
+}
+
+#[derive(Debug)]
+pub struct Instance<'tcx> {
+    pub def: (DefId, GenericArgsRef<'tcx>),
+    pub impl_: Option<(DefId, GenericArgsRef<'tcx>)>,
 }
 
 impl<'tcx> TraitResolved<'tcx> {
@@ -301,13 +307,21 @@ impl<'tcx> TraitResolved<'tcx> {
                     leaf_def.defining_node,
                 );
                 let substs = substs.rebase_onto(tcx, trait_ref.def_id, args);
+
                 let leaf_substs = tcx.erase_regions(substs);
-                TraitResolved::Instance(leaf_def.item.def_id, leaf_substs)
+
+                TraitResolved::Instance(Instance {
+                    def: (leaf_def.item.def_id, leaf_substs),
+                    impl_: Some((impl_data.impl_def_id, impl_data.args)),
+                })
             }
             ImplSource::Param(_) => {
                 // Check whether the default impl from the trait def is sealed
                 if is_sealed(tcx, trait_item_def_id) {
-                    return TraitResolved::Instance(trait_item_def_id, substs);
+                    return TraitResolved::Instance(Instance {
+                        def: (trait_item_def_id, substs),
+                        impl_: None,
+                    });
                 }
 
                 // TODO: we could try to explore the graph to determine if we can be sure
@@ -317,33 +331,13 @@ impl<'tcx> TraitResolved<'tcx> {
             }
             ImplSource::Builtin(_, _) => match *substs.type_at(0).kind() {
                 rustc_middle::ty::Closure(closure_def_id, closure_substs) => {
-                    TraitResolved::Instance(closure_def_id, closure_substs)
+                    TraitResolved::Instance(Instance {
+                        def: (closure_def_id, closure_substs),
+                        impl_: None,
+                    })
                 }
                 _ => unimplemented!(),
             },
-        }
-    }
-
-    /// Given a trait and some type parameters, try to find a concrete `impl` block for
-    /// this trait.
-    pub(crate) fn impl_id_of_trait(
-        tcx: TyCtxt<'tcx>,
-        typing_env: TypingEnv<'tcx>,
-        trait_def_id: DefId,
-        substs: GenericArgsRef<'tcx>,
-    ) -> Option<DefId> {
-        let trait_ref = TraitRef::from_method(tcx, trait_def_id, substs);
-        let trait_ref = tcx.normalize_erasing_regions(typing_env, trait_ref);
-
-        let Ok(source) = tcx.codegen_select_candidate(typing_env.as_query_input(trait_ref)) else {
-            return None;
-        };
-        trace!("TraitResolved::impl_id_of_trait {source:?}",);
-        match source {
-            ImplSource::UserDefined(impl_data) => Some(impl_data.impl_def_id),
-            ImplSource::Param(_) => None,
-            // TODO: should we return something here, like we do in the above method?
-            ImplSource::Builtin(_, _) => None,
         }
     }
 
@@ -353,7 +347,7 @@ impl<'tcx> TraitResolved<'tcx> {
         substs: GenericArgsRef<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
-            TraitResolved::Instance(did, substs) => Some((did, substs)),
+            TraitResolved::Instance(inst) => Some(inst.def),
             TraitResolved::NotATraitItem | TraitResolved::UnknownFound => Some((did, substs)),
             _ => None,
         }
