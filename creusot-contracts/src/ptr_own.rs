@@ -69,7 +69,7 @@ impl<T> PtrOwn<T> {
     /// Convert `&PtrOwn<T>` into `&PtrOwn<[T]><T>` representing a singleton slice.
     #[trusted]
     #[pure]
-    #[ensures(result.ptr() == self.ptr())]
+    #[ensures(result.ptr().as_ptr_logic() == self.ptr())]
     #[ensures(result.val()@ == Seq::singleton(*self.val()))]
     pub fn as_slice_own_ref_ghost(&self) -> &PtrOwn<[T]> {
         unreachable!("BUG: called ghost function in normal code")
@@ -78,7 +78,7 @@ impl<T> PtrOwn<T> {
     /// Convert `&mut PtrOwn<T>` into `&mut PtrOwn<[T]><T>` representing a singleton slice.
     #[trusted]
     #[pure]
-    #[ensures(result.ptr() == self.ptr())]
+    #[ensures(result.ptr().as_ptr_logic() == self.ptr())]
     #[ensures(result.val()@ == Seq::singleton(*self.val()))]
     #[ensures((^self).ptr() == self.ptr())]
     #[ensures((^result).val()@ == Seq::singleton(*(^self).val()))]
@@ -166,28 +166,30 @@ impl<T> PtrOwn<[T]> {
     #[logic]
     #[open]
     pub fn as_ptr(&self) -> RawPtr<T> {
-        pearlite!{ self.ptr() as RawPtr<T> }
+        pearlite! { self.ptr() as RawPtr<T> }
     }
 
     /// The number of elements in the slice.
+    /// Invariant: `self.val()@.len() == self.ptr().len_logic()` TODO how to add this to Invariant?
     #[logic]
     #[open]
     pub fn len(&self) -> Int {
-        pearlite!{ self.val()@.len() }
+        pearlite! { self.val()@.len() }
     }
 
     /// Access the logical element at the given index. `None` if out of bounds.
     #[logic]
     #[open(self)]
     pub fn get(&self, index: Int) -> Option<T> {
-        pearlite!{ self.val()@.get(index) }
+        pearlite! { self.val()@.get(index) }
     }
 
     /// Split a `&PtrOwn<[T]>` into two subslices.
     #[trusted]
     #[pure]
     #[requires(0 <= index && index <= self.len())]
-    #[ensures(result.0.ptr() == self.ptr() && result.1.ptr() == self.ptr().offset_logic(index))]
+    #[ensures(result.0.ptr().as_ptr_logic() == self.ptr().as_ptr_logic() && result.1.ptr().as_ptr_logic() == self.ptr().as_ptr_logic().offset_logic(index))]
+    #[ensures(result.0.ptr().len_logic() == result.0.len() && result.1.ptr().len_logic() == result.1.len())]
     #[ensures(result.0.val()@ == self.val()@.subsequence(0, index))]
     #[ensures(result.1.val()@ == self.val()@.subsequence(index, self.len()))]
     pub fn split_at_ghost(&self, index: Int) -> (&Self, &Self) {
@@ -200,6 +202,7 @@ impl<T> PtrOwn<[T]> {
     #[pure]
     #[requires(0 <= index && index <= self.len())]
     #[ensures(result.0.ptr().as_ptr_logic() == self.ptr().as_ptr_logic() && result.1.ptr().as_ptr_logic() == self.ptr().as_ptr_logic().offset_logic(index))]
+    #[ensures(result.0.ptr().len_logic() == result.0.len() && result.1.ptr().len_logic() == result.1.len())]
     #[ensures(result.0.val()@ == self.val()@.subsequence(0, index) && (^result.0).val()@ == (^self).val()@.subsequence(0, index))]
     #[ensures(result.1.val()@ == self.val()@.subsequence(index, self.len()) && (^result.1).val()@ == (^self).val()@.subsequence(index, self.len()))]
     #[ensures((^self).ptr() == self.ptr())]
@@ -213,7 +216,7 @@ impl<T> PtrOwn<[T]> {
     #[trusted]
     #[pure]
     #[requires(self.len() > 0)]
-    #[ensures(result.ptr().as_ptr_logic() == self.ptr())]
+    #[ensures(result.ptr() == self.ptr().as_ptr_logic())]
     #[ensures(*result.val() == self.val()@[0])]
     pub fn as_ptr_own_ref_ghost(&self) -> &PtrOwn<T> {
         unreachable!("BUG: called ghost function in normal code")
@@ -223,7 +226,7 @@ impl<T> PtrOwn<[T]> {
     #[trusted]
     #[pure]
     #[requires(self.len() > 0)]
-    #[ensures(result.ptr().as_ptr_logic() == self.ptr())]
+    #[ensures(result.ptr() == self.ptr().as_ptr_logic())]
     #[ensures(*result.val() == self.val()@[0])]
     #[ensures(*(^result).val() == (^self).val()@[0])]
     #[ensures((^self).ptr() == self.ptr())]
@@ -236,7 +239,7 @@ impl<T> PtrOwn<[T]> {
     /// Convert a `&PtrOwn<[T]>` for a non-empty slice into a `&PtrOwn<T>` for the element at the given index.
     #[pure]
     #[requires(0 <= index && index < self.len())]
-    #[ensures(result.ptr().as_ptr_logic() == self.ptr().offset_logic(index))]
+    #[ensures(result.ptr() == self.ptr().as_ptr_logic().offset_logic(index))]
     #[ensures(*result.val() == self.val()@[index])]
     pub fn index_ptr_own_ref_ghost(&self, index: Int) -> &PtrOwn<T> {
         self.split_at_ghost(index).1.as_ptr_own_ref_ghost()
@@ -245,7 +248,7 @@ impl<T> PtrOwn<[T]> {
     /// Convert a `&mut PtrOwn<[T]>` for a non-empty slice into a `&mut PtrOwn<T>` for the element at the given index.
     #[pure]
     #[requires(0 <= index && index < self.len())]
-    #[ensures(result.ptr().as_ptr_logic() == self.ptr().offset_logic(index))]
+    #[ensures(result.ptr() == self.ptr().as_ptr_logic().offset_logic(index))]
     #[ensures(*result.val() == self.val()@[index])]
     #[ensures(*(^result).val() == (^self).val()@[index])]
     #[ensures((^self).ptr() == self.ptr())]
