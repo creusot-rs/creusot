@@ -9,7 +9,10 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use rustc_infer::{
     infer::{DefineOpaqueTypes, InferCtxt, TyCtxtInferExt},
-    traits::{Obligation, ObligationCause, TraitEngine, specialization_graph::Graph},
+    traits::{
+        CodegenObligationError, Obligation, ObligationCause, TraitEngine,
+        specialization_graph::Graph,
+    },
 };
 use rustc_middle::ty::{
     Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv, ParamTy, Predicate,
@@ -223,7 +226,16 @@ impl<'tcx> TraitResolved<'tcx> {
         };
         let trait_ref = tcx.normalize_erasing_regions(typing_env, trait_ref);
 
-        let Ok(source) = tcx.codegen_select_candidate(typing_env.as_query_input(trait_ref)) else {
+        let source = tcx.codegen_select_candidate(typing_env.as_query_input(trait_ref));
+        if let Err(err) = source {
+            if let CodegenObligationError::Ambiguity = err {
+                // FIXME: if there are several instances available, `codegen_select_candidate`
+                // returns an error, while we would like it to return any of the instances.
+                // We need to find another entry point of the trait solver.
+                // In the meantime, pretend that we have an instance that we do not know
+                return TraitResolved::UnknownFound;
+            }
+
             // We have not found an instance. Does there exist a specializing instance?
 
             let Ok(gt) = GraphTraversal::new(tcx, typing_env.param_env, trait_ref) else {
@@ -255,7 +267,7 @@ impl<'tcx> TraitResolved<'tcx> {
         };
         trace!("TraitResolved::resolve {source:?}",);
 
-        match source {
+        match source.unwrap() {
             ImplSource::UserDefined(impl_data) => {
                 // Find the id of the actual associated method we will be running
                 let leaf_def = tcx

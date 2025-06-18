@@ -49,7 +49,10 @@ use petgraph::{
     visit::{Control, DfsEvent, EdgeRef as _, depth_first_search},
 };
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_infer::{infer::TyCtxtInferExt as _, traits::ObligationCause};
+use rustc_infer::{
+    infer::TyCtxtInferExt as _,
+    traits::{ImplSource, ObligationCause},
+};
 use rustc_middle::{
     thir::{self, visit::Visitor},
     ty::{Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, TypingEnv, TypingMode},
@@ -303,10 +306,25 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 continue;
             }
 
-            let subst = EarlyBinder::bind(trait_ref.args).instantiate(ctx.tcx, generic_args);
+            let trait_ref = EarlyBinder::bind(trait_ref).instantiate(ctx.tcx, generic_args);
+            let trait_ref = ctx.normalize_erasing_regions(typing_env, trait_ref);
+
+            // FIXME: in the case of an ambiguity, `codegen_select_candidate` may return an error,
+            // which makes the unwrap bellow fail. So this is not the entry point of the trait solver we want.
+            // We want something that gives one possible instance, even if there are several instances
+            // available.
+            //
+            // FIXME: this only handle the primary goal of the proof tree. We need to handle all the instances
+            // used by this trait solving, including those that are used indirectly.
+            if let ImplSource::Param(_) =
+                ctx.codegen_select_candidate(typing_env.as_query_input(trait_ref)).unwrap()
+            {
+                continue;
+            }
+
             for &item in ctx.associated_item_def_ids(trait_ref.def_id) {
                 let TraitResolved::Instance(Instance { def: (item_id, _), .. }) =
-                    TraitResolved::resolve_item(ctx.tcx, typing_env, item, subst)
+                    TraitResolved::resolve_item(ctx.tcx, typing_env, item, trait_ref.args)
                 else {
                     continue;
                 };
