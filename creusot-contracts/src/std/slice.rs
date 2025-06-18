@@ -1,7 +1,8 @@
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{
     invariant::*,
     ptr_own::{PtrOwn, RawPtr},
-    resolve::structural_resolve,
     std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
     *,
 };

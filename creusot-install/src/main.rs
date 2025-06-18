@@ -65,7 +65,10 @@ struct Args {
     /// Use existing creusot-rustc
     #[arg(long)]
     skip_creusot_rustc: bool,
-    /// Skip installing Why3, Why3find, and provers
+    /// Skip installing Why3 and Why3find
+    #[arg(long)]
+    skip_why3: bool,
+    /// Skip installing provers
     #[arg(long)]
     skip_extra_tools: bool,
     /// Only build the prelude, don't install anything (implies the skip options)
@@ -110,7 +113,7 @@ fn main() -> anyhow::Result<()> {
 
 fn install(args: Args) -> anyhow::Result<()> {
     let paths = setup::get_config_paths()?;
-    if !args.external.contains(&SetupManagedTool::Why3AndWhy3find) && !args.skip_extra_tools {
+    if !args.external.contains(&SetupManagedTool::Why3AndWhy3find) && !args.skip_why3 {
         install_why3(&paths)?;
     }
     if !args.skip_cargo_creusot {

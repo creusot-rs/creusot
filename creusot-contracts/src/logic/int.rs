@@ -243,6 +243,14 @@ impl PartialEq for Int {
 impl PartialOrd for Int {
     #[trusted]
     #[pure]
+    #[ensures(result == Some(self.cmp_log(*other)))]
+    #[allow(unused_variables)]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        unreachable!("BUG: called ghost function in normal code")
+    }
+
+    #[trusted]
+    #[pure]
     #[ensures(result == self.lt_log(*other))]
     #[allow(unused_variables)]
     fn lt(&self, other: &Self) -> bool {
@@ -270,14 +278,6 @@ impl PartialOrd for Int {
     #[ensures(result == self.ge_log(*other))]
     #[allow(unused_variables)]
     fn ge(&self, other: &Self) -> bool {
-        unreachable!("BUG: called ghost function in normal code")
-    }
-
-    #[trusted]
-    #[pure]
-    #[ensures(result == Some(self.cmp_log(*other)))]
-    #[allow(unused_variables)]
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         unreachable!("BUG: called ghost function in normal code")
     }
 }

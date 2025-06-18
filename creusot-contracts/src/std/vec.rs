@@ -1,6 +1,7 @@
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{
     invariant::*,
-    resolve::structural_resolve,
     std::{
         ops::{Deref, DerefMut, Index, IndexMut},
         slice::SliceIndex,

@@ -1,4 +1,6 @@
-use crate::{logic::ops::IndexLogic, resolve::structural_resolve, *};
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
+use crate::{logic::ops::IndexLogic, *};
 #[cfg(feature = "nightly")]
 use ::std::alloc::Allocator;
 pub use ::std::collections::VecDeque;

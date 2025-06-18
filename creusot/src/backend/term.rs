@@ -123,9 +123,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                     Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([self.lower_term(arg)])])
                 }
+                TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = term.ty.kind() && ty1 == ty2 => {
+                    // Note: this only handles casts from `*const T` to `*mut T`
+                    // - Casts from `*mut T` to `*const T` are represented as `Coerce`.
+                    // - Casts between different pointer types are more complicated because of fat pointers metadata.
+                    self.lower_term(arg)
+                }
                 _ => self.ctx.crash_and_error(
                     DUMMY_SP,
-                    "casting from a type other than booleans and integers is not supported",
+                    "unsupported cast in Pearlite (allowed: bool as integer, integer as integer, or *mut T as *const T, or *const T as *mut T)",
                 ),
             },
             TermKind::Coerce { arg } => self.lower_term(arg),

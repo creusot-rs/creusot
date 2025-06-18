@@ -82,7 +82,7 @@ struct ImplData {
     where_clause: Option<Punctuated<WherePredicate, Comma>>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct FlatSpec {
     span: Span,
     signature: Signature,
@@ -522,10 +522,10 @@ fn flatten(
             }
         }
         ExternSpec::Fn(fun) => {
-            prefix
-                .path
-                .segments
-                .push(PathSegment { ident: fun.sig.ident.clone(), arguments: PathArguments::None });
+            prefix.path.segments.push(PathSegment {
+                ident: fun.sig.ident.clone(),
+                arguments: generic_arguments(&fun.sig),
+            });
             item_name.add_ident(&fun.sig.ident);
             flat.push(FlatSpec {
                 span: fun.span,
@@ -539,6 +539,34 @@ fn flatten(
         }
     }
     Ok(())
+}
+
+fn generic_arguments(sig: &Signature) -> PathArguments {
+    generic_arguments_opt(&sig.generics).unwrap_or(PathArguments::None)
+}
+
+fn generic_arguments_opt(generics: &Generics) -> Option<PathArguments> {
+    Some(PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+        colon2_token: None,
+        lt_token: generics.lt_token?,
+        args: generics.params.iter().filter_map(param_to_argument).collect(),
+        gt_token: generics.gt_token?,
+    }))
+}
+
+fn param_to_argument(t: &GenericParam) -> Option<GenericArgument> {
+    match t {
+        GenericParam::Lifetime(_) => None, // cannot specify lifetime arguments explicitly if late bound lifetime parameters are present
+        GenericParam::Type(t) => Some(GenericArgument::Type(Type::Path(TypePath {
+            qself: None,
+            path: t.ident.clone().into(),
+        }))),
+        GenericParam::Const(c) => Some(GenericArgument::Const(Expr::Path(ExprPath {
+            attrs: vec![],
+            qself: None,
+            path: c.ident.clone().into(),
+        }))),
+    }
 }
 
 impl Parse for ExternSpecs {

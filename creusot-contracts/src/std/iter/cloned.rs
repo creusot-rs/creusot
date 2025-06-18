@@ -1,4 +1,6 @@
-use crate::{invariant::*, resolve::structural_resolve, std::iter::Cloned, *};
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
+use crate::{invariant::*, std::iter::Cloned, *};
 
 pub trait ClonedExt<I> {
     #[logic]

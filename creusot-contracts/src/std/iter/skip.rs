@@ -1,4 +1,6 @@
-use crate::{resolve::structural_resolve, std::iter::Skip, *};
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
+use crate::{std::iter::Skip, *};
 
 pub trait SkipExt<I> {
     #[logic]

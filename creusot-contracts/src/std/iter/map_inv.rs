@@ -1,4 +1,6 @@
-use crate::{invariant::Invariant, resolve::structural_resolve, *};
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
+use crate::{invariant::Invariant, *};
 
 pub struct MapInv<I, B, F> {
     pub iter: I,

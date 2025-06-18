@@ -1,4 +1,6 @@
-use crate::{std::ops::*, structural_resolve, *};
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
+use crate::{std::ops::*, *};
 use ::std::iter::Map;
 
 pub trait MapExt<I, F> {

@@ -13,24 +13,20 @@ pub trait Resolve {
     fn resolve_coherence(&self);
 }
 
+#[trusted]
 #[predicate(prophetic)]
 #[open]
 #[rustc_diagnostic_item = "creusot_resolve"]
 pub fn resolve<T: ?Sized>(_: &T) -> bool {
-    true
+    dead
 }
 
+#[trusted]
 #[predicate(prophetic)]
 #[open]
 #[rustc_diagnostic_item = "creusot_structural_resolve"]
-#[creusot::no_translate]
 pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
-    true /* Dummy */
-}
-
-#[cfg(not(creusot))]
-pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
-    panic!()
+    dead
 }
 
 impl<T1, T2: ?Sized> Resolve for (T1, T2) {

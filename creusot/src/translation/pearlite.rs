@@ -32,7 +32,8 @@ use rustc_middle::{
     },
     ty::{
         CanonicalUserType, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable,
-        TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind, int_ty, uint_ty,
+        TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind, adjustment::PointerCoercion,
+        int_ty, uint_ty,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -913,6 +914,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     "Casts from ! are not supported in Pearlite, because Why3 types are always inhabited.",
                 ))
             }
+            ExprKind::PointerCoercion {
+                cast: PointerCoercion::MutToConstPointer, source, ..
+            } => Ok(self.expr_term(source)?.coerce(ty).span(span)),
             ref ek => todo!("lower_expr: {:?}", ek),
         };
         Ok(Term { ty, ..res? })
@@ -1549,6 +1553,10 @@ impl<'tcx> Term<'tcx> {
         let ty = self.ty;
         assert_eq!(ty.ref_mutability(), Some(Not));
         self.coerce(ty.builtin_deref(false).unwrap())
+    }
+
+    pub(crate) fn int(int_ty: Ty<'tcx>, int: i128) -> Self {
+        Term { ty: int_ty, kind: TermKind::Lit(Literal::Integer(int)), span: DUMMY_SP }
     }
 
     pub(crate) fn span(mut self, sp: Span) -> Self {
