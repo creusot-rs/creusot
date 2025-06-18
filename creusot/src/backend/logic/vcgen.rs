@@ -10,7 +10,7 @@ use crate::{
         logic::Dependencies,
         projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::lower_contract,
-        term::{binop_to_binop, lower_literal, lower_pure},
+        term::{binop_to_binop, lower_literal, lower_pure, unsupported_cast},
         ty::{constructor, is_int, ity_to_prelude, translate_ty, ty_to_prelude, uty_to_prelude},
     },
     contracts_items::get_builtin,
@@ -285,7 +285,13 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         k(Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([arg])]))
                     })
                 }
-                _ => self.ctx.crash_and_error(t.span, "unsupported cast"),
+                TyKind::RawPtr(ty1, _)
+                    if let TyKind::RawPtr(ty2, _) = t.ty.kind()
+                        && ty1 == ty2 =>
+                {
+                    self.build_wp(arg, k)
+                }
+                _ => unsupported_cast(self.ctx, t.span, arg.ty, t.ty),
             },
             TermKind::Coerce { arg } => self.build_wp(arg, k),
             // Items are just global names so
