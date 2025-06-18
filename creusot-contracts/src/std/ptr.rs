@@ -105,6 +105,10 @@ pub trait SizedPointerExt<T>: PointerExt<T> {
     #[ensures(result.addr_logic() == self.addr_logic() + offset * size_of_logic::<T>())]
     fn offset_logic(self, offset: Int) -> RawPtr<T>;
 
+    #[law]
+    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
+    fn offset_logic_assoc(self, offset1: Int, offset2: Int);
+
     /// Restriction of `add` that requires evidence that the addition is safe.
     /// We simply require a borrow of the `PtrOwn<[T]>` token for the result pointer.
     /// In particular, this accounts for one-past-the-end pointers, which point to a zero-sized slice.
@@ -132,6 +136,11 @@ impl<T> SizedPointerExt<T> for *const T {
     }
 
     #[trusted]
+    #[law]
+    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
+    fn offset_logic_assoc(self, offset1: Int, offset2: Int) {}
+
+    #[trusted]
     #[requires(own.ptr().as_ptr_logic() == self.offset_logic(offset@))]
     #[ensures(own.ptr().as_ptr_logic() == result.raw())]
     unsafe fn add_own(self, offset: usize, own: Ghost<&PtrOwn<[T]>>) -> Self {
@@ -146,6 +155,11 @@ impl<T> SizedPointerExt<T> for *mut T {
     fn offset_logic(self, offset: Int) -> RawPtr<T> {
         dead
     }
+
+    #[trusted]
+    #[law]
+    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
+    fn offset_logic_assoc(self, offset1: Int, offset2: Int) {}
 
     #[trusted]
     #[requires(own.ptr().as_ptr_logic() == self.offset_logic(offset@))]
