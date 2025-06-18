@@ -58,6 +58,18 @@ pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
     Lower { ctx, names }.lower_pat(pat)
 }
 
+pub(crate) fn unsupported_cast<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    span: rustc_span::Span,
+    src: Ty<'tcx>,
+    tgt: Ty<'tcx>,
+) -> ! {
+    ctx.crash_and_error(
+        span,
+        &format!("unsupported cast in Pearlite from {src} to {tgt} (allowed: bool as integer, integer as integer, or *mut T as *const T, or *const T as *mut T)"),
+    )
+}
+
 struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,
@@ -123,16 +135,16 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                     Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([self.lower_term(arg)])])
                 }
-                TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = term.ty.kind() && ty1 == ty2 => {
+                TyKind::RawPtr(ty1, _)
+                    if let TyKind::RawPtr(ty2, _) = term.ty.kind()
+                        && ty1 == ty2 =>
+                {
                     // Note: this only handles casts from `*const T` to `*mut T`
                     // - Casts from `*mut T` to `*const T` are represented as `Coerce`.
                     // - Casts between different pointer types are more complicated because of fat pointers metadata.
                     self.lower_term(arg)
                 }
-                _ => self.ctx.crash_and_error(
-                    DUMMY_SP,
-                    "unsupported cast in Pearlite (allowed: bool as integer, integer as integer, or *mut T as *const T, or *const T as *mut T)",
-                ),
+                _ => unsupported_cast(self.ctx, term.span, arg.ty, term.ty),
             },
             TermKind::Coerce { arg } => self.lower_term(arg),
             // FIXME: this is a weird dance.
