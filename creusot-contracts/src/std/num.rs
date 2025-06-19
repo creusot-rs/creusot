@@ -110,9 +110,9 @@ mach_int!(isize, "creusot.int.Int16$BW$", 0isize, ".to_int");
 macro_rules! spec_type {
     ($type:ty) => {
         // Specify addition, subtraction and multiplication
-        spec_op_common!($type, +, checked_add, wrapping_add, saturating_add, overflowing_add);
-        spec_op_common!($type, -, checked_sub, wrapping_sub, saturating_sub, overflowing_sub);
-        spec_op_common!($type, *, checked_mul, wrapping_mul, saturating_mul, overflowing_mul);
+        spec_op_common!($type, +, checked_add, wrapping_add, saturating_add, overflowing_add, unchecked_add);
+        spec_op_common!($type, -, checked_sub, wrapping_sub, saturating_sub, overflowing_sub, unchecked_sub);
+        spec_op_common!($type, *, checked_mul, wrapping_mul, saturating_mul, overflowing_mul, unchecked_mul);
 
         extern_spec! {
             impl $type {
@@ -182,7 +182,8 @@ macro_rules! spec_op_common {
         $checked:ident,
         $wrapping:ident,
         $saturating:ident,
-        $overflowing:ident $(,)?
+        $overflowing:ident,
+        $unchecked:ident
     ) => {
         extern_spec! {
             impl $type {
@@ -240,6 +241,11 @@ macro_rules! spec_op_common {
                     result.1 == ((self@ $op rhs@) < $type::MIN@ || (self@ $op rhs@) > $type::MAX@)
                 )]
                 fn $overflowing(self, rhs: $type) -> ($type, bool);
+
+                #[pure]
+                #[requires($type::MIN@ <= self@ $op rhs@ && self@ $op rhs@ <= $type::MAX@)]
+                #[ensures(result@ == self@ $op rhs@)]
+                unsafe fn $unchecked(self, rhs: $type) -> $type;
             }
         }
     };
