@@ -20,9 +20,6 @@ use std::{env, panic};
 
 const BUG_REPORT_URL: &str = "https://github.com/creusot-rs/creusot/issues/new";
 
-struct DefaultCallbacks;
-impl rustc_driver::Callbacks for DefaultCallbacks {}
-
 fn main() {
     let handler = EarlyDiagCtxt::new(ErrorOutputType::default());
 
@@ -75,9 +72,13 @@ fn setup_plugin() {
             };
             run_compiler(&args, &mut ToWhy::new(opts))
         }
-        _ => {
+        creusot => {
+            let opts = creusot.map(|creusot| match CreusotArgs::to_options(creusot) {
+                Ok(opts) => opts,
+                Err(msg) => panic!("Error: {msg}"),
+            });
             args.push("--cfg=creusot".to_string());
-            run_compiler(&args, &mut DefaultCallbacks)
+            run_compiler(&args, &mut Prep(opts))
         }
     }
 }

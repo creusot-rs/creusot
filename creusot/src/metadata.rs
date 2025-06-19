@@ -1,6 +1,6 @@
 use crate::{
+    analysis::resolve::BodyData,
     creusot_items::CreusotItems,
-    ctx::*,
     translation::{external::ExternSpec, pearlite::ScopedTerm},
 };
 use creusot_metadata::{decode_metadata, encode_metadata};
@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 use once_map::unsync::OnceMap;
 use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
 use rustc_macros::{TyDecodable, TyEncodable};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::{mir, ty::TyCtxt};
 use rustc_session::config::OutputType;
 use rustc_span::Symbol;
 use std::{
@@ -19,12 +19,14 @@ use std::{
 };
 
 type ExternSpecs<'tcx> = HashMap<DefId, ExternSpec<'tcx>>;
+type BodyDataMap<'tcx> = HashMap<DefId, BodyData<'tcx>>;
 
 // TODO: this should lazily load the metadata.
 #[derive(Default)]
 pub struct Metadata<'tcx> {
     crates: HashMap<CrateNum, CrateMetadata<'tcx>>,
     extern_specs: ExternSpecs<'tcx>,
+    body_data: std::cell::RefCell<BodyDataMap<'tcx>>,
 }
 
 impl<'tcx> Metadata<'tcx> {
@@ -57,17 +59,28 @@ impl<'tcx> Metadata<'tcx> {
 
     pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, String>) {
         for cnum in external_crates(tcx) {
-            let Some((cmeta, mut ext_specs)) = CrateMetadata::load(tcx, overrides, cnum) else {
+            let Some((cmeta, ext_specs, body_data)) = CrateMetadata::load(tcx, overrides, cnum)
+            else {
                 continue;
             };
             self.crates.insert(cnum, cmeta);
 
-            for (id, spec) in ext_specs.drain() {
+            for (id, spec) in ext_specs {
                 if self.extern_specs.insert(id, spec).is_some() {
                     panic!("duplicate external spec found for {:?} while loading {:?}", id, cnum);
                 }
             }
+
+            for (id, data) in body_data {
+                if self.body_data.borrow_mut().insert(id, data).is_some() {
+                    panic!("duplicate body data found for {:?} while loading {:?}", id, cnum);
+                }
+            }
         }
+    }
+
+    pub(crate) fn take_body_data(&self, def_id: DefId) -> Option<BodyData<'tcx>> {
+        self.body_data.borrow_mut().remove(&def_id)
     }
 }
 
@@ -104,7 +117,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         tcx: TyCtxt<'tcx>,
         overrides: &HashMap<String, String>,
         cnum: CrateNum,
-    ) -> Option<(Self, ExternSpecs<'tcx>)> {
+    ) -> Option<(Self, ExternSpecs<'tcx>, BodyDataMap<'tcx>)> {
         let base_path = creusot_metadata_base_path(tcx, overrides, cnum);
 
         let binary_path = creusot_metadata_binary_path(base_path.clone());
@@ -120,7 +133,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         meta.creusot_items = metadata.creusot_items;
         meta.params_open_inv = metadata.params_open_inv;
 
-        Some((meta, metadata.extern_specs))
+        Some((meta, metadata.extern_specs, metadata.body_data))
     }
 }
 
@@ -134,6 +147,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
     creusot_items: CreusotItems,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
+    body_data: HashMap<DefId, BodyData<'tcx>>,
 }
 
 impl<'tcx> BinaryMetadata<'tcx> {
@@ -142,6 +156,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
         items: &CreusotItems,
         extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
         params_open_inv: &HashMap<DefId, Vec<usize>>,
+        body_data: HashMap<DefId, BodyData<'tcx>>,
     ) -> Self {
         let terms = terms
             .iter_mut()
@@ -154,23 +169,37 @@ impl<'tcx> BinaryMetadata<'tcx> {
             creusot_items: items.clone(),
             extern_specs: extern_specs.clone(),
             params_open_inv: params_open_inv.clone(),
+            body_data: body_data,
+        }
+    }
+
+    pub(crate) fn from_body_data(body_data: HashMap<DefId, BodyData<'tcx>>) -> Self {
+        BinaryMetadata {
+            terms: Vec::new(),
+            creusot_items: CreusotItems::default(),
+            extern_specs: HashMap::new(),
+            params_open_inv: HashMap::new(),
+            body_data,
         }
     }
 }
 
-fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
-    out.as_ref().map(|s| s.clone().into()).unwrap_or_else(|| {
-        let outputs = ctx.output_filenames(());
+pub(crate) fn export_file(tcx: TyCtxt, out: Option<&String>) -> PathBuf {
+    out.map(|s| s.into()).unwrap_or_else(|| {
+        let outputs = tcx.output_filenames(());
         let out = outputs.path(OutputType::Metadata);
         out.as_path().to_owned().with_extension("cmeta")
     })
 }
 
-pub(crate) fn dump_exports(ctx: &mut TranslationCtx) {
-    let out_filename = export_file(ctx, &ctx.opts.metadata_path);
+pub(crate) fn dump_exports<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    out: Option<&String>,
+    metadata: BinaryMetadata<'tcx>,
+) {
+    let out_filename = export_file(tcx, out);
     debug!("dump_exports={:?}", out_filename);
-
-    dump_binary_metadata(ctx.tcx, &out_filename, ctx.metadata()).unwrap_or_else(|err| {
+    dump_binary_metadata(tcx, &out_filename, metadata).unwrap_or_else(|err| {
         panic!("could not save metadata path=`{:?}` error={}", out_filename, err.1)
     });
 }

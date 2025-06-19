@@ -1,4 +1,5 @@
 use crate::{
+    analysis::resolve::{self, BodyData},
     backend::ty_inv::is_tyinv_trivial,
     callbacks,
     contracts_items::{
@@ -35,7 +36,7 @@ use rustc_hir::{
 use rustc_infer::traits::ObligationCause;
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{Promoted, TerminatorKind},
+    mir::{self, Promoted, TerminatorKind},
     thir,
     ty::{
         Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, ResolverAstLowering, Ty, TyCtxt,
@@ -148,6 +149,7 @@ pub struct TranslationCtx<'tcx> {
     renamer: RefCell<HashMap<HirId, Ident>>,
     pub corenamer: RefCell<HashMap<Ident, HirId>>,
     crate_name: OnceCell<why3::Symbol>,
+    body_data: OnceMap<LocalDefId, Box<(mir::Body<'tcx>, BodyData<'tcx>)>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -209,6 +211,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             corenamer: Default::default(),
             crate_name: Default::default(),
             thir: Default::default(),
+            body_data: Default::default(),
         }
     }
 
@@ -276,24 +279,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     queryish!(sig, DefId, PreSignature<'tcx>, (pre_sig_of));
 
     pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
-        self.bodies.insert(def_id, |_| {
-            let mut body = callbacks::get_body(self.tcx, def_id)
-                .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
-
-            // We need to remove false edges. They are used in compilation of pattern matchings
-            // in ways that may result in move paths that are marked live and uninitilized at the
-            // same time. We cannot handle this in the generation of resolution.
-            // On the other hand, it is necessary to keep false unwind edges, because they are needed
-            // by liveness analysis.
-            for bbd in body.body.basic_blocks_mut().iter_mut() {
-                let term = bbd.terminator_mut();
-                if let TerminatorKind::FalseEdge { real_target, .. } = term.kind {
-                    term.kind = TerminatorKind::Goto { target: real_target };
-                }
-            }
-
-            Box::new(body)
-        })
+        self.bodies.insert(def_id, |_| Box::new(body_with_facts(self.tcx, def_id)))
     }
 
     /// `span` is used for diagnostics.
@@ -396,6 +382,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             &self.creusot_items,
             &self.extern_specs,
             &self.params_open_inv,
+            self.body_data.iter_mut().map(|(k, v)| (k.to_def_id(), v.1.clone())).collect(),
         )
     }
 
@@ -489,6 +476,41 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
     }
 
+    pub(crate) fn get_body_data(&self, def_id: DefId) -> (&mir::Body<'tcx>, &BodyData<'tcx>) {
+        todo!()
+        // let body = match def_id.as_local() {
+        //     Some(local_def_id) => self.get_body_data_local(local_def_id),
+        //     None => self.get_body_data_extern(def_id),
+        // };
+        // (&body.0, &body.1)
+    }
+
+    /// Run analysis on the body of a `const` item if it has not already been done.
+    /// We avoid doing this upfront in a separate pass by doing this lazily:
+    /// either when the const is used in another function being translated,
+    /// or during the main loop in `after_analysis`.
+    pub(crate) fn get_body_data_local(&self, def_id: LocalDefId) -> &(mir::Body<'tcx>, BodyData<'tcx>) {
+        self.body_data.insert(def_id, |_| {
+            let body = body_with_facts(self.tcx, def_id);
+            let data = resolve::resolve_analysis_for(self.tcx, &body);
+            Box::new((body.body, data))
+        })
+    }
+
+    /*
+    pub(crate) fn get_body_data_extern(&self, def_id: DefId) -> &(mir::Body<'tcx>, BodyData<'tcx>) {
+        self.extern_body_data.insert(def_id, |_| {
+            let body = body_with_facts(self.tcx, def_id);
+            let body_data = self.externs.take_body_data(def_id).unwrap_or_else(|| {
+                self.crash_and_error(
+                    self.tcx.def_span(def_id),
+                    &format!("no body data found for {def_id:?}, please report this bug"),
+                )});
+            (body.body, body_data)
+        })
+    }
+    */
+
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
         match self.tcx.def_kind(def_id) {
             DefKind::Trait => ItemType::Trait,
@@ -530,4 +552,23 @@ impl<'tcx> TranslationCtx<'tcx> {
 
 pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
     tcx.crate_name(LOCAL_CRATE).as_str().into()
+}
+
+/// This should only be called at most once per `def_id` (for more info, see `callbacks::get_body`).
+pub(crate) fn body_with_facts(tcx: TyCtxt, def_id: LocalDefId) -> BodyWithBorrowckFacts {
+    let mut body = callbacks::get_body(tcx, def_id)
+        .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
+
+    // We need to remove false edges. They are used in compilation of pattern matchings
+    // in ways that may result in move paths that are marked live and uninitilized at the
+    // same time. We cannot handle this in the generation of resolution.
+    // On the other hand, it is necessary to keep false unwind edges, because they are needed
+    // by liveness analysis.
+    for bbd in body.body.basic_blocks_mut().iter_mut() {
+        let term = bbd.terminator_mut();
+        if let TerminatorKind::FalseEdge { real_target, .. } = term.kind {
+            term.kind = TerminatorKind::Goto { target: real_target };
+        }
+    }
+    body
 }

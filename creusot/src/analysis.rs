@@ -1,6 +1,7 @@
 mod borrows;
 mod liveness_no_drop;
 mod not_final_places;
+pub mod resolve;
 
 pub use borrows::*;
 pub use liveness_no_drop::*;

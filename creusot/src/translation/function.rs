@@ -2,17 +2,18 @@ mod statement;
 mod terminator;
 
 use crate::{
-    analysis::NotFinalPlaces,
+    analysis::{
+        resolve::{self, place_contains_borrow_deref, BodyData, HasMoveDataExt, Resolver}, NotFinalPlaces
+    },
     backend::ty_inv::is_tyinv_trivial,
     contracts_items::{is_snapshot_closure, is_spec},
     ctx::*,
     extended_location::ExtendedLocation,
-    gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
+    gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
     naming::variable_name,
-    resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
         constant::from_mir_constant,
-        fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inline_pearlite_subst},
+        fmir::{self, inline_pearlite_subst, LocalDecl, LocalDecls, RValue, TrivialInv},
         function::terminator::discriminator_for_switch,
         pearlite::{Ident, Term},
     },
@@ -123,6 +124,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     ) -> R {
         let tcx = ctx.tcx;
         let body_with_facts = ctx.body_with_facts(body_id.def_id);
+        let body_data = resolve::resolve_analysis_for(tcx, &body_with_facts);
         let (body, move_data, resolver, borrows);
         match body_id.promoted {
             None => {

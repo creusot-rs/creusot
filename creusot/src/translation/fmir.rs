@@ -5,6 +5,7 @@ use crate::{
 };
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
+use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     mir::{
         self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, Promoted, SourceScope, UnOp,
@@ -94,7 +95,7 @@ pub(crate) struct Statement<'tcx> {
 }
 
 // TODO: Add shared borrows?
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, TyDecodable, TyEncodable)]
 pub enum BorrowKind {
     /// Ordinary mutable borrows
     Mut,
