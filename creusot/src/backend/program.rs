@@ -171,38 +171,55 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
 
+    let mut recursive_calls = IndexMap::new();
+
     let blocks: Box<[Defn]> = wto
         .into_iter()
         .map(|c| {
-            component_to_defn(&mut body, ctx, names, body_id.def_id, &block_idents, inner_return, c)
+            component_to_defn(
+                &mut body,
+                &mut recursive_calls,
+                ctx,
+                names,
+                body_id.def_id,
+                &block_idents,
+                inner_return,
+                c,
+            )
         })
         .collect();
 
-    let (mut sig, contract, return_ty) = if body_id.promoted.is_none() {
+    let ((mut sig, contract, return_ty), variant) = if body_id.promoted.is_none() {
         let def_id = body_id.def_id();
         let typing_env = ctx.typing_env(def_id);
         let mut pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
+        let variant = pre_sig.contract.variant.clone();
         pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
-        lower_program_sig(ctx, names, name, pre_sig, def_id, outer_return)
+        (lower_program_sig(ctx, names, name, pre_sig, def_id, outer_return), variant)
     } else {
         let ret = body.locals.first().map(|(_, decl)| decl.clone()).unwrap();
         let ret_ty = translate_ty(ctx, names, ret.span, ret.ty);
         (
-            Prototype {
-                name,
-                attrs: vec![],
-                params: [Param::Cont(
-                    outer_return,
-                    [].into(),
-                    [Param::Term(Ident::fresh_local("x"), ret_ty.clone())].into(), // argument that has to be named for useless reasons (difficult to fix in Coma/Why3 parser)
-                )]
-                .into(),
-            },
-            Contract::default(),
-            ret_ty,
+            (
+                Prototype {
+                    name,
+                    attrs: vec![],
+                    params: [Param::Cont(
+                        outer_return,
+                        [].into(),
+                        [Param::Term(Ident::fresh_local("x"), ret_ty.clone())].into(), // argument that has to be named for useless reasons (difficult to fix in Coma/Why3 parser)
+                    )]
+                    .into(),
+                },
+                Contract::default(),
+                ret_ty,
+            ),
+            None,
         )
     };
+
     // Bind local variables in the body
+    let variant_name = body.function_variant;
     let vars: Box<[_]> = body
         .locals
         .into_iter()
@@ -210,7 +227,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
             let init = if decl.arg {
                 let (id2, ty2) = sig.params[arg_index[&id]].as_term();
-                assert_eq! {ty, *ty2};
+                assert_eq!(ty, *ty2);
                 Exp::var(id2)
             } else {
                 Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])
@@ -226,6 +243,9 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
                 IsRef::Ref,
             )
         }))
+        .chain(
+            contract.variant.into_iter().map(|(exp, ty)| Var(variant_name, ty, exp, IsRef::NotRef)),
+        )
         .collect();
 
     let mut body = Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks);
@@ -253,15 +273,89 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         sig.attrs.push(Attribute::Attr("coma:extspec".into()));
     }
 
-    body = body.let_(vars);
+    // variant handler
+    if let Some(variant_expr) = variant {
+        // If the function has a variant, recursive calls go through a special
+        // local handler that shadows the function:
+        //
+        // ```
+        // let rec f (x) (ret) =
+        //   ... f'0 {x} ret ...
+        //   [ f'0 (x) (ret) -> { x < variant } f {x} ret ]
+        //   [ variant : int = ... ]
+        //   [ inner_return ... ]
+        // ```
 
+        let variant = {
+            let subst = ctx.tcx.mk_args(&[variant_expr.ty.into()]);
+            let wf_relation = get_wf_relation(ctx.tcx);
+            let (wf_relation, subst) = TraitResolved::resolve_item(
+                ctx.tcx,
+                ctx.typing_env(body_id.def_id()),
+                wf_relation,
+                subst,
+            )
+            .to_opt(wf_relation, subst)
+            .unwrap_or((wf_relation, subst));
+            let variant_decreases =
+                pearlite::Term::call_no_normalize(ctx.tcx, wf_relation, subst, [
+                    pearlite::Term::var(variant_name, variant_expr.ty),
+                    variant_expr,
+                ]);
+            lower_pure(ctx, names, &variant_decreases)
+                .with_attr(Attribute::Attr("expl:function variant".to_string()))
+        };
+
+        for (_, (fun_name, params, ret_ty)) in recursive_calls {
+            let params: Box<[_]> = params
+                .into_iter()
+                .zip(&sig.params)
+                .map(|(ty, param)| Param::Term(param.as_term().0, ty))
+                .chain(std::iter::once(Param::Cont(
+                    Ident::fresh_local("_ret"),
+                    [].into(),
+                    [Param::Term(Ident::fresh_local("_r"), ret_ty)].into(),
+                )))
+                .collect();
+            let args: Box<[_]> = params
+                .iter()
+                .map(|p| match p {
+                    Param::Term(ident, _) => Arg::Term(Exp::Var(Name::local(*ident))),
+                    Param::Cont(ident, _, _) => Arg::Cont(Expr::Name(Name::local(*ident))),
+                    _ => unreachable!(),
+                })
+                .collect();
+
+            body = Expr::Defn(
+                body.boxed(),
+                false,
+                [Defn {
+                    prototype: Prototype {
+                        name: fun_name.clone().to_ident(),
+                        attrs: Vec::new(),
+                        params,
+                    },
+                    body: Expr::Assert(
+                        // assert the variant
+                        variant.clone().boxed(),
+                        // call the function with the same args
+                        Expr::app(Expr::Name(fun_name), args).boxed(),
+                    ),
+                }]
+                .into(),
+            );
+        }
+    } else if !recursive_calls.is_empty() {
+        ctx.dcx().span_bug(ctx.def_span(body_id.def_id), "missing variant for function");
+    }
+    body = body.let_(vars);
     body = Expr::Defn(
         body.boxed(),
         false,
         [Defn {
             prototype: Prototype {
                 name: inner_return,
-                attrs: vec![],
+                attrs: Vec::new(),
                 params: [Param::Term(name::result(), return_ty)].into(),
             },
             body: postcond,
@@ -282,6 +376,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
 /// into their own group of handlers.
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
+    recursive_calls: &mut RecursiveCalls,
     ctx: &Why3Generator<'tcx>,
     names: &N,
     def_id: LocalDefId,
@@ -294,7 +389,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     let (head, tl) = match c {
         Component::Vertex(v) => {
             let block = body.blocks.shift_remove(&v).unwrap();
-            return block.into_why(&lower, v);
+            return block.into_why(&lower, recursive_calls, v);
         }
         Component::Component(v, tls) => (v, tls),
     };
@@ -319,11 +414,22 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
         lower_pure(lower.ctx, lower.names, &variant_decreases)
             .with_attr(Attribute::Attr("expl:loop variant".to_string()))
     });
-    let mut block = block.into_why(&lower, head);
+    let mut block = block.into_why(&lower, recursive_calls, head);
 
     let defns = tl
         .into_iter()
-        .map(|id| component_to_defn(body, ctx, names, def_id, block_idents, return_ident, id))
+        .map(|id| {
+            component_to_defn(
+                body,
+                recursive_calls,
+                ctx,
+                names,
+                def_id,
+                block_idents,
+                return_ident,
+                id,
+            )
+        })
         .collect();
 
     if !block.body.is_guarded() {
@@ -365,11 +471,16 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     block
 }
 
-pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
-    pub(super) ctx: &'a Why3Generator<'tcx>,
-    pub(super) names: &'a N,
-    pub(super) locals: &'a LocalDecls<'tcx>,
-    pub(super) def_id: LocalDefId,
+/// Keep the recursive calls, so that we generate the right handlers.
+type RecursiveCalls = IndexMap<DefId, (Name, Vec<Type>, Type)>;
+
+/// State to pass around when lowering a function from FMIR to Coma.
+struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
+    ctx: &'a Why3Generator<'tcx>,
+    names: &'a N,
+    locals: &'a LocalDecls<'tcx>,
+    /// Id of the function (or promoted) we are lowering.
+    def_id: LocalDefId,
     block_idents: &'a IndexMap<BasicBlock, Ident>,
     return_ident: Ident,
 }
@@ -931,13 +1042,18 @@ fn mk_switch_branches(
 
 impl<'tcx> Block<'tcx> {
     /// Translate a FMIR block to coma.
-    fn into_why<N: Namer<'tcx>>(self, lower: &LoweringState<'_, 'tcx, N>, id: BasicBlock) -> Defn {
+    fn into_why<N: Namer<'tcx>>(
+        self,
+        lower: &LoweringState<'_, 'tcx, N>,
+        recursive_calls: &mut RecursiveCalls,
+        id: BasicBlock,
+    ) -> Defn {
         let mut statements = vec![];
 
         let cont0 = Ident::fresh_local("s0");
         let mut cont = cont0;
         for (ix, s) in self.stmts.into_iter().enumerate() {
-            let stmt = s.into_why(lower);
+            let stmt = s.into_why(lower, recursive_calls);
             let old_cont = cont;
             cont = Ident::fresh_local(format!("s{}", ix + 1));
             let body = assemble_intermediates(stmt.into_iter(), Expr::var(cont));
@@ -1019,7 +1135,11 @@ impl IntermediateStmt {
 }
 
 impl<'tcx> Statement<'tcx> {
-    fn into_why<N: Namer<'tcx>>(self, lower: &LoweringState<'_, 'tcx, N>) -> Vec<IntermediateStmt> {
+    fn into_why<N: Namer<'tcx>>(
+        self,
+        lower: &LoweringState<'_, 'tcx, N>,
+        recursive_calls: &mut RecursiveCalls,
+    ) -> Vec<IntermediateStmt> {
         let mut istmts = Vec::new();
         match self.kind {
             StatementKind::Assignment(lhs, RValue::Borrow(bor_kind, rhs, triv_inv)) => {
@@ -1133,9 +1253,14 @@ impl<'tcx> Statement<'tcx> {
                 lower.assignment(&lhs, rhs, &mut istmts, self.span);
             }
             StatementKind::Call(dest, fun_id, subst, args) => {
+                let params =
+                    args.iter().map(|a| lower.ty(a.ty(lower.ctx.tcx, lower.locals))).collect();
                 let (fun_qname, args) = func_call_to_why3(lower, fun_id, subst, args, &mut istmts);
                 let ty = dest.ty(lower.ctx.tcx, lower.locals);
                 let ty = lower.ty(ty);
+                if lower.ctx.should_check_variant_decreases(lower.def_id.to_def_id(), fun_id) {
+                    recursive_calls.insert(fun_id, (fun_qname.clone(), params, ty.clone()));
+                }
                 let ret_ident = Ident::fresh_local("_ret");
                 istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, args));
                 lower.assignment(&dest, Exp::var(ret_ident), &mut istmts, self.span);
