@@ -1,12 +1,11 @@
-use indexmap::IndexSet;
-use std::collections::HashMap;
-
 use crate::{
     coma::Defn,
     exp::{Exp, Trigger},
     ty::Type,
     *,
 };
+use indexmap::IndexSet;
+use std::collections::HashMap;
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -91,7 +90,7 @@ impl Condition {
 pub struct Contract {
     pub requires: Box<[Condition]>,
     pub ensures: Box<[Condition]>,
-    pub variant: Option<Exp>,
+    pub variant: Option<(Exp, Type)>,
 }
 
 impl Contract {
@@ -145,7 +144,7 @@ impl Contract {
             ens.exp.subst(subst);
         }
 
-        if let Some(ref mut var) = self.variant {
+        if let Some((ref mut var, _)) = self.variant {
             var.subst(subst);
         }
     }
@@ -161,7 +160,7 @@ impl Contract {
             qfvs.extend(ens.exp.qfvs());
         }
 
-        if let Some(ref var) = self.variant {
+        if let Some((ref var, _)) = self.variant {
             qfvs.extend(var.qfvs());
         }
 
