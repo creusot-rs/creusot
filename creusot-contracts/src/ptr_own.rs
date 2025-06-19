@@ -188,10 +188,10 @@ impl<T> PtrOwn<[T]> {
     #[trusted]
     #[pure]
     #[requires(0 <= index && index <= self.len())]
-    #[ensures(result.0.ptr().as_ptr_logic() == self.ptr().as_ptr_logic() && result.1.ptr().as_ptr_logic() == self.ptr().as_ptr_logic().offset_logic(index))]
+    #[ensures(self.ptr().as_ptr_logic() == result.0.ptr().as_ptr_logic() && self.ptr().as_ptr_logic().offset_logic(index) == result.1.ptr().as_ptr_logic())]
     #[ensures(result.0.ptr().len_logic() == result.0.len() && result.1.ptr().len_logic() == result.1.len())]
-    #[ensures(result.0.val()@ == self.val()@.subsequence(0, index))]
-    #[ensures(result.1.val()@ == self.val()@.subsequence(index, self.len()))]
+    #[ensures(forall<k: Int> 0 <= k && k < index ==> self.val()@[k] == result.0.val()@[k])]
+    #[ensures(forall<k: Int> index <= k && k < self.len() ==> self.val()@[k] == result.1.val()@[k - index])]
     pub fn split_at_ghost(&self, index: Int) -> (&Self, &Self) {
         let _ = index;
         unreachable!("BUG: called ghost function in normal code")
@@ -201,10 +201,12 @@ impl<T> PtrOwn<[T]> {
     #[trusted]
     #[pure]
     #[requires(0 <= index && index <= self.len())]
-    #[ensures(result.0.ptr().as_ptr_logic() == self.ptr().as_ptr_logic() && result.1.ptr().as_ptr_logic() == self.ptr().as_ptr_logic().offset_logic(index))]
+    #[ensures(self.ptr().as_ptr_logic() == result.0.ptr().as_ptr_logic()  && self.ptr().as_ptr_logic().offset_logic(index) == result.1.ptr().as_ptr_logic())]
     #[ensures(result.0.ptr().len_logic() == result.0.len() && result.1.ptr().len_logic() == result.1.len())]
-    #[ensures(result.0.val()@ == self.val()@.subsequence(0, index) && (^result.0).val()@ == (^self).val()@.subsequence(0, index))]
-    #[ensures(result.1.val()@ == self.val()@.subsequence(index, self.len()) && (^result.1).val()@ == (^self).val()@.subsequence(index, self.len()))]
+    #[ensures(index == result.0.len() && self.len() - index == result.1.len())]
+    #[ensures((^result.0).len() == index && self.len() - index == (^result.1).len())]
+    #[ensures(forall<k: Int> 0 <= k && k < index ==> self.val()@[k] == result.0.val()@[k] && (^self).val()@[k] == (^result.0).val()@[k])]
+    #[ensures(forall<k: Int> index <= k && k < self.len() ==> self.val()@[k] == result.1.val()@[k - index] && (^self).val()@[k] == (^result.1).val()@[k - index])]
     #[ensures((^self).ptr() == self.ptr())]
     #[ensures((^self).len() == self.len())]
     pub fn split_at_mut_ghost(&mut self, index: Int) -> (&mut Self, &mut Self) {
