@@ -1,6 +1,7 @@
 //! Type invariants
 
 use crate::*;
+use ::std::ops::{Deref, DerefMut};
 
 /// A user-defined _type invariant_.
 ///
@@ -116,3 +117,121 @@ pub fn inv<T: ?Sized>(_: T) -> bool {
 pub fn inv<T: ?Sized>(_: &T) -> bool {
     panic!()
 }
+
+/// A type implements `InhabitedInvariants` when its type invariant is inhabited.
+/// This is needed to define subset types.
+pub trait InhabitedInvariant: Invariant {
+    #[logic]
+    #[ensures(result.invariant())]
+    fn inhabits() -> Self;
+}
+
+#[trusted]
+pub struct Subset<T: InhabitedInvariant>(T);
+
+impl<T: InhabitedInvariant> View for Subset<T> {
+    type ViewTy = T;
+
+    #[trusted]
+    #[logic]
+    #[ensures(result.invariant())]
+    fn view(self) -> T {
+        dead
+    }
+}
+
+impl<T: InhabitedInvariant + DeepModel> DeepModel for Subset<T> {
+    type DeepModelTy = T::DeepModelTy;
+
+    #[logic]
+    fn deep_model(self) -> T::DeepModelTy {
+        pearlite! { self@.deep_model() }
+    }
+}
+
+impl<T: InhabitedInvariant> Subset<T> {
+    #[trusted]
+    #[logic]
+    #[requires(x.invariant())]
+    #[ensures(result@ == x)]
+    pub fn new_logic(x: T) -> Self {
+        let _ = x;
+        dead
+    }
+
+    #[trusted]
+    #[logic]
+    #[requires(self@ == other@)]
+    #[ensures(self == other)]
+    pub fn view_inj(self, other: Self) {}
+
+    #[pure]
+    #[trusted]
+    #[ensures(result == Self::new_logic(x))]
+    pub fn new(x: T) -> Self {
+        Subset(x)
+    }
+
+    #[pure]
+    #[trusted]
+    #[ensures(result == self@)]
+    pub fn into_inner(self) -> T {
+        self.0
+    }
+}
+
+impl<T: InhabitedInvariant> Deref for Subset<T> {
+    type Target = T;
+
+    #[pure]
+    #[trusted]
+    #[ensures(*result == self@)]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: InhabitedInvariant> DerefMut for Subset<T> {
+    #[pure]
+    #[trusted]
+    #[ensures(*result == self@)]
+    #[ensures(^result == (^self)@)]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<T: InhabitedInvariant + Clone> Clone for Subset<T> {
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        snapshot! { Self::view_inj };
+        Self::new(self.deref().clone())
+    }
+}
+
+impl<T: InhabitedInvariant + Copy> Copy for Subset<T> {}
+
+impl<T: InhabitedInvariant> Resolve for Subset<T> {
+    #[open]
+    #[predicate(prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! { resolve(&(self@)) }
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
+}
+
+impl<T: InhabitedInvariant + DeepModel + PartialEq> PartialEq for Subset<T> {
+    #[pure]
+    #[trusted]
+    #[ensures(result == (self.deep_model() == rhs.deep_model()))]
+    fn eq(&self, rhs: &Self) -> bool {
+        self.0 == rhs.0
+    }
+}
+
+impl<T: InhabitedInvariant + DeepModel + Eq> Eq for Subset<T> {}
