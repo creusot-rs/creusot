@@ -86,6 +86,8 @@ struct BodyTranslator<'a, 'tcx> {
     variants: IndexMap<BasicBlock, Vec<(Term<'tcx>, Ident, BasicBlock)>>,
     /// Maps a basic block representing a loop head to the variant of the loop.
     variants_targets: IndexMap<BasicBlock, (Term<'tcx>, Ident)>,
+    /// Name of the eventual variant for the function.
+    function_variant_name: Ident,
     /// Invariants to translate as assertions.
     invariant_assertions: IndexMap<DefId, (Term<'tcx>, String)>,
     /// Map of the `proof_assert!` blocks to their translated version.
@@ -203,6 +205,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             invariants: invariants.invariants,
             variants,
             variants_targets,
+            function_variant_name: Ident::fresh_local("function_variant"),
             invariant_assertions: invariants.assertions,
             assertions,
             snapshots,
@@ -302,6 +305,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         fmir::Body {
             locals: self.vars,
             variant_locals,
+            function_variant_name: self.function_variant_name,
             arg_count: self.body.arg_count,
             blocks: self.past_blocks,
             fresh: self.fresh_id,

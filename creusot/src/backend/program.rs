@@ -163,13 +163,6 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
 
-    let blocks: Box<[Defn]> = wto
-        .into_iter()
-        .map(|c| {
-            component_to_defn(&mut body, ctx, names, body_id.def_id, &block_idents, inner_return, c)
-        })
-        .collect();
-
     let (mut sig, contract, return_ty) = if body_id.promoted.is_none() {
         let def_id = body_id.def_id();
         let typing_env = ctx.typing_env(def_id);
@@ -194,6 +187,14 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
             ret_ty,
         )
     };
+
+    let blocks: Box<[Defn]> = wto
+        .into_iter()
+        .map(|c| {
+            component_to_defn(&mut body, ctx, names, body_id.def_id, &block_idents, inner_return, c)
+        })
+        .collect();
+
     // Bind local variables in the body
     let vars: Box<[_]> = body
         .locals
@@ -202,7 +203,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
             let init = if decl.arg {
                 let (id2, ty2) = sig.params[arg_index[&id]].as_term();
-                assert_eq! {ty, *ty2};
+                assert_eq!(ty, *ty2);
                 Exp::var(id2)
             } else {
                 Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])
@@ -218,6 +219,12 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
                 IsRef::Ref,
             )
         }))
+        .chain(
+            contract
+                .variant
+                .into_iter()
+                .map(|(exp, ty)| Var(body.function_variant_name, ty, exp, IsRef::NotRef)),
+        )
         .collect();
 
     let mut body = Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks);

@@ -1,10 +1,3 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::Display,
-    io::Write,
-    iter::{once, repeat},
-};
-
 use crate::{
     Exp, Ident, Name, QName, Symbol,
     declaration::{
@@ -17,6 +10,12 @@ use crate::{
 };
 use num::{Float, Zero};
 use pretty::*;
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+    io::Write,
+    iter::{once, repeat},
+};
 
 pub struct PrintDisplay<'a, A: Print>(&'a A);
 
@@ -697,7 +696,7 @@ impl Print for Contract {
             )
         }
 
-        if let Some(ref var) = self.variant {
+        if let Some((ref var, _)) = self.variant {
             doc = doc.append(
                 alloc
                     .text("variant ")

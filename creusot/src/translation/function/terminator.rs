@@ -1,7 +1,7 @@
 use super::BodyTranslator;
 use crate::{
     analysis::NotFinalPlaces,
-    contracts_items::{is_box_new, is_snap_from_fn},
+    contracts_items::{get_wf_relation, is_box_new, is_snap_from_fn},
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
     lints::contractless_external_function::{
@@ -115,6 +115,69 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 .unwrap_or_else(|err| err.crash(self.ctx, arg.span))
                         })
                         .collect();
+
+                    if self.ctx.should_check_variant_decreases(self.body_id.def_id(), fun_def_id) {
+                        // insert an assertion to check that the variant indeed decreased.
+                        let callee_sig = self
+                            .ctx
+                            .sig(fun_def_id)
+                            .clone()
+                            .normalize(self.ctx.tcx, self.typing_env);
+                        let mut variant_after = callee_sig
+                            .contract
+                            .variant
+                            .expect("recursive call should have a variant");
+                        let mut s = HashMap::new();
+                        for (arg, i) in std::iter::zip(&func_args, callee_sig.inputs) {
+                            s.insert(
+                                i.0.0,
+                                arg.clone().into_term(self.tcx(), &self.vars, span).kind,
+                            );
+                        }
+                        variant_after.subst(&s);
+                        // FIXME: could we specialize some type parameters here?
+                        let variant_before_ty = self
+                            .ctx
+                            .sig(self.body_id.def_id())
+                            .contract
+                            .variant
+                            .as_ref()
+                            .unwrap()
+                            .ty;
+                        if variant_before_ty != variant_after.ty {
+                            self.tcx().dcx().span_fatal(
+                                span,
+                                format!(
+                                    "mismatched variant type: expected {}, got {}",
+                                    variant_before_ty, variant_after.ty
+                                ),
+                            );
+                        }
+                        let variant_before =
+                            Term::var(self.function_variant_name, variant_before_ty);
+                        let wf_relation = get_wf_relation(self.tcx());
+                        let (wf_relation, subst) = TraitResolved::resolve_item(
+                            self.tcx(),
+                            self.typing_env(),
+                            wf_relation,
+                            self.tcx().mk_args(&[variant_before_ty.into()]),
+                        )
+                        .to_opt(wf_relation, subst)
+                        .unwrap_or((wf_relation, subst));
+                        let variant_decreases =
+                            Term::call_no_normalize(self.tcx(), wf_relation, subst, [
+                                variant_before,
+                                variant_after,
+                            ]);
+                        self.emit_statement(Statement {
+                            kind: fmir::StatementKind::Assertion {
+                                cond: variant_decreases,
+                                msg: "expl:function variant".to_string(),
+                                trusted: false,
+                            },
+                            span,
+                        });
+                    }
 
                     if is_box_new(self.tcx(), fun_def_id) {
                         let [arg] = *func_args.into_array().unwrap();

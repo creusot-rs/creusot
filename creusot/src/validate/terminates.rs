@@ -68,13 +68,34 @@ use rustc_trait_selection::traits::{
     normalize_param_env_or_error, specialization_graph, translate_args,
 };
 
+pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
+
 /// Validate that a `#[terminates]` function cannot loop indefinitely. This includes:
 /// - forbidding program function from using loops without a variant.
 /// - forbidding (mutual) recursive calls, especially when traits are involved.
 ///
 /// Note that for logical functions, these are relaxed: we don't check loops, nor simple
 /// recursion, because why3 will handle it for us.
-pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
+///
+/// # Returns
+///
+/// For each function with a `#[variant]`, returns the called function before
+/// which the variant should have decreased.
+/// FIXME: how do we ensure that the called function uses the _same_ variant?
+/// - The variant term must be the same (ok if this is simple recursion)
+/// - It must be called with the variant variable in the same position? Ah, no:
+///   we could "simply" check that the argument decreased. AKA:
+///   ```text
+///   #[variant(x)]
+///   fn foo(x: u32) {
+///       if x > 0 { foo(x - 1) }
+///   }
+///   ```
+///   Here, check that `x - 1 < x`. Feasible in MIR (see `terminator.rs`)
+#[must_use]
+pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
+    let mut recursive_calls = RecursiveCalls::new();
+
     // Check for ghost loops
     for local_id in ctx.hir().body_owners() {
         let def_id = local_id.to_def_id();
@@ -88,6 +109,10 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
 
     let CallGraph { graph: mut call_graph } = CallGraph::build(ctx);
 
+    // FIXME: somewhere else, check that functions that have a variant but are
+    // not `terminates` are warned against (since the variant is not handled in this case)
+    // Detect simple recursion, and loops
+
     // Detect simple recursion
     for fun_index in call_graph.node_indices() {
         let def_id = call_graph.node_weight(fun_index).unwrap().def_id();
@@ -95,7 +120,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
             let (self_edge, call) = (self_edge.id(), *self_edge.weight());
             let CallKind::Direct(span) = call else { continue };
             call_graph.remove_edge(self_edge);
-            if is_pearlite(ctx.tcx, def_id) {
+            if is_pearlite(ctx.tcx, def_id) && has_variant_clause(ctx.tcx, def_id) {
                 // Allow simple recursion in logic functions
                 continue;
             }
@@ -106,12 +131,17 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
                 error.span_note(span, "Recursive call happens here");
                 error.emit();
             }
+            recursive_calls.entry(def_id).or_default().insert(def_id);
         };
     }
 
     // detect mutual recursion
     let cycles = tarjan_scc(&call_graph);
     for cycle in cycles {
+        // FIXME: if there is a variant on all the functions in the cycle, then
+        // - Insert the recursive call in `recursive_calls`
+        // - do not report an error here :)
+
         // find a root as a local function
         let Some(root_idx) = cycle.iter().position(|n| {
             let id = call_graph.node_weight(*n).unwrap().def_id();
@@ -178,10 +208,10 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
                 }
             }
         }
-
         error.emit();
     }
     ctx.dcx().abort_if_errors();
+    recursive_calls
 }
 
 struct CallGraph {
