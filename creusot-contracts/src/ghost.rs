@@ -46,6 +46,8 @@ use crate::{
 #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_ty", creusot::builtins = "")]
 pub struct Ghost<T>(PhantomData<T>);
 
+impl<T: Copy> Copy for Ghost<T> {}
+
 impl<T: Clone> Clone for Ghost<T> {
     #[trusted]
     #[pure]
