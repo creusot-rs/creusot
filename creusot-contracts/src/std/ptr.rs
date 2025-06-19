@@ -108,26 +108,9 @@ pub trait SizedPointerExt<T>: PointerExt<T> {
     #[law]
     #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
     fn offset_logic_assoc(self, offset1: Int, offset2: Int);
-
-    /// Restriction of `add` that requires evidence that the addition is safe.
-    /// We simply require a borrow of the `PtrOwn<[T]>` token for the result pointer.
-    /// In particular, this accounts for one-past-the-end pointers, which point to a zero-sized slice.
-    ///
-    /// From https://doc.rust-lang.org/std/primitive.pointer.html#method.add:
-    ///
-    /// > If any of the following conditions are violated, the result is Undefined Behavior:
-    /// > - The offset in bytes, `count * size_of::<T>()`, computed on mathematical
-    /// >   integers (without “wrapping around”), must fit in an `isize`.
-    /// > - If the computed offset is non-zero, then `self` must be derived from a
-    /// >   pointer to some allocated object, and the entire memory range between
-    /// >   `self` and the result must be in bounds of that allocated object.
-    /// >   In particular, this range must not “wrap around” the edge of the address space.
-    #[requires(own.ptr().as_ptr_logic() == self.offset_logic(offset@))]
-    #[ensures(own.ptr().as_ptr_logic() == result.raw())]
-    unsafe fn add_own(self, offset: usize, own: Ghost<&PtrOwn<[T]>>) -> Self;
 }
 
-impl<T> SizedPointerExt<T> for *const T {
+impl<T> SizedPointerExt<T> for RawPtr<T> {
     #[trusted]
     #[logic]
     #[ensures(result.addr_logic() == self.addr_logic() + offset * size_of_logic::<T>())]
@@ -139,34 +122,6 @@ impl<T> SizedPointerExt<T> for *const T {
     #[law]
     #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
     fn offset_logic_assoc(self, offset1: Int, offset2: Int) {}
-
-    #[trusted]
-    #[requires(own.ptr().as_ptr_logic() == self.offset_logic(offset@))]
-    #[ensures(own.ptr().as_ptr_logic() == result.raw())]
-    unsafe fn add_own(self, offset: usize, own: Ghost<&PtrOwn<[T]>>) -> Self {
-        self.add(offset)
-    }
-}
-
-impl<T> SizedPointerExt<T> for *mut T {
-    #[trusted]
-    #[logic]
-    #[ensures(result.addr_logic() == self.addr_logic() + offset * size_of_logic::<T>())]
-    fn offset_logic(self, offset: Int) -> RawPtr<T> {
-        dead
-    }
-
-    #[trusted]
-    #[law]
-    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
-    fn offset_logic_assoc(self, offset1: Int, offset2: Int) {}
-
-    #[trusted]
-    #[requires(own.ptr().as_ptr_logic() == self.offset_logic(offset@))]
-    #[ensures(own.ptr().as_ptr_logic() == result.raw())]
-    unsafe fn add_own(self, offset: usize, own: Ghost<&PtrOwn<[T]>>) -> Self {
-        self.add(offset)
-    }
 }
 
 pub trait SlicePointerExt<T>: PointerExt<[T]> {
@@ -181,7 +136,7 @@ pub trait SlicePointerExt<T>: PointerExt<[T]> {
     fn slice_ptr_ext(self, other: Self);
 }
 
-impl<T> SlicePointerExt<T> for *const [T] {
+impl<T> SlicePointerExt<T> for RawPtr<[T]> {
     #[trusted]
     #[logic]
     fn as_ptr_logic(self) -> RawPtr<T> {
@@ -200,23 +155,41 @@ impl<T> SlicePointerExt<T> for *const [T] {
     fn slice_ptr_ext(self, other: Self) {}
 }
 
-impl<T> SlicePointerExt<T> for *mut [T] {
-    #[trusted]
-    #[logic]
-    fn as_ptr_logic(self) -> RawPtr<T> {
-        dead
-    }
+pub trait PtrAddExt<T>: PointerExt<T> {
+    /// Restriction of `add` that requires evidence that the addition is safe.
+    /// We simply require a borrow of the `PtrOwn<[T]>` token for the result pointer.
+    /// In particular, this accounts for one-past-the-end pointers, which point to a zero-sized slice.
+    ///
+    /// From https://doc.rust-lang.org/std/primitive.pointer.html#method.add:
+    ///
+    /// > If any of the following conditions are violated, the result is Undefined Behavior:
+    /// > - The offset in bytes, `count * size_of::<T>()`, computed on mathematical
+    /// >   integers (without “wrapping around”), must fit in an `isize`.
+    /// > - If the computed offset is non-zero, then `self` must be derived from a
+    /// >   pointer to some allocated object, and the entire memory range between
+    /// >   `self` and the result must be in bounds of that allocated object.
+    /// >   In particular, this range must not “wrap around” the edge of the address space.
+    #[requires(own.ptr().as_ptr_logic() == self.raw().offset_logic(offset@))]
+    #[ensures(own.ptr().as_ptr_logic() == result.raw())]
+    unsafe fn add_own(self, offset: usize, own: Ghost<&PtrOwn<[T]>>) -> Self;
+}
 
+impl<T> PtrAddExt<T> for *const T {
     #[trusted]
-    #[logic]
-    fn len_logic(self) -> Int {
-        dead
+    #[requires(own.ptr().as_ptr_logic() == self.raw().offset_logic(offset@))]
+    #[ensures(own.ptr().as_ptr_logic() == result.raw())]
+    unsafe fn add_own(self, offset: usize, own: Ghost<&PtrOwn<[T]>>) -> Self {
+        self.add(offset)
     }
+}
 
+impl<T> PtrAddExt<T> for *mut T {
     #[trusted]
-    #[law]
-    #[ensures(self.as_ptr_logic() == other.as_ptr_logic() && self.len_logic() == other.len_logic() ==> self == other)]
-    fn slice_ptr_ext(self, other: Self) {}
+    #[requires(own.ptr().as_ptr_logic() == self.raw().offset_logic(offset@))]
+    #[ensures(own.ptr().as_ptr_logic() == result.raw())]
+    unsafe fn add_own(self, offset: usize, own: Ghost<&PtrOwn<[T]>>) -> Self {
+        self.add(offset)
+    }
 }
 
 extern_spec! {
@@ -256,7 +229,7 @@ extern_spec! {
             #[ensures(result.as_ptr_logic() == data && result.len_logic() == len@)]
             fn slice_from_raw_parts<T>(data: *const T, len: usize) -> *const [T];
 
-            #[ensures(result.as_ptr_logic() == data.raw() && result.len_logic() == len@)]
+            #[ensures(result.raw().as_ptr_logic() == data.raw() && result.raw().len_logic() == len@)]
             fn slice_from_raw_parts_mut<T>(data: *mut T, len: usize) -> *mut [T];
         }
     }

@@ -190,6 +190,7 @@ impl<T> PtrOwn<[T]> {
     #[requires(0 <= index && index <= self.len())]
     #[ensures(self.ptr().as_ptr_logic() == result.0.ptr().as_ptr_logic() && self.ptr().as_ptr_logic().offset_logic(index) == result.1.ptr().as_ptr_logic())]
     #[ensures(result.0.ptr().len_logic() == result.0.len() && result.1.ptr().len_logic() == result.1.len())]
+    #[ensures(index == result.0.len() && self.len() - index == result.1.len())]
     #[ensures(forall<k: Int> 0 <= k && k < index ==> self.val()@[k] == result.0.val()@[k])]
     #[ensures(forall<k: Int> index <= k && k < self.len() ==> self.val()@[k] == result.1.val()@[k - index])]
     pub fn split_at_ghost(&self, index: Int) -> (&Self, &Self) {
@@ -204,7 +205,7 @@ impl<T> PtrOwn<[T]> {
     #[ensures(self.ptr().as_ptr_logic() == result.0.ptr().as_ptr_logic()  && self.ptr().as_ptr_logic().offset_logic(index) == result.1.ptr().as_ptr_logic())]
     #[ensures(result.0.ptr().len_logic() == result.0.len() && result.1.ptr().len_logic() == result.1.len())]
     #[ensures(index == result.0.len() && self.len() - index == result.1.len())]
-    #[ensures((^result.0).len() == index && self.len() - index == (^result.1).len())]
+    #[ensures(index == (^result.0).len() && self.len() - index == (^result.1).len())]
     #[ensures(forall<k: Int> 0 <= k && k < index ==> self.val()@[k] == result.0.val()@[k] && (^self).val()@[k] == (^result.0).val()@[k])]
     #[ensures(forall<k: Int> index <= k && k < self.len() ==> self.val()@[k] == result.1.val()@[k - index] && (^self).val()@[k] == (^result.1).val()@[k - index])]
     #[ensures((^self).ptr() == self.ptr())]
