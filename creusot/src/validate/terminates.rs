@@ -192,46 +192,43 @@ struct BuildFunctionsGraph<'tcx> {
     default_functions_bounds: IndexMap<graph::NodeIndex, Clauses<'tcx>>,
 }
 
-/// This node is used in the following case:
-/// ```
-/// # macro_rules! ignore { ($($t:tt)*) => {}; }
-/// # ignore! {
-/// trait Tr { // possibly in another crate
-///     #[logic] #[open] fn f() { /* ... */ }
-/// }
-/// impl Tr for Ty {} // in the current crate
-/// # }
-/// ```
-/// In this case, we create an additional node in the graph, corresponding to the
-/// instantiation of the default function for this impl block.
-///
-/// # Why though?
-///
-/// First, this is sound, because it acts as if the function was actually written in
-/// the impl block (with the same definition as the default one).
-///
-/// Then we feel this is justified to do this transformation, precisely because the
-/// default function is transparent at the point of the impl, so the user can 'see'
-/// its definition.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-struct ImplDefaultTransparent {
-    /// The default implementation selected for the impl block.
-    item_id: DefId,
-    impl_id: LocalDefId,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum GraphNode {
     /// A normal function.
     Function(DefId),
-    ImplDefaultTransparent(ImplDefaultTransparent),
+    /// This node is used in the following case:
+    /// ```
+    /// # macro_rules! ignore { ($($t:tt)*) => {}; }
+    /// # ignore! {
+    /// trait Tr { // possibly in another crate
+    ///     #[logic] #[open] fn f() { /* ... */ }
+    /// }
+    /// impl Tr for Ty {} // in the current crate
+    /// # }
+    /// ```
+    /// In this case, we create an additional node in the graph, corresponding to the
+    /// instantiation of the default function for this impl block.
+    ///
+    /// # Why though?
+    ///
+    /// First, this is sound, because it acts as if the function was actually written in
+    /// the impl block (with the same definition as the default one).
+    ///
+    /// Then we feel this is justified to do this transformation, precisely because the
+    /// default function is transparent at the point of the impl, so the user can 'see'
+    /// its definition.
+    ImplDefaultTransparent {
+        /// The default implementation selected for the impl block.
+        item_id: DefId,
+        impl_id: LocalDefId,
+    },
 }
 
 impl GraphNode {
     fn def_id(&self) -> DefId {
         match self {
             GraphNode::Function(def_id) => *def_id,
-            GraphNode::ImplDefaultTransparent(ImplDefaultTransparent { item_id, .. }) => *item_id,
+            GraphNode::ImplDefaultTransparent { item_id, .. } => *item_id,
         }
     }
 }
@@ -364,11 +361,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         impl_id: LocalDefId,
         item_id: DefId,
     ) -> (graph::NodeIndex, Clauses<'tcx>) {
-        let node =
-            self.insert_function(GraphNode::ImplDefaultTransparent(ImplDefaultTransparent {
-                item_id,
-                impl_id,
-            }));
+        let node = self.insert_function(GraphNode::ImplDefaultTransparent { item_id, impl_id });
         if let Some(bounds) = self.default_functions_bounds.get(&node) {
             return (node, bounds);
         }
