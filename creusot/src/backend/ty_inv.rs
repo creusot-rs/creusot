@@ -7,7 +7,7 @@ use crate::{
     naming::variable_name,
     translation::{
         pearlite::{Ident, Literal, Pattern, Term, TermKind, Trigger},
-        traits::TraitResolved,
+        traits::{Instance, TraitResolved},
     },
 };
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
@@ -41,7 +41,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         match user_inv {
             TraitResolved::NotATraitItem => unreachable!(),
             TraitResolved::NoInstance => (),
-            TraitResolved::Instance(uinv_did, _)
+            TraitResolved::Instance(Instance { def: (uinv_did, _), .. })
                 if is_tyinv_trivial_if_param_trivial(tcx, uinv_did) => {}
             _ => return false,
         }
@@ -114,9 +114,9 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
         match resolve_user_inv(self.ctx.tcx, ty, self.typing_env) {
             TraitResolved::NotATraitItem => unreachable!(),
-            TraitResolved::Instance(uinv_did, uinv_subst) => {
-                rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, uinv_did, uinv_subst, [
-                    subject.clone(),
+            TraitResolved::Instance(Instance { def, .. }) => {
+                rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, def.0, def.1, [
+                    subject.clone()
                 ]))
             }
             TraitResolved::UnknownFound => {
@@ -150,9 +150,9 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
     }
 
     fn structural_invariant(&mut self, term: Term<'tcx>, ty: Ty<'tcx>) -> Term<'tcx> {
-        if let TraitResolved::Instance(uinv_did, _) =
+        if let TraitResolved::Instance(Instance { def, .. }) =
             resolve_user_inv(self.ctx.tcx, ty, self.typing_env)
-            && is_ignore_structural_inv(self.ctx.tcx, uinv_did)
+            && is_ignore_structural_inv(self.ctx.tcx, def.0)
         {
             return Term::true_(self.ctx.tcx);
         }

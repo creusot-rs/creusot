@@ -41,12 +41,7 @@ impl<I, F> Resolve for Map<I, F> {
     fn resolve_coherence(&self) {}
 }
 
-impl<B, I, F> Iterator for Map<I, F>
-where
-    I: Iterator,
-    Self: ::std::iter::Iterator<Item = B>,
-    F: FnMut(I::Item) -> B,
-{
+impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     #[open]
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {

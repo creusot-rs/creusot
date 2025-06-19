@@ -14,11 +14,10 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
         return vec![];
     }
 
-    let data = ctx.trait_impl(def_id).clone();
     let mut res = vec![];
 
-    for refn in &data.refinements {
-        let impl_did = refn.impl_.0;
+    for refn in ctx.trait_impl(def_id) {
+        let impl_did = refn.impl_item;
 
         // HACK: Snapshot::deref is a (very) special case, do not generate refinement obligations for it.
         if is_snapshot_deref(ctx.tcx, impl_did) {
@@ -26,7 +25,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
         }
 
         let mut names = Dependencies::new(ctx, impl_did);
-        let goal = lower_pure(ctx, &mut names, &refn.refn.clone());
+        let goal = lower_pure(ctx, &mut names, &refn.refn);
         if goal.is_true() {
             continue;
         }

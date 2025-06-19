@@ -229,20 +229,14 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
 
     fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
         match expr.kind {
-            ExprKind::Call { fun, ref args, fn_span, .. } => {
+            ExprKind::Call { fun, ref args, .. } => {
                 if let &FnDef(func_did, subst) = self.thir[fun].ty.kind() {
                     // try to specialize the called function if it is a trait method.
                     let subst = self.ctx.erase_regions(subst);
-                    let Some((func_did, _)) =
+                    let (func_did, _) =
                         TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, func_did, subst)
                             .to_opt(func_did, subst)
-                    else {
-                        self.ctx.dcx().span_err(
-                            fn_span,
-                            format!("no instance of {} found", self.ctx.def_path_str(func_did)),
-                        );
-                        return;
-                    };
+                            .unwrap();
 
                     let fn_purity = self.purity(fun, func_did, args);
                     if !(self.context.can_call(fn_purity)

@@ -29,6 +29,12 @@
 //! Default function in traits, as well as `impl` blocks marked with `default`, are
 //! special-cased when handling logical functions: see the documentation in
 //! [`ImplDefaultTransparent`] for more details.
+// FIXME:
+// There are still cycles that are not detected in logic function, because of builtins.
+// For example, calling `inv(x)` does not add an arc going to `x.invariant()`.
+// The same happens for (at least) `resolve`, `precondition`, `postcondition`.
+
+use std::iter::repeat;
 
 use crate::{
     backend::is_trusted_item,
@@ -36,7 +42,7 @@ use crate::{
     ctx::TranslationCtx,
     translation::{
         pearlite::{Term, TermKind, TermVisitor, super_visit_term},
-        traits::TraitResolved,
+        traits::{Instance, TraitResolved},
     },
     util::erased_identity_for_item,
 };
@@ -47,13 +53,16 @@ use petgraph::{
     visit::{Control, DfsEvent, EdgeRef as _, depth_first_search},
 };
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_infer::{infer::TyCtxtInferExt as _, traits::ObligationCause};
+use rustc_infer::{
+    infer::TyCtxtInferExt as _,
+    traits::{ImplSource, ObligationCause},
+};
 use rustc_middle::{
-    thir,
-    ty::{Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, TyCtxt, TypingEnv, TypingMode},
+    thir::{self, visit::Visitor},
+    ty::{Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, TypingEnv, TypingMode},
 };
 use rustc_span::Span;
-use rustc_trait_selection::traits::normalize_param_env_or_error;
+use rustc_trait_selection::traits::{normalize_param_env_or_error, specialization_graph};
 
 /// Validate that a `#[terminates]` function cannot loop indefinitely. This includes:
 /// - forbidding program function from using loops of any kind (this should be relaxed
@@ -63,52 +72,43 @@ use rustc_trait_selection::traits::normalize_param_env_or_error;
 /// Note that for logical functions, these are relaxed: we don't check loops, nor simple
 /// recursion, because why3 will handle it for us.
 pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
-    // If this is None there must be a type error that will be reported later so we can skip this silently.
-    let Some(CallGraph { graph: mut call_graph, additional_data, loops_in_ghost }) =
-        CallGraph::build(ctx)
-    else {
-        return;
-    };
-
-    for loop_in_ghost in loops_in_ghost {
-        ctx.error(loop_in_ghost, "`ghost!` blocks must not contain loops.").emit();
+    // Check for ghost loops
+    for local_id in ctx.hir().body_owners() {
+        let def_id = local_id.to_def_id();
+        if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
+            continue;
+        }
+        let (thir, expr) = ctx.get_thir(local_id).unwrap();
+        let mut visitor = GhostLoops { thir: &thir, ctx, is_in_ghost: false };
+        visitor.visit_expr(&thir[expr]);
     }
 
-    // Detect simple recursion, and loops
+    let CallGraph { graph: mut call_graph } = CallGraph::build(ctx);
+
+    // Detect simple recursion
     for fun_index in call_graph.node_indices() {
         let def_id = call_graph.node_weight(fun_index).unwrap().def_id();
-        let function_data = &additional_data[&fun_index];
         if let Some(self_edge) = call_graph.edges_connecting(fun_index, fun_index).next() {
             let (self_edge, call) = (self_edge.id(), *self_edge.weight());
-            let span = match call {
-                CallKind::Direct(span) => span,
-                _ => continue,
-            };
-            if function_data.is_pearlite {
+            let CallKind::Direct(span) = call else { continue };
+            call_graph.remove_edge(self_edge);
+            if is_pearlite(ctx.tcx, def_id) {
                 // Allow simple recursion in logic functions
-                call_graph.remove_edge(self_edge);
                 continue;
             }
-            call_graph.remove_edge(self_edge);
-            if !function_data.has_variant && def_id.is_local() {
-                let fun_span = ctx.tcx.def_span(def_id);
+            if !has_variant_clause(ctx.tcx, def_id) && def_id.is_local() {
+                let fun_span = ctx.def_span(def_id);
                 let mut error =
                     ctx.error(fun_span, "Recursive function without a `#[variant]` clause");
                 error.span_note(span, "Recursive call happens here");
                 error.emit();
             }
         };
-        if let Some(loop_span) = function_data.has_loops {
-            let fun_span = ctx.tcx.def_span(def_id);
-            let mut error = ctx.error(fun_span, "`#[terminates]` function must not contain loops.");
-            error.span_note(loop_span, "looping occurs here");
-            error.emit();
-        }
     }
 
     // detect mutual recursion
     let cycles = tarjan_scc(&call_graph);
-    for mut cycle in cycles {
+    for cycle in cycles {
         // find a root as a local function
         let Some(root_idx) = cycle.iter().position(|n| {
             let id = call_graph.node_weight(*n).unwrap().def_id();
@@ -116,9 +116,9 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
         }) else {
             continue;
         };
-        let root = cycle.remove(root_idx);
+        let root = cycle[root_idx];
 
-        if cycle.is_empty() && call_graph.edges_connecting(root, root).count() == 0 {
+        if cycle.len() == 1 && call_graph.edges_connecting(root, root).count() == 0 {
             // Need more than 2 components.
             continue;
         }
@@ -129,8 +129,6 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
             DfsEvent::Discover(n, _) => {
                 if in_cycle.contains(&n) {
                     cycle.push(n);
-                    Control::Continue
-                } else if n == root {
                     Control::Continue
                 } else {
                     Control::Prune
@@ -145,29 +143,28 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
             ctx.def_span(root_def_id),
             &format!(
                 "Mutually recursive functions: when calling `{}`...",
-                ctx.tcx.def_path_str(root_def_id)
+                ctx.def_path_str(root_def_id)
             ),
         );
         let mut next_node = root;
         let mut current_node;
-        for (idx, &node) in cycle.iter().chain([&root]).enumerate() {
+        assert!(cycle[0] == root);
+        for (&node, last) in cycle.iter().skip(1).zip(repeat(false)).chain([(&root, true)]) {
             current_node = next_node;
             next_node = node;
-            let last = idx == cycle.len();
             if let Some(e) = call_graph.edges_connecting(current_node, next_node).next() {
                 let call = *e.weight();
-                let adverb = if last && !cycle.is_empty() { "finally" } else { "then" };
+                let adverb = if last && cycle.len() > 1 { "finally" } else { "then" };
                 let punct = if last { "." } else { "..." };
-                let f1 =
-                    ctx.tcx.def_path_str(call_graph.node_weight(current_node).unwrap().def_id());
-                let f2 = ctx.tcx.def_path_str(call_graph.node_weight(next_node).unwrap().def_id());
+                let f1 = ctx.def_path_str(call_graph.node_weight(current_node).unwrap().def_id());
+                let f2 = ctx.def_path_str(call_graph.node_weight(next_node).unwrap().def_id());
 
                 match call {
                     CallKind::Direct(span) => {
                         error.span_note(span, format!("{adverb} `{f1}` calls `{f2}`{punct}"));
                     }
                     CallKind::GenericBound(indirect_id, span) => {
-                        let f3 = ctx.tcx.def_path_str(indirect_id);
+                        let f3 = ctx.def_path_str(indirect_id);
                         error.span_note(
                             span,
                             format!(
@@ -181,73 +178,61 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
 
         error.emit();
     }
-    ctx.tcx.dcx().abort_if_errors();
+    ctx.dcx().abort_if_errors();
 }
 
 struct CallGraph {
     graph: graph::DiGraph<GraphNode, CallKind>,
-    additional_data: IndexMap<graph::NodeIndex, FunctionData>,
-    loops_in_ghost: Vec<Span>,
 }
 
 #[derive(Default)]
 struct BuildFunctionsGraph<'tcx> {
     graph: graph::DiGraph<GraphNode, CallKind>,
-    additional_data: IndexMap<graph::NodeIndex, FunctionData>,
     graph_node_to_index: IndexMap<GraphNode, graph::NodeIndex>,
     /// Stores the generic bounds that are left when instantiating the default method in
     /// the impl block.
     ///
     /// This is used to retrieve all the bounds when calling this function.
     default_functions_bounds: IndexMap<graph::NodeIndex, Clauses<'tcx>>,
-    is_default_function: IndexSet<DefId>,
-    visited_default_specialization: IndexSet<graph::NodeIndex>,
-    specialization_nodes:
-        IndexMap<graph::NodeIndex, rustc_infer::traits::specialization_graph::LeafDef>,
-}
-
-/// This node is used in the following case:
-/// ```
-/// # macro_rules! ignore { ($($t:tt)*) => {}; }
-/// # ignore! {
-/// trait Tr { // possibly in another crate
-///     #[logic] #[open] fn f() { /* ... */ }
-/// }
-/// impl Tr {} // in the current crate
-/// # }
-/// ```
-/// In this case, we create an additional node in the graph, corresponding to the
-/// implementation of the default function.
-///
-/// # Why though?
-///
-/// First, this is sound, because it acts as if the function was actually written in
-/// the impl block (with the same definition as the default one).
-///
-/// Then we feel this is justified to do this transformation, precisely because the
-/// default function is transparent at the point of the impl, so the user can 'see'
-/// its definition.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-struct ImplDefaultTransparent {
-    /// The default implementation selected for the impl block.
-    default_function: DefId,
-    impl_block: LocalDefId,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum GraphNode {
     /// A normal function.
     Function(DefId),
-
-    ImplDefaultTransparent(ImplDefaultTransparent),
+    /// This node is used in the following case:
+    /// ```
+    /// # macro_rules! ignore { ($($t:tt)*) => {}; }
+    /// # ignore! {
+    /// trait Tr { // possibly in another crate
+    ///     #[logic] #[open] fn f() { /* ... */ }
+    /// }
+    /// impl Tr for Ty {} // in the current crate
+    /// # }
+    /// ```
+    /// In this case, we create an additional node in the graph, corresponding to the
+    /// instantiation of the default function for this impl block.
+    ///
+    /// # Why though?
+    ///
+    /// First, this is sound, because it acts as if the function was actually written in
+    /// the impl block (with the same definition as the default one).
+    ///
+    /// Then we feel this is justified to do this transformation, precisely because the
+    /// default function is transparent at the point of the impl, so the user can 'see'
+    /// its definition.
+    ImplDefaultTransparent {
+        /// The default implementation selected for the impl block.
+        item_id: DefId,
+        impl_id: LocalDefId,
+    },
 }
+
 impl GraphNode {
     fn def_id(&self) -> DefId {
         match self {
             GraphNode::Function(def_id) => *def_id,
-            GraphNode::ImplDefaultTransparent(ImplDefaultTransparent {
-                default_function, ..
-            }) => *default_function,
+            GraphNode::ImplDefaultTransparent { item_id, .. } => *item_id,
         }
     }
 }
@@ -267,38 +252,13 @@ enum CallKind {
     GenericBound(DefId, Span),
 }
 
-#[derive(Debug)]
-struct FunctionData {
-    /// `true` if the function is a pearlite function (e.g. `#[logic]`).
-    is_pearlite: bool,
-    /// `true` if the function has a `#[variant]` annotation.
-    ///
-    /// For now, mutually recursive functions are never allowed, so this only matter for
-    /// the simple recursion check.
-    has_variant: bool,
-    /// `Some` if the function contains a loop construct (contains the location of the loop).
-    ///
-    /// The body of external function are not visited, so this field will be `false`.
-    has_loops: Option<Span>,
-}
-
 impl<'tcx> BuildFunctionsGraph<'tcx> {
     /// Insert a new node in the graph, or fetch an existing node id.
-    fn insert_function(&mut self, tcx: TyCtxt, graph_node: GraphNode) -> graph::NodeIndex {
-        let def_id = graph_node.def_id();
-        match self.graph_node_to_index.entry(graph_node) {
-            indexmap::map::Entry::Occupied(n) => *n.get(),
-            indexmap::map::Entry::Vacant(entry) => {
-                let node = self.graph.add_node(graph_node);
-                self.additional_data.insert(node, FunctionData {
-                    is_pearlite: is_pearlite(tcx, def_id),
-                    has_variant: has_variant_clause(tcx, def_id),
-                    has_loops: None,
-                });
-                entry.insert(node);
-                node
-            }
-        }
+    fn insert_function(&mut self, graph_node: GraphNode) -> graph::NodeIndex {
+        *self
+            .graph_node_to_index
+            .entry(graph_node)
+            .or_insert_with(|| self.graph.add_node(graph_node))
     }
 
     /// Process the call from `node` to `called_id`.
@@ -307,84 +267,69 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         ctx: &TranslationCtx<'tcx>,
         node: graph::NodeIndex,
         typing_env: TypingEnv<'tcx>,
-        called_id: DefId,
-        generic_args: GenericArgsRef<'tcx>,
+        mut called_id: DefId,
+        mut generic_args: GenericArgsRef<'tcx>,
         call_span: Span,
     ) {
-        let tcx = ctx.tcx;
-        let (called_id, generic_args) =
-            TraitResolved::resolve_item(tcx, typing_env, called_id, generic_args)
-                .to_opt(called_id, generic_args)
-                .unwrap();
+        let res = TraitResolved::resolve_item(ctx.tcx, typing_env, called_id, generic_args);
 
-        // TODO: this code is kind of a soup, rework or refactor into a function
-        let (called_node, bounds, impl_self_bound) = 'bl: {
-            // this checks if we are calling a function with a default implementation,
-            // as processed at the beginning of `CallGraph::build`.
-            'not_default: {
-                if !self.is_default_function.contains(&called_id) {
-                    break 'not_default;
-                };
-                let trait_id = match tcx.impl_of_method(called_id) {
-                    Some(id) => {
-                        if let Some(trait_id) = tcx.trait_id_of_impl(id) {
-                            trait_id
-                        } else {
-                            break 'not_default;
-                        }
-                    }
-                    None => {
-                        if let Some(trait_id) = tcx.trait_of_item(called_id) {
-                            trait_id
-                        } else {
-                            break 'not_default;
-                        }
-                    }
-                };
-                let Some(spec_impl_id) =
-                    TraitResolved::impl_id_of_trait(tcx, typing_env, trait_id, generic_args)
-                        .and_then(|id| id.as_local())
-                else {
-                    break 'not_default;
-                };
-                let default_node = ImplDefaultTransparent {
-                    default_function: called_id,
-                    impl_block: spec_impl_id,
-                };
-                let Some(node) = self.visit_specialized_default_function(ctx, default_node) else {
-                    break 'not_default;
-                };
-                let bounds = self.default_functions_bounds[&node];
-                let self_bound = tcx.impl_trait_header(spec_impl_id);
-                break 'bl (node, bounds, self_bound);
-            }
-            (
-                self.insert_function(tcx, GraphNode::Function(called_id)),
-                tcx.param_env(called_id).caller_bounds(),
-                None,
-            )
-        };
+        let (called_node, bounds, impl_self_bound);
+
+        // If we are calling a known method, and this method has been defined in an ancestor of the impl
+        // we found, and this method is logic and transparent from this impl and this impl is local, then use a
+        // specialized default node
+        if let TraitResolved::Instance(Instance { def, impl_ : Some(impl_)}) = res &&
+            ctx.impl_of_method(def.0) != Some(impl_.0) && // The method is defined in an ancestor
+            is_pearlite(ctx.tcx, def.0) && // The method is logic
+            let Some(impl_ldid) = impl_.0.as_local() && // The impl is local
+            ctx.is_transparent_from(def.0, ctx.parent_module_from_def_id(impl_ldid).to_def_id())
+        {
+            (called_id, generic_args) = def;
+            (called_node, bounds) = self.visit_specialized_default_function(ctx, impl_ldid, def.0);
+            impl_self_bound = Some(ctx.impl_trait_header(impl_.0).unwrap());
+        } else {
+            (called_id, generic_args) = res.to_opt(called_id, generic_args).unwrap();
+            called_node = self.insert_function(GraphNode::Function(called_id));
+            bounds = ctx.param_env(called_id).caller_bounds();
+            impl_self_bound = None;
+        }
         self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
 
-        // Iterate over the trait bounds of the called function, and assume we call all functions of the corresponding trait if they are specialized.
+        // Iterate over the trait bounds of the called function, and assume we call all functions
+        // of the corresponding trait if they are specialized.
         for bound in bounds {
             let Some(clause) = bound.as_trait_clause() else { continue };
-            let clause = tcx.instantiate_bound_regions_with_erased(clause);
+            let clause = ctx.instantiate_bound_regions_with_erased(clause);
             let trait_ref = clause.trait_ref;
-            if let Some(self_bound) = &impl_self_bound {
-                if trait_ref == self_bound.trait_ref.instantiate_identity() {
-                    continue;
-                }
+            if let Some(self_bound) = &impl_self_bound
+                && trait_ref == self_bound.trait_ref.instantiate_identity()
+            {
+                continue;
             }
 
-            let subst = EarlyBinder::bind(trait_ref.args).instantiate(tcx, generic_args);
-            for &item in tcx.associated_item_def_ids(trait_ref.def_id) {
-                let TraitResolved::Instance(item_id, _) =
-                    TraitResolved::resolve_item(tcx, typing_env, item, subst)
+            let trait_ref = EarlyBinder::bind(trait_ref).instantiate(ctx.tcx, generic_args);
+            let trait_ref = ctx.normalize_erasing_regions(typing_env, trait_ref);
+
+            // FIXME: in the case of an ambiguity, `codegen_select_candidate` may return an error,
+            // which makes the unwrap bellow fail. So this is not the entry point of the trait solver we want.
+            // We want something that gives one possible instance, even if there are several instances
+            // available.
+            //
+            // FIXME: this only handle the primary goal of the proof tree. We need to handle all the instances
+            // used by this trait solving, including those that are used indirectly.
+            if let ImplSource::Param(_) =
+                ctx.codegen_select_candidate(typing_env.as_query_input(trait_ref)).unwrap()
+            {
+                continue;
+            }
+
+            for &item in ctx.associated_item_def_ids(trait_ref.def_id) {
+                let TraitResolved::Instance(Instance { def: (item_id, _), .. }) =
+                    TraitResolved::resolve_item(ctx.tcx, typing_env, item, trait_ref.args)
                 else {
                     continue;
                 };
-                let item_node = self.insert_function(tcx, GraphNode::Function(item_id));
+                let item_node = self.insert_function(GraphNode::Function(item_id));
                 self.graph.update_edge(
                     node,
                     item_node,
@@ -417,78 +362,59 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     fn visit_specialized_default_function(
         &mut self,
         ctx: &TranslationCtx<'tcx>,
-        graph_node: ImplDefaultTransparent,
-    ) -> Option<graph::NodeIndex> {
-        let Some(&node) =
-            self.graph_node_to_index.get(&GraphNode::ImplDefaultTransparent(graph_node))
-        else {
-            return None;
-        };
-        if !self.visited_default_specialization.insert(node) {
-            return Some(node);
+        impl_id: LocalDefId,
+        item_id: DefId,
+    ) -> (graph::NodeIndex, Clauses<'tcx>) {
+        let node = self.insert_function(GraphNode::ImplDefaultTransparent { item_id, impl_id });
+        if let Some(bounds) = self.default_functions_bounds.get(&node) {
+            return (node, bounds);
         }
-        let tcx = ctx.tcx;
-        let ImplDefaultTransparent { default_function: item_id, impl_block: impl_id } = graph_node;
-        let specialization_node = &self.specialization_nodes[&node];
 
-        let impl_id = impl_id.to_def_id();
-        let typing_env = ctx.typing_env(impl_id);
-        let Some(term) = ctx.term(item_id) else {
-            // ` ctx.term` can return None if the function we are searching for is not yet implemented.
-            // In this case, there is an Rust error happening: bail out and let the compiler report it normally.
-            ctx.dcx()
-                .has_errors()
-                .unwrap_or_else(||
-                // or not :(
-                ctx
-                .dcx()
-                .struct_span_err(
-                    ctx.def_span(item_id),
-                    format!("Could not generate a term for {}", ctx.def_path_str(item_id)),
-                )
-                .with_span_note(ctx.def_span(impl_id), "The trait function is not implemented here")
-                .emit())
-                .raise_fatal()
+        let trait_id = ctx.trait_id_of_impl(impl_id.into()).unwrap();
+
+        let spec_node_def = if let Some(def_impl) = ctx.impl_of_method(item_id) {
+            specialization_graph::Node::Impl(def_impl)
+        } else {
+            specialization_graph::Node::Trait(trait_id)
         };
-        let mut visitor = TermCalls { results: IndexSet::new() };
-        visitor.visit_term(&term.1);
-
-        let trait_id = tcx.trait_id_of_impl(impl_id).unwrap();
 
         // translate the args of the impl to match the trait.
-        let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
+        let infcx = ctx.infer_ctxt().build(TypingMode::non_body_analysis());
         let impl_args = rustc_trait_selection::traits::translate_args(
             &infcx,
-            typing_env.param_env,
-            impl_id,
-            erased_identity_for_item(tcx, impl_id),
-            specialization_node.defining_node,
+            ctx.param_env(impl_id.into()),
+            impl_id.into(),
+            erased_identity_for_item(ctx.tcx, impl_id.into()),
+            spec_node_def,
         );
 
         // Take the generic arguments of the default function, instantiated with
         // the type parameters from the impl block.
         let func_impl_args =
-            erased_identity_for_item(tcx, item_id).rebase_onto(tcx, trait_id, impl_args);
+            erased_identity_for_item(ctx.tcx, item_id).rebase_onto(ctx.tcx, trait_id, impl_args);
 
         // data for when we call this function
-        let item_typing_env = ctx.typing_env(item_id);
-        let item_typing_env = EarlyBinder::bind(item_typing_env).instantiate(tcx, func_impl_args);
-        let bounds =
-            normalize_param_env_or_error(tcx, item_typing_env.param_env, ObligationCause::dummy())
-                .caller_bounds();
+        let param_env =
+            EarlyBinder::bind(ctx.param_env(item_id)).instantiate(ctx.tcx, func_impl_args);
+        let param_env = normalize_param_env_or_error(ctx.tcx, param_env, ObligationCause::dummy());
+        let typing_env = TypingEnv { param_env, ..ctx.typing_env(item_id) };
+
+        let bounds = param_env.caller_bounds();
         self.default_functions_bounds.insert(node, bounds);
 
+        let mut visitor = TermCalls { results: IndexSet::new() };
+        visitor.visit_term(&ctx.term(item_id).unwrap().1);
         for (called_id, generic_args, call_span) in visitor.results {
             // Instantiate the args for the call with the context we just built up.
-            let actual_args = tcx.instantiate_and_normalize_erasing_regions(
+            let actual_args = ctx.instantiate_and_normalize_erasing_regions(
                 func_impl_args,
-                item_typing_env,
+                typing_env,
                 EarlyBinder::bind(generic_args),
             );
 
             self.function_call(ctx, node, typing_env, called_id, actual_args, call_span);
         }
-        Some(node)
+        (node, bounds)
     }
 }
 
@@ -497,89 +423,17 @@ impl CallGraph {
     /// exclusively for the purpose of termination checking.
     ///
     /// In particular, this means it only contains `#[terminates]` functions.
-    fn build(ctx: &TranslationCtx) -> Option<Self> {
-        let tcx = ctx.tcx;
+    fn build(ctx: &TranslationCtx) -> Self {
         let mut build_call_graph = BuildFunctionsGraph::default();
 
-        // Create the `GraphNode::ImplDefaultTransparent` nodes.
-        for (trait_id, impls) in tcx.all_local_trait_impls(()) {
-            for &impl_local_id in impls {
-                let module_id = tcx.parent_module_from_def_id(impl_local_id).to_def_id();
-                let impl_id = impl_local_id.to_def_id();
-                let items_in_impl = tcx.impl_item_implementor_ids(impl_id);
-
-                for &item_id in tcx.associated_item_def_ids(trait_id) {
-                    if items_in_impl.contains_key(&item_id) {
-                        // The function is explicitely implemented, skip
-                        continue;
-                    }
-
-                    let default_item = {
-                        let trait_def = tcx.trait_def(trait_id);
-                        let leaf_def = trait_def
-                            .ancestors(tcx, impl_id)
-                            .unwrap()
-                            .leaf_def(tcx, item_id)
-                            .unwrap_or_else(|| {
-                                unreachable!(
-                                    "no definition found for item {} in impl {}",
-                                    tcx.def_path_str(item_id),
-                                    tcx.def_path_str(impl_id)
-                                );
-                            });
-                        leaf_def
-                    };
-                    let default_item_id = default_item.item.def_id;
-
-                    let is_transparent = ctx.is_transparent_from(default_item_id, module_id);
-                    if !is_transparent || !is_pearlite(tcx, default_item_id) {
-                        // only consider item that are:
-                        // - transparent from the POV of the impl block
-                        // - logical items
-                        continue;
-                    }
-
-                    let node = build_call_graph.insert_function(
-                        tcx,
-                        GraphNode::ImplDefaultTransparent(ImplDefaultTransparent {
-                            default_function: default_item_id,
-                            impl_block: impl_local_id,
-                        }),
-                    );
-                    build_call_graph.specialization_nodes.insert(node, default_item);
-                    build_call_graph.is_default_function.insert(default_item_id);
-                }
-            }
-        }
-
-        let mut loops_in_ghost = Vec::new();
-
         for local_id in ctx.hir().body_owners() {
             let def_id = local_id.to_def_id();
-            if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
+            if !(is_pearlite(ctx.tcx, def_id) || ctx.sig(def_id).contract.terminates) {
+                // Only consider functions marked with `terminates`: we already ensured
+                // that a `terminates` functions only calls other `terminates` functions.
                 continue;
             }
-            let (thir, expr) = ctx.get_thir(local_id)?;
-            let mut visitor = GhostLoops {
-                thir: &thir,
-                ctx,
-                thir_failed: false,
-                loops_in_ghost: Vec::new(),
-                is_in_ghost: false,
-            };
-            <GhostLoops as thir::visit::Visitor>::visit_expr(&mut visitor, &thir[expr]);
-            loops_in_ghost.extend(visitor.loops_in_ghost);
-        }
-
-        for local_id in ctx.hir().body_owners() {
-            if !(is_pearlite(ctx.tcx, local_id.to_def_id())
-                || ctx.sig(local_id.to_def_id()).contract.terminates)
-            {
-                // Only consider functions marked with `terminates`: we already ensured that a `terminates` functions only calls other `terminates` functions.
-                continue;
-            }
-            let def_id = local_id.to_def_id();
-            let node = build_call_graph.insert_function(ctx.tcx, GraphNode::Function(def_id));
+            let node = build_call_graph.insert_function(GraphNode::Function(def_id));
 
             if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
                 // Cut all arcs from this function.
@@ -587,13 +441,11 @@ impl CallGraph {
             }
 
             let typing_env = ctx.typing_env(def_id);
-            let (thir, expr) = ctx.get_thir(local_id)?;
-            // Collect functions called by this function
-            let mut visitor =
-                FunctionCalls { thir: &thir, ctx, calls: IndexSet::new(), has_loops: None };
-            <FunctionCalls as thir::visit::Visitor>::visit_expr(&mut visitor, &thir[expr]);
+            let (thir, expr) = ctx.get_thir(local_id).unwrap();
 
-            build_call_graph.additional_data[&node].has_loops = visitor.has_loops;
+            // Collect functions called by this function
+            let mut visitor = FunctionCalls { def_id, thir: &thir, ctx, calls: IndexSet::new() };
+            visitor.visit_expr(&thir[expr]);
 
             for (called_id, generic_args, call_span) in visitor.calls {
                 build_call_graph.function_call(
@@ -607,16 +459,13 @@ impl CallGraph {
             }
         }
 
-        Some(Self {
-            graph: build_call_graph.graph,
-            additional_data: build_call_graph.additional_data,
-            loops_in_ghost,
-        })
+        Self { graph: build_call_graph.graph }
     }
 }
 
 /// Gather the functions calls that appear in a particular function, and store them in `calls`.
 struct FunctionCalls<'a, 'tcx> {
+    def_id: DefId,
     thir: &'a thir::Thir<'tcx>,
     ctx: &'a TranslationCtx<'tcx>,
     /// Contains:
@@ -624,11 +473,9 @@ struct FunctionCalls<'a, 'tcx> {
     /// - The generic args for this call.
     /// - The span of the call (for error messages).
     calls: IndexSet<(DefId, &'tcx GenericArgs<'tcx>, Span)>,
-    /// `Some` if the function contains a loop construct.
-    has_loops: Option<Span>,
 }
 
-impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
+impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
     fn thir(&self) -> &'a thir::Thir<'tcx> {
         self.thir
     }
@@ -644,17 +491,20 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
                 let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
                 let mut closure_visitor = FunctionCalls {
+                    def_id: self.def_id,
                     thir: &thir,
                     ctx: self.ctx,
                     calls: std::mem::take(&mut self.calls),
-                    has_loops: None,
                 };
                 thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
                 self.calls.extend(closure_visitor.calls);
-                self.has_loops = self.has_loops.or(closure_visitor.has_loops);
             }
             thir::ExprKind::Loop { .. } => {
-                self.has_loops = Some(expr.span);
+                let fun_span = self.ctx.def_span(self.def_id);
+                let mut error =
+                    self.ctx.error(fun_span, "`#[terminates]` function must not contain loops.");
+                error.span_note(expr.span, "looping occurs here");
+                error.emit();
             }
             _ => {}
         }
@@ -666,14 +516,10 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
 struct GhostLoops<'thir, 'tcx> {
     thir: &'thir thir::Thir<'tcx>,
     ctx: &'thir TranslationCtx<'tcx>,
-    /// loop constructs in ghost code are forbidden for now.
-    loops_in_ghost: Vec<Span>,
     is_in_ghost: bool,
-    /// If `true`, we should error with a [`CannotFetchThir`] error.
-    thir_failed: bool,
 }
 
-impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> {
+impl<'thir, 'tcx> Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> {
     fn thir(&self) -> &'thir thir::Thir<'tcx> {
         self.thir
     }
@@ -683,30 +529,14 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> 
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
                 let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
-                let mut closure_visitor = GhostLoops {
-                    thir: &thir,
-                    ctx: self.ctx,
-                    loops_in_ghost: Vec::new(),
-                    is_in_ghost: self.is_in_ghost,
-                    thir_failed: false,
-                };
+                let mut closure_visitor =
+                    GhostLoops { thir: &thir, ctx: self.ctx, is_in_ghost: self.is_in_ghost };
                 thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
-                if closure_visitor.thir_failed {
-                    self.thir_failed = true;
-                    return;
-                }
-                self.loops_in_ghost.extend(closure_visitor.loops_in_ghost);
             }
-            thir::ExprKind::Loop { .. } => {
-                if self.is_in_ghost {
-                    self.loops_in_ghost.push(expr.span);
-                }
+            thir::ExprKind::Loop { .. } if self.is_in_ghost => {
+                self.ctx.error(expr.span, "`ghost!` blocks must not contain loops.").emit();
             }
-            thir::ExprKind::Scope {
-                region_scope: _,
-                lint_level: thir::LintLevel::Explicit(hir_id),
-                value: _,
-            } => {
+            thir::ExprKind::Scope { lint_level: thir::LintLevel::Explicit(hir_id), .. } => {
                 if super::is_ghost_block(self.ctx.tcx, hir_id) {
                     let old_is_ghost = std::mem::replace(&mut self.is_in_ghost, true);
                     thir::visit::walk_expr(self, expr);
