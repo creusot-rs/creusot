@@ -117,6 +117,8 @@ pub(crate) fn lower_contract<'tcx, N: Namer<'tcx>>(
         contract.requires.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
     let ensures =
         contract.ensures.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
-    let variant = contract.variant.map(|term| lower_pure(ctx, names, &term));
+    let variant = contract
+        .variant
+        .map(|term| (lower_pure(ctx, names, &term), translate_ty(ctx, names, term.span, term.ty)));
     Contract { requires, ensures, variant }
 }

@@ -18,7 +18,7 @@ use crate::{
     util::{erased_identity_for_item, parent_module},
 };
 use creusot_args::options::Options;
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use once_map::unsync::OnceMap;
 use rustc_ast::{
     Fn, FnSig, NodeId,
@@ -170,6 +170,9 @@ pub struct TranslationCtx<'tcx> {
     pub(crate) opts: Options,
     creusot_items: HashMap<Symbol, DefId>,
     pub(crate) thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
+    /// This field tracks recursive calls, where we should check that a variant
+    /// decreases.
+    pub(crate) variant_calls: RefCell<IndexMap<DefId, IndexSet<DefId>>>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
@@ -236,6 +239,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             externs: Default::default(),
             terms: Default::default(),
             creusot_items,
+            variant_calls: RefCell::new(IndexMap::new()),
             opts,
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
@@ -270,6 +274,12 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// Callers can then skip whatever they were doing silently because Creusot will abort in the end (in `after_analysis`).
     pub(crate) fn get_thir(&self, def_id: LocalDefId) -> Option<(&thir::Thir<'tcx>, thir::ExprId)> {
         self.thir.get(&def_id).map(|&(ref thir, expr)| (thir, expr))
+    }
+
+    /// Returns `true` if a call from `caller` to `callee` should be checked to
+    /// have decreased a variant.
+    pub(crate) fn should_check_variant_decreases(&self, caller: DefId, callee: DefId) -> bool {
+        self.variant_calls.borrow().get(&caller).is_some_and(|calls| calls.contains(&callee))
     }
 
     queryish!(trait_impl, DefId, Vec<Refinement<'tcx>>, translate_impl);

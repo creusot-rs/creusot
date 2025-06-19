@@ -55,7 +55,12 @@ struct BodyTranslator<'a, 'tcx> {
     /// invariants, each with a possible description for Why3.
     invariants: HashMap<BasicBlock, Vec<(String, Term<'tcx>)>>,
     /// Maps a basic block representing a loop head to the variant of the loop.
-    variants: HashMap<BasicBlock, (Term<'tcx>, Ident)>,
+    loop_variants: HashMap<BasicBlock, (Term<'tcx>, Ident)>,
+    /// Names for the eventual variant for the function.
+    ///
+    /// This identifier is the name of the variable holding the variant's value
+    /// at the start of the function
+    function_variant: Ident,
     /// Invariants to translate as assertions.
     invariant_assertions: HashMap<DefId, (Term<'tcx>, String)>,
     /// Map of the `proof_assert!` blocks to their translated version.
@@ -132,11 +137,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             vars,
             erased_locals,
         } = body_specs;
-        let mut translator_variants = HashMap::new();
+        let mut loop_variants = HashMap::new();
         for (loop_head, term) in variants {
             let variant_old_name =
                 Ident::fresh_local(format!("variant_old_bb{}", loop_head.as_usize()));
-            translator_variants.insert(loop_head, (term, variant_old_name));
+            loop_variants.insert(loop_head, (term, variant_old_name));
         }
         f(BodyTranslator {
             body,
@@ -152,7 +157,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             ctx,
             fresh_id: body.basic_blocks.len(),
             invariants,
-            variants: translator_variants,
+            loop_variants,
+            function_variant: Ident::fresh_local("function_variant"),
             invariant_assertions,
             assertions,
             snapshots,
@@ -174,7 +180,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
 
             // compute an eventual variant assertion to insert in this basic block
-            if let Some((term, old_name)) = self.variants.remove(&bb) {
+            if let Some((term, old_name)) = self.loop_variants.remove(&bb) {
                 variant = Some(Variant { term, old_name: PIdent(old_name) });
             }
 
@@ -213,6 +219,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         fmir::Body {
             locals: self.vars,
             variant_locals,
+            function_variant: PIdent(self.function_variant),
             arg_count: self.body.arg_count,
             blocks: self.past_blocks,
             fresh: self.fresh_id,

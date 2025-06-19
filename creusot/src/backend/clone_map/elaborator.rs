@@ -362,7 +362,15 @@ fn const_setter<'tcx, N: Namer<'tcx>>(
         "set_{}",
         crate::naming::translate_name(ctx.ctx.item_name(def_id).as_str())
     ));
-    let body = program::why_body(ctx, names, body_id, Some(subst), &[], inner_return);
+    let body = program::why_body(
+        ctx,
+        names,
+        body_id,
+        Some(subst),
+        &[],
+        inner_return,
+        &mut Default::default(),
+    );
     let ty = translate_ty(ctx, names, span, ctx.sig(def_id).output);
     let inner_def = Defn {
         prototype: Prototype::new(inner_return, [Param::Term(value_name, ty)]),

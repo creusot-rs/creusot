@@ -99,7 +99,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
         &mut names,
         def_id,
         args_names,
-        sig.contract.variant.clone(),
+        sig.contract.variant.clone().map(|(exp, _)| exp),
         term,
         name::result(),
         postcondition.clone(),
