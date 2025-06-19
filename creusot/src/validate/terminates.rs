@@ -29,6 +29,10 @@
 //! Default function in traits, as well as `impl` blocks marked with `default`, are
 //! special-cased when handling logical functions: see the documentation in
 //! [`ImplDefaultTransparent`] for more details.
+// FIXME:
+// There are still cycles that are not detected in logic function, because of builtins.
+// For example, calling `inv(x)` does not add an arc going to `x.invariant()`.
+// The same happens for (at least) `resolve`, `precondition`, `postcondition`.
 
 use std::iter::repeat;
 
