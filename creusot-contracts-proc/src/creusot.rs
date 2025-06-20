@@ -238,7 +238,7 @@ impl Parse for Assertion {
 
 pub fn proof_assert(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
-    let assert_body = pretyping::encode_block(&assert.0).unwrap_or_else(|e| e.into_tokens());
+    let assert_body = pretyping::encode_block(&assert.0);
 
     TS1::from(quote! {
         {
@@ -256,7 +256,7 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
 
 pub fn snapshot(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
-    let assert_body = pretyping::encode_block(&assert.0).unwrap_or_else(|e| e.into_tokens());
+    let assert_body = pretyping::encode_block(&assert.0);
 
     TS1::from(quote! {
         ::creusot_contracts::__stubs::snapshot_from_fn(
@@ -537,13 +537,13 @@ fn logic_item(log: LogicItem, tags: Vec<LogicTag>, documentation: TokenStream) -
     let def = log.defaultness;
     let sig = log.sig;
     let attrs = log.attrs;
-    let req_body = pretyping::encode_block(&term).unwrap_or_else(|e| e.into_tokens());
+    let req_body = pretyping::encode_block(&term);
 
     TS1::from(quote_spanned! {span =>
         #(#tags)*
         #(#attrs)*
         #documentation
-        #vis #def #sig { #req_body }
+        #vis #def #sig #req_body
     })
 }
 
