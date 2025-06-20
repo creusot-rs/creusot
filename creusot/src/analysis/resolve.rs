@@ -384,6 +384,55 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
         }
     }
 
+    fn resolve_before_assignment(&mut self, need: MixedBitSet<MovePathIndex>, resolved: &MixedBitSet<MovePathIndex>, loc: Location, pl: Place<'tcx>) {
+        todo!()
+    }
+
+    fn resolve_after_assignment(&mut self, loc: Location, pl: Place<'tcx>) {
+        todo!()
+    }
+
+    fn resolve_places(&mut self,  need: MixedBitSet<MovePathIndex>, resolved: &MixedBitSet<MovePathIndex>) {
+        todo!()
+    }
+
     fn visit_statement(&mut self, statement: &'a Statement<'tcx>, loc: Location) {
+        match statement.kind {
+            StatementKind::Assign(box (pl, ref rv)) => {
+                let (need, resolved) =
+                    self.resolver.resolved_places_during(ExtendedLocation::Mid(loc));
+                self.resolve_before_assignment(need, &resolved, loc, pl);
+                self.resolve_after_assignment(loc.successor_within_block(), pl);
+            }
+            // All these instructions are no-ops in the dynamic semantics, but may trigger resolution
+            StatementKind::Nop
+            | StatementKind::StorageDead(_)
+            | StatementKind::StorageLive(_)
+            | StatementKind::FakeRead(_)
+            | StatementKind::AscribeUserType(_, _)
+            | StatementKind::Retag(_, _)
+            | StatementKind::Coverage(_)
+            | StatementKind::PlaceMention(_)
+            | StatementKind::ConstEvalCounter
+            | StatementKind::BackwardIncompatibleDropHint { .. } => {
+                let (mut need, resolved) =
+                    self.resolver.resolved_places_during(ExtendedLocation::End(loc));
+                if let StatementKind::StorageDead(local) | StatementKind::StorageLive(local) =
+                    statement.kind
+                {
+                    // These instructions signals that a local goes out of scope. We resolve any needed
+                    // move path it contains. These are typically frozen places.
+                    let (need_start, _) =
+                        self.resolver.need_resolve_resolved_places_at(ExtendedLocation::Start(loc));
+                    for mp in need_start.clone().iter() {
+                        if self.resolver.move_data.base_local(mp) == local {
+                            need.insert(mp);
+                        }
+                    }
+                }
+                self.resolve_places(need, &resolved);
+            }
+            _ => {}
+        }
     }
 }
