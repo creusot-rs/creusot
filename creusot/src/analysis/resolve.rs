@@ -1,11 +1,12 @@
+use std::collections::HashMap;
+
 use crate::analysis::{Borrows, MaybeLiveExceptDrop};
 use either::Either;
-use rustc_borrowck::consumers::{BorrowIndex, BorrowSet, PlaceExt, RegionInferenceContext};
-use rustc_index::bit_set::MixedBitSet;
+use rustc_borrowck::consumers::{BodyWithBorrowckFacts, BorrowIndex, BorrowSet, PlaceExt, RegionInferenceContext};
+use rustc_index::{bit_set::MixedBitSet, IndexVec};
 use rustc_middle::{
     mir::{
-        BasicBlock, Body, Location, PlaceRef, ProjectionElem, Rvalue, Statement, StatementKind,
-        TerminatorEdges, traversal,
+        traversal, BasicBlock, Body, Local, Location, Place, PlaceRef, ProjectionElem, Rvalue, Statement, StatementKind, TerminatorEdges
     },
     ty::{TyCtxt, TyKind},
 };
@@ -23,7 +24,7 @@ pub struct Resolver<'a, 'tcx> {
     uninit: ResultsCursor<'a, 'tcx, MaybeUninitializedPlaces<'a, 'tcx>>,
     borrows: ResultsCursor<'a, 'tcx, Borrows<'a, 'a, 'tcx>>,
     borrow_set: &'a BorrowSet<'tcx>,
-    move_data: &'a MoveData<'tcx>,
+    move_data: MoveData<'tcx>,
     body: &'a Body<'tcx>,
     tcx: TyCtxt<'tcx>,
 }
@@ -349,4 +350,40 @@ pub fn place_contains_borrow_deref<'tcx>(
         proj == ProjectionElem::Deref
             && matches!(pl.ty(&body.local_decls, tcx).ty.kind(), TyKind::Ref(..))
     })
+}
+
+type Resolves<'tcx> = Vec<Place<'tcx>>;
+
+pub struct BodyData<'tcx> {
+    erased_locals: MixedBitSet<Local>,
+    borrows: BorrowSet<'tcx>,
+    resolve_between_blocks: Vec<(BasicBlock, BasicBlock, Resolves<'tcx>)>,
+    /// Resolves before and after each statement and terminator
+    resolve_for_stmt: HashMap<Location, (Resolves<'tcx>, Resolves<'tcx>)>,
+}
+
+impl<'tcx> BodyData<'tcx> {
+    pub fn new() -> Self {
+        todo!()
+    }
+}
+
+pub struct PreAnalysis<'a, 'tcx> {
+    resolver: Resolver<'a, 'tcx>,
+    body: &'a BodyWithBorrowckFacts<'tcx>,
+    data: BodyData<'tcx>,
+}
+
+impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
+    pub fn new(tcx: TyCtxt<'tcx>, body: &'a BodyWithBorrowckFacts<'tcx>) -> Self {
+        let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
+        Self {
+            resolver: Resolver::new(tcx, &body.body, &body.borrow_set, &body.region_inference_context, move_data),
+            body,
+            data: BodyData::new(),
+        }
+    }
+
+    fn visit_statement(&mut self, statement: &'a Statement<'tcx>, loc: Location) {
+    }
 }
