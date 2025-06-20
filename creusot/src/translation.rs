@@ -218,5 +218,4 @@ fn print_crate<I: Iterator<Item = FileModule>>(
     Ok(root)
 }
 
-pub(crate) fn prep(tcx: TyCtxt) {
-}
+pub(crate) fn prep(tcx: TyCtxt) {}

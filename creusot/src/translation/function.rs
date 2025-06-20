@@ -2,14 +2,16 @@ mod statement;
 mod terminator;
 
 use crate::{
-    analysis::NotFinalPlaces,
+    analysis::{
+        NotFinalPlaces,
+        resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
+    },
     backend::ty_inv::is_tyinv_trivial,
     contracts_items::{is_snapshot_closure, is_spec},
     ctx::*,
     extended_location::ExtendedLocation,
     gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
     naming::variable_name,
-    resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
         constant::from_mir_constant,
         fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv, inline_pearlite_subst},

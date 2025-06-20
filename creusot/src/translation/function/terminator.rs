@@ -1,13 +1,12 @@
 use super::BodyTranslator;
 use crate::{
-    analysis::NotFinalPlaces,
+    analysis::{NotFinalPlaces, resolve::HasMoveDataExt},
     contracts_items::{is_box_new, is_snap_from_fn},
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
     lints::contractless_external_function::{
         CONTRACTLESS_EXTERNAL_FUNCTION, ContractlessExternalFunction,
     },
-    resolve::HasMoveDataExt,
     translation::{
         fmir::{self, *},
         pearlite::{Term, TermKind, UnOp},
