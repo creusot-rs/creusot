@@ -94,10 +94,6 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
 
     let CallGraph { graph: mut call_graph } = CallGraph::build(ctx);
 
-    // FIXME: somewhere else, check that functions that have a variant but are
-    // not `terminates` are warned against (since the variant is not handled in this case)
-    // Detect simple recursion, and loops
-
     // Detect simple recursion
     for fun_index in call_graph.node_indices() {
         let def_id = call_graph.node_weight(fun_index).unwrap().def_id();
@@ -457,6 +453,11 @@ impl CallGraph {
             if !(is_pearlite(ctx.tcx, def_id) || ctx.sig(def_id).contract.terminates) {
                 // Only consider functions marked with `terminates`: we already ensured
                 // that a `terminates` functions only calls other `terminates` functions.
+                if let Some(variant) = &ctx.sig(def_id).contract.variant {
+                    ctx.dcx().struct_span_warn(variant.span, "variant will be ignored")
+                        .with_span_note(ctx.def_span(def_id), "This function is not a logical function, and is not marked with `#[terminates]`.")
+                        .emit();
+                }
                 continue;
             }
             let node = build_call_graph.insert_function(GraphNode::Function(def_id));
