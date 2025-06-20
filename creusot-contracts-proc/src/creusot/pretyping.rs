@@ -113,7 +113,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }
         }
-        RT::Block(TermBlock { block, .. }) => encode_block(&block),
+        RT::Block(TermBlock { block, .. }) => Ok(encode_block(&block)),
         RT::Call(TermCall { func, args, .. }) => {
             let args: Vec<_> = args.into_iter().map(encode_term).collect::<Result<_, _>>()?;
             if let RT::Path(p) = &**func {
@@ -330,13 +330,16 @@ fn encode_trigger(
     Ok(ts)
 }
 
-pub fn encode_block(block: &TBlock) -> Result<TokenStream, EncodeError> {
-    let stmts: Vec<_> = block.stmts.iter().map(encode_stmt).collect::<Result<_, _>>()?;
+pub fn encode_block(block: &TBlock) -> TokenStream {
+    // If there are errors during encode_stmt, still emit the braces
+    // to allow the parser to skip over the body and discover more errors.
     let mut tokens = TokenStream::new();
-    block
-        .brace_token
-        .surround(&mut tokens, |tokens| stmts.iter().for_each(|stmt| stmt.to_tokens(tokens)));
-    Ok(tokens)
+    block.brace_token.surround(&mut tokens, |tokens| {
+        block.stmts.iter().for_each(|stmt| {
+            encode_stmt(stmt).unwrap_or_else(|e| e.into_tokens()).to_tokens(tokens)
+        })
+    });
+    tokens
 }
 
 pub fn encode_stmt(stmt: &TermStmt) -> Result<TokenStream, EncodeError> {
