@@ -6,7 +6,7 @@ use rustc_borrowck::consumers::{BodyWithBorrowckFacts, BorrowIndex, BorrowSet, P
 use rustc_index::{bit_set::MixedBitSet, IndexVec};
 use rustc_middle::{
     mir::{
-        traversal, BasicBlock, Body, Local, Location, Place, PlaceRef, ProjectionElem, Rvalue, Statement, StatementKind, TerminatorEdges
+        traversal::{self, reverse_postorder}, BasicBlock, Body, Local, Location, Place, PlaceRef, ProjectionElem, Rvalue, Statement, StatementKind, Terminator, TerminatorEdges, TerminatorKind, START_BLOCK
     },
     ty::{TyCtxt, TyKind},
 };
@@ -396,7 +396,30 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
         todo!()
     }
 
-    fn visit_statement(&mut self, statement: &'a Statement<'tcx>, loc: Location) {
+    fn resolve_places_between_blocks(&mut self, bb: BasicBlock) {
+        todo!()
+    }
+
+    fn move_data(&self) -> &MoveData<'tcx> { &self.resolver.move_data }
+
+    fn visit(&mut self) {
+        for (bb, bbd) in reverse_postorder(&self.body.body) {
+            if bbd.is_cleanup { continue; }
+            if bb == START_BLOCK {
+                let (_, resolved) = self.resolver.need_resolve_resolved_places_at(ExtendedLocation::Start(Location::START));
+                self.resolve_places(resolved.clone(), &resolved)
+            }
+            self.resolve_places_between_blocks(bb);
+            let mut loc = bb.start_location();
+            for statement in &bbd.statements {
+                self.visit_statement(statement, loc);
+                loc = loc.successor_within_block();
+            }
+            self.visit_terminator(bbd.terminator(), loc)
+        }
+    }
+
+    fn visit_statement(&mut self, statement: &Statement<'tcx>, loc: Location) {
         match statement.kind {
             StatementKind::Assign(box (pl, ref rv)) => {
                 let (need, resolved) =
@@ -433,6 +456,52 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
                 self.resolve_places(need, &resolved);
             }
             _ => {}
+        }
+    }
+
+    fn visit_terminator(&mut self, terminator: &Terminator<'tcx>, loc: Location) {
+        match terminator.kind {
+            TerminatorKind::Return => {
+                    let (mut need, resolved) =
+                        self.resolver.need_resolve_resolved_places_at(ExtendedLocation::Start(loc));
+                    // do not resolve return local
+                    for mp in need.clone().iter() {
+                        if self.move_data().base_local(mp) == Local::from_usize(0) {
+                            need.remove(mp);
+                        }
+                    }
+                    self.resolve_places(need, &resolved);
+            }
+            TerminatorKind::Call { ref func, ref args, destination, mut target, fn_span, .. } => {
+                let (need, resolved) = self.resolver.resolved_places_during(ExtendedLocation::End(loc));
+                self.resolve_before_assignment(need, &resolved, loc, destination);
+                if let Some(bb) = target {
+                    self.resolve_after_assignment(target.unwrap().start_location(), destination)
+                }
+            }
+            TerminatorKind::Drop { target, place, .. } => {
+                // place may need to be resolved since it may be frozen.
+                if let LookupResult::Exact(mp) =
+                    self.move_data().rev_lookup.find(place.as_ref())
+                {
+                    let (need_start, resolved) = self
+                        .resolver
+                        .need_resolve_resolved_places_at(ExtendedLocation::Start(loc));
+                    let mut to_resolve = self.resolver.empty_bitset();
+                    on_all_children_bits(self.move_data(), mp, |mpi| {
+                        if need_start.contains(mpi) {
+                            to_resolve.insert(mpi);
+                        }
+                    });
+                    self.resolve_places(to_resolve, &resolved);
+                }
+                let (need, resolved) = self.resolver.resolved_places_during(ExtendedLocation::End(loc));
+                self.resolve_places(need, &resolved)
+            }
+            _ => {
+                let (need, resolved) = self.resolver.resolved_places_during(ExtendedLocation::End(loc));
+                self.resolve_places(need, &resolved)
+            }
         }
     }
 }
