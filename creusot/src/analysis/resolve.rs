@@ -371,6 +371,8 @@ impl<'tcx> BodyData<'tcx> {
 pub struct PreAnalysis<'a, 'tcx> {
     resolver: Resolver<'a, 'tcx>,
     body: &'a BodyWithBorrowckFacts<'tcx>,
+    /// Places to resolve before and after the current statement
+    current_resolved: (Vec<Place<'tcx>>, Vec<Place<'tcx>>),
     data: BodyData<'tcx>,
 }
 
@@ -443,7 +445,7 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
                 if let StatementKind::StorageDead(local) | StatementKind::StorageLive(local) =
                     statement.kind
                 {
-                    // These instructions signals that a local goes out of scope. We resolve any needed
+                    // These instructions signal that a local goes out of scope. We resolve any needed
                     // move path it contains. These are typically frozen places.
                     let (need_start, _) =
                         self.resolver.need_resolve_resolved_places_at(ExtendedLocation::Start(loc));
