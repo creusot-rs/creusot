@@ -425,7 +425,7 @@ mod base_prelude {
         char::CharExt as _,
         iter::{SkipExt as _, TakeExt as _},
         ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
-        ptr::PointerExt as _,
+        ptr::{PointerExt as _, SizedPointerExt as _, SlicePointerExt as _, PtrAddExt as _},
         slice::SliceExt as _,
     };
 
