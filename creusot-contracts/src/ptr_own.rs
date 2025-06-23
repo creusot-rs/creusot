@@ -1,7 +1,7 @@
 //! Raw pointers with ghost code
 
 #[cfg(creusot)]
-use crate::util::SizedW;
+use crate::util::{SizedW, MakeSized as _};
 use crate::*;
 
 /// Raw pointer whose ownership is tracked by a ghost [`PtrOwn`].
@@ -94,6 +94,23 @@ impl<T: ?Sized> PtrOwn<T> {
     pub fn from_box(val: Box<T>) -> (RawPtr<T>, Ghost<PtrOwn<T>>) {
         assert!(core::mem::size_of_val::<T>(&*val) > 0, "PtrOwn doesn't support ZSTs");
         (Box::into_raw(val), Ghost::conjure())
+    }
+
+    ///
+    #[trusted]
+    #[ensures(result.1.ptr() == result.0)]
+    #[ensures(*result.1.val() == *r)]
+    pub fn from_ref(r: &T) -> (RawPtr<T>, Ghost<&PtrOwn<T>>) {
+        (r, Ghost::conjure())
+    }
+
+    ///
+    #[trusted]
+    #[ensures(result.1.ptr() == result.0)]
+    #[ensures(*result.1.val() == *r)]
+    #[ensures(*(^result.1.inner_logic()).val() == ^r)]
+    pub fn from_mut(r: &mut T) -> (RawPtr<T>, Ghost<&mut PtrOwn<T>>) {
+        (r, Ghost::conjure())
     }
 
     /// Immutably borrows the underlying `T`.
