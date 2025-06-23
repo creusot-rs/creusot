@@ -209,6 +209,16 @@ extern_spec! {
         fn is_null(self) -> bool;
     }
 
+    impl<T> *const [T] {
+        #[ensures(result@ == self.len_logic())]
+        fn len(self) -> usize;
+    }
+
+    impl<T> *mut [T] {
+        #[ensures(result@ == self.len_logic())]
+        fn len(self) -> usize;
+    }
+
     mod std {
         mod ptr {
             #[ensures(result.is_null_logic())]
