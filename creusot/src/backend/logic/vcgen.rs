@@ -285,11 +285,23 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         k(Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([arg])]))
                     })
                 }
-                TyKind::RawPtr(ty1, _)
-                    if let TyKind::RawPtr(ty2, _) = t.ty.kind()
-                        && ty1 == ty2 =>
-                {
-                    self.build_wp(arg, k)
+                TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = t.ty.kind() => {
+                    // TODO: is using `is_sized` correct? Its doc says "it can be an overapproximation in generic contexts".
+                    // https://doc.rust-lang.org/beta/nightly-rustc/rustc_middle/ty/struct.Ty.html#method.is_sized
+                    let sized1 = ty1.is_sized(self.ctx.tcx, self.names.typing_env());
+                    let sized2 = ty2.is_sized(self.ctx.tcx, self.names.typing_env());
+                    if sized1 == sized2 {
+                        // Cast between pointer types of same sizedness is the identity
+                        self.build_wp(arg, k)
+                    } else if !sized1 && sized2 {
+                        // Strip metadata from fat pointer with `Opaque.thin`
+                        self.build_wp(arg, &|arg| {
+                            let thin = self.names.in_pre(PreMod::Opaque, "thin");
+                            k(Exp::qvar(thin).app([arg]))
+                        })
+                    } else {
+                        unsupported_cast(self.ctx, t.span, arg.ty, t.ty)
+                    }
                 }
                 _ => unsupported_cast(self.ctx, t.span, arg.ty, t.ty),
             },
