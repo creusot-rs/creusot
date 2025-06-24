@@ -44,16 +44,25 @@ More examples are found in [tests/should_succeed](tests/should_succeed).
 
 1. [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
 2. [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
-3. Clone the [creusot](https://github.com/creusot-rs/creusot/) repository,
-   then move into the `creusot` directory.
-    ```
-    git clone https://github.com/creusot-rs/creusot
-    cd creusot
-    ```
-4. Install **Creusot**:
+3. Setup the environment for cargo if not done already:
+   ```sh
+   . .cargo/env
    ```
+4. Clone the [creusot](https://github.com/creusot-rs/creusot/) repository,
+   then move into the `creusot` directory.
+   ```sh
+   git clone https://github.com/creusot-rs/creusot
+   cd creusot
+   ```
+5. Install **Creusot**:
+   ```sh
    ./INSTALL
    ```
+6. Check that the installation succeeded:
+   ```sh
+   cargo creusot --help
+   ```
+
    A regular installation consists of:
    - the `cargo-creusot` executable in `~/.cargo/bin/`;
    - the `creusot-rustc` executable in `{DATA_DIR}/toolchains/$TOOLCHAIN/bin`;
@@ -75,7 +84,7 @@ They are just space-separated command-line arguments.
 Type `./INSTALL --help` for a list of available options.
 For example:
 
-```
+```sh
 echo "--external z3" > INSTALL.opts
 ./INSTALL
 ```
@@ -84,15 +93,15 @@ echo "--external z3" > INSTALL.opts
 
 1. Enter the cloned Creusot git repository used previously to install Creusot
 2. Update Creusot's sources:
-   ```
+   ```sh
    git pull
    ```
 3. Update opam's package listing:
-   ```
+   ```sh
    opam update
    ```
 4. Reinstall Creusot:
-   ```
+   ```sh
    ./INSTALL
    ```
 
