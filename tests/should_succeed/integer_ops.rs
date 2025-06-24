@@ -80,7 +80,7 @@ pub fn test_shift_ops() {
 }
 
 macro_rules! test_ops {
-    ($t: ty) => {
+    ($t: ty, $three: expr) => {
         #[requires(l@ + r@ >= $t::MIN@ && l@ + r@ <= $t::MAX@)]
         #[ensures(result@ == l@ + r@)]
         #[allow(dead_code)]
@@ -159,12 +159,25 @@ macro_rules! test_ops {
             assert_eq!(false as $t, 0);
             b as $t
         }
+
+        #[ensures(result == n << $three)]
+        #[allow(dead_code)]
+        pub fn test_shl(n: $t) -> $t {
+            n << 3
+        }
+
+        #[ensures(result == n << $three)]
+        #[allow(dead_code)]
+        #[bitwise_proof]
+        pub fn test_shl_bw(n: $t) -> $t {
+            n << 3
+        }
     };
 }
 
 mod u8 {
     use super::*;
-    test_ops!(u8);
+    test_ops!(u8, 3u8);
 
     #[allow(dead_code)]
     pub fn test_to_char() {
@@ -180,55 +193,55 @@ mod u8 {
 
 mod i8 {
     use super::*;
-    test_ops!(i8);
+    test_ops!(i8, 3i8);
 }
 
 mod u16 {
     use super::*;
-    test_ops!(u16);
+    test_ops!(u16, 3u16);
 }
 
 mod i16 {
     use super::*;
-    test_ops!(i16);
+    test_ops!(i16, 3i16);
 }
 
 mod u32 {
     use super::*;
-    test_ops!(u32);
+    test_ops!(u32, 3u32);
 }
 
 mod i32 {
     use super::*;
-    test_ops!(i32);
+    test_ops!(i32, 3i32);
 }
 
 mod u64 {
     use super::*;
-    test_ops!(u64);
+    test_ops!(u64, 3u64);
 }
 
 mod i64 {
     use super::*;
-    test_ops!(i64);
+    test_ops!(i64, 3i64);
 }
 
 mod u128 {
     use super::*;
-    test_ops!(u128);
+    test_ops!(u128, 3u128);
 }
 
 mod i128 {
     use super::*;
-    test_ops!(i128);
+    test_ops!(i128, 3i128);
 }
 
 mod usize {
     use super::*;
-    test_ops!(usize);
+    test_ops!(usize, 3usize);
 }
 
 mod isize {
     use super::*;
-    test_ops!(isize);
+    test_ops!(isize, 3isize);
 }
