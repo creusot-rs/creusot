@@ -126,6 +126,31 @@ pub trait InhabitedInvariant: Invariant {
     fn inhabits() -> Self;
 }
 
+/// A _subset_ type.
+///
+/// This the same as `T`, with one exception: the invariant for `T` will also
+/// be verified in logic.
+///
+/// # Example
+///
+/// ```
+/// # use creusot_contracts::*;
+/// struct Pair(i32);
+/// impl Invariant for Pair {
+///     #[predicate] fn invariant(self) -> bool { self.0 % 2 == 0 }
+/// }
+/// impl InhabitedInvariant for Pair {
+///     #[logic]
+///     #[ensures(result.invariant())]
+///     fn inhabits() -> Self { Self(0i32) }
+/// }
+///
+/// #[logic]
+/// fn pair_in_logic(x: Subset<Pair>) {
+///     proof_assert!(x.0 % 2 == 0);
+/// }
+/// ```
+#[repr(transparent)]
 #[trusted]
 pub struct Subset<T: InhabitedInvariant>(T);
 
@@ -150,6 +175,10 @@ impl<T: InhabitedInvariant + DeepModel> DeepModel for Subset<T> {
 }
 
 impl<T: InhabitedInvariant> Subset<T> {
+    /// Create a new element of `Subset<T>` in logic.
+    ///
+    /// As per the [documentation of Subset](Subset), the returned value will
+    /// satisfy `T`'s type invariant.
     #[trusted]
     #[logic]
     #[requires(x.invariant())]
@@ -159,12 +188,42 @@ impl<T: InhabitedInvariant> Subset<T> {
         dead
     }
 
+    /// Characterize that `Subset<T>` indeed contains a `T` (and only a `T`).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// #[requires(x == y@)]
+    /// fn foo<T: InhabitedInvariant>(x: T, y: Subset<T>) {
+    ///     let x = Subset::new(x);
+    ///     let _ = snapshot!(Subset::<T>::view_inj);
+    ///     proof_assert!(x == y);
+    /// }
+    /// ```
     #[trusted]
     #[logic]
     #[requires(self@ == other@)]
     #[ensures(self == other)]
     pub fn view_inj(self, other: Self) {}
 
+    /// Create a new element of `Subset<T>`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// // Use the `Pair` type defined in `Subset`'s documentation
+    /// # struct Pair(i32);
+    /// # impl Invariant for Pair {
+    /// #     #[predicate] fn invariant(self) -> bool { self.0 % 2 == 0 } }
+    /// # impl InhabitedInvariant for Pair {
+    /// #     #[logic] #[ensures(result.invariant())]
+    /// #     fn inhabits() -> Self { Self(0i32) } }
+    ///
+    /// let p = Subset::new(Pair(0));
+    /// proof_assert!(p@.0 == 0i32);
+    /// ```
     #[pure]
     #[trusted]
     #[ensures(result == Self::new_logic(x))]
@@ -172,6 +231,27 @@ impl<T: InhabitedInvariant> Subset<T> {
         Subset(x)
     }
 
+    /// Unwrap the `Subset` to get the inner value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// // Use the `Pair` type defined in `Subset`'s documentation
+    /// # struct Pair(i32);
+    /// # impl Invariant for Pair {
+    /// #     #[predicate] fn invariant(self) -> bool { self.0 % 2 == 0 } }
+    /// # impl InhabitedInvariant for Pair {
+    /// #     #[logic] #[ensures(result.invariant())]
+    /// #     fn inhabits() -> Self { Self(0i32) } }
+    ///
+    /// fn changes_pair(p: &mut Subset<Pair>) { /* ... */ }
+    ///
+    /// let mut p = Subset::new(Pair(0));
+    /// changes_pair(&mut p);
+    /// let inner = p.into_inner();
+    /// proof_assert!(inner.0 % 2 == 0);
+    /// ```
     #[pure]
     #[trusted]
     #[ensures(result == self@)]
