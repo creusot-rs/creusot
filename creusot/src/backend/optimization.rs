@@ -61,7 +61,7 @@ pub(crate) fn gather_usage(b: &Body) -> HashMap<Ident, Usage> {
     usage.usages
 }
 
-impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
+impl<'tcx> LocalUsage<'_, 'tcx> {
     pub(crate) fn visit_body(&mut self, b: &Body<'tcx>) {
         b.blocks.values().for_each(|b| self.visit_block(b));
     }
@@ -84,25 +84,25 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     }
 
     fn visit_statement(&mut self, b: &Statement<'tcx>) {
-        match b {
-            Statement::Assignment(p, r, _) => {
+        match &b.kind {
+            StatementKind::Assignment(p, r) => {
                 self.write_place(p);
                 if let RValue::Operand(_) = r {
                     self.move_chain(p.local);
                 }
                 self.visit_rvalue(r)
             }
-            Statement::Resolve { pl, .. } => {
+            StatementKind::Resolve { pl, .. } => {
                 self.read_place(pl);
                 self.read_place(pl)
             }
-            Statement::Assertion { cond, msg: _, trusted: _ } => {
+            StatementKind::Assertion { cond, msg: _, trusted: _ } => {
                 // Make assertions stop propagation because it would require Expr -> Term translation
                 self.visit_term(cond);
                 self.visit_term(cond);
             }
-            Statement::AssertTyInv { pl, .. } => self.read_place(pl),
-            Statement::Call(dest, _, _, args, _) => {
+            StatementKind::AssertTyInv { pl, .. } => self.read_place(pl),
+            StatementKind::Call(dest, _, _, args) => {
                 self.write_place(dest);
                 args.iter().for_each(|a| self.visit_operand(a));
             }
@@ -154,17 +154,19 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
 
     fn read_place(&mut self, p: &Place<'tcx>) {
         self.read(p.local, p.projections.is_empty());
-        p.projections.iter().for_each(|p| match p {
-            mir::ProjectionElem::Index(l) => self.read(*l, true),
-            _ => {}
+        p.projections.iter().for_each(|p| {
+            if let mir::ProjectionElem::Index(l) = p {
+                self.read(*l, true)
+            }
         })
     }
 
     fn write_place(&mut self, p: &Place<'tcx>) {
         self.write(p.local, p.projections.is_empty());
-        p.projections.iter().for_each(|p| match p {
-            mir::ProjectionElem::Index(l) => self.read(*l, true),
-            _ => {}
+        p.projections.iter().for_each(|p| {
+            if let mir::ProjectionElem::Index(l) = p {
+                self.read(*l, true)
+            }
         })
     }
 
@@ -211,7 +213,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> TermVisitor<'tcx> for LocalUsage<'a, 'tcx> {
+impl<'tcx> TermVisitor<'tcx> for LocalUsage<'_, 'tcx> {
     fn visit_term(&mut self, term: &Term<'tcx>) {
         match term.kind {
             TermKind::Var(v) => {
@@ -231,7 +233,7 @@ struct SimplePropagator<'tcx> {
     dead: HashSet<Ident>,
 }
 
-pub(crate) fn simplify_fmir<'tcx>(usage: HashMap<Ident, Usage>, body: &mut Body) {
+pub(crate) fn simplify_fmir(usage: HashMap<Ident, Usage>, body: &mut Body) {
     SimplePropagator { usage, prop: HashMap::new(), dead: HashSet::new() }.visit_body(body);
 }
 impl<'tcx> SimplePropagator<'tcx> {
@@ -240,7 +242,7 @@ impl<'tcx> SimplePropagator<'tcx> {
             self.visit_block(b)
         }
 
-        b.locals.retain(|l, _| !self.dead.contains(&l) && self.usage.contains_key(&l));
+        b.locals.retain(|l, _| !self.dead.contains(l) && self.usage.contains_key(l));
 
         assert!(self.prop.is_empty(), "some values were not properly propagated {:?}", self.prop)
     }
@@ -250,20 +252,20 @@ impl<'tcx> SimplePropagator<'tcx> {
 
         for mut s in std::mem::take(&mut b.stmts) {
             self.visit_statement(&mut s);
-            match s {
-                Statement::Assignment(l, RValue::Operand(op), _)
+            match s.kind {
+                StatementKind::Assignment(l, RValue::Operand(op))
                     // we do not propagate calls to avoid moving them after the resolve of their arguments
                     if self.should_propagate(l.local) && !self.usage[&l.local].used_in_pure_ctx => {
                       self.prop.insert(l.local, op);
                       self.dead.insert(l.local);
                     }
-                Statement::Assignment(_, RValue::Snapshot(_), _) => {
+                StatementKind::Assignment(_, RValue::Snapshot(_)) => {
                     out_stmts.push(s)
                 }
-                Statement::Assignment(ref l, ref r, _) if self.should_erase(l.local) && r.is_pure() => {
+                StatementKind::Assignment(ref l, ref r) if self.should_erase(l.local) && r.is_pure() => {
                     self.dead.insert(l.local);
                 }
-                Statement::Resolve{ pl: ref p, .. } => {
+                StatementKind::Resolve{ pl: ref p, .. } => {
                   if let Some(l) = p.as_symbol() && self.dead.contains(&l) {
                   } else {
                     out_stmts.push(s)
@@ -283,18 +285,18 @@ impl<'tcx> SimplePropagator<'tcx> {
     }
 
     fn visit_statement(&mut self, s: &mut Statement<'tcx>) {
-        match s {
-            Statement::Assignment(_, r, _) => self.visit_rvalue(r),
-            Statement::Resolve { pl, .. } => {
+        match &mut s.kind {
+            StatementKind::Assignment(_, r) => self.visit_rvalue(r),
+            StatementKind::Resolve { pl, .. } => {
                 if let Some(l) = pl.as_symbol()
                     && self.dead.contains(&l)
                 {}
             }
-            Statement::Assertion { cond, msg: _, trusted: _ } => self.visit_term(cond),
-            Statement::Call(_, _, _, args, _) => {
+            StatementKind::Assertion { cond, msg: _, trusted: _ } => self.visit_term(cond),
+            StatementKind::Call(_, _, _, args) => {
                 args.iter_mut().for_each(|a| self.visit_operand(a))
             }
-            Statement::AssertTyInv { .. } => {}
+            StatementKind::AssertTyInv { .. } => {}
         }
     }
 
@@ -302,7 +304,7 @@ impl<'tcx> SimplePropagator<'tcx> {
         match r {
             RValue::Snapshot(t) => self.visit_term(t),
             RValue::Ptr(p) | RValue::Borrow(_, p, _) => {
-                assert!(self.prop.get(&p.local).is_none(), "Trying to propagate borrowed variable")
+                assert!(!self.prop.contains_key(&p.local), "Trying to propagate borrowed variable")
             }
             RValue::Operand(op) => self.visit_operand(op),
             RValue::BinOp(_, l, r) => {

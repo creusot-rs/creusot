@@ -154,10 +154,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                     let places = self.tree.visible_places(si.scope);
                                     cond.subst(inline_pearlite_subst(self.ctx, &places));
                                     self.check_use_in_logic(&cond, loc);
-                                    self.emit_statement(fmir::Statement::Assertion {
-                                        cond,
-                                        msg,
-                                        trusted: false,
+                                    self.emit_statement(fmir::Statement {
+                                        kind: fmir::StatementKind::Assertion {
+                                            cond,
+                                            msg,
+                                            trusted: false,
+                                        },
+                                        span,
                                     });
                                     return Ok(());
                                 }
@@ -170,10 +173,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             let places = self.tree.visible_places(si.scope);
                             assertion.subst(inline_pearlite_subst(self.ctx, &places));
                             self.check_use_in_logic(&assertion, loc);
-                            self.emit_statement(fmir::Statement::Assertion {
-                                cond: assertion,
-                                msg: "expl:assertion".to_owned(),
-                                trusted: false,
+                            self.emit_statement(fmir::Statement {
+                                kind: fmir::StatementKind::Assertion {
+                                    cond: assertion,
+                                    msg: "expl:assertion".to_owned(),
+                                    trusted: false,
+                                },
+                                span,
                             });
                             return Ok(());
                         } else if is_spec(self.tcx(), *def_id) {

@@ -78,13 +78,19 @@ impl<'tcx> PlaceRef<'_, 'tcx> {
 }
 
 #[derive(Clone, Debug)]
-pub enum Statement<'tcx> {
-    Assignment(Place<'tcx>, RValue<'tcx>, Span),
+pub enum StatementKind<'tcx> {
+    Assignment(Place<'tcx>, RValue<'tcx>),
     Resolve { did: DefId, subst: GenericArgsRef<'tcx>, pl: Place<'tcx> },
     Assertion { cond: Term<'tcx>, msg: String, trusted: bool },
     // Todo: fold into `Assertion`
     AssertTyInv { pl: Place<'tcx> },
-    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>, Span),
+    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>),
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct Statement<'tcx> {
+    pub(crate) kind: StatementKind<'tcx>,
+    pub(crate) span: Span,
 }
 
 // TODO: Add shared borrows?
@@ -504,21 +510,21 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
     visitor: &mut V,
     stmt: &Statement<'tcx>,
 ) {
-    match stmt {
-        Statement::Assignment(place, rval, _) => {
+    match &stmt.kind {
+        StatementKind::Assignment(place, rval) => {
             visitor.visit_place(place);
             visitor.visit_rvalue(rval);
         }
-        Statement::Resolve { pl, .. } => {
+        StatementKind::Resolve { pl, .. } => {
             visitor.visit_place(pl);
         }
-        Statement::Assertion { cond, .. } => {
+        StatementKind::Assertion { cond, .. } => {
             visitor.visit_term(cond);
         }
-        Statement::AssertTyInv { pl, .. } => {
+        StatementKind::AssertTyInv { pl, .. } => {
             visitor.visit_place(pl);
         }
-        Statement::Call(place, _, _, operands, _) => {
+        StatementKind::Call(place, _, _, operands) => {
             visitor.visit_place(place);
             for operand in operands {
                 visitor.visit_operand(operand);

@@ -30,7 +30,7 @@ use crate::{
     translation::{
         fmir::{
             Block, Body, BorrowKind, Branches, LocalDecls, Operand, Place, RValue, Statement,
-            Terminator, TrivialInv,
+            StatementKind, Terminator, TrivialInv,
         },
         pearlite::Pattern,
     },
@@ -160,7 +160,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     simplify_fmir(gather_usage(&body), &mut body);
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
-    infer_proph_invariants(ctx, &mut body);
+    infer_proph_invariants(ctx, &mut body, body_id);
 
     let blocks: Box<[Defn]> = wto
         .into_iter()
@@ -636,7 +636,7 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(res_ident)
             }
             RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t),
-            RValue::Borrow(_, _, _) => unreachable!(), // Handled in Statement::to_why
+            RValue::Borrow(_, _, _) => unreachable!(), // Handled in StatementKind::to_why
             RValue::UnaryOp(UnOp::PtrMetadata, op) => {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {
                     TyKind::Ref(_, ty, mu) => {
@@ -992,8 +992,8 @@ impl<'tcx> Statement<'tcx> {
         lower: &mut LoweringState<'_, 'tcx, N>,
     ) -> Vec<IntermediateStmt> {
         let mut istmts = Vec::new();
-        match self {
-            Statement::Assignment(lhs, RValue::Borrow(bor_kind, rhs, triv_inv), _span) => {
+        match self.kind {
+            StatementKind::Assignment(lhs, RValue::Borrow(bor_kind, rhs, triv_inv)) => {
                 let lhs_ty = lhs.ty(lower.ctx.tcx, lower.locals);
                 let lhs_ty_low = lower.ty(lhs_ty);
                 let rhs_ty = rhs.ty(lower.ctx.tcx, lower.locals);
@@ -1093,11 +1093,11 @@ impl<'tcx> Statement<'tcx> {
                 let new_rhs = rhs_constr(Some(&mut istmts), reassign);
                 istmts.push(IntermediateStmt::Assign(rhs.local, new_rhs));
             }
-            Statement::Assignment(lhs, e, _span) => {
+            StatementKind::Assignment(lhs, e) => {
                 let rhs = e.into_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
                 lower.assignment(&lhs, rhs, &mut istmts);
             }
-            Statement::Call(dest, fun_id, subst, args, _) => {
+            StatementKind::Call(dest, fun_id, subst, args) => {
                 let (fun_qname, args) = func_call_to_why3(lower, fun_id, subst, args, &mut istmts);
                 let ty = dest.ty(lower.ctx.tcx, lower.locals);
                 let ty = lower.ty(ty);
@@ -1105,7 +1105,7 @@ impl<'tcx> Statement<'tcx> {
                 istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, args));
                 lower.assignment(&dest, Exp::var(ret_ident), &mut istmts);
             }
-            Statement::Resolve { did, subst, pl } => {
+            StatementKind::Resolve { did, subst, pl } => {
                 let rp = Exp::Var(lower.names.item(did, subst));
                 let loc = pl.local;
                 let bound = Ident::fresh_local("x");
@@ -1122,7 +1122,7 @@ impl<'tcx> Statement<'tcx> {
 
                 istmts.push(IntermediateStmt::Assume(exp));
             }
-            Statement::Assertion { cond, msg, trusted } => {
+            StatementKind::Assertion { cond, msg, trusted } => {
                 let e = lower_pure(lower.ctx, lower.names, &cond).with_attr(Attribute::Attr(msg));
                 if trusted {
                     istmts.push(IntermediateStmt::Assume(e))
@@ -1130,7 +1130,7 @@ impl<'tcx> Statement<'tcx> {
                     istmts.push(IntermediateStmt::Assert(e))
                 }
             }
-            Statement::AssertTyInv { pl } => {
+            StatementKind::AssertTyInv { pl } => {
                 let inv_fun = Exp::var(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
                 let loc = pl.local;
                 let bound = Ident::fresh_local("x");

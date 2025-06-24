@@ -158,14 +158,16 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             let subst =
                                 self.ctx.normalize_erasing_regions(self.typing_env(), subst);
 
-                            self.emit_statement(Statement::Call(
-                                self.translate_place(destination.as_ref())
-                                    .unwrap_or_else(|err| err.crash(self.ctx, span)),
-                                fun_def_id,
-                                subst,
-                                func_args,
-                                span.source_callsite(),
-                            ));
+                            self.emit_statement(Statement {
+                                kind: fmir::StatementKind::Call(
+                                    self.translate_place(destination.as_ref())
+                                        .unwrap_or_else(|err| err.crash(self.ctx, span)),
+                                    fun_def_id,
+                                    subst,
+                                    func_args,
+                                ),
+                                span: span.source_callsite(),
+                            });
                         }
                     }
                 }
@@ -208,7 +210,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     };
                 }
                 let msg = self.get_explanation(msg);
-                self.emit_statement(Statement::Assertion { cond, msg, trusted: false });
+                self.emit_statement(Statement {
+                    kind: fmir::StatementKind::Assertion { cond, msg, trusted: false },
+                    span,
+                });
                 term = Terminator::Goto(*target)
             }
             Drop { target, place, .. } => {
@@ -278,14 +283,13 @@ fn resolve_function<'tcx>(
     subst: GenericArgsRef<'tcx>,
     report_location: (&mir::Body<'tcx>, Span, Location),
 ) -> (DefId, GenericArgsRef<'tcx>) {
-    let res;
-    if ctx.trait_of_item(def_id).is_some() {
-        res = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
+    let res = if ctx.trait_of_item(def_id).is_some() {
+        TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
             .to_opt(def_id, subst)
             .expect("could not find instance")
     } else {
-        res = (def_id, subst)
-    }
+        (def_id, subst)
+    };
 
     if ctx.sig(res.0).contract.extern_no_spec {
         let (body, span, location) = report_location;
