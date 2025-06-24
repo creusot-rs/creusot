@@ -1,6 +1,7 @@
 use crate::{
     backend::{
         Why3Generator,
+        program::{PtrCastKind, ptr_cast_kind},
         projections::{Focus, borrow_generated_id, projections_to_expr},
         ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude},
     },
@@ -67,7 +68,7 @@ pub(crate) fn unsupported_cast<'tcx>(
 ) -> ! {
     ctx.crash_and_error(
         span,
-        &format!("unsupported cast in Pearlite from {src} to {tgt} (allowed: bool as integer, integer as integer, or *mut T as *const T, or *const T as *mut T)"),
+        &format!("unsupported cast from {src} to {tgt} (allowed: bool as integer, integer as integer, or pointer as pointer)"),
     )
 }
 
@@ -136,14 +137,18 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                     Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([self.lower_term(arg)])])
                 }
-                TyKind::RawPtr(ty1, _)
-                    if let TyKind::RawPtr(ty2, _) = term.ty.kind()
-                        && ty1 == ty2 =>
-                {
-                    // Note: this only handles casts from `*const T` to `*mut T`
-                    // - Casts from `*mut T` to `*const T` are represented as `Coerce`.
-                    // - Casts between different pointer types are more complicated because of fat pointers metadata.
-                    self.lower_term(arg)
+                // Pointer-to-pointer casts
+                TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = term.ty.kind() => {
+                    match ptr_cast_kind(self.ctx.tcx, self.names.typing_env(), ty1, ty2) {
+                        PtrCastKind::Id => self.lower_term(arg),
+                        PtrCastKind::Thin => {
+                            let thin = self.names.in_pre(PreMod::Opaque, "thin");
+                            Exp::qvar(thin).app([self.lower_term(arg)])
+                        }
+                        PtrCastKind::Unknown => {
+                            unsupported_cast(self.ctx, term.span, arg.ty, term.ty)
+                        }
+                    }
                 }
                 _ => unsupported_cast(self.ctx, term.span, arg.ty, term.ty),
             },
