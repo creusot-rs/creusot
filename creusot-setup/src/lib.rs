@@ -211,7 +211,7 @@ pub fn creusot_paths() -> anyhow::Result<Paths> {
                 }
                 bail!(
                     "Please run 'cargo creusot setup status' \
-                     to diagnostic and fix the issue(s)"
+                    to diagnostic and fix the issue(s)"
                 )
             }
             Ok(Paths {

@@ -8,11 +8,9 @@ use crate::{
     ctx::{ItemType, TranslatedItem, TranslationCtx},
     naming::ModulePath,
     options::SpanMode,
-    run_why3::SpanMap,
     util::path_of_span,
 };
 use std::{
-    cell::RefCell,
     ops::{Deref, DerefMut},
     path::PathBuf,
 };
@@ -35,7 +33,6 @@ pub(crate) mod wto;
 pub struct Why3Generator<'tcx> {
     pub ctx: TranslationCtx<'tcx>,
     functions: Vec<TranslatedItem>,
-    pub(crate) span_map: RefCell<SpanMap>,
 }
 
 impl<'tcx> Deref for Why3Generator<'tcx> {
@@ -54,7 +51,7 @@ impl<'tcx> DerefMut for Why3Generator<'tcx> {
 
 impl<'tcx> Why3Generator<'tcx> {
     pub fn new(ctx: TranslationCtx<'tcx>) -> Self {
-        Why3Generator { ctx, functions: Default::default(), span_map: Default::default() }
+        Why3Generator { ctx, functions: Default::default() }
     }
 
     pub(crate) fn translate(&mut self, def_id: DefId) {
@@ -95,10 +92,6 @@ impl<'tcx> Why3Generator<'tcx> {
 
     pub(crate) fn span_attr(&self, span: Span) -> Option<Attribute> {
         let path = path_of_span(self.tcx, span, &self.opts.span_mode)?;
-
-        if let Some(span) = self.span_map.borrow_mut().encode_span(&self.ctx.opts, span) {
-            return Some(span);
-        };
 
         let lo = self.sess.source_map().lookup_char_pos(span.lo());
         let hi = self.sess.source_map().lookup_char_pos(span.hi());

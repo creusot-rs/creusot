@@ -49,12 +49,8 @@ fn creusot(
     if !args.no_check_version {
         check_contracts_version()?;
     }
-
-    let paths = setup::creusot_paths()?;
     let creusot_args = CreusotArgs {
         options: args.options,
-        why3_path: paths.why3.clone(),
-        why3_config_file: paths.why3.clone(),
         subcommand: match subcmd {
             Some(CreusotSubCommand::Doc) => Some(LegacyCreusotSubCommand::Doc),
             None => None,

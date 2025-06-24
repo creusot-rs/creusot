@@ -54,7 +54,6 @@ mod lints;
 mod metadata;
 mod naming;
 mod resolve;
-mod run_why3;
 mod translated_item;
 mod translation;
 mod util;
