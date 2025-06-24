@@ -66,7 +66,7 @@ pub(crate) fn unsupported_cast<'tcx>(
 ) -> ! {
     ctx.crash_and_error(
         span,
-        &format!("unsupported cast in Pearlite from {src} to {tgt} (allowed: bool as integer, integer as integer, or *mut T as *const T, or *const T as *mut T)"),
+        &format!("unsupported cast from {src} to {tgt} (allowed: bool as integer, integer as integer, or *mut T as *const T, or *const T as *mut T)"),
     )
 }
 
@@ -135,14 +135,24 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                     Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([self.lower_term(arg)])])
                 }
-                TyKind::RawPtr(ty1, _)
-                    if let TyKind::RawPtr(ty2, _) = term.ty.kind()
-                        && ty1 == ty2 =>
-                {
-                    // Note: this only handles casts from `*const T` to `*mut T`
-                    // - Casts from `*mut T` to `*const T` are represented as `Coerce`.
-                    // - Casts between different pointer types are more complicated because of fat pointers metadata.
-                    self.lower_term(arg)
+                // Pointer-to-pointer casts
+                // Cast `*T` to `*U` (regardless of `const` or `mut`)
+                // Reference: https://doc.rust-lang.org/reference/expressions/operator-expr.html#r-expr.as.pointer
+                TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = term.ty.kind() => {
+                    // TODO: is using `is_sized` correct? Its doc says "it can be an overapproximation in generic contexts".
+                    // https://doc.rust-lang.org/beta/nightly-rustc/rustc_middle/ty/struct.Ty.html#method.is_sized
+                    let sized1 = ty1.is_sized(self.ctx.tcx, self.names.typing_env());
+                    let sized2 = ty2.is_sized(self.ctx.tcx, self.names.typing_env());
+                    if sized1 == sized2 {
+                        // Cast between pointer types of same sizedness is the identity
+                        self.lower_term(arg)
+                    } else if !sized1 && sized2 {
+                        // Strip metadata from fat pointer with `Opaque.thin`
+                        let thin = self.names.in_pre(PreMod::Opaque, "thin");
+                        Exp::qvar(thin).app([self.lower_term(arg)])
+                    } else {
+                        unsupported_cast(self.ctx, term.span, arg.ty, term.ty)
+                    }
                 }
                 _ => unsupported_cast(self.ctx, term.span, arg.ty, term.ty),
             },

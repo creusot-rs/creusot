@@ -17,7 +17,7 @@ use crate::{
         optimization::{gather_usage, infer_proph_invariants, simplify_fmir},
         projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::lower_program_sig,
-        term::{lower_pat, lower_pure},
+        term::{lower_pat, lower_pure, unsupported_cast},
         ty::{
             constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, ty_to_prelude,
             uty_to_prelude,
@@ -46,7 +46,7 @@ use rustc_middle::{
     mir::{BasicBlock, BinOp, ProjectionElem, START_BLOCK, UnOp, tcx::PlaceTy},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
-use rustc_span::DUMMY_SP;
+use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};
 use std::{collections::HashMap, fmt::Debug, iter::once};
@@ -373,6 +373,7 @@ impl<'tcx> RValue<'tcx> {
         lower: &mut LoweringState<'_, 'tcx, N>,
         ty: Ty<'tcx>,
         istmts: &mut Vec<IntermediateStmt>,
+        span: Span,
     ) -> Exp {
         match self {
             RValue::Operand(op) => op.into_why(lower, istmts),
@@ -522,15 +523,12 @@ impl<'tcx> RValue<'tcx> {
                         let prelude = match target.kind() {
                             TyKind::Int(ity) => ity_to_prelude(lower.ctx.tcx, *ity),
                             TyKind::Uint(uty) => uty_to_prelude(lower.ctx.tcx, *uty),
-                            _ => lower.ctx.crash_and_error(
-                                DUMMY_SP,
-                                "bool cast to non integral casts are currently unsupported",
-                            ),
+                            _ => unsupported_cast(&lower.ctx, span, source, target),
                         };
                         let arg = e.into_why(lower, istmts);
                         Exp::qvar(lower.names.in_pre(prelude, "of_bool")).app(vec![arg])
                     }
-                    _ => {
+                    TyKind::Int(_) | TyKind::Uint(_) => {
                         // convert source to BV256.t / int
                         let to_fname = match source.kind() {
                             TyKind::Int(ity) => {
@@ -543,10 +541,7 @@ impl<'tcx> RValue<'tcx> {
                                     if lower.names.bitwise_mode() { "to_BV256" } else { "t'int" };
                                 lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *ity), fct_name)
                             }
-                            _ => lower.ctx.crash_and_error(
-                                DUMMY_SP,
-                                &format!("casts {:?} are currently unsupported", source.kind()),
-                            ),
+                            _ => unsupported_cast(&lower.ctx, span, source, target),
                         };
                         let to_exp = Exp::qvar(to_fname).app(vec![e.into_why(lower, istmts)]);
 
@@ -567,10 +562,7 @@ impl<'tcx> RValue<'tcx> {
                                     if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
                                 lower.names.in_pre(PreMod::Char, fct_name)
                             }
-                            _ => lower.ctx.crash_and_error(
-                                DUMMY_SP,
-                                "Non integral casts are currently unsupported",
-                            ),
+                            _ => unsupported_cast(&lower.ctx, span, source, target),
                         };
 
                         // create final statement
@@ -583,6 +575,33 @@ impl<'tcx> RValue<'tcx> {
                         ));
                         Exp::var(of_ret_id)
                     }
+                    // Pointer-to-pointer casts
+                    // Reference: https://doc.rust-lang.org/reference/expressions/operator-expr.html#r-expr.as.pointer
+                    TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = target.kind() => {
+                        // TODO: is using `is_sized` correct? Its doc says "it can be an overapproximation in generic contexts".
+                        // https://doc.rust-lang.org/beta/nightly-rustc/rustc_middle/ty/struct.Ty.html#method.is_sized
+                        let sized1 = ty1.is_sized(lower.ctx.tcx, lower.names.typing_env());
+                        let sized2 = ty2.is_sized(lower.ctx.tcx, lower.names.typing_env());
+                        if sized1 == sized2 {
+                            // Cast between pointer types of same sizedness is the identity
+                            e.into_why(lower, istmts)
+                        } else if !sized1 && sized2 {
+                            // Strip metadata from fat pointer with `Opaque.thin`
+                            let res = Ident::fresh_local("_res");
+                            let thin = lower.names.in_pre(PreMod::Opaque, "thin");
+                            let exp = e.into_why(lower, istmts);
+                            istmts.push(IntermediateStmt::call(
+                                res,
+                                lower.ty(ty),
+                                Name::Global(thin),
+                                [Arg::Term(exp)],
+                            ));
+                            Exp::var(res)
+                        } else {
+                            unsupported_cast(&lower.ctx, span, source, target)
+                        }
+                    }
+                    _ => unsupported_cast(&lower.ctx, span, source, target),
                 }
             }
             RValue::Len(op) => Exp::qvar(lower.names.in_pre(PreMod::Slice, "length"))
@@ -1093,8 +1112,8 @@ impl<'tcx> Statement<'tcx> {
                 let new_rhs = rhs_constr(Some(&mut istmts), reassign);
                 istmts.push(IntermediateStmt::Assign(rhs.local, new_rhs));
             }
-            Statement::Assignment(lhs, e, _span) => {
-                let rhs = e.into_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
+            Statement::Assignment(lhs, e, span) => {
+                let rhs = e.into_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts, span);
                 lower.assignment(&lhs, rhs, &mut istmts);
             }
             Statement::Call(dest, fun_id, subst, args, _) => {
