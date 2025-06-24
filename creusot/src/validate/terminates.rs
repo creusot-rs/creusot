@@ -428,17 +428,18 @@ impl CallGraph {
 
         for local_id in ctx.hir().body_owners() {
             let def_id = local_id.to_def_id();
+
+            if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
+                // Cut all arcs from this function.
+                continue;
+            }
+
             if !(is_pearlite(ctx.tcx, def_id) || ctx.sig(def_id).contract.terminates) {
                 // Only consider functions marked with `terminates`: we already ensured
                 // that a `terminates` functions only calls other `terminates` functions.
                 continue;
             }
             let node = build_call_graph.insert_function(GraphNode::Function(def_id));
-
-            if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
-                // Cut all arcs from this function.
-                continue;
-            }
 
             let typing_env = ctx.typing_env(def_id);
             let (thir, expr) = ctx.get_thir(local_id).unwrap();
