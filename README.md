@@ -47,12 +47,12 @@ More examples are found in [tests/should_succeed](tests/should_succeed).
 3. Clone the [creusot](https://github.com/creusot-rs/creusot/) repository,
    then move into the `creusot` directory.
     ```
-    $ git clone https://github.com/creusot-rs/creusot
-    $ cd creusot
+    git clone https://github.com/creusot-rs/creusot
+    cd creusot
     ```
 4. Install **Creusot**:
    ```
-   $ ./INSTALL
+   ./INSTALL
    ```
    A regular installation consists of:
    - the `cargo-creusot` executable in `~/.cargo/bin/`;
@@ -85,7 +85,7 @@ echo "--external z3" > INSTALL.opts
 1. Enter the cloned Creusot git repository used previously to install Creusot
 2. Update Creusot's sources:
    ```
-   $ git pull
+   git pull
    ```
 3. Update opam's package listing:
    ```
@@ -93,7 +93,7 @@ echo "--external z3" > INSTALL.opts
    ```
 4. Reinstall Creusot:
    ```
-   $ ./INSTALL
+   ./INSTALL
    ```
 
 # Hacking on Creusot
