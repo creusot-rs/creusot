@@ -27,7 +27,7 @@ use crate::{
         constant::from_ty_const,
         pearlite::{BinOp, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
         specification::Condition,
-        traits::{Instance, TraitResolved},
+        traits::TraitResolved,
     },
 };
 use petgraph::graphmap::DiGraphMap;
@@ -230,7 +230,7 @@ fn expand_logic<'tcx>(
     assert_matches!(
         trait_resol,
         TraitResolved::NotATraitItem
-            | TraitResolved::Instance(..) // The default impl is known to be the final instance
+            | TraitResolved::Instance { .. } // The default impl is known to be the final instance
             | TraitResolved::UnknownFound // Unresolved trait method
     );
     // The other case are impossible, because that would mean we are not guaranteed to have an instance
@@ -537,7 +537,7 @@ fn resolve_term<'tcx>(
     } else {
         match TraitResolved::resolve_item(ctx.tcx, typing_env, trait_meth_id, subst) {
             TraitResolved::NotATraitItem => unreachable!(),
-            TraitResolved::Instance(Instance { def: (meth_did, meth_substs), .. }) => {
+            TraitResolved::Instance { def: (meth_did, meth_substs), .. } => {
                 // We know the instance => body points to it
                 Some(Term::call(ctx.tcx, typing_env, meth_did, meth_substs, [arg]))
             }
@@ -633,7 +633,7 @@ fn fn_once_postcond_term<'tcx>(
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
                 TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance(Instance { def, .. }) => (did, subst) = def,
+                TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
             }
@@ -740,7 +740,7 @@ fn fn_mut_postcond_term<'tcx>(
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
                 TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance(Instance { def, .. }) => (did, subst) = def,
+                TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
             }
@@ -816,7 +816,7 @@ fn fn_postcond_term<'tcx>(
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
                 TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance(Instance { def, .. }) => (did, subst) = def,
+                TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
             }
@@ -892,7 +892,7 @@ fn fn_once_precond_term<'tcx>(
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
                 TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance(Instance { def, .. }) => (did, subst) = def,
+                TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
             }

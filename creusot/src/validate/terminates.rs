@@ -42,7 +42,7 @@ use crate::{
     ctx::TranslationCtx,
     translation::{
         pearlite::{Term, TermKind, TermVisitor, super_visit_term},
-        traits::{Instance, TraitResolved},
+        traits::TraitResolved,
     },
     util::erased_identity_for_item,
 };
@@ -278,7 +278,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         // If we are calling a known method, and this method has been defined in an ancestor of the impl
         // we found, and this method is logic and transparent from this impl and this impl is local, then use a
         // specialized default node
-        if let TraitResolved::Instance(Instance { def, impl_ : Some(impl_)}) = res &&
+        if let TraitResolved::Instance { def, impl_ : Some(impl_)} = res &&
             ctx.impl_of_method(def.0) != Some(impl_.0) && // The method is defined in an ancestor
             is_pearlite(ctx.tcx, def.0) && // The method is logic
             let Some(impl_ldid) = impl_.0.as_local() && // The impl is local
@@ -324,7 +324,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             }
 
             for &item in ctx.associated_item_def_ids(trait_ref.def_id) {
-                let TraitResolved::Instance(Instance { def: (item_id, _), .. }) =
+                let TraitResolved::Instance { def: (item_id, _), .. } =
                     TraitResolved::resolve_item(ctx.tcx, typing_env, item, trait_ref.args)
                 else {
                     continue;

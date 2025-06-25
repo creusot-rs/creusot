@@ -184,7 +184,12 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
 pub(crate) enum TraitResolved<'tcx> {
     NotATraitItem,
     /// An instance (like `impl Clone for i32 { ... }`) exists for the given type parameters.
-    Instance(Instance<'tcx>),
+    Instance {
+        /// The id and substitution of the specific item found (e.g. the `clone` function in `impl Clone for i32`).
+        def: (DefId, GenericArgsRef<'tcx>),
+        /// The id and substitution of the impl block, if any.
+        impl_: Option<(DefId, GenericArgsRef<'tcx>)>,
+    },
     /// A known instance exists, but we don't know which one.
     UnknownFound,
     /// We don't know if an instance exists.
@@ -194,14 +199,6 @@ pub(crate) enum TraitResolved<'tcx> {
     /// For example, in `fn<T> f(x: T) { let _ = x.clone() }`, we  don't have an
     /// instance for `T::clone` until we know more about `T`.
     NoInstance,
-}
-
-#[derive(Debug)]
-pub(crate) struct Instance<'tcx> {
-    /// The id and substitution of the specific item found (e.g. the `clone` function in `impl Clone for i32`).
-    pub(crate) def: (DefId, GenericArgsRef<'tcx>),
-    /// The id and substitution of the impl block, if any.
-    pub(crate) impl_: Option<(DefId, GenericArgsRef<'tcx>)>,
 }
 
 impl<'tcx> TraitResolved<'tcx> {
@@ -324,18 +321,18 @@ impl<'tcx> TraitResolved<'tcx> {
 
                 let leaf_substs = tcx.erase_regions(substs);
 
-                TraitResolved::Instance(Instance {
+                TraitResolved::Instance {
                     def: (leaf_def.item.def_id, leaf_substs),
                     impl_: Some((impl_data.impl_def_id, impl_data.args)),
-                })
+                }
             }
             ImplSource::Param(_) => {
                 // Check whether the default impl from the trait def is sealed
                 if is_sealed(tcx, trait_item_def_id) {
-                    return TraitResolved::Instance(Instance {
+                    return TraitResolved::Instance {
                         def: (trait_item_def_id, substs),
                         impl_: None,
-                    });
+                    };
                 }
 
                 // TODO: we could try to explore the graph to determine if we can be sure
@@ -345,15 +342,12 @@ impl<'tcx> TraitResolved<'tcx> {
             }
             ImplSource::Builtin(_, _) => match *substs.type_at(0).kind() {
                 rustc_middle::ty::Closure(closure_def_id, closure_substs) => {
-                    TraitResolved::Instance(Instance {
-                        def: (closure_def_id, closure_substs),
-                        impl_: None,
-                    })
+                    TraitResolved::Instance { def: (closure_def_id, closure_substs), impl_: None }
                 }
-                rustc_middle::ty::Dynamic(_, _, _) => TraitResolved::Instance(Instance {
+                rustc_middle::ty::Dynamic(_, _, _) => TraitResolved::Instance {
                     def: (trait_item_def_id, trait_ref.args),
                     impl_: None,
-                }),
+                },
                 _ => unimplemented!(
                     "Cannot handle builtin implementation of `{}` for `{}`",
                     tcx.def_path_str(trait_ref.def_id),
@@ -363,13 +357,13 @@ impl<'tcx> TraitResolved<'tcx> {
         }
     }
 
-    pub fn to_opt(
+    pub(crate) fn to_opt(
         self,
         did: DefId,
         substs: GenericArgsRef<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
-            TraitResolved::Instance(inst) => Some(inst.def),
+            TraitResolved::Instance { def, impl_: _ } => Some(def),
             TraitResolved::NotATraitItem | TraitResolved::UnknownFound => Some((did, substs)),
             _ => None,
         }
