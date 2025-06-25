@@ -197,9 +197,11 @@ pub(crate) enum TraitResolved<'tcx> {
 }
 
 #[derive(Debug)]
-pub struct Instance<'tcx> {
-    pub def: (DefId, GenericArgsRef<'tcx>),
-    pub impl_: Option<(DefId, GenericArgsRef<'tcx>)>,
+pub(crate) struct Instance<'tcx> {
+    /// The id and substitution of the specific item found (e.g. the `clone` function in `impl Clone for i32`).
+    pub(crate) def: (DefId, GenericArgsRef<'tcx>),
+    /// The id and substitution of the impl block, if any.
+    pub(crate) impl_: Option<(DefId, GenericArgsRef<'tcx>)>,
 }
 
 impl<'tcx> TraitResolved<'tcx> {
@@ -348,7 +350,15 @@ impl<'tcx> TraitResolved<'tcx> {
                         impl_: None,
                     })
                 }
-                _ => unimplemented!(),
+                rustc_middle::ty::Dynamic(_, _, _) => TraitResolved::Instance(Instance {
+                    def: (trait_item_def_id, trait_ref.args),
+                    impl_: None,
+                }),
+                _ => unimplemented!(
+                    "Cannot handle builtin implementation of `{}` for `{}`",
+                    tcx.def_path_str(trait_ref.def_id),
+                    substs.type_at(0)
+                ),
             },
         }
     }
