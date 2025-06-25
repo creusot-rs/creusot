@@ -86,21 +86,25 @@ fn test_forall() {
                 ident: Ident {
                     sym: x,
                 },
-                colon_token: Colon,
-                ty: Type::Path {
-                    qself: None,
-                    path: Path {
-                        leading_colon: None,
-                        segments: [
-                            PathSegment {
-                                ident: Ident {
-                                    sym: u32,
-                                },
-                                arguments: PathArguments::None,
+                ty: Some(
+                    (
+                        Colon,
+                        Type::Path {
+                            qself: None,
+                            path: Path {
+                                leading_colon: None,
+                                segments: [
+                                    PathSegment {
+                                        ident: Ident {
+                                            sym: u32,
+                                        },
+                                        arguments: PathArguments::None,
+                                    },
+                                ],
                             },
-                        ],
-                    },
-                },
+                        },
+                    ),
+                ),
             },
         ],
         gt_token: Gt,
@@ -125,21 +129,25 @@ fn test_exists() {
                 ident: Ident {
                     sym: x,
                 },
-                colon_token: Colon,
-                ty: Type::Path {
-                    qself: None,
-                    path: Path {
-                        leading_colon: None,
-                        segments: [
-                            PathSegment {
-                                ident: Ident {
-                                    sym: u32,
-                                },
-                                arguments: PathArguments::None,
+                ty: Some(
+                    (
+                        Colon,
+                        Type::Path {
+                            qself: None,
+                            path: Path {
+                                leading_colon: None,
+                                segments: [
+                                    PathSegment {
+                                        ident: Ident {
+                                            sym: u32,
+                                        },
+                                        arguments: PathArguments::None,
+                                    },
+                                ],
                             },
-                        ],
-                    },
-                },
+                        },
+                    ),
+                ),
             },
         ],
         gt_token: Gt,
@@ -164,42 +172,50 @@ fn test_trigger() {
                 ident: Ident {
                     sym: x,
                 },
-                colon_token: Colon,
-                ty: Type::Path {
-                    qself: None,
-                    path: Path {
-                        leading_colon: None,
-                        segments: [
-                            PathSegment {
-                                ident: Ident {
-                                    sym: u32,
-                                },
-                                arguments: PathArguments::None,
+                ty: Some(
+                    (
+                        Colon,
+                        Type::Path {
+                            qself: None,
+                            path: Path {
+                                leading_colon: None,
+                                segments: [
+                                    PathSegment {
+                                        ident: Ident {
+                                            sym: u32,
+                                        },
+                                        arguments: PathArguments::None,
+                                    },
+                                ],
                             },
-                        ],
-                    },
-                },
+                        },
+                    ),
+                ),
             },
             Comma,
             QuantArg {
                 ident: Ident {
                     sym: y,
                 },
-                colon_token: Colon,
-                ty: Type::Path {
-                    qself: None,
-                    path: Path {
-                        leading_colon: None,
-                        segments: [
-                            PathSegment {
-                                ident: Ident {
-                                    sym: u32,
-                                },
-                                arguments: PathArguments::None,
+                ty: Some(
+                    (
+                        Colon,
+                        Type::Path {
+                            qself: None,
+                            path: Path {
+                                leading_colon: None,
+                                segments: [
+                                    PathSegment {
+                                        ident: Ident {
+                                            sym: u32,
+                                        },
+                                        arguments: PathArguments::None,
+                                    },
+                                ],
                             },
-                        ],
-                    },
-                },
+                        },
+                    ),
+                ),
             },
         ],
         gt_token: Gt,
