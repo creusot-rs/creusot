@@ -51,7 +51,7 @@ impl<I: Iterator> Iterator for Skip<I> {
             exists<s: Seq<Self::Item>, i: &mut I>
                    s.len() <= (*self).n()
                 && self.iter().produces(s, *i)
-                && (forall<i: Int> 0 <= i && i < s.len() ==> resolve(&s[i]))
+                && (forall<i> 0 <= i && i < s.len() ==> resolve(&s[i]))
                 && i.completed()
                 && ^i == (^self).iter()
         }
@@ -66,7 +66,7 @@ impl<I: Iterator> Iterator for Skip<I> {
             exists<s: Seq<Self::Item>>
                    s.len() == self.n()
                 && self.iter().produces(s.concat(visited), o.iter())
-                && forall<i: Int> 0 <= i && i < s.len() ==> resolve(&s[i])
+                && forall<i> 0 <= i && i < s.len() ==> resolve(&s[i])
         }
     }
 

@@ -268,7 +268,7 @@ impl<'arena> Invariant for Context<'arena> {
                     Some(n) => {
                         let b = Bdd (self.hashcons_ghost.get(bm), bm);
                         self.is_valid_bdd(n) && self.is_valid_bdd(b) &&
-                        (forall<v:_> n.interp(v) == !b.interp(v)) &&
+                        (forall<v> n.interp(v) == !b.interp(v)) &&
                         b.leastvar() <= n.leastvar()
                 }}) &&
             (forall<abm: (u64, u64)>
@@ -278,7 +278,7 @@ impl<'arena> Invariant for Context<'arena> {
                         let a = Bdd (self.hashcons_ghost.get(abm.0), abm.0);
                         let b = Bdd (self.hashcons_ghost.get(abm.1), abm.1);
                         self.is_valid_bdd(n) && self.is_valid_bdd(a) && self.is_valid_bdd(b) &&
-                        (forall<v:_> n.interp(v) == (a.interp(v) && b.interp(v))) &&
+                        (forall<v> n.interp(v) == (a.interp(v) && b.interp(v))) &&
                         (a.leastvar() <= n.leastvar() || b.leastvar() <= n.leastvar())
                 }})
         }
@@ -405,7 +405,7 @@ impl<'arena> Context<'arena> {
     #[requires(inv(self))]
     #[requires(self.is_valid_bdd(a))]
     #[requires(self.is_valid_bdd(b))]
-    #[requires(forall<v: _> a.interp(v) == b.interp(v))]
+    #[requires(forall<v> a.interp(v) == b.interp(v))]
     #[ensures(a == b)]
     #[allow(path_statements)]
     pub fn bdd_canonical(self, a: Bdd<'arena>, b: Bdd<'arena>) {
@@ -453,7 +453,7 @@ impl<'arena> Context<'arena> {
     #[requires(x@ < childt.leastvar() && x@ < childf.leastvar())]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> result.interp(v) == if v.get(x) { childt.interp(v) } else { childf.interp(v) })]
+    #[ensures(forall<v> result.interp(v) == if v.get(x) { childt.interp(v) } else { childf.interp(v) })]
     #[ensures(x@ <= result.leastvar())]
     fn node(&mut self, x: u64, childt: Bdd<'arena>, childf: Bdd<'arena>) -> Bdd<'arena> {
         if childt == childf {
@@ -464,7 +464,7 @@ impl<'arena> Context<'arena> {
 
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> result.interp(v))]
+    #[ensures(forall<v> result.interp(v))]
     #[ensures(u64::MAX@+1 == result.leastvar())]
     pub fn true_(&mut self) -> Bdd<'arena> {
         self.hashcons(True)
@@ -472,7 +472,7 @@ impl<'arena> Context<'arena> {
 
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> !result.interp(v))]
+    #[ensures(forall<v> !result.interp(v))]
     #[ensures(u64::MAX@+1 == result.leastvar())]
     pub fn false_(&mut self) -> Bdd<'arena> {
         self.hashcons(False)
@@ -480,7 +480,7 @@ impl<'arena> Context<'arena> {
 
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> result.interp(v) == v.get(x))]
+    #[ensures(forall<v> result.interp(v) == v.get(x))]
     pub fn v(&mut self, x: u64) -> Bdd<'arena> {
         let t = self.true_();
         let f = self.false_();
@@ -490,7 +490,7 @@ impl<'arena> Context<'arena> {
     #[requires(self.is_valid_bdd(x))]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> result.interp(v) == !x.interp(v))]
+    #[ensures(forall<v> result.interp(v) == !x.interp(v))]
     #[ensures(x.leastvar() <= result.leastvar())]
     #[variant(x.size())]
     pub fn not(&mut self, x: Bdd<'arena>) -> Bdd<'arena> {
@@ -514,7 +514,7 @@ impl<'arena> Context<'arena> {
     #[requires(self.is_valid_bdd(b))]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> result.interp(v) == (a.interp(v) && b.interp(v)))]
+    #[ensures(forall<v> result.interp(v) == (a.interp(v) && b.interp(v)))]
     #[ensures(a.leastvar() <= result.leastvar() || b.leastvar() <= result.leastvar())]
     #[variant(a.size() + b.size())]
     pub fn and(&mut self, a: Bdd<'arena>, b: Bdd<'arena>) -> Bdd<'arena> {

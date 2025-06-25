@@ -3,7 +3,7 @@ extern crate creusot_contracts;
 
 use creusot_contracts::{
     invariant::{Invariant, inv},
-    logic::{Int, Seq},
+    logic::Seq,
     *,
 };
 
@@ -38,7 +38,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self.inner@.len() == visited.len() + tl.inner@.len() &&
-            (forall<i:Int> 0 <= i && i < self.inner@.len() ==>
+            (forall<i> 0 <= i && i < self.inner@.len() ==>
                 *self.inner.to_mut_seq()[i] == *visited.concat(tl.inner.to_mut_seq())[i] &&
                 ^self.inner.to_mut_seq()[i] == ^visited.concat(tl.inner.to_mut_seq())[i]
             )
@@ -81,14 +81,14 @@ fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
 }
 
 #[ensures((^v)@.len() == v@.len())]
-#[ensures(forall<i : _> 0 <= i && i < v@.len() ==> (^v)[i]@ == 0)]
+#[ensures(forall<i> 0 <= i && i < v@.len() ==> (^v)[i]@ == 0)]
 pub fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v).into_iter();
     let iter_old = snapshot! { it };
     let mut produced = snapshot! { Seq::EMPTY };
     #[invariant(inv(it))]
     #[invariant(iter_old.produces(produced.inner(), it))]
-    #[invariant(forall<i : Int> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
+    #[invariant(forall<i> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
     loop {
         match it.next() {
             Some(x) => {

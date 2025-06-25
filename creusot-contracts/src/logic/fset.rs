@@ -282,7 +282,7 @@ impl<T> FSet<T> {
                 proof_assert! { forall<xs: Seq<T>> xs.len() == 0 ==> xs == Seq::EMPTY };
                 FSet::singleton(Seq::EMPTY)
             } else {
-                proof_assert! { forall<xs: Seq<T>, i: Int> 0 < i && i < xs.len() ==> xs[i] == xs.tail()[i-1] };
+                proof_assert! { forall<xs: Seq<T>, i> 0 < i && i < xs.len() ==> xs[i] == xs.tail()[i-1] };
                 FSet::cons(self, self.replicate(n - 1))
             }
         }

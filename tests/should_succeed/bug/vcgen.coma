@@ -1,7 +1,7 @@
 module M_vcgen__set_max [#"vcgen.rs" 9 0 9 35]
   let%span svcgen = "vcgen.rs" 5 11 5 24
   let%span svcgen'0 = "vcgen.rs" 7 10 7 28
-  let%span svcgen'1 = "vcgen.rs" 8 10 8 53
+  let%span svcgen'1 = "vcgen.rs" 8 10 8 49
   let%span svcgen'2 = "vcgen.rs" 6 10 6 17
   let%span svcgen'3 = "vcgen.rs" 10 4 10 21
   let%span sfset = "../../../creusot-contracts/src/logic/fset.rs" 47 8 47 26
@@ -10,28 +10,28 @@ module M_vcgen__set_max [#"vcgen.rs" 9 0 9 35]
   use set.Fset
   use mach.int.Int
   
-  predicate contains [@inline:trivial] (self : Fset.fset int) (e : int) =
+  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) =
     [%#sfset] Fset.mem e self
   
-  function remove [@inline:trivial] (self : Fset.fset int) (e : int) : Fset.fset int =
+  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int =
     [%#sfset'0] Fset.remove e self
   
   constant s  : Fset.fset int
   
-  function set_max [#"vcgen.rs" 9 0 9 35] (s'0 : Fset.fset int) : int
+  function set_max [#"vcgen.rs" 9 0 9 35] (s'0: Fset.fset int) : int
   
-  goal vc_set_max : ([%#svcgen] not Fset.is_empty s)
+  goal vc_set_max: ([%#svcgen] not Fset.is_empty s)
    -> (let x = Fset.pick s in let s'0 = remove s x in if Fset.is_empty s'0 then
-    let result = x in ([%#svcgen'0] contains s result) && ([%#svcgen'1] forall o : int . contains s o  -> o <= result)
+    let result = x in ([%#svcgen'0] contains s result) && ([%#svcgen'1] forall o: int. contains s o  -> o <= result)
   else
     (([@expl:set_max requires] [%#svcgen] not Fset.is_empty s'0)
     /\ 0 <= ([%#svcgen'2] Fset.cardinal s) /\ ([%#svcgen'2] Fset.cardinal s'0) < ([%#svcgen'2] Fset.cardinal s))
-    /\ (([%#svcgen'0] contains s'0 (set_max s'0)) && ([%#svcgen'1] forall o : int . contains s'0 o  -> o <= set_max s'0)
+    /\ (([%#svcgen'0] contains s'0 (set_max s'0)) && ([%#svcgen'1] forall o: int. contains s'0 o  -> o <= set_max s'0)
      -> (let rec' = set_max s'0 in if x >= rec' then
-      let result = x in ([%#svcgen'0] contains s result) && ([%#svcgen'1] forall o : int . contains s o  -> o <= result)
+      let result = x in ([%#svcgen'0] contains s result) && ([%#svcgen'1] forall o: int. contains s o  -> o <= result)
     else
       let result = rec' in ([%#svcgen'0] contains s result)
-      && ([%#svcgen'1] forall o : int . contains s o  -> o <= result)
+      && ([%#svcgen'1] forall o: int. contains s o  -> o <= result)
     ))
   )
 end

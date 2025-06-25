@@ -31,7 +31,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     #[logic]
     #[trusted]
     #[ensures(self.view().len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < self.view().len()
+    #[ensures(forall<i> 0 <= i && i < self.view().len()
               ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         dead
@@ -43,7 +43,7 @@ impl<T, A: Allocator> Resolve for Vec<T, A> {
     #[open]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
+        pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
     }
 
     #[trusted]
@@ -76,7 +76,7 @@ extern_spec! {
                 #[ensures(result@.len() == 0)]
                 fn with_capacity(capacity: usize) -> Vec<T>;
             }
-            impl<T, A : Allocator> Vec<T, A> {
+            impl<T, A: Allocator> Vec<T, A> {
                 #[pure]
                 #[ensures(result@ == self@.len())]
                 fn len(&self) -> usize;
@@ -103,9 +103,9 @@ extern_spec! {
 
                 #[terminates] // can OOM
                 #[ensures((^self)@.len() == self@.len() + 1)]
-                #[ensures(forall<i: Int> 0 <= i && i < index@ ==> (^self)[i] == self[i])]
+                #[ensures(forall<i> 0 <= i && i < index@ ==> (^self)[i] == self[i])]
                 #[ensures((^self)[index@] == element)]
-                #[ensures(forall<i: Int> index@ < i && i < (^self)@.len() ==> (^self)[i] == self[i - 1])]
+                #[ensures(forall<i> index@ < i && i < (^self)@.len() ==> (^self)[i] == self[i - 1])]
                 fn insert(&mut self, index: usize, element: T);
 
                 #[pure]
@@ -133,19 +133,19 @@ extern_spec! {
                 fn clear(&mut self);
             }
 
-            impl<T, A : Allocator> Extend<T> for Vec<T, A> {
+            impl<T, A: Allocator> Extend<T> for Vec<T, A> {
                 #[requires(I::into_iter.precondition((iter,)))]
-                #[ensures(exists<start_ : I::IntoIter, done : &mut I::IntoIter, prod: Seq<T>>
+                #[ensures(exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
                     inv(start_) && inv(done) && inv(prod) &&
                     I::into_iter.postcondition((iter,), start_) &&
                     done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
                 )]
                 fn extend<I>(&mut self, iter: I)
                 where
-                    I : IntoIterator<Item = T>, I::IntoIter : Iterator;
+                    I: IntoIterator<Item = T>, I::IntoIter: Iterator;
             }
 
-            impl<T, I : SliceIndex<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
+            impl<T, I: SliceIndex<[T]>, A: Allocator> IndexMut<I> for Vec<T, A> {
                 #[pure]
                 #[requires(ix.in_bounds(self@))]
                 #[ensures(ix.has_value(self@, *result))]
@@ -155,20 +155,20 @@ extern_spec! {
                 fn index_mut(&mut self, ix: I) -> &mut <Vec<T, A> as Index<I>>::Output;
             }
 
-            impl<T, I : SliceIndex<[T]>, A : Allocator> Index<I> for Vec<T, A> {
+            impl<T, I: SliceIndex<[T]>, A: Allocator> Index<I> for Vec<T, A> {
                 #[pure]
                 #[requires(ix.in_bounds(self@))]
                 #[ensures(ix.has_value(self@, *result))]
                 fn index(&self, ix: I) -> & <Vec<T, A> as Index<I>>::Output;
             }
 
-            impl<T, A : Allocator> Deref for Vec<T, A> {
+            impl<T, A: Allocator> Deref for Vec<T, A> {
                 #[pure]
                 #[ensures(result@ == self@)]
                 fn deref(&self) -> &[T];
             }
 
-            impl<T, A : Allocator> DerefMut for Vec<T, A> {
+            impl<T, A: Allocator> DerefMut for Vec<T, A> {
                 #[pure]
                 #[ensures(result@ == self@)]
                 #[ensures((^result)@ == (^self)@)]
@@ -176,8 +176,8 @@ extern_spec! {
             }
 
             #[ensures(result@.len() == n@)]
-            #[ensures(forall<i : Int> 0 <= i && i < n@ ==> result[i] == elem)]
-            fn from_elem<T : Clone>(elem : T, n : usize) -> Vec<T>;
+            #[ensures(forall<i> 0 <= i && i < n@ ==> result[i] == elem)]
+            fn from_elem<T: Clone>(elem: T, n: usize) -> Vec<T>;
         }
     }
 
@@ -218,7 +218,7 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     #[open]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> resolve(&self@[i]) }
+        pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(&self@[i]) }
     }
 
     #[trusted]

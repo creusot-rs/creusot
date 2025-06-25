@@ -7,7 +7,7 @@ use creusot_contracts::{logic::Int, *};
 fn match_at(needle: &Vec<u8>, haystack: &Vec<u8>, pos: Int, len: Int) -> bool {
     pearlite! { len <= needle@.len()
       && pos <= haystack@.len() - len
-      && forall<i: Int>
+      && forall<i>
           0 <= i && i < len ==> needle[i] == haystack[pos + i]
     }
 }
@@ -16,10 +16,10 @@ fn match_at(needle: &Vec<u8>, haystack: &Vec<u8>, pos: Int, len: Int) -> bool {
 #[ensures(result@ == haystack@.len() || result@ < haystack@.len() - needle@.len() + 1)]
 #[ensures(result@ < haystack@.len() ==>
             match_at(needle, haystack, result@, needle@.len())
-             && (forall <i: Int> 0 <= i && i < result@ ==> ! match_at(needle, haystack, i, needle@.len())))]
-#[ensures(result@ == haystack@.len() ==> forall <i: Int> 0 <= i && i < haystack@.len() ==> ! match_at(needle, haystack, i, needle@.len()))]
+             && (forall <i> 0 <= i && i < result@ ==> ! match_at(needle, haystack, i, needle@.len())))]
+#[ensures(result@ == haystack@.len() ==> forall <i> 0 <= i && i < haystack@.len() ==> ! match_at(needle, haystack, i, needle@.len()))]
 pub fn search(needle: &Vec<u8>, haystack: &Vec<u8>) -> usize {
-    #[invariant(forall<k: Int> 0 <= k && k < produced.len() ==> ! match_at(needle, haystack, k, needle@.len()))]
+    #[invariant(forall<k> 0 <= k && k < produced.len() ==> ! match_at(needle, haystack, k, needle@.len()))]
     'a: for i in 0..=haystack.len() - needle.len() {
         #[invariant(match_at(needle, haystack, i@, produced.len()))]
         for j in 0..needle.len() {

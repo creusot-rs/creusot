@@ -8,7 +8,7 @@ use creusot_contracts::{
 #[predicate]
 fn sorted_range<T: OrdLogic>(s: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
-        forall<i : Int, j : Int> l <= i && i < j && j < u ==> s[i] <= s[j]
+        forall<i, j> l <= i && i < j && j < u ==> s[i] <= s[j]
     }
 }
 

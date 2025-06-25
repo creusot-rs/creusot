@@ -5,7 +5,7 @@ use rustc_mir_dataflow::{self as dataflow, Analysis, ResultsCursor};
 #[derive(Debug, Copy, Clone)]
 pub enum ExtendedLocation {
     Start(Location), // Before the statement
-    Mid(Location), // For assignments and calls : after the RHS is computed, but before the LHS is written to
+    Mid(Location), // For assignments and calls: after the RHS is computed, but before the LHS is written to
     End(Location), // After the statement
 }
 

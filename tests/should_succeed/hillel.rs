@@ -12,16 +12,16 @@ use creusot_contracts::{
 #[ensures((^str)@.len() == len@ || (^str)@.len() == str@.len())]
 #[ensures(len@ <= str@.len() ==> (^str)@.len() == str@.len())]
 #[ensures(len@ > str@.len() ==> (^str)@.len() == len@)]
-#[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)[i] == str[i])]
-#[ensures(forall<i: Int> str@.len() <= i && i < len@ ==> (^str)[i] == pad)]
+#[ensures(forall<i> 0 <= i && i < str@.len() ==> (^str)[i] == str[i])]
+#[ensures(forall<i> str@.len() <= i && i < len@ ==> (^str)[i] == pad)]
 fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = snapshot! { str };
 
     #[invariant(old_str@.len() <= str@.len())]
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
     #[invariant(str@.len() > len@ ==> str@.len() == old_str@.len())]
-    #[invariant(forall<i: Int> 0 <= i && i < old_str@.len() ==> str[i] == old_str[i])]
-    #[invariant(forall<i: Int> old_str@.len() <= i && i < str@.len() ==> str[i] == pad)]
+    #[invariant(forall<i> 0 <= i && i < old_str@.len() ==> str[i] == old_str[i])]
+    #[invariant(forall<i> old_str@.len() <= i && i < str@.len() ==> str[i] == pad)]
     while str.len() < len {
         str.push(pad);
     }
@@ -29,8 +29,8 @@ fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
 
 #[ensures((^str)@.len() >= len@ && (^str)@.len() >= str@.len())]
 #[ensures((^str)@.len() == len@ || (^str)@.len() == str@.len())]
-#[ensures(forall<i: Int> 0 <= i && i < ((^str)@.len() - str@.len()) ==> (^str)[i] == pad)]
-#[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)[i + ((^str)@.len() - str@.len())] == str[i])]
+#[ensures(forall<i> 0 <= i && i < ((^str)@.len() - str@.len()) ==> (^str)[i] == pad)]
+#[ensures(forall<i> 0 <= i && i < str@.len() ==> (^str)[i + ((^str)@.len() - str@.len())] == str[i])]
 fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = snapshot! { str };
     let mut c: Snapshot<Int> = snapshot! { 0 };
@@ -39,8 +39,8 @@ fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
     #[invariant(str@.len() > len@ ==> str@.len() == old_str@.len())]
     #[invariant(*c == str@.len() - old_str@.len())]
-    #[invariant(forall<i: Int> *c <= i && i < str@.len() ==> str[i] == old_str[i - *c])]
-    #[invariant(forall<i: Int> 0 <= i && i < *c ==> str[i] == pad)]
+    #[invariant(forall<i> *c <= i && i < str@.len() ==> str[i] == old_str[i - *c])]
+    #[invariant(forall<i> 0 <= i && i < *c ==> str[i] == pad)]
     while str.len() < len {
         str.insert(0, pad);
         c = snapshot! { 1 + *c };
@@ -50,21 +50,21 @@ fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
 #[predicate]
 fn is_unique<T>(s: Seq<T>) -> bool {
     pearlite! {
-        forall<i: Int, j :Int> 0 <= i && i < s.len() && 0 <= j && j < s.len() ==> s[i] == s[j] ==> i == j
+        forall<i, j> 0 <= i && i < s.len() && 0 <= j && j < s.len() ==> s[i] == s[j] ==> i == j
     }
 }
 
 #[predicate]
 fn contains<T>(seq: Seq<T>, elem: T) -> bool {
     pearlite! {
-        exists<i: Int> 0 <= i && i < seq.len() && seq[i] == elem
+        exists<i> 0 <= i && i < seq.len() && seq[i] == elem
     }
 }
 
 #[predicate]
 fn is_subset<T>(sub: Seq<T>, sup: Seq<T>) -> bool {
     pearlite! {
-        forall<i: Int> 0 <= i && i < sub.len() ==> contains(sup, sub[i])
+        forall<i> 0 <= i && i < sub.len() ==> contains(sup, sub[i])
     }
 }
 
@@ -82,7 +82,7 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
     proof_assert! { is_subset(vec.deep_model(), vec.deep_model().push_back(elem.deep_model())) };
     let ghost_vec = snapshot! { vec };
 
-    #[invariant(forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
+    #[invariant(forall<j> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
     for e in vec.iter() {
         proof_assert! { *e == ghost_vec[produced.len()-1] };
         if e == &elem {
@@ -155,7 +155,7 @@ fn score(seq: Seq<u32>, i: Int) -> Int {
 #[requires(sum_range(s@, 0, s@.len()) <= 1000)]
 #[requires(s@.len() > 0)]
 #[ensures(0 <= result@ && result@ < s@.len())]
-#[ensures(forall<i: Int> 0 <= i && i < s@.len() ==> score(s@, result@) <= score(s@, i))]
+#[ensures(forall<i> 0 <= i && i < s@.len() ==> score(s@, result@) <= score(s@, i))]
 fn fulcrum(s: &[u32]) -> usize {
     let mut total: u32 = 0;
 
@@ -175,7 +175,7 @@ fn fulcrum(s: &[u32]) -> usize {
     #[invariant(sum@ <= total@)]
     #[invariant(min_i@ <= produced.len() && min_i@ < s@.len())]
     #[invariant(min_dist@ == score(s@, min_i@))]
-    #[invariant(forall<j: Int> 0 <= j && j < produced.len() ==> score(s@, min_i@) <= score(s@, j))]
+    #[invariant(forall<j> 0 <= j && j < produced.len() ==> score(s@, min_i@) <= score(s@, j))]
     for i in 0..s.len() {
         let dist = sum.abs_diff(total - sum);
         if dist < min_dist {

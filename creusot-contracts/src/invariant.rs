@@ -44,7 +44,7 @@ use ::std::ops::{Deref, DerefMut};
 /// Examples:
 /// - `x: (T, U)` -> `inv(x.0) && inv(x.1)`
 /// - `x: &T` -> `inv(*x)`
-/// - `x: Vec<T>` -> `forall<i: Int> 0 <= i && i < x@.len() ==> inv(x@[i])`
+/// - `x: Vec<T>` -> `forall<i> 0 <= i && i < x@.len() ==> inv(x@[i])`
 ///
 /// This does not prevent the type to additionnaly implement the `Invariant` trait.
 ///

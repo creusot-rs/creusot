@@ -5,7 +5,7 @@ use creusot_contracts::*;
 #[predicate]
 fn sorted_range<T: OrdLogic>(s: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
-        forall<i: Int, j :Int> l <= i && i < j && j < u ==> s[i] <= s[j]
+        forall<i, j> l <= i && i < j && j < u ==> s[i] <= s[j]
     }
 }
 
@@ -29,8 +29,8 @@ pub fn insertion_sort(array: &mut [i32]) {
         #[invariant(j <= i)]
         #[invariant(array@.len() == n@)]
         #[invariant(original@.permutation_of(array@))]
-        #[invariant(forall< a : Int, b : Int> 0 <= a && a <= b && b <= i@ ==> a != j@ ==> b != j@ ==> array[a] <= array[b])]
-        #[invariant(forall< a : _> j@ + 1 <= a && a <= i@ ==> array[j] < array[a])]
+        #[invariant(forall<a, b> 0 <= a && a <= b && b <= i@ ==> a != j@ ==> b != j@ ==> array[a] <= array[b])]
+        #[invariant(forall<a> j@ + 1 <= a && a <= i@ ==> array[j] < array[a])]
         while j > 0 {
             if array[j - 1] > array[j] {
                 array.swap(j - 1, j);

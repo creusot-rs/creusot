@@ -84,9 +84,9 @@ struct Scope {
     /// generates
     ///
     /// ```ignore
-    /// constant x : usize
-    /// function f (x : usize) : ()    (* x is shadowed here (also unused) *)
-    /// goal vc_f : ... POST(f(x-1)) -> POST(...)
+    /// constant x: usize
+    /// function f (x: usize): ()    (* x is shadowed here (also unused) *)
+    /// goal vc_f: ... POST(f(x-1)) -> POST(...)
     /// ```
     ///
     /// I don't know if it's the only place to fix; we can probably avoid shadowing if we really want to.
@@ -401,7 +401,7 @@ impl Print for Axiom {
         alloc
             .text("axiom ")
             .append(self.name.pretty_value_name(alloc, scope))
-            .append(if self.rewrite { " [@rewrite] : " } else { " : " })
+            .append(if self.rewrite { " [@rewrite]: " } else { ": " })
             .append(self.axiom.pretty(alloc, scope))
     }
 }
@@ -419,7 +419,7 @@ impl Print for Goal {
         alloc
             .text("goal ")
             .append(self.name.pretty_value_name(alloc, scope))
-            .append(" : ")
+            .append(": ")
             .append(self.goal.pretty(alloc, scope))
     }
 }
@@ -439,7 +439,7 @@ impl Print for declaration::Constant {
             alloc,
             "constant ",
             self.name.pretty_value_name(alloc, scope),
-            " : ",
+            ": ",
             self.type_.pretty(alloc, scope),
             match &self.body {
                 Some(b) => alloc.text(" = ").append(b.pretty(alloc, scope)),
@@ -552,7 +552,7 @@ where
     A::Doc: Clone,
 {
     scope.bind_value(*id);
-    id.pretty_value_name(alloc, scope).append(" : ").append(ty.pretty(alloc, scope)).parens()
+    id.pretty_value_name(alloc, scope).append(": ").append(ty.pretty(alloc, scope)).parens()
 }
 
 impl Print for LogicDefn {
@@ -889,7 +889,7 @@ impl Print for Exp {
                     binders.iter().map(|(b, t)| {
                         scope.bind_value(*b);
                         b.pretty_value_name(alloc, scope)
-                            .append(" : ")
+                            .append(": ")
                             .append(t.pretty(alloc, scope))
                     }),
                     ", ",
@@ -904,7 +904,7 @@ impl Print for Exp {
                         .append("]");
                 }
 
-                let doc = res.append(" . ").append(exp.pretty(alloc, scope));
+                let doc = res.append(". ").append(exp.pretty(alloc, scope));
                 scope.close();
                 doc
             }
@@ -914,7 +914,7 @@ impl Print for Exp {
                     binders.iter().map(|(b, t)| {
                         scope.bind_value(*b);
                         b.pretty_value_name(alloc, scope)
-                            .append(" : ")
+                            .append(": ")
                             .append(t.pretty(alloc, scope))
                     }),
                     ", ",
@@ -929,7 +929,7 @@ impl Print for Exp {
                         .append("]");
                 }
 
-                let doc = res.append(" . ").append(exp.pretty(alloc, scope));
+                let doc = res.append(". ").append(exp.pretty(alloc, scope));
                 scope.close();
                 doc
             }
@@ -944,7 +944,7 @@ impl Print for Exp {
                 hyp.append(impl_)
             }
             Exp::Ascribe(e, t) => {
-                parens!(alloc, scope, self, e).append(" : ").append(t.pretty(alloc, scope)).group()
+                parens!(alloc, scope, self, e).append(": ").append(t.pretty(alloc, scope)).group()
             }
             Exp::RecUp { record, updates } => {
                 alloc
@@ -1020,7 +1020,7 @@ impl Print for Binder {
                                 }),
                                 alloc.space(),
                             )
-                            .append(" : ")
+                            .append(": ")
                             .append(ty.pretty(alloc, scope)),
                     )
                     .parens()
@@ -1183,14 +1183,14 @@ impl Print for Constant {
             }
             Constant::Char(c, t) => {
                 let c = *c as u32;
-                alloc.as_string(c).append(" : ").append(t.pretty(alloc, scope)).parens()
+                alloc.as_string(c).append(": ").append(t.pretty(alloc, scope)).parens()
             }
             Constant::Int(i, Some(t)) => {
-                alloc.as_string(i).append(" : ").append(t.pretty(alloc, scope)).parens()
+                alloc.as_string(i).append(": ").append(t.pretty(alloc, scope)).parens()
             }
             Constant::Int(i, None) => alloc.as_string(i),
             Constant::Uint(i, Some(t)) => {
-                alloc.as_string(i).append(" : ").append(t.pretty(alloc, scope)).parens()
+                alloc.as_string(i).append(": ").append(t.pretty(alloc, scope)).parens()
             }
             Constant::String(s) => alloc.text(format!("{s:?}")),
             Constant::Uint(i, None) => alloc.as_string(i),
@@ -1205,7 +1205,7 @@ impl Print for Constant {
             Constant::Float(f, Some(t)) => {
                 assert!(f.is_finite());
                 let f_str = print_float(*f);
-                alloc.text(f_str).append(" : ").append(t.pretty(alloc, scope)).parens()
+                alloc.text(f_str).append(": ").append(t.pretty(alloc, scope)).parens()
             }
         }
     }

@@ -45,14 +45,14 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
         pearlite! {
             self.func.hist_inv(succ.func)
             && exists<fs: Seq<&mut F>> fs.len() == visited.len()
-            && exists<s : Seq<I::Item>>
+            && exists<s: Seq<I::Item>>
                 #![trigger self.iter.produces(s, succ.iter)]
                 s.len() == visited.len() && self.iter.produces(s, succ.iter)
             && succ.produced.inner() == self.produced.concat(s)
-            && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
+            && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
             && if visited.len() == 0 { self.func == succ.func }
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
-            && forall<i : Int> 0 <= i && i < visited.len() ==>
+            && forall<i> 0 <= i && i < visited.len() ==>
                  self.func.hist_inv(*fs[i])
                  && (*fs[i]).precondition((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))))
                  && (*fs[i]).postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
@@ -169,7 +169,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant f
     }
 }
 
-#[requires(forall<e : I::Item, i2 : I>
+#[requires(forall<e: I::Item, i2: I>
                 iter.produces(Seq::singleton(e), i2) ==>
                 func.precondition((e, Snapshot::new(Seq::EMPTY))))]
 #[requires(Map::<I, F>::reinitialize())]
@@ -186,21 +186,21 @@ pub fn identity<I: Iterator>(iter: I) {
     map(iter, |x, _| x);
 }
 
-#[requires(forall<done : &mut U> done.completed() ==> forall<next : U, steps: Seq<_>> (^done).produces(steps, next) ==> steps == Seq::EMPTY && ^done == next)]
-#[requires(forall<prod : _, fin: U> iter.produces(prod, fin) ==>
-    forall<x : _> 0 <= x && x < prod.len() ==> prod[x] <= 10u32
+#[requires(forall<done: &mut U> done.completed() ==> forall<next, steps> (^done).produces(steps, next) ==> steps == Seq::EMPTY && ^done == next)]
+#[requires(forall<prod, fin> iter.produces(prod, fin) ==>
+    forall<x> 0 <= x && x < prod.len() ==> prod[x] <= 10u32
 )]
 pub fn increment<U: Iterator<Item = u32>>(iter: U) {
     let i = map(iter, |x: u32, _| x + 1);
 
     proof_assert! {
-        forall<prod : _, fin: Map< _, _>> i.produces(prod, fin) ==>
-            forall<x : _> 0 <= x && x < prod.len() ==> prod[x] <= 11u32
+        forall<prod, fin> i.produces(prod, fin) ==>
+            forall<x> 0 <= x && x < prod.len() ==> prod[x] <= 11u32
     };
 }
 
-#[requires(forall<done : &mut I> done.completed() ==> forall<next : I, steps: Seq<_>> (^done).produces(steps, next) ==> steps == Seq::EMPTY && ^done == next)]
-#[requires(forall<prod : _, fin: I> iter.produces(prod, fin) ==> prod.len() <= usize::MAX@)]
+#[requires(forall<done: &mut I> done.completed() ==> forall<next, steps> (^done).produces(steps, next) ==> steps == Seq::EMPTY && ^done == next)]
+#[requires(forall<prod, fin> iter.produces(prod, fin) ==> prod.len() <= usize::MAX@)]
 pub fn counter<I: Iterator<Item = u32>>(iter: I) {
     let mut cnt: usize = 0;
     map(iter, |x, _prod: Snapshot<Seq<_>>| {

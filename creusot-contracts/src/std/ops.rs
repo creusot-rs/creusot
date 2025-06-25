@@ -172,19 +172,19 @@ impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
 extern_spec! {
     mod std {
         mod ops {
-            trait FnOnce<Args> where Args : Tuple {
+            trait FnOnce<Args> where Args: Tuple {
                 #[requires(self.precondition(arg))]
                 #[ensures(self.postcondition_once(arg, result))]
                 fn call_once(self, arg: Args) -> Self::Output;
             }
 
-            trait FnMut<Args> where Args : Tuple {
+            trait FnMut<Args> where Args: Tuple {
                 #[requires((*self).precondition(arg))]
                 #[ensures((*self).postcondition_mut(arg, ^self, result))]
                 fn call_mut(&mut self, arg: Args) -> Self::Output;
             }
 
-            trait Fn<Args> where Args : Tuple {
+            trait Fn<Args> where Args: Tuple {
                 #[requires((*self).precondition(arg))]
                 #[ensures((*self).postcondition(arg, result))]
                 fn call(&self, arg: Args) -> Self::Output;
@@ -249,7 +249,7 @@ extern_spec! {
                 fn end(&self) -> &Idx;
             }
 
-            impl<Idx : PartialOrd<Idx> + DeepModel> RangeInclusive<Idx>
+            impl<Idx: PartialOrd<Idx> + DeepModel> RangeInclusive<Idx>
             where Idx::DeepModelTy: OrdLogic
             {
                 #[ensures(result == self.is_empty_log())]
@@ -262,14 +262,14 @@ extern_spec! {
 extern_spec! {
     mod std {
         mod ops {
-            trait IndexMut<Idx>  where Idx : ?Sized, Self : ?Sized {
+            trait IndexMut<Idx>  where Idx: ?Sized, Self: ?Sized {
                 #[requires(false)]
-                fn index_mut(&mut self, ix : Idx) -> &mut Self::Output;
+                fn index_mut(&mut self, ix: Idx) -> &mut Self::Output;
             }
 
-            trait Index<Idx>  where Idx : ?Sized,  Self : ?Sized {
+            trait Index<Idx>  where Idx: ?Sized,  Self: ?Sized {
                 #[requires(false)]
-                fn index(&self, ix : Idx) -> &Self::Output;
+                fn index(&self, ix: Idx) -> &Self::Output;
             }
         }
     }

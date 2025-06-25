@@ -46,46 +46,46 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
   
   type t_F
   
-  predicate precondition (self : t_F) (args : ())
+  predicate precondition (self: t_F) (args: ())
   
-  predicate inv (_0 : t_F)
+  predicate inv (_0: t_F)
   
-  function deep_model (self : Int32.t) : int =
+  function deep_model (self: Int32.t) : int =
     [%#snum] Int32.to_int self
   
-  predicate produces (self : t_Range) (visited : Seq.seq Int32.t) (o : t_Range) =
+  predicate produces (self: t_Range) (visited: Seq.seq Int32.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end
     /\ deep_model self.t_Range__start <= deep_model o.t_Range__start
     /\ (Seq.length visited > 0  -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
     /\ Seq.length visited = deep_model o.t_Range__start - deep_model self.t_Range__start
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
      -> deep_model (Seq.get visited i) = deep_model self.t_Range__start + i)
   
-  function produces_trans (a : t_Range) (ab : Seq.seq Int32.t) (b : t_Range) (bc : Seq.seq Int32.t) (c : t_Range) : ()
+  function produces_trans (a: t_Range) (ab: Seq.seq Int32.t) (b: t_Range) (bc: Seq.seq Int32.t) (c: t_Range) : ()
   
-  axiom produces_trans_spec : forall a : t_Range, ab : Seq.seq Int32.t, b : t_Range, bc : Seq.seq Int32.t, c : t_Range . ([%#srange'1] produces a ab b)
+  axiom produces_trans_spec: forall a: t_Range, ab: Seq.seq Int32.t, b: t_Range, bc: Seq.seq Int32.t, c: t_Range. ([%#srange'1] produces a ab b)
    -> ([%#srange'2] produces b bc c)  -> ([%#srange'3] produces a (Seq.(++) ab bc) c)
   
-  function produces_refl (self : t_Range) : ()
+  function produces_refl (self: t_Range) : ()
   
-  axiom produces_refl_spec : forall self : t_Range . [%#srange'0] produces self (Seq.empty : Seq.seq Int32.t) self
+  axiom produces_refl_spec: forall self: t_Range. [%#srange'0] produces self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate inv'0 (_0 : t_Range)
+  predicate inv'0 (_0: t_Range)
   
-  axiom inv_axiom [@rewrite] : forall x : t_Range [inv'0 x] . inv'0 x = true
+  axiom inv_axiom [@rewrite]: forall x: t_Range [inv'0 x]. inv'0 x = true
   
-  predicate inv'1 (_0 : Seq.seq Int32.t)
+  predicate inv'1 (_0: Seq.seq Int32.t)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : Seq.seq Int32.t [inv'1 x] . inv'1 x = true
+  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq Int32.t [inv'1 x]. inv'1 x = true
   
   type t_Option  =
     | C_None
     | C_Some Int32.t
   
-  predicate resolve (self : MutBorrow.t t_Range) =
+  predicate resolve (self: MutBorrow.t t_Range) =
     [%#sresolve] self.final = self.current
   
-  predicate completed (self : MutBorrow.t t_Range) =
+  predicate completed (self: MutBorrow.t t_Range) =
     [%#srange'4] resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
   
   let rec next (self_:MutBorrow.t t_Range) (return'  (x:t_Option))= any
@@ -96,46 +96,46 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
       (! return' {result}) ]
   
   
-  predicate resolve'0 (_0 : MutBorrow.t t_Range) =
+  predicate resolve'0 (_0: MutBorrow.t t_Range) =
     resolve _0
   
   let rec v_Some (input:t_Option) (ret  (field_0:Int32.t))= any
     [ good (field_0:Int32.t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : Int32.t [C_Some field_0 : t_Option] . C_Some field_0 <> input} (! {false} any) ]
+    | bad -> {forall field_0: Int32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
   
-  predicate invariant' (self : MutBorrow.t t_F) =
+  predicate invariant' (self: MutBorrow.t t_F) =
     [%#sinvariant] inv self.current /\ inv self.final
   
-  predicate inv'2 (_0 : MutBorrow.t t_F)
+  predicate inv'2 (_0: MutBorrow.t t_F)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_F [inv'2 x] . inv'2 x = invariant' x
+  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_F [inv'2 x]. inv'2 x = invariant' x
   
-  predicate postcondition_once (self : t_F) (args : ()) (result : ())
+  predicate postcondition_once (self: t_F) (args: ()) (result: ())
   
-  predicate resolve'1 (_0 : t_F)
+  predicate resolve'1 (_0: t_F)
   
-  predicate postcondition_mut (self : t_F) (args : ()) (result_state : t_F) (result : ())
+  predicate postcondition_mut (self: t_F) (args: ()) (result_state: t_F) (result: ())
   
-  function fn_mut_once (self : t_F) (args : ()) (res : ()) : ()
+  function fn_mut_once (self: t_F) (args: ()) (res: ()) : ()
   
-  axiom fn_mut_once_spec : forall self : t_F, args : (), res : () . [%#sops'8] postcondition_once self args res
-  = (exists res_state : t_F . postcondition_mut self args res_state res /\ resolve'1 res_state)
+  axiom fn_mut_once_spec: forall self: t_F, args: (), res: (). [%#sops'8] postcondition_once self args res
+  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve'1 res_state)
   
-  predicate hist_inv (self : t_F) (result_state : t_F)
+  predicate hist_inv (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self : t_F) (b : t_F) (c : t_F) : ()
+  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec : forall self : t_F, b : t_F, c : t_F . ([%#sops'5] hist_inv self b)
+  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'5] hist_inv self b)
    -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
   
-  function hist_inv_refl (self : t_F) : ()
+  function hist_inv_refl (self: t_F) : ()
   
-  axiom hist_inv_refl_spec : forall self : t_F . [%#sops'4] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: t_F. [%#sops'4] hist_inv self self
   
-  function postcondition_mut_hist_inv (self : t_F) (args : ()) (res_state : t_F) (res : ()) : ()
+  function postcondition_mut_hist_inv (self: t_F) (args: ()) (res_state: t_F) (res: ()) : ()
   
-  axiom postcondition_mut_hist_inv_spec : forall self : t_F, args : (), res_state : t_F, res : () . ([%#sops'2] postcondition_mut self args res_state res)
+  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: (), res_state: t_F, res: (). ([%#sops'2] postcondition_mut self args res_state res)
    -> ([%#sops'3] hist_inv self res_state)
   
   let rec call_mut (self_:MutBorrow.t t_F) (arg:()) (return'  (x:()))= {[@expl:call_mut 'self_' type invariant] [%#sops] inv'2 self_}
@@ -151,12 +151,12 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
     (! bb0
     [ bb0 = bb1
     | bb1 = s0
-      [ s0 =  [ &_4 <- { t_Range__start = ([%#s1410] (0 : Int32.t)); t_Range__end = ([%#s1410'0] (1 : Int32.t)) } ] s1
+      [ s0 =  [ &_4 <- { t_Range__start = ([%#s1410] (0: Int32.t)); t_Range__end = ([%#s1410'0] (1: Int32.t)) } ] s1
       | s1 = into_iter {_4} (fun (_ret:t_Range) ->  [ &iter <- _ret ] s2)
       | s2 = bb2 ]
     
     | bb2 = s0 [ s0 =  [ &iter_old <- [%#s1410'1] iter ] s1 | s1 = bb3 ] 
-    | bb3 = s0 [ s0 =  [ &produced <- [%#s1410'2] Seq.empty : Seq.seq Int32.t ] s1 | s1 = bb4 ] 
+    | bb3 = s0 [ s0 =  [ &produced <- [%#s1410'2] Seq.empty: Seq.seq Int32.t ] s1 | s1 = bb4 ] 
     | bb4 = bb5
     | bb5 = bb5'0
       [ bb5'0 = {[@expl:for invariant] [%#s1410'5] inv'1 produced}
@@ -199,19 +199,19 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
     | bb12 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve'1 f'0}- s2 | s2 = bb16 ] 
     | bb16 = return''0 {_0} ]
     )
-    [ & _0 : () = Any.any_l ()
-    | & f'0 : t_F = f
-    | & iter : t_Range = Any.any_l ()
-    | & _4 : t_Range = Any.any_l ()
-    | & iter_old : t_Range = Any.any_l ()
-    | & produced : Seq.seq Int32.t = Any.any_l ()
-    | & _16 : t_Option = Any.any_l ()
-    | & _17 : MutBorrow.t t_Range = Any.any_l ()
-    | & _18 : MutBorrow.t t_Range = Any.any_l ()
-    | & __creusot_proc_iter_elem : Int32.t = Any.any_l ()
-    | & _21 : Seq.seq Int32.t = Any.any_l ()
-    | & _23 : () = Any.any_l ()
-    | & _24 : MutBorrow.t t_F = Any.any_l ()
-    | & _25 : () = Any.any_l () ]
+    [ & _0: () = Any.any_l ()
+    | & f'0: t_F = f
+    | & iter: t_Range = Any.any_l ()
+    | & _4: t_Range = Any.any_l ()
+    | & iter_old: t_Range = Any.any_l ()
+    | & produced: Seq.seq Int32.t = Any.any_l ()
+    | & _16: t_Option = Any.any_l ()
+    | & _17: MutBorrow.t t_Range = Any.any_l ()
+    | & _18: MutBorrow.t t_Range = Any.any_l ()
+    | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
+    | & _21: Seq.seq Int32.t = Any.any_l ()
+    | & _23: () = Any.any_l ()
+    | & _24: MutBorrow.t t_F = Any.any_l ()
+    | & _25: () = Any.any_l () ]
      [ return''0 (result:())-> (! return' {result}) ] 
 end

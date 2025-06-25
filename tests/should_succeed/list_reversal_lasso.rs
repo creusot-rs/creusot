@@ -78,8 +78,8 @@ impl Memory {
     fn list_seg(self, first: Ptr, s: Seq<Ptr>, last: Ptr, l: Int, h: Int) -> bool {
         pearlite! {
             first == if h == l { last } else { s[l] } &&
-            (forall<i: Int> l <= i && i < h ==> self.nonnull_ptr(s[i]) && self[s[i]] == if i == h - 1 { last } else { s[i+1] }) &&
-            (forall<i: Int, j: Int> l <= i && i < h && l <= j && j < h && i != j ==> s[i] != s[j])
+            (forall<i> l <= i && i < h ==> self.nonnull_ptr(s[i]) && self[s[i]] == if i == h - 1 { last } else { s[i+1] }) &&
+            (forall<i, j> l <= i && i < h && l <= j && j < h && i != j ==> s[i] != s[j])
         }
     }
 
@@ -135,7 +135,7 @@ impl Memory {
             n = snapshot! { *n + 1 }
         }
 
-        proof_assert! { forall<i:Int> 0 <= i && i < s.len() ==>
+        proof_assert! { forall<i> 0 <= i && i < s.len() ==>
             s.subsequence(1, s.len()).reverse().push_front(s[0])[i] ==
         if i == 0 { s[0] } else { s.reverse()[i-1] } };
         return r;
@@ -146,7 +146,7 @@ impl Memory {
         pearlite! {
             let mid = if s2.len() == 0 { s1[s1.len()-1] } else { s2[0] };
             s1.len() > 0 &&
-            (forall<i: Int, j: Int> 0 <= i && i < s1.len() && 0 <= j && j < s2.len() ==> s1[i] != s2[j]) &&
+            (forall<i, j> 0 <= i && i < s1.len() && 0 <= j && j < s2.len() ==> s1[i] != s2[j]) &&
             self.list_seg(first, s1, mid, 0, s1.len()) &&
             self.list_seg(mid, s2, s1[s1.len()-1], 0, s2.len())
         }
@@ -191,7 +191,7 @@ impl Memory {
     #[logic]
     #[requires(0 <= i && i <= s.len())]
     #[ensures(match result {
-        None => forall<j: Int> i <= j && j < s.len() ==> s[j]@ != p,
+        None => forall<j> i <= j && j < s.len() ==> s[j]@ != p,
         Some(j) => i <= j && j < s.len() && s[j]@ == p
     })]
     #[variant(s.len() - i)]
@@ -205,8 +205,8 @@ impl Memory {
 
     #[logic]
     #[requires(0 <= n)]
-    #[requires(forall<i: Int> 0 <= i && i < s.len() ==> s[i]@ < n)]
-    #[requires(forall<i: Int, j: Int> 0 <= i && i < s.len() && 0 <= j && j < s.len() && i != j ==> s[i] != s[j])]
+    #[requires(forall<i> 0 <= i && i < s.len() ==> s[i]@ < n)]
+    #[requires(forall<i, j> 0 <= i && i < s.len() && 0 <= j && j < s.len() && i != j ==> s[i] != s[j])]
     #[ensures(s.len() <= n)]
     #[ensures(result)]
     #[variant(n)]

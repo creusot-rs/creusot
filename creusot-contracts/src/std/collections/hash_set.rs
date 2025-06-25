@@ -78,7 +78,7 @@ pub fn set_produces<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
         && (forall<x: T::DeepModelTy> start@.contains(x) ==> (exists<x1: T> x1.deep_model() == x && visited.contains(x1)) || end@.contains(x))
         && (forall<x: T> visited.contains(x) ==> start@.contains(x.deep_model()) && !end@.contains(x.deep_model()))
         && (forall<x: T::DeepModelTy> end@.contains(x) ==> start@.contains(x) && !exists<x1: T> x1.deep_model() == x && visited.contains(x1))
-        && (forall<i: Int, j: Int>
+        && (forall<i, j>
             0 <= i && i < visited.len() && 0 <= j && j < visited.len()
             && visited[i].deep_model() == visited[j].deep_model()
             ==> i == j)
@@ -98,8 +98,8 @@ pub fn set_produces_trans<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
     c: I,
 ) {
     Seq::<T>::concat_contains();
-    proof_assert! { forall<i: Int, x: T> ab.len() <= i && ab.concat(bc).get(i) == Some(x) ==> bc.contains(x) };
-    proof_assert! { forall<i: Int> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] };
+    proof_assert! { forall<i, x: T> ab.len() <= i && ab.concat(bc).get(i) == Some(x) ==> bc.contains(x) };
+    proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] };
 }
 
 impl<T: DeepModel> Iterator for IntoIter<T> {

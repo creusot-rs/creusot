@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 #[predicate]
 fn sorted_range<T: OrdLogic>(s: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
-        forall<i : Int, j : Int> l <= i && i <= j && j < u ==> s[i] <= s[j]
+        forall<i, j> l <= i && i <= j && j < u ==> s[i] <= s[j]
     }
 }
 
@@ -35,8 +35,8 @@ where
     let mut base: usize = 0;
 
     #[invariant(0 < size@ && size@ + base@ <= arr@.len())]
-    #[invariant(forall<i : usize> i < base ==> arr.deep_model()[i@] <= elem.deep_model())]
-    #[invariant(forall<i : usize> base@ + size@ <= i@ && i@ < arr@.len() ==> elem.deep_model() < arr.deep_model()[i@])]
+    #[invariant(forall<i: usize> i < base ==> arr.deep_model()[i@] <= elem.deep_model())]
+    #[invariant(forall<i: usize> base@ + size@ <= i@ && i@ < arr@.len() ==> elem.deep_model() < arr.deep_model()[i@])]
     while size > 1 {
         let half = size / 2;
         let mid = base + half;

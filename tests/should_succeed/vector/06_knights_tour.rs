@@ -31,7 +31,7 @@ impl Board {
         pearlite! {
             self.size@ <= 1_000 &&
             self.field@.len() == self.size@ &&
-            forall<i : Int> 0 <= i && i < self.size@ ==> (self.field[i]@).len() == self.size@
+            forall<i> 0 <= i && i < self.size@ ==> (self.field[i]@).len() == self.size@
         }
     }
     #[requires(size@ <= 1000)]
@@ -91,7 +91,7 @@ impl Board {
 
 #[trusted]
 #[ensures(result@.len() == 8)]
-#[ensures(forall<i: Int> 0 <= i && i < 8 ==>  -2 <= result[i].0@ && result[i].0@ <= 2 && -2 <= result[i].1@ && result[i].1@ <= 2)]
+#[ensures(forall<i> 0 <= i && i < 8 ==>  -2 <= result[i].0@ && result[i].0@ <= 2 && -2 <= result[i].1@ && result[i].1@ <= 2)]
 fn moves() -> Vec<(isize, isize)> {
     let mut v = Vec::new();
     v.push((2, 1));
@@ -106,11 +106,11 @@ fn moves() -> Vec<(isize, isize)> {
 }
 
 #[ensures(forall<r: &(usize, Point)> result == Some(r) ==>
-          exists<i:Int> 0 <= i && i < v@.len() && v[i] == *r)]
+          exists<i> 0 <= i && i < v@.len() && v[i] == *r)]
 fn min(v: &Vec<(usize, Point)>) -> Option<&(usize, Point)> {
     let mut min = None;
     #[invariant(forall<r: &(usize, Point)> min == Some(r) ==>
-                      exists<i:Int> 0 <= i && i < v@.len() && v[i] == *r)]
+                      exists<i> 0 <= i && i < v@.len() && v[i] == *r)]
     for x in v {
         match min {
             None => min = Some(x),
@@ -144,7 +144,7 @@ pub fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
     for step in 2..(size * size) {
         // choose next square by Warnsdorf's rule
         let mut candidates: Vec<(usize, Point)> = Vec::new();
-        #[invariant(forall<i: Int> 0 <= i && i < candidates@.len() ==>
+        #[invariant(forall<i> 0 <= i && i < candidates@.len() ==>
                     board.in_bounds(candidates[i].1))]
         for m in moves() {
             proof_assert! { forall<r:Seq<_>, a: Seq<_>, b:Seq<_>> r == a.concat(Seq::singleton(m).concat(b)) ==> m == r[a.len()] };

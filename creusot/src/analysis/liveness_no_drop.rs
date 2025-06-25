@@ -16,7 +16,7 @@ use crate::resolve::place_contains_borrow_deref;
 
 /// A liveness analysis used for insertion of "resolve" statements.
 /// This is meant to be used exclusively for `Resolve`.
-/// It differs from Rustc's :
+/// It differs from Rustc's:
 /// - It's based on move paths, and not on locals
 /// - It ignores `drop`. This is only sound if drop does never
 ///   modify a mutable borrow contained in the drop value.

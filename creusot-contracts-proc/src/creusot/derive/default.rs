@@ -72,7 +72,7 @@ fn fields_set_to_default(fields: &Fields) -> TokenStream {
         Fields::Named(fields) => {
             let fs = fields.named.iter().map(|f| {
                 let name = &f.ident;
-                quote_spanned! { f.span() => #name : ::std::default::Default::default() }
+                quote_spanned! { f.span() => #name: ::std::default::Default::default() }
             });
             quote! { { #(#fs),* } }
         }

@@ -29,50 +29,50 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
   
   type t_FMap
   
-  function len (self : t_FMap) : int
+  function len (self: t_FMap) : int
   
-  axiom len_spec : forall self : t_FMap . [%#sfmap'5] len self >= 0
+  axiom len_spec: forall self: t_FMap. [%#sfmap'5] len self >= 0
   
   type t_Option  =
     | C_None
     | C_Some int
   
-  function view (self : t_FMap) : Map.map int t_Option
+  function view (self: t_FMap) : Map.map int t_Option
   
-  axiom view_spec : forall self : t_FMap . [%#sfmap'6] forall m1 : t_FMap, m2 : t_FMap . m1 <> m2  -> view m1 <> view m2
+  axiom view_spec: forall self: t_FMap. [%#sfmap'6] forall m1: t_FMap, m2: t_FMap. m1 <> m2  -> view m1 <> view m2
   
   constant empty  : t_FMap
   
-  axiom empty_spec : ([%#sfmap] len empty = 0) && ([%#sfmap'0] view empty = Const.const (C_None))
+  axiom empty_spec: ([%#sfmap] len empty = 0) && ([%#sfmap'0] view empty = Const.const (C_None))
   
-  function make_sized (self : int) : int
+  function make_sized (self: int) : int
   
-  axiom make_sized_spec : forall self : int . [%#sutil] make_sized self = self
+  axiom make_sized_spec: forall self: int. [%#sutil] make_sized self = self
   
-  function get_unsized [@inline:trivial] (self : t_FMap) (k : int) : t_Option =
+  function get_unsized [@inline:trivial] (self: t_FMap) (k: int) : t_Option =
     [%#sfmap'9] Map.get (view self) k
   
-  function contains [@inline:trivial] (self : t_FMap) (k : int) : bool =
+  function contains [@inline:trivial] (self: t_FMap) (k: int) : bool =
     [%#sfmap'7] get_unsized self k <> C_None
   
-  function insert (self : t_FMap) (k : int) (v : int) : t_FMap
+  function insert (self: t_FMap) (k: int) (v: int) : t_FMap
   
-  axiom insert_spec : forall self : t_FMap, k : int, v : int . ([%#sfmap'1] view (insert self k v)
+  axiom insert_spec: forall self: t_FMap, k: int, v: int. ([%#sfmap'1] view (insert self k v)
   = Map.set (view self) k (C_Some (make_sized v)))
   && ([%#sfmap'2] contains self k  -> len (insert self k v) = len self)
   && ([%#sfmap'3] not contains self k  -> len (insert self k v) = len self + 1)
   
-  function unwrap (op : t_Option) : int
+  function unwrap (op: t_Option) : int
   
-  axiom unwrap_spec : forall op : t_Option . ([%#sutil'0] op <> C_None)  -> ([%#sutil'1] C_Some (unwrap op) = op)
+  axiom unwrap_spec: forall op: t_Option. ([%#sutil'0] op <> C_None)  -> ([%#sutil'1] C_Some (unwrap op) = op)
   
-  function lookup_unsized [@inline:trivial] (self : t_FMap) (k : int) : int =
+  function lookup_unsized [@inline:trivial] (self: t_FMap) (k: int) : int =
     [%#sfmap'10] unwrap (get_unsized self k)
   
-  function lookup [@inline:trivial] (self : t_FMap) (k : int) : int =
+  function lookup [@inline:trivial] (self: t_FMap) (k: int) : int =
     [%#sfmap'8] lookup_unsized self k
   
-  function index_logic [@inline:trivial] (self : t_FMap) (key : int) : int =
+  function index_logic [@inline:trivial] (self: t_FMap) (key: int) : int =
     [%#sfmap'4] lookup self key
   
   meta "compute_max_steps" 1000000
@@ -98,10 +98,10 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
       | s2 = return''0 {_0} ]
      ]
     )
-    [ & _0 : () = Any.any_l ()
-    | & map : t_FMap = Any.any_l ()
-    | & _3 : t_FMap = Any.any_l ()
-    | & _7 : t_FMap = Any.any_l ()
-    | & _11 : t_FMap = Any.any_l () ]
+    [ & _0: () = Any.any_l ()
+    | & map: t_FMap = Any.any_l ()
+    | & _3: t_FMap = Any.any_l ()
+    | & _7: t_FMap = Any.any_l ()
+    | & _11: t_FMap = Any.any_l () ]
      [ return''0 (result:())-> (! return' {result}) ] 
 end

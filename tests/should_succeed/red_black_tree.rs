@@ -174,7 +174,7 @@ impl<K: DeepModel, V> Resolve for Tree<K, V> {
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
-            forall<k: _, v: V> self.has_mapping(k, v) ==> resolve(&v)
+            forall<k, v> self.has_mapping(k, v) ==> resolve(&v)
         }
     }
 
@@ -188,7 +188,7 @@ impl<K: DeepModel, V> Resolve for Node<K, V> {
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
-            forall<k: _, v: V> self.has_mapping(k, v) ==> resolve(&v)
+            forall<k, v> self.has_mapping(k, v) ==> resolve(&v)
         }
     }
 
