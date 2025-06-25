@@ -420,11 +420,9 @@ impl<'tcx> TranslationCtx<'tcx> {
             let base_predicates =
                 self.tcx.param_env(def_id).caller_bounds().into_iter().map(Clause::as_predicate);
             let additional_predicates = es.predicates_for(self.tcx, subst).into_iter();
-            let clauses = base_predicates
-                .chain(additional_predicates)
-                .map(Predicate::expect_clause)
-                .collect::<Box<_>>();
-            let res = ParamEnv::new(self.mk_clauses(&clauses));
+            let clauses =
+                base_predicates.chain(additional_predicates).map(Predicate::expect_clause);
+            let res = ParamEnv::new(self.mk_clauses_from_iter(clauses));
             let res = normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy());
             res
         } else {
