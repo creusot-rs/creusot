@@ -59,10 +59,14 @@ use rustc_infer::{
 };
 use rustc_middle::{
     thir::{self, visit::Visitor},
-    ty::{Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, TypingEnv, TypingMode},
+    ty::{
+        Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv, TypingEnv, TypingMode,
+    },
 };
 use rustc_span::Span;
-use rustc_trait_selection::traits::{normalize_param_env_or_error, specialization_graph};
+use rustc_trait_selection::traits::{
+    normalize_param_env_or_error, specialization_graph, translate_args,
+};
 
 /// Validate that a `#[terminates]` function cannot loop indefinitely. This includes:
 /// - forbidding program function from using loops of any kind (this should be relaxed
@@ -268,12 +272,12 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         node: graph::NodeIndex,
         typing_env: TypingEnv<'tcx>,
         mut called_id: DefId,
-        mut generic_args: GenericArgsRef<'tcx>,
+        subst: GenericArgsRef<'tcx>,
         call_span: Span,
     ) {
-        let res = TraitResolved::resolve_item(ctx.tcx, typing_env, called_id, generic_args);
+        let res = TraitResolved::resolve_item(ctx.tcx, typing_env, called_id, subst);
 
-        let (called_node, bounds, impl_self_bound);
+        let (called_node, bounds);
 
         // If we are calling a known method, and this method has been defined in an ancestor of the impl
         // we found, and this method is logic and transparent from this impl and this impl is local, then use a
@@ -284,14 +288,24 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             let Some(impl_ldid) = impl_.0.as_local() && // The impl is local
             ctx.is_transparent_from(def.0, ctx.parent_module_from_def_id(impl_ldid).to_def_id())
         {
-            (called_id, generic_args) = def;
-            (called_node, bounds) = self.visit_specialized_default_function(ctx, impl_ldid, def.0);
-            impl_self_bound = Some(ctx.impl_trait_header(impl_.0).unwrap());
+            called_id = def.0;
+            let bnds;
+            (called_node, bnds) =
+                self.visit_specialized_default_function(ctx, impl_ldid, called_id);
+            bounds = ctx.instantiate_and_normalize_erasing_regions(
+                def.1.rebase_onto(ctx.tcx, ctx.parent(def.0), impl_.1),
+                typing_env,
+                EarlyBinder::bind(bnds),
+            );
         } else {
-            (called_id, generic_args) = res.to_opt(called_id, generic_args).unwrap();
+            let subst_r;
+            (called_id, subst_r) = res.to_opt(called_id, subst).unwrap();
             called_node = self.insert_function(GraphNode::Function(called_id));
-            bounds = ctx.param_env(called_id).caller_bounds();
-            impl_self_bound = None;
+            bounds = ctx.instantiate_and_normalize_erasing_regions(
+                subst_r,
+                typing_env,
+                EarlyBinder::bind(ctx.param_env(called_id).caller_bounds()),
+            );
         }
         self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
 
@@ -299,16 +313,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         // of the corresponding trait if they are specialized.
         for bound in bounds {
             let Some(clause) = bound.as_trait_clause() else { continue };
-            let clause = ctx.instantiate_bound_regions_with_erased(clause);
-            let trait_ref = clause.trait_ref;
-            if let Some(self_bound) = &impl_self_bound
-                && trait_ref == self_bound.trait_ref.instantiate_identity()
-            {
-                continue;
-            }
-
-            let trait_ref = EarlyBinder::bind(trait_ref).instantiate(ctx.tcx, generic_args);
-            let trait_ref = ctx.normalize_erasing_regions(typing_env, trait_ref);
+            let trait_ref = ctx.instantiate_bound_regions_with_erased(clause).trait_ref;
 
             // FIXME: in the case of an ambiguity, `codegen_select_candidate` may return an error,
             // which makes the unwrap bellow fail. So this is not the entry point of the trait solver we want.
@@ -380,22 +385,30 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
 
         // translate the args of the impl to match the trait.
         let infcx = ctx.infer_ctxt().build(TypingMode::non_body_analysis());
-        let impl_args = rustc_trait_selection::traits::translate_args(
-            &infcx,
-            ctx.param_env(impl_id.into()),
-            impl_id.into(),
-            erased_identity_for_item(ctx.tcx, impl_id.into()),
-            spec_node_def,
-        );
+        let impl_param_env = ctx.param_env(impl_id.into());
+        let impl_args = erased_identity_for_item(ctx.tcx, impl_id.into());
+        let impl_args =
+            translate_args(&infcx, impl_param_env, impl_id.into(), impl_args, spec_node_def);
 
         // Take the generic arguments of the default function, instantiated with
         // the type parameters from the impl block.
-        let func_impl_args =
-            erased_identity_for_item(ctx.tcx, item_id).rebase_onto(ctx.tcx, trait_id, impl_args);
+        let func_impl_args = erased_identity_for_item(ctx.tcx, item_id);
+        let func_impl_args = func_impl_args.rebase_onto(ctx.tcx, spec_node_def.def_id(), impl_args);
+
+        let item_bounds = ctx.param_env(item_id).caller_bounds();
+        let defimpl_bounds = ctx.param_env(spec_node_def.def_id()).caller_bounds();
+        // Before instantiating the bounds, keep only those that are not inherited from the defining
+        // impl. After instantiation, they will be implied by the bounds of the inheriting
+        // impl.
+        let bounds = impl_param_env.caller_bounds().iter().chain(
+            item_bounds
+                .iter()
+                .filter(|b| !defimpl_bounds.contains(&b))
+                .map(|b| EarlyBinder::bind(b).instantiate(ctx.tcx, func_impl_args)),
+        );
 
         // data for when we call this function
-        let param_env =
-            EarlyBinder::bind(ctx.param_env(item_id)).instantiate(ctx.tcx, func_impl_args);
+        let param_env = ParamEnv::new(ctx.mk_clauses_from_iter(bounds));
         let param_env = normalize_param_env_or_error(ctx.tcx, param_env, ObligationCause::dummy());
         let typing_env = TypingEnv { param_env, ..ctx.typing_env(item_id) };
 
