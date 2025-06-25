@@ -1,10 +1,3 @@
-use indexmap::{IndexMap, IndexSet};
-use rustc_middle::{
-    mir::{BasicBlock, ProjectionElem, START_BLOCK, tcx::PlaceTy},
-    ty::{Ty, TyCtxt},
-};
-use rustc_span::DUMMY_SP;
-
 use crate::{
     backend::{
         program::node_graph,
@@ -12,13 +5,19 @@ use crate::{
         wto::{Component, weak_topological_order},
     },
     contracts_items::get_snap_ty,
-    ctx::TranslationCtx,
+    ctx::{BodyId, TranslationCtx},
     translation::{
-        fmir,
+        fmir::{self, StatementKind},
         pearlite::{Ident, Term},
     },
 };
+use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
+use rustc_middle::{
+    mir::{BasicBlock, ProjectionElem, START_BLOCK, tcx::PlaceTy},
+    ty::{Ty, TyCtxt},
+};
+use rustc_span::DUMMY_SP;
 
 use crate::translation::fmir::{Block, FmirVisitor, Place, RValue, Statement, Terminator};
 
@@ -28,15 +27,19 @@ use crate::translation::fmir::{Block, FmirVisitor, Place, RValue, Statement, Ter
 ///
 /// (1) types with invariants being mutated inside of a loop
 /// (2) mutable borrows being mutated inside of a loop.
-
-pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir::Body<'tcx>) {
+pub fn infer_proph_invariants<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    body: &mut fmir::Body<'tcx>,
+    body_id: BodyId,
+) {
+    let mir_body = &ctx.body_with_facts(body_id.def_id).body;
     let graph = node_graph(body);
 
     let wto = weak_topological_order(&graph, START_BLOCK);
     let mut backs = IndexMap::new();
     descendants(&mut backs, &wto);
 
-    let res = borrow_prophecy_analysis(ctx, &body, &wto);
+    let res = borrow_prophecy_analysis(ctx, body, &wto);
 
     let snap_ty = get_snap_ty(ctx.tcx);
     let tcx = ctx.tcx;
@@ -47,7 +50,7 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
         for (ix, u) in unchanged.iter().enumerate() {
             let Some(pterm) = place_to_term(u, tcx, &body.locals) else { continue };
 
-            let local = Ident::fresh_local(&format!("old_{}_{ix}", k.as_u32()));
+            let local = Ident::fresh_local(format!("old_{}_{ix}", k.as_u32()));
             let subst = ctx.mk_args(&[u.ty(tcx, &body.locals).into()]);
             let ty = Ty::new_adt(ctx.tcx, ctx.adt_def(snap_ty), subst);
 
@@ -82,11 +85,14 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
                 } else {
                     panic!()
                 }
-                prev_block.stmts.push(Statement::Assignment(
-                    Place { local, projections: Box::new([]) },
-                    RValue::Snapshot(pterm.clone().coerce(ty)),
-                    DUMMY_SP,
-                ));
+                let span = mir_body.source_info(p.start_location()).span;
+                prev_block.stmts.push(Statement {
+                    kind: StatementKind::Assignment(
+                        Place { local, projections: Box::new([]) },
+                        RValue::Snapshot(pterm.clone().coerce(ty)),
+                    ),
+                    span,
+                });
             }
 
             let old = Term::var(local, ty);
@@ -222,7 +228,7 @@ struct BorrowProph<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
 }
 
-impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
+impl<'tcx> BorrowProph<'_, 'tcx> {
     fn record_write_to(&mut self, pl: &Place<'tcx>) {
         self.overwritten_values.insert(pl.clone());
 
@@ -239,17 +245,17 @@ impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FmirVisitor<'tcx> for BorrowProph<'a, 'tcx> {
+impl<'tcx> FmirVisitor<'tcx> for BorrowProph<'_, 'tcx> {
     fn visit_stmt(&mut self, stmt: &fmir::Statement<'tcx>) {
-        match stmt {
-            fmir::Statement::Assignment(l, r, _) => {
+        match &stmt.kind {
+            fmir::StatementKind::Assignment(l, r) => {
                 self.record_write_to(l);
 
                 if let RValue::Borrow(_, r, _) = r {
                     self.record_write_to(r);
                 }
             }
-            fmir::Statement::Call(r, _, _, _, _) => {
+            fmir::StatementKind::Call(r, _, _, _) => {
                 self.record_write_to(r);
             }
             _ => (),
@@ -269,7 +275,7 @@ impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
                 locals,
                 active_borrows: Default::default(),
                 overwritten_values: Default::default(),
-                unchanged_prophs: unchanged_prophs,
+                unchanged_prophs,
             }
         }
     }

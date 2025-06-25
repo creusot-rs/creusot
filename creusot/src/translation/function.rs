@@ -302,17 +302,19 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let p = self.translate_place(pl)?;
 
-        if !is_tyinv_trivial(
-            self.tcx(),
-            self.typing_env(),
-            place_ty.ty,
-            self.tcx().def_span(self.body_id.def_id()),
-        ) {
-            self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone() });
+        let span = self.tcx().def_span(self.body_id.def_id()); // TODO: not a great span
+        if !is_tyinv_trivial(self.tcx(), self.typing_env(), place_ty.ty, span) {
+            self.emit_statement(fmir::Statement {
+                kind: fmir::StatementKind::AssertTyInv { pl: p.clone() },
+                span,
+            });
         }
 
         if let Some((did, subst)) = self.ctx.resolve(self.typing_env(), place_ty.ty) {
-            self.emit_statement(fmir::Statement::Resolve { did, subst, pl: p });
+            self.emit_statement(fmir::Statement {
+                kind: fmir::StatementKind::Resolve { did, subst, pl: p },
+                span,
+            });
         }
         Ok(())
     }
@@ -356,7 +358,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>, span: Span) {
         let p = self.translate_place(lhs.as_ref()).unwrap_or_else(|err| err.crash(self.ctx, span));
-        self.emit_statement(fmir::Statement::Assignment(p, rhs, span))
+        self.emit_statement(fmir::Statement { kind: fmir::StatementKind::Assignment(p, rhs), span })
     }
 
     fn resolve_before_assignment(

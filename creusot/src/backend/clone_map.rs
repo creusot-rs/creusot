@@ -257,7 +257,7 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
     }
 }
 
-impl<'tcx> CloneNames<'tcx> {
+impl CloneNames<'_> {
     fn bitwise_mode(&self) -> bool {
         self.bitwise_mode
     }
@@ -384,7 +384,7 @@ impl<'tcx> Dependencies<'tcx> {
 
         let typing_env = ctx.typing_env(self.self_id);
 
-        let self_node = Dependency::Item(self.self_id, self.self_subst);
+        let self_node = (self.self_id, self.self_subst);
         let graph = Expander::new(
             &mut self.names,
             self_node,
@@ -397,7 +397,7 @@ impl<'tcx> Dependencies<'tcx> {
         let (graph, mut bodies) = graph.update_graph(ctx);
 
         for scc in petgraph::algo::tarjan_scc(&graph).into_iter() {
-            if scc.iter().any(|node| node == &self_node) {
+            if scc.iter().any(|node| node == &Dependency::Item(self_node.0, self_node.1)) {
                 assert_eq!(scc.len(), 1);
                 bodies.remove(&scc[0]);
                 continue;

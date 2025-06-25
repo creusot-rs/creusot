@@ -1,9 +1,3 @@
-use std::{
-    assert_matches::assert_matches,
-    cell::RefCell,
-    collections::{HashMap, HashSet, VecDeque},
-};
-
 use crate::{
     backend::{
         TranslationCtx, Why3Generator,
@@ -33,18 +27,29 @@ use crate::{
         constant::from_ty_const,
         pearlite::{BinOp, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
         specification::Condition,
-        traits::{Instance, TraitResolved},
+        traits::TraitResolved,
     },
 };
 use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
-use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{
-    self, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
-    UnevaluatedConst,
+use rustc_hir::{
+    def::DefKind,
+    def_id::{DefId, LocalDefId},
+};
+use rustc_middle::{
+    mir::Promoted,
+    ty::{
+        self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind,
+        TypeFoldable, TypingEnv, UnevaluatedConst,
+    },
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
+use std::{
+    assert_matches::assert_matches,
+    cell::RefCell,
+    collections::{HashMap, HashSet, VecDeque},
+};
 use why3::{
     Ident,
     declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
@@ -64,7 +69,7 @@ pub(super) struct Expander<'a, 'tcx> {
     graph: DiGraphMap<Dependency<'tcx>, Strength>,
     dep_bodies: HashMap<Dependency<'tcx>, Vec<Decl>>,
     namer: &'a mut CloneNames<'tcx>,
-    self_key: Dependency<'tcx>,
+    self_key: (DefId, GenericArgsRef<'tcx>),
     typing_env: TypingEnv<'tcx>,
     expansion_queue: VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>,
     /// Span for the item we are expanding
@@ -104,211 +109,198 @@ impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, 'tcx> {
     }
 }
 
-trait DepElab {
-    // type Sig;
-    // type Contract;
-    // type Body;
+fn expand_program<'tcx>(
+    elab: &mut Expander<'_, 'tcx>,
+    ctx: &Why3Generator<'tcx>,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> Vec<Decl> {
+    let dep = Dependency::Item(def_id, subst);
+    let typing_env = elab.typing_env;
+    let names = elab.namer(dep);
+    let name = names.dependency(dep).ident();
 
-    fn expand<'tcx>(
-        elab: &mut Expander<'_, 'tcx>,
-        ctx: &Why3Generator<'tcx>,
-        dep: Dependency<'tcx>,
-    ) -> Vec<Decl>;
-}
+    if ctx.def_kind(def_id) != DefKind::Closure {
+        let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
+            .instantiate(ctx.tcx, subst)
+            .normalize(ctx.tcx, typing_env);
 
-struct ProgramElab;
-
-impl DepElab for ProgramElab {
-    fn expand<'tcx>(
-        elab: &mut Expander<'_, 'tcx>,
-        ctx: &Why3Generator<'tcx>,
-        dep: Dependency<'tcx>,
-    ) -> Vec<Decl> {
-        let typing_env = elab.typing_env;
-        let names = elab.namer(dep);
-        let name = names.dependency(dep).ident();
-
-        if let Dependency::Item(def_id, subst) = dep
-            && ctx.def_kind(def_id) != DefKind::Closure
-        {
-            let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
-                .instantiate(ctx.tcx, subst)
-                .normalize(ctx.tcx, typing_env);
-
-            if let TraitResolved::UnknownFound = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
+        if let TraitResolved::UnknownFound = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
                 // These conditions are important to make sure the Fn trait familly is implemented
                 && ctx.fn_sig(def_id).skip_binder().is_fn_trait_compatible()
                 && ctx.codegen_fn_attrs(def_id).target_features.is_empty()
-            {
-                let fn_name = ctx.item_name(def_id);
+        {
+            let fn_name = ctx.item_name(def_id);
 
-                let args = Term::tuple(
-                    ctx.tcx,
-                    pre_sig.inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)),
-                );
-                let fndef_ty = Ty::new_fn_def(ctx.tcx, def_id, subst);
+            let args =
+                Term::tuple(ctx.tcx, pre_sig.inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)));
+            let fndef_ty = Ty::new_fn_def(ctx.tcx, def_id, subst);
 
-                let pre_post_subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
+            let pre_post_subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
 
-                let pre_did = get_fn_once_impl_precond(ctx.tcx);
-                let pre = Term::call(ctx.tcx, typing_env, pre_did, pre_post_subst, [
-                    Term::unit(ctx.tcx).coerce(fndef_ty),
-                    args.clone(),
-                ]);
-                let expl_pre = format!("expl:{} requires", fn_name);
-                pre_sig.contract.requires = vec![Condition { term: pre, expl: expl_pre }];
+            let pre_did = get_fn_once_impl_precond(ctx.tcx);
+            let pre = Term::call(ctx.tcx, typing_env, pre_did, pre_post_subst, [
+                Term::unit(ctx.tcx).coerce(fndef_ty),
+                args.clone(),
+            ]);
+            let expl_pre = format!("expl:{} requires", fn_name);
+            pre_sig.contract.requires = vec![Condition { term: pre, expl: expl_pre }];
 
-                let post_did = get_fn_once_impl_postcond(ctx.tcx);
-                let post = Term::call(ctx.tcx, typing_env, post_did, pre_post_subst, [
-                    Term::unit(ctx.tcx).coerce(fndef_ty),
-                    args,
-                    Term::var(name::result(), pre_sig.output),
-                ]);
-                let expl_post = format!("expl:{} ensures", fn_name);
-                pre_sig.contract.ensures = vec![Condition { term: post, expl: expl_post }]
-            } else {
-                pre_sig.add_type_invariant_spec(ctx, def_id, typing_env)
-            }
-
-            let return_ident = Ident::fresh_local("return");
-            let (sig, contract, return_ty) =
-                lower_program_sig(ctx, &names, name, pre_sig, def_id, return_ident);
-            return vec![program::val(sig, contract, return_ident, return_ty)];
+            let post_did = get_fn_once_impl_postcond(ctx.tcx);
+            let post = Term::call(ctx.tcx, typing_env, post_did, pre_post_subst, [
+                Term::unit(ctx.tcx).coerce(fndef_ty),
+                args,
+                Term::var(name::result(), pre_sig.output),
+            ]);
+            let expl_post = format!("expl:{} ensures", fn_name);
+            pre_sig.contract.ensures = vec![Condition { term: post, expl: expl_post }]
+        } else {
+            pre_sig.add_type_invariant_spec(ctx, def_id, typing_env)
         }
 
-        // Inline the body of closures and promoted
-        let bid = match dep {
-            Dependency::Item(def_id, _) => BodyId { def_id: def_id.expect_local(), promoted: None },
-            Dependency::Promoted(def_id, prom) => BodyId { def_id, promoted: Some(prom) },
-            _ => unreachable!(),
-        };
-
-        let coma = program::to_why(ctx, &names, name, bid);
-        vec![Decl::Coma(coma)]
+        let return_ident = Ident::fresh_local("return");
+        let (sig, contract, return_ty) =
+            lower_program_sig(ctx, &names, name, pre_sig, def_id, return_ident);
+        return vec![program::val(sig, contract, return_ident, return_ty)];
     }
+
+    // Inline the body of closures
+    let bid = BodyId { def_id: def_id.expect_local(), promoted: None };
+
+    let coma = program::to_why(ctx, &names, name, bid);
+    vec![Decl::Coma(coma)]
 }
 
-struct LogicElab;
+fn expand_promoted<'tcx>(
+    elab: &mut Expander<'_, 'tcx>,
+    ctx: &Why3Generator<'tcx>,
+    def_id: LocalDefId,
+    prom: Promoted,
+) -> Vec<Decl> {
+    let names = elab.namer(Dependency::Promoted(def_id, prom));
+    let name = names.dependency(Dependency::Promoted(def_id, prom)).ident();
+    // Inline the body of promoteds
+    let bid = BodyId { def_id, promoted: Some(prom) };
+    let coma = program::to_why(ctx, &names, name, bid);
+    vec![Decl::Coma(coma)]
+}
 
-impl DepElab for LogicElab {
-    fn expand<'tcx>(
-        elab: &mut Expander<'_, 'tcx>,
-        ctx: &Why3Generator<'tcx>,
-        dep: Dependency<'tcx>,
-    ) -> Vec<Decl> {
-        assert_matches!(dep, Dependency::Item(_, _));
+/// Expand a logical item
+fn expand_logic<'tcx>(
+    elab: &mut Expander<'_, 'tcx>,
+    ctx: &Why3Generator<'tcx>,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> Vec<Decl> {
+    let dep = Dependency::Item(def_id, subst);
 
-        let (def_id, subst) = dep.did().unwrap();
+    if is_inv_function(ctx.tcx, def_id) {
+        elab.expansion_queue.push_back((
+            dep,
+            Strength::Weak,
+            Dependency::TyInvAxiom(subst.type_at(0)),
+        ));
+    }
 
-        if is_inv_function(ctx.tcx, def_id) {
-            elab.expansion_queue.push_back((
-                dep,
-                Strength::Weak,
-                Dependency::TyInvAxiom(subst.type_at(0)),
-            ));
-        }
-
-        if get_builtin(ctx.tcx, def_id).is_some() {
-            match elab.namer.dependency(dep) {
-                Kind::Named(_) => return vec![],
-                Kind::UsedBuiltin(qname) => {
-                    return vec![Decl::UseDecls(Box::new([Use {
-                        name: qname.module.clone(),
-                        export: false,
-                    }]))];
-                }
-                Kind::Unnamed => unreachable!(),
+    if get_builtin(ctx.tcx, def_id).is_some() {
+        match elab.namer.dependency(dep) {
+            Kind::Named(_) => return vec![],
+            Kind::UsedBuiltin(qname) => {
+                return vec![Decl::UseDecls(Box::new([Use {
+                    name: qname.module.clone(),
+                    export: false,
+                }]))];
             }
+            Kind::Unnamed => unreachable!(),
         }
+    }
 
-        let typing_env = elab.typing_env;
-        let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
-            .instantiate(ctx.tcx, subst)
-            .normalize(ctx.tcx, typing_env);
-        let kind = match ctx.item_type(def_id) {
-            ItemType::Logic { .. } if pre_sig.inputs.len() > 0 => DeclKind::Function,
-            ItemType::Predicate { .. } => DeclKind::Predicate,
-            ItemType::Logic { .. } | ItemType::Constant => DeclKind::Constant,
-            _ => unreachable!(),
-        };
-        let bound: Box<[Ident]> = pre_sig.inputs.iter().map(|(ident, _, _)| ident.0).collect();
-        let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
-        assert_matches!(
-            trait_resol,
-            TraitResolved::NotATraitItem
-            | TraitResolved::Instance(..) // The default impl is known to be the final instance
+    let typing_env = elab.typing_env;
+    let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
+        .instantiate(ctx.tcx, subst)
+        .normalize(ctx.tcx, typing_env);
+    let kind = match ctx.item_type(def_id) {
+        ItemType::Logic { .. } if !pre_sig.inputs.is_empty() => DeclKind::Function,
+        ItemType::Predicate { .. } => DeclKind::Predicate,
+        ItemType::Logic { .. } | ItemType::Constant => DeclKind::Constant,
+        _ => unreachable!(),
+    };
+    let bound: Box<[Ident]> = pre_sig.inputs.iter().map(|(ident, _, _)| ident.0).collect();
+    let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
+    assert_matches!(
+        trait_resol,
+        TraitResolved::NotATraitItem
+            | TraitResolved::Instance { .. } // The default impl is known to be the final instance
             | TraitResolved::UnknownFound // Unresolved trait method
-        );
-        // The other case are impossible, because that would mean we are  not guaranteed to have an instance
+    );
+    // The other case are impossible, because that would mean we are not guaranteed to have an instance
 
-        let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
-            || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0);
+    let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
+        || !ctx.is_transparent_from(def_id, elab.self_key.0);
 
-        let names = elab.namer(dep);
-        let name = names.dependency(dep).ident();
-        let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
-        if !opaque && let Some(term) = term(ctx, typing_env, &bound, dep) {
-            lower_logical_defn(ctx, &names, sig, kind, term)
-        } else {
-            let mut decls = val(sig, kind);
+    let names = elab.namer(dep);
+    let name = names.dependency(dep).ident();
+    let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
+    if !opaque && let Some(term) = term(ctx, typing_env, &bound, def_id, subst) {
+        lower_logical_defn(ctx, &names, sig, kind, term)
+    } else {
+        let mut decls = val(sig, kind);
 
-            if is_fn_once_impl_precond(ctx.tcx, def_id) {
-                if let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind() {
-                    let args_id = Ident::fresh_local("args").into();
-                    let args = Term::var(args_id, subst.type_at(0));
-                    if let Some(pre) = pre_fndef(ctx, typing_env, did_f, subst_f, args.clone()) {
-                        let call = Term::call(ctx.tcx, typing_env, def_id, subst, [
-                            Term::unit(ctx.tcx).coerce(subst.type_at(1)),
-                            args,
-                        ]);
-                        let trig = Box::new([Trigger(Box::new([call.clone()]))]);
-                        let axiom =
-                            pre.implies(call).forall_trig((args_id, subst.type_at(0)), trig);
-                        decls.push(Decl::Axiom(Axiom {
-                            name: Ident::fresh(ctx.crate_name(), "precondition_fndef"),
-                            rewrite: false,
-                            axiom: lower_pure(ctx, &names, &axiom),
-                        }))
-                    }
-                }
-            } else if is_fn_impl_postcond(ctx.tcx, def_id)
-                || is_fn_mut_impl_postcond(ctx.tcx, def_id)
-                || is_fn_once_impl_postcond(ctx.tcx, def_id)
-            {
-                if let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind() {
-                    let args_id = Ident::fresh_local("args").into();
-                    let args = Term::var(args_id, subst.type_at(0));
-
-                    let res_id = Ident::fresh_local("res").into();
-                    let res_ty = ctx.instantiate_bound_regions_with_erased(
-                        ctx.fn_sig(did_f).instantiate(ctx.tcx, subst_f).output(),
-                    );
-                    let res = Term::var(res_id, res_ty);
-                    if let Some(post) =
-                        post_fndef(ctx, typing_env, did_f, subst_f, args.clone(), res.clone())
-                    {
-                        let mut v = vec![Term::unit(ctx.tcx).coerce(subst.type_at(1)), args, res];
-                        if is_fn_mut_impl_postcond(ctx.tcx, def_id) {
-                            v.insert(2, v[0].clone());
-                        }
-                        let call = Term::call(ctx.tcx, typing_env, def_id, subst, v);
-                        let trig = Box::new([Trigger(Box::new([call.clone()]))]);
-                        let axiom = call.implies(post).quant(
-                            QuantKind::Forall,
-                            Box::new([(args_id, subst.type_at(0)), (res_id, res_ty)]),
-                            trig,
-                        );
-                        decls.push(Decl::Axiom(Axiom {
-                            name: Ident::fresh(ctx.crate_name(), "postcondition_fndef"),
-                            rewrite: false,
-                            axiom: lower_pure(ctx, &names, &axiom),
-                        }))
-                    }
+        if is_fn_once_impl_precond(ctx.tcx, def_id) {
+            if let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind() {
+                let args_id = Ident::fresh_local("args").into();
+                let args = Term::var(args_id, subst.type_at(0));
+                if let Some(pre) = pre_fndef(ctx, typing_env, did_f, subst_f, args.clone()) {
+                    let call = Term::call(ctx.tcx, typing_env, def_id, subst, [
+                        Term::unit(ctx.tcx).coerce(subst.type_at(1)),
+                        args,
+                    ]);
+                    let trig = Box::new([Trigger(Box::new([call.clone()]))]);
+                    let axiom = pre.implies(call).forall_trig((args_id, subst.type_at(0)), trig);
+                    decls.push(Decl::Axiom(Axiom {
+                        name: Ident::fresh(ctx.crate_name(), "precondition_fndef"),
+                        rewrite: false,
+                        axiom: lower_pure(ctx, &names, &axiom),
+                    }))
                 }
             }
+        } else if is_fn_impl_postcond(ctx.tcx, def_id)
+            || is_fn_mut_impl_postcond(ctx.tcx, def_id)
+            || is_fn_once_impl_postcond(ctx.tcx, def_id)
+        {
+            if let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind() {
+                let args_id = Ident::fresh_local("args").into();
+                let args = Term::var(args_id, subst.type_at(0));
 
-            decls
+                let res_id = Ident::fresh_local("res").into();
+                let res_ty = ctx.instantiate_bound_regions_with_erased(
+                    ctx.fn_sig(did_f).instantiate(ctx.tcx, subst_f).output(),
+                );
+                let res = Term::var(res_id, res_ty);
+                if let Some(post) =
+                    post_fndef(ctx, typing_env, did_f, subst_f, args.clone(), res.clone())
+                {
+                    let mut v = vec![Term::unit(ctx.tcx).coerce(subst.type_at(1)), args, res];
+                    if is_fn_mut_impl_postcond(ctx.tcx, def_id) {
+                        v.insert(2, v[0].clone());
+                    }
+                    let call = Term::call(ctx.tcx, typing_env, def_id, subst, v);
+                    let trig = Box::new([Trigger(Box::new([call.clone()]))]);
+                    let axiom = call.implies(post).quant(
+                        QuantKind::Forall,
+                        Box::new([(args_id, subst.type_at(0)), (res_id, res_ty)]),
+                        trig,
+                    );
+                    decls.push(Decl::Axiom(Axiom {
+                        name: Ident::fresh(ctx.crate_name(), "postcondition_fndef"),
+                        rewrite: false,
+                        axiom: lower_pure(ctx, &names, &axiom),
+                    }))
+                }
+            }
         }
+
+        decls
     }
 }
 
@@ -330,54 +322,45 @@ fn expand_ty_inv_axiom<'tcx>(
     vec![Decl::Axiom(axiom)]
 }
 
-struct TyElab;
-
-use rustc_middle::ty::AliasTyKind;
-
-impl DepElab for TyElab {
-    fn expand<'tcx>(
-        elab: &mut Expander<'_, 'tcx>,
-        ctx: &Why3Generator<'tcx>,
-        dep: Dependency<'tcx>,
-    ) -> Vec<Decl> {
-        let Dependency::Type(ty) = dep else { unreachable!() };
-        let typing_env = elab.typing_env;
-        let names = elab.namer(dep);
-        match ty.kind() {
-            TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
-                ty_name: names.ty(ty).to_ident(),
+fn expand_type<'tcx>(
+    elab: &mut Expander<'_, 'tcx>,
+    ctx: &Why3Generator<'tcx>,
+    ty: Ty<'tcx>,
+) -> Vec<Decl> {
+    let dep = Dependency::Type(ty);
+    let typing_env = elab.typing_env;
+    let names = elab.namer(dep);
+    match ty.kind() {
+        TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
+            ty_name: names.ty(ty).to_ident(),
+            ty_params: Box::new([]),
+        })],
+        TyKind::Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
+            let (def_id, subst) = dep.did().unwrap();
+            vec![Decl::TyDecl(TyDecl::Opaque {
+                ty_name: names.def_ty(def_id, subst).to_ident(),
                 ty_params: Box::new([]),
-            })],
-            TyKind::Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
-                let (def_id, subst) = dep.did().unwrap();
-                vec![Decl::TyDecl(TyDecl::Opaque {
-                    ty_name: names.def_ty(def_id, subst).to_ident(),
-                    ty_params: Box::new([]),
-                })]
-            }
-            TyKind::Closure(did, subst) => translate_closure_ty(ctx, &names, *did, subst),
-            TyKind::Adt(adt_def, subst) if get_builtin(ctx.tcx, adt_def.did()).is_some() => {
-                for ty in subst.types() {
-                    translate_ty(ctx, &names, DUMMY_SP, ty);
-                }
-                if let Kind::UsedBuiltin(qname) = names.dependency(dep)
-                    && !qname.module.is_empty()
-                {
-                    vec![Decl::UseDecls(Box::new([Use {
-                        name: qname.module.clone(),
-                        export: false,
-                    }]))]
-                } else {
-                    vec![]
-                }
-            }
-            TyKind::Adt(_, _) => {
-                let (def_id, subst) = dep.did().unwrap();
-                translate_tydecl(ctx, &names, (def_id, subst), typing_env)
-            }
-            TyKind::Tuple(_) => translate_tuple_ty(ctx, &names, ty),
-            _ => unreachable!(),
+            })]
         }
+        TyKind::Closure(did, subst) => translate_closure_ty(ctx, &names, *did, subst),
+        TyKind::Adt(adt_def, subst) if get_builtin(ctx.tcx, adt_def.did()).is_some() => {
+            for ty in subst.types() {
+                translate_ty(ctx, &names, DUMMY_SP, ty);
+            }
+            if let Kind::UsedBuiltin(qname) = names.dependency(dep)
+                && !qname.module.is_empty()
+            {
+                vec![Decl::UseDecls(Box::new([Use { name: qname.module.clone(), export: false }]))]
+            } else {
+                vec![]
+            }
+        }
+        TyKind::Adt(_, _) => {
+            let (def_id, subst) = dep.did().unwrap();
+            translate_tydecl(ctx, &names, (def_id, subst), typing_env)
+        }
+        TyKind::Tuple(_) => translate_tuple_ty(ctx, &names, ty),
+        _ => unreachable!("unsupported type: {ty}"),
     }
 }
 
@@ -385,9 +368,9 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     /// # Parameters
     ///
     /// `span`: span of the item being expanded
-    pub fn new(
+    pub(crate) fn new(
         namer: &'a mut CloneNames<'tcx>,
-        self_key: Dependency<'tcx>,
+        self_key: (DefId, GenericArgsRef<'tcx>),
         typing_env: TypingEnv<'tcx>,
         initial: impl Iterator<Item = Dependency<'tcx>>,
         span: Span,
@@ -397,7 +380,9 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             namer,
             self_key,
             typing_env,
-            expansion_queue: initial.map(|b| (self_key, Strength::Strong, b)).collect(),
+            expansion_queue: initial
+                .map(|b| (Dependency::Item(self_key.0, self_key.1), Strength::Strong, b))
+                .collect(),
             dep_bodies: Default::default(),
             root_span: span,
         }
@@ -437,15 +422,15 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         expand_laws(self, ctx, dep);
 
         let decls = match dep {
-            Dependency::Type(_) => TyElab::expand(self, ctx, dep),
+            Dependency::Type(ty) => expand_type(self, ctx, ty),
             Dependency::Item(def_id, subst) => {
                 if ctx.is_logical(def_id) || matches!(ctx.item_type(def_id), ItemType::Constant) {
-                    LogicElab::expand(self, ctx, dep)
+                    expand_logic(self, ctx, def_id, subst)
                 } else if matches!(ctx.def_kind(def_id), DefKind::Field | DefKind::Variant) {
                     self.namer(dep).def_ty(ctx.parent(def_id), subst);
                     vec![]
                 } else {
-                    ProgramElab::expand(self, ctx, dep)
+                    expand_program(self, ctx, def_id, subst)
                 }
             }
             Dependency::TyInvAxiom(ty) => expand_ty_inv_axiom(self, ctx, ty),
@@ -459,7 +444,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             Dependency::Eliminator(def_id, subst) => {
                 vec![eliminator(ctx, &self.namer(dep), def_id, subst)]
             }
-            Dependency::Promoted(_, _) => ProgramElab::expand(self, ctx, dep),
+            Dependency::Promoted(def_id, prom) => expand_promoted(self, ctx, def_id, prom),
         };
 
         self.dep_bodies.insert(dep, decls);
@@ -489,7 +474,7 @@ fn expand_laws<'tcx>(
     ctx: &Why3Generator<'tcx>,
     dep: Dependency<'tcx>,
 ) {
-    let (self_did, self_subst) = elab.self_key.did().unwrap();
+    let (self_did, self_subst) = elab.self_key;
     let Some((item_did, item_subst)) = dep.did() else {
         return;
     };
@@ -552,7 +537,7 @@ fn resolve_term<'tcx>(
     } else {
         match TraitResolved::resolve_item(ctx.tcx, typing_env, trait_meth_id, subst) {
             TraitResolved::NotATraitItem => unreachable!(),
-            TraitResolved::Instance(Instance { def: (meth_did, meth_substs), .. }) => {
+            TraitResolved::Instance { def: (meth_did, meth_substs), .. } => {
                 // We know the instance => body points to it
                 Some(Term::call(ctx.tcx, typing_env, meth_did, meth_substs, [arg]))
             }
@@ -648,7 +633,7 @@ fn fn_once_postcond_term<'tcx>(
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
                 TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance(Instance { def, .. }) => (did, subst) = def,
+                TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
             }
@@ -755,7 +740,7 @@ fn fn_mut_postcond_term<'tcx>(
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
                 TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance(Instance { def, .. }) => (did, subst) = def,
+                TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
             }
@@ -831,7 +816,7 @@ fn fn_postcond_term<'tcx>(
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
                 TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance(Instance { def, .. }) => (did, subst) = def,
+                TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
             }
@@ -907,7 +892,7 @@ fn fn_once_precond_term<'tcx>(
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
                 TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance(Instance { def, .. }) => (did, subst) = def,
+                TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
             }
@@ -1047,20 +1032,21 @@ fn size_of_array<'tcx>(
         // TODO: ConstKind::Param
         _ => return None,
     };
-    let subst = ctx.mk_args(&[ty.clone().into()]);
+    let subst = ctx.mk_args(&[ty.into()]);
     let item_size = Term::call(ctx.tcx, typing_env, def_id, subst, []);
     Some(item_size.bin_op(int_ty, BinOp::Mul, Term::int(int_ty, n)))
 }
 
-// Returns a resolved and normalized term for a dependency.
-// Currently, it does not handle invariant axioms but otherwise returns all logical terms.
+/// Returns a resolved and normalized term for a dependency.
+///
+/// Currently, it does not handle invariant axioms but otherwise returns all logical terms.
 fn term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     bound: &[Ident],
-    dep: Dependency<'tcx>,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
 ) -> Option<Term<'tcx>> {
-    let Dependency::Item(def_id, subst) = dep else { unreachable!() };
     if is_trusted_item(ctx.tcx, def_id) {
         if is_resolve_function(ctx.tcx, def_id) {
             resolve_term(ctx, typing_env, def_id, subst, bound)

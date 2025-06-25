@@ -23,8 +23,6 @@ use crate::{
 /// for various Creusot hacks like the handling of closures.
 ///
 /// These should be used both to power the cloning system and to order the overall translation of items in Creusot.
-///
-
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, TypeVisitable, TypeFoldable)]
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
@@ -167,7 +165,7 @@ fn type_string_walk(tcx: TyCtxt, prefix: &mut String, ty: Ty) {
             push_(prefix, "ref");
             type_string_walk(tcx, prefix, *ty)
         }
-        Tuple(args) if args.len() == 0 => {
+        Tuple(args) if args.is_empty() => {
             push_(prefix, "unit");
         }
         Tuple(args) => {
