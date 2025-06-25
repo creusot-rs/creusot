@@ -4,40 +4,18 @@ use crate::{logic::ra::RA, *};
 ///
 /// This has the property that all resource with the same id have the same value
 /// (they 'agree').
-pub enum Ag<T> {
-    Ag(T),
-    /// The invalid value
-    Bot,
-}
+pub struct Ag<T>(pub T);
 
 impl<T> RA for Ag<T> {
     #[logic]
     #[open]
-    fn op(self, other: Self) -> Self {
-        match (self, other) {
-            (Self::Ag(x), Self::Ag(y)) => {
-                if x == y {
-                    Self::Ag(x)
-                } else {
-                    Self::Bot
-                }
-            }
-            (_, _) => Self::Bot,
-        }
+    fn op(self, other: Self) -> Option<Self> {
+        if self.0 == other.0 { Some(self) } else { None }
     }
 
-    #[logic]
+    #[predicate]
     #[open]
-    fn valid(self) -> bool {
-        match self {
-            Self::Ag(_) => true,
-            Self::Bot => false,
-        }
-    }
-
-    #[logic]
-    #[open]
-    #[ensures(result == (self.op(self) == self))]
+    #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool {
         true
     }
@@ -45,21 +23,11 @@ impl<T> RA for Ag<T> {
     #[logic]
     #[open]
     #[ensures(match result {
-        Some(c) => self.op(c) == other,
-        None => forall<c: Self> self.op(c) != other,
+        Some(c) => factor.op(c) == Some(self),
+        None => forall<c: Self> factor.op(c) != Some(self),
     })]
-    fn incl(self, other: Self) -> Option<Self> {
-        match (self, other) {
-            (Self::Ag(x), Self::Ag(y)) => {
-                if x == y {
-                    Some(Self::Ag(x))
-                } else {
-                    None
-                }
-            }
-            (_, Self::Bot) => Some(Self::Bot),
-            (_, Self::Ag(_)) => None,
-        }
+    fn factor(self, factor: Self) -> Option<Self> {
+        self.op(factor)
     }
 
     #[law]
@@ -69,26 +37,17 @@ impl<T> RA for Ag<T> {
 
     #[law]
     #[open(self)]
-    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
+    #[ensures(a.op(b).and_then_logic(|ab : Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic]
     #[open(self)]
-    #[ensures(self.op(b).valid() ==> self.valid())]
-    fn valid_op(self, b: Self) {}
-
-    #[logic]
-    #[open(self)]
-    #[requires(self.valid())]
     #[ensures(match result {
-        Some(b) => b.incl(self) != None && b.idemp() &&
-           forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(b) != None,
-        None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
+        Some(b) => b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b),
+        None => forall<b: Self> ! (b.incl(self) && b.idemp()),
     })]
     fn maximal_idemp(self) -> Option<Self> {
-        match self {
-            Self::Ag(_) => Some(self),
-            Self::Bot => None,
-        }
+        Some(self)
     }
 }
