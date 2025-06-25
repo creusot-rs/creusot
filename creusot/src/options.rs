@@ -36,7 +36,6 @@ pub struct Options {
     pub in_cargo: bool,
     pub span_mode: SpanMode,
     pub simple_triggers: bool,
-    pub why3_cmd: Option<Why3Command>,
 }
 
 #[derive(Debug, Clone)]

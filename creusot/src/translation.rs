@@ -107,15 +107,11 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn std:
     }
 
     if why3.should_compile() {
-        use crate::run_why3::run_why3;
-
         let output_target = why3.opts.output.clone();
         let prefix = why3.opts.prefix.clone();
         let modules = why3.modules();
         let modules = modules.flat_map(|item| item.modules());
-
-        let file = print_crate(output_target, prefix, modules)?;
-        run_why3(&why3, file);
+        print_crate(output_target, prefix, modules)?;
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());
 

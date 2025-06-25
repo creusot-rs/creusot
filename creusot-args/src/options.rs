@@ -50,12 +50,6 @@ pub struct CommonOptions {
 pub struct CreusotArgs {
     #[clap(flatten)]
     pub options: CommonOptions,
-    /// Path to the Why3 binary
-    #[arg(long, default_value_os_t = PathBuf::from("why3"))]
-    pub why3_path: PathBuf,
-    /// Specify an alternative location for Why3's configuration
-    #[arg(long)]
-    pub why3_config_file: PathBuf,
     #[command(subcommand)]
     pub subcommand: Option<LegacyCreusotSubCommand>,
 }
