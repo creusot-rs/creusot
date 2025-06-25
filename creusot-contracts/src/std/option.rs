@@ -733,6 +733,7 @@ impl<T> Iterator for IterMut<'_, T> {
 pub trait OptionExt<T> {
     /// Same as [`Option::unwrap`], but in logic.
     #[logic]
+    #[requires(false)]
     fn unwrap_logic(self) -> T;
 
     /// Same as [`Option::and_then`], but in logic.
@@ -747,6 +748,7 @@ pub trait OptionExt<T> {
 impl<T> OptionExt<T> for Option<T> {
     #[logic]
     #[open]
+    #[requires(self != None)]
     fn unwrap_logic(self) -> T {
         match self {
             Some(x) => x,

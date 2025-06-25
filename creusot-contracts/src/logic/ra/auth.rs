@@ -1,6 +1,6 @@
 use crate::{
     logic::ra::{
-        RA,
+        UnitRA,
         view::{View, ViewRel},
     },
     *,
@@ -17,23 +17,30 @@ pub type Auth<T> = View<AuthViewRel<T>>;
 /// The relation that specifies [`Auth`].
 pub struct AuthViewRel<T>(T);
 
-impl<T> ViewRel for AuthViewRel<T>
-where
-    T: RA,
-{
+impl<T: UnitRA> ViewRel for AuthViewRel<T> {
     type Auth = T;
     type Frag = T;
 
-    #[logic]
+    #[predicate]
     #[open]
-    fn rel(a: Self::Auth, f: Self::Frag) -> bool {
-        f.incl(a) != None && a.valid()
+    fn rel(a: Option<T>, f: T) -> bool {
+        match a {
+            Some(a) => f.incl(a),
+            None => true,
+        }
     }
 
     #[law]
-    #[open(self)]
     #[requires(Self::rel(a, f1))]
-    #[requires(f2.incl(f1) != None)]
+    #[requires(f2.incl(f1))]
     #[ensures(Self::rel(a, f2))]
-    fn rel_mono(a: Self::Auth, f1: Self::Frag, f2: Self::Frag) {}
+    fn rel_mono(a: Option<T>, f1: T, f2: T) {}
+
+    #[law]
+    #[ensures(Self::rel(None, f))]
+    fn rel_none(a: Option<T>, f: T) {}
+
+    #[law]
+    #[ensures(Self::rel(a, T::unit()))]
+    fn rel_unit(a: Option<T>) {}
 }

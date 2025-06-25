@@ -5,46 +5,30 @@ use crate::{logic::ra::RA, *};
 /// Combining those resource with [`RA::op`] **never** yields valid elements.
 /// As such, only one version of this resource (when using
 /// [`Resource`](crate::resource::Resource)) will be able to exists at a given moment.
-pub enum Excl<T> {
-    Excl(T),
-    /// The invalid value
-    Bot,
-}
+pub struct Excl<T>(pub T);
 
 impl<T> RA for Excl<T> {
     #[logic]
     #[open]
-    fn op(self, _other: Self) -> Self {
-        Self::Bot
-    }
-
-    #[logic]
-    #[open]
-    fn valid(self) -> bool {
-        match self {
-            Self::Excl(_) => true,
-            Self::Bot => false,
-        }
+    fn op(self, _other: Self) -> Option<Self> {
+        None
     }
 
     #[logic]
     #[open]
     #[ensures(match result {
-        Some(c) => self.op(c) == other,
-        None => forall<c: Self> self.op(c) != other,
+        Some(c) => factor.op(c) == Some(self),
+        None => forall<c: Self> factor.op(c) != Some(self),
     })]
-    fn incl(self, other: Self) -> Option<Self> {
-        match other {
-            Self::Bot => Some(self),
-            Self::Excl(_) => None,
-        }
+    fn factor(self, factor: Self) -> Option<Self> {
+        None
     }
 
-    #[logic]
+    #[predicate]
     #[open]
-    #[ensures(result == (self.op(self) == self))]
+    #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool {
-        self == Self::Bot
+        false
     }
 
     #[law]
@@ -54,21 +38,15 @@ impl<T> RA for Excl<T> {
 
     #[law]
     #[open(self)]
-    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
+    #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic]
     #[open(self)]
-    #[ensures(self.op(b).valid() ==> self.valid())]
-    fn valid_op(self, b: Self) {}
-
-    #[logic]
-    #[open(self)]
-    #[requires(self.valid())]
     #[ensures(match result {
-        Some(b) => b.incl(self) != None && b.idemp() &&
-           forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(b) != None,
-        None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
+        Some(b) => b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b),
+        None => forall<b: Self> ! (b.incl(self) && b.idemp()),
     })]
     fn maximal_idemp(self) -> Option<Self> {
         None

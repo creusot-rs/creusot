@@ -1,79 +1,85 @@
 module M_agree__agreement [#"agree.rs" 6 0 6 62]
   let%span sagree = "agree.rs" 4 11 4 27
   let%span sagree'0 = "agree.rs" 5 10 5 18
-  let%span sagree'1 = "../../../creusot-contracts/src/logic/ra/agree.rs" 47 14 50 5
-  let%span sagree'2 = "../../../creusot-contracts/src/logic/ra/agree.rs" 52 8 62 9
-  let%span sagree'3 = "../../../creusot-contracts/src/logic/ra/agree.rs" 67 14 67 32
-  let%span sagree'4 = "../../../creusot-contracts/src/logic/ra/agree.rs" 72 14 72 44
-  let%span sagree'5 = "../../../creusot-contracts/src/logic/ra/agree.rs" 17 8 26 9
-  let%span sagree'6 = "../../../creusot-contracts/src/logic/ra/agree.rs" 32 8 35 9
+  let%span sagree'1 = "../../../creusot-contracts/src/logic/ra/agree.rs" 35 14 35 32
+  let%span sagree'2 = "../../../creusot-contracts/src/logic/ra/agree.rs" 40 14 40 99
+  let%span sagree'3 = "../../../creusot-contracts/src/logic/ra/agree.rs" 13 8 13 57
+  let%span sagree'4 = "../../../creusot-contracts/src/logic/ra/agree.rs" 25 14 28 5
+  let%span sagree'5 = "../../../creusot-contracts/src/logic/ra/agree.rs" 30 8 30 23
   let%span sresource = "../../../creusot-contracts/src/resource.rs" 190 15 190 38
   let%span sresource'0 = "../../../creusot-contracts/src/resource.rs" 191 14 191 38
-  let%span sresource'1 = "../../../creusot-contracts/src/resource.rs" 192 14 192 81
-  let%span sresource'2 = "../../../creusot-contracts/src/resource.rs" 47 8 47 18
-  let%span sresource'3 = "../../../creusot-contracts/src/resource.rs" 75 14 75 28
+  let%span sresource'1 = "../../../creusot-contracts/src/resource.rs" 192 14 192 63
+  let%span sresource'2 = "../../../creusot-contracts/src/resource.rs" 44 8 44 18
   let%span smodel = "../../../creusot-contracts/src/model.rs" 44 8 44 22
-  let%span sra = "../../../creusot-contracts/src/logic/ra.rs" 150 4 150 61
+  let%span sra = "../../../creusot-contracts/src/logic/ra.rs" 100 8 100 41
+  let%span sra'0 = "../../../creusot-contracts/src/logic/ra.rs" 93 15 93 43
+  let%span sra'1 = "../../../creusot-contracts/src/logic/ra.rs" 94 14 94 29
+  let%span sra'2 = "../../../creusot-contracts/src/logic/ra.rs" 146 15 146 24
+  let%span sra'3 = "../../../creusot-contracts/src/logic/ra.rs" 147 15 147 24
+  let%span sra'4 = "../../../creusot-contracts/src/logic/ra.rs" 148 14 148 23
+  let%span sra'5 = "../../../creusot-contracts/src/logic/ra.rs" 89 8 89 34
+  let%span soption = "../../../creusot-contracts/src/std/option.rs" 762 8 765 9
   
   use creusot.int.Int32
+  use map.Map
   use creusot.prelude.Any
   
-  type t_Resource  =
-    { t_Resource__0: () }
+  type t_Resource
   
   type t_Id
   
   function id (self: t_Resource) : t_Id
   
   type t_Ag  =
-    | C_Ag Int32.t
-    | C_Bot
+    { t_Ag__0: Int32.t }
   
   type t_Option  =
     | C_None
     | C_Some t_Ag
   
-  type tuple  =
-    { _p0: t_Ag; _p1: t_Ag }
-  
-  function op (self: t_Ag) (other: t_Ag) : t_Ag =
-    [%#sagree'5] match { _p0 = self; _p1 = other } with
-      | {_p0 = C_Ag x ; _p1 = C_Ag y} -> if x = y then C_Ag x else C_Bot
-      | _ -> C_Bot
+  function and_then_logic (self: t_Option) (f: Map.map t_Ag t_Option) : t_Option =
+    [%#soption] match self with
+      | C_None -> C_None
+      | C_Some x -> Map.get f x
       end
+  
+  function op (self: t_Ag) (other: t_Ag) : t_Option =
+    [%#sagree'3] if self.t_Ag__0 = other.t_Ag__0 then C_Some self else C_None
   
   function associative (a: t_Ag) (b: t_Ag) (c: t_Ag) : ()
   
-  axiom associative_spec: forall a: t_Ag, b: t_Ag, c: t_Ag. [%#sagree'4] op (op a b) c = op a (op b c)
+  axiom associative_spec: forall a: t_Ag, b: t_Ag, c: t_Ag. [%#sagree'2] and_then_logic (op a b) (fun (ab: t_Ag) -> op ab c)
+  = and_then_logic (op b c) (fun (bc: t_Ag) -> op a bc)
   
   function commutative (a: t_Ag) (b: t_Ag) : ()
   
-  axiom commutative_spec: forall a: t_Ag, b: t_Ag. [%#sagree'3] op a b = op b a
+  axiom commutative_spec: forall a: t_Ag, b: t_Ag. [%#sagree'1] op a b = op b a
   
-  function incl (self: t_Ag) (other: t_Ag) : t_Option =
-    [%#sagree'2] match { _p0 = self; _p1 = other } with
-      | {_p0 = C_Ag x ; _p1 = C_Ag y} -> if x = y then C_Some (C_Ag x) else C_None
-      | {_p1 = C_Bot} -> C_Some (C_Bot)
-      | {_p1 = C_Ag _} -> C_None
-      end
+  function factor (self: t_Ag) (factor'0: t_Ag) : t_Option =
+    [%#sagree'5] op self factor'0
   
-  axiom incl_spec: forall self: t_Ag, other: t_Ag. [%#sagree'1] match incl self other with
-    | C_Some c -> op self c = other
-    | C_None -> forall c: t_Ag. op self c <> other
+  axiom factor_spec: forall self: t_Ag, factor'0: t_Ag. [%#sagree'4] match factor self factor'0 with
+    | C_Some c -> op factor'0 c = C_Some self
+    | C_None -> forall c: t_Ag. op factor'0 c <> C_Some self
     end
   
-  function incl_eq (this: t_Ag) (other: t_Ag) : t_Option =
-    [%#sra] if this = other then C_Some this else incl this other
+  predicate incl (self: t_Ag) (other: t_Ag) =
+    [%#sra'5] factor other self <> C_None
   
-  function valid (self: t_Ag) : bool =
-    [%#sagree'6] match self with
-      | C_Ag _ -> true
-      | C_Bot -> false
-      end
+  function incl_transitive (a: t_Ag) (b: t_Ag) (c: t_Ag) : ()
+  
+  axiom incl_transitive_spec: forall a: t_Ag, b: t_Ag, c: t_Ag. ([%#sra'2] incl a b)
+   -> ([%#sra'3] incl b c)  -> ([%#sra'4] incl a c)
+  
+  function incl_op (self: t_Ag) (other: t_Ag) (comb: t_Ag) : ()
+  
+  axiom incl_op_spec: forall self: t_Ag, other: t_Ag, comb: t_Ag. ([%#sra'0] op self other = C_Some comb)
+   -> ([%#sra'1] incl self comb)
+  
+  predicate incl_eq (self: t_Ag) (other: t_Ag) =
+    [%#sra] self = other \/ incl self other
   
   function val' (self: t_Resource) : t_Ag
-  
-  axiom val_spec: forall self: t_Resource. [%#sresource'3] valid (val' self)
   
   function view (self: t_Resource) : t_Ag =
     [%#sresource'2] val' self
@@ -85,8 +91,7 @@ module M_agree__agreement [#"agree.rs" 6 0 6 62]
     = id other}
     any
     [ return''0 (result:t_Resource)-> {[%#sresource'0] id result = id self}
-      {[%#sresource'1] incl_eq (view'0 self) (view'0 result) <> C_None
-      /\ incl_eq (view'0 other) (view'0 result) <> C_None}
+      {[%#sresource'1] incl_eq (view'0 self) (view'0 result) /\ incl_eq (view'0 other) (view'0 result)}
       (! return' {result}) ]
   
   

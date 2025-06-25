@@ -1,37 +1,54 @@
 use crate::{
-    logic::{FMap, ra::RA},
+    logic::{
+        FMap,
+        ra::{RA, UnitRA},
+    },
     *,
 };
 
 impl<K, V: RA> RA for FMap<K, V> {
     #[logic]
     #[open]
-    fn op(self, other: Self) -> Self {
-        self.merge(other, |(x, y): (V, V)| x.op(y))
-    }
-
-    #[logic]
-    #[open]
-    fn valid(self) -> bool {
+    fn op(self, other: Self) -> Option<Self> {
         pearlite! {
-            forall<k: K> self.get(k).valid()
+            if (forall<k: K> self.get(k).op(other.get(k)) != None) {
+                Some(self.total_op(other))
+            } else {
+                None
+            }
         }
     }
 
     #[logic]
     #[open]
     #[ensures(match result {
-        Some(c) => self.op(c) == other,
-        None => forall<c: Self> self.op(c) != other,
+        Some(c) => factor.op(c) == Some(self),
+        None => forall<c: Self> factor.op(c) != Some(self),
     })]
-    fn incl(self, other: Self) -> Option<Self> {
-        let res = self.missing_part(other);
-        if self.op(res).ext_eq(other) { Some(res) } else { None }
+    fn factor(self, factor: Self) -> Option<Self> {
+        pearlite! {
+            if (forall<k: K> factor.get(k).incl(self.get(k))) {
+                let res = self.filter_map(|(k, vo): (K, V)|
+                    match Some(vo).factor(factor.get(k)) {
+                        Some(r) => r,
+                        None => None,
+                });
+                proof_assert!(
+                    match factor.op(res) {
+                        None => false,
+                        Some(o) => o.ext_eq(self)
+                    }
+                );
+                Some(res)
+            } else {
+                None
+            }
+        }
     }
 
-    #[logic]
+    #[predicate]
     #[open]
-    #[ensures(result == (self.op(self) == self))]
+    #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool {
         pearlite! {
             forall<k: K> self.get(k).idemp()
@@ -39,52 +56,50 @@ impl<K, V: RA> RA for FMap<K, V> {
     }
 
     #[law]
-    #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}
 
     #[law]
-    #[open(self)]
-    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
+    #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {
-        proof_assert!(a.op(b).op(c).ext_eq(a.op(b.op(c))));
-    }
-
-    #[logic]
-    #[open(self)]
-    #[ensures(self.op(b).valid() ==> self.valid())]
-    fn valid_op(self, b: Self) {
-        let _ = <V as RA>::valid_op;
+        match (a.op(b), b.op(c)) {
+            (Some(ab), Some(bc)) => match (ab.op(c), a.op(bc)) {
+                (Some(x), Some(y)) => proof_assert!(x.ext_eq(y)),
+                _ => (),
+            },
+            _ => (),
+        }
     }
 
     #[logic]
     #[open]
-    #[requires(self.valid())]
     #[ensures(match result {
-        Some(b) => b.incl(self) != None && b.idemp() &&
-           forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(b) != None,
-        None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
+        Some(b) => b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b),
+        None => forall<b: Self> ! (b.incl(self) && b.idemp()),
     })]
     fn maximal_idemp(self) -> Option<Self> {
-        Some(self.maximal_idemp_part())
+        Some(self.filter_map(|(_, v): (K, V)| v.maximal_idemp()))
+    }
+}
+
+impl<K, V: RA> UnitRA for FMap<K, V> {
+    #[logic]
+    #[open]
+    #[ensures(forall<x: Self> x.op(result) == Some(x))]
+    fn unit() -> Self {
+        Self::empty()
     }
 }
 
 impl<K, V: RA> FMap<K, V> {
-    /// Used in `<FMap as RA>::incl`.
     #[logic]
-    #[open]
-    pub fn missing_part(self, other: Self) -> Self {
-        other.filter_map(|(k, vo)| match self.get(k).incl(Some(vo)) {
+    #[requires(forall<k: K> self.get(k).op(other.get(k)) != None)]
+    #[ensures(forall<k: K> Some(result.get(k)) == self.get(k).op(other.get(k)))]
+    pub fn total_op(self, other: Self) -> Self {
+        self.merge(other, |(x, y): (V, V)| match x.op(y) {
             Some(r) => r,
-            None => None,
+            _ => such_that(|_| true),
         })
-    }
-
-    /// Used in `<FMap as RA>::maximal_idemp`.
-    #[logic]
-    #[open]
-    pub fn maximal_idemp_part(self) -> Self {
-        self.filter_map(|(_, v): (K, V)| v.maximal_idemp())
     }
 }

@@ -1,39 +1,27 @@
 use crate::logic::ra::*;
 
-impl<T> RA for Option<T>
-where
-    T: RA,
-{
+impl<T: RA> RA for Option<T> {
     #[logic]
     #[open]
-    fn op(self, other: Self) -> Self {
+    fn op(self, other: Self) -> Option<Self> {
         match (self, other) {
-            (None, _) => other,
-            (_, None) => self,
-            (Some(x), Some(y)) => Some(x.op(y)),
-        }
-    }
-
-    #[logic]
-    #[open]
-    fn valid(self) -> bool {
-        match self {
-            Some(x) => x.valid(),
-            None => true,
+            (None, _) => Some(other),
+            (_, None) => Some(self),
+            (Some(x), Some(y)) => x.op(y).map_logic(|z| Some(z)),
         }
     }
 
     #[logic]
     #[open]
     #[ensures(match result {
-        Some(c) => self.op(c) == other,
-        None => forall<c: Self> self.op(c) != other,
+        Some(c) => factor.op(c) == Some(self),
+        None => forall<c: Self> factor.op(c) != Some(self),
     })]
-    fn incl(self, other: Self) -> Option<Self> {
-        match (self, other) {
-            (None, x) => Some(x),
-            (_, None) => None,
-            (Some(x), Some(y)) => match x.incl(y) {
+    fn factor(self, factor: Self) -> Option<Self> {
+        match (self, factor) {
+            (x, None) => Some(x),
+            (None, _) => None,
+            (Some(x), Some(y)) => match x.factor(y) {
                 Some(z) => Some(Some(z)),
                 None => {
                     if x == y {
@@ -46,9 +34,9 @@ where
         }
     }
 
-    #[logic]
+    #[predicate]
     #[open]
-    #[ensures(result == (self.op(self) == self))]
+    #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool {
         match self {
             None => true,
@@ -65,7 +53,7 @@ where
 
     #[law]
     #[open(self)]
-    #[ensures(a.op(b).op(c) == a.op(b.op(c)))]
+    #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {
         pearlite! {
             match (a, b, c) {
@@ -81,18 +69,10 @@ where
 
     #[logic]
     #[open(self)]
-    #[ensures(self.op(b).valid() ==> self.valid())]
-    fn valid_op(self, b: Self) {
-        let _ = <T as RA>::valid_op;
-    }
-
-    #[logic]
-    #[open(self)]
-    #[requires(self.valid())]
     #[ensures(match result {
-        Some(b) => b.incl(self) != None && b.idemp() &&
-           forall<c: Self> c.incl(self) != None && c.idemp() ==> c.incl(b) != None,
-        None => forall<b: Self> ! (b.incl(self) != None && b.idemp()),
+        Some(b) => b.incl(self) && b.idemp() &&
+           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b),
+        None => forall<b: Self> ! (b.incl(self) && b.idemp()),
     })]
     fn maximal_idemp(self) -> Option<Self> {
         pearlite! {
@@ -106,5 +86,14 @@ where
                 }
             }
         }
+    }
+}
+
+impl<T: RA> UnitRA for Option<T> {
+    #[logic]
+    #[open]
+    #[ensures(forall<x: Self> x.op(result) == Some(x))]
+    fn unit() -> Self {
+        None
     }
 }

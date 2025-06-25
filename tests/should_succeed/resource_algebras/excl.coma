@@ -3,29 +3,28 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
   let%span sexcl'0 = "excl.rs" 9 8 9 22
   let%span sexcl'1 = "excl.rs" 4 10 4 26
   let%span sexcl'2 = "excl.rs" 5 10 5 18
-  let%span sexcl'3 = "../../../creusot-contracts/src/logic/ra/excl.rs" 24 8 27 9
-  let%span sexcl'4 = "../../../creusot-contracts/src/logic/ra/excl.rs" 18 8 18 17
-  let%span sexcl'5 = "../../../creusot-contracts/src/logic/ra/excl.rs" 52 14 52 32
-  let%span sexcl'6 = "../../../creusot-contracts/src/logic/ra/excl.rs" 57 14 57 44
-  let%span sresource = "../../../creusot-contracts/src/resource.rs" 67 14 67 33
-  let%span sresource'0 = "../../../creusot-contracts/src/resource.rs" 225 15 225 38
-  let%span sresource'1 = "../../../creusot-contracts/src/resource.rs" 226 14 226 28
-  let%span sresource'2 = "../../../creusot-contracts/src/resource.rs" 227 14 227 38
-  let%span sresource'3 = "../../../creusot-contracts/src/resource.rs" 47 8 47 18
-  let%span sresource'4 = "../../../creusot-contracts/src/resource.rs" 75 14 75 28
+  let%span sexcl'3 = "../../../creusot-contracts/src/logic/ra/excl.rs" 14 8 14 12
+  let%span sexcl'4 = "../../../creusot-contracts/src/logic/ra/excl.rs" 36 14 36 32
+  let%span sexcl'5 = "../../../creusot-contracts/src/logic/ra/excl.rs" 41 14 41 98
+  let%span sresource = "../../../creusot-contracts/src/resource.rs" 64 14 64 33
+  let%span sresource'0 = "../../../creusot-contracts/src/resource.rs" 226 15 226 38
+  let%span sresource'1 = "../../../creusot-contracts/src/resource.rs" 227 14 227 28
+  let%span sresource'2 = "../../../creusot-contracts/src/resource.rs" 228 14 228 38
+  let%span sresource'3 = "../../../creusot-contracts/src/resource.rs" 44 8 44 18
   let%span sid = "../../../creusot-contracts/src/logic/id.rs" 29 14 29 41
   let%span smodel = "../../../creusot-contracts/src/model.rs" 62 8 62 22
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 44 8 44 22
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
+  let%span soption = "../../../creusot-contracts/src/std/option.rs" 762 8 765 9
   
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use map.Map
   use creusot.prelude.Any
   
   type t_Id
   
-  type t_Resource  =
-    { t_Resource__0: () }
+  type t_Resource
   
   function id (self: t_Resource) : t_Id
   
@@ -38,29 +37,31 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
   
   
   type t_Excl  =
-    | C_Excl Int32.t
-    | C_Bot
+    { t_Excl__0: Int32.t }
   
-  function op (self: t_Excl) (_other: t_Excl) : t_Excl =
-    [%#sexcl'4] C_Bot
+  type t_Option  =
+    | C_None
+    | C_Some t_Excl
+  
+  function and_then_logic (self: t_Option) (f: Map.map t_Excl t_Option) : t_Option =
+    [%#soption] match self with
+      | C_None -> C_None
+      | C_Some x -> Map.get f x
+      end
+  
+  function op (self: t_Excl) (_other: t_Excl) : t_Option =
+    [%#sexcl'3] C_None
   
   function associative (a: t_Excl) (b: t_Excl) (c: t_Excl) : ()
   
-  axiom associative_spec: forall a: t_Excl, b: t_Excl, c: t_Excl. [%#sexcl'6] op (op a b) c = op a (op b c)
+  axiom associative_spec: forall a: t_Excl, b: t_Excl, c: t_Excl. [%#sexcl'5] and_then_logic (op a b) (fun (ab: t_Excl) -> op ab c)
+  = and_then_logic (op b c) (fun (bc: t_Excl) -> op a bc)
   
   function commutative (a: t_Excl) (b: t_Excl) : ()
   
-  axiom commutative_spec: forall a: t_Excl, b: t_Excl. [%#sexcl'5] op a b = op b a
-  
-  function valid (self: t_Excl) : bool =
-    [%#sexcl'3] match self with
-      | C_Excl _ -> true
-      | C_Bot -> false
-      end
+  axiom commutative_spec: forall a: t_Excl, b: t_Excl. [%#sexcl'4] op a b = op b a
   
   function val' (self: t_Resource) : t_Excl
-  
-  axiom val_spec: forall self: t_Resource. [%#sresource'4] valid (val' self)
   
   function view (self: t_Resource) : t_Excl =
     [%#sresource'3] val' self
@@ -75,7 +76,7 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
     = id other}
     any
     [ return''0 (result:())-> {[%#sresource'1] self.final = self.current}
-      {[%#sresource'2] valid (op (view'0 self) (view'1 other))}
+      {[%#sresource'2] op (view'0 self) (view'1 other) <> C_None}
       (! return' {result}) ]
   
   

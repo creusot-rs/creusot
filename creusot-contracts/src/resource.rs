@@ -1,42 +1,39 @@
 pub mod fmap_view;
 
+#[cfg(creusot)]
+use crate::std::option::OptionExt as _;
 use crate::{
     Ghost, Snapshot,
     logic::{Id, Set, ra::RA},
     *,
 };
-#[cfg(creusot)]
-use crate::{
-    logic::ra::{self, incl_eq},
-    std::option::OptionExt as _,
-};
 use ::std::marker::PhantomData;
 
 /// A ghost wrapper around a [resource algebra](RA).
 ///
-/// This structure is meant to be manipulated in [`ghost`](mod@ghost) code. It is
-/// guaranteed to always contain a [`valid`](RA::valid) resource.
+/// This structure is meant to be manipulated in [`ghost`](mod@ghost) code.
 ///
 /// The usual usage is this:
 /// - [Create](Self::alloc) some ghost resource
 /// - [Split](Self::split) it into multiple parts, some of which may be [duplicable](RA::idemp)
-/// - [Join](Self::join) these parts later. By the validity invariant, this allows
+/// - [Join](Self::join) these parts later. By exploiting validity of the combination, this allows
 ///   one to learn information about one part from the other.
 ///
 /// # Example
 ///
 /// ```rust
 /// use creusot_contracts::{*, resource::Resource, logic::ra::Ag};
-/// let mut res: Ghost<Resource<Ag<Int>>> = Resource::alloc(snapshot!(Ag::Ag(1)));
+/// let mut res: Ghost<Resource<Ag<Int>>> = Resource::alloc(snapshot!(Ag(1)));
 ///
 /// ghost! {
-///     let part = res.split_off(snapshot!(Ag::Ag(1)), snapshot!(Ag::Ag(1)));
+///     let part = res.split_off(snapshot!(Ag(1)), snapshot!(Ag(1)));
 ///     // Pass `part` around, forget what it contained...
 ///     let _ = res.join_shared(&part);
 ///     // And now we remember: the only way this works is if `part` contained `1`!
-///     proof_assert!(part@ == Ag::Ag(1));
+///     proof_assert!(part@ == Ag(1));
 /// };
 /// ```
+#[trusted]
 pub struct Resource<R>(PhantomData<R>);
 
 impl<R: RA> View for Resource<R> {
@@ -72,28 +69,31 @@ impl<R: RA> Resource<R> {
     /// Get the RA contained in this resource.
     #[logic]
     #[trusted]
-    #[ensures(result.valid())]
     pub fn val(self) -> R {
         dead
     }
 
-    /// Create a new resource from a valid value.
+    /// Create a new resource
     ///
     /// # Corresponding reasoning
     ///
-    /// `⌜valid(value)⌝ ⊢ ∃γ, Own(value, γ)`
+    /// `⊢ |=> ∃γ, Own(value, γ)`
     #[trusted]
     #[pure]
-    #[requires(r.valid())]
     #[ensures(result@ == *r)]
     pub fn alloc(r: Snapshot<R>) -> Ghost<Self> {
         Ghost::conjure()
     }
 
-    /// Dummy resource used to prove some of these functions.
+    /// Dummy resource.
+    /// This funciton is unsound, because there does not necessarilly exist
+    /// a value of the RA that does not carry any ownership.
+    ///
+    /// However, thanks to this, we can prove some of the functions bellow, that would be
+    /// otherwise axiomatized. These proofs are morally trusted, but being to prove them is
+    /// a good measure against stupid mistakes in their specifications.
     #[trusted]
     #[pure]
-    #[ensures(true)]
     fn dummy() -> Self {
         Self(PhantomData)
     }
@@ -117,7 +117,7 @@ impl<R: RA> Resource<R> {
     /// `⌜a = b ⋅ c⌝ ∧ Own(a, γ) ⊢ Own(b, γ) ∗ Own(c, γ)`
     #[trusted]
     #[pure]
-    #[requires(self@ == a.op(*b))]
+    #[requires(Some(self@) == a.op(*b))]
     #[ensures(result.0.id() == self.id() && result.1.id() == self.id())]
     #[ensures(result.0@ == *a)]
     #[ensures(result.1@ == *b)]
@@ -128,20 +128,20 @@ impl<R: RA> Resource<R> {
     /// Split a resource into two, and join it again once the mutable borrows are dropped.
     #[trusted]
     #[pure]
-    #[requires(self@ == a.op(*b))]
+    #[requires(Some(self@) == a.op(*b))]
     #[ensures(result.0.id() == self.id() && result.1.id() == self.id())]
     #[ensures(result.0@ == *a)]
     #[ensures(result.1@ == *b)]
     #[ensures((^result.0).id() == self.id() && (^result.1).id() == self.id() ==>
         (^self).id() == self.id() &&
-        (^self)@ == (^result.0)@.op((^result.1)@))]
+        Some((^self)@) == (^result.0)@.op((^result.1)@))]
     pub fn split_mut(&mut self, a: Snapshot<R>, b: Snapshot<R>) -> (&mut Self, &mut Self) {
         panic!("ghost code only")
     }
 
     /// Remove `b` from `self` and return it, leaving `a` inside `self`.
     #[pure]
-    #[requires(self@ == a.op(*b))]
+    #[requires(Some(self@) == a.op(*b))]
     #[ensures((^self).id() == self.id())]
     #[ensures(result.id() == self.id())]
     #[ensures((^self)@ == *a)]
@@ -164,7 +164,7 @@ impl<R: RA> Resource<R> {
     #[pure]
     #[requires(self.id() == other.id())]
     #[ensures(result.id() == self.id())]
-    #[ensures(result@ == self@.op(other@))]
+    #[ensures(Some(result@) == self@.op(other@))]
     pub fn join(self, other: Self) -> Self {
         panic!("ghost code only")
     }
@@ -173,7 +173,7 @@ impl<R: RA> Resource<R> {
     #[pure]
     #[requires(self.id() == other.id())]
     #[ensures((^self).id() == self.id())]
-    #[ensures((^self)@ == self@.op(other@))]
+    #[ensures(Some((^self)@) == self@.op(other@))]
     pub fn join_mut(&mut self, other: Self) {
         let this = std::mem::replace(self, Self::dummy());
         let this = this.join(other);
@@ -189,19 +189,20 @@ impl<R: RA> Resource<R> {
     #[pure]
     #[requires(self.id() == other.id())]
     #[ensures(result.id() == self.id())]
-    #[ensures(incl_eq(self@, result@) != None && incl_eq(other@, result@) != None)]
+    #[ensures(self@.incl_eq(result@) && other@.incl_eq(result@))]
     pub fn join_shared<'a>(&'a self, other: &'a Self) -> &'a Self {
         panic!("ghost code only")
     }
 
     /// Transforms `self` into `target`, given that `target` is included in `self`.
     #[pure]
-    #[requires(target.incl(self@) != None)]
+    #[requires(target.incl(self@))]
     #[ensures((^self).id() == self.id())]
     #[ensures((^self)@ == *target)]
     pub fn weaken(&mut self, target: Snapshot<R>) {
         let this = std::mem::replace(self, Self::dummy());
-        let (this, _) = this.split(target, snapshot!(target.incl(self@).unwrap_logic()));
+        let factor = snapshot!(this@.factor(*target).unwrap_logic());
+        let (this, _) = this.split(target, factor);
         let _ = std::mem::replace(self, this);
     }
 
@@ -212,7 +213,7 @@ impl<R: RA> Resource<R> {
     /// `⌜a ⇝ b⌝ ∧ Own(a, γ) ⊢ Own(b, γ)`
     #[trusted]
     #[pure]
-    #[requires(ra::update(self@, *target))]
+    #[requires(self@.update(*target))]
     #[ensures((^self).id() == self.id())]
     #[ensures((^self)@ == *target)]
     pub fn update(&mut self, target: Snapshot<R>) {
@@ -224,7 +225,7 @@ impl<R: RA> Resource<R> {
     #[pure]
     #[requires(self.id() == other.id())]
     #[ensures(^self == *self)]
-    #[ensures(self@.op(other@).valid())]
+    #[ensures(self@.op(other@) != None)]
     pub fn valid_shared(&mut self, other: &Self) {}
 
     /// Transform `self` into an element in `target`, nondeterministically.
@@ -234,7 +235,7 @@ impl<R: RA> Resource<R> {
     /// `⌜a ⇝ B⌝ ∧ Own(a, γ) ⊢ ∃b∈B, Own(b, γ)`
     #[trusted]
     #[pure]
-    #[requires(ra::update_nondet(self@, *target_s))]
+    #[requires(self@.update_nondet(*target_s))]
     #[ensures((^self).id() == self.id())]
     #[ensures(target_s.contains((^self)@))]
     pub fn update_nondet(&mut self, target_s: Snapshot<Set<R>>) {
