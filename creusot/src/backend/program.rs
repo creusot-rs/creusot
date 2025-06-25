@@ -522,15 +522,12 @@ impl<'tcx> RValue<'tcx> {
                         let prelude = match target.kind() {
                             TyKind::Int(ity) => ity_to_prelude(lower.ctx.tcx, *ity),
                             TyKind::Uint(uty) => uty_to_prelude(lower.ctx.tcx, *uty),
-                            _ => lower.ctx.crash_and_error(
-                                DUMMY_SP,
-                                "bool cast to non integral casts are currently unsupported",
-                            ),
+                            _ => unsupported_cast(&lower.ctx, source, target),
                         };
                         let arg = e.into_why(lower, istmts);
                         Exp::qvar(lower.names.in_pre(prelude, "of_bool")).app(vec![arg])
                     }
-                    _ => {
+                    TyKind::Int(_) | TyKind::Uint(_) => {
                         // convert source to BV256.t / int
                         let to_fname = match source.kind() {
                             TyKind::Int(ity) => {
@@ -543,10 +540,7 @@ impl<'tcx> RValue<'tcx> {
                                     if lower.names.bitwise_mode() { "to_BV256" } else { "t'int" };
                                 lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *ity), fct_name)
                             }
-                            _ => lower.ctx.crash_and_error(
-                                DUMMY_SP,
-                                &format!("casts {:?} are currently unsupported", source.kind()),
-                            ),
+                            _ => unsupported_cast(&lower.ctx, source, target),
                         };
                         let to_exp = Exp::qvar(to_fname).app(vec![e.into_why(lower, istmts)]);
 
@@ -567,10 +561,7 @@ impl<'tcx> RValue<'tcx> {
                                     if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
                                 lower.names.in_pre(PreMod::Char, fct_name)
                             }
-                            _ => lower.ctx.crash_and_error(
-                                DUMMY_SP,
-                                "Non integral casts are currently unsupported",
-                            ),
+                            _ => unsupported_cast(&lower.ctx, source, target),
                         };
 
                         // create final statement
@@ -583,6 +574,14 @@ impl<'tcx> RValue<'tcx> {
                         ));
                         Exp::var(of_ret_id)
                     }
+                    TyKind::RawPtr(ty1, _)
+                        if let TyKind::RawPtr(ty2, _) = target.kind()
+                            && ty1 == ty2 =>
+                    {
+                        // cast between raw pointers of the same type
+                        e.into_why(lower, istmts)
+                    }
+                    _ => unsupported_cast(&lower.ctx, source, target),
                 }
             }
             RValue::Len(op) => Exp::qvar(lower.names.in_pre(PreMod::Slice, "length"))
@@ -1224,4 +1223,11 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
     };
 
     (lower.names.item(id, subst), args)
+}
+
+fn unsupported_cast(ctx: &crate::ctx::TranslationCtx, source: Ty, target: Ty) -> ! {
+    ctx.crash_and_error(
+        DUMMY_SP,
+        &format!("casts from {:?} to {:?} are currently unsupported", source, target),
+    )
 }

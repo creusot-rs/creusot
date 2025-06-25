@@ -226,6 +226,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::RawPtr(_, pl) => RValue::Ptr(self.translate_place(pl.as_ref())?),
             Rvalue::Cast(
+                CastKind::PointerCoercion(PointerCoercion::MutToConstPointer, _),
+                op,
+                _,
+            ) => RValue::Operand(self.translate_operand(op)?),
+            Rvalue::Cast(
                 CastKind::PointerCoercion(..)
                 | CastKind::PointerExposeProvenance
                 | CastKind::PointerWithExposedProvenance
