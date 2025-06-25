@@ -455,8 +455,7 @@ ast_enum_of_structs! {
 ast_struct! {
     pub struct QuantArg {
         pub ident: Ident,
-        pub colon_token: Token![:],
-        pub ty: Box<Type>,
+        pub ty: Option<(Token![:], Box<Type>)>,
     }
 }
 
@@ -1442,9 +1441,11 @@ pub(crate) mod parsing {
     impl Parse for QuantArg {
         fn parse(input: ParseStream) -> Result<Self> {
             let ident = input.parse()?;
-            let colon_token = input.parse()?;
-            let ty = input.parse()?;
-            Ok(QuantArg { ident, colon_token, ty })
+            if input.peek(Token![:]) {
+                Ok(QuantArg { ident, ty: Some((input.parse()?, input.parse()?)) })
+            } else {
+                Ok(QuantArg { ident, ty: None })
+            }
         }
     }
 
@@ -1969,8 +1970,10 @@ pub(crate) mod printing {
     impl ToTokens for QuantArg {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.ident.to_tokens(tokens);
-            self.colon_token.to_tokens(tokens);
-            self.ty.to_tokens(tokens);
+            if let Some((colon_token, ty)) = &self.ty {
+                colon_token.to_tokens(tokens);
+                ty.to_tokens(tokens);
+            }
         }
     }
 
