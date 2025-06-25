@@ -142,6 +142,13 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             Ok(res)
         }
         RT::If(TermIf { cond, then_branch, else_branch, .. }) => {
+            let cond = if let RT::Paren(TermParen { expr, .. }) = &**cond
+                && matches!(&**expr, RT::Quant(_))
+            {
+                &**expr
+            } else {
+                cond
+            };
             let cond = encode_term(cond)?;
             let then_branch: Vec<_> =
                 then_branch.stmts.iter().map(encode_stmt).collect::<Result<_, _>>()?;
