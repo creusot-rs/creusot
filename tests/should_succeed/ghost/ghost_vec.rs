@@ -5,7 +5,9 @@ pub fn ghost_vec() {
     let mut v = Seq::new();
     proof_assert!(forall<i: Int> v.get(i) == None);
     ghost! {
+        assert!(v.is_empty_ghost());
         v.push_back_ghost(21);
+        assert!(!v.is_empty_ghost());
         proof_assert!(v[0] == 21i32);
         proof_assert!(v.len() == 1);
 

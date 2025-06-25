@@ -476,6 +476,30 @@ impl<T> Seq<T> {
         panic!()
     }
 
+    /// Returns `true` if the sequence is empty.
+    ///
+    /// # Example
+    ///
+    /// ```rust,creusot
+    /// use creusot_contracts::*;
+    /// #[pure]
+    /// #[requires(s.len() == 0)]
+    /// pub fn foo(mut s: Seq<i32>) {
+    ///     assert!(s.is_empty_ghost());
+    ///     s.push_back_ghost(1i32);
+    ///     assert!(!s.is_empty_ghost());
+    /// }
+    /// ghost! {
+    ///     foo(Seq::new().into_inner())  
+    /// };
+    /// ```
+    #[trusted]
+    #[pure]
+    #[ensures(result == (self.len() == 0))]
+    pub fn is_empty_ghost(&self) -> bool {
+        panic!()
+    }
+
     /// Appends an element to the front of a collection.
     ///
     /// # Example
