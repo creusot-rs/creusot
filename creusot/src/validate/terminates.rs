@@ -282,7 +282,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         // If we are calling a known method, and this method has been defined in an ancestor of the impl
         // we found, and this method is logic and transparent from this impl and this impl is local, then use a
         // specialized default node
-        if let TraitResolved::Instance { def, impl_ : Some(impl_)} = res &&
+        if let TraitResolved::Instance { def, impl_: Some(impl_)} = res &&
             ctx.impl_of_method(def.0) != Some(impl_.0) && // The method is defined in an ancestor
             is_pearlite(ctx.tcx, def.0) && // The method is logic
             let Some(impl_ldid) = impl_.0.as_local() && // The impl is local

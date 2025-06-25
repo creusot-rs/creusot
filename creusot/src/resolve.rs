@@ -130,7 +130,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
         let (mut uninit, mut live, mut borrows);
         match loc {
             ExtendedLocation::Mid(loc) if self.body.stmt_at(loc).is_left() => {
-                // TODO : this is copying bits of the various analyses. Move this there,
+                // TODO: this is copying bits of the various analyses. Move this there,
                 // and factor what can be factored.
                 self.uninit.seek_before_primary_effect(loc);
                 uninit = self.uninit.get().clone();

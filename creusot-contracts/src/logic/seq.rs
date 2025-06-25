@@ -63,7 +63,7 @@ impl<T: ?Sized> Seq<T> {
     /// # use creusot_contracts::*;
     /// let s = snapshot!(Seq::create(5, |i| i + 1));
     /// proof_assert!(s.len() == 5);
-    /// proof_assert!(forall<i: Int> 0 <= i && i < 5 ==> s[i] == i + 1);
+    /// proof_assert!(forall<i> 0 <= i && i < 5 ==> s[i] == i + 1);
     /// ```
     #[trusted]
     #[logic]
@@ -81,7 +81,7 @@ impl<T: ?Sized> Seq<T> {
     #[open]
     pub fn get(self, ix: Int) -> Option<T>
     where
-        T: Sized, // TODO : don't require this (problem: return type needs to be sized)
+        T: Sized, // TODO: don't require this (problem: return type needs to be sized)
     {
         if 0 <= ix && ix < self.len() { Some(self.index_logic(ix)) } else { None }
     }
@@ -357,9 +357,9 @@ impl<T: ?Sized> Seq<T> {
     #[predicate]
     pub fn contains(self, x: T) -> bool
     where
-        T: Sized, // TODO : don't require this (problem: uses index)
+        T: Sized, // TODO: don't require this (problem: uses index)
     {
-        pearlite! { exists<i : Int> 0 <= i &&  i < self.len() && self[i] == x }
+        pearlite! { exists<i> 0 <= i &&  i < self.len() && self[i] == x }
     }
 
     /// Returns `true` if `self` is sorted between `start` and `end`.
@@ -367,10 +367,10 @@ impl<T: ?Sized> Seq<T> {
     #[predicate]
     pub fn sorted_range(self, start: Int, end: Int) -> bool
     where
-        T: OrdLogic + Sized, // TODO : don't require this (problem: uses index)
+        T: OrdLogic + Sized, // TODO: don't require this (problem: uses index)
     {
         pearlite! {
-            forall<i : Int, j : Int> start <= i && i <= j && j < end ==> self[i] <= self[j]
+            forall<i, j> start <= i && i <= j && j < end ==> self[i] <= self[j]
         }
     }
 
@@ -379,14 +379,14 @@ impl<T: ?Sized> Seq<T> {
     #[predicate]
     pub fn sorted(self) -> bool
     where
-        T: OrdLogic + Sized, // TODO : don't require this (problem: uses index)
+        T: OrdLogic + Sized, // TODO: don't require this (problem: uses index)
     {
         self.sorted_range(0, self.len())
     }
 
     #[open]
     #[logic]
-    #[ensures(forall<a: Seq<T>, b: Seq<T>, x: T>
+    #[ensures(forall<a: Seq<T>, b: Seq<T>, x>
         a.concat(b).contains(x) == a.contains(x) || b.contains(x))]
     pub fn concat_contains()
     where
@@ -490,7 +490,7 @@ impl<T> Seq<T> {
     ///     assert!(!s.is_empty_ghost());
     /// }
     /// ghost! {
-    ///     foo(Seq::new().into_inner())  
+    ///     foo(Seq::new().into_inner())
     /// };
     /// ```
     #[trusted]
@@ -596,7 +596,7 @@ impl<T> Seq<T> {
         None => self.get(index) == None && *self == ^self,
         Some(r) => self.get(index) == Some(*r) && ^r == (^self)[index],
     })]
-    #[ensures(forall<i: Int> i != index ==> (*self).get(i) == (^self).get(i))]
+    #[ensures(forall<i> i != index ==> (*self).get(i) == (^self).get(i))]
     #[ensures((*self).len() == (^self).len())]
     pub fn get_mut_ghost(&mut self, index: Int) -> Option<&mut T> {
         let _ = index;
@@ -694,7 +694,7 @@ impl<T: ?Sized> Invariant for Seq<T> {
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { forall<i:Int> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
+        pearlite! { forall<i> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
     }
 }
 

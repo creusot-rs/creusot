@@ -41,17 +41,17 @@ fn m<Name>(items: Seq<Item<Name>>, i: Int, w: Int) -> Int {
 
 #[requires(items@.len() < 10000000)]
 #[requires(max_weight@ < 10000000)]
-#[requires(forall<i: Int> 0 <= i && i < items@.len() ==> items[i].value@ <= 10000000)]
+#[requires(forall<i> 0 <= i && i < items@.len() ==> items[i].value@ <= 10000000)]
 pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&Item<Name>> {
     let mut best_value = vec![vec![0; max_weight + 1]; items.len() + 1];
     let mut i = 0;
 
     #[invariant(items@.len() + 1 == best_value@.len())]
-    #[invariant(forall<i: Int> 0 <= i && i < best_value@.len() ==>
+    #[invariant(forall<i> 0 <= i && i < best_value@.len() ==>
                 max_weight@ + 1 == (best_value[i]@).len())]
-    #[invariant(forall<ii: Int, ww: Int> 0 <= ii && ii <= i@ && 0 <= ww && ww <= max_weight@ ==>
+    #[invariant(forall<ii, ww> 0 <= ii && ii <= i@ && 0 <= ww && ww <= max_weight@ ==>
                   (best_value[ii]@)[ww]@ == m(items@, ii, ww))]
-    #[invariant(forall<ii: Int, ww: Int> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
+    #[invariant(forall<ii, ww> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
                   (best_value[ii]@)[ww]@ <= 10000000 * ii)]
     while i < items.len() {
         let it = &items[i];
@@ -61,14 +61,14 @@ pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&
         let mut w = 0;
 
         #[invariant(items@.len() + 1 == best_value@.len())]
-        #[invariant(forall<i: Int> 0 <= i && i < best_value@.len() ==>
+        #[invariant(forall<i> 0 <= i && i < best_value@.len() ==>
                       max_weight@ + 1 == (best_value[i]@).len())]
-        #[invariant(forall<ii: Int, ww: Int>
+        #[invariant(forall<ii, ww>
                       0 <= ii && ii <= i@ && 0 <= ww && ww <= max_weight@ ==>
                       (best_value[ii]@)[ww]@ == m(items@, ii, ww))]
-        #[invariant(forall<ww: Int> 0 <= ww && ww <= w@-1 ==>
+        #[invariant(forall<ww> 0 <= ww && ww <= w@-1 ==>
                       (best_value[i@+1]@)[ww]@ == m(items@, i@+1, ww))]
-        #[invariant(forall<ii: Int, ww: Int> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
+        #[invariant(forall<ii, ww> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
                   (best_value[ii]@)[ww]@ <= 10000000 * ii)]
         while w <= max_weight {
             best_value[i + 1][w] = if it.weight > w {

@@ -24,7 +24,7 @@ impl<A: Clone> Iterator for Repeat<A> {
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&
-            forall<i: Int> 0 <= i && i < visited.len() ==> visited[i] == self.element
+            forall<i> 0 <= i && i < visited.len() ==> visited[i] == self.element
         }
     }
 

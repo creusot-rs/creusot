@@ -25,7 +25,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
             self.end == o.end && self.start.deep_model() <= o.start.deep_model()
             && (visited.len() > 0 ==> o.start.deep_model() <= o.end.deep_model())
             && visited.len() == o.start.deep_model() - self.start.deep_model()
-            && forall<i : Int> 0 <= i && i < visited.len() ==>
+            && forall<i> 0 <= i && i < visited.len() ==>
                 visited[i].deep_model() == self.start.deep_model() + i
         }
     }
@@ -50,7 +50,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for Range<Idx
             self.start == o.start && self.end.deep_model() >= o.end.deep_model()
             && (visited.len() > 0 ==> o.end.deep_model() >= o.start.deep_model())
             && visited.len() == o.end.deep_model() - self.end.deep_model()
-            && forall<i : Int> 0 <= i && i < visited.len() ==>
+            && forall<i> 0 <= i && i < visited.len() ==>
                 visited[i].deep_model() == self.end.deep_model() - i
         }
     }
@@ -93,7 +93,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
             visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
             (self.is_empty_log() ==> o.is_empty_log()) &&
             (o.is_empty_log() || self.end_log() == o.end_log()) &&
-            forall<i : Int> 0 <= i && i < visited.len() ==>
+            forall<i> 0 <= i && i < visited.len() ==>
                 visited[i].deep_model() == self.start_log().deep_model() + i
         }
     }
@@ -120,7 +120,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for RangeIncl
             visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
             (self.is_empty_log() ==> o.is_empty_log()) &&
             (o.is_empty_log() || self.start_log() == o.start_log()) &&
-            forall<i : Int> 0 <= i && i < visited.len() ==>
+            forall<i> 0 <= i && i < visited.len() ==>
                 visited[i].deep_model() == self.end_log().deep_model() - i
         }
     }

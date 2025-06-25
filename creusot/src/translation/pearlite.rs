@@ -1044,7 +1044,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     }
 
     // Creates a 'logical' reborrow of a mutable borrow.
-    // The idea is that the expression `&mut ** X` for `X : &mut &mut T` should produces a pearlite value of type `&mut T`.
+    // The idea is that the expression `&mut ** X` for `X: &mut &mut T` should produces a pearlite value of type `&mut T`.
     //
     // However, this also has to deal with the idea that `* X` access the current value of a borrow in Pearlite.
     // In actuality `&mut ** X` and `*X` are the same thing in THIR (rather the second doesn't exist).
@@ -1571,7 +1571,7 @@ impl<'tcx> Term<'tcx> {
     ///
     /// If `inv_subst` containts `("x", 5)`:
     /// - If `self` is `x == 1`, `self.subst(inv_subst)` is `5 + 1`
-    /// - If `self` is `forall<x: Int> x == 1`, `self.subst(inv_subst)` is still `forall<x: Int> x == 1`
+    /// - If `self` is `forall<x> x == 1`, `self.subst(inv_subst)` is still `forall<x> x == 1`
     pub(crate) fn subst(&mut self, subst: impl IntoSubst<'tcx>) {
         self.subst_with(&HashMap::new(), &mut subst.into_subst())
     }

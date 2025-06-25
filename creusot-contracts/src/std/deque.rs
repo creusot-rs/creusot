@@ -28,7 +28,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     #[logic]
     #[trusted]
     #[ensures(self.view().len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < self.view().len()
+    #[ensures(forall<i> 0 <= i && i < self.view().len()
               ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         dead
@@ -63,7 +63,7 @@ impl<T> Resolve for VecDeque<T> {
     #[open]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
+        pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
     }
 
     #[trusted]

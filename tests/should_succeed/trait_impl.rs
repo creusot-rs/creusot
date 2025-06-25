@@ -34,7 +34,7 @@ impl<B> T<B> for u32 {
 // }
 
 // impl PartialEq<()> for u32 {
-//   fn eq(self : Self, rhs: ()) -> bool {
+//   fn eq(self: Self, rhs: ()) -> bool {
 //     true
 //   }
 // }

@@ -3,7 +3,7 @@ use creusot_contracts::*;
 
 pub fn ghost_vec() {
     let mut v = Seq::new();
-    proof_assert!(forall<i: Int> v.get(i) == None);
+    proof_assert!(forall<i> v.get(i) == None);
     ghost! {
         assert!(v.is_empty_ghost());
         v.push_back_ghost(21);

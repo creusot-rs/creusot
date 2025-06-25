@@ -27,7 +27,7 @@ impl<A: ?Sized, B: ?Sized> Mapping<A, B> {
     #[allow(unused_variables)]
     pub fn get(self, a: A) -> B
     where
-        B: Sized, // TODO : don't require this (problem: return type needs to be sized)
+        B: Sized, // TODO: don't require this (problem: return type needs to be sized)
     {
         dead
     }

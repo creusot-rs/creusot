@@ -192,7 +192,7 @@ pub mod macros {
     /// let mut v = Vec::new();
     /// // For annoying reasons, examples cannot use invariants. Please imagine that they are uncommented :)
     /// // #[invariant(v@.len() == produced.len())]
-    /// // #[invariant(forall<j: Int> 0 <= j && j < produced.len() ==> v@[j]@ == j)]
+    /// // #[invariant(forall<j> 0 <= j && j < produced.len() ==> v@[j]@ == j)]
     /// for i in 0..10 {
     ///     v.push(i);
     /// }
@@ -315,7 +315,7 @@ pub mod macros {
     /// fn all_ones(s: Seq<Int>) -> bool {
     ///     // Allow access to `forall` and `==>` among other things
     ///     pearlite! {
-    ///         forall<i: Int> 0 <= i && i < s.len() ==> s[i] == 1
+    ///         forall<i> 0 <= i && i < s.len() ==> s[i] == 1
     ///     }
     /// }
     /// ```

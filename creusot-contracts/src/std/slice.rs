@@ -38,7 +38,7 @@ impl<T: DeepModel> DeepModel for [T] {
     #[logic]
     #[trusted]
     #[ensures((&self)@.len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < result.len() ==> result[i] == (&self)[i].deep_model())]
+    #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == (&self)[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         dead
     }
@@ -71,7 +71,7 @@ impl<T> SliceExt<T> for [T] {
     #[logic]
     #[trusted]
     #[ensures(result.len() == self@.len())]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> result[i] == &mut self[i])]
+    #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == &mut self[i])]
     // TODO: replace with a map function applied on a sequence
     fn to_mut_seq(&mut self) -> Seq<&mut T> {
         dead
@@ -80,7 +80,7 @@ impl<T> SliceExt<T> for [T] {
     #[logic]
     #[trusted]
     #[ensures(result.len() == self@.len())]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> result[i] == &self[i])]
+    #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == &self[i])]
     fn to_ref_seq(&self) -> Seq<&T> {
         dead
     }
@@ -119,7 +119,7 @@ impl<T> SliceIndex<[T]> for usize {
     #[open]
     #[creusot::why3_attr = "inline:trivial"]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i != self@ && i < old.len() ==> old[i] == fin[i] }
+        pearlite! { forall<i> 0 <= i && i != self@ && i < old.len() ==> old[i] == fin[i] }
     }
 }
 
@@ -140,7 +140,7 @@ impl<T> SliceIndex<[T]> for Range<usize> {
     #[open]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! {
-            forall<i : Int> 0 <= i && (i < self.start@ || self.end@ <= i) && i < old.len()
+            forall<i> 0 <= i && (i < self.start@ || self.end@ <= i) && i < old.len()
             ==> old[i] == fin[i]
         }
     }
@@ -162,7 +162,7 @@ impl<T> SliceIndex<[T]> for RangeTo<usize> {
     #[predicate]
     #[open]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
-        pearlite! { forall<i : Int> self.end@ <= i && i < old.len() ==> old[i] == fin[i] }
+        pearlite! { forall<i> self.end@ <= i && i < old.len() ==> old[i] == fin[i] }
     }
 }
 
@@ -183,7 +183,7 @@ impl<T> SliceIndex<[T]> for RangeFrom<usize> {
     #[open]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! {
-            forall<i : Int> 0 <= i && i < self.start@ && i < old.len() ==> old[i] == fin[i]
+            forall<i> 0 <= i && i < self.start@ && i < old.len() ==> old[i] == fin[i]
         }
     }
 }
@@ -224,7 +224,7 @@ impl<T> SliceIndex<[T]> for RangeToInclusive<usize> {
     #[predicate]
     #[open]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
-        pearlite! { forall<i : Int> self.end@ < i && i < old.len() ==> old[i] == fin[i] }
+        pearlite! { forall<i> self.end@ < i && i < old.len() ==> old[i] == fin[i] }
     }
 }
 
@@ -233,7 +233,7 @@ extern_spec! {
         #[pure]
         #[requires(self@.len() == src@.len())]
         #[ensures((^self)@ == src@)]
-        fn copy_from_slice(&mut self, src: &[T]) where T : Copy;
+        fn copy_from_slice(&mut self, src: &[T]) where T: Copy;
 
         #[pure]
         #[ensures(self@.len() == result@)]
@@ -245,9 +245,9 @@ extern_spec! {
         #[ensures((^self)@.exchange(self@, i@, j@))]
         fn swap(&mut self, i: usize, j: usize);
 
-        #[ensures(ix.in_bounds(self@) ==> exists<r: _> result == Some(r) && ix.has_value(self_@, *r))]
+        #[ensures(ix.in_bounds(self@) ==> exists<r> result == Some(r) && ix.has_value(self_@, *r))]
         #[ensures(ix.in_bounds(self@) || result == None)]
-        fn get<I : SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as ::std::slice::SliceIndex<[T]>>::Output>;
+        fn get<I: SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as ::std::slice::SliceIndex<[T]>>::Output>;
 
         #[pure]
         #[requires(mid@ <= self@.len())]
@@ -294,24 +294,24 @@ extern_spec! {
 
         #[pure]
         #[ensures(result == None ==> self@.len() == 0)]
-        #[ensures(forall<x : _> result == Some(x) ==> self[self@.len() - 1] == *x)]
+        #[ensures(forall<x> result == Some(x) ==> self[self@.len() - 1] == *x)]
         fn last(&self) -> Option<&T>;
 
         #[pure]
         #[ensures(result == None ==> self@.len() == 0)]
-        #[ensures(forall<x : _> result == Some(x) ==> self[0] == *x)]
+        #[ensures(forall<x> result == Some(x) ==> self[0] == *x)]
         fn first(&self) -> Option<&T>;
 
 
         #[requires(self.deep_model().sorted())]
         #[ensures(forall<i:usize> result == Ok(i) ==> i@ < self@.len() && (*self).deep_model()[i@] == x.deep_model())]
         #[ensures(forall<i:usize> result == Err(i) ==> i@ <= self@.len() &&
-            forall<j : _> 0 <= j && j < self@.len() ==> self.deep_model()[j] != x.deep_model())]
+            forall<j> 0 <= j && j < self@.len() ==> self.deep_model()[j] != x.deep_model())]
         #[ensures(forall<i:usize> result == Err(i) ==>
             forall<j:usize> j < i ==> self.deep_model()[j@] < x.deep_model())]
         #[ensures(forall<i:usize> result == Err(i) ==>
             forall<j:usize> i <= j && j@ < self@.len() ==> x.deep_model() < self.deep_model()[j@])]
-        fn binary_search(&self, x : &T) -> Result<usize, usize>
+        fn binary_search(&self, x: &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
 
         #[terminates] // can OOM (?)
@@ -321,7 +321,7 @@ extern_spec! {
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
         unsafe fn get_unchecked<I>(&self, ix: I) -> &<I as ::std::slice::SliceIndex<[T]>>::Output
-            where I : SliceIndex<[T]>;
+            where I: SliceIndex<[T]>;
 
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
@@ -329,11 +329,11 @@ extern_spec! {
         #[ensures(ix.resolve_elswhere(self@, (^self)@))]
         #[ensures((^self)@.len() == self@.len())]
         unsafe fn get_unchecked_mut<I>(&mut self, ix: I) -> &mut <I as ::std::slice::SliceIndex<[T]>>::Output
-            where I : SliceIndex<[T]>;
+            where I: SliceIndex<[T]>;
     }
 
     impl<T, I> IndexMut<I> for [T]
-        where I : SliceIndex<[T]> {
+        where I: SliceIndex<[T]> {
         #[pure]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
@@ -344,7 +344,7 @@ extern_spec! {
     }
 
     impl<T, I> Index<I> for [T]
-        where I : SliceIndex<[T]> {
+        where I: SliceIndex<[T]> {
         #[pure]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]

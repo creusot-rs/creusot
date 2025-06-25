@@ -79,7 +79,7 @@ impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
                 ==> self@.get(k) == Some(v) && !exists<k2: K, v2: V> k2.deep_model() == k && visited.contains((k2, v2)))
             && (forall<k: K::DeepModelTy, v: V> self@.get(k) == Some(v)
                 ==> (exists<k1: K> k1.deep_model() == k && visited.contains((k1, v))) || o@.get(k) == Some(v))
-            && (forall<i1: Int, i2: Int>
+            && (forall<i1, i2>
                 0 <= i1 && i1 < visited.len() && 0 <= i2 && i2 < visited.len()
                 && visited[i1].0.deep_model() == visited[i2].0.deep_model()
                 ==> i1 == i2)
@@ -103,7 +103,7 @@ impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
-        proof_assert! { forall<i: Int> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
+        proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
     }
 }
 
@@ -131,7 +131,7 @@ impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
                 ==> self@.get(k) == Some(v) && !exists<k2: &K, v2: &V> k2.deep_model() == k && visited.contains((k2, v2)))
             && (forall<k: K::DeepModelTy, v: V> self@.get(k) == Some(v)
                 ==> (exists<k2: &K> k2.deep_model() == k && visited.contains((k2, &v))) || o@.get(k) == Some(v))
-            && (forall<i1: Int, i2: Int>
+            && (forall<i1, i2>
                 0 <= i1 && i1 < visited.len() && 0 <= i2 && i2 < visited.len()
                 && visited[i1].0.deep_model() == visited[i2].0.deep_model()
                 ==> i1 == i2)
@@ -155,7 +155,7 @@ impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
-        proof_assert! { forall<i: Int> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
+        proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
     }
 }
 
@@ -183,7 +183,7 @@ impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
                 ==> self@.get(k) == Some(v) && !exists<k2: &K, v2: &mut V> k2.deep_model() == k && visited.contains((k2, v2)))
             && (forall<k: K::DeepModelTy, v: &mut V> self@.get(k) == Some(v)
                 ==> (exists<k1: &K> k1.deep_model() == k && visited.contains((k1, v))) || o@.get(k) == Some(v))
-            && (forall<i1: Int, i2: Int>
+            && (forall<i1, i2>
                 0 <= i1 && i1 < visited.len() && 0 <= i2 && i2 < visited.len()
                 && visited[i1].0.deep_model() == visited[i2].0.deep_model()
                 ==> i1 == i2)
@@ -207,7 +207,7 @@ impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
-        proof_assert! { forall<i: Int> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
+        proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
     }
 }
 
@@ -218,7 +218,7 @@ impl<K: Eq + Hash + DeepModel, V, S: Default + BuildHasher> FromIterator<(K, V)>
     #[open]
     fn from_iter_post(prod: Seq<(K, V)>, res: Self) -> bool {
         pearlite! { forall<k: K::DeepModelTy, v: V> (res@.get(k) == Some(v))
-        == (exists<i: Int, k1: K> 0 <= i && i < prod.len() && k1.deep_model() == k && prod[i] == (k1, v)
-            && forall<j: Int> i < j && j < prod.len() ==> prod[j].0.deep_model() != k) }
+        == (exists<i, k1: K> 0 <= i && i < prod.len() && k1.deep_model() == k && prod[i] == (k1, v)
+            && forall<j> i < j && j < prod.len() ==> prod[j].0.deep_model() != k) }
     }
 }

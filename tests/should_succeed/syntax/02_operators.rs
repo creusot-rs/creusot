@@ -10,7 +10,7 @@ fn division(x: usize, y: usize) -> usize {
 }
 
 // #[logic]
-// fn division_logic(x : usize, y : usize) -> usize {
+// fn division_logic(x: usize, y: usize) -> usize {
 //     x / y
 // }
 
@@ -25,7 +25,7 @@ fn modulus(x: usize, y: usize) -> usize {
 }
 
 // #[logic]
-// fn modulus_logic(x : usize, y : usize) -> usize {
+// fn modulus_logic(x: usize, y: usize) -> usize {
 //     x % y
 // }
 
@@ -55,7 +55,7 @@ fn add_int(x: Int, y: Int) -> Int {
 }
 
 // #[logic]
-// fn add_logic(x : usize, y : usize) -> usize {
+// fn add_logic(x: usize, y: usize) -> usize {
 //     x + y
 // }
 

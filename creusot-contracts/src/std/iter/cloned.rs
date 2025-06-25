@@ -39,7 +39,7 @@ where
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            exists<inner : &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed()
+            exists<inner: &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed()
         }
     }
 
@@ -50,7 +50,7 @@ where
             exists<s: Seq<&'a T>>
                    self.iter().produces(s, o.iter())
                 && visited.len() == s.len()
-                && forall<i: Int> 0 <= i && i < s.len() ==> visited[i] == *s[i]
+                && forall<i> 0 <= i && i < s.len() ==> visited[i] == *s[i]
         }
     }
 

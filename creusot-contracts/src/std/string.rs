@@ -35,10 +35,10 @@ extern_spec! {
         fn to_string(&self) -> String;
 
         #[pure]
-        #[requires(exists<i0: Int> 0 <= i0 && i0 <= self@.len() && self@.subsequence(0, i0).to_bytes().len() == ix@)]
+        #[requires(exists<i0> 0 <= i0 && i0 <= self@.len() && self@.subsequence(0, i0).to_bytes().len() == ix@)]
         #[ensures(result.0@.concat(result.1@) == self@)]
         #[ensures(result.0@.to_bytes().len() == ix@)]
-        fn split_at(&self, ix : usize) -> (&str, &str);
+        fn split_at(&self, ix: usize) -> (&str, &str);
     }
 }
 

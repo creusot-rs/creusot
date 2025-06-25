@@ -50,12 +50,12 @@ pub trait Iterator: ::std::iter::Iterator {
 
     // FIXME: remove `trusted`
     #[trusted]
-    #[requires(forall<e : Self::Item, i2 : Self>
+    #[requires(forall<e, i2>
                     self.produces(Seq::singleton(e), i2) ==>
                     func.precondition((e, Snapshot::new(Seq::EMPTY))))]
     #[requires(MapInv::<Self, _, F>::reinitialize())]
     #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
-    #[ensures(result == MapInv { iter: self, func, produced: Snapshot::new(Seq::EMPTY) })]
+    #[ensures(result == MapInv { iter: self, func, produced: Snapshot::new(Seq::EMPTY)})]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
     where
         Self: Sized,
@@ -89,7 +89,7 @@ extern_spec! {
     mod std {
         mod iter {
             trait Iterator
-                where Self : Iterator {
+                where Self: Iterator {
 
                 #[ensures(match result {
                     None => self.completed(),
@@ -108,24 +108,24 @@ extern_spec! {
                 #[pure]
                 #[ensures(result.iter() == self)]
                 fn cloned<'a, T>(self) -> Cloned<Self>
-                    where T : 'a + Clone,
+                    where T: 'a + Clone,
                         Self: Sized + Iterator<Item = &'a T>;
 
                 #[pure]
                 #[ensures(result.iter() == self)]
                 fn copied<'a, T>(self) -> Copied<Self>
-                    where T : 'a + Copy,
+                    where T: 'a + Copy,
                         Self: Sized + Iterator<Item = &'a T>;
 
                 #[pure]
-                #[requires(forall<e : _, i2 : _>
+                #[requires(forall<e, i2>
                                 self.produces(Seq::singleton(e), i2) ==>
                                 f.precondition((e,)))]
                 #[requires(map::reinitialize::<Self_, B, F>())]
                 #[requires(map::preservation::<Self_, B, F>(self, f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn map<B, F>(self, f: F) -> Map<Self, F>
-                    where Self: Sized, F : FnMut(Self_::Item) -> B;
+                    where Self: Sized, F: FnMut(Self_::Item) -> B;
 
                 #[pure]
                 #[requires(filter::immutable(f))]
@@ -133,7 +133,7 @@ extern_spec! {
                 #[requires(filter::precise(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn filter<P>(self, f: P) -> Filter<Self, P>
-                    where  P : for<'a> FnMut(&Self_::Item) -> bool;
+                    where  P: for<'a> FnMut(&Self_::Item) -> bool;
 
                 #[pure]
                 #[requires(filter_map::immutable(f))]
@@ -141,7 +141,7 @@ extern_spec! {
                 #[requires(filter_map::precise(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn filter_map<B, F>(self, f: F) -> FilterMap<Self, F>
-                    where F : for<'a> FnMut(Self_::Item) -> Option<B>;
+                    where F: for<'a> FnMut(Self_::Item) -> Option<B>;
 
                 #[pure]
                 // These two requirements are here only to prove the absence of overflows
@@ -161,7 +161,7 @@ extern_spec! {
                     where U::IntoIter: Iterator;
 
                 // TODO: Investigate why Self_ needed
-                #[ensures(exists<done : &mut Self_, prod: Seq<_>>
+                #[ensures(exists<done: &mut Self_, prod>
                     resolve(&^done) && done.completed() && self.produces(prod, *done) && B::from_iter_post(prod, result))]
                 fn collect<B>(self) -> B
                     where B: FromIterator<Self::Item>;

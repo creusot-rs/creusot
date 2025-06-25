@@ -1,11 +1,7 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{
-    invariant::inv,
-    logic::{Int, Seq},
-    *,
-};
+use creusot_contracts::{invariant::inv, logic::Seq, *};
 
 mod common;
 use common::Iterator;
@@ -33,7 +29,7 @@ impl Iterator for Range {
             self.end == o.end && self.start <= o.start
             && (visited.len() > 0 ==> o.start <= o.end)
             && visited.len() == o.start@ - self.start@
-            && forall<i : Int> 0 <= i && i < visited.len() ==>
+            && forall<i> 0 <= i && i < visited.len() ==>
                 visited[i]@ == self.start@ + i
         }
     }

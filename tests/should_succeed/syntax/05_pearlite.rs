@@ -22,7 +22,7 @@ pub struct A {
 #[ensures(x.a == x.a)]
 pub fn solver(x: A) {}
 
-#[ensures(x == A { a : false })]
+#[ensures(x == A { a: false })]
 pub fn struct_in_pearlite(x: A) {}
 
 pub struct B {
@@ -48,7 +48,7 @@ pub fn field1_is_true(x: B) -> bool {
 }
 
 pub fn ghost_closure() {
-    let _x = snapshot! { |a : u32| a };
+    let _x = snapshot! { |a: u32| a };
 }
 
 pub fn pearlite_closure(_x: Snapshot<Mapping<u32, bool>>) {}
@@ -121,7 +121,7 @@ pub fn test6<'a>(a: &'a mut &&mut u32) -> &'a mut u32 {
 
 // Left out until I understand the semantics of `Deref` patterns.
 // #[logic]
-// pub fn proj_opt(x : &mut Option<S>)  -> bool {
+// pub fn proj_opt(x: &mut Option<S>)  -> bool {
 //     match x {
 //         Some(a) => a.x(),
 //         None => true,

@@ -11,6 +11,6 @@ pub fn f() {}
 #[ensures(true)]
 pub fn omg(a: Int, b: Int) -> bool {
     pearlite! { {
-        exists<c : Int> a + c == b
+        exists<c> a + c == b
     } }
 }

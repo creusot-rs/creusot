@@ -18,7 +18,7 @@ impl<T: DeepModel> DeepModel for Option<T> {
 extern_spec! {
     mod std {
         mod option {
-            impl<T : PartialEq + DeepModel> PartialEq for Option<T> {
+            impl<T: PartialEq + DeepModel> PartialEq for Option<T> {
                 #[allow(unstable_name_collisions)]
                 #[ensures(result == (self.deep_model() == rhs.deep_model()))]
                 fn eq(&self, rhs: &Self) -> bool {
@@ -193,7 +193,7 @@ extern_spec! {
                 })]
                 #[ensures(match self {
                     None => result == None,
-                    Some(t) => exists<r: _> result == Some(r) && f.postcondition_once((t,), r),
+                    Some(t) => exists<r> result == Some(r) && f.postcondition_once((t,), r),
                 })]
                 fn map<U, F>(self, f: F) -> Option<U>
                 where
@@ -271,7 +271,7 @@ extern_spec! {
 
                 #[requires(self == None ==> err.precondition(()))]
                 #[ensures(match self {
-                    None => exists<r: _> result == Err(r) && err.postcondition_once((), r),
+                    None => exists<r> result == Err(r) && err.postcondition_once((), r),
                     Some(t) => result == Ok(t),
                 })]
                 fn ok_or_else<E, F>(self, err: F) -> Result<T, E>

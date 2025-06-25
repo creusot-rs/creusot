@@ -969,7 +969,7 @@ where
 pub(crate) enum IntermediateStmt {
     // [ id = E] K
     Assign(Ident, Exp),
-    // E [ARGS] (id : ty -> K)
+    // E [ARGS] (id: ty -> K)
     Call(Box<[Param]>, Name, Box<[Arg]>),
     // -{ E }- K
     Assume(Exp),

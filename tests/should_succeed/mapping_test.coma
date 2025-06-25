@@ -20,24 +20,24 @@ module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
   type t_T  =
     { t_T__a: Int32.t }
   
-  predicate resolve (self : MutBorrow.t t_T) =
+  predicate resolve (self: MutBorrow.t t_T) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0 : MutBorrow.t t_T) =
+  predicate resolve'0 (_0: MutBorrow.t t_T) =
     resolve _0
   
-  function view [#"mapping_test.rs" 21 4 21 33] (self : t_T) : Map.map int int
+  function view [#"mapping_test.rs" 21 4 21 33] (self: t_T) : Map.map int int
   
-  axiom view_spec : forall self : t_T . [%#smapping_test'5] forall i : int . Map.get (view self) i
+  axiom view_spec: forall self: t_T. [%#smapping_test'5] forall i: int. Map.get (view self) i
   = (if 0 <= i /\ i < Int32.to_int self.t_T__a then 1 else 0)
   
-  function view'0 (self : MutBorrow.t t_T) : Map.map int int =
+  function view'0 (self: MutBorrow.t t_T) : Map.map int int =
     [%#smodel] view self.current
   
-  function view'1 (self : MutBorrow.t t_T) : Map.map int int =
+  function view'1 (self: MutBorrow.t t_T) : Map.map int int =
     [%#smodel'0] view'0 self
   
-  function view'2 (self : MutBorrow.t t_T) : Map.map int int =
+  function view'2 (self: MutBorrow.t t_T) : Map.map int int =
     [%#ssnapshot] view'1 self
   
   meta "compute_max_steps" 1000000
@@ -48,7 +48,7 @@ module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_t <- [%#smapping_test] t'0 ] s1 | s1 = bb1 ] 
     | bb1 = s0
-      [ s0 = Int32.add {(t'0.current).t_T__a} {[%#smapping_test'0] (1 : Int32.t)}
+      [ s0 = Int32.add {(t'0.current).t_T__a} {[%#smapping_test'0] (1: Int32.t)}
           (fun (_ret:Int32.t) ->  [ &t'0 <- { t'0 with current = { t_T__a = _ret } } ] s1)
       | s1 = -{resolve'0 t'0}- s2
       | s2 = {[@expl:assertion] [%#smapping_test'1] view t'0.final
@@ -56,7 +56,7 @@ module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
         s3
       | s3 = return''0 {_0} ]
      ]
-    ) [ & _0 : () = Any.any_l () | & t'0 : MutBorrow.t t_T = t | & old_t : MutBorrow.t t_T = Any.any_l () ] 
+    ) [ & _0: () = Any.any_l () | & t'0: MutBorrow.t t_T = t | & old_t: MutBorrow.t t_T = Any.any_l () ] 
     [ return''0 (result:())-> {[@expl:incr ensures] [%#smapping_test'4] view t.final
       = Map.set (view'0 t) (Int32.to_int (t.current).t_T__a) 1}
       (! return' {result}) ]
@@ -84,12 +84,12 @@ module M_mapping_test__f [#"mapping_test.rs" 37 0 37 10]
   type t_T  =
     { t_T__a: Int32.t }
   
-  function view [#"mapping_test.rs" 21 4 21 33] (self : t_T) : Map.map int int
+  function view [#"mapping_test.rs" 21 4 21 33] (self: t_T) : Map.map int int
   
-  axiom view_spec : forall self : t_T . [%#smapping_test'4] forall i : int . Map.get (view self) i
+  axiom view_spec: forall self: t_T. [%#smapping_test'4] forall i: int. Map.get (view self) i
   = (if 0 <= i /\ i < Int32.to_int self.t_T__a then 1 else 0)
   
-  function view'0 (self : MutBorrow.t t_T) : Map.map int int =
+  function view'0 (self: MutBorrow.t t_T) : Map.map int int =
     [%#smodel] view self.current
   
   let rec incr (t:MutBorrow.t t_T) (return'  (x:()))= {[@expl:incr requires #0] [%#smapping_test'5] 0
@@ -101,17 +101,17 @@ module M_mapping_test__f [#"mapping_test.rs" 37 0 37 10]
       (! return' {result}) ]
   
   
-  predicate resolve (self : MutBorrow.t t_T) =
+  predicate resolve (self: MutBorrow.t t_T) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0 : MutBorrow.t t_T) =
+  predicate resolve'0 (_0: MutBorrow.t t_T) =
     resolve _0
   
   meta "compute_max_steps" 1000000
   
   let rec f[#"mapping_test.rs" 37 0 37 10] (return'  (x:()))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &x <- { t_T__a = ([%#smapping_test] (42 : Int32.t)) } ] s1
+      [ s0 =  [ &x <- { t_T__a = ([%#smapping_test] (42: Int32.t)) } ] s1
       | s1 = {[@expl:assertion] [%#smapping_test'0] Map.get (view x) 13 = 1} s2
       | s2 = {[@expl:assertion] [%#smapping_test'1] Map.get (view x) 42 = 0} s3
       | s3 = MutBorrow.borrow_mut <t_T> {x} (fun (_ret:MutBorrow.t t_T) ->  [ &_8 <- _ret ]  [ &x <- _ret.final ] s4)
@@ -127,10 +127,10 @@ module M_mapping_test__f [#"mapping_test.rs" 37 0 37 10]
       | s3 = return''0 {_0} ]
      ]
     )
-    [ & _0 : () = Any.any_l ()
-    | & x : t_T = Any.any_l ()
-    | & _6 : () = Any.any_l ()
-    | & _7 : MutBorrow.t t_T = Any.any_l ()
-    | & _8 : MutBorrow.t t_T = Any.any_l () ]
+    [ & _0: () = Any.any_l ()
+    | & x: t_T = Any.any_l ()
+    | & _6: () = Any.any_l ()
+    | & _7: MutBorrow.t t_T = Any.any_l ()
+    | & _8: MutBorrow.t t_T = Any.any_l () ]
      [ return''0 (result:())-> (! return' {result}) ] 
 end

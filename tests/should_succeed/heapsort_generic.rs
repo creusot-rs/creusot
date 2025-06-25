@@ -13,7 +13,7 @@ fn parent(i: Int) -> Int {
 
 #[predicate]
 fn heap_frag<T: OrdLogic>(s: Seq<T>, start: Int, end: Int) -> bool {
-    pearlite! { forall<i: Int> start <= parent(i) && i < end ==>
+    pearlite! { forall<i> start <= parent(i) && i < end ==>
     s[i] <= s[parent(i)] }
 }
 
@@ -33,11 +33,11 @@ fn heap_frag_max<T: OrdLogic>(s: Seq<T>, i: Int, end: Int) {
 #[requires(end@ <= v@.len())]
 #[ensures(heap_frag((^v).deep_model(), start@, end@))]
 #[ensures((^v)@.permutation_of(v@))]
-#[ensures(forall<i: Int> 0 <= i && i < start@ || end@ <= i && i < v@.len()
+#[ensures(forall<i> 0 <= i && i < start@ || end@ <= i && i < v@.len()
                       ==> v[i] == (^v)[i])]
 #[ensures(forall<m: T::DeepModelTy>
-          (forall<j: Int> start@ <= j && j < end@ ==> v.deep_model()[j] <= m) ==>
-          forall<j: Int> start@ <= j && j < end@ ==> (^v).deep_model()[j] <= m)]
+          (forall<j> start@ <= j && j < end@ ==> v.deep_model()[j] <= m) ==>
+          forall<j> start@ <= j && j < end@ ==> (^v).deep_model()[j] <= m)]
 fn sift_down<T: Ord + DeepModel>(v: &mut Vec<T>, start: usize, end: usize)
 where
     T::DeepModelTy: OrdLogic,
@@ -48,12 +48,12 @@ where
     #[invariant(inv(v))]
     #[invariant(v@.permutation_of(old_v@))]
     #[invariant(start@ <= i@ && i@ < end@)]
-    #[invariant(forall<j: Int> 0 <= j && j < start@ || end@ <= j && j < v@.len()
+    #[invariant(forall<j> 0 <= j && j < start@ || end@ <= j && j < v@.len()
                        ==> old_v[j] == v[j])]
     #[invariant(forall<m: T::DeepModelTy>
-          (forall<j: Int> start@ <= j && j < end@ ==> old_v.deep_model()[j] <= m) ==>
-          forall<j: Int> start@ <= j && j < end@ ==> v.deep_model()[j] <= m)]
-    #[invariant(forall<j: Int> start@ <= parent(j) && j < end@ && i@ != parent(j) ==>
+          (forall<j> start@ <= j && j < end@ ==> old_v.deep_model()[j] <= m) ==>
+          forall<j> start@ <= j && j < end@ ==> v.deep_model()[j] <= m)]
+    #[invariant(forall<j> start@ <= parent(j) && j < end@ && i@ != parent(j) ==>
             v.deep_model()[j] <= v.deep_model()[parent(j)])]
     #[invariant({let c = 2*i@+1; c < end@ && start@ <= parent(i@) ==> v.deep_model()[c] <= v.deep_model()[parent(parent(c))]})]
     #[invariant({let c = 2*i@+2; c < end@ && start@ <= parent(i@) ==> v.deep_model()[c] <= v.deep_model()[parent(parent(c))]})]
@@ -77,7 +77,7 @@ where
 #[predicate]
 fn sorted_range<T: OrdLogic>(s: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
-        forall<i: Int, j :Int> l <= i && i < j && j < u ==> s[i] <= s[j]
+        forall<i, j> l <= i && i < j && j < u ==> s[i] <= s[j]
     }
 }
 
@@ -111,14 +111,14 @@ where
     #[invariant(v@.permutation_of(old_v@))]
     #[invariant(heap_frag(v.deep_model(), 0, end@))]
     #[invariant(sorted_range(v.deep_model(), end@, v@.len()))]
-    #[invariant(forall<i: Int, j: Int> 0 <= i && i < end@ && end@ <= j && j < v@.len() ==>
+    #[invariant(forall<i, j> 0 <= i && i < end@ && end@ <= j && j < v@.len() ==>
                       v.deep_model()[i] <= v.deep_model()[j])]
     while end > 1 {
         end -= 1;
         v.swap(0, end);
         proof_assert! {
             heap_frag_max(v.deep_model(), 0/*dummy*/, end@);
-            forall<i : Int, j : Int> 0 <= i && i < end@ && end@ <= j && j < v@.len() ==>
+            forall<i, j> 0 <= i && i < end@ && end@ <= j && j < v@.len() ==>
                         v.deep_model()[i] <= v.deep_model()[j]
         };
         sift_down(v, 0, end);

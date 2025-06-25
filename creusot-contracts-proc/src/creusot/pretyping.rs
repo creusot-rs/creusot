@@ -424,13 +424,13 @@ mod tests {
 
     #[test]
     fn encode_forall() {
-        let term: Term = syn::parse_str("forall<x:Int> x == x").unwrap();
+        let term: Term = syn::parse_str("forall<x: Int> x == x").unwrap();
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
             ":: creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | x : Int | { :: creusot_contracts :: __stubs :: equal (x , x) })"
         );
 
-        let term: Term = syn::parse_str("forall<x:Int> forall<y:Int> true").unwrap();
+        let term: Term = syn::parse_str("forall<x: Int> forall<y: Int> true").unwrap();
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
             ":: creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | x : Int | { :: creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | y : Int | { true }) })"

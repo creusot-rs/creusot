@@ -164,8 +164,8 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         ContractSubject::FnOrMethod(mut s) if s.is_trait_signature() => {
             let attrs = take(&mut s.attrs);
             let result = match s.sig.output {
-                ReturnType::Default => parse_quote! { result : () },
-                ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
+                ReturnType::Default => parse_quote! { result: () },
+                ReturnType::Type(_, ref ty) => parse_quote! { result: #ty },
             };
 
             let mut sig = s.sig.clone();
@@ -182,8 +182,8 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         ContractSubject::FnOrMethod(mut f) => {
             let attrs = take(&mut f.attrs);
             let result = match f.sig.output {
-                ReturnType::Default => parse_quote! { result : () },
-                ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
+                ReturnType::Default => parse_quote! { result: () },
+                ReturnType::Type(_, ref ty) => parse_quote! { result: #ty },
             };
             let ensures_tokens = fn_spec_item(ens_name, Some(result), term);
 

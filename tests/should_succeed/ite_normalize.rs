@@ -68,7 +68,7 @@ use std::alloc::Allocator;
 extern_spec! {
     mod std {
         mod boxed {
-            impl<T : Clone, A : Allocator + Clone> Clone for Box<T, A> {
+            impl<T: Clone, A: Allocator + Clone> Clone for Box<T, A> {
                 #[ensures(result == *self)]
                 fn clone(&self) -> Self;
             }

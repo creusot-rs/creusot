@@ -535,7 +535,7 @@ impl Exp {
         }
     }
 
-    /// Returns a type abscribtion expression (e.g. `(1 : int)`), of the form `(self : ty)`.
+    /// Returns a type abscribtion expression (e.g. `(1: int)`), of the form `(self: ty)`.
     pub fn ascribe(self, ty: Type) -> Self {
         Exp::Ascribe(Box::new(self), ty)
     }

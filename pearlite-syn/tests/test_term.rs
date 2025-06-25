@@ -77,7 +77,7 @@ fn test_model() {
 
 #[test]
 fn test_forall() {
-    snapshot!(quote!(forall<x : u32> true) as Term, @r###"
+    snapshot!(quote!(forall<x: u32> true) as Term, @r###"
     TermQuant {
         quant_token: Keyword [forall],
         lt_token: Lt,
@@ -120,7 +120,7 @@ fn test_forall() {
 
 #[test]
 fn test_exists() {
-    snapshot!(quote!(exists<x : u32> true) as Term, @r###"
+    snapshot!(quote!(exists<x: u32> true) as Term, @r###"
     TermQuant {
         quant_token: Keyword [exists],
         lt_token: Lt,
@@ -163,7 +163,7 @@ fn test_exists() {
 
 #[test]
 fn test_trigger() {
-    snapshot!(quote!(forall<x : u32, y: u32> #![trigger f(x, y)] #![trigger g(x), g(y)] true) as Term, @r###"
+    snapshot!(quote!(forall<x: u32, y: u32> #![trigger f(x, y)] #![trigger g(x), g(y)] true) as Term, @r###"
     TermQuant {
         quant_token: Keyword [forall],
         lt_token: Lt,

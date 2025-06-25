@@ -90,12 +90,12 @@ impl List<u32> {
     fn is_sorted(self) -> bool {
         {
             pearlite! {
-                forall<x1 : Int, x2 : Int> x1 <= x2 ==>
-                match (self.get(x1), self.get(x2)) {
-                    (Some(v1), Some(v2)) => v1 <= v2,
-                    (None, None) => true,
-                    _ => false
-                }
+                forall<x1, x2> x1 <= x2 ==>
+                    match (self.get(x1), self.get(x2)) {
+                        (Some(v1), Some(v2)) => v1 <= v2,
+                        (None, None) => true,
+                        _ => false
+                    }
             }
         }
     }
@@ -116,8 +116,8 @@ pub fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     let mut base = 0;
 
     #[invariant(0 < size@ && size@ + base@ <= (arr).len_logic())]
-    #[invariant(forall<i : usize> i < base ==> (arr).get_default(i@, 0u32) <= elem)]
-    #[invariant(forall<i : usize> base@ + size@ < i@ && i@ < (arr).len_logic() ==> elem < (arr).get_default(i@, 0u32))]
+    #[invariant(forall<i: usize> i < base ==> (arr).get_default(i@, 0u32) <= elem)]
+    #[invariant(forall<i: usize> base@ + size@ < i@ && i@ < (arr).len_logic() ==> elem < (arr).get_default(i@, 0u32))]
     while size > 1 {
         let half = size / 2;
         let mid = base + half;

@@ -21,58 +21,58 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   
   type t_F
   
-  predicate inv (_0 : t_F)
+  predicate inv (_0: t_F)
   
-  predicate invariant' (self : t_F) =
+  predicate invariant' (self: t_F) =
     [%#sinvariant] inv self
   
-  predicate inv'0 (_0 : t_F)
+  predicate inv'0 (_0: t_F)
   
-  axiom inv_axiom [@rewrite] : forall x : t_F [inv'0 x] . inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
   
-  predicate precondition (self : t_F) (args : UInt32.t)
+  predicate precondition (self: t_F) (args: UInt32.t)
   
-  predicate postcondition_once (self : t_F) (args : UInt32.t) (result : ())
+  predicate postcondition_once (self: t_F) (args: UInt32.t) (result: ())
   
-  predicate resolve (_0 : t_F)
+  predicate resolve (_0: t_F)
   
-  predicate postcondition_mut (self : t_F) (args : UInt32.t) (result_state : t_F) (result : ())
+  predicate postcondition_mut (self: t_F) (args: UInt32.t) (result_state: t_F) (result: ())
   
-  function fn_mut_once (self : t_F) (args : UInt32.t) (res : ()) : ()
+  function fn_mut_once (self: t_F) (args: UInt32.t) (res: ()) : ()
   
-  axiom fn_mut_once_spec : forall self : t_F, args : UInt32.t, res : () . [%#sops'11] postcondition_once self args res
-  = (exists res_state : t_F . postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_spec: forall self: t_F, args: UInt32.t, res: (). [%#sops'11] postcondition_once self args res
+  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate hist_inv (self : t_F) (result_state : t_F)
+  predicate hist_inv (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self : t_F) (b : t_F) (c : t_F) : ()
+  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec : forall self : t_F, b : t_F, c : t_F . ([%#sops'8] hist_inv self b)
+  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'8] hist_inv self b)
    -> ([%#sops'9] hist_inv b c)  -> ([%#sops'10] hist_inv self c)
   
-  function hist_inv_refl (self : t_F) : ()
+  function hist_inv_refl (self: t_F) : ()
   
-  axiom hist_inv_refl_spec : forall self : t_F . [%#sops'7] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: t_F. [%#sops'7] hist_inv self self
   
-  function postcondition_mut_hist_inv (self : t_F) (args : UInt32.t) (res_state : t_F) (res : ()) : ()
+  function postcondition_mut_hist_inv (self: t_F) (args: UInt32.t) (res_state: t_F) (res: ()) : ()
   
-  axiom postcondition_mut_hist_inv_spec : forall self : t_F, args : UInt32.t, res_state : t_F, res : () . ([%#sops'5] postcondition_mut self args res_state res)
+  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: UInt32.t, res_state: t_F, res: (). ([%#sops'5] postcondition_mut self args res_state res)
    -> ([%#sops'6] hist_inv self res_state)
   
-  function fn_hist_inv (self : t_F) (res_state : t_F) : ()
+  function fn_hist_inv (self: t_F) (res_state: t_F) : ()
   
-  axiom fn_hist_inv_spec : forall self : t_F, res_state : t_F . [%#sops'4] hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'4] hist_inv self res_state = (self = res_state)
   
-  predicate postcondition (self : t_F) (args : UInt32.t) (result : ())
+  predicate postcondition (self: t_F) (args: UInt32.t) (result: ())
   
-  function fn_once (self : t_F) (args : UInt32.t) (res : ()) : ()
+  function fn_once (self: t_F) (args: UInt32.t) (res: ()) : ()
   
-  axiom fn_once_spec : forall self : t_F, args : UInt32.t, res : () . [%#sops'3] postcondition_once self args res
+  axiom fn_once_spec: forall self: t_F, args: UInt32.t, res: (). [%#sops'3] postcondition_once self args res
   = (postcondition self args res /\ resolve self)
   
-  function fn_mut (self : t_F) (args : UInt32.t) (res_state : t_F) (res : ()) : ()
+  function fn_mut (self: t_F) (args: UInt32.t) (res_state: t_F) (res: ()) : ()
   
-  axiom fn_mut_spec : forall self : t_F, args : UInt32.t, res_state : t_F, res : () . [%#sops'2] postcondition_mut self args res_state res
+  axiom fn_mut_spec: forall self: t_F, args: UInt32.t, res_state: t_F, res: (). [%#sops'2] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
   
   let rec call (self_:t_F) (arg:UInt32.t) (return'  (x:()))= {[@expl:call 'self_' type invariant] [%#sops] inv'0 self_}
@@ -84,13 +84,13 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   let rec closure_param[#"03_generic_bound.rs" 5 0 5 34] (f:t_F) (return'  (x:()))= {[@expl:closure_param 'f' type invariant] [%#s03_generic_bound'0] inv f}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_3 <- [%#s03_generic_bound] (0 : UInt32.t) ] s1
+      [ s0 =  [ &_3 <- [%#s03_generic_bound] (0: UInt32.t) ] s1
       | s1 = call {f'0} {_3} (fun (_ret:()) ->  [ &_0 <- _ret ] s2)
       | s2 = bb1 ]
     
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb2 ] 
     | bb2 = return''0 {_0} ]
-    ) [ & _0 : () = Any.any_l () | & f'0 : t_F = f | & _3 : UInt32.t = Any.any_l () ] 
+    ) [ & _0: () = Any.any_l () | & f'0: t_F = f | & _3: UInt32.t = Any.any_l () ] 
     [ return''0 (result:())-> (! return' {result}) ]
 
 end
@@ -100,7 +100,7 @@ module M_03_generic_bound__caller [#"03_generic_bound.rs" 9 0 9 15]
   
   let rec closure0[#"03_generic_bound.rs" 10 18 10 27] [@coma:extspec] (self:()) (_x:UInt32.t) (return'  (x:()))= bb0
     [ bb0 = return''0 {_0} ]
-     [ & _0 : () = Any.any_l () ]  [ return''0 (result:())-> return' {result} ] 
+     [ & _0: () = Any.any_l () ]  [ return''0 (result:())-> return' {result} ] 
   
   let rec closure_param (f:()) (return'  (x:()))= any [ return''0 (result:())-> (! return' {result}) ] 
   
@@ -109,5 +109,5 @@ module M_03_generic_bound__caller [#"03_generic_bound.rs" 9 0 9 15]
   let rec caller[#"03_generic_bound.rs" 9 0 9 15] (return'  (x:()))= (! bb0
     [ bb0 = s0 [ s0 =  [ &_1 <- () ] s1 | s1 = closure_param {_1} (fun (_ret:()) ->  [ &_0 <- _ret ] s2) | s2 = bb1 ] 
     | bb1 = return''0 {_0} ]
-    ) [ & _0 : () = Any.any_l () | & _1 : () = Any.any_l () ]  [ return''0 (result:())-> (! return' {result}) ] 
+    ) [ & _0: () = Any.any_l () | & _1: () = Any.any_l () ]  [ return''0 (result:())-> (! return' {result}) ] 
 end

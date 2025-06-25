@@ -77,24 +77,24 @@ mod implementation {
             let domain = self.domain;
             pearlite! {
             // this invariant was not in the why3 proof: it is here because of the specifics of `DeepModel` and equality in Creusot
-            (forall<e1: _, e2: _> domain.contains(e1) && domain.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2) &&
+            (forall<e1, e2> domain.contains(e1) && domain.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2) &&
             // this invariant was not in the why3 proof: it ensures that the keys and the values of `map` agree
-            (forall<e: _> domain.contains(e) ==> self.map.contains(Snapshot::new(e.deep_model()))) &&
-            (forall<e: _> domain.contains(e) ==> e.0 == self.get_perm(e).ptr()) &&
-            (forall<e: _> domain.contains(e) ==> self.values[e] == self.values[self.root_of[e]]) &&
-            (forall<e: _> domain.contains(e) ==> self.root_of[self.root_of[e]] == self.root_of[e]) &&
-            (forall<e: _> domain.contains(e) ==> domain.contains(self.root_of[e])) &&
-            (forall<e: _> domain.contains(e) ==> match *self.get_perm(e).val() {
+            (forall<e> domain.contains(e) ==> self.map.contains(Snapshot::new(e.deep_model()))) &&
+            (forall<e> domain.contains(e) ==> e.0 == self.get_perm(e).ptr()) &&
+            (forall<e> domain.contains(e) ==> self.values[e] == self.values[self.root_of[e]]) &&
+            (forall<e> domain.contains(e) ==> self.root_of[self.root_of[e]] == self.root_of[e]) &&
+            (forall<e> domain.contains(e) ==> domain.contains(self.root_of[e])) &&
+            (forall<e> domain.contains(e) ==> match *self.get_perm(e).val() {
                 Content::Link(e2) => e != e2 && domain.contains(e2) && self.root_of[e] == self.root_of[e2],
                 Content::Root { rank: _, value: v } => self.values[e] == v && self.root_of[e] == e,
             }) &&
-            (forall<e: _> domain.contains(e) ==> match *self.get_perm(e).val() {
+            (forall<e> domain.contains(e) ==> match *self.get_perm(e).val() {
                 Content::Link(e2) => self.distance[e] < self.distance[e2],
                 Content::Root { .. } => true,
             }) &&
             *self.max_depth >= 0 &&
-            (forall<e: _> domain.contains(e) ==> 0 <= self.distance[e] && self.distance[e] <= *self.max_depth) &&
-            (forall<e: _> domain.contains(e) ==> match *self.get_perm(self.root_of[e]).val() {
+            (forall<e> domain.contains(e) ==> 0 <= self.distance[e] && self.distance[e] <= *self.max_depth) &&
+            (forall<e> domain.contains(e) ==> match *self.get_perm(self.root_of[e]).val() {
                 Content::Root { .. } => true,
                 Content::Link { .. } => false,
             })
@@ -343,7 +343,7 @@ mod implementation {
         #[requires(self.domain().contains(y))]
         #[ensures((^self).domain() == (*self).domain())]
         #[ensures(exists<r: Element<T>> (r == (*self).root_of()[x] || r == (*self).root_of()[y]) && {
-            forall<z: _> self.domain().contains(z) ==> {
+            forall<z> self.domain().contains(z) ==> {
                 ((^self).root_of()[z] == if (*self).equiv_log(z, x) || (*self).equiv_log(z, y) {
                     r
                 } else {

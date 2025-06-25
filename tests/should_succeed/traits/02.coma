@@ -7,29 +7,29 @@ module M_02__omg [#"02.rs" 11 0 11 30]
   
   type t_T
   
-  predicate inv (_0 : t_T)
+  predicate inv (_0: t_T)
   
-  predicate invariant' (self : t_T) =
+  predicate invariant' (self: t_T) =
     [%#sinvariant] inv self
   
-  predicate inv'0 (_0 : t_T)
+  predicate inv'0 (_0: t_T)
   
-  axiom inv_axiom [@rewrite] : forall x : t_T [inv'0 x] . inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate precondition (self : ()) (args : t_T)
+  predicate precondition (self: ()) (args: t_T)
   
-  axiom precondition_fndef : forall args : t_T [precondition () args] . (let self = args in inv'0 self)
+  axiom precondition_fndef: forall args: t_T [precondition () args]. (let self = args in inv'0 self)
    -> precondition () args
   
-  predicate postcondition_once (self : ()) (args : t_T) (result : bool)
+  predicate postcondition_once (self: ()) (args: t_T) (result: bool)
   
-  axiom postcondition_fndef : forall args : t_T, res : bool [postcondition_once () args res] . postcondition_once () args res
+  axiom postcondition_fndef: forall args: t_T, res: bool [postcondition_once () args res]. postcondition_once () args res
    -> (let self = args in res = true)
   
   let rec is_true (self:t_T) (return'  (x:bool))= {[@expl:is_true requires] precondition () self}
     any [ return''0 (result:bool)-> {postcondition_once () self result} (! return' {result}) ] 
   
-  predicate resolve (_0 : t_T)
+  predicate resolve (_0: t_T)
   
   meta "compute_max_steps" 1000000
   
@@ -38,7 +38,7 @@ module M_02__omg [#"02.rs" 11 0 11 30]
     [ bb0 = s0 [ s0 = is_true {a'0} (fun (_ret:bool) ->  [ &_0 <- _ret ] s1) | s1 = bb1 ] 
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv a'0} s1 | s1 = -{resolve a'0}- s2 | s2 = bb2 ] 
     | bb2 = return''0 {_0} ]
-    ) [ & _0 : bool = Any.any_l () | & a'0 : t_T = a ] 
+    ) [ & _0: bool = Any.any_l () | & a'0: t_T = a ] 
     [ return''0 (result:bool)-> {[@expl:omg ensures] [%#s02'0] result = true} (! return' {result}) ]
 
 end

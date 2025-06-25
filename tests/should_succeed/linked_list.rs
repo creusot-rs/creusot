@@ -30,7 +30,7 @@ impl<T> Invariant for List<T> {
              self.first == self.seq[0].ptr() &&
              self.last  == self.seq[self.seq.len() - 1].ptr() &&
              // the cells in `seq` are chained properly
-             (forall<i:Int> 0 <= i && i < self.seq.len() - 1 ==>
+             (forall<i> 0 <= i && i < self.seq.len() - 1 ==>
                  self.seq[i].val().next == self.seq[i+1].ptr()) &&
              self.seq[self.seq.len() - 1].val().next.is_null_logic())
         }
