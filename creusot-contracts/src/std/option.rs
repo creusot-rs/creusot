@@ -31,6 +31,21 @@ extern_spec! {
             }
         }
     }
+
+    impl<T: Clone> Clone for Option<T> {
+        #[ensures(match (*self, result) {
+            (None, None) => true,
+            (Some(s), Some(r)) => T::clone.postcondition((&s,), r),
+            _ => false
+        })]
+        fn clone(&self) -> Option<T> {
+            match self {
+                None => None,
+                Some(x) => Some(x.clone())
+            }
+        }
+    }
+
 }
 
 extern_spec! {
@@ -477,8 +492,10 @@ extern_spec! {
 
             impl<T> Option<&T> {
                 #[pure]
-                #[ensures(self == None ==> result == None)]
-                #[ensures(self == None || exists<t: &T> self == Some(t) && result == Some(*t))]
+                #[ensures(match self {
+                    None => result == None,
+                    Some(s) => result == Some(*s)
+                })]
                 fn copied(self) -> Option<T>
                 where
                     T: Copy {
@@ -488,8 +505,11 @@ extern_spec! {
                     }
                 }
 
-                #[ensures(self == None ==> result == None)]
-                #[ensures(self == None || exists<t: &T> self == Some(t) && result == Some(*t))]
+                #[ensures(match (self, result) {
+                    (None, None) => true,
+                    (Some(s), Some(r)) =>T::clone.postcondition((s,), r),
+                    _ => false
+                })]
                 fn cloned(self) -> Option<T>
                 where
                     T: Clone {
@@ -502,11 +522,10 @@ extern_spec! {
 
             impl<T> Option<&mut T> {
                 #[pure]
-                #[ensures(self == None ==> result == None)]
-                #[ensures(
-                    self == None
-                    || exists<t: &mut T> self == Some(t) && result == Some(*t) && t.resolve()
-                )]
+                #[ensures(match self {
+                    None => result == None,
+                    Some(s) => result == Some(*s) && ^s == *s
+                })]
                 fn copied(self) -> Option<T>
                 where
                     T: Copy {
@@ -516,11 +535,11 @@ extern_spec! {
                     }
                 }
 
-                #[ensures(self == None ==> result == None)]
-                #[ensures(
-                    self == None
-                    || exists<t: &mut T> self == Some(t) && result == Some(*t) && t.resolve()
-                )]
+                #[ensures(match (self, result) {
+                    (None, None) => true,
+                    (Some(s), Some(r)) => T::clone.postcondition((s,), r) && ^s == *s,
+                    _ => false
+                })]
                 fn cloned(self) -> Option<T>
                 where
                     T: Clone {

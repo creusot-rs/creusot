@@ -1,5 +1,16 @@
 module M_mixed__qyi2592445413368279263__clone [#"mixed.rs" 8 9 8 14] (* <Product<A, B> as creusot_contracts::Clone> *)
   let%span smixed = "mixed.rs" 8 9 8 14
+  let%span smixed'0 = "mixed.rs" 10 4 11 12
+  let%span sops = "../../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
   use creusot.prelude.Any
@@ -28,7 +39,7 @@ module M_mixed__qyi2592445413368279263__clone [#"mixed.rs" 8 9 8 14] (* <Product
   predicate postcondition_once (self: ()) (args: t_A) (result: t_A)
   
   axiom postcondition_fndef: forall args: t_A, res: t_A [postcondition_once () args res]. postcondition_once () args res
-   -> (let self_ = args in res = self_ /\ inv res)
+   -> (let self_ = args in inv res)
   
   let rec clone' (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition () self_}
     any [ return''0 (result:t_A)-> {postcondition_once () self_ result} (! return' {result}) ] 
@@ -50,7 +61,7 @@ module M_mixed__qyi2592445413368279263__clone [#"mixed.rs" 8 9 8 14] (* <Product
   predicate postcondition_once'0 (self: ()) (args: t_B) (result: t_B)
   
   axiom postcondition_fndef'0: forall args: t_B, res: t_B [postcondition_once'0 () args res]. postcondition_once'0 () args res
-   -> (let self_ = args in res = self_ /\ inv'1 res)
+   -> (let self_ = args in inv'1 res)
   
   let rec clone''0 (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition'0 () self_}
     any [ return''0 (result:t_B)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
@@ -68,6 +79,104 @@ module M_mixed__qyi2592445413368279263__clone [#"mixed.rs" 8 9 8 14] (* <Product
   predicate inv'4 (_0: t_Product)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Product [inv'4 x]. inv'4 x = invariant''1 x
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_A) (result_state: ()) (result: t_A)
+  
+  axiom postcondition_fndef'1: forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_A, res_state: (), res: t_A. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef'2: forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_A, res_state: (), res: t_A. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate resolve'0 (_0: ()) =
+    true
+  
+  predicate postcondition_mut'0 (self: ()) (args: t_B) (result_state: ()) (result: t_B)
+  
+  axiom postcondition_fndef'3: forall args: t_B, res: t_B [postcondition_mut'0 () args () res]. postcondition_mut'0 () args () res
+   -> (let self_ = args in inv'1 res)
+  
+  function fn_mut_once'0 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_mut_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'8] postcondition_once'0 self args res
+  = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate hist_inv'0 (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans'0 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec'0: forall self: (), b: (), c: (). ([%#sops'5] hist_inv'0 self b)
+   -> ([%#sops'6] hist_inv'0 b c)  -> ([%#sops'7] hist_inv'0 self c)
+  
+  function hist_inv_refl'0 (self: ()) : ()
+  
+  axiom hist_inv_refl_spec'0: forall self: (). [%#sops'4] hist_inv'0 self self
+  
+  function postcondition_mut_hist_inv'0 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom postcondition_mut_hist_inv_spec'0: forall self: (), args: t_B, res_state: (), res: t_B. ([%#sops'2] postcondition_mut'0 self args res_state res)
+   -> ([%#sops'3] hist_inv'0 self res_state)
+  
+  function fn_hist_inv'0 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec'0: forall self: (), res_state: (). [%#sops'1] hist_inv'0 self res_state = (self = res_state)
+  
+  predicate postcondition'0 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'4: forall args: t_B, res: t_B [postcondition'0 () args res]. postcondition'0 () args res
+   -> (let self_ = args in inv'1 res)
+  
+  function fn_once'0 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'0] postcondition_once'0 self args res
+  = (postcondition'0 self args res /\ resolve'0 self)
+  
+  function fn_mut'0 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom fn_mut_spec'0: forall self: (), args: t_B, res_state: (), res: t_B. [%#sops] postcondition_mut'0 self args res_state res
+  = (postcondition'0 self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
@@ -93,7 +202,8 @@ module M_mixed__qyi2592445413368279263__clone [#"mixed.rs" 8 9 8 14] (* <Product
     | & _8: t_B = Any.any_l () ]
     
     [ return''0 (result:t_Product)-> {[@expl:clone result type invariant] [%#smixed] inv'3 result}
-      {[@expl:clone ensures] [%#smixed] result = self}
+      {[@expl:clone ensures] [%#smixed'0] postcondition () self.t_Product__a result.t_Product__a
+      /\ postcondition'0 () self.t_Product__b result.t_Product__b}
       (! return' {result}) ]
 
 end
@@ -102,7 +212,7 @@ module M_mixed__qyi15378480724732772077__eq [#"mixed.rs" 8 16 8 25] (* <Product<
   let%span smixed'0 = "mixed.rs" 8 16 8 25
   let%span smixed'1 = "mixed.rs" 24 8 24 66
   let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
-  let%span smodel = "../../../../creusot-contracts/src/model.rs" 45 8 45 28
+  let%span smodel = "../../../../creusot-contracts/src/model.rs" 35 8 35 28
   
   use creusot.prelude.Any
   
@@ -225,6 +335,16 @@ module M_mixed__qyi15378480724732772077__eq [#"mixed.rs" 8 16 8 25] (* <Product<
 end
 module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A, B> as creusot_contracts::Clone> *)
   let%span smixed = "mixed.rs" 28 9 28 14
+  let%span sops = "../../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
   use creusot.prelude.Any
@@ -237,9 +357,9 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
     | C_A t_A
     | C_B t_B
   
-  let rec v_B (input:t_Sum) (ret  (field_0:t_B))= any
-    [ good (field_0:t_B)-> {C_B field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_B [C_B field_0: t_Sum]. C_B field_0 <> input} (! {false} any) ]
+  let rec v_B (input:t_Sum) (ret  (b:t_B))= any
+    [ good (b:t_B)-> {C_B b = input} (! ret {b})
+    | bad -> {forall b: t_B [C_B b: t_Sum]. C_B b <> input} (! {false} any) ]
   
   
   predicate inv (_0: t_B)
@@ -259,7 +379,7 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
   predicate postcondition_once (self: ()) (args: t_B) (result: t_B)
   
   axiom postcondition_fndef: forall args: t_B, res: t_B [postcondition_once () args res]. postcondition_once () args res
-   -> (let self_ = args in res = self_ /\ inv res)
+   -> (let self_ = args in inv res)
   
   let rec clone' (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition () self_}
     any [ return''0 (result:t_B)-> {postcondition_once () self_ result} (! return' {result}) ] 
@@ -286,7 +406,7 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
   predicate postcondition_once'0 (self: ()) (args: t_A) (result: t_A)
   
   axiom postcondition_fndef'0: forall args: t_A, res: t_A [postcondition_once'0 () args res]. postcondition_once'0 () args res
-   -> (let self_ = args in res = self_ /\ inv'1 res)
+   -> (let self_ = args in inv'1 res)
   
   let rec clone''0 (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition'0 () self_}
     any [ return''0 (result:t_A)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
@@ -296,7 +416,7 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
   axiom inv_axiom'1 [@rewrite]: forall x: t_Sum [inv'3 x]. inv'3 x
   = match x with
     | C_A a_0 -> inv'1 a_0
-    | C_B a_0 -> inv a_0
+    | C_B b -> inv b
     end
   
   predicate invariant''1 (self: t_Sum) =
@@ -306,14 +426,115 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Sum [inv'4 x]. inv'4 x = invariant''1 x
   
+  type tuple  =
+    { _p0: t_Sum; _p1: t_Sum }
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_A) (result_state: ()) (result: t_A)
+  
+  axiom postcondition_fndef'1: forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv'1 res)
+  
+  function fn_mut_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'8] postcondition_once'0 self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_A, res_state: (), res: t_A. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef'2: forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv'1 res)
+  
+  function fn_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'0] postcondition_once'0 self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_A, res_state: (), res: t_A. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate resolve'0 (_0: ()) =
+    true
+  
+  predicate postcondition_mut'0 (self: ()) (args: t_B) (result_state: ()) (result: t_B)
+  
+  axiom postcondition_fndef'3: forall args: t_B, res: t_B [postcondition_mut'0 () args () res]. postcondition_mut'0 () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once'0 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_mut_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate hist_inv'0 (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans'0 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec'0: forall self: (), b: (), c: (). ([%#sops'5] hist_inv'0 self b)
+   -> ([%#sops'6] hist_inv'0 b c)  -> ([%#sops'7] hist_inv'0 self c)
+  
+  function hist_inv_refl'0 (self: ()) : ()
+  
+  axiom hist_inv_refl_spec'0: forall self: (). [%#sops'4] hist_inv'0 self self
+  
+  function postcondition_mut_hist_inv'0 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom postcondition_mut_hist_inv_spec'0: forall self: (), args: t_B, res_state: (), res: t_B. ([%#sops'2] postcondition_mut'0 self args res_state res)
+   -> ([%#sops'3] hist_inv'0 self res_state)
+  
+  function fn_hist_inv'0 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec'0: forall self: (), res_state: (). [%#sops'1] hist_inv'0 self res_state = (self = res_state)
+  
+  predicate postcondition'0 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'4: forall args: t_B, res: t_B [postcondition'0 () args res]. postcondition'0 () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once'0 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'0] postcondition_once self args res
+  = (postcondition'0 self args res /\ resolve'0 self)
+  
+  function fn_mut'0 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom fn_mut_spec'0: forall self: (), args: t_B, res_state: (), res: t_B. [%#sops] postcondition_mut'0 self args res_state res
+  = (postcondition'0 self args res /\ self = res_state)
+  
   meta "compute_max_steps" 1000000
   
   let rec clone''1[#"mixed.rs" 28 9 28 14] (self:t_Sum) (return'  (x:t_Sum))= {[@expl:clone 'self' type invariant] [%#smixed] inv'4 self}
     (! bb0
     [ bb0 = any [ br0 (x0:t_A)-> {self'0 = C_A x0} (! bb2) | br1 (x0:t_B)-> {self'0 = C_B x0} (! bb3) ] 
     | bb3 = s0
-      [ s0 = v_B {self'0} (fun (r0:t_B) ->  [ &v0_1'0 <- r0 ] s1)
-      | s1 =  [ &_11 <- v0_1'0 ] s2
+      [ s0 = v_B {self'0} (fun (rb:t_B) ->  [ &b_1 <- rb ] s1)
+      | s1 =  [ &_11 <- b_1 ] s2
       | s2 = clone' {_11} (fun (_ret:t_B) ->  [ &_9 <- _ret ] s3)
       | s3 = bb7 ]
     
@@ -335,12 +556,16 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
     | & v0_1: t_A = Any.any_l ()
     | & _5: t_A = Any.any_l ()
     | & _7: t_A = Any.any_l ()
-    | & v0_1'0: t_B = Any.any_l ()
+    | & b_1: t_B = Any.any_l ()
     | & _9: t_B = Any.any_l ()
     | & _11: t_B = Any.any_l () ]
     
     [ return''0 (result:t_Sum)-> {[@expl:clone result type invariant] [%#smixed] inv'3 result}
-      {[@expl:clone ensures] [%#smixed] result = self}
+      {[@expl:clone ensures] [%#smixed] match { _p0 = self; _p1 = result } with
+        | {_p0 = C_A v0_1 ; _p1 = C_A v0_r} -> postcondition () v0_1 v0_r
+        | {_p0 = C_B b_1 ; _p1 = C_B b_r} -> postcondition'0 () b_1 b_r
+        | _ -> false
+        end}
       (! return' {result}) ]
 
 end
@@ -348,7 +573,7 @@ module M_mixed__qyi16267973469411556781__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A,
   let%span smixed = "mixed.rs" 28 16 28 25
   let%span smixed'0 = "mixed.rs" 40 8 43 9
   let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
-  let%span smodel = "../../../../creusot-contracts/src/model.rs" 45 8 45 28
+  let%span smodel = "../../../../creusot-contracts/src/model.rs" 35 8 35 28
   
   use creusot.prelude.Any
   
@@ -363,9 +588,9 @@ module M_mixed__qyi16267973469411556781__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A,
   type tuple  =
     { _p0: t_Sum; _p1: t_Sum }
   
-  let rec v_B (input:t_Sum) (ret  (field_0:t_B))= any
-    [ good (field_0:t_B)-> {C_B field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_B [C_B field_0: t_Sum]. C_B field_0 <> input} (! {false} any) ]
+  let rec v_B (input:t_Sum) (ret  (b:t_B))= any
+    [ good (b:t_B)-> {C_B b = input} (! ret {b})
+    | bad -> {forall b: t_B [C_B b: t_Sum]. C_B b <> input} (! {false} any) ]
   
   
   type tuple'0  =
@@ -448,7 +673,7 @@ module M_mixed__qyi16267973469411556781__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A,
   axiom inv_axiom'1 [@rewrite]: forall x: t_Sum [inv'3 x]. inv'3 x
   = match x with
     | C_A a_0 -> inv'1 a_0
-    | C_B a_0 -> inv a_0
+    | C_B b -> inv b
     end
   
   predicate invariant''1 (self: t_Sum) =
@@ -483,9 +708,9 @@ module M_mixed__qyi16267973469411556781__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A,
     | bb4 = any [ br0 (x0:t_A)-> {_4._p1 = C_A x0} (! bb1) | br1 (x0:t_B)-> {_4._p1 = C_B x0} (! bb5) ] 
     | bb5 = bb6
     | bb6 = s0
-      [ s0 = v_B {_4._p0} (fun (r0:t_B) ->  [ &v0_1'0 <- r0 ] s1)
-      | s1 = v_B {_4._p1} (fun (r0:t_B) ->  [ &v0_2'0 <- r0 ] s2)
-      | s2 = eq {v0_1'0} {v0_2'0} (fun (_ret:bool) ->  [ &_17 <- _ret ] s3)
+      [ s0 = v_B {_4._p0} (fun (rb:t_B) ->  [ &b_1 <- rb ] s1)
+      | s1 = v_B {_4._p1} (fun (rb:t_B) ->  [ &b_2 <- rb ] s2)
+      | s2 = eq {b_1} {b_2} (fun (_ret:bool) ->  [ &_17 <- _ret ] s3)
       | s3 = bb12 ]
     
     | bb12 = any [ br0 -> {_17 = false} (! bb14) | br1 -> {_17} (! bb13) ] 
@@ -514,8 +739,8 @@ module M_mixed__qyi16267973469411556781__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A,
     | & v0_1: t_A = Any.any_l ()
     | & v0_2: t_A = Any.any_l ()
     | & _12: bool = Any.any_l ()
-    | & v0_1'0: t_B = Any.any_l ()
-    | & v0_2'0: t_B = Any.any_l ()
+    | & b_1: t_B = Any.any_l ()
+    | & b_2: t_B = Any.any_l ()
     | & _17: bool = Any.any_l () ]
     
     [ return''0 (result:bool)-> {[@expl:eq ensures] [%#smixed] result = (deep_model'4 self = deep_model'4 rhs)}
@@ -637,8 +862,312 @@ module M_mixed__qyi2899991615344599026__resolve_coherence [#"mixed.rs" 56 9 56 1
   
   goal vc_resolve_coherence: ([%#smixed] structural_resolve self)  -> ([%#smixed] resolve'2 self)
 end
+module M_mixed__qyi2388806976216935010__clone [#"mixed.rs" 56 18 56 23] (* <Sum2<A, B> as creusot_contracts::Clone> *)
+  let%span smixed = "mixed.rs" 56 18 56 23
+  let%span sops = "../../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
+  let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
+  let%span sclone = "../../../../creusot-contracts/src/std/clone.rs" 18 18 18 33
+  
+  use creusot.prelude.Any
+  
+  type t_A
+  
+  type t_B
+  
+  type t_Sum2  =
+    | C_X t_A
+    | C_Y bool t_B
+  
+  let rec v_Y (input:t_Sum2) (ret  (a:bool) (x:t_B))= any
+    [ good (a:bool) (x:t_B)-> {C_Y a x = input} (! ret {a} {x})
+    | bad -> {forall a: bool, x: t_B [C_Y a x: t_Sum2]. C_Y a x <> input} (! {false} any) ]
+  
+  
+  let rec clone' (self_:bool) (return'  (x:bool))= any
+    [ return''0 (result:bool)-> {[%#sclone] result = self_} (! return' {result}) ]
+  
+  
+  predicate inv (_0: t_B)
+  
+  predicate invariant' (self: t_B) =
+    [%#sinvariant] inv self
+  
+  predicate inv'0 (_0: t_B)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_B [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition (self: ()) (args: t_B)
+  
+  axiom precondition_fndef: forall args: t_B [precondition () args]. (let self_ = args in inv'0 self_)
+   -> precondition () args
+  
+  predicate postcondition_once (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef: forall args: t_B, res: t_B [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv res)
+  
+  let rec clone''0 (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_B)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
+  let rec v_X (input:t_Sum2) (ret  (field_0:t_A))= any
+    [ good (field_0:t_A)-> {C_X field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_A [C_X field_0: t_Sum2]. C_X field_0 <> input} (! {false} any) ]
+  
+  
+  predicate inv'1 (_0: t_A)
+  
+  predicate invariant''0 (self: t_A) =
+    [%#sinvariant] inv'1 self
+  
+  predicate inv'2 (_0: t_A)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_A [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate precondition'0 (self: ()) (args: t_A)
+  
+  axiom precondition_fndef'0: forall args: t_A [precondition'0 () args]. (let self_ = args in inv'2 self_)
+   -> precondition'0 () args
+  
+  predicate postcondition_once'0 (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef'0: forall args: t_A, res: t_A [postcondition_once'0 () args res]. postcondition_once'0 () args res
+   -> (let self_ = args in inv'1 res)
+  
+  let rec clone''1 (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition'0 () self_}
+    any [ return''0 (result:t_A)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
+  
+  predicate inv'3 (_0: t_Sum2)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Sum2 [inv'3 x]. inv'3 x
+  = match x with
+    | C_X a_0 -> inv'1 a_0
+    | C_Y a x'0 -> inv x'0
+    end
+  
+  predicate invariant''1 (self: t_Sum2) =
+    [%#sinvariant] inv'3 self
+  
+  predicate inv'4 (_0: t_Sum2)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Sum2 [inv'4 x]. inv'4 x = invariant''1 x
+  
+  type tuple  =
+    { _p0: t_Sum2; _p1: t_Sum2 }
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_A) (result_state: ()) (result: t_A)
+  
+  axiom postcondition_fndef'1: forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv'1 res)
+  
+  function fn_mut_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'8] postcondition_once'0 self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_A, res_state: (), res: t_A. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef'2: forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv'1 res)
+  
+  function fn_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'0] postcondition_once'0 self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_A, res_state: (), res: t_A. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate postcondition_once'1 (self: ()) (args: bool) (result: bool) =
+    let self_ = args in result = self_
+  
+  predicate resolve'0 (_0: ()) =
+    true
+  
+  predicate postcondition_mut'0 (self: ()) (args: bool) (result_state: ()) (result: bool) =
+    let self_ = args in result = self_
+  
+  function fn_mut_once'0 (self: ()) (args: bool) (res: bool) : ()
+  
+  axiom fn_mut_once_spec'0: forall self: (), args: bool, res: bool. [%#sops'8] postcondition_once'1 self args res
+  = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate hist_inv'0 (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans'0 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec'0: forall self: (), b: (), c: (). ([%#sops'5] hist_inv'0 self b)
+   -> ([%#sops'6] hist_inv'0 b c)  -> ([%#sops'7] hist_inv'0 self c)
+  
+  function hist_inv_refl'0 (self: ()) : ()
+  
+  axiom hist_inv_refl_spec'0: forall self: (). [%#sops'4] hist_inv'0 self self
+  
+  function postcondition_mut_hist_inv'0 (self: ()) (args: bool) (res_state: ()) (res: bool) : ()
+  
+  axiom postcondition_mut_hist_inv_spec'0: forall self: (), args: bool, res_state: (), res: bool. ([%#sops'2] postcondition_mut'0 self args res_state res)
+   -> ([%#sops'3] hist_inv'0 self res_state)
+  
+  function fn_hist_inv'0 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec'0: forall self: (), res_state: (). [%#sops'1] hist_inv'0 self res_state = (self = res_state)
+  
+  predicate postcondition'0 (self: ()) (args: bool) (result: bool) =
+    let self_ = args in result = self_
+  
+  function fn_once'0 (self: ()) (args: bool) (res: bool) : ()
+  
+  axiom fn_once_spec'0: forall self: (), args: bool, res: bool. [%#sops'0] postcondition_once'1 self args res
+  = (postcondition'0 self args res /\ resolve'0 self)
+  
+  function fn_mut'0 (self: ()) (args: bool) (res_state: ()) (res: bool) : ()
+  
+  axiom fn_mut_spec'0: forall self: (), args: bool, res_state: (), res: bool. [%#sops] postcondition_mut'0 self args res_state res
+  = (postcondition'0 self args res /\ self = res_state)
+  
+  predicate resolve'1 (_0: ()) =
+    true
+  
+  predicate postcondition_mut'1 (self: ()) (args: t_B) (result_state: ()) (result: t_B)
+  
+  axiom postcondition_fndef'3: forall args: t_B, res: t_B [postcondition_mut'1 () args () res]. postcondition_mut'1 () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once'1 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_mut_once_spec'1: forall self: (), args: t_B, res: t_B. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut'1 self args res_state res /\ resolve'1 res_state)
+  
+  predicate hist_inv'1 (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans'1 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec'1: forall self: (), b: (), c: (). ([%#sops'5] hist_inv'1 self b)
+   -> ([%#sops'6] hist_inv'1 b c)  -> ([%#sops'7] hist_inv'1 self c)
+  
+  function hist_inv_refl'1 (self: ()) : ()
+  
+  axiom hist_inv_refl_spec'1: forall self: (). [%#sops'4] hist_inv'1 self self
+  
+  function postcondition_mut_hist_inv'1 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom postcondition_mut_hist_inv_spec'1: forall self: (), args: t_B, res_state: (), res: t_B. ([%#sops'2] postcondition_mut'1 self args res_state res)
+   -> ([%#sops'3] hist_inv'1 self res_state)
+  
+  function fn_hist_inv'1 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec'1: forall self: (), res_state: (). [%#sops'1] hist_inv'1 self res_state = (self = res_state)
+  
+  predicate postcondition'1 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'4: forall args: t_B, res: t_B [postcondition'1 () args res]. postcondition'1 () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once'1 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_once_spec'1: forall self: (), args: t_B, res: t_B. [%#sops'0] postcondition_once self args res
+  = (postcondition'1 self args res /\ resolve'1 self)
+  
+  function fn_mut'1 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom fn_mut_spec'1: forall self: (), args: t_B, res_state: (), res: t_B. [%#sops] postcondition_mut'1 self args res_state res
+  = (postcondition'1 self args res /\ self = res_state)
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec clone''2[#"mixed.rs" 56 18 56 23] (self:t_Sum2) (return'  (x:t_Sum2))= {[@expl:clone 'self' type invariant] [%#smixed] inv'4 self}
+    (! bb0
+    [ bb0 = any [ br0 (x0:t_A)-> {self'0 = C_X x0} (! bb2) | br1 (x0:bool) (x1:t_B)-> {self'0 = C_Y x0 x1} (! bb3) ] 
+    | bb3 = s0
+      [ s0 = v_Y {self'0} (fun (ra:bool) (rx:t_B) ->  [ &a_1 <- ra ] s1)
+      | s1 = v_Y {self'0} (fun (ra:bool) (rx:t_B) ->  [ &x_1 <- rx ] s2)
+      | s2 =  [ &_12 <- a_1 ] s3
+      | s3 = clone' {_12} (fun (_ret:bool) ->  [ &_10 <- _ret ] s4)
+      | s4 = bb7 ]
+    
+    | bb7 = s0 [ s0 =  [ &_15 <- x_1 ] s1 | s1 = clone''0 {_15} (fun (_ret:t_B) ->  [ &_13 <- _ret ] s2) | s2 = bb8 ] 
+    | bb8 = s0 [ s0 =  [ &_0 <- C_Y _10 _13 ] s1 | s1 = bb9 ] 
+    | bb9 = bb10
+    | bb2 = bb4
+    | bb4 = s0
+      [ s0 = v_X {self'0} (fun (r0:t_A) ->  [ &v0_1 <- r0 ] s1)
+      | s1 =  [ &_7 <- v0_1 ] s2
+      | s2 = clone''1 {_7} (fun (_ret:t_A) ->  [ &_5 <- _ret ] s3)
+      | s3 = bb5 ]
+    
+    | bb5 = s0 [ s0 =  [ &_0 <- C_X _5 ] s1 | s1 = bb6 ] 
+    | bb6 = bb10
+    | bb10 = return''0 {_0} ]
+    )
+    [ & _0: t_Sum2 = Any.any_l ()
+    | & self'0: t_Sum2 = self
+    | & v0_1: t_A = Any.any_l ()
+    | & _5: t_A = Any.any_l ()
+    | & _7: t_A = Any.any_l ()
+    | & a_1: bool = Any.any_l ()
+    | & x_1: t_B = Any.any_l ()
+    | & _10: bool = Any.any_l ()
+    | & _12: bool = Any.any_l ()
+    | & _13: t_B = Any.any_l ()
+    | & _15: t_B = Any.any_l () ]
+    
+    [ return''0 (result:t_Sum2)-> {[@expl:clone result type invariant] [%#smixed] inv'3 result}
+      {[@expl:clone ensures] [%#smixed] match { _p0 = self; _p1 = result } with
+        | {_p0 = C_X v0_1 ; _p1 = C_X v0_r} -> postcondition () v0_1 v0_r
+        | {_p0 = C_Y a_1 x_1 ; _p1 = C_Y a_r x_r} -> postcondition'0 () a_1 a_r /\ postcondition'1 () x_1 x_r
+        | _ -> false
+        end}
+      (! return' {result}) ]
+
+end
 module M_mixed__qyi2592445413368279263__clone__refines [#"mixed.rs" 8 9 8 14] (* <Product<A, B> as creusot_contracts::Clone> *)
   let%span smixed = "mixed.rs" 8 9 8 14
+  let%span sops = "../../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
   type t_A
@@ -666,11 +1195,161 @@ module M_mixed__qyi2592445413368279263__clone__refines [#"mixed.rs" 8 9 8 14] (*
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Product [inv'2 x]. inv'2 x = invariant' x
   
+  predicate postcondition_once (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef: forall args: t_A, res: t_A [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv res)
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_A) (result_state: ()) (result: t_A)
+  
+  axiom postcondition_fndef'0: forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_A, res_state: (), res: t_A. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef'1: forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_A, res_state: (), res: t_A. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant''0 (self: t_A) =
+    [%#sinvariant] inv self
+  
+  predicate inv'3 (_0: t_A)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_A [inv'3 x]. inv'3 x = invariant''0 x
+  
+  predicate precondition (self: ()) (args: t_A)
+  
+  axiom precondition_fndef: forall args: t_A [precondition () args]. (let self_ = args in inv'3 self_)
+   -> precondition () args
+  
+  let rec clone' (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_A)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
+  predicate postcondition_once'0 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'2: forall args: t_B, res: t_B [postcondition_once'0 () args res]. postcondition_once'0 () args res
+   -> (let self_ = args in inv'0 res)
+  
+  predicate resolve'0 (_0: ()) =
+    true
+  
+  predicate postcondition_mut'0 (self: ()) (args: t_B) (result_state: ()) (result: t_B)
+  
+  axiom postcondition_fndef'3: forall args: t_B, res: t_B [postcondition_mut'0 () args () res]. postcondition_mut'0 () args () res
+   -> (let self_ = args in inv'0 res)
+  
+  function fn_mut_once'0 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_mut_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'8] postcondition_once'0 self args res
+  = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate hist_inv'0 (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans'0 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec'0: forall self: (), b: (), c: (). ([%#sops'5] hist_inv'0 self b)
+   -> ([%#sops'6] hist_inv'0 b c)  -> ([%#sops'7] hist_inv'0 self c)
+  
+  function hist_inv_refl'0 (self: ()) : ()
+  
+  axiom hist_inv_refl_spec'0: forall self: (). [%#sops'4] hist_inv'0 self self
+  
+  function postcondition_mut_hist_inv'0 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom postcondition_mut_hist_inv_spec'0: forall self: (), args: t_B, res_state: (), res: t_B. ([%#sops'2] postcondition_mut'0 self args res_state res)
+   -> ([%#sops'3] hist_inv'0 self res_state)
+  
+  function fn_hist_inv'0 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec'0: forall self: (), res_state: (). [%#sops'1] hist_inv'0 self res_state = (self = res_state)
+  
+  predicate postcondition'0 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'4: forall args: t_B, res: t_B [postcondition'0 () args res]. postcondition'0 () args res
+   -> (let self_ = args in inv'0 res)
+  
+  function fn_once'0 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'0] postcondition_once'0 self args res
+  = (postcondition'0 self args res /\ resolve'0 self)
+  
+  function fn_mut'0 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom fn_mut_spec'0: forall self: (), args: t_B, res_state: (), res: t_B. [%#sops] postcondition_mut'0 self args res_state res
+  = (postcondition'0 self args res /\ self = res_state)
+  
+  predicate invariant''1 (self: t_B) =
+    [%#sinvariant] inv'0 self
+  
+  predicate inv'4 (_0: t_B)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_B [inv'4 x]. inv'4 x = invariant''1 x
+  
+  predicate precondition'0 (self: ()) (args: t_B)
+  
+  axiom precondition_fndef'0: forall args: t_B [precondition'0 () args]. (let self_ = args in inv'4 self_)
+   -> precondition'0 () args
+  
+  let rec clone''0 (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition'0 () self_}
+    any [ return''0 (result:t_B)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
+  
   goal refines: [%#smixed] forall self_: t_Product. inv'2 self_
-   -> inv'2 self_ /\ (forall result: t_Product. result = self_ /\ inv'1 result  -> result = self_ /\ inv'1 result)
+   -> inv'2 self_
+  /\ (forall result: t_Product. postcondition () self_.t_Product__a result.t_Product__a
+  /\ postcondition'0 () self_.t_Product__b result.t_Product__b /\ inv'1 result  -> inv'1 result)
 end
 module M_mixed__qyi1267749258272586863__clone__refines [#"mixed.rs" 28 9 28 14] (* <Sum<A, B> as creusot_contracts::Clone> *)
   let%span smixed = "mixed.rs" 28 9 28 14
+  let%span sops = "../../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
   type t_A
@@ -690,7 +1369,7 @@ module M_mixed__qyi1267749258272586863__clone__refines [#"mixed.rs" 28 9 28 14] 
   axiom inv_axiom [@rewrite]: forall x: t_Sum [inv'1 x]. inv'1 x
   = match x with
     | C_A a_0 -> inv a_0
-    | C_B a_0 -> inv'0 a_0
+    | C_B b -> inv'0 b
     end
   
   predicate invariant' (self: t_Sum) =
@@ -700,14 +1379,405 @@ module M_mixed__qyi1267749258272586863__clone__refines [#"mixed.rs" 28 9 28 14] 
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Sum [inv'2 x]. inv'2 x = invariant' x
   
+  type tuple  =
+    { _p0: t_Sum; _p1: t_Sum }
+  
+  predicate postcondition_once (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef: forall args: t_A, res: t_A [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv res)
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_A) (result_state: ()) (result: t_A)
+  
+  axiom postcondition_fndef'0: forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_A, res_state: (), res: t_A. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef'1: forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_A, res_state: (), res: t_A. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant''0 (self: t_A) =
+    [%#sinvariant] inv self
+  
+  predicate inv'3 (_0: t_A)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_A [inv'3 x]. inv'3 x = invariant''0 x
+  
+  predicate precondition (self: ()) (args: t_A)
+  
+  axiom precondition_fndef: forall args: t_A [precondition () args]. (let self_ = args in inv'3 self_)
+   -> precondition () args
+  
+  let rec clone' (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_A)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
+  predicate postcondition_once'0 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'2: forall args: t_B, res: t_B [postcondition_once'0 () args res]. postcondition_once'0 () args res
+   -> (let self_ = args in inv'0 res)
+  
+  predicate resolve'0 (_0: ()) =
+    true
+  
+  predicate postcondition_mut'0 (self: ()) (args: t_B) (result_state: ()) (result: t_B)
+  
+  axiom postcondition_fndef'3: forall args: t_B, res: t_B [postcondition_mut'0 () args () res]. postcondition_mut'0 () args () res
+   -> (let self_ = args in inv'0 res)
+  
+  function fn_mut_once'0 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_mut_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'8] postcondition_once'0 self args res
+  = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate hist_inv'0 (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans'0 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec'0: forall self: (), b: (), c: (). ([%#sops'5] hist_inv'0 self b)
+   -> ([%#sops'6] hist_inv'0 b c)  -> ([%#sops'7] hist_inv'0 self c)
+  
+  function hist_inv_refl'0 (self: ()) : ()
+  
+  axiom hist_inv_refl_spec'0: forall self: (). [%#sops'4] hist_inv'0 self self
+  
+  function postcondition_mut_hist_inv'0 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom postcondition_mut_hist_inv_spec'0: forall self: (), args: t_B, res_state: (), res: t_B. ([%#sops'2] postcondition_mut'0 self args res_state res)
+   -> ([%#sops'3] hist_inv'0 self res_state)
+  
+  function fn_hist_inv'0 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec'0: forall self: (), res_state: (). [%#sops'1] hist_inv'0 self res_state = (self = res_state)
+  
+  predicate postcondition'0 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'4: forall args: t_B, res: t_B [postcondition'0 () args res]. postcondition'0 () args res
+   -> (let self_ = args in inv'0 res)
+  
+  function fn_once'0 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'0] postcondition_once'0 self args res
+  = (postcondition'0 self args res /\ resolve'0 self)
+  
+  function fn_mut'0 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom fn_mut_spec'0: forall self: (), args: t_B, res_state: (), res: t_B. [%#sops] postcondition_mut'0 self args res_state res
+  = (postcondition'0 self args res /\ self = res_state)
+  
+  predicate invariant''1 (self: t_B) =
+    [%#sinvariant] inv'0 self
+  
+  predicate inv'4 (_0: t_B)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_B [inv'4 x]. inv'4 x = invariant''1 x
+  
+  predicate precondition'0 (self: ()) (args: t_B)
+  
+  axiom precondition_fndef'0: forall args: t_B [precondition'0 () args]. (let self_ = args in inv'4 self_)
+   -> precondition'0 () args
+  
+  let rec clone''0 (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition'0 () self_}
+    any [ return''0 (result:t_B)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
+  
   goal refines: [%#smixed] forall self_: t_Sum. inv'2 self_
-   -> inv'2 self_ /\ (forall result: t_Sum. result = self_ /\ inv'1 result  -> result = self_ /\ inv'1 result)
+   -> inv'2 self_
+  /\ (forall result: t_Sum. match { _p0 = self_; _p1 = result } with
+    | {_p0 = C_A v0_1 ; _p1 = C_A v0_r} -> postcondition () v0_1 v0_r
+    | {_p0 = C_B b_1 ; _p1 = C_B b_r} -> postcondition'0 () b_1 b_r
+    | _ -> false
+    end
+  /\ inv'1 result  -> inv'1 result)
+end
+module M_mixed__qyi2388806976216935010__clone__refines [#"mixed.rs" 56 18 56 23] (* <Sum2<A, B> as creusot_contracts::Clone> *)
+  let%span smixed = "mixed.rs" 56 18 56 23
+  let%span sops = "../../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
+  let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
+  let%span sclone = "../../../../creusot-contracts/src/std/clone.rs" 18 18 18 33
+  
+  type t_A
+  
+  type t_B
+  
+  type t_Sum2  =
+    | C_X t_A
+    | C_Y bool t_B
+  
+  predicate inv (_0: t_A)
+  
+  predicate inv'0 (_0: t_B)
+  
+  predicate inv'1 (_0: t_Sum2)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Sum2 [inv'1 x]. inv'1 x
+  = match x with
+    | C_X a_0 -> inv a_0
+    | C_Y a x'0 -> inv'0 x'0
+    end
+  
+  predicate invariant' (self: t_Sum2) =
+    [%#sinvariant] inv'1 self
+  
+  predicate inv'2 (_0: t_Sum2)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Sum2 [inv'2 x]. inv'2 x = invariant' x
+  
+  type tuple  =
+    { _p0: t_Sum2; _p1: t_Sum2 }
+  
+  predicate postcondition_once (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef: forall args: t_A, res: t_A [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv res)
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_A) (result_state: ()) (result: t_A)
+  
+  axiom postcondition_fndef'0: forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_A, res_state: (), res: t_A. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef'1: forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_A, res_state: (), res: t_A. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant''0 (self: t_A) =
+    [%#sinvariant] inv self
+  
+  predicate inv'3 (_0: t_A)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_A [inv'3 x]. inv'3 x = invariant''0 x
+  
+  predicate precondition (self: ()) (args: t_A)
+  
+  axiom precondition_fndef: forall args: t_A [precondition () args]. (let self_ = args in inv'3 self_)
+   -> precondition () args
+  
+  let rec clone' (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_A)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
+  predicate postcondition_once'0 (self: ()) (args: bool) (result: bool) =
+    let self_ = args in result = self_
+  
+  predicate resolve'0 (_0: ()) =
+    true
+  
+  predicate postcondition_mut'0 (self: ()) (args: bool) (result_state: ()) (result: bool) =
+    let self_ = args in result = self_
+  
+  function fn_mut_once'0 (self: ()) (args: bool) (res: bool) : ()
+  
+  axiom fn_mut_once_spec'0: forall self: (), args: bool, res: bool. [%#sops'8] postcondition_once'0 self args res
+  = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate hist_inv'0 (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans'0 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec'0: forall self: (), b: (), c: (). ([%#sops'5] hist_inv'0 self b)
+   -> ([%#sops'6] hist_inv'0 b c)  -> ([%#sops'7] hist_inv'0 self c)
+  
+  function hist_inv_refl'0 (self: ()) : ()
+  
+  axiom hist_inv_refl_spec'0: forall self: (). [%#sops'4] hist_inv'0 self self
+  
+  function postcondition_mut_hist_inv'0 (self: ()) (args: bool) (res_state: ()) (res: bool) : ()
+  
+  axiom postcondition_mut_hist_inv_spec'0: forall self: (), args: bool, res_state: (), res: bool. ([%#sops'2] postcondition_mut'0 self args res_state res)
+   -> ([%#sops'3] hist_inv'0 self res_state)
+  
+  function fn_hist_inv'0 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec'0: forall self: (), res_state: (). [%#sops'1] hist_inv'0 self res_state = (self = res_state)
+  
+  predicate postcondition'0 (self: ()) (args: bool) (result: bool) =
+    let self_ = args in result = self_
+  
+  function fn_once'0 (self: ()) (args: bool) (res: bool) : ()
+  
+  axiom fn_once_spec'0: forall self: (), args: bool, res: bool. [%#sops'0] postcondition_once'0 self args res
+  = (postcondition'0 self args res /\ resolve'0 self)
+  
+  function fn_mut'0 (self: ()) (args: bool) (res_state: ()) (res: bool) : ()
+  
+  axiom fn_mut_spec'0: forall self: (), args: bool, res_state: (), res: bool. [%#sops] postcondition_mut'0 self args res_state res
+  = (postcondition'0 self args res /\ self = res_state)
+  
+  let rec clone''0 (self_:bool) (return'  (x:bool))= any
+    [ return''0 (result:bool)-> {[%#sclone] result = self_} (! return' {result}) ]
+  
+  
+  predicate postcondition_once'1 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'2: forall args: t_B, res: t_B [postcondition_once'1 () args res]. postcondition_once'1 () args res
+   -> (let self_ = args in inv'0 res)
+  
+  predicate resolve'1 (_0: ()) =
+    true
+  
+  predicate postcondition_mut'1 (self: ()) (args: t_B) (result_state: ()) (result: t_B)
+  
+  axiom postcondition_fndef'3: forall args: t_B, res: t_B [postcondition_mut'1 () args () res]. postcondition_mut'1 () args () res
+   -> (let self_ = args in inv'0 res)
+  
+  function fn_mut_once'1 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_mut_once_spec'1: forall self: (), args: t_B, res: t_B. [%#sops'8] postcondition_once'1 self args res
+  = (exists res_state: (). postcondition_mut'1 self args res_state res /\ resolve'1 res_state)
+  
+  predicate hist_inv'1 (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans'1 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec'1: forall self: (), b: (), c: (). ([%#sops'5] hist_inv'1 self b)
+   -> ([%#sops'6] hist_inv'1 b c)  -> ([%#sops'7] hist_inv'1 self c)
+  
+  function hist_inv_refl'1 (self: ()) : ()
+  
+  axiom hist_inv_refl_spec'1: forall self: (). [%#sops'4] hist_inv'1 self self
+  
+  function postcondition_mut_hist_inv'1 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom postcondition_mut_hist_inv_spec'1: forall self: (), args: t_B, res_state: (), res: t_B. ([%#sops'2] postcondition_mut'1 self args res_state res)
+   -> ([%#sops'3] hist_inv'1 self res_state)
+  
+  function fn_hist_inv'1 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec'1: forall self: (), res_state: (). [%#sops'1] hist_inv'1 self res_state = (self = res_state)
+  
+  predicate postcondition'1 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'4: forall args: t_B, res: t_B [postcondition'1 () args res]. postcondition'1 () args res
+   -> (let self_ = args in inv'0 res)
+  
+  function fn_once'1 (self: ()) (args: t_B) (res: t_B) : ()
+  
+  axiom fn_once_spec'1: forall self: (), args: t_B, res: t_B. [%#sops'0] postcondition_once'1 self args res
+  = (postcondition'1 self args res /\ resolve'1 self)
+  
+  function fn_mut'1 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
+  
+  axiom fn_mut_spec'1: forall self: (), args: t_B, res_state: (), res: t_B. [%#sops] postcondition_mut'1 self args res_state res
+  = (postcondition'1 self args res /\ self = res_state)
+  
+  predicate invariant''1 (self: t_B) =
+    [%#sinvariant] inv'0 self
+  
+  predicate inv'4 (_0: t_B)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_B [inv'4 x]. inv'4 x = invariant''1 x
+  
+  predicate precondition'0 (self: ()) (args: t_B)
+  
+  axiom precondition_fndef'0: forall args: t_B [precondition'0 () args]. (let self_ = args in inv'4 self_)
+   -> precondition'0 () args
+  
+  let rec clone''1 (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition'0 () self_}
+    any [ return''0 (result:t_B)-> {postcondition_once'1 () self_ result} (! return' {result}) ] 
+  
+  goal refines: [%#smixed] forall self_: t_Sum2. inv'2 self_
+   -> inv'2 self_
+  /\ (forall result: t_Sum2. match { _p0 = self_; _p1 = result } with
+    | {_p0 = C_X v0_1 ; _p1 = C_X v0_r} -> postcondition () v0_1 v0_r
+    | {_p0 = C_Y a_1 x_1 ; _p1 = C_Y a_r x_r} -> postcondition'0 () a_1 a_r /\ postcondition'1 () x_1 x_r
+    | _ -> false
+    end
+  /\ inv'1 result  -> inv'1 result)
 end
 module M_mixed__qyi15378480724732772077__eq__refines [#"mixed.rs" 8 16 8 25] (* <Product<A, B> as creusot_contracts::PartialEq> *)
   let%span smixed = "mixed.rs" 8 16 8 25
   let%span smixed'0 = "mixed.rs" 24 8 24 66
   let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
-  let%span smodel = "../../../../creusot-contracts/src/model.rs" 45 8 45 28
+  let%span smodel = "../../../../creusot-contracts/src/model.rs" 35 8 35 28
   
   type t_A
   
@@ -761,7 +1831,7 @@ module M_mixed__qyi16267973469411556781__eq__refines [#"mixed.rs" 28 16 28 25] (
   let%span smixed = "mixed.rs" 28 16 28 25
   let%span smixed'0 = "mixed.rs" 40 8 43 9
   let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
-  let%span smodel = "../../../../creusot-contracts/src/model.rs" 45 8 45 28
+  let%span smodel = "../../../../creusot-contracts/src/model.rs" 35 8 35 28
   
   type t_A
   
@@ -780,7 +1850,7 @@ module M_mixed__qyi16267973469411556781__eq__refines [#"mixed.rs" 28 16 28 25] (
   axiom inv_axiom [@rewrite]: forall x: t_Sum [inv'1 x]. inv'1 x
   = match x with
     | C_A a_0 -> inv a_0
-    | C_B a_0 -> inv'0 a_0
+    | C_B b -> inv'0 b
     end
   
   predicate invariant' (self: t_Sum) =

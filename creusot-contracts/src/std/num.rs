@@ -30,6 +30,13 @@ macro_rules! mach_int {
                 #[ensures(result == $zero)]
                 fn default() -> $t;
             }
+
+            impl Clone for $t {
+                #[ensures(result == *self)]
+                fn clone(&self) -> $t {
+                    *self
+                }
+            }
         }
 
         impl AddLogic for $t {

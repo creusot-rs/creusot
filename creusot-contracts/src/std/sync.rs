@@ -4,18 +4,18 @@ use ::std::alloc::Allocator;
 use ::std::sync::Arc;
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel, A: Allocator> DeepModel for Arc<T, A> {
+impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Arc<T, A> {
     type DeepModelTy = T::DeepModelTy;
     #[logic]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { self.view().deep_model() }
+        pearlite! { *self.view().deep_model() }
     }
 }
 
 #[cfg(feature = "nightly")]
-impl<T, A: Allocator> View for Arc<T, A> {
-    type ViewTy = T;
+impl<T: ?Sized, A: Allocator> View for Arc<T, A> {
+    type ViewTy = Box<T>;
     #[logic]
     #[trusted]
     fn view(self) -> Self::ViewTy {
@@ -27,15 +27,20 @@ extern_spec! {
     mod std {
         mod sync {
             impl<T> Arc<T> {
-                #[ensures(result@ == value)]
+                #[ensures(*result@ == value)]
                 fn new(value: T) -> Self;
             }
 
             impl<T, A: Allocator> AsRef for Arc<T, A> {
-                #[ensures(*result == (*self)@)]
+                #[ensures(*result == *(*self)@)]
                 fn as_ref(&self) -> &T;
             }
         }
+    }
+
+    impl<T: ?Sized, A: Allocator + Clone> Clone for Arc<T, A> {
+        #[ensures(result@ == (*self)@)]
+        fn clone(&self) -> Arc<T, A>;
     }
 }
 

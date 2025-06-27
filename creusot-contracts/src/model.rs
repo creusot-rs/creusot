@@ -27,16 +27,6 @@ pub trait DeepModel {
     fn deep_model(self) -> Self::DeepModelTy;
 }
 
-impl View for str {
-    type ViewTy = Seq<char>;
-
-    #[logic]
-    #[trusted]
-    fn view(self) -> Self::ViewTy {
-        dead
-    }
-}
-
 impl<T: DeepModel + ?Sized> DeepModel for &T {
     type DeepModelTy = T::DeepModelTy;
     #[logic]

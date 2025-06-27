@@ -1274,12 +1274,21 @@ module M_own__qyi1738359920797260731__copied [#"own.rs" 165 4 167 16] (* OwnResu
       (! return' {result}) ]
 
 end
-module M_own__qyi1738359920797260731__cloned [#"own.rs" 178 4 180 17] (* OwnResult<&T, E> *)
-  let%span sown = "own.rs" 178 18 178 22
-  let%span sown'0 = "own.rs" 178 27 178 42
-  let%span sown'1 = "own.rs" 176 14 176 84
-  let%span sown'2 = "own.rs" 177 14 177 84
+module M_own__qyi1738359920797260731__cloned [#"own.rs" 181 4 183 17] (* OwnResult<&T, E> *)
+  let%span sown = "own.rs" 181 18 181 22
+  let%span sown'0 = "own.rs" 181 27 181 42
+  let%span sown'1 = "own.rs" 176 14 180 5
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   
   use creusot.prelude.Any
   
@@ -1322,7 +1331,7 @@ module M_own__qyi1738359920797260731__cloned [#"own.rs" 178 4 180 17] (* OwnResu
   predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
-   -> (let self_ = args in res = self_ /\ inv res)
+   -> (let self_ = args in inv res)
   
   let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition () self_}
     any [ return''0 (result:t_T)-> {postcondition_once () self_ result} (! return' {result}) ] 
@@ -1345,44 +1354,98 @@ module M_own__qyi1738359920797260731__cloned [#"own.rs" 178 4 180 17] (* OwnResu
     | C_Err'0 a_0 -> inv'1 a_0
     end
   
+  type tuple  =
+    { _p0: t_OwnResult; _p1: t_OwnResult'0 }
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0: forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_T, res_state: (), res: t_T. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_T. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
   meta "compute_max_steps" 1000000
   
-  let rec cloned[#"own.rs" 178 4 180 17] (self:t_OwnResult) (return'  (x:t_OwnResult'0))= {[@expl:cloned 'self' type invariant] [%#sown] inv'2 self}
+  let rec cloned[#"own.rs" 181 4 183 17] (self:t_OwnResult) (return'  (x:t_OwnResult'0))= {[@expl:cloned 'self' type invariant] [%#sown] inv'2 self}
     (! bb0
     [ bb0 = bb1
-    | bb1 = bb2
-    | bb2 = any [ br0 (x0:t_T)-> {self'0 = C_Ok x0} (! bb4) | br1 (x0:t_E)-> {self'0 = C_Err x0} (! bb5) ] 
-    | bb5 = s0 [ s0 = v_Err {self'0} (fun (r0:t_E) ->  [ &e <- r0 ] s1) | s1 =  [ &_0 <- C_Err'0 e ] s2 | s2 = bb9 ] 
+    | bb1 = any [ br0 (x0:t_T)-> {self'0 = C_Ok x0} (! bb3) | br1 (x0:t_E)-> {self'0 = C_Err x0} (! bb4) ] 
+    | bb4 = s0 [ s0 = v_Err {self'0} (fun (r0:t_E) ->  [ &e <- r0 ] s1) | s1 =  [ &_0 <- C_Err'0 e ] s2 | s2 = bb8 ] 
+    | bb8 = bb9
     | bb9 = bb10
-    | bb10 = bb11
-    | bb4 = bb6
-    | bb6 = s0
+    | bb3 = bb5
+    | bb5 = s0
       [ s0 = v_Ok {self'0} (fun (r0:t_T) ->  [ &t <- r0 ] s1)
-      | s1 = clone' {t} (fun (_ret:t_T) ->  [ &_6 <- _ret ] s2)
-      | s2 = bb7 ]
+      | s1 = clone' {t} (fun (_ret:t_T) ->  [ &_5 <- _ret ] s2)
+      | s2 = bb6 ]
     
-    | bb7 = s0 [ s0 =  [ &_0 <- C_Ok'0 _6 ] s1 | s1 = bb8 ] 
-    | bb8 = bb11
-    | bb11 = bb12
-    | bb12 = return''0 {_0} ]
+    | bb6 = s0 [ s0 =  [ &_0 <- C_Ok'0 _5 ] s1 | s1 = bb7 ] 
+    | bb7 = bb10
+    | bb10 = bb11
+    | bb11 = return''0 {_0} ]
     )
     [ & _0: t_OwnResult'0 = Any.any_l ()
     | & self'0: t_OwnResult = self
     | & t: t_T = Any.any_l ()
-    | & _6: t_T = Any.any_l ()
+    | & _5: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ]
     
     [ return''0 (result:t_OwnResult'0)-> {[@expl:cloned result type invariant] [%#sown'0] inv'3 result}
-      {[@expl:cloned ensures #0] [%#sown'1] forall t: t_T. self = C_Ok t  -> result = C_Ok'0 t}
-      {[@expl:cloned ensures #1] [%#sown'2] forall e: t_E. self = C_Err e  -> result = C_Err'0 e}
+      {[@expl:cloned ensures] [%#sown'1] match { _p0 = self; _p1 = result } with
+        | {_p0 = C_Ok s ; _p1 = C_Ok'0 r} -> postcondition () s r
+        | {_p0 = C_Err s ; _p1 = C_Err'0 r} -> s = r
+        | _ -> false
+        end}
       (! return' {result}) ]
 
 end
-module M_own__qyi10690551671874530681__copied [#"own.rs" 193 4 195 16] (* OwnResult<&mut T, E> *)
-  let%span sown = "own.rs" 193 18 193 22
-  let%span sown'0 = "own.rs" 193 27 193 42
-  let%span sown'1 = "own.rs" 191 14 191 103
-  let%span sown'2 = "own.rs" 192 14 192 84
+module M_own__qyi10690551671874530681__copied [#"own.rs" 196 4 198 16] (* OwnResult<&mut T, E> *)
+  let%span sown = "own.rs" 196 18 196 22
+  let%span sown'0 = "own.rs" 196 27 196 42
+  let%span sown'1 = "own.rs" 194 14 194 103
+  let%span sown'2 = "own.rs" 195 14 195 84
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
@@ -1446,7 +1509,7 @@ module M_own__qyi10690551671874530681__copied [#"own.rs" 193 4 195 16] (* OwnRes
   
   meta "compute_max_steps" 1000000
   
-  let rec copied[#"own.rs" 193 4 195 16] (self:t_OwnResult) (return'  (x:t_OwnResult'0))= {[@expl:copied 'self' type invariant] [%#sown] inv'2 self}
+  let rec copied[#"own.rs" 196 4 198 16] (self:t_OwnResult) (return'  (x:t_OwnResult'0))= {[@expl:copied 'self' type invariant] [%#sown] inv'2 self}
     (! bb0
     [ bb0 = bb1
     | bb1 = bb2
@@ -1477,14 +1540,23 @@ module M_own__qyi10690551671874530681__copied [#"own.rs" 193 4 195 16] (* OwnRes
       (! return' {result}) ]
 
 end
-module M_own__qyi10690551671874530681__cloned [#"own.rs" 206 4 208 17] (* OwnResult<&mut T, E> *)
-  let%span sown = "own.rs" 206 18 206 22
-  let%span sown'0 = "own.rs" 206 27 206 42
-  let%span sown'1 = "own.rs" 204 14 204 103
-  let%span sown'2 = "own.rs" 205 14 205 84
+module M_own__qyi10690551671874530681__cloned [#"own.rs" 212 4 214 17] (* OwnResult<&mut T, E> *)
+  let%span sown = "own.rs" 212 18 212 22
+  let%span sown'0 = "own.rs" 212 27 212 42
+  let%span sown'1 = "own.rs" 207 14 211 5
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
   let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -1528,7 +1600,7 @@ module M_own__qyi10690551671874530681__cloned [#"own.rs" 206 4 208 17] (* OwnRes
   predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
-   -> (let self_ = args in res = self_ /\ inv res)
+   -> (let self_ = args in inv res)
   
   let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition () self_}
     any [ return''0 (result:t_T)-> {postcondition_once () self_ result} (! return' {result}) ] 
@@ -1564,48 +1636,101 @@ module M_own__qyi10690551671874530681__cloned [#"own.rs" 206 4 208 17] (* OwnRes
     | C_Err'0 a_0 -> inv'2 a_0
     end
   
+  type tuple  =
+    { _p0: t_OwnResult; _p1: t_OwnResult'0 }
+  
+  predicate resolve'1 (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0: forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_T, res_state: (), res: t_T. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve'1 self)
+  
+  function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_T. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
   meta "compute_max_steps" 1000000
   
-  let rec cloned[#"own.rs" 206 4 208 17] (self:t_OwnResult) (return'  (x:t_OwnResult'0))= {[@expl:cloned 'self' type invariant] [%#sown] inv'3 self}
+  let rec cloned[#"own.rs" 212 4 214 17] (self:t_OwnResult) (return'  (x:t_OwnResult'0))= {[@expl:cloned 'self' type invariant] [%#sown] inv'3 self}
     (! bb0
     [ bb0 = bb1
-    | bb1 = bb2
-    | bb2 = any [ br0 (x0:MutBorrow.t t_T)-> {self'0 = C_Ok x0} (! bb4) | br1 (x0:t_E)-> {self'0 = C_Err x0} (! bb5) ] 
-    | bb5 = s0 [ s0 = v_Err {self'0} (fun (r0:t_E) ->  [ &e <- r0 ] s1) | s1 =  [ &_0 <- C_Err'0 e ] s2 | s2 = bb9 ] 
+    | bb1 = any [ br0 (x0:MutBorrow.t t_T)-> {self'0 = C_Ok x0} (! bb3) | br1 (x0:t_E)-> {self'0 = C_Err x0} (! bb4) ] 
+    | bb4 = s0 [ s0 = v_Err {self'0} (fun (r0:t_E) ->  [ &e <- r0 ] s1) | s1 =  [ &_0 <- C_Err'0 e ] s2 | s2 = bb8 ] 
+    | bb8 = bb9
     | bb9 = bb10
-    | bb10 = bb11
-    | bb4 = bb6
-    | bb6 = s0
+    | bb3 = bb5
+    | bb5 = s0
       [ s0 = v_Ok {self'0} (fun (r0:MutBorrow.t t_T) ->  [ &t <- r0 ] s1)
-      | s1 = clone' {t.current} (fun (_ret:t_T) ->  [ &_6 <- _ret ] s2)
-      | s2 = bb7 ]
+      | s1 = clone' {t.current} (fun (_ret:t_T) ->  [ &_5 <- _ret ] s2)
+      | s2 = bb6 ]
     
-    | bb7 = s0
-      [ s0 = {[@expl:type invariant] inv'1 t} s1 | s1 = -{resolve'0 t}- s2 | s2 =  [ &_0 <- C_Ok'0 _6 ] s3 | s3 = bb8 ]
+    | bb6 = s0
+      [ s0 = {[@expl:type invariant] inv'1 t} s1 | s1 = -{resolve'0 t}- s2 | s2 =  [ &_0 <- C_Ok'0 _5 ] s3 | s3 = bb7 ]
     
-    | bb8 = bb11
-    | bb11 = bb12
-    | bb12 = return''0 {_0} ]
+    | bb7 = bb10
+    | bb10 = bb11
+    | bb11 = return''0 {_0} ]
     )
     [ & _0: t_OwnResult'0 = Any.any_l ()
     | & self'0: t_OwnResult = self
     | & t: MutBorrow.t t_T = Any.any_l ()
-    | & _6: t_T = Any.any_l ()
+    | & _5: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ]
     
     [ return''0 (result:t_OwnResult'0)-> {[@expl:cloned result type invariant] [%#sown'0] inv'4 result}
-      {[@expl:cloned ensures #0] [%#sown'1] forall t: MutBorrow.t t_T. self = C_Ok t
-       -> result = C_Ok'0 (t.current) /\ resolve'0 t}
-      {[@expl:cloned ensures #1] [%#sown'2] forall e: t_E. self = C_Err e  -> result = C_Err'0 e}
+      {[@expl:cloned ensures] [%#sown'1] match { _p0 = self; _p1 = result } with
+        | {_p0 = C_Ok s ; _p1 = C_Ok'0 r} -> postcondition () s.current r
+        | {_p0 = C_Err s ; _p1 = C_Err'0 r} -> s = r
+        | _ -> false
+        end}
       (! return' {result}) ]
 
 end
-module M_own__qyi11106003418932042655__transpose [#"own.rs" 222 4 222 53] (* OwnResult<std::option::Option<T>, E> *)
-  let%span sown = "own.rs" 222 21 222 25
-  let%span sown'0 = "own.rs" 222 30 222 53
-  let%span sown'1 = "own.rs" 219 14 219 60
-  let%span sown'2 = "own.rs" 220 14 220 94
-  let%span sown'3 = "own.rs" 221 14 221 90
+module M_own__qyi11106003418932042655__transpose [#"own.rs" 228 4 228 53] (* OwnResult<std::option::Option<T>, E> *)
+  let%span sown = "own.rs" 228 21 228 25
+  let%span sown'0 = "own.rs" 228 30 228 53
+  let%span sown'1 = "own.rs" 225 14 225 60
+  let%span sown'2 = "own.rs" 226 14 226 94
+  let%span sown'3 = "own.rs" 227 14 227 90
   
   use creusot.prelude.Any
   
@@ -1682,7 +1807,7 @@ module M_own__qyi11106003418932042655__transpose [#"own.rs" 222 4 222 53] (* Own
   
   meta "compute_max_steps" 1000000
   
-  let rec transpose[#"own.rs" 222 4 222 53] (self:t_OwnResult) (return'  (x:t_Option'0))= {[@expl:transpose 'self' type invariant] [%#sown] inv'2 self}
+  let rec transpose[#"own.rs" 228 4 228 53] (self:t_OwnResult) (return'  (x:t_Option'0))= {[@expl:transpose 'self' type invariant] [%#sown] inv'2 self}
     (! bb0
     [ bb0 = bb1
     | bb1 = bb2
