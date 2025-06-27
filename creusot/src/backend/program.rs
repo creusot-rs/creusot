@@ -25,6 +25,7 @@ use crate::{
         },
         wto::{Component, weak_topological_order},
     },
+    contracts_items::get_namespace_ty,
     ctx::{BodyId, Dependencies},
     naming::name,
     translated_item::FileModule,
@@ -69,6 +70,9 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     let name = names.item_ident(names.self_id, names.self_subst);
     let body = Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), None)));
 
+    let namespace_ty =
+        names.def_ty_no_dependency(get_namespace_ty(ctx.ctx.tcx), GenericArgsRef::default());
+
     let mut decls = names.provide_deps(ctx);
     decls.extend(common_meta_decls());
     decls.push(body);
@@ -77,6 +81,13 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     let meta = ctx.display_impl_of(def_id);
     let path = ctx.module_path(def_id);
     let name = path.why3_ident();
+
+    if ctx.used_namespaces.get() {
+        let mut new_decls = ctx.generate_namespace_type(namespace_ty);
+        new_decls.extend(std::mem::take(&mut decls));
+        decls = new_decls;
+    }
+
     Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } })
 }
 

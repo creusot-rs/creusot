@@ -19,7 +19,7 @@ use crate::{
         get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
         is_fn_impl_postcond, is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond,
         is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_logic,
-        is_resolve_function, is_size_of_logic, is_structural_resolve,
+        is_namespace_ty, is_resolve_function, is_size_of_logic, is_structural_resolve,
     },
     ctx::{BodyId, ItemType},
     naming::name,
@@ -356,6 +356,10 @@ fn expand_type<'tcx>(
             } else {
                 vec![]
             }
+        } // Special treatment for the `Namespace` type: we must generate it after collecting all the possible variants.
+        TyKind::Adt(adt_def, _) if is_namespace_ty(ctx.tcx, adt_def.did()) => {
+            ctx.used_namespaces.set(true);
+            Vec::new()
         }
         TyKind::Adt(_, _) => {
             let (def_id, subst) = dep.did().unwrap();

@@ -52,6 +52,7 @@ attribute_functions! {
     [creusot::decl::logic::sealed]           => is_sealed
     [creusot::decl::trusted]                 => is_trusted
     [creusot::decl::law]                     => is_law
+    [creusot::decl::new_namespace]           => is_new_namespace
     not [creusot::decl::no_trigger]          => should_replace_trigger
     [creusot::decl::open_inv_result]         => is_open_inv_result
     [creusot::extern_spec]                   => is_extern_spec
@@ -64,7 +65,7 @@ attribute_functions! {
     [creusot::builtins_ascription]           => is_builtins_ascription
 }
 
-pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
+pub(crate) fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
     get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"])
         .map(|a| a.value_str().map_or("expl:loop invariant".to_string(), |s| s.to_string()))
 }

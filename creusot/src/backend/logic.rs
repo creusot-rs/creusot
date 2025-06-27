@@ -3,13 +3,14 @@ use crate::{
         Why3Generator, common_meta_decls, is_trusted_item, logic::vcgen::wp,
         signature::lower_logic_sig, term::lower_pure_weakdep, ty::translate_ty,
     },
-    contracts_items::get_builtin,
+    contracts_items::{get_builtin, get_namespace_ty},
     ctx::*,
     naming::name,
     translated_item::FileModule,
     translation::pearlite::Term,
 };
 use rustc_hir::def_id::DefId;
+use rustc_middle::ty::GenericArgsRef;
 use why3::{
     Ident,
     declaration::*,
@@ -21,6 +22,9 @@ mod vcgen;
 pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<FileModule> {
     let mut names = Dependencies::new(ctx, def_id);
     let pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, ctx.typing_env(def_id));
+
+    let namespace_ty =
+        names.def_ty_no_dependency(get_namespace_ty(ctx.ctx.tcx), GenericArgsRef::default());
 
     if pre_sig.contract.is_empty() {
         return None;
@@ -44,7 +48,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     let bound: Box<[Ident]> = args.iter().map(|(name, _, _)| name.0).collect();
 
     let name = names.item_ident(names.self_id, names.self_subst);
-    let sig = lower_logic_sig(ctx, &mut names, name, pre_sig, def_id);
+    let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
     let (param_decls, args_names): (Vec<_>, Vec<_>) = args
         .into_iter()
         .map(|(name, span, ty)| {
@@ -108,6 +112,10 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     decls.extend(common_meta_decls());
     decls.extend(body_decls);
 
+    if ctx.used_namespaces.get() {
+        decls.splice(0..0, ctx.generate_namespace_type(namespace_ty));
+    }
+
     let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();
     let meta = ctx.display_impl_of(def_id);
     let path = ctx.module_path(def_id);
@@ -164,7 +172,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
     if !sig.contract.ensures.is_empty() {
         if let Some(lim_name) = lim_name
-            && !sig.contract.variant.is_none()
+            && sig.contract.variant.is_some()
         {
             let mut lim_sig = sig;
             lim_sig.name = lim_name;
