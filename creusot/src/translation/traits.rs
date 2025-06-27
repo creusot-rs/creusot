@@ -340,24 +340,41 @@ impl<'tcx> TraitResolved<'tcx> {
 
                 TraitResolved::UnknownFound
             }
-            ImplSource::Builtin(_, _) => match *substs.type_at(0).kind() {
-                rustc_middle::ty::Closure(closure_def_id, closure_substs) => {
-                    // TODO: check that we are indeed resolving one of the Fn* traits
-                    TraitResolved::Instance { def: (closure_def_id, closure_substs), impl_: None }
+            ImplSource::Builtin(_, _) => {
+                if matches!(substs.type_at(0).kind(), rustc_middle::ty::Dynamic(_, _, _)) {
+                    // These types are not supported, but we want to display a proper error message because
+                    // they are rather common in real Rust code, and this is not the right place to emit
+                    // such an error message.
+                    return TraitResolved::UnknownFound;
                 }
-                rustc_middle::ty::Dynamic(_, _, _) =>
-                // These types are not supported, but we want to display a proper error message because
-                // they are rather common in real Rust code, and this is not the right place to emit
-                // such an error message.
+
+                if [
+                    tcx.lang_items().fn_trait(),
+                    tcx.lang_items().fn_mut_trait(),
+                    tcx.lang_items().fn_once_trait(),
+                ]
+                .contains(&Some(trait_ref.def_id))
                 {
-                    TraitResolved::UnknownFound
+                    match *substs.type_at(0).kind() {
+                        TyKind::Closure(closure_def_id, closure_substs) => {
+                            return TraitResolved::Instance {
+                                def: (closure_def_id, closure_substs),
+                                impl_: None,
+                            };
+                        }
+                        TyKind::FnDef(did, subst) => {
+                            return TraitResolved::Instance { def: (did, subst), impl_: None };
+                        }
+                        _ => (),
+                    }
                 }
-                _ => unimplemented!(
+
+                unimplemented!(
                     "Cannot handle builtin implementation of `{}` for `{}`",
                     tcx.def_path_str(trait_ref.def_id),
                     substs.type_at(0)
-                ),
-            },
+                )
+            }
         }
     }
 
