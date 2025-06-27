@@ -174,7 +174,7 @@ pub(crate) trait Namer<'tcx> {
             }
             (PreMod::Any, _) => ["creusot", "prelude", "Any"],
         };
-        name.into_iter().map(|s| Symbol::intern(s)).collect()
+        name.into_iter().map(Symbol::intern).collect()
     }
 
     fn in_pre(&self, module: PreMod, name: &str) -> QName {
@@ -376,6 +376,13 @@ impl<'tcx> Dependencies<'tcx> {
         let node = Dependency::Item(self_id, self_subst);
         deps.names.dependency(node);
         deps
+    }
+
+    /// Get a name for an type, _without_ adding it to the list of dependencies.
+    ///
+    /// This is a hack, used to handle namespaces.
+    pub(crate) fn def_ty_no_dependency(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
+        self.names.def_ty(def_id, subst)
     }
 
     pub(crate) fn provide_deps(mut self, ctx: &Why3Generator<'tcx>) -> Vec<Decl> {
