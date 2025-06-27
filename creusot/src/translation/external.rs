@@ -1,3 +1,4 @@
+use super::specification::inputs_and_output_from_thir;
 use crate::{
     ctx::*,
     translation::{
@@ -17,17 +18,15 @@ use rustc_middle::{
 use rustc_span::Span;
 use rustc_type_ir::ConstKind;
 
-use super::specification::inputs_and_output_from_thir;
-
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
-    pub contract: ContractClauses,
-    pub subst: GenericArgsRef<'tcx>,
-    pub inputs: Box<[(PIdent, Span, Ty<'tcx>)]>,
-    pub output: Ty<'tcx>,
+    pub(crate) contract: ContractClauses,
+    pub(crate) subst: GenericArgsRef<'tcx>,
+    pub(crate) inputs: Box<[(PIdent, Span, Ty<'tcx>)]>,
+    pub(crate) output: Ty<'tcx>,
     // Additional predicates we must verify to call this function
-    pub additional_predicates: Vec<Predicate<'tcx>>,
+    pub(crate) additional_predicates: Vec<Predicate<'tcx>>,
 }
 
 impl<'tcx> ExternSpec<'tcx> {
@@ -43,31 +42,31 @@ impl<'tcx> ExternSpec<'tcx> {
 // Must be run before MIR generation.
 pub(crate) fn extract_extern_specs_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    def_id: LocalDefId,
+    local_def_id: LocalDefId,
     &(ref thir, expr): &(Thir<'tcx>, thir::ExprId),
 ) -> (DefId, ExternSpec<'tcx>) {
-    let def_id_ = def_id.to_def_id();
-    let span = ctx.def_span(def_id_);
-    let contract = contract_clauses_of(ctx, def_id_).unwrap();
-    let mut visit = ExtractExternItems::new(&thir);
+    let def_id = local_def_id.to_def_id();
+    let span = ctx.def_span(def_id);
+    let contract = contract_clauses_of(ctx, def_id).unwrap();
+    let mut visit = ExtractExternItems::new(thir);
     visit.visit_expr(&thir[expr]);
     let (id, subst) = visit.items.pop().unwrap();
 
     let (id, _) =
-        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id_), id, subst).to_opt(id, subst).unwrap_or_else(|| {
+        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
-                ctx.def_span(def_id_),
+                ctx.def_span(def_id),
                 "could not derive original instance from external specification",
             );
 
-            err.span_warn(ctx.def_span(def_id_), "the bounds on an external specification must be at least as strong as the original impl bounds");
+            err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
             err.emit()
         });
 
     // Generics of the actual item.
     let mut inner_subst = erased_identity_for_item(ctx.tcx, id).to_vec();
     // Generics of our stub.
-    let outer_subst = erased_identity_for_item(ctx.tcx, def_id_);
+    let outer_subst = erased_identity_for_item(ctx.tcx, def_id);
 
     // FIXME: I don't remember the original reason for introducing this...
     let extra_parameters = inner_subst.len() - outer_subst.len();
@@ -89,6 +88,18 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         let self_ = inner_subst.remove(ix + extra_parameters);
         inner_subst.insert(extra_parameters, self_);
     };
+
+    // since `outer_subst` has all its generic coming from a function (no `impl`),
+    // it always puts lifetimes first.
+    inner_subst.sort_by(|a1, a2| {
+        use std::cmp::Ordering;
+        match (a1.unpack(), a2.unpack()) {
+            (GenericArgKind::Lifetime(_), GenericArgKind::Lifetime(_)) => Ordering::Equal,
+            (GenericArgKind::Lifetime(_), _) => Ordering::Less,
+            (_, GenericArgKind::Lifetime(_)) => Ordering::Greater,
+            _ => Ordering::Equal,
+        }
+    });
 
     let mut subst = Vec::new();
     let mut errors = Vec::new();
@@ -131,8 +142,20 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                     errors.push(err);
                 }
             }
-            _ => {
-                let err = ctx.fatal_error(span, "mismatched parameters kind in `extern_spec!`");
+            (arg_expected, arg) => {
+                let p_str = |arg| match arg {
+                    GenericArgKind::Lifetime(l) => format!("lifetime `{l:?}`"),
+                    GenericArgKind::Type(t) => format!("type `{t:?}`"),
+                    GenericArgKind::Const(c) => format!("constant `{c:?}`"),
+                };
+                let err = ctx.dcx().struct_span_fatal(
+                    span,
+                    format!(
+                        "mismatched parameter kinds in `extern_spec!`: expected {}, got {}",
+                        p_str(arg_expected),
+                        p_str(arg)
+                    ),
+                );
                 errors.push(err);
             }
         }
@@ -143,14 +166,14 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let subst = ctx.mk_args(&subst);
 
     let additional_predicates = ctx
-        .predicates_of(def_id)
+        .predicates_of(local_def_id)
         .instantiate(ctx.tcx, subst)
         .predicates
         .into_iter()
         .map(Clause::as_predicate)
         .collect();
 
-    let (inputs, output) = inputs_and_output_from_thir(ctx, def_id_, &thir);
+    let (inputs, output) = inputs_and_output_from_thir(ctx, def_id, thir);
     (id, ExternSpec { contract, additional_predicates, subst, inputs, output })
 }
 
