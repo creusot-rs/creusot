@@ -52,7 +52,6 @@ impl<K: DeepModel, V> View for BTreeMap<K, V> {
     }
 }
 
-#[derive(Clone)]
 pub enum Expr {
     IfThenElse { c: Box<Expr>, t: Box<Expr>, e: Box<Expr> },
     Var { v: usize },
@@ -60,18 +59,18 @@ pub enum Expr {
     False,
 }
 
-// FIXME: this should go away, we have not defined any order relation on Expr
-#[trusted]
-impl WellFounded for Expr {}
-
-use std::alloc::Allocator;
-extern_spec! {
-    mod std {
-        mod boxed {
-            impl<T: Clone, A: Allocator + Clone> Clone for Box<T, A> {
-                #[ensures(result == *self)]
-                fn clone(&self) -> Self;
-            }
+impl Clone for Expr {
+    #[ensures(result == *self)]
+    fn clone(&self) -> Expr {
+        match self {
+            Expr::IfThenElse { c, t, e } => Expr::IfThenElse {
+                c: Box::new((&**c).clone()),
+                t: Box::new((&**t).clone()),
+                e: Box::new((&**e).clone()),
+            },
+            &Expr::Var { v } => Expr::Var { v },
+            Expr::True => Expr::True,
+            Expr::False => Expr::False,
         }
     }
 }
@@ -103,7 +102,6 @@ impl Expr {
     #[requires(a.is_normalized())]
     #[requires(b.is_normalized())]
     #[ensures(result.is_normalized())]
-    #[variant(self)]
     pub fn transpose(self, a: Self, b: Self) -> Self {
         match self {
             Self::IfThenElse { c, t, e } => Self::IfThenElse {
@@ -138,7 +136,6 @@ impl Expr {
     }
 
     #[ensures(result.is_normalized())]
-    #[variant(self)]
     pub fn normalize(&self) -> Self {
         match self {
             Expr::IfThenElse { c, t, e } => {
@@ -182,7 +179,6 @@ impl Expr {
     #[requires(self.is_normalized())]
     #[ensures(forall<i: usize> (exists<v: bool> state@.get(i@) == Some(v)) ==> result.does_not_contain(i))]
     #[ensures(result.is_simplified())]
-    #[variant(self)]
     fn simplify_helper(self, state: BTreeMap<usize, bool>) -> Self {
         match self {
             Expr::IfThenElse { c, t, e } => {

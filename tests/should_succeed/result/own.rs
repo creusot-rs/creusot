@@ -173,8 +173,11 @@ impl<T, E> OwnResult<&T, E> {
         }
     }
 
-    #[ensures(forall<t: &T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t))]
-    #[ensures(forall<e: E> self == OwnResult::Err(e) ==> result == OwnResult::Err(e))]
+    #[ensures(match (self, result) {
+        (OwnResult::Ok(s), OwnResult::Ok(r)) => T::clone.postcondition((s,), r),
+        (OwnResult::Err(s), OwnResult::Err(r)) => s == r,
+        _ => false
+    })]
     pub fn cloned(self) -> OwnResult<T, E>
     where
         T: Clone,
@@ -201,8 +204,11 @@ impl<T, E> OwnResult<&mut T, E> {
         }
     }
 
-    #[ensures(forall<t: &mut T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t) && resolve(&t))]
-    #[ensures(forall<e: E> self == OwnResult::Err(e) ==> result == OwnResult::Err(e))]
+    #[ensures(match (self, result) {
+        (OwnResult::Ok(s), OwnResult::Ok(r)) => T::clone.postcondition((s,), r),
+        (OwnResult::Err(s), OwnResult::Err(r)) => s == r,
+        _ => false
+    })]
     pub fn cloned(self) -> OwnResult<T, E>
     where
         T: Clone,

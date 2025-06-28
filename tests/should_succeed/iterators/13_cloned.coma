@@ -26,11 +26,22 @@ end
 module M_13_cloned__qyi8249401513993331368__produces_refl [#"13_cloned.rs" 41 4 41 26] (* <Cloned<I> as common::Iterator> *)
   let%span s13_cloned = "13_cloned.rs" 40 14 40 45
   let%span s13_cloned'0 = "13_cloned.rs" 41 27 41 29
-  let%span s13_cloned'1 = "13_cloned.rs" 31 12 34 74
+  let%span s13_cloned'1 = "13_cloned.rs" 31 12 34 98
   let%span scommon = "common.rs" 14 14 14 45
   let%span scommon'0 = "common.rs" 18 15 18 32
   let%span scommon'1 = "common.rs" 19 15 19 32
   let%span scommon'2 = "common.rs" 20 14 20 42
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
   use seq.Seq
   use mach.int.Int
@@ -53,10 +64,81 @@ module M_13_cloned__qyi8249401513993331368__produces_refl [#"13_cloned.rs" 41 4 
   
   axiom produces_refl_spec: forall self: t_I. [%#scommon] produces self (Seq.empty: Seq.seq t_T) self
   
+  predicate inv (_0: t_T)
+  
+  predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv res)
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0: forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_T, res_state: (), res: t_T. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_T. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: t_T) =
+    [%#sinvariant] inv self
+  
+  predicate inv'0 (_0: t_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition () args]. (let self_ = args in inv'0 self_)
+   -> precondition () args
+  
+  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_T)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
   predicate produces'0 [#"13_cloned.rs" 29 4 29 64] (self: t_Cloned) (visited: Seq.seq t_T) (o: t_Cloned) =
     [%#s13_cloned'1] exists s: Seq.seq t_T. produces self.t_Cloned__iter s o.t_Cloned__iter
     /\ Seq.length visited = Seq.length s
-    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> Seq.get visited i = Seq.get s i)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> postcondition () (Seq.get s i) (Seq.get visited i))
   
   constant self  : t_Cloned
   
@@ -69,11 +151,22 @@ module M_13_cloned__qyi8249401513993331368__produces_trans [#"13_cloned.rs" 48 4
   let%span s13_cloned'0 = "13_cloned.rs" 46 15 46 32
   let%span s13_cloned'1 = "13_cloned.rs" 47 14 47 42
   let%span s13_cloned'2 = "13_cloned.rs" 48 91 48 93
-  let%span s13_cloned'3 = "13_cloned.rs" 31 12 34 74
+  let%span s13_cloned'3 = "13_cloned.rs" 31 12 34 98
   let%span scommon = "common.rs" 14 14 14 45
   let%span scommon'0 = "common.rs" 18 15 18 32
   let%span scommon'1 = "common.rs" 19 15 19 32
   let%span scommon'2 = "common.rs" 20 14 20 42
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
   use seq.Seq
   use mach.int.Int
@@ -96,10 +189,81 @@ module M_13_cloned__qyi8249401513993331368__produces_trans [#"13_cloned.rs" 48 4
   
   axiom produces_refl_spec: forall self: t_I. [%#scommon] produces self (Seq.empty: Seq.seq t_T) self
   
+  predicate inv (_0: t_T)
+  
+  predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv res)
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0: forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_T, res_state: (), res: t_T. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_T. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: t_T) =
+    [%#sinvariant] inv self
+  
+  predicate inv'0 (_0: t_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition () args]. (let self_ = args in inv'0 self_)
+   -> precondition () args
+  
+  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_T)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
   predicate produces'0 [#"13_cloned.rs" 29 4 29 64] (self: t_Cloned) (visited: Seq.seq t_T) (o: t_Cloned) =
     [%#s13_cloned'3] exists s: Seq.seq t_T. produces self.t_Cloned__iter s o.t_Cloned__iter
     /\ Seq.length visited = Seq.length s
-    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> Seq.get visited i = Seq.get s i)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> postcondition () (Seq.get s i) (Seq.get visited i))
   
   constant a  : t_Cloned
   
@@ -122,17 +286,26 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
   let%span s13_cloned'0 = "13_cloned.rs" 54 26 54 35
   let%span s13_cloned'1 = "13_cloned.rs" 50 14 53 5
   let%span s13_cloned'2 = "13_cloned.rs" 24 8 24 43
-  let%span s13_cloned'3 = "13_cloned.rs" 31 12 34 74
+  let%span s13_cloned'3 = "13_cloned.rs" 31 12 34 98
   let%span scommon = "common.rs" 14 14 14 45
   let%span scommon'0 = "common.rs" 18 15 18 32
   let%span scommon'1 = "common.rs" 19 15 19 32
   let%span scommon'2 = "common.rs" 20 14 20 42
-  let%span soption = "../../../creusot-contracts/src/std/option.rs" 491 16 491 17
-  let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 491 26 491 57
-  let%span soption'1 = "../../../creusot-contracts/src/std/option.rs" 492 26 492 93
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
   let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
+  let%span soption = "../../../creusot-contracts/src/std/option.rs" 508 16 508 17
+  let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 508 26 512 17
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
   use creusot.prelude.MutBorrow
   use seq.Seq
@@ -238,11 +411,79 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
     | C_Some'0 a_0 -> inv'1 a_0
     end
   
+  type tuple  =
+    { _p0: t_Option; _p1: t_Option'0 }
+  
+  predicate postcondition_once'0 (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'0: forall args: t_T, res: t_T [postcondition_once'0 () args res]. postcondition_once'0 () args res
+   -> (let self_ = args in inv'1 res)
+  
+  predicate resolve'1 (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv'1 res)
+  
+  function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'8] postcondition_once'0 self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_T, res_state: (), res: t_T. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'2: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv'1 res)
+  
+  function fn_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'0] postcondition_once'0 self args res
+  = (postcondition self args res /\ resolve'1 self)
+  
+  function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_T. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate precondition'0 (self: ()) (args: t_T)
+  
+  axiom precondition_fndef'0: forall args: t_T [precondition'0 () args]. (let self_ = args in inv'2 self_)
+   -> precondition'0 () args
+  
+  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition'0 () self_}
+    any [ return''0 (result:t_T)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
+  
   let rec cloned (self_:t_Option) (return'  (x:t_Option'0))= {[@expl:cloned 'self_' type invariant] [%#soption] inv'3 self_}
     any
     [ return''0 (result:t_Option'0)-> {inv'6 result}
-      {[%#soption'0] self_ = C_None  -> result = C_None'0}
-      {[%#soption'1] self_ = C_None \/ (exists t: t_T. self_ = C_Some t /\ result = C_Some'0 t)}
+      {[%#soption'0] match { _p0 = self_; _p1 = result } with
+        | {_p0 = C_None ; _p1 = C_None'0} -> true
+        | {_p0 = C_Some s ; _p1 = C_Some'0 r} -> postcondition () s r
+        | _ -> false
+        end}
       (! return' {result}) ]
   
   
@@ -252,7 +493,7 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
   predicate produces'0 [#"13_cloned.rs" 29 4 29 64] (self: t_Cloned) (visited: Seq.seq t_T) (o: t_Cloned) =
     [%#s13_cloned'3] exists s: Seq.seq t_T. produces self.t_Cloned__iter s o.t_Cloned__iter
     /\ Seq.length visited = Seq.length s
-    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> Seq.get visited i = Seq.get s i)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> postcondition () (Seq.get s i) (Seq.get visited i))
   
   meta "compute_max_steps" 1000000
   
@@ -334,11 +575,22 @@ module M_13_cloned__qyi15962217627105823597__resolve_coherence__refines [#"13_cl
 end
 module M_13_cloned__qyi8249401513993331368__produces_trans__refines [#"13_cloned.rs" 48 4 48 90] (* <Cloned<I> as common::Iterator> *)
   let%span s13_cloned = "13_cloned.rs" 48 4 48 90
-  let%span s13_cloned'0 = "13_cloned.rs" 31 12 34 74
+  let%span s13_cloned'0 = "13_cloned.rs" 31 12 34 98
   let%span scommon = "common.rs" 14 14 14 45
   let%span scommon'0 = "common.rs" 18 15 18 32
   let%span scommon'1 = "common.rs" 19 15 19 32
   let%span scommon'2 = "common.rs" 20 14 20 42
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
   use seq.Seq
   use mach.int.Int
@@ -361,10 +613,81 @@ module M_13_cloned__qyi8249401513993331368__produces_trans__refines [#"13_cloned
   
   axiom produces_refl_spec: forall self: t_I. [%#scommon] produces self (Seq.empty: Seq.seq t_T) self
   
+  predicate inv (_0: t_T)
+  
+  predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv res)
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0: forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_T, res_state: (), res: t_T. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_T. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: t_T) =
+    [%#sinvariant] inv self
+  
+  predicate inv'0 (_0: t_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition () args]. (let self_ = args in inv'0 self_)
+   -> precondition () args
+  
+  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_T)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
   predicate produces'0 [#"13_cloned.rs" 29 4 29 64] (self: t_Cloned) (visited: Seq.seq t_T) (o: t_Cloned) =
     [%#s13_cloned'0] exists s: Seq.seq t_T. produces self.t_Cloned__iter s o.t_Cloned__iter
     /\ Seq.length visited = Seq.length s
-    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> Seq.get visited i = Seq.get s i)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> postcondition () (Seq.get s i) (Seq.get visited i))
   
   goal refines: [%#s13_cloned] forall a: t_Cloned. forall ab: Seq.seq t_T. forall b: t_Cloned. forall bc: Seq.seq t_T. forall c: t_Cloned. produces'0 b bc c
   /\ produces'0 a ab b
@@ -373,11 +696,22 @@ module M_13_cloned__qyi8249401513993331368__produces_trans__refines [#"13_cloned
 end
 module M_13_cloned__qyi8249401513993331368__produces_refl__refines [#"13_cloned.rs" 41 4 41 26] (* <Cloned<I> as common::Iterator> *)
   let%span s13_cloned = "13_cloned.rs" 41 4 41 26
-  let%span s13_cloned'0 = "13_cloned.rs" 31 12 34 74
+  let%span s13_cloned'0 = "13_cloned.rs" 31 12 34 98
   let%span scommon = "common.rs" 14 14 14 45
   let%span scommon'0 = "common.rs" 18 15 18 32
   let%span scommon'1 = "common.rs" 19 15 19 32
   let%span scommon'2 = "common.rs" 20 14 20 42
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
   use seq.Seq
   use mach.int.Int
@@ -400,10 +734,81 @@ module M_13_cloned__qyi8249401513993331368__produces_refl__refines [#"13_cloned.
   
   axiom produces_refl_spec: forall self: t_I. [%#scommon] produces self (Seq.empty: Seq.seq t_T) self
   
+  predicate inv (_0: t_T)
+  
+  predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv res)
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0: forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
+  
+  function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_T, res_state: (), res: t_T. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
+  
+  function fn_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_T. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: t_T) =
+    [%#sinvariant] inv self
+  
+  predicate inv'0 (_0: t_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition () args]. (let self_ = args in inv'0 self_)
+   -> precondition () args
+  
+  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_T)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
   predicate produces'0 [#"13_cloned.rs" 29 4 29 64] (self: t_Cloned) (visited: Seq.seq t_T) (o: t_Cloned) =
     [%#s13_cloned'0] exists s: Seq.seq t_T. produces self.t_Cloned__iter s o.t_Cloned__iter
     /\ Seq.length visited = Seq.length s
-    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> Seq.get visited i = Seq.get s i)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> postcondition () (Seq.get s i) (Seq.get visited i))
   
   goal refines: [%#s13_cloned] forall self: t_Cloned. forall result: (). produces'0 self (Seq.empty: Seq.seq t_T) self
    -> produces'0 self (Seq.empty: Seq.seq t_T) self
@@ -411,12 +816,23 @@ end
 module M_13_cloned__qyi8249401513993331368__next__refines [#"13_cloned.rs" 54 4 54 35] (* <Cloned<I> as common::Iterator> *)
   let%span s13_cloned = "13_cloned.rs" 54 4 54 35
   let%span s13_cloned'0 = "13_cloned.rs" 24 8 24 43
-  let%span s13_cloned'1 = "13_cloned.rs" 31 12 34 74
+  let%span s13_cloned'1 = "13_cloned.rs" 31 12 34 98
   let%span scommon = "common.rs" 14 14 14 45
   let%span scommon'0 = "common.rs" 18 15 18 32
   let%span scommon'1 = "common.rs" 19 15 19 32
   let%span scommon'2 = "common.rs" 20 14 20 42
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 158 14 158 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 163 14 163 101
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 168 14 168 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 133 15 133 31
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
+  let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
   use creusot.prelude.MutBorrow
   use seq.Seq
@@ -465,16 +881,85 @@ module M_13_cloned__qyi8249401513993331368__next__refines [#"13_cloned.rs" 54 4 
   predicate completed'0 [#"13_cloned.rs" 23 4 23 35] (self: MutBorrow.t t_Cloned) =
     [%#s13_cloned'0] completed (MutBorrow.borrow_logic (self.current).t_Cloned__iter (self.final).t_Cloned__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
   
+  predicate inv'2 (_0: t_T)
+  
+  predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv'2 res)
+  
+  predicate resolve (_0: ()) =
+    true
+  
+  predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0: forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv'2 res)
+  
+  function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: ()) (result_state: ()) =
+    true
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
+   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_T, res_state: (), res: t_T. ([%#sops'2] postcondition_mut self args res_state res)
+   -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv'2 res)
+  
+  function fn_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_T. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant''0 (self: t_T) =
+    [%#sinvariant'0] inv'2 self
+  
+  predicate inv'3 (_0: t_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_T [inv'3 x]. inv'3 x = invariant''0 x
+  
+  predicate precondition (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition () args]. (let self_ = args in inv'3 self_)
+   -> precondition () args
+  
+  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_T)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
   predicate produces'0 [#"13_cloned.rs" 29 4 29 64] (self: t_Cloned) (visited: Seq.seq t_T) (o: t_Cloned) =
     [%#s13_cloned'1] exists s: Seq.seq t_T. produces self.t_Cloned__iter s o.t_Cloned__iter
     /\ Seq.length visited = Seq.length s
-    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> Seq.get visited i = Seq.get s i)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> postcondition () (Seq.get s i) (Seq.get visited i))
   
-  predicate inv'2 (_0: t_T)
+  predicate inv'4 (_0: t_Option)
   
-  predicate inv'3 (_0: t_Option)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
   = match x with
     | C_None -> true
     | C_Some a_0 -> inv'2 a_0
@@ -486,10 +971,10 @@ module M_13_cloned__qyi8249401513993331368__next__refines [#"13_cloned.rs" 54 4 
     | C_None -> completed'0 self
     | C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
-  /\ inv'3 result
+  /\ inv'4 result
    -> match result with
     | C_None -> completed'0 self
     | C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
-  /\ inv'3 result)
+  /\ inv'4 result)
 end

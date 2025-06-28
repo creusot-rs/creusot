@@ -61,6 +61,11 @@ extern_spec! {
             }
         }
     }
+
+    impl<T: Clone, A: Allocator + Clone> Clone for Box<T, A> {
+        #[ensures(T::clone.postcondition((&**self,), *result))]
+        fn clone(&self) -> Box<T, A>;
+    }
 }
 
 /// Dummy impls that don't use the unstable trait Allocator

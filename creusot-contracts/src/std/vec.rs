@@ -200,6 +200,12 @@ extern_spec! {
         #[ensures(result@ == Seq::EMPTY)]
         fn default() -> Vec<T>;
     }
+
+    impl<T: Clone, A: Allocator + Clone> Clone for Vec<T, A> {
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i]))]
+        fn clone(&self) -> Vec<T, A>;
+    }
 }
 
 #[cfg(feature = "nightly")]

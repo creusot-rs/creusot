@@ -28,7 +28,7 @@ where
 #[derive(Clone, PartialEq)]
 pub enum Sum<A, B> {
     A(A),
-    B(B),
+    B { b: B },
 }
 
 impl<A: DeepModel, B: DeepModel> DeepModel for Sum<A, B> {
@@ -39,7 +39,7 @@ impl<A: DeepModel, B: DeepModel> DeepModel for Sum<A, B> {
     fn deep_model(self) -> Self::DeepModelTy {
         match self {
             Sum::A(a) => Sum::A(a.deep_model()),
-            Sum::B(b) => Sum::B(b.deep_model()),
+            Sum::B { b } => Sum::B { b: b.deep_model() },
         }
     }
 }
@@ -53,7 +53,7 @@ pub struct Product2<'a, A> {
     pub c: Vec<u32>,
 }
 
-#[derive(Resolve)]
+#[derive(Resolve, Clone)]
 pub enum Sum2<A, B> {
     X(A),
     Y { a: bool, x: B },

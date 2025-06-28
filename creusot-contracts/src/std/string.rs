@@ -1,6 +1,16 @@
 use crate::*;
 use ::std::ops::Deref;
 
+impl View for str {
+    type ViewTy = Seq<char>;
+
+    #[logic]
+    #[trusted]
+    fn view(self) -> Self::ViewTy {
+        dead
+    }
+}
+
 extern_spec! {
     mod std {
         mod string {
@@ -39,6 +49,11 @@ extern_spec! {
         #[ensures(result.0@.concat(result.1@) == self@)]
         #[ensures(result.0@.to_bytes().len() == ix@)]
         fn split_at(&self, ix: usize) -> (&str, &str);
+    }
+
+    impl Clone for Box<str> {
+        #[ensures((*result)@ == (**self)@)]
+        fn clone(&self) -> Box<str>;
     }
 }
 

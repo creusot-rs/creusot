@@ -372,6 +372,12 @@ extern_spec! {
         fn default() -> &'a [T];
     }
 
+    impl<T: Clone, A: Allocator + Clone> Clone for Box<[T], A> {
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i]))]
+        fn clone(&self) -> Box<[T], A>;
+    }
+
     mod std {
         mod slice {
             #[pure]

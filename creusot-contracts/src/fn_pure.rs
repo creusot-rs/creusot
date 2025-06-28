@@ -26,7 +26,7 @@ impl<F> FnPure for F {}
 pub struct FnPureWrapper<F>(F);
 
 impl<F: Clone> Clone for FnPureWrapper<F> {
-    #[ensures(result == *self)]
+    #[ensures(F::clone.postcondition((&self.0,), result.0))]
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }

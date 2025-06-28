@@ -112,4 +112,18 @@ extern_spec! {
                 T: ?Sized, U: ?Sized;
         }
     }
+
+    impl<T> Clone for *mut T {
+        #[ensures(result == *self)]
+        fn clone(&self) -> *mut T {
+            *self
+        }
+    }
+
+    impl<T> Clone for *const T {
+        #[ensures(result == *self)]
+        fn clone(&self) -> *const T {
+            *self
+        }
+    }
 }
