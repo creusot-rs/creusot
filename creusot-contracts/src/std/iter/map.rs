@@ -59,7 +59,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
             self.func().hist_inv(succ.func())
             && exists<fs: Seq<&mut F>> fs.len() == visited.len()
             && exists<s: Seq<I::Item>>
-                #![trigger self.iter().produces(s, succ.iter())]
+                #[trigger(self.iter().produces(s, succ.iter()))]
                 s.len() == visited.len() && self.iter().produces(s, succ.iter())
             && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
             && if visited.len() == 0 { self.func() == succ.func() }
@@ -91,7 +91,7 @@ where
 {
     pearlite! {
         forall<e: I::Item, i: I>
-            #![trigger iter.produces(Seq::singleton(e), i)]
+            #[trigger(iter.produces(Seq::singleton(e), i))]
             iter.produces(Seq::singleton(e), i) ==>
             func.precondition((e,))
     }
@@ -106,7 +106,7 @@ where
 {
     pearlite! {
         forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-            #![trigger iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b)]
+            #[trigger(iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b))]
             func.hist_inv(*f) ==>
             iter.produces(s.push_back(e1).push_back(e2), i) ==>
             (*f).precondition((e1,)) ==>

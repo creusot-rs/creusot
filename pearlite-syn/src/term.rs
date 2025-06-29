@@ -462,9 +462,9 @@ ast_struct! {
 ast_struct! {
     pub struct Trigger {
         pub pound_token: Token![#],
-        pub bang_token: Token![!],
         pub bracket_token: token::Bracket,
         pub trigger_token: kw::trigger,
+        pub paren_token: token::Paren,
         pub terms: Punctuated<Term, Token![,]>,
     }
 }
@@ -1451,12 +1451,12 @@ pub(crate) mod parsing {
 
     impl Parse for Trigger {
         fn parse(input: ParseStream) -> Result<Self> {
-            let content;
+            let mut content;
             Ok(Trigger {
                 pound_token: input.parse()?,
-                bang_token: input.parse()?,
                 bracket_token: bracketed!(content in input),
                 trigger_token: content.parse()?,
+                paren_token: parenthesized!(content in content),
                 terms: Punctuated::parse_terminated(&content)?,
             })
         }
@@ -1980,13 +1980,14 @@ pub(crate) mod printing {
     impl ToTokens for Trigger {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.pound_token.to_tokens(tokens);
-            self.bang_token.to_tokens(tokens);
             self.bracket_token.surround(tokens, |tokens| {
                 self.trigger_token.to_tokens(tokens);
-                self.terms.to_tokens(tokens);
-                if !self.terms.empty_or_trailing() {
-                    <Token![,] as Default>::default().to_tokens(tokens)
-                }
+                self.paren_token.surround(tokens, |tokens| {
+                    self.terms.to_tokens(tokens);
+                    if !self.terms.empty_or_trailing() {
+                        <Token![,] as Default>::default().to_tokens(tokens)
+                    }
+                })
             })
         }
     }
