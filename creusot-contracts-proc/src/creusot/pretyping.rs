@@ -327,12 +327,8 @@ fn encode_trigger(
 ) -> Result<TokenStream, EncodeError> {
     while let [rest @ .., last] = trigger {
         trigger = rest;
-        let mut last_trigger = TokenStream::new();
-        for pair in last.terms.pairs() {
-            last_trigger.extend(encode_term(pair.value())?);
-            pair.punct().to_tokens(&mut last_trigger)
-        }
-        ts = quote!(::creusot_contracts::__stubs::trigger((#last_trigger), #ts))
+        let trigs = last.terms.iter().map(encode_term).collect::<Result<Vec<_>, _>>()?;
+        ts = quote!(::creusot_contracts::__stubs::trigger((#(#trigs,)*), #ts))
     }
     Ok(ts)
 }

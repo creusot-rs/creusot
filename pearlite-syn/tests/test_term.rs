@@ -163,7 +163,7 @@ fn test_exists() {
 
 #[test]
 fn test_trigger() {
-    snapshot!(quote!(forall<x: u32, y: u32> #![trigger f(x, y)] #![trigger g(x), g(y)] true) as Term, @r###"
+    snapshot!(quote!(forall<x: u32, y: u32> #[trigger(f(x, y))] #[trigger(g(x), g(y))] true) as Term, @r###"
     TermQuant {
         quant_token: Keyword [forall],
         lt_token: Lt,
@@ -222,9 +222,9 @@ fn test_trigger() {
         trigger: [
             Trigger {
                 pound_token: Pound,
-                bang_token: Not,
                 bracket_token: Bracket,
                 trigger_token: Keyword [trigger],
+                paren_token: Paren,
                 terms: [
                     TermCall {
                         func: TermPath {
@@ -287,9 +287,9 @@ fn test_trigger() {
             },
             Trigger {
                 pound_token: Pound,
-                bang_token: Not,
                 bracket_token: Bracket,
                 trigger_token: Keyword [trigger],
+                paren_token: Paren,
                 terms: [
                     TermCall {
                         func: TermPath {

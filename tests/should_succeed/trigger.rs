@@ -13,7 +13,7 @@ mod inner {
 
     #[law]
     #[open(self)]
-    #[ensures(forall<i, j> #![trigger id(i), id(j)] i <= j ==> id(i) <= id(j))]
+    #[ensures(forall<i, j> #[trigger(id(i), id(j))] i <= j ==> id(i) <= id(j))]
     pub fn id_mono() {}
 }
 use inner::*;
