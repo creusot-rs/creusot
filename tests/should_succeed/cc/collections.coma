@@ -16,25 +16,28 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   let%span shash_map'7 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 104 14 104 42
   let%span shash_map'8 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 106 8 106 99
   let%span siter = "../../../creusot-contracts/src/std/iter.rs" 164 26 165 120
-  let%span sfmap = "../../../creusot-contracts/src/logic/fmap.rs" 93 8 96 9
-  let%span sfmap'0 = "../../../creusot-contracts/src/logic/fmap.rs" 133 8 133 35
-  let%span sfmap'1 = "../../../creusot-contracts/src/logic/fmap.rs" 229 8 229 24
-  let%span sfmap'2 = "../../../creusot-contracts/src/logic/fmap.rs" 140 8 140 34
-  let%span sfmap'3 = "../../../creusot-contracts/src/logic/fmap.rs" 49 14 49 25
-  let%span sfmap'4 = "../../../creusot-contracts/src/logic/fmap.rs" 104 8 104 26
-  let%span sfmap'5 = "../../../creusot-contracts/src/logic/fmap.rs" 117 8 117 31
-  let%span sfmap'6 = "../../../creusot-contracts/src/logic/fmap.rs" 215 14 215 38
-  let%span sfmap'7 = "../../../creusot-contracts/src/logic/fmap.rs" 216 14 216 83
-  let%span sfmap'8 = "../../../creusot-contracts/src/logic/fmap.rs" 218 8 218 35
-  let%span sfmap'9 = "../../../creusot-contracts/src/logic/fmap.rs" 40 14 40 31
-  let%span sfmap'10 = "../../../creusot-contracts/src/logic/fmap.rs" 41 14 41 49
-  let%span sfmap'11 = "../../../creusot-contracts/src/logic/fmap.rs" 59 14 59 86
-  let%span sfmap'12 = "../../../creusot-contracts/src/logic/fmap.rs" 125 8 125 35
+  let%span sfmap = "../../../creusot-contracts/src/logic/fmap.rs" 101 8 104 9
+  let%span sfmap'0 = "../../../creusot-contracts/src/logic/fmap.rs" 141 8 141 35
+  let%span sfmap'1 = "../../../creusot-contracts/src/logic/fmap.rs" 307 8 307 24
+  let%span sfmap'2 = "../../../creusot-contracts/src/logic/fmap.rs" 148 8 148 34
+  let%span sfmap'3 = "../../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
+  let%span sfmap'4 = "../../../creusot-contracts/src/logic/fmap.rs" 112 8 112 26
+  let%span sfmap'5 = "../../../creusot-contracts/src/logic/fmap.rs" 125 8 125 31
+  let%span sfmap'6 = "../../../creusot-contracts/src/logic/fmap.rs" 223 14 223 38
+  let%span sfmap'7 = "../../../creusot-contracts/src/logic/fmap.rs" 224 14 224 83
+  let%span sfmap'8 = "../../../creusot-contracts/src/logic/fmap.rs" 226 8 226 35
+  let%span sfmap'9 = "../../../creusot-contracts/src/logic/fmap.rs" 51 14 51 31
+  let%span sfmap'10 = "../../../creusot-contracts/src/logic/fmap.rs" 52 14 52 43
+  let%span sfmap'11 = "../../../creusot-contracts/src/logic/fmap.rs" 40 14 40 64
+  let%span sfmap'12 = "../../../creusot-contracts/src/logic/fmap.rs" 133 8 133 42
   let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 362 20 362 71
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span smodel = "../../../creusot-contracts/src/model.rs" 62 8 62 22
-  let%span sutil = "../../../creusot-contracts/src/util.rs" 54 11 54 21
-  let%span sutil'0 = "../../../creusot-contracts/src/util.rs" 55 10 55 28
+  let%span soption = "../../../creusot-contracts/src/std/option.rs" 751 15 751 27
+  let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 753 8 756 9
+  let%span sutil = "../../../creusot-contracts/src/util.rs" 33 11 33 28
+  let%span sutil'0 = "../../../creusot-contracts/src/util.rs" 34 0 34 21
+  let%span smapping = "../../../creusot-contracts/src/logic/mapping.rs" 60 8 60 19
   
   use creusot.int.UInt16
   use creusot.prelude.Opaque
@@ -260,7 +263,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   predicate resolve'0 (self: MutBorrow.t t_IntoIter'0) =
     [%#sresolve] self.final = self.current
   
-  function ext_eq (self: t_FMap) (other: t_FMap) : bool =
+  predicate ext_eq (self: t_FMap) (other: t_FMap) =
     [%#sfmap'8] view'1 self = view'1 other
   
   axiom ext_eq_spec: forall self: t_FMap, other: t_FMap. ([%#sfmap'6] ext_eq self other  -> self = other)
@@ -270,7 +273,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   
   axiom empty_spec: ([%#sfmap'9] len empty = 0) && ([%#sfmap'10] view'1 empty = Const.const (C_None'1))
   
-  function is_empty (self: t_FMap) : bool =
+  predicate is_empty (self: t_FMap) =
     [%#sfmap'2] ext_eq self empty
   
   function view'2 (self: MutBorrow.t t_IntoIter'0) : t_FMap =
@@ -293,20 +296,30 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
       (! return' {result}) ]
   
   
-  function contains'0 [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : bool =
+  predicate contains'0 [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) =
     [%#sfmap'0] get_unsized self k <> C_None'1
   
-  function unwrap (op: t_Option'1) : t_V
+  function index_logic (self: Map.map t_V bool) (a: t_V) : bool =
+    [%#smapping] Map.get self a
   
-  axiom unwrap_spec: forall op: t_Option'1. ([%#sutil] op <> C_None'1)  -> ([%#sutil'0] C_Some'1 (unwrap op) = op)
+  function such_that (p: Map.map t_V bool) : t_V
+  
+  axiom such_that_spec: forall p: Map.map t_V bool. ([%#sutil] exists x: t_V. index_logic p x)
+   -> ([%#sutil'0] index_logic p (such_that p))
+  
+  function unwrap_logic (self: t_Option'1) : t_V =
+    [%#soption'0] match self with
+      | C_Some'1 x -> x
+      | C_None'1 -> such_that (fun (__0: t_V) -> true)
+      end
   
   function lookup_unsized [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_V =
-    [%#sfmap'12] unwrap (get_unsized self k)
+    [%#sfmap'12] unwrap_logic (get_unsized self k)
   
   function lookup [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_V =
     [%#sfmap'5] lookup_unsized self k
   
-  function index_logic [@inline:trivial] (self: t_FMap) (key: t_DeepModelTy) : t_V =
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_DeepModelTy) : t_V =
     [%#sfmap'1] lookup self key
   
   meta "compute_max_steps" 1000000
@@ -332,8 +345,8 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
       | s1 = bb7 ]
     
     | bb7 = s0
-      [ s0 = {[@expl:assertion] [%#scollections'3] forall k: t_DeepModelTy. index_logic (view r) k
-        = index_logic (view xs_snap) k}
+      [ s0 = {[@expl:assertion] [%#scollections'3] forall k: t_DeepModelTy. index_logic'0 (view r) k
+        = index_logic'0 (view xs_snap) k}
         s1
       | s1 = bb8 ]
     
@@ -369,16 +382,16 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 34 0 34 97]
   let%span shash_map'7 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 156 14 156 42
   let%span shash_map'8 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 158 8 158 99
   let%span siter = "../../../creusot-contracts/src/std/iter.rs" 164 26 165 120
-  let%span sfmap = "../../../creusot-contracts/src/logic/fmap.rs" 93 8 96 9
-  let%span sfmap'0 = "../../../creusot-contracts/src/logic/fmap.rs" 140 8 140 34
-  let%span sfmap'1 = "../../../creusot-contracts/src/logic/fmap.rs" 49 14 49 25
-  let%span sfmap'2 = "../../../creusot-contracts/src/logic/fmap.rs" 104 8 104 26
-  let%span sfmap'3 = "../../../creusot-contracts/src/logic/fmap.rs" 215 14 215 38
-  let%span sfmap'4 = "../../../creusot-contracts/src/logic/fmap.rs" 216 14 216 83
-  let%span sfmap'5 = "../../../creusot-contracts/src/logic/fmap.rs" 218 8 218 35
-  let%span sfmap'6 = "../../../creusot-contracts/src/logic/fmap.rs" 40 14 40 31
-  let%span sfmap'7 = "../../../creusot-contracts/src/logic/fmap.rs" 41 14 41 49
-  let%span sfmap'8 = "../../../creusot-contracts/src/logic/fmap.rs" 59 14 59 86
+  let%span sfmap = "../../../creusot-contracts/src/logic/fmap.rs" 101 8 104 9
+  let%span sfmap'0 = "../../../creusot-contracts/src/logic/fmap.rs" 148 8 148 34
+  let%span sfmap'1 = "../../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
+  let%span sfmap'2 = "../../../creusot-contracts/src/logic/fmap.rs" 112 8 112 26
+  let%span sfmap'3 = "../../../creusot-contracts/src/logic/fmap.rs" 223 14 223 38
+  let%span sfmap'4 = "../../../creusot-contracts/src/logic/fmap.rs" 224 14 224 83
+  let%span sfmap'5 = "../../../creusot-contracts/src/logic/fmap.rs" 226 8 226 35
+  let%span sfmap'6 = "../../../creusot-contracts/src/logic/fmap.rs" 51 14 51 31
+  let%span sfmap'7 = "../../../creusot-contracts/src/logic/fmap.rs" 52 14 52 43
+  let%span sfmap'8 = "../../../creusot-contracts/src/logic/fmap.rs" 40 14 40 64
   let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 362 20 362 71
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span smodel = "../../../creusot-contracts/src/model.rs" 35 8 35 28
@@ -539,7 +552,7 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 34 0 34 97]
   predicate resolve'0 (self: MutBorrow.t t_Iter'0) =
     [%#sresolve] self.final = self.current
   
-  function ext_eq (self: t_FMap) (other: t_FMap) : bool =
+  predicate ext_eq (self: t_FMap) (other: t_FMap) =
     [%#sfmap'5] view'2 self = view'2 other
   
   axiom ext_eq_spec: forall self: t_FMap, other: t_FMap. ([%#sfmap'3] ext_eq self other  -> self = other)
@@ -549,7 +562,7 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 34 0 34 97]
   
   axiom empty_spec: ([%#sfmap'6] len empty = 0) && ([%#sfmap'7] view'2 empty = Const.const (C_None'0))
   
-  function is_empty (self: t_FMap) : bool =
+  predicate is_empty (self: t_FMap) =
     [%#sfmap'0] ext_eq self empty
   
   function view'3 (self: MutBorrow.t t_Iter'0) : t_FMap =
@@ -646,26 +659,29 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
   let%span shash_map'9 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 208 14 208 42
   let%span shash_map'10 = "../../../creusot-contracts/src/std/collections/hash_map.rs" 210 8 210 99
   let%span siter = "../../../creusot-contracts/src/std/iter.rs" 164 26 165 120
-  let%span sfmap = "../../../creusot-contracts/src/logic/fmap.rs" 93 8 96 9
-  let%span sfmap'0 = "../../../creusot-contracts/src/logic/fmap.rs" 133 8 133 35
-  let%span sfmap'1 = "../../../creusot-contracts/src/logic/fmap.rs" 229 8 229 24
-  let%span sfmap'2 = "../../../creusot-contracts/src/logic/fmap.rs" 140 8 140 34
-  let%span sfmap'3 = "../../../creusot-contracts/src/logic/fmap.rs" 49 14 49 25
-  let%span sfmap'4 = "../../../creusot-contracts/src/logic/fmap.rs" 104 8 104 26
-  let%span sfmap'5 = "../../../creusot-contracts/src/logic/fmap.rs" 117 8 117 31
-  let%span sfmap'6 = "../../../creusot-contracts/src/logic/fmap.rs" 215 14 215 38
-  let%span sfmap'7 = "../../../creusot-contracts/src/logic/fmap.rs" 216 14 216 83
-  let%span sfmap'8 = "../../../creusot-contracts/src/logic/fmap.rs" 218 8 218 35
-  let%span sfmap'9 = "../../../creusot-contracts/src/logic/fmap.rs" 40 14 40 31
-  let%span sfmap'10 = "../../../creusot-contracts/src/logic/fmap.rs" 41 14 41 49
-  let%span sfmap'11 = "../../../creusot-contracts/src/logic/fmap.rs" 59 14 59 86
-  let%span sfmap'12 = "../../../creusot-contracts/src/logic/fmap.rs" 125 8 125 35
+  let%span sfmap = "../../../creusot-contracts/src/logic/fmap.rs" 101 8 104 9
+  let%span sfmap'0 = "../../../creusot-contracts/src/logic/fmap.rs" 141 8 141 35
+  let%span sfmap'1 = "../../../creusot-contracts/src/logic/fmap.rs" 307 8 307 24
+  let%span sfmap'2 = "../../../creusot-contracts/src/logic/fmap.rs" 148 8 148 34
+  let%span sfmap'3 = "../../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
+  let%span sfmap'4 = "../../../creusot-contracts/src/logic/fmap.rs" 112 8 112 26
+  let%span sfmap'5 = "../../../creusot-contracts/src/logic/fmap.rs" 125 8 125 31
+  let%span sfmap'6 = "../../../creusot-contracts/src/logic/fmap.rs" 223 14 223 38
+  let%span sfmap'7 = "../../../creusot-contracts/src/logic/fmap.rs" 224 14 224 83
+  let%span sfmap'8 = "../../../creusot-contracts/src/logic/fmap.rs" 226 8 226 35
+  let%span sfmap'9 = "../../../creusot-contracts/src/logic/fmap.rs" 51 14 51 31
+  let%span sfmap'10 = "../../../creusot-contracts/src/logic/fmap.rs" 52 14 52 43
+  let%span sfmap'11 = "../../../creusot-contracts/src/logic/fmap.rs" 40 14 40 64
+  let%span sfmap'12 = "../../../creusot-contracts/src/logic/fmap.rs" 133 8 133 42
   let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 362 20 362 71
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span smodel = "../../../creusot-contracts/src/model.rs" 35 8 35 28
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 62 8 62 22
-  let%span sutil = "../../../creusot-contracts/src/util.rs" 54 11 54 21
-  let%span sutil'0 = "../../../creusot-contracts/src/util.rs" 55 10 55 28
+  let%span soption = "../../../creusot-contracts/src/std/option.rs" 751 15 751 27
+  let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 753 8 756 9
+  let%span sutil = "../../../creusot-contracts/src/util.rs" 33 11 33 28
+  let%span sutil'0 = "../../../creusot-contracts/src/util.rs" 34 0 34 21
+  let%span smapping = "../../../creusot-contracts/src/logic/mapping.rs" 60 8 60 19
   
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
@@ -742,7 +758,7 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
   function get_unsized [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_Option =
     [%#sfmap'4] Map.get (view self) k
   
-  function contains [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : bool =
+  predicate contains [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) =
     [%#sfmap'0] get_unsized self k <> C_None
   
   function view'0 (self: t_HashMap'0) : t_FMap
@@ -761,35 +777,55 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
   function get_unsized'0 [@inline:trivial] (self: t_FMap'0) (k: t_DeepModelTy) : t_Option'0 =
     [%#sfmap'4] Map.get (view'1 self) k
   
-  function contains'0 [@inline:trivial] (self: t_FMap'0) (k: t_DeepModelTy) : bool =
+  predicate contains'0 [@inline:trivial] (self: t_FMap'0) (k: t_DeepModelTy) =
     [%#sfmap'0] get_unsized'0 self k <> C_None'0
   
   function view'2 (self: t_IterMut'0) : t_FMap'0
   
-  function unwrap (op: t_Option) : t_V
+  function index_logic (self: Map.map t_V bool) (a: t_V) : bool =
+    [%#smapping] Map.get self a
   
-  axiom unwrap_spec: forall op: t_Option. ([%#sutil] op <> C_None)  -> ([%#sutil'0] C_Some (unwrap op) = op)
+  function such_that (p: Map.map t_V bool) : t_V
+  
+  axiom such_that_spec: forall p: Map.map t_V bool. ([%#sutil] exists x: t_V. index_logic p x)
+   -> ([%#sutil'0] index_logic p (such_that p))
+  
+  function unwrap_logic (self: t_Option) : t_V =
+    [%#soption'0] match self with
+      | C_Some x -> x
+      | C_None -> such_that (fun (__0: t_V) -> true)
+      end
   
   function lookup_unsized [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_V =
-    [%#sfmap'12] unwrap (get_unsized self k)
+    [%#sfmap'12] unwrap_logic (get_unsized self k)
   
   function lookup [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_V =
     [%#sfmap'5] lookup_unsized self k
   
-  function index_logic [@inline:trivial] (self: t_FMap) (key: t_DeepModelTy) : t_V =
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_DeepModelTy) : t_V =
     [%#sfmap'1] lookup self key
   
-  function unwrap'0 (op: t_Option'0) : MutBorrow.t t_V
+  function index_logic'1 (self: Map.map (MutBorrow.t t_V) bool) (a: MutBorrow.t t_V) : bool =
+    [%#smapping] Map.get self a
   
-  axiom unwrap_spec'0: forall op: t_Option'0. ([%#sutil] op <> C_None'0)  -> ([%#sutil'0] C_Some'0 (unwrap'0 op) = op)
+  function such_that'0 (p: Map.map (MutBorrow.t t_V) bool) : MutBorrow.t t_V
+  
+  axiom such_that_spec'0: forall p: Map.map (MutBorrow.t t_V) bool. ([%#sutil] exists x: MutBorrow.t t_V. index_logic'1 p x)
+   -> ([%#sutil'0] index_logic'1 p (such_that'0 p))
+  
+  function unwrap_logic'0 (self: t_Option'0) : MutBorrow.t t_V =
+    [%#soption'0] match self with
+      | C_Some'0 x -> x
+      | C_None'0 -> such_that'0 (fun (__0: MutBorrow.t t_V) -> true)
+      end
   
   function lookup_unsized'0 [@inline:trivial] (self: t_FMap'0) (k: t_DeepModelTy) : MutBorrow.t t_V =
-    [%#sfmap'12] unwrap'0 (get_unsized'0 self k)
+    [%#sfmap'12] unwrap_logic'0 (get_unsized'0 self k)
   
   function lookup'0 [@inline:trivial] (self: t_FMap'0) (k: t_DeepModelTy) : MutBorrow.t t_V =
     [%#sfmap'5] lookup_unsized'0 self k
   
-  function index_logic'0 [@inline:trivial] (self: t_FMap'0) (key: t_DeepModelTy) : MutBorrow.t t_V =
+  function index_logic'2 [@inline:trivial] (self: t_FMap'0) (key: t_DeepModelTy) : MutBorrow.t t_V =
     [%#sfmap'1] lookup'0 self key
   
   let rec iter_mut (self_:MutBorrow.t t_HashMap'0) (return'  (x:t_IterMut'0))= any
@@ -797,8 +833,8 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
       = contains (view'0 self_.final) k}
       {[%#shash_map'0] forall k: t_DeepModelTy. contains (view'0 self_.current) k = contains'0 (view'2 result) k}
       {[%#shash_map'1] forall k: t_DeepModelTy. contains (view'0 self_.current) k
-       -> index_logic (view'0 self_.current) k = (index_logic'0 (view'2 result) k).current
-      /\ index_logic (view'0 self_.final) k = (index_logic'0 (view'2 result) k).final}
+       -> index_logic'0 (view'0 self_.current) k = (index_logic'2 (view'2 result) k).current
+      /\ index_logic'0 (view'0 self_.final) k = (index_logic'2 (view'2 result) k).final}
       (! return' {result}) ]
   
   
@@ -873,7 +909,7 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
   predicate resolve'0 (self: MutBorrow.t t_IterMut'0) =
     [%#sresolve] self.final = self.current
   
-  function ext_eq (self: t_FMap'0) (other: t_FMap'0) : bool =
+  predicate ext_eq (self: t_FMap'0) (other: t_FMap'0) =
     [%#sfmap'8] view'1 self = view'1 other
   
   axiom ext_eq_spec: forall self: t_FMap'0, other: t_FMap'0. ([%#sfmap'6] ext_eq self other  -> self = other)
@@ -883,7 +919,7 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
   
   axiom empty_spec: ([%#sfmap'9] len empty = 0) && ([%#sfmap'10] view'1 empty = Const.const (C_None'0))
   
-  function is_empty (self: t_FMap'0) : bool =
+  predicate is_empty (self: t_FMap'0) =
     [%#sfmap'2] ext_eq self empty
   
   function view'3 (self: MutBorrow.t t_IterMut'0) : t_FMap'0 =
@@ -959,9 +995,9 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 50 0 52 24]
     [ return''0 (result:t_HashMap'2)-> {[@expl:roundtrip_hashmap_iter_mut ensures #0] [%#scollections'1] forall k: t_DeepModelTy, v: MutBorrow.t t_V. get (view'4 result) k
       = C_Some'1 v  -> get'0 (view'5 xs) k = C_Some'2 (v.current) /\ get'0 (view'0 xs.final) k = C_Some'2 (v.final)}
       {[@expl:roundtrip_hashmap_iter_mut ensures #1] [%#scollections'2] forall k: t_DeepModelTy, v: t_V. get'0 (view'5 xs) k
-      = C_Some'2 v  -> contains'0 (view'4 result) k /\ (index_logic'0 (view'4 result) k).current = v}
+      = C_Some'2 v  -> contains'0 (view'4 result) k /\ (index_logic'2 (view'4 result) k).current = v}
       {[@expl:roundtrip_hashmap_iter_mut ensures #2] [%#scollections'3] forall k: t_DeepModelTy, v: t_V. get'0 (view'0 xs.final) k
-      = C_Some'2 v  -> contains'0 (view'4 result) k /\ (index_logic'0 (view'4 result) k).final = v}
+      = C_Some'2 v  -> contains'0 (view'4 result) k /\ (index_logic'2 (view'4 result) k).final = v}
       (! return' {result}) ]
 
 end

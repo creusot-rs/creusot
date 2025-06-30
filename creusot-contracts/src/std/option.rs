@@ -1,4 +1,6 @@
-use crate::*;
+#[cfg(creusot)]
+use crate::util::such_that;
+use crate::{logic::Mapping, *};
 use ::std::cmp::Ordering;
 pub use ::std::option::*;
 
@@ -726,4 +728,49 @@ impl<T> Iterator for IterMut<'_, T> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+pub trait OptionExt<T> {
+    /// Same as [`Option::unwrap`], but in logic.
+    #[logic]
+    #[requires(false)]
+    fn unwrap_logic(self) -> T;
+
+    /// Same as [`Option::and_then`], but in logic.
+    #[logic]
+    fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U>;
+
+    /// Same as [`Option::map`], but in logic.
+    #[logic]
+    fn map_logic<U>(self, f: Mapping<T, U>) -> Option<U>;
+}
+
+impl<T> OptionExt<T> for Option<T> {
+    #[logic]
+    #[open]
+    #[requires(self != None)]
+    fn unwrap_logic(self) -> T {
+        match self {
+            Some(x) => x,
+            None => such_that(|_| true),
+        }
+    }
+
+    #[logic]
+    #[open]
+    fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U> {
+        match self {
+            None => None,
+            Some(x) => f.get(x),
+        }
+    }
+
+    #[logic]
+    #[open]
+    fn map_logic<U>(self, f: Mapping<T, U>) -> Option<U> {
+        match self {
+            None => None,
+            Some(x) => Some(f.get(x)),
+        }
+    }
 }

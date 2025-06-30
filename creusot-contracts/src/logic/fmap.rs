@@ -1,12 +1,9 @@
 use crate::{
     logic::{Mapping, ops::IndexLogic},
-    util::*,
+    std::option::OptionExt as _,
+    util::{MakeSized as _, SizedW},
     *,
 };
-
-/// A mapping, where keys may not have an associated value.
-#[cfg_attr(not(creusot), allow(dead_code))]
-type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
 
 /// A finite map type usable in pearlite and `ghost!` blocks.
 ///
@@ -32,13 +29,27 @@ type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
 #[trusted] //opaque
 pub struct FMap<K, V: ?Sized>(std::marker::PhantomData<K>, std::marker::PhantomData<V>);
 
+impl<K, V: ?Sized> View for FMap<K, V> {
+    type ViewTy = Mapping<K, Option<SizedW<V>>>;
+
+    /// View of the map
+    ///
+    /// This represents the actual content of the map: other methods are specified relative to this.
+    #[trusted]
+    #[logic]
+    #[ensures(forall<m1: Self, m2: Self> m1 != m2 ==> m1@ != m2@)]
+    fn view(self) -> Mapping<K, Option<SizedW<V>>> {
+        dead
+    }
+}
+
 /// Logical definitions
 impl<K, V: ?Sized> FMap<K, V> {
     /// Returns the empty map.
     #[trusted]
     #[logic]
     #[ensures(result.len() == 0)]
-    #[ensures(result.view() == Mapping::cst(None))]
+    #[ensures(result@ == Mapping::cst(None))]
     pub fn empty() -> Self {
         dead
     }
@@ -51,30 +62,27 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
-    /// View of the map
-    ///
-    /// This represents the actual content of the map: other methods are specified relative to this.
-    #[trusted]
-    #[logic]
-    #[ensures(forall<m1: Self, m2: Self> m1 != m2 ==> Self::view(m1) != Self::view(m2))]
-    pub fn view(self) -> PMap<K, V> {
-        dead
-    }
-
     /// Returns a new map, where the key-value pair `(k, v)` have been inserted.
     #[trusted]
     #[logic]
-    #[ensures(result.view() == self.view().set(k, Some(v.make_sized())))]
+    #[ensures(result@ == self@.set(k, Some(v.make_sized())))]
     #[ensures(self.contains(k) ==> result.len() == self.len())]
     #[ensures(!self.contains(k) ==> result.len() == self.len() + 1)]
     pub fn insert(self, k: K, v: V) -> Self {
         dead
     }
 
+    /// Returns a new map, where the key-value pair `(k, v)` have been inserted.
+    #[logic]
+    #[open]
+    pub fn singleton(k: K, v: V) -> Self {
+        Self::empty().insert(k, v)
+    }
+
     /// Returns a new map, where the key `k` is no longer present.
     #[trusted]
     #[logic]
-    #[ensures(result.view() == self.view().set(k, None))]
+    #[ensures(result@ == self@.set(k, None))]
     #[ensures(result.len() == if self.contains(k) {self.len() - 1} else {self.len()})]
     pub fn remove(self, k: K) -> Self {
         dead
@@ -122,11 +130,11 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[open]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn lookup_unsized(self, k: K) -> SizedW<V> {
-        unwrap(self.get_unsized(k))
+        self.get_unsized(k).unwrap_logic()
     }
 
     /// Returns `true` if the map contains a value for the specified key.
-    #[logic]
+    #[predicate]
     #[open]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, k: K) -> bool {
@@ -134,21 +142,21 @@ impl<K, V: ?Sized> FMap<K, V> {
     }
 
     /// Returns `true` if the map contains no elements.
-    #[logic]
+    #[predicate]
     #[open]
     pub fn is_empty(self) -> bool {
         self.ext_eq(FMap::empty())
     }
 
     /// Returns `true` if the two maps have no key in common.
-    #[logic]
+    #[predicate]
     #[open]
     pub fn disjoint(self, other: Self) -> bool {
         pearlite! {forall<k: K> !self.contains(k) || !other.contains(k)}
     }
 
     /// Returns `true` if all key-value pairs in `self` are also in `other`.
-    #[logic]
+    #[predicate]
     #[open]
     pub fn subset(self, other: Self) -> bool {
         pearlite! {
@@ -210,12 +218,82 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// Returns `true` if `self` and `other` contain exactly the same key-value pairs.
     ///
     /// This is in fact equivalent with normal equality.
-    #[logic]
+    #[predicate]
     #[open]
     #[ensures(result ==> self == other)]
     #[ensures((forall<k: K> self.get_unsized(k) == other.get_unsized(k)) ==> result)]
     pub fn ext_eq(self, other: Self) -> bool {
         self.view() == other.view()
+    }
+
+    /// Merge the two maps together
+    ///
+    /// If both map contain the same key, the entry for the result is determined by `f`.
+    #[trusted]
+    #[logic]
+    #[ensures(
+        forall<k: K>
+            match (self.get(k), m.get(k)) {
+                (None, y) => result.get(k) == y,
+                (x, None) => result.get(k) == x,
+                (Some(x), Some(y)) => result.get(k) == Some(f[(x, y)]),
+            }
+    )]
+    pub fn merge(self, m: FMap<K, V>, f: Mapping<(V, V), V>) -> FMap<K, V>
+    where
+        V: Sized, // XXX
+    {
+        dead
+    }
+
+    /// Map every value in `self` according to `f`. Keys are unchanged.
+    #[logic]
+    #[trusted]
+    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
+        None => None,
+        Some(v) => Some(f[(k, v)]),
+    })]
+    pub fn map<V2>(self, f: Mapping<(K, V), V2>) -> FMap<K, V2>
+    where
+        V: Sized,
+    {
+        // TODO: this needs the VCGen to support closures
+        // self.filter_map(|(k, v)| Some(f[(k, v)]))
+        dead
+    }
+
+    /// Filter key-values in `self` according to `p`.
+    ///
+    /// A key-value pair will be in the result map if and only if it is in `self` and
+    /// `p` returns `true` on this pair.
+    #[logic]
+    #[trusted]
+    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
+        None => None,
+        Some(v) => if p[(k, v)] { Some(v) } else { None },
+    })]
+    pub fn filter(self, p: Mapping<(K, V), bool>) -> Self
+    where
+        V: Sized,
+    {
+        // TODO: this needs the VCGen to support closures
+        // self.filter_map(|(k, v)| if p[(k, v)] { Some(v) } else { None })
+        dead
+    }
+
+    /// Map every value in `self` according to `f`. Keys are unchanged.
+    /// If `f` returns `false`, remove the key-value from the map.
+    #[logic]
+    #[trusted]
+    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
+        None => None,
+        Some(v) => f[(k, v)],
+    })]
+    pub fn filter_map<V2>(self, f: Mapping<(K, V), Option<V2>>) -> FMap<K, V2>
+    where
+        V: Sized,
+    {
+        dead
     }
 }
 
