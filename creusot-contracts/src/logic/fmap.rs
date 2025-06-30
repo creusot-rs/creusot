@@ -1,12 +1,8 @@
 use crate::{
     logic::{Mapping, ops::IndexLogic},
-    util::*,
+    std::option::OptionExt as _,
     *,
 };
-
-/// A mapping, where keys may not have an associated value.
-#[cfg_attr(not(creusot), allow(dead_code))]
-type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
 
 /// A finite map type usable in pearlite and `ghost!` blocks.
 ///
@@ -30,15 +26,29 @@ type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
 ///
 /// This type is designed for this use-case, with no restriction on the capacity.
 #[trusted] //opaque
-pub struct FMap<K, V: ?Sized>(std::marker::PhantomData<K>, std::marker::PhantomData<V>);
+pub struct FMap<K, V>(std::marker::PhantomData<K>, std::marker::PhantomData<V>);
+
+impl<K, V> View for FMap<K, V> {
+    type ViewTy = Mapping<K, Option<V>>;
+
+    /// View of the map
+    ///
+    /// This represents the actual content of the map: other methods are specified relative to this.
+    #[trusted]
+    #[logic]
+    #[ensures(forall<m1: Self, m2: Self> m1 != m2 ==> m1@ != m2@)]
+    fn view(self) -> Self::ViewTy {
+        dead
+    }
+}
 
 /// Logical definitions
-impl<K, V: ?Sized> FMap<K, V> {
+impl<K, V> FMap<K, V> {
     /// Returns the empty map.
     #[trusted]
     #[logic]
     #[ensures(result.len() == 0)]
-    #[ensures(result.view() == Mapping::cst(None))]
+    #[ensures(result@ == Mapping::cst(None))]
     pub fn empty() -> Self {
         dead
     }
@@ -51,30 +61,26 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
-    /// View of the map
-    ///
-    /// This represents the actual content of the map: other methods are specified relative to this.
+    /// Returns a new map, where the key-value pair `(k, v)` have been inserted.
     #[trusted]
     #[logic]
-    #[ensures(forall<m1: Self, m2: Self> m1 != m2 ==> Self::view(m1) != Self::view(m2))]
-    pub fn view(self) -> PMap<K, V> {
+    #[ensures(result@ == self@.set(k, Some(v)))]
+    #[ensures(result.len() == if self.contains(k) { self.len() } else { self.len() + 1 })]
+    pub fn insert(self, k: K, v: V) -> Self {
         dead
     }
 
     /// Returns a new map, where the key-value pair `(k, v)` have been inserted.
-    #[trusted]
     #[logic]
-    #[ensures(result.view() == self.view().set(k, Some(v.make_sized())))]
-    #[ensures(self.contains(k) ==> result.len() == self.len())]
-    #[ensures(!self.contains(k) ==> result.len() == self.len() + 1)]
-    pub fn insert(self, k: K, v: V) -> Self {
-        dead
+    #[open]
+    pub fn singleton(k: K, v: V) -> Self {
+        Self::empty().insert(k, v)
     }
 
     /// Returns a new map, where the key `k` is no longer present.
     #[trusted]
     #[logic]
-    #[ensures(result.view() == self.view().set(k, None))]
+    #[ensures(result@ == self@.set(k, None))]
     #[ensures(result.len() == if self.contains(k) {self.len() - 1} else {self.len()})]
     pub fn remove(self, k: K) -> Self {
         dead
@@ -86,21 +92,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[logic]
     #[open]
     #[creusot::why3_attr = "inline:trivial"]
-    pub fn get(self, k: K) -> Option<V>
-    where
-        V: Sized,
-    {
-        match self.get_unsized(k) {
-            None => None,
-            Some(x) => Some(*x),
-        }
-    }
-
-    /// Same as [`Self::get`], but can handle unsized values.
-    #[logic]
-    #[open]
-    #[creusot::why3_attr = "inline:trivial"]
-    pub fn get_unsized(self, k: K) -> Option<SizedW<V>> {
+    pub fn get(self, k: K) -> Option<V> {
         self.view().get(k)
     }
 
@@ -110,49 +102,38 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[logic]
     #[open]
     #[creusot::why3_attr = "inline:trivial"]
-    pub fn lookup(self, k: K) -> V
-    where
-        V: Sized,
-    {
-        *self.lookup_unsized(k)
-    }
-
-    /// Same as [`Self::lookup`], but can handle unsized values.
-    #[logic]
-    #[open]
-    #[creusot::why3_attr = "inline:trivial"]
-    pub fn lookup_unsized(self, k: K) -> SizedW<V> {
-        unwrap(self.get_unsized(k))
+    pub fn lookup(self, k: K) -> V {
+        self.get(k).unwrap_logic()
     }
 
     /// Returns `true` if the map contains a value for the specified key.
-    #[logic]
+    #[predicate]
     #[open]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, k: K) -> bool {
-        self.get_unsized(k) != None
+        self.get(k) != None
     }
 
     /// Returns `true` if the map contains no elements.
-    #[logic]
+    #[predicate]
     #[open]
     pub fn is_empty(self) -> bool {
         self.ext_eq(FMap::empty())
     }
 
     /// Returns `true` if the two maps have no key in common.
-    #[logic]
+    #[predicate]
     #[open]
     pub fn disjoint(self, other: Self) -> bool {
         pearlite! {forall<k: K> !self.contains(k) || !other.contains(k)}
     }
 
     /// Returns `true` if all key-value pairs in `self` are also in `other`.
-    #[logic]
+    #[predicate]
     #[open]
     pub fn subset(self, other: Self) -> bool {
         pearlite! {
-            forall<k: K> self.contains(k) ==> other.get_unsized(k) == self.get_unsized(k)
+            forall<k: K> self.contains(k) ==> other.get(k) == self.get(k)
         }
     }
 
@@ -162,10 +143,10 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[trusted]
     #[logic]
     #[requires(self.disjoint(other))]
-    #[ensures(forall<k: K> result.get_unsized(k) == if self.contains(k) {
-        self.get_unsized(k)
+    #[ensures(forall<k: K> result.get(k) == if self.contains(k) {
+        self.get(k)
     } else if other.contains(k) {
-        other.get_unsized(k)
+        other.get(k)
     } else {
         None
     })]
@@ -178,10 +159,10 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// key is not in `other`.
     #[trusted]
     #[logic]
-    #[ensures(forall<k: K> result.get_unsized(k) == if other.contains(k) {
+    #[ensures(forall<k: K> result.get(k) == if other.contains(k) {
         None
     } else {
-        self.get_unsized(k)
+        self.get(k)
     })]
     pub fn subtract_keys(self, other: Self) -> Self {
         dead
@@ -196,10 +177,10 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[requires(other.subset(self))]
     #[ensures(result.disjoint(other))]
     #[ensures(other.union(result).ext_eq(self))]
-    #[ensures(forall<k: K> result.get_unsized(k) == if other.contains(k) {
+    #[ensures(forall<k: K> result.get(k) == if other.contains(k) {
         None
     } else {
-        self.get_unsized(k)
+        self.get(k)
     })]
     pub fn subtract(self, other: Self) -> Self {
         self.subtract_keys(other)
@@ -210,12 +191,66 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// Returns `true` if `self` and `other` contain exactly the same key-value pairs.
     ///
     /// This is in fact equivalent with normal equality.
-    #[logic]
+    #[predicate]
     #[open]
     #[ensures(result ==> self == other)]
-    #[ensures((forall<k: K> self.get_unsized(k) == other.get_unsized(k)) ==> result)]
+    #[ensures((forall<k: K> self.get(k) == other.get(k)) ==> result)]
     pub fn ext_eq(self, other: Self) -> bool {
         self.view() == other.view()
+    }
+
+    /// Merge the two maps together
+    ///
+    /// If both map contain the same key, the entry for the result is determined by `f`.
+    #[trusted]
+    #[logic]
+    #[ensures(
+        forall<k: K>
+            match (self.get(k), m.get(k)) {
+                (None, y) => result.get(k) == y,
+                (x, None) => result.get(k) == x,
+                (Some(x), Some(y)) => result.get(k) == Some(f[(x, y)]),
+            }
+    )]
+    pub fn merge(self, m: FMap<K, V>, f: Mapping<(V, V), V>) -> FMap<K, V> {
+        dead
+    }
+
+    /// Map every value in `self` according to `f`. Keys are unchanged.
+    #[logic]
+    #[trusted]
+    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
+        None => None,
+        Some(v) => Some(f[(k, v)]),
+    })]
+    pub fn map<V2>(self, f: Mapping<(K, V), V2>) -> FMap<K, V2> {
+        self.filter_map(|(k, v)| Some(f[(k, v)]))
+    }
+
+    /// Filter key-values in `self` according to `p`.
+    ///
+    /// A key-value pair will be in the result map if and only if it is in `self` and
+    /// `p` returns `true` on this pair.
+    #[logic]
+    #[trusted]
+    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
+        None => None,
+        Some(v) => if p[(k, v)] { Some(v) } else { None },
+    })]
+    pub fn filter(self, p: Mapping<(K, V), bool>) -> Self {
+        self.filter_map(|(k, v)| if p[(k, v)] { Some(v) } else { None })
+    }
+
+    /// Map every value in `self` according to `f`. Keys are unchanged.
+    /// If `f` returns `false`, remove the key-value from the map.
+    #[logic]
+    #[trusted]
+    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
+        None => None,
+        Some(v) => f[(k, v)],
+    })]
+    pub fn filter_map<V2>(self, f: Mapping<(K, V), Option<V2>>) -> FMap<K, V2> {
+        dead
     }
 }
 
@@ -231,7 +266,7 @@ impl<K, V> IndexLogic<K> for FMap<K, V> {
 }
 
 /// Ghost definitions
-impl<K, V: ?Sized> FMap<K, V> {
+impl<K, V> FMap<K, V> {
     /// Create a new, empty map on the ghost heap.
     #[trusted]
     #[pure]
@@ -304,14 +339,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// ```
     #[trusted]
     #[pure]
-    #[ensures(if self.contains(*key) {
-            match result {
-                None => false,
-                Some(r) => *self.lookup_unsized(*key) == *r,
-            }
-        } else {
-            result == None
-        })]
+    #[ensures(result == self.get(*key).map_logic(|v|&v))]
     pub fn get_ghost(&self, key: &K) -> Option<&V> {
         let _ = key;
         panic!()
@@ -337,14 +365,13 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[ensures(if self.contains(*key) {
             match result {
                 None => false,
-                Some(r) => (^self).contains(*key) &&
-                           *(*self).lookup_unsized(*key) == *r &&
-                           *(^self).lookup_unsized(*key) == ^r,
+                Some(r) =>
+                    (^self).contains(*key) && (*self).lookup(*key) == *r && (^self).lookup(*key) == ^r,
             }
         } else {
             result == None && *self == ^self
         })]
-    #[ensures(forall<k: K> k != *key ==> (*self).get_unsized(k) == (^self).get_unsized(k))]
+    #[ensures(forall<k: K> k != *key ==> (*self).get(k) == (^self).get(k))]
     #[ensures((*self).len() == (^self).len())]
     pub fn get_mut_ghost(&mut self, key: &K) -> Option<&mut V> {
         let _ = key;
@@ -378,7 +405,7 @@ impl<K, V: ?Sized> FMap<K, V> {
         *result.1 == (*self).remove(*key) &&
         match result.0 {
             None => false,
-            Some(r) => *(*self).lookup_unsized(*key) == *r && ^self == (^result.1).insert(*key, ^r),
+            Some(r) => (*self).lookup(*key) == *r && ^self == (^result.1).insert(*key, ^r),
         }
     } else {
         result.0 == None && result.1 == self
@@ -411,21 +438,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[pure]
     #[ensures(^self == (*self).insert(key, value))]
     #[ensures(result == (*self).get(key))]
-    pub fn insert_ghost(&mut self, key: K, value: V) -> Option<V>
-    where
-        V: Sized,
-    {
-        let _ = key;
-        let _ = value;
-        panic!()
-    }
-
-    /// Same as [`Self::insert_ghost`], but for unsized values.
-    #[trusted]
-    #[pure]
-    #[ensures(^self == (*self).insert(key, *value))]
-    #[ensures(result == (*self).get_unsized(key))]
-    pub fn insert_ghost_unsized(&mut self, key: K, value: Box<V>) -> Option<Box<V>> {
+    pub fn insert_ghost(&mut self, key: K, value: V) -> Option<V> {
         let _ = key;
         let _ = value;
         panic!()
@@ -450,20 +463,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[pure]
     #[ensures(^self == (*self).remove(*key))]
     #[ensures(result == (*self).get(*key))]
-    pub fn remove_ghost(&mut self, key: &K) -> Option<V>
-    where
-        V: Sized,
-    {
-        let _ = key;
-        panic!()
-    }
-
-    /// Same as [`Self::remove_ghost`], but for unsized values.
-    #[trusted]
-    #[pure]
-    #[ensures(^self == (*self).remove(*key))]
-    #[ensures(result == (*self).get_unsized(*key))]
-    pub fn remove_ghost_unsized(&mut self, key: &K) -> Option<Box<V>> {
+    pub fn remove_ghost(&mut self, key: &K) -> Option<V> {
         let _ = key;
         panic!()
     }
@@ -501,12 +501,12 @@ impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
 impl<K: Clone + Copy, V: Clone + Copy> Copy for FMap<K, V> {}
 
-impl<K, V: ?Sized> Invariant for FMap<K, V> {
+impl<K, V> Invariant for FMap<K, V> {
     #[predicate(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { forall<k: K> self.contains(k) ==> inv(k) && inv(self.lookup_unsized(k)) }
+        pearlite! { forall<k: K> self.contains(k) ==> inv(k) && inv(self.lookup(k)) }
     }
 }

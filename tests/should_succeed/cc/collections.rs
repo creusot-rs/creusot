@@ -22,8 +22,8 @@ pub fn roundtrip_hashmap_into_iter<K: Eq + Hash + DeepModel, V>(
     proof_assert! {
         exists<prod: Seq<(K, V)>, it1: &mut hash_map::IntoIter<K, V>>
             it1.completed() && it0.produces(prod, *it1) &&
-            forall<k: K::DeepModelTy, v: V> r@.get(k) == Some(v)
-                ==> exists<k1: K> k1.deep_model() == k && prod.contains((k1, v))
+            forall<k: K::DeepModelTy, v: V> (r@.get(k) == Some(v))
+                == exists<k1: K> k1.deep_model() == k && prod.contains((k1, v))
     };
     proof_assert! { forall<k: K::DeepModelTy> r@.contains(k) == (*xs_snap)@.contains(k) };
     proof_assert! { forall<k: K::DeepModelTy> r@[k] == (*xs_snap)@[k] };
@@ -39,8 +39,8 @@ pub fn roundtrip_hashmap_iter<K: Eq + Hash + DeepModel, V>(xs: &HashMap<K, V>) -
     proof_assert! {
     exists<prod: Seq<(&K, &V)>, it1: &mut hash_map::Iter<K,V>>
         it1.completed() && it0.produces(prod, *it1)
-        && forall<k: K::DeepModelTy, v: &V> r@.get(k) == Some(v)
-            ==> exists<k1: &K> k1.deep_model() == k && prod.contains((k1, v)) };
+        && forall<k: K::DeepModelTy, v: &V> (r@.get(k) == Some(v))
+            == exists<k1: &K> k1.deep_model() == k && prod.contains((k1, v)) };
     r
 }
 
@@ -56,8 +56,8 @@ pub fn roundtrip_hashmap_iter_mut<K: Eq + Hash + DeepModel, V>(
     proof_assert! {
         exists<prod: Seq<(&K, &mut V)>, it1: &mut hash_map::IterMut<K, V>>
             it1.completed() && it0.produces(prod, *it1)
-            && forall<k: K::DeepModelTy, v: &mut V> r@.get(k) == Some(v)
-                ==> exists<k1: &K> k1.deep_model() == k && prod.contains((k1, v))
+            && forall<k: K::DeepModelTy, v: &mut V> (r@.get(k) == Some(v))
+                == exists<k1: &K> k1.deep_model() == k && prod.contains((k1, v))
     };
     r
 }

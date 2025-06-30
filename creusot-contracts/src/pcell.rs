@@ -4,7 +4,7 @@
 //! track of the logical value.
 
 #[cfg(creusot)]
-use crate::util::SizedW;
+use crate::logic::Id;
 
 use crate::{Ghost, *};
 use ::std::{cell::UnsafeCell, marker::PhantomData};
@@ -20,22 +20,6 @@ use ::std::{cell::UnsafeCell, marker::PhantomData};
 /// created by [`PCell::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
 #[repr(transparent)]
 pub struct PCell<T: ?Sized>(UnsafeCell<T>);
-
-/// The id of a [`PCell`].
-///
-/// Most methods that manipulate `PCell`s require a permission with the same id.
-#[trusted]
-#[allow(dead_code)]
-pub struct Id(PhantomData<()>);
-
-impl Clone for Id {
-    #[pure]
-    #[ensures(result == *self)]
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl Copy for Id {}
 
 /// Token that represents the ownership of a [`PCell`] object.
 ///
@@ -68,20 +52,17 @@ impl<T: ?Sized> Resolve for PCellOwn<T> {
     fn resolve_coherence(&self) {}
 }
 
-impl<T: Sized> Invariant for PCellOwn<T> {
+impl<T: ?Sized> Invariant for PCellOwn<T> {
     #[predicate(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { invariant::inv(self@) }
+        pearlite! { invariant::inv(self.val()) }
     }
 }
 
-impl<T> PCellOwn<T>
-where
-    T: ?Sized,
-{
+impl<T: ?Sized> PCellOwn<T> {
     /// Returns the logical identity of the cell.
     ///
     /// To use a [`Pcell`], this and [`PCell::id`] must agree.
@@ -94,7 +75,7 @@ where
     /// Get the logical value.
     #[logic]
     #[trusted]
-    pub fn val(self) -> SizedW<T> {
+    pub fn val<'a>(self) -> &'a T {
         dead
     }
 
@@ -210,10 +191,7 @@ impl<T> PCell<T> {
     }
 }
 
-impl<T> PCell<T>
-where
-    T: Copy,
-{
+impl<T: Copy> PCell<T> {
     /// Returns a copy of the contained value.
     ///
     /// # Safety
@@ -263,10 +241,7 @@ impl<T> PCell<T> {
     }
 }
 
-impl<T> PCell<T>
-where
-    T: crate::std::default::Default,
-{
+impl<T: Default> PCell<T> {
     /// Takes the value of the cell, leaving `Default::default()` in its place.
     ///
     /// # Safety
