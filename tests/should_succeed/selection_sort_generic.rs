@@ -5,21 +5,21 @@ use creusot_contracts::{
     *,
 };
 
-#[predicate]
+#[logic]
 fn sorted_range<T: OrdLogic>(s: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
         forall<i, j> l <= i && i < j && j < u ==> s[i] <= s[j]
     }
 }
 
-#[predicate]
+#[logic]
 fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
     pearlite! {
         sorted_range(s, 0, s.len())
     }
 }
 
-#[predicate]
+#[logic]
 fn partition<T: OrdLogic>(v: Seq<T>, i: Int) -> bool {
     pearlite! { forall<k1, k2> 0 <= k1 && k1 < i && i <= k2 && k2 < v.len() ==> v[k1] <= v[k2]}
 }

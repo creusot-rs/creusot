@@ -19,13 +19,13 @@ where
     type Item = (usize, I::Item);
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.iter.completed() && (&mut self.count).resolve() }
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == o.count@ - self.count@
@@ -69,7 +69,7 @@ where
     I: Iterator,
 {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
             (forall<s: Seq<I::Item>, i: I>

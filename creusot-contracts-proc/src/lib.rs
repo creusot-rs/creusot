@@ -59,7 +59,6 @@ proc_macro_attributes! {
     pure
     logic
     trusted
-    predicate
     law
     open
     open_inv_result

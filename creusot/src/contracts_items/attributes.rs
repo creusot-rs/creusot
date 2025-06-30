@@ -50,7 +50,6 @@ attribute_functions! {
     [creusot::decl::logic]                   => is_logic
     [creusot::decl::logic::prophetic]        => is_prophetic
     [creusot::decl::logic::sealed]           => is_sealed
-    [creusot::decl::predicate]               => is_predicate
     [creusot::decl::trusted]                 => is_trusted
     [creusot::decl::law]                     => is_law
     not [creusot::decl::no_trigger]          => should_replace_trigger
@@ -70,8 +69,7 @@ pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
 }
 
 pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
-    is_predicate(tcx, def_id)
-        || is_spec(tcx, def_id)
+    is_spec(tcx, def_id)
         || is_logic_closure(tcx, def_id)
         || is_logic(tcx, def_id)
         || is_assertion(tcx, def_id)

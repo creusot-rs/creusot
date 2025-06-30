@@ -2,14 +2,14 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 pub trait AssocTrait {
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool;
 }
 
 pub trait Trait {
     type Assoc: AssocTrait;
 
-    #[predicate]
+    #[logic]
     #[ensures(result ==> assoc.invariant())]
     fn invariant(self, assoc: Self::Assoc) -> bool;
 }
@@ -19,7 +19,7 @@ pub struct Struct;
 
 impl AssocTrait for AssocStruct {
     #[open]
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         true
     }
@@ -29,7 +29,7 @@ impl Trait for Struct {
     type Assoc = AssocStruct;
 
     #[open]
-    #[predicate]
+    #[logic]
     #[ensures(result ==> assoc.invariant())]
     fn invariant(self, assoc: AssocStruct) -> bool {
         true

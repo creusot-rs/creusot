@@ -19,7 +19,7 @@ where
     type Item = I::Item;
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (*self).n@ == 0 && self.resolve() ||
@@ -28,7 +28,7 @@ where
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.n@ == o.n@ + visited.len() && self.iter.produces(visited, o.iter)

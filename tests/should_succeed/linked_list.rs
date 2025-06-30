@@ -19,7 +19,7 @@ pub struct List<T> {
 }
 
 impl<T> Invariant for List<T> {
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! {
             (*self.seq == Seq::EMPTY &&

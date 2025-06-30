@@ -27,7 +27,7 @@ impl<I> EnumerateExt<I> for Enumerate<I> {
 
 impl<I> Resolve for Enumerate<I> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         resolve(&self.iter())
     }
@@ -40,7 +40,7 @@ impl<I> Resolve for Enumerate<I> {
 }
 
 impl<I: Iterator> Invariant for Enumerate<I> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
             (forall<s: Seq<I::Item>, i: I>
@@ -57,7 +57,7 @@ where
     I: Iterator,
 {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             exists<inner: &mut _> *inner == self.iter() && ^inner == (^self).iter()
@@ -67,7 +67,7 @@ where
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == o.n() - self.n()

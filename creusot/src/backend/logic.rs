@@ -18,10 +18,7 @@ use why3::{
 
 mod vcgen;
 
-pub(crate) fn translate_logic_or_predicate(
-    ctx: &Why3Generator,
-    def_id: DefId,
-) -> Option<FileModule> {
+pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<FileModule> {
     let mut names = Dependencies::new(ctx, def_id);
     let pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, ctx.typing_env(def_id));
 
@@ -72,10 +69,13 @@ pub(crate) fn translate_logic_or_predicate(
         let mut sig = sig.clone();
         sig.contract = Default::default();
         match ctx.item_type(def_id) {
-            ItemType::Logic { .. } => LogicDecl { sig, kind: Some(DeclKind::Function) },
-            ItemType::Predicate { .. } => {
-                sig.retty = None;
-                LogicDecl { sig, kind: Some(DeclKind::Predicate) }
+            ItemType::Logic { .. } => {
+                let kind = if sig.retty == None {
+                    Some(DeclKind::Predicate)
+                } else {
+                    Some(DeclKind::Function)
+                };
+                LogicDecl { sig, kind }
             }
             ItemType::Program | ItemType::Closure => LogicDecl { sig, kind: None },
             ItemType::Constant => LogicDecl { sig, kind: Some(DeclKind::Constant) },
@@ -97,9 +97,7 @@ pub(crate) fn translate_logic_or_predicate(
         name::result(),
         postcondition.clone(),
     )
-    .unwrap_or_else(|e| {
-        ctx.fatal_error(e.span(), &format!("translate_logic_or_predicate: {e:?}")).emit()
-    });
+    .unwrap_or_else(|e| ctx.fatal_error(e.span(), &format!("translate_logic: {e:?}")).emit());
 
     let goal = sig.contract.requires_implies(wp);
 
@@ -120,14 +118,10 @@ pub(crate) fn translate_logic_or_predicate(
 pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    mut sig: Signature,
+    sig: Signature,
     kind: DeclKind,
     body: Term<'tcx>,
 ) -> Vec<Decl> {
-    if let DeclKind::Predicate = kind {
-        sig.retty = None;
-    }
-
     let mut decls = vec![];
 
     let body = lower_pure(ctx, names, &body);

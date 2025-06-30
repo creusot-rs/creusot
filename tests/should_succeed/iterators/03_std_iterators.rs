@@ -74,14 +74,14 @@ pub fn enumerate_range() {
     }
 }
 
-#[predicate]
+#[logic]
 fn equiv_range<T>(s1: Seq<T>, s2: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
         forall<i> l <= i && i < u ==> s1[i] == s2[i]
     }
 }
 
-#[predicate]
+#[logic]
 fn equiv_reverse_range<T>(s1: Seq<T>, s2: Seq<T>, l: Int, u: Int, n: Int) -> bool {
     pearlite! {
         forall<i> l <= i && i < u ==> s1[i] == s2[n-i]

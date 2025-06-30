@@ -34,7 +34,7 @@ impl<K: DeepModel, V> List<(K, V)> {
         }
     }
 
-    #[predicate]
+    #[logic]
     fn no_double_binding(self) -> bool {
         pearlite! {
             match self {
@@ -46,7 +46,7 @@ impl<K: DeepModel, V> List<(K, V)> {
 }
 
 impl<K: DeepModel, V> Resolve for List<(K, V)> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         // FIXME: we don't resolve keys because we only have access to their deep model.
         pearlite! {
@@ -95,7 +95,7 @@ impl<K: Hash, V> View for MyHashMap<K, V> {
 }
 
 impl<K: Hash, V> Resolve for MyHashMap<K, V> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         // FIXME: we don't resolve keys because we only have access to their deep model.
         pearlite! {
@@ -121,7 +121,7 @@ impl<K: Hash, V> MyHashMap<K, V> {
         pearlite! { K::hash_log(k).rem_euclid(self.buckets@.len()) }
     }
 
-    #[predicate]
+    #[logic]
     fn good_bucket(self, l: List<(K, V)>, h: Int) -> bool {
         pearlite! {
             forall<k: K::DeepModelTy, v> l.get(k) == Some(v) ==> self.bucket_ix(k) == h
@@ -130,7 +130,7 @@ impl<K: Hash, V> MyHashMap<K, V> {
 }
 
 impl<K: Hash, V> Invariant for MyHashMap<K, V> {
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! {
             0 < self.buckets@.len() &&

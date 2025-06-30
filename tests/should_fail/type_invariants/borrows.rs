@@ -5,7 +5,7 @@ use creusot_contracts::{invariant::Invariant, *};
 pub struct NonZero(pub i32);
 
 impl Invariant for NonZero {
-    #[predicate]
+    #[logic]
     #[open(self)]
     fn invariant(self) -> bool {
         pearlite! { self.0@ != 0 }
@@ -82,7 +82,7 @@ pub struct SumTo10 {
 }
 
 impl Invariant for SumTo10 {
-    #[predicate]
+    #[logic]
     #[open(self)]
     fn invariant(self) -> bool {
         pearlite! { self.a@ + self.b@ == 10 }

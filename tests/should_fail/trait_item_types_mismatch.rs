@@ -7,7 +7,7 @@ pub trait Trusted {}
 impl Trusted for () {}
 
 pub trait HasPredicate {
-    #[predicate]
+    #[logic]
     #[open(self)]
     fn my_predicate() -> bool {
         true

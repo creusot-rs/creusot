@@ -26,7 +26,7 @@ pub struct Board {
 }
 
 impl Board {
-    #[predicate]
+    #[logic]
     fn wf(self) -> bool {
         pearlite! {
             self.size@ <= 1_000 &&
@@ -57,7 +57,7 @@ impl Board {
             && self.field[p.x as usize][p.y as usize] == 0
     }
 
-    #[predicate]
+    #[logic]
     fn in_bounds(self, p: Point) -> bool {
         pearlite! {
             0 <= p.x@ && p.x@< self.size@ && 0 <= p.y@ && p.y@ < self.size@

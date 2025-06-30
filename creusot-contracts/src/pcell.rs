@@ -39,7 +39,7 @@ impl<T> View for PCellOwn<T> {
 
 impl<T: ?Sized> Resolve for PCellOwn<T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         resolve(&self.val())
     }
@@ -52,8 +52,8 @@ impl<T: ?Sized> Resolve for PCellOwn<T> {
     fn resolve_coherence(&self) {}
 }
 
-impl<T: ?Sized> Invariant for PCellOwn<T> {
-    #[predicate(prophetic)]
+impl<T: Sized> Invariant for PCellOwn<T> {
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]

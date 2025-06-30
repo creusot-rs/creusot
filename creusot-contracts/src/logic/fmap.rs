@@ -107,7 +107,7 @@ impl<K, V> FMap<K, V> {
     }
 
     /// Returns `true` if the map contains a value for the specified key.
-    #[predicate]
+    #[logic]
     #[open]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, k: K) -> bool {
@@ -115,21 +115,21 @@ impl<K, V> FMap<K, V> {
     }
 
     /// Returns `true` if the map contains no elements.
-    #[predicate]
+    #[logic]
     #[open]
     pub fn is_empty(self) -> bool {
         self.ext_eq(FMap::empty())
     }
 
     /// Returns `true` if the two maps have no key in common.
-    #[predicate]
+    #[logic]
     #[open]
     pub fn disjoint(self, other: Self) -> bool {
         pearlite! {forall<k: K> !self.contains(k) || !other.contains(k)}
     }
 
     /// Returns `true` if all key-value pairs in `self` are also in `other`.
-    #[predicate]
+    #[logic]
     #[open]
     pub fn subset(self, other: Self) -> bool {
         pearlite! {
@@ -191,7 +191,7 @@ impl<K, V> FMap<K, V> {
     /// Returns `true` if `self` and `other` contain exactly the same key-value pairs.
     ///
     /// This is in fact equivalent with normal equality.
-    #[predicate]
+    #[logic]
     #[open]
     #[ensures(result ==> self == other)]
     #[ensures((forall<k: K> self.get(k) == other.get(k)) ==> result)]
@@ -502,7 +502,7 @@ impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
 impl<K: Clone + Copy, V: Clone + Copy> Copy for FMap<K, V> {}
 
 impl<K, V> Invariant for FMap<K, V> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]

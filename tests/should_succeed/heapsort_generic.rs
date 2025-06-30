@@ -11,7 +11,7 @@ fn parent(i: Int) -> Int {
     (i + 1) / 2 - 1
 }
 
-#[predicate]
+#[logic]
 fn heap_frag<T: OrdLogic>(s: Seq<T>, start: Int, end: Int) -> bool {
     pearlite! { forall<i> start <= parent(i) && i < end ==>
     s[i] <= s[parent(i)] }
@@ -74,14 +74,14 @@ where
     }
 }
 
-#[predicate]
+#[logic]
 fn sorted_range<T: OrdLogic>(s: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
         forall<i, j> l <= i && i < j && j < u ==> s[i] <= s[j]
     }
 }
 
-#[predicate]
+#[logic]
 fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
     pearlite! {
         sorted_range(s, 0, s.len())

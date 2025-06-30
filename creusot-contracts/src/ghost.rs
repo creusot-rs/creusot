@@ -91,7 +91,7 @@ impl<T: View> View for Ghost<T> {
 }
 
 impl<T> Invariant for Ghost<T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
@@ -102,7 +102,7 @@ impl<T> Invariant for Ghost<T> {
 
 impl<T> Resolve for Ghost<T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         resolve(&*self)
     }

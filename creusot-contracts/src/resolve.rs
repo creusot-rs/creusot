@@ -2,7 +2,7 @@ use crate::*;
 pub use crate::{base_macros::Resolve, invariant::*};
 
 pub trait Resolve {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[rustc_diagnostic_item = "creusot_resolve_method"]
     fn resolve(self) -> bool;
 
@@ -14,7 +14,7 @@ pub trait Resolve {
 }
 
 #[trusted]
-#[predicate(prophetic)]
+#[logic(prophetic)]
 #[open]
 #[rustc_diagnostic_item = "creusot_resolve"]
 pub fn resolve<T: ?Sized>(_: &T) -> bool {
@@ -22,7 +22,7 @@ pub fn resolve<T: ?Sized>(_: &T) -> bool {
 }
 
 #[trusted]
-#[predicate(prophetic)]
+#[logic(prophetic)]
 #[open]
 #[rustc_diagnostic_item = "creusot_structural_resolve"]
 pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
@@ -30,7 +30,7 @@ pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
 }
 
 impl<T1, T2: ?Sized> Resolve for (T1, T2) {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn resolve(self) -> bool {
         resolve(&self.0) && resolve(&self.1)
@@ -44,7 +44,7 @@ impl<T1, T2: ?Sized> Resolve for (T1, T2) {
 
 impl<T: ?Sized> Resolve for &mut T {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! { ^self == *self }
     }
@@ -57,7 +57,7 @@ impl<T: ?Sized> Resolve for &mut T {
 
 impl<T: ?Sized> Resolve for Box<T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         resolve(&*self)
     }
@@ -70,7 +70,7 @@ impl<T: ?Sized> Resolve for Box<T> {
 
 impl<T> Resolve for Option<T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         match self {
             Some(x) => resolve(&x),

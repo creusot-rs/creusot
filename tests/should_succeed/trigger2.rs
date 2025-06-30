@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[predicate(prophetic)]
+#[logic(prophetic)]
 #[ensures(resolve(&seq) ==> result)]
 fn resolve_seq<T>(seq: Vec<&mut T>) -> bool {
     pearlite! {
@@ -10,7 +10,7 @@ fn resolve_seq<T>(seq: Vec<&mut T>) -> bool {
     }
 }
 
-#[predicate(prophetic)]
+#[logic(prophetic)]
 #[ensures(resolve(&seq) ==> result)]
 #[open(self)]
 pub fn resolve_seq2<T>(seq: Vec<&mut T>) -> bool {

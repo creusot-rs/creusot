@@ -18,7 +18,7 @@ use ::std::ops::{Deref, DerefMut};
 /// // The type invariant constrains the set of valid `SumTo10`s to
 /// // only allow values where the sum of both fields is equal to 10.
 /// impl Invariant for SumTo10 {
-///     #[predicate]
+///     #[logic]
 ///     #[open]
 ///     fn invariant(self) -> bool {
 ///         pearlite! {
@@ -60,21 +60,21 @@ use ::std::ops::{Deref, DerefMut};
 /// # use creusot_contracts::*;
 /// # struct SumTo10 { a: i32, b: i32 }
 /// # impl Invariant for SumTo10 {
-/// # #[predicate] #[open] fn invariant(self) -> bool { pearlite!{self.a@ + self.b@ == 10} }
+/// # #[logic] #[open] fn invariant(self) -> bool { pearlite!{self.a@ + self.b@ == 10} }
 /// # }
 /// #[logic]
 /// #[ensures(x.a@ + x.b@ == 10)]
 /// fn not_provable(x: SumTo10) {}
 /// ```
 pub trait Invariant {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[rustc_diagnostic_item = "creusot_invariant_user"]
     fn invariant(self) -> bool;
 }
 
 #[cfg(feature = "nightly")]
 impl Invariant for ! {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
@@ -83,7 +83,7 @@ impl Invariant for ! {
 }
 
 impl<T: ?Sized> Invariant for &T {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
@@ -93,7 +93,7 @@ impl<T: ?Sized> Invariant for &T {
 }
 
 impl<T: ?Sized> Invariant for &mut T {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
@@ -106,7 +106,7 @@ impl<T: ?Sized> Invariant for &mut T {
 ///
 /// This function is functionnaly equivalent to [`Invariant::invariant`], except that it
 /// can be called on any type (even if it does not implement [`Invariant`]).
-#[predicate(prophetic)]
+#[logic(prophetic)]
 #[trusted]
 #[rustc_diagnostic_item = "creusot_invariant_internal"]
 pub fn inv<T: ?Sized>(_: T) -> bool {
@@ -137,7 +137,7 @@ pub trait InhabitedInvariant: Invariant {
 /// # use creusot_contracts::*;
 /// struct Pair(i32);
 /// impl Invariant for Pair {
-///     #[predicate] fn invariant(self) -> bool { self.0 % 2 == 0 }
+///     #[logic] fn invariant(self) -> bool { self.0 % 2 == 0 }
 /// }
 /// impl InhabitedInvariant for Pair {
 ///     #[logic]
@@ -216,7 +216,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// // Use the `Pair` type defined in `Subset`'s documentation
     /// # struct Pair(i32);
     /// # impl Invariant for Pair {
-    /// #     #[predicate] fn invariant(self) -> bool { self.0 % 2 == 0 } }
+    /// #     #[logic] fn invariant(self) -> bool { self.0 % 2 == 0 } }
     /// # impl InhabitedInvariant for Pair {
     /// #     #[logic] #[ensures(result.invariant())]
     /// #     fn inhabits() -> Self { Self(0i32) } }
@@ -240,7 +240,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// // Use the `Pair` type defined in `Subset`'s documentation
     /// # struct Pair(i32);
     /// # impl Invariant for Pair {
-    /// #     #[predicate] fn invariant(self) -> bool { self.0 % 2 == 0 } }
+    /// #     #[logic] fn invariant(self) -> bool { self.0 % 2 == 0 } }
     /// # impl InhabitedInvariant for Pair {
     /// #     #[logic] #[ensures(result.invariant())]
     /// #     fn inhabits() -> Self { Self(0i32) } }
@@ -293,7 +293,7 @@ impl<T: InhabitedInvariant + Copy> Copy for Subset<T> {}
 
 impl<T: InhabitedInvariant> Resolve for Subset<T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! { resolve(&(self@)) }
     }

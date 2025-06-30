@@ -14,10 +14,10 @@ pub use ::std::ops::*;
 pub trait FnOnceExt<Args: Tuple> {
     type Output;
 
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn precondition(self, a: Args) -> bool;
 
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn postcondition_once(self, a: Args, res: Self::Output) -> bool;
 }
 
@@ -25,10 +25,10 @@ pub trait FnOnceExt<Args: Tuple> {
 /// adding a specification to closures. It should not be used directly.
 #[cfg(feature = "nightly")]
 pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn postcondition_mut(self, _: Args, _: Self, _: Self::Output) -> bool;
 
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn hist_inv(self, _: Self) -> bool;
 
     #[law]
@@ -58,7 +58,7 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
 /// adding a specification to closures. It should not be used directly.
 #[cfg(feature = "nightly")]
 pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn postcondition(self, _: Args, _: Self::Output) -> bool;
 
     #[law]
@@ -79,7 +79,7 @@ impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
     #[trusted]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_once_impl_precond"]
@@ -88,7 +88,7 @@ impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
     }
 
     #[trusted]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_once_impl_postcond"]
@@ -100,7 +100,7 @@ impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[trusted]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
@@ -109,7 +109,7 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     }
 
     #[trusted]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_mut_impl_hist_inv"]
@@ -145,7 +145,7 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
     #[trusted]
-    #[predicate]
+    #[logic]
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_impl_postcond"]

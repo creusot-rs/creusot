@@ -2,7 +2,7 @@ use crate::{invariant::*, std::iter::Iterator, *};
 use ::std::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     #[creusot::trusted_ignore_structural_inv]
@@ -54,13 +54,13 @@ impl<T, const N: usize> View for IntoIter<T, N> {
 
 impl<T, const N: usize> Iterator for IntoIter<T, N> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { self@ == visited.concat(o@) }
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@ == Seq::EMPTY }
     }

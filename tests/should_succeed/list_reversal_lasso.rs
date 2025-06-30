@@ -43,12 +43,12 @@ impl IndexMut<Ptr> for Memory {
 }
 
 impl Memory {
-    #[predicate]
+    #[logic]
     pub fn nonnull_ptr(self, i: Ptr) -> bool {
         pearlite! { self.0@.len() <= usize::MAX@ && i@ < self.0@.len() }
     }
 
-    #[predicate]
+    #[logic]
     pub fn mem_is_well_formed(self) -> bool {
         pearlite! {
             forall<i: Ptr> self.nonnull_ptr(i) ==> self[i] == NULL || self.nonnull_ptr(self[i])
@@ -74,7 +74,7 @@ impl Memory {
         return r;
     }
 
-    #[predicate]
+    #[logic]
     fn list_seg(self, first: Ptr, s: Seq<Ptr>, last: Ptr, l: Int, h: Int) -> bool {
         pearlite! {
             first == if h == l { last } else { s[l] } &&
@@ -83,7 +83,7 @@ impl Memory {
         }
     }
 
-    #[predicate]
+    #[logic]
     pub fn list(self, first: Ptr, s: Seq<Ptr>) -> bool {
         pearlite! {
             self.list_seg(first, s, NULL, 0, s.len())
@@ -107,7 +107,7 @@ impl Memory {
         return r;
     }
 
-    #[predicate]
+    #[logic]
     pub fn loop_(self, first: Ptr, s: Seq<Ptr>) -> bool {
         pearlite! {
             self.list_seg(first, s, s[0], 0, s.len())
@@ -141,7 +141,7 @@ impl Memory {
         return r;
     }
 
-    #[predicate]
+    #[logic]
     pub fn lasso(self, first: Ptr, s1: Seq<Ptr>, s2: Seq<Ptr>) -> bool {
         pearlite! {
             let mid = if s2.len() == 0 { s1[s1.len()-1] } else { s2[0] };
