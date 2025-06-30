@@ -29,7 +29,7 @@ impl<K, V> ViewRel for MapRelation<K, V> {
     type Auth = FMap<K, V>;
     type Frag = FMap<K, Ag<V>>;
 
-    #[predicate]
+    #[logic]
     #[open]
     fn rel(a: Option<Self::Auth>, f: Self::Frag) -> bool {
         pearlite! {
@@ -73,13 +73,13 @@ pub struct Authority<K, V>(FMapView<K, V>);
 pub struct Fragment<K, V>(FMapView<K, V>, Snapshot<(K, V)>);
 
 impl<K, V> Invariant for Authority<K, V> {
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! { self.0@.auth() != None && self.0@.frag() == FMap::empty() }
     }
 }
 impl<K, V> Invariant for Fragment<K, V> {
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! {
             self.0@.auth() == None &&

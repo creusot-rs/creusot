@@ -14,7 +14,7 @@ impl<T: ?Sized> Set<T> {
 
     /// Returns `true` if `e` is in the set.
     #[open]
-    #[predicate]
+    #[logic]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, e: T) -> bool {
         Self::mem(e, self)
@@ -52,7 +52,7 @@ impl<T: ?Sized> Set<T> {
 
     /// Returns `true` if the set contains no elements.
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "set.Set.is_empty"]
     pub fn is_empty(self) -> bool {
         dead

@@ -21,7 +21,7 @@ impl<T: UnitRA> ViewRel for AuthViewRel<T> {
     type Auth = T;
     type Frag = T;
 
-    #[predicate]
+    #[logic]
     #[open]
     fn rel(a: Option<T>, f: T) -> bool {
         match a {

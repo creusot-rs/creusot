@@ -1,7 +1,5 @@
 //! Raw pointers with ghost code
 
-#[cfg(creusot)]
-use crate::util::SizedW;
 use crate::*;
 
 /// Raw pointer whose ownership is tracked by a ghost [`PtrOwn`].
@@ -31,19 +29,19 @@ pub struct PtrOwn<T: ?Sized> {
 impl<T: ?Sized> PtrOwn<T> {
     /// The raw pointer whose ownership is tracked by this `PtrOwn`
     #[logic]
-    pub fn ptr(&self) -> RawPtr<T> {
+    pub fn ptr(self) -> RawPtr<T> {
         self.ptr
     }
 
     /// The value currently stored at address [`self.ptr()`](Self::ptr)
     #[logic]
-    pub fn val(&self) -> SizedW<T> {
-        self.val
+    pub fn val<'a>(self) -> &'a T {
+        &*self.val
     }
 }
 
 impl<T: ?Sized> Invariant for PtrOwn<T> {
-    #[predicate]
+    #[logic]
     #[open]
     fn invariant(self) -> bool {
         !self.ptr().is_null_logic()

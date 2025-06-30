@@ -117,7 +117,7 @@ impl Expr {
         }
     }
 
-    #[predicate]
+    #[logic]
     fn is_normalized(self) -> bool {
         match self {
             Expr::IfThenElse { c, t, e } => {
@@ -148,7 +148,7 @@ impl Expr {
         }
     }
 
-    #[predicate]
+    #[logic]
     fn is_simplified(self) -> bool {
         match self {
             Expr::IfThenElse { c, t, e } => match *c {
@@ -159,7 +159,7 @@ impl Expr {
         }
     }
 
-    #[predicate]
+    #[logic]
     fn does_not_contain(self, vp: usize) -> bool {
         match self {
             Expr::IfThenElse { c, t, e } => {

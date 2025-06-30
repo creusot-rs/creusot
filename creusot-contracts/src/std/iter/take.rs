@@ -38,7 +38,7 @@ impl<I> TakeExt<I> for Take<I> {
 
 impl<I> Resolve for Take<I> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         resolve(&self.iter())
     }
@@ -52,7 +52,7 @@ impl<I> Resolve for Take<I> {
 
 impl<I: Iterator> Iterator for Take<I> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             self.n() == 0 && resolve(&self) ||
@@ -61,7 +61,7 @@ impl<I: Iterator> Iterator for Take<I> {
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.n() == o.n() + visited.len() && self.iter().produces(visited, o.iter())

@@ -5,7 +5,7 @@ pub struct WithInvariant;
 
 impl Invariant for WithInvariant {
     #[open]
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         true
     }

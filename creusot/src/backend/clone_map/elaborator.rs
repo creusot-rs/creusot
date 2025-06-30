@@ -18,7 +18,7 @@ use crate::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
         get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
         is_fn_impl_postcond, is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond,
-        is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_predicate,
+        is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_logic,
         is_resolve_function, is_size_of_logic, is_structural_resolve,
     },
     ctx::{BodyId, ItemType},
@@ -219,12 +219,7 @@ fn expand_logic<'tcx>(
     let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
         .instantiate(ctx.tcx, subst)
         .normalize(ctx.tcx, typing_env);
-    let kind = match ctx.item_type(def_id) {
-        ItemType::Logic { .. } if !pre_sig.inputs.is_empty() => DeclKind::Function,
-        ItemType::Predicate { .. } => DeclKind::Predicate,
-        ItemType::Logic { .. } | ItemType::Constant => DeclKind::Constant,
-        _ => unreachable!(),
-    };
+
     let bound: Box<[Ident]> = pre_sig.inputs.iter().map(|(ident, _, _)| ident.0).collect();
     let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
     assert_matches!(
@@ -241,6 +236,13 @@ fn expand_logic<'tcx>(
     let names = elab.namer(dep);
     let name = names.dependency(dep).ident();
     let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
+    let kind = match ctx.item_type(def_id) {
+        ItemType::Logic { .. } if sig.args.is_empty() && sig.retty != None => DeclKind::Constant,
+        ItemType::Logic { .. } if sig.retty == None => DeclKind::Predicate,
+        ItemType::Logic { .. } => DeclKind::Function,
+        ItemType::Constant => DeclKind::Constant,
+        _ => unreachable!(),
+    };
     if !opaque && let Some(term) = term(ctx, typing_env, &bound, def_id, subst) {
         lower_logical_defn(ctx, &names, sig, kind, term)
     } else {
@@ -424,7 +426,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         let decls = match dep {
             Dependency::Type(ty) => expand_type(self, ctx, ty),
             Dependency::Item(def_id, subst) => {
-                if ctx.is_logical(def_id) || matches!(ctx.item_type(def_id), ItemType::Constant) {
+                if matches!(ctx.item_type(def_id), ItemType::Constant | ItemType::Logic { .. }) {
                     expand_logic(self, ctx, def_id, subst)
                 } else if matches!(ctx.def_kind(def_id), DefKind::Field | DefKind::Variant) {
                     self.namer(dep).def_ty(ctx.parent(def_id), subst);
@@ -834,10 +836,7 @@ fn post_fndef<'tcx>(
     args: Term<'tcx>,
     res: Term<'tcx>,
 ) -> Option<Term<'tcx>> {
-    if is_predicate(ctx.tcx, did)
-        || is_predicate(ctx.tcx, did)
-        || get_builtin(ctx.tcx, did).is_some()
-    {
+    if is_logic(ctx.tcx, did) || get_builtin(ctx.tcx, did).is_some() {
         return None;
     }
 
@@ -924,10 +923,7 @@ fn pre_fndef<'tcx>(
     subst: GenericArgsRef<'tcx>,
     args: Term<'tcx>,
 ) -> Option<Term<'tcx>> {
-    if is_predicate(ctx.tcx, did)
-        || is_predicate(ctx.tcx, did)
-        || get_builtin(ctx.tcx, did).is_some()
-    {
+    if is_logic(ctx.tcx, did) || get_builtin(ctx.tcx, did).is_some() {
         return None;
     }
     let mut sig = EarlyBinder::bind(ctx.sig(did).clone())

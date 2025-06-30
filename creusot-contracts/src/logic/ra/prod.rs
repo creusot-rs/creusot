@@ -23,7 +23,7 @@ impl<T: RA, U: RA> RA for (T, U) {
         }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool {

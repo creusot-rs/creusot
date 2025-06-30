@@ -88,7 +88,11 @@ pub(crate) fn lower_logic_sig<'tcx, N: Namer<'tcx>>(
         attrs.push(attr)
     }
 
-    let retty = Some(translate_ty(ctx, names, span, pre_sig.output));
+    let retty = if names.normalize(ctx, pre_sig.output).is_bool() {
+        None
+    } else {
+        Some(translate_ty(ctx, names, span, pre_sig.output))
+    };
     let contract = lower_contract(ctx, names, pre_sig.contract);
 
     let mut sig = Signature { name, trigger: None, attrs, retty, args, contract };

@@ -220,30 +220,8 @@ pub mod macros {
     /// }
     /// ```
     /// Such a logic function cannot be used in [`snapshot!`] anymore, and cannot be
-    /// called from a regular [`logic`] or [`predicate`] function.
+    /// called from a regular [`logic`] function.
     pub use base_macros::logic;
-
-    /// Declare a function as being a predicate
-    ///
-    /// This declaration must be pure and total. It cannot be called from Rust programs,
-    /// but in exchange it can use logical operations and syntax with the help of the
-    /// [`pearlite!`] macro.
-    ///
-    /// It **must** return a boolean.
-    ///
-    /// # `prophetic`
-    ///
-    /// If you wish to use the `^` operator on mutable borrows to get the final value, you need to
-    /// specify that the function is _prophetic_, like so:
-    /// ```ignore
-    /// #[predicate(prophetic)]
-    /// fn uses_prophecies(x: &mut Int) -> bool {
-    ///     pearlite! { ^x == 0 }
-    /// }
-    /// ```
-    /// Such a predicate function cannot be used in [`snapshot!`] anymore, and cannot be
-    /// called from a regular [`logic`] or [`predicate`] function.
-    pub use base_macros::predicate;
 
     /// Inserts a *logical* assertion into the code
     ///
@@ -311,7 +289,7 @@ pub mod macros {
     ///
     /// ```
     /// # use creusot_contracts::*;
-    /// #[predicate]
+    /// #[logic]
     /// fn all_ones(s: Seq<Int>) -> bool {
     ///     // Allow access to `forall` and `==>` among other things
     ///     pearlite! {

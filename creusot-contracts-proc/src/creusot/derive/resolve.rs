@@ -13,7 +13,7 @@ pub fn derive_resolve(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 
     let expanded = quote! {
         impl #impl_generics ::creusot_contracts::Resolve for #name #ty_generics #where_clause {
-            #[::creusot_contracts::predicate(prophetic)]
+            #[::creusot_contracts::logic(prophetic)]
             #[::creusot_contracts::open]
             fn resolve(self) -> bool {
                 #eq

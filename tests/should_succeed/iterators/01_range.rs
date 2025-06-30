@@ -15,7 +15,7 @@ impl Iterator for Range {
     type Item = isize;
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             self.resolve() && self.start >= self.end
@@ -23,7 +23,7 @@ impl Iterator for Range {
     }
 
     #[open]
-    #[predicate]
+    #[logic]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.end == o.end && self.start <= o.start

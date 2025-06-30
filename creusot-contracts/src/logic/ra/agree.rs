@@ -13,7 +13,7 @@ impl<T> RA for Ag<T> {
         if self.0 == other.0 { Some(self) } else { None }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool {

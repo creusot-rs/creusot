@@ -17,7 +17,7 @@ struct IterMut<'a, T> {
 
 impl<'a, T> Invariant for IterMut<'a, T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn invariant(self) -> bool {
         // Property that is always true but we must carry around..
         pearlite! { (^self.inner)@.len() == (*self.inner)@.len() }
@@ -28,13 +28,13 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.inner.resolve() && self.inner@.ext_eq(Seq::EMPTY) }
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self.inner@.len() == visited.len() + tl.inner@.len() &&

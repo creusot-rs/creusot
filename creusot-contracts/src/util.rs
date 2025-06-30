@@ -2,28 +2,6 @@
 
 use crate::*;
 
-/// A wrapper around `T` that makes it safe.
-///
-/// This type is indented to be used in logic code.
-pub type SizedW<T> = Box<T>;
-
-/// Helper trait to turn a `T` into a [`SizedW<T>`]
-pub trait MakeSized {
-    /// Turn a `T` into a [`SizedW<T>`]
-    #[logic]
-    #[creusot::why3_attr = "inline:trivial"]
-    fn make_sized(&self) -> SizedW<Self>;
-}
-
-impl<T: ?Sized> MakeSized for T {
-    #[trusted]
-    #[logic]
-    #[ensures(*result == *self)]
-    fn make_sized(&self) -> SizedW<Self> {
-        dead
-    }
-}
-
 /// Creates a logical value satisfying the property given by `p`.
 ///
 /// This is also called the "epsilon operator": its goal is not extract from `∃x. P(x)`

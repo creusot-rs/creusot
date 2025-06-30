@@ -13,13 +13,13 @@ impl<T> Iterator for Once<T> {
     type Item = T;
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { *self == Once(None) && self.resolve() }
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||

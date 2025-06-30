@@ -34,7 +34,7 @@ impl<T: RA> RA for Option<T> {
         }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool {

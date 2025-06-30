@@ -5,7 +5,7 @@ struct S {
     g: Snapshot<bool>,
 }
 
-#[predicate]
+#[logic]
 fn prophecy(x: &mut S) -> bool {
     pearlite! { *(^x).g }
 }

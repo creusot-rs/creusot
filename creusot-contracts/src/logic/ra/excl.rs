@@ -24,7 +24,7 @@ impl<T> RA for Excl<T> {
         None
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool {

@@ -25,7 +25,7 @@ impl<T: View + ?Sized, A: Allocator> View for Box<T, A> {
 
 #[cfg(feature = "nightly")]
 impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]

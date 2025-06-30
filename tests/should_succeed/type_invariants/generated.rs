@@ -4,7 +4,7 @@ use creusot_contracts::{invariant::Invariant, *};
 pub struct Sum10(i32, i32);
 
 impl Invariant for Sum10 {
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! { self.0@ + self.1@ == 10 }
     }

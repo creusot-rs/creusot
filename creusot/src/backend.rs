@@ -62,11 +62,11 @@ impl<'tcx> Why3Generator<'tcx> {
                 let modls = traits::lower_impl(self, def_id);
                 self.functions.push(TranslatedItem::Impl { modls });
             }
-            ItemType::Predicate { .. } if is_resolve_function(self.tcx, def_id) => {
+            ItemType::Logic { .. } if is_resolve_function(self.tcx, def_id) => {
                 self.functions.push(TranslatedItem::Logic { proof_modl: None });
             }
-            ItemType::Logic { .. } | ItemType::Predicate { .. } => {
-                let proof_modl = logic::translate_logic_or_predicate(self, def_id);
+            ItemType::Logic { .. } => {
+                let proof_modl = logic::translate_logic(self, def_id);
                 self.functions.push(TranslatedItem::Logic { proof_modl });
             }
             ItemType::Program => {
@@ -84,10 +84,6 @@ impl<'tcx> Why3Generator<'tcx> {
 
     pub(crate) fn modules(&mut self) -> impl Iterator<Item = TranslatedItem> + '_ {
         self.functions.drain(..)
-    }
-
-    fn is_logical(&self, item: DefId) -> bool {
-        matches!(self.item_type(item), ItemType::Logic { .. } | ItemType::Predicate { .. })
     }
 
     pub(crate) fn span_attr(&self, span: Span) -> Option<Attribute> {

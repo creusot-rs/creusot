@@ -45,7 +45,7 @@ impl<T> View for Sparse<T> {
 
 impl<T> Resolve for Sparse<T> {
     #[open(self)]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
             forall<i> 0 <= i && i < self.size@ ==> resolve(&self@[i])
@@ -62,7 +62,7 @@ impl<T> Resolve for Sparse<T> {
 
 impl<T> Invariant for Sparse<T> {
     #[open(self)]
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! {
             self.n@ <= self.size@

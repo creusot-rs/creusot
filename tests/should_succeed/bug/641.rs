@@ -1,13 +1,13 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{law, maintains, open, predicate};
+use creusot_contracts::{law, logic, maintains, open};
 
 #[law]
 #[open]
 pub fn test_law() {}
 
 #[open]
-#[predicate]
+#[logic]
 pub fn test() -> bool {
     true
 }

@@ -8,7 +8,7 @@ pub struct SumTo10 {
 
 impl Invariant for SumTo10 {
     #[open]
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! { self.a@ + self.b@ == 10 }
     }

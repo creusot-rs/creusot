@@ -4,7 +4,7 @@
 //! track of the logical value.
 
 #[cfg(creusot)]
-use crate::{logic::Id, util::SizedW};
+use crate::logic::Id;
 
 use crate::{Ghost, *};
 use ::std::{cell::UnsafeCell, marker::PhantomData};
@@ -39,7 +39,7 @@ impl<T> View for PCellOwn<T> {
 
 impl<T: ?Sized> Resolve for PCellOwn<T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         resolve(&self.val())
     }
@@ -53,19 +53,16 @@ impl<T: ?Sized> Resolve for PCellOwn<T> {
 }
 
 impl<T: Sized> Invariant for PCellOwn<T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { invariant::inv(self@) }
+        pearlite! { invariant::inv(self.val()) }
     }
 }
 
-impl<T> PCellOwn<T>
-where
-    T: ?Sized,
-{
+impl<T: ?Sized> PCellOwn<T> {
     /// Returns the logical identity of the cell.
     ///
     /// To use a [`Pcell`], this and [`PCell::id`] must agree.
@@ -78,7 +75,7 @@ where
     /// Get the logical value.
     #[logic]
     #[trusted]
-    pub fn val(self) -> SizedW<T> {
+    pub fn val<'a>(self) -> &'a T {
         dead
     }
 
@@ -194,10 +191,7 @@ impl<T> PCell<T> {
     }
 }
 
-impl<T> PCell<T>
-where
-    T: Copy,
-{
+impl<T: Copy> PCell<T> {
     /// Returns a copy of the contained value.
     ///
     /// # Safety
@@ -247,10 +241,7 @@ impl<T> PCell<T> {
     }
 }
 
-impl<T> PCell<T>
-where
-    T: crate::std::default::Default,
-{
+impl<T: Default> PCell<T> {
     /// Takes the value of the cell, leaving `Default::default()` in its place.
     ///
     /// # Safety

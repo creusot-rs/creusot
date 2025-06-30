@@ -83,7 +83,7 @@ pub trait RA: Sized {
     /// reflexive definition of `incl` on paper, but not in its accompanying
     /// Iris formalization, where it uses the non-reflexive definition (as
     /// we do here).
-    #[predicate(sealed)]
+    #[logic(sealed)]
     #[open]
     fn incl(self, other: Self) -> bool {
         other.factor(self) != None
@@ -94,7 +94,7 @@ pub trait RA: Sized {
     #[ensures(self.incl(comb))]
     fn incl_op(self, other: Self, comb: Self) {}
 
-    #[predicate(sealed)]
+    #[logic(sealed)]
     #[open]
     fn incl_eq(self, other: Self) -> bool {
         self == other || self.incl(other)
@@ -103,14 +103,14 @@ pub trait RA: Sized {
     /// Identifies an element as _idempotent_.
     ///
     /// This means that this particular element can be duplicated with [`Self::op`].
-    #[predicate]
+    #[logic]
     #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool;
 
     /// Ensures that we can go from `self` to `x` without making composition with the frame invalid.
     ///
     /// This is used in [`Resource::update`](crate::resource::Resource::update).
-    #[predicate(sealed)]
+    #[logic(sealed)]
     #[open]
     fn update(self, x: Self) -> bool {
         pearlite! {
@@ -119,7 +119,7 @@ pub trait RA: Sized {
     }
 
     /// This is used in [`Resource::update_nondet`](crate::resource::Resource::update_nondet).
-    #[predicate(sealed)]
+    #[logic(sealed)]
     #[open]
     fn update_nondet(self, s: Set<Self>) -> bool {
         pearlite! {

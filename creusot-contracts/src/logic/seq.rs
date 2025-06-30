@@ -214,7 +214,7 @@ impl<T: ?Sized> Seq<T> {
     ///
     /// This is in fact equivalent with normal equality.
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "seq.Seq.(==)"]
     pub fn ext_eq(self, other: Self) -> bool {
         let _ = other;
@@ -317,7 +317,7 @@ impl<T: ?Sized> Seq<T> {
     }
 
     /// Returns `true` if `other` is a permutation of `self`.
-    #[predicate]
+    #[logic]
     #[open]
     pub fn permutation_of(self, other: Self) -> bool {
         self.permut(other, 0, self.len())
@@ -329,7 +329,7 @@ impl<T: ?Sized> Seq<T> {
     /// - Every element of `self` between `start` (included) and `end` (excluded) can
     ///   also be found in `other` between `start` and `end`, and vice-versa
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "seq.Permut.permut"]
     pub fn permut(self, other: Self, start: Int, end: Int) -> bool {
         let _ = other;
@@ -343,7 +343,7 @@ impl<T: ?Sized> Seq<T> {
     /// - `i` and `j` are in bounds (between `0` and `self.len()` excluded)
     /// - `other` is equal to `self` where the elements at `i` and `j` are swapped
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "seq.Permut.exchange"]
     pub fn exchange(self, other: Self, i: Int, j: Int) -> bool {
         let _ = other;
@@ -354,7 +354,7 @@ impl<T: ?Sized> Seq<T> {
 
     /// Returns `true` if there is an index `i` such that `self[i] == x`.
     #[open]
-    #[predicate]
+    #[logic]
     pub fn contains(self, x: T) -> bool
     where
         T: Sized, // TODO: don't require this (problem: uses index)
@@ -364,7 +364,7 @@ impl<T: ?Sized> Seq<T> {
 
     /// Returns `true` if `self` is sorted between `start` and `end`.
     #[open]
-    #[predicate]
+    #[logic]
     pub fn sorted_range(self, start: Int, end: Int) -> bool
     where
         T: OrdLogic + Sized, // TODO: don't require this (problem: uses index)
@@ -376,7 +376,7 @@ impl<T: ?Sized> Seq<T> {
 
     /// Returns `true` if `self` is sorted.
     #[open]
-    #[predicate]
+    #[logic]
     pub fn sorted(self) -> bool
     where
         T: OrdLogic + Sized, // TODO: don't require this (problem: uses index)
@@ -689,7 +689,7 @@ impl<T: Clone + Copy> Clone for Seq<T> {
 impl<T: Clone + Copy> Copy for Seq<T> {}
 
 impl<T: ?Sized> Invariant for Seq<T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]

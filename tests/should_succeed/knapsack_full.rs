@@ -37,7 +37,7 @@ fn sum_values<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
     }
 }
 
-#[predicate]
+#[logic]
 #[variant(i2)]
 #[requires(0 <= i1 && i1 <= s1.len())]
 #[requires(0 <= i2 && i2 <= s2.len())]

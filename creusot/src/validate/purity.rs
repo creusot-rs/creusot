@@ -2,7 +2,7 @@ use crate::{
     backend::is_trusted_item,
     contracts_items::{
         get_builtin, get_fn_pure_trait, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner,
-        is_ghost_new, is_logic, is_no_translate, is_predicate, is_prophetic, is_snap_from_fn,
+        is_ghost_new, is_logic, is_no_translate, is_prophetic, is_snap_from_fn,
         is_snapshot_closure, is_snapshot_deref, is_spec,
     },
     ctx::TranslationCtx,
@@ -37,12 +37,11 @@ pub(crate) enum Purity {
 impl Purity {
     pub(crate) fn of_def_id(ctx: &TranslationCtx, def_id: DefId) -> Self {
         let is_snapshot = is_snapshot_closure(ctx.tcx, def_id);
-        if is_predicate(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
-            || is_logic(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
+        if is_logic(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
             || is_spec(ctx.tcx, def_id) && !is_snapshot
         {
             Purity::Logic { prophetic: true }
-        } else if is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id) || is_snapshot {
+        } else if is_logic(ctx.tcx, def_id) || is_snapshot {
             Purity::Logic { prophetic: false }
         } else {
             let contract = &ctx.sig(def_id).contract;
@@ -123,13 +122,10 @@ impl PurityVisitor<'_, '_> {
         let tcx = self.ctx.tcx;
         let stub = pearlite_stub(tcx, self.thir[fun].ty);
 
-        if matches!(stub, Some(Stub::Fin))
-            || is_predicate(tcx, func_did) && is_prophetic(tcx, func_did)
-            || is_logic(tcx, func_did) && is_prophetic(tcx, func_did)
+        if matches!(stub, Some(Stub::Fin)) || is_logic(tcx, func_did) && is_prophetic(tcx, func_did)
         {
             Purity::Logic { prophetic: true }
-        } else if is_predicate(tcx, func_did)
-            || is_logic(tcx, func_did)
+        } else if is_logic(tcx, func_did)
             || get_builtin(tcx, func_did).is_some()
             || stub.is_some()
             || is_snapshot_deref(tcx, func_did)

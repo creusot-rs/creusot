@@ -46,7 +46,7 @@ impl<K, V: RA> RA for FMap<K, V> {
         }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool {

@@ -11,7 +11,7 @@ pub trait ViewRel {
     type Frag: UnitRA;
 
     /// The relation between the authority and a fragment
-    #[predicate]
+    #[logic]
     fn rel(a: Option<Self::Auth>, f: Self::Frag) -> bool;
 
     #[law]
@@ -49,7 +49,7 @@ pub struct InnerView<R: ViewRel> {
 }
 
 impl<R: ViewRel> Invariant for InnerView<R> {
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         R::rel(self.auth, self.frag)
     }
@@ -78,7 +78,7 @@ impl<R: ViewRel> View<R> {
         pearlite! { self.0@.frag }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     #[ensures(result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
@@ -153,7 +153,7 @@ impl<R: ViewRel> RA for View<R> {
         }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     #[ensures(result == (self.op(self) == Some(self)))]
     fn idemp(self) -> bool {

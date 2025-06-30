@@ -21,8 +21,8 @@ use rustc_span::Symbol;
 use crate::{
     backend::is_trusted_item,
     contracts_items::{
-        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_logic, is_predicate, is_snapshot_deref,
-        is_spec, is_trusted,
+        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_logic, is_snapshot_deref, is_spec,
+        is_trusted,
     },
     ctx::TranslationCtx,
 };
@@ -68,7 +68,7 @@ pub(crate) fn validate(ctx: &TranslationCtx) {
     for (&def_id, thir) in ctx.thir.iter() {
         validate_purity(ctx, def_id, thir);
         let def_id = def_id.to_def_id();
-        if (is_spec(ctx.tcx, def_id) || is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
+        if (is_spec(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
             && !is_trusted_item(ctx.tcx, def_id)
         {
             validate_opacity(ctx, def_id);

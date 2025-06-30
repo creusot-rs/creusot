@@ -19,7 +19,7 @@ pub trait OrdLogic {
     fn cmp_log(self, other: Self) -> Ordering;
 
     /// The logical `<=` operation.
-    #[predicate]
+    #[logic]
     #[open]
     fn le_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) != Ordering::Greater }
@@ -30,7 +30,7 @@ pub trait OrdLogic {
     fn cmp_le_log(x: Self, y: Self);
 
     /// The logical `<` operation.
-    #[predicate]
+    #[logic]
     #[open]
     fn lt_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) == Ordering::Less }
@@ -41,7 +41,7 @@ pub trait OrdLogic {
     fn cmp_lt_log(x: Self, y: Self);
 
     /// The logical `>=` operation.
-    #[predicate]
+    #[logic]
     #[open]
     fn ge_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) != Ordering::Less }
@@ -52,7 +52,7 @@ pub trait OrdLogic {
     fn cmp_ge_log(x: Self, y: Self);
 
     /// The logical `>` operation.
-    #[predicate]
+    #[logic]
     #[open]
     fn gt_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) == Ordering::Greater }
@@ -109,13 +109,13 @@ pub trait OrdLogic {
 /// impl OrdLogic for MyInt {
 ///     #[logic]
 ///     fn cmp_log(self, other: Self) -> Ordering { todo!() }
-///     #[predicate]
+///     #[logic]
 ///     fn le_log(self, other: Self) -> bool { todo!() }
-///     #[predicate]
+///     #[logic]
 ///     fn lt_log(self, other: Self) -> bool { todo!() }
-///     #[predicate]
+///     #[logic]
 ///     fn ge_log(self, other: Self) -> bool { todo!() }
-///     #[predicate]
+///     #[logic]
 ///     fn gt_log(self, other: Self) -> bool { todo!() }
 ///
 ///     ord_laws_impl! {}
@@ -191,28 +191,28 @@ impl OrdLogic for Int {
     }
 
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "mach.int.Int.(<=)"]
     fn le_log(self, _: Self) -> bool {
         dead
     }
 
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "mach.int.Int.(<)"]
     fn lt_log(self, _: Self) -> bool {
         dead
     }
 
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "mach.int.Int.(>=)"]
     fn ge_log(self, _: Self) -> bool {
         dead
     }
 
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "mach.int.Int.(>)"]
     fn gt_log(self, _: Self) -> bool {
         dead
@@ -238,7 +238,7 @@ macro_rules! ord_logic_impl {
 
             #[trusted]
             #[open]
-            #[predicate]
+            #[logic]
             #[creusot::builtins = concat!($module, ".le")]
             fn le_log(self, _: Self) -> bool {
                 true
@@ -246,7 +246,7 @@ macro_rules! ord_logic_impl {
 
             #[trusted]
             #[open]
-            #[predicate]
+            #[logic]
             #[creusot::builtins = concat!($module, ".lt")]
             fn lt_log(self, _: Self) -> bool {
                 true
@@ -254,7 +254,7 @@ macro_rules! ord_logic_impl {
 
             #[trusted]
             #[open]
-            #[predicate]
+            #[logic]
             #[creusot::builtins = concat!($module, ".ge")]
             fn ge_log(self, _: Self) -> bool {
                 true
@@ -262,7 +262,7 @@ macro_rules! ord_logic_impl {
 
             #[trusted]
             #[open]
-            #[predicate]
+            #[logic]
             #[creusot::builtins = concat!($module, ".gt")]
             fn gt_log(self, _: Self) -> bool {
                 true
@@ -314,25 +314,25 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
         } }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn le_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 <= o.1) || self.0 < o.0 }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn lt_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 < o.1) || self.0 < o.0 }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn ge_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 >= o.1) || self.0 > o.0 }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn gt_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 > o.1) || self.0 > o.0 }
