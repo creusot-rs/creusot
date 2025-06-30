@@ -3,6 +3,9 @@
 //! This allows a form of interior mutability, using [ghost](mod@crate::ghost) code to keep
 //! track of the logical value.
 
+#[cfg(creusot)]
+use crate::logic::Id;
+
 use crate::{Ghost, *};
 use ::std::{cell::UnsafeCell, marker::PhantomData};
 
@@ -17,22 +20,6 @@ use ::std::{cell::UnsafeCell, marker::PhantomData};
 /// created by [`PCell::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
 #[repr(transparent)]
 pub struct PCell<T: ?Sized>(UnsafeCell<T>);
-
-/// The id of a [`PCell`].
-///
-/// Most methods that manipulate `PCell`s require a permission with the same id.
-#[trusted]
-#[allow(dead_code)]
-pub struct Id(PhantomData<()>);
-
-impl Clone for Id {
-    #[pure]
-    #[ensures(result == *self)]
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl Copy for Id {}
 
 /// Token that represents the ownership of a [`PCell`] object.
 ///
