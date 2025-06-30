@@ -253,7 +253,7 @@ pub struct Context<'arena> {
 }
 
 impl<'arena> Invariant for Context<'arena> {
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! {
             (forall<n: NodeLog>
@@ -286,7 +286,7 @@ impl<'arena> Invariant for Context<'arena> {
 }
 
 impl<'arena> Context<'arena> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     pub fn grows(&mut self) -> bool {
         pearlite! {
             self.cnt@ <= (^self).cnt@ &&
@@ -298,14 +298,14 @@ impl<'arena> Context<'arena> {
         }
     }
 
-    #[predicate]
+    #[logic]
     pub fn is_valid_bdd(self, b: Bdd<'arena>) -> bool {
         pearlite! {
             self.hashcons@.get(b.0@) == Some(b)
         }
     }
 
-    #[predicate]
+    #[logic]
     fn is_valid_node(self, n: Node<'arena>) -> bool {
         pearlite! {
             match n {

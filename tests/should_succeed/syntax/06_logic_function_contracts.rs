@@ -17,7 +17,7 @@ pub fn sum(seq: Seq<Int>) -> Int {
 }
 
 #[open]
-#[predicate]
+#[logic]
 #[variant(seq.len())]
 pub fn all_zero(seq: Seq<Int>) -> bool {
     pearlite! {
@@ -29,7 +29,7 @@ pub fn all_zero(seq: Seq<Int>) -> bool {
 }
 
 #[open]
-#[predicate]
+#[logic]
 #[variant(i)]
 pub fn stupid<T>(x: T, i: Int) -> bool {
     pearlite! {

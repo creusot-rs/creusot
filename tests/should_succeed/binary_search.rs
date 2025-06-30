@@ -86,7 +86,7 @@ impl<T> List<T> {
 }
 
 impl List<u32> {
-    #[predicate]
+    #[logic]
     fn is_sorted(self) -> bool {
         {
             pearlite! {

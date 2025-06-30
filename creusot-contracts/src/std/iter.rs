@@ -32,10 +32,10 @@ pub use take::TakeExt;
 pub use zip::ZipExt;
 
 pub trait Iterator: ::std::iter::Iterator {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool;
 
     #[law]
@@ -66,12 +66,12 @@ pub trait Iterator: ::std::iter::Iterator {
 }
 
 pub trait FromIterator<A>: ::std::iter::FromIterator<A> {
-    #[predicate]
+    #[logic]
     fn from_iter_post(prod: Seq<A>, res: Self) -> bool;
 }
 
 pub trait DoubleEndedIterator: ::std::iter::DoubleEndedIterator + Iterator {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
     #[law]
@@ -214,13 +214,13 @@ extern_spec! {
 
 impl<I: Iterator + ?Sized> Iterator for &mut I {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { (*self).produces(visited, *o) && ^self == ^o }
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self).completed() && ^*self == ^^self }
     }

@@ -3,7 +3,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{logic::Int, *};
 
-#[predicate]
+#[logic]
 fn match_at(needle: &Vec<u8>, haystack: &Vec<u8>, pos: Int, len: Int) -> bool {
     pearlite! { len <= needle@.len()
       && pos <= haystack@.len() - len

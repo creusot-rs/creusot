@@ -22,7 +22,6 @@ pub(crate) fn document_spec(spec_name: &str, spec_body: LogicBody) -> TokenStrea
         "ensures" => "DodgerBlue",
         "terminates" | "pure" | "logic" | "law" => "Violet",
         _ if spec_name.starts_with("logic(") => "Violet",
-        _ if spec_name.starts_with("predicate(") => "Violet",
         _ => "LightGray",
     };
     let styled_spec_name = format!(

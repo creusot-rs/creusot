@@ -26,7 +26,7 @@ impl<I, F> FilterExt<I, F> for Filter<I, F> {
 }
 
 impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
             // trivial precondition: simplification for sake of proof complexity
@@ -44,7 +44,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
 /// Asserts that `f` has no precondition: any closure state can be called with any input value
 /// In a future release this restriction may be lifted or weakened
 #[open]
-#[predicate(prophetic)]
+#[logic(prophetic)]
 pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f: F, i: A> f.precondition((i,)) }
 }
@@ -52,14 +52,14 @@ pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
 /// Asserts that the captures of `f` are used immutably
 /// In a future release this restriction may be lifted or weakened
 #[open]
-#[predicate(prophetic)]
+#[logic(prophetic)]
 pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f: F, g: F> f.hist_inv(g) ==> f == g }
 }
 
 /// Asserts that the postcondition of `f` is *precise*: that there are never two possible values matching the postcondition
 #[open]
-#[predicate(prophetic)]
+#[logic(prophetic)]
 pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f1: F, f2: F, i> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)) }
 }
@@ -70,7 +70,7 @@ where
     F: FnMut(&I::Item) -> bool,
 {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (exists<s: Seq<_>, e: &mut I > self.iter().produces(s, *e) && e.completed() &&
@@ -80,7 +80,7 @@ where
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.invariant() ==>

@@ -41,7 +41,7 @@ impl<T: ?Sized> FSet<T> {
 
     /// Returns `true` if `e` is in the set.
     #[open]
-    #[predicate]
+    #[logic]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, e: T) -> bool {
         Self::mem(e, self)
@@ -79,7 +79,7 @@ impl<T: ?Sized> FSet<T> {
 
     /// Returns `true` if the set contains no elements.
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "set.Fset.is_empty"]
     pub fn is_empty(self) -> bool {
         dead
@@ -139,7 +139,7 @@ impl<T: ?Sized> FSet<T> {
 
     /// Returns `true` if every element of `self` is in `other`.
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "set.Fset.subset"]
     pub fn is_subset(self, other: Self) -> bool {
         let _ = other;
@@ -148,7 +148,7 @@ impl<T: ?Sized> FSet<T> {
 
     /// Returns `true` if every element of `other` is in `self`.
     #[open]
-    #[predicate]
+    #[logic]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn is_superset(self, other: Self) -> bool {
         Self::is_subset(other, self)
@@ -156,7 +156,7 @@ impl<T: ?Sized> FSet<T> {
 
     /// Returns `true` if `self` and `other` are disjoint.
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "set.Fset.disjoint"]
     pub fn disjoint(self, other: Self) -> bool {
         let _ = other;
@@ -193,7 +193,7 @@ impl<T: ?Sized> FSet<T> {
     ///
     /// This is in fact equivalent with normal equality.
     #[open]
-    #[predicate]
+    #[logic]
     #[ensures(result ==> self == other)]
     pub fn ext_eq(self, other: Self) -> bool
     where
@@ -481,7 +481,7 @@ impl<T: Clone + Copy> Clone for FSet<T> {
 impl<T: Clone + Copy> Copy for FSet<T> {}
 
 impl<T: ?Sized> Invariant for FSet<T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]

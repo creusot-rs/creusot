@@ -415,14 +415,12 @@ impl LogicInput {
 
 enum LogicKind {
     Logic,
-    Predicate,
     Law,
 }
 
 enum LogicTag {
     Law,
     Logic,
-    Predicate,
     Prophetic,
     Sealed,
 }
@@ -431,7 +429,6 @@ impl ToTokens for LogicTag {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Self::Logic => tokens.extend(quote!(#[creusot::decl::logic])),
-            Self::Predicate => tokens.extend(quote!(#[creusot::decl::predicate])),
             Self::Prophetic => tokens.extend(quote!(#[creusot::decl::logic::prophetic])),
             Self::Sealed => tokens.extend(quote!(#[creusot::decl::logic::sealed])),
             Self::Law => tokens.extend(
@@ -463,30 +460,8 @@ fn logic_gen(tags: TS1, tokens: TS1, kind: LogicKind) -> TS1 {
     let Ok(mut tags) = tags else { return tags.err().unwrap().into_compile_error().into() };
     let log = parse_macro_input!(tokens as LogicInput);
 
-    if matches!(kind, LogicKind::Predicate) {
-        let sig = match &log {
-            LogicInput::Item(LogicItem { sig, .. }) => sig,
-            LogicInput::Sig(TraitItemSignature { sig, .. }) => sig,
-        };
-
-        let is_bool = match &sig.output {
-            ReturnType::Default => false,
-            ReturnType::Type(_, ty) => *ty == parse_quote! { bool },
-        };
-
-        if !is_bool {
-            let sp = match sig.output {
-                ReturnType::Default => sig.span(),
-                ReturnType::Type(_, _) => sig.output.span(),
-            };
-            return quote_spanned! {sp=> compile_error!("Predicates must have boolean return types"); }
-            .into();
-        };
-    }
-
     let mut doc_str: String = match kind {
         LogicKind::Logic => "logic".into(),
-        LogicKind::Predicate => "predicate".into(),
         LogicKind::Law => "law".into(),
     };
     if !tags.is_empty() {
@@ -496,7 +471,7 @@ fn logic_gen(tags: TS1, tokens: TS1, kind: LogicKind) -> TS1 {
             match t {
                 LogicTag::Prophetic => doc_str.push_str("prophetic"),
                 LogicTag::Sealed => doc_str.push_str("sealed"),
-                LogicTag::Law | LogicTag::Logic | LogicTag::Predicate => unreachable!(),
+                LogicTag::Law | LogicTag::Logic => unreachable!(),
             }
         }
         doc_str.push(')')
@@ -509,7 +484,6 @@ fn logic_gen(tags: TS1, tokens: TS1, kind: LogicKind) -> TS1 {
     match kind {
         LogicKind::Law => tags.push(LogicTag::Law),
         LogicKind::Logic => tags.push(LogicTag::Logic),
-        LogicKind::Predicate => tags.push(LogicTag::Predicate),
     }
     match log {
         LogicInput::Item(log) => logic_item(log, tags, documentation),
@@ -553,10 +527,6 @@ pub fn logic(tags: TS1, tokens: TS1) -> TS1 {
 
 pub fn law(tags: TS1, tokens: TS1) -> TS1 {
     logic_gen(tags, tokens, LogicKind::Law)
-}
-
-pub fn predicate(tags: TS1, tokens: TS1) -> TS1 {
-    logic_gen(tags, tokens, LogicKind::Predicate)
 }
 
 pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {

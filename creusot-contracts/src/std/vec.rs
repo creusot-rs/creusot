@@ -41,7 +41,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Resolve for Vec<T, A> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
     }
@@ -55,7 +55,7 @@ impl<T, A: Allocator> Resolve for Vec<T, A> {
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Invariant for Vec<T, A> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
@@ -222,7 +222,7 @@ impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(&self@[i]) }
     }
@@ -236,13 +236,13 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@ == Seq::EMPTY }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
         pearlite! {
@@ -264,7 +264,7 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
 }
 
 impl<T> FromIterator<T> for Vec<T> {
-    #[predicate]
+    #[logic]
     #[open]
     fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
         pearlite! { prod == res@ }

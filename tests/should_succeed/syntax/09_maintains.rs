@@ -8,18 +8,18 @@ use creusot_contracts::{logic::Int, *};
 pub struct A {}
 
 impl A {
-    #[predicate]
+    #[logic]
     fn invariant(self, b: bool, c: u64) -> bool {
         true
     }
 
-    #[predicate]
+    #[logic]
     fn inv2(self, b: Int) -> bool {
         true
     }
 }
 
-#[predicate]
+#[logic]
 fn other_inv(a: A, b: bool) -> bool {
     true
 }

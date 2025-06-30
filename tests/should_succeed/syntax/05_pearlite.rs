@@ -6,7 +6,7 @@ use creusot_contracts::{logic::Mapping, *};
 // Test postfix model operator
 
 #[open]
-#[predicate]
+#[logic]
 #[requires(v@.len() == 3)]
 pub fn has_len_3(v: &[u32]) -> bool {
     pearlite! { v@.len() == 3 }
@@ -34,7 +34,7 @@ pub struct B {
 pub fn struct_order(x: B) {}
 
 #[open]
-#[predicate]
+#[logic]
 #[allow(unreachable_patterns)]
 pub fn field1_is_true(x: B) -> bool {
     pearlite! {

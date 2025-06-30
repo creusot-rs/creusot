@@ -68,7 +68,7 @@ impl<T: DeepModel> View for IntoIter<T> {
 }
 
 #[open]
-#[predicate]
+#[logic]
 pub fn set_produces<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
     start: I,
     visited: Seq<T>,
@@ -104,13 +104,13 @@ pub fn set_produces_trans<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
 
 impl<T: DeepModel> Iterator for IntoIter<T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (self@).is_empty() }
     }
@@ -143,13 +143,13 @@ impl<'a, T: DeepModel> View for Iter<'a, T> {
 
 impl<'a, T: DeepModel> Iterator for Iter<'a, T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (self@).is_empty() }
     }
@@ -170,7 +170,7 @@ impl<'a, T: DeepModel> Iterator for Iter<'a, T> {
 }
 
 impl<T: Eq + Hash + DeepModel, S: Default + BuildHasher> FromIterator<T> for HashSet<T, S> {
-    #[predicate]
+    #[logic]
     #[open]
     fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
         pearlite! { forall<x: T::DeepModelTy> res@.contains(x) == exists<x1: T> x1.deep_model() == x && prod.contains(x1) }
@@ -201,13 +201,13 @@ impl<'a, T: DeepModel, S> View for Difference<'a, T, S> {
 
 impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Intersection<'a, T, S> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (self@).is_empty() }
     }
@@ -229,13 +229,13 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Intersection<'a,
 
 impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Difference<'a, T, S> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (self@).is_empty() }
     }

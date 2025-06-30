@@ -8,7 +8,7 @@ fn sqr(x: Int) -> Int {
     x * x
 }
 
-#[predicate]
+#[logic]
 fn is_square(y: Int) -> bool {
     pearlite! { exists<z> y == sqr(z) }
 }

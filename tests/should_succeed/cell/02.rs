@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::{logic::Int, *};
 
 pub trait Inv<T> {
-    #[predicate]
+    #[logic]
     fn inv(&self, x: T) -> bool;
 }
 
@@ -66,7 +66,7 @@ pub struct Fib {
 }
 impl Inv<Option<usize>> for Fib {
     #[open(crate)]
-    #[predicate]
+    #[logic]
     fn inv(&self, v: Option<usize>) -> bool {
         pearlite! {
             match v {
@@ -80,7 +80,7 @@ impl Inv<Option<usize>> for Fib {
 pub type FibCache = Vec<Cell<Option<usize>, Fib>>;
 
 #[open(crate)]
-#[predicate]
+#[logic]
 fn fib_cell(v: FibCache) -> bool {
     pearlite! {
         forall<i: Int> v[i].ghost_inv.ix@ == i

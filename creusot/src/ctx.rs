@@ -3,7 +3,7 @@ use crate::{
     callbacks,
     contracts_items::{
         get_inv_function, get_resolve_function, get_resolve_method, is_extern_spec, is_logic,
-        is_open_inv_param, is_predicate, is_prophetic, opacity_witness_name,
+        is_open_inv_param, is_prophetic, opacity_witness_name,
     },
     creusot_items::{self, CreusotItems},
     metadata::{BinaryMetadata, Metadata},
@@ -89,7 +89,6 @@ pub(crate) struct Opacity(pub Visibility<DefId>);
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ItemType {
     Logic { prophetic: bool },
-    Predicate { prophetic: bool },
     Program,
     Closure,
     Trait,
@@ -107,8 +106,6 @@ impl ItemType {
         match self {
             ItemType::Logic { prophetic: false } => "logic function",
             ItemType::Logic { prophetic: true } => "prophetic logic function",
-            ItemType::Predicate { prophetic: false } => "predicate",
-            ItemType::Predicate { prophetic: true } => "prophetic predicate",
             ItemType::Program => "program function",
             ItemType::Closure => "closure",
             ItemType::Trait => "trait declaration",
@@ -125,9 +122,6 @@ impl ItemType {
     pub(crate) fn can_implement(self, trait_type: Self) -> bool {
         match (self, trait_type) {
             (ItemType::Logic { prophetic: false }, ItemType::Logic { prophetic: true }) => true,
-            (ItemType::Predicate { prophetic: false }, ItemType::Predicate { prophetic: true }) => {
-                true
-            }
             _ => self == trait_type,
         }
     }
@@ -379,7 +373,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// We encodes the opacity of functions using 'witnesses', functions that have the target opacity
     /// set as their *visibility*.
     fn mk_opacity(&self, item: DefId) -> Opacity {
-        if !matches!(self.item_type(item), ItemType::Predicate { .. } | ItemType::Logic { .. }) {
+        if !matches!(self.item_type(item), ItemType::Logic { .. }) {
             return Opacity(Visibility::Public);
         };
 
@@ -446,7 +440,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.tcx.hir().maybe_body_owned_by(local_id).is_some()
         } else {
             match self.item_type(def_id) {
-                ItemType::Logic { .. } | ItemType::Predicate { .. } => self.term(def_id).is_some(),
+                ItemType::Logic { .. } => self.term(def_id).is_some(),
                 _ => false,
             }
         }
@@ -500,9 +494,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             DefKind::Trait => ItemType::Trait,
             DefKind::Impl { .. } => ItemType::Impl,
             DefKind::Fn | DefKind::AssocFn => {
-                if is_predicate(self.tcx, def_id) {
-                    ItemType::Predicate { prophetic: is_prophetic(self.tcx, def_id) }
-                } else if is_logic(self.tcx, def_id) {
+                if is_logic(self.tcx, def_id) {
                     ItemType::Logic { prophetic: is_prophetic(self.tcx, def_id) }
                 } else {
                     ItemType::Program

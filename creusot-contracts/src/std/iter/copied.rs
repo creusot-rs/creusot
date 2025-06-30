@@ -18,7 +18,7 @@ impl<I> CopiedExt<I> for Copied<I> {
 
 impl<I> Resolve for Copied<I> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         resolve(&self.iter())
     }
@@ -36,7 +36,7 @@ where
     T: Copy,
 {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             exists<inner: &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed()
@@ -44,7 +44,7 @@ where
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             exists<s: Seq<&'a T>>

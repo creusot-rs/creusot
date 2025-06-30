@@ -14,13 +14,13 @@ impl<A: Clone> Iterator for Repeat<A> {
     type Item = A;
 
     #[open]
-    #[predicate]
+    #[logic]
     fn completed(&mut self) -> bool {
         pearlite! { false }
     }
 
     #[open]
-    #[predicate]
+    #[logic]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&

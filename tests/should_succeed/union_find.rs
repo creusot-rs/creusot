@@ -71,7 +71,7 @@ mod implementation {
     }
 
     impl<T> Invariant for UnionFind<T> {
-        #[predicate]
+        #[logic]
         #[creusot::why3_attr = "inline:trivial"]
         fn invariant(self) -> bool {
             let domain = self.domain;
@@ -148,7 +148,7 @@ mod implementation {
         }
 
         /// The internals of the union-find may have changed, but the API did not
-        #[predicate(prophetic)]
+        #[logic(prophetic)]
         #[open]
         pub fn unchanged(&mut self) -> bool {
             pearlite! {
@@ -239,7 +239,7 @@ mod implementation {
         /// Returns `true` if `x` and `y` are in the same class.
         ///
         /// This is the logical version of [`Self::equiv`]
-        #[predicate]
+        #[logic]
         #[open]
         pub fn equiv_log(self, x: Element<T>, y: Element<T>) -> bool {
             self.root_of()[x] == self.root_of()[y]

@@ -32,7 +32,7 @@ struct Tree<K, V> {
 /*************  The model of a tree, and the set of its mappings  *************/
 
 impl<K: DeepModel, V> Tree<K, V> {
-    #[predicate]
+    #[logic]
     fn has_mapping(self, k: K::DeepModelTy, v: V) -> bool {
         pearlite! {
             match self {
@@ -43,7 +43,7 @@ impl<K: DeepModel, V> Tree<K, V> {
         }
     }
 
-    #[predicate]
+    #[logic]
     fn same_mappings(self, o: Self) -> bool {
         pearlite! {
             forall<k: K::DeepModelTy, v: V> self.has_mapping(k, v) == o.has_mapping(k, v)
@@ -132,7 +132,7 @@ impl<K: DeepModel, V> Tree<K, V> {
 }
 
 impl<K: DeepModel, V> Node<K, V> {
-    #[predicate]
+    #[logic]
     #[ensures(forall<node: Box<Node<K, V>>>
               self == *node ==> result == Tree{ node: Some(node) }.has_mapping(k, v))]
     fn has_mapping(self, k: K::DeepModelTy, v: V) -> bool {
@@ -142,7 +142,7 @@ impl<K: DeepModel, V> Node<K, V> {
         }
     }
 
-    #[predicate]
+    #[logic]
     fn same_mappings(self, o: Self) -> bool {
         pearlite! {
             forall<k: K::DeepModelTy, v: V> self.has_mapping(k, v) == o.has_mapping(k, v)
@@ -171,7 +171,7 @@ impl<K: DeepModel, V> View for Tree<K, V> {
 }
 
 impl<K: DeepModel, V> Resolve for Tree<K, V> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
             forall<k, v> self.has_mapping(k, v) ==> resolve(&v)
@@ -185,7 +185,7 @@ impl<K: DeepModel, V> Resolve for Tree<K, V> {
 }
 
 impl<K: DeepModel, V> Resolve for Node<K, V> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
             forall<k, v> self.has_mapping(k, v) ==> resolve(&v)
@@ -204,7 +204,7 @@ impl<K: DeepModel, V> Node<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
-    #[predicate]
+    #[logic]
     fn bst_invariant_here(self) -> bool {
         pearlite! {
             (forall<k: K::DeepModelTy, v: V> self.left.has_mapping(k, v) ==> k < self.key.deep_model()) &&
@@ -212,7 +212,7 @@ where
         }
     }
 
-    #[predicate]
+    #[logic]
     fn bst_invariant(self) -> bool {
         pearlite! {
             self.bst_invariant_here() && self.left.bst_invariant() && self.right.bst_invariant()
@@ -224,7 +224,7 @@ impl<K: DeepModel, V> Tree<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
-    #[predicate]
+    #[logic]
     fn bst_invariant(self) -> bool {
         pearlite! {
             match self {
@@ -252,7 +252,7 @@ fn cpn(c: Color, l: CP, r: CP) -> CP {
 }
 
 impl CP {
-    #[predicate]
+    #[logic]
     fn match_t<K, V>(self, tree: Tree<K, V>) -> bool {
         pearlite! {
             match self {
@@ -264,7 +264,7 @@ impl CP {
         }
     }
 
-    #[predicate]
+    #[logic]
     fn match_n<K, V>(self, node: Node<K, V>) -> bool {
         pearlite! {
             match self {
@@ -286,7 +286,7 @@ impl<K, V> Tree<K, V> {
         }
     }
 
-    #[predicate]
+    #[logic]
     fn color_invariant(self) -> bool {
         pearlite! {
             match self {
@@ -301,12 +301,12 @@ impl<K, V> Tree<K, V> {
 }
 
 impl<K, V> Node<K, V> {
-    #[predicate]
+    #[logic]
     fn color_invariant_here(self) -> bool {
         pearlite! { self.right.color() == Black && (self.color == Black || self.left.color() == Black) }
     }
 
-    #[predicate]
+    #[logic]
     fn color_invariant(self) -> bool {
         pearlite! { self.color_invariant_here() && self.left.color_invariant() && self.right.color_invariant() }
     }
@@ -331,7 +331,7 @@ impl<K: DeepModel, V> Tree<K, V> {
         }
     }
 
-    #[predicate]
+    #[logic]
     fn height_invariant(self) -> bool {
         pearlite! {
             match self {
@@ -358,12 +358,12 @@ impl<K: DeepModel, V> Node<K, V> {
         }
     }
 
-    #[predicate]
+    #[logic]
     fn height_invariant_here(self) -> bool {
         pearlite! { self.left.height() == self.right.height() }
     }
 
-    #[predicate]
+    #[logic]
     fn height_invariant(self) -> bool {
         pearlite! { self.height_invariant_here() && self.left.height_invariant() && self.right.height_invariant() }
     }
@@ -375,7 +375,7 @@ impl<K: DeepModel, V> Tree<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
-    #[predicate]
+    #[logic]
     fn internal_invariant(self) -> bool {
         pearlite! {
             self.bst_invariant() && self.height_invariant()
@@ -387,7 +387,7 @@ impl<K: DeepModel, V> Node<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
-    #[predicate]
+    #[logic]
     // TODO
     // This might be made a proper type invariant, but move_red_left/move_red_right need to be
     // rewritten, perhaps by taking a continuation as closure in parameter.
@@ -758,7 +758,7 @@ impl<K: DeepModel, V> Invariant for Map<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! {
             self.0.internal_invariant() && self.0.color_invariant() && self.0.color() == Black
@@ -770,7 +770,7 @@ impl<K: DeepModel, V> Resolve for Map<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn resolve(self) -> bool {
         pearlite! { forall<k: K::DeepModelTy> resolve(&self@.get(k)) }

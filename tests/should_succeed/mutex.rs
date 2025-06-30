@@ -3,7 +3,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 pub trait Inv<T> {
-    #[predicate]
+    #[logic]
     fn inv(&self, x: T) -> bool;
 }
 
@@ -62,7 +62,7 @@ struct Even;
 
 impl Inv<u32> for Even {
     #[open(self)]
-    #[predicate]
+    #[logic]
     fn inv(&self, x: u32) -> bool {
         x.view() % 2 == 0
     }
@@ -74,10 +74,10 @@ struct AddsTwo<'a> {
 
 trait FakeFnOnce {
     type Return;
-    #[predicate]
+    #[logic]
     fn precondition(self) -> bool;
 
-    #[predicate]
+    #[logic]
     fn postcondition(self, _: Self::Return) -> bool;
 
     #[requires(self.precondition())]
@@ -87,12 +87,12 @@ trait FakeFnOnce {
 
 impl<'a> FakeFnOnce for AddsTwo<'a> {
     type Return = ();
-    #[predicate]
+    #[logic]
     fn precondition(self) -> bool {
         true
     }
 
-    #[predicate]
+    #[logic]
     fn postcondition(self, _: ()) -> bool {
         true
     }
@@ -146,7 +146,7 @@ struct SpawnPostCond<F> {
 
 impl<F: FakeFnOnce> Inv<F::Return> for SpawnPostCond<F> {
     #[open(self)]
-    #[predicate]
+    #[logic]
     fn inv(&self, v: F::Return) -> bool {
         self.f.postcondition(v)
     }

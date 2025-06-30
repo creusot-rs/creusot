@@ -68,7 +68,7 @@ impl<K: DeepModel, V> View for IntoIter<K, V> {
 
 impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // self@ equals the union of visited (viewed as a fmap) and o@
         pearlite! {
@@ -87,7 +87,7 @@ impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@.is_empty() }
     }
@@ -120,7 +120,7 @@ impl<'a, K: DeepModel, V> View for Iter<'a, K, V> {
 
 impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // `self@` equals the union of `visited` (viewed as a finite map) and `o@`
         pearlite! {
@@ -139,7 +139,7 @@ impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@.is_empty() }
     }
@@ -172,7 +172,7 @@ impl<'a, K: DeepModel, V> View for IterMut<'a, K, V> {
 
 impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // self@ equals the union of visited (viewed as a fmap) and o@
         pearlite! {
@@ -191,7 +191,7 @@ impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@.is_empty() }
     }
@@ -214,7 +214,7 @@ impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
 impl<K: Eq + Hash + DeepModel, V, S: Default + BuildHasher> FromIterator<(K, V)>
     for HashMap<K, V, S>
 {
-    #[predicate]
+    #[logic]
     #[open]
     fn from_iter_post(prod: Seq<(K, V)>, res: Self) -> bool {
         pearlite! { forall<k: K::DeepModelTy, v: V> (res@.get(k) == Some(v))

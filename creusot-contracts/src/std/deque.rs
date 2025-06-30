@@ -61,7 +61,7 @@ impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
 
 impl<T> Resolve for VecDeque<T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
     }
@@ -157,13 +157,13 @@ impl<'a, T> View for Iter<'a, T> {
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {

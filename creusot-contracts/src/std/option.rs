@@ -630,13 +630,13 @@ impl<T> View for IntoIter<T> {
 }
 
 impl<T> Iterator for IntoIter<T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -667,13 +667,13 @@ impl<'a, T> View for Iter<'a, T> {
 }
 
 impl<T> Iterator for Iter<'_, T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -704,13 +704,13 @@ impl<'a, T> View for IterMut<'a, T> {
 }
 
 impl<T> Iterator for IterMut<'_, T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {

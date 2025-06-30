@@ -47,21 +47,21 @@ fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     }
 }
 
-#[predicate]
+#[logic]
 fn is_unique<T>(s: Seq<T>) -> bool {
     pearlite! {
         forall<i, j> 0 <= i && i < s.len() && 0 <= j && j < s.len() ==> s[i] == s[j] ==> i == j
     }
 }
 
-#[predicate]
+#[logic]
 fn contains<T>(seq: Seq<T>, elem: T) -> bool {
     pearlite! {
         exists<i> 0 <= i && i < seq.len() && seq[i] == elem
     }
 }
 
-#[predicate]
+#[logic]
 fn is_subset<T>(sub: Seq<T>, sup: Seq<T>) -> bool {
     pearlite! {
         forall<i> 0 <= i && i < sub.len() ==> contains(sup, sub[i])

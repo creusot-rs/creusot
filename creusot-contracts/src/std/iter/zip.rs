@@ -26,7 +26,7 @@ impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
 
 impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             exists<a: &mut A, b: &mut B>
@@ -39,7 +39,7 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             // Using an `unzip` definition doesn't work well because of issues related to datatypes and `match`
