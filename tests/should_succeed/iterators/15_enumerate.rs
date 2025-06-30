@@ -73,7 +73,7 @@ where
     fn invariant(self) -> bool {
         pearlite! {
             (forall<s: Seq<I::Item>, i: I>
-                #![trigger self.iter.produces(s, i)]
+                #[trigger(self.iter.produces(s, i))]
                 self.iter.produces(s, i) ==>
                 self.count@ + s.len() < std::usize::MAX@)
             && (forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))

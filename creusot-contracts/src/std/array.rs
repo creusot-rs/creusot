@@ -83,4 +83,10 @@ extern_spec! {
         #[ensures(self@ == result@)]
         fn into_iter(self) -> std::array::IntoIter<T, N>;
     }
+
+    impl<T: Clone, const N: usize> Clone for [T; N] {
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i]))]
+        fn clone(&self) -> [T; N];
+    }
 }

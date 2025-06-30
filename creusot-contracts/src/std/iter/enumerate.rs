@@ -44,7 +44,7 @@ impl<I: Iterator> Invariant for Enumerate<I> {
     fn invariant(self) -> bool {
         pearlite! {
             (forall<s: Seq<I::Item>, i: I>
-                #![trigger self.iter().produces(s, i)]
+                #[trigger(self.iter().produces(s, i))]
                 self.iter().produces(s, i) ==>
                 self.n() + s.len() < std::usize::MAX@)
             && (forall<i: &mut I> (*i).completed() ==> (*i).produces(Seq::EMPTY, ^i))
