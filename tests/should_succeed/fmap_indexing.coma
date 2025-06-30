@@ -6,23 +6,20 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
   let%span sfmap_indexing'3 = "fmap_indexing.rs" 9 18 9 45
   let%span sfmap_indexing'4 = "fmap_indexing.rs" 10 10 10 37
   let%span sfmap_indexing'5 = "fmap_indexing.rs" 11 18 11 45
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 51 14 51 31
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 52 14 52 43
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 68 14 68 59
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 69 14 69 61
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 70 14 70 66
-  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 307 8 307 24
-  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
-  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 40 14 40 64
-  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 141 8 141 35
-  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 125 8 125 31
-  let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 112 8 112 26
-  let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 133 8 133 42
-  let%span sutil = "../../creusot-contracts/src/util.rs" 21 14 21 30
-  let%span sutil'0 = "../../creusot-contracts/src/util.rs" 33 11 33 28
-  let%span sutil'1 = "../../creusot-contracts/src/util.rs" 34 0 34 21
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 50 14 50 31
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 51 14 51 43
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 67 14 67 46
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 68 14 68 88
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 264 8 264 24
+  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 59 14 59 25
+  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 39 14 39 64
+  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 114 8 114 27
+  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 106 8 106 34
+  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 96 8 96 26
   let%span soption = "../../creusot-contracts/src/std/option.rs" 751 15 751 27
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 753 8 756 9
+  let%span sutil = "../../creusot-contracts/src/util.rs" 11 11 11 28
+  let%span sutil'0 = "../../creusot-contracts/src/util.rs" 12 0 12 21
   let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 60 8 60 19
   
   use mach.int.Int
@@ -34,7 +31,7 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
   
   function len (self: t_FMap) : int
   
-  axiom len_spec: forall self: t_FMap. [%#sfmap'5] len self >= 0
+  axiom len_spec: forall self: t_FMap. [%#sfmap'4] len self >= 0
   
   type t_Option  =
     | C_None
@@ -42,36 +39,31 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
   
   function view (self: t_FMap) : Map.map int t_Option
   
-  axiom view_spec: forall self: t_FMap. [%#sfmap'6] forall m1: t_FMap, m2: t_FMap. m1 <> m2  -> view m1 <> view m2
+  axiom view_spec: forall self: t_FMap. [%#sfmap'5] forall m1: t_FMap, m2: t_FMap. m1 <> m2  -> view m1 <> view m2
   
   constant empty  : t_FMap
   
   axiom empty_spec: ([%#sfmap] len empty = 0) && ([%#sfmap'0] view empty = Const.const (C_None))
   
-  function make_sized (self: int) : int
-  
-  axiom make_sized_spec: forall self: int. [%#sutil] make_sized self = self
-  
-  function get_unsized [@inline:trivial] (self: t_FMap) (k: int) : t_Option =
-    [%#sfmap'9] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: int) : t_Option =
+    [%#sfmap'8] Map.get (view self) k
   
   predicate contains [@inline:trivial] (self: t_FMap) (k: int) =
-    [%#sfmap'7] get_unsized self k <> C_None
+    [%#sfmap'6] get self k <> C_None
   
   function insert (self: t_FMap) (k: int) (v: int) : t_FMap
   
   axiom insert_spec: forall self: t_FMap, k: int, v: int. ([%#sfmap'1] view (insert self k v)
-  = Map.set (view self) k (C_Some (make_sized v)))
-  && ([%#sfmap'2] contains self k  -> len (insert self k v) = len self)
-  && ([%#sfmap'3] not contains self k  -> len (insert self k v) = len self + 1)
+  = Map.set (view self) k (C_Some v))
+  && ([%#sfmap'2] len (insert self k v) = (if contains self k then len self else len self + 1))
   
   function index_logic (self: Map.map int bool) (a: int) : bool =
     [%#smapping] Map.get self a
   
   function such_that (p: Map.map int bool) : int
   
-  axiom such_that_spec: forall p: Map.map int bool. ([%#sutil'0] exists x: int. index_logic p x)
-   -> ([%#sutil'1] index_logic p (such_that p))
+  axiom such_that_spec: forall p: Map.map int bool. ([%#sutil] exists x: int. index_logic p x)
+   -> ([%#sutil'0] index_logic p (such_that p))
   
   function unwrap_logic (self: t_Option) : int =
     [%#soption'0] match self with
@@ -79,14 +71,11 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
       | C_None -> such_that (fun (__0: int) -> true)
       end
   
-  function lookup_unsized [@inline:trivial] (self: t_FMap) (k: int) : int =
-    [%#sfmap'10] unwrap_logic (get_unsized self k)
-  
   function lookup [@inline:trivial] (self: t_FMap) (k: int) : int =
-    [%#sfmap'8] lookup_unsized self k
+    [%#sfmap'7] unwrap_logic (get self k)
   
   function index_logic'0 [@inline:trivial] (self: t_FMap) (key: int) : int =
-    [%#sfmap'4] lookup self key
+    [%#sfmap'3] lookup self key
   
   meta "compute_max_steps" 1000000
   

@@ -25,7 +25,7 @@ impl<T: ?Sized> Set<T> {
     /// This is how the function is defined in why3.
     #[doc(hidden)]
     #[trusted]
-    #[logic]
+    #[predicate]
     #[creusot::builtins = "set.Set.mem"]
     pub fn mem(_: T, _: Self) -> bool {
         dead
