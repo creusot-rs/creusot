@@ -20,8 +20,6 @@ use rustc_middle::{
         UpvarCapture,
     },
 };
-
-use rustc_span::DUMMY_SP;
 use rustc_target::abi::FieldIdx;
 use std::{assert_matches::assert_matches, collections::HashSet, iter::once};
 
@@ -115,7 +113,7 @@ pub(crate) fn closure_pre<'tcx>(
         pre = Term {
             kind: TermKind::Precondition { item: def_id.into(), subst, params },
             ty: ctx.types.bool,
-            span: DUMMY_SP,
+            span: ctx.def_span(def_id),
         };
         if let Some(k) = k {
             pre = k(pre)
@@ -159,7 +157,7 @@ pub(crate) fn closure_post<'tcx>(
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
                     ty: ctx.types.bool,
-                    span: DUMMY_SP,
+                    span: ctx.def_span(def_id),
                 };
                 to_resolve =
                     if target_kind == ClosureKind::FnOnce { vec![self_.clone()] } else { vec![] };
@@ -177,7 +175,7 @@ pub(crate) fn closure_post<'tcx>(
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
                     ty: ctx.types.bool,
-                    span: DUMMY_SP,
+                    span: ctx.def_span(def_id),
                 };
 
                 let result_state = match target_kind {
@@ -217,7 +215,7 @@ pub(crate) fn closure_post<'tcx>(
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
                     ty: ctx.types.bool,
-                    span: DUMMY_SP,
+                    span: ctx.def_span(def_id),
                 }
             }
         }
@@ -405,7 +403,8 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
         let map_cur = closure_captures(ctx, def_id)
             .map(|((f, cap), ty)| {
                 assert!(cap.place.projections.is_empty());
-                let proj = self_pre.clone().proj(f, ty);
+                let span = cap.get_path_span(ctx.tcx);
+                let proj = self_pre.clone().proj(f, ty).span(span);
                 let term = match cap.info.capture_kind {
                     UpvarCapture::ByValue => proj,
                     UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
@@ -415,7 +414,7 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                 };
                 let hir_id = match cap.place.base {
                     PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
-                        cap.var_ident.span,
+                        span,
                         format!("Unexpected place in closure capture: {:?}", cap.place.base),
                     ),
                     PlaceBase::Local(hir_id) => hir_id,
@@ -436,8 +435,9 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
         let (map_old, map_cur) = closure_captures(ctx, def_id)
             .map(|((f, cap), ty)| {
                 assert!(cap.place.projections.is_empty());
-                let proj_pre = self_pre.clone().proj(f, ty);
-                let proj_post = self_post.clone().proj(f, ty);
+                let span = cap.get_path_span(ctx.tcx);
+                let proj_pre = self_pre.clone().proj(f, ty).span(span);
+                let proj_post = self_post.clone().proj(f, ty).span(span);
                 let (term_pre, term_post) = match cap.info.capture_kind {
                     UpvarCapture::ByValue => (proj_pre, proj_post),
                     UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
@@ -449,7 +449,7 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                 };
                 let hir_id = match cap.place.base {
                     PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
-                        cap.var_ident.span,
+                        span,
                         format!("Unexpected place in closure capture: {:?}", cap.place.base),
                     ),
                     PlaceBase::Local(hir_id) => hir_id,
@@ -472,7 +472,8 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
             .zip(post_owned_projs)
             .map(|(((f, cap), ty), post_owned_proj)| {
                 assert!(cap.place.projections.is_empty());
-                let proj = self_.clone().proj(f, ty);
+                let span = cap.get_path_span(ctx.tcx);
+                let proj = self_.clone().proj(f, ty).span(span);
                 let (term_pre, term_post) = match cap.info.capture_kind {
                     UpvarCapture::ByValue => (proj, post_owned_proj),
                     UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
@@ -486,7 +487,7 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                 };
                 let hir_id = match cap.place.base {
                     PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
-                        cap.var_ident.span,
+                        span,
                         format!("Unexpected place in closure capture: {:?}", cap.place.base),
                     ),
                     PlaceBase::Local(hir_id) => hir_id,

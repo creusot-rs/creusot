@@ -383,7 +383,7 @@ impl<'tcx> Pattern<'tcx> {
     }
 
     pub(crate) fn deref(self, ty: Ty<'tcx>) -> Self {
-        Pattern { ty, kind: PatternKind::Deref(Box::new(self)), span: DUMMY_SP }
+        Pattern { ty, span: self.span, kind: PatternKind::Deref(Box::new(self)) }
     }
 
     pub(crate) fn constructor(
@@ -1386,7 +1386,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
 impl<'tcx> Term<'tcx> {
     pub(crate) fn let_(pattern: Pattern<'tcx>, arg: Term<'tcx>, body: Term<'tcx>) -> Self {
         Term {
-            span: DUMMY_SP,
+            span: pattern.span.until(body.span),
             ty: body.ty,
             kind: TermKind::Let { pattern, arg: Box::new(arg), body: Box::new(body) },
         }
@@ -1405,13 +1405,20 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn proj(self, idx: FieldIdx, ty: Ty<'tcx>) -> Self {
-        Term { ty, kind: TermKind::Projection { lhs: Box::new(self), idx }, span: DUMMY_SP }
+        Term { ty, span: self.span, kind: TermKind::Projection { lhs: Box::new(self), idx } }
     }
 
     pub(crate) fn tuple(tcx: TyCtxt<'tcx>, fields: impl IntoIterator<Item = Term<'tcx>>) -> Self {
         let fields: Box<[_]> = fields.into_iter().collect();
-        let ty = Ty::new_tup_from_iter(tcx, fields.iter().map(|t| t.ty));
-        Term { ty, kind: TermKind::Tuple { fields }, span: DUMMY_SP }
+        let mut span = DUMMY_SP;
+        let ty = Ty::new_tup_from_iter(
+            tcx,
+            fields.iter().map(|t| {
+                span = span.until(t.span);
+                t.ty
+            }),
+        );
+        Term { ty, kind: TermKind::Tuple { fields }, span }
     }
 
     pub(crate) fn call_no_normalize(
@@ -1475,12 +1482,12 @@ impl<'tcx> Term<'tcx> {
                 TermKind::Lit(Literal::Bool(true)) => self,
                 _ => Term {
                     ty: self.ty,
+                    span: self.span.until(rhs.span),
                     kind: TermKind::Binary {
                         op: BinOp::And,
                         lhs: Box::new(self),
                         rhs: Box::new(rhs),
                     },
-                    span: DUMMY_SP,
                 },
             },
         }
@@ -1489,8 +1496,8 @@ impl<'tcx> Term<'tcx> {
     pub(crate) fn bin_op(self, ty: Ty<'tcx>, op: BinOp, rhs: Self) -> Self {
         Term {
             ty,
+            span: self.span.until(rhs.span),
             kind: TermKind::Binary { op, lhs: Box::new(self), rhs: Box::new(rhs) },
-            span: DUMMY_SP,
         }
     }
 
@@ -1513,8 +1520,8 @@ impl<'tcx> Term<'tcx> {
             }
             _ => Term {
                 ty: self.ty,
+                span: self.span.until(rhs.span),
                 kind: TermKind::Impl { lhs: Box::new(self), rhs: Box::new(rhs) },
-                span: DUMMY_SP,
             },
         }
     }
@@ -1550,14 +1557,14 @@ impl<'tcx> Term<'tcx> {
             (TermKind::Lit(Literal::Bool(false)), QuantKind::Exists) => self,
             _ => Term {
                 ty: self.ty,
+                span: self.span,
                 kind: TermKind::Quant { kind: quant_kind, binder, body: Box::new(self), trigger },
-                span: DUMMY_SP,
             },
         }
     }
 
     pub(crate) fn coerce(self, ty: Ty<'tcx>) -> Self {
-        Term { ty, kind: TermKind::Coerce { arg: Box::new(self) }, span: DUMMY_SP }
+        Term { ty, span: self.span, kind: TermKind::Coerce { arg: Box::new(self) } }
     }
 
     pub(crate) fn shr_ref(self, tcx: TyCtxt<'tcx>) -> Self {
