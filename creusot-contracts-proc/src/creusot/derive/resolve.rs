@@ -9,7 +9,10 @@ pub fn derive_resolve(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
-    let eq = resolve(&name, &input.data);
+    let eq = match resolve(&name, &input.data) {
+        Ok(eq) => eq,
+        Err(e) => return e.into_compile_error().into(),
+    };
 
     let expanded = quote! {
         impl #impl_generics ::creusot_contracts::Resolve for #name #ty_generics #where_clause {
@@ -30,9 +33,9 @@ pub fn derive_resolve(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     proc_macro::TokenStream::from(expanded)
 }
 
-fn resolve(base_ident: &Ident, data: &Data) -> TokenStream {
+fn resolve(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
     match *data {
-        Data::Struct(ref data) => match data.fields {
+        Data::Struct(ref data) => Ok(match data.fields {
             Fields::Named(ref fields) => {
                 let recurse = fields.named.iter().map(|f| {
                     let name = &f.ident;
@@ -58,7 +61,7 @@ fn resolve(base_ident: &Ident, data: &Data) -> TokenStream {
             Fields::Unit => quote! {
                 true
             },
-        },
+        }),
         Data::Enum(ref data) => {
             let arms = data.variants.iter().map(|v| {
                 let ident = &v.ident;
@@ -79,13 +82,15 @@ fn resolve(base_ident: &Ident, data: &Data) -> TokenStream {
                 }
             });
 
-            quote! {
+            Ok(quote! {
                 match self {
                     #(#arms),*
                 }
-            }
+            })
         }
-        Data::Union(_) => todo!(),
+        Data::Union(_) => {
+            Err(syn::Error::new(base_ident.span(), "cannot derive `Resolve` on a union"))
+        }
     }
 }
 

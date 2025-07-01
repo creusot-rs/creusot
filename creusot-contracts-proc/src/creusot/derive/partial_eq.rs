@@ -13,7 +13,10 @@ pub fn derive_partial_eq(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let generics = add_trait_bounds(input.generics);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    let eq = partial_eq(&name, &input.data);
+    let eq = match partial_eq(&name, &input.data) {
+        Ok(eq) => eq,
+        Err(e) => return e.into_compile_error().into(),
+    };
 
     let expanded = quote! {
         impl #impl_generics ::std::cmp::PartialEq for #name #ty_generics #where_clause {
@@ -38,9 +41,9 @@ fn add_trait_bounds(mut generics: Generics) -> Generics {
     generics
 }
 
-fn partial_eq(base_ident: &Ident, data: &Data) -> TokenStream {
+fn partial_eq(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
     match *data {
-        Data::Struct(ref data) => match data.fields {
+        Data::Struct(ref data) => Ok(match data.fields {
             Fields::Named(ref fields) => {
                 let recurse = fields.named.iter().map(|f| {
                     let name = &f.ident;
@@ -60,7 +63,7 @@ fn partial_eq(base_ident: &Ident, data: &Data) -> TokenStream {
             Fields::Unit => {
                 quote!(true)
             }
-        },
+        }),
         Data::Enum(ref data) => {
             let arms = data.variants.iter().map(|v| {
                 let ident = &v.ident;
@@ -83,14 +86,16 @@ fn partial_eq(base_ident: &Ident, data: &Data) -> TokenStream {
                 }
             });
 
-            quote! {
+            Ok(quote! {
                 match (self, rhs) {
                     #(#arms),*,
                     _ => false
                 }
-            }
+            })
         }
-        Data::Union(_) => todo!(),
+        Data::Union(_) => {
+            Err(syn::Error::new(base_ident.span(), "cannot derive `PartialEq` on a union"))
+        }
     }
 }
 

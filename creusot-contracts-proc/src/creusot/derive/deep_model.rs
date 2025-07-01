@@ -17,8 +17,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let (deep_model_ty_name, ty) = if let Some(attr) =
         input.attrs.into_iter().find(|p| p.path().is_ident("DeepModelTy"))
     {
-        let parse = parse_deep_model_ty_attr(attr.meta);
-        let name = match parse {
+        let name = match parse_deep_model_ty_attr(attr.meta) {
             Err(e) => return e.to_compile_error().into(),
             Ok(o) => o,
         };
@@ -26,12 +25,18 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
         (name, None)
     } else {
         let ident = Ident::new(&format!("{}DeepModel", name), proc_macro::Span::def_site().into());
-        let deep_model_ty = deep_model_ty(&ident, &generics, &input.data);
+        let deep_model_ty = match deep_model_ty(&ident, &generics, &input.data) {
+            Ok(t) => t,
+            Err(e) => return e.to_compile_error().into(),
+        };
 
         (ident.into(), Some(quote! { #vis #deep_model_ty }))
     };
 
-    let eq = deep_model(&name, &deep_model_ty_name, &input.data);
+    let eq = match deep_model(&name, &deep_model_ty_name, &input.data) {
+        Ok(eq) => eq,
+        Err(e) => return e.into_compile_error().into(),
+    };
 
     let open = match vis {
         syn::Visibility::Public(_) => quote! {#[::creusot_contracts::open]},
@@ -109,12 +114,12 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
     }
 }
 
-fn deep_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> TokenStream {
+fn deep_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> syn::Result<TokenStream> {
     match data {
         Data::Struct(data) => {
             let semi_colon = data.semi_token;
             let data = deep_model_ty_fields(&data.fields);
-            quote! { struct #base_ident #generics #data #semi_colon }
+            Ok(quote! { struct #base_ident #generics #data #semi_colon })
         }
         Data::Enum(data) => {
             let arms = data.variants.iter().map(|v| {
@@ -124,17 +129,19 @@ fn deep_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> TokenS
                 quote! { #ident #fields }
             });
 
-            quote! {
+            Ok(quote! {
                 enum #base_ident #generics {
                     #(#arms),*
                 }
-            }
+            })
         }
-        Data::Union(_) => todo!(),
+        Data::Union(_) => {
+            Err(syn::Error::new(base_ident.span(), "cannot derive `DeepModel` on a union"))
+        }
     }
 }
 
-fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> TokenStream {
+fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> syn::Result<TokenStream> {
     match *data {
         Data::Struct(ref data) => match data.fields {
             Fields::Named(ref fields) => {
@@ -144,9 +151,9 @@ fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> TokenStream {
                         #name: ::creusot_contracts::DeepModel::deep_model(self.#name)
                     }
                 });
-                quote! {
+                Ok(quote! {
                     #tgt_ident { #(#recurse),*}
-                }
+                })
             }
             Fields::Unnamed(ref fields) => {
                 let recurse = fields.unnamed.iter().enumerate().map(|(i, f)| {
@@ -155,13 +162,13 @@ fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> TokenStream {
                         ::creusot_contracts::DeepModel::deep_model(self.#index)
                     }
                 });
-                quote! {
+                Ok(quote! {
                     #tgt_ident (#(#recurse),*)
-                }
+                })
             }
-            Fields::Unit => quote! {
+            Fields::Unit => Ok(quote! {
                 #tgt_ident
-            },
+            }),
         },
         Data::Enum(ref data) => {
             let arms = data.variants.iter().map(|v| {
@@ -183,13 +190,15 @@ fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> TokenStream {
                 }
             });
 
-            quote! {
+            Ok(quote! {
                 match self {
                     #(#arms),*
                 }
-            }
+            })
         }
-        Data::Union(_) => todo!(),
+        Data::Union(_) => {
+            Err(syn::Error::new(src_ident.span(), "cannot derive `DeepModel` on a union"))
+        }
     }
 }
 
