@@ -1,8 +1,8 @@
 use proc_macro::TokenStream as TS1;
 use proc_macro2::TokenStream;
 use syn::{
-    Attribute, GenericArgument, Generics, Ident, Lifetime, Path, PathArguments, QSelf, ReturnType,
-    Type,
+    Attribute, Expr, GenericArgument, Generics, Ident, Lifetime, Path, PathArguments, QSelf,
+    ReturnType, Type,
 };
 
 /// The body of a logical function or a spec.
@@ -174,15 +174,21 @@ impl DocItemName {
                 self.0.push_str("__slice");
                 self.add_type(&type_slice.elem);
             }
-            Type::TraitObject(_) => unimplemented!(),
+            Type::TraitObject(bounds) => {
+                self.0.push_str("__dyn");
+                for b in &bounds.bounds {
+                    self.add_type_param_bound(b);
+                }
+            }
             Type::Tuple(type_tuple) => {
                 self.0.push_str(&format!("__tuple{}", type_tuple.elems.len()));
                 for ty in &type_tuple.elems {
                     self.add_type(ty);
                 }
             }
-            Type::Verbatim(_) => unimplemented!(),
-            _ => todo!(),
+            Type::Verbatim(tokens) => self.0.push_str(&format!("__verbatim{tokens}")),
+            // Fill this if new types appear
+            _ => {}
         }
     }
 
@@ -223,8 +229,11 @@ impl DocItemName {
         match bound {
             syn::TypeParamBound::Trait(trait_bound) => self.add_path(&trait_bound.path),
             syn::TypeParamBound::Lifetime(lifetime) => self.add_lifetime(lifetime),
-            syn::TypeParamBound::Verbatim(_) => unimplemented!(),
-            _ => todo!(),
+            syn::TypeParamBound::Verbatim(tokens) => {
+                self.0.push_str(&format!("__verbatim{tokens}"))
+            }
+            // Fill this if new types of bounds appear
+            _ => {}
         }
     }
 
@@ -246,11 +255,16 @@ impl DocItemName {
                         match arg {
                             GenericArgument::Lifetime(lifetime) => self.add_lifetime(lifetime),
                             GenericArgument::Type(ty) => self.add_type(ty),
-                            GenericArgument::Const(_) => todo!(),
-                            GenericArgument::AssocType(_) => todo!(),
-                            GenericArgument::AssocConst(_) => todo!(),
-                            GenericArgument::Constraint(_) => todo!(),
-                            _ => todo!(),
+                            GenericArgument::Const(c) => self.add_expr(c),
+                            GenericArgument::AssocType(assoc_ty) => {
+                                self.add_ident(&assoc_ty.ident);
+                                self.add_type(&assoc_ty.ty);
+                            }
+                            // If we ever need to disambiguate this, uncomment
+                            // those two.
+                            // GenericArgument::AssocConst(_) => todo!(),
+                            // GenericArgument::Constraint(_) => todo!(),
+                            _ => {}
                         }
                     }
                 }
@@ -276,5 +290,17 @@ impl DocItemName {
     fn add_lifetime(&mut self, _lifetime: &Lifetime) {
         // self.0.push_str("__lifetime");
         // self.0.push_str(&lifetime.ident.to_string());
+    }
+
+    fn add_expr(&mut self, e: &Expr) {
+        match e {
+            Expr::Path(expr_path) => {
+                self.add_qself(&expr_path.qself);
+                self.add_path(&expr_path.path);
+            }
+            // Do nothing in most cases: if a complicated expr appears, we
+            // probably don't want to actually see it in the generated name.
+            _ => {}
+        }
     }
 }
