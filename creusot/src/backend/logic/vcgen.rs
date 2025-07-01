@@ -495,8 +495,14 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, inner.ty);
                 self.build_wp(inner, &|inner| {
                     self.build_wp_projections(projections, &|projs| {
-                        let borrow_id =
-                            borrow_generated_id(self.names, inner.clone(), &projs, Clone::clone);
+                        let borrow_id = borrow_generated_id(
+                            self.ctx,
+                            self.names,
+                            inner.clone(),
+                            t.span,
+                            &projs,
+                            Clone::clone,
+                        );
                         let [cur, fin] = [name::current(), name::final_()].map(|nm| {
                             let (foc, _) = projections_to_expr(
                                 self.ctx,
@@ -507,6 +513,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                                 Box::new(|_, _| unreachable!()),
                                 &projs,
                                 Clone::clone,
+                                t.span,
                             );
                             foc.call(None)
                         });

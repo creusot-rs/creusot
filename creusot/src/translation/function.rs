@@ -95,13 +95,16 @@ struct BodyTranslator<'a, 'tcx> {
 enum TranslationError {
     /// Dereference of a raw pointer
     PtrDeref,
+    /// Something went really wrong, we need to emit a bug with a backtrace
+    Bug(String),
 }
 
 impl TranslationError {
     fn crash(&self, ctx: &TranslationCtx, span: Span) -> ! {
-        ctx.crash_and_error(span,  match self {
-            TranslationError::PtrDeref => "Dereference of a raw pointer is forbidden in creusot: use `creusot_contracts::ptr_own::PtrOwn` instead",
-        })
+        match self {
+            TranslationError::PtrDeref => ctx.dcx().span_fatal(span, "Dereference of a raw pointer is forbidden in creusot: use `creusot_contracts::ptr_own::PtrOwn` instead"),
+            TranslationError::Bug(msg) => ctx.dcx().span_bug(span, msg.to_string()),
+        }
     }
 }
 
@@ -664,7 +667,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     }
                 }
 
-                TyKind::Array(_, _) | TyKind::Slice(_) | TyKind::Pat(_, _) => todo!(),
+                TyKind::Array(_, _) | TyKind::Slice(_) | TyKind::Pat(_, _) => {
+                    return Err(TranslationError::Bug(format!(
+                        "Unsupported type during resolution: {}",
+                        ty.ty
+                    )));
+                }
 
                 TyKind::Bool
                 | TyKind::Char

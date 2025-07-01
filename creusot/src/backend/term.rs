@@ -325,8 +325,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 };
 
                 // TODO: if inner is large, do not clone it, use a "let" instead
-                let borrow_id =
-                    borrow_generated_id(self.names, inner.clone(), &projections, idx_conv);
+                let borrow_id = borrow_generated_id(
+                    self.ctx,
+                    self.names,
+                    inner.clone(),
+                    term.span,
+                    projections,
+                    idx_conv,
+                );
                 let [cur, fin] = [name::current(), name::final_()].map(|nm| {
                     let (foc, _) = projections_to_expr(
                         self.ctx,
@@ -337,6 +343,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                         Box::new(|_, _| unreachable!()),
                         projections,
                         idx_conv,
+                        term.span,
                     );
                     foc.call(None)
                 });
@@ -501,7 +508,6 @@ pub(crate) fn binop_to_binop(op: BinOp) -> WBinOp {
         BinOp::BitXor => WBinOp::BitXor,
         BinOp::Shl => WBinOp::Shl,
         BinOp::Shr => WBinOp::Shr,
-        BinOp::Div => WBinOp::Div,
-        BinOp::Rem => WBinOp::Mod,
+        BinOp::Div | BinOp::Rem => unreachable!("Div and Rem are handled separately"),
     }
 }

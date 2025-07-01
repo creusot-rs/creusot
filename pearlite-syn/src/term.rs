@@ -1,4 +1,4 @@
-use proc_macro2::{Delimiter, Span, TokenStream};
+use proc_macro2::{Delimiter, Span};
 use syn::{Pat, parse::discouraged::AnyDelimiter, punctuated::Punctuated, *};
 
 #[cfg(feature = "printing")]
@@ -109,9 +109,6 @@ ast_enum_of_structs! {
         /// The model of a term: `x@`
         Model(TermModel),
 
-        /// Tokens in term position not interpreted by Syn.
-        Verbatim(TokenStream),
-
         /// Logical equality
         LogEq(TermLogEq),
 
@@ -162,6 +159,9 @@ ast_enum! {
 
         /// Expression with trailing semicolon.
         Semi(Term, Token![;]),
+
+        /// Empty statement
+        Empty(Token![;]),
     }
 }
 
@@ -493,7 +493,7 @@ ast_struct! {
 
 impl From<usize> for Index {
     fn from(index: usize) -> Index {
-        assert!(index < u32::max_value() as usize);
+        assert!(index < u32::MAX as usize);
         Index { index: index as u32, span: Span::call_site() }
     }
 }
@@ -555,8 +555,6 @@ ast_enum! {
 ast_struct! {
     /// A field-value pair in a struct literal.
     pub struct TermFieldValue {
-        /// Attributes tagged on the field.
-
         /// Name or index of the field.
         pub member: Member,
 
@@ -601,10 +599,7 @@ ast_struct! {
 #[cfg(feature = "full")]
 pub(crate) fn requires_terminator(expr: &Term) -> bool {
     // see https://github.com/rust-lang/rust/blob/2679c38fc/src/librustc_ast/util/classify.rs#L7-L25
-    match *expr {
-        Term::Block(..) | Term::If(..) | Term::Match(..) => false,
-        _ => true,
-    }
+    !matches!(*expr, Term::Block(..) | Term::If(..) | Term::Match(..))
 }
 
 #[cfg(feature = "parsing")]
@@ -678,7 +673,7 @@ pub(crate) mod parsing {
             let mut stmts = Vec::new();
             loop {
                 while let Some(semi) = input.parse::<Option<Token![;]>>()? {
-                    stmts.push(TermStmt::Semi(Term::Verbatim(TokenStream::new()), semi));
+                    stmts.push(TermStmt::Empty(semi));
                 }
                 if input.is_empty() {
                     break;
@@ -960,7 +955,7 @@ pub(crate) mod parsing {
                 .fork()
                 .parse::<BinOp>()
                 .ok()
-                .map_or(false, |op| Precedence::of(&op) >= base)
+                .is_some_and(|op| Precedence::of(&op) >= base)
                 && !(input.peek(Token![==]) && (input.peek3(Token![>]) || input.peek3(Token![=])))
             {
                 let op: BinOp = input.parse()?;
@@ -1321,7 +1316,7 @@ pub(crate) mod parsing {
         }
     }
 
-    fn term_group<'a>(input: ParseStream) -> Result<TermGroup> {
+    fn term_group(input: ParseStream) -> Result<TermGroup> {
         input.parse_any_delimiter().and_then(|(delim, span, content)| {
             assert_eq!(delim, Delimiter::None);
             Ok(TermGroup { group_token: token::Group(span.join()), expr: content.parse()? })
@@ -1796,6 +1791,7 @@ pub(crate) mod printing {
                     semi.to_tokens(tokens);
                 }
                 TermStmt::Item(i) => i.to_tokens(tokens),
+                TermStmt::Empty(semi) => semi.to_tokens(tokens),
             }
         }
     }

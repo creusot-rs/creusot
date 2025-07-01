@@ -414,8 +414,10 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                     UpvarCapture::ByRef(BorrowKind::Immutable) => proj.shr_deref(),
                 };
                 let hir_id = match cap.place.base {
-                    PlaceBase::Rvalue => todo!(),
-                    PlaceBase::StaticItem => todo!(),
+                    PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
+                        cap.var_ident.span,
+                        format!("Unexpected place in closure capture: {:?}", cap.place.base),
+                    ),
                     PlaceBase::Local(hir_id) => hir_id,
                     PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
                 };
@@ -446,8 +448,10 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                     }
                 };
                 let hir_id = match cap.place.base {
-                    PlaceBase::Rvalue => todo!(),
-                    PlaceBase::StaticItem => todo!(),
+                    PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
+                        cap.var_ident.span,
+                        format!("Unexpected place in closure capture: {:?}", cap.place.base),
+                    ),
                     PlaceBase::Local(hir_id) => hir_id,
                     PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
                 };
@@ -481,8 +485,10 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                     }
                 };
                 let hir_id = match cap.place.base {
-                    PlaceBase::Rvalue => todo!(),
-                    PlaceBase::StaticItem => todo!(),
+                    PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
+                        cap.var_ident.span,
+                        format!("Unexpected place in closure capture: {:?}", cap.place.base),
+                    ),
                     PlaceBase::Local(hir_id) => hir_id,
                     PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
                 };
