@@ -1,6 +1,7 @@
 module M_resolve_uninit__maybe_uninit [#"resolve_uninit.rs" 5 0 5 51]
   let%span sresolve_uninit = "resolve_uninit.rs" 5 41 5 42
   let%span sresolve_uninit'0 = "resolve_uninit.rs" 5 50 5 51
+  let%span sresolve_uninit'1 = "resolve_uninit.rs" 1 0 139 4
   
   use creusot.prelude.Any
   
@@ -8,13 +9,14 @@ module M_resolve_uninit__maybe_uninit [#"resolve_uninit.rs" 5 0 5 51]
   
   predicate precondition (self: ()) (args: ())
   
-  axiom precondition_fndef: forall args: () [precondition () args]. (let () = args in true)  -> precondition () args
+  axiom precondition_fndef: [%#sresolve_uninit'1] forall args: () [precondition () args]. (let () = args in true)
+   -> precondition () args
   
   predicate inv (_0: t_T)
   
   predicate postcondition_once (self: ()) (args: ()) (result: t_T)
   
-  axiom postcondition_fndef: forall args: (), res: t_T [postcondition_once () args res]. postcondition_once () args res
+  axiom postcondition_fndef: [%#sresolve_uninit'1] forall args: (), res: t_T [postcondition_once () args res]. postcondition_once () args res
    -> (let () = args in inv res)
   
   let rec default (return'  (x:t_T))= {[@expl:default requires] precondition () ()}
