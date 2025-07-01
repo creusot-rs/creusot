@@ -501,7 +501,7 @@ pub(crate) fn binop_to_binop(op: BinOp) -> WBinOp {
         BinOp::BitXor => WBinOp::BitXor,
         BinOp::Shl => WBinOp::Shl,
         BinOp::Shr => WBinOp::Shr,
-        BinOp::Div => todo!("Refactor binop_to_binop to support Div"),
-        BinOp::Rem => todo!("Refactor binop_to_binop to support Rem"),
+        BinOp::Div => WBinOp::Div,
+        BinOp::Rem => WBinOp::Mod,
     }
 }
