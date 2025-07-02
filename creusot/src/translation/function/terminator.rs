@@ -1,9 +1,7 @@
 use super::BodyTranslator;
 use crate::{
-    analysis::{NotFinalPlaces, resolve::HasMoveDataExt},
     contracts_items::{is_box_new, is_snap_from_fn},
-    ctx::TranslationCtx,
-    extended_location::ExtendedLocation,
+    ctx::{HasTyCtxt as _, TranslationCtx},
     lints::contractless_external_function::{
         CONTRACTLESS_EXTERNAL_FUNCTION, ContractlessExternalFunction,
     },
@@ -18,16 +16,11 @@ use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     mir::{
-        self, AssertKind, BasicBlockData, Local, Location, Operand, Place, Rvalue, SourceInfo,
+        self, AssertKind, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
         StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
-    ty::{self, GenericArgKind, GenericArgsRef, Ty, TyKind, TypingEnv, TypingMode},
-};
-use rustc_mir_dataflow::{
-    ResultsCursor,
-    move_paths::{HasMoveData, LookupResult},
-    on_all_children_bits,
+    ty::{GenericArgKind, GenericArgsRef, Ty, TyKind, TypingEnv, TypingMode},
 };
 use rustc_span::Span;
 use rustc_trait_selection::error_reporting::InferCtxtErrorExt;
@@ -40,21 +33,11 @@ use std::collections::{HashMap, HashSet};
 // patterns in match expressions.
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
-    pub fn translate_terminator(
-        &mut self,
-        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
-        terminator: &mir::Terminator<'tcx>,
-        location: Location,
-    ) {
+    pub fn translate_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: Location) {
         let span = terminator.source_info.span;
-        self.activate_two_phase(not_final_borrows, location, span);
-        let mut resolved_during = self
-            .resolver
-            .as_mut()
-            .map(|r| r.resolved_places_during(ExtendedLocation::End(location)));
-        let term;
-        match &terminator.kind {
-            Goto { target } => term = Terminator::Goto(*target),
+        self.activate_two_phase(location, span);
+        let term = match &terminator.kind {
+            Goto { target } => Terminator::Goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let real_discr = discriminator_for_switch(&self.body.basic_blocks[location.block])
                     .map(Operand::Move)
@@ -64,50 +47,22 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     .translate_operand(&real_discr)
                     .unwrap_or_else(|err| err.crash(self.ctx, terminator.source_info.span));
                 let ty = real_discr.ty(self.body, self.tcx());
-                let switch =
-                    make_switch(self.ctx, terminator.source_info, ty, targets, discriminant);
-                term = switch;
+                make_switch(self.ctx, terminator.source_info, ty, targets, discriminant)
             }
-            Return => {
-                if let Some(resolver) = &mut self.resolver {
-                    let (mut need, resolved) =
-                        resolver.need_resolve_resolved_places_at(ExtendedLocation::Start(location));
-                    // do not resolve return local
-                    for mp in need.clone().iter() {
-                        if self.move_data().base_local(mp) == Local::from_usize(0) {
-                            need.remove(mp);
-                        }
-                    }
-                    if let Err(err) = self.resolve_places(need, &resolved) {
-                        err.crash(self.ctx, span)
-                    }
-                    resolved_during = None;
-                }
-
-                term = Terminator::Return
-            }
-            Unreachable => term = Terminator::Abort(terminator.source_info.span),
+            Return => Terminator::Return,
+            Unreachable => Terminator::Abort(terminator.source_info.span),
             &Call { ref func, ref args, destination, mut target, fn_span, .. } => {
-                let Some((fun_def_id, subst)) = func_defid(func) else {
-                    self.ctx.fatal_error(fn_span, "unsupported function call type").emit()
+                let Some((fun_def_id, subst)) = crate::analysis::resolve::func_defid(func) else {
+                    self.fatal_error(fn_span, "unsupported function call type").emit()
                 };
-                if let Some((need, resolved)) = resolved_during.take() {
-                    if let Err(err) =
-                        self.resolve_before_assignment(need, &resolved, location, destination)
-                    {
-                        err.crash(self.ctx, span)
-                    }
-                }
-
                 if is_snap_from_fn(self.ctx.tcx, fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else {
                         unreachable!()
                     };
                     let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
-                    let mut assertion = self.snapshots.shift_remove(def_id).unwrap();
+                    let mut assertion = self.snapshots.remove(def_id).unwrap();
                     let places = self.tree.visible_places(terminator.source_info.scope);
                     assertion.subst(inline_pearlite_subst(self.ctx, &places));
-                    self.check_use_in_logic(&assertion, location);
                     self.emit_snapshot_assign(destination, assertion, span);
                 } else {
                     let func_args: Box<[_]> = args
@@ -172,17 +127,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 if let Some(bb) = target {
-                    if self.resolver.is_some() {
-                        if let Err(err) = self
-                            .resolve_after_assignment(target.unwrap().start_location(), destination)
-                        {
-                            err.crash(self.ctx, span)
-                        }
-                    }
-
-                    term = Terminator::Goto(bb);
+                    Terminator::Goto(bb)
                 } else {
-                    term = Terminator::Abort(terminator.source_info.span);
+                    Terminator::Abort(terminator.source_info.span)
                 }
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
@@ -213,37 +160,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     kind: fmir::StatementKind::Assertion { cond, msg, trusted: false },
                     span,
                 });
-                term = Terminator::Goto(*target)
+                Terminator::Goto(*target)
             }
-            Drop { target, place, .. } => {
-                if self.resolver.is_some() {
-                    // place may need to be resolved since it may be frozen.
-                    if let LookupResult::Exact(mp) =
-                        self.move_data().rev_lookup.find(place.as_ref())
-                    {
-                        let (need_start, resolved) = self
-                            .resolver
-                            .as_mut()
-                            .unwrap()
-                            .need_resolve_resolved_places_at(ExtendedLocation::Start(location));
-                        let mut to_resolve = self.empty_bitset();
-                        on_all_children_bits(self.move_data(), mp, |mpi| {
-                            if need_start.contains(mpi) {
-                                to_resolve.insert(mpi);
-                            }
-                        });
-                        if let Err(err) = self.resolve_places(to_resolve, &resolved) {
-                            err.crash(self.ctx, span)
-                        }
-                    } else {
-                        // If the place we drop is not a move path, then the MaybeUninit analysis ignores it. So we do not miss a resolve.
-                    }
-                }
+            Drop { target, .. } => Terminator::Goto(*target),
 
-                term = Terminator::Goto(*target)
-            }
-
-            FalseUnwind { real_target, .. } => term = Terminator::Goto(*real_target),
+            FalseUnwind { real_target, .. } => Terminator::Goto(*real_target),
             FalseEdge { .. }
             | CoroutineDrop
             | UnwindResume
@@ -251,12 +172,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             | Yield { .. }
             | InlineAsm { .. }
             | TailCall { .. } => unreachable!("{:?}", terminator.kind),
-        }
-        if let Some((need, resolved)) = resolved_during {
-            if let Err(err) = self.resolve_places(need, &resolved) {
-                err.crash(self.ctx, span)
-            }
-        }
+        };
         self.emit_terminator(term)
     }
 
@@ -305,12 +221,6 @@ fn resolve_function<'tcx>(
     }
 
     res
-}
-
-// Try to extract a function defid from an operand
-fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    let fun_ty = op.constant()?.const_.ty();
-    if let ty::TyKind::FnDef(def_id, subst) = fun_ty.kind() { Some((*def_id, subst)) } else { None }
 }
 
 // Find the place being discriminated, if there is one

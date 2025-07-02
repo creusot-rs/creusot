@@ -4,7 +4,15 @@ use std::{
 };
 
 use crate::{
-    analysis::{Borrows, MaybeLiveExceptDrop, NotFinalPlaces}, contracts_items::{is_snapshot_closure, is_spec}, ctx::{body_with_facts, TranslationCtx}, gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures}, translation::{fmir::{self, BorrowKind}, pearlite::Term}
+    analysis::{Borrows, MaybeLiveExceptDrop, NotFinalPlaces},
+    contracts_items::{is_snapshot_closure, is_spec},
+    ctx::{HasTyCtxt, TranslationCtx, body_with_facts},
+    gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
+    naming::variable_name,
+    translation::{
+        fmir::{self, BorrowKind, LocalDecl, LocalDecls},
+        pearlite::{Ident, Term},
+    },
 };
 use either::Either;
 use rustc_borrowck::consumers::{
@@ -29,6 +37,7 @@ use rustc_mir_dataflow::{
     on_all_children_bits,
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
+use rustc_span::Symbol;
 use rustc_target::abi::{FieldIdx, VariantIdx};
 
 use crate::extended_location::ExtendedLocation;
@@ -382,6 +391,36 @@ pub struct BodyData<'tcx> {
     two_phase_activated: HashMap<Orphan<Location>, Vec<(Place<'tcx>, Place<'tcx>, BorrowKind)>>,
 }
 
+impl<'tcx> BodyData<'tcx> {
+    pub fn new() -> Self {
+        BodyData {
+            resolve_for_stmt: HashMap::new(),
+            resolve_between_blocks: HashMap::new(),
+            two_phase_created: HashSet::new(),
+            two_phase_activated: HashMap::new(),
+            final_borrows: HashMap::new(),
+        }
+    }
+
+    pub(crate) fn is_final_at(&self, loc: Location) -> fmir::BorrowKind {
+        self.final_borrows
+            .get(&Orphan(loc))
+            .copied()
+            .map_or(fmir::BorrowKind::Mut, fmir::BorrowKind::Final)
+    }
+
+    pub(crate) fn is_two_phase_at(&self, loc: Location) -> bool {
+        self.two_phase_created.contains(&Orphan(loc))
+    }
+
+    pub(crate) fn two_phase_activated_at(
+        &self,
+        loc: Location,
+    ) -> &[(Place<'tcx>, Place<'tcx>, BorrowKind)] {
+        self.two_phase_activated.get(&Orphan(loc)).map_or(&[], |v| &v)
+    }
+}
+
 // A newtype to carry orphan trait impls.
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 struct Orphan<T>(T);
@@ -401,47 +440,41 @@ impl<E: Encoder> Encodable<E> for Orphan<Location> {
     }
 }
 
-impl<'tcx> BodyData<'tcx> {
-    pub fn new() -> Self {
-        BodyData {
-            resolve_for_stmt: HashMap::new(),
-            resolve_between_blocks: HashMap::new(),
-            two_phase_created: HashSet::new(),
-            two_phase_activated: HashMap::new(),
-            final_borrows: HashMap::new(),
-        }
-    }
-}
-
-pub struct Assertions<'tcx> {
-    invariants: HashMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
+pub struct BodySpecs<'tcx> {
+    pub invariants: HashMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
     /// Invariants to translate as assertions.
-    invariant_assertions: HashMap<DefId, (Term<'tcx>, String)>,
+    pub invariant_assertions: HashMap<DefId, (Term<'tcx>, String)>,
     /// Map of the `proof_assert!` blocks to their translated version.
-    assertions: HashMap<DefId, Term<'tcx>>,
+    pub assertions: HashMap<DefId, Term<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
-    snapshots: HashMap<DefId, Term<'tcx>>,
+    pub snapshots: HashMap<DefId, Term<'tcx>>,
+    pub locals: HashMap<Local, (rustc_span::Symbol, Ident)>,
+    pub vars: LocalDecls<'tcx>,
+    pub erased_locals: MixedBitSet<Local>,
 }
 
-impl<'tcx> Assertions<'tcx> {
+impl<'tcx> BodySpecs<'tcx> {
     fn empty() -> Self {
-        Assertions {
+        BodySpecs {
             invariants: HashMap::new(),
             invariant_assertions: HashMap::new(),
             assertions: HashMap::new(),
             snapshots: HashMap::new(),
+            // erased_locals, locals and vars won't be used if there are no specs
+            locals: HashMap::new(),
+            vars: LocalDecls::new(),
+            erased_locals: MixedBitSet::new_empty(0),
         }
     }
 }
 
 pub struct PreAnalysis<'a, 'tcx> {
     resolver: Resolver<'a, 'tcx>,
-    erased_locals: MixedBitSet<Local>,
     typing_env: TypingEnv<'tcx>,
     /// Places to resolve before and after the current statement
     current_resolved: Vec<Place<'tcx>>,
     not_final_places: ResultsCursor<'a, 'tcx, NotFinalPlaces<'tcx>>,
-    assertions: &'a Assertions<'tcx>,
+    body_specs: &'a BodySpecs<'tcx>,
     data: BodyData<'tcx>,
 }
 
@@ -461,17 +494,9 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
         body: &'a BodyWithBorrowckFacts<'tcx>,
-        assertions: &'a Assertions<'tcx>,
+        assertions: &'a BodySpecs<'tcx>,
         move_data: &'a MoveData<'tcx>,
     ) -> Self {
-        let mut erased_locals = MixedBitSet::new_empty(body.body.local_decls.len());
-        body.body.local_decls.iter_enumerated().for_each(|(local, decl)| {
-            if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if is_spec(tcx, *def_id) || is_snapshot_closure(tcx, *def_id) {
-                    erased_locals.insert(local);
-                }
-            }
-        });
         Self {
             resolver: Resolver::new(
                 tcx,
@@ -481,13 +506,12 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
                 move_data,
             ),
             typing_env: local_typing_env(tcx, body.body.source.def_id()),
-            erased_locals,
             current_resolved: Default::default(),
             not_final_places: NotFinalPlaces::new(tcx, &body.body)
                 .iterate_to_fixpoint(tcx, &body.body, None)
                 .into_results_cursor(&body.body),
             data: BodyData::new(),
-            assertions,
+            body_specs: assertions,
         }
     }
 
@@ -575,6 +599,9 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
         self.current_resolved.push(pl);
     }
 
+    /// We try to coalesce resolutions for places, if possible
+    /// TODO: We may actually want to do the opposite: resolve as deeply as possible,
+    /// but taking care of type opacity and recursive types.
     fn resolve_places(
         &mut self,
         to_resolve: MixedBitSet<MovePathIndex>,
@@ -607,14 +634,14 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
             });
 
             let pl = self.move_data().move_paths[mp].place;
-            if !self.erased_locals.contains(pl.local) {
+            if !self.body_specs.erased_locals.contains(pl.local) {
                 v.push(pl);
             }
         }
 
         for mp in to_resolve_partial.iter() {
             let pl = self.move_data().move_paths[mp].place;
-            if self.erased_locals.contains(pl.local) {
+            if self.body_specs.erased_locals.contains(pl.local) {
                 continue;
             }
             let ty = pl.ty(&self.body().local_decls, self.tcx());
@@ -803,6 +830,9 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
             if bbd.is_cleanup {
                 continue;
             }
+            for (_, term) in self.body_specs.invariants.get(&bb).into_iter().flatten() {
+                self.check_use_in_logic(&term, bb.start_location());
+            }
             self.resolve_places_between_blocks(bb);
             if bb == START_BLOCK {
                 let (_, resolved) = self
@@ -869,6 +899,20 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
                     self.check_final(pl, loc);
                 }
             }
+            Rvalue::Aggregate(box kind, ops) => match kind {
+                mir::AggregateKind::Closure(def_id, subst) => {
+                    let spec = self
+                        .body_specs
+                        .invariant_assertions
+                        .get(def_id)
+                        .map(|(term, _)| term)
+                        .or_else(|| self.body_specs.assertions.get(def_id));
+                    spec.into_iter().for_each(|term| {
+                        self.check_use_in_logic(term, loc);
+                    })
+                }
+                _ => {}
+            },
             _ => {}
         }
     }
@@ -891,6 +935,19 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
                 let (need, resolved) =
                     self.resolver.resolved_places_during(ExtendedLocation::End(loc));
                 self.resolve_before_assignment(need, &resolved, loc, destination);
+
+                // If this is a snapshot, check that it doesn't use uninitialized or borrowed variables
+                let Some((fun_def_id, subst)) = func_defid(func) else {
+                    self.fatal_error(fn_span, "unsupported function call type").emit()
+                };
+                if let ty::GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() {
+                    if let TyKind::Closure(def_id, _) = ty.kind() {
+                        self.body_specs.snapshots.get(def_id).into_iter().for_each(|term| {
+                            self.check_use_in_logic(term, loc);
+                        });
+                    }
+                }
+
                 self.store_resolved_before(loc);
                 if let Some(_) = target {
                     self.resolve_after_assignment(target.unwrap().start_location(), destination)
@@ -976,27 +1033,125 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
     fn body(&self) -> &Body<'tcx> {
         self.resolver.body
     }
+
+    fn check_use_in_logic(&mut self, term: &Term<'tcx>, location: Location) {
+        // TODO: We should refine this check to consider places and not only locals
+        let resolver = &mut self.resolver;
+        let mut bad_vars = resolver.frozen_places_before(location);
+        let uninit = resolver.uninit_places_before(location);
+        bad_vars.union(&uninit);
+        let free_vars = term.free_vars();
+        for f in bad_vars.iter() {
+            if let Some((sym, ident)) = self.move_data().move_paths[f]
+                .place
+                .as_local()
+                .and_then(|l| self.body_specs.locals.get(&l))
+                && free_vars.contains(ident)
+            {
+                let msg = format!("Use of borrowed or uninitialized variable {}", sym.as_str());
+                self.tcx().crash_and_error(term.span, &msg);
+            }
+        }
+    }
+}
+
+impl<'a, 'tcx> HasTyCtxt<'tcx> for PreAnalysis<'a, 'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.resolver.tcx
+    }
+}
+
+// Try to extract a function defid from an operand
+pub(crate) fn func_defid<'tcx>(
+    op: &mir::Operand<'tcx>,
+) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
+    let fun_ty = op.constant()?.const_.ty();
+    if let ty::TyKind::FnDef(def_id, subst) = fun_ty.kind() { Some((*def_id, subst)) } else { None }
 }
 
 pub(crate) fn resolve_analysis(tcx: TyCtxt, def_id: LocalDefId) -> BodyData {
     let body = body_with_facts(tcx, def_id);
-    resolve_analysis_for(tcx, &body, &Assertions::empty())
+    resolve_analysis_for(tcx, &body, &BodySpecs::empty())
 }
 
-pub(crate) fn resolve_analysis_for<'tcx>(tcx: TyCtxt<'tcx>, body: &BodyWithBorrowckFacts<'tcx>, assertions: &Assertions<'tcx>) -> BodyData<'tcx> {
+pub(crate) fn resolve_analysis_for<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &BodyWithBorrowckFacts<'tcx>,
+    assertions: &BodySpecs<'tcx>,
+) -> BodyData<'tcx> {
     let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
     let mut resolve_analysis = PreAnalysis::new(tcx, &body, assertions, &move_data);
     resolve_analysis.visit();
     resolve_analysis.data
 }
 
-fn get_assertions<'tcx>(ctx: &TranslationCtx<'tcx>, body: &Body<'tcx>) -> Assertions<'tcx> {
+pub(crate) fn get_assertions<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    body: &Body<'tcx>,
+) -> BodySpecs<'tcx> {
+    let mut erased_locals = MixedBitSet::new_empty(body.local_decls.len());
+    body.local_decls.iter_enumerated().for_each(|(local, decl)| {
+        if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
+            if is_spec(ctx.tcx, *def_id) || is_snapshot_closure(ctx.tcx, *def_id) {
+                erased_locals.insert(local);
+            }
+        }
+    });
+    let (vars, locals) = translate_vars(ctx, body, &erased_locals);
     let invariants = corrected_invariant_names_and_locations(ctx, body);
     let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, body);
-    Assertions {
+    BodySpecs {
         invariants: invariants.loop_headers,
         invariant_assertions: invariants.assertions,
         assertions,
         snapshots,
+        vars,
+        locals,
+        erased_locals,
     }
+}
+
+/// Find a fmir name for each variable in `body`.
+///
+/// This will skip mir variables that are in `erased_locals`.
+///
+/// # Returns
+/// - The mapping of mir locals to the symbol used in fmir.
+/// - Each (unique) fmir symbol is then mapped to the [`LocalDecl`] information of the
+///   mir local (the `vars` variable).
+fn translate_vars<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    body: &Body<'tcx>,
+    erased_locals: &MixedBitSet<Local>,
+) -> (LocalDecls<'tcx>, HashMap<Local, (rustc_span::Symbol, Ident)>) {
+    let mut vars = LocalDecls::with_capacity(body.local_decls.len());
+    let mut locals = HashMap::new();
+
+    use mir::VarDebugInfoContents::Place;
+
+    for (loc, d) in body.local_decls.iter_enumerated() {
+        if erased_locals.contains(loc) {
+            continue;
+        }
+        let name = if !d.is_user_variable() {
+            format!("_{}", loc.index())
+        } else {
+            let x = body.var_debug_info.iter().find(|var_info| match var_info.value {
+                Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
+                _ => false,
+            });
+            let debug_info = x.expect("expected user variable to have name");
+            variable_name(debug_info.name.as_str())
+        };
+        let ident = ctx.fresh(&name);
+        locals.insert(loc, (Symbol::intern(&name), ident));
+        let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
+        vars.insert(ident, LocalDecl {
+            span: d.source_info.span,
+            ty: d.ty,
+            temp: !d.is_user_variable(),
+            arg: is_arg,
+        });
+    }
+    (vars, locals)
 }

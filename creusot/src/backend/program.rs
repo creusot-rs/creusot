@@ -24,7 +24,7 @@ use crate::{
         },
         wto::{Component, weak_topological_order},
     },
-    ctx::{BodyId, Dependencies},
+    ctx::{BodyId, Dependencies, HasTyCtxt as _},
     naming::name,
     translated_item::FileModule,
     translation::{

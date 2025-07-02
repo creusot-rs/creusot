@@ -1,16 +1,14 @@
 use super::{BodyTranslator, TranslationError};
 use crate::{
-    analysis::NotFinalPlaces,
     contracts_items::{
         is_assertion, is_before_loop, is_invariant, is_snapshot_closure, is_spec, is_variant,
     },
-    extended_location::ExtendedLocation,
+    ctx::HasTyCtxt as _,
     translation::{
         constant::from_ty_const,
         fmir::{self, Operand, RValue, inline_pearlite_subst},
     },
 };
-use rustc_borrowck::consumers::TwoPhaseActivation;
 use rustc_middle::{
     mir::{
         BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
@@ -18,31 +16,19 @@ use rustc_middle::{
     },
     ty::{TyKind, adjustment::PointerCoercion},
 };
-use rustc_mir_dataflow::ResultsCursor;
 use rustc_span::Span;
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
     pub(super) fn translate_statement(
         &mut self,
-        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
         statement: &'_ Statement<'tcx>,
         loc: Location,
     ) -> Result<(), TranslationError> {
         let si = statement.source_info;
-        self.activate_two_phase(not_final_borrows, loc, si.span);
+        self.activate_two_phase(loc, si.span);
         match statement.kind {
             StatementKind::Assign(box (pl, ref rv)) => {
-                if let Some(resolver) = &mut self.resolver {
-                    let (need, resolved) =
-                        resolver.resolved_places_during(ExtendedLocation::Mid(loc));
-                    self.resolve_before_assignment(need, &resolved, loc, pl)?;
-                }
-
-                self.translate_assign(not_final_borrows, si, &pl, rv, loc)?;
-
-                if self.resolver.is_some() {
-                    self.resolve_after_assignment(loc.successor_within_block(), pl)?;
-                }
+                self.translate_assign(si, &pl, rv, loc)?;
             }
 
             // All these instructions are no-ops in the dynamic semantics, but may trigger resolution
@@ -55,31 +41,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             | StatementKind::Coverage(_)
             | StatementKind::PlaceMention(_)
             | StatementKind::ConstEvalCounter
-            | StatementKind::BackwardIncompatibleDropHint { .. } => {
-                if let Some(resolver) = &mut self.resolver {
-                    let (mut need, resolved) =
-                        resolver.resolved_places_during(ExtendedLocation::End(loc));
-                    if let StatementKind::StorageDead(local) | StatementKind::StorageLive(local) =
-                        statement.kind
-                    {
-                        // These instructions signals that a local goes out of scope. We resolve any needed
-                        // move path it contains. These are typically frozen places.
-                        let (need_start, _) =
-                            resolver.need_resolve_resolved_places_at(ExtendedLocation::Start(loc));
-                        for mp in need_start.clone().iter() {
-                            if self.move_data.base_local(mp) == local {
-                                need.insert(mp);
-                            }
-                        }
-                    }
-                    self.resolve_places(need, &resolved)?;
-                }
+            | StatementKind::BackwardIncompatibleDropHint { .. } => {}
+            StatementKind::SetDiscriminant { .. } => {
+                self.crash_and_error(statement.source_info.span, "SetDiscriminant is not supported")
             }
-            StatementKind::SetDiscriminant { .. } => self
-                .ctx
-                .crash_and_error(statement.source_info.span, "SetDiscriminant is not supported"),
             StatementKind::Intrinsic(_) => {
-                self.ctx.crash_and_error(statement.source_info.span, "intrinsics are not supported")
+                self.crash_and_error(statement.source_info.span, "intrinsics are not supported")
             }
             StatementKind::Deinit(_) => unreachable!("Deinit unsupported"),
         }
@@ -88,7 +55,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     fn translate_assign(
         &mut self,
-        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
         si: SourceInfo,
         place: &'_ Place<'tcx>,
         rvalue: &'_ Rvalue<'tcx>,
@@ -119,11 +85,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     if self.erased_locals.contains(pl.local) || self.is_two_phase(loc) {
                         return Ok(());
                     }
-                    let is_final = NotFinalPlaces::is_final_at(
-                        not_final_borrows,
-                        pl,
-                        loc.successor_within_block(),
-                    );
+                    let is_final = self.is_final_at(loc);
                     self.emit_borrow(place, pl, is_final, span);
                     return Ok(());
                 }
@@ -148,12 +110,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         if is_variant(self.tcx(), *def_id) || is_before_loop(self.tcx(), *def_id) {
                             return Ok(());
                         } else if is_invariant(self.tcx(), *def_id) {
-                            match self.invariant_assertions.shift_remove(def_id) {
+                            match self.invariant_assertions.remove(def_id) {
                                 None => return Ok(()),
                                 Some((mut cond, msg)) => {
                                     let places = self.tree.visible_places(si.scope);
                                     cond.subst(inline_pearlite_subst(self.ctx, &places));
-                                    self.check_use_in_logic(&cond, loc);
                                     self.emit_statement(fmir::Statement {
                                         kind: fmir::StatementKind::Assertion {
                                             cond,
@@ -168,11 +129,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         } else if is_assertion(self.tcx(), *def_id) {
                             let mut assertion = self
                                 .assertions
-                                .shift_remove(def_id)
+                                .remove(def_id)
                                 .expect("Could not find body of assertion");
                             let places = self.tree.visible_places(si.scope);
                             assertion.subst(inline_pearlite_subst(self.ctx, &places));
-                            self.check_use_in_logic(&assertion, loc);
                             self.emit_statement(fmir::Statement {
                                 kind: fmir::StatementKind::Assertion {
                                     cond: assertion,
@@ -189,7 +149,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         }
                     }
                     Array(_) => RValue::Array(fields),
-                    _ => self.ctx.crash_and_error(
+                    _ => self.crash_and_error(
                         si.span,
                         &format!("the rvalue {:?} is not currently supported", kind),
                     ),
@@ -261,24 +221,19 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     }
 
     fn is_two_phase(&self, loc: Location) -> bool {
-        let Some(borrows) = &self.borrows else { return false };
-        borrows.location_map().get(&loc).iter().any(|borrow| {
-            matches!(borrow.activation_location(), TwoPhaseActivation::ActivatedAt(_))
-        })
+        self.body_data.is_two_phase_at(loc)
     }
 
-    pub(super) fn activate_two_phase(
-        &mut self,
-        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
-        loc: Location,
-        span: Span,
-    ) {
-        let Some(borrows) = self.borrows else { return };
-        for i in borrows.activation_map().get(&loc).iter().flat_map(|is| is.iter()) {
-            let borrow = &borrows[*i];
-            let borrowed = borrow.borrowed_place();
-            let is_final = NotFinalPlaces::is_final_at(not_final_borrows, &borrowed, loc);
-            self.emit_borrow(&borrow.assigned_place(), &borrowed, is_final, span)
+    pub(super) fn activate_two_phase(&mut self, loc: Location, span: Span) {
+        // TODO: avoid this clone by separating the mutable and immutable parts of self
+        let activations =
+            self.body_data.two_phase_activated_at(loc).into_iter().cloned().collect::<Box<[_]>>();
+        for (lhs, rhs, is_final) in activations {
+            self.emit_borrow(&lhs, &rhs, is_final, span)
         }
+    }
+
+    fn is_final_at(&self, loc: Location) -> fmir::BorrowKind {
+        self.body_data.is_final_at(loc)
     }
 }

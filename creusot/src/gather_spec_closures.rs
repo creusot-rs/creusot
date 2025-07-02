@@ -4,7 +4,7 @@ use crate::{
     contracts_items::{
         get_invariant_expl, is_assertion, is_before_loop, is_loop_variant, is_snapshot_closure,
     },
-    ctx::TranslationCtx,
+    ctx::{HasTyCtxt, TranslationCtx},
     translation::pearlite::Term,
 };
 use rustc_hir::def_id::DefId;
@@ -133,7 +133,7 @@ impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
             let kind = if let Some(expl) = get_invariant_expl(self.ctx.tcx, *id) {
                 LoopSpecKind::Invariant(expl)
             } else if is_loop_variant(self.ctx.tcx, *id) {
-                self.ctx.warn(self.ctx.def_span(id), "Loop variants are currently unsupported.");
+                self.warn(self.ctx.def_span(id), "Loop variants are currently unsupported.");
                 LoopSpecKind::Variant
             } else {
                 if is_before_loop(self.ctx.tcx, *id) {
@@ -162,6 +162,12 @@ impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
             }
         }
         self.super_rvalue(rvalue, loc);
+    }
+}
+
+impl<'a, 'tcx> HasTyCtxt<'tcx> for InvariantsVisitor<'a, 'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.ctx.tcx
     }
 }
 

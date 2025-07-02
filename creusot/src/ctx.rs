@@ -128,6 +128,34 @@ impl ItemType {
     }
 }
 
+pub trait HasTyCtxt<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx>;
+
+    fn crash_and_error(&self, span: Span, msg: &str) -> ! {
+        // TODO: try to add a code back in
+        self.tcx().dcx().span_fatal(span, msg.to_string())
+    }
+
+    fn fatal_error(&self, span: Span, msg: &str) -> Diag<'tcx, FatalAbort> {
+        // TODO: try to add a code back in
+        self.tcx().dcx().struct_span_fatal(span, msg.to_string())
+    }
+
+    fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
+        self.tcx().dcx().struct_span_err(span, msg.to_string())
+    }
+
+    fn warn(&self, span: Span, msg: impl Into<String>) {
+        self.tcx().dcx().span_warn(span, msg.into())
+    }
+}
+
+impl<'tcx> HasTyCtxt<'tcx> for TyCtxt<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        *self
+    }
+}
+
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
@@ -321,24 +349,6 @@ impl<'tcx> TranslationCtx<'tcx> {
         Some((get_resolve_function(self.tcx), substs))
     }
 
-    pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
-        // TODO: try to add a code back in
-        self.tcx.dcx().span_fatal(span, msg.to_string())
-    }
-
-    pub(crate) fn fatal_error(&self, span: Span, msg: &str) -> Diag<'tcx, FatalAbort> {
-        // TODO: try to add a code back in
-        self.tcx.dcx().struct_span_fatal(span, msg.to_string())
-    }
-
-    pub(crate) fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
-        self.tcx.dcx().struct_span_err(span, msg.to_string())
-    }
-
-    pub(crate) fn warn(&self, span: Span, msg: impl Into<String>) {
-        self.tcx.dcx().span_warn(span, msg.into())
-    }
-
     queryish!(laws, DefId, [DefId], laws_inner);
 
     // TODO Make private
@@ -489,10 +499,14 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// We avoid doing this upfront in a separate pass by doing this lazily:
     /// either when the const is used in another function being translated,
     /// or during the main loop in `after_analysis`.
-    pub(crate) fn get_body_data_local(&self, def_id: LocalDefId) -> &(mir::Body<'tcx>, BodyData<'tcx>) {
+    pub(crate) fn get_body_data_local(
+        &self,
+        def_id: LocalDefId,
+    ) -> &(mir::Body<'tcx>, BodyData<'tcx>) {
         self.body_data.insert(def_id, |_| {
             let body = body_with_facts(self.tcx, def_id);
-            let data = resolve::resolve_analysis_for(self.tcx, &body);
+            let specs = resolve::get_assertions(self, &body.body);
+            let data = resolve::resolve_analysis_for(self.tcx, &body, &specs);
             Box::new((body.body, data))
         })
     }
@@ -547,6 +561,12 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn fresh(&self, name: impl AsRef<str>) -> Ident {
         Ident::fresh(self.crate_name(), name)
+    }
+}
+
+impl<'tcx> HasTyCtxt<'tcx> for TranslationCtx<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.tcx
     }
 }
 

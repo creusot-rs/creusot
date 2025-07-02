@@ -11,7 +11,7 @@ use crate::{
     analysis::resolve,
     backend::Why3Generator,
     contracts_items::{AreContractsLoaded, are_contracts_loaded, is_no_translate},
-    ctx,
+    ctx::{self, HasTyCtxt as _},
     metadata::{self, BinaryMetadata, dump_exports},
     options::{Options, Output},
     translated_item::FileModule,
