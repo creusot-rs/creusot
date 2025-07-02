@@ -3,15 +3,15 @@ use crate::{logic::Mapping, *};
 /// A (possibly infinite) set type.
 #[trusted]
 #[cfg_attr(creusot, creusot::builtins = "set.Set.set")]
-pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
+pub struct Set<T>(std::marker::PhantomData<T>);
 
-impl<T: ?Sized> Set<T> {
+impl<T> Set<T> {
     /// The empty set.
     #[cfg(creusot)]
     #[trusted]
     #[creusot::builtins = "set.Set.empty"]
     pub const EMPTY: Self = { Set(std::marker::PhantomData) };
-    
+
     /// Build a set from a predicate, given as a `Mapping`.
     #[trusted]
     #[logic]

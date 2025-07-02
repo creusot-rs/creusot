@@ -1,4 +1,7 @@
-use crate::{logic::ra::{update::Update, RA}, *};
+use crate::{
+    logic::ra::{RA, update::Update},
+    *,
+};
 
 /// The 'exclusive' Resource Algebra.
 ///
