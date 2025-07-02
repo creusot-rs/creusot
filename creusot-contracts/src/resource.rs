@@ -16,7 +16,7 @@ mod m {
     /// # Example
     ///
     /// ```rust
-    /// use creusot_contracts::{*, resource::Resource, logic::ra::Ag};
+    /// use creusot_contracts::{*, resource::Resource, logic::ra::agree::Ag};
     /// let mut res: Ghost<Resource<Ag<Int>>> = Resource::alloc(snapshot!(Ag(1)));
     ///
     /// ghost! {
