@@ -4,10 +4,7 @@ use std::{
 };
 
 use crate::{
-    analysis::{Borrows, MaybeLiveExceptDrop, NotFinalPlaces},
-    contracts_items::{is_snapshot_closure, is_spec},
-    ctx::body_with_facts,
-    translation::fmir::{self, BorrowKind},
+    analysis::{Borrows, MaybeLiveExceptDrop, NotFinalPlaces}, contracts_items::{is_snapshot_closure, is_spec}, ctx::{body_with_facts, TranslationCtx}, gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures}, translation::{fmir::{self, BorrowKind}, pearlite::Term}
 };
 use either::Either;
 use rustc_borrowck::consumers::{
@@ -416,6 +413,27 @@ impl<'tcx> BodyData<'tcx> {
     }
 }
 
+pub struct Assertions<'tcx> {
+    invariants: HashMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
+    /// Invariants to translate as assertions.
+    invariant_assertions: HashMap<DefId, (Term<'tcx>, String)>,
+    /// Map of the `proof_assert!` blocks to their translated version.
+    assertions: HashMap<DefId, Term<'tcx>>,
+    /// Map of the `snapshot!` blocks to their translated version.
+    snapshots: HashMap<DefId, Term<'tcx>>,
+}
+
+impl<'tcx> Assertions<'tcx> {
+    fn empty() -> Self {
+        Assertions {
+            invariants: HashMap::new(),
+            invariant_assertions: HashMap::new(),
+            assertions: HashMap::new(),
+            snapshots: HashMap::new(),
+        }
+    }
+}
+
 pub struct PreAnalysis<'a, 'tcx> {
     resolver: Resolver<'a, 'tcx>,
     erased_locals: MixedBitSet<Local>,
@@ -423,6 +441,7 @@ pub struct PreAnalysis<'a, 'tcx> {
     /// Places to resolve before and after the current statement
     current_resolved: Vec<Place<'tcx>>,
     not_final_places: ResultsCursor<'a, 'tcx, NotFinalPlaces<'tcx>>,
+    assertions: &'a Assertions<'tcx>,
     data: BodyData<'tcx>,
 }
 
@@ -442,6 +461,7 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
         body: &'a BodyWithBorrowckFacts<'tcx>,
+        assertions: &'a Assertions<'tcx>,
         move_data: &'a MoveData<'tcx>,
     ) -> Self {
         let mut erased_locals = MixedBitSet::new_empty(body.body.local_decls.len());
@@ -467,6 +487,7 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
                 .iterate_to_fixpoint(tcx, &body.body, None)
                 .into_results_cursor(&body.body),
             data: BodyData::new(),
+            assertions,
         }
     }
 
@@ -959,12 +980,23 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
 
 pub(crate) fn resolve_analysis(tcx: TyCtxt, def_id: LocalDefId) -> BodyData {
     let body = body_with_facts(tcx, def_id);
-    resolve_analysis_for(tcx, &body)
+    resolve_analysis_for(tcx, &body, &Assertions::empty())
 }
 
-pub(crate) fn resolve_analysis_for<'tcx>(tcx: TyCtxt<'tcx>, body: &BodyWithBorrowckFacts<'tcx>) -> BodyData<'tcx> {
+pub(crate) fn resolve_analysis_for<'tcx>(tcx: TyCtxt<'tcx>, body: &BodyWithBorrowckFacts<'tcx>, assertions: &Assertions<'tcx>) -> BodyData<'tcx> {
     let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
-    let mut resolve_analysis = PreAnalysis::new(tcx, &body, &move_data);
+    let mut resolve_analysis = PreAnalysis::new(tcx, &body, assertions, &move_data);
     resolve_analysis.visit();
     resolve_analysis.data
+}
+
+fn get_assertions<'tcx>(ctx: &TranslationCtx<'tcx>, body: &Body<'tcx>) -> Assertions<'tcx> {
+    let invariants = corrected_invariant_names_and_locations(ctx, body);
+    let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, body);
+    Assertions {
+        invariants: invariants.loop_headers,
+        invariant_assertions: invariants.assertions,
+        assertions,
+        snapshots,
+    }
 }
