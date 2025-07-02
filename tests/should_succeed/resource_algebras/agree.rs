@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::ra::Ag, resource::Resource, *};
+use creusot_contracts::{logic::ra::agree::Ag, resource::Resource, *};
 
 #[requires(x.id() == y.id())]
 #[ensures(x@ == y@)]

@@ -1,4 +1,4 @@
-use crate::{logic::ra::RA, *};
+use crate::{logic::ra::{update::Update, RA}, *};
 
 /// The 'exclusive' Resource Algebra.
 ///
@@ -51,4 +51,28 @@ impl<T> RA for Excl<T> {
     fn maximal_idemp(self) -> Option<Self> {
         None
     }
+}
+
+pub struct ExclUpdate<T>(pub Snapshot<T>);
+
+impl<T> Update<Excl<T>> for ExclUpdate<T> {
+    type Choice = ();
+
+    #[logic]
+    #[open]
+    fn premise(self, _: Excl<T>) -> bool {
+        true
+    }
+
+    #[logic]
+    #[open]
+    fn update(self, _: Excl<T>, _: ()) -> Excl<T> {
+        Excl(*self.0)
+    }
+
+    #[logic]
+    #[requires(self.premise(from))]
+    #[requires(from.op(frame) != None)]
+    #[ensures(self.update(from, result).op(frame) != None)]
+    fn frame_preserving(self, from: Excl<T>, frame: Excl<T>) {}
 }

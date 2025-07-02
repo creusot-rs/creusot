@@ -1,4 +1,4 @@
-use crate::logic::ra::*;
+use crate::logic::ra::{update::Update, *};
 
 impl<T: RA> RA for Option<T> {
     #[logic]
@@ -95,5 +95,40 @@ impl<T: RA> UnitRA for Option<T> {
     #[ensures(forall<x: Self> x.op(result) == Some(x))]
     fn unit() -> Self {
         None
+    }
+}
+
+pub struct OptionUpdate<U>(pub U);
+
+impl<R: RA, U: Update<R>> Update<Option<R>> for OptionUpdate<U> {
+    type Choice = U::Choice;
+
+    #[logic]
+    #[open]
+    fn premise(self, from: Option<R>) -> bool {
+        match from {
+            Some(from) => self.0.premise(from),
+            None => false,
+        }
+    }
+
+    #[logic]
+    #[open]
+    fn update(self, from: Option<R>, ch: U::Choice) -> Option<R> {
+        match from {
+            Some(from) => Some(self.0.update(from, ch)),
+            None => None, /* Dummy */
+        }
+    }
+
+    #[logic]
+    #[requires(self.premise(from))]
+    #[requires(from.op(frame) != None)]
+    #[ensures(self.update(from, result).op(frame) != None)]
+    fn frame_preserving(self, from: Option<R>, frame: Option<R>) -> U::Choice {
+        match frame {
+            Some(frame) => self.0.frame_preserving(from.unwrap_logic(), frame),
+            None => such_that(|_| true),
+        }
     }
 }

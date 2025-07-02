@@ -1,5 +1,8 @@
 use crate::{
-    logic::ra::{RA, UnitRA},
+    logic::{
+        Mapping,
+        ra::{RA, UnitRA, update::Update},
+    },
     *,
 };
 
@@ -36,12 +39,11 @@ pub trait ViewRel {
 /// **authoritative** part (of type `R::Auth`) and a **fragment** part
 /// (of type `R::Frag`).
 ///
-/// The authoritative part is unique, while the fragment part might not be. When the
-/// two are present, the relation between the two must hold in order for the view to
-/// be [valid](RA::valid).
+/// The authoritative part is unique, while the fragment part might not be. A relation
+/// must hold between the two pasts.
 // NOTE: we could add (discardable) fragments for the auth part
 #[cfg_attr(not(creusot), allow(unused))]
-pub struct InnerView<R: ViewRel> {
+struct InnerView<R: ViewRel> {
     /// Authoritative part of the view
     auth: Option<R::Auth>,
     /// Fragment part of the view
@@ -97,19 +99,17 @@ impl<R: ViewRel> View<R> {
 
     /// Create a new `View` containing an authoritative version of `x`.
     #[logic]
-    #[ensures(result.auth() == Some(auth))]
-    #[ensures(result.frag() == R::Frag::unit())]
+    #[open]
     pub fn new_auth(auth: R::Auth) -> Self {
-        Self(Subset::new_logic(InnerView { auth: Some(auth), frag: R::Frag::unit() }))
+        Self::new(Some(auth), R::Frag::unit())
     }
 
     /// Create a new `View` containing a fragment version of `x`.
     #[logic]
+    #[open]
     #[requires(R::rel(None, frag))]
-    #[ensures(result.auth() == None)]
-    #[ensures(result.frag() == frag)]
     pub fn new_frag(frag: R::Frag) -> Self {
-        Self(Subset::new_logic(InnerView { auth: None, frag }))
+        Self::new(None, frag)
     }
 }
 
@@ -120,7 +120,6 @@ impl<R: ViewRel> RA for View<R> {
         pearlite! {
             match self.frag().op(other.frag()) {
                 Some(f) => match (self.auth(), other.auth()) {
-                    (None, None) => if R::rel(None, f) { Some(Self::new_frag(f)) } else { None },
                     (None, a) => if R::rel(a, f) { Some(Self::new(a, f)) } else { None },
                     (a, None) => if R::rel(a, f) { Some(Self::new(a, f)) } else { None },
                     _ => None
@@ -200,4 +199,105 @@ impl<R: ViewRel> UnitRA for View<R> {
     fn unit() -> Self {
         Self::new_frag(R::Frag::unit())
     }
+}
+
+pub struct ViewUpdate<R: ViewRel, Choice>(pub Snapshot<Mapping<Choice, (R::Auth, R::Frag)>>);
+
+impl<R: ViewRel, Choice> Update<View<R>> for ViewUpdate<R, Choice> {
+    type Choice = Choice;
+
+    #[logic]
+    #[open]
+    fn premise(self, from: View<R>) -> bool {
+        pearlite! {
+            from.auth() != None &&
+            forall<f: R::Frag>
+                match from.frag().op(f) {
+                    Some(ff) => R::rel(from.auth(), ff),
+                    None => false
+                } ==>
+                exists<ch: Choice>
+                    match self.0[ch].1.op(f) {
+                        Some(ff) => R::rel(Some(self.0[ch].0), ff),
+                        None => false
+                    }
+        }
+    }
+
+    #[logic]
+    #[open]
+    fn update(self, _: View<R>, ch: Choice) -> View<R> {
+        View::new(Some(self.0[ch].0), self.0[ch].1)
+    }
+
+    #[logic]
+    #[requires(self.premise(from))]
+    #[requires(from.op(frame) != None)]
+    #[ensures(self.update(from, result).op(frame) != None)]
+    fn frame_preserving(self, from: View<R>, frame: View<R>) -> Choice {
+        such_that(|ch| self.update(from, ch).op(frame) != None)
+    }
+}
+
+pub struct ViewUpdateInsert<R: ViewRel>(pub Snapshot<R::Auth>, pub Snapshot<R::Frag>);
+
+impl<R: ViewRel> Update<View<R>> for ViewUpdateInsert<R> {
+    type Choice = ();
+
+    #[logic]
+    #[open]
+    fn premise(self, from: View<R>) -> bool {
+        pearlite! {
+            from.auth() != None &&
+            forall<f: R::Frag> R::rel(from.auth(), f) ==>
+                match self.1.op(f) {
+                    Some(ff) => R::rel(Some(*self.0), ff),
+                    None => false
+                }
+        }
+    }
+
+    #[logic]
+    #[open]
+    fn update(self, _: View<R>, _: ()) -> View<R> {
+        View::new(Some(*self.0), *self.1)
+    }
+
+    #[logic]
+    #[requires(self.premise(from))]
+    #[requires(from.op(frame) != None)]
+    #[ensures(self.update(from, result).op(frame) != None)]
+    fn frame_preserving(self, from: View<R>, frame: View<R>) {}
+}
+
+pub struct ViewUpdateRemove<R: ViewRel>(pub Snapshot<R::Auth>);
+
+impl<R: ViewRel> Update<View<R>> for ViewUpdateRemove<R> {
+    type Choice = ();
+
+    #[logic]
+    #[open]
+    fn premise(self, from: View<R>) -> bool {
+        pearlite! {
+            from.auth() != None &&
+            forall<f: R::Frag>
+                match from.frag().op(f) {
+                    Some(ff) => R::rel(from.auth(), ff),
+                    None => false
+                } ==>
+                R::rel(Some(*self.0), f)
+        }
+    }
+
+    #[logic]
+    #[open]
+    fn update(self, _: View<R>, _: ()) -> View<R> {
+        View::new_auth(*self.0)
+    }
+
+    #[logic]
+    #[requires(self.premise(from))]
+    #[requires(from.op(frame) != None)]
+    #[ensures(self.update(from, result).op(frame) != None)]
+    fn frame_preserving(self, from: View<R>, frame: View<R>) {}
 }

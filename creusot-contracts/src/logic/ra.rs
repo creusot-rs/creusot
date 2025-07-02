@@ -1,21 +1,14 @@
 //! Definitions of Resource Algebras
 
-mod agree;
-mod auth;
-mod excl;
-mod fmap;
-mod option;
-mod prod;
-mod sum;
-mod view;
-
-pub use self::{
-    agree::Ag,
-    auth::{Auth, AuthViewRel},
-    excl::Excl,
-    sum::Sum,
-    view::{View, ViewRel},
-};
+pub mod agree;
+pub mod auth;
+pub mod excl;
+pub mod fmap;
+pub mod option;
+pub mod prod;
+pub mod sum;
+pub mod update;
+pub mod view;
 
 use crate::{logic::Set, *};
 

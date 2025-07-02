@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::ra::Excl, resource::Resource, *};
+use creusot_contracts::{logic::ra::excl::Excl, resource::Resource, *};
 
 #[ensures(x.id() != y.id())]
 #[ensures(*x == ^x)]

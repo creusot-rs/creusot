@@ -15,7 +15,10 @@ use crate::logic::{
 use crate::{
     logic::{
         FMap,
-        ra::{Ag, View, ViewRel},
+        ra::{
+            agree::Ag,
+            view::{View, ViewRel, ViewUpdateInsert},
+        },
     },
     resource::Resource,
     *,
@@ -70,20 +73,19 @@ pub struct Authority<K, V>(FMapView<K, V>);
 /// Wrapper around a [`Resource`], that allows to agree on the values of a [`FMap`].
 ///
 /// This is the fragment version
-pub struct Fragment<K, V>(FMapView<K, V>, Snapshot<(K, V)>);
+pub struct Fragment<K, V>(FMapView<K, V>, Snapshot<K>, Snapshot<V>);
 
 impl<K, V> Invariant for Authority<K, V> {
     #[logic]
     fn invariant(self) -> bool {
-        pearlite! { self.0@.auth() != None && self.0@.frag() == FMap::empty() }
+        pearlite! { self.0@.auth() != None }
     }
 }
 impl<K, V> Invariant for Fragment<K, V> {
     #[logic]
     fn invariant(self) -> bool {
         pearlite! {
-            self.0@.auth() == None &&
-            self.0@.frag() == FMap::singleton(self.1.0, Ag(self.1.1))
+            View::new_frag(FMap::singleton(*self.1, Ag(*self.2))).incl(self.0@)
         }
     }
 }
@@ -103,7 +105,7 @@ impl<K, V> crate::View for Fragment<K, V> {
     /// Get the fragment of the map represented by this resource.
     #[logic]
     fn view(self) -> (K, V) {
-        *self.1
+        (*self.1, *self.2)
     }
 }
 
@@ -134,26 +136,11 @@ impl<K, V> Authority<K, V> {
     pub fn insert(&mut self, k: Snapshot<K>, v: Snapshot<V>) -> Fragment<K, V> {
         let auth = snapshot!(self@.insert(*k, *v));
         let frag = snapshot!(FMap::singleton(*k, Ag(*v)));
-        let new: Snapshot<View<MapRelation<K, V>>> = snapshot!(View::new(Some(*auth), *frag));
-        proof_assert!(
-            forall<y: View<MapRelation<K, V>>> self.0@.op(y) != None ==>
-                y.auth() == None &&
-                forall<l> match y.frag().get(l) {
-                    Some(Ag(yl)) => *k != l && self@.get(l) == Some(yl),
-                    None => true,
-                }
-        );
-        proof_assert!(
-            forall<y: View<MapRelation<K, V>>> self.0@.op(y) != None ==>
-                    match new.frag().op(y.frag()) {
-                    Some(f) => MapRelation::rel(Some(*auth), f),
-                    None => false
-                }
-        );
-        self.0.update(new);
+        self.0.update(ViewUpdateInsert(auth, frag));
         Fragment(
-            self.0.split_off(snapshot!(View::new_auth(*auth)), snapshot!(View::new_frag(*frag))),
-            snapshot!((*k, *v)),
+            self.0.split_off(snapshot!(View::new_frag(*frag)), snapshot!(View::new_auth(*auth))),
+            snapshot!(*k),
+            snapshot!(*v),
         )
     }
 
@@ -164,6 +151,7 @@ impl<K, V> Authority<K, V> {
     #[allow(unused_variables)]
     pub fn contains(&self, frag: &Fragment<K, V>) {
         let new_resource = self.0.join_shared(&frag.0);
+        proof_assert!(FMap::singleton(*frag.1, Ag(*frag.2)).incl_eq(new_resource@.frag()));
         proof_assert!(new_resource@.frag().get(frag@.0) == Some(Ag(frag@.1)));
     }
 }
@@ -177,8 +165,8 @@ impl<K, V> Fragment<K, V> {
 
 impl<K, V> Clone for Fragment<K, V> {
     #[pure]
-    #[ensures(result == *self)]
+    #[ensures(result@ == self@)]
     fn clone(&self) -> Self {
-        Self(self.0.clone(), self.1)
+        Self(self.0.core(), self.1, self.2)
     }
 }
