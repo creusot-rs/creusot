@@ -782,13 +782,13 @@ impl<'a, 'tcx> PreAnalysis<'a, 'tcx> {
             if bbd.is_cleanup {
                 continue;
             }
+            self.resolve_places_between_blocks(bb);
             if bb == START_BLOCK {
                 let (_, resolved) = self
                     .resolver
                     .need_resolve_resolved_places_at(ExtendedLocation::Start(Location::START));
                 self.resolve_places(resolved.clone(), &resolved)
             }
-            self.resolve_places_between_blocks(bb);
             let mut loc = bb.start_location();
             for statement in &bbd.statements {
                 self.visit_statement(statement, loc);

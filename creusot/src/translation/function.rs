@@ -195,17 +195,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 continue;
             }
 
-            if let Some(resolver) = &mut self.resolver
-                && bb == START_BLOCK
-            {
-                let (_, resolved) = resolver
-                    .need_resolve_resolved_places_at(ExtendedLocation::Start(Location::START));
-                if let Err(err) = self.resolve_places(resolved.clone(), &resolved) {
-                    // TODO: what is the appropriate span here?
-                    err.crash(self.ctx, self.body.span);
-                }
-            }
-
             let mut invariants = Vec::new();
             let mut variant = None;
 
@@ -232,6 +221,17 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             if let Err(err) = self.resolve_places_between_blocks(bb) {
                 err.crash(self.ctx, self.basic_block_first_span(bbd))
+            }
+
+            if let Some(resolver) = &mut self.resolver
+                && bb == START_BLOCK
+            {
+                let (_, resolved) = resolver
+                    .need_resolve_resolved_places_at(ExtendedLocation::Start(Location::START));
+                if let Err(err) = self.resolve_places(resolved.clone(), &resolved) {
+                    // TODO: what is the appropriate span here?
+                    err.crash(self.ctx, self.body.span);
+                }
             }
 
             let mut loc = bb.start_location();
