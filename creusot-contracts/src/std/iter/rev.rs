@@ -43,7 +43,7 @@ impl<I: DoubleEndedIterator> Iterator for Rev<I> {
     }
 
     #[law]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

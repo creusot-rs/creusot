@@ -15,13 +15,13 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
     #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            *(^self).produced == Seq::EMPTY &&
+            *(^self).produced == Seq::empty() &&
             self.iter.completed() && self.func == (^self).func
         }
     }
 
     #[law]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -100,7 +100,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> ::std::iter
                 Some(r)
             }
             None => {
-                self.produced = snapshot! { Seq::EMPTY };
+                self.produced = snapshot! { Seq::empty() };
                 None
             }
         }
@@ -119,7 +119,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
     }
 
     #[logic(prophetic)]
-    #[ensures(produced == Seq::EMPTY ==> result == Self::preservation(iter, func))]
+    #[ensures(produced == Seq::empty() ==> result == Self::preservation(iter, func))]
     fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
@@ -150,7 +150,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
         pearlite! {
             forall<iter: &mut I, func: F>
                 iter.completed() ==>
-                Self::next_precondition(^iter, func, Seq::EMPTY) &&
+                Self::next_precondition(^iter, func, Seq::empty()) &&
                 Self::preservation(^iter, func)
         }
     }

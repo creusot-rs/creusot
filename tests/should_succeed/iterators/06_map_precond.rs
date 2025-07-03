@@ -21,14 +21,14 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
     #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            *(^self).produced == Seq::EMPTY &&
+            *(^self).produced == Seq::empty() &&
             self.iter.completed() && self.func == (^self).func
         }
     }
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -74,7 +74,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
                 Some(r)
             }
             None => {
-                self.produced = snapshot! { Seq::EMPTY };
+                self.produced = snapshot! { Seq::empty() };
                 None
             }
         }
@@ -93,7 +93,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
     }
 
     #[logic(prophetic)]
-    #[ensures(produced == Seq::EMPTY ==> result == Self::preservation(iter, func))]
+    #[ensures(produced == Seq::empty() ==> result == Self::preservation(iter, func))]
     fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
@@ -123,7 +123,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
         pearlite! {
             forall<iter: &mut I, func: F>
                 iter.completed() ==>
-                Self::next_precondition(^iter, func, Seq::EMPTY) &&
+                Self::next_precondition(^iter, func, Seq::empty()) &&
                 Self::preservation(^iter, func)
         }
     }
@@ -171,22 +171,22 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant f
 
 #[requires(forall<e: I::Item, i2: I>
                 iter.produces(Seq::singleton(e), i2) ==>
-                func.precondition((e, Snapshot::new(Seq::EMPTY))))]
+                func.precondition((e, Snapshot::new(Seq::empty()))))]
 #[requires(Map::<I, F>::reinitialize())]
 #[requires(Map::<I, F>::preservation(iter, func))]
-#[ensures(result == Map { iter, func, produced: Snapshot::new(Seq::EMPTY) })]
+#[ensures(result == Map { iter, func, produced: Snapshot::new(Seq::empty()) })]
 pub fn map<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B>(
     iter: I,
     func: F,
 ) -> Map<I, F> {
-    Map { iter, func, produced: snapshot! {Seq::EMPTY} }
+    Map { iter, func, produced: snapshot! {Seq::empty()} }
 }
 
 pub fn identity<I: Iterator>(iter: I) {
     map(iter, |x, _| x);
 }
 
-#[requires(forall<done: &mut U> done.completed() ==> forall<next, steps> (^done).produces(steps, next) ==> steps == Seq::EMPTY && ^done == next)]
+#[requires(forall<done: &mut U> done.completed() ==> forall<next, steps> (^done).produces(steps, next) ==> steps == Seq::empty() && ^done == next)]
 #[requires(forall<prod, fin> iter.produces(prod, fin) ==>
     forall<x> 0 <= x && x < prod.len() ==> prod[x] <= 10u32
 )]
@@ -199,7 +199,7 @@ pub fn increment<U: Iterator<Item = u32>>(iter: U) {
     };
 }
 
-#[requires(forall<done: &mut I> done.completed() ==> forall<next, steps> (^done).produces(steps, next) ==> steps == Seq::EMPTY && ^done == next)]
+#[requires(forall<done: &mut I> done.completed() ==> forall<next, steps> (^done).produces(steps, next) ==> steps == Seq::empty() && ^done == next)]
 #[requires(forall<prod, fin> iter.produces(prod, fin) ==> prod.len() <= usize::MAX@)]
 pub fn counter<I: Iterator<Item = u32>>(iter: I) {
     let mut cnt: usize = 0;

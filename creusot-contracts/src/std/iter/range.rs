@@ -31,7 +31,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     }
 
     #[law]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -56,7 +56,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for Range<Idx
     }
 
     #[law]
-    #[ensures(self.produces_back(Seq::EMPTY, self))]
+    #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self) {}
 
     #[law]
@@ -100,7 +100,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -127,7 +127,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for RangeIncl
 
     #[law]
     #[open]
-    #[ensures(self.produces_back(Seq::EMPTY, self))]
+    #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self) {}
 
     #[law]

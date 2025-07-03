@@ -640,13 +640,13 @@ impl<T> Iterator for IntoIter<T> {
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited == Seq::EMPTY && self == o ||
+            visited == Seq::empty() && self == o ||
             exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
     #[law]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -677,13 +677,13 @@ impl<T> Iterator for Iter<'_, T> {
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited == Seq::EMPTY && self == o ||
+            visited == Seq::empty() && self == o ||
             exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
     #[law]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -714,13 +714,13 @@ impl<T> Iterator for IterMut<'_, T> {
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited == Seq::EMPTY && self == o ||
+            visited == Seq::empty() && self == o ||
             exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
     #[law]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

@@ -47,7 +47,7 @@ impl<T: View + ?Sized> View for Snapshot<T> {
     #[logic]
     #[open]
     fn view(self) -> Self::ViewTy {
-        pearlite! { self.deref().view() }
+        self.deref().view()
     }
 }
 

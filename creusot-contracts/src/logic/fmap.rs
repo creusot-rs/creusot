@@ -357,7 +357,7 @@ impl<K, V> FMap<K, V> {
     ///     if let Some(x) = map.get_mut_ghost(&1) {
     ///         *x = 42;
     ///     }
-    ///     proof_assert!(map.lookup(1i32) == 42i32);
+    ///     proof_assert!(map[1i32] == 42i32);
     /// };
     /// ```
     #[trusted]
@@ -366,7 +366,7 @@ impl<K, V> FMap<K, V> {
             match result {
                 None => false,
                 Some(r) =>
-                    (^self).contains(*key) && (*self).lookup(*key) == *r && (^self).lookup(*key) == ^r,
+                    (^self).contains(*key) && self[*key] == *r && (^self)[*key] == ^r,
             }
         } else {
             result == None && *self == ^self
@@ -394,9 +394,9 @@ impl<K, V> FMap<K, V> {
     ///         map2.insert_ghost(3, 30);
     ///         map2.insert_ghost(1, 56); // This modification will be ignored on `map`
     ///     }
-    ///     proof_assert!(map.lookup(1i32) == 22i32);
-    ///     proof_assert!(map.lookup(2i32) == 42i32);
-    ///     proof_assert!(map.lookup(3i32) == 30i32);
+    ///     proof_assert!(map[1i32] == 22i32);
+    ///     proof_assert!(map[2i32] == 42i32);
+    ///     proof_assert!(map[3i32] == 30i32);
     /// };
     /// ```
     #[trusted]
@@ -405,7 +405,7 @@ impl<K, V> FMap<K, V> {
         *result.1 == (*self).remove(*key) &&
         match result.0 {
             None => false,
-            Some(r) => (*self).lookup(*key) == *r && ^self == (^result.1).insert(*key, ^r),
+            Some(r) => self[*key] == *r && ^self == (^result.1).insert(*key, ^r),
         }
     } else {
         result.0 == None && result.1 == self
@@ -431,7 +431,7 @@ impl<K, V> FMap<K, V> {
     ///
     ///     let res2 = map.insert_ghost(37, 42);
     ///     proof_assert!(res2 == Some(41));
-    ///     proof_assert!(map.lookup(37i32) == 42i32);
+    ///     proof_assert!(map[37i32] == 42i32);
     /// };
     /// ```
     #[trusted]
@@ -507,6 +507,6 @@ impl<K, V> Invariant for FMap<K, V> {
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { forall<k: K> self.contains(k) ==> inv(k) && inv(self.lookup(k)) }
+        pearlite! { forall<k: K> self.contains(k) ==> inv(k) && inv(self[k]) }
     }
 }

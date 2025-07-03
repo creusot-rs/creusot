@@ -17,18 +17,15 @@ use crate::{logic::ops::IndexLogic, *};
 /// ```
 #[trusted]
 #[cfg_attr(creusot, creusot::builtins = "map.Map.map")]
-pub struct Mapping<A: ?Sized, B: ?Sized>(std::marker::PhantomData<A>, std::marker::PhantomData<B>);
+pub struct Mapping<A, B>(std::marker::PhantomData<A>, std::marker::PhantomData<B>);
 
-impl<A: ?Sized, B: ?Sized> Mapping<A, B> {
+impl<A, B> Mapping<A, B> {
     /// Get the value associated with `a` in the map.
     #[trusted]
     #[logic]
     #[creusot::builtins = "map.Map.get"]
     #[allow(unused_variables)]
-    pub fn get(self, a: A) -> B
-    where
-        B: Sized, // TODO: don't require this (problem: return type needs to be sized)
-    {
+    pub fn get(self, a: A) -> B {
         dead
     }
 
@@ -49,9 +46,22 @@ impl<A: ?Sized, B: ?Sized> Mapping<A, B> {
     pub fn cst(b: B) -> Self {
         dead
     }
+
+    /// Extensional equality.
+    ///
+    /// Returns `true` if `self` and `other` contain exactly the same key-value pairs.
+    ///
+    /// This is in fact equivalent with normal equality.
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "map.MapExt.(==)"]
+    #[allow(unused_variables)]
+    pub fn ext_eq(self, x: Self) -> bool {
+        dead
+    }
 }
 
-impl<A: ?Sized, B> IndexLogic<A> for Mapping<A, B> {
+impl<A, B> IndexLogic<A> for Mapping<A, B> {
     type Item = B;
 
     #[logic]

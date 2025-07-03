@@ -36,21 +36,19 @@ use crate::{
 /// This type is designed for this use-case, with no restriction on the capacity.
 #[trusted]
 #[cfg_attr(creusot, creusot::builtins = "seq.Seq.seq")]
-pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
+#[cfg_attr(creusot, creusot::builtins_ascription)]
+
+pub struct Seq<T>(std::marker::PhantomData<T>);
 
 /// Logical definitions
-impl<T: ?Sized> Seq<T> {
-    /// The empty sequence.
-    #[cfg(creusot)]
-    #[trusted]
-    #[creusot::builtins = "seq.Seq.empty"]
-    pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
-
+impl<T> Seq<T> {
     /// Returns the empty sequence.
     #[logic]
-    #[open]
+    #[trusted]
+    #[creusot::builtins = "seq.Seq.empty"]
+    #[creusot::builtins_ascription]
     pub fn empty() -> Self {
-        Self::EMPTY
+        dead
     }
 
     /// Create a new sequence in pearlite.
@@ -79,10 +77,7 @@ impl<T: ?Sized> Seq<T> {
     /// If `ix` is out of bounds, return `None`.
     #[logic]
     #[open]
-    pub fn get(self, ix: Int) -> Option<T>
-    where
-        T: Sized, // TODO: don't require this (problem: return type needs to be sized)
-    {
+    pub fn get(self, ix: Int) -> Option<T> {
         if 0 <= ix && ix < self.len() { Some(self.index_logic(ix)) } else { None }
     }
 
@@ -161,7 +156,7 @@ impl<T: ?Sized> Seq<T> {
     /// let s = snapshot!(Seq::singleton(5).push_back(10).push_back(15));
     /// proof_assert!(s.tail() == Seq::singleton(10).push_back(15));
     /// proof_assert!(s.tail().tail() == Seq::singleton(15));
-    /// proof_assert!(s.tail().tail().tail() == Seq::EMPTY);
+    /// proof_assert!(s.tail().tail().tail() == Seq::empty());
     /// ```
     #[logic]
     #[open]
@@ -289,9 +284,9 @@ impl<T: ?Sized> Seq<T> {
     #[logic]
     #[open]
     #[variant(self.len())]
-    pub fn flat_map<U: ?Sized>(self, other: Mapping<T, Seq<U>>) -> Seq<U> {
+    pub fn flat_map<U>(self, other: Mapping<T, Seq<U>>) -> Seq<U> {
         if self.len() == 0 {
-            Seq::EMPTY
+            Seq::empty()
         } else {
             other.get(*self.index_logic_unsized(0)).concat(self.tail().flat_map(other))
         }
@@ -355,10 +350,7 @@ impl<T: ?Sized> Seq<T> {
     /// Returns `true` if there is an index `i` such that `self[i] == x`.
     #[open]
     #[logic]
-    pub fn contains(self, x: T) -> bool
-    where
-        T: Sized, // TODO: don't require this (problem: uses index)
-    {
+    pub fn contains(self, x: T) -> bool {
         pearlite! { exists<i> 0 <= i &&  i < self.len() && self[i] == x }
     }
 
@@ -367,7 +359,7 @@ impl<T: ?Sized> Seq<T> {
     #[logic]
     pub fn sorted_range(self, start: Int, end: Int) -> bool
     where
-        T: OrdLogic + Sized, // TODO: don't require this (problem: uses index)
+        T: OrdLogic,
     {
         pearlite! {
             forall<i, j> start <= i && i <= j && j < end ==> self[i] <= self[j]
@@ -379,7 +371,7 @@ impl<T: ?Sized> Seq<T> {
     #[logic]
     pub fn sorted(self) -> bool
     where
-        T: OrdLogic + Sized, // TODO: don't require this (problem: uses index)
+        T: OrdLogic,
     {
         self.sorted_range(0, self.len())
     }
@@ -388,27 +380,23 @@ impl<T: ?Sized> Seq<T> {
     #[logic]
     #[ensures(forall<a: Seq<T>, b: Seq<T>, x>
         a.concat(b).contains(x) == a.contains(x) || b.contains(x))]
-    pub fn concat_contains()
-    where
-        T: Sized,
-    {
-    }
+    pub fn concat_contains() {}
 }
 
-impl<T: ?Sized> Seq<Seq<T>> {
+impl<T> Seq<Seq<T>> {
     #[open]
     #[logic]
     #[variant(self.len())]
     pub fn flatten(self) -> Seq<T> {
         if self.len() == 0 {
-            Seq::EMPTY
+            Seq::empty()
         } else {
             self.index_logic_unsized(0).concat(self.tail().flatten())
         }
     }
 }
 
-impl<T: ?Sized> Seq<&T> {
+impl<T> Seq<&T> {
     /// Convert `Seq<&T>` to `Seq<T>`.
     ///
     /// This is simply a utility method, because `&T` is equivalent to `T` in pearlite.
@@ -446,7 +434,7 @@ impl<T> Seq<T> {
     /// ```
     #[trusted]
     #[pure]
-    #[ensures(*result == Self::EMPTY)]
+    #[ensures(*result == Self::empty())]
     #[allow(unreachable_code)]
     pub fn new() -> Ghost<Self> {
         Ghost::conjure()
@@ -622,7 +610,7 @@ impl<T> Seq<T> {
     #[trusted]
     #[pure]
     #[ensures(match result {
-        None => *self == Seq::EMPTY && *self == ^self,
+        None => *self == Seq::empty() && *self == ^self,
         Some(r) => *self == (^self).push_back(r)
     })]
     pub fn pop_back_ghost(&mut self) -> Option<T> {
@@ -648,7 +636,7 @@ impl<T> Seq<T> {
     #[trusted]
     #[pure]
     #[ensures(match result {
-        None => *self == Seq::EMPTY && *self == ^self,
+        None => *self == Seq::empty() && *self == ^self,
         Some(r) => *self == (^self).push_front(r)
     })]
     pub fn pop_front_ghost(&mut self) -> Option<T> {
@@ -667,12 +655,12 @@ impl<T> Seq<T> {
     ///     s.push_back_ghost(2);
     ///     s.push_back_ghost(3);
     ///     s.clear_ghost();
-    ///     proof_assert!(s == Seq::EMPTY);
+    ///     proof_assert!(s == Seq::empty());
     /// };
     /// ```
     #[trusted]
     #[pure]
-    #[ensures(^self == Self::EMPTY)]
+    #[ensures(^self == Self::empty())]
     pub fn clear_ghost(&mut self) {}
 }
 
@@ -688,7 +676,7 @@ impl<T: Clone + Copy> Clone for Seq<T> {
 
 impl<T: Clone + Copy> Copy for Seq<T> {}
 
-impl<T: ?Sized> Invariant for Seq<T> {
+impl<T> Invariant for Seq<T> {
     #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
@@ -718,5 +706,5 @@ pub fn flat_map_push_back<A, B>(xs: Seq<A>) {
 #[macro_export]
 macro_rules! seq {
     ($($items:expr),+) => { creusot_contracts::__stubs::seq_literal(&[$($items),+]) };
-    () => { Seq::EMPTY };
+    () => { Seq::empty() };
 }

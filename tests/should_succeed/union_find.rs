@@ -106,7 +106,7 @@ mod implementation {
         #[ensures(result.domain.is_empty())]
         pub fn new() -> Self {
             Self {
-                domain: snapshot!(FSet::EMPTY),
+                domain: snapshot!(FSet::empty()),
                 map: FMap::new(),
                 values: snapshot!(such_that(|_| true)),
                 distance: snapshot!(such_that(|_| true)),

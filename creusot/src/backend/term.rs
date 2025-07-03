@@ -4,6 +4,7 @@ use crate::{
         projections::{Focus, borrow_generated_id, projections_to_expr},
         ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude},
     },
+    contracts_items::is_builtins_ascription,
     ctx::*,
     naming::name,
     translation::{
@@ -151,17 +152,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Item(id, subst) => {
                 let method = (*id, *subst);
                 debug!("resolved_method={:?}", method);
-                let clone = self.names.item(*id, subst);
-                let item = match self.ctx.type_of(id).instantiate_identity().kind() {
+                let item_name = self.names.item(*id, subst);
+                match self.ctx.type_of(id).instantiate_identity().kind() {
                     TyKind::FnDef(_, _) => Exp::unit(),
-                    _ => Exp::Var(clone),
-                };
-
-                if matches!(self.ctx.def_kind(*id), DefKind::AssocConst) {
-                    let ty = translate_ty(self.ctx, self.names, term.span, term.ty);
-                    item.ascribe(ty)
-                } else {
-                    item
+                    _ => Exp::Var(item_name),
                 }
             }
             TermKind::Var(v) => Exp::var(v.0),
@@ -212,8 +206,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 };
                 Exp::UnaryOp(op, self.lower_term(arg).boxed())
             }
-            TermKind::Call { id, subst, args, .. } => Exp::Var(self.names.item(*id, *subst))
-                .app(args.into_iter().map(|arg| self.lower_term(arg))),
+            TermKind::Call { id, subst, args, .. } => {
+                let e = Exp::Var(self.names.item(*id, *subst))
+                    .app(args.into_iter().map(|arg| self.lower_term(arg)));
+                if is_builtins_ascription(self.ctx.tcx, *id) {
+                    e.ascribe(self.lower_ty(term.ty))
+                } else {
+                    e
+                }
+            }
             TermKind::Quant { kind, binder, box body, trigger } => {
                 let bound = binder.iter().map(|(s, t)| (s.0, self.lower_ty(*t)));
                 let body = self.lower_term(body);

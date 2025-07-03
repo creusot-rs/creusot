@@ -111,7 +111,7 @@ impl<T> Sparse<T> {
     #[requires(0 <= i && i < self.size@)]
     #[ensures(self.is_elt(i))]
     fn lemma_permutation(self, i: Int) {
-        self.lemma_permutation_aux(FSet::EMPTY, i, i);
+        self.lemma_permutation_aux(FSet::empty(), i, i);
     }
 
     #[logic]

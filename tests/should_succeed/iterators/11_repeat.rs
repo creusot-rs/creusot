@@ -30,7 +30,7 @@ impl<A: Clone> Iterator for Repeat<A> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

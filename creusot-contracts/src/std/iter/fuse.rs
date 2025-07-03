@@ -27,7 +27,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
     fn produces(self, prod: Seq<Self::Item>, other: Self) -> bool {
         pearlite! {
             match self@ {
-                None => prod == Seq::EMPTY && other@ == self@,
+                None => prod == Seq::empty() && other@ == self@,
                 Some(i) => match other@ {
                     Some(i2) => i.produces(prod, i2),
                     None => false,
@@ -38,7 +38,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -53,7 +53,7 @@ pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
     #[law]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
-    #[ensures(steps == Seq::EMPTY && ^self == next)]
+    #[ensures(steps == Seq::empty() && ^self == next)]
     fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self);
 }
 
@@ -62,6 +62,6 @@ impl<I: Iterator> FusedIterator for Fuse<I> {
     #[open]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
-    #[ensures(steps == Seq::EMPTY && ^self == next)]
+    #[ensures(steps == Seq::empty() && ^self == next)]
     fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self) {}
 }

@@ -22,7 +22,7 @@ impl<T> Invariant for List<T> {
     #[logic]
     fn invariant(self) -> bool {
         pearlite! {
-            (*self.seq == Seq::EMPTY &&
+            (*self.seq == Seq::empty() &&
              self.first.is_null_logic() &&
              self.last.is_null_logic())
             ||
@@ -54,7 +54,7 @@ pub fn seq_map<T, U>(s: Seq<T>, f: logic::Mapping<T, U>) -> Seq<U> {
 }
 
 impl<T> List<T> {
-    #[ensures(result@ == Seq::EMPTY)]
+    #[ensures(result@ == Seq::empty())]
     pub fn new() -> List<T> {
         List { first: std::ptr::null(), last: std::ptr::null(), seq: Seq::new() }
     }

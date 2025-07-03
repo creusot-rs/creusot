@@ -117,7 +117,7 @@ impl<T: DeepModel> Iterator for IntoIter<T> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -156,7 +156,7 @@ impl<'a, T: DeepModel> Iterator for Iter<'a, T> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -214,7 +214,7 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Intersection<'a,
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -242,7 +242,7 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Difference<'a, T
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

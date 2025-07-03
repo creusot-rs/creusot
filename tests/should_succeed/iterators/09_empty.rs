@@ -20,12 +20,12 @@ impl<T> Iterator for Empty<T> {
     #[open]
     #[logic]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
-        pearlite! { visited == Seq::EMPTY && self == o }
+        pearlite! { visited == Seq::empty() && self == o }
     }
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

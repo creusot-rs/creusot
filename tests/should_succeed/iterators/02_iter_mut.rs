@@ -30,7 +30,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     #[open]
     #[logic(prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.inner.resolve() && self.inner@.ext_eq(Seq::EMPTY) }
+        pearlite! { self.inner.resolve() && self.inner@.ext_eq(Seq::empty()) }
     }
 
     #[open]
@@ -47,7 +47,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -85,7 +85,7 @@ fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
 pub fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v).into_iter();
     let iter_old = snapshot! { it };
-    let mut produced = snapshot! { Seq::EMPTY };
+    let mut produced = snapshot! { Seq::empty() };
     #[invariant(inv(it))]
     #[invariant(iter_old.produces(produced.inner(), it))]
     #[invariant(forall<i> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
