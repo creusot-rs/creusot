@@ -1,0 +1,108 @@
+module M_agree__agreement [#"agree.rs" 6 0 6 62]
+  let%span sagree = "agree.rs" 4 11 4 27
+  let%span sagree'0 = "agree.rs" 5 10 5 18
+  let%span sagree'1 = "../../../creusot-contracts/src/logic/ra/agree.rs" 35 14 35 32
+  let%span sagree'2 = "../../../creusot-contracts/src/logic/ra/agree.rs" 40 14 40 99
+  let%span sagree'3 = "../../../creusot-contracts/src/logic/ra/agree.rs" 13 8 13 57
+  let%span sagree'4 = "../../../creusot-contracts/src/logic/ra/agree.rs" 25 14 28 5
+  let%span sagree'5 = "../../../creusot-contracts/src/logic/ra/agree.rs" 30 8 30 23
+  let%span sresource = "../../../creusot-contracts/src/resource.rs" 200 19 200 42
+  let%span sresource'0 = "../../../creusot-contracts/src/resource.rs" 201 18 201 42
+  let%span sresource'1 = "../../../creusot-contracts/src/resource.rs" 202 18 202 67
+  let%span sresource'2 = "../../../creusot-contracts/src/resource.rs" 48 12 48 22
+  let%span smodel = "../../../creusot-contracts/src/model.rs" 44 8 44 22
+  let%span sra = "../../../creusot-contracts/src/logic/ra.rs" 93 8 93 41
+  let%span sra'0 = "../../../creusot-contracts/src/logic/ra.rs" 86 15 86 43
+  let%span sra'1 = "../../../creusot-contracts/src/logic/ra.rs" 87 14 87 29
+  let%span sra'2 = "../../../creusot-contracts/src/logic/ra.rs" 139 15 139 24
+  let%span sra'3 = "../../../creusot-contracts/src/logic/ra.rs" 140 15 140 24
+  let%span sra'4 = "../../../creusot-contracts/src/logic/ra.rs" 141 14 141 23
+  let%span sra'5 = "../../../creusot-contracts/src/logic/ra.rs" 82 8 82 34
+  let%span soption = "../../../creusot-contracts/src/std/option.rs" 762 8 765 9
+  
+  use creusot.int.Int32
+  use map.Map
+  use creusot.prelude.Any
+  
+  type t_Resource
+  
+  type t_Id
+  
+  function id (self: t_Resource) : t_Id
+  
+  type t_Ag  =
+    { t_Ag__0: Int32.t }
+  
+  type t_Option  =
+    | C_None
+    | C_Some t_Ag
+  
+  function and_then_logic (self: t_Option) (f: Map.map t_Ag t_Option) : t_Option =
+    [%#soption] match self with
+      | C_None -> C_None
+      | C_Some x -> Map.get f x
+      end
+  
+  function op (self: t_Ag) (other: t_Ag) : t_Option =
+    [%#sagree'3] if self.t_Ag__0 = other.t_Ag__0 then C_Some self else C_None
+  
+  function associative (a: t_Ag) (b: t_Ag) (c: t_Ag) : ()
+  
+  axiom associative_spec: forall a: t_Ag, b: t_Ag, c: t_Ag. [%#sagree'2] and_then_logic (op a b) (fun (ab: t_Ag) -> op ab c)
+  = and_then_logic (op b c) (fun (bc: t_Ag) -> op a bc)
+  
+  function commutative (a: t_Ag) (b: t_Ag) : ()
+  
+  axiom commutative_spec: forall a: t_Ag, b: t_Ag. [%#sagree'1] op a b = op b a
+  
+  function factor (self: t_Ag) (factor'0: t_Ag) : t_Option =
+    [%#sagree'5] op self factor'0
+  
+  axiom factor_spec: forall self: t_Ag, factor'0: t_Ag. [%#sagree'4] match factor self factor'0 with
+    | C_Some c -> op factor'0 c = C_Some self
+    | C_None -> forall c: t_Ag. op factor'0 c <> C_Some self
+    end
+  
+  predicate incl (self: t_Ag) (other: t_Ag) =
+    [%#sra'5] factor other self <> C_None
+  
+  function incl_transitive (a: t_Ag) (b: t_Ag) (c: t_Ag) : ()
+  
+  axiom incl_transitive_spec: forall a: t_Ag, b: t_Ag, c: t_Ag. ([%#sra'2] incl a b)
+   -> ([%#sra'3] incl b c)  -> ([%#sra'4] incl a c)
+  
+  function incl_op (self: t_Ag) (other: t_Ag) (comb: t_Ag) : ()
+  
+  axiom incl_op_spec: forall self: t_Ag, other: t_Ag, comb: t_Ag. ([%#sra'0] op self other = C_Some comb)
+   -> ([%#sra'1] incl self comb)
+  
+  predicate incl_eq (self: t_Ag) (other: t_Ag) =
+    [%#sra] self = other \/ incl self other
+  
+  function val' (self: t_Resource) : t_Ag
+  
+  function view (self: t_Resource) : t_Ag =
+    [%#sresource'2] val' self
+  
+  function view'0 (self: t_Resource) : t_Ag =
+    [%#smodel] view self
+  
+  let rec join_shared (self:t_Resource) (other:t_Resource) (return'  (x:t_Resource))= {[@expl:join_shared requires] [%#sresource] id self
+    = id other}
+    any
+    [ return''0 (result:t_Resource)-> {[%#sresource'0] id result = id self}
+      {[%#sresource'1] incl_eq (view'0 self) (view'0 result) /\ incl_eq (view'0 other) (view'0 result)}
+      (! return' {result}) ]
+  
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec agreement[#"agree.rs" 6 0 6 62] (x:t_Resource) (y:t_Resource) (return'  (x'0:()))= {[@expl:agreement requires] [%#sagree] id x
+    = id y}
+    (! bb0
+    [ bb0 = s0 [ s0 = join_shared {x'0} {y'0} (fun (_ret:t_Resource) ->  [ &_5 <- _ret ] s1) | s1 = bb1 ] 
+    | bb1 = return''0 {_0} ]
+    ) [ & _0: () = Any.any_l () | & x'0: t_Resource = x | & y'0: t_Resource = y | & _5: t_Resource = Any.any_l () ] 
+    [ return''0 (result:())-> {[@expl:agreement ensures] [%#sagree'0] view'0 x = view'0 y} (! return' {result}) ]
+
+end

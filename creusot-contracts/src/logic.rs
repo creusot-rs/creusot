@@ -11,6 +11,7 @@ mod int;
 mod mapping;
 pub mod ops;
 pub mod ord;
+pub mod ra;
 pub mod seq;
 mod set;
 

@@ -369,6 +369,7 @@ pub mod pcell;
 pub mod peano;
 pub mod ptr_own;
 pub mod resolve;
+pub mod resource;
 pub mod snapshot;
 pub mod util;
 pub mod well_founded;

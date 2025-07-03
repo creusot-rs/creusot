@@ -61,7 +61,7 @@ impl<K, V> FMap<K, V> {
         dead
     }
 
-    /// Returns a new map, where the key-value pair `(k, v)` have been inserted.
+    /// Returns a new map, where the key-value pair `(k, v)` has been inserted.
     #[trusted]
     #[logic]
     #[ensures(result@ == self@.set(k, Some(v)))]
@@ -70,7 +70,7 @@ impl<K, V> FMap<K, V> {
         dead
     }
 
-    /// Returns a new map, where the key-value pair `(k, v)` have been inserted.
+    /// Returns the map where containing the only key-value pair `(k, v)`.
     #[logic]
     #[open]
     pub fn singleton(k: K, v: V) -> Self {
