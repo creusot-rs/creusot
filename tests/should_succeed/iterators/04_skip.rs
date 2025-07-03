@@ -37,7 +37,7 @@ where
     #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited == Seq::EMPTY && self == o ||
+            visited == Seq::empty() && self == o ||
             o.n@ == 0 && visited.len() > 0
             && exists<s: Seq<Self::Item>>
                    s.len() == self.n@
@@ -48,7 +48,7 @@ where
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -65,7 +65,7 @@ where
     fn next(&mut self) -> Option<I::Item> {
         let old_self = snapshot! { self };
         let mut n = std::mem::take(&mut self.n);
-        let mut skipped = snapshot! { Seq::EMPTY };
+        let mut skipped = snapshot! { Seq::empty() };
 
         #[invariant(inv(self))]
         #[invariant(skipped.len() + n@ == old_self.n@)]

@@ -262,7 +262,7 @@ impl Memory {
     })]
     pub fn find_lasso(self, first: Ptr) -> (Seq<Ptr>, Option<Seq<Ptr>>) {
         pearlite! {
-             Self::find_lasso_aux(self, first, first, Seq::EMPTY)
+             Self::find_lasso_aux(self, first, first, Seq::empty())
         }
     }
 }

@@ -269,7 +269,7 @@ extern_spec! {
                 (*tail)@ == (*self)@.tail() &&
                 (^tail)@ == (^self)@.tail()
             }
-            None => self@.len() == 0 && ^self == *self && self@ == Seq::EMPTY
+            None => self@.len() == 0 && ^self == *self && self@ == Seq::empty()
         })]
         fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
 
@@ -280,7 +280,8 @@ extern_spec! {
                 (**self)@.len() > 0 && (^*self)@.len() > 0 &&
                 (*^self)@ == (**self)@.tail() && (^^self)@ == (^*self)@.tail()
             }
-            None => (*^self)@ == Seq::EMPTY && (^*self)@ == Seq::EMPTY && (**self)@ == Seq::EMPTY && (^^self)@ == Seq::EMPTY
+            None => (*^self)@ == Seq::empty() && (^*self)@ == Seq::empty() &&
+                    (**self)@ == Seq::empty() && (^^self)@ == Seq::empty()
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 
@@ -362,13 +363,13 @@ extern_spec! {
     }
 
     impl<'a, T> Default for &'a mut [T] {
-        #[ensures((*result)@ == Seq::EMPTY)]
-        #[ensures((^result)@ == Seq::EMPTY)]
+        #[ensures((*result)@ == Seq::empty())]
+        #[ensures((^result)@ == Seq::empty())]
         fn default() -> &'a mut [T];
     }
 
     impl<'a, T> Default for &'a [T] {
-        #[ensures(result@ == Seq::EMPTY)]
+        #[ensures(result@ == Seq::empty())]
         fn default() -> &'a [T];
     }
 
@@ -409,7 +410,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
     #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
+        pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
     }
 
     #[logic]
@@ -422,7 +423,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -462,7 +463,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     #[open]
     #[logic(prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
+        pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
     }
 
     #[logic]
@@ -475,7 +476,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

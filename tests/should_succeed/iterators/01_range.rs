@@ -36,7 +36,7 @@ impl Iterator for Range {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -74,7 +74,7 @@ pub fn sum_range(n: isize) -> isize {
     let mut i = 0;
     let mut it = Range { start: 0, end: n }.into_iter();
     let iter_old = snapshot! { it };
-    let mut produced = snapshot! { Seq::EMPTY };
+    let mut produced = snapshot! { Seq::empty() };
     #[invariant(inv(it))]
     #[invariant(iter_old.produces(produced.inner(), it))]
     #[invariant(i@ == produced.len() && i <= n)]

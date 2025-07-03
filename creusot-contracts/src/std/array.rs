@@ -62,12 +62,12 @@ impl<T, const N: usize> Iterator for IntoIter<T, N> {
     #[open]
     #[logic(prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && self@ == Seq::EMPTY }
+        pearlite! { self.resolve() && self@ == Seq::empty() }
     }
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

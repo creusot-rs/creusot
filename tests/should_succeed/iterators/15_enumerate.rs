@@ -38,7 +38,7 @@ where
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -76,13 +76,13 @@ where
                 #[trigger(self.iter.produces(s, i))]
                 self.iter.produces(s, i) ==>
                 self.count@ + s.len() < std::usize::MAX@)
-            && (forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))
+            && (forall<i: &mut I> i.completed() ==> i.produces(Seq::empty(), ^i))
         }
     }
 }
 
 // These two requirements are here only to prove the absence of overflow.
-#[requires(forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))]
+#[requires(forall<i: &mut I> i.completed() ==> i.produces(Seq::empty(), ^i))]
 #[requires(forall<s: Seq<I::Item>, i: I> iter.produces(s, i) ==> s.len() < std::usize::MAX@)]
 #[ensures(result.iter == iter && result.count@ == 0)]
 pub fn enumerate<I: Iterator>(iter: I) -> Enumerate<I> {

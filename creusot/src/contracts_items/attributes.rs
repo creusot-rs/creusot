@@ -61,6 +61,7 @@ attribute_functions! {
     [creusot::clause::terminates]            => is_terminates
     [creusot::clause::no_panic]              => is_no_panic
     [creusot::bitwise]                       => is_bitwise
+    [creusot::builtins_ascription]           => is_builtins_ascription
 }
 
 pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
@@ -76,7 +77,7 @@ pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
         || is_snapshot_closure(tcx, def_id)
 }
 
-/// Get the string on the right of `creusot::builtin = ...`
+/// Get the string on the right of `creusot::builtins = ...`
 pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).map(|a| {
         a.value_str().unwrap_or_else(|| {

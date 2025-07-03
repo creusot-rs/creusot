@@ -94,7 +94,7 @@ impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -146,7 +146,7 @@ impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -198,7 +198,7 @@ impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

@@ -51,7 +51,7 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     }
 
     #[law]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

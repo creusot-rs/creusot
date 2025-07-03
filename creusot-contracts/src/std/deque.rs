@@ -160,7 +160,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
     #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
+        pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
     }
 
     #[logic]
@@ -173,7 +173,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

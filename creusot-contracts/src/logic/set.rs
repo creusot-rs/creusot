@@ -7,10 +7,13 @@ pub struct Set<T>(std::marker::PhantomData<T>);
 
 impl<T> Set<T> {
     /// The empty set.
-    #[cfg(creusot)]
     #[trusted]
+    #[logic]
     #[creusot::builtins = "set.Set.empty"]
-    pub const EMPTY: Self = { Set(std::marker::PhantomData) };
+    #[creusot::builtins_ascription]
+    pub fn empty() -> Self {
+        dead
+    }
 
     /// Build a set from a predicate, given as a `Mapping`.
     #[trusted]

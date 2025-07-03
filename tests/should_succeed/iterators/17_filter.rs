@@ -48,7 +48,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -84,7 +84,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
     })]
     fn next(&mut self) -> Option<I::Item> {
         let old_self = snapshot! { self};
-        let mut produced = snapshot! { Seq::EMPTY };
+        let mut produced = snapshot! { Seq::empty() };
 
         #[invariant(inv(self))]
         #[invariant(self.func == old_self.func)]

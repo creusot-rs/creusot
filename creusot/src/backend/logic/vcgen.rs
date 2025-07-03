@@ -13,7 +13,7 @@ use crate::{
         term::{binop_to_binop, lower_literal, lower_pure, unsupported_cast},
         ty::{constructor, is_int, ity_to_prelude, translate_ty, ty_to_prelude, uty_to_prelude},
     },
-    contracts_items::get_builtin,
+    contracts_items::is_builtins_ascription,
     ctx::PreMod,
     naming::name,
     translation::pearlite::{
@@ -298,12 +298,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(i, Q) = Q(i)
             TermKind::Item(id, sub) => {
                 let item_name = self.names.item(*id, sub);
-
-                if get_builtin(self.ctx.tcx, *id).is_some() {
-                    // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
-                    k(Exp::Var(item_name).ascribe(self.ty(t.ty)))
-                } else {
-                    k(Exp::Var(item_name))
+                match self.ctx.type_of(id).instantiate_identity().kind() {
+                    TyKind::FnDef(_, _) => k(Exp::unit()),
+                    _ => k(Exp::Var(item_name)),
                 }
             }
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
@@ -337,7 +334,10 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     Exp::mk_true()
                 };
 
-                let call = Exp::Var(self.names.item(*id, subst)).app(args.clone());
+                let mut call = Exp::Var(self.names.item(*id, subst)).app(args.clone());
+                if is_builtins_ascription(self.ctx.tcx, *id) {
+                    call = call.ascribe(self.ty(t.ty))
+                }
                 let call_subst = pre_sig
                     .inputs
                     .iter()

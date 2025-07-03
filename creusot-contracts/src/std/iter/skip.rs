@@ -61,7 +61,7 @@ impl<I: Iterator> Iterator for Skip<I> {
     #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited == Seq::EMPTY && self == o ||
+            visited == Seq::empty() && self == o ||
             o.n() == 0 && visited.len() > 0 &&
             exists<s: Seq<Self::Item>>
                    s.len() == self.n()
@@ -71,7 +71,7 @@ impl<I: Iterator> Iterator for Skip<I> {
     }
 
     #[law]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
