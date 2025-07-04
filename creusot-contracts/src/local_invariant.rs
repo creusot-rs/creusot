@@ -1,9 +1,59 @@
-//! Define local invariants
+//! Define local invariants.
 //!
-//! [Local invariants](LocalInvariant) are not the same as [invariants](Invariant): they
+//! [Local invariants](LocalInvariant) are not the same as [type invariants](Invariant): they
 //! allow the use of a shared piece of data to be used in the invariant (see
 //! [`LocalInvariantSpec`]), but in return they impose a much more restricted access to
 //! the underlying data, as well as the use of [`Namespaces`].
+//!
+//! # Example
+//!
+//! Building a simplified `Cell`, that only asserts its content's type invariant.
+//! ```
+//! # use creusot_contracts::{
+//! #     local_invariant::{LocalInvariant, LocalInvariantSpec, Namespaces, declare_namespace},
+//! #     logic::Id,
+//! #     pcell::{PCell, PCellOwn},
+//! #     *,
+//! # };
+//!
+//! declare_namespace! { PCELL }
+//!
+//! /// A cell that simply asserts its content's type invariant.
+//! pub struct CellInv<T: Invariant + 'static> {
+//!     data: PCell<T>,
+//!     permission: Ghost<&'static LocalInvariant<PCellLocalInv<T>>>,
+//! }
+//! impl<T: Invariant> Invariant for CellInv<T> {
+//!     #[logic]
+//!     fn invariant(self) -> bool {
+//!         self.permission.namespace() == PCELL() && self.permission.public() == self.data.id()
+//!     }
+//! }
+//!
+//! struct PCellLocalInv<T>(PCellOwn<T>);
+//! impl<T: Invariant> LocalInvariantSpec for PCellLocalInv<T> {
+//!     type Public = Id;
+//!
+//!     #[logic]
+//!     fn invariant_with_data(self, id: Id) -> bool {
+//!         self.0.id() == id
+//!     }
+//! }
+//!
+//! impl<T: Invariant + 'static> CellInv<T> {
+//!     #[requires(namespaces.contains(PCELL()))]
+//!     pub fn write(&self, x: T, namespaces: Ghost<Namespaces>) {
+//!         LocalInvariant::open(self.permission, namespaces, move |perm| unsafe {
+//!             *self.data.borrow_mut(ghost!(&mut perm.into_inner().0)) = x
+//!         })
+//!     }
+//! }
+//! ```
+//!
+//! # Explicit namespaces
+//!
+//! For now, [`Namespaces`] must be explicitely passed to [`open`](LocalInvariant::open).
+//! We plan to relax this limitation at some point.
 
 use crate::{logic::Set, *};
 use ::std::cell::UnsafeCell;
@@ -21,7 +71,7 @@ use ::std::cell::UnsafeCell;
 /// ```
 pub use base_macros::declare_namespace;
 
-/// The type of _namespaces_ associated with invariants.
+/// The type of _namespaces_ associated with local invariants.
 ///
 /// Can be declared with the [`declare_namespace`] macro, and then attached to a local
 /// invariant when creating it with [`LocalInvariant::new`].
@@ -97,6 +147,8 @@ impl View for Namespaces<'_> {
     }
 }
 
+/// A ghost structure, that holds a piece of data (`T`) together with an
+/// [invariant](LocalInvariantSpec).
 #[trusted]
 pub struct LocalInvariant<T: LocalInvariantSpec> {
     value: UnsafeCell<T>,
