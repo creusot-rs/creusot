@@ -113,7 +113,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }
         }
-        RT::Block(TermBlock { block, .. }) => Ok(encode_block(&block)),
+        RT::Block(TermBlock { block, .. }) => Ok(encode_block(block)),
         RT::Call(TermCall { func, args, .. }) => {
             let args: Vec<_> = args.into_iter().map(encode_term).collect::<Result<_, _>>()?;
             if let RT::Path(p) = &**func {
@@ -273,7 +273,6 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 ::creusot_contracts::model::View::view(#term)
             })
         }
-        RT::Verbatim(_) => todo!(),
         RT::LogEq(TermLogEq { lhs, rhs, .. }) => {
             let lhs = encode_term(lhs)?;
             let rhs = encode_term(rhs)?;
@@ -362,6 +361,7 @@ pub fn encode_stmt(stmt: &TermStmt) -> Result<TokenStream, EncodeError> {
             Ok(quote! { #term #s })
         }
         TermStmt::Item(i) => Ok(quote! { #i }),
+        TermStmt::Empty(s) => Ok(quote! { #s }),
     }
 }
 

@@ -200,7 +200,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             unreachable!("assertion contains something other than local")
                         }
                     }
-                    Operand::Constant(_) => todo!(),
+                    Operand::Constant(_) => {
+                        self.ctx.dcx().span_bug(span, "assert value is a constant")
+                    }
                 };
                 if !expected {
                     cond = Term {

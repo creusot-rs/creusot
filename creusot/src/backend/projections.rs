@@ -9,7 +9,7 @@ use rustc_middle::{
     mir::{ProjectionElem, tcx::PlaceTy},
     ty::{GenericArg, Ty, TyCtxt, TyKind},
 };
-use rustc_span::DUMMY_SP;
+use rustc_span::Span;
 use std::{assert_matches::assert_matches, cell::RefCell, fmt::Debug, rc::Rc};
 use why3::{
     Ident, Name,
@@ -77,6 +77,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
     mut constructor: Constructor<'a>,
     proj: &'a [ProjectionElem<V, Ty<'tcx>>],
     mut translate_index: impl FnMut(&V) -> Exp,
+    span: Span,
 ) -> (Focus<'a>, Constructor<'a>) {
     for (elem, place_ty) in iter_projections_ty(ctx.tcx, proj, place_ty) {
         // TODO: name hygiene
@@ -106,7 +107,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
                         .map(|f| {
                             Param::Term(
                                 Ident::fresh_local(format!("r{}", f.name)),
-                                translate_ty(ctx, names, DUMMY_SP, f.ty(names.tcx(), subst)),
+                                translate_ty(ctx, names, span, f.ty(names.tcx(), subst)),
                             )
                         })
                         .collect();
@@ -182,12 +183,14 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
                         }
                     });
                 }
-                _ => todo!("place: {:?}", place_ty.ty.kind()),
+                _ => {
+                    ctx.dcx().span_bug(span, format!("cannot access field of type {}", place_ty.ty))
+                }
             },
             ProjectionElem::Index(ix) => {
                 let elt_ty = projection_ty(place_ty, names.tcx(), elem);
-                let elt_ty = translate_ty(ctx, names, DUMMY_SP, elt_ty.ty);
-                let ty = translate_ty(ctx, names, DUMMY_SP, place_ty.ty);
+                let elt_ty = translate_ty(ctx, names, span, elt_ty.ty);
+                let ty = translate_ty(ctx, names, span, place_ty.ty);
                 // TODO: Use [_] syntax
                 let ix_exp = translate_index(ix);
 
@@ -244,10 +247,12 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
             }
             ProjectionElem::Downcast(_, _) => {}
             // UNSUPPORTED
-            ProjectionElem::ConstantIndex { .. } => todo!(),
-            ProjectionElem::Subslice { .. } => todo!(),
-            ProjectionElem::OpaqueCast(_) => todo!(),
-            ProjectionElem::Subtype(_) => todo!(),
+            ProjectionElem::ConstantIndex { .. }
+            | ProjectionElem::Subslice { .. }
+            | ProjectionElem::OpaqueCast(_)
+            | ProjectionElem::Subtype(_) => {
+                ctx.dcx().span_bug(span, format!("Unsupported projection {proj:?}"))
+            }
         }
     }
 
@@ -262,9 +267,12 @@ pub(crate) fn projection_ty<'tcx, V: Debug>(
     pty.projection_ty_core(tcx, elem, |_, _, ty| ty, |_, ty| ty)
 }
 
+/// Generate the ID for a final reborrow of `original_borrow`.
 pub(crate) fn borrow_generated_id<'tcx, V: Debug, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
     names: &N,
     original_borrow: Exp,
+    span: Span,
     projections: &[ProjectionElem<V, Ty<'tcx>>],
     mut translate_index: impl FnMut(&V) -> Exp,
 ) -> Exp {
@@ -285,7 +293,7 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, N: Namer<'tcx>>(
 
             ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
                 // those should inherit a different id instead
-                todo!("Unsupported projection {proj:?} in reborrow")
+                ctx.dcx().span_bug(span, format!("Unsupported projection {proj:?} in reborrow"))
             }
             // Nothing to do
             ProjectionElem::Downcast(..)

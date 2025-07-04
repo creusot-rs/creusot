@@ -46,7 +46,7 @@ use rustc_middle::{
     mir::{BasicBlock, BinOp, ProjectionElem, START_BLOCK, UnOp, tcx::PlaceTy},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
-use rustc_span::DUMMY_SP;
+use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};
 use std::{collections::HashMap, fmt::Debug, iter::once};
@@ -311,7 +311,13 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
         translate_ty(self.ctx, self.names, DUMMY_SP, ty)
     }
 
-    fn assignment(&self, lhs: &Place<'tcx>, rhs: Term, istmts: &mut Vec<IntermediateStmt>) {
+    fn assignment(
+        &self,
+        lhs: &Place<'tcx>,
+        rhs: Term,
+        istmts: &mut Vec<IntermediateStmt>,
+        span: Span,
+    ) {
         let (_, constructor) = projections_to_expr(
             self.ctx,
             self.names,
@@ -321,6 +327,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
             Box::new(|_, x| x),
             &lhs.projections,
             |ix| Exp::var(*ix),
+            span,
         );
 
         let rhs = constructor(Some(istmts), rhs);
@@ -337,6 +344,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
             Box::new(|_, _| unreachable!()),
             &pl.projections,
             |ix| Exp::var(*ix),
+            DUMMY_SP,
         );
         rhs.call(Some(istmts))
     }
@@ -369,6 +377,7 @@ impl<'tcx> RValue<'tcx> {
     /// Translate a `RValue` from FMIR to Why3.
     fn into_why<N: Namer<'tcx>>(
         self,
+        span: Span,
         lower: &mut LoweringState<'_, 'tcx, N>,
         ty: Ty<'tcx>,
         istmts: &mut Vec<IntermediateStmt>,
@@ -437,8 +446,10 @@ impl<'tcx> RValue<'tcx> {
                     BitAnd => ("bw_and", true),
                     BitOr => ("bw_or", true),
 
-                    Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => todo!(),
-                    Offset => unimplemented!("pointer offsets are unsupported"),
+                    Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => {
+                        lower.ctx.dcx().span_bug(span, "Unsupported binary operation {op}")
+                    }
+                    Offset => lower.ctx.dcx().span_bug(span, "pointer offsets are unsupported"),
                 };
 
                 let fname = lower.names.in_pre(prelude, opname);
@@ -521,7 +532,7 @@ impl<'tcx> RValue<'tcx> {
                         let prelude = match target.kind() {
                             TyKind::Int(ity) => ity_to_prelude(lower.ctx.tcx, *ity),
                             TyKind::Uint(uty) => uty_to_prelude(lower.ctx.tcx, *uty),
-                            _ => unsupported_cast(&lower.ctx, source, target),
+                            _ => unsupported_cast(lower.ctx, source, target),
                         };
                         let arg = e.into_why(lower, istmts);
                         Exp::qvar(lower.names.in_pre(prelude, "of_bool")).app(vec![arg])
@@ -539,7 +550,7 @@ impl<'tcx> RValue<'tcx> {
                                     if lower.names.bitwise_mode() { "to_BV256" } else { "t'int" };
                                 lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *ity), fct_name)
                             }
-                            _ => unsupported_cast(&lower.ctx, source, target),
+                            _ => unsupported_cast(lower.ctx, source, target),
                         };
                         let to_exp = Exp::qvar(to_fname).app(vec![e.into_why(lower, istmts)]);
 
@@ -560,7 +571,7 @@ impl<'tcx> RValue<'tcx> {
                                     if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
                                 lower.names.in_pre(PreMod::Char, fct_name)
                             }
-                            _ => unsupported_cast(&lower.ctx, source, target),
+                            _ => unsupported_cast(lower.ctx, source, target),
                         };
 
                         // create final statement
@@ -580,7 +591,7 @@ impl<'tcx> RValue<'tcx> {
                         // cast between raw pointers of the same type
                         e.into_why(lower, istmts)
                     }
-                    _ => unsupported_cast(&lower.ctx, source, target),
+                    _ => unsupported_cast(lower.ctx, source, target),
                 }
             }
             RValue::Len(op) => Exp::qvar(lower.names.in_pre(PreMod::Slice, "length"))
@@ -1023,6 +1034,7 @@ impl<'tcx> Statement<'tcx> {
                         Box::new(|_, x| x),
                         &rhs.projections[..deref_index],
                         |ix| Exp::var(*ix),
+                        self.span,
                     );
                     let (foc, constr) = projections_to_expr(
                         lower.ctx,
@@ -1033,13 +1045,16 @@ impl<'tcx> Statement<'tcx> {
                         original_borrow_constr,
                         &rhs.projections[deref_index..],
                         |ix| Exp::var(*ix),
+                        self.span,
                     );
                     rhs_rplace = foc.call(Some(&mut istmts));
                     rhs_constr = constr;
 
                     let borrow_id = borrow_generated_id(
+                        lower.ctx,
                         lower.names,
                         original_borrow.call(Some(&mut istmts)),
+                        self.span,
                         &rhs.projections[deref_index + 1..],
                         |sym| {
                             Exp::qvar(
@@ -1062,6 +1077,7 @@ impl<'tcx> Statement<'tcx> {
                         Box::new(|_, x| x),
                         &rhs.projections,
                         |ix| Exp::var(*ix),
+                        self.span,
                     );
                     rhs_rplace = foc.call(Some(&mut istmts));
                     rhs_constr = constr;
@@ -1080,7 +1096,7 @@ impl<'tcx> Statement<'tcx> {
                 let borrow_call =
                     IntermediateStmt::call(ret_ident, lhs_ty_low, Name::Global(func), args);
                 istmts.push(borrow_call);
-                lower.assignment(&lhs, Exp::var(ret_ident), &mut istmts);
+                lower.assignment(&lhs, Exp::var(ret_ident), &mut istmts, self.span);
 
                 let reassign = Exp::var(ret_ident).field(Name::Global(name::final_()));
 
@@ -1092,8 +1108,9 @@ impl<'tcx> Statement<'tcx> {
                 istmts.push(IntermediateStmt::Assign(rhs.local, new_rhs));
             }
             StatementKind::Assignment(lhs, e) => {
-                let rhs = e.into_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
-                lower.assignment(&lhs, rhs, &mut istmts);
+                let rhs =
+                    e.into_why(self.span, lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
+                lower.assignment(&lhs, rhs, &mut istmts, self.span);
             }
             StatementKind::Call(dest, fun_id, subst, args) => {
                 let (fun_qname, args) = func_call_to_why3(lower, fun_id, subst, args, &mut istmts);
@@ -1101,13 +1118,13 @@ impl<'tcx> Statement<'tcx> {
                 let ty = lower.ty(ty);
                 let ret_ident = Ident::fresh_local("_ret");
                 istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, args));
-                lower.assignment(&dest, Exp::var(ret_ident), &mut istmts);
+                lower.assignment(&dest, Exp::var(ret_ident), &mut istmts, self.span);
             }
             StatementKind::Resolve { did, subst, pl } => {
                 let rp = Exp::Var(lower.names.item(did, subst));
                 let loc = pl.local;
                 let bound = Ident::fresh_local("x");
-                let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
+                let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound, self.span);
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let WPattern::VarP(_) = pat {
                     rp.app([Exp::var(loc)])
@@ -1132,7 +1149,7 @@ impl<'tcx> Statement<'tcx> {
                 let inv_fun = Exp::var(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
                 let loc = pl.local;
                 let bound = Ident::fresh_local("x");
-                let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
+                let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound, self.span);
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let WPattern::VarP(_) = pat {
                     inv_fun.app([Exp::var(loc)])
@@ -1158,6 +1175,7 @@ fn pattern_of_place<'tcx>(
     locals: &LocalDecls<'tcx>,
     pl: Place<'tcx>,
     binder: Ident,
+    span: Span,
 ) -> Pattern<'tcx> {
     let mut pat = Pattern::binder(binder, pl.ty(tcx, locals));
     for (pl, el) in pl.iter_projections().rev() {
@@ -1175,7 +1193,7 @@ fn pattern_of_place<'tcx>(
             }
             ProjectionElem::Downcast(_, _) => {}
             ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
-                todo!("Array and slice patterns are currently not supported")
+                tcx.dcx().span_bug(span, "Array and slice patterns are currently not supported")
             }
             ProjectionElem::Index(_)
             | ProjectionElem::OpaqueCast(_)

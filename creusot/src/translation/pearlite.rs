@@ -5,13 +5,6 @@
 // Transforms THIR into a Term which may be serialized in Creusot metadata files for usage by dependent crates
 // The `lower` module then transforms a `Term` into a WhyML expression.
 
-use std::{
-    assert_matches::assert_matches,
-    collections::{HashMap, HashSet},
-    fmt::{Display, Formatter},
-    unreachable,
-};
-
 use crate::{
     contracts_items::{is_assertion, is_deref, is_ghost_ty, is_index_logic, is_snap_ty, is_spec},
     error::{CreusotResult, Error},
@@ -40,6 +33,11 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
+use std::{
+    assert_matches::assert_matches,
+    collections::{HashMap, HashSet},
+    fmt::{Display, Formatter},
+};
 
 mod normalize;
 
@@ -274,7 +272,7 @@ impl<'tcx> TermKind<'tcx> {
     }
 }
 
-impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
+impl<I: Interner> TypeFoldable<I> for Literal<'_> {
     fn try_fold_with<F: rustc_middle::ty::FallibleTypeFolder<I>>(
         self,
         _: &mut F,
@@ -283,23 +281,25 @@ impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
     }
 }
 
-impl<'tcx, I: Interner> TypeVisitable<I> for Literal<'tcx> {
+impl<I: Interner> TypeVisitable<I> for Literal<'_> {
     fn visit_with<V: rustc_middle::ty::TypeVisitor<I>>(&self, _: &mut V) -> V::Result {
         V::Result::output()
     }
 }
 
 pub fn visit_projections<V, T>(v: &Projections<V, T>, mut f: impl FnMut(&V)) {
-    v.iter().for_each(|elem| match elem {
-        ProjectionElem::Index(v) => f(v),
-        _ => {}
+    v.iter().for_each(|elem| {
+        if let ProjectionElem::Index(v) = elem {
+            f(v)
+        }
     })
 }
 
 pub fn visit_projections_mut<V, T>(v: &mut Projections<V, T>, mut f: impl FnMut(&mut V)) {
-    v.iter_mut().for_each(|elem| match elem {
-        ProjectionElem::Index(v) => f(v),
-        _ => {}
+    v.iter_mut().for_each(|elem| {
+        if let ProjectionElem::Index(v) = elem {
+            f(v)
+        }
     })
 }
 
@@ -383,7 +383,7 @@ impl<'tcx> Pattern<'tcx> {
     }
 
     pub(crate) fn deref(self, ty: Ty<'tcx>) -> Self {
-        Pattern { ty, kind: PatternKind::Deref(Box::new(self)), span: DUMMY_SP }
+        Pattern { ty, span: self.span, kind: PatternKind::Deref(Box::new(self)) }
     }
 
     pub(crate) fn constructor(
@@ -462,15 +462,16 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
     id: LocalDefId,
 ) -> CreusotResult<(Box<[(PIdent, Ty<'tcx>)]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
     let Some((thir, expr)) = ctx.get_thir(id) else { return Err(Error::ErrorGuaranteed) };
-    let lower = ThirTerm { ctx, item_id: id, thir: &thir };
+    let lower = ThirTerm { ctx, item_id: id, thir };
 
     let (triggers, body) = lower.body_term(expr)?;
 
     // All that remains is to translate patterns in the parameter list.
     // Postconditions make this annoying. They are closures with a `result` parameter,
     // so we have to collect the parameters of the parent function and the current closure.
-    let to_pattern =
-        |param: &thir::Param<'tcx>| param.pat.as_ref().map(|box pat| lower.pattern_term(pat, true));
+    let to_pattern = |param: &thir::Param<'tcx>| {
+        param.pat.as_ref().map(|box pat| lower.pattern_term(ctx, pat, true))
+    };
     let did = id.into();
     let is_closure = ctx.tcx.is_closure_like(did);
     let patterns: Box<[Pattern]> = if is_spec(ctx.tcx, did) && is_closure {
@@ -501,7 +502,7 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
         .map(|(idx, pat)| {
             let ident = match pat.kind {
                 PatternKind::Binder(var) => var,
-                _ => Ident::fresh_local(&format!("__{}", idx)).into(),
+                _ => Ident::fresh_local(format!("__{}", idx)).into(),
             };
             (
                 ident,
@@ -530,7 +531,7 @@ struct ThirTerm<'a, 'tcx> {
 
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
-impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
+impl<'tcx> ThirTerm<'_, 'tcx> {
     fn body_term(&self, expr: ExprId) -> CreusotResult<(Box<[Trigger<'tcx>]>, Term<'tcx>)> {
         let mut triggers = vec![];
         let expr = self.collect_triggers(expr, &mut triggers)?;
@@ -574,10 +575,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         PIdent(self.ctx.rename(id))
     }
 
+    /// Translate a THIR expression into a term.
     fn expr_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let ty = self.thir[expr].ty;
         let thir_term = &self.thir[expr];
-        let span = self.thir[expr].span;
+        let span = thir_term.span;
         let res = match thir_term.kind {
             ExprKind::Scope { value, .. } => self.expr_term(value),
             ExprKind::Block { block } => {
@@ -615,9 +617,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Gt => BinOp::Gt,
                     Ne => unreachable!(),
                     Eq => unreachable!(),
-                    Offset => todo!(),
-                    Cmp => todo!(),
-                    AddWithOverflow | SubWithOverflow | MulWithOverflow => todo!(),
+                    Offset | Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => {
+                        return Err(Error::msg(span, "Unsupported binary operation {op}"));
+                    }
                 };
                 Ok(Term {
                     ty,
@@ -644,7 +646,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let op = match op {
                     Not => UnOp::Not,
                     Neg => UnOp::Neg,
-                    PtrMetadata => todo!(),
+                    PtrMetadata => {
+                        return Err(Error::msg(span, "Unsupported unary operation {op}"));
+                    }
                 };
                 Ok(Term { ty, span, kind: TermKind::Unary { op, arg: Box::new(arg) } })
             }
@@ -674,7 +678,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         }
                     }
                     LitKind::Char(c) => Literal::Char(c),
-                    _ => unimplemented!("Unsupported literal"),
+                    _ => self.ctx.dcx().span_bug(span, "Unsupported literal"),
                 };
                 Ok(Term { ty, span, kind: TermKind::Lit(lit) })
             }
@@ -737,7 +741,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                                 _ => {
                                     return Err(Error::msg(
                                         span,
-                                        &format!("Bad seq! This should not happen."),
+                                        "Bad seq! This should not happen.",
                                     ));
                                 }
                             }
@@ -805,7 +809,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         }
                     }
                     thir::AdtExprBase::DefaultFields(_) => {
-                        unimplemented!("default_field_values is not supported in pearlite")
+                        return Err(Error::msg(
+                            span,
+                            "Default field values syntax is not supported in pearlite",
+                        ));
                     }
                 }
 
@@ -832,7 +839,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let scrutinee = self.expr_term(scrutinee)?;
                 if arms.is_empty() {
                     return Err(Error::msg(
-                        thir_term.span,
+                        span,
                         "Empty matches are forbidden in Pearlite, because Why3 types are always inhabited.",
                     ));
                 }
@@ -874,12 +881,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Use { source } => self.expr_term(source),
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
             ExprKind::Box { value } => self.expr_term(value),
-            // ExprKind::Array { ref fields } => todo!("Array {:?}", fields),
             ExprKind::NonHirLiteral { ref user_ty, .. } => match ty.kind() {
                 TyKind::FnDef(id, substs) => {
                     Ok(Term { ty, span, kind: TermKind::item(*id, substs, user_ty, self.ctx.tcx) })
                 }
-                _ => Err(Error::msg(thir_term.span, "unhandled literal expression")),
+                _ => Err(Error::msg(span, "unhandled literal expression")),
             },
             ExprKind::NamedConst { def_id, args, ref user_ty, .. } => {
                 Ok(Term { ty, span, kind: TermKind::item(def_id, args, user_ty, self.ctx.tcx) })
@@ -910,14 +916,16 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 // from the empty match. It is more helpful because it has a visible source.
                 let _ = self.expr_term(source)?;
                 Err(Error::msg(
-                    thir_term.span,
+                    span,
                     "Casts from ! are not supported in Pearlite, because Why3 types are always inhabited.",
                 ))
             }
             ExprKind::PointerCoercion {
                 cast: PointerCoercion::MutToConstPointer, source, ..
             } => Ok(self.expr_term(source)?.coerce(ty).span(span)),
-            ref ek => todo!("lower_expr: {:?}", ek),
+            ref ek => {
+                self.ctx.dcx().span_bug(span, format!("Unsupported expression kind {:?}", ek))
+            }
         };
         Ok(Term { ty, ..res? })
     }
@@ -929,13 +937,18 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             return Err(Error::msg(arm.span, "match guards are unsupported"));
         }
 
-        let pattern = self.pattern_term(&arm.pattern, false)?;
+        let pattern = self.pattern_term(self.ctx, &arm.pattern, false)?;
         let body = self.expr_term(arm.body)?;
 
         Ok((pattern, body))
     }
 
-    fn pattern_term(&self, pat: &Pat<'tcx>, mut_allowed: bool) -> CreusotResult<Pattern<'tcx>> {
+    fn pattern_term(
+        &self,
+        ctx: &TranslationCtx<'tcx>,
+        pat: &Pat<'tcx>,
+        mut_allowed: bool,
+    ) -> CreusotResult<Pattern<'tcx>> {
         trace!("{:?}", pat);
         match &pat.kind {
             PatKind::Wild => {
@@ -957,14 +970,14 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             PatKind::Variant { subpatterns, variant_index, .. } => {
                 let fields = subpatterns
                     .iter()
-                    .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern, mut_allowed)?)))
+                    .map(|pat| Ok((pat.field, self.pattern_term(ctx, &pat.pattern, mut_allowed)?)))
                     .collect::<Result<Vec<_>, Error>>()?;
                 Ok(Pattern::constructor(*variant_index, fields, pat.ty).span(pat.span))
             }
             PatKind::Leaf { subpatterns } => {
                 let fields = subpatterns
                     .iter()
-                    .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern, mut_allowed)?)))
+                    .map(|pat| Ok((pat.field, self.pattern_term(ctx, &pat.pattern, mut_allowed)?)))
                     .collect::<Result<Vec<_>, Error>>()?;
 
                 if let TyKind::Tuple(_) = pat.ty.kind() {
@@ -976,7 +989,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             PatKind::Deref { subpattern } => Ok(Pattern {
                 ty: pat.ty,
                 span: pat.span,
-                kind: PatternKind::Deref(Box::new(self.pattern_term(subpattern, mut_allowed)?)),
+                kind: PatternKind::Deref(Box::new(self.pattern_term(
+                    ctx,
+                    subpattern,
+                    mut_allowed,
+                )?)),
             }),
             PatKind::Constant { value } => {
                 if !pat.ty.is_bool() {
@@ -993,9 +1010,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             // TODO: this simply ignores type annotations, maybe we should actually support them
             PatKind::AscribeUserType { ascription: _, subpattern } => {
-                self.pattern_term(subpattern, mut_allowed)
+                self.pattern_term(ctx, subpattern, mut_allowed)
             }
-            ref pk => todo!("lower_pattern: unsupported pattern kind {:?}", pk),
+            ref pk => ctx.dcx().span_bug(pat.span, format!("Unsupported pattern kind {:?}", pk)),
         }
     }
 
@@ -1012,7 +1029,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(Term::let_(Pattern::wildcard(arg.ty), arg, inner).span(span))
             }
             StmtKind::Let { pattern, initializer, init_scope, .. } => {
-                let pattern = self.pattern_term(pattern, false)?;
+                let pattern = self.pattern_term(self.ctx, pattern, false)?;
                 if let Some(initializer) = initializer {
                     let initializer = self.expr_term(*initializer)?;
                     let span =
@@ -1032,7 +1049,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn quant_term(
         &self,
         body: ExprId,
-    ) -> Result<(Box<[(PIdent, Ty<'tcx>)]>, Box<[Trigger<'tcx>]>, Term<'tcx>), Error> {
+    ) -> CreusotResult<(Box<[(PIdent, Ty<'tcx>)]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
         trace!("{:?}", self.thir[body].kind);
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
@@ -1043,28 +1060,27 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         }
     }
 
-    // Creates a 'logical' reborrow of a mutable borrow.
-    // The idea is that the expression `&mut ** X` for `X: &mut &mut T` should produces a pearlite value of type `&mut T`.
-    //
-    // However, this also has to deal with the idea that `* X` access the current value of a borrow in Pearlite.
-    // In actuality `&mut ** X` and `*X` are the same thing in THIR (rather the second doesn't exist).
-    // This has a **notable** consequence: an hist_inving of a mutable borrow in Pearlite must be the same as its **current value**.
-    // That is: `Y = &mut ** X` means that `* Y = ** X` and `^ Y = ^* X`. This is **unlike** in programs in which the `^` and `*` are
-    // swapped. While this difference is not satisfactory, it is a natural consequence of the properties of a logic, in particular stability
-    //  under substitution. We are allowed to write the following in Pearlite:
-    //
-    // let a = * x;
-    // let b = &mut * a; // &mut cannot be writte in surface syntax.
-    //
-    // However we translate `&mut x` should be the same as if we had first substituted `a`.
-    // This is not fully satisfactory, but the other choice where we correspond to the behavior of programs is not stable under
-    // substitution.
+    /// Creates a 'logical' reborrow of a mutable borrow.
+    /// The idea is that the expression `&mut ** X` for `X: &mut &mut T` should produces a pearlite value of type `&mut T`.
+    ///
+    /// However, this also has to deal with the idea that `* X` access the current value of a borrow in Pearlite.
+    /// In actuality `&mut ** X` and `*X` are the same thing in THIR (rather the second doesn't exist).
+    /// This has a **notable** consequence: an hist_inving of a mutable borrow in Pearlite must be the same as its **current value**.
+    /// That is: `Y = &mut ** X` means that `* Y = ** X` and `^ Y = ^* X`. This is **unlike** in programs in which the `^` and `*` are
+    /// swapped. While this difference is not satisfactory, it is a natural consequence of the properties of a logic, in particular stability
+    ///  under substitution. We are allowed to write the following in Pearlite:
+    ///
+    /// let a = * x;
+    /// let b = &mut * a; // &mut cannot be writte in surface syntax.
+    ///
+    /// However we translate `&mut x` should be the same as if we had first substituted `a`.
+    /// This is not fully satisfactory, but the other choice where we correspond to the behavior of programs is not stable under
+    /// substitution.
     fn logical_reborrow(&self, rebor_id: ExprId) -> Result<TermKind<'tcx>, Error> {
         // Check for the simple `&mut * x` case.
         if let ExprKind::Deref { arg } = self.thir[rebor_id].kind {
             return Ok(self.expr_term(arg)?.kind);
         };
-        // eprintln!("{}", PrintExpr(self.thir, rebor_id));
         // Handle every other case.
         let (inner, projections) = self.logical_reborrow_inner(rebor_id)?;
         Ok(TermKind::Reborrow { inner: Box::new(inner), projections: projections.into() })
@@ -1370,7 +1386,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
 impl<'tcx> Term<'tcx> {
     pub(crate) fn let_(pattern: Pattern<'tcx>, arg: Term<'tcx>, body: Term<'tcx>) -> Self {
         Term {
-            span: DUMMY_SP,
+            span: pattern.span.until(body.span),
             ty: body.ty,
             kind: TermKind::Let { pattern, arg: Box::new(arg), body: Box::new(body) },
         }
@@ -1389,13 +1405,20 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn proj(self, idx: FieldIdx, ty: Ty<'tcx>) -> Self {
-        Term { ty, kind: TermKind::Projection { lhs: Box::new(self), idx }, span: DUMMY_SP }
+        Term { ty, span: self.span, kind: TermKind::Projection { lhs: Box::new(self), idx } }
     }
 
     pub(crate) fn tuple(tcx: TyCtxt<'tcx>, fields: impl IntoIterator<Item = Term<'tcx>>) -> Self {
         let fields: Box<[_]> = fields.into_iter().collect();
-        let ty = Ty::new_tup_from_iter(tcx, fields.iter().map(|t| t.ty));
-        Term { ty, kind: TermKind::Tuple { fields }, span: DUMMY_SP }
+        let mut span = DUMMY_SP;
+        let ty = Ty::new_tup_from_iter(
+            tcx,
+            fields.iter().map(|t| {
+                span = span.until(t.span);
+                t.ty
+            }),
+        );
+        Term { ty, kind: TermKind::Tuple { fields }, span }
     }
 
     pub(crate) fn call_no_normalize(
@@ -1459,12 +1482,12 @@ impl<'tcx> Term<'tcx> {
                 TermKind::Lit(Literal::Bool(true)) => self,
                 _ => Term {
                     ty: self.ty,
+                    span: self.span.until(rhs.span),
                     kind: TermKind::Binary {
                         op: BinOp::And,
                         lhs: Box::new(self),
                         rhs: Box::new(rhs),
                     },
-                    span: DUMMY_SP,
                 },
             },
         }
@@ -1473,8 +1496,8 @@ impl<'tcx> Term<'tcx> {
     pub(crate) fn bin_op(self, ty: Ty<'tcx>, op: BinOp, rhs: Self) -> Self {
         Term {
             ty,
+            span: self.span.until(rhs.span),
             kind: TermKind::Binary { op, lhs: Box::new(self), rhs: Box::new(rhs) },
-            span: DUMMY_SP,
         }
     }
 
@@ -1497,8 +1520,8 @@ impl<'tcx> Term<'tcx> {
             }
             _ => Term {
                 ty: self.ty,
+                span: self.span.until(rhs.span),
                 kind: TermKind::Impl { lhs: Box::new(self), rhs: Box::new(rhs) },
-                span: DUMMY_SP,
             },
         }
     }
@@ -1534,14 +1557,14 @@ impl<'tcx> Term<'tcx> {
             (TermKind::Lit(Literal::Bool(false)), QuantKind::Exists) => self,
             _ => Term {
                 ty: self.ty,
+                span: self.span,
                 kind: TermKind::Quant { kind: quant_kind, binder, body: Box::new(self), trigger },
-                span: DUMMY_SP,
             },
         }
     }
 
     pub(crate) fn coerce(self, ty: Ty<'tcx>) -> Self {
-        Term { ty, kind: TermKind::Coerce { arg: Box::new(self) }, span: DUMMY_SP }
+        Term { ty, span: self.span, kind: TermKind::Coerce { arg: Box::new(self) } }
     }
 
     pub(crate) fn shr_ref(self, tcx: TyCtxt<'tcx>) -> Self {

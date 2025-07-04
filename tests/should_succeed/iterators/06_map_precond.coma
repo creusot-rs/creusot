@@ -282,13 +282,14 @@ module M_06_map_precond__qyi13778860181180212516__next [#"06_map_precond.rs" 66 
   let%span s06_map_precond'13 = "06_map_precond.rs" 23 8 26 9
   let%span s06_map_precond'14 = "06_map_precond.rs" 147 14 147 68
   let%span s06_map_precond'15 = "06_map_precond.rs" 150 12 156 74
-  let%span s06_map_precond'16 = "06_map_precond.rs" 165 12 167 73
-  let%span s06_map_precond'17 = "06_map_precond.rs" 96 14 96 83
-  let%span s06_map_precond'18 = "06_map_precond.rs" 99 12 105 88
-  let%span s06_map_precond'19 = "06_map_precond.rs" 88 12 91 63
-  let%span s06_map_precond'20 = "06_map_precond.rs" 45 8 59 9
-  let%span s06_map_precond'21 = "06_map_precond.rs" 124 12 127 47
-  let%span s06_map_precond'22 = "06_map_precond.rs" 112 12 117 71
+  let%span s06_map_precond'16 = "06_map_precond.rs" 1 0 27 4
+  let%span s06_map_precond'17 = "06_map_precond.rs" 165 12 167 73
+  let%span s06_map_precond'18 = "06_map_precond.rs" 96 14 96 83
+  let%span s06_map_precond'19 = "06_map_precond.rs" 99 12 105 88
+  let%span s06_map_precond'20 = "06_map_precond.rs" 88 12 91 63
+  let%span s06_map_precond'21 = "06_map_precond.rs" 45 8 59 9
+  let%span s06_map_precond'22 = "06_map_precond.rs" 124 12 127 47
+  let%span s06_map_precond'23 = "06_map_precond.rs" 112 12 117 71
   let%span scommon = "common.rs" 14 14 14 47
   let%span scommon'0 = "common.rs" 18 15 18 32
   let%span scommon'1 = "common.rs" 19 15 19 32
@@ -348,7 +349,7 @@ module M_06_map_precond__qyi13778860181180212516__next [#"06_map_precond.rs" 66 
   
   predicate precondition (self: ()) (args: MutBorrow.t t_I)
   
-  axiom precondition_fndef: forall args: MutBorrow.t t_I [precondition () args]. (let self = args in inv'0 self)
+  axiom precondition_fndef: [%#s06_map_precond'16] forall args: MutBorrow.t t_I [precondition () args]. (let self = args in inv'0 self)
    -> precondition () args
   
   predicate completed [#"common.rs" 11 4 11 36] (self: MutBorrow.t t_I)
@@ -365,7 +366,7 @@ module M_06_map_precond__qyi13778860181180212516__next [#"06_map_precond.rs" 66 
   
   predicate postcondition_once (self: ()) (args: MutBorrow.t t_I) (result: t_Option)
   
-  axiom postcondition_fndef: forall args: MutBorrow.t t_I, res: t_Option [postcondition_once () args res]. postcondition_once () args res
+  axiom postcondition_fndef: [%#s06_map_precond'16] forall args: MutBorrow.t t_I, res: t_Option [postcondition_once () args res]. postcondition_once () args res
    -> (let self = args in match res with
     | C_None -> completed self
     | C_Some v -> produces self.current (Seq.singleton v) self.final
@@ -439,33 +440,33 @@ module M_06_map_precond__qyi13778860181180212516__next [#"06_map_precond.rs" 66 
   
   
   predicate next_precondition [#"06_map_precond.rs" 86 4 86 74] (iter: t_I) (func: t_F) (produced: Seq.seq t_Item) =
-    [%#s06_map_precond'19] forall e: t_Item, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
+    [%#s06_map_precond'20] forall e: t_Item, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
      -> precondition'0 func { _p0 = e; _p1 = produced }
   
   predicate preservation [#"06_map_precond.rs" 110 4 110 45] (iter: t_I) (func: t_F) =
-    [%#s06_map_precond'22] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv func f.current
+    [%#s06_map_precond'23] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv func f.current
      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
      -> precondition'0 f.current { _p0 = e1; _p1 = s }
      -> postcondition_mut f.current { _p0 = e1; _p1 = s } f.final b
      -> precondition'0 f.final { _p0 = e2; _p1 = Seq.snoc s e1 }
   
   predicate reinitialize [#"06_map_precond.rs" 122 4 122 29]  =
-    [%#s06_map_precond'21] forall iter: MutBorrow.t t_I, func: t_F. completed iter
+    [%#s06_map_precond'22] forall iter: MutBorrow.t t_I, func: t_F. completed iter
      -> next_precondition iter.final func (Seq.empty: Seq.seq t_Item) /\ preservation iter.final func
   
   predicate preservation_inv [#"06_map_precond.rs" 97 4 97 73] (iter: t_I) (func: t_F) (produced: Seq.seq t_Item) =
-    [%#s06_map_precond'18] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current { _p0 = e1;
+    [%#s06_map_precond'19] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current { _p0 = e1;
                                                                                                                                                                                               _p1 = Seq.(++) produced s } f.final b]. hist_inv func f.current
      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
      -> precondition'0 f.current { _p0 = e1; _p1 = Seq.(++) produced s }
      -> postcondition_mut f.current { _p0 = e1; _p1 = Seq.(++) produced s } f.final b
      -> precondition'0 f.final { _p0 = e2; _p1 = Seq.snoc (Seq.(++) produced s) e1 }
   
-  axiom preservation_inv_spec: forall iter: t_I, func: t_F, produced: Seq.seq t_Item. [%#s06_map_precond'17] produced
+  axiom preservation_inv_spec: forall iter: t_I, func: t_F, produced: Seq.seq t_Item. [%#s06_map_precond'18] produced
   = (Seq.empty: Seq.seq t_Item)  -> preservation_inv iter func produced = preservation iter func
   
   predicate invariant''1 [#"06_map_precond.rs" 163 4 163 30] (self: t_Map) =
-    [%#s06_map_precond'16] reinitialize
+    [%#s06_map_precond'17] reinitialize
     /\ preservation_inv self.t_Map__iter self.t_Map__func self.t_Map__produced
     /\ next_precondition self.t_Map__iter self.t_Map__func self.t_Map__produced
   
@@ -522,7 +523,7 @@ module M_06_map_precond__qyi13778860181180212516__next [#"06_map_precond.rs" 66 
   predicate produces'0 [@inline:trivial] [#"06_map_precond.rs" 44 4 44 67] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map)
   
    =
-    [%#s06_map_precond'20] hist_inv self.t_Map__func succ.t_Map__func
+    [%#s06_map_precond'21] hist_inv self.t_Map__func succ.t_Map__func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
     /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
     /\ produces self.t_Map__iter s succ.t_Map__iter
