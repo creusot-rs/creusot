@@ -8,6 +8,7 @@ use crate::{
         Why3Generator,
         clone_map::Namer as _,
         logic::Dependencies,
+        program::{PtrCastKind, ptr_cast_kind},
         projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::lower_contract,
         term::{binop_to_binop, lower_literal, lower_pure, unsupported_cast},
@@ -285,11 +286,16 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         k(Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([arg])]))
                     })
                 }
-                TyKind::RawPtr(ty1, _)
-                    if let TyKind::RawPtr(ty2, _) = t.ty.kind()
-                        && ty1 == ty2 =>
-                {
-                    self.build_wp(arg, k)
+                // Pointer-to-pointer casts
+                TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = t.ty.kind() => {
+                    match ptr_cast_kind(self.ctx.tcx, self.names.typing_env(), ty1, ty2) {
+                        PtrCastKind::Id => self.build_wp(arg, k),
+                        PtrCastKind::Thin => self.build_wp(arg, &|arg| {
+                            let thin = self.names.in_pre(PreMod::Opaque, "thin");
+                            k(Exp::qvar(thin).app([arg]))
+                        }),
+                        PtrCastKind::Unknown => unsupported_cast(self.ctx, t.span, arg.ty, t.ty),
+                    }
                 }
                 _ => unsupported_cast(self.ctx, t.span, arg.ty, t.ty),
             },
