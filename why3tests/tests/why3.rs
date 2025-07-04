@@ -58,15 +58,9 @@ fn main() {
     // Use the Creusot installation for Why3, Why3find, and solvers (because they're a pain to keep track of if we allow them to come from anywhere)
     let creusot_setup::Paths { why3, why3find, why3_config, .. } =
         creusot_setup::creusot_paths().unwrap();
+
     // Use the local prelude, so that it's easy to test quick changes.
-    let build_prelude_success = Command::new("cargo")
-        .args(["run", "-p", "creusot-install", "--", "--only-build-prelude"])
-        .status()
-        .unwrap()
-        .success();
-    if !build_prelude_success {
-        exit(1);
-    }
+    prelude_generator::build_prelude().unwrap_or_else(|_| exit(1));
 
     let changed =
         if let Some(diff) = args.diff_from { Some(changed_comas(&diff).unwrap()) } else { None };
