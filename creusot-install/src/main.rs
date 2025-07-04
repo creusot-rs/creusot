@@ -4,10 +4,10 @@ use clap::*;
 use creusot_setup::{
     self as setup, Binary, CfgPaths, PROVERS,
     config::{Config, ExternalTool, ManagedTool},
+    run,
     tools_versions_urls::*,
 };
 use indoc::writedoc;
-use reqwest::blocking::Client;
 use std::{
     env,
     ffi::OsStr,
@@ -23,29 +23,23 @@ use std::{
 pub struct ManagedBinary {
     pub bin: setup::Binary,
     url: &'static Url,
-    download_with: fn(&Client, &Url, &Path, &Path) -> anyhow::Result<()>,
+    download: fn(&Url, &Path, &Path) -> anyhow::Result<()>,
 }
 
 const ALTERGO: ManagedBinary = ManagedBinary {
     bin: setup::ALTERGO,
     url: &URLS.altergo,
-    download_with: download_from_url_with_cache,
+    download: download_from_url_with_cache,
 };
 
 const Z3: ManagedBinary =
-    ManagedBinary { bin: setup::Z3, url: &URLS.z3, download_with: download_z3_from_url };
+    ManagedBinary { bin: setup::Z3, url: &URLS.z3, download: download_z3_from_url };
 
-const CVC4: ManagedBinary = ManagedBinary {
-    bin: setup::CVC4,
-    url: &URLS.cvc4,
-    download_with: download_from_url_with_cache,
-};
+const CVC4: ManagedBinary =
+    ManagedBinary { bin: setup::CVC4, url: &URLS.cvc4, download: download_from_url_with_cache };
 
-const CVC5: ManagedBinary = ManagedBinary {
-    bin: setup::CVC5,
-    url: &URLS.cvc5,
-    download_with: download_from_url_with_cache,
-};
+const CVC5: ManagedBinary =
+    ManagedBinary { bin: setup::CVC5, url: &URLS.cvc5, download: download_from_url_with_cache };
 
 /// Install Creusot
 #[derive(Debug, Parser)]
@@ -336,21 +330,16 @@ pub fn sha256sum(file: &Path) -> anyhow::Result<String> {
     Ok(hex::encode(hasher.finalize()))
 }
 
-fn download_from_url(client: &Client, url: &Url, dest: &Path) -> anyhow::Result<()> {
+fn download_from_url(url: &Url, dest: &Path) -> anyhow::Result<()> {
     const DOWNLOAD_RETRIES: u32 = 1;
-    let do_download = || -> anyhow::Result<()> {
-        let mut resp = client.get(url.url).send()?;
-        let mut file = fs::File::create(dest)?;
-        resp.copy_to(&mut file)?;
-        Ok(())
-    };
     let mut success = false;
     let mut tries: u32 = 0;
     while !success && tries <= DOWNLOAD_RETRIES {
         if tries > 0 {
             eprintln!("Retrying...")
         };
-        do_download().with_context(|| format!("downloading {} to {}", url.url, dest.display()))?;
+        run(Command::new("curl").arg(url.url).arg("-fLo").arg(dest))
+            .with_context(|| format!("downloading {} to {}", url.url, dest.display()))?;
         let file_hash = sha256sum(dest)?;
         if file_hash == url.sha256 {
             success = true
@@ -368,15 +357,10 @@ fn download_from_url(client: &Client, url: &Url, dest: &Path) -> anyhow::Result<
 
 // looks up [cache_dir] to try to find a cached download; if not, stores the
 // result of the download in [cache_dir] (using the hash as the filename).
-fn download_from_url_with_cache(
-    client: &Client,
-    url: &Url,
-    cache_dir: &Path,
-    dest: &Path,
-) -> anyhow::Result<()> {
+fn download_from_url_with_cache(url: &Url, cache_dir: &Path, dest: &Path) -> anyhow::Result<()> {
     let cached_path = cache_dir.join(url.sha256);
     if !(cached_path.is_file() && sha256sum(&cached_path)? == url.sha256) {
-        download_from_url(client, url, &cached_path)?;
+        download_from_url(url, &cached_path)?;
     }
     if cached_path != dest {
         fs::copy(cached_path, dest)?;
@@ -496,12 +480,11 @@ fn generate_strategy(f: &mut dyn Write) -> anyhow::Result<()> {
 // download a list [ManagedBinary]s
 
 fn download_all(bins: &[ManagedBinary], cache_dir: &Path, dest_dir: &Path) -> anyhow::Result<()> {
-    let client = Client::new();
     for bin in bins {
         println!("Downloading {} {}...", bin.bin.display_name, bin.bin.version);
         let path = dest_dir.join(bin.bin.binary_name);
-        let dl = bin.download_with;
-        dl(&client, bin.url, cache_dir, &path)?;
+        let dl = bin.download;
+        dl(bin.url, cache_dir, &path)?;
         set_executable(&path)?;
     }
     Ok(())
@@ -511,16 +494,11 @@ fn download_all(bins: &[ManagedBinary], cache_dir: &Path, dest_dir: &Path) -> an
 // interested in the z3 binary, so we extract it from the archive and throw away
 // the rest.
 
-fn download_z3_from_url(
-    client: &Client,
-    url: &Url,
-    cache_dir: &Path,
-    dest: &Path,
-) -> anyhow::Result<()> {
+fn download_z3_from_url(url: &Url, cache_dir: &Path, dest: &Path) -> anyhow::Result<()> {
     use zip::read::ZipArchive;
     // just use the zip file stored in the cache
     let zip_path = cache_dir.join(url.sha256);
-    download_from_url_with_cache(client, url, cache_dir, &zip_path)?;
+    download_from_url_with_cache(url, cache_dir, &zip_path)?;
     {
         // extract the z3 binary from the .zip archive
         let zipfile = std::fs::File::open(&zip_path)?;
