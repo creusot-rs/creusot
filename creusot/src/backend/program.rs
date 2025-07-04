@@ -24,6 +24,7 @@ use crate::{
         },
         wto::{Component, weak_topological_order},
     },
+    contracts_items::get_namespace_ty,
     ctx::{BodyId, Dependencies},
     naming::name,
     translated_item::FileModule,
@@ -68,6 +69,9 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     let name = names.item_ident(names.self_id, names.self_subst);
     let body = Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), None)));
 
+    let namespace_ty =
+        names.def_ty_no_dependency(get_namespace_ty(ctx.ctx.tcx), GenericArgsRef::default());
+
     let mut decls = names.provide_deps(ctx);
     decls.push(Decl::Meta(Meta {
         name: MetaIdent::String("compute_max_steps".into()),
@@ -79,6 +83,13 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     let meta = ctx.display_impl_of(def_id);
     let path = ctx.module_path(def_id);
     let name = path.why3_ident();
+
+    if ctx.used_namespaces.get() {
+        let mut new_decls = ctx.generate_namespace_type(namespace_ty);
+        new_decls.extend(std::mem::take(&mut decls));
+        decls = new_decls;
+    }
+
     Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } })
 }
 
@@ -522,7 +533,7 @@ impl<'tcx> RValue<'tcx> {
                         let prelude = match target.kind() {
                             TyKind::Int(ity) => ity_to_prelude(lower.ctx.tcx, *ity),
                             TyKind::Uint(uty) => uty_to_prelude(lower.ctx.tcx, *uty),
-                            _ => unsupported_cast(&lower.ctx, source, target),
+                            _ => unsupported_cast(lower.ctx, source, target),
                         };
                         let arg = e.into_why(lower, istmts);
                         Exp::qvar(lower.names.in_pre(prelude, "of_bool")).app(vec![arg])
@@ -540,7 +551,7 @@ impl<'tcx> RValue<'tcx> {
                                     if lower.names.bitwise_mode() { "to_BV256" } else { "t'int" };
                                 lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *ity), fct_name)
                             }
-                            _ => unsupported_cast(&lower.ctx, source, target),
+                            _ => unsupported_cast(lower.ctx, source, target),
                         };
                         let to_exp = Exp::qvar(to_fname).app(vec![e.into_why(lower, istmts)]);
 
@@ -561,7 +572,7 @@ impl<'tcx> RValue<'tcx> {
                                     if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
                                 lower.names.in_pre(PreMod::Char, fct_name)
                             }
-                            _ => unsupported_cast(&lower.ctx, source, target),
+                            _ => unsupported_cast(lower.ctx, source, target),
                         };
 
                         // create final statement
@@ -581,7 +592,7 @@ impl<'tcx> RValue<'tcx> {
                         // cast between raw pointers of the same type
                         e.into_why(lower, istmts)
                     }
-                    _ => unsupported_cast(&lower.ctx, source, target),
+                    _ => unsupported_cast(lower.ctx, source, target),
                 }
             }
             RValue::Len(op) => Exp::qvar(lower.names.in_pre(PreMod::Slice, "length"))

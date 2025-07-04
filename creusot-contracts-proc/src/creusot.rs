@@ -268,6 +268,21 @@ pub fn snapshot(assertion: TS1) -> TS1 {
     })
 }
 
+pub fn declare_namespace(namespace: TS1) -> TS1 {
+    let ident = parse_macro_input!(namespace as Ident);
+    quote! {
+        #[logic]
+        #[open(self)]
+        #[creusot::no_translate]
+        #[creusot::decl::new_namespace]
+        #[allow(nonstandard_style)]
+        pub fn #ident() -> ::creusot_contracts::local_invariant::Namespace {
+            ::creusot_contracts::local_invariant::Namespace::new()
+        }
+    }
+    .into()
+}
+
 /// A structure to parse some attributes followed by something else.
 struct Attributes {
     attrs: Vec<Attribute>,
