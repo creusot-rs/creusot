@@ -101,16 +101,19 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
             let (self_edge, call) = (self_edge.id(), *self_edge.weight());
             let CallKind::Direct(span) = call else { continue };
             call_graph.remove_edge(self_edge);
-            if is_pearlite(ctx.tcx, def_id) && has_variant_clause(ctx.tcx, def_id) {
-                // Allow simple recursion in logic functions
-                continue;
-            }
-            if !has_variant_clause(ctx.tcx, def_id) && def_id.is_local() {
+            if !is_pearlite(ctx.tcx, def_id)
+                && !has_variant_clause(ctx.tcx, def_id)
+                && def_id.is_local()
+            {
                 let fun_span = ctx.def_span(def_id);
                 let mut error =
                     ctx.error(fun_span, "Recursive function without a `#[variant]` clause");
                 error.span_note(span, "Recursive call happens here");
                 error.emit();
+            }
+            if is_pearlite(ctx.tcx, def_id) && !has_variant_clause(ctx.tcx, def_id) {
+                // Allow simple recursion in logic functions
+                continue;
             }
             recursive_calls.entry(def_id).or_default().insert(def_id);
         };

@@ -23,7 +23,7 @@ use why3::{
 mod vcgen;
 
 pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<FileModule> {
-    let mut names = Dependencies::new(ctx, def_id);
+    let names = Dependencies::new(ctx, def_id);
     let pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, ctx.typing_env(def_id));
 
     let namespace_ty =
@@ -96,7 +96,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     let term = ctx.ctx.term(def_id).unwrap().rename(&bound);
     let wp = wp(
         ctx,
-        &mut names,
+        &names,
         def_id,
         args_names,
         sig.contract.variant.clone().map(|(exp, _)| exp),
