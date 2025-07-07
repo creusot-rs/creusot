@@ -2,7 +2,9 @@
 use crate::resolve::structural_resolve;
 use crate::{
     invariant::*,
-    std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
+    std::ops::{
+        Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
+    },
     *,
 };
 #[cfg(feature = "nightly")]
@@ -146,6 +148,36 @@ impl<T> SliceIndex<[T]> for Range<usize> {
     }
 }
 
+impl<T> SliceIndex<[T]> for RangeInclusive<usize> {
+    #[logic]
+    #[trusted]
+    #[ensures(self.end_log()@ < seq.len() && self.start_log()@ <= self.end_log()@+1 ==> result)]
+    #[ensures(self.end_log()@ >= seq.len() ==> !result)]
+    fn in_bounds(self, seq: Seq<T>) -> bool {
+        dead
+    }
+
+    #[logic]
+    #[open]
+    fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
+        pearlite! {
+            if self.is_empty_log() { out@ == Seq::empty() }
+            else { seq.subsequence(self.start_log()@, self.end_log()@ + 1) == out@ }
+        }
+    }
+
+    #[logic]
+    #[open]
+    fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
+        pearlite! {
+            forall<i> 0 <= i
+                && (i < self.start_log()@ || self.end_log()@ < i || self.is_empty_log())
+                && i < old.len()
+                ==> old[i] == fin[i]
+        }
+    }
+}
+
 impl<T> SliceIndex<[T]> for RangeTo<usize> {
     #[logic]
     #[open]
@@ -245,9 +277,14 @@ extern_spec! {
         #[ensures((^self)@.exchange(self@, i@, j@))]
         fn swap(&mut self, i: usize, j: usize);
 
-        #[ensures(ix.in_bounds(self@) ==> exists<r> result == Some(r) && ix.has_value(self_@, *r))]
+        #[ensures(ix.in_bounds(self@) ==> exists<r> result == Some(r) && ix.has_value(self@, *r))]
         #[ensures(ix.in_bounds(self@) || result == None)]
         fn get<I: SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as ::std::slice::SliceIndex<[T]>>::Output>;
+
+        #[ensures((^self)@.len() == self@.len())]
+        #[ensures(ix.in_bounds(self@) ==> exists<r> result == Some(r) && ix.has_value(self@, *r) && ix.has_value((^self)@, ^r) && ix.resolve_elswhere(self@, (^self)@))]
+        #[ensures(ix.in_bounds(self@) || result == None)]
+        fn get_mut<I: SliceIndex<[T]>>(&mut self, ix: I) -> Option<&mut <I as ::std::slice::SliceIndex<[T]>>::Output>;
 
         #[pure]
         #[requires(mid@ <= self@.len())]
@@ -338,9 +375,9 @@ extern_spec! {
         #[pure]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
-        #[ensures(ix.has_value((^self)@, ^result))]
-        #[ensures(ix.resolve_elswhere(self@, (^self)@))]
-        #[ensures((^self)@.len() == self@.len())]
+        #[ensures(ix.has_value((&^self)@, ^result))]
+        #[ensures(ix.resolve_elswhere(self@, (&^self)@))]
+        #[ensures((&^self)@.len() == self@.len())]
         fn index_mut(&mut self, ix: I) -> &mut <[T] as Index<I>>::Output;
     }
 
