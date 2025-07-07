@@ -3,8 +3,12 @@ module M_simple_trigger__id [#"simple_trigger.rs" 10 0 10 24]
   let%span ssimple_trigger'0 = "simple_trigger.rs" 9 10 9 32
   let%span ssimple_trigger'1 = "simple_trigger.rs" 8 10 8 11
   let%span ssimple_trigger'2 = "simple_trigger.rs" 11 4 11 42
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use mach.int.Int
+  
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -19,7 +23,7 @@ module M_simple_trigger__id [#"simple_trigger.rs" 10 0 10 24]
     [@expl:id ensures] [%#ssimple_trigger'0] i = 0  -> 0 = 0
   else
     (([@expl:id requires] [%#ssimple_trigger] i - 1 >= 0)
-    /\ 0 <= ([%#ssimple_trigger'1] i) /\ ([%#ssimple_trigger'1] i - 1) < ([%#ssimple_trigger'1] i))
+    /\ well_founded_relation ([%#ssimple_trigger'1] i) ([%#ssimple_trigger'1] i - 1))
     /\ (([%#ssimple_trigger'0] i - 1 = 0  -> id (i - 1) = 0)
      -> ([@expl:id ensures] [%#ssimple_trigger'0] i = 0  -> id (i - 1) + 1 = 0))
   )

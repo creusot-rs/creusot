@@ -30,6 +30,7 @@ module M_knapsack__m [#"knapsack.rs" 31 0 31 57]
   let%span sknapsack'1 = "knapsack.rs" 30 10 30 21
   let%span sknapsack'2 = "knapsack.rs" 27 10 27 11
   let%span sknapsack'3 = "knapsack.rs" 33 8 38 9
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use creusot.int.UInt64
   use seq.Seq
@@ -40,6 +41,9 @@ module M_knapsack__m [#"knapsack.rs" 31 0 31 57]
   
   type t_Item  =
     { t_Item__name: t_Name; t_Item__weight: UInt64.t; t_Item__value: UInt64.t }
+  
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -61,16 +65,16 @@ module M_knapsack__m [#"knapsack.rs" 31 0 31 57]
     if UInt64.t'int (Seq.get items (i - 1)).t_Item__weight > w then
       ((([@expl:m requires #0] [%#sknapsack] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w))
-      /\ 0 <= ([%#sknapsack'2] i) /\ ([%#sknapsack'2] i - 1) < ([%#sknapsack'2] i))
+      /\ well_founded_relation ([%#sknapsack'2] i) ([%#sknapsack'2] i - 1))
       /\ (([%#sknapsack'1] m items (i - 1) w >= 0)  -> ([@expl:m ensures] [%#sknapsack'1] m items (i - 1) w >= 0))
     else
       ((([@expl:m requires #0] [%#sknapsack] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w))
-      /\ 0 <= ([%#sknapsack'2] i) /\ ([%#sknapsack'2] i - 1) < ([%#sknapsack'2] i))
+      /\ well_founded_relation ([%#sknapsack'2] i) ([%#sknapsack'2] i - 1))
       /\ (([%#sknapsack'1] m items (i - 1) w >= 0)
        -> ((([@expl:m requires #0] [%#sknapsack] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight))
-      /\ 0 <= ([%#sknapsack'2] i) /\ ([%#sknapsack'2] i - 1) < ([%#sknapsack'2] i))
+      /\ well_founded_relation ([%#sknapsack'2] i) ([%#sknapsack'2] i - 1))
       /\ (([%#sknapsack'1] m items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight) >= 0)
        -> ([@expl:m ensures] [%#sknapsack'1] MinMax.max (m items (i - 1) w) (m items (i - 1) (w
       - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight)

@@ -7,10 +7,6 @@ pub enum Tree {
 }
 use Tree::*;
 
-// FIXME: this should go away, we have not defined any order relation on Tree
-#[trusted]
-impl WellFounded for Tree {}
-
 #[trusted]
 fn random() -> bool {
     panic!()

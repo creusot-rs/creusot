@@ -2,12 +2,16 @@ module M_217__ex [#"217.rs" 11 0 11 37]
   let%span s217 = "217.rs" 10 10 10 17
   let%span s217'0 = "217.rs" 12 4 12 50
   let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 162 8 162 39
+  let%span swell_founded = "../../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use seq.Seq
   use mach.int.Int
   
   function tail (self: Seq.seq int) : Seq.seq int =
     [%#sseq] Seq.([..]) self 1 (Seq.length self)
+  
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -22,6 +26,6 @@ module M_217__ex [#"217.rs" 11 0 11 37]
   goal vc_ex: if Seq.length c = 0 then
     true
   else
-    0 <= ([%#s217] Seq.length c) /\ ([%#s217] Seq.length (tail c)) < ([%#s217] Seq.length c)
+    well_founded_relation ([%#s217] Seq.length c) ([%#s217] Seq.length (tail c))
 
 end
