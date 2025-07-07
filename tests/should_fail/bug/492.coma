@@ -1,8 +1,8 @@
 module M_492__reborrow_tuple [#"492.rs" 6 0 6 52]
-  let%span s492 = "492.rs" 7 8 7 10
-  let%span s492'0 = "492.rs" 6 25 6 26
-  let%span s492'1 = "492.rs" 6 39 6 52
-  let%span s492'2 = "492.rs" 5 10 5 27
+  let%span s492 = "492.rs" 6 25 6 26
+  let%span s492'0 = "492.rs" 6 39 6 52
+  let%span s492'1 = "492.rs" 5 10 5 27
+  let%span s492'2 = "492.rs" 7 8 7 10
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
   
@@ -12,10 +12,10 @@ module M_492__reborrow_tuple [#"492.rs" 6 0 6 52]
   
   type t_T
   
-  predicate inv (_0: t_T)
-  
   type tuple  =
     { _p0: MutBorrow.t t_T; _p1: UInt32.t }
+  
+  predicate inv (_0: t_T)
   
   predicate invariant' (self: MutBorrow.t t_T) =
     [%#sinvariant] inv self.current /\ inv self.final
@@ -24,19 +24,19 @@ module M_492__reborrow_tuple [#"492.rs" 6 0 6 52]
   
   axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'0 x]. inv'0 x = invariant' x
   
+  predicate inv'1 (_0: tuple)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {_p0 = x0 ; _p1 = x1} = x in inv'0 x0)
+  
   predicate resolve (self: MutBorrow.t t_T) =
     [%#sresolve] self.final = self.current
   
   predicate resolve'0 (_0: MutBorrow.t t_T) =
     resolve _0
   
-  predicate inv'1 (_0: tuple)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {_p0 = x0 ; _p1 = x1} = x in inv'0 x0)
-  
   meta "compute_max_steps" 1000000
   
-  let rec reborrow_tuple[#"492.rs" 6 0 6 52] (x:MutBorrow.t t_T) (return'  (x'0:tuple))= {[@expl:reborrow_tuple 'x' type invariant] [%#s492'0] inv'0 x}
+  let rec reborrow_tuple[#"492.rs" 6 0 6 52] (x:MutBorrow.t t_T) (return'  (x'0:tuple))= {[@expl:reborrow_tuple 'x' type invariant] [%#s492] inv'0 x}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv x'0.current}
@@ -46,22 +46,22 @@ module M_492__reborrow_tuple [#"492.rs" 6 0 6 52]
             -{inv _ret.final}-
              [ &x'0 <- { x'0 with current = _ret.final } ] 
             s1)
-      | s1 =  [ &_0 <- { _p0 = _3; _p1 = ([%#s492] (32: UInt32.t)) } ] s2
+      | s1 =  [ &_0 <- { _p0 = _3; _p1 = ([%#s492'2] (32: UInt32.t)) } ] s2
       | s2 = {[@expl:type invariant] inv'0 x'0} s3
       | s3 = -{resolve'0 x'0}- s4
       | s4 = return''0 {_0} ]
      ]
     ) [ & _0: tuple = Any.any_l () | & x'0: MutBorrow.t t_T = x | & _3: MutBorrow.t t_T = Any.any_l () ] 
-    [ return''0 (result:tuple)-> {[@expl:reborrow_tuple result type invariant] [%#s492'1] inv'1 result}
-      {[@expl:reborrow_tuple ensures] [%#s492'2] (result._p0).current = x.current}
+    [ return''0 (result:tuple)-> {[@expl:reborrow_tuple result type invariant] [%#s492'0] inv'1 result}
+      {[@expl:reborrow_tuple ensures] [%#s492'1] (result._p0).current = x.current}
       (! return' {result}) ]
 
 end
 module M_492__test [#"492.rs" 11 0 11 13]
-  let%span s492 = "492.rs" 12 16 12 17
-  let%span s492'0 = "492.rs" 14 18 14 30
-  let%span s492'1 = "492.rs" 15 11 15 13
-  let%span s492'2 = "492.rs" 10 10 10 15
+  let%span s492 = "492.rs" 10 10 10 15
+  let%span s492'0 = "492.rs" 12 16 12 17
+  let%span s492'1 = "492.rs" 14 18 14 30
+  let%span s492'2 = "492.rs" 15 11 15 13
   let%span s492'3 = "492.rs" 5 10 5 27
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
@@ -87,7 +87,7 @@ module M_492__test [#"492.rs" 11 0 11 13]
   
   let rec test[#"492.rs" 11 0 11 13] (return'  (x:()))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &x <- [%#s492] (5: Int32.t) ] s1
+      [ s0 =  [ &x <- [%#s492'0] (5: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
           (fun (_ret:MutBorrow.t Int32.t) ->  [ &_6 <- _ret ]  [ &x <- _ret.final ] s2)
       | s2 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
@@ -98,8 +98,8 @@ module M_492__test [#"492.rs" 11 0 11 13]
     | bb1 = s0
       [ s0 =  [ &res <- _4._p0 ] s1
       | s1 = -{resolve'0 _6}- s2
-      | s2 = {[@expl:assertion] [%#s492'0] res.final = (5: Int32.t)} s3
-      | s3 =  [ &res <- { res with current = ([%#s492'1] (10: Int32.t)) } ] s4
+      | s2 = {[@expl:assertion] [%#s492'1] res.final = (5: Int32.t)} s3
+      | s3 =  [ &res <- { res with current = ([%#s492'2] (10: Int32.t)) } ] s4
       | s4 = -{resolve'0 res}- s5
       | s5 = return''0 {_0} ]
      ]
@@ -110,5 +110,5 @@ module M_492__test [#"492.rs" 11 0 11 13]
     | & _4: tuple = Any.any_l ()
     | & _5: MutBorrow.t Int32.t = Any.any_l ()
     | & _6: MutBorrow.t Int32.t = Any.any_l () ]
-     [ return''0 (result:())-> {[@expl:test ensures] [%#s492'2] false} (! return' {result}) ] 
+     [ return''0 (result:())-> {[@expl:test ensures] [%#s492] false} (! return' {result}) ] 
 end

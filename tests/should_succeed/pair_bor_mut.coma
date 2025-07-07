@@ -11,10 +11,10 @@ module M_pair_bor_mut__pair_bor_mut [#"pair_bor_mut.rs" 6 0 6 84]
   
   type t_T
   
-  predicate inv (_0: t_T)
-  
   type tuple  =
     { _p0: MutBorrow.t t_T; _p1: MutBorrow.t t_T }
+  
+  predicate inv (_0: t_T)
   
   predicate invariant' (self: MutBorrow.t t_T) =
     [%#sinvariant] inv self.current /\ inv self.final
@@ -23,16 +23,16 @@ module M_pair_bor_mut__pair_bor_mut [#"pair_bor_mut.rs" 6 0 6 84]
   
   axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'0 x]. inv'0 x = invariant' x
   
+  predicate inv'1 (_0: tuple)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x
+  = (let {_p0 = x0 ; _p1 = x1} = x in inv'0 x0 /\ inv'0 x1)
+  
   predicate resolve (self: MutBorrow.t t_T) =
     [%#sresolve] self.final = self.current
   
   predicate resolve'0 (_0: MutBorrow.t t_T) =
     resolve _0
-  
-  predicate inv'1 (_0: tuple)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x
-  = (let {_p0 = x0 ; _p1 = x1} = x in inv'0 x0 /\ inv'0 x1)
   
   predicate resolve'1 (self: tuple) =
     [%#sresolve'0] resolve'0 self._p0 /\ resolve'0 self._p1

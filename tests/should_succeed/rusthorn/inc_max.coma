@@ -1,6 +1,5 @@
 module M_inc_max__take_max [#"inc_max.rs" 6 0 6 64]
   let%span sinc_max = "inc_max.rs" 4 10 5 54
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
   let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
   let%span sord'1 = "../../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
@@ -14,17 +13,12 @@ module M_inc_max__take_max [#"inc_max.rs" 6 0 6 64]
   let%span sord'9 = "../../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
   let%span sord'10 = "../../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
   let%span sord'11 = "../../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
-  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
+  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 260 16 266 17
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
-  use creusot.int.UInt32
   use creusot.prelude.MutBorrow
+  use creusot.int.UInt32
   use creusot.prelude.Any
-  
-  predicate resolve (self: MutBorrow.t UInt32.t) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0: MutBorrow.t UInt32.t) =
-    resolve _0
   
   type t_Ordering  =
     | C_Less
@@ -72,6 +66,12 @@ module M_inc_max__take_max [#"inc_max.rs" 6 0 6 64]
   function cmp_le_log (x: UInt32.t) (y: UInt32.t) : ()
   
   axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord] UInt32.le x y = (cmp_log x y <> C_Greater)
+  
+  predicate resolve (self: MutBorrow.t UInt32.t) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0: MutBorrow.t UInt32.t) =
+    resolve _0
   
   meta "compute_max_steps" 1000000
   
@@ -124,11 +124,10 @@ module M_inc_max__take_max [#"inc_max.rs" 6 0 6 64]
 
 end
 module M_inc_max__inc_max [#"inc_max.rs" 11 0 11 38]
-  let%span sinc_max = "inc_max.rs" 13 11 13 12
-  let%span sinc_max'0 = "inc_max.rs" 14 4 14 19
-  let%span sinc_max'1 = "inc_max.rs" 10 11 10 49
+  let%span sinc_max = "inc_max.rs" 10 11 10 49
+  let%span sinc_max'0 = "inc_max.rs" 13 11 13 12
+  let%span sinc_max'1 = "inc_max.rs" 14 4 14 19
   let%span sinc_max'2 = "inc_max.rs" 4 10 5 54
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
   let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
   let%span sord'1 = "../../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
@@ -142,10 +141,11 @@ module M_inc_max__inc_max [#"inc_max.rs" 11 0 11 38]
   let%span sord'9 = "../../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
   let%span sord'10 = "../../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
   let%span sord'11 = "../../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
-  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
+  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 260 16 266 17
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
-  use creusot.prelude.MutBorrow
   use creusot.int.UInt32
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_Ordering  =
@@ -212,7 +212,7 @@ module M_inc_max__inc_max [#"inc_max.rs" 11 0 11 38]
   
   meta "compute_max_steps" 1000000
   
-  let rec inc_max[#"inc_max.rs" 11 0 11 38] (a:UInt32.t) (b:UInt32.t) (return'  (x:()))= {[@expl:inc_max requires] [%#sinc_max'1] UInt32.le a (1000000: UInt32.t)
+  let rec inc_max[#"inc_max.rs" 11 0 11 38] (a:UInt32.t) (b:UInt32.t) (return'  (x:()))= {[@expl:inc_max requires] [%#sinc_max] UInt32.le a (1000000: UInt32.t)
     /\ UInt32.le b (1000000: UInt32.t)}
     (! bb0
     [ bb0 = s0
@@ -230,14 +230,14 @@ module M_inc_max__inc_max [#"inc_max.rs" 11 0 11 38]
     | bb1 = s0
       [ s0 = -{resolve'0 _8}- s1
       | s1 = -{resolve'0 _6}- s2
-      | s2 = UInt32.add {mc.current} {[%#sinc_max] (1: UInt32.t)}
+      | s2 = UInt32.add {mc.current} {[%#sinc_max'0] (1: UInt32.t)}
           (fun (_ret:UInt32.t) ->  [ &mc <- { mc with current = _ret } ] s3)
       | s3 = -{resolve'0 mc}- s4
       | s4 =  [ &_10 <- a'0 <> b'0 ] s5
       | s5 = any [ br0 -> {_10 = false} (! bb3) | br1 -> {_10} (! bb2) ]  ]
     
     | bb2 = return''0 {_0}
-    | bb3 = {[%#sinc_max'0] false} any ]
+    | bb3 = {[%#sinc_max'1] false} any ]
     )
     [ & _0: () = Any.any_l ()
     | & a'0: UInt32.t = a

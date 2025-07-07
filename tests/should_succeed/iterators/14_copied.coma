@@ -139,14 +139,42 @@ module M_14_copied__qyi9881593582958868314__next [#"14_copied.rs" 54 4 54 35] (*
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_I
+  type t_T
   
-  predicate inv (_0: t_I)
+  type t_Option  =
+    | C_None
+    | C_Some t_T
+  
+  type t_I
   
   type t_Copied  =
     { t_Copied__iter: t_I }
   
-  type t_T
+  predicate inv (_0: t_I)
+  
+  predicate inv'0 (_0: t_Copied)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Copied [inv'0 x]. inv'0 x
+  = match x with
+    | {t_Copied__iter = iter} -> inv iter
+    end
+  
+  predicate invariant' (self: MutBorrow.t t_Copied) =
+    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'1 (_0: MutBorrow.t t_Copied)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Copied [inv'1 x]. inv'1 x = invariant' x
+  
+  predicate inv'2 (_0: t_T)
+  
+  predicate inv'3 (_0: t_Option)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
+  = match x with
+    | C_None -> true
+    | C_Some a_0 -> inv'2 a_0
+    end
   
   predicate produces [#"common.rs" 8 4 8 65] (self: t_I) (visited: Seq.seq t_T) (o: t_I)
   
@@ -159,94 +187,7 @@ module M_14_copied__qyi9881593582958868314__next [#"14_copied.rs" 54 4 54 35] (*
   
   axiom produces_refl_spec: forall self: t_I. [%#scommon] produces self (Seq.empty: Seq.seq t_T) self
   
-  type t_Option  =
-    | C_None
-    | C_Some t_T
-  
-  predicate invariant' (self: MutBorrow.t t_I) =
-    [%#sinvariant] inv self.current /\ inv self.final
-  
-  predicate inv'0 (_0: MutBorrow.t t_I)
-  
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_I [inv'0 x]. inv'0 x = invariant' x
-  
-  predicate precondition (self: ()) (args: MutBorrow.t t_I)
-  
-  axiom precondition_fndef: [%#s14_copied'4] forall args: MutBorrow.t t_I [precondition () args]. (let self = args in inv'0 self)
-   -> precondition () args
-  
   predicate completed [#"common.rs" 11 4 11 36] (self: MutBorrow.t t_I)
-  
-  predicate inv'1 (_0: t_T)
-  
-  predicate invariant''0 (self: t_T) =
-    [%#sinvariant'0] inv'1 self
-  
-  predicate inv'2 (_0: t_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'2 x]. inv'2 x = invariant''0 x
-  
-  predicate inv'3 (_0: t_Option)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
-  = match x with
-    | C_None -> true
-    | C_Some a_0 -> inv'2 a_0
-    end
-  
-  predicate postcondition_once (self: ()) (args: MutBorrow.t t_I) (result: t_Option)
-  
-  axiom postcondition_fndef: [%#s14_copied'4] forall args: MutBorrow.t t_I, res: t_Option [postcondition_once () args res]. postcondition_once () args res
-   -> (let self = args in match res with
-    | C_None -> completed self
-    | C_Some v -> produces self.current (Seq.singleton v) self.final
-    end
-  /\ inv'3 res)
-  
-  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self}
-    any [ return''0 (result:t_Option)-> {postcondition_once () self result} (! return' {result}) ] 
-  
-  predicate inv'4 (_0: t_Copied)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Copied [inv'4 x]. inv'4 x
-  = match x with
-    | {t_Copied__iter = iter} -> inv iter
-    end
-  
-  predicate invariant''1 (self: MutBorrow.t t_Copied) =
-    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
-  
-  predicate inv'5 (_0: MutBorrow.t t_Copied)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Copied [inv'5 x]. inv'5 x = invariant''1 x
-  
-  predicate resolve (self: MutBorrow.t t_Copied) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0: MutBorrow.t t_Copied) =
-    resolve _0
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_T
-  
-  predicate inv'6 (_0: t_Option'0)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'0 [inv'6 x]. inv'6 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'1 a_0
-    end
-  
-  let rec copied (self_:t_Option) (return'  (x:t_Option'0))= {[@expl:copied 'self_' type invariant] [%#soption] inv'3 self_}
-    any
-    [ return''0 (result:t_Option'0)-> {inv'6 result}
-      {[%#soption'0] match self_ with
-        | C_None -> result = C_None'0
-        | C_Some s -> result = C_Some'0 s
-        end}
-      (! return' {result}) ]
-  
   
   predicate completed'0 [#"14_copied.rs" 23 4 23 35] (self: MutBorrow.t t_Copied) =
     [%#s14_copied'2] completed (MutBorrow.borrow_logic (self.current).t_Copied__iter (self.final).t_Copied__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
@@ -256,9 +197,68 @@ module M_14_copied__qyi9881593582958868314__next [#"14_copied.rs" 54 4 54 35] (*
     /\ Seq.length visited = Seq.length s
     /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> Seq.get visited i = Seq.get s i)
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_T
+  
+  predicate invariant''0 (self: MutBorrow.t t_I) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  predicate inv'4 (_0: MutBorrow.t t_I)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_I [inv'4 x]. inv'4 x = invariant''0 x
+  
+  predicate precondition (self: ()) (args: MutBorrow.t t_I)
+  
+  axiom precondition_fndef: [%#s14_copied'4] forall args: MutBorrow.t t_I [precondition () args]. (let self = args in inv'4 self)
+   -> precondition () args
+  
+  predicate invariant''1 (self: t_T) =
+    [%#sinvariant'0] inv'2 self
+  
+  predicate inv'5 (_0: t_T)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_T [inv'5 x]. inv'5 x = invariant''1 x
+  
+  predicate inv'6 (_0: t_Option'0)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'0 [inv'6 x]. inv'6 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'5 a_0
+    end
+  
+  predicate postcondition_once (self: ()) (args: MutBorrow.t t_I) (result: t_Option'0)
+  
+  axiom postcondition_fndef: [%#s14_copied'4] forall args: MutBorrow.t t_I, res: t_Option'0 [postcondition_once () args res]. postcondition_once () args res
+   -> (let self = args in match res with
+    | C_None'0 -> completed self
+    | C_Some'0 v -> produces self.current (Seq.singleton v) self.final
+    end
+  /\ inv'6 res)
+  
+  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option'0))= {[@expl:next requires] precondition () self}
+    any [ return''0 (result:t_Option'0)-> {postcondition_once () self result} (! return' {result}) ] 
+  
+  predicate resolve (self: MutBorrow.t t_Copied) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0: MutBorrow.t t_Copied) =
+    resolve _0
+  
+  let rec copied (self_:t_Option'0) (return'  (x:t_Option))= {[@expl:copied 'self_' type invariant] [%#soption] inv'6 self_}
+    any
+    [ return''0 (result:t_Option)-> {inv'3 result}
+      {[%#soption'0] match self_ with
+        | C_None'0 -> result = C_None
+        | C_Some'0 s -> result = C_Some s
+        end}
+      (! return' {result}) ]
+  
+  
   meta "compute_max_steps" 1000000
   
-  let rec next'0[#"14_copied.rs" 54 4 54 35] (self:MutBorrow.t t_Copied) (return'  (x:t_Option'0))= {[@expl:next 'self' type invariant] [%#s14_copied] inv'5 self}
+  let rec next'0[#"14_copied.rs" 54 4 54 35] (self:MutBorrow.t t_Copied) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#s14_copied] inv'1 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv (self'0.current).t_Copied__iter}
@@ -271,26 +271,26 @@ module M_14_copied__qyi9881593582958868314__next [#"14_copied.rs" 54 4 54 35] (*
             -{inv _ret.final}-
              [ &self'0 <- { self'0 with current = { t_Copied__iter = _ret.final } } ] 
             s1)
-      | s1 = next {_4} (fun (_ret:t_Option) ->  [ &_3 <- _ret ] s2)
+      | s1 = next {_4} (fun (_ret:t_Option'0) ->  [ &_3 <- _ret ] s2)
       | s2 = bb1 ]
     
     | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv'5 self'0} s1
+      [ s0 = {[@expl:type invariant] inv'1 self'0} s1
       | s1 = -{resolve'0 self'0}- s2
-      | s2 = copied {_3} (fun (_ret:t_Option'0) ->  [ &_0 <- _ret ] s3)
+      | s2 = copied {_3} (fun (_ret:t_Option) ->  [ &_0 <- _ret ] s3)
       | s3 = bb2 ]
     
     | bb2 = return''0 {_0} ]
     )
-    [ & _0: t_Option'0 = Any.any_l ()
+    [ & _0: t_Option = Any.any_l ()
     | & self'0: MutBorrow.t t_Copied = self
-    | & _3: t_Option = Any.any_l ()
+    | & _3: t_Option'0 = Any.any_l ()
     | & _4: MutBorrow.t t_I = Any.any_l () ]
     
-    [ return''0 (result:t_Option'0)-> {[@expl:next result type invariant] [%#s14_copied'0] inv'6 result}
+    [ return''0 (result:t_Option)-> {[@expl:next result type invariant] [%#s14_copied'0] inv'3 result}
       {[@expl:next ensures] [%#s14_copied'1] match result with
-        | C_None'0 -> completed'0 self
-        | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
+        | C_None -> completed'0 self
+        | C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
 

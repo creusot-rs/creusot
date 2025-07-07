@@ -7,10 +7,6 @@ pub enum List {
 }
 use List::*;
 
-// FIXME: this should go away, we have not defined any order relation on List
-#[trusted]
-impl WellFounded for List {}
-
 #[trusted]
 fn random() -> bool {
     panic!()

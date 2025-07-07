@@ -289,8 +289,8 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
   let%span s13_cloned'1 = "13_cloned.rs" 50 14 53 5
   let%span s13_cloned'2 = "13_cloned.rs" 24 8 24 43
   let%span s13_cloned'3 = "13_cloned.rs" 31 12 34 98
-  let%span s13_cloned'4 = "13_cloned.rs" 1 0 27 4
-  let%span s13_cloned'5 = "13_cloned.rs" 1 0 165 4
+  let%span s13_cloned'4 = "13_cloned.rs" 1 0 165 4
+  let%span s13_cloned'5 = "13_cloned.rs" 1 0 27 4
   let%span scommon = "common.rs" 14 14 14 47
   let%span scommon'0 = "common.rs" 18 15 18 32
   let%span scommon'1 = "common.rs" 19 15 19 32
@@ -316,14 +316,42 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_I
+  type t_T
   
-  predicate inv (_0: t_I)
+  type t_Option  =
+    | C_None
+    | C_Some t_T
+  
+  type t_I
   
   type t_Cloned  =
     { t_Cloned__iter: t_I }
   
-  type t_T
+  predicate inv (_0: t_I)
+  
+  predicate inv'0 (_0: t_Cloned)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Cloned [inv'0 x]. inv'0 x
+  = match x with
+    | {t_Cloned__iter = iter} -> inv iter
+    end
+  
+  predicate invariant' (self: MutBorrow.t t_Cloned) =
+    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'1 (_0: MutBorrow.t t_Cloned)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Cloned [inv'1 x]. inv'1 x = invariant' x
+  
+  predicate inv'2 (_0: t_T)
+  
+  predicate inv'3 (_0: t_Option)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
+  = match x with
+    | C_None -> true
+    | C_Some a_0 -> inv'2 a_0
+    end
   
   predicate produces [#"common.rs" 8 4 8 65] (self: t_I) (visited: Seq.seq t_T) (o: t_I)
   
@@ -336,105 +364,28 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
   
   axiom produces_refl_spec: forall self: t_I. [%#scommon] produces self (Seq.empty: Seq.seq t_T) self
   
-  type t_Option  =
-    | C_None
-    | C_Some t_T
-  
-  predicate invariant' (self: MutBorrow.t t_I) =
-    [%#sinvariant] inv self.current /\ inv self.final
-  
-  predicate inv'0 (_0: MutBorrow.t t_I)
-  
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_I [inv'0 x]. inv'0 x = invariant' x
-  
-  predicate precondition (self: ()) (args: MutBorrow.t t_I)
-  
-  axiom precondition_fndef: [%#s13_cloned'4] forall args: MutBorrow.t t_I [precondition () args]. (let self = args in inv'0 self)
-   -> precondition () args
-  
   predicate completed [#"common.rs" 11 4 11 36] (self: MutBorrow.t t_I)
   
-  predicate inv'1 (_0: t_T)
+  predicate completed'0 [#"13_cloned.rs" 23 4 23 35] (self: MutBorrow.t t_Cloned) =
+    [%#s13_cloned'2] completed (MutBorrow.borrow_logic (self.current).t_Cloned__iter (self.final).t_Cloned__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
   
-  predicate invariant''0 (self: t_T) =
-    [%#sinvariant'0] inv'1 self
+  predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
   
-  predicate inv'2 (_0: t_T)
+  axiom postcondition_fndef: [%#s13_cloned'4] forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv'2 res)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'2 x]. inv'2 x = invariant''0 x
-  
-  predicate inv'3 (_0: t_Option)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
-  = match x with
-    | C_None -> true
-    | C_Some a_0 -> inv'2 a_0
-    end
-  
-  predicate postcondition_once (self: ()) (args: MutBorrow.t t_I) (result: t_Option)
-  
-  axiom postcondition_fndef: [%#s13_cloned'4] forall args: MutBorrow.t t_I, res: t_Option [postcondition_once () args res]. postcondition_once () args res
-   -> (let self = args in match res with
-    | C_None -> completed self
-    | C_Some v -> produces self.current (Seq.singleton v) self.final
-    end
-  /\ inv'3 res)
-  
-  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self}
-    any [ return''0 (result:t_Option)-> {postcondition_once () self result} (! return' {result}) ] 
-  
-  predicate inv'4 (_0: t_Cloned)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cloned [inv'4 x]. inv'4 x
-  = match x with
-    | {t_Cloned__iter = iter} -> inv iter
-    end
-  
-  predicate invariant''1 (self: MutBorrow.t t_Cloned) =
-    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
-  
-  predicate inv'5 (_0: MutBorrow.t t_Cloned)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Cloned [inv'5 x]. inv'5 x = invariant''1 x
-  
-  predicate resolve (self: MutBorrow.t t_Cloned) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0: MutBorrow.t t_Cloned) =
-    resolve _0
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_T
-  
-  predicate inv'6 (_0: t_Option'0)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'0 [inv'6 x]. inv'6 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'1 a_0
-    end
-  
-  type tuple  =
-    { _p0: t_Option; _p1: t_Option'0 }
-  
-  predicate postcondition_once'0 (self: ()) (args: t_T) (result: t_T)
-  
-  axiom postcondition_fndef'0: [%#s13_cloned'5] forall args: t_T, res: t_T [postcondition_once'0 () args res]. postcondition_once'0 () args res
-   -> (let self_ = args in inv'1 res)
-  
-  predicate resolve'1 (_0: ()) =
+  predicate resolve (_0: ()) =
     true
   
   predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
   
-  axiom postcondition_fndef'1: [%#s13_cloned'5] forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
-   -> (let self_ = args in inv'1 res)
+  axiom postcondition_fndef'0: [%#s13_cloned'4] forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv'2 res)
   
   function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'8] postcondition_once'0 self args res
-  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
+  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'8] postcondition_once self args res
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: ()) (result_state: ()) =
     true
@@ -459,49 +410,98 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
   
   predicate postcondition (self: ()) (args: t_T) (result: t_T)
   
-  axiom postcondition_fndef'2: [%#s13_cloned'5] forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
-   -> (let self_ = args in inv'1 res)
+  axiom postcondition_fndef'1: [%#s13_cloned'4] forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv'2 res)
   
   function fn_once (self: ()) (args: t_T) (res: t_T) : ()
   
-  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'0] postcondition_once'0 self args res
-  = (postcondition self args res /\ resolve'1 self)
+  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
   
   axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_T. [%#sops] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
   
-  predicate precondition'0 (self: ()) (args: t_T)
+  predicate invariant''0 (self: t_T) =
+    [%#sinvariant'0] inv'2 self
   
-  axiom precondition_fndef'0: [%#s13_cloned'5] forall args: t_T [precondition'0 () args]. (let self_ = args in inv'2 self_)
-   -> precondition'0 () args
+  predicate inv'4 (_0: t_T)
   
-  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition'0 () self_}
-    any [ return''0 (result:t_T)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
+  axiom inv_axiom'2 [@rewrite]: forall x: t_T [inv'4 x]. inv'4 x = invariant''0 x
   
-  let rec cloned (self_:t_Option) (return'  (x:t_Option'0))= {[@expl:cloned 'self_' type invariant] [%#soption] inv'3 self_}
-    any
-    [ return''0 (result:t_Option'0)-> {inv'6 result}
-      {[%#soption'0] match { _p0 = self_; _p1 = result } with
-        | {_p0 = C_None ; _p1 = C_None'0} -> true
-        | {_p0 = C_Some s ; _p1 = C_Some'0 r} -> postcondition () s r
-        | _ -> false
-        end}
-      (! return' {result}) ]
+  predicate precondition (self: ()) (args: t_T)
   
+  axiom precondition_fndef: [%#s13_cloned'4] forall args: t_T [precondition () args]. (let self_ = args in inv'4 self_)
+   -> precondition () args
   
-  predicate completed'0 [#"13_cloned.rs" 23 4 23 35] (self: MutBorrow.t t_Cloned) =
-    [%#s13_cloned'2] completed (MutBorrow.borrow_logic (self.current).t_Cloned__iter (self.final).t_Cloned__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
+  let rec clone' (self_:t_T) (return'  (x:t_T))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_T)-> {postcondition_once () self_ result} (! return' {result}) ] 
   
   predicate produces'0 [#"13_cloned.rs" 29 4 29 64] (self: t_Cloned) (visited: Seq.seq t_T) (o: t_Cloned) =
     [%#s13_cloned'3] exists s: Seq.seq t_T. produces self.t_Cloned__iter s o.t_Cloned__iter
     /\ Seq.length visited = Seq.length s
     /\ (forall i: int. 0 <= i /\ i < Seq.length s  -> postcondition () (Seq.get s i) (Seq.get visited i))
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_T
+  
+  predicate invariant''1 (self: MutBorrow.t t_I) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  predicate inv'5 (_0: MutBorrow.t t_I)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_I [inv'5 x]. inv'5 x = invariant''1 x
+  
+  predicate precondition'0 (self: ()) (args: MutBorrow.t t_I)
+  
+  axiom precondition_fndef'0: [%#s13_cloned'5] forall args: MutBorrow.t t_I [precondition'0 () args]. (let self = args in inv'5 self)
+   -> precondition'0 () args
+  
+  predicate inv'6 (_0: t_Option'0)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'0 [inv'6 x]. inv'6 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'4 a_0
+    end
+  
+  predicate postcondition_once'0 (self: ()) (args: MutBorrow.t t_I) (result: t_Option'0)
+  
+  axiom postcondition_fndef'2: [%#s13_cloned'5] forall args: MutBorrow.t t_I, res: t_Option'0 [postcondition_once'0 () args res]. postcondition_once'0 () args res
+   -> (let self = args in match res with
+    | C_None'0 -> completed self
+    | C_Some'0 v -> produces self.current (Seq.singleton v) self.final
+    end
+  /\ inv'6 res)
+  
+  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option'0))= {[@expl:next requires] precondition'0 () self}
+    any [ return''0 (result:t_Option'0)-> {postcondition_once'0 () self result} (! return' {result}) ] 
+  
+  predicate resolve'0 (self: MutBorrow.t t_Cloned) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'1 (_0: MutBorrow.t t_Cloned) =
+    resolve'0 _0
+  
+  type tuple  =
+    { _p0: t_Option'0; _p1: t_Option }
+  
+  let rec cloned (self_:t_Option'0) (return'  (x:t_Option))= {[@expl:cloned 'self_' type invariant] [%#soption] inv'6 self_}
+    any
+    [ return''0 (result:t_Option)-> {inv'3 result}
+      {[%#soption'0] match { _p0 = self_; _p1 = result } with
+        | {_p0 = C_None'0 ; _p1 = C_None} -> true
+        | {_p0 = C_Some'0 s ; _p1 = C_Some r} -> postcondition () s r
+        | _ -> false
+        end}
+      (! return' {result}) ]
+  
+  
   meta "compute_max_steps" 1000000
   
-  let rec next'0[#"13_cloned.rs" 54 4 54 35] (self:MutBorrow.t t_Cloned) (return'  (x:t_Option'0))= {[@expl:next 'self' type invariant] [%#s13_cloned] inv'5 self}
+  let rec next'0[#"13_cloned.rs" 54 4 54 35] (self:MutBorrow.t t_Cloned) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#s13_cloned] inv'1 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv (self'0.current).t_Cloned__iter}
@@ -514,26 +514,26 @@ module M_13_cloned__qyi8249401513993331368__next [#"13_cloned.rs" 54 4 54 35] (*
             -{inv _ret.final}-
              [ &self'0 <- { self'0 with current = { t_Cloned__iter = _ret.final } } ] 
             s1)
-      | s1 = next {_4} (fun (_ret:t_Option) ->  [ &_3 <- _ret ] s2)
+      | s1 = next {_4} (fun (_ret:t_Option'0) ->  [ &_3 <- _ret ] s2)
       | s2 = bb1 ]
     
     | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv'5 self'0} s1
-      | s1 = -{resolve'0 self'0}- s2
-      | s2 = cloned {_3} (fun (_ret:t_Option'0) ->  [ &_0 <- _ret ] s3)
+      [ s0 = {[@expl:type invariant] inv'1 self'0} s1
+      | s1 = -{resolve'1 self'0}- s2
+      | s2 = cloned {_3} (fun (_ret:t_Option) ->  [ &_0 <- _ret ] s3)
       | s3 = bb2 ]
     
     | bb2 = return''0 {_0} ]
     )
-    [ & _0: t_Option'0 = Any.any_l ()
+    [ & _0: t_Option = Any.any_l ()
     | & self'0: MutBorrow.t t_Cloned = self
-    | & _3: t_Option = Any.any_l ()
+    | & _3: t_Option'0 = Any.any_l ()
     | & _4: MutBorrow.t t_I = Any.any_l () ]
     
-    [ return''0 (result:t_Option'0)-> {[@expl:next result type invariant] [%#s13_cloned'0] inv'6 result}
+    [ return''0 (result:t_Option)-> {[@expl:next result type invariant] [%#s13_cloned'0] inv'3 result}
       {[@expl:next ensures] [%#s13_cloned'1] match result with
-        | C_None'0 -> completed'0 self
-        | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
+        | C_None -> completed'0 self
+        | C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
 

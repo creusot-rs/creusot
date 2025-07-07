@@ -382,16 +382,10 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
     [ return''0 (result:t_Iter)-> {[%#sslice] view result = self_} (! return' {result}) ]
   
   
-  predicate resolve (self: MutBorrow.t ()) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0: MutBorrow.t ()) =
-    resolve _0
-  
   predicate postcondition_once (self: ()) (args: bool) (result: bool) =
     [%#siter'11] let b = args in result = b
   
-  predicate resolve'1 (_0: ()) =
+  predicate resolve (_0: ()) =
     true
   
   predicate hist_inv (self: ()) (result_state: ()) =
@@ -403,7 +397,7 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
   function fn_mut_once (self: ()) (args: bool) (res: bool) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: bool, res: bool. [%#sops'5] postcondition_once self args res
-  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -419,9 +413,15 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
   axiom postcondition_mut_hist_inv_spec: forall self: (), args: bool, res_state: (), res: bool. ([%#sops] postcondition_mut self args res_state res)
    -> ([%#sops'0] hist_inv self res_state)
   
+  predicate resolve'0 (self: MutBorrow.t ()) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'1 (_0: MutBorrow.t ()) =
+    resolve'0 _0
+  
   let rec closure0[#"iter.rs" 14 8 14 33] (self:MutBorrow.t ()) (b:bool) (return'  (x:bool))= (! bb0
     [ bb0 = s0
-      [ s0 = -{resolve'0 _1}- s1 | s1 =  [ &res <- b'0 ] s2 | s2 =  [ &_0 <- res ] s3 | s3 = return''0 {_0} ]
+      [ s0 = -{resolve'1 _1}- s1 | s1 =  [ &res <- b'0 ] s2 | s2 =  [ &_0 <- res ] s3 | s3 = return''0 {_0} ]
      ]
     ) [ & _0: bool = Any.any_l () | & _1: MutBorrow.t () = self | & b'0: bool = b | & res: bool = Any.any_l () ] 
     [ return''0 (result:bool)-> {[@expl:closure ensures] [%#siter'2] result = b}
@@ -778,8 +778,8 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
   let%span siter = "iter.rs" 23 17 23 21
   let%span siter'0 = "iter.rs" 23 23 23 28
   let%span siter'1 = "iter.rs" 23 30 23 34
-  let%span siter'2 = "iter.rs" 25 32 25 37
-  let%span siter'3 = "iter.rs" 24 18 24 63
+  let%span siter'2 = "iter.rs" 24 18 24 63
+  let%span siter'3 = "iter.rs" 25 32 25 37
   let%span siter'4 = "../../../creusot-contracts/src/std/iter.rs" 139 27 139 51
   let%span siter'5 = "../../../creusot-contracts/src/std/iter.rs" 140 27 140 57
   let%span siter'6 = "../../../creusot-contracts/src/std/iter.rs" 141 27 141 49
@@ -867,12 +867,6 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
     [ return''0 (result:t_Iter)-> {[%#sslice] view result = self_} (! return' {result}) ]
   
   
-  predicate resolve (self: MutBorrow.t ()) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0: MutBorrow.t ()) =
-    resolve _0
-  
   type t_Option  =
     | C_None
     | C_Some bool
@@ -880,7 +874,7 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
   predicate postcondition_once (self: ()) (args: bool) (result: t_Option) =
     [%#siter'12] let b = args in result = (if b then C_Some false else C_None)
   
-  predicate resolve'1 (_0: ()) =
+  predicate resolve (_0: ()) =
     true
   
   predicate hist_inv (self: ()) (result_state: ()) =
@@ -892,7 +886,7 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
   function fn_mut_once (self: ()) (args: bool) (res: t_Option) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: bool, res: t_Option. [%#sops'5] postcondition_once self args res
-  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
+  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -908,15 +902,21 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
   axiom postcondition_mut_hist_inv_spec: forall self: (), args: bool, res_state: (), res: t_Option. ([%#sops] postcondition_mut self args res_state res)
    -> ([%#sops'0] hist_inv self res_state)
   
+  predicate resolve'0 (self: MutBorrow.t ()) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'1 (_0: MutBorrow.t ()) =
+    resolve'0 _0
+  
   let rec closure0[#"iter.rs" 24 8 24 65] (self:MutBorrow.t ()) (b:bool) (return'  (x:t_Option))= (! bb0
-    [ bb0 = s0 [ s0 = -{resolve'0 _1}- s1 | s1 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ]  ] 
-    | bb1 = s0 [ s0 =  [ &res <- C_Some ([%#siter'2] false) ] s1 | s1 = bb3 ] 
+    [ bb0 = s0 [ s0 = -{resolve'1 _1}- s1 | s1 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ]  ] 
+    | bb1 = s0 [ s0 =  [ &res <- C_Some ([%#siter'3] false) ] s1 | s1 = bb3 ] 
     | bb2 = s0 [ s0 =  [ &res <- C_None ] s1 | s1 = bb3 ] 
     | bb3 = s0 [ s0 =  [ &_0 <- res ] s1 | s1 = return''0 {_0} ]  ]
     )
     [ & _0: t_Option = Any.any_l () | & _1: MutBorrow.t () = self | & b'0: bool = b | & res: t_Option = Any.any_l () ]
     
-    [ return''0 (result:t_Option)-> {[@expl:closure ensures] [%#siter'3] result = (if b then C_Some false else C_None)}
+    [ return''0 (result:t_Option)-> {[@expl:closure ensures] [%#siter'2] result = (if b then C_Some false else C_None)}
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return' {result}) ]
   

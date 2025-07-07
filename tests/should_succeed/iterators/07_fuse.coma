@@ -52,33 +52,11 @@ module M_07_fuse__qyi15189554860034455533__next [#"07_fuse.rs" 41 4 41 44] (* <F
   let%span scommon'2 = "common.rs" 20 14 20 42
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
   
-  use creusot.prelude.MutBorrow
   use seq.Seq
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_I
-  
-  type t_Option  =
-    | C_None
-    | C_Some t_I
-  
-  predicate inv (_0: t_I)
-  
-  predicate inv'0 (_0: t_Option)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'0 x]. inv'0 x
-  = match x with
-    | C_None -> true
-    | C_Some a_0 -> inv a_0
-    end
-  
-  type t_Fuse  =
-    { t_Fuse__iter: t_Option }
-  
-  let rec v_Some (input:t_Option) (ret  (field_0:t_I))= any
-    [ good (field_0:t_I)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_I [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
-  
   
   type t_Item
   
@@ -94,45 +72,95 @@ module M_07_fuse__qyi15189554860034455533__next [#"07_fuse.rs" 41 4 41 44] (* <F
   
   axiom produces_refl_spec: forall self: t_I. [%#scommon] produces self (Seq.empty: Seq.seq t_Item) self
   
+  type t_Option  =
+    | C_None
+    | C_Some t_Item
+  
   type t_Option'0  =
     | C_None'0
-    | C_Some'0 t_Item
+    | C_Some'0 t_I
   
-  predicate invariant' (self: MutBorrow.t t_I) =
-    [%#sinvariant] inv self.current /\ inv self.final
+  type t_Fuse  =
+    { t_Fuse__iter: t_Option'0 }
   
-  predicate inv'1 (_0: MutBorrow.t t_I)
+  predicate inv (_0: t_I)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_I [inv'1 x]. inv'1 x = invariant' x
+  predicate inv'0 (_0: t_Option'0)
   
-  predicate precondition (self: ()) (args: MutBorrow.t t_I)
+  axiom inv_axiom [@rewrite]: forall x: t_Option'0 [inv'0 x]. inv'0 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv a_0
+    end
   
-  axiom precondition_fndef: [%#s07_fuse'4] forall args: MutBorrow.t t_I [precondition () args]. (let self = args in inv'1 self)
-   -> precondition () args
+  predicate inv'1 (_0: t_Fuse)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Fuse [inv'1 x]. inv'1 x
+  = match x with
+    | {t_Fuse__iter = iter} -> inv'0 iter
+    end
+  
+  predicate invariant' (self: MutBorrow.t t_Fuse) =
+    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'2 (_0: MutBorrow.t t_Fuse)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_Fuse [inv'2 x]. inv'2 x = invariant' x
+  
+  predicate inv'3 (_0: t_Item)
+  
+  predicate inv'4 (_0: t_Option)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  = match x with
+    | C_None -> true
+    | C_Some a_0 -> inv'3 a_0
+    end
   
   predicate completed [#"common.rs" 11 4 11 36] (self: MutBorrow.t t_I)
   
-  predicate inv'2 (_0: t_Item)
+  predicate completed'0 [#"07_fuse.rs" 18 4 18 35] (self: MutBorrow.t t_Fuse) =
+    [%#s07_fuse'2] ((self.current).t_Fuse__iter = C_None'0
+    \/ (exists it: MutBorrow.t t_I. completed it /\ (self.current).t_Fuse__iter = C_Some'0 (it.current)))
+    /\ (self.final).t_Fuse__iter = C_None'0
   
-  predicate inv'3 (_0: t_Option'0)
+  predicate produces'0 [#"07_fuse.rs" 27 4 27 65] (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
+    [%#s07_fuse'3] match self.t_Fuse__iter with
+      | C_None'0 -> prod = (Seq.empty: Seq.seq t_Item) /\ other.t_Fuse__iter = self.t_Fuse__iter
+      | C_Some'0 i -> match other.t_Fuse__iter with
+        | C_Some'0 i2 -> produces i prod i2
+        | C_None'0 -> false
+        end
+      end
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option'0 [inv'3 x]. inv'3 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'2 a_0
-    end
+  let rec v_Some (input:t_Option'0) (ret  (field_0:t_I))= any
+    [ good (field_0:t_I)-> {C_Some'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_I [C_Some'0 field_0: t_Option'0]. C_Some'0 field_0 <> input} (! {false} any) ]
   
-  predicate postcondition_once (self: ()) (args: MutBorrow.t t_I) (result: t_Option'0)
   
-  axiom postcondition_fndef: [%#s07_fuse'4] forall args: MutBorrow.t t_I, res: t_Option'0 [postcondition_once () args res]. postcondition_once () args res
+  predicate invariant''0 (self: MutBorrow.t t_I) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  predicate inv'5 (_0: MutBorrow.t t_I)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_I [inv'5 x]. inv'5 x = invariant''0 x
+  
+  predicate precondition (self: ()) (args: MutBorrow.t t_I)
+  
+  axiom precondition_fndef: [%#s07_fuse'4] forall args: MutBorrow.t t_I [precondition () args]. (let self = args in inv'5 self)
+   -> precondition () args
+  
+  predicate postcondition_once (self: ()) (args: MutBorrow.t t_I) (result: t_Option)
+  
+  axiom postcondition_fndef: [%#s07_fuse'4] forall args: MutBorrow.t t_I, res: t_Option [postcondition_once () args res]. postcondition_once () args res
    -> (let self = args in match res with
-    | C_None'0 -> completed self
-    | C_Some'0 v -> produces self.current (Seq.singleton v) self.final
+    | C_None -> completed self
+    | C_Some v -> produces self.current (Seq.singleton v) self.final
     end
-  /\ inv'3 res)
+  /\ inv'4 res)
   
-  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option'0))= {[@expl:next requires] precondition () self}
-    any [ return''0 (result:t_Option'0)-> {postcondition_once () self result} (! return' {result}) ] 
+  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self}
+    any [ return''0 (result:t_Option)-> {postcondition_once () self result} (! return' {result}) ] 
   
   predicate resolve (self: MutBorrow.t t_I) =
     [%#sresolve] self.final = self.current
@@ -140,32 +168,18 @@ module M_07_fuse__qyi15189554860034455533__next [#"07_fuse.rs" 41 4 41 44] (* <F
   predicate resolve'0 (_0: MutBorrow.t t_I) =
     resolve _0
   
-  predicate invariant''0 (self: MutBorrow.t t_Option) =
+  predicate invariant''1 (self: MutBorrow.t t_Option'0) =
     [%#sinvariant] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'4 (_0: MutBorrow.t t_Option)
+  predicate inv'6 (_0: MutBorrow.t t_Option'0)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Option [inv'4 x]. inv'4 x = invariant''0 x
+  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Option'0 [inv'6 x]. inv'6 x = invariant''1 x
   
-  predicate resolve'1 (self: MutBorrow.t t_Option) =
+  predicate resolve'1 (self: MutBorrow.t t_Option'0) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0: MutBorrow.t t_Option) =
+  predicate resolve'2 (_0: MutBorrow.t t_Option'0) =
     resolve'1 _0
-  
-  predicate inv'5 (_0: t_Fuse)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Fuse [inv'5 x]. inv'5 x
-  = match x with
-    | {t_Fuse__iter = iter} -> inv'0 iter
-    end
-  
-  predicate invariant''1 (self: MutBorrow.t t_Fuse) =
-    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
-  
-  predicate inv'6 (_0: MutBorrow.t t_Fuse)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Fuse [inv'6 x]. inv'6 x = invariant''1 x
   
   predicate resolve'3 (self: MutBorrow.t t_Fuse) =
     [%#sresolve] self.final = self.current
@@ -175,53 +189,39 @@ module M_07_fuse__qyi15189554860034455533__next [#"07_fuse.rs" 41 4 41 44] (* <F
   
   predicate resolve'5 (_0: t_Item)
   
-  predicate resolve'6 (self: t_Option'0) =
+  predicate resolve'6 (self: t_Option) =
     [%#sresolve'0] match self with
-      | C_Some'0 x -> resolve'5 x
-      | C_None'0 -> true
+      | C_Some x -> resolve'5 x
+      | C_None -> true
       end
   
-  predicate resolve'7 (_0: t_Option'0) =
+  predicate resolve'7 (_0: t_Option) =
     resolve'6 _0
   
   predicate resolve'8 (_0: t_I)
   
-  predicate resolve'9 (self: t_Option) =
+  predicate resolve'9 (self: t_Option'0) =
     [%#sresolve'0] match self with
-      | C_Some x -> resolve'8 x
-      | C_None -> true
+      | C_Some'0 x -> resolve'8 x
+      | C_None'0 -> true
       end
   
-  predicate resolve'10 (_0: t_Option) =
+  predicate resolve'10 (_0: t_Option'0) =
     resolve'9 _0
-  
-  predicate completed'0 [#"07_fuse.rs" 18 4 18 35] (self: MutBorrow.t t_Fuse) =
-    [%#s07_fuse'2] ((self.current).t_Fuse__iter = C_None
-    \/ (exists it: MutBorrow.t t_I. completed it /\ (self.current).t_Fuse__iter = C_Some (it.current)))
-    /\ (self.final).t_Fuse__iter = C_None
-  
-  predicate produces'0 [#"07_fuse.rs" 27 4 27 65] (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
-    [%#s07_fuse'3] match self.t_Fuse__iter with
-      | C_None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.t_Fuse__iter = self.t_Fuse__iter
-      | C_Some i -> match other.t_Fuse__iter with
-        | C_Some i2 -> produces i prod i2
-        | C_None -> false
-        end
-      end
   
   meta "compute_max_steps" 1000000
   
-  let rec next'0[#"07_fuse.rs" 41 4 41 44] (self:MutBorrow.t t_Fuse) (return'  (x:t_Option'0))= {[@expl:next 'self' type invariant] [%#s07_fuse] inv'6 self}
+  let rec next'0[#"07_fuse.rs" 41 4 41 44] (self:MutBorrow.t t_Fuse) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#s07_fuse] inv'2 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 (self'0.current).t_Fuse__iter}
-        MutBorrow.borrow_mut <t_Option> {(self'0.current).t_Fuse__iter}
-          (fun (_ret:MutBorrow.t t_Option) ->
+        MutBorrow.borrow_mut <t_Option'0> {(self'0.current).t_Fuse__iter}
+          (fun (_ret:MutBorrow.t t_Option'0) ->
              [ &_3 <- _ret ] 
             -{inv'0 _ret.final}-
              [ &self'0 <- { self'0 with current = { t_Fuse__iter = _ret.final } } ] 
             s1)
-      | s1 = any [ br0 -> {_3.current = C_None} (! bb2) | br1 (x0:t_I)-> {_3.current = C_Some x0} (! bb3) ]  ]
+      | s1 = any [ br0 -> {_3.current = C_None'0} (! bb2) | br1 (x0:t_I)-> {_3.current = C_Some'0 x0} (! bb3) ]  ]
     
     | bb3 = s0
       [ s0 = v_Some {_3.current}
@@ -231,7 +231,7 @@ module M_07_fuse__qyi15189554860034455533__next [#"07_fuse.rs" 41 4 41 44] (* <F
               (fun (_ret:MutBorrow.t t_I) ->
                  [ &iter <- _ret ] 
                 -{inv _ret.final}-
-                 [ &_3 <- { _3 with current = C_Some _ret.final } ] 
+                 [ &_3 <- { _3 with current = C_Some'0 _ret.final } ] 
                 s1))
       | s1 = {inv iter.current}
         MutBorrow.borrow_final <t_I> {iter.current} {MutBorrow.get_id iter}
@@ -240,25 +240,25 @@ module M_07_fuse__qyi15189554860034455533__next [#"07_fuse.rs" 41 4 41 44] (* <F
             -{inv _ret.final}-
              [ &iter <- { iter with current = _ret.final } ] 
             s2)
-      | s2 = next {_7} (fun (_ret:t_Option'0) ->  [ &_6 <- _ret ] s3)
+      | s2 = next {_7} (fun (_ret:t_Option) ->  [ &_6 <- _ret ] s3)
       | s3 = bb5 ]
     
     | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv'1 iter} s1
+      [ s0 = {[@expl:type invariant] inv'5 iter} s1
       | s1 = -{resolve'0 iter}- s2
-      | s2 = {[@expl:type invariant] inv'4 _3} s3
+      | s2 = {[@expl:type invariant] inv'6 _3} s3
       | s3 = -{resolve'2 _3}- s4
-      | s4 = any [ br0 -> {_6 = C_None'0} (! bb7) | br1 (x0:t_Item)-> {_6 = C_Some'0 x0} (! bb6) ]  ]
+      | s4 = any [ br0 -> {_6 = C_None} (! bb7) | br1 (x0:t_Item)-> {_6 = C_Some x0} (! bb6) ]  ]
     
     | bb6 = s0
-      [ s0 = {[@expl:type invariant] inv'6 self'0} s1
+      [ s0 = {[@expl:type invariant] inv'2 self'0} s1
       | s1 = -{resolve'4 self'0}- s2
       | s2 =  [ &x <- _6 ] s3
       | s3 =  [ &_0 <- x ] s4
       | s4 = bb15 ]
     
-    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'3 _6} s1 | s1 = -{resolve'7 _6}- s2 | s2 = bb8 ] 
-    | bb8 = s0 [ s0 =  [ &_9 <- C_None ] s1 | s1 = bb9 ] 
+    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'4 _6} s1 | s1 = -{resolve'7 _6}- s2 | s2 = bb8 ] 
+    | bb8 = s0 [ s0 =  [ &_9 <- C_None'0 ] s1 | s1 = bb9 ] 
     | bb9 = s0
       [ s0 = {[@expl:type invariant] match self'0 with
           | {current = {t_Fuse__iter = x'0}} -> inv'0 x'0
@@ -271,33 +271,33 @@ module M_07_fuse__qyi15189554860034455533__next [#"07_fuse.rs" 41 4 41 44] (* <F
           end}-
         s2
       | s2 =  [ &self'0 <- { self'0 with current = { t_Fuse__iter = _9 } } ] s3
-      | s3 = {[@expl:type invariant] inv'6 self'0} s4
+      | s3 = {[@expl:type invariant] inv'2 self'0} s4
       | s4 = -{resolve'4 self'0}- s5
       | s5 = bb11 ]
     
-    | bb11 = s0 [ s0 =  [ &_0 <- C_None'0 ] s1 | s1 = bb15 ] 
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'4 _3} s1 | s1 = -{resolve'2 _3}- s2 | s2 = bb4 ] 
+    | bb11 = s0 [ s0 =  [ &_0 <- C_None ] s1 | s1 = bb15 ] 
+    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'6 _3} s1 | s1 = -{resolve'2 _3}- s2 | s2 = bb4 ] 
     | bb4 = s0
-      [ s0 = {[@expl:type invariant] inv'6 self'0} s1
+      [ s0 = {[@expl:type invariant] inv'2 self'0} s1
       | s1 = -{resolve'4 self'0}- s2
-      | s2 =  [ &_0 <- C_None'0 ] s3
+      | s2 =  [ &_0 <- C_None ] s3
       | s3 = bb15 ]
     
     | bb15 = return''0 {_0} ]
     )
-    [ & _0: t_Option'0 = Any.any_l ()
+    [ & _0: t_Option = Any.any_l ()
     | & self'0: MutBorrow.t t_Fuse = self
-    | & _3: MutBorrow.t t_Option = Any.any_l ()
+    | & _3: MutBorrow.t t_Option'0 = Any.any_l ()
     | & iter: MutBorrow.t t_I = Any.any_l ()
-    | & _6: t_Option'0 = Any.any_l ()
+    | & _6: t_Option = Any.any_l ()
     | & _7: MutBorrow.t t_I = Any.any_l ()
-    | & _9: t_Option = Any.any_l ()
-    | & x: t_Option'0 = Any.any_l () ]
+    | & _9: t_Option'0 = Any.any_l ()
+    | & x: t_Option = Any.any_l () ]
     
-    [ return''0 (result:t_Option'0)-> {[@expl:next result type invariant] [%#s07_fuse'0] inv'3 result}
+    [ return''0 (result:t_Option)-> {[@expl:next result type invariant] [%#s07_fuse'0] inv'4 result}
       {[@expl:next ensures] [%#s07_fuse'1] match result with
-        | C_None'0 -> completed'0 self
-        | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
+        | C_None -> completed'0 self
+        | C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
 

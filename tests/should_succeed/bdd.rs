@@ -1,3 +1,4 @@
+// TACTIC +compute_in_goal
 extern crate creusot_contracts;
 
 use creusot_contracts::{
