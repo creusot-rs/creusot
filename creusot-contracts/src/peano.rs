@@ -25,19 +25,71 @@
 //! overflow the backing integer. Since ghost code is not executed, the time argument is
 //! not applicable.
 
-use crate::{Clone, Default, *};
+use crate::{Clone, Default, PartialEq, *};
+use ::std::cmp::Ordering;
 
 /// A peano integer wrapping a 64-bits integer.
 ///
 /// See the [module](crate::peano) explanation.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct PeanoInt(u64);
+
+impl DeepModel for PeanoInt {
+    type DeepModelTy = Int;
+    #[logic]
+    #[open]
+    fn deep_model(self) -> Int {
+        self.view()
+    }
+}
+
+impl OrdLogic for PeanoInt {
+    #[logic]
+    #[open]
+    fn cmp_log(self, o: Self) -> Ordering {
+        self.view().cmp_log(o.view())
+    }
+    #[logic]
+    #[open]
+    fn le_log(self, o: Self) -> bool {
+        self.view().le_log(o.view())
+    }
+    #[logic]
+    #[open]
+    fn lt_log(self, o: Self) -> bool {
+        self.view().lt_log(o.view())
+    }
+    #[logic]
+    #[open]
+    fn ge_log(self, o: Self) -> bool {
+        self.view().ge_log(o.view())
+    }
+    #[logic]
+    #[open]
+    fn gt_log(self, o: Self) -> bool {
+        self.view().gt_log(o.view())
+    }
+    ord_laws_impl! {}
+}
 
 impl View for PeanoInt {
     type ViewTy = Int;
     #[logic]
     fn view(self) -> Int {
         self.0.view()
+    }
+}
+
+impl PartialOrd for PeanoInt {
+    #[ensures(result == Some(self.cmp_log(*other)))]
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for PeanoInt {
+    #[ensures(result == self.cmp_log(*other))]
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
     }
 }
 
