@@ -344,7 +344,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
             Box::new(|_, _| unreachable!()),
             &pl.projections,
             |ix| Exp::var(*ix),
-            DUMMY_SP,
+            self.ctx.tcx.def_span(self.def_id),
         );
         rhs.call(Some(istmts))
     }
