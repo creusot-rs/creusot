@@ -6,6 +6,7 @@ module M_heapsort_generic__heap_frag_max [#"heapsort_generic.rs" 25 0 25 58]
   let%span sheapsort_generic'3 = "heapsort_generic.rs" 26 4 28 5
   let%span sheapsort_generic'4 = "heapsort_generic.rs" 16 16 17 24
   let%span sheapsort_generic'5 = "heapsort_generic.rs" 11 4 11 19
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 29 14 29 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 40 14 40 61
   let%span sord'1 = "../../creusot-contracts/src/logic/ord.rs" 51 14 51 61
@@ -84,6 +85,9 @@ module M_heapsort_generic__heap_frag_max [#"heapsort_generic.rs" 25 0 25 58]
   predicate heap_frag [#"heapsort_generic.rs" 15 0 15 66] (s: Seq.seq t_T) (start: int) (end': int) =
     [%#sheapsort_generic'4] forall i: int. start <= parent i /\ i < end'  -> le_log (Seq.get s i) (Seq.get s (parent i))
   
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -101,7 +105,7 @@ module M_heapsort_generic__heap_frag_max [#"heapsort_generic.rs" 25 0 25 58]
    -> (if i > 0 then
     ((([@expl:heap_frag_max requires #0] [%#sheapsort_generic] heap_frag s 0 end')
     && ([@expl:heap_frag_max requires #1] [%#sheapsort_generic'0] 0 <= parent i /\ parent i < end'))
-    /\ 0 <= ([%#sheapsort_generic'2] i) /\ ([%#sheapsort_generic'2] parent i) < ([%#sheapsort_generic'2] i))
+    /\ well_founded_relation ([%#sheapsort_generic'2] i) ([%#sheapsort_generic'2] parent i))
     /\ (([%#sheapsort_generic'1] le_log (Seq.get s (parent i)) (Seq.get s 0))
      -> ([@expl:heap_frag_max ensures] [%#sheapsort_generic'1] le_log (Seq.get s i) (Seq.get s 0)))
   else
@@ -679,8 +683,8 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 95 0 97 29]
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   
-  use creusot.int.UInt64
   use creusot.prelude.Opaque
+  use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.MutBorrow

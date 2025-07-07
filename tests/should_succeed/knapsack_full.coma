@@ -27,6 +27,7 @@ module M_knapsack_full__sum_weights [#"knapsack_full.rs" 24 0 24 60]
   let%span sknapsack_full'0 = "knapsack_full.rs" 23 10 23 21
   let%span sknapsack_full'1 = "knapsack_full.rs" 21 10 21 19
   let%span sknapsack_full'2 = "knapsack_full.rs" 26 8 27 51
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use creusot.int.UInt64
   use seq.Seq
@@ -36,6 +37,9 @@ module M_knapsack_full__sum_weights [#"knapsack_full.rs" 24 0 24 60]
   
   type t_Item  =
     { t_Item__name: t_Name; t_Item__weight: UInt64.t; t_Item__value: UInt64.t }
+  
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -52,8 +56,7 @@ module M_knapsack_full__sum_weights [#"knapsack_full.rs" 24 0 24 60]
     [@expl:sum_weights ensures] [%#sknapsack_full'0] 0 >= 0
   else
     (([@expl:sum_weights requires] [%#sknapsack_full] 0 <= i + 1 /\ i + 1 <= Seq.length s)
-    /\ 0 <= ([%#sknapsack_full'1] Seq.length s - i)
-    /\ ([%#sknapsack_full'1] Seq.length s - (i + 1)) < ([%#sknapsack_full'1] Seq.length s - i))
+    /\ well_founded_relation ([%#sknapsack_full'1] Seq.length s - i) ([%#sknapsack_full'1] Seq.length s - (i + 1)))
     /\ (([%#sknapsack_full'0] sum_weights s (i + 1) >= 0)
      -> ([@expl:sum_weights ensures] [%#sknapsack_full'0] UInt64.t'int (Seq.get s i).t_Item__weight
     + sum_weights s (i + 1)
@@ -64,6 +67,7 @@ module M_knapsack_full__sum_values [#"knapsack_full.rs" 35 0 35 59]
   let%span sknapsack_full = "knapsack_full.rs" 34 11 34 33
   let%span sknapsack_full'0 = "knapsack_full.rs" 33 10 33 19
   let%span sknapsack_full'1 = "knapsack_full.rs" 37 8 38 49
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use creusot.int.UInt64
   use seq.Seq
@@ -73,6 +77,9 @@ module M_knapsack_full__sum_values [#"knapsack_full.rs" 35 0 35 59]
   
   type t_Item  =
     { t_Item__name: t_Name; t_Item__weight: UInt64.t; t_Item__value: UInt64.t }
+  
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -89,8 +96,7 @@ module M_knapsack_full__sum_values [#"knapsack_full.rs" 35 0 35 59]
     true
   else
     ([@expl:sum_values requires] [%#sknapsack_full] i + 1 >= 0 /\ i + 1 <= Seq.length s)
-    /\ 0 <= ([%#sknapsack_full'0] Seq.length s - i)
-    /\ ([%#sknapsack_full'0] Seq.length s - (i + 1)) < ([%#sknapsack_full'0] Seq.length s - i)
+    /\ well_founded_relation ([%#sknapsack_full'0] Seq.length s - i) ([%#sknapsack_full'0] Seq.length s - (i + 1))
   )
 end
 module M_knapsack_full__subseq_rev [#"knapsack_full.rs" 47 0 47 71]
@@ -98,11 +104,15 @@ module M_knapsack_full__subseq_rev [#"knapsack_full.rs" 47 0 47 71]
   let%span sknapsack_full'0 = "knapsack_full.rs" 46 11 46 36
   let%span sknapsack_full'1 = "knapsack_full.rs" 44 10 44 12
   let%span sknapsack_full'2 = "knapsack_full.rs" 49 8 53 9
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use seq.Seq
   use mach.int.Int
   
   type t_T
+  
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -127,23 +137,23 @@ module M_knapsack_full__subseq_rev [#"knapsack_full.rs" 47 0 47 71]
       if Seq.get s1 i1 = Seq.get s2 (i2 - 1) then
         ((([@expl:subseq_rev requires #0] [%#sknapsack_full] 0 <= i1 + 1 /\ i1 + 1 <= Seq.length s1)
         && ([@expl:subseq_rev requires #1] [%#sknapsack_full'0] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
-        /\ 0 <= ([%#sknapsack_full'1] i2) /\ ([%#sknapsack_full'1] i2 - 1) < ([%#sknapsack_full'1] i2))
+        /\ well_founded_relation ([%#sknapsack_full'1] i2) ([%#sknapsack_full'1] i2 - 1))
         /\ (if subseq_rev s1 (i1 + 1) s2 (i2 - 1) then
           true
         else
           (([@expl:subseq_rev requires #0] [%#sknapsack_full] 0 <= i1 /\ i1 <= Seq.length s1)
           && ([@expl:subseq_rev requires #1] [%#sknapsack_full'0] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
-          /\ 0 <= ([%#sknapsack_full'1] i2) /\ ([%#sknapsack_full'1] i2 - 1) < ([%#sknapsack_full'1] i2)
+          /\ well_founded_relation ([%#sknapsack_full'1] i2) ([%#sknapsack_full'1] i2 - 1)
         )
       else
         (([@expl:subseq_rev requires #0] [%#sknapsack_full] 0 <= i1 /\ i1 <= Seq.length s1)
         && ([@expl:subseq_rev requires #1] [%#sknapsack_full'0] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
-        /\ 0 <= ([%#sknapsack_full'1] i2) /\ ([%#sknapsack_full'1] i2 - 1) < ([%#sknapsack_full'1] i2)
+        /\ well_founded_relation ([%#sknapsack_full'1] i2) ([%#sknapsack_full'1] i2 - 1)
     
     else
       (([@expl:subseq_rev requires #0] [%#sknapsack_full] 0 <= i1 /\ i1 <= Seq.length s1)
       && ([@expl:subseq_rev requires #1] [%#sknapsack_full'0] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
-      /\ 0 <= ([%#sknapsack_full'1] i2) /\ ([%#sknapsack_full'1] i2 - 1) < ([%#sknapsack_full'1] i2)
+      /\ well_founded_relation ([%#sknapsack_full'1] i2) ([%#sknapsack_full'1] i2 - 1)
   
   )
 end
@@ -165,6 +175,7 @@ module M_knapsack_full__m [#"knapsack_full.rs" 65 0 65 57]
   let%span sknapsack_full'13 = "knapsack_full.rs" 34 11 34 33
   let%span sknapsack_full'14 = "knapsack_full.rs" 33 10 33 19
   let%span sknapsack_full'15 = "knapsack_full.rs" 37 8 38 49
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use creusot.int.UInt64
   use seq.Seq
@@ -212,6 +223,9 @@ module M_knapsack_full__m [#"knapsack_full.rs" 65 0 65 57]
     UInt64.t'int (Seq.get s i).t_Item__value + sum_values s (i + 1)
   )
   
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -234,7 +248,7 @@ module M_knapsack_full__m [#"knapsack_full.rs" 65 0 65 57]
     if UInt64.t'int (Seq.get items (i - 1)).t_Item__weight > w then
       ((([@expl:m requires #0] [%#sknapsack_full] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack_full'0] 0 <= w))
-      /\ 0 <= ([%#sknapsack_full'3] i) /\ ([%#sknapsack_full'3] i - 1) < ([%#sknapsack_full'3] i))
+      /\ well_founded_relation ([%#sknapsack_full'3] i) ([%#sknapsack_full'3] i - 1))
       /\ (([%#sknapsack_full'1] m items (i - 1) w >= 0)
       && ([%#sknapsack_full'2] forall s: Seq.seq t_Item, j: int. 0 <= j
       /\ j <= Seq.length s /\ subseq_rev s j items (i - 1) /\ sum_weights s j <= w
@@ -245,14 +259,14 @@ module M_knapsack_full__m [#"knapsack_full.rs" 65 0 65 57]
     else
       ((([@expl:m requires #0] [%#sknapsack_full] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack_full'0] 0 <= w))
-      /\ 0 <= ([%#sknapsack_full'3] i) /\ ([%#sknapsack_full'3] i - 1) < ([%#sknapsack_full'3] i))
+      /\ well_founded_relation ([%#sknapsack_full'3] i) ([%#sknapsack_full'3] i - 1))
       /\ (([%#sknapsack_full'1] m items (i - 1) w >= 0)
       && ([%#sknapsack_full'2] forall s: Seq.seq t_Item, j: int. 0 <= j
       /\ j <= Seq.length s /\ subseq_rev s j items (i - 1) /\ sum_weights s j <= w
        -> sum_values s j <= m items (i - 1) w)
        -> ((([@expl:m requires #0] [%#sknapsack_full] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack_full'0] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight))
-      /\ 0 <= ([%#sknapsack_full'3] i) /\ ([%#sknapsack_full'3] i - 1) < ([%#sknapsack_full'3] i))
+      /\ well_founded_relation ([%#sknapsack_full'3] i) ([%#sknapsack_full'3] i - 1))
       /\ (([%#sknapsack_full'1] m items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight) >= 0)
       && ([%#sknapsack_full'2] forall s: Seq.seq t_Item, j: int. 0 <= j
       /\ j <= Seq.length s
