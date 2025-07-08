@@ -1,5 +1,5 @@
 use crate::{
-    logic::ops::{AddLogic, MulLogic, NegLogic, SubLogic},
+    logic::ops::{AddLogic, MulLogic, NegLogic, NthBitLogic, SubLogic},
     *,
 };
 pub use ::std::num::*;
@@ -82,6 +82,17 @@ macro_rules! mach_int {
             #[creusot::no_translate]
             #[creusot::builtins = concat!($ty_nm, ".neg")]
             fn neg(self) -> Self {
+                dead
+            }
+        }
+
+        impl NthBitLogic for $t {
+            #[logic]
+            #[trusted]
+            #[creusot::no_translate]
+            #[creusot::builtins = concat!($ty_nm, ".nth")]
+            #[allow(unused_variables)]
+            fn nth_bit(self, n: Int) -> bool {
                 dead
             }
         }
