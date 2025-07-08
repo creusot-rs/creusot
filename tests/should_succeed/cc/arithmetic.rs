@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::ops::NthBitLogic as _, *};
 
 #[bitwise_proof]
 pub fn test() {
