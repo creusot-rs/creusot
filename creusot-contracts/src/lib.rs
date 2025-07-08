@@ -379,7 +379,7 @@ mod base_prelude {
     pub use crate::{
         fn_pure::FnPure,
         ghost::Ghost,
-        logic::{Int, OrdLogic, Seq, ops::IndexLogic as _},
+        logic::{Int, OrdLogic, Seq, ops::IndexLogic as _, ops::NthBitLogic as _},
         model::{DeepModel, View},
         resolve::*,
         snapshot::Snapshot,
