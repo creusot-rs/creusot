@@ -16,6 +16,9 @@ pub struct ProveArgs {
     /// Replay proofs only, no update.
     #[clap(long)]
     pub replay: bool,
+    /// Do not use the Why3find cache.
+    #[clap(long)]
+    pub no_cache: bool,
     /// Generate Why3 sessions for why3 ide.
     #[clap(long)]
     pub why3session: bool,
@@ -64,6 +67,9 @@ fn raw_prove(args: ProveArgs, paths: &Paths) -> Result<()> {
     }
     if args.replay {
         why3find.arg("-r");
+    }
+    if args.no_cache {
+        why3find.arg("--no-cache");
     }
     // `--ide-always` requires Why3 session files
     if args.why3session || args.ide.ide_always {
