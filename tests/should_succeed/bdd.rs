@@ -363,7 +363,7 @@ impl<'arena> Context<'arena> {
     #[allow(path_statements)]
     fn discr_valuation(self, a: Bdd<'arena>, b: Bdd<'arena>) -> Mapping<u64, bool> {
         pearlite! {
-            Self::set_irrelevent_var;
+            let _ = Self::set_irrelevent_var;
             if a.leastvar() < b.leastvar() {
                 match a {
                     Bdd(&If { v, childt, childf }, _) =>
@@ -410,7 +410,7 @@ impl<'arena> Context<'arena> {
     #[ensures(a == b)]
     #[allow(path_statements)]
     pub fn bdd_canonical(self, a: Bdd<'arena>, b: Bdd<'arena>) {
-        Self::discr_valuation;
+        let _ = Self::discr_valuation;
     }
 }
 

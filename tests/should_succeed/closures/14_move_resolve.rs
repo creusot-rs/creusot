@@ -8,7 +8,7 @@ pub fn f<T>(x: T) {
     move || {
         &x;
     };
-    proof_assert!(f.postcondition_once((), ()) ==> resolve(&*xx));
+    proof_assert!(f.postcondition_once((), ()) ==> resolve(*xx));
     f()
 }
 
@@ -18,6 +18,6 @@ pub fn g<T>(x: T) {
     let f = move || {
         &x;
     };
-    proof_assert!(f.postcondition_once((), ()) ==> resolve(&*xx));
+    proof_assert!(f.postcondition_once((), ()) ==> resolve(*xx));
     f()
 }

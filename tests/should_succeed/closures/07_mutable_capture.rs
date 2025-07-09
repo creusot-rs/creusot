@@ -22,7 +22,7 @@ pub fn test_fnmut(mut x: u32) {
 #[ensures(exists<st1, st2, r>
     f.postcondition_mut((), st1, r) &&
     st1.postcondition_mut((), st2, result) &&
-    resolve(&st2))]
+    resolve(st2))]
 fn call_fnmut<F: FnMut() -> i32>(mut f: F) -> i32 {
     f();
     f()

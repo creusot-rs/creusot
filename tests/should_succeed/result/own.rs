@@ -14,15 +14,15 @@ impl<T, E> Resolve for OwnResult<T, E> {
     #[logic(prophetic)]
     fn resolve(self) -> bool {
         match self {
-            OwnResult::Ok(t) => resolve(&t),
-            OwnResult::Err(e) => resolve(&e),
+            OwnResult::Ok(t) => resolve(t),
+            OwnResult::Err(e) => resolve(e),
         }
     }
 
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T, E> OwnResult<T, E> {
@@ -191,7 +191,7 @@ impl<T, E> OwnResult<&T, E> {
 }
 
 impl<T, E> OwnResult<&mut T, E> {
-    #[ensures(forall<t: &mut T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t) && resolve(&t))]
+    #[ensures(forall<t: &mut T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t) && resolve(t))]
     #[ensures(forall<e: E> self == OwnResult::Err(e) ==> result == OwnResult::Err(e))]
     pub fn copied(self) -> OwnResult<T, E>
     where
