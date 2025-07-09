@@ -5,7 +5,7 @@ use why3::declaration::Attribute;
 
 use crate::{
     contracts_items::{is_resolve_function, is_spec, is_trusted},
-    ctx::{ItemType, TranslatedItem, TranslationCtx},
+    ctx::{HasTyCtxt, ItemType, TranslatedItem, TranslationCtx},
     naming::ModulePath,
     options::SpanMode,
     util::path_of_span,
@@ -146,6 +146,12 @@ impl<'tcx> Why3Generator<'tcx> {
 
     pub(crate) fn module_path(&self, def_id: DefId) -> ModulePath {
         ModulePath::new(self.tcx, def_id)
+    }
+}
+
+impl<'tcx> HasTyCtxt<'tcx> for Why3Generator<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.ctx.tcx
     }
 }
 

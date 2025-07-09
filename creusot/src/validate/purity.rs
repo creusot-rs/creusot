@@ -5,7 +5,7 @@ use crate::{
         is_ghost_new, is_logic, is_no_translate, is_prophetic, is_snap_from_fn,
         is_snapshot_closure, is_snapshot_deref, is_spec,
     },
-    ctx::TranslationCtx,
+    ctx::{HasTyCtxt, TranslationCtx},
     translation::{
         pearlite::{Stub, pearlite_stub},
         traits::TraitResolved,
@@ -16,7 +16,7 @@ use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     thir::{self, ClosureExpr, ExprKind, Thir},
-    ty::{FnDef, TypingEnv},
+    ty::{FnDef, TyCtxt, TypingEnv},
 };
 use rustc_trait_selection::infer::InferCtxtExt;
 
@@ -253,7 +253,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 "cannot create a ghost variable in program context"
                             };
 
-                            let mut err = self.ctx.error(expr.span, msg);
+                            let mut err = self.error(expr.span, msg);
                             if is_ghost_new(tcx, func_did) {
                                 err = err.with_span_suggestion(
                                     expr.span,
@@ -343,5 +343,11 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
         if !self.try_visit_spec_statement(stmt) {
             thir::visit::walk_stmt(self, stmt);
         }
+    }
+}
+
+impl<'a, 'tcx> HasTyCtxt<'tcx> for PurityVisitor<'a, 'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.ctx.tcx
     }
 }
