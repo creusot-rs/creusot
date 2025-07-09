@@ -48,10 +48,8 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
 
     #[law]
     #[ensures(self.postcondition_once(args, res) ==
-              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(&res_state))]
-    fn fn_mut_once(self, args: Args, res: Self::Output)
-    where
-        Self: Sized;
+              exists<res_state: &Self> self.postcondition_mut(args, *res_state, res) && resolve(res_state))]
+    fn fn_mut_once(self, args: Args, res: Self::Output);
 }
 
 /// `FnExt` is an extension trait for the `Fn` trait, used for
@@ -75,7 +73,7 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
 }
 
 #[cfg(feature = "nightly")]
-impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
+impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
     #[trusted]
@@ -98,7 +96,7 @@ impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
 }
 
 #[cfg(feature = "nightly")]
-impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
+impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
     #[trusted]
     #[logic(prophetic)]
     #[open]
@@ -138,12 +136,12 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[law]
     #[trusted]
     #[ensures(self.postcondition_once(args, res) ==
-              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(&res_state))]
+              exists<res_state: &Self> self.postcondition_mut(args, *res_state, res) && resolve(res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
 #[cfg(feature = "nightly")]
-impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
+impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
     #[trusted]
     #[logic]
     #[open]
