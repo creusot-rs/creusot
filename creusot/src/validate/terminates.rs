@@ -39,7 +39,7 @@ use std::iter::repeat;
 use crate::{
     backend::is_trusted_item,
     contracts_items::{has_variant_clause, is_no_translate, is_pearlite},
-    ctx::TranslationCtx,
+    ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{
         pearlite::{Term, TermKind, TermVisitor, super_visit_term},
         traits::TraitResolved,
