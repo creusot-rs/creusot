@@ -78,6 +78,10 @@ impl<'tcx> Why3Generator<'tcx> {
                 self.tcx.def_span(def_id),
                 &format!("unsupported definition kind {:?} {:?}", def_id, dk),
             ),
+            ItemType::Constant => {
+                // Just force the body data so it will be serialized
+                self.get_body_data_local(def_id.expect_local());
+            }
             _ => (),
         }
     }

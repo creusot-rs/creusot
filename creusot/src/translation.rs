@@ -8,17 +8,19 @@ pub(crate) mod specification;
 pub(crate) mod traits;
 
 use crate::{
+    analysis,
     backend::Why3Generator,
     contracts_items::{AreContractsLoaded, are_contracts_loaded, is_no_translate},
-    ctx::{TranslationCtx, HasTyCtxt as _}, metadata,
-    options::Output,
+    ctx::{TranslationCtx, HasTyCtxt as _}, ctx::{self, HasTyCtxt as _},
+    metadata::{self, BinaryMetadata, dump_exports},
+    options::{Options, Output},
     translated_item::FileModule,
     validate::validate,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::DUMMY_SP;
-use std::{fs::File, io::Write, path::PathBuf, time::Instant};
+use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
     Symbol,
     declaration::{Attribute, Decl, Module},
@@ -102,7 +104,8 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn std:
     let start = Instant::now();
 
     if why3.should_export() {
-        metadata::dump_exports(&mut why3);
+        let metadata = why3.metadata();
+        metadata::dump_exports(why3.tcx, why3.opts.metadata_path.as_ref(), metadata);
     }
 
     if why3.should_compile() {
@@ -215,4 +218,20 @@ fn print_crate<I: Iterator<Item = FileModule>>(
     drop(output);
 
     Ok(root)
+}
+
+pub(crate) fn prep(tcx: TyCtxt, opts: &Option<Options>) {
+    let mut body_data = HashMap::new();
+    for local_def_id in tcx.hir().body_owners() {
+        let def_id = local_def_id.to_def_id();
+        // TODO: const assoc implementations?
+        if tcx.def_kind(def_id) != DefKind::Const {
+            continue;
+        }
+        let data = analysis::run(tcx, local_def_id);
+        body_data.insert(def_id, data);
+    }
+    let metadata = BinaryMetadata::from_body_data(body_data);
+    let path = opts.as_ref().map(|o| o.metadata_path.as_ref()).flatten();
+    dump_exports(tcx, path, metadata);
 }

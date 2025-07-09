@@ -180,6 +180,7 @@ pub struct TranslationCtx<'tcx> {
     renamer: RefCell<HashMap<HirId, Ident>>,
     pub corenamer: RefCell<HashMap<Ident, HirId>>,
     crate_name: OnceCell<why3::Symbol>,
+    body_data: OnceMap<LocalDefId, Box<(mir::Body<'tcx>, BodyData<'tcx>)>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -241,6 +242,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             corenamer: Default::default(),
             crate_name: Default::default(),
             thir: Default::default(),
+            body_data: Default::default(),
         }
     }
 
@@ -393,6 +395,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             &self.creusot_items,
             &self.extern_specs,
             &self.params_open_inv,
+            self.body_data.iter_mut().map(|(k, v)| (k.to_def_id(), v.1.clone())).collect(),
         )
     }
 
@@ -485,6 +488,36 @@ impl<'tcx> TranslationCtx<'tcx> {
             });
         }
     }
+
+    /// Run analysis on the body of a `const` item if it has not already been done.
+    /// We avoid doing this upfront in a separate pass by doing this lazily:
+    /// either when the const is used in another function being translated,
+    /// or during the main loop in `after_analysis`.
+    pub(crate) fn get_body_data_local(
+        &self,
+        def_id: LocalDefId,
+    ) -> &(mir::Body<'tcx>, BodyData<'tcx>) {
+        self.body_data.insert(def_id, |_| {
+            let body = body_with_facts(self.tcx, def_id);
+            let mut specs = analysis::get_assertions(self, &body.body);
+            let data = analysis::run_for(self, &body, &mut specs);
+            Box::new((body.body, data))
+        })
+    }
+
+    /*
+    pub(crate) fn get_body_data_extern(&self, def_id: DefId) -> &(mir::Body<'tcx>, BodyData<'tcx>) {
+        self.extern_body_data.insert(def_id, |_| {
+            let body = body_with_facts(self.tcx, def_id);
+            let body_data = self.externs.take_body_data(def_id).unwrap_or_else(|| {
+                self.crash_and_error(
+                    self.tcx.def_span(def_id),
+                    &format!("no body data found for {def_id:?}, please report this bug"),
+                )});
+            (body.body, body_data)
+        })
+    }
+    */
 
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
         match self.tcx.def_kind(def_id) {
