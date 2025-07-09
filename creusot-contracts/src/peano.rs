@@ -31,15 +31,17 @@ use ::std::cmp::Ordering;
 /// A peano integer wrapping a 64-bits integer.
 ///
 /// See the [module](crate::peano) explanation.
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
-pub struct PeanoInt(u64);
+#[derive(Clone, Copy, Default, Eq)]
+#[non_exhaustive]
+#[repr(transparent)]
+pub struct PeanoInt(pub u64);
 
 impl DeepModel for PeanoInt {
-    type DeepModelTy = Int;
+    type DeepModelTy = u64;
     #[logic]
     #[open]
-    fn deep_model(self) -> Int {
-        self.view()
+    fn deep_model(self) -> u64 {
+        self.0
     }
 }
 
@@ -47,56 +49,66 @@ impl OrdLogic for PeanoInt {
     #[logic]
     #[open]
     fn cmp_log(self, o: Self) -> Ordering {
-        self.view().cmp_log(o.view())
+        self.0.cmp_log(o.0)
     }
     #[logic]
     #[open]
     fn le_log(self, o: Self) -> bool {
-        self.view().le_log(o.view())
+        self.0.le_log(o.0)
     }
     #[logic]
     #[open]
     fn lt_log(self, o: Self) -> bool {
-        self.view().lt_log(o.view())
+        self.0.lt_log(o.0)
     }
     #[logic]
     #[open]
     fn ge_log(self, o: Self) -> bool {
-        self.view().ge_log(o.view())
+        self.0.ge_log(o.0)
     }
     #[logic]
     #[open]
     fn gt_log(self, o: Self) -> bool {
-        self.view().gt_log(o.view())
+        self.0.gt_log(o.0)
     }
     ord_laws_impl! {}
 }
 
 impl View for PeanoInt {
-    type ViewTy = Int;
+    type ViewTy = u64;
     #[logic]
-    fn view(self) -> Int {
-        self.0.view()
+    #[open]
+    fn view(self) -> u64 {
+        self.0
     }
 }
 
 impl PartialOrd for PeanoInt {
-    #[ensures(result == Some(self.cmp_log(*other)))]
+    #[pure]
+    #[ensures(result == Some((*self).cmp_log(*other)))]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 impl Ord for PeanoInt {
-    #[ensures(result == self.cmp_log(*other))]
+    #[pure]
+    #[ensures(result == (*self).cmp_log(*other))]
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0)
+    }
+}
+impl PartialEq for PeanoInt {
+    #[pure]
+    #[ensures(result == (*self == *other))]
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
     }
 }
 
 impl PeanoInt {
     /// Create a new peano integer with value `0`.
     #[pure]
-    #[ensures(result@ == 0)]
+    #[ensures(result.0 == 0u64)]
     pub fn new() -> Self {
         Self(0)
     }
@@ -116,17 +128,18 @@ impl PeanoInt {
     /// Since the backing integer is 64 bits long, no program could ever actually reach
     /// the point where the integer overflows.
     #[trusted]
-    #[ensures((^self)@ == (*self)@ + 1)]
-    pub fn incr(&mut self) {
+    #[terminates]
+    #[ensures(result.0@ == self.0@ + 1)]
+    pub fn incr(self) -> Self {
         // Use volatile read, to avoid optimizing successive increments.
         // SAFETY: using `read_volatile` on a reference of a `Copy` object is always safe.
         let x = unsafe { std::ptr::read_volatile(&self.0) };
-        self.0 = x + 1;
+        Self(x + 1)
     }
 
     /// Get the underlying integer.
     #[pure]
-    #[ensures(result@ == self@)]
+    #[ensures(result == self.0)]
     pub fn to_u64(self) -> u64 {
         self.0
     }
@@ -134,49 +147,53 @@ impl PeanoInt {
     /// Get the underlying integer.
     #[pure]
     #[trusted]
-    #[ensures(result@ == self@)]
+    #[ensures(result@ == self.0@)]
     pub fn to_i64(self) -> i64 {
         self.0 as i64
     }
 
     /// Get the underlying integer.
     #[pure]
-    #[ensures(result@ == self@)]
+    #[ensures(result@ == self.0@)]
     pub fn to_u128(self) -> u128 {
         self.0 as u128
     }
 
     /// Get the underlying integer.
     #[pure]
-    #[ensures(result@ == self@)]
+    #[ensures(result@ == self.0@)]
     pub fn to_i128(self) -> i128 {
         self.0 as i128
     }
 }
 
 impl From<PeanoInt> for u64 {
-    #[ensures(result@ == val@)]
+    #[pure]
+    #[ensures(result == val.0)]
     fn from(val: PeanoInt) -> Self {
         val.to_u64()
     }
 }
 
 impl From<PeanoInt> for i64 {
-    #[ensures(result@ == val@)]
+    #[pure]
+    #[ensures(result@ == val.0@)]
     fn from(val: PeanoInt) -> Self {
         val.to_i64()
     }
 }
 
 impl From<PeanoInt> for u128 {
-    #[ensures(result@ == val@)]
+    #[pure]
+    #[ensures(result@ == val.0@)]
     fn from(val: PeanoInt) -> Self {
         val.to_u128()
     }
 }
 
 impl From<PeanoInt> for i128 {
-    #[ensures(result@ == val@)]
+    #[pure]
+    #[ensures(result@ == val.0@)]
     fn from(val: PeanoInt) -> Self {
         val.to_i128()
     }
