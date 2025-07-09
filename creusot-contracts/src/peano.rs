@@ -31,7 +31,7 @@ use ::std::cmp::Ordering;
 /// A peano integer wrapping a 64-bits integer.
 ///
 /// See the [module](crate::peano) explanation.
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, Eq)]
 #[non_exhaustive]
 #[repr(transparent)]
 pub struct PeanoInt(pub u64);
@@ -84,15 +84,24 @@ impl View for PeanoInt {
 }
 
 impl PartialOrd for PeanoInt {
-    #[ensures(result == Some(self.cmp_log(*other)))]
+    #[pure]
+    #[ensures(result == Some((*self).cmp_log(*other)))]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 impl Ord for PeanoInt {
-    #[ensures(result == self.cmp_log(*other))]
+    #[pure]
+    #[ensures(result == (*self).cmp_log(*other))]
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0)
+    }
+}
+impl PartialEq for PeanoInt {
+    #[pure]
+    #[ensures(result == (*self == *other))]
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
     }
 }
 
@@ -119,6 +128,7 @@ impl PeanoInt {
     /// Since the backing integer is 64 bits long, no program could ever actually reach
     /// the point where the integer overflows.
     #[trusted]
+    #[terminates]
     #[ensures((^self).0@ == (*self).0@ + 1)]
     pub fn incr(&mut self) {
         // Use volatile read, to avoid optimizing successive increments.
@@ -158,6 +168,7 @@ impl PeanoInt {
 }
 
 impl From<PeanoInt> for u64 {
+    #[pure]
     #[ensures(result == val.0)]
     fn from(val: PeanoInt) -> Self {
         val.to_u64()
@@ -165,6 +176,7 @@ impl From<PeanoInt> for u64 {
 }
 
 impl From<PeanoInt> for i64 {
+    #[pure]
     #[ensures(result@ == val.0@)]
     fn from(val: PeanoInt) -> Self {
         val.to_i64()
@@ -172,6 +184,7 @@ impl From<PeanoInt> for i64 {
 }
 
 impl From<PeanoInt> for u128 {
+    #[pure]
     #[ensures(result@ == val.0@)]
     fn from(val: PeanoInt) -> Self {
         val.to_u128()
@@ -179,6 +192,7 @@ impl From<PeanoInt> for u128 {
 }
 
 impl From<PeanoInt> for i128 {
+    #[pure]
     #[ensures(result@ == val.0@)]
     fn from(val: PeanoInt) -> Self {
         val.to_i128()
