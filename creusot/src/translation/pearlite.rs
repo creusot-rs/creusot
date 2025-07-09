@@ -848,6 +848,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     kind: TermKind::Constructor { variant: variant_index, fields },
                 })
             }
+            ExprKind::Deref { arg } if let Some(arg) = self.expect_shared_borrow(arg) => {
+                self.expr_term(arg)
+            }
             ExprKind::Deref { arg } => {
                 let arg_trans = self.expr_term(arg)?;
                 let arg_ty = self.thir[arg].ty;
@@ -951,6 +954,18 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             }
         };
         Ok(Term { ty, ..res? })
+    }
+
+    // Get the contents of a shared borrow expression (`&contents`), skipping through `Scope` nodes.
+    // `None` if the expression is not a shared borrow.
+    fn expect_shared_borrow(&self, mut expr: ExprId) -> Option<ExprId> {
+        loop {
+            match &self.thir[expr].kind {
+                ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => return Some(*arg),
+                ExprKind::Scope { value, .. } => expr = *value,
+                _ => return None,
+            }
+        }
     }
 
     fn arm_term(&self, arm: ArmId) -> CreusotResult<(Pattern<'tcx>, Term<'tcx>)> {

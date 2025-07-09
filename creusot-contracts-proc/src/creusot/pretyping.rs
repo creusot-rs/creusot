@@ -129,10 +129,11 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                         quote_spanned! {sp=> *::creusot_contracts::__stubs::old( #(#args),* ) },
                     );
                 }
+                // Don't wrap function calls in `*&`.
+                return Ok(quote_spanned! {sp=> #func (#(#args),*)});
+            } else {
+                unimplemented!("unsupported: (expr)() where (expr) is not an identifier")
             }
-
-            let func = encode_term(func)?;
-            Ok(quote_spanned! {sp=> #func (#(#args),*)})
         }
         RT::Cast(TermCast { expr, as_token, ty }) => {
             let expr_token = encode_term(expr)?;
@@ -207,7 +208,10 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             });
             Ok(tokens)
         }
-        RT::Path(_) => Ok(quote_spanned! {sp=> #term }),
+        RT::Path(_) => Ok(
+            // Trick to avoid capturing unsized arguments in spec closures.
+            quote_spanned! {sp=> (*&#term) },
+        ),
         RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
         RT::Reference(TermReference { mutability, expr, .. }) => {
             let term = encode_term(expr)?;

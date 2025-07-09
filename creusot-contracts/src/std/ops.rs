@@ -130,26 +130,26 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
 
     #[trusted]
     #[law]
-    #[requires((*&self).postcondition_mut(args, *&res_state, res))]
-    #[ensures((*&self).hist_inv(*&res_state))]
+    #[requires(self.postcondition_mut(args, res_state, res))]
+    #[ensures(self.hist_inv(res_state))]
     fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[trusted]
     #[law]
-    #[ensures((*&self).hist_inv(*&self))]
+    #[ensures(self.hist_inv(self))]
     fn hist_inv_refl(self) {}
 
     #[trusted]
     #[law]
-    #[requires((*&self).hist_inv(*&b))]
-    #[requires((*&b).hist_inv(*&c))]
-    #[ensures((*&self).hist_inv(*&c))]
+    #[requires(self.hist_inv(b))]
+    #[requires(b.hist_inv(c))]
+    #[ensures(self.hist_inv(c))]
     fn hist_inv_trans(self, b: Self, c: Self) {}
 
     #[law]
     #[trusted]
-    #[ensures((*&self).postcondition_once(args, res) ==
-              exists<res_state: Self> (*&self).postcondition_mut(args, res_state, res) && resolve(res_state))]
+    #[ensures(self.postcondition_once(args, res) ==
+              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
@@ -166,17 +166,17 @@ impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
 
     #[law]
     #[trusted]
-    #[ensures((*&self).postcondition_mut(args, *&res_state, res) == ((*&self).postcondition(args, res) && *&self == *&res_state))]
+    #[ensures(self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
     fn fn_mut(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[law]
     #[trusted]
-    #[ensures((*&self).postcondition_once(args, res) == ((*&self).postcondition(args, res) && resolve(&self)))]
+    #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(&self)))]
     fn fn_once(self, args: Args, res: Self::Output) {}
 
     #[law]
     #[trusted]
-    #[ensures((*&self).hist_inv(*&res_state) == (*&self == *&res_state))]
+    #[ensures(self.hist_inv(res_state) == (self == res_state))]
     fn fn_hist_inv(self, res_state: Self) {}
 }
 
@@ -184,10 +184,8 @@ extern_spec! {
     mod std {
         mod ops {
             trait FnOnce<Args> where Args: Tuple {
-                // `*&self` is meant to be `self` but, due to our encoding of contracts,
-                // that would require `Self: Sized`. `*&self` avoids this.
-                #[requires((*&self).precondition(arg))]
-                #[ensures((*&self).postcondition_once(arg, result))]
+                #[requires(self.precondition(arg))]
+                #[ensures(self.postcondition_once(arg, result))]
                 fn call_once(self, arg: Args) -> Self::Output;
             }
 
