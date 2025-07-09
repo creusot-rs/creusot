@@ -15,13 +15,12 @@
 //! #     pcell::{PCell, PCellOwn},
 //! #     *,
 //! # };
-//!
 //! declare_namespace! { PCELL }
 //!
 //! /// A cell that simply asserts its content's type invariant.
-//! pub struct CellInv<T: Invariant + 'static> {
+//! pub struct CellInv<T: Invariant> {
 //!     data: PCell<T>,
-//!     permission: Ghost<&'static LocalInvariant<PCellLocalInv<T>>>,
+//!     permission: Ghost<LocalInvariant<PCellLocalInv<T>>>,
 //! }
 //! impl<T: Invariant> Invariant for CellInv<T> {
 //!     #[logic]
@@ -40,10 +39,10 @@
 //!     }
 //! }
 //!
-//! impl<T: Invariant + 'static> CellInv<T> {
+//! impl<T: Invariant> CellInv<T> {
 //!     #[requires(namespaces.contains(PCELL()))]
 //!     pub fn write(&self, x: T, namespaces: Ghost<Namespaces>) {
-//!         LocalInvariant::open(self.permission, namespaces, move |perm| unsafe {
+//!         LocalInvariant::open(self.permission.borrow(), namespaces, move |perm| unsafe {
 //!             *self.data.borrow_mut(ghost!(&mut perm.into_inner().0)) = x
 //!         })
 //!     }
