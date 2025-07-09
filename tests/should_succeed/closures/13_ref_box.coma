@@ -24,13 +24,6 @@ module M_13_ref_box__call_fn [#"13_ref_box.rs" 6 0 6 50]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: t_F) =
-    [%#sinvariant] inv self
-  
-  predicate inv'0 (_0: t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
@@ -76,6 +69,13 @@ module M_13_ref_box__call_fn [#"13_ref_box.rs" 6 0 6 50]
   axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops'2] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
   
+  predicate invariant' (self: t_F) =
+    [%#sinvariant] inv self
+  
+  predicate inv'0 (_0: t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
+  
   let rec call (self_:t_F) (arg:Int32.t) (return'  (x:Int32.t))= {[@expl:call 'self_' type invariant] [%#sops] inv'0 self_}
     {[@expl:call requires] [%#sops'0] precondition self_ arg}
     any [ return''0 (result:Int32.t)-> {[%#sops'1] postcondition self_ arg result} (! return' {result}) ] 
@@ -112,20 +112,13 @@ module M_13_ref_box__call_fnmut [#"13_ref_box.rs" 12 0 12 60]
   let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
   
-  use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_F
   
   predicate inv (_0: t_F)
-  
-  predicate invariant' (self: MutBorrow.t t_F) =
-    [%#sinvariant] inv self.current /\ inv self.final
-  
-  predicate inv'0 (_0: MutBorrow.t t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
   
   predicate precondition (self: t_F) (args: Int32.t)
   
@@ -155,6 +148,13 @@ module M_13_ref_box__call_fnmut [#"13_ref_box.rs" 12 0 12 60]
   
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops'2] postcondition_mut self args res_state res)
    -> ([%#sops'3] hist_inv self res_state)
+  
+  predicate invariant' (self: MutBorrow.t t_F) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  predicate inv'0 (_0: MutBorrow.t t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
   
   let rec call_mut (self_:MutBorrow.t t_F) (arg:Int32.t) (return'  (x:Int32.t))= {[@expl:call_mut 'self_' type invariant] [%#sops] inv'0 self_}
     {[@expl:call_mut requires] [%#sops'0] precondition self_.current arg}
@@ -255,17 +255,7 @@ module M_13_ref_box__test1 [#"13_ref_box.rs" 24 0 24 52]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: t_F) =
-    [%#sinvariant] inv self
-  
-  predicate inv'0 (_0: t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
-  
-  predicate precondition'0 (self: t_F) (args: Int32.t) =
-    precondition self args
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
@@ -309,6 +299,16 @@ module M_13_ref_box__test1 [#"13_ref_box.rs" 24 0 24 52]
   
   axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: t_F) =
+    [%#sinvariant] inv self
+  
+  predicate inv'0 (_0: t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: t_F) (args: Int32.t) =
+    precondition self args
   
   predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
     postcondition self args result
@@ -402,22 +402,9 @@ module M_13_ref_box__test2 [#"13_ref_box.rs" 30 0 30 52]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: t_F) =
-    [%#sboxed] inv self
-  
-  predicate inv'0 (_0: t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
   
-  predicate precondition'0 (self: t_F) (args: Int32.t) =
-    precondition self args
-  
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once self args result
   
   predicate resolve (_0: t_F)
   
@@ -443,6 +430,35 @@ module M_13_ref_box__test2 [#"13_ref_box.rs" 30 0 30 52]
   
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops'2] postcondition_mut self args res_state res)
    -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: t_F) (res_state: t_F) : ()
+  
+  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  function fn_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  
+  axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: t_F) =
+    [%#sboxed] inv self
+  
+  predicate inv'0 (_0: t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: t_F) (args: Int32.t) =
+    precondition self args
+  
+  predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
+    postcondition_once self args result
   
   predicate resolve'0 (self: t_F) =
     [%#sresolve] resolve self
@@ -474,22 +490,6 @@ module M_13_ref_box__test2 [#"13_ref_box.rs" 30 0 30 52]
   
   axiom postcondition_mut_hist_inv_spec'0: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops'2] postcondition_mut'0 self args res_state res)
    -> ([%#sops'3] hist_inv'0 self res_state)
-  
-  function fn_hist_inv (self: t_F) (res_state: t_F) : ()
-  
-  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'1] hist_inv self res_state = (self = res_state)
-  
-  predicate postcondition (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  function fn_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'0] postcondition_once self args res
-  = (postcondition self args res /\ resolve self)
-  
-  function fn_mut (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
-  = (postcondition self args res /\ self = res_state)
   
   function fn_hist_inv'0 (self: t_F) (res_state: t_F) : ()
   
@@ -551,17 +551,7 @@ module M_13_ref_box__test3 [#"13_ref_box.rs" 36 0 36 52]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: t_F) =
-    [%#sinvariant] inv self
-  
-  predicate inv'0 (_0: t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
-  
-  predicate precondition'0 (self: t_F) (args: Int32.t) =
-    precondition self args
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
@@ -605,6 +595,16 @@ module M_13_ref_box__test3 [#"13_ref_box.rs" 36 0 36 52]
   
   axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: t_F) =
+    [%#sinvariant] inv self
+  
+  predicate inv'0 (_0: t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: t_F) (args: Int32.t) =
+    precondition self args
   
   predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
     postcondition self args result
@@ -684,30 +684,11 @@ module M_13_ref_box__test4 [#"13_ref_box.rs" 42 0 42 52]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: t_F) =
-    [%#sboxed] inv self
-  
-  predicate inv'0 (_0: t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
-  
-  predicate precondition'0 (self: t_F) (args: Int32.t) =
-    precondition self args
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once self args result
-  
   predicate resolve (_0: t_F)
-  
-  predicate resolve'0 (self: t_F) =
-    [%#sresolve] resolve self
-  
-  predicate resolve'1 (_0: t_F) =
-    resolve'0 _0
   
   predicate postcondition_mut (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
@@ -731,6 +712,41 @@ module M_13_ref_box__test4 [#"13_ref_box.rs" 42 0 42 52]
   
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops'2] postcondition_mut self args res_state res)
    -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: t_F) (res_state: t_F) : ()
+  
+  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  function fn_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  
+  axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: t_F) =
+    [%#sboxed] inv self
+  
+  predicate inv'0 (_0: t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: t_F) (args: Int32.t) =
+    precondition self args
+  
+  predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
+    postcondition_once self args result
+  
+  predicate resolve'0 (self: t_F) =
+    [%#sresolve] resolve self
+  
+  predicate resolve'1 (_0: t_F) =
+    resolve'0 _0
   
   predicate postcondition_mut'0 (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t) =
     postcondition_mut self args result_state result
@@ -763,22 +779,6 @@ module M_13_ref_box__test4 [#"13_ref_box.rs" 42 0 42 52]
     [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] exists f2: t_F. postcondition_mut'0 f x f2 result /\ resolve'1 f2}
       (! return' {result}) ]
   
-  
-  function fn_hist_inv (self: t_F) (res_state: t_F) : ()
-  
-  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'1] hist_inv self res_state = (self = res_state)
-  
-  predicate postcondition (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  function fn_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'0] postcondition_once self args res
-  = (postcondition self args res /\ resolve self)
-  
-  function fn_mut (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
-  = (postcondition self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
@@ -813,25 +813,15 @@ module M_13_ref_box__test5 [#"13_ref_box.rs" 48 0 48 56]
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
-  use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_F
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: MutBorrow.t t_F) =
-    [%#sinvariant] inv self.current /\ inv self.final
-  
-  predicate inv'0 (_0: MutBorrow.t t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
-  
-  predicate precondition'0 (self: MutBorrow.t t_F) (args: Int32.t) =
-    precondition self.current args
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
@@ -859,6 +849,32 @@ module M_13_ref_box__test5 [#"13_ref_box.rs" 48 0 48 56]
   
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops'2] postcondition_mut self args res_state res)
    -> ([%#sops'3] hist_inv self res_state)
+  
+  function fn_hist_inv (self: t_F) (res_state: t_F) : ()
+  
+  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'1] hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  function fn_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'0] postcondition_once self args res
+  = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  
+  axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
+  = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: MutBorrow.t t_F) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  predicate inv'0 (_0: MutBorrow.t t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: MutBorrow.t t_F) (args: Int32.t) =
+    precondition self.current args
   
   predicate postcondition_once'0 (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
     postcondition_mut self.current args self.final result
@@ -904,22 +920,6 @@ module M_13_ref_box__test5 [#"13_ref_box.rs" 48 0 48 56]
       /\ resolve'1 f2}
       (! return' {result}) ]
   
-  
-  function fn_hist_inv (self: t_F) (res_state: t_F) : ()
-  
-  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'1] hist_inv self res_state = (self = res_state)
-  
-  predicate postcondition (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  function fn_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'0] postcondition_once self args res
-  = (postcondition self args res /\ resolve self)
-  
-  function fn_mut (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
-  = (postcondition self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
@@ -967,17 +967,7 @@ module M_13_ref_box__test6 [#"13_ref_box.rs" 54 0 54 52]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: t_F) =
-    [%#sinvariant] inv self
-  
-  predicate inv'0 (_0: t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
-  
-  predicate precondition'0 (self: t_F) (args: Int32.t) =
-    precondition self args
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
@@ -1021,6 +1011,16 @@ module M_13_ref_box__test6 [#"13_ref_box.rs" 54 0 54 52]
   
   axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: t_F) =
+    [%#sinvariant] inv self
+  
+  predicate inv'0 (_0: t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: t_F) (args: Int32.t) =
+    precondition self args
   
   predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
     postcondition self args result
@@ -1069,26 +1069,9 @@ module M_13_ref_box__test7 [#"13_ref_box.rs" 60 0 60 52]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: t_F) =
-    [%#sboxed] inv self
-  
-  predicate inv'0 (_0: t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
   
-  predicate precondition'0 (self: t_F) (args: Int32.t) =
-    precondition self args
-  
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once self args result
-  
-  let rec call_fnonce (f:t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnonce 'f' type invariant] [%#s13_ref_box'2] inv'0 f}
-    {[@expl:call_fnonce requires] [%#s13_ref_box'3] precondition'0 f x}
-    any [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] postcondition_once'0 f x result} (! return' {result}) ] 
   
   predicate resolve (_0: t_F)
   
@@ -1130,6 +1113,23 @@ module M_13_ref_box__test7 [#"13_ref_box.rs" 60 0 60 52]
   
   axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: t_F) =
+    [%#sboxed] inv self
+  
+  predicate inv'0 (_0: t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: t_F) (args: Int32.t) =
+    precondition self args
+  
+  predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
+    postcondition_once self args result
+  
+  let rec call_fnonce (f:t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnonce 'f' type invariant] [%#s13_ref_box'2] inv'0 f}
+    {[@expl:call_fnonce requires] [%#s13_ref_box'3] precondition'0 f x}
+    any [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] postcondition_once'0 f x result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
@@ -1163,25 +1163,15 @@ module M_13_ref_box__test8 [#"13_ref_box.rs" 66 0 66 56]
   let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
   
-  use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_F
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: MutBorrow.t t_F) =
-    [%#sinvariant] inv self.current /\ inv self.final
-  
-  predicate inv'0 (_0: MutBorrow.t t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
-  
-  predicate precondition'0 (self: MutBorrow.t t_F) (args: Int32.t) =
-    precondition self.current args
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
@@ -1210,13 +1200,6 @@ module M_13_ref_box__test8 [#"13_ref_box.rs" 66 0 66 56]
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops'2] postcondition_mut self args res_state res)
    -> ([%#sops'3] hist_inv self res_state)
   
-  predicate postcondition_once'0 (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_mut self.current args self.final result
-  
-  let rec call_fnonce (f:MutBorrow.t t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnonce 'f' type invariant] [%#s13_ref_box'2] inv'0 f}
-    {[@expl:call_fnonce requires] [%#s13_ref_box'3] precondition'0 f x}
-    any [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] postcondition_once'0 f x result} (! return' {result}) ] 
-  
   function fn_hist_inv (self: t_F) (res_state: t_F) : ()
   
   axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'1] hist_inv self res_state = (self = res_state)
@@ -1232,6 +1215,23 @@ module M_13_ref_box__test8 [#"13_ref_box.rs" 66 0 66 56]
   
   axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
+  
+  predicate invariant' (self: MutBorrow.t t_F) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  predicate inv'0 (_0: MutBorrow.t t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: MutBorrow.t t_F) (args: Int32.t) =
+    precondition self.current args
+  
+  predicate postcondition_once'0 (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
+    postcondition_mut self.current args self.final result
+  
+  let rec call_fnonce (f:MutBorrow.t t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnonce 'f' type invariant] [%#s13_ref_box'2] inv'0 f}
+    {[@expl:call_fnonce requires] [%#s13_ref_box'3] precondition'0 f x}
+    any [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] postcondition_once'0 f x result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
@@ -1277,30 +1277,11 @@ module M_13_ref_box__test9 [#"13_ref_box.rs" 72 0 72 55]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: t_F) =
-    [%#sboxed] inv self
-  
-  predicate inv'0 (_0: t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
-  
-  predicate precondition'0 (self: t_F) (args: Int32.t) =
-    precondition self args
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once self args result
-  
   predicate resolve (_0: t_F)
-  
-  predicate resolve'0 (self: t_F) =
-    [%#sresolve] resolve self
-  
-  predicate resolve'1 (_0: t_F) =
-    resolve'0 _0
   
   predicate postcondition_mut (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
@@ -1324,6 +1305,25 @@ module M_13_ref_box__test9 [#"13_ref_box.rs" 72 0 72 55]
   
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops] postcondition_mut self args res_state res)
    -> ([%#sops'0] hist_inv self res_state)
+  
+  predicate invariant' (self: t_F) =
+    [%#sboxed] inv self
+  
+  predicate inv'0 (_0: t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: t_F) (args: Int32.t) =
+    precondition self args
+  
+  predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
+    postcondition_once self args result
+  
+  predicate resolve'0 (self: t_F) =
+    [%#sresolve] resolve self
+  
+  predicate resolve'1 (_0: t_F) =
+    resolve'0 _0
   
   predicate postcondition_mut'0 (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t) =
     postcondition_mut self args result_state result
@@ -1388,25 +1388,15 @@ module M_13_ref_box__test10 [#"13_ref_box.rs" 78 0 78 60]
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
-  use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_F
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: MutBorrow.t t_F) =
-    [%#sinvariant] inv self.current /\ inv self.final
-  
-  predicate inv'0 (_0: MutBorrow.t t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
-  
-  predicate precondition'0 (self: MutBorrow.t t_F) (args: Int32.t) =
-    precondition self.current args
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
@@ -1434,6 +1424,16 @@ module M_13_ref_box__test10 [#"13_ref_box.rs" 78 0 78 60]
   
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops] postcondition_mut self args res_state res)
    -> ([%#sops'0] hist_inv self res_state)
+  
+  predicate invariant' (self: MutBorrow.t t_F) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  predicate inv'0 (_0: MutBorrow.t t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: MutBorrow.t t_F) (args: Int32.t) =
+    precondition self.current args
   
   predicate postcondition_once'0 (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
     postcondition_mut self.current args self.final result
@@ -1524,26 +1524,9 @@ module M_13_ref_box__test11 [#"13_ref_box.rs" 84 0 84 56]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: t_F) =
-    [%#sboxed] inv self
-  
-  predicate inv'0 (_0: t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
   
-  predicate precondition'0 (self: t_F) (args: Int32.t) =
-    precondition self args
-  
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once self args result
-  
-  let rec call_fnonce (f:t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnonce 'f' type invariant] [%#s13_ref_box'2] inv'0 f}
-    {[@expl:call_fnonce requires] [%#s13_ref_box'3] precondition'0 f x}
-    any [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] postcondition_once'0 f x result} (! return' {result}) ] 
   
   predicate resolve (_0: t_F)
   
@@ -1569,6 +1552,23 @@ module M_13_ref_box__test11 [#"13_ref_box.rs" 84 0 84 56]
   
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops] postcondition_mut self args res_state res)
    -> ([%#sops'0] hist_inv self res_state)
+  
+  predicate invariant' (self: t_F) =
+    [%#sboxed] inv self
+  
+  predicate inv'0 (_0: t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: t_F) (args: Int32.t) =
+    precondition self args
+  
+  predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
+    postcondition_once self args result
+  
+  let rec call_fnonce (f:t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnonce 'f' type invariant] [%#s13_ref_box'2] inv'0 f}
+    {[@expl:call_fnonce requires] [%#s13_ref_box'3] precondition'0 f x}
+    any [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] postcondition_once'0 f x result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
@@ -1600,25 +1600,15 @@ module M_13_ref_box__test12 [#"13_ref_box.rs" 90 0 90 60]
   let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
   
-  use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_F
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: MutBorrow.t t_F) =
-    [%#sinvariant] inv self.current /\ inv self.final
-  
-  predicate inv'0 (_0: MutBorrow.t t_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
-  
   predicate precondition (self: t_F) (args: Int32.t)
-  
-  predicate precondition'0 (self: MutBorrow.t t_F) (args: Int32.t) =
-    precondition self.current args
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
@@ -1646,6 +1636,16 @@ module M_13_ref_box__test12 [#"13_ref_box.rs" 90 0 90 60]
   
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops] postcondition_mut self args res_state res)
    -> ([%#sops'0] hist_inv self res_state)
+  
+  predicate invariant' (self: MutBorrow.t t_F) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  predicate inv'0 (_0: MutBorrow.t t_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate precondition'0 (self: MutBorrow.t t_F) (args: Int32.t) =
+    precondition self.current args
   
   predicate postcondition_once'0 (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
     postcondition_mut self.current args self.final result
@@ -1691,6 +1691,10 @@ module M_13_ref_box__test13 [#"13_ref_box.rs" 96 0 96 56]
   
   predicate inv (_0: t_F)
   
+  predicate precondition (self: t_F) (args: Int32.t)
+  
+  predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
+  
   predicate invariant' (self: t_F) =
     [%#sboxed] inv self
   
@@ -1698,12 +1702,8 @@ module M_13_ref_box__test13 [#"13_ref_box.rs" 96 0 96 56]
   
   axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
   
-  predicate precondition (self: t_F) (args: Int32.t)
-  
   predicate precondition'0 (self: t_F) (args: Int32.t) =
     precondition self args
-  
-  predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
   predicate postcondition_once'0 (self: t_F) (args: Int32.t) (result: Int32.t) =
     postcondition_once self args result
@@ -1779,13 +1779,6 @@ module M_13_ref_box__test14 [#"13_ref_box.rs" 102 0 102 53]
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops'2] postcondition_mut self args res_state res)
    -> ([%#sops'3] hist_inv self res_state)
   
-  let rec call_fnmut (f:t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnmut 'f' type invariant] [%#s13_ref_box'2] inv f}
-    {[@expl:call_fnmut requires] [%#s13_ref_box'3] precondition f x}
-    any
-    [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] exists f2: t_F. postcondition_mut f x f2 result /\ resolve f2}
-      (! return' {result}) ]
-  
-  
   function fn_hist_inv (self: t_F) (res_state: t_F) : ()
   
   axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'1] hist_inv self res_state = (self = res_state)
@@ -1801,6 +1794,13 @@ module M_13_ref_box__test14 [#"13_ref_box.rs" 102 0 102 53]
   
   axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
+  
+  let rec call_fnmut (f:t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnmut 'f' type invariant] [%#s13_ref_box'2] inv f}
+    {[@expl:call_fnmut requires] [%#s13_ref_box'3] precondition f x}
+    any
+    [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] exists f2: t_F. postcondition_mut f x f2 result /\ resolve f2}
+      (! return' {result}) ]
+  
   
   meta "compute_max_steps" 1000000
   
@@ -1844,10 +1844,6 @@ module M_13_ref_box__test15 [#"13_ref_box.rs" 108 0 108 53]
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
-  let rec call_fnonce (f:t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnonce 'f' type invariant] [%#s13_ref_box'2] inv f}
-    {[@expl:call_fnonce requires] [%#s13_ref_box'3] precondition f x}
-    any [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] postcondition_once f x result} (! return' {result}) ] 
-  
   predicate resolve (_0: t_F)
   
   predicate postcondition_mut (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
@@ -1889,6 +1885,10 @@ module M_13_ref_box__test15 [#"13_ref_box.rs" 108 0 108 53]
   axiom fn_mut_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
   
+  let rec call_fnonce (f:t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnonce 'f' type invariant] [%#s13_ref_box'2] inv f}
+    {[@expl:call_fnonce requires] [%#s13_ref_box'3] precondition f x}
+    any [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] postcondition_once f x result} (! return' {result}) ] 
+  
   meta "compute_max_steps" 1000000
   
   let rec test15[#"13_ref_box.rs" 108 0 108 53] (f:t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:test15 'f' type invariant] [%#s13_ref_box] inv f}
@@ -1928,10 +1928,6 @@ module M_13_ref_box__test16 [#"13_ref_box.rs" 114 0 114 56]
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
-  let rec call_fnonce (f:t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnonce 'f' type invariant] [%#s13_ref_box'2] inv f}
-    {[@expl:call_fnonce requires] [%#s13_ref_box'3] precondition f x}
-    any [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] postcondition_once f x result} (! return' {result}) ] 
-  
   predicate resolve (_0: t_F)
   
   predicate postcondition_mut (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
@@ -1956,6 +1952,10 @@ module M_13_ref_box__test16 [#"13_ref_box.rs" 114 0 114 56]
   
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops] postcondition_mut self args res_state res)
    -> ([%#sops'0] hist_inv self res_state)
+  
+  let rec call_fnonce (f:t_F) (x:Int32.t) (return'  (x'0:Int32.t))= {[@expl:call_fnonce 'f' type invariant] [%#s13_ref_box'2] inv f}
+    {[@expl:call_fnonce requires] [%#s13_ref_box'3] precondition f x}
+    any [ return''0 (result:Int32.t)-> {[%#s13_ref_box'4] postcondition_once f x result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   

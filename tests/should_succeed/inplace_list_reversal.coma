@@ -1,10 +1,10 @@
 module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
-  let%span sinplace_list_reversal = "inplace_list_reversal.rs" 25 16 25 31
-  let%span sinplace_list_reversal'0 = "inplace_list_reversal.rs" 30 16 30 73
-  let%span sinplace_list_reversal'1 = "inplace_list_reversal.rs" 29 16 29 25
-  let%span sinplace_list_reversal'2 = "inplace_list_reversal.rs" 28 16 28 25
-  let%span sinplace_list_reversal'3 = "inplace_list_reversal.rs" 24 14 24 15
-  let%span sinplace_list_reversal'4 = "inplace_list_reversal.rs" 23 10 23 35
+  let%span sinplace_list_reversal = "inplace_list_reversal.rs" 24 14 24 15
+  let%span sinplace_list_reversal'0 = "inplace_list_reversal.rs" 23 10 23 35
+  let%span sinplace_list_reversal'1 = "inplace_list_reversal.rs" 25 16 25 31
+  let%span sinplace_list_reversal'2 = "inplace_list_reversal.rs" 30 16 30 73
+  let%span sinplace_list_reversal'3 = "inplace_list_reversal.rs" 29 16 29 25
+  let%span sinplace_list_reversal'4 = "inplace_list_reversal.rs" 28 16 28 25
   let%span sinplace_list_reversal'5 = "inplace_list_reversal.rs" 17 4 20 5
   let%span smem = "../../creusot-contracts/src/std/mem.rs" 10 26 10 30
   let%span smem'0 = "../../creusot-contracts/src/std/mem.rs" 10 40 10 43
@@ -13,8 +13,8 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 62 8 62 23
   let%span sresolve'0 = "../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sresolve'1 = "../../creusot-contracts/src/resolve.rs" 36 8 36 44
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 101 20 101 44
+  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -55,6 +55,12 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_List [inv'3 x]. inv'3 x = invariant''0 x
   
+  function rev_append [#"inplace_list_reversal.rs" 16 0 16 55] (n: t_List) (o: t_List) : t_List =
+    [%#sinplace_list_reversal'5] match n with
+      | C_Nil -> o
+      | C_Cons {_p0 = hd ; _p1 = tl} -> rev_append tl (C_Cons { _p0 = hd; _p1 = o })
+      end
+  
   let rec replace (dest:MutBorrow.t t_List) (src:t_List) (return'  (x:t_List))= {[@expl:replace 'dest' type invariant] [%#smem] inv'3 dest}
     {[@expl:replace 'src' type invariant] [%#smem'0] inv'1 src}
     any
@@ -63,12 +69,6 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
       {[%#smem'2] result = dest.current}
       (! return' {result}) ]
   
-  
-  function rev_append [#"inplace_list_reversal.rs" 16 0 16 55] (n: t_List) (o: t_List) : t_List =
-    [%#sinplace_list_reversal'5] match n with
-      | C_Nil -> o
-      | C_Cons {_p0 = hd ; _p1 = tl} -> rev_append tl (C_Cons { _p0 = hd; _p1 = o })
-      end
   
   let rec v_Cons (input:t_List) (ret  (field_0:tuple))= any
     [ good (field_0:tuple)-> {C_Cons field_0 = input} (! ret {field_0})
@@ -100,9 +100,9 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
   
   meta "compute_max_steps" 1000000
   
-  let rec rev[#"inplace_list_reversal.rs" 24 0 24 30] (l:MutBorrow.t t_List) (return'  (x:()))= {[@expl:rev 'l' type invariant] [%#sinplace_list_reversal'3] inv'3 l}
+  let rec rev[#"inplace_list_reversal.rs" 24 0 24 30] (l:MutBorrow.t t_List) (return'  (x:()))= {[@expl:rev 'l' type invariant] [%#sinplace_list_reversal] inv'3 l}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_l <- [%#sinplace_list_reversal] l'0 ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &old_l <- [%#sinplace_list_reversal'1] l'0 ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 =  [ &prev <- C_Nil ] s1
       | s1 =  [ &_8 <- C_Nil ] s2
@@ -117,9 +117,9 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
       | s4 = bb3 ]
     
     | bb3 = bb3'0
-      [ bb3'0 = {[@expl:loop invariant #0] [%#sinplace_list_reversal'2] inv'1 prev}
-        {[@expl:loop invariant #1] [%#sinplace_list_reversal'1] inv'1 head}
-        {[@expl:loop invariant #2] [%#sinplace_list_reversal'0] rev_append head prev = rev_append old_l.current (C_Nil)}
+      [ bb3'0 = {[@expl:loop invariant #0] [%#sinplace_list_reversal'4] inv'1 prev}
+        {[@expl:loop invariant #1] [%#sinplace_list_reversal'3] inv'1 head}
+        {[@expl:loop invariant #2] [%#sinplace_list_reversal'2] rev_append head prev = rev_append old_l.current (C_Nil)}
         (! s0) [ s0 = bb7 ] 
         [ bb7 = any [ br0 -> {head = C_Nil} (! bb21) | br1 (x0:tuple)-> {head = C_Cons x0} (! bb9) ] 
         | bb9 = s0
@@ -168,7 +168,7 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
     | & next: t_List = Any.any_l ()
     | & _19: t_List = Any.any_l () ]
     
-    [ return''0 (result:())-> {[@expl:rev ensures] [%#sinplace_list_reversal'4] l.final = rev_append l.current (C_Nil)}
+    [ return''0 (result:())-> {[@expl:rev ensures] [%#sinplace_list_reversal'0] l.final = rev_append l.current (C_Nil)}
       (! return' {result}) ]
 
 end

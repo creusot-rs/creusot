@@ -25,68 +25,33 @@ module M_mixed__qyi2592445413368279263__clone [#"mixed.rs" 8 9 8 14] (* <Product
   
   predicate inv (_0: t_A)
   
-  predicate invariant' (self: t_A) =
-    [%#sinvariant] inv self
+  predicate inv'0 (_0: t_B)
   
-  predicate inv'0 (_0: t_A)
+  predicate inv'1 (_0: t_Product)
   
-  axiom inv_axiom [@rewrite]: forall x: t_A [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_Product [inv'1 x]. inv'1 x
+  = match x with
+    | {t_Product__a = a ; t_Product__b = b} -> inv a /\ inv'0 b
+    end
   
-  predicate precondition (self: ()) (args: t_A)
+  predicate invariant' (self: t_Product) =
+    [%#sinvariant] inv'1 self
   
-  axiom precondition_fndef: [%#smixed'1] forall args: t_A [precondition () args]. (let self_ = args in inv'0 self_)
-   -> precondition () args
+  predicate inv'2 (_0: t_Product)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Product [inv'2 x]. inv'2 x = invariant' x
   
   predicate postcondition_once (self: ()) (args: t_A) (result: t_A)
   
   axiom postcondition_fndef: [%#smixed'1] forall args: t_A, res: t_A [postcondition_once () args res]. postcondition_once () args res
    -> (let self_ = args in inv res)
   
-  let rec clone' (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition () self_}
-    any [ return''0 (result:t_A)-> {postcondition_once () self_ result} (! return' {result}) ] 
-  
-  predicate inv'1 (_0: t_B)
-  
-  predicate invariant''0 (self: t_B) =
-    [%#sinvariant] inv'1 self
-  
-  predicate inv'2 (_0: t_B)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_B [inv'2 x]. inv'2 x = invariant''0 x
-  
-  predicate precondition'0 (self: ()) (args: t_B)
-  
-  axiom precondition_fndef'0: [%#smixed'1] forall args: t_B [precondition'0 () args]. (let self_ = args in inv'2 self_)
-   -> precondition'0 () args
-  
-  predicate postcondition_once'0 (self: ()) (args: t_B) (result: t_B)
-  
-  axiom postcondition_fndef'0: [%#smixed'1] forall args: t_B, res: t_B [postcondition_once'0 () args res]. postcondition_once'0 () args res
-   -> (let self_ = args in inv'1 res)
-  
-  let rec clone''0 (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition'0 () self_}
-    any [ return''0 (result:t_B)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
-  
-  predicate inv'3 (_0: t_Product)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Product [inv'3 x]. inv'3 x
-  = match x with
-    | {t_Product__a = a ; t_Product__b = b} -> inv a /\ inv'1 b
-    end
-  
-  predicate invariant''1 (self: t_Product) =
-    [%#sinvariant] inv'3 self
-  
-  predicate inv'4 (_0: t_Product)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Product [inv'4 x]. inv'4 x = invariant''1 x
-  
   predicate resolve (_0: ()) =
     true
   
   predicate postcondition_mut (self: ()) (args: t_A) (result_state: ()) (result: t_A)
   
-  axiom postcondition_fndef'1: [%#smixed'1] forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
+  axiom postcondition_fndef'0: [%#smixed'1] forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
    -> (let self_ = args in inv res)
   
   function fn_mut_once (self: ()) (args: t_A) (res: t_A) : ()
@@ -117,7 +82,7 @@ module M_mixed__qyi2592445413368279263__clone [#"mixed.rs" 8 9 8 14] (* <Product
   
   predicate postcondition (self: ()) (args: t_A) (result: t_A)
   
-  axiom postcondition_fndef'2: [%#smixed'1] forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
+  axiom postcondition_fndef'1: [%#smixed'1] forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
    -> (let self_ = args in inv res)
   
   function fn_once (self: ()) (args: t_A) (res: t_A) : ()
@@ -130,13 +95,33 @@ module M_mixed__qyi2592445413368279263__clone [#"mixed.rs" 8 9 8 14] (* <Product
   axiom fn_mut_spec: forall self: (), args: t_A, res_state: (), res: t_A. [%#sops] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
   
+  predicate invariant''0 (self: t_A) =
+    [%#sinvariant] inv self
+  
+  predicate inv'3 (_0: t_A)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_A [inv'3 x]. inv'3 x = invariant''0 x
+  
+  predicate precondition (self: ()) (args: t_A)
+  
+  axiom precondition_fndef: [%#smixed'1] forall args: t_A [precondition () args]. (let self_ = args in inv'3 self_)
+   -> precondition () args
+  
+  let rec clone' (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_A)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
+  predicate postcondition_once'0 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'2: [%#smixed'1] forall args: t_B, res: t_B [postcondition_once'0 () args res]. postcondition_once'0 () args res
+   -> (let self_ = args in inv'0 res)
+  
   predicate resolve'0 (_0: ()) =
     true
   
   predicate postcondition_mut'0 (self: ()) (args: t_B) (result_state: ()) (result: t_B)
   
   axiom postcondition_fndef'3: [%#smixed'1] forall args: t_B, res: t_B [postcondition_mut'0 () args () res]. postcondition_mut'0 () args () res
-   -> (let self_ = args in inv'1 res)
+   -> (let self_ = args in inv'0 res)
   
   function fn_mut_once'0 (self: ()) (args: t_B) (res: t_B) : ()
   
@@ -167,7 +152,7 @@ module M_mixed__qyi2592445413368279263__clone [#"mixed.rs" 8 9 8 14] (* <Product
   predicate postcondition'0 (self: ()) (args: t_B) (result: t_B)
   
   axiom postcondition_fndef'4: [%#smixed'1] forall args: t_B, res: t_B [postcondition'0 () args res]. postcondition'0 () args res
-   -> (let self_ = args in inv'1 res)
+   -> (let self_ = args in inv'0 res)
   
   function fn_once'0 (self: ()) (args: t_B) (res: t_B) : ()
   
@@ -179,9 +164,24 @@ module M_mixed__qyi2592445413368279263__clone [#"mixed.rs" 8 9 8 14] (* <Product
   axiom fn_mut_spec'0: forall self: (), args: t_B, res_state: (), res: t_B. [%#sops] postcondition_mut'0 self args res_state res
   = (postcondition'0 self args res /\ self = res_state)
   
+  predicate invariant''1 (self: t_B) =
+    [%#sinvariant] inv'0 self
+  
+  predicate inv'4 (_0: t_B)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_B [inv'4 x]. inv'4 x = invariant''1 x
+  
+  predicate precondition'0 (self: ()) (args: t_B)
+  
+  axiom precondition_fndef'0: [%#smixed'1] forall args: t_B [precondition'0 () args]. (let self_ = args in inv'4 self_)
+   -> precondition'0 () args
+  
+  let rec clone''0 (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition'0 () self_}
+    any [ return''0 (result:t_B)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
+  
   meta "compute_max_steps" 1000000
   
-  let rec clone''1[#"mixed.rs" 8 9 8 14] (self:t_Product) (return'  (x:t_Product))= {[@expl:clone 'self' type invariant] [%#smixed] inv'4 self}
+  let rec clone''1[#"mixed.rs" 8 9 8 14] (self:t_Product) (return'  (x:t_Product))= {[@expl:clone 'self' type invariant] [%#smixed] inv'2 self}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_5 <- self'0.t_Product__a ] s1 | s1 = clone' {_5} (fun (_ret:t_A) ->  [ &_3 <- _ret ] s2) | s2 = bb1 ]
@@ -201,17 +201,17 @@ module M_mixed__qyi2592445413368279263__clone [#"mixed.rs" 8 9 8 14] (* <Product
     | & _6: t_B = Any.any_l ()
     | & _8: t_B = Any.any_l () ]
     
-    [ return''0 (result:t_Product)-> {[@expl:clone result type invariant] [%#smixed] inv'3 result}
+    [ return''0 (result:t_Product)-> {[@expl:clone result type invariant] [%#smixed] inv'1 result}
       {[@expl:clone ensures] [%#smixed'0] postcondition () self.t_Product__a result.t_Product__a
       /\ postcondition'0 () self.t_Product__b result.t_Product__b}
       (! return' {result}) ]
 
 end
 module M_mixed__qyi15378480724732772077__eq [#"mixed.rs" 8 16 8 25] (* <Product<A, B> as creusot_contracts::PartialEq> *)
-  let%span smixed = "mixed.rs" 10 4 11 12
-  let%span smixed'0 = "mixed.rs" 8 16 8 25
-  let%span smixed'1 = "mixed.rs" 1 0 253 4
-  let%span smixed'2 = "mixed.rs" 24 8 24 66
+  let%span smixed = "mixed.rs" 8 16 8 25
+  let%span smixed'0 = "mixed.rs" 10 4 11 12
+  let%span smixed'1 = "mixed.rs" 24 8 24 66
+  let%span smixed'2 = "mixed.rs" 1 0 253 4
   let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   let%span smodel = "../../../../creusot-contracts/src/model.rs" 35 8 35 28
   
@@ -224,34 +224,63 @@ module M_mixed__qyi15378480724732772077__eq [#"mixed.rs" 8 16 8 25] (* <Product<
   type t_Product  =
     { t_Product__a: t_A; t_Product__b: t_B }
   
-  type tuple  =
-    { _p0: t_A; _p1: t_A }
-  
   predicate inv (_0: t_A)
   
-  predicate invariant' (self: t_A) =
-    [%#sinvariant] inv self
+  predicate inv'0 (_0: t_B)
   
-  predicate inv'0 (_0: t_A)
+  predicate inv'1 (_0: t_Product)
   
-  axiom inv_axiom [@rewrite]: forall x: t_A [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_Product [inv'1 x]. inv'1 x
+  = match x with
+    | {t_Product__a = a ; t_Product__b = b} -> inv a /\ inv'0 b
+    end
   
-  predicate precondition (self: ()) (args: tuple)
+  predicate invariant' (self: t_Product) =
+    [%#sinvariant] inv'1 self
   
-  axiom precondition_fndef: [%#smixed'1] forall args: tuple [precondition () args]. (let {_p0 = self_ ; _p1 = rhs} = args in inv'0 rhs
-  /\ inv'0 self_)  -> precondition () args
+  predicate inv'2 (_0: t_Product)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Product [inv'2 x]. inv'2 x = invariant' x
   
   type t_DeepModelTy
   
+  type t_DeepModelTy'0
+  
+  type t_Product'0  =
+    { t_Product__a'0: t_DeepModelTy; t_Product__b'0: t_DeepModelTy'0 }
+  
   function deep_model (self: t_A) : t_DeepModelTy
   
-  function deep_model'0 (self: t_A) : t_DeepModelTy =
+  function deep_model'0 (self: t_B) : t_DeepModelTy'0
+  
+  function deep_model'1 [#"mixed.rs" 23 4 23 44] (self: t_Product) : t_Product'0 =
+    [%#smixed'1] { t_Product__a'0 = deep_model self.t_Product__a; t_Product__b'0 = deep_model'0 self.t_Product__b }
+  
+  function deep_model'2 (self: t_Product) : t_Product'0 =
+    [%#smodel] deep_model'1 self
+  
+  type tuple  =
+    { _p0: t_A; _p1: t_A }
+  
+  predicate invariant''0 (self: t_A) =
+    [%#sinvariant] inv self
+  
+  predicate inv'3 (_0: t_A)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_A [inv'3 x]. inv'3 x = invariant''0 x
+  
+  predicate precondition (self: ()) (args: tuple)
+  
+  axiom precondition_fndef: [%#smixed'2] forall args: tuple [precondition () args]. (let {_p0 = self_ ; _p1 = rhs} = args in inv'3 rhs
+  /\ inv'3 self_)  -> precondition () args
+  
+  function deep_model'3 (self: t_A) : t_DeepModelTy =
     [%#smodel] deep_model self
   
   predicate postcondition_once (self: ()) (args: tuple) (result: bool)
   
-  axiom postcondition_fndef: [%#smixed'1] forall args: tuple, res: bool [postcondition_once () args res]. postcondition_once () args res
-   -> (let {_p0 = self_ ; _p1 = rhs} = args in res = (deep_model'0 self_ = deep_model'0 rhs))
+  axiom postcondition_fndef: [%#smixed'2] forall args: tuple, res: bool [postcondition_once () args res]. postcondition_once () args res
+   -> (let {_p0 = self_ ; _p1 = rhs} = args in res = (deep_model'3 self_ = deep_model'3 rhs))
   
   let rec eq (self_:t_A) (rhs:t_A) (return'  (x:bool))= {[@expl:eq requires] precondition () { _p0 = self_; _p1 = rhs }}
     any [ return''0 (result:bool)-> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ] 
@@ -259,31 +288,25 @@ module M_mixed__qyi15378480724732772077__eq [#"mixed.rs" 8 16 8 25] (* <Product<
   type tuple'0  =
     { _p0'0: t_B; _p1'0: t_B }
   
-  predicate inv'1 (_0: t_B)
+  predicate invariant''1 (self: t_B) =
+    [%#sinvariant] inv'0 self
   
-  predicate invariant''0 (self: t_B) =
-    [%#sinvariant] inv'1 self
+  predicate inv'4 (_0: t_B)
   
-  predicate inv'2 (_0: t_B)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_B [inv'2 x]. inv'2 x = invariant''0 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_B [inv'4 x]. inv'4 x = invariant''1 x
   
   predicate precondition'0 (self: ()) (args: tuple'0)
   
-  axiom precondition_fndef'0: [%#smixed'1] forall args: tuple'0 [precondition'0 () args]. (let {_p0'0 = self_ ; _p1'0 = rhs} = args in inv'2 rhs
-  /\ inv'2 self_)  -> precondition'0 () args
+  axiom precondition_fndef'0: [%#smixed'2] forall args: tuple'0 [precondition'0 () args]. (let {_p0'0 = self_ ; _p1'0 = rhs} = args in inv'4 rhs
+  /\ inv'4 self_)  -> precondition'0 () args
   
-  type t_DeepModelTy'0
-  
-  function deep_model'1 (self: t_B) : t_DeepModelTy'0
-  
-  function deep_model'2 (self: t_B) : t_DeepModelTy'0 =
-    [%#smodel] deep_model'1 self
+  function deep_model'4 (self: t_B) : t_DeepModelTy'0 =
+    [%#smodel] deep_model'0 self
   
   predicate postcondition_once'0 (self: ()) (args: tuple'0) (result: bool)
   
-  axiom postcondition_fndef'0: [%#smixed'1] forall args: tuple'0, res: bool [postcondition_once'0 () args res]. postcondition_once'0 () args res
-   -> (let {_p0'0 = self_ ; _p1'0 = rhs} = args in res = (deep_model'2 self_ = deep_model'2 rhs))
+  axiom postcondition_fndef'0: [%#smixed'2] forall args: tuple'0, res: bool [postcondition_once'0 () args res]. postcondition_once'0 () args res
+   -> (let {_p0'0 = self_ ; _p1'0 = rhs} = args in res = (deep_model'4 self_ = deep_model'4 rhs))
   
   let rec eq'0 (self_:t_B) (rhs:t_B) (return'  (x:bool))= {[@expl:eq requires] precondition'0 () { _p0'0 = self_;
                                                                                                    _p1'0 = rhs }}
@@ -291,33 +314,10 @@ module M_mixed__qyi15378480724732772077__eq [#"mixed.rs" 8 16 8 25] (* <Product<
     [ return''0 (result:bool)-> {postcondition_once'0 () { _p0'0 = self_; _p1'0 = rhs } result} (! return' {result}) ]
   
   
-  predicate inv'3 (_0: t_Product)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Product [inv'3 x]. inv'3 x
-  = match x with
-    | {t_Product__a = a ; t_Product__b = b} -> inv a /\ inv'1 b
-    end
-  
-  predicate invariant''1 (self: t_Product) =
-    [%#sinvariant] inv'3 self
-  
-  predicate inv'4 (_0: t_Product)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Product [inv'4 x]. inv'4 x = invariant''1 x
-  
-  type t_Product'0  =
-    { t_Product__a'0: t_DeepModelTy; t_Product__b'0: t_DeepModelTy'0 }
-  
-  function deep_model'3 [#"mixed.rs" 23 4 23 44] (self: t_Product) : t_Product'0 =
-    [%#smixed'2] { t_Product__a'0 = deep_model self.t_Product__a; t_Product__b'0 = deep_model'1 self.t_Product__b }
-  
-  function deep_model'4 (self: t_Product) : t_Product'0 =
-    [%#smodel] deep_model'3 self
-  
   meta "compute_max_steps" 1000000
   
-  let rec eq'1[#"mixed.rs" 8 16 8 25] (self:t_Product) (rhs:t_Product) (return'  (x:bool))= {[@expl:eq 'self' type invariant] [%#smixed'0] inv'4 self}
-    {[@expl:eq 'rhs' type invariant] [%#smixed'0] inv'4 rhs}
+  let rec eq'1[#"mixed.rs" 8 16 8 25] (self:t_Product) (rhs:t_Product) (return'  (x:bool))= {[@expl:eq 'self' type invariant] [%#smixed] inv'2 self}
+    {[@expl:eq 'rhs' type invariant] [%#smixed] inv'2 rhs}
     (! bb0
     [ bb0 = s0
       [ s0 = eq {self'0.t_Product__a} {rhs'0.t_Product__a} (fun (_ret:bool) ->  [ &_4 <- _ret ] s1) | s1 = bb1 ]
@@ -326,10 +326,10 @@ module M_mixed__qyi15378480724732772077__eq [#"mixed.rs" 8 16 8 25] (* <Product<
     | bb2 = s0
       [ s0 = eq'0 {self'0.t_Product__b} {rhs'0.t_Product__b} (fun (_ret:bool) ->  [ &_0 <- _ret ] s1) | s1 = bb5 ]
     
-    | bb3 = s0 [ s0 =  [ &_0 <- [%#smixed] false ] s1 | s1 = bb5 ] 
+    | bb3 = s0 [ s0 =  [ &_0 <- [%#smixed'0] false ] s1 | s1 = bb5 ] 
     | bb5 = return''0 {_0} ]
     ) [ & _0: bool = Any.any_l () | & self'0: t_Product = self | & rhs'0: t_Product = rhs | & _4: bool = Any.any_l () ] 
-    [ return''0 (result:bool)-> {[@expl:eq ensures] [%#smixed'0] result = (deep_model'4 self = deep_model'4 rhs)}
+    [ return''0 (result:bool)-> {[@expl:eq ensures] [%#smixed] result = (deep_model'2 self = deep_model'2 rhs)}
       (! return' {result}) ]
 
 end
@@ -358,89 +358,44 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
     | C_A t_A
     | C_B t_B
   
-  let rec v_B (input:t_Sum) (ret  (b:t_B))= any
-    [ good (b:t_B)-> {C_B b = input} (! ret {b})
-    | bad -> {forall b: t_B [C_B b: t_Sum]. C_B b <> input} (! {false} any) ]
-  
-  
-  predicate inv (_0: t_B)
-  
-  predicate invariant' (self: t_B) =
-    [%#sinvariant] inv self
+  predicate inv (_0: t_A)
   
   predicate inv'0 (_0: t_B)
   
-  axiom inv_axiom [@rewrite]: forall x: t_B [inv'0 x]. inv'0 x = invariant' x
+  predicate inv'1 (_0: t_Sum)
   
-  predicate precondition (self: ()) (args: t_B)
-  
-  axiom precondition_fndef: [%#smixed'0] forall args: t_B [precondition () args]. (let self_ = args in inv'0 self_)
-   -> precondition () args
-  
-  predicate postcondition_once (self: ()) (args: t_B) (result: t_B)
-  
-  axiom postcondition_fndef: [%#smixed'0] forall args: t_B, res: t_B [postcondition_once () args res]. postcondition_once () args res
-   -> (let self_ = args in inv res)
-  
-  let rec clone' (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition () self_}
-    any [ return''0 (result:t_B)-> {postcondition_once () self_ result} (! return' {result}) ] 
-  
-  let rec v_A (input:t_Sum) (ret  (field_0:t_A))= any
-    [ good (field_0:t_A)-> {C_A field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_A [C_A field_0: t_Sum]. C_A field_0 <> input} (! {false} any) ]
-  
-  
-  predicate inv'1 (_0: t_A)
-  
-  predicate invariant''0 (self: t_A) =
-    [%#sinvariant] inv'1 self
-  
-  predicate inv'2 (_0: t_A)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_A [inv'2 x]. inv'2 x = invariant''0 x
-  
-  predicate precondition'0 (self: ()) (args: t_A)
-  
-  axiom precondition_fndef'0: [%#smixed'0] forall args: t_A [precondition'0 () args]. (let self_ = args in inv'2 self_)
-   -> precondition'0 () args
-  
-  predicate postcondition_once'0 (self: ()) (args: t_A) (result: t_A)
-  
-  axiom postcondition_fndef'0: [%#smixed'0] forall args: t_A, res: t_A [postcondition_once'0 () args res]. postcondition_once'0 () args res
-   -> (let self_ = args in inv'1 res)
-  
-  let rec clone''0 (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition'0 () self_}
-    any [ return''0 (result:t_A)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
-  
-  predicate inv'3 (_0: t_Sum)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Sum [inv'3 x]. inv'3 x
+  axiom inv_axiom [@rewrite]: forall x: t_Sum [inv'1 x]. inv'1 x
   = match x with
-    | C_A a_0 -> inv'1 a_0
-    | C_B b -> inv b
+    | C_A a_0 -> inv a_0
+    | C_B b -> inv'0 b
     end
   
-  predicate invariant''1 (self: t_Sum) =
-    [%#sinvariant] inv'3 self
+  predicate invariant' (self: t_Sum) =
+    [%#sinvariant] inv'1 self
   
-  predicate inv'4 (_0: t_Sum)
+  predicate inv'2 (_0: t_Sum)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Sum [inv'4 x]. inv'4 x = invariant''1 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Sum [inv'2 x]. inv'2 x = invariant' x
   
   type tuple  =
     { _p0: t_Sum; _p1: t_Sum }
+  
+  predicate postcondition_once (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef: [%#smixed'0] forall args: t_A, res: t_A [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv res)
   
   predicate resolve (_0: ()) =
     true
   
   predicate postcondition_mut (self: ()) (args: t_A) (result_state: ()) (result: t_A)
   
-  axiom postcondition_fndef'1: [%#smixed'0] forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
-   -> (let self_ = args in inv'1 res)
+  axiom postcondition_fndef'0: [%#smixed'0] forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
   
   function fn_mut_once (self: ()) (args: t_A) (res: t_A) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'8] postcondition_once'0 self args res
+  axiom fn_mut_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'8] postcondition_once self args res
   = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: ()) (result_state: ()) =
@@ -466,12 +421,12 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
   
   predicate postcondition (self: ()) (args: t_A) (result: t_A)
   
-  axiom postcondition_fndef'2: [%#smixed'0] forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
-   -> (let self_ = args in inv'1 res)
+  axiom postcondition_fndef'1: [%#smixed'0] forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
   
   function fn_once (self: ()) (args: t_A) (res: t_A) : ()
   
-  axiom fn_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'0] postcondition_once'0 self args res
+  axiom fn_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'0] postcondition_once self args res
   = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
@@ -479,17 +434,37 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
   axiom fn_mut_spec: forall self: (), args: t_A, res_state: (), res: t_A. [%#sops] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
   
+  predicate invariant''0 (self: t_A) =
+    [%#sinvariant] inv self
+  
+  predicate inv'3 (_0: t_A)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_A [inv'3 x]. inv'3 x = invariant''0 x
+  
+  predicate precondition (self: ()) (args: t_A)
+  
+  axiom precondition_fndef: [%#smixed'0] forall args: t_A [precondition () args]. (let self_ = args in inv'3 self_)
+   -> precondition () args
+  
+  let rec clone' (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_A)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
+  predicate postcondition_once'0 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'2: [%#smixed'0] forall args: t_B, res: t_B [postcondition_once'0 () args res]. postcondition_once'0 () args res
+   -> (let self_ = args in inv'0 res)
+  
   predicate resolve'0 (_0: ()) =
     true
   
   predicate postcondition_mut'0 (self: ()) (args: t_B) (result_state: ()) (result: t_B)
   
   axiom postcondition_fndef'3: [%#smixed'0] forall args: t_B, res: t_B [postcondition_mut'0 () args () res]. postcondition_mut'0 () args () res
-   -> (let self_ = args in inv res)
+   -> (let self_ = args in inv'0 res)
   
   function fn_mut_once'0 (self: ()) (args: t_B) (res: t_B) : ()
   
-  axiom fn_mut_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'8] postcondition_once self args res
+  axiom fn_mut_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'8] postcondition_once'0 self args res
   = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   predicate hist_inv'0 (self: ()) (result_state: ()) =
@@ -516,11 +491,11 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
   predicate postcondition'0 (self: ()) (args: t_B) (result: t_B)
   
   axiom postcondition_fndef'4: [%#smixed'0] forall args: t_B, res: t_B [postcondition'0 () args res]. postcondition'0 () args res
-   -> (let self_ = args in inv res)
+   -> (let self_ = args in inv'0 res)
   
   function fn_once'0 (self: ()) (args: t_B) (res: t_B) : ()
   
-  axiom fn_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'0] postcondition_once self args res
+  axiom fn_once_spec'0: forall self: (), args: t_B, res: t_B. [%#sops'0] postcondition_once'0 self args res
   = (postcondition'0 self args res /\ resolve'0 self)
   
   function fn_mut'0 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
@@ -528,22 +503,47 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
   axiom fn_mut_spec'0: forall self: (), args: t_B, res_state: (), res: t_B. [%#sops] postcondition_mut'0 self args res_state res
   = (postcondition'0 self args res /\ self = res_state)
   
+  predicate invariant''1 (self: t_B) =
+    [%#sinvariant] inv'0 self
+  
+  predicate inv'4 (_0: t_B)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_B [inv'4 x]. inv'4 x = invariant''1 x
+  
+  predicate precondition'0 (self: ()) (args: t_B)
+  
+  axiom precondition_fndef'0: [%#smixed'0] forall args: t_B [precondition'0 () args]. (let self_ = args in inv'4 self_)
+   -> precondition'0 () args
+  
+  let rec clone''0 (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition'0 () self_}
+    any [ return''0 (result:t_B)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
+  
+  let rec v_B (input:t_Sum) (ret  (b:t_B))= any
+    [ good (b:t_B)-> {C_B b = input} (! ret {b})
+    | bad -> {forall b: t_B [C_B b: t_Sum]. C_B b <> input} (! {false} any) ]
+  
+  
+  let rec v_A (input:t_Sum) (ret  (field_0:t_A))= any
+    [ good (field_0:t_A)-> {C_A field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_A [C_A field_0: t_Sum]. C_A field_0 <> input} (! {false} any) ]
+  
+  
   meta "compute_max_steps" 1000000
   
-  let rec clone''1[#"mixed.rs" 28 9 28 14] (self:t_Sum) (return'  (x:t_Sum))= {[@expl:clone 'self' type invariant] [%#smixed] inv'4 self}
+  let rec clone''1[#"mixed.rs" 28 9 28 14] (self:t_Sum) (return'  (x:t_Sum))= {[@expl:clone 'self' type invariant] [%#smixed] inv'2 self}
     (! bb0
     [ bb0 = any [ br0 (x0:t_A)-> {self'0 = C_A x0} (! bb4) | br1 (x0:t_B)-> {self'0 = C_B x0} (! bb3) ] 
     | bb3 = s0
       [ s0 = v_B {self'0} (fun (rb:t_B) ->  [ &b_1 <- rb ] s1)
       | s1 =  [ &_11 <- b_1 ] s2
-      | s2 = clone' {_11} (fun (_ret:t_B) ->  [ &_9 <- _ret ] s3)
+      | s2 = clone''0 {_11} (fun (_ret:t_B) ->  [ &_9 <- _ret ] s3)
       | s3 = bb7 ]
     
     | bb7 = s0 [ s0 =  [ &_0 <- C_B _9 ] s1 | s1 = bb9 ] 
     | bb4 = s0
       [ s0 = v_A {self'0} (fun (r0:t_A) ->  [ &v0_1 <- r0 ] s1)
       | s1 =  [ &_7 <- v0_1 ] s2
-      | s2 = clone''0 {_7} (fun (_ret:t_A) ->  [ &_5 <- _ret ] s3)
+      | s2 = clone' {_7} (fun (_ret:t_A) ->  [ &_5 <- _ret ] s3)
       | s3 = bb5 ]
     
     | bb5 = s0 [ s0 =  [ &_0 <- C_A _5 ] s1 | s1 = bb9 ] 
@@ -558,7 +558,7 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
     | & _9: t_B = Any.any_l ()
     | & _11: t_B = Any.any_l () ]
     
-    [ return''0 (result:t_Sum)-> {[@expl:clone result type invariant] [%#smixed] inv'3 result}
+    [ return''0 (result:t_Sum)-> {[@expl:clone result type invariant] [%#smixed] inv'1 result}
       {[@expl:clone ensures] [%#smixed] match { _p0 = self; _p1 = result } with
         | {_p0 = C_A v0_1 ; _p1 = C_A v0_r} -> postcondition () v0_1 v0_r
         | {_p0 = C_B b_1 ; _p1 = C_B b_r} -> postcondition'0 () b_1 b_r
@@ -569,8 +569,8 @@ module M_mixed__qyi1267749258272586863__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
 end
 module M_mixed__qyi16267973469411556781__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A, B> as creusot_contracts::PartialEq> *)
   let%span smixed = "mixed.rs" 28 16 28 25
-  let%span smixed'0 = "mixed.rs" 1 0 253 4
-  let%span smixed'1 = "mixed.rs" 40 8 43 9
+  let%span smixed'0 = "mixed.rs" 40 8 43 9
+  let%span smixed'1 = "mixed.rs" 1 0 253 4
   let%span sinvariant = "../../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   let%span smodel = "../../../../creusot-contracts/src/model.rs" 35 8 35 28
   
@@ -584,6 +584,46 @@ module M_mixed__qyi16267973469411556781__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A,
     | C_A t_A
     | C_B t_B
   
+  predicate inv (_0: t_A)
+  
+  predicate inv'0 (_0: t_B)
+  
+  predicate inv'1 (_0: t_Sum)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Sum [inv'1 x]. inv'1 x
+  = match x with
+    | C_A a_0 -> inv a_0
+    | C_B b -> inv'0 b
+    end
+  
+  predicate invariant' (self: t_Sum) =
+    [%#sinvariant] inv'1 self
+  
+  predicate inv'2 (_0: t_Sum)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Sum [inv'2 x]. inv'2 x = invariant' x
+  
+  type t_DeepModelTy
+  
+  type t_DeepModelTy'0
+  
+  type t_Sum'0  =
+    | C_A'0 t_DeepModelTy
+    | C_B'0 t_DeepModelTy'0
+  
+  function deep_model (self: t_A) : t_DeepModelTy
+  
+  function deep_model'0 (self: t_B) : t_DeepModelTy'0
+  
+  function deep_model'1 [#"mixed.rs" 39 4 39 44] (self: t_Sum) : t_Sum'0 =
+    [%#smixed'0] match self with
+      | C_A a -> C_A'0 (deep_model a)
+      | C_B b -> C_B'0 (deep_model'0 b)
+      end
+  
+  function deep_model'2 (self: t_Sum) : t_Sum'0 =
+    [%#smodel] deep_model'1 self
+  
   type tuple  =
     { _p0: t_Sum; _p1: t_Sum }
   
@@ -595,31 +635,25 @@ module M_mixed__qyi16267973469411556781__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A,
   type tuple'0  =
     { _p0'0: t_B; _p1'0: t_B }
   
-  predicate inv (_0: t_B)
+  predicate invariant''0 (self: t_B) =
+    [%#sinvariant] inv'0 self
   
-  predicate invariant' (self: t_B) =
-    [%#sinvariant] inv self
+  predicate inv'3 (_0: t_B)
   
-  predicate inv'0 (_0: t_B)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_B [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_B [inv'3 x]. inv'3 x = invariant''0 x
   
   predicate precondition (self: ()) (args: tuple'0)
   
-  axiom precondition_fndef: [%#smixed'0] forall args: tuple'0 [precondition () args]. (let {_p0'0 = self_ ; _p1'0 = rhs} = args in inv'0 rhs
-  /\ inv'0 self_)  -> precondition () args
+  axiom precondition_fndef: [%#smixed'1] forall args: tuple'0 [precondition () args]. (let {_p0'0 = self_ ; _p1'0 = rhs} = args in inv'3 rhs
+  /\ inv'3 self_)  -> precondition () args
   
-  type t_DeepModelTy
-  
-  function deep_model (self: t_B) : t_DeepModelTy
-  
-  function deep_model'0 (self: t_B) : t_DeepModelTy =
-    [%#smodel] deep_model self
+  function deep_model'3 (self: t_B) : t_DeepModelTy'0 =
+    [%#smodel] deep_model'0 self
   
   predicate postcondition_once (self: ()) (args: tuple'0) (result: bool)
   
-  axiom postcondition_fndef: [%#smixed'0] forall args: tuple'0, res: bool [postcondition_once () args res]. postcondition_once () args res
-   -> (let {_p0'0 = self_ ; _p1'0 = rhs} = args in res = (deep_model'0 self_ = deep_model'0 rhs))
+  axiom postcondition_fndef: [%#smixed'1] forall args: tuple'0, res: bool [postcondition_once () args res]. postcondition_once () args res
+   -> (let {_p0'0 = self_ ; _p1'0 = rhs} = args in res = (deep_model'3 self_ = deep_model'3 rhs))
   
   let rec eq (self_:t_B) (rhs:t_B) (return'  (x:bool))= {[@expl:eq requires] precondition () { _p0'0 = self_;
                                                                                                _p1'0 = rhs }}
@@ -635,31 +669,25 @@ module M_mixed__qyi16267973469411556781__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A,
   type tuple'1  =
     { _p0'1: t_A; _p1'1: t_A }
   
-  predicate inv'1 (_0: t_A)
+  predicate invariant''1 (self: t_A) =
+    [%#sinvariant] inv self
   
-  predicate invariant''0 (self: t_A) =
-    [%#sinvariant] inv'1 self
+  predicate inv'4 (_0: t_A)
   
-  predicate inv'2 (_0: t_A)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_A [inv'2 x]. inv'2 x = invariant''0 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_A [inv'4 x]. inv'4 x = invariant''1 x
   
   predicate precondition'0 (self: ()) (args: tuple'1)
   
-  axiom precondition_fndef'0: [%#smixed'0] forall args: tuple'1 [precondition'0 () args]. (let {_p0'1 = self_ ; _p1'1 = rhs} = args in inv'2 rhs
-  /\ inv'2 self_)  -> precondition'0 () args
+  axiom precondition_fndef'0: [%#smixed'1] forall args: tuple'1 [precondition'0 () args]. (let {_p0'1 = self_ ; _p1'1 = rhs} = args in inv'4 rhs
+  /\ inv'4 self_)  -> precondition'0 () args
   
-  type t_DeepModelTy'0
-  
-  function deep_model'1 (self: t_A) : t_DeepModelTy'0
-  
-  function deep_model'2 (self: t_A) : t_DeepModelTy'0 =
-    [%#smodel] deep_model'1 self
+  function deep_model'4 (self: t_A) : t_DeepModelTy =
+    [%#smodel] deep_model self
   
   predicate postcondition_once'0 (self: ()) (args: tuple'1) (result: bool)
   
-  axiom postcondition_fndef'0: [%#smixed'0] forall args: tuple'1, res: bool [postcondition_once'0 () args res]. postcondition_once'0 () args res
-   -> (let {_p0'1 = self_ ; _p1'1 = rhs} = args in res = (deep_model'2 self_ = deep_model'2 rhs))
+  axiom postcondition_fndef'0: [%#smixed'1] forall args: tuple'1, res: bool [postcondition_once'0 () args res]. postcondition_once'0 () args res
+   -> (let {_p0'1 = self_ ; _p1'1 = rhs} = args in res = (deep_model'4 self_ = deep_model'4 rhs))
   
   let rec eq'0 (self_:t_A) (rhs:t_A) (return'  (x:bool))= {[@expl:eq requires] precondition'0 () { _p0'1 = self_;
                                                                                                    _p1'1 = rhs }}
@@ -667,38 +695,10 @@ module M_mixed__qyi16267973469411556781__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A,
     [ return''0 (result:bool)-> {postcondition_once'0 () { _p0'1 = self_; _p1'1 = rhs } result} (! return' {result}) ]
   
   
-  predicate inv'3 (_0: t_Sum)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Sum [inv'3 x]. inv'3 x
-  = match x with
-    | C_A a_0 -> inv'1 a_0
-    | C_B b -> inv b
-    end
-  
-  predicate invariant''1 (self: t_Sum) =
-    [%#sinvariant] inv'3 self
-  
-  predicate inv'4 (_0: t_Sum)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Sum [inv'4 x]. inv'4 x = invariant''1 x
-  
-  type t_Sum'0  =
-    | C_A'0 t_DeepModelTy'0
-    | C_B'0 t_DeepModelTy
-  
-  function deep_model'3 [#"mixed.rs" 39 4 39 44] (self: t_Sum) : t_Sum'0 =
-    [%#smixed'1] match self with
-      | C_A a -> C_A'0 (deep_model'1 a)
-      | C_B b -> C_B'0 (deep_model b)
-      end
-  
-  function deep_model'4 (self: t_Sum) : t_Sum'0 =
-    [%#smodel] deep_model'3 self
-  
   meta "compute_max_steps" 1000000
   
-  let rec eq'1[#"mixed.rs" 28 16 28 25] (self:t_Sum) (rhs:t_Sum) (return'  (x:bool))= {[@expl:eq 'self' type invariant] [%#smixed] inv'4 self}
-    {[@expl:eq 'rhs' type invariant] [%#smixed] inv'4 rhs}
+  let rec eq'1[#"mixed.rs" 28 16 28 25] (self:t_Sum) (rhs:t_Sum) (return'  (x:bool))= {[@expl:eq 'self' type invariant] [%#smixed] inv'2 self}
+    {[@expl:eq 'rhs' type invariant] [%#smixed] inv'2 rhs}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_4 <- { _p0 = self'0; _p1 = rhs'0 } ] s1
@@ -738,7 +738,7 @@ module M_mixed__qyi16267973469411556781__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A,
     | & b_2: t_B = Any.any_l ()
     | & _17: bool = Any.any_l () ]
     
-    [ return''0 (result:bool)-> {[@expl:eq ensures] [%#smixed] result = (deep_model'4 self = deep_model'4 rhs)}
+    [ return''0 (result:bool)-> {[@expl:eq ensures] [%#smixed] result = (deep_model'2 self = deep_model'2 rhs)}
       (! return' {result}) ]
 
 end
@@ -883,93 +883,44 @@ module M_mixed__qyi2388806976216935010__clone [#"mixed.rs" 56 18 56 23] (* <Sum2
     | C_X t_A
     | C_Y bool t_B
   
-  let rec v_Y (input:t_Sum2) (ret  (a:bool) (x:t_B))= any
-    [ good (a:bool) (x:t_B)-> {C_Y a x = input} (! ret {a} {x})
-    | bad -> {forall a: bool, x: t_B [C_Y a x: t_Sum2]. C_Y a x <> input} (! {false} any) ]
-  
-  
-  let rec clone' (self_:bool) (return'  (x:bool))= any
-    [ return''0 (result:bool)-> {[%#sclone] result = self_} (! return' {result}) ]
-  
-  
-  predicate inv (_0: t_B)
-  
-  predicate invariant' (self: t_B) =
-    [%#sinvariant] inv self
+  predicate inv (_0: t_A)
   
   predicate inv'0 (_0: t_B)
   
-  axiom inv_axiom [@rewrite]: forall x: t_B [inv'0 x]. inv'0 x = invariant' x
+  predicate inv'1 (_0: t_Sum2)
   
-  predicate precondition (self: ()) (args: t_B)
-  
-  axiom precondition_fndef: [%#smixed'0] forall args: t_B [precondition () args]. (let self_ = args in inv'0 self_)
-   -> precondition () args
-  
-  predicate postcondition_once (self: ()) (args: t_B) (result: t_B)
-  
-  axiom postcondition_fndef: [%#smixed'0] forall args: t_B, res: t_B [postcondition_once () args res]. postcondition_once () args res
-   -> (let self_ = args in inv res)
-  
-  let rec clone''0 (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition () self_}
-    any [ return''0 (result:t_B)-> {postcondition_once () self_ result} (! return' {result}) ] 
-  
-  let rec v_X (input:t_Sum2) (ret  (field_0:t_A))= any
-    [ good (field_0:t_A)-> {C_X field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_A [C_X field_0: t_Sum2]. C_X field_0 <> input} (! {false} any) ]
-  
-  
-  predicate inv'1 (_0: t_A)
-  
-  predicate invariant''0 (self: t_A) =
-    [%#sinvariant] inv'1 self
-  
-  predicate inv'2 (_0: t_A)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_A [inv'2 x]. inv'2 x = invariant''0 x
-  
-  predicate precondition'0 (self: ()) (args: t_A)
-  
-  axiom precondition_fndef'0: [%#smixed'0] forall args: t_A [precondition'0 () args]. (let self_ = args in inv'2 self_)
-   -> precondition'0 () args
-  
-  predicate postcondition_once'0 (self: ()) (args: t_A) (result: t_A)
-  
-  axiom postcondition_fndef'0: [%#smixed'0] forall args: t_A, res: t_A [postcondition_once'0 () args res]. postcondition_once'0 () args res
-   -> (let self_ = args in inv'1 res)
-  
-  let rec clone''1 (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition'0 () self_}
-    any [ return''0 (result:t_A)-> {postcondition_once'0 () self_ result} (! return' {result}) ] 
-  
-  predicate inv'3 (_0: t_Sum2)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Sum2 [inv'3 x]. inv'3 x
+  axiom inv_axiom [@rewrite]: forall x: t_Sum2 [inv'1 x]. inv'1 x
   = match x with
-    | C_X a_0 -> inv'1 a_0
-    | C_Y a x'0 -> inv x'0
+    | C_X a_0 -> inv a_0
+    | C_Y a x'0 -> inv'0 x'0
     end
   
-  predicate invariant''1 (self: t_Sum2) =
-    [%#sinvariant] inv'3 self
+  predicate invariant' (self: t_Sum2) =
+    [%#sinvariant] inv'1 self
   
-  predicate inv'4 (_0: t_Sum2)
+  predicate inv'2 (_0: t_Sum2)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Sum2 [inv'4 x]. inv'4 x = invariant''1 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Sum2 [inv'2 x]. inv'2 x = invariant' x
   
   type tuple  =
     { _p0: t_Sum2; _p1: t_Sum2 }
+  
+  predicate postcondition_once (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef: [%#smixed'0] forall args: t_A, res: t_A [postcondition_once () args res]. postcondition_once () args res
+   -> (let self_ = args in inv res)
   
   predicate resolve (_0: ()) =
     true
   
   predicate postcondition_mut (self: ()) (args: t_A) (result_state: ()) (result: t_A)
   
-  axiom postcondition_fndef'1: [%#smixed'0] forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
-   -> (let self_ = args in inv'1 res)
+  axiom postcondition_fndef'0: [%#smixed'0] forall args: t_A, res: t_A [postcondition_mut () args () res]. postcondition_mut () args () res
+   -> (let self_ = args in inv res)
   
   function fn_mut_once (self: ()) (args: t_A) (res: t_A) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'8] postcondition_once'0 self args res
+  axiom fn_mut_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'8] postcondition_once self args res
   = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: ()) (result_state: ()) =
@@ -995,12 +946,12 @@ module M_mixed__qyi2388806976216935010__clone [#"mixed.rs" 56 18 56 23] (* <Sum2
   
   predicate postcondition (self: ()) (args: t_A) (result: t_A)
   
-  axiom postcondition_fndef'2: [%#smixed'0] forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
-   -> (let self_ = args in inv'1 res)
+  axiom postcondition_fndef'1: [%#smixed'0] forall args: t_A, res: t_A [postcondition () args res]. postcondition () args res
+   -> (let self_ = args in inv res)
   
   function fn_once (self: ()) (args: t_A) (res: t_A) : ()
   
-  axiom fn_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'0] postcondition_once'0 self args res
+  axiom fn_once_spec: forall self: (), args: t_A, res: t_A. [%#sops'0] postcondition_once self args res
   = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
@@ -1008,7 +959,22 @@ module M_mixed__qyi2388806976216935010__clone [#"mixed.rs" 56 18 56 23] (* <Sum2
   axiom fn_mut_spec: forall self: (), args: t_A, res_state: (), res: t_A. [%#sops] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
   
-  predicate postcondition_once'1 (self: ()) (args: bool) (result: bool) =
+  predicate invariant''0 (self: t_A) =
+    [%#sinvariant] inv self
+  
+  predicate inv'3 (_0: t_A)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_A [inv'3 x]. inv'3 x = invariant''0 x
+  
+  predicate precondition (self: ()) (args: t_A)
+  
+  axiom precondition_fndef: [%#smixed'0] forall args: t_A [precondition () args]. (let self_ = args in inv'3 self_)
+   -> precondition () args
+  
+  let rec clone' (self_:t_A) (return'  (x:t_A))= {[@expl:clone requires] precondition () self_}
+    any [ return''0 (result:t_A)-> {postcondition_once () self_ result} (! return' {result}) ] 
+  
+  predicate postcondition_once'0 (self: ()) (args: bool) (result: bool) =
     let self_ = args in result = self_
   
   predicate resolve'0 (_0: ()) =
@@ -1019,7 +985,7 @@ module M_mixed__qyi2388806976216935010__clone [#"mixed.rs" 56 18 56 23] (* <Sum2
   
   function fn_mut_once'0 (self: ()) (args: bool) (res: bool) : ()
   
-  axiom fn_mut_once_spec'0: forall self: (), args: bool, res: bool. [%#sops'8] postcondition_once'1 self args res
+  axiom fn_mut_once_spec'0: forall self: (), args: bool, res: bool. [%#sops'8] postcondition_once'0 self args res
   = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   predicate hist_inv'0 (self: ()) (result_state: ()) =
@@ -1048,7 +1014,7 @@ module M_mixed__qyi2388806976216935010__clone [#"mixed.rs" 56 18 56 23] (* <Sum2
   
   function fn_once'0 (self: ()) (args: bool) (res: bool) : ()
   
-  axiom fn_once_spec'0: forall self: (), args: bool, res: bool. [%#sops'0] postcondition_once'1 self args res
+  axiom fn_once_spec'0: forall self: (), args: bool, res: bool. [%#sops'0] postcondition_once'0 self args res
   = (postcondition'0 self args res /\ resolve'0 self)
   
   function fn_mut'0 (self: ()) (args: bool) (res_state: ()) (res: bool) : ()
@@ -1056,17 +1022,26 @@ module M_mixed__qyi2388806976216935010__clone [#"mixed.rs" 56 18 56 23] (* <Sum2
   axiom fn_mut_spec'0: forall self: (), args: bool, res_state: (), res: bool. [%#sops] postcondition_mut'0 self args res_state res
   = (postcondition'0 self args res /\ self = res_state)
   
+  let rec clone''0 (self_:bool) (return'  (x:bool))= any
+    [ return''0 (result:bool)-> {[%#sclone] result = self_} (! return' {result}) ]
+  
+  
+  predicate postcondition_once'1 (self: ()) (args: t_B) (result: t_B)
+  
+  axiom postcondition_fndef'2: [%#smixed'0] forall args: t_B, res: t_B [postcondition_once'1 () args res]. postcondition_once'1 () args res
+   -> (let self_ = args in inv'0 res)
+  
   predicate resolve'1 (_0: ()) =
     true
   
   predicate postcondition_mut'1 (self: ()) (args: t_B) (result_state: ()) (result: t_B)
   
   axiom postcondition_fndef'3: [%#smixed'0] forall args: t_B, res: t_B [postcondition_mut'1 () args () res]. postcondition_mut'1 () args () res
-   -> (let self_ = args in inv res)
+   -> (let self_ = args in inv'0 res)
   
   function fn_mut_once'1 (self: ()) (args: t_B) (res: t_B) : ()
   
-  axiom fn_mut_once_spec'1: forall self: (), args: t_B, res: t_B. [%#sops'8] postcondition_once self args res
+  axiom fn_mut_once_spec'1: forall self: (), args: t_B, res: t_B. [%#sops'8] postcondition_once'1 self args res
   = (exists res_state: (). postcondition_mut'1 self args res_state res /\ resolve'1 res_state)
   
   predicate hist_inv'1 (self: ()) (result_state: ()) =
@@ -1093,11 +1068,11 @@ module M_mixed__qyi2388806976216935010__clone [#"mixed.rs" 56 18 56 23] (* <Sum2
   predicate postcondition'1 (self: ()) (args: t_B) (result: t_B)
   
   axiom postcondition_fndef'4: [%#smixed'0] forall args: t_B, res: t_B [postcondition'1 () args res]. postcondition'1 () args res
-   -> (let self_ = args in inv res)
+   -> (let self_ = args in inv'0 res)
   
   function fn_once'1 (self: ()) (args: t_B) (res: t_B) : ()
   
-  axiom fn_once_spec'1: forall self: (), args: t_B, res: t_B. [%#sops'0] postcondition_once self args res
+  axiom fn_once_spec'1: forall self: (), args: t_B, res: t_B. [%#sops'0] postcondition_once'1 self args res
   = (postcondition'1 self args res /\ resolve'1 self)
   
   function fn_mut'1 (self: ()) (args: t_B) (res_state: ()) (res: t_B) : ()
@@ -1105,24 +1080,49 @@ module M_mixed__qyi2388806976216935010__clone [#"mixed.rs" 56 18 56 23] (* <Sum2
   axiom fn_mut_spec'1: forall self: (), args: t_B, res_state: (), res: t_B. [%#sops] postcondition_mut'1 self args res_state res
   = (postcondition'1 self args res /\ self = res_state)
   
+  predicate invariant''1 (self: t_B) =
+    [%#sinvariant] inv'0 self
+  
+  predicate inv'4 (_0: t_B)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_B [inv'4 x]. inv'4 x = invariant''1 x
+  
+  predicate precondition'0 (self: ()) (args: t_B)
+  
+  axiom precondition_fndef'0: [%#smixed'0] forall args: t_B [precondition'0 () args]. (let self_ = args in inv'4 self_)
+   -> precondition'0 () args
+  
+  let rec clone''1 (self_:t_B) (return'  (x:t_B))= {[@expl:clone requires] precondition'0 () self_}
+    any [ return''0 (result:t_B)-> {postcondition_once'1 () self_ result} (! return' {result}) ] 
+  
+  let rec v_Y (input:t_Sum2) (ret  (a:bool) (x:t_B))= any
+    [ good (a:bool) (x:t_B)-> {C_Y a x = input} (! ret {a} {x})
+    | bad -> {forall a: bool, x: t_B [C_Y a x: t_Sum2]. C_Y a x <> input} (! {false} any) ]
+  
+  
+  let rec v_X (input:t_Sum2) (ret  (field_0:t_A))= any
+    [ good (field_0:t_A)-> {C_X field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_A [C_X field_0: t_Sum2]. C_X field_0 <> input} (! {false} any) ]
+  
+  
   meta "compute_max_steps" 1000000
   
-  let rec clone''2[#"mixed.rs" 56 18 56 23] (self:t_Sum2) (return'  (x:t_Sum2))= {[@expl:clone 'self' type invariant] [%#smixed] inv'4 self}
+  let rec clone''2[#"mixed.rs" 56 18 56 23] (self:t_Sum2) (return'  (x:t_Sum2))= {[@expl:clone 'self' type invariant] [%#smixed] inv'2 self}
     (! bb0
     [ bb0 = any [ br0 (x0:t_A)-> {self'0 = C_X x0} (! bb4) | br1 (x0:bool) (x1:t_B)-> {self'0 = C_Y x0 x1} (! bb3) ] 
     | bb3 = s0
       [ s0 = v_Y {self'0} (fun (ra:bool) (rx:t_B) ->  [ &a_1 <- ra ] s1)
       | s1 = v_Y {self'0} (fun (ra:bool) (rx:t_B) ->  [ &x_1 <- rx ] s2)
       | s2 =  [ &_12 <- a_1 ] s3
-      | s3 = clone' {_12} (fun (_ret:bool) ->  [ &_10 <- _ret ] s4)
+      | s3 = clone''0 {_12} (fun (_ret:bool) ->  [ &_10 <- _ret ] s4)
       | s4 = bb7 ]
     
-    | bb7 = s0 [ s0 =  [ &_15 <- x_1 ] s1 | s1 = clone''0 {_15} (fun (_ret:t_B) ->  [ &_13 <- _ret ] s2) | s2 = bb8 ] 
+    | bb7 = s0 [ s0 =  [ &_15 <- x_1 ] s1 | s1 = clone''1 {_15} (fun (_ret:t_B) ->  [ &_13 <- _ret ] s2) | s2 = bb8 ] 
     | bb8 = s0 [ s0 =  [ &_0 <- C_Y _10 _13 ] s1 | s1 = bb10 ] 
     | bb4 = s0
       [ s0 = v_X {self'0} (fun (r0:t_A) ->  [ &v0_1 <- r0 ] s1)
       | s1 =  [ &_7 <- v0_1 ] s2
-      | s2 = clone''1 {_7} (fun (_ret:t_A) ->  [ &_5 <- _ret ] s3)
+      | s2 = clone' {_7} (fun (_ret:t_A) ->  [ &_5 <- _ret ] s3)
       | s3 = bb5 ]
     
     | bb5 = s0 [ s0 =  [ &_0 <- C_X _5 ] s1 | s1 = bb10 ] 
@@ -1140,7 +1140,7 @@ module M_mixed__qyi2388806976216935010__clone [#"mixed.rs" 56 18 56 23] (* <Sum2
     | & _13: t_B = Any.any_l ()
     | & _15: t_B = Any.any_l () ]
     
-    [ return''0 (result:t_Sum2)-> {[@expl:clone result type invariant] [%#smixed] inv'3 result}
+    [ return''0 (result:t_Sum2)-> {[@expl:clone result type invariant] [%#smixed] inv'1 result}
       {[@expl:clone ensures] [%#smixed] match { _p0 = self; _p1 = result } with
         | {_p0 = C_X v0_1 ; _p1 = C_X v0_r} -> postcondition () v0_1 v0_r
         | {_p0 = C_Y a_1 x_1 ; _p1 = C_Y a_r x_r} -> postcondition'0 () a_1 a_r /\ postcondition'1 () x_1 x_r

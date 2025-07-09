@@ -1,7 +1,7 @@
 use super::BodyTranslator;
 use crate::{
     analysis::NotFinalPlaces,
-    contracts_items::{is_box_new, is_snap_from_fn},
+    contracts_items::{get_wf_relation, is_box_new, is_snap_from_fn},
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
     lints::contractless_external_function::{
@@ -53,9 +53,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             .resolver
             .as_mut()
             .map(|r| r.resolved_places_during(ExtendedLocation::End(location)));
-        let term;
-        match &terminator.kind {
-            Goto { target } => term = Terminator::Goto(*target),
+        let term = match &terminator.kind {
+            Goto { target } => Terminator::Goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let real_discr = discriminator_for_switch(&self.body.basic_blocks[location.block])
                     .map(Operand::Move)
@@ -65,9 +64,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     .translate_operand(&real_discr)
                     .unwrap_or_else(|err| err.crash(self.ctx, terminator.source_info.span));
                 let ty = real_discr.ty(self.body, self.tcx());
-                let switch =
-                    make_switch(self.ctx, terminator.source_info, ty, targets, discriminant);
-                term = switch;
+                make_switch(self.ctx, terminator.source_info, ty, targets, discriminant)
             }
             Return => {
                 if let Some(resolver) = &mut self.resolver {
@@ -85,9 +82,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     resolved_during = None;
                 }
 
-                term = Terminator::Return
+                Terminator::Return
             }
-            Unreachable => term = Terminator::Abort(terminator.source_info.span),
+            Unreachable => Terminator::Abort(terminator.source_info.span),
             &Call { ref func, ref args, destination, mut target, fn_span, .. } => {
                 let Some((fun_def_id, subst)) = func_defid(func) else {
                     self.ctx.fatal_error(fn_span, "unsupported function call type").emit()
@@ -118,6 +115,69 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 .unwrap_or_else(|err| err.crash(self.ctx, arg.span))
                         })
                         .collect();
+
+                    if self.ctx.should_check_variant_decreases(self.body_id.def_id(), fun_def_id) {
+                        // insert an assertion to check that the variant indeed decreased.
+                        let callee_sig = self
+                            .ctx
+                            .sig(fun_def_id)
+                            .clone()
+                            .normalize(self.ctx.tcx, self.typing_env);
+                        let mut variant_after = callee_sig
+                            .contract
+                            .variant
+                            .expect("recursive call should have a variant");
+                        let mut s = HashMap::new();
+                        for (arg, i) in std::iter::zip(&func_args, callee_sig.inputs) {
+                            s.insert(
+                                i.0.0,
+                                arg.clone().into_term(self.tcx(), &self.vars, span).kind,
+                            );
+                        }
+                        variant_after.subst(&s);
+                        // FIXME: could we specialize some type parameters here?
+                        let variant_before_ty = self
+                            .ctx
+                            .sig(self.body_id.def_id())
+                            .contract
+                            .variant
+                            .as_ref()
+                            .unwrap()
+                            .ty;
+                        if variant_before_ty != variant_after.ty {
+                            self.tcx().dcx().span_fatal(
+                                span,
+                                format!(
+                                    "mismatched variant type: expected {}, got {}",
+                                    variant_before_ty, variant_after.ty
+                                ),
+                            );
+                        }
+                        let variant_before =
+                            Term::var(self.function_variant_name, variant_before_ty);
+                        let wf_relation = get_wf_relation(self.tcx());
+                        let (wf_relation, subst) = TraitResolved::resolve_item(
+                            self.tcx(),
+                            self.typing_env(),
+                            wf_relation,
+                            self.tcx().mk_args(&[variant_before_ty.into()]),
+                        )
+                        .to_opt(wf_relation, subst)
+                        .unwrap_or((wf_relation, subst));
+                        let variant_decreases =
+                            Term::call_no_normalize(self.tcx(), wf_relation, subst, [
+                                variant_before,
+                                variant_after,
+                            ]);
+                        self.emit_statement(Statement {
+                            kind: fmir::StatementKind::Assertion {
+                                cond: variant_decreases,
+                                msg: "expl:function variant".to_string(),
+                                trusted: false,
+                            },
+                            span,
+                        });
+                    }
 
                     if is_box_new(self.tcx(), fun_def_id) {
                         let [arg] = *func_args.into_array().unwrap();
@@ -181,9 +241,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         }
                     }
 
-                    term = Terminator::Goto(bb);
+                    Terminator::Goto(bb)
                 } else {
-                    term = Terminator::Abort(terminator.source_info.span);
+                    Terminator::Abort(terminator.source_info.span)
                 }
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
@@ -216,7 +276,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     kind: fmir::StatementKind::Assertion { cond, msg, trusted: false },
                     span,
                 });
-                term = Terminator::Goto(*target)
+                Terminator::Goto(*target)
             }
             Drop { target, place, .. } => {
                 if self.resolver.is_some() {
@@ -243,10 +303,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     }
                 }
 
-                term = Terminator::Goto(*target)
+                Terminator::Goto(*target)
             }
 
-            FalseUnwind { real_target, .. } => term = Terminator::Goto(*real_target),
+            FalseUnwind { real_target, .. } => Terminator::Goto(*real_target),
             FalseEdge { .. }
             | CoroutineDrop
             | UnwindResume
@@ -254,7 +314,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             | Yield { .. }
             | InlineAsm { .. }
             | TailCall { .. } => unreachable!("{:?}", terminator.kind),
-        }
+        };
         if let Some((need, resolved)) = resolved_during {
             if let Err(err) = self.resolve_places(need, &resolved) {
                 err.crash(self.ctx, span)

@@ -106,6 +106,8 @@ contracts_items! {{
         is_fn_mut_impl_hist_inv           get_fn_mut_impl_hist_inv
     fn Fn::postcondition                 ["fn_impl_postcond"]
         is_fn_impl_postcond             get_fn_impl_postcond
+    fn WellFounded::relation              ["creusot_wf_relation"]
+        is_wf_relation                  get_wf_relation
     type Int                             ["creusot_int"]
         is_int_ty                       get_int_ty
     type Snapshot                        ["snapshot_ty"]

@@ -122,6 +122,9 @@ module M_10_once__qyi13094531909677028354__next [#"10_once.rs" 46 4 46 35] (* <O
     | C_None
     | C_Some t_T
   
+  type t_Once  =
+    { t_Once__0: t_Option }
+  
   predicate inv (_0: t_T)
   
   predicate inv'0 (_0: t_Option)
@@ -132,42 +135,22 @@ module M_10_once__qyi13094531909677028354__next [#"10_once.rs" 46 4 46 35] (* <O
     | C_Some a_0 -> inv a_0
     end
   
-  type t_Once  =
-    { t_Once__0: t_Option }
+  predicate inv'1 (_0: t_Once)
   
-  predicate invariant' (self: MutBorrow.t t_Option) =
-    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
-  
-  predicate inv'1 (_0: MutBorrow.t t_Option)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Option [inv'1 x]. inv'1 x = invariant' x
-  
-  let rec take (self_:MutBorrow.t t_Option) (return'  (x:t_Option))= {[@expl:take 'self_' type invariant] [%#soption] inv'1 self_}
-    any
-    [ return''0 (result:t_Option)-> {inv'0 result}
-      {[%#soption'0] result = self_.current /\ self_.final = C_None}
-      (! return' {result}) ]
-  
-  
-  predicate inv'2 (_0: t_Once)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Once [inv'2 x]. inv'2 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Once [inv'1 x]. inv'1 x
   = match x with
     | {t_Once__0 = a_0} -> inv'0 a_0
     end
   
-  predicate invariant''0 (self: MutBorrow.t t_Once) =
-    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant' (self: MutBorrow.t t_Once) =
+    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
   
-  predicate inv'3 (_0: MutBorrow.t t_Once)
+  predicate inv'2 (_0: MutBorrow.t t_Once)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Once [inv'3 x]. inv'3 x = invariant''0 x
+  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_Once [inv'2 x]. inv'2 x = invariant' x
   
   predicate resolve (self: MutBorrow.t t_Once) =
     [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0: MutBorrow.t t_Once) =
-    resolve _0
   
   predicate completed [#"10_once.rs" 17 4 17 35] (self: MutBorrow.t t_Once) =
     [%#s10_once'2] self.current = { t_Once__0 = C_None } /\ resolve self
@@ -176,9 +159,26 @@ module M_10_once__qyi13094531909677028354__next [#"10_once.rs" 46 4 46 35] (* <O
     [%#s10_once'3] visited = (Seq.empty: Seq.seq t_T) /\ self = o
     \/ (exists e: t_T. self = { t_Once__0 = C_Some e } /\ visited = Seq.singleton e /\ o = { t_Once__0 = C_None })
   
+  predicate invariant''0 (self: MutBorrow.t t_Option) =
+    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'3 (_0: MutBorrow.t t_Option)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Option [inv'3 x]. inv'3 x = invariant''0 x
+  
+  let rec take (self_:MutBorrow.t t_Option) (return'  (x:t_Option))= {[@expl:take 'self_' type invariant] [%#soption] inv'3 self_}
+    any
+    [ return''0 (result:t_Option)-> {inv'0 result}
+      {[%#soption'0] result = self_.current /\ self_.final = C_None}
+      (! return' {result}) ]
+  
+  
+  predicate resolve'0 (_0: MutBorrow.t t_Once) =
+    resolve _0
+  
   meta "compute_max_steps" 1000000
   
-  let rec next[#"10_once.rs" 46 4 46 35] (self:MutBorrow.t t_Once) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#s10_once] inv'3 self}
+  let rec next[#"10_once.rs" 46 4 46 35] (self:MutBorrow.t t_Once) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#s10_once] inv'2 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 (self'0.current).t_Once__0}
@@ -194,7 +194,7 @@ module M_10_once__qyi13094531909677028354__next [#"10_once.rs" 46 4 46 35] (* <O
       | s1 = take {_3} (fun (_ret:t_Option) ->  [ &_0 <- _ret ] s2)
       | s2 = bb1 ]
     
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 self'0} s1 | s1 = -{resolve'0 self'0}- s2 | s2 = return''0 {_0} ]  ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'2 self'0} s1 | s1 = -{resolve'0 self'0}- s2 | s2 = return''0 {_0} ]  ]
     )
     [ & _0: t_Option = Any.any_l () | & self'0: MutBorrow.t t_Once = self | & _3: MutBorrow.t t_Option = Any.any_l () ]
     

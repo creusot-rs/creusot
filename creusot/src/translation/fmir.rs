@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-
 use crate::{
-    backend::projections::projection_ty, ctx::TranslationCtx, translation::pearlite::Term,
+    backend::projections::projection_ty,
+    ctx::TranslationCtx,
+    translation::pearlite::{PIdent, Term, TermKind},
 };
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
@@ -14,9 +14,8 @@ use rustc_middle::{
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
+use std::collections::HashMap;
 use why3::Ident;
-
-use super::pearlite::TermKind;
 
 pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<Ident, Ty<'tcx>>;
 
@@ -64,6 +63,47 @@ impl<'tcx> Place<'tcx> {
         } else {
             None
         }
+    }
+
+    fn into_term(self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>, span: Span) -> Term<'tcx> {
+        let mut ty = PlaceTy::from_ty(locals[&self.local].ty);
+        let mut term = Term { ty: ty.ty, span, kind: TermKind::Var(PIdent(self.local)) };
+
+        for p in self.projections.iter() {
+            ty = projection_ty(ty, tcx, p);
+            term = Term {
+                ty: ty.ty,
+                span,
+                kind: match *p {
+                    mir::ProjectionElem::Deref => TermKind::Cur { term: Box::new(term) },
+                    mir::ProjectionElem::Field(idx, _) => {
+                        TermKind::Projection { lhs: Box::new(term), idx }
+                    }
+                    mir::ProjectionElem::Index(idx) => {
+                        let index = &locals[&idx];
+                        let self_ty = term.ty;
+                        let index_ty = index.ty;
+                        let index = Term {
+                            ty: index.ty,
+                            span: index.span,
+                            kind: TermKind::Var(PIdent(idx)),
+                        };
+                        let did = crate::contracts_items::get_index_logic(tcx);
+                        let subst = tcx.mk_args(&[self_ty.into(), index_ty.into()]);
+                        TermKind::Call { id: did, subst, args: [term, index].into() }
+                    }
+                    mir::ProjectionElem::Downcast { .. }
+                    | mir::ProjectionElem::OpaqueCast(_)
+                    | mir::ProjectionElem::Subtype(_)
+                    | mir::ProjectionElem::ConstantIndex { .. }
+                    | mir::ProjectionElem::Subslice { .. } => {
+                        tcx.dcx().span_fatal(span, "Unsupported pattern")
+                    }
+                },
+            }
+        }
+
+        term
     }
 }
 
@@ -201,6 +241,19 @@ impl<'tcx> Operand<'tcx> {
             Operand::Promoted(_, ty) => *ty,
         }
     }
+
+    /// Transform the operand into a pearlite term.
+    ///
+    /// Right now this is only used when generating variant code.
+    ///
+    /// FIXME: promoted are not supported, as well as some places.
+    pub fn into_term(self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>, span: Span) -> Term<'tcx> {
+        match self {
+            Operand::Move(place) | Operand::Copy(place) => place.into_term(tcx, locals, span),
+            Operand::Constant(term) => term,
+            Operand::Promoted(_p, _ty) => tcx.dcx().span_fatal(span, "unsupported expression"),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -264,10 +317,26 @@ pub struct Invariant<'tcx> {
     pub(crate) expl: String,
 }
 
+/// A loop variant
+#[derive(Clone, Debug)]
+pub(crate) struct Variant<'tcx> {
+    /// The term that should decrease
+    pub(crate) term: Term<'tcx>,
+    /// The name of the variable that holds the previous value of the term.
+    pub(crate) old_name: Ident,
+    /// The block corresponding with the head of this variant's loop.
+    pub(crate) loop_head: BasicBlock,
+}
+
 #[derive(Clone, Debug)]
 pub struct Block<'tcx> {
     pub(crate) invariants: Vec<Invariant<'tcx>>,
-    pub(crate) variant: Option<Term<'tcx>>,
+    /// This is the list of variants that should be checked before `continue`ing
+    /// a loop.
+    pub(crate) variants: Vec<Variant<'tcx>>,
+    /// `Some` if this is the head of a loop, and we should remember the value
+    /// of a variant.
+    pub(crate) variant_target: Option<(Term<'tcx>, Ident)>,
     pub(crate) stmts: Vec<Statement<'tcx>>,
     pub(crate) terminator: Terminator<'tcx>,
 }
@@ -290,6 +359,10 @@ pub struct Body<'tcx> {
     // TODO: Split into return local, args, and true locals?
     // TODO: Remove usage of `LocalIdent`.
     pub(crate) locals: LocalDecls<'tcx>,
+    /// Locals that hold the previous values of loop variants
+    pub(crate) variant_locals: Vec<(Ident, Ty<'tcx>, Span)>,
+    /// Name of the eventual variant for the function.
+    pub(crate) function_variant_name: Ident,
     pub(crate) arg_count: usize,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
     pub(crate) fresh: usize,
@@ -454,8 +527,13 @@ fn place_to_term<'tcx>(
             }
             // The rest are impossible for a place generated by a closure capture.
             // FIXME: is this still true in 2021 (with partial captures) ?
-            _ => {
-                tcx.dcx().struct_span_err(span, "Partial captures are not supported here").emit();
+            mir::ProjectionElem::Index(_)
+            | mir::ProjectionElem::ConstantIndex { .. }
+            | mir::ProjectionElem::Subslice { .. }
+            | mir::ProjectionElem::Downcast { .. }
+            | mir::ProjectionElem::OpaqueCast(_)
+            | mir::ProjectionElem::Subtype(_) => {
+                tcx.dcx().span_err(span, "Partial captures are not supported here");
             }
         };
     }

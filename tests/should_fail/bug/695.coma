@@ -1,10 +1,10 @@
 module M_695__inversed_if [#"695.rs" 7 0 7 78]
-  let%span s695 = "695.rs" 8 46 8 51
-  let%span s695'0 = "695.rs" 8 24 8 28
-  let%span s695'1 = "695.rs" 7 59 7 63
-  let%span s695'2 = "695.rs" 7 68 7 74
-  let%span s695'3 = "695.rs" 5 11 5 77
-  let%span s695'4 = "695.rs" 6 10 6 89
+  let%span s695 = "695.rs" 7 59 7 63
+  let%span s695'0 = "695.rs" 7 68 7 74
+  let%span s695'1 = "695.rs" 5 11 5 77
+  let%span s695'2 = "695.rs" 6 10 6 89
+  let%span s695'3 = "695.rs" 8 46 8 51
+  let%span s695'4 = "695.rs" 8 24 8 28
   let%span sops = "../../../creusot-contracts/src/std/ops.rs" 188 16 188 17
   let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 188 27 188 52
   let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 189 26 189 60
@@ -27,16 +27,15 @@ module M_695__inversed_if [#"695.rs" 7 0 7 78]
   
   type t_C
   
+  type t_B
+  
   predicate inv (_0: t_C)
   
-  predicate invariant' (self: t_C) =
-    [%#sinvariant] inv self
-  
-  predicate inv'0 (_0: t_C)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_C [inv'0 x]. inv'0 x = invariant' x
+  predicate inv'0 (_0: t_B)
   
   predicate precondition (self: t_C) (args: ())
+  
+  predicate precondition'0 (self: t_B) (args: bool)
   
   predicate postcondition_once (self: t_C) (args: ()) (result: bool)
   
@@ -81,27 +80,28 @@ module M_695__inversed_if [#"695.rs" 7 0 7 78]
   axiom fn_mut_spec: forall self: t_C, args: (), res_state: t_C, res: bool. [%#sops'5] postcondition_mut self args res_state res
   = (postcondition self args res /\ self = res_state)
   
-  let rec call (self_:t_C) (arg:()) (return'  (x:bool))= {[@expl:call 'self_' type invariant] [%#sops] inv'0 self_}
+  predicate postcondition_once'0 (self: t_B) (args: bool) (result: ())
+  
+  predicate invariant' (self: t_C) =
+    [%#sinvariant] inv self
+  
+  predicate inv'1 (_0: t_C)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_C [inv'1 x]. inv'1 x = invariant' x
+  
+  let rec call (self_:t_C) (arg:()) (return'  (x:bool))= {[@expl:call 'self_' type invariant] [%#sops] inv'1 self_}
     {[@expl:call requires] [%#sops'0] precondition self_ arg}
     any [ return''0 (result:bool)-> {[%#sops'1] postcondition self_ arg result} (! return' {result}) ] 
   
-  type t_B
-  
-  predicate inv'1 (_0: t_B)
-  
-  predicate precondition'0 (self: t_B) (args: bool)
-  
-  predicate postcondition_once'0 (self: t_B) (args: bool) (result: ())
-  
-  let rec call_once (self_:t_B) (arg:bool) (return'  (x:()))= {[@expl:call_once 'self_' type invariant] [%#sops'2] inv'1 self_}
+  let rec call_once (self_:t_B) (arg:bool) (return'  (x:()))= {[@expl:call_once 'self_' type invariant] [%#sops'2] inv'0 self_}
     {[@expl:call_once requires] [%#sops'3] precondition'0 self_ arg}
     any [ return''0 (result:())-> {[%#sops'4] postcondition_once'0 self_ arg result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec inversed_if[#"695.rs" 7 0 7 78] (cond:t_C) (branch:t_B) (return'  (x:()))= {[@expl:inversed_if 'cond' type invariant] [%#s695'1] inv cond}
-    {[@expl:inversed_if 'branch' type invariant] [%#s695'2] inv'1 branch}
-    {[@expl:inversed_if requires] [%#s695'3] precondition cond () /\ (forall b: bool. precondition'0 branch b)}
+  let rec inversed_if[#"695.rs" 7 0 7 78] (cond:t_C) (branch:t_B) (return'  (x:()))= {[@expl:inversed_if 'cond' type invariant] [%#s695] inv cond}
+    {[@expl:inversed_if 'branch' type invariant] [%#s695'0] inv'0 branch}
+    {[@expl:inversed_if requires] [%#s695'1] precondition cond () /\ (forall b: bool. precondition'0 branch b)}
     (! bb0
     [ bb0 = bb2
     | bb2 = s0 [ s0 = call {cond'0} {_7} (fun (_ret:bool) ->  [ &_5 <- _ret ] s1) | s1 = bb3 ] 
@@ -111,12 +111,12 @@ module M_695__inversed_if [#"695.rs" 7 0 7 78]
       | s2 = any [ br0 -> {_5 = false} (! bb5) | br1 -> {_5} (! bb4) ]  ]
     
     | bb4 = s0
-      [ s0 =  [ &_11 <- [%#s695] false ] s1
+      [ s0 =  [ &_11 <- [%#s695'3] false ] s1
       | s1 = call_once {branch'0} {_11} (fun (_ret:()) ->  [ &_0 <- _ret ] s2)
       | s2 = bb10 ]
     
     | bb5 = s0
-      [ s0 =  [ &_9 <- [%#s695'0] true ] s1
+      [ s0 =  [ &_9 <- [%#s695'4] true ] s1
       | s1 = call_once {branch'0} {_9} (fun (_ret:()) ->  [ &_0 <- _ret ] s2)
       | s2 = bb10 ]
     
@@ -130,20 +130,20 @@ module M_695__inversed_if [#"695.rs" 7 0 7 78]
     | & _9: bool = Any.any_l ()
     | & _11: bool = Any.any_l () ]
     
-    [ return''0 (result:())-> {[@expl:inversed_if ensures] [%#s695'4] exists b: bool. postcondition cond () b
+    [ return''0 (result:())-> {[@expl:inversed_if ensures] [%#s695'2] exists b: bool. postcondition cond () b
       /\ postcondition_once'0 branch (not b) ()}
       (! return' {result}) ]
 
 end
 module M_695__valid [#"695.rs" 12 0 12 27]
-  let%span s695 = "695.rs" 13 16 13 20
-  let%span s695'0 = "695.rs" 19 20 19 25
-  let%span s695'1 = "695.rs" 11 10 11 71
-  let%span s695'2 = "695.rs" 15 11 15 15
-  let%span s695'3 = "695.rs" 14 25 14 45
-  let%span s695'4 = "695.rs" 17 25 17 26
-  let%span s695'5 = "695.rs" 17 36 17 37
-  let%span s695'6 = "695.rs" 16 27 16 62
+  let%span s695 = "695.rs" 11 10 11 71
+  let%span s695'0 = "695.rs" 13 16 13 20
+  let%span s695'1 = "695.rs" 19 20 19 25
+  let%span s695'2 = "695.rs" 14 25 14 45
+  let%span s695'3 = "695.rs" 15 11 15 15
+  let%span s695'4 = "695.rs" 16 27 16 62
+  let%span s695'5 = "695.rs" 17 25 17 26
+  let%span s695'6 = "695.rs" 17 36 17 37
   let%span s695'7 = "695.rs" 5 11 5 77
   let%span s695'8 = "695.rs" 6 10 6 89
   let%span s695'9 = "695.rs" 16 17 16 64
@@ -171,15 +171,12 @@ module M_695__valid [#"695.rs" 12 0 12 27]
   let%span sord'9 = "../../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
   let%span sord'10 = "../../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
   let%span sord'11 = "../../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
-  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
+  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 260 16 266 17
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
   use creusot.int.UInt32
   use creusot.prelude.Any
   use creusot.prelude.MutBorrow
-  
-  type closure1  =
-    { _0: UInt32.t }
   
   type t_Ordering  =
     | C_Less
@@ -228,37 +225,34 @@ module M_695__valid [#"695.rs" 12 0 12 27]
   
   axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord] UInt32.le x y = (cmp_log x y <> C_Greater)
   
+  type closure1  =
+    { _0: UInt32.t }
+  
   let rec closure1[#"695.rs" 14 15 14 47] (self:closure1) (return'  (x:bool))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &res <- UInt32.gt _1._0 ([%#s695'2] (7: UInt32.t)) ] s1
+      [ s0 =  [ &res <- UInt32.gt _1._0 ([%#s695'3] (7: UInt32.t)) ] s1
       | s1 =  [ &_0'0 <- res ] s2
       | s2 = return''0 {_0'0} ]
      ]
     ) [ & _0'0: bool = Any.any_l () | & _1: closure1 = self | & res: bool = Any.any_l () ] 
-    [ return''0 (result:bool)-> {[@expl:closure ensures] [%#s695'3] result = UInt32.gt self._0 (7: UInt32.t)}
+    [ return''0 (result:bool)-> {[@expl:closure ensures] [%#s695'2] result = UInt32.gt self._0 (7: UInt32.t)}
       (! return' {result}) ]
   
   
   type closure2  =
     { _0'0: MutBorrow.t UInt32.t }
   
-  predicate resolve (self: MutBorrow.t closure2) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0'1: MutBorrow.t closure2) =
-    resolve _0'1
-  
   predicate postcondition_once (self: closure2) (args: bool) (result: ()) =
     [%#s695'9] let b = args in b /\ (self._0'0).final = (2: UInt32.t) \/ not b /\ (self._0'0).final = (1: UInt32.t)
   
-  predicate resolve'1 (self: MutBorrow.t UInt32.t) =
+  predicate resolve (self: MutBorrow.t UInt32.t) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0'1: MutBorrow.t UInt32.t) =
-    resolve'1 _0'1
+  predicate resolve'0 (_0'1: MutBorrow.t UInt32.t) =
+    resolve _0'1
   
-  predicate resolve'3 (_0'1: closure2) =
-    resolve'2 _0'1._0'0
+  predicate resolve'1 (_0'1: closure2) =
+    resolve'0 _0'1._0'0
   
   predicate hist_inv (self: closure2) (result_state: closure2) =
     [%#s695'9] (result_state._0'0).final = (self._0'0).final
@@ -271,7 +265,7 @@ module M_695__valid [#"695.rs" 12 0 12 27]
   function fn_mut_once (self: closure2) (args: bool) (res: ()) : ()
   
   axiom fn_mut_once_spec: forall self: closure2, args: bool, res: (). [%#sops'5] postcondition_once self args res
-  = (exists res_state: closure2. postcondition_mut self args res_state res /\ resolve'3 res_state)
+  = (exists res_state: closure2. postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   function hist_inv_trans (self: closure2) (b: closure2) (c: closure2) : ()
   
@@ -287,19 +281,25 @@ module M_695__valid [#"695.rs" 12 0 12 27]
   axiom postcondition_mut_hist_inv_spec: forall self: closure2, args: bool, res_state: closure2, res: (). ([%#sops] postcondition_mut self args res_state res)
    -> ([%#sops'0] hist_inv self res_state)
   
+  predicate resolve'2 (self: MutBorrow.t closure2) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'3 (_0'1: MutBorrow.t closure2) =
+    resolve'2 _0'1
+  
   let rec closure2[#"695.rs" 16 17 16 64] (self:MutBorrow.t closure2) (b:bool) (return'  (x:()))= (! bb0
     [ bb0 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ] 
-    | bb1 = s0 [ s0 =  [ &_4 <- [%#s695'4] (2: UInt32.t) ] s1 | s1 = bb3 ] 
-    | bb2 = s0 [ s0 =  [ &_4 <- [%#s695'5] (1: UInt32.t) ] s1 | s1 = bb3 ] 
+    | bb1 = s0 [ s0 =  [ &_4 <- [%#s695'5] (2: UInt32.t) ] s1 | s1 = bb3 ] 
+    | bb2 = s0 [ s0 =  [ &_4 <- [%#s695'6] (1: UInt32.t) ] s1 | s1 = bb3 ] 
     | bb3 = s0
       [ s0 =  [ &_1 <- { _1 with current = { _0'0 = { (_1.current)._0'0 with current = _4 } } } ] s1
-      | s1 = -{resolve'0 _1}- s2
+      | s1 = -{resolve'3 _1}- s2
       | s2 = return''0 {_0'1} ]
      ]
     )
     [ & _0'1: () = Any.any_l () | & _1: MutBorrow.t closure2 = self | & b'0: bool = b | & _4: UInt32.t = Any.any_l () ]
     
-    [ return''0 (result:())-> {[@expl:closure ensures] [%#s695'6] b /\ ((self.final)._0'0).current = (2: UInt32.t)
+    [ return''0 (result:())-> {[@expl:closure ensures] [%#s695'4] b /\ ((self.final)._0'0).current = (2: UInt32.t)
       \/ not b /\ ((self.final)._0'0).current = (1: UInt32.t)}
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return' {result}) ]
@@ -372,7 +372,7 @@ module M_695__valid [#"695.rs" 12 0 12 27]
   
   let rec valid[#"695.rs" 12 0 12 27] (n:UInt32.t) (return'  (x:UInt32.t))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &r <- [%#s695] (0: UInt32.t) ] s1
+      [ s0 =  [ &r <- [%#s695'0] (0: UInt32.t) ] s1
       | s1 =  [ &cond <- { _0 = n'0 } ] s2
       | s2 = MutBorrow.borrow_mut <UInt32.t> {r}
           (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_7 <- _ret ]  [ &r <- _ret.final ] s3)
@@ -380,7 +380,7 @@ module M_695__valid [#"695.rs" 12 0 12 27]
       | s4 = inversed_if {cond} {branch} (fun (_ret:()) ->  [ &_8 <- _ret ] s5)
       | s5 = bb1 ]
     
-    | bb1 = s0 [ s0 = {[@expl:assertion] [%#s695'0] false} s1 | s1 =  [ &_0'1 <- r ] s2 | s2 = return''0 {_0'1} ]  ]
+    | bb1 = s0 [ s0 = {[@expl:assertion] [%#s695'1] false} s1 | s1 =  [ &_0'1 <- r ] s2 | s2 = return''0 {_0'1} ]  ]
     )
     [ & _0'1: UInt32.t = Any.any_l ()
     | & n'0: UInt32.t = n
@@ -390,8 +390,7 @@ module M_695__valid [#"695.rs" 12 0 12 27]
     | & _7: MutBorrow.t UInt32.t = Any.any_l ()
     | & _8: () = Any.any_l () ]
     
-    [ return''0 (result:UInt32.t)-> {[@expl:valid ensures] [%#s695'1] UInt32.gt n (7: UInt32.t)
-      /\ result = (2: UInt32.t)
+    [ return''0 (result:UInt32.t)-> {[@expl:valid ensures] [%#s695] UInt32.gt n (7: UInt32.t) /\ result = (2: UInt32.t)
       \/ UInt32.le n (7: UInt32.t) /\ result = (1: UInt32.t)}
       (! return' {result}) ]
 

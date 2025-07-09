@@ -19,7 +19,7 @@ use why3::{
 mod vcgen;
 
 pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<FileModule> {
-    let mut names = Dependencies::new(ctx, def_id);
+    let names = Dependencies::new(ctx, def_id);
     let pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, ctx.typing_env(def_id));
 
     if pre_sig.contract.is_empty() {
@@ -44,7 +44,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     let bound: Box<[Ident]> = args.iter().map(|(name, _, _)| name.0).collect();
 
     let name = names.item_ident(names.self_id, names.self_subst);
-    let sig = lower_logic_sig(ctx, &mut names, name, pre_sig, def_id);
+    let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
     let (param_decls, args_names): (Vec<_>, Vec<_>) = args
         .into_iter()
         .map(|(name, span, ty)| {
@@ -89,10 +89,10 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     let term = ctx.ctx.term(def_id).unwrap().rename(&bound);
     let wp = wp(
         ctx,
-        &mut names,
+        &names,
         def_id,
         args_names,
-        sig.contract.variant.clone(),
+        sig.contract.variant.clone().map(|(exp, _)| exp),
         term,
         name::result(),
         postcondition.clone(),
@@ -161,7 +161,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
     if !sig.contract.ensures.is_empty() {
         if let Some(lim_name) = lim_name
-            && !sig.contract.variant.is_none()
+            && sig.contract.variant.is_some()
         {
             let mut lim_sig = sig;
             lim_sig.name = lim_name;

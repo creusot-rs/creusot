@@ -38,7 +38,7 @@ use std::iter::repeat;
 
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{has_variant_clause, is_no_translate, is_pearlite},
+    contracts_items::{has_variant_clause, is_loop_variant, is_no_translate, is_pearlite},
     ctx::TranslationCtx,
     translation::{
         pearlite::{Term, TermKind, TermVisitor, super_visit_term},
@@ -68,14 +68,34 @@ use rustc_trait_selection::traits::{
     normalize_param_env_or_error, specialization_graph, translate_args,
 };
 
+pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
+
 /// Validate that a `#[terminates]` function cannot loop indefinitely. This includes:
-/// - forbidding program function from using loops of any kind (this should be relaxed
-///   later).
+/// - forbidding program function from using loops without a variant.
 /// - forbidding (mutual) recursive calls, especially when traits are involved.
 ///
 /// Note that for logical functions, these are relaxed: we don't check loops, nor simple
 /// recursion, because why3 will handle it for us.
-pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
+///
+/// # Returns
+///
+/// For each function with a `#[variant]`, returns the called function before
+/// which the variant should have decreased.
+/// FIXME: how do we ensure that the called function uses the _same_ variant?
+/// - The variant term must be the same (ok if this is simple recursion)
+/// - It must be called with the variant variable in the same position? Ah, no:
+///   we could "simply" check that the argument decreased. AKA:
+///   ```text
+///   #[variant(x)]
+///   fn foo(x: u32) {
+///       if x > 0 { foo(x - 1) }
+///   }
+///   ```
+///   Here, check that `x - 1 < x`. Feasible in MIR (see `terminator.rs`)
+#[must_use]
+pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
+    let mut recursive_calls = RecursiveCalls::new();
+
     // Check for ghost loops
     for local_id in ctx.hir().body_owners() {
         let def_id = local_id.to_def_id();
@@ -83,7 +103,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
             continue;
         }
         let (thir, expr) = ctx.get_thir(local_id).unwrap();
-        let mut visitor = GhostLoops { thir: &thir, ctx, is_in_ghost: false };
+        let mut visitor = GhostLoops { thir, ctx, is_in_ghost: false };
         visitor.visit_expr(&thir[expr]);
     }
 
@@ -96,23 +116,31 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
             let (self_edge, call) = (self_edge.id(), *self_edge.weight());
             let CallKind::Direct(span) = call else { continue };
             call_graph.remove_edge(self_edge);
-            if is_pearlite(ctx.tcx, def_id) {
-                // Allow simple recursion in logic functions
-                continue;
-            }
-            if !has_variant_clause(ctx.tcx, def_id) && def_id.is_local() {
+            if !is_pearlite(ctx.tcx, def_id)
+                && !has_variant_clause(ctx.tcx, def_id)
+                && def_id.is_local()
+            {
                 let fun_span = ctx.def_span(def_id);
                 let mut error =
                     ctx.error(fun_span, "Recursive function without a `#[variant]` clause");
                 error.span_note(span, "Recursive call happens here");
                 error.emit();
             }
+            if is_pearlite(ctx.tcx, def_id) && !has_variant_clause(ctx.tcx, def_id) {
+                // Allow simple recursion in logic functions
+                continue;
+            }
+            recursive_calls.entry(def_id).or_default().insert(def_id);
         };
     }
 
     // detect mutual recursion
     let cycles = tarjan_scc(&call_graph);
     for cycle in cycles {
+        // FIXME: if there is a variant on all the functions in the cycle, then
+        // - Insert the recursive call in `recursive_calls`
+        // - do not report an error here :)
+
         // find a root as a local function
         let Some(root_idx) = cycle.iter().position(|n| {
             let id = call_graph.node_weight(*n).unwrap().def_id();
@@ -179,10 +207,10 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
                 }
             }
         }
-
         error.emit();
     }
     ctx.dcx().abort_if_errors();
+    recursive_calls
 }
 
 struct CallGraph {
@@ -450,6 +478,11 @@ impl CallGraph {
             if !(is_pearlite(ctx.tcx, def_id) || ctx.sig(def_id).contract.terminates) {
                 // Only consider functions marked with `terminates`: we already ensured
                 // that a `terminates` functions only calls other `terminates` functions.
+                if let Some(variant) = &ctx.sig(def_id).contract.variant {
+                    ctx.dcx().struct_span_warn(variant.span, "variant will be ignored")
+                        .with_span_note(ctx.def_span(def_id), "This function is not a logical function, and is not marked with `#[terminates]`.")
+                        .emit();
+                }
                 continue;
             }
             let node = build_call_graph.insert_function(GraphNode::Function(def_id));
@@ -458,7 +491,7 @@ impl CallGraph {
             let (thir, expr) = ctx.get_thir(local_id).unwrap();
 
             // Collect functions called by this function
-            let mut visitor = FunctionCalls { def_id, thir: &thir, ctx, calls: IndexSet::new() };
+            let mut visitor = FunctionCalls { def_id, thir, ctx, calls: IndexSet::new() };
             visitor.visit_expr(&thir[expr]);
 
             for (called_id, generic_args, call_span) in visitor.calls {
@@ -478,6 +511,8 @@ impl CallGraph {
 }
 
 /// Gather the functions calls that appear in a particular function, and store them in `calls`.
+///
+/// This will also flag loops without variants in `#[terminates]` functions.
 struct FunctionCalls<'a, 'tcx> {
     def_id: DefId,
     thir: &'a thir::Thir<'tcx>,
@@ -506,19 +541,47 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
                 let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
                 let mut closure_visitor = FunctionCalls {
                     def_id: self.def_id,
-                    thir: &thir,
+                    thir,
                     ctx: self.ctx,
                     calls: std::mem::take(&mut self.calls),
                 };
                 thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
                 self.calls.extend(closure_visitor.calls);
             }
-            thir::ExprKind::Loop { .. } => {
-                let fun_span = self.ctx.def_span(self.def_id);
-                let mut error =
-                    self.ctx.error(fun_span, "`#[terminates]` function must not contain loops.");
-                error.span_note(expr.span, "looping occurs here");
-                error.emit();
+            thir::ExprKind::Loop { body } => {
+                let body = &self.thir.exprs[body];
+                let block = match body.kind {
+                    thir::ExprKind::Block { block } => block,
+                    _ => unreachable!(),
+                };
+                let has_variant = if let Some(&s) = self.thir.blocks[block].stmts.first() {
+                    let s = &self.thir.stmts[s];
+                    match &s.kind {
+                        thir::StmtKind::Expr { .. } => false,
+                        thir::StmtKind::Let { pattern, .. } => {
+                            matches!(pattern.ty.kind(), rustc_type_ir::TyKind::Closure(clos_id, _) if is_loop_variant(self.ctx.tcx, *clos_id))
+                        }
+                    }
+                } else {
+                    false
+                };
+                if !has_variant {
+                    let fun_span = self.ctx.tcx.def_span(self.def_id);
+                    let suggestion_span = expr.span.shrink_to_lo();
+                    self.ctx
+                        .error(
+                            fun_span,
+                            "`#[terminates]` function must not contain loops without variants.",
+                        )
+                        .with_span_note(expr.span, "looping occurs here")
+                        .with_span_suggestion(
+                            suggestion_span,
+                            "Add a variant here",
+                            "#[variant(...)]",
+                            rustc_errors::Applicability::HasPlaceholders,
+                        )
+                        .emit();
+                }
             }
             _ => {}
         }
@@ -544,11 +607,40 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> {
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
                 let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
                 let mut closure_visitor =
-                    GhostLoops { thir: &thir, ctx: self.ctx, is_in_ghost: self.is_in_ghost };
+                    GhostLoops { thir, ctx: self.ctx, is_in_ghost: self.is_in_ghost };
                 thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
             }
-            thir::ExprKind::Loop { .. } if self.is_in_ghost => {
-                self.ctx.error(expr.span, "`ghost!` blocks must not contain loops.").emit();
+            thir::ExprKind::Loop { body } if self.is_in_ghost => {
+                let body = &self.thir.exprs[body];
+                let block = match body.kind {
+                    thir::ExprKind::Block { block } => block,
+                    _ => unreachable!(),
+                };
+                let has_variant = if let Some(&s) = self.thir.blocks[block].stmts.first() {
+                    let s = &self.thir.stmts[s];
+                    match &s.kind {
+                        thir::StmtKind::Expr { .. } => false,
+                        thir::StmtKind::Let { pattern, .. } => {
+                            matches!(pattern.ty.kind(), rustc_type_ir::TyKind::Closure(clos_id, _) if is_loop_variant(self.ctx.tcx, *clos_id))
+                        }
+                    }
+                } else {
+                    false
+                };
+                if !has_variant {
+                    self.ctx
+                        .error(
+                            expr.span,
+                            "`ghost!` blocks must not contain loops without variants.",
+                        )
+                        .with_span_suggestion(
+                            expr.span.shrink_to_lo(),
+                            "add a variant here",
+                            "#[variant(...)]",
+                            rustc_errors::Applicability::HasPlaceholders,
+                        )
+                        .emit();
+                }
             }
             thir::ExprKind::Scope { lint_level: thir::LintLevel::Explicit(hir_id), .. } => {
                 if super::is_ghost_block(self.ctx.tcx, hir_id) {

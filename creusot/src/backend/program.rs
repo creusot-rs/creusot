@@ -24,6 +24,7 @@ use crate::{
         },
         wto::{Component, weak_topological_order},
     },
+    contracts_items::get_wf_relation,
     ctx::{BodyId, Dependencies},
     naming::name,
     translated_item::FileModule,
@@ -32,7 +33,8 @@ use crate::{
             Block, Body, BorrowKind, Branches, LocalDecls, Operand, Place, RValue, Statement,
             StatementKind, Terminator, TrivialInv,
         },
-        pearlite::Pattern,
+        pearlite::{self, Pattern},
+        traits::TraitResolved,
     },
 };
 use indexmap::IndexMap;
@@ -44,7 +46,7 @@ use rustc_hir::{
 };
 use rustc_middle::{
     mir::{BasicBlock, BinOp, ProjectionElem, START_BLOCK, UnOp, tcx::PlaceTy},
-    ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
+    ty::{self, AdtDef, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::VariantIdx;
@@ -161,13 +163,6 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
 
-    let blocks: Box<[Defn]> = wto
-        .into_iter()
-        .map(|c| {
-            component_to_defn(&mut body, ctx, names, body_id.def_id, &block_idents, inner_return, c)
-        })
-        .collect();
-
     let (mut sig, contract, return_ty) = if body_id.promoted.is_none() {
         let def_id = body_id.def_id();
         let typing_env = ctx.typing_env(def_id);
@@ -192,6 +187,14 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
             ret_ty,
         )
     };
+
+    let blocks: Box<[Defn]> = wto
+        .into_iter()
+        .map(|c| {
+            component_to_defn(&mut body, ctx, names, body_id.def_id, &block_idents, inner_return, c)
+        })
+        .collect();
+
     // Bind local variables in the body
     let vars: Box<[_]> = body
         .locals
@@ -200,13 +203,28 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
             let init = if decl.arg {
                 let (id2, ty2) = sig.params[arg_index[&id]].as_term();
-                assert_eq! {ty, *ty2};
+                assert_eq!(ty, *ty2);
                 Exp::var(id2)
             } else {
                 Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])
             };
             Var(id, ty.clone(), init, IsRef::Ref)
         })
+        .chain(body.variant_locals.into_iter().map(|(ident, ty, span)| {
+            let ty = translate_ty(ctx, names, span, ty);
+            Var(
+                ident,
+                ty,
+                Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()]),
+                IsRef::Ref,
+            )
+        }))
+        .chain(
+            contract
+                .variant
+                .into_iter()
+                .map(|(exp, ty)| Var(body.function_variant_name, ty, exp, IsRef::NotRef)),
+        )
         .collect();
 
     let mut body = Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks);
@@ -257,6 +275,10 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     Defn { prototype: sig, body }
 }
 
+/// Translate the group of blocks `c` to a coma definition.
+///
+/// Such groups of blocks will typically be loops, that need to be separated
+/// into their own group of handlers.
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
     ctx: &Why3Generator<'tcx>,
@@ -936,6 +958,10 @@ impl<'tcx> Block<'tcx> {
         statements.push(Defn::simple(cont, body));
 
         let mut body = Expr::var(cont0);
+        if let Some((term, old_name)) = &self.variant_target {
+            let term = lower_pure(lower.ctx, lower.names, term);
+            body = body.assign(*old_name, term);
+        }
         if !self.invariants.is_empty() {
             body = body.black_box();
         }
@@ -947,9 +973,64 @@ impl<'tcx> Block<'tcx> {
             );
         }
 
+        for v in self.variants {
+            let wf_relation = get_wf_relation(lower.ctx.tcx);
+            let typing_env = lower.ctx.typing_env(lower.def_id.to_def_id());
+            assert_eq!(GenericArgs::identity_for_item(lower.ctx.tcx, wf_relation).len(), 1); // sanity check
+            let subst = lower.ctx.tcx.mk_args(&[v.term.ty.into()]);
+
+            let (wf_relation, subst) =
+                TraitResolved::resolve_item(lower.ctx.tcx, typing_env, wf_relation, subst)
+                    .to_opt(wf_relation, subst)
+                    .unwrap_or((wf_relation, subst));
+            let variant_decreases =
+                pearlite::Term::call_no_normalize(lower.ctx.tcx, wf_relation, subst, [
+                    pearlite::Term::var(v.old_name, v.term.ty),
+                    v.term.clone(),
+                ]);
+
+            let variant_assertion = lower_pure(lower.ctx, lower.names, &variant_decreases)
+                .with_attr(Attribute::Attr("expl:loop variant".to_string()));
+            for s in &mut statements {
+                assert_before(&mut s.body, &lower.block_idents[&v.loop_head], &variant_assertion);
+            }
+        }
+
         body = body.where_(statements.into());
 
         Defn::simple(*lower.block_idents.get(&id).unwrap(), body)
+    }
+}
+
+/// Insert the assertion right before each jump to `label`.
+fn assert_before(e: &mut Expr, label: &Ident, assertion: &Exp) {
+    match e {
+        Expr::Name(Name::Local(i, None)) if i == label => {
+            *e = Expr::assert(assertion.clone(), std::mem::replace(e, Expr::Any));
+        }
+        Expr::Name(_) => {}
+        Expr::Any => {}
+        Expr::App(expr, arg) => {
+            assert_before(expr, label, assertion);
+            let arg: &mut Arg = &mut *arg;
+            match arg {
+                Arg::Cont(expr) => assert_before(expr, label, assertion),
+                Arg::Ty(_) | Arg::Term(_) | Arg::Ref(_) => {}
+            }
+        }
+        Expr::Defn(expr, _, defns) => {
+            assert_before(expr, label, assertion);
+            for d in defns {
+                assert_before(&mut d.body, label, assertion);
+            }
+        }
+        Expr::Lambda(_, expr)
+        | Expr::Assign(expr, _)
+        | Expr::Let(expr, _)
+        | Expr::Assert(_, expr)
+        | Expr::Assume(_, expr)
+        | Expr::BlackBox(expr)
+        | Expr::WhiteBox(expr) => assert_before(expr, label, assertion),
     }
 }
 

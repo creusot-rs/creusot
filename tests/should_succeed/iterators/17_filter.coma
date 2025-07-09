@@ -228,21 +228,21 @@ module M_17_filter__qyi6180221713105948918__produces_trans [#"17_filter.rs" 59 4
    -> ([%#s17_filter'0] produces'0 b bc c)  -> ([%#s17_filter'1] produces'0 a (Seq.(++) ab bc) c)
 end
 module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 85 4 85 41] (* <Filter<I, F> as common::Iterator> *)
-  let%span s17_filter = "17_filter.rs" 86 23 86 40
-  let%span s17_filter'0 = "17_filter.rs" 87 27 87 53
-  let%span s17_filter'1 = "17_filter.rs" 89 8 89 31
-  let%span s17_filter'2 = "17_filter.rs" 91 20 91 125
-  let%span s17_filter'3 = "17_filter.rs" 90 20 90 46
-  let%span s17_filter'4 = "17_filter.rs" 89 20 89 29
-  let%span s17_filter'5 = "17_filter.rs" 95 23 95 58
-  let%span s17_filter'6 = "17_filter.rs" 96 12 96 71
-  let%span s17_filter'7 = "17_filter.rs" 85 17 85 21
-  let%span s17_filter'8 = "17_filter.rs" 85 26 85 41
-  let%span s17_filter'9 = "17_filter.rs" 81 14 84 5
+  let%span s17_filter = "17_filter.rs" 85 17 85 21
+  let%span s17_filter'0 = "17_filter.rs" 85 26 85 41
+  let%span s17_filter'1 = "17_filter.rs" 81 14 84 5
+  let%span s17_filter'2 = "17_filter.rs" 86 23 86 40
+  let%span s17_filter'3 = "17_filter.rs" 87 27 87 53
+  let%span s17_filter'4 = "17_filter.rs" 89 8 89 31
+  let%span s17_filter'5 = "17_filter.rs" 91 20 91 125
+  let%span s17_filter'6 = "17_filter.rs" 90 20 90 46
+  let%span s17_filter'7 = "17_filter.rs" 89 20 89 29
+  let%span s17_filter'8 = "17_filter.rs" 95 23 95 58
+  let%span s17_filter'9 = "17_filter.rs" 96 12 96 71
   let%span s17_filter'10 = "17_filter.rs" 43 12 45 43
   let%span s17_filter'11 = "17_filter.rs" 65 12 77 17
-  let%span s17_filter'12 = "17_filter.rs" 1 0 27 4
-  let%span s17_filter'13 = "17_filter.rs" 25 12 31 118
+  let%span s17_filter'12 = "17_filter.rs" 25 12 31 118
+  let%span s17_filter'13 = "17_filter.rs" 1 0 27 4
   let%span scommon = "common.rs" 14 14 14 47
   let%span scommon'0 = "common.rs" 18 15 18 32
   let%span scommon'1 = "common.rs" 19 15 19 32
@@ -285,7 +285,16 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 85 4 85 41] (*
   
   axiom produces_refl_spec: forall self: t_I. [%#scommon] produces self (Seq.empty: Seq.seq t_Item) self
   
+  type t_Option  =
+    | C_None
+    | C_Some t_Item
+  
   type t_F
+  
+  type t_Filter  =
+    { t_Filter__iter: t_I; t_Filter__func: t_F }
+  
+  predicate precondition (self: t_F) (args: t_Item)
   
   predicate postcondition_once (self: t_F) (args: t_Item) (result: bool)
   
@@ -314,16 +323,8 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 85 4 85 41] (*
   axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: t_Item, res_state: t_F, res: bool. ([%#sops'3] postcondition_mut self args res_state res)
    -> ([%#sops'4] hist_inv self res_state)
   
-  type t_Filter  =
-    { t_Filter__iter: t_I; t_Filter__func: t_F }
-  
-  function index_logic [@inline:trivial] (self: Seq.seq t_Item) (ix: int) : t_Item =
-    [%#sindex] Seq.get self ix
-  
-  predicate precondition (self: t_F) (args: t_Item)
-  
   predicate invariant' [#"17_filter.rs" 22 4 22 30] (self: t_Filter) =
-    [%#s17_filter'13] forall f: t_F, i: t_Item. precondition f i
+    [%#s17_filter'12] forall f: t_F, i: t_Item. precondition f i
     /\ (forall f'0: t_F, g: t_F. hist_inv f'0 g  -> f'0 = g)
     /\ (forall f1: t_F, f2: t_F, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
     /\ postcondition_mut f1 i'0 f2 false))
@@ -347,42 +348,59 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 85 4 85 41] (*
   
   axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Filter [inv'2 x]. inv'2 x = invariant''0 x
   
-  type t_Option  =
-    | C_None
-    | C_Some t_Item
+  predicate inv'3 (_0: t_Item)
+  
+  predicate inv'4 (_0: t_Option)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  = match x with
+    | C_None -> true
+    | C_Some a_0 -> inv'3 a_0
+    end
+  
+  predicate completed [#"common.rs" 11 4 11 36] (self: MutBorrow.t t_I)
+  
+  predicate completed'0 [#"17_filter.rs" 41 4 41 35] (self: MutBorrow.t t_Filter) =
+    [%#s17_filter'10] (exists s: Seq.seq t_Item, e: MutBorrow.t t_I. produces (self.current).t_Filter__iter s e.current
+    /\ completed e
+    /\ (forall i: int. 0 <= i /\ i < Seq.length s
+     -> postcondition_mut (self.current).t_Filter__func (Seq.get s i) (self.final).t_Filter__func false))
+    /\ (self.current).t_Filter__func = (self.final).t_Filter__func
+  
+  predicate produces'0 [#"17_filter.rs" 63 4 63 67] (self: t_Filter) (visited: Seq.seq t_Item) (succ: t_Filter) =
+    [%#s17_filter'11] invariant' self
+     -> hist_inv self.t_Filter__func succ.t_Filter__func
+    /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces self.t_Filter__iter s succ.t_Filter__iter
+    /\ (forall i: int, j: int. 0 <= i /\ i <= j /\ j < Seq.length visited
+     -> 0 <= Map.get f i /\ Map.get f i <= Map.get f j /\ Map.get f j < Seq.length s)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = Seq.get s (Map.get f i))
+    /\ (forall i: int. 0 <= i /\ i < Seq.length s
+     -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
+    = postcondition_mut self.t_Filter__func (Seq.get s i) self.t_Filter__func true))
+  
+  function index_logic [@inline:trivial] (self: Seq.seq t_Item) (ix: int) : t_Item =
+    [%#sindex] Seq.get self ix
   
   predicate invariant''1 (self: MutBorrow.t t_I) =
     [%#sinvariant] inv self.current /\ inv self.final
   
-  predicate inv'3 (_0: MutBorrow.t t_I)
+  predicate inv'5 (_0: MutBorrow.t t_I)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_I [inv'3 x]. inv'3 x = invariant''1 x
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_I [inv'5 x]. inv'5 x = invariant''1 x
   
   predicate precondition'0 (self: ()) (args: MutBorrow.t t_I)
   
-  axiom precondition_fndef: [%#s17_filter'12] forall args: MutBorrow.t t_I [precondition'0 () args]. (let self = args in inv'3 self)
+  axiom precondition_fndef: [%#s17_filter'13] forall args: MutBorrow.t t_I [precondition'0 () args]. (let self = args in inv'5 self)
    -> precondition'0 () args
-  
-  predicate completed [#"common.rs" 11 4 11 36] (self: MutBorrow.t t_I)
-  
-  predicate inv'4 (_0: t_Item)
-  
-  predicate inv'5 (_0: t_Option)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'5 x]. inv'5 x
-  = match x with
-    | C_None -> true
-    | C_Some a_0 -> inv'4 a_0
-    end
   
   predicate postcondition_once'0 (self: ()) (args: MutBorrow.t t_I) (result: t_Option)
   
-  axiom postcondition_fndef: [%#s17_filter'12] forall args: MutBorrow.t t_I, res: t_Option [postcondition_once'0 () args res]. postcondition_once'0 () args res
+  axiom postcondition_fndef: [%#s17_filter'13] forall args: MutBorrow.t t_I, res: t_Option [postcondition_once'0 () args res]. postcondition_once'0 () args res
    -> (let self = args in match res with
     | C_None -> completed self
     | C_Some v -> produces self.current (Seq.singleton v) self.final
     end
-  /\ inv'5 res)
+  /\ inv'4 res)
   
   let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition'0 () self}
     any [ return''0 (result:t_Option)-> {postcondition_once'0 () self result} (! return' {result}) ] 
@@ -400,7 +418,7 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 85 4 85 41] (*
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_F [inv'6 x]. inv'6 x = invariant''2 x
   
   predicate invariant''3 (self: t_Item) =
-    [%#sinvariant'0] inv'4 self
+    [%#sinvariant'0] inv'3 self
   
   predicate inv'7 (_0: t_Item)
   
@@ -426,39 +444,21 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 85 4 85 41] (*
   predicate resolve'2 (_0: MutBorrow.t t_Filter) =
     resolve'1 _0
   
-  predicate completed'0 [#"17_filter.rs" 41 4 41 35] (self: MutBorrow.t t_Filter) =
-    [%#s17_filter'10] (exists s: Seq.seq t_Item, e: MutBorrow.t t_I. produces (self.current).t_Filter__iter s e.current
-    /\ completed e
-    /\ (forall i: int. 0 <= i /\ i < Seq.length s
-     -> postcondition_mut (self.current).t_Filter__func (Seq.get s i) (self.final).t_Filter__func false))
-    /\ (self.current).t_Filter__func = (self.final).t_Filter__func
-  
-  predicate produces'0 [#"17_filter.rs" 63 4 63 67] (self: t_Filter) (visited: Seq.seq t_Item) (succ: t_Filter) =
-    [%#s17_filter'11] invariant' self
-     -> hist_inv self.t_Filter__func succ.t_Filter__func
-    /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces self.t_Filter__iter s succ.t_Filter__iter
-    /\ (forall i: int, j: int. 0 <= i /\ i <= j /\ j < Seq.length visited
-     -> 0 <= Map.get f i /\ Map.get f i <= Map.get f j /\ Map.get f j < Seq.length s)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = Seq.get s (Map.get f i))
-    /\ (forall i: int. 0 <= i /\ i < Seq.length s
-     -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
-    = postcondition_mut self.t_Filter__func (Seq.get s i) self.t_Filter__func true))
-  
   meta "compute_max_steps" 1000000
   
-  let rec next'0[#"17_filter.rs" 85 4 85 41] (self:MutBorrow.t t_Filter) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#s17_filter'7] inv'2 self}
+  let rec next'0[#"17_filter.rs" 85 4 85 41] (self:MutBorrow.t t_Filter) (return'  (x:t_Option))= {[@expl:next 'self' type invariant] [%#s17_filter] inv'2 self}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_self <- [%#s17_filter] self'0 ] s1 | s1 = bb1 ] 
-    | bb1 = s0 [ s0 =  [ &produced <- [%#s17_filter'0] Seq.empty: Seq.seq t_Item ] s1 | s1 = bb2 ] 
+    [ bb0 = s0 [ s0 =  [ &old_self <- [%#s17_filter'2] self'0 ] s1 | s1 = bb1 ] 
+    | bb1 = s0 [ s0 =  [ &produced <- [%#s17_filter'3] Seq.empty: Seq.seq t_Item ] s1 | s1 = bb2 ] 
     | bb2 = s0 [ s0 =  [ &old_3_0 <- self'0 ] s1 | s1 = bb3 ] 
     | bb3 = bb3'0
       [ bb3'0 = {[@expl:mut invariant] old_3_0.final = self'0.final}
-        {[@expl:loop invariant #0] [%#s17_filter'4] inv'2 self'0}
-        {[@expl:loop invariant #1] [%#s17_filter'3] (self'0.current).t_Filter__func = (old_self.current).t_Filter__func}
-        {[@expl:loop invariant #2] [%#s17_filter'2] forall i: int. 0 <= i /\ i < Seq.length produced
+        {[@expl:loop invariant #0] [%#s17_filter'7] inv'2 self'0}
+        {[@expl:loop invariant #1] [%#s17_filter'6] (self'0.current).t_Filter__func = (old_self.current).t_Filter__func}
+        {[@expl:loop invariant #2] [%#s17_filter'5] forall i: int. 0 <= i /\ i < Seq.length produced
          -> postcondition_mut (self'0.current).t_Filter__func (index_logic produced i) (self'0.current).t_Filter__func false}
-        {[@expl:loop invariant #3] [%#s17_filter'1] produces (old_self.current).t_Filter__iter produced (self'0.current).t_Filter__iter}
-        {[@expl:loop invariant #4] [%#s17_filter'1] hist_inv (old_self.current).t_Filter__func (self'0.current).t_Filter__func}
+        {[@expl:loop invariant #3] [%#s17_filter'4] produces (old_self.current).t_Filter__iter produced (self'0.current).t_Filter__iter}
+        {[@expl:loop invariant #4] [%#s17_filter'4] hist_inv (old_self.current).t_Filter__func (self'0.current).t_Filter__func}
         (! s0) [ s0 = bb4 ] 
         [ bb4 = s0
           [ s0 = {inv (self'0.current).t_Filter__iter}
@@ -474,12 +474,12 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 85 4 85 41] (*
         | bb5 = any [ br0 -> {_15 = C_None} (! bb13) | br1 (x0:t_Item)-> {_15 = C_Some x0} (! bb7) ] 
         | bb7 = s0
           [ s0 = v_Some {_15} (fun (r0:t_Item) ->  [ &n <- r0 ] s1)
-          | s1 =  [ &_19 <- [%#s17_filter'5] Seq.snoc produced n ] s2
+          | s1 =  [ &_19 <- [%#s17_filter'8] Seq.snoc produced n ] s2
           | s2 = bb8 ]
         
         | bb8 = s0
           [ s0 =  [ &produced <- _19 ] s1
-          | s1 = {[@expl:assertion] [%#s17_filter'6] produces (old_self.current).t_Filter__iter produced (self'0.current).t_Filter__iter}
+          | s1 = {[@expl:assertion] [%#s17_filter'9] produces (old_self.current).t_Filter__iter produced (self'0.current).t_Filter__iter}
             s2
           | s2 = {inv'0 (self'0.current).t_Filter__func}
             MutBorrow.borrow_mut <t_F> {(self'0.current).t_Filter__func}
@@ -494,12 +494,12 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 85 4 85 41] (*
           | s6 = bb9 ]
         
         | bb9 = any [ br0 -> {_23 = false} (! bb12) | br1 -> {_23} (! bb10) ] 
-        | bb12 = s0 [ s0 = {[@expl:type invariant] inv'4 n} s1 | s1 = -{resolve'0 n}- s2 | s2 = bb3'0 ]  ]
+        | bb12 = s0 [ s0 = {[@expl:type invariant] inv'3 n} s1 | s1 = -{resolve'0 n}- s2 | s2 = bb3'0 ]  ]
        ]
     
     | bb13 = s0
       [ s0 = {[@expl:type invariant] match _15 with
-          | C_Some x -> inv'4 x
+          | C_Some x -> inv'3 x
           | _ -> true
           end}
         s1
@@ -535,8 +535,8 @@ module M_17_filter__qyi6180221713105948918__next [#"17_filter.rs" 85 4 85 41] (*
     | & _27: t_Item = Any.any_l ()
     | & old_3_0: MutBorrow.t t_Filter = Any.any_l () ]
     
-    [ return''0 (result:t_Option)-> {[@expl:next result type invariant] [%#s17_filter'8] inv'5 result}
-      {[@expl:next ensures] [%#s17_filter'9] match result with
+    [ return''0 (result:t_Option)-> {[@expl:next result type invariant] [%#s17_filter'0] inv'4 result}
+      {[@expl:next ensures] [%#s17_filter'1] match result with
         | C_None -> completed'0 self
         | C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -679,8 +679,8 @@ module M_17_filter__less_than [#"17_filter.rs" 120 0 120 49]
   let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
   let%span sindex = "../../../creusot-contracts/src/logic/ops/index.rs" 29 8 29 31
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
-  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 185 18 185 34
-  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 21 14 21 41
+  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 21 14 21 41
+  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 185 18 185 34
   let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 270 20 270 32
   let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 249 12 249 41
   let%span svec'3 = "../../../creusot-contracts/src/std/vec.rs" 242 20 242 59
@@ -690,24 +690,13 @@ module M_17_filter__less_than [#"17_filter.rs" 120 0 120 49]
   let%span svec'7 = "../../../creusot-contracts/src/std/vec.rs" 261 15 261 32
   let%span svec'8 = "../../../creusot-contracts/src/std/vec.rs" 262 14 262 42
   let%span svec'9 = "../../../creusot-contracts/src/std/vec.rs" 263 73 263 75
+  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 354 20 354 71
   let%span siter = "../../../creusot-contracts/src/std/iter.rs" 131 27 131 47
   let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 132 27 132 53
   let%span siter'1 = "../../../creusot-contracts/src/std/iter.rs" 133 27 133 45
   let%span siter'2 = "../../../creusot-contracts/src/std/iter.rs" 134 26 134 69
   let%span siter'3 = "../../../creusot-contracts/src/std/iter.rs" 164 16 164 17
   let%span siter'4 = "../../../creusot-contracts/src/std/iter.rs" 164 26 165 120
-  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 354 20 354 71
-  let%span sfilter = "../../../creusot-contracts/src/std/iter/filter.rs" 57 16 57 59
-  let%span sfilter'0 = "../../../creusot-contracts/src/std/iter/filter.rs" 49 16 49 55
-  let%span sfilter'1 = "../../../creusot-contracts/src/std/iter/filter.rs" 64 16 64 120
-  let%span sfilter'2 = "../../../creusot-contracts/src/std/iter/filter.rs" 15 14 15 39
-  let%span sfilter'3 = "../../../creusot-contracts/src/std/iter/filter.rs" 22 14 22 39
-  let%span sfilter'4 = "../../../creusot-contracts/src/std/iter/filter.rs" 76 12 78 47
-  let%span sfilter'5 = "../../../creusot-contracts/src/std/iter/filter.rs" 86 12 97 139
-  let%span sfilter'6 = "../../../creusot-contracts/src/std/iter/filter.rs" 102 14 102 47
-  let%span sfilter'7 = "../../../creusot-contracts/src/std/iter/filter.rs" 106 15 106 32
-  let%span sfilter'8 = "../../../creusot-contracts/src/std/iter/filter.rs" 107 15 107 32
-  let%span sfilter'9 = "../../../creusot-contracts/src/std/iter/filter.rs" 108 14 108 42
   let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
   let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
   let%span sord'1 = "../../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
@@ -721,14 +710,25 @@ module M_17_filter__less_than [#"17_filter.rs" 120 0 120 49]
   let%span sord'9 = "../../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
   let%span sord'10 = "../../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
   let%span sord'11 = "../../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
-  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
+  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 260 16 266 17
+  let%span sfilter = "../../../creusot-contracts/src/std/iter/filter.rs" 57 16 57 59
+  let%span sfilter'0 = "../../../creusot-contracts/src/std/iter/filter.rs" 49 16 49 55
+  let%span sfilter'1 = "../../../creusot-contracts/src/std/iter/filter.rs" 64 16 64 120
+  let%span sfilter'2 = "../../../creusot-contracts/src/std/iter/filter.rs" 15 14 15 39
+  let%span sfilter'3 = "../../../creusot-contracts/src/std/iter/filter.rs" 22 14 22 39
+  let%span sfilter'4 = "../../../creusot-contracts/src/std/iter/filter.rs" 76 12 78 47
+  let%span sfilter'5 = "../../../creusot-contracts/src/std/iter/filter.rs" 86 12 97 139
+  let%span sfilter'6 = "../../../creusot-contracts/src/std/iter/filter.rs" 102 14 102 47
+  let%span sfilter'7 = "../../../creusot-contracts/src/std/iter/filter.rs" 106 15 106 32
+  let%span sfilter'8 = "../../../creusot-contracts/src/std/iter/filter.rs" 107 15 107 32
+  let%span sfilter'9 = "../../../creusot-contracts/src/std/iter/filter.rs" 108 14 108 42
   let%span smodel = "../../../creusot-contracts/src/model.rs" 62 8 62 22
   
   use creusot.prelude.Opaque
   use creusot.int.UInt64
   use creusot.int.UInt32
-  use seq.Seq
   use mach.int.Int
+  use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use map.Map
@@ -736,22 +736,8 @@ module M_17_filter__less_than [#"17_filter.rs" 120 0 120 49]
   type t_NonNull  =
     { t_NonNull__pointer: Opaque.ptr }
   
-  type t_ManuallyDrop  =
-    { t_ManuallyDrop__value: () }
-  
-  type t_IntoIter  =
-    { t_IntoIter__buf: t_NonNull;
-      t_IntoIter__phantom: ();
-      t_IntoIter__cap: UInt64.t;
-      t_IntoIter__alloc: t_ManuallyDrop;
-      t_IntoIter__ptr: t_NonNull;
-      t_IntoIter__end: Opaque.ptr }
-  
-  type t_NonNull'0  =
-    { t_NonNull__pointer'0: Opaque.ptr }
-  
   type t_Unique  =
-    { t_Unique__pointer: t_NonNull'0; t_Unique__qy95zmarker: () }
+    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
   type t_UsizeNoHighBit  =
     { t_UsizeNoHighBit__0: UInt64.t }
@@ -769,22 +755,7 @@ module M_17_filter__less_than [#"17_filter.rs" 120 0 120 49]
   
   function view (self: t_Vec) : Seq.seq UInt32.t
   
-  axiom view_spec: forall self: t_Vec. [%#svec'0] Seq.length (view self) <= UInt64.t'int v_MAX
-  
-  function view'0 (self: t_IntoIter) : Seq.seq UInt32.t
-  
-  let rec into_iter (self_:t_Vec) (return'  (x:t_IntoIter))= any
-    [ return''0 (result:t_IntoIter)-> {[%#svec] view self_ = view'0 result} (! return' {result}) ]
-  
-  
-  type closure2  =
-    { _0: UInt32.t }
-  
-  predicate resolve (self: MutBorrow.t closure2) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0'0: MutBorrow.t closure2) =
-    resolve _0'0
+  axiom view_spec: forall self: t_Vec. [%#svec] Seq.length (view self) <= UInt64.t'int v_MAX
   
   type t_Ordering  =
     | C_Less
@@ -833,10 +804,39 @@ module M_17_filter__less_than [#"17_filter.rs" 120 0 120 49]
   
   axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord] UInt32.le x y = (cmp_log x y <> C_Greater)
   
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt32.t =
+    [%#sindex] Seq.get (view self) ix
+  
+  predicate contains (self: Seq.seq UInt32.t) (x: UInt32.t) =
+    [%#sseq] exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: Opaque.ptr }
+  
+  type t_ManuallyDrop  =
+    { t_ManuallyDrop__value: () }
+  
+  type t_IntoIter  =
+    { t_IntoIter__buf: t_NonNull'0;
+      t_IntoIter__phantom: ();
+      t_IntoIter__cap: UInt64.t;
+      t_IntoIter__alloc: t_ManuallyDrop;
+      t_IntoIter__ptr: t_NonNull'0;
+      t_IntoIter__end: Opaque.ptr }
+  
+  function view'0 (self: t_IntoIter) : Seq.seq UInt32.t
+  
+  let rec into_iter (self_:t_Vec) (return'  (x:t_IntoIter))= any
+    [ return''0 (result:t_IntoIter)-> {[%#svec'0] view self_ = view'0 result} (! return' {result}) ]
+  
+  
+  type closure2  =
+    { _0: UInt32.t }
+  
   predicate postcondition_once (self: closure2) (args: UInt32.t) (result: bool) =
     [%#s17_filter'2] let i = args in result = UInt32.lt i self._0
   
-  predicate resolve'1 (_0'0: closure2) =
+  predicate resolve (_0'0: closure2) =
     true
   
   predicate hist_inv (self: closure2) (result_state: closure2) =
@@ -848,7 +848,7 @@ module M_17_filter__less_than [#"17_filter.rs" 120 0 120 49]
   function fn_mut_once (self: closure2) (args: UInt32.t) (res: bool) : ()
   
   axiom fn_mut_once_spec: forall self: closure2, args: UInt32.t, res: bool. [%#sops'5] postcondition_once self args res
-  = (exists res_state: closure2. postcondition_mut self args res_state res /\ resolve'1 res_state)
+  = (exists res_state: closure2. postcondition_mut self args res_state res /\ resolve res_state)
   
   function hist_inv_trans (self: closure2) (b: closure2) (c: closure2) : ()
   
@@ -864,9 +864,15 @@ module M_17_filter__less_than [#"17_filter.rs" 120 0 120 49]
   axiom postcondition_mut_hist_inv_spec: forall self: closure2, args: UInt32.t, res_state: closure2, res: bool. ([%#sops] postcondition_mut self args res_state res)
    -> ([%#sops'0] hist_inv self res_state)
   
+  predicate resolve'0 (self: MutBorrow.t closure2) =
+    [%#sresolve] self.final = self.current
+  
+  predicate resolve'1 (_0'0: MutBorrow.t closure2) =
+    resolve'0 _0'0
+  
   let rec closure2[#"17_filter.rs" 123 12 123 42] (self:MutBorrow.t closure2) (i:UInt32.t) (return'  (x:bool))= (! bb0
     [ bb0 = s0
-      [ s0 = -{resolve'0 _1}- s1
+      [ s0 = -{resolve'1 _1}- s1
       | s1 =  [ &res <- UInt32.lt i'0 (_1.current)._0 ] s2
       | s2 =  [ &_0'0 <- res ] s3
       | s3 = return''0 {_0'0} ]
@@ -997,12 +1003,6 @@ module M_17_filter__less_than [#"17_filter.rs" 120 0 120 49]
       /\ completed'0 done' /\ produces'0 self_ prod done'.current /\ from_iter_post prod result}
       (! return' {result}) ]
   
-  
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt32.t =
-    [%#sindex] Seq.get (view self) ix
-  
-  predicate contains (self: Seq.seq UInt32.t) (x: UInt32.t) =
-    [%#sseq] exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
   meta "compute_max_steps" 1000000
   

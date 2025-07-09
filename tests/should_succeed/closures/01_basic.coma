@@ -62,7 +62,6 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   let%span s01_basic = "01_basic.rs" 19 17 19 21
   let%span s01_basic'0 = "01_basic.rs" 22 14 22 15
   let%span s01_basic'1 = "01_basic.rs" 21 16 21 23
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sops = "../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
   let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
   let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
@@ -70,6 +69,7 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
   let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
   let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
@@ -78,20 +78,20 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   type closure0  =
     { _0: MutBorrow.t Int32.t }
   
-  predicate resolve (self: MutBorrow.t closure0) =
+  predicate resolve (self: MutBorrow.t Int32.t) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0'0: MutBorrow.t closure0) =
+  predicate resolve'0 (_0'0: MutBorrow.t Int32.t) =
     resolve _0'0
   
-  predicate resolve'1 (self: MutBorrow.t Int32.t) =
+  predicate resolve'1 (_0'0: closure0) =
+    resolve'0 _0'0._0
+  
+  predicate resolve'2 (self: MutBorrow.t closure0) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0'0: MutBorrow.t Int32.t) =
-    resolve'1 _0'0
-  
-  predicate resolve'3 (_0'0: closure0) =
-    resolve'2 _0'0._0
+  predicate resolve'3 (_0'0: MutBorrow.t closure0) =
+    resolve'2 _0'0
   
   predicate hist_inv (self: closure0) (result_state: closure0) =
     [%#s01_basic'1] true
@@ -100,7 +100,7 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
     [ bb0 = s0
       [ s0 = Int32.add {((_1.current)._0).current} {[%#s01_basic'0] (1: Int32.t)}
           (fun (_ret:Int32.t) ->  [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s1)
-      | s1 = -{resolve'0 _1}- s2
+      | s1 = -{resolve'3 _1}- s2
       | s2 = return''0 {_0'0} ]
      ]
      [ & _0'0: () = Any.any_l () | & _1: MutBorrow.t closure0 = self ]  [ return''0 (result:())-> return' {result} ] 
@@ -108,7 +108,7 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   predicate postcondition_once (self: closure0) (args: ()) (result: ()) =
     [%#s01_basic'1] let () = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
     /\ bor_self.final = e /\ closure0'post'return' bor_self result /\ hist_inv self e)
-    /\ resolve'3 e
+    /\ resolve'1 e
   
   predicate postcondition_mut (self: closure0) (args: ()) (result_state: closure0) (result: ()) =
     [%#s01_basic'1] let () = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
@@ -117,7 +117,7 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   function fn_mut_once (self: closure0) (args: ()) (res: ()) : ()
   
   axiom fn_mut_once_spec: forall self: closure0, args: (), res: (). [%#sops'5] postcondition_once self args res
-  = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'3 res_state)
+  = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   function hist_inv_trans (self: closure0) (b: closure0) (c: closure0) : ()
   
@@ -152,7 +152,7 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
       | s1 = closure0 {_8} (fun (_ret:()) ->  [ &_7 <- _ret ] s2)
       | s2 = bb2 ]
     
-    | bb2 = s0 [ s0 = -{resolve'3 x}- s1 | s1 = return''0 {_0'0} ]  ]
+    | bb2 = s0 [ s0 = -{resolve'1 x}- s1 | s1 = return''0 {_0'0} ]  ]
     )
     [ & _0'0: () = Any.any_l ()
     | & a: MutBorrow.t Int32.t = Any.any_l ()
@@ -169,7 +169,6 @@ end
 module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
   let%span s01_basic = "01_basic.rs" 36 21 36 25
   let%span s01_basic'0 = "01_basic.rs" 38 16 38 23
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sops = "../../../creusot-contracts/src/std/ops.rs" 122 15 122 59
   let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 123 14 123 38
   let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 33
@@ -177,32 +176,33 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
   let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 134 15 134 28
   let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 135 14 135 30
   let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 140 14 141 105
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  let rec new_ref (return'  (x:MutBorrow.t UInt32.t))= any
-    [ return''0 (result:MutBorrow.t UInt32.t)-> (! return' {result}) ]
-  
+  type closure0  =
+    { _0: MutBorrow.t UInt32.t }
   
   predicate resolve (self: MutBorrow.t UInt32.t) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t UInt32.t) =
-    resolve _0
+  predicate resolve'0 (_0'0: MutBorrow.t UInt32.t) =
+    resolve _0'0
   
-  type closure0  =
-    { _0: MutBorrow.t UInt32.t }
+  predicate resolve'1 (_0'0: closure0) =
+    resolve'0 _0'0._0
   
-  predicate resolve'1 (self: MutBorrow.t closure0) =
+  let rec new_ref (return'  (x:MutBorrow.t UInt32.t))= any
+    [ return''0 (result:MutBorrow.t UInt32.t)-> (! return' {result}) ]
+  
+  
+  predicate resolve'2 (self: MutBorrow.t closure0) =
     [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0'0: MutBorrow.t closure0) =
-    resolve'1 _0'0
-  
-  predicate resolve'3 (_0'0: closure0) =
-    resolve'0 _0'0._0
+  predicate resolve'3 (_0'0: MutBorrow.t closure0) =
+    resolve'2 _0'0
   
   predicate hist_inv (self: closure0) (result_state: closure0) =
     [%#s01_basic'0] true
@@ -218,7 +218,7 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
           end}-
         s2
       | s2 =  [ &_1 <- { _1 with current = { _0 = _2 } } ] s3
-      | s3 = -{resolve'2 _1}- s4
+      | s3 = -{resolve'3 _1}- s4
       | s4 = -{resolve'0 _3}- s5
       | s5 = return''0 {_0'0} ]
      ]
@@ -232,7 +232,7 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
   predicate postcondition_once (self: closure0) (args: ()) (result: ()) =
     [%#s01_basic'0] let () = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
     /\ bor_self.final = e /\ closure0'post'return' bor_self result /\ hist_inv self e)
-    /\ resolve'3 e
+    /\ resolve'1 e
   
   predicate postcondition_mut (self: closure0) (args: ()) (result_state: closure0) (result: ()) =
     [%#s01_basic'0] let () = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
@@ -241,7 +241,7 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
   function fn_mut_once (self: closure0) (args: ()) (res: ()) : ()
   
   axiom fn_mut_once_spec: forall self: closure0, args: (), res: (). [%#sops'5] postcondition_once self args res
-  = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'3 res_state)
+  = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   function hist_inv_trans (self: closure0) (b: closure0) (c: closure0) : ()
   
@@ -276,7 +276,7 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
       | s1 = closure0 {_8} (fun (_ret:()) ->  [ &_7 <- _ret ] s2)
       | s2 = bb2 ]
     
-    | bb2 = s0 [ s0 = -{resolve'3 a}- s1 | s1 = return''0 {_0'0} ]  ]
+    | bb2 = s0 [ s0 = -{resolve'1 a}- s1 | s1 = return''0 {_0'0} ]  ]
     )
     [ & _0'0: () = Any.any_l ()
     | & x: MutBorrow.t UInt32.t = Any.any_l ()

@@ -30,7 +30,7 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
             return;
         }
 
-        let mut control_flow = GhostControlFlow { errors: Vec::new() };
+        let mut control_flow = GhostControlFlow { loop_labels: Vec::new(), errors: Vec::new() };
         control_flow.visit_expr(expr);
 
         let tcx = cx.tcx;
@@ -74,17 +74,23 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
 
 /// Check that we do not escape the ghost block with e.g. `return`.
 struct GhostControlFlow {
+    loop_labels: Vec<Option<rustc_ast::Label>>,
     errors: Vec<(Span, &'static str)>,
 }
 
 impl<'tcx> rustc_hir::intravisit::Visitor<'tcx> for GhostControlFlow {
     fn visit_expr(&mut self, expr: &'tcx rustc_hir::Expr<'tcx>) -> Self::Result {
         match expr.kind {
-            rustc_hir::ExprKind::Break { .. } => {
-                self.errors.push((expr.span, "cannot use `break` in ghost code"))
+            rustc_hir::ExprKind::Break(dest, _) => {
+                if !self.loop_labels.contains(&dest.label) {
+                    self.errors.push((expr.span, "cannot `break` to an outer loop in ghost code"))
+                }
             }
-            rustc_hir::ExprKind::Continue { .. } => {
-                self.errors.push((expr.span, "cannot use `continue` in ghost code"))
+            rustc_hir::ExprKind::Continue(dest) => {
+                if !self.loop_labels.contains(&dest.label) {
+                    self.errors
+                        .push((expr.span, "cannot `continue` to an outer loop in ghost code"))
+                }
             }
             rustc_hir::ExprKind::Ret { .. } => {
                 self.errors.push((expr.span, "cannot use `return` in ghost code"))
@@ -94,6 +100,12 @@ impl<'tcx> rustc_hir::intravisit::Visitor<'tcx> for GhostControlFlow {
             }
             rustc_hir::ExprKind::Yield { .. } => {
                 self.errors.push((expr.span, "cannot use `yield` in ghost code"))
+            }
+            rustc_hir::ExprKind::Loop(_, label, _, _) => {
+                self.loop_labels.push(label);
+                rustc_hir::intravisit::walk_expr(self, expr);
+                self.loop_labels.pop();
+                return;
             }
             _ => {}
         }
