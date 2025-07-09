@@ -235,7 +235,7 @@ impl FlatSpec {
             if let TraitOrImpl::Trait(trait_name, generics) = data.self_ty {
                 where_clause
                     .predicates
-                    .push(parse_quote_spanned! {span=> Self_: #trait_name #generics });
+                    .push(parse_quote_spanned! {span=> Self_: ?::std::marker::Sized + #trait_name #generics });
 
                 self.signature.generics.params.insert(0, parse_quote_spanned! {span=> Self_ });
 

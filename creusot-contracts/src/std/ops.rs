@@ -21,6 +21,11 @@ pub trait FnOnceExt<Args: Tuple> {
     fn postcondition_once(self, a: Args, res: Self::Output) -> bool;
 }
 
+#[cfg(not(feature = "nightly"))]
+pub trait FnOnceExt<Args> {
+    type Output;
+}
+
 /// `FnMutExt` is an extension trait for the `FnMut` trait, used for
 /// adding a specification to closures. It should not be used directly.
 #[cfg(feature = "nightly")]
@@ -48,9 +53,12 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
 
     #[law]
     #[ensures(self.postcondition_once(args, res) ==
-              exists<res_state: Self> (&self).postcondition_mut(args, res_state, res) && resolve(&res_state))]
+              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output);
 }
+
+#[cfg(not(feature = "nightly"))]
+pub trait FnMutExt<Args>: FnOnceExt<Args> {}
 
 /// `FnExt` is an extension trait for the `Fn` trait, used for
 /// adding a specification to closures. It should not be used directly.
@@ -72,8 +80,13 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
     fn fn_hist_inv(self, res_state: Self);
 }
 
+/// `FnExt` is an extension trait for the `Fn` trait, used for
+/// adding a specification to closures. It should not be used directly.
+#[cfg(not(feature = "nightly"))]
+pub trait FnExt<Args>: FnMutExt<Args> {}
+
 #[cfg(feature = "nightly")]
-impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
+impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
     #[trusted]
@@ -96,7 +109,7 @@ impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
 }
 
 #[cfg(feature = "nightly")]
-impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
+impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
     #[trusted]
     #[logic(prophetic)]
     #[open]
@@ -117,31 +130,31 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 
     #[trusted]
     #[law]
-    #[requires(self.postcondition_mut(args, res_state, res))]
-    #[ensures(self.hist_inv(res_state))]
+    #[requires((*&self).postcondition_mut(args, *&res_state, res))]
+    #[ensures((*&self).hist_inv(*&res_state))]
     fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[trusted]
     #[law]
-    #[ensures(self.hist_inv(self))]
+    #[ensures((*&self).hist_inv(*&self))]
     fn hist_inv_refl(self) {}
 
     #[trusted]
     #[law]
-    #[requires(self.hist_inv(b))]
-    #[requires(b.hist_inv(c))]
-    #[ensures(self.hist_inv(c))]
+    #[requires((*&self).hist_inv(*&b))]
+    #[requires((*&b).hist_inv(*&c))]
+    #[ensures((*&self).hist_inv(*&c))]
     fn hist_inv_trans(self, b: Self, c: Self) {}
 
     #[law]
     #[trusted]
-    #[ensures(self.postcondition_once(args, res) ==
-              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(&res_state))]
+    #[ensures((*&self).postcondition_once(args, res) ==
+              exists<res_state: Self> (*&self).postcondition_mut(args, res_state, res) && resolve(res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
 #[cfg(feature = "nightly")]
-impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
+impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
     #[trusted]
     #[logic]
     #[open]
@@ -153,17 +166,17 @@ impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
 
     #[law]
     #[trusted]
-    #[ensures(self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
+    #[ensures((*&self).postcondition_mut(args, *&res_state, res) == ((*&self).postcondition(args, res) && *&self == *&res_state))]
     fn fn_mut(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[law]
     #[trusted]
-    #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(&self)))]
+    #[ensures((*&self).postcondition_once(args, res) == ((*&self).postcondition(args, res) && resolve(&self)))]
     fn fn_once(self, args: Args, res: Self::Output) {}
 
     #[law]
     #[trusted]
-    #[ensures(self.hist_inv(res_state) == (self == res_state))]
+    #[ensures((*&self).hist_inv(*&res_state) == (*&self == *&res_state))]
     fn fn_hist_inv(self, res_state: Self) {}
 }
 
@@ -171,8 +184,10 @@ extern_spec! {
     mod std {
         mod ops {
             trait FnOnce<Args> where Args: Tuple {
-                #[requires(self.precondition(arg))]
-                #[ensures(self.postcondition_once(arg, result))]
+                // `*&self` is meant to be `self` but, due to our encoding of contracts,
+                // that would require `Self: Sized`. `*&self` avoids this.
+                #[requires((*&self).precondition(arg))]
+                #[ensures((*&self).postcondition_once(arg, result))]
                 fn call_once(self, arg: Args) -> Self::Output;
             }
 
@@ -322,19 +337,6 @@ extern_spec! {
         }
     }
 }
-
-#[cfg(not(feature = "nightly"))]
-pub trait FnOnceExt<Args> {
-    type Output;
-}
-
-#[cfg(not(feature = "nightly"))]
-pub trait FnMutExt<Args>: FnOnceExt<Args> {}
-
-/// `FnExt` is an extension trait for the `Fn` trait, used for
-/// adding a specification to closures. It should not be used directly.
-#[cfg(not(feature = "nightly"))]
-pub trait FnExt<Args>: FnMutExt<Args> {}
 
 /// Dummy impls that don't use the unstable traits Tuple, FnOnce<Args>, FnMut<Args>, Fn<Args>
 #[cfg(not(feature = "nightly"))]

@@ -97,11 +97,13 @@ extern_spec! {
 
                 #[pure]
                 #[ensures(result.iter() == self && result.n() == n@)]
-                fn skip(self, n: usize) -> Skip<Self>;
+                fn skip(self, n: usize) -> Skip<Self>
+                    where Self: Sized;
 
                 #[pure]
                 #[ensures(result.iter() == self && result.n() == n@)]
-                fn take(self, n: usize) -> Take<Self>;
+                fn take(self, n: usize) -> Take<Self>
+                    where Self: Sized;
 
                 #[pure]
                 #[ensures(result.iter() == self)]
@@ -131,7 +133,7 @@ extern_spec! {
                 #[requires(filter::precise(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn filter<P>(self, f: P) -> Filter<Self, P>
-                    where  P: for<'a> FnMut(&Self_::Item) -> bool;
+                    where Self: Sized, P: for<'a> FnMut(&Self_::Item) -> bool;
 
                 #[pure]
                 #[requires(filter_map::immutable(f))]
@@ -139,30 +141,32 @@ extern_spec! {
                 #[requires(filter_map::precise(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn filter_map<B, F>(self, f: F) -> FilterMap<Self, F>
-                    where F: for<'a> FnMut(Self_::Item) -> Option<B>;
+                    where Self: Sized, F: for<'a> FnMut(Self_::Item) -> Option<B>;
 
                 #[pure]
                 // These two requirements are here only to prove the absence of overflows
                 #[requires(forall<i: &mut Self_> (*i).completed() ==> (*i).produces(Seq::empty(), ^i))]
                 #[requires(forall<s: Seq<Self_::Item>, i: Self_> self.produces(s, i) ==> s.len() < std::usize::MAX@)]
                 #[ensures(result.iter() == self && result.n() == 0)]
-                fn enumerate(self) -> Enumerate<Self>;
+                fn enumerate(self) -> Enumerate<Self>
+                    where Self: Sized;
 
                 #[ensures(result@ == Some(self))]
-                fn fuse(self) -> Fuse<Self>;
+                fn fuse(self) -> Fuse<Self>
+                    where Self: Sized;
 
                 #[pure]
                 #[requires(U::into_iter.precondition((other,)))]
                 #[ensures(result.itera() == self)]
                 #[ensures(U::into_iter.postcondition((other,), result.iterb()))]
                 fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U::IntoIter>
-                    where U::IntoIter: Iterator;
+                    where Self: Sized, U::IntoIter: Iterator;
 
                 // TODO: Investigate why Self_ needed
                 #[ensures(exists<done: &mut Self_, prod>
                     resolve(&^done) && done.completed() && self.produces(prod, *done) && B::from_iter_post(prod, result))]
                 fn collect<B>(self) -> B
-                    where B: FromIterator<Self::Item>;
+                    where Self: Sized, B: FromIterator<Self::Item>;
 
                 #[pure]
                 #[ensures(result.iter() == self)]
@@ -179,7 +183,7 @@ extern_spec! {
                             into_iter.produces(prod, *done) && done.completed() && resolve(&^done) &&
                             Self_::from_iter_post(prod, result))]
                 fn from_iter<T>(iter: T) -> Self
-                    where T: IntoIterator<Item = A>, T::IntoIter: Iterator;
+                    where Self: Sized, T: IntoIterator<Item = A>, T::IntoIter: Iterator;
             }
 
             #[pure]
