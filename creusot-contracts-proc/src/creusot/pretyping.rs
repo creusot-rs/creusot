@@ -200,7 +200,11 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             });
             Ok(tokens)
         }
-        RT::Path(_) => Ok(quote_spanned! {sp=> #term }),
+        RT::Path(path) => Ok(if path.inner.path.segments.len() == 1 {
+            quote_spanned! {sp=> (*&#term) }
+        } else {
+            quote_spanned! {sp=> #term }
+        }),
         RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
         RT::Reference(TermReference { mutability, expr, .. }) => {
             let term = encode_term(expr)?;
