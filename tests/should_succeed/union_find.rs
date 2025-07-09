@@ -298,7 +298,7 @@ mod implementation {
                 if rx == ry {
                     let perm_mut_x = ghost!(self.map.get_mut_ghost(&x.addr()).unwrap());
                     match unsafe { PtrOwn::as_mut(x.0, perm_mut_x) } {
-                        Content::Root { rank, value: _ } => rank.incr(),
+                        Content::Root { rank, value: _ } => *rank = rank.incr(),
                         _ => {}
                     }
                 }

@@ -129,12 +129,12 @@ impl PeanoInt {
     /// the point where the integer overflows.
     #[trusted]
     #[terminates]
-    #[ensures((^self).0@ == (*self).0@ + 1)]
-    pub fn incr(&mut self) {
+    #[ensures(result.0@ == self.0@ + 1)]
+    pub fn incr(self) -> Self {
         // Use volatile read, to avoid optimizing successive increments.
         // SAFETY: using `read_volatile` on a reference of a `Copy` object is always safe.
         let x = unsafe { std::ptr::read_volatile(&self.0) };
-        self.0 = x + 1;
+        Self(x + 1)
     }
 
     /// Get the underlying integer.
