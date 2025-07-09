@@ -1,6 +1,10 @@
-use crate::analysis::{Borrows, MaybeLiveExceptDrop};
+use crate::{
+    analysis::{Borrows, MaybeLiveExceptDrop},
+    ctx::HasTyCtxt,
+};
 use either::Either;
 use rustc_borrowck::consumers::{BorrowIndex, BorrowSet, PlaceExt, RegionInferenceContext};
+
 use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
     mir::{
@@ -24,7 +28,7 @@ pub struct Resolver<'a, 'tcx> {
     borrows: ResultsCursor<'a, 'tcx, Borrows<'a, 'a, 'tcx>>,
     borrow_set: &'a BorrowSet<'tcx>,
     move_data: &'a MoveData<'tcx>,
-    body: &'a Body<'tcx>,
+    pub(super) body: &'a Body<'tcx>,
     tcx: TyCtxt<'tcx>,
 }
 
@@ -41,6 +45,12 @@ pub trait HasMoveDataExt<'tcx>: HasMoveData<'tcx> {
 impl<'tcx, T: HasMoveData<'tcx>> HasMoveDataExt<'tcx> for T {
     fn empty_bitset(&self) -> MixedBitSet<MovePathIndex> {
         MixedBitSet::new_empty(self.move_data().move_paths.len())
+    }
+}
+
+impl<'a, 'tcx> HasTyCtxt<'tcx> for Resolver<'a, 'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.tcx
     }
 }
 
@@ -75,6 +85,10 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
             .into_results_cursor(body);
 
         Resolver { live, uninit, borrows, borrow_set, move_data, body, tcx }
+    }
+
+    pub(super) fn borrow_set(&self) -> &BorrowSet<'tcx> {
+        self.borrow_set
     }
 
     /// Get the set of frozen move paths corresponding to the given set of borrows.
@@ -287,6 +301,13 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
     pub fn frozen_places_before(&mut self, loc: Location) -> MixedBitSet<MovePathIndex> {
         ExtendedLocation::Start(loc).seek_to(&mut self.borrows);
         self.frozen_of_borrows(self.borrows.get())
+    }
+
+    pub(super) fn bad_vars_at(&mut self, location: Location) -> MixedBitSet<MovePathIndex> {
+        let mut bad_vars = self.frozen_places_before(location);
+        let uninit = self.uninit_places_before(location);
+        bad_vars.union(&uninit);
+        bad_vars
     }
 
     #[allow(dead_code)]

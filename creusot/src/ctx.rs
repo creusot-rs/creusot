@@ -127,6 +127,38 @@ impl ItemType {
     }
 }
 
+pub trait HasTyCtxt<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx>;
+
+    fn crash_and_error(&self, span: Span, msg: &str) -> ! {
+        // TODO: try to add a code back in
+        self.tcx().dcx().span_fatal(span, msg.to_string())
+    }
+
+    fn fatal_error(&self, span: Span, msg: &str) -> Diag<'tcx, FatalAbort> {
+        // TODO: try to add a code back in
+        self.tcx().dcx().struct_span_fatal(span, msg.to_string())
+    }
+
+    fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
+        self.tcx().dcx().struct_span_err(span, msg.to_string())
+    }
+
+    fn warn(&self, span: Span, msg: impl Into<String>) {
+        self.tcx().dcx().span_warn(span, msg.into())
+    }
+
+    fn span_bug(&self, span: Span, msg: impl Into<String>) -> ! {
+        self.tcx().dcx().span_bug(span, msg.into())
+    }
+}
+
+impl<'tcx> HasTyCtxt<'tcx> for TyCtxt<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        *self
+    }
+}
+
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
@@ -276,24 +308,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     queryish!(sig, DefId, PreSignature<'tcx>, (pre_sig_of));
 
     pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
-        self.bodies.insert(def_id, |_| {
-            let mut body = callbacks::get_body(self.tcx, def_id)
-                .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
-
-            // We need to remove false edges. They are used in compilation of pattern matchings
-            // in ways that may result in move paths that are marked live and uninitilized at the
-            // same time. We cannot handle this in the generation of resolution.
-            // On the other hand, it is necessary to keep false unwind edges, because they are needed
-            // by liveness analysis.
-            for bbd in body.body.basic_blocks_mut().iter_mut() {
-                let term = bbd.terminator_mut();
-                if let TerminatorKind::FalseEdge { real_target, .. } = term.kind {
-                    term.kind = TerminatorKind::Goto { target: real_target };
-                }
-            }
-
-            Box::new(body)
-        })
+        self.bodies.insert(def_id, |_| Box::new(body_with_facts(self.tcx, def_id)))
     }
 
     /// `span` is used for diagnostics.
@@ -333,24 +348,6 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
 
         Some((get_resolve_function(self.tcx), substs))
-    }
-
-    pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
-        // TODO: try to add a code back in
-        self.tcx.dcx().span_fatal(span, msg.to_string())
-    }
-
-    pub(crate) fn fatal_error(&self, span: Span, msg: &str) -> Diag<'tcx, FatalAbort> {
-        // TODO: try to add a code back in
-        self.tcx.dcx().struct_span_fatal(span, msg.to_string())
-    }
-
-    pub(crate) fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
-        self.tcx.dcx().struct_span_err(span, msg.to_string())
-    }
-
-    pub(crate) fn warn(&self, span: Span, msg: impl Into<String>) {
-        self.tcx.dcx().span_warn(span, msg.into())
     }
 
     queryish!(laws, DefId, [DefId], laws_inner);
@@ -522,12 +519,33 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn crate_name(&self) -> why3::Symbol {
         *self.crate_name.get_or_init(|| crate_name(self.tcx))
     }
+}
 
-    pub(crate) fn fresh(&self, name: impl AsRef<str>) -> Ident {
-        Ident::fresh(self.crate_name(), name)
+impl<'tcx> HasTyCtxt<'tcx> for TranslationCtx<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.tcx
     }
 }
 
 pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
     tcx.crate_name(LOCAL_CRATE).as_str().into()
+}
+
+/// This should only be called at most once per `def_id` (for more info, see `callbacks::get_body`).
+pub(crate) fn body_with_facts(tcx: TyCtxt, def_id: LocalDefId) -> BodyWithBorrowckFacts {
+    let mut body = callbacks::get_body(tcx, def_id)
+        .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
+
+    // We need to remove false edges. They are used in compilation of pattern matchings
+    // in ways that may result in move paths that are marked live and uninitilized at the
+    // same time. We cannot handle this in the generation of resolution.
+    // On the other hand, it is necessary to keep false unwind edges, because they are needed
+    // by liveness analysis.
+    for bbd in body.body.basic_blocks_mut().iter_mut() {
+        let term = bbd.terminator_mut();
+        if let TerminatorKind::FalseEdge { real_target, .. } = term.kind {
+            term.kind = TerminatorKind::Goto { target: real_target };
+        }
+    }
+    body
 }

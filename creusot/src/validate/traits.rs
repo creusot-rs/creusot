@@ -2,7 +2,7 @@ use rustc_hir::def::DefKind;
 
 use crate::{
     contracts_items::{is_law, is_open_inv_result, is_trusted},
-    ctx::TranslationCtx,
+    ctx::{HasTyCtxt as _, TranslationCtx},
     validate::is_overloaded_item,
 };
 

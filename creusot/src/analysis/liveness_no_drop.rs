@@ -12,7 +12,7 @@ use rustc_mir_dataflow::{
     on_all_children_bits,
 };
 
-use crate::resolve::place_contains_borrow_deref;
+use super::resolve::place_contains_borrow_deref;
 
 /// A liveness analysis used for insertion of "resolve" statements.
 /// This is meant to be used exclusively for `Resolve`.

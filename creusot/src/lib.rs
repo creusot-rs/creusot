@@ -45,15 +45,12 @@ mod cleanup_spec_closures;
 mod contracts_items;
 mod creusot_items;
 mod ctx;
-#[allow(dead_code)]
-mod debug;
 mod error;
 mod extended_location;
 mod gather_spec_closures;
 mod lints;
 mod metadata;
 mod naming;
-mod resolve;
 mod translated_item;
 mod translation;
 mod util;

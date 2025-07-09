@@ -703,58 +703,6 @@ impl<'tcx> RValue<'tcx> {
 }
 
 impl<'tcx> Terminator<'tcx> {
-    pub(crate) fn retarget(&mut self, from: BasicBlock, to: BasicBlock) {
-        match self {
-            Terminator::Goto(bb) => {
-                if *bb == from {
-                    *bb = to
-                };
-            }
-            Terminator::Switch(_, brs) => match brs {
-                Branches::Int(brs, def) => {
-                    if *def == from {
-                        *def = to
-                    };
-                    for (_, bb) in brs {
-                        if *bb == from {
-                            *bb = to
-                        }
-                    }
-                }
-                Branches::Uint(brs, def) => {
-                    if *def == from {
-                        *def = to
-                    };
-                    for (_, bb) in brs {
-                        if *bb == from {
-                            *bb = to
-                        }
-                    }
-                }
-                Branches::Constructor(_, _, brs, def) => {
-                    if *def == Some(from) {
-                        *def = Some(to)
-                    };
-                    for (_, bb) in brs {
-                        if *bb == from {
-                            *bb = to
-                        }
-                    }
-                }
-                Branches::Bool(bb1, bb2) => {
-                    if *bb1 == from {
-                        *bb1 = to
-                    };
-                    if *bb2 == from {
-                        *bb2 = to;
-                    }
-                }
-            },
-            Terminator::Return => {}
-            Terminator::Abort(_) => {}
-        }
-    }
-
     fn into_why<N: Namer<'tcx>>(
         self,
         lower: &mut LoweringState<'_, 'tcx, N>,
