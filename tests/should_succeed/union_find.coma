@@ -1108,7 +1108,7 @@ module M_union_find__implementation__qyi1944850640244667852__make [#"union_find.
   let%span sptr_own'5 = "../../creusot-contracts/src/ptr_own.rs" 137 14 137 28
   let%span sptr_own'6 = "../../creusot-contracts/src/ptr_own.rs" 47 8 47 35
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
-  let%span speano = "../../creusot-contracts/src/peano.rs" 99 14 99 26
+  let%span speano = "../../creusot-contracts/src/peano.rs" 111 14 111 30
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sresolve'0 = "../../creusot-contracts/src/resolve.rs" 75 8 78 9
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 101 20 101 44
@@ -1125,10 +1125,8 @@ module M_union_find__implementation__qyi1944850640244667852__make [#"union_find.
   type t_PeanoInt  =
     { t_PeanoInt__0: UInt64.t }
   
-  function view (self: t_PeanoInt) : int
-  
   let rec new (return'  (x:t_PeanoInt))= any
-    [ return''0 (result:t_PeanoInt)-> {[%#speano] view result = 0} (! return' {result}) ]
+    [ return''0 (result:t_PeanoInt)-> {[%#speano] result.t_PeanoInt__0 = (0: UInt64.t)} (! return' {result}) ]
   
   
   type t_T
@@ -1212,12 +1210,12 @@ module M_union_find__implementation__qyi1944850640244667852__make [#"union_find.
     | C_None
     | C_Some t_PtrOwn
   
-  function view'0 (self: t_FMap) : Map.map UInt64.t t_Option
+  function view (self: t_FMap) : Map.map UInt64.t t_Option
   
-  axiom view_spec: forall self: t_FMap. [%#sfmap'17] forall m1: t_FMap, m2: t_FMap. m1 <> m2  -> view'0 m1 <> view'0 m2
+  axiom view_spec: forall self: t_FMap. [%#sfmap'17] forall m1: t_FMap, m2: t_FMap. m1 <> m2  -> view m1 <> view m2
   
   function get [@inline:trivial] (self: t_FMap) (k: UInt64.t) : t_Option =
-    [%#sfmap'11] Map.get (view'0 self) k
+    [%#sfmap'11] Map.get (view self) k
   
   predicate contains [@inline:trivial] (self: t_FMap) (k: UInt64.t) =
     [%#sfmap'9] get self k <> C_None
@@ -1381,8 +1379,8 @@ module M_union_find__implementation__qyi1944850640244667852__make [#"union_find.
   
   function insert (self: t_FMap) (k: UInt64.t) (v: t_PtrOwn) : t_FMap
   
-  axiom insert_spec: forall self: t_FMap, k: UInt64.t, v: t_PtrOwn. ([%#sfmap'13] view'0 (insert self k v)
-  = Map.set (view'0 self) k (C_Some v))
+  axiom insert_spec: forall self: t_FMap, k: UInt64.t, v: t_PtrOwn. ([%#sfmap'13] view (insert self k v)
+  = Map.set (view self) k (C_Some v))
   && ([%#sfmap'14] len (insert self k v) = (if contains self k then len self else len self + 1))
   
   let rec insert_ghost (self:MutBorrow.t t_FMap) (key:UInt64.t) (value:t_PtrOwn) (return'  (x:t_Option))= {[@expl:insert_ghost 'self' type invariant] [%#sfmap'4] inv'9 self}
@@ -3425,8 +3423,8 @@ module M_union_find__implementation__qyi1944850640244667852__link [#"union_find.
   let%span sptr_own'8 = "../../creusot-contracts/src/ptr_own.rs" 99 14 99 52
   let%span sptr_own'9 = "../../creusot-contracts/src/ptr_own.rs" 47 8 47 35
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
-  let%span speano = "../../creusot-contracts/src/peano.rs" 129 14 129 30
-  let%span speano'0 = "../../creusot-contracts/src/peano.rs" 119 14 119 38
+  let%span speano = "../../creusot-contracts/src/peano.rs" 142 14 142 30
+  let%span speano'0 = "../../creusot-contracts/src/peano.rs" 132 14 132 38
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 101 20 101 44
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
@@ -3725,10 +3723,8 @@ module M_union_find__implementation__qyi1944850640244667852__link [#"union_find.
       any) ]
   
   
-  function view'0 (self: t_PeanoInt) : int
-  
   let rec to_u64 (self:t_PeanoInt) (return'  (x:UInt64.t))= any
-    [ return''0 (result:UInt64.t)-> {[%#speano] UInt64.t'int result = view'0 self} (! return' {result}) ]
+    [ return''0 (result:UInt64.t)-> {[%#speano] result = self.t_PeanoInt__0} (! return' {result}) ]
   
   
   type tuple  =
@@ -3853,8 +3849,10 @@ module M_union_find__implementation__qyi1944850640244667852__link [#"union_find.
   predicate resolve'6 (_0: MutBorrow.t t_Content) =
     resolve'5 _0
   
-  let rec incr (self:MutBorrow.t t_PeanoInt) (return'  (x:()))= any
-    [ return''0 (result:())-> {[%#speano'0] view'0 self.final = view'0 self.current + 1} (! return' {result}) ]
+  let rec incr (self:t_PeanoInt) (return'  (x:t_PeanoInt))= any
+    [ return''0 (result:t_PeanoInt)-> {[%#speano'0] UInt64.t'int result.t_PeanoInt__0
+      = UInt64.t'int self.t_PeanoInt__0 + 1}
+      (! return' {result}) ]
   
   
   predicate resolve'7 (self: MutBorrow.t t_PeanoInt) =
@@ -4184,23 +4182,19 @@ module M_union_find__implementation__qyi1944850640244667852__link [#"union_find.
                  [ &rank'1 <- _ret ] 
                  [ &_124 <- { _124 with current = C_Root _ret.final rvalue } ] 
                 s1))
-      | s1 = MutBorrow.borrow_final <t_PeanoInt> {rank'1.current} {MutBorrow.get_id rank'1}
-          (fun (_ret:MutBorrow.t t_PeanoInt) ->
-             [ &_129 <- _ret ] 
-             [ &rank'1 <- { rank'1 with current = _ret.final } ] 
-            s2)
-      | s2 = incr {_129} (fun (_ret:()) ->  [ &_109 <- _ret ] s3)
-      | s3 = bb58 ]
+      | s1 = incr {rank'1.current} (fun (_ret:t_PeanoInt) ->  [ &_129 <- _ret ] s2)
+      | s2 = bb58 ]
     
     | bb58 = s0
-      [ s0 = -{resolve'8 rank'1}- s1
-      | s1 = {[@expl:type invariant] inv'19 _124} s2
-      | s2 = -{resolve'6 _124}- s3
-      | s3 = bb61 ]
+      [ s0 =  [ &rank'1 <- { rank'1 with current = _129 } ] s1
+      | s1 = -{resolve'8 rank'1}- s2
+      | s2 = {[@expl:type invariant] inv'19 _124} s3
+      | s3 = -{resolve'6 _124}- s4
+      | s4 = bb61 ]
     
     | bb61 = s0
       [ s0 = 
-        [ &_130 <- [%#sunion_find'3] fun (z: t_Element) -> if index_logic'2 (self'0.current).t_UnionFind__root_of z
+        [ &_131 <- [%#sunion_find'3] fun (z: t_Element) -> if index_logic'2 (self'0.current).t_UnionFind__root_of z
         = y'0 then
           x'0
         else
@@ -4211,9 +4205,9 @@ module M_union_find__implementation__qyi1944850640244667852__link [#"union_find.
       | s1 = bb62 ]
     
     | bb62 = s0
-      [ s0 =  [ &self'0 <- { self'0 with current = { self'0.current with t_UnionFind__root_of = _130 } } ] s1
+      [ s0 =  [ &self'0 <- { self'0 with current = { self'0.current with t_UnionFind__root_of = _131 } } ] s1
       | s1 = 
-        [ &_132 <- [%#sunion_find'4] fun (z: t_Element) -> if index_logic'2 (self'0.current).t_UnionFind__root_of z
+        [ &_133 <- [%#sunion_find'4] fun (z: t_Element) -> if index_logic'2 (self'0.current).t_UnionFind__root_of z
         = x'0 then
           vx
         else
@@ -4224,21 +4218,21 @@ module M_union_find__implementation__qyi1944850640244667852__link [#"union_find.
       | s2 = bb63 ]
     
     | bb63 = s0
-      [ s0 =  [ &self'0 <- { self'0 with current = { self'0.current with t_UnionFind__values = _132 } } ] s1
-      | s1 =  [ &_134 <- [%#sunion_find'5] (self'0.current).t_UnionFind__max_depth + 1 ] s2
+      [ s0 =  [ &self'0 <- { self'0 with current = { self'0.current with t_UnionFind__values = _133 } } ] s1
+      | s1 =  [ &_135 <- [%#sunion_find'5] (self'0.current).t_UnionFind__max_depth + 1 ] s2
       | s2 = bb64 ]
     
     | bb64 = s0
-      [ s0 =  [ &self'0 <- { self'0 with current = { self'0.current with t_UnionFind__max_depth = _134 } } ] s1
+      [ s0 =  [ &self'0 <- { self'0 with current = { self'0.current with t_UnionFind__max_depth = _135 } } ] s1
       | s1 = 
-        [ &_136 <- [%#sunion_find'6] Map.set (self'0.current).t_UnionFind__distance x'0 (1
+        [ &_137 <- [%#sunion_find'6] Map.set (self'0.current).t_UnionFind__distance x'0 (1
         + MinMax.max (index_logic'3 (self'0.current).t_UnionFind__distance x'0) (index_logic'3 (self'0.current).t_UnionFind__distance y'0)) ]
         
         s2
       | s2 = bb65 ]
     
     | bb65 = s0
-      [ s0 =  [ &self'0 <- { self'0 with current = { self'0.current with t_UnionFind__distance = _136 } } ] s1
+      [ s0 =  [ &self'0 <- { self'0 with current = { self'0.current with t_UnionFind__distance = _137 } } ] s1
       | s1 = {[@expl:type invariant] inv'7 self'0} s2
       | s2 = -{resolve'0 self'0}- s3
       | s3 =  [ &_0 <- x'0 ] s4
@@ -4304,7 +4298,6 @@ module M_union_find__implementation__qyi1944850640244667852__link [#"union_find.
     | & _101: UInt64.t = Any.any_l ()
     | & _104: t_Content = Any.any_l ()
     | & _106: MutBorrow.t t_Content = Any.any_l ()
-    | & _109: () = Any.any_l ()
     | & _110: bool = Any.any_l ()
     | & perm_mut_x'0:  (MutBorrow.t t_PtrOwn) = Any.any_l ()
     | & _114: MutBorrow.t t_PtrOwn = Any.any_l ()
@@ -4317,11 +4310,11 @@ module M_union_find__implementation__qyi1944850640244667852__link [#"union_find.
     | & _122: UInt64.t = Any.any_l ()
     | & _124: MutBorrow.t t_Content = Any.any_l ()
     | & rank'1: MutBorrow.t t_PeanoInt = Any.any_l ()
-    | & _129: MutBorrow.t t_PeanoInt = Any.any_l ()
-    | & _130: Map.map t_Element t_Element = Any.any_l ()
-    | & _132: Map.map t_Element t_T = Any.any_l ()
-    | & _134: int = Any.any_l ()
-    | & _136: Map.map t_Element int = Any.any_l () ]
+    | & _129: t_PeanoInt = Any.any_l ()
+    | & _131: Map.map t_Element t_Element = Any.any_l ()
+    | & _133: Map.map t_Element t_T = Any.any_l ()
+    | & _135: int = Any.any_l ()
+    | & _137: Map.map t_Element int = Any.any_l () ]
     
     [ return''0 (result:t_Element)-> {[@expl:link ensures #0] [%#sunion_find'12] domain self.final
       = domain self.current}
