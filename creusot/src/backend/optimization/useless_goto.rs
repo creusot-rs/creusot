@@ -5,6 +5,18 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use rustc_middle::mir::BasicBlock;
 
+fn is_empty_block(b: &fmir::Block) -> Option<BasicBlock> {
+    match b {
+        // do it like this so we don't forget fields
+        fmir::Block { invariants, variant, stmts, terminator: Terminator::Goto(bb) }
+            if stmts.is_empty() && invariants.is_empty() && variant.is_none() =>
+        {
+            Some(*bb)
+        }
+        _ => None,
+    }
+}
+
 /// Remove the common pattern:
 /// ```text
 /// bb1:
@@ -22,11 +34,7 @@ pub(super) fn remove_useless_gotos(body: &mut fmir::Body) {
     let mut shortcuts_to = IndexMap::new();
     for bb in graph.nodes() {
         let block = &body.blocks[&bb];
-        if block.stmts.is_empty()
-            && block.variant.is_none()
-            && block.invariants.is_empty()
-            && let Terminator::Goto(to_bb) = block.terminator
-        {
+        if let Some(to_bb) = is_empty_block(block) {
             shortcuts_to.insert(bb, to_bb);
         }
     }
