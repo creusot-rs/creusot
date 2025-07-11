@@ -43,13 +43,15 @@ module M_knapsack_full__sum_weights [#"knapsack_full.rs" 23 0 23 56]
   
   goal vc_sum_weights: ([%#sknapsack_full] 0 <= i /\ i <= Seq.length s)
    -> (if i = Seq.length s then
-    [%#sknapsack_full'0] 0 >= 0
+    [@expl:sum_weights ensures] [%#sknapsack_full'0] 0 >= 0
   else
     (([@expl:sum_weights requires] [%#sknapsack_full] 0 <= i + 1 /\ i + 1 <= Seq.length s)
     /\ 0 <= ([%#sknapsack_full'1] Seq.length s - i)
     /\ ([%#sknapsack_full'1] Seq.length s - (i + 1)) < ([%#sknapsack_full'1] Seq.length s - i))
     /\ (([%#sknapsack_full'0] sum_weights s (i + 1) >= 0)
-     -> ([%#sknapsack_full'0] UInt64.t'int (Seq.get s i).t_Item__weight + sum_weights s (i + 1) >= 0))
+     -> ([@expl:sum_weights ensures] [%#sknapsack_full'0] UInt64.t'int (Seq.get s i).t_Item__weight
+    + sum_weights s (i + 1)
+    >= 0))
   )
 end
 module M_knapsack_full__sum_values [#"knapsack_full.rs" 33 0 33 55]
@@ -207,8 +209,8 @@ module M_knapsack_full__m [#"knapsack_full.rs" 62 0 62 57]
   goal vc_m: ([%#sknapsack_full] 0 <= i /\ i <= Seq.length items)
    -> ([%#sknapsack_full'0] 0 <= w)
    -> (if i = 0 then
-    let result = 0 in ([%#sknapsack_full'1] result >= 0)
-    && ([%#sknapsack_full'2] forall s: Seq.seq t_Item, j: int. 0 <= j
+    let result = 0 in ([@expl:m ensures #0] [%#sknapsack_full'1] result >= 0)
+    && ([@expl:m ensures #1] [%#sknapsack_full'2] forall s: Seq.seq t_Item, j: int. 0 <= j
     /\ j <= Seq.length s /\ subseq_rev s j items i /\ sum_weights s j <= w  -> sum_values s j <= result)
   else
     if UInt64.t'int (Seq.get items (i - 1)).t_Item__weight > w then
@@ -219,8 +221,8 @@ module M_knapsack_full__m [#"knapsack_full.rs" 62 0 62 57]
       && ([%#sknapsack_full'2] forall s: Seq.seq t_Item, j: int. 0 <= j
       /\ j <= Seq.length s /\ subseq_rev s j items (i - 1) /\ sum_weights s j <= w
        -> sum_values s j <= m items (i - 1) w)
-       -> (let result = m items (i - 1) w in ([%#sknapsack_full'1] result >= 0)
-      && ([%#sknapsack_full'2] forall s: Seq.seq t_Item, j: int. 0 <= j
+       -> (let result = m items (i - 1) w in ([@expl:m ensures #0] [%#sknapsack_full'1] result >= 0)
+      && ([@expl:m ensures #1] [%#sknapsack_full'2] forall s: Seq.seq t_Item, j: int. 0 <= j
       /\ j <= Seq.length s /\ subseq_rev s j items i /\ sum_weights s j <= w  -> sum_values s j <= result)))
     else
       ((([@expl:m requires #0] [%#sknapsack_full] 0 <= i - 1 /\ i - 1 <= Seq.length items)
@@ -240,8 +242,8 @@ module M_knapsack_full__m [#"knapsack_full.rs" 62 0 62 57]
        -> sum_values s j <= m items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight))
        -> (let result = MinMax.max (m items (i - 1) w) (m items (i - 1) (w
       - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight)
-      + UInt64.t'int (Seq.get items (i - 1)).t_Item__value) in ([%#sknapsack_full'1] result >= 0)
-      && ([%#sknapsack_full'2] forall s: Seq.seq t_Item, j: int. 0 <= j
+      + UInt64.t'int (Seq.get items (i - 1)).t_Item__value) in ([@expl:m ensures #0] [%#sknapsack_full'1] result >= 0)
+      && ([@expl:m ensures #1] [%#sknapsack_full'2] forall s: Seq.seq t_Item, j: int. 0 <= j
       /\ j <= Seq.length s /\ subseq_rev s j items i /\ sum_weights s j <= w  -> sum_values s j <= result))))
   
   )
@@ -538,9 +540,11 @@ module M_knapsack_full__knapsack01_dyn [#"knapsack_full.rs" 81 0 81 91]
   )
   
   axiom m_spec: forall items: Seq.seq t_Item, i: int, w: int. ([%#sknapsack_full'39] 0 <= i /\ i <= Seq.length items)
+   -> ([%#sknapsack_full'40] 0 <= w)  -> ([%#sknapsack_full'41] m items i w >= 0)
+  
+  axiom m_spec'0: forall items: Seq.seq t_Item, i: int, w: int. ([%#sknapsack_full'39] 0 <= i /\ i <= Seq.length items)
    -> ([%#sknapsack_full'40] 0 <= w)
-   -> ([%#sknapsack_full'41] m items i w >= 0)
-  && ([%#sknapsack_full'42] forall s: Seq.seq t_Item, j: int. 0 <= j
+   -> ([%#sknapsack_full'42] forall s: Seq.seq t_Item, j: int. 0 <= j
   /\ j <= Seq.length s /\ subseq_rev s j items i /\ sum_weights s j <= w  -> sum_values s j <= m items i w)
   
   function deep_model (self: UInt64.t) : int =

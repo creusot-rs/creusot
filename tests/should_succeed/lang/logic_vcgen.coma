@@ -12,7 +12,7 @@ module M_logic_vcgen__bor_1_2 [#"logic_vcgen.rs" 8 0 8 30]
   function bor_1_2 [#"logic_vcgen.rs" 8 0 8 30] (x'0: MutBorrow.t Int32.t) : int
   
   goal vc_bor_1_2: ([%#slogic_vcgen] Int32.to_int x.current = 1 /\ Int32.to_int x.final = 2)
-   -> ([%#slogic_vcgen'0] Int32.to_int x.current - Int32.to_int x.final = - 1)
+   -> ([@expl:bor_1_2 ensures] [%#slogic_vcgen'0] Int32.to_int x.current - Int32.to_int x.final = - 1)
 end
 module M_logic_vcgen__f [#"logic_vcgen.rs" 16 0 16 41]
   let%span slogic_vcgen = "logic_vcgen.rs" 13 11 13 26
@@ -54,7 +54,7 @@ module M_logic_vcgen__f [#"logic_vcgen.rs" 16 0 16 41]
   = 2)
   /\ (([%#slogic_vcgen'3] bor_1_2 (MutBorrow.borrow_logic (index_logic x.current 2)._p0 (index_logic x.final 2)._p0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id x) 2) 1))
   = - 1)
-   -> ([%#slogic_vcgen'1] bor_1_2 (MutBorrow.borrow_logic (index_logic x.current 2)._p0 (index_logic x.final 2)._p0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id x) 2) 1))
+   -> ([@expl:f ensures] [%#slogic_vcgen'1] bor_1_2 (MutBorrow.borrow_logic (index_logic x.current 2)._p0 (index_logic x.final 2)._p0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id x) 2) 1))
   = - 1))
 end
 module M_logic_vcgen__bool_of_int [#"logic_vcgen.rs" 22 0 22 34]
@@ -97,5 +97,9 @@ module M_logic_vcgen__g [#"logic_vcgen.rs" 29 0 29 24]
     bool_of_int (1 - x'0)
   else
     true
-   in if Map.get map x then [%#slogic_vcgen'0] true else [%#slogic_vcgen'0] Map.get map (1 - x))
+   in if Map.get map x then
+    [@expl:g ensures] [%#slogic_vcgen'0] true
+  else
+    [@expl:g ensures] [%#slogic_vcgen'0] Map.get map (1 - x)
+  )
 end

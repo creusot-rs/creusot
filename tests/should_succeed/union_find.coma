@@ -233,8 +233,10 @@ module M_union_find__implementation__qyi1944850640244667852__new [#"union_find.r
   predicate ext_eq (self: t_FMap) (other: t_FMap) =
     [%#sfmap'4] view self = view other
   
-  axiom ext_eq_spec: forall self: t_FMap, other: t_FMap. ([%#sfmap'2] ext_eq self other  -> self = other)
-  && ([%#sfmap'3] (forall k: UInt64.t. get self k = get other k)  -> ext_eq self other)
+  axiom ext_eq_spec: forall self: t_FMap, other: t_FMap. [%#sfmap'2] ext_eq self other  -> self = other
+  
+  axiom ext_eq_spec'0: forall self: t_FMap, other: t_FMap. [%#sfmap'3] (forall k: UInt64.t. get self k = get other k)
+   -> ext_eq self other
   
   function len (self: t_FMap) : int
   
@@ -242,7 +244,9 @@ module M_union_find__implementation__qyi1944850640244667852__new [#"union_find.r
   
   constant empty  : t_FMap
   
-  axiom empty_spec: ([%#sfmap'5] len empty = 0) && ([%#sfmap'6] view empty = Const.const (C_None))
+  axiom empty_spec: [%#sfmap'5] len empty = 0
+  
+  axiom empty_spec'0: [%#sfmap'6] view empty = Const.const (C_None)
   
   predicate is_empty (self: t_FMap) =
     [%#sfmap'1] ext_eq self empty
@@ -596,7 +600,7 @@ module M_union_find__implementation__qyi1944850640244667852__domain [#"union_fin
   function domain [#"union_find.rs" 127 8 127 47] (self'0: t_UnionFind) : Fset.fset t_Element
   
   goal vc_domain: ([%#sunion_find] inv'6 self)
-   -> (let result = self.t_UnionFind__domain in [%#sunion_find'0] forall e1: t_Element, e2: t_Element. contains result e1
+   -> (let result = self.t_UnionFind__domain in [@expl:domain ensures] [%#sunion_find'0] forall e1: t_Element, e2: t_Element. contains result e1
   /\ contains result e2 /\ deep_model e1 = deep_model e2  -> e1 = e2)
 end
 module M_union_find__implementation__qyi1944850640244667852__root_of [#"union_find.rs" 138 8 138 63] (* implementation::UnionFind<T> *)
@@ -810,7 +814,7 @@ module M_union_find__implementation__qyi1944850640244667852__root_of [#"union_fi
   function root_of [#"union_find.rs" 138 8 138 63] (self'0: t_UnionFind) : Map.map t_Element t_Element
   
   goal vc_root_of: ([%#sunion_find] inv'6 self)
-   -> (let result = self.t_UnionFind__root_of in [%#sunion_find'0] forall e: t_Element. contains self.t_UnionFind__domain e
+   -> (let result = self.t_UnionFind__root_of in [@expl:root_of ensures] [%#sunion_find'0] forall e: t_Element. contains self.t_UnionFind__domain e
    -> index_logic'2 result e = index_logic'2 result (index_logic'2 result e))
 end
 module M_union_find__implementation__qyi1944850640244667852__values [#"union_find.rs" 146 8 146 53] (* implementation::UnionFind<T> *)
@@ -1034,7 +1038,7 @@ module M_union_find__implementation__qyi1944850640244667852__values [#"union_fin
   function values [#"union_find.rs" 146 8 146 53] (self'0: t_UnionFind) : Map.map t_Element t_T
   
   goal vc_values: ([%#sunion_find] inv'6 self)
-   -> (let result = self.t_UnionFind__values in [%#sunion_find'0] forall e: t_Element. contains self.t_UnionFind__domain e
+   -> (let result = self.t_UnionFind__values in [@expl:values ensures] [%#sunion_find'0] forall e: t_Element. contains self.t_UnionFind__domain e
    -> index_logic'1 result e = index_logic'1 result (index_logic'2 (root_of self) e))
 end
 module M_union_find__implementation__qyi1944850640244667852__make [#"union_find.rs" 165 8 165 54] (* implementation::UnionFind<T> *)
@@ -1379,9 +1383,11 @@ module M_union_find__implementation__qyi1944850640244667852__make [#"union_find.
   
   function insert (self: t_FMap) (k: UInt64.t) (v: t_PtrOwn) : t_FMap
   
-  axiom insert_spec: forall self: t_FMap, k: UInt64.t, v: t_PtrOwn. ([%#sfmap'13] view (insert self k v)
-  = Map.set (view self) k (C_Some v))
-  && ([%#sfmap'14] len (insert self k v) = (if contains self k then len self else len self + 1))
+  axiom insert_spec: forall self: t_FMap, k: UInt64.t, v: t_PtrOwn. [%#sfmap'13] view (insert self k v)
+  = Map.set (view self) k (C_Some v)
+  
+  axiom insert_spec'0: forall self: t_FMap, k: UInt64.t, v: t_PtrOwn. [%#sfmap'14] len (insert self k v)
+  = (if contains self k then len self else len self + 1)
   
   let rec insert_ghost (self:MutBorrow.t t_FMap) (key:UInt64.t) (value:t_PtrOwn) (return'  (x:t_Option))= {[@expl:insert_ghost 'self' type invariant] [%#sfmap'4] inv'9 self}
     {[@expl:insert_ghost 'value' type invariant] [%#sfmap'5] inv'2 value}

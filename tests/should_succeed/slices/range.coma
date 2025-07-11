@@ -62,17 +62,20 @@ module M_range__slice_range_inclusive [#"range.rs" 6 0 6 43]
   
   predicate in_bounds (self: t_RangeInclusive) (seq: Seq.seq UInt32.t)
   
-  axiom in_bounds_spec: forall self: t_RangeInclusive, seq: Seq.seq UInt32.t. ([%#sslice'6] UInt64.t'int (end_log self)
+  axiom in_bounds_spec: forall self: t_RangeInclusive, seq: Seq.seq UInt32.t. [%#sslice'6] UInt64.t'int (end_log self)
   < Seq.length seq
-  /\ UInt64.t'int (start_log self) <= UInt64.t'int (end_log self) + 1  -> in_bounds self seq)
-  && ([%#sslice'7] UInt64.t'int (end_log self) >= Seq.length seq  -> not in_bounds self seq)
+  /\ UInt64.t'int (start_log self) <= UInt64.t'int (end_log self) + 1  -> in_bounds self seq
+  
+  axiom in_bounds_spec'0: forall self: t_RangeInclusive, seq: Seq.seq UInt32.t. [%#sslice'7] UInt64.t'int (end_log self)
+  >= Seq.length seq  -> not in_bounds self seq
   
   constant v_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function view (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t
   
-  axiom view_spec: forall self: Slice64.slice UInt32.t. ([%#sslice'4] Seq.length (view self) <= UInt64.t'int v_MAX)
-  && ([%#sslice'5] view self = Slice64.id self)
+  axiom view_spec: forall self: Slice64.slice UInt32.t. [%#sslice'4] Seq.length (view self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'0: forall self: Slice64.slice UInt32.t. [%#sslice'5] view self = Slice64.id self
   
   function view'0 (self: MutBorrow.t (Slice64.slice UInt32.t)) : Seq.seq UInt32.t =
     [%#smodel] view self.current

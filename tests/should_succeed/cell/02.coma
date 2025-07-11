@@ -39,16 +39,17 @@ module M_02__lemma_fib_bound [#"02.rs" 47 0 47 30]
   
   goal vc_lemma_fib_bound: ([%#s02] 0 <= i)
    -> (if i = 0 then
-    [%#s02'0] fib i <= Power.power 2 i
+    [@expl:lemma_fib_bound ensures] [%#s02'0] fib i <= Power.power 2 i
   else
     if i = 1 then
-      [%#s02'0] fib i <= Power.power 2 i
+      [@expl:lemma_fib_bound ensures] [%#s02'0] fib i <= Power.power 2 i
     else
       (([@expl:lemma_fib_bound requires] [%#s02] 0 <= i - 2) /\ 0 <= ([%#s02'1] i) /\ ([%#s02'1] i - 2) < ([%#s02'1] i))
       /\ (([%#s02'0] fib (i - 2) <= Power.power 2 (i - 2))
        -> (let _ = lemma_fib_bound (i - 2) in (([@expl:lemma_fib_bound requires] [%#s02] 0 <= i - 1)
       /\ 0 <= ([%#s02'1] i) /\ ([%#s02'1] i - 1) < ([%#s02'1] i))
-      /\ (([%#s02'0] fib (i - 1) <= Power.power 2 (i - 1))  -> ([%#s02'0] fib i <= Power.power 2 i))))
+      /\ (([%#s02'0] fib (i - 1) <= Power.power 2 (i - 1))
+       -> ([@expl:lemma_fib_bound ensures] [%#s02'0] fib i <= Power.power 2 i))))
   
   )
 end

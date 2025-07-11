@@ -116,9 +116,10 @@ module M_12_borrow_instances__test1 [#"12_borrow_instances.rs" 9 0 9 59]
   
   function test1 [#"12_borrow_instances.rs" 9 0 9 59] (x'0: t_F) (n'0: UInt32.t) (r'0: bool) : ()
   
-  goal vc_test1: ([%#s12_borrow_instances] postcondition'0 x n r = postcondition x n r)
-  && ([%#s12_borrow_instances'0] forall xx: t_F. postcondition_mut'0 x n xx r = (postcondition x n r /\ x = xx))
-  && ([%#s12_borrow_instances'1] postcondition_once'0 x n r = postcondition x n r)
+  goal vc_test1: ([@expl:test1 ensures #0] [%#s12_borrow_instances] postcondition'0 x n r = postcondition x n r)
+  && ([@expl:test1 ensures #1] [%#s12_borrow_instances'0] forall xx: t_F. postcondition_mut'0 x n xx r
+  = (postcondition x n r /\ x = xx))
+  && ([@expl:test1 ensures #2] [%#s12_borrow_instances'1] postcondition_once'0 x n r = postcondition x n r)
 end
 module M_12_borrow_instances__test2 [#"12_borrow_instances.rs" 15 0 15 66]
   let%span s12_borrow_instances = "12_borrow_instances.rs" 13 10 13 130
@@ -209,7 +210,8 @@ module M_12_borrow_instances__test2 [#"12_borrow_instances.rs" 15 0 15 66]
   
   function test2 [#"12_borrow_instances.rs" 15 0 15 66] (x'0: MutBorrow.t t_F) (n'0: UInt32.t) (r'0: bool) : ()
   
-  goal vc_test2: ([%#s12_borrow_instances] forall xx: MutBorrow.t t_F. postcondition_mut'0 x n xx r
+  goal vc_test2: ([@expl:test2 ensures #0] [%#s12_borrow_instances] forall xx: MutBorrow.t t_F. postcondition_mut'0 x n xx r
   = (postcondition_mut x.current n xx.current r /\ x.final = xx.final))
-  && ([%#s12_borrow_instances'0] postcondition_once'0 x n r = postcondition_mut x.current n x.final r)
+  && ([@expl:test2 ensures #1] [%#s12_borrow_instances'0] postcondition_once'0 x n r
+  = postcondition_mut x.current n x.final r)
 end
