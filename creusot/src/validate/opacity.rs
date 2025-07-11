@@ -9,7 +9,7 @@ use rustc_target::abi::VariantIdx;
 use crate::{
     backend::projections::iter_projections_ty,
     contracts_items::is_spec,
-    ctx::{Opacity, TranslationCtx},
+    ctx::{HasTyCtxt, Opacity, TranslationCtx},
     translation::pearlite::{
         Pattern, PatternKind, ScopedTerm, Term, TermKind, TermVisitor, super_visit_pattern,
         super_visit_term,
