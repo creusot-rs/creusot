@@ -275,18 +275,18 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     return_ident: Ident,
     c: Component<BasicBlock>,
 ) -> Defn {
-    let mut lower =
+    let lower =
         LoweringState { ctx, names, locals: &body.locals, def_id, block_idents, return_ident };
     let (head, tl) = match c {
         Component::Vertex(v) => {
             let block = body.blocks.shift_remove(&v).unwrap();
-            return block.into_why(&mut lower, v);
+            return block.into_why(&lower, v);
         }
         Component::Component(v, tls) => (v, tls),
     };
 
     let block = body.blocks.shift_remove(&head).unwrap();
-    let mut block = block.into_why(&mut lower, head);
+    let mut block = block.into_why(&lower, head);
 
     let defns = tl
         .into_iter()
@@ -362,7 +362,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
 impl<'tcx> Operand<'tcx> {
     fn into_why<N: Namer<'tcx>>(
         self,
-        lower: &mut LoweringState<'_, 'tcx, N>,
+        lower: &LoweringState<'_, 'tcx, N>,
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
         match self {
@@ -387,7 +387,7 @@ impl<'tcx> RValue<'tcx> {
     fn into_why<N: Namer<'tcx>>(
         self,
         span: Span,
-        lower: &mut LoweringState<'_, 'tcx, N>,
+        lower: &LoweringState<'_, 'tcx, N>,
         ty: Ty<'tcx>,
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
@@ -705,7 +705,7 @@ impl<'tcx> RValue<'tcx> {
 impl<'tcx> Terminator<'tcx> {
     fn into_why<N: Namer<'tcx>>(
         self,
-        lower: &mut LoweringState<'_, 'tcx, N>,
+        lower: &LoweringState<'_, 'tcx, N>,
     ) -> (Vec<IntermediateStmt>, Expr) {
         let mut istmts = vec![];
         let exp = match self {
@@ -871,11 +871,7 @@ fn mk_switch_branches(
 }
 
 impl<'tcx> Block<'tcx> {
-    fn into_why<N: Namer<'tcx>>(
-        self,
-        lower: &mut LoweringState<'_, 'tcx, N>,
-        id: BasicBlock,
-    ) -> Defn {
+    fn into_why<N: Namer<'tcx>>(self, lower: &LoweringState<'_, 'tcx, N>, id: BasicBlock) -> Defn {
         let mut statements = vec![];
 
         let cont0 = Ident::fresh_local("s0");
@@ -959,10 +955,7 @@ impl IntermediateStmt {
 }
 
 impl<'tcx> Statement<'tcx> {
-    fn into_why<N: Namer<'tcx>>(
-        self,
-        lower: &mut LoweringState<'_, 'tcx, N>,
-    ) -> Vec<IntermediateStmt> {
+    fn into_why<N: Namer<'tcx>>(self, lower: &LoweringState<'_, 'tcx, N>) -> Vec<IntermediateStmt> {
         let mut istmts = Vec::new();
         match self.kind {
             StatementKind::Assignment(lhs, RValue::Borrow(bor_kind, rhs, triv_inv)) => {
@@ -1170,7 +1163,7 @@ fn pattern_of_place<'tcx>(
 }
 
 fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
-    lower: &mut LoweringState<'_, 'tcx, N>,
+    lower: &LoweringState<'_, 'tcx, N>,
     id: DefId,
     subst: GenericArgsRef<'tcx>,
     args: Box<[Operand<'tcx>]>,
