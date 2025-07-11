@@ -66,8 +66,6 @@ fn optimize_builtin<'tcx>(
         Some("mach.int.Int.(+)") => Some(Add),
         Some("mach.int.Int.(-)") => Some(Sub),
         Some("mach.int.Int.(*)") => Some(Mul),
-        Some("mach.int.Int.(/)") => Some(Div),
-        Some("mach.int.Int.(%)") => Some(Rem),
         Some("mach.int.Int.(<=)") => Some(Le),
         Some("mach.int.Int.(<)") => Some(Lt),
         Some("mach.int.Int.(>=)") => Some(Ge),
