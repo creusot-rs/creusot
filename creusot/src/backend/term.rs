@@ -3,7 +3,10 @@ use crate::{
         Why3Generator,
         program::{PtrCastKind, ptr_cast_kind},
         projections::{Focus, borrow_generated_id, projections_to_expr},
-        ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude},
+        ty::{
+            constructor, floatty_to_prelude, ity_to_prelude, translate_ty, ty_to_prelude,
+            uty_to_prelude,
+        },
     },
     contracts_items::is_builtins_ascription,
     ctx::*,
@@ -165,40 +168,20 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Var(v) => Exp::var(v.0),
             TermKind::Binary { op, box lhs, box rhs } => {
+                let rhs_ty = rhs.ty.kind();
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
 
                 use BinOp::*;
-                match op {
-                    BitAnd | BitOr | BitXor | Shl | Shr | Div | Rem => {
-                        let prelude = match term.ty.kind() {
-                            TyKind::Int(ity) => ity_to_prelude(self.names.tcx(), *ity),
-                            TyKind::Uint(uty) => uty_to_prelude(self.names.tcx(), *uty),
-                            _ => unreachable!("the operator {op:?} is only available on integer"),
-                        };
-
-                        let func_name = match (op, term.ty.kind()) {
-                            (BitAnd, _) => "bw_and",
-                            (BitOr, _) => "bw_or",
-                            (BitXor, _) => "bw_xor",
-                            (Shl, _) => "lsl_bv",
-                            (Shr, TyKind::Int(_)) => "asr_bv",
-                            (Shr, TyKind::Uint(_)) => "lsr_bv",
-                            (Div, TyKind::Int(_)) => "sdiv",
-                            (Div, TyKind::Uint(_)) => "udiv",
-                            (Rem, TyKind::Int(_)) => "srem",
-                            (Rem, TyKind::Uint(_)) => "urem",
-                            _ => unreachable!(),
-                        };
-
-                        Exp::qvar(self.names.in_pre(prelude, func_name)).app([lhs, rhs])
+                if let Some(fun) = binop_function(self.names, *op, term.ty.kind()) {
+                    let rhs =
+                        if binop_right_int(*op) { self.names.to_int_app(rhs_ty, rhs) } else { rhs };
+                    Exp::qvar(fun).app([lhs, rhs])
+                } else {
+                    if matches!(op, Add | Sub | Mul | Le | Ge | Lt | Gt) {
+                        self.names.import_prelude_module(PreMod::Int);
                     }
-                    _ => {
-                        if matches!(op, Add | Sub | Mul | Le | Ge | Lt | Gt) {
-                            self.names.import_prelude_module(PreMod::Int);
-                        }
-                        Exp::BinaryOp(binop_to_binop(*op), lhs.boxed(), rhs.boxed())
-                    }
+                    Exp::BinaryOp(binop_to_binop(*op), lhs.boxed(), rhs.boxed())
                 }
             }
             TermKind::Unary { op, box arg } => {
@@ -508,11 +491,36 @@ pub(crate) fn binop_to_binop(op: BinOp) -> WBinOp {
         BinOp::Ne => WBinOp::Ne,
         BinOp::And => WBinOp::LogAnd,
         BinOp::Or => WBinOp::LogOr,
-        BinOp::BitAnd => WBinOp::BitAnd,
-        BinOp::BitOr => WBinOp::BitOr,
-        BinOp::BitXor => WBinOp::BitXor,
-        BinOp::Shl => WBinOp::Shl,
-        BinOp::Shr => WBinOp::Shr,
-        BinOp::Div | BinOp::Rem => unreachable!("Div and Rem are handled separately"),
+        BinOp::BitAnd | BinOp::BitOr | BinOp::BitXor | BinOp::Shl | BinOp::Shr => {
+            unreachable!("Bitwise operations are handled separately")
+        }
+    }
+}
+
+/// Return the Why3 function name of a `BinOp`, if it exists.
+pub(crate) fn binop_function<'tcx, N: Namer<'tcx>>(
+    namer: &N,
+    op: BinOp,
+    ty: &TyKind,
+) -> Option<why3::QName> {
+    use BinOp::*;
+    let name = match op {
+        BitAnd => "bw_and",
+        BitOr => "bw_or",
+        BitXor => "bw_xor",
+        Shl => "lsl",
+        Shr => "shr",
+        _ => return None,
+    };
+    Some(namer.in_pre(ty_to_prelude(namer.tcx(), ty), name))
+}
+
+/// `true` if the binop expects the right operand to be cast to type `int`.
+/// This is for `Shl`/`Shr` which allow left and right operands to have different types.
+pub(crate) fn binop_right_int(op: BinOp) -> bool {
+    use BinOp::*;
+    match op {
+        Shl | Shr => true,
+        _ => false,
     }
 }
