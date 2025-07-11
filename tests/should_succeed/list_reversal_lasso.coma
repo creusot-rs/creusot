@@ -1076,13 +1076,13 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_ptr_in_seq [#"list_re
   
   goal vc_find_ptr_in_seq: ([%#slist_reversal_lasso] 0 <= i /\ i <= Seq.length s)
    -> (if i = Seq.length s then
-    [%#slist_reversal_lasso'0] match C_None with
+    [@expl:find_ptr_in_seq ensures] [%#slist_reversal_lasso'0] match C_None with
       | C_None -> forall j: int. i <= j /\ j < Seq.length s  -> UInt64.t'int (Seq.get s j) <> p
       | C_Some j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
       end
   else
     if UInt64.t'int (Seq.get s i) = p then
-      [%#slist_reversal_lasso'0] match C_Some i with
+      [@expl:find_ptr_in_seq ensures] [%#slist_reversal_lasso'0] match C_Some i with
         | C_None -> forall j: int. i <= j /\ j < Seq.length s  -> UInt64.t'int (Seq.get s j) <> p
         | C_Some j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
         end
@@ -1094,7 +1094,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_ptr_in_seq [#"list_re
         | C_None -> forall j: int. i + 1 <= j /\ j < Seq.length s  -> UInt64.t'int (Seq.get s j) <> p
         | C_Some j -> i + 1 <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
         end)
-       -> ([%#slist_reversal_lasso'0] match find_ptr_in_seq s (i + 1) p with
+       -> ([@expl:find_ptr_in_seq ensures] [%#slist_reversal_lasso'0] match find_ptr_in_seq s (i + 1) p with
         | C_None -> forall j: int. i <= j /\ j < Seq.length s  -> UInt64.t'int (Seq.get s j) <> p
         | C_Some j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
         end))
@@ -1151,7 +1151,8 @@ module M_list_reversal_lasso__qyi2644757663130641572__pigeon [#"list_reversal_la
    -> ([%#slist_reversal_lasso'1] forall i: int, j: int. 0 <= i
   /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
    -> (if n = 0 then
-    ([%#slist_reversal_lasso'2] Seq.length s <= n) && ([%#slist_reversal_lasso'3] true)
+    ([@expl:pigeon ensures #0] [%#slist_reversal_lasso'2] Seq.length s <= n)
+    && ([@expl:pigeon ensures #1] [%#slist_reversal_lasso'3] true)
   else
     ([@expl:find_ptr_in_seq requires] [%#slist_reversal_lasso'5] 0 <= 0 /\ 0 <= Seq.length s)
     /\ (([%#slist_reversal_lasso'6] match find_ptr_in_seq s 0 (n - 1) with
@@ -1166,7 +1167,8 @@ module M_list_reversal_lasso__qyi2644757663130641572__pigeon [#"list_reversal_la
       /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j))
       /\ 0 <= ([%#slist_reversal_lasso'4] n) /\ ([%#slist_reversal_lasso'4] n - 1) < ([%#slist_reversal_lasso'4] n))
       /\ (([%#slist_reversal_lasso'2] Seq.length s <= n - 1) && ([%#slist_reversal_lasso'3] pigeon s (n - 1))
-       -> ([%#slist_reversal_lasso'2] Seq.length s <= n) && ([%#slist_reversal_lasso'3] pigeon s (n - 1)))
+       -> ([@expl:pigeon ensures #0] [%#slist_reversal_lasso'2] Seq.length s <= n)
+      && ([@expl:pigeon ensures #1] [%#slist_reversal_lasso'3] pigeon s (n - 1)))
       | C_Some i -> ([@expl:find_ptr_in_seq requires] [%#slist_reversal_lasso'5] 0 <= i + 1 /\ i + 1 <= Seq.length s)
       /\ (([%#slist_reversal_lasso'6] match find_ptr_in_seq s (i + 1) (n - 1) with
         | C_None -> forall j: int. i + 1 <= j /\ j < Seq.length s  -> UInt64.t'int (Seq.get s j) <> n - 1
@@ -1187,10 +1189,11 @@ module M_list_reversal_lasso__qyi2644757663130641572__pigeon [#"list_reversal_la
         <= n - 1)
         && ([%#slist_reversal_lasso'3] pigeon (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) (n
         - 1))
-         -> ([%#slist_reversal_lasso'2] Seq.length s <= n)
-        && ([%#slist_reversal_lasso'3] pigeon (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) (n
-        - 1)))
-        | C_Some _ -> ([%#slist_reversal_lasso'2] Seq.length s <= n) && ([%#slist_reversal_lasso'3] true)
+         -> ([@expl:pigeon ensures #0] [%#slist_reversal_lasso'2] Seq.length s <= n)
+        && ([@expl:pigeon ensures #1] [%#slist_reversal_lasso'3] pigeon (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i
+        + 1) (Seq.length s))) (n - 1)))
+        | C_Some _ -> ([@expl:pigeon ensures #0] [%#slist_reversal_lasso'2] Seq.length s <= n)
+        && ([@expl:pigeon ensures #1] [%#slist_reversal_lasso'3] true)
         end)
       end)
   )
@@ -1348,7 +1351,13 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso_aux [#"list_rev
    -> ([%#slist_reversal_lasso'8] forall i: int. 0 <= i /\ i < Seq.length s  -> UInt64.t'int (Seq.get s i) < n)
    -> ([%#slist_reversal_lasso'9] forall i: int, j: int. 0 <= i
   /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
-   -> ([%#slist_reversal_lasso'10] Seq.length s <= n) && ([%#slist_reversal_lasso'11] pigeon s n)
+   -> ([%#slist_reversal_lasso'10] Seq.length s <= n)
+  
+  axiom pigeon_spec'0: forall s: Seq.seq UInt64.t, n: int. ([%#slist_reversal_lasso'7] 0 <= n)
+   -> ([%#slist_reversal_lasso'8] forall i: int. 0 <= i /\ i < Seq.length s  -> UInt64.t'int (Seq.get s i) < n)
+   -> ([%#slist_reversal_lasso'9] forall i: int, j: int. 0 <= i
+  /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
+   -> ([%#slist_reversal_lasso'11] pigeon s n)
   
   constant self  : t_Memory
   
@@ -1365,7 +1374,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso_aux [#"list_rev
    -> ([%#slist_reversal_lasso'0] last = v_NULL \/ nonnull_ptr self last)
    -> ([%#slist_reversal_lasso'1] list_seg self first s last 0 (Seq.length s))
    -> (if last = v_NULL then
-    [%#slist_reversal_lasso'2] match { _p0 = s; _p1 = C_None } with
+    [@expl:find_lasso_aux ensures] [%#slist_reversal_lasso'2] match { _p0 = s; _p1 = C_None } with
       | {_p0 = s'0 ; _p1 = C_None} -> list self first s'0
       | {_p0 = s1 ; _p1 = C_Some s2} -> lasso self first s1 s2
       end
@@ -1396,18 +1405,19 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso_aux [#"list_rev
           | {_p0 = s'0 ; _p1 = C_None} -> list self first s'0
           | {_p0 = s1 ; _p1 = C_Some s2} -> lasso self first s1 s2
           end)
-         -> ([%#slist_reversal_lasso'2] match find_lasso_aux self first (index_logic'0 self last) (Seq.snoc s last) with
+         -> ([@expl:find_lasso_aux ensures] [%#slist_reversal_lasso'2] match find_lasso_aux self first (index_logic'0 self last) (Seq.snoc s last) with
           | {_p0 = s'0 ; _p1 = C_None} -> list self first s'0
           | {_p0 = s1 ; _p1 = C_Some s2} -> lasso self first s1 s2
           end))
       else
-        [%#slist_reversal_lasso'2] match { _p0 = s; _p1 = C_None } with
+        [@expl:find_lasso_aux ensures] [%#slist_reversal_lasso'2] match { _p0 = s; _p1 = C_None } with
           | {_p0 = s'0 ; _p1 = C_None} -> list self first s'0
           | {_p0 = s1 ; _p1 = C_Some s2} -> lasso self first s1 s2
           end
       ))
-      | C_Some'0 i -> [%#slist_reversal_lasso'2] match { _p0 = Seq.([..]) s 0 (i + 1);
-                                                         _p1 = C_Some (Seq.([..]) s (i + 1) (Seq.length s)) } with
+      | C_Some'0 i -> [@expl:find_lasso_aux ensures] [%#slist_reversal_lasso'2] match { _p0 = Seq.([..]) s 0 (i + 1);
+                                                                                        _p1 = C_Some (Seq.([..]) s (i
+                                                                                        + 1) (Seq.length s)) } with
         | {_p0 = s'0 ; _p1 = C_None} -> list self first s'0
         | {_p0 = s1 ; _p1 = C_Some s2} -> lasso self first s1 s2
         end
@@ -1571,7 +1581,13 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso [#"list_reversa
    -> ([%#slist_reversal_lasso'21] forall i: int. 0 <= i /\ i < Seq.length s  -> UInt64.t'int (Seq.get s i) < n)
    -> ([%#slist_reversal_lasso'22] forall i: int, j: int. 0 <= i
   /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
-   -> ([%#slist_reversal_lasso'23] Seq.length s <= n) && ([%#slist_reversal_lasso'24] pigeon s n)
+   -> ([%#slist_reversal_lasso'23] Seq.length s <= n)
+  
+  axiom pigeon_spec'0: forall s: Seq.seq UInt64.t, n: int. ([%#slist_reversal_lasso'20] 0 <= n)
+   -> ([%#slist_reversal_lasso'21] forall i: int. 0 <= i /\ i < Seq.length s  -> UInt64.t'int (Seq.get s i) < n)
+   -> ([%#slist_reversal_lasso'22] forall i: int, j: int. 0 <= i
+  /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
+   -> ([%#slist_reversal_lasso'24] pigeon s n)
   
   function find_lasso_aux [#"list_reversal_lasso.rs" 238 4 238 95] (self: t_Memory) (first: UInt64.t) (last: UInt64.t) (s: Seq.seq UInt64.t) : tuple
   
@@ -1616,7 +1632,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso [#"list_reversa
     | {_p0 = s ; _p1 = C_None} -> list self first s
     | {_p0 = s1 ; _p1 = C_Some s2} -> lasso self first s1 s2
     end)
-   -> ([%#slist_reversal_lasso'1] match find_lasso_aux self first first (Seq.empty: Seq.seq UInt64.t) with
+   -> ([@expl:find_lasso ensures] [%#slist_reversal_lasso'1] match find_lasso_aux self first first (Seq.empty: Seq.seq UInt64.t) with
     | {_p0 = s ; _p1 = C_None} -> list self first s
     | {_p0 = s1 ; _p1 = C_Some s2} -> lasso self first s1 s2
     end))

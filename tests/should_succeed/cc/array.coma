@@ -81,8 +81,9 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   
   function view'0 (self: Slice64.slice Int32.t) : Seq.seq Int32.t
   
-  axiom view_spec: forall self: Slice64.slice Int32.t. ([%#sslice'8] Seq.length (view'0 self) <= UInt64.t'int v_MAX)
-  && ([%#sslice'9] view'0 self = Slice64.id self)
+  axiom view_spec: forall self: Slice64.slice Int32.t. [%#sslice'8] Seq.length (view'0 self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'0: forall self: Slice64.slice Int32.t. [%#sslice'9] view'0 self = Slice64.id self
   
   function view'1 (self: Slice64.slice Int32.t) : Seq.seq Int32.t =
     [%#smodel'1] view'0 self
@@ -92,10 +93,11 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   
   function to_ref_seq (self: Slice64.slice Int32.t) : Seq.seq Int32.t
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice Int32.t. ([%#sslice'10] Seq.length (to_ref_seq self)
-  = Seq.length (view'1 self))
-  && ([%#sslice'11] forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
-   -> Seq.get (to_ref_seq self) i = index_logic self i)
+  axiom to_ref_seq_spec: forall self: Slice64.slice Int32.t. [%#sslice'10] Seq.length (to_ref_seq self)
+  = Seq.length (view'1 self)
+  
+  axiom to_ref_seq_spec'0: forall self: Slice64.slice Int32.t. [%#sslice'11] forall i: int. 0 <= i
+  /\ i < Seq.length (to_ref_seq self)  -> Seq.get (to_ref_seq self) i = index_logic self i
   
   predicate produces (self: t_Iter) (visited: Seq.seq Int32.t) (tl: t_Iter) =
     [%#sslice'1] to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))

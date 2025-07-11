@@ -106,8 +106,10 @@ module M_ghost_map__ghost_map [#"ghost_map.rs" 4 0 4 18]
   predicate ext_eq (self: t_FMap) (other: t_FMap) =
     [%#sfmap'24] view self = view other
   
-  axiom ext_eq_spec: forall self: t_FMap, other: t_FMap. ([%#sfmap'22] ext_eq self other  -> self = other)
-  && ([%#sfmap'23] (forall k: Int32.t. get self k = get other k)  -> ext_eq self other)
+  axiom ext_eq_spec: forall self: t_FMap, other: t_FMap. [%#sfmap'22] ext_eq self other  -> self = other
+  
+  axiom ext_eq_spec'0: forall self: t_FMap, other: t_FMap. [%#sfmap'23] (forall k: Int32.t. get self k = get other k)
+   -> ext_eq self other
   
   function len (self: t_FMap) : int
   
@@ -115,7 +117,9 @@ module M_ghost_map__ghost_map [#"ghost_map.rs" 4 0 4 18]
   
   constant empty  : t_FMap
   
-  axiom empty_spec: ([%#sfmap'25] len empty = 0) && ([%#sfmap'26] view empty = Const.const (C_None))
+  axiom empty_spec: [%#sfmap'25] len empty = 0
+  
+  axiom empty_spec'0: [%#sfmap'26] view empty = Const.const (C_None)
   
   predicate is_empty (self: t_FMap) =
     [%#sfmap'14] ext_eq self empty
@@ -135,9 +139,11 @@ module M_ghost_map__ghost_map [#"ghost_map.rs" 4 0 4 18]
   
   function insert (self: t_FMap) (k: Int32.t) (v: Int32.t) : t_FMap
   
-  axiom insert_spec: forall self: t_FMap, k: Int32.t, v: Int32.t. ([%#sfmap'15] view (insert self k v)
-  = Map.set (view self) k (C_Some v))
-  && ([%#sfmap'16] len (insert self k v) = (if contains self k then len self else len self + 1))
+  axiom insert_spec: forall self: t_FMap, k: Int32.t, v: Int32.t. [%#sfmap'15] view (insert self k v)
+  = Map.set (view self) k (C_Some v)
+  
+  axiom insert_spec'0: forall self: t_FMap, k: Int32.t, v: Int32.t. [%#sfmap'16] len (insert self k v)
+  = (if contains self k then len self else len self + 1)
   
   let rec insert_ghost (self:MutBorrow.t t_FMap) (key:Int32.t) (value:Int32.t) (return'  (x:t_Option))= any
     [ return''0 (result:t_Option)-> {[%#sfmap'1] self.final = insert self.current key value}
@@ -224,9 +230,10 @@ module M_ghost_map__ghost_map [#"ghost_map.rs" 4 0 4 18]
   
   function remove (self: t_FMap) (k: Int32.t) : t_FMap
   
-  axiom remove_spec: forall self: t_FMap, k: Int32.t. ([%#sfmap'19] view (remove self k)
-  = Map.set (view self) k (C_None))
-  && ([%#sfmap'20] len (remove self k) = (if contains self k then len self - 1 else len self))
+  axiom remove_spec: forall self: t_FMap, k: Int32.t. [%#sfmap'19] view (remove self k) = Map.set (view self) k (C_None)
+  
+  axiom remove_spec'0: forall self: t_FMap, k: Int32.t. [%#sfmap'20] len (remove self k)
+  = (if contains self k then len self - 1 else len self)
   
   let rec split_mut_ghost (self:MutBorrow.t t_FMap) (key:Int32.t) (return'  (x:tuple))= any
     [ return''0 (result:tuple)-> {[%#sfmap'8] if contains self.current key then

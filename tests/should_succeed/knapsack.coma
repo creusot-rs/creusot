@@ -50,13 +50,13 @@ module M_knapsack__m [#"knapsack.rs" 31 0 31 57]
   goal vc_m: ([%#sknapsack] 0 <= i /\ i <= Seq.length items)
    -> ([%#sknapsack'0] 0 <= w)
    -> (if i = 0 then
-    [%#sknapsack'1] 0 >= 0
+    [@expl:m ensures] [%#sknapsack'1] 0 >= 0
   else
     if UInt64.t'int (Seq.get items (i - 1)).t_Item__weight > w then
       ((([@expl:m requires #0] [%#sknapsack] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w))
       /\ 0 <= ([%#sknapsack'2] i) /\ ([%#sknapsack'2] i - 1) < ([%#sknapsack'2] i))
-      /\ (([%#sknapsack'1] m items (i - 1) w >= 0)  -> ([%#sknapsack'1] m items (i - 1) w >= 0))
+      /\ (([%#sknapsack'1] m items (i - 1) w >= 0)  -> ([@expl:m ensures] [%#sknapsack'1] m items (i - 1) w >= 0))
     else
       ((([@expl:m requires #0] [%#sknapsack] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w))
@@ -66,7 +66,7 @@ module M_knapsack__m [#"knapsack.rs" 31 0 31 57]
       && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight))
       /\ 0 <= ([%#sknapsack'2] i) /\ ([%#sknapsack'2] i - 1) < ([%#sknapsack'2] i))
       /\ (([%#sknapsack'1] m items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight) >= 0)
-       -> ([%#sknapsack'1] MinMax.max (m items (i - 1) w) (m items (i - 1) (w
+       -> ([@expl:m ensures] [%#sknapsack'1] MinMax.max (m items (i - 1) w) (m items (i - 1) (w
       - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight)
       + UInt64.t'int (Seq.get items (i - 1)).t_Item__value)
       >= 0)))

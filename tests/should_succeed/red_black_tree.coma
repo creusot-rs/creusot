@@ -83,7 +83,8 @@ module M_red_black_tree__qyi3529752165842986389__model_acc_has_mapping [#"red_bl
   
   
   goal vc_model_acc_has_mapping: match self with
-    | {t_Tree__node = C_None} -> [%#sred_black_tree] Map.get (model_acc self accu) k = Map.get accu k
+    | {t_Tree__node = C_None} -> [@expl:model_acc_has_mapping ensures] [%#sred_black_tree] Map.get (model_acc self accu) k
+    = Map.get accu k
     \/ (exists v: t_V. Map.get (model_acc self accu) k = C_Some'0 v /\ has_mapping self k v)
     | {t_Tree__node = C_Some {t_Node__left = left ; t_Node__key = key ; t_Node__val = val' ; t_Node__right = right}} -> ([%#sred_black_tree] Map.get (model_acc left accu) k
     = Map.get accu k
@@ -91,7 +92,7 @@ module M_red_black_tree__qyi3529752165842986389__model_acc_has_mapping [#"red_bl
      -> (let _ = model_acc_has_mapping left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'0 val') in ([%#sred_black_tree] Map.get (model_acc right accu2) k
     = Map.get accu2 k
     \/ (exists v: t_V. Map.get (model_acc right accu2) k = C_Some'0 v /\ has_mapping right k v))
-     -> ([%#sred_black_tree] Map.get (model_acc self accu) k = Map.get accu k
+     -> ([@expl:model_acc_has_mapping ensures] [%#sred_black_tree] Map.get (model_acc self accu) k = Map.get accu k
     \/ (exists v: t_V. Map.get (model_acc self accu) k = C_Some'0 v /\ has_mapping self k v)))
     end
 end
@@ -249,7 +250,7 @@ module M_red_black_tree__qyi3529752165842986389__has_mapping_model_acc [#"red_bl
   
   goal vc_has_mapping_model_acc: ([%#sred_black_tree] bst_invariant self)
    -> match self with
-    | {t_Tree__node = C_None} -> [%#sred_black_tree'0] forall v: t_V. has_mapping self k v
+    | {t_Tree__node = C_None} -> [@expl:has_mapping_model_acc ensures] [%#sred_black_tree'0] forall v: t_V. has_mapping self k v
      -> Map.get (model_acc self accu) k = C_Some'0 v
     | {t_Tree__node = C_Some {t_Node__left = left ; t_Node__key = key ; t_Node__val = val' ; t_Node__right = right}} -> ([@expl:has_mapping_model_acc requires] [%#sred_black_tree] bst_invariant left)
     /\ (([%#sred_black_tree'0] forall v: t_V. has_mapping left k v  -> Map.get (model_acc left accu) k = C_Some'0 v)
@@ -258,7 +259,8 @@ module M_red_black_tree__qyi3529752165842986389__has_mapping_model_acc [#"red_bl
      -> (let _ = has_mapping_model_acc right accu2 k in ([%#sred_black_tree'1] Map.get (model_acc right accu2) k
     = Map.get accu2 k
     \/ (exists v: t_V. Map.get (model_acc right accu2) k = C_Some'0 v /\ has_mapping right k v))
-     -> ([%#sred_black_tree'0] forall v: t_V. has_mapping self k v  -> Map.get (model_acc self accu) k = C_Some'0 v)))))
+     -> ([@expl:has_mapping_model_acc ensures] [%#sred_black_tree'0] forall v: t_V. has_mapping self k v
+     -> Map.get (model_acc self accu) k = C_Some'0 v)))))
     end
 end
 module M_red_black_tree__qyi3529752165842986389__has_mapping_model [#"red_black_tree.rs" 108 4 110 33] (* Tree<K, V> *)
@@ -435,7 +437,8 @@ module M_red_black_tree__qyi3529752165842986389__has_mapping_model [#"red_black_
    -> (let _ = model_acc_has_mapping self (Const.const (C_None'0)) k in ([@expl:has_mapping_model_acc requires] [%#sred_black_tree'2] bst_invariant self)
   /\ (([%#sred_black_tree'3] forall v: t_V. has_mapping self k v
    -> Map.get (model_acc self (Const.const (C_None'0))) k = C_Some'0 v)
-   -> ([%#sred_black_tree'0] forall v: t_V. has_mapping self k v = (Map.get (view self) k = C_Some'0 v))))
+   -> ([@expl:has_mapping_model ensures] [%#sred_black_tree'0] forall v: t_V. has_mapping self k v
+  = (Map.get (view self) k = C_Some'0 v))))
 end
 module M_red_black_tree__qyi3529752165842986389__has_mapping_inj [#"red_black_tree.rs" 123 4 125 33] (* Tree<K, V> *)
   let%span sred_black_tree = "red_black_tree.rs" 119 15 119 35
@@ -627,8 +630,8 @@ module M_red_black_tree__qyi3529752165842986389__has_mapping_inj [#"red_black_tr
    -> ([@expl:has_mapping_model requires] [%#sred_black_tree'3] bst_invariant self)
   /\ (([%#sred_black_tree'4] forall v: t_V. has_mapping self k v = (Map.get (view self) k = C_Some'0 v))
    -> (let _ = has_mapping_model self k in match Map.get (view self) k with
-    | C_None'0 -> [%#sred_black_tree'2] v1 = v2
-    | C_Some'0 _v -> [%#sred_black_tree'2] v1 = v2
+    | C_None'0 -> [@expl:has_mapping_inj ensures] [%#sred_black_tree'2] v1 = v2
+    | C_Some'0 _v -> [@expl:has_mapping_inj ensures] [%#sred_black_tree'2] v1 = v2
     end))
 end
 module M_red_black_tree__qyi3665871523867809084__has_mapping [#"red_black_tree.rs" 138 4 138 57] (* Node<K, V> *)
@@ -672,16 +675,19 @@ module M_red_black_tree__qyi3665871523867809084__has_mapping [#"red_black_tree.r
   predicate has_mapping'0 [#"red_black_tree.rs" 138 4 138 57] (self'0: t_Node) (k'0: t_DeepModelTy) (v'0: t_V)
   
   goal vc_has_mapping: if has_mapping self.t_Node__left k v then
-    [%#sred_black_tree] forall node: t_Node. self = node  -> true = has_mapping { t_Tree__node = C_Some node } k v
+    [@expl:has_mapping ensures] [%#sred_black_tree] forall node: t_Node. self = node
+     -> true = has_mapping { t_Tree__node = C_Some node } k v
   else
     if has_mapping self.t_Node__right k v then
-      [%#sred_black_tree] forall node: t_Node. self = node  -> true = has_mapping { t_Tree__node = C_Some node } k v
+      [@expl:has_mapping ensures] [%#sred_black_tree] forall node: t_Node. self = node
+       -> true = has_mapping { t_Tree__node = C_Some node } k v
     else
       if k = deep_model self.t_Node__key then
-        [%#sred_black_tree] forall node: t_Node. self = node
+        [@expl:has_mapping ensures] [%#sred_black_tree] forall node: t_Node. self = node
          -> (v = self.t_Node__val) = has_mapping { t_Tree__node = C_Some node } k v
       else
-        [%#sred_black_tree] forall node: t_Node. self = node  -> false = has_mapping { t_Tree__node = C_Some node } k v
+        [@expl:has_mapping ensures] [%#sred_black_tree] forall node: t_Node. self = node
+         -> false = has_mapping { t_Tree__node = C_Some node } k v
     
   
 
@@ -767,7 +773,8 @@ module M_red_black_tree__qyi8412372133095258695__resolve_coherence [#"red_black_
   
   function resolve_coherence [#"red_black_tree.rs" 184 4 184 31] (self'0: t_Tree) : ()
   
-  goal vc_resolve_coherence: ([%#sred_black_tree] structural_resolve self)  -> ([%#sred_black_tree'0] resolve'6 self)
+  goal vc_resolve_coherence: ([%#sred_black_tree] structural_resolve self)
+   -> ([@expl:resolve_coherence ensures] [%#sred_black_tree'0] resolve'6 self)
 end
 module M_red_black_tree__qyi17767811206440054577__resolve_coherence [#"red_black_tree.rs" 198 4 198 31] (* <Node<K, V> as creusot_contracts::Resolve> *)
   let%span sred_black_tree = "red_black_tree.rs" 196 15 196 39
@@ -836,7 +843,8 @@ module M_red_black_tree__qyi17767811206440054577__resolve_coherence [#"red_black
   
   function resolve_coherence [#"red_black_tree.rs" 198 4 198 31] (self'0: t_Node) : ()
   
-  goal vc_resolve_coherence: ([%#sred_black_tree] structural_resolve self)  -> ([%#sred_black_tree'0] resolve'3 self)
+  goal vc_resolve_coherence: ([%#sred_black_tree] structural_resolve self)
+   -> ([@expl:resolve_coherence ensures] [%#sred_black_tree'0] resolve'3 self)
 end
 module M_red_black_tree__qyi3529752165842986389__height [#"red_black_tree.rs" 320 4 320 26] (* Tree<K, V> *)
   let%span sred_black_tree = "red_black_tree.rs" 319 14 319 25
@@ -865,10 +873,12 @@ module M_red_black_tree__qyi3529752165842986389__height [#"red_black_tree.rs" 32
   function height [#"red_black_tree.rs" 320 4 320 26] (self'0: t_Tree) : int
   
   goal vc_height: match self with
-    | {t_Tree__node = C_None} -> [%#sred_black_tree] 0 >= 0
+    | {t_Tree__node = C_None} -> [@expl:height ensures] [%#sred_black_tree] 0 >= 0
     | {t_Tree__node = C_Some {t_Node__left = left ; t_Node__color = color}} -> match color with
-      | C_Red -> ([%#sred_black_tree] height left >= 0)  -> ([%#sred_black_tree] height left >= 0)
-      | C_Black -> ([%#sred_black_tree] height left >= 0)  -> ([%#sred_black_tree] height left + 1 >= 0)
+      | C_Red -> ([%#sred_black_tree] height left >= 0)
+       -> ([@expl:height ensures] [%#sred_black_tree] height left >= 0)
+      | C_Black -> ([%#sred_black_tree] height left >= 0)
+       -> ([@expl:height ensures] [%#sred_black_tree] height left + 1 >= 0)
       end
     end
 end
@@ -913,10 +923,10 @@ module M_red_black_tree__qyi3665871523867809084__height [#"red_black_tree.rs" 35
   
   goal vc_height: match self.t_Node__color with
     | C_Red -> ([%#sred_black_tree'0] height self.t_Node__left >= 0)
-     -> ([%#sred_black_tree] forall node: t_Node. self = node
+     -> ([@expl:height ensures] [%#sred_black_tree] forall node: t_Node. self = node
      -> height self.t_Node__left = height { t_Tree__node = C_Some node })
     | C_Black -> ([%#sred_black_tree'0] height self.t_Node__left >= 0)
-     -> ([%#sred_black_tree] forall node: t_Node. self = node
+     -> ([@expl:height ensures] [%#sred_black_tree] forall node: t_Node. self = node
      -> height self.t_Node__left + 1 = height { t_Tree__node = C_Some node })
     end
 end
@@ -8087,7 +8097,7 @@ module M_red_black_tree__qyi7670249875066633436__resolve_coherence [#"red_black_
   function resolve_coherence [#"red_black_tree.rs" 783 4 783 31] (self'0: t_Map) : ()
   
   goal vc_resolve_coherence: ([%#sred_black_tree] structural_resolve self)
-   -> (let _ = () in [%#sred_black_tree'0] resolve'4 self)
+   -> (let _ = () in [@expl:resolve_coherence ensures] [%#sred_black_tree'0] resolve'4 self)
 end
 module M_red_black_tree__qyi1722927563742988856__new [#"red_black_tree.rs" 793 4 793 24] (* Map<K, V> *)
   let%span sred_black_tree = "red_black_tree.rs" 793 20 793 24

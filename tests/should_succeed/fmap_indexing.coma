@@ -43,7 +43,9 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
   
   constant empty  : t_FMap
   
-  axiom empty_spec: ([%#sfmap] len empty = 0) && ([%#sfmap'0] view empty = Const.const (C_None))
+  axiom empty_spec: [%#sfmap] len empty = 0
+  
+  axiom empty_spec'0: [%#sfmap'0] view empty = Const.const (C_None)
   
   function get [@inline:trivial] (self: t_FMap) (k: int) : t_Option =
     [%#sfmap'8] Map.get (view self) k
@@ -53,9 +55,11 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
   
   function insert (self: t_FMap) (k: int) (v: int) : t_FMap
   
-  axiom insert_spec: forall self: t_FMap, k: int, v: int. ([%#sfmap'1] view (insert self k v)
-  = Map.set (view self) k (C_Some v))
-  && ([%#sfmap'2] len (insert self k v) = (if contains self k then len self else len self + 1))
+  axiom insert_spec: forall self: t_FMap, k: int, v: int. [%#sfmap'1] view (insert self k v)
+  = Map.set (view self) k (C_Some v)
+  
+  axiom insert_spec'0: forall self: t_FMap, k: int, v: int. [%#sfmap'2] len (insert self k v)
+  = (if contains self k then len self else len self + 1)
   
   predicate index_logic (self: Map.map int bool) (a: int) =
     [%#smapping] Map.get self a

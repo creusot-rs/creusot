@@ -1189,8 +1189,9 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
   
   function view'1 (self: Slice64.slice tuple) : Seq.seq tuple
   
-  axiom view_spec'0: forall self: Slice64.slice tuple. ([%#sslice'9] Seq.length (view'1 self) <= UInt64.t'int v_MAX)
-  && ([%#sslice'10] view'1 self = Slice64.id self)
+  axiom view_spec'0: forall self: Slice64.slice tuple. [%#sslice'9] Seq.length (view'1 self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'1: forall self: Slice64.slice tuple. [%#sslice'10] view'1 self = Slice64.id self
   
   function view'2 (self: Slice64.slice tuple) : Seq.seq tuple =
     [%#smodel] view'1 self
@@ -1209,10 +1210,11 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
   
   function to_ref_seq (self: Slice64.slice tuple) : Seq.seq tuple
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice tuple. ([%#sslice'6] Seq.length (to_ref_seq self)
-  = Seq.length (view'2 self))
-  && ([%#sslice'7] forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
-   -> Seq.get (to_ref_seq self) i = index_logic'0 self i)
+  axiom to_ref_seq_spec: forall self: Slice64.slice tuple. [%#sslice'6] Seq.length (to_ref_seq self)
+  = Seq.length (view'2 self)
+  
+  axiom to_ref_seq_spec'0: forall self: Slice64.slice tuple. [%#sslice'7] forall i: int. 0 <= i
+  /\ i < Seq.length (to_ref_seq self)  -> Seq.get (to_ref_seq self) i = index_logic'0 self i
   
   predicate produces (self: t_Iter) (visited: Seq.seq tuple) (tl: t_Iter) =
     [%#sslice] to_ref_seq (view'3 self) = Seq.(++) visited (to_ref_seq (view'3 tl))
@@ -1344,7 +1346,7 @@ module M_06_knights_tour__dumb_nonlinear_arith [#"06_knights_tour.rs" 130 0 130 
   function dumb_nonlinear_arith [#"06_knights_tour.rs" 130 0 130 33] (a'0: UInt64.t) : ()
   
   goal vc_dumb_nonlinear_arith: ([%#s06_knights_tour] UInt64.t'int a <= 1000)
-   -> ([%#s06_knights_tour'0] UInt64.t'int a * UInt64.t'int a <= 1000000)
+   -> ([@expl:dumb_nonlinear_arith ensures] [%#s06_knights_tour'0] UInt64.t'int a * UInt64.t'int a <= 1000000)
 end
 module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
   let%span s06_knights_tour = "06_knights_tour.rs" 138 17 138 18

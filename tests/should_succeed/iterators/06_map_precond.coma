@@ -48,7 +48,8 @@ module M_06_map_precond__qyi6490470836283789663__resolve_coherence [#"06_map_pre
   
   function resolve_coherence [#"06_map_precond.rs" 10 9 10 16] (self'0: t_Map) : ()
   
-  goal vc_resolve_coherence: ([%#s06_map_precond] structural_resolve self)  -> ([%#s06_map_precond] resolve'2 self)
+  goal vc_resolve_coherence: ([%#s06_map_precond] structural_resolve self)
+   -> ([@expl:resolve_coherence ensures] [%#s06_map_precond] resolve'2 self)
 end
 module M_06_map_precond__qyi13778860181180212516__produces_refl [#"06_map_precond.rs" 32 4 32 26] (* <Map<I, F> as common::Iterator> *)
   let%span s06_map_precond = "06_map_precond.rs" 31 14 31 47
@@ -149,7 +150,7 @@ module M_06_map_precond__qyi13778860181180212516__produces_refl [#"06_map_precon
   
   function produces_refl'0 [#"06_map_precond.rs" 32 4 32 26] (self'0: t_Map) : ()
   
-  goal vc_produces_refl: [%#s06_map_precond] produces'0 self (Seq.empty: Seq.seq t_B) self
+  goal vc_produces_refl: [@expl:produces_refl ensures] [%#s06_map_precond] produces'0 self (Seq.empty: Seq.seq t_B) self
 end
 module M_06_map_precond__qyi13778860181180212516__produces_trans [#"06_map_precond.rs" 39 4 39 90] (* <Map<I, F> as common::Iterator> *)
   let%span s06_map_precond = "06_map_precond.rs" 36 15 36 32
@@ -262,7 +263,8 @@ module M_06_map_precond__qyi13778860181180212516__produces_trans [#"06_map_preco
   
   
   goal vc_produces_trans: ([%#s06_map_precond] produces'0 a ab b)
-   -> ([%#s06_map_precond'0] produces'0 b bc c)  -> ([%#s06_map_precond'1] produces'0 a (Seq.(++) ab bc) c)
+   -> ([%#s06_map_precond'0] produces'0 b bc c)
+   -> ([@expl:produces_trans ensures] [%#s06_map_precond'1] produces'0 a (Seq.(++) ab bc) c)
 end
 module M_06_map_precond__qyi13778860181180212516__next [#"06_map_precond.rs" 66 4 66 44] (* <Map<I, F> as common::Iterator> *)
   let%span s06_map_precond = "06_map_precond.rs" 69 16 69 76
@@ -501,7 +503,12 @@ module M_06_map_precond__qyi13778860181180212516__next [#"06_map_precond.rs" 66 
    -> ([%#s06_map_precond'8] f.current = self.t_Map__func)
    -> ([%#s06_map_precond'9] postcondition_mut f.current { _p0 = e; _p1 = self.t_Map__produced } f.final r)
    -> ([%#s06_map_precond'10] preservation_inv iter f.final (Seq.snoc self.t_Map__produced e))
-  && ([%#s06_map_precond'11] next_precondition iter f.final (Seq.snoc self.t_Map__produced e))
+  
+  axiom produces_one_invariant_spec'0: forall self: t_Map, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter: t_I. ([%#s06_map_precond'6] invariant''1 self)
+   -> ([%#s06_map_precond'7] produces self.t_Map__iter (Seq.singleton e) iter)
+   -> ([%#s06_map_precond'8] f.current = self.t_Map__func)
+   -> ([%#s06_map_precond'9] postcondition_mut f.current { _p0 = e; _p1 = self.t_Map__produced } f.final r)
+   -> ([%#s06_map_precond'11] next_precondition iter f.final (Seq.snoc self.t_Map__produced e))
   
   type t_Option'0  =
     | C_None'0
@@ -716,7 +723,7 @@ module M_06_map_precond__qyi10069788794515621353__preservation_inv [#"06_map_pre
   
   predicate preservation_inv [#"06_map_precond.rs" 97 4 97 73] (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item)
   
-  goal vc_preservation_inv: [%#s06_map_precond] produced = (Seq.empty: Seq.seq t_Item)
+  goal vc_preservation_inv: [@expl:preservation_inv ensures] [%#s06_map_precond] produced = (Seq.empty: Seq.seq t_Item)
    -> ([%#s06_map_precond'0] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current { _p0 = e1;
                                                                                                                                                                                                 _p1 = Seq.(++) produced s } f.final b]. hist_inv func f.current
    -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
@@ -862,8 +869,8 @@ module M_06_map_precond__qyi10069788794515621353__produces_one_invariant [#"06_m
    -> ([%#s06_map_precond'2] postcondition_mut f.current { _p0 = e; _p1 = self.t_Map__produced } f.final r)
    -> ([%#s06_map_precond'5] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, i: t_I. produces iter (Seq.snoc (Seq.snoc s e1) e2) i
    -> produces self.t_Map__iter (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
-  && (let _ = () in ([%#s06_map_precond'3] preservation_inv iter f.final (Seq.snoc self.t_Map__produced e))
-  && ([%#s06_map_precond'4] next_precondition iter f.final (Seq.snoc self.t_Map__produced e)))
+  && (let _ = () in ([@expl:produces_one_invariant ensures #0] [%#s06_map_precond'3] preservation_inv iter f.final (Seq.snoc self.t_Map__produced e))
+  && ([@expl:produces_one_invariant ensures #1] [%#s06_map_precond'4] next_precondition iter f.final (Seq.snoc self.t_Map__produced e)))
 end
 module M_06_map_precond__qyi10069788794515621353__produces_one [#"06_map_precond.rs" 148 4 148 57] (* Map<I, F> *)
   let%span s06_map_precond = "06_map_precond.rs" 147 14 147 68
@@ -987,8 +994,8 @@ module M_06_map_precond__qyi10069788794515621353__produces_one [#"06_map_precond
   
   predicate produces_one [#"06_map_precond.rs" 148 4 148 57] (self'0: t_Map) (visited'0: t_B) (succ'0: t_Map)
   
-  goal vc_produces_one: [%#s06_map_precond] ([%#s06_map_precond'0] exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current { _p0 = e;
-                                                                                                                                       _p1 = self.t_Map__produced } f.final visited]. f.current
+  goal vc_produces_one: [@expl:produces_one ensures] [%#s06_map_precond] ([%#s06_map_precond'0] exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current { _p0 = e;
+                                                                                                                                                                    _p1 = self.t_Map__produced } f.final visited]. f.current
   = self.t_Map__func
   /\ f.final = succ.t_Map__func
   /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter

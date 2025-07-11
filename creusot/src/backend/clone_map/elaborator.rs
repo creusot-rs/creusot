@@ -4,7 +4,7 @@ use crate::{
         clone_map::{CloneNames, Dependency, Kind, Namer},
         closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve},
         is_trusted_item,
-        logic::{lower_logical_defn, spec_axiom},
+        logic::{lower_logical_defn, spec_axioms},
         program,
         signature::{lower_logic_sig, lower_program_sig},
         structural_resolve::structural_resolve,
@@ -510,12 +510,9 @@ fn val(mut sig: Signature, kind: DeclKind) -> Vec<Decl> {
     if let DeclKind::Predicate = kind {
         sig.retty = None;
     }
-    let ax = if !sig.contract.ensures.is_empty() { Some(spec_axiom(&sig)) } else { None };
+    let mut d = spec_axioms(&sig).collect::<Vec<_>>();
     sig.contract = Default::default();
-    let mut d = vec![Decl::LogicDecl(LogicDecl { kind: Some(kind), sig })];
-    if let Some(ax) = ax {
-        d.push(Decl::Axiom(ax))
-    }
+    d.insert(0, Decl::LogicDecl(LogicDecl { kind: Some(kind), sig }));
     d
 }
 

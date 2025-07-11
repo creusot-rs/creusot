@@ -174,7 +174,8 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence [#"sparse_array
   function resolve_coherence [#"sparse_array.rs" 60 4 60 31] (self'0: t_Sparse) : ()
   
   goal vc_resolve_coherence: ([%#ssparse_array] inv'4 self)
-   -> ([%#ssparse_array'0] structural_resolve self)  -> ([%#ssparse_array'1] resolve'7 self)
+   -> ([%#ssparse_array'0] structural_resolve self)
+   -> ([@expl:resolve_coherence ensures] [%#ssparse_array'1] resolve'7 self)
 end
 module M_sparse_array__qyi16402981711463100202__get [#"sparse_array.rs" 101 4 101 45] (* Sparse<T> *)
   let%span ssparse_array = "sparse_array.rs" 101 16 101 20
@@ -594,7 +595,17 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation [#"sparse_arra
    -> ([%#ssparse_array'8] not contains seen cur)
    -> ([%#ssparse_array'9] 0 <= lemma_permutation_aux self seen i cur
   /\ lemma_permutation_aux self seen i cur < UInt64.t'int self.t_Sparse__size)
-  && ([%#ssparse_array'10] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self seen i cur)) = i)
+  
+  axiom lemma_permutation_aux_spec'0: forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'3] inv'3 self)
+   -> ([%#ssparse_array'4] self.t_Sparse__n = self.t_Sparse__size)
+   -> ([%#ssparse_array'5] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
+   -> ([%#ssparse_array'6] forall k: int. contains seen k
+   -> 0 <= k
+  /\ k < UInt64.t'int self.t_Sparse__size /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
+   -> ([%#ssparse_array'7] i = cur
+  \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
+   -> ([%#ssparse_array'8] not contains seen cur)
+   -> ([%#ssparse_array'10] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self seen i cur)) = i)
   
   constant self  : t_Sparse
   
@@ -619,7 +630,8 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation [#"sparse_arra
   /\ (([%#ssparse_array'9] 0 <= lemma_permutation_aux self (Fset.empty: Fset.fset int) i i
   /\ lemma_permutation_aux self (Fset.empty: Fset.fset int) i i < UInt64.t'int self.t_Sparse__size)
   && ([%#ssparse_array'10] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self (Fset.empty: Fset.fset int) i i))
-  = i)  -> (let _ = lemma_permutation_aux self (Fset.empty: Fset.fset int) i i in [%#ssparse_array'2] is_elt self i))
+  = i)
+   -> (let _ = lemma_permutation_aux self (Fset.empty: Fset.fset int) i i in [@expl:lemma_permutation ensures] [%#ssparse_array'2] is_elt self i))
 end
 module M_sparse_array__qyi16402981711463100202__lemma_permutation_aux [#"sparse_array.rs" 129 4 129 76] (* Sparse<T> *)
   let%span ssparse_array = "sparse_array.rs" 119 15 119 24
@@ -781,8 +793,10 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation_aux [#"sparse_
   \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
    -> ([%#ssparse_array'4] not contains seen cur)
    -> (if UInt64.t'int (index_logic self.t_Sparse__back cur) = i then
-    let result = cur in ([%#ssparse_array'5] 0 <= result /\ result < UInt64.t'int self.t_Sparse__size)
-    && ([%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__back result) = i)
+    let result = cur in ([@expl:lemma_permutation_aux ensures #0] [%#ssparse_array'5] 0 <= result
+    /\ result < UInt64.t'int self.t_Sparse__size)
+    && ([@expl:lemma_permutation_aux ensures #1] [%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__back result)
+    = i)
   else
     (([@expl:bounded_fset_len requires #0] [%#ssparse_array'8] forall x: int. contains seen x
      -> 0 <= x /\ x < UInt64.t'int self.t_Sparse__size)
@@ -811,10 +825,11 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation_aux [#"sparse_
     < UInt64.t'int self.t_Sparse__size)
     && ([%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur))))
     = i)
-     -> (let result = lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur)) in ([%#ssparse_array'5] 0
+     -> (let result = lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur)) in ([@expl:lemma_permutation_aux ensures #0] [%#ssparse_array'5] 0
     <= result
     /\ result < UInt64.t'int self.t_Sparse__size)
-    && ([%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__back result) = i)))))
+    && ([@expl:lemma_permutation_aux ensures #1] [%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__back result)
+    = i)))))
   )
 end
 module M_sparse_array__qyi16402981711463100202__bounded_fset_len [#"sparse_array.rs" 145 4 145 47] (* Sparse<T> *)
@@ -849,9 +864,9 @@ module M_sparse_array__qyi16402981711463100202__bounded_fset_len [#"sparse_array
     && ([@expl:bounded_fset_len requires #1] [%#ssparse_array'0] bnd - 1 >= 0))
     /\ 0 <= ([%#ssparse_array'2] bnd) /\ ([%#ssparse_array'2] bnd - 1) < ([%#ssparse_array'2] bnd))
     /\ (([%#ssparse_array'1] Fset.cardinal (remove s (bnd - 1)) <= bnd - 1)
-     -> ([%#ssparse_array'1] Fset.cardinal s <= bnd))
+     -> ([@expl:bounded_fset_len ensures] [%#ssparse_array'1] Fset.cardinal s <= bnd))
   else
-    [%#ssparse_array'1] Fset.cardinal s <= bnd
+    [@expl:bounded_fset_len ensures] [%#ssparse_array'1] Fset.cardinal s <= bnd
   )
 end
 module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 157 41] (* Sparse<T> *)
@@ -1131,7 +1146,17 @@ module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 15
    -> ([%#ssparse_array'20] not contains seen cur)
    -> ([%#ssparse_array'21] 0 <= lemma_permutation_aux self seen i cur
   /\ lemma_permutation_aux self seen i cur < UInt64.t'int self.t_Sparse__size)
-  && ([%#ssparse_array'22] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self seen i cur)) = i)
+  
+  axiom lemma_permutation_aux_spec'0: forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'15] inv'5 self)
+   -> ([%#ssparse_array'16] self.t_Sparse__n = self.t_Sparse__size)
+   -> ([%#ssparse_array'17] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
+   -> ([%#ssparse_array'18] forall k: int. contains seen k
+   -> 0 <= k
+  /\ k < UInt64.t'int self.t_Sparse__size /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
+   -> ([%#ssparse_array'19] i = cur
+  \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
+   -> ([%#ssparse_array'20] not contains seen cur)
+   -> ([%#ssparse_array'22] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self seen i cur)) = i)
   
   function lemma_permutation [#"sparse_array.rs" 113 4 113 38] (self: t_Sparse) (i: int) : () =
     [%#ssparse_array'12] let _ = lemma_permutation_aux self (Fset.empty: Fset.fset int) i i in ()

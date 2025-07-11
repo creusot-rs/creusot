@@ -25,7 +25,8 @@ module M_05_map__qyi11082488819865755034__resolve_coherence [#"05_map.rs" 10 9 1
   
   function resolve_coherence [#"05_map.rs" 10 9 10 16] (self'0: t_Map) : ()
   
-  goal vc_resolve_coherence: ([%#s05_map] structural_resolve self)  -> ([%#s05_map] resolve'1 self)
+  goal vc_resolve_coherence: ([%#s05_map] structural_resolve self)
+   -> ([@expl:resolve_coherence ensures] [%#s05_map] resolve'1 self)
 end
 module M_05_map__qyi14378821460689001001__produces_refl [#"05_map.rs" 30 4 30 26] (* <Map<I, F> as common::Iterator> *)
   let%span s05_map = "05_map.rs" 29 14 29 47
@@ -119,7 +120,7 @@ module M_05_map__qyi14378821460689001001__produces_refl [#"05_map.rs" 30 4 30 26
   
   function produces_refl'0 [#"05_map.rs" 30 4 30 26] (self'0: t_Map) : ()
   
-  goal vc_produces_refl: [%#s05_map] produces'0 self (Seq.empty: Seq.seq t_B) self
+  goal vc_produces_refl: [@expl:produces_refl ensures] [%#s05_map] produces'0 self (Seq.empty: Seq.seq t_B) self
 end
 module M_05_map__qyi14378821460689001001__produces_trans [#"05_map.rs" 37 4 37 90] (* <Map<I, F> as common::Iterator> *)
   let%span s05_map = "05_map.rs" 34 15 34 32
@@ -225,7 +226,8 @@ module M_05_map__qyi14378821460689001001__produces_trans [#"05_map.rs" 37 4 37 9
   
   
   goal vc_produces_trans: ([%#s05_map] produces'0 a ab b)
-   -> ([%#s05_map'0] produces'0 b bc c)  -> ([%#s05_map'1] produces'0 a (Seq.(++) ab bc) c)
+   -> ([%#s05_map'0] produces'0 b bc c)
+   -> ([@expl:produces_trans ensures] [%#s05_map'1] produces'0 a (Seq.(++) ab bc) c)
 end
 module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map<I, F> as common::Iterator> *)
   let%span s05_map = "05_map.rs" 66 16 66 62
@@ -396,8 +398,12 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   axiom produces_one_invariant_spec: forall self: t_Map, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter: t_I. ([%#s05_map'4] invariant''0 self)
    -> ([%#s05_map'5] produces self.t_Map__iter (Seq.singleton e) iter)
    -> ([%#s05_map'6] f.current = self.t_Map__func)
-   -> ([%#s05_map'7] postcondition_mut f.current e f.final r)
-   -> ([%#s05_map'8] preservation iter f.final) && ([%#s05_map'9] next_precondition iter f.final)
+   -> ([%#s05_map'7] postcondition_mut f.current e f.final r)  -> ([%#s05_map'8] preservation iter f.final)
+  
+  axiom produces_one_invariant_spec'0: forall self: t_Map, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter: t_I. ([%#s05_map'4] invariant''0 self)
+   -> ([%#s05_map'5] produces self.t_Map__iter (Seq.singleton e) iter)
+   -> ([%#s05_map'6] f.current = self.t_Map__func)
+   -> ([%#s05_map'7] postcondition_mut f.current e f.final r)  -> ([%#s05_map'9] next_precondition iter f.final)
   
   predicate inv'3 (_0: t_F)
   
@@ -666,7 +672,8 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
    -> ([%#s05_map'2] postcondition_mut f.current e f.final r)
    -> ([%#s05_map'5] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, i: t_I. produces iter (Seq.snoc (Seq.snoc s e1) e2) i
    -> produces self.t_Map__iter (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
-  && (let _ = () in ([%#s05_map'3] preservation iter f.final) && ([%#s05_map'4] next_precondition iter f.final))
+  && (let _ = () in ([@expl:produces_one_invariant ensures #0] [%#s05_map'3] preservation iter f.final)
+  && ([@expl:produces_one_invariant ensures #1] [%#s05_map'4] next_precondition iter f.final))
 end
 module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 125 4 125 57] (* Map<I, F> *)
   let%span s05_map = "05_map.rs" 124 14 124 68
@@ -783,7 +790,7 @@ module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 125 4 125 5
   
   predicate produces_one [#"05_map.rs" 125 4 125 57] (self'0: t_Map) (visited'0: t_B) (succ'0: t_Map)
   
-  goal vc_produces_one: [%#s05_map] ([%#s05_map'0] exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current e f.final visited]. f.current
+  goal vc_produces_one: [@expl:produces_one ensures] [%#s05_map] ([%#s05_map'0] exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current e f.final visited]. f.current
   = self.t_Map__func
   /\ f.final = succ.t_Map__func
   /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter

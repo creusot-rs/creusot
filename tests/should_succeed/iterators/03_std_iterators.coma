@@ -70,8 +70,9 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
   
   function view (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom view_spec: forall self: Slice64.slice t_T. ([%#sslice'11] Seq.length (view self) <= UInt64.t'int v_MAX)
-  && ([%#sslice'12] view self = Slice64.id self)
+  axiom view_spec: forall self: Slice64.slice t_T. [%#sslice'11] Seq.length (view self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'0: forall self: Slice64.slice t_T. [%#sslice'12] view self = Slice64.id self
   
   predicate invariant''1 (self: Slice64.slice t_T) =
     [%#sslice'13] inv'1 (view self)
@@ -104,10 +105,11 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. ([%#sslice'8] Seq.length (to_ref_seq self)
-  = Seq.length (view'1 self))
-  && ([%#sslice'9] forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
-   -> Seq.get (to_ref_seq self) i = index_logic self i)
+  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. [%#sslice'8] Seq.length (to_ref_seq self)
+  = Seq.length (view'1 self)
+  
+  axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. [%#sslice'9] forall i: int. 0 <= i
+  /\ i < Seq.length (to_ref_seq self)  -> Seq.get (to_ref_seq self) i = index_logic self i
   
   predicate produces (self: t_Iter) (visited: Seq.seq t_T) (tl: t_Iter) =
     [%#sslice'1] to_ref_seq (view'0 self) = Seq.(++) visited (to_ref_seq (view'0 tl))
@@ -360,8 +362,9 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
   
   function view'1 (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom view_spec'0: forall self: Slice64.slice t_T. ([%#sslice'9] Seq.length (view'1 self) <= UInt64.t'int v_MAX)
-  && ([%#sslice'10] view'1 self = Slice64.id self)
+  axiom view_spec'0: forall self: Slice64.slice t_T. [%#sslice'9] Seq.length (view'1 self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'1: forall self: Slice64.slice t_T. [%#sslice'10] view'1 self = Slice64.id self
   
   function view'2 (self: Slice64.slice t_T) : Seq.seq t_T =
     [%#smodel] view'1 self
@@ -376,10 +379,11 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. ([%#sslice'6] Seq.length (to_ref_seq self)
-  = Seq.length (view'2 self))
-  && ([%#sslice'7] forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
-   -> Seq.get (to_ref_seq self) i = index_logic self i)
+  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. [%#sslice'6] Seq.length (to_ref_seq self)
+  = Seq.length (view'2 self)
+  
+  axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. [%#sslice'7] forall i: int. 0 <= i
+  /\ i < Seq.length (to_ref_seq self)  -> Seq.get (to_ref_seq self) i = index_logic self i
   
   predicate produces (self: t_Iter) (visited: Seq.seq t_T) (tl: t_Iter) =
     [%#sslice] to_ref_seq (view'3 self) = Seq.(++) visited (to_ref_seq (view'3 tl))
@@ -584,15 +588,16 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   
   function view (self: Slice64.slice UInt64.t) : Seq.seq UInt64.t
   
-  axiom view_spec: forall self: Slice64.slice UInt64.t. ([%#sslice'1] Seq.length (view self) <= UInt64.t'int v_MAX)
-  && ([%#sslice'2] view self = Slice64.id self)
+  axiom view_spec: forall self: Slice64.slice UInt64.t. [%#sslice'1] Seq.length (view self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'0: forall self: Slice64.slice UInt64.t. [%#sslice'2] view self = Slice64.id self
   
   function view'0 (self: MutBorrow.t (Slice64.slice UInt64.t)) : Seq.seq UInt64.t =
     [%#smodel] view self.current
   
   function view'1 (self: t_Vec) : Seq.seq UInt64.t
   
-  axiom view_spec'0: forall self: t_Vec. [%#svec'1] Seq.length (view'1 self) <= UInt64.t'int v_MAX
+  axiom view_spec'1: forall self: t_Vec. [%#svec'1] Seq.length (view'1 self) <= UInt64.t'int v_MAX
   
   function view'2 (self: MutBorrow.t t_Vec) : Seq.seq UInt64.t =
     [%#smodel] view'1 self.current
@@ -611,7 +616,7 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   
   function view'3 (self: t_IterMut) : MutBorrow.t (Slice64.slice UInt64.t)
   
-  axiom view_spec'1: forall self: t_IterMut. [%#sslice'3] Seq.length (view (view'3 self).final)
+  axiom view_spec'2: forall self: t_IterMut. [%#sslice'3] Seq.length (view (view'3 self).final)
   = Seq.length (view (view'3 self).current)
   
   let rec iter_mut (self_:MutBorrow.t (Slice64.slice UInt64.t)) (return'  (x:t_IterMut))= any
@@ -636,11 +641,13 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   
   function to_mut_seq (self: MutBorrow.t (Slice64.slice UInt64.t)) : Seq.seq (MutBorrow.t UInt64.t)
   
-  axiom to_mut_seq_spec: forall self: MutBorrow.t (Slice64.slice UInt64.t). ([%#sslice'10] Seq.length (to_mut_seq self)
-  = Seq.length (view'0 self))
-  && ([%#sslice'11] forall i: int. 0 <= i /\ i < Seq.length (to_mut_seq self)
+  axiom to_mut_seq_spec: forall self: MutBorrow.t (Slice64.slice UInt64.t). [%#sslice'10] Seq.length (to_mut_seq self)
+  = Seq.length (view'0 self)
+  
+  axiom to_mut_seq_spec'0: forall self: MutBorrow.t (Slice64.slice UInt64.t). [%#sslice'11] forall i: int. 0 <= i
+  /\ i < Seq.length (to_mut_seq self)
    -> Seq.get (to_mut_seq self) i
-  = MutBorrow.borrow_logic (index_logic'0 self.current i) (index_logic'0 self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i))
+  = MutBorrow.borrow_logic (index_logic'0 self.current i) (index_logic'0 self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t UInt64.t)) (tl: t_IterMut) =
     [%#sslice'0] to_mut_seq (view'3 self) = Seq.(++) visited (to_mut_seq (view'3 tl))
@@ -1144,15 +1151,16 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   
   function view (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t
   
-  axiom view_spec: forall self: Slice64.slice UInt32.t. ([%#sslice'7] Seq.length (view self) <= UInt64.t'int v_MAX)
-  && ([%#sslice'8] view self = Slice64.id self)
+  axiom view_spec: forall self: Slice64.slice UInt32.t. [%#sslice'7] Seq.length (view self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'0: forall self: Slice64.slice UInt32.t. [%#sslice'8] view self = Slice64.id self
   
   function view'0 (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t =
     [%#smodel] view self
   
   function view'1 (self: t_Vec) : Seq.seq UInt32.t
   
-  axiom view_spec'0: forall self: t_Vec. [%#svec'0] Seq.length (view'1 self) <= UInt64.t'int v_MAX
+  axiom view_spec'1: forall self: t_Vec. [%#svec'0] Seq.length (view'1 self) <= UInt64.t'int v_MAX
   
   function view'2 (self: t_Vec) : Seq.seq UInt32.t =
     [%#smodel] view'1 self
@@ -1248,10 +1256,11 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   
   function to_ref_seq (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice UInt32.t. ([%#sslice'9] Seq.length (to_ref_seq self)
-  = Seq.length (view'0 self))
-  && ([%#sslice'10] forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
-   -> Seq.get (to_ref_seq self) i = index_logic self i)
+  axiom to_ref_seq_spec: forall self: Slice64.slice UInt32.t. [%#sslice'9] Seq.length (to_ref_seq self)
+  = Seq.length (view'0 self)
+  
+  axiom to_ref_seq_spec'0: forall self: Slice64.slice UInt32.t. [%#sslice'10] forall i: int. 0 <= i
+  /\ i < Seq.length (to_ref_seq self)  -> Seq.get (to_ref_seq self) i = index_logic self i
   
   predicate produces (self: t_Iter) (visited: Seq.seq UInt32.t) (tl: t_Iter) =
     [%#sslice'6] to_ref_seq (view'3 self) = Seq.(++) visited (to_ref_seq (view'3 tl))
@@ -1972,8 +1981,9 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   
   function view (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom view_spec: forall self: Slice64.slice t_T. ([%#sslice'5] Seq.length (view self) <= UInt64.t'int v_MAX)
-  && ([%#sslice'6] view self = Slice64.id self)
+  axiom view_spec: forall self: Slice64.slice t_T. [%#sslice'5] Seq.length (view self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'0: forall self: Slice64.slice t_T. [%#sslice'6] view self = Slice64.id self
   
   predicate invariant''1 (self: Slice64.slice t_T) =
     [%#sslice'7] inv'1 (view self)

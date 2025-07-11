@@ -706,10 +706,11 @@ module M_bdd__qyi13535665294507397779__size [#"bdd.rs" 221 4 221 24] (* Bdd<'are
   function size [#"bdd.rs" 221 4 221 24] (self'0: t_Bdd) : int
   
   goal vc_size: match self with
-    | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> [%#sbdd] 0 >= 0
-    | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> [%#sbdd] 0 >= 0
+    | {t_Bdd__0 = C_True ; t_Bdd__1 = _} -> [@expl:size ensures] [%#sbdd] 0 >= 0
+    | {t_Bdd__0 = C_False ; t_Bdd__1 = _} -> [@expl:size ensures] [%#sbdd] 0 >= 0
     | {t_Bdd__0 = C_If _ childt childf ; t_Bdd__1 = _} -> ([%#sbdd] size childt >= 0)
-     -> (let ht = size childt in ([%#sbdd] size childf >= 0)  -> (let hf = size childf in [%#sbdd] 1 + ht + hf >= 0))
+     -> (let ht = size childt in ([%#sbdd] size childf >= 0)
+     -> (let hf = size childf in [@expl:size ensures] [%#sbdd] 1 + ht + hf >= 0))
     end
 end
 module M_bdd__qyi11078426090797403070__grows_is_valid_bdd [#"bdd.rs" 329 4 329 56] (* Context<'arena> *)
@@ -857,7 +858,8 @@ module M_bdd__qyi11078426090797403070__grows_is_valid_bdd [#"bdd.rs" 329 4 329 5
   function grows_is_valid_bdd [#"bdd.rs" 329 4 329 56] (self'0: MutBorrow.t t_Context) (b'0: t_Bdd) : ()
   
   goal vc_grows_is_valid_bdd: ([%#sbdd] grows self)
-   -> ([%#sbdd'0] is_valid_bdd self.current b)  -> ([%#sbdd'1] is_valid_bdd self.final b)
+   -> ([%#sbdd'0] is_valid_bdd self.current b)
+   -> ([@expl:grows_is_valid_bdd ensures] [%#sbdd'1] is_valid_bdd self.final b)
 end
 module M_bdd__qyi11078426090797403070__grows_trans [#"bdd.rs" 337 4 337 62] (* Context<'arena> *)
   let%span sbdd = "bdd.rs" 332 15 332 27
@@ -991,7 +993,8 @@ module M_bdd__qyi11078426090797403070__grows_trans [#"bdd.rs" 337 4 337 62] (* C
   goal vc_grows_trans: ([%#sbdd] grows self)
    -> ([%#sbdd'0] grows o)
    -> ([%#sbdd'1] self.final = o.current)
-   -> ([%#sbdd'2] self.current = oo.current /\ self.final = oo.final)  -> ([%#sbdd'3] grows oo)
+   -> ([%#sbdd'2] self.current = oo.current /\ self.final = oo.final)
+   -> ([@expl:grows_trans ensures] [%#sbdd'3] grows oo)
 end
 module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 344 4 344 87] (* Context<'arena> *)
   let%span sbdd = "bdd.rs" 340 15 340 24
@@ -1226,8 +1229,9 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 344 4 344 8
     && ([@expl:set_irrelevent_var requires #1] [%#sbdd'0] is_valid_bdd self childf)
     && ([@expl:set_irrelevent_var requires #2] [%#sbdd'1] UInt64.t'int x < leastvar childf))
     /\ (([%#sbdd'2] interp childf v = interp childf (Map.set v x b))
-     -> (let _ = set_irrelevent_var self childf x v b in [%#sbdd'2] interp a v = interp a (Map.set v x b)))))
-    | _ -> [%#sbdd'2] interp a v = interp a (Map.set v x b)
+     -> (let _ = set_irrelevent_var self childf x v b in [@expl:set_irrelevent_var ensures] [%#sbdd'2] interp a v
+    = interp a (Map.set v x b)))))
+    | _ -> [@expl:set_irrelevent_var ensures] [%#sbdd'2] interp a v = interp a (Map.set v x b)
     end
 end
 module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 364 4 364 82] (* Context<'arena> *)
@@ -1491,7 +1495,7 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 364 4 364 82] 
         && ([@expl:discr_valuation requires #3] [%#sbdd'2] childf <> b))
         /\ 0 <= ([%#sbdd'4] size a + size b) /\ ([%#sbdd'4] size childf + size b) < ([%#sbdd'4] size a + size b))
         /\ (([%#sbdd'3] interp childf (discr_valuation self childf b) <> interp b (discr_valuation self childf b))
-         -> (let result = Map.set (discr_valuation self childf b) v false in [%#sbdd'3] interp a result
+         -> (let result = Map.set (discr_valuation self childf b) v false in [@expl:discr_valuation ensures] [%#sbdd'3] interp a result
         <> interp b result))
       else
         ((([@expl:discr_valuation requires #0] [%#sbdd] inv self)
@@ -1500,10 +1504,11 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 364 4 364 82] 
         && ([@expl:discr_valuation requires #3] [%#sbdd'2] childt <> b))
         /\ 0 <= ([%#sbdd'4] size a + size b) /\ ([%#sbdd'4] size childt + size b) < ([%#sbdd'4] size a + size b))
         /\ (([%#sbdd'3] interp childt (discr_valuation self childt b) <> interp b (discr_valuation self childt b))
-         -> (let result = Map.set (discr_valuation self childt b) v true in [%#sbdd'3] interp a result
+         -> (let result = Map.set (discr_valuation self childt b) v true in [@expl:discr_valuation ensures] [%#sbdd'3] interp a result
         <> interp b result))
       
-      | _ -> let result = Const.const true in [%#sbdd'3] interp a result <> interp b result
+      | _ -> let result = Const.const true in [@expl:discr_valuation ensures] [%#sbdd'3] interp a result
+      <> interp b result
       end
   else
     if leastvar a > leastvar b then
@@ -1515,7 +1520,7 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 364 4 364 82] 
           && ([@expl:discr_valuation requires #3] [%#sbdd'2] a <> childf))
           /\ 0 <= ([%#sbdd'4] size a + size b) /\ ([%#sbdd'4] size a + size childf) < ([%#sbdd'4] size a + size b))
           /\ (([%#sbdd'3] interp a (discr_valuation self a childf) <> interp childf (discr_valuation self a childf))
-           -> (let result = Map.set (discr_valuation self a childf) v false in [%#sbdd'3] interp a result
+           -> (let result = Map.set (discr_valuation self a childf) v false in [@expl:discr_valuation ensures] [%#sbdd'3] interp a result
           <> interp b result))
         else
           ((([@expl:discr_valuation requires #0] [%#sbdd] inv self)
@@ -1524,10 +1529,11 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 364 4 364 82] 
           && ([@expl:discr_valuation requires #3] [%#sbdd'2] a <> childt))
           /\ 0 <= ([%#sbdd'4] size a + size b) /\ ([%#sbdd'4] size a + size childt) < ([%#sbdd'4] size a + size b))
           /\ (([%#sbdd'3] interp a (discr_valuation self a childt) <> interp childt (discr_valuation self a childt))
-           -> (let result = Map.set (discr_valuation self a childt) v true in [%#sbdd'3] interp a result
+           -> (let result = Map.set (discr_valuation self a childt) v true in [@expl:discr_valuation ensures] [%#sbdd'3] interp a result
           <> interp b result))
         
-        | _ -> let result = Const.const true in [%#sbdd'3] interp a result <> interp b result
+        | _ -> let result = Const.const true in [@expl:discr_valuation ensures] [%#sbdd'3] interp a result
+        <> interp b result
         end
     else
       match a with
@@ -1541,7 +1547,7 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 364 4 364 82] 
             /\ ([%#sbdd'4] size childfa + size childfb) < ([%#sbdd'4] size a + size b))
             /\ (([%#sbdd'3] interp childfa (discr_valuation self childfa childfb)
             <> interp childfb (discr_valuation self childfa childfb))
-             -> (let result = Map.set (discr_valuation self childfa childfb) v false in [%#sbdd'3] interp a result
+             -> (let result = Map.set (discr_valuation self childfa childfb) v false in [@expl:discr_valuation ensures] [%#sbdd'3] interp a result
             <> interp b result))
           else
             ((([@expl:discr_valuation requires #0] [%#sbdd] inv self)
@@ -1552,12 +1558,14 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 364 4 364 82] 
             /\ ([%#sbdd'4] size childta + size childtb) < ([%#sbdd'4] size a + size b))
             /\ (([%#sbdd'3] interp childta (discr_valuation self childta childtb)
             <> interp childtb (discr_valuation self childta childtb))
-             -> (let result = Map.set (discr_valuation self childta childtb) v true in [%#sbdd'3] interp a result
+             -> (let result = Map.set (discr_valuation self childta childtb) v true in [@expl:discr_valuation ensures] [%#sbdd'3] interp a result
             <> interp b result))
           
-          | _ -> let result = Const.const true in [%#sbdd'3] interp a result <> interp b result
+          | _ -> let result = Const.const true in [@expl:discr_valuation ensures] [%#sbdd'3] interp a result
+          <> interp b result
           end
-        | _ -> let result = Const.const true in [%#sbdd'3] interp a result <> interp b result
+        | _ -> let result = Const.const true in [@expl:discr_valuation ensures] [%#sbdd'3] interp a result
+        <> interp b result
         end
   
   )
@@ -1864,7 +1872,8 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 412 4 412 62] (*
   goal vc_bdd_canonical: ([%#sbdd] inv self)
    -> ([%#sbdd'0] is_valid_bdd self a)
    -> ([%#sbdd'1] is_valid_bdd self b)
-   -> ([%#sbdd'2] forall v: Map.map UInt64.t bool. interp a v = interp b v)  -> (let _ = () in [%#sbdd'3] a = b)
+   -> ([%#sbdd'2] forall v: Map.map UInt64.t bool. interp a v = interp b v)
+   -> (let _ = () in [@expl:bdd_canonical ensures] [%#sbdd'3] a = b)
 end
 module M_bdd__qyi11078426090797403070__new [#"bdd.rs" 418 4 418 52] (* Context<'arena> *)
   let%span sbdd = "bdd.rs" 423 28 423 57

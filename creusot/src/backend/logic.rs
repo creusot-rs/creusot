@@ -84,7 +84,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     };
     body_decls.push(Decl::LogicDecl(val_decl));
 
-    let postcondition = sig.contract.ensures_conj();
+    let postcondition = sig.contract.ensures_conj_labelled();
 
     let term = ctx.ctx.term(def_id).unwrap().rename(&bound);
     let wp = wp(
@@ -168,10 +168,9 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
             lim_sig.trigger = Some(Trigger::single(function_call(&lim_sig)));
             lim_sig.attrs = vec![];
 
-            let lim_spec = spec_axiom(&lim_sig);
-            decls.push(Decl::Axiom(lim_spec))
+            decls.extend(spec_axioms(&lim_sig))
         } else {
-            decls.push(Decl::Axiom(spec_axiom(&sig)));
+            decls.extend(spec_axioms(&sig));
         }
     }
 
@@ -207,16 +206,14 @@ fn limited_function_encode(
     decls.push(Decl::Axiom(definition_axiom(sig, lim_call, "def_lim")));
 }
 
-pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
-    let postcondition = sig.contract.ensures_conj();
-    let mut condition = sig.contract.requires_implies(postcondition);
-
-    let func_call = function_call(sig);
-    let trigger = sig.trigger.clone();
-    condition.subst(&[(name::result(), func_call.clone())].into_iter().collect());
-    let axiom = Exp::forall_trig(sig.args.clone(), trigger, condition);
-    let spec_ident = sig.name.refresh_with(|s| format!("{s}_spec"));
-    Axiom { name: spec_ident, rewrite: false, axiom }
+pub(crate) fn spec_axioms(sig: &Signature) -> impl Iterator<Item = Decl> {
+    sig.contract.ensures.iter().map(|post| {
+        let mut condition = sig.contract.requires_implies(post.exp.clone());
+        condition.subst(&[(name::result(), function_call(sig).clone())].into_iter().collect());
+        let axiom = Exp::forall_trig(sig.args.clone(), sig.trigger.clone(), condition);
+        let name = sig.name.refresh_with(|s| format!("{s}_spec"));
+        Decl::Axiom(Axiom { name, rewrite: false, axiom })
+    })
 }
 
 pub fn function_call(sig: &Signature) -> Exp {
