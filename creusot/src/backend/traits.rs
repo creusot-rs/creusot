@@ -1,5 +1,8 @@
 use crate::{
-    backend::{Why3Generator, clone_map::Dependencies, is_trusted_item, term::lower_pure},
+    backend::{
+        Why3Generator, clone_map::Dependencies, common_meta_decls, is_trusted_item,
+        term::lower_pure,
+    },
     contracts_items::is_snapshot_deref,
     ctx::FileModule,
 };
@@ -30,8 +33,8 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
             continue;
         }
         let mut decls = names.provide_deps(ctx);
-        let refines = Ident::fresh(ctx.crate_name(), "refines");
-        decls.push(Decl::Goal(Goal { name: refines, goal }));
+        decls.extend(common_meta_decls());
+        decls.push(Decl::Goal(Goal { name: Ident::fresh(ctx.crate_name(), "refines"), goal }));
 
         let attrs = ctx.span_attr(ctx.def_span(impl_did)).into_iter().collect();
         let meta = ctx.display_impl_of(impl_did);
