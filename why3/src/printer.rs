@@ -635,6 +635,7 @@ impl Print for MetaArg {
     {
         match self {
             MetaArg::Integer(i) => alloc.as_string(i),
+            MetaArg::String(s) => alloc.text(format!("{s:?}")),
         }
     }
 }
