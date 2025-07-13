@@ -838,6 +838,7 @@ pub enum Pattern {
     TupleP(Box<[Pattern]>),
     ConsP(Name, Box<[Pattern]>),
     RecP(Box<[(Name, Pattern)]>),
+    OrP(Box<[Pattern]>),
 }
 
 impl Pattern {
@@ -875,6 +876,12 @@ impl Pattern {
                     set
                 })
             }
+            Pattern::OrP(pats) => {
+                pats.iter().map(|p| p.binders()).fold(IndexSet::new(), |mut set, x| {
+                    set.extend(x);
+                    set
+                })
+            }
         }
     }
 
@@ -890,6 +897,9 @@ impl Pattern {
             }
             Pattern::RecP(fields) => {
                 fields.iter_mut().for_each(|(_, p)| p.refresh(bound));
+            }
+            Pattern::OrP(pats) => {
+                pats.iter_mut().for_each(|p| p.refresh(bound));
             }
         }
     }

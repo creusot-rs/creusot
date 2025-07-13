@@ -1611,9 +1611,7 @@ pub(crate) mod parsing {
         fn parse(input: ParseStream) -> Result<TermArm> {
             let requires_comma;
             Ok(TermArm {
-                // pat: todo!("Arm"),
-                pat: Pat::parse_single(input)?,
-                // pat: pat::parsing::multi_pat_with_leading_vert(input)?,
+                pat: Pat::parse_multi_with_leading_vert(input)?,
                 guard: {
                     if input.peek(Token![if]) {
                         let if_token: Token![if] = input.parse()?;
