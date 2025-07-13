@@ -197,6 +197,7 @@ impl<R: ViewRel> UnitRA for View<R> {
     #[logic]
     #[ensures(forall<x: Self> x.op(result) == Some(x))]
     fn unit() -> Self {
+        let _ = Self::ext_eq;
         Self::new_frag(R::Frag::unit())
     }
 }

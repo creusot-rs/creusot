@@ -8,7 +8,7 @@ use crate::{
         program,
         signature::{lower_logic_sig, lower_program_sig},
         structural_resolve::structural_resolve,
-        term::lower_pure,
+        term::{lower_pure, lower_pure_weakdep},
         ty::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
         },
@@ -318,7 +318,7 @@ fn expand_ty_inv_axiom<'tcx>(
     let mut elab = InvariantElaborator::new(param_env, ctx);
     let Some(term) = elab.elaborate_inv(ty, span) else { return vec![] };
     let rewrite = elab.rewrite;
-    let axiom = lower_pure(ctx, &names, &term);
+    let axiom = lower_pure_weakdep(ctx, &names, &term);
     let axiom =
         Axiom { name: names.dependency(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom };
     vec![Decl::Axiom(axiom)]
