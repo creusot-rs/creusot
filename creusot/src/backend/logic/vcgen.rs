@@ -616,6 +616,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     _ => unreachable!(),
                 }
             }
+            PatternKind::Or(patterns) => {
+                WPattern::OrP(patterns.iter().map(|p| self.build_pattern_inner(p)).collect())
+            }
         }
     }
 

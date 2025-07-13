@@ -435,6 +435,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     _ => unreachable!(),
                 }
             }
+            PatternKind::Or(patterns) => {
+                WPattern::OrP(patterns.iter().map(|p| self.lower_pat(p)).collect())
+            }
         }
     }
 
