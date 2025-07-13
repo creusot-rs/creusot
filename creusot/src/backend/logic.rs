@@ -1,7 +1,7 @@
 use crate::{
     backend::{
         Why3Generator, common_meta_decls, is_trusted_item, logic::vcgen::wp,
-        signature::lower_logic_sig, term::lower_pure, ty::translate_ty,
+        signature::lower_logic_sig, term::lower_pure_weakdep, ty::translate_ty,
     },
     contracts_items::get_builtin,
     ctx::*,
@@ -125,7 +125,9 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 ) -> Vec<Decl> {
     let mut decls = vec![];
 
-    let body = lower_pure(ctx, names, &body);
+    // We don't pull dependencies for FnDef items, because it may be more private than
+    // the definition is transparent
+    let body = lower_pure_weakdep(ctx, names, &body);
     let lim_name = if sig.uses_simple_triggers() {
         Some(sig.name.refresh_with(|s| format!("{s}_lim")))
     } else {

@@ -1,7 +1,7 @@
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{ProjectionElem, tcx::PlaceTy},
-    ty::TypingEnv,
+    ty::{TyKind, TypingEnv},
 };
 use rustc_span::Span;
 use rustc_target::abi::VariantIdx;
@@ -45,6 +45,9 @@ pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) {
         fn visit_term(&mut self, term: &Term<'tcx>) {
             match &term.kind {
                 TermKind::Item(id, _) => {
+                    if let TyKind::FnDef(_, _) = self.ctx.type_of(id).skip_binder().kind() {
+                        return;
+                    }
                     if !self.is_visible_enough(*id) {
                         self.error(*id, term.span)
                     }
@@ -99,6 +102,7 @@ pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) {
                         }
                     }
                 }
+                TermKind::Assert { .. } => return,
                 _ => (),
             }
             super_visit_term(term, self);
