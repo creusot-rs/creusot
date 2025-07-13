@@ -93,12 +93,14 @@ pub trait RA: Sized {
         self == other || self.incl(other)
     }
 
-    /// Identifies an element as _idempotent_.
-    ///
-    /// This means that this particular element can be duplicated with [`Self::op`].
-    #[logic]
-    #[ensures(result == (self.op(self) == Some(self)))]
-    fn idemp(self) -> bool;
+    #[logic(sealed)]
+    #[open]
+    fn incl_eq_op(a: Self, b: Self, x: Self) -> bool {
+        match a.op(b) {
+            None => false,
+            Some(ab) => ab.incl_eq(x),
+        }
+    }
 
     /// Ensures that we can go from `self` to `x` without making composition with the frame invalid.
     ///
@@ -143,25 +145,31 @@ pub trait RA: Sized {
         let _ = Self::associative;
     }
 
-    /// For every element, there is a maximal (in the sense of [`Self::incl`]) part
-    /// of `self` that is [`Self::idemp`].
+    /// The core of an element, when it exists, is inclded in that element, and idempotent.
+    /// Note that the statement `c.op(self) == Some(self)` is equivalent to `c.incl(self)` for
+    /// idempotent elements.
     #[logic]
     #[ensures(match result {
-        Some(b) => b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b),
-        None => forall<b: Self> ! (b.incl(self) && b.idemp()),
+        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
+        None => true
     })]
-    fn maximal_idemp(self) -> Option<Self>;
+    fn core(self) -> Option<Self>;
+
+    /// The core maximal, if there exists an idempotent element included in self
+    #[logic]
+    #[requires(i.op(i) == Some(i))]
+    #[requires(i.op(self) == Some(self))]
+    #[ensures(match self.core() {
+        Some(c) => i.incl(c),
+        None => false,
+    })]
+    fn core_is_maximal_idemp(self, i: Self);
 }
 
 pub trait UnitRA: RA {
     #[logic]
-    #[ensures(forall<x: Self> x.op(result) == Some(x))]
+    #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self;
-
-    #[law(sealed)]
-    #[ensures(forall<x: Self> Self::unit().op(x) == Some(x))]
-    fn unit_op_l() {}
 
     #[law(sealed)]
     #[ensures(forall<x: Self> x.incl(x))]
@@ -170,16 +178,19 @@ pub trait UnitRA: RA {
     }
 
     #[law(sealed)]
-    #[ensures(Self::unit().maximal_idemp() == Some(Self::unit()))]
-    fn unit_maximal_idemp() {}
+    #[ensures(Self::unit().core_total() == Self::unit())]
+    fn unit_core() {}
 
     #[logic]
-    #[ensures(Some(result) == self.maximal_idemp())]
-    #[ensures(result.incl(self))]
-    #[ensures(result.idemp())]
-    #[ensures(forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(result))]
-    fn maximal_idemp_total(self) -> Self {
-        let _ = Self::unit();
-        self.maximal_idemp().unwrap_logic()
+    #[open]
+    #[ensures(result.op(result) == Some(result))]
+    #[ensures(result.op(self) == Some(self))]
+    fn core_total(self) -> Self {
+        let _ = self.core_is_maximal_idemp(Self::unit());
+        self.core().unwrap_logic()
     }
+
+    #[logic] // TODO: make this a law
+    #[ensures(self.core() == Some(self.core_total()))]
+    fn core_is_total(self);
 }

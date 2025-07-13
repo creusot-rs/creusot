@@ -152,14 +152,6 @@ impl<R: ViewRel> RA for View<R> {
         }
     }
 
-    #[logic]
-    #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
-    fn idemp(self) -> bool {
-        let _ = Subset::<InnerView<R>>::view_inj;
-        self.auth() == None && self.frag().idemp()
-    }
-
     #[law]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
@@ -171,7 +163,13 @@ impl<R: ViewRel> RA for View<R> {
     fn associative(a: Self, b: Self, c: Self) {
         match (a.frag().op(b.frag()), b.frag().op(c.frag())) {
             (Some(fab), Some(fbc)) => match (fab.op(c.frag()), a.frag().op(fbc)) {
-                (Some(_), Some(_)) => (),
+                (Some(fabc1), Some(fabc2)) => {
+                    proof_assert!(fabc1 == fabc2);
+                    match (a.auth(), b.auth(), c.auth()) {
+                        (Some(_), None, None) | (None, Some(_), None) | (None, None, Some(_)) => {}
+                        _ => (),
+                    }
+                }
                 _ => (),
             },
             _ => (),
@@ -180,26 +178,49 @@ impl<R: ViewRel> RA for View<R> {
     }
 
     #[logic]
-    #[open(self)]
+    #[open]
     #[ensures(match result {
-        Some(b) => b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b),
-        None => forall<b: Self> ! (b.incl(self) && b.idemp()),
+        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
+        None => true
     })]
-    fn maximal_idemp(self) -> Option<Self> {
-        pearlite! {
-            Some(Self::new_frag(self.frag().maximal_idemp_total()))
-        }
+    fn core(self) -> Option<Self> {
+        Some(self.core_total())
+    }
+
+    #[logic]
+    #[requires(i.op(i) == Some(i))]
+    #[requires(i.op(self) == Some(self))]
+    #[ensures(match self.core() {
+        Some(c) => i.incl(c),
+        None => false,
+    })]
+    fn core_is_maximal_idemp(self, i: Self) {
+        let _ = R::Frag::core_is_total;
+        self.frag().core_is_maximal_idemp(i.frag())
     }
 }
 
 impl<R: ViewRel> UnitRA for View<R> {
     #[logic]
-    #[ensures(forall<x: Self> x.op(result) == Some(x))]
+    #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self {
         let _ = Self::ext_eq;
         Self::new_frag(R::Frag::unit())
     }
+
+    #[logic]
+    #[open]
+    #[ensures(result.op(result) == Some(result))]
+    #[ensures(result.op(self) == Some(self))]
+    fn core_total(self) -> Self {
+        let _ = R::Frag::core_is_total;
+        let _ = Self::ext_eq;
+        Self::new_frag(self.frag().core_total())
+    }
+
+    #[logic]
+    #[ensures(self.core() == Some(self.core_total()))]
+    fn core_is_total(self) {}
 }
 
 pub struct ViewUpdate<R: ViewRel, Choice>(pub Snapshot<Mapping<Choice, (R::Auth, R::Frag)>>);
@@ -212,13 +233,14 @@ impl<R: ViewRel, Choice> Update<View<R>> for ViewUpdate<R, Choice> {
     fn premise(self, from: View<R>) -> bool {
         pearlite! {
             from.auth() != None &&
-            forall<f: R::Frag>
-                match from.frag().op(f) {
+            (forall<ch: Choice> R::rel(Some(self.0[ch].0), self.0[ch].1)) &&
+            forall<frame: R::Frag>
+                match from.frag().op(frame) {
                     Some(ff) => R::rel(from.auth(), ff),
                     None => false
                 } ==>
                 exists<ch: Choice>
-                    match self.0[ch].1.op(f) {
+                    match self.0[ch].1.op(frame) {
                         Some(ff) => R::rel(Some(self.0[ch].0), ff),
                         None => false
                     }
@@ -227,7 +249,8 @@ impl<R: ViewRel, Choice> Update<View<R>> for ViewUpdate<R, Choice> {
 
     #[logic]
     #[open]
-    fn update(self, _: View<R>, ch: Choice) -> View<R> {
+    #[requires(self.premise(from))]
+    fn update(self, from: View<R>, ch: Choice) -> View<R> {
         View::new(Some(self.0[ch].0), self.0[ch].1)
     }
 
@@ -260,7 +283,9 @@ impl<R: ViewRel> Update<View<R>> for ViewUpdateInsert<R> {
 
     #[logic]
     #[open]
-    fn update(self, _: View<R>, _: ()) -> View<R> {
+    #[requires(self.premise(from))]
+    #[ensures(R::rel(Some(*self.0), *self.1))]
+    fn update(self, from: View<R>, _: ()) -> View<R> {
         View::new(Some(*self.0), *self.1)
     }
 
@@ -268,7 +293,9 @@ impl<R: ViewRel> Update<View<R>> for ViewUpdateInsert<R> {
     #[requires(self.premise(from))]
     #[requires(from.op(frame) != None)]
     #[ensures(self.update(from, result).op(frame) != None)]
-    fn frame_preserving(self, from: View<R>, frame: View<R>) {}
+    fn frame_preserving(self, from: View<R>, frame: View<R>) {
+        proof_assert!(R::rel(Some(*self.0), *self.1))
+    }
 }
 
 pub struct ViewUpdateRemove<R: ViewRel>(pub Snapshot<R::Auth>);
@@ -292,7 +319,9 @@ impl<R: ViewRel> Update<View<R>> for ViewUpdateRemove<R> {
 
     #[logic]
     #[open]
-    fn update(self, _: View<R>, _: ()) -> View<R> {
+    #[requires(self.premise(from))]
+    #[ensures(R::rel(Some(*self.0), R::Frag::unit()))]
+    fn update(self, from: View<R>, _: ()) -> View<R> {
         View::new_auth(*self.0)
     }
 

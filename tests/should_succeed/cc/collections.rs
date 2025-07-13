@@ -27,6 +27,7 @@ pub fn roundtrip_hashmap_into_iter<K: Eq + Hash + DeepModel, V>(
     };
     proof_assert! { forall<k: K::DeepModelTy> r@.contains(k) == (*xs_snap)@.contains(k) };
     proof_assert! { forall<k: K::DeepModelTy> r@[k] == (*xs_snap)@[k] };
+    proof_assert! { r@.ext_eq(xs_snap@) };
     r
 }
 
