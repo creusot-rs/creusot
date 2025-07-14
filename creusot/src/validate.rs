@@ -24,7 +24,7 @@ use crate::{
         get_builtin, is_ghost_deref, is_ghost_deref_mut, is_logic, is_snapshot_deref, is_spec,
         is_trusted,
     },
-    ctx::TranslationCtx,
+    ctx::{HasTyCtxt as _, TranslationCtx},
 };
 
 /// Validate that creusot buitins are annotated with `#[trusted]`.

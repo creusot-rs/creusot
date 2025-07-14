@@ -18,7 +18,7 @@ use crate::{
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
     },
     contracts_items::is_builtins_ascription,
-    ctx::PreMod,
+    ctx::{HasTyCtxt, PreMod},
     naming::name,
     translation::pearlite::{
         BinOp, Literal, Pattern, PatternKind, Term, TermKind, TermVisitor, UnOp, super_visit_term,
@@ -29,7 +29,7 @@ use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{ProjectionElem, tcx::PlaceTy},
-    ty::{EarlyBinder, Ty, TyKind, TypingEnv},
+    ty::{EarlyBinder, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::UintTy;
@@ -248,7 +248,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
                         TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
                         _ if is_int(self.ctx.tcx, t.ty) => ("to_int", PreMod::Bool),
-                        _ => self.ctx.crash_and_error(
+                        _ => self.crash_and_error(
                             t.span,
                             "bool cast to non integral casts are currently unsupported",
                         ),
@@ -739,5 +739,11 @@ impl<'tcx> VCGen<'_, 'tcx> {
         } else {
             Err(VCError::UnsupportedVariant(variant_ty, span))
         }
+    }
+}
+
+impl<'a, 'tcx> HasTyCtxt<'tcx> for VCGen<'a, 'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.ctx.tcx
     }
 }
