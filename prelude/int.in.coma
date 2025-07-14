@@ -50,9 +50,7 @@ module UInt$bits_count$
   function bw_xor (a:t) (b:t) : t
   function bw_not (a:t) : t
   function lsl (a:t) (b:int) : t
-  function lsr (a:t) (b:int) : t
-  function lsl_bv (a:t) (b:t) : t = lsl a (t'int b)
-  function lsr_bv (a:t) (b:t) : t = lsr a (t'int b)
+  function shr (a:t) (b:int) : t
   function nth (x: t) (i: int) : bool
 
   let of_int (n:int) { [@expl:integer overflow] in_bounds n }
@@ -84,7 +82,7 @@ module UInt$bits_count$
     = any
   let shr (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b <= $bits_count$ }
-    (ret (result :t) { result = lsr a b })
+    (ret (result :t) { result = shr a b })
     = any
 end
 
@@ -104,6 +102,8 @@ module UInt$bits_count$BW
   predicate lt (a:t) (b:t) = ult a b
   predicate ge (a:t) (b:t) = uge a b
   predicate gt (a:t) (b:t) = ugt a b
+
+  function shr (a:t) (b:int) : t = lsr a b
 
   let of_BV256 (a:BV256.t)
     { [@expl:arithmetic overflow] BV256.t'int a >= 0 /\ BV256.t'int a < two_power_size }
@@ -136,7 +136,7 @@ module UInt$bits_count$BW
     = any
   let shr (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size }
-    (ret (result :t) { result = lsr_bv a (of_int b) } { result = lsr a b })
+    (ret (result :t) { result = lsr_bv a (of_int b) } { result = shr a b })
     = any
 end
 
@@ -195,9 +195,7 @@ module Int$bits_count$
   function bw_xor (a:t) (b:t) : t
   function bw_not (a:t) : t
   function lsl (a:t) (b:int) : t
-  function lsr (a:t) (b:int) : t
-  function lsl_bv (a:t) (b:t) : t = lsl a (t'int b)
-  function lsr_bv (a:t) (b:t) : t = lsr a (t'int b)
+  function shr (a:t) (b:int) : t
 
   let of_int (n:int) { [@expl:integer overflow] in_bounds n }
     (ret (result : t) { to_int result = n }) = any
@@ -233,7 +231,7 @@ module Int$bits_count$
     = any
   let shr (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b <= $bits_count$ }
-    (ret (result :t) { result = lsr a b })
+    (ret (result :t) { result = shr a b })
     = any
 end
 
@@ -257,6 +255,8 @@ module Int$bits_count$BW
   predicate lt (a:t) (b:t) = slt a b
   predicate ge (a:t) (b:t) = sge a b
   predicate gt (a:t) (b:t) = sgt a b
+
+  function shr (a:t) (b:int) : t = asr a b
 
   let of_BV256 (a:BV256.t)
     { [@expl:arithmetic overflow] BV256.to_int a >= 0 /\ BV256.to_int a < two_power_size }
@@ -293,6 +293,6 @@ module Int$bits_count$BW
     = any
   let shr (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b < size }
-    (ret (result :t) { result = asr_bv a (of_int b) } { result = asr a b })
+    (ret (result :t) { result = asr_bv a (of_int b) } { result = shr a b })
     = any
 end

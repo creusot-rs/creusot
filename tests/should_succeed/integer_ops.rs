@@ -83,14 +83,12 @@ macro_rules! test_ops {
     ($t: ty, $three: expr) => {
         #[requires(l@ + r@ >= $t::MIN@ && l@ + r@ <= $t::MAX@)]
         #[ensures(result@ == l@ + r@)]
-        #[allow(dead_code)]
         pub fn test_add(l: $t, r: $t) -> $t {
             l + r
         }
 
         #[requires(l@ + r@ >= $t::MIN@ && l@ + r@ <= $t::MAX@)]
         #[ensures(result@ == l@ + r@)]
-        #[allow(dead_code)]
         #[bitwise_proof]
         pub fn test_add_bw(l: $t, r: $t) -> $t {
             l + r
@@ -98,14 +96,12 @@ macro_rules! test_ops {
 
         #[requires(l@ - r@ >= $t::MIN@ && l@ - r@ <= $t::MAX@)]
         #[ensures(result@ == l@ - r@)]
-        #[allow(dead_code)]
         pub fn test_sub(l: $t, r: $t) -> $t {
             l - r
         }
 
         #[requires(l@ - r@ >= $t::MIN@ && l@ - r@ <= $t::MAX@)]
         #[ensures(result@ == l@ - r@)]
-        #[allow(dead_code)]
         #[bitwise_proof]
         pub fn test_sub_bw(l: $t, r: $t) -> $t {
             l - r
@@ -113,14 +109,12 @@ macro_rules! test_ops {
 
         #[requires(l@ * r@ >= $t::MIN@ && l@ * r@ <= $t::MAX@)]
         #[ensures(result@ == l@ * r@)]
-        #[allow(dead_code)]
         pub fn test_mul(l: $t, r: $t) -> $t {
             l * r
         }
 
         #[requires(l@ * r@ >= $t::MIN@ && l@ * r@ <= $t::MAX@)]
         #[ensures(result@ == l@ * r@)]
-        #[allow(dead_code)]
         #[bitwise_proof]
         pub fn test_mul_bw(l: $t, r: $t) -> $t {
             l * r
@@ -129,7 +123,6 @@ macro_rules! test_ops {
         #[requires(r@ != 0)]
         #[requires(l@ / r@ >= $t::MIN@ && l@ / r@ <= $t::MAX@)]
         #[ensures(result@ == l@ / r@)]
-        #[allow(dead_code)]
         pub fn test_div(l: $t, r: $t) -> $t {
             l / r
         }
@@ -137,14 +130,12 @@ macro_rules! test_ops {
         #[requires(r@ != 0)]
         #[requires(l@ / r@ >= $t::MIN@ && l@ / r@ <= $t::MAX@)]
         #[ensures(result@ == l@ / r@)]
-        #[allow(dead_code)]
         #[bitwise_proof]
         pub fn test_div_bw(l: $t, r: $t) -> $t {
             l / r
         }
 
         #[ensures(result == b as $t)]
-        #[allow(dead_code)]
         pub fn test_from_bool(b: bool) -> $t {
             assert_eq!(true as $t, 1);
             assert_eq!(false as $t, 0);
@@ -152,7 +143,6 @@ macro_rules! test_ops {
         }
 
         #[ensures(result == b as $t)]
-        #[allow(dead_code)]
         #[bitwise_proof]
         pub fn test_from_bool_bw(b: bool) -> $t {
             assert_eq!(true as $t, 1);
@@ -160,88 +150,112 @@ macro_rules! test_ops {
             b as $t
         }
 
-        #[ensures(result == n << $three)]
-        #[allow(dead_code)]
+        #[ensures(result == n << $three)] // homogeneous shift
+        #[ensures(result == n << 3u8)] // heterogeneous shift
         pub fn test_shl(n: $t) -> $t {
             n << 3
         }
 
         #[ensures(result == n << $three)]
-        #[allow(dead_code)]
+        #[ensures(result == n << 3u8)]
         #[bitwise_proof]
         pub fn test_shl_bw(n: $t) -> $t {
             n << 3
         }
+
+        #[ensures(result == n >> $three)]
+        #[ensures(result == n >> 3u8)]
+        pub fn test_shr(n: $t) -> $t {
+            n >> 3
+        }
+
+        #[ensures(result == n >> $three)]
+        #[ensures(result == n >> 3u8)]
+        #[bitwise_proof]
+        pub fn test_shr_bw(n: $t) -> $t {
+            n >> 3
+        }
     };
 }
 
-mod u8 {
+pub mod u8 {
     use super::*;
     test_ops!(u8, 3u8);
 
-    #[allow(dead_code)]
     pub fn test_to_char() {
         assert_eq!((0x61 as u8) as char, 'a');
     }
 
-    #[allow(dead_code)]
     #[bitwise_proof]
     pub fn test_to_char_bw() {
         assert_eq!((0xFF as u8) as char, 'ÿ');
     }
 }
 
-mod i8 {
+pub mod i8 {
     use super::*;
     test_ops!(i8, 3i8);
+
+    #[requires(n > i8::MIN)]
+    #[ensures(result == -n)]
+    pub fn test_neg(n: i8) -> i8 {
+        -n
+    }
+
+    #[requires(n > i8::MIN)]
+    #[ensures(result == -n)]
+    #[bitwise_proof]
+    pub fn test_neg_bw(n: i8) -> i8 {
+        -n
+    }
 }
 
-mod u16 {
+pub mod u16 {
     use super::*;
     test_ops!(u16, 3u16);
 }
 
-mod i16 {
+pub mod i16 {
     use super::*;
     test_ops!(i16, 3i16);
 }
 
-mod u32 {
+pub mod u32 {
     use super::*;
     test_ops!(u32, 3u32);
 }
 
-mod i32 {
+pub mod i32 {
     use super::*;
     test_ops!(i32, 3i32);
 }
 
-mod u64 {
+pub mod u64 {
     use super::*;
     test_ops!(u64, 3u64);
 }
 
-mod i64 {
+pub mod i64 {
     use super::*;
     test_ops!(i64, 3i64);
 }
 
-mod u128 {
+pub mod u128 {
     use super::*;
     test_ops!(u128, 3u128);
 }
 
-mod i128 {
+pub mod i128 {
     use super::*;
     test_ops!(i128, 3i128);
 }
 
-mod usize {
+pub mod usize {
     use super::*;
     test_ops!(usize, 3usize);
 }
 
-mod isize {
+pub mod isize {
     use super::*;
     test_ops!(isize, 3isize);
 }
