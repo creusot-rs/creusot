@@ -11,8 +11,11 @@ use crate::{
         program::{PtrCastKind, ptr_cast_kind},
         projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::lower_contract,
-        term::{binop_to_binop, lower_literal, lower_pure, unsupported_cast},
-        ty::{constructor, is_int, ity_to_prelude, translate_ty, ty_to_prelude, uty_to_prelude},
+        term::{
+            binop_function, binop_right_int, binop_to_binop, lower_literal, lower_pure,
+            unsupported_cast,
+        },
+        ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
     },
     contracts_items::is_builtins_ascription,
     ctx::PreMod,
@@ -229,6 +232,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
     }
 
     fn build_wp(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Result<Exp, VCError<'tcx>> {
+        use BinOp::*;
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => k(Exp::var(v.0)),
@@ -374,25 +378,22 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(A || B, Q) = VC(A, |a| if a then Q(true) else VC(B, Q))
             // VC(A OP B, Q) = VC(A, |a| VC(B, |b| Q(a OP B)))
             TermKind::Binary { op, lhs, rhs } => match op {
-                BinOp::And => self.build_wp(lhs, &|lhs| {
+                And => self.build_wp(lhs, &|lhs| {
                     Ok(Exp::if_(lhs, self.build_wp(rhs, k)?, k(Exp::mk_false())?))
                 }),
-                BinOp::Or => self.build_wp(lhs, &|lhs| {
+                Or => self.build_wp(lhs, &|lhs| {
                     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_wp(rhs, k)?))
                 }),
-                BinOp::Div => {
-                    let prelude = ty_to_prelude(self.ctx.tcx, lhs.ty.kind());
+                _ if let Some(fun) = binop_function(self.names, *op, t.ty.kind()) => {
+                    let rhs_ty = rhs.ty.kind();
                     self.build_wp(lhs, &|lhs| {
                         self.build_wp(rhs, &|rhs| {
-                            k(Exp::qvar(self.names.in_pre(prelude, "div")).app([lhs.clone(), rhs]))
-                        })
-                    })
-                }
-                BinOp::Rem => {
-                    let prelude = ty_to_prelude(self.ctx.tcx, lhs.ty.kind());
-                    self.build_wp(lhs, &|lhs| {
-                        self.build_wp(rhs, &|rhs| {
-                            k(Exp::qvar(self.names.in_pre(prelude, "mod")).app([lhs.clone(), rhs]))
+                            let rhs = if binop_right_int(*op) {
+                                self.names.to_int_app(rhs_ty, rhs)
+                            } else {
+                                rhs
+                            };
+                            k(Exp::qvar(fun.clone()).app([lhs.clone(), rhs]))
                         })
                     })
                 }

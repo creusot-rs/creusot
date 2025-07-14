@@ -48,8 +48,6 @@ pub enum BinOp {
     Add,
     Sub,
     Mul,
-    Div,
-    Rem,
     BitXor,
     BitAnd,
     BitOr,
@@ -620,8 +618,6 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Add | AddUnchecked => BinOp::Add,
                     Sub | SubUnchecked => BinOp::Sub,
                     Mul | MulUnchecked => BinOp::Mul,
-                    Div => BinOp::Div,
-                    Rem => BinOp::Rem,
                     BitXor => BinOp::BitXor,
                     BitAnd => BinOp::BitAnd,
                     BitOr => BinOp::BitOr,
@@ -631,8 +627,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Le => BinOp::Le,
                     Ge => BinOp::Ge,
                     Gt => BinOp::Gt,
-                    Ne => unreachable!(),
-                    Eq => unreachable!(),
+                    Div | Rem | Ne | Eq => unreachable!(),
                     Offset | Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => {
                         return Err(Error::msg(span, "Unsupported binary operation {op}"));
                     }
