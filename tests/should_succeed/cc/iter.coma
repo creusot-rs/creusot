@@ -4,19 +4,19 @@ module M_iter__test_mut_ref [#"iter.rs" 5 0 5 21]
   let%span siter'1 = "../../../creusot-contracts/src/std/iter.rs" 94 26 97 17
   let%span siter'2 = "iter.rs" 7 38 7 39
   let%span siter'3 = "iter.rs" 8 38 8 39
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 289 18 289 33
-  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 413 20 413 63
-  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 420 12 420 66
-  let%span sslice'2 = "../../../creusot-contracts/src/std/slice.rs" 426 14 426 47
-  let%span sslice'3 = "../../../creusot-contracts/src/std/slice.rs" 427 27 427 29
-  let%span sslice'4 = "../../../creusot-contracts/src/std/slice.rs" 431 15 431 32
-  let%span sslice'5 = "../../../creusot-contracts/src/std/slice.rs" 432 15 432 32
-  let%span sslice'6 = "../../../creusot-contracts/src/std/slice.rs" 433 14 433 42
-  let%span sslice'7 = "../../../creusot-contracts/src/std/slice.rs" 434 91 434 93
-  let%span sslice'8 = "../../../creusot-contracts/src/std/slice.rs" 28 14 28 41
-  let%span sslice'9 = "../../../creusot-contracts/src/std/slice.rs" 29 14 29 42
-  let%span sslice'10 = "../../../creusot-contracts/src/std/slice.rs" 82 14 82 41
-  let%span sslice'11 = "../../../creusot-contracts/src/std/slice.rs" 83 14 83 76
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 326 18 326 33
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 450 20 450 63
+  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 457 12 457 66
+  let%span sslice'2 = "../../../creusot-contracts/src/std/slice.rs" 463 14 463 47
+  let%span sslice'3 = "../../../creusot-contracts/src/std/slice.rs" 464 27 464 29
+  let%span sslice'4 = "../../../creusot-contracts/src/std/slice.rs" 468 15 468 32
+  let%span sslice'5 = "../../../creusot-contracts/src/std/slice.rs" 469 15 469 32
+  let%span sslice'6 = "../../../creusot-contracts/src/std/slice.rs" 470 14 470 42
+  let%span sslice'7 = "../../../creusot-contracts/src/std/slice.rs" 471 91 471 93
+  let%span sslice'8 = "../../../creusot-contracts/src/std/slice.rs" 30 14 30 41
+  let%span sslice'9 = "../../../creusot-contracts/src/std/slice.rs" 31 14 31 42
+  let%span sslice'10 = "../../../creusot-contracts/src/std/slice.rs" 84 14 84 41
+  let%span sslice'11 = "../../../creusot-contracts/src/std/slice.rs" 85 14 85 76
   let%span soption = "../../../creusot-contracts/src/std/option.rs" 25 26 25 75
   let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 13 8 16 9
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
@@ -70,8 +70,9 @@ module M_iter__test_mut_ref [#"iter.rs" 5 0 5 21]
   
   function view'0 (self: Slice64.slice Int32.t) : Seq.seq Int32.t
   
-  axiom view_spec: forall self: Slice64.slice Int32.t. ([%#sslice'8] Seq.length (view'0 self) <= UInt64.t'int v_MAX)
-  && ([%#sslice'9] view'0 self = Slice64.id self)
+  axiom view_spec: forall self: Slice64.slice Int32.t. [%#sslice'8] Seq.length (view'0 self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'0: forall self: Slice64.slice Int32.t. [%#sslice'9] view'0 self = Slice64.id self
   
   function view'1 (self: Slice64.slice Int32.t) : Seq.seq Int32.t =
     [%#smodel'1] view'0 self
@@ -81,10 +82,11 @@ module M_iter__test_mut_ref [#"iter.rs" 5 0 5 21]
   
   function to_ref_seq (self: Slice64.slice Int32.t) : Seq.seq Int32.t
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice Int32.t. ([%#sslice'10] Seq.length (to_ref_seq self)
-  = Seq.length (view'1 self))
-  && ([%#sslice'11] forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
-   -> Seq.get (to_ref_seq self) i = index_logic self i)
+  axiom to_ref_seq_spec: forall self: Slice64.slice Int32.t. [%#sslice'10] Seq.length (to_ref_seq self)
+  = Seq.length (view'1 self)
+  
+  axiom to_ref_seq_spec'0: forall self: Slice64.slice Int32.t. [%#sslice'11] forall i: int. 0 <= i
+  /\ i < Seq.length (to_ref_seq self)  -> Seq.get (to_ref_seq self) i = index_logic self i
   
   predicate produces (self: t_Iter) (visited: Seq.seq Int32.t) (tl: t_Iter) =
     [%#sslice'1] to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
@@ -174,6 +176,8 @@ module M_iter__test_mut_ref [#"iter.rs" 5 0 5 21]
     | C_Match
   
   meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   let rec test_mut_ref[#"iter.rs" 5 0 5 21] (return'  (x:()))= (! bb0
     [ bb0 = s0
@@ -304,19 +308,19 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
   let%span siter'9 = "iter.rs" 17 38 17 42
   let%span siter'10 = "iter.rs" 18 38 18 42
   let%span siter'11 = "iter.rs" 14 8 14 33
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 289 18 289 33
-  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 420 12 420 66
-  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 413 20 413 63
-  let%span sslice'2 = "../../../creusot-contracts/src/std/slice.rs" 426 14 426 47
-  let%span sslice'3 = "../../../creusot-contracts/src/std/slice.rs" 427 27 427 29
-  let%span sslice'4 = "../../../creusot-contracts/src/std/slice.rs" 431 15 431 32
-  let%span sslice'5 = "../../../creusot-contracts/src/std/slice.rs" 432 15 432 32
-  let%span sslice'6 = "../../../creusot-contracts/src/std/slice.rs" 433 14 433 42
-  let%span sslice'7 = "../../../creusot-contracts/src/std/slice.rs" 434 91 434 93
-  let%span sslice'8 = "../../../creusot-contracts/src/std/slice.rs" 82 14 82 41
-  let%span sslice'9 = "../../../creusot-contracts/src/std/slice.rs" 83 14 83 76
-  let%span sslice'10 = "../../../creusot-contracts/src/std/slice.rs" 28 14 28 41
-  let%span sslice'11 = "../../../creusot-contracts/src/std/slice.rs" 29 14 29 42
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 326 18 326 33
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 457 12 457 66
+  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 450 20 450 63
+  let%span sslice'2 = "../../../creusot-contracts/src/std/slice.rs" 463 14 463 47
+  let%span sslice'3 = "../../../creusot-contracts/src/std/slice.rs" 464 27 464 29
+  let%span sslice'4 = "../../../creusot-contracts/src/std/slice.rs" 468 15 468 32
+  let%span sslice'5 = "../../../creusot-contracts/src/std/slice.rs" 469 15 469 32
+  let%span sslice'6 = "../../../creusot-contracts/src/std/slice.rs" 470 14 470 42
+  let%span sslice'7 = "../../../creusot-contracts/src/std/slice.rs" 471 91 471 93
+  let%span sslice'8 = "../../../creusot-contracts/src/std/slice.rs" 84 14 84 41
+  let%span sslice'9 = "../../../creusot-contracts/src/std/slice.rs" 85 14 85 76
+  let%span sslice'10 = "../../../creusot-contracts/src/std/slice.rs" 30 14 30 41
+  let%span sslice'11 = "../../../creusot-contracts/src/std/slice.rs" 31 14 31 42
   let%span soption = "../../../creusot-contracts/src/std/option.rs" 25 26 25 75
   let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 13 8 16 9
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
@@ -495,8 +499,9 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
   
   function view'0 (self: Slice64.slice bool) : Seq.seq bool
   
-  axiom view_spec: forall self: Slice64.slice bool. ([%#sslice'10] Seq.length (view'0 self) <= UInt64.t'int v_MAX)
-  && ([%#sslice'11] view'0 self = Slice64.id self)
+  axiom view_spec: forall self: Slice64.slice bool. [%#sslice'10] Seq.length (view'0 self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'0: forall self: Slice64.slice bool. [%#sslice'11] view'0 self = Slice64.id self
   
   function view'1 (self: Slice64.slice bool) : Seq.seq bool =
     [%#smodel'1] view'0 self
@@ -506,10 +511,11 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
   
   function to_ref_seq (self: Slice64.slice bool) : Seq.seq bool
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice bool. ([%#sslice'8] Seq.length (to_ref_seq self)
-  = Seq.length (view'1 self))
-  && ([%#sslice'9] forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
-   -> Seq.get (to_ref_seq self) i = index_logic self i)
+  axiom to_ref_seq_spec: forall self: Slice64.slice bool. [%#sslice'8] Seq.length (to_ref_seq self)
+  = Seq.length (view'1 self)
+  
+  axiom to_ref_seq_spec'0: forall self: Slice64.slice bool. [%#sslice'9] forall i: int. 0 <= i
+  /\ i < Seq.length (to_ref_seq self)  -> Seq.get (to_ref_seq self) i = index_logic self i
   
   predicate produces (self: t_Iter) (visited: Seq.seq bool) (tl: t_Iter) =
     [%#sslice'0] to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
@@ -626,6 +632,8 @@ module M_iter__test_filter [#"iter.rs" 12 0 12 20]
     | C_Match
   
   meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   let rec test_filter[#"iter.rs" 12 0 12 20] (return'  (x:()))= (! bb0
     [ bb0 = s0
@@ -789,19 +797,19 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
   let%span siter'10 = "iter.rs" 27 37 27 42
   let%span siter'11 = "iter.rs" 28 37 28 42
   let%span siter'12 = "iter.rs" 24 8 24 65
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 289 18 289 33
-  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 420 12 420 66
-  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 413 20 413 63
-  let%span sslice'2 = "../../../creusot-contracts/src/std/slice.rs" 426 14 426 47
-  let%span sslice'3 = "../../../creusot-contracts/src/std/slice.rs" 427 27 427 29
-  let%span sslice'4 = "../../../creusot-contracts/src/std/slice.rs" 431 15 431 32
-  let%span sslice'5 = "../../../creusot-contracts/src/std/slice.rs" 432 15 432 32
-  let%span sslice'6 = "../../../creusot-contracts/src/std/slice.rs" 433 14 433 42
-  let%span sslice'7 = "../../../creusot-contracts/src/std/slice.rs" 434 91 434 93
-  let%span sslice'8 = "../../../creusot-contracts/src/std/slice.rs" 82 14 82 41
-  let%span sslice'9 = "../../../creusot-contracts/src/std/slice.rs" 83 14 83 76
-  let%span sslice'10 = "../../../creusot-contracts/src/std/slice.rs" 28 14 28 41
-  let%span sslice'11 = "../../../creusot-contracts/src/std/slice.rs" 29 14 29 42
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 326 18 326 33
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 457 12 457 66
+  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 450 20 450 63
+  let%span sslice'2 = "../../../creusot-contracts/src/std/slice.rs" 463 14 463 47
+  let%span sslice'3 = "../../../creusot-contracts/src/std/slice.rs" 464 27 464 29
+  let%span sslice'4 = "../../../creusot-contracts/src/std/slice.rs" 468 15 468 32
+  let%span sslice'5 = "../../../creusot-contracts/src/std/slice.rs" 469 15 469 32
+  let%span sslice'6 = "../../../creusot-contracts/src/std/slice.rs" 470 14 470 42
+  let%span sslice'7 = "../../../creusot-contracts/src/std/slice.rs" 471 91 471 93
+  let%span sslice'8 = "../../../creusot-contracts/src/std/slice.rs" 84 14 84 41
+  let%span sslice'9 = "../../../creusot-contracts/src/std/slice.rs" 85 14 85 76
+  let%span sslice'10 = "../../../creusot-contracts/src/std/slice.rs" 30 14 30 41
+  let%span sslice'11 = "../../../creusot-contracts/src/std/slice.rs" 31 14 31 42
   let%span soption = "../../../creusot-contracts/src/std/option.rs" 25 26 25 75
   let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 13 8 16 9
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
@@ -983,8 +991,9 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
   
   function view'0 (self: Slice64.slice bool) : Seq.seq bool
   
-  axiom view_spec: forall self: Slice64.slice bool. ([%#sslice'10] Seq.length (view'0 self) <= UInt64.t'int v_MAX)
-  && ([%#sslice'11] view'0 self = Slice64.id self)
+  axiom view_spec: forall self: Slice64.slice bool. [%#sslice'10] Seq.length (view'0 self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'0: forall self: Slice64.slice bool. [%#sslice'11] view'0 self = Slice64.id self
   
   function view'1 (self: Slice64.slice bool) : Seq.seq bool =
     [%#smodel'2] view'0 self
@@ -994,10 +1003,11 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
   
   function to_ref_seq (self: Slice64.slice bool) : Seq.seq bool
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice bool. ([%#sslice'8] Seq.length (to_ref_seq self)
-  = Seq.length (view'1 self))
-  && ([%#sslice'9] forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
-   -> Seq.get (to_ref_seq self) i = index_logic self i)
+  axiom to_ref_seq_spec: forall self: Slice64.slice bool. [%#sslice'8] Seq.length (to_ref_seq self)
+  = Seq.length (view'1 self)
+  
+  axiom to_ref_seq_spec'0: forall self: Slice64.slice bool. [%#sslice'9] forall i: int. 0 <= i
+  /\ i < Seq.length (to_ref_seq self)  -> Seq.get (to_ref_seq self) i = index_logic self i
   
   predicate produces (self: t_Iter) (visited: Seq.seq bool) (tl: t_Iter) =
     [%#sslice'0] to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
@@ -1109,6 +1119,8 @@ module M_iter__test_filter_map [#"iter.rs" 22 0 22 24]
     | C_Match
   
   meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   let rec test_filter_map[#"iter.rs" 22 0 22 24] (return'  (x:()))= (! bb0
     [ bb0 = s0

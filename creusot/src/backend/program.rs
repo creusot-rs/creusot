@@ -12,12 +12,13 @@ use crate::{
     backend::{
         Why3Generator,
         clone_map::{Namer, PreMod},
+        common_meta_decls,
         dependency::Dependency,
         is_trusted_item,
         optimization::optimizations,
         projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::lower_program_sig,
-        term::{lower_pat, lower_pure},
+        term::{lower_pat, lower_pure, unsupported_cast},
         ty::{
             constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, ty_to_prelude,
             uty_to_prelude,
@@ -44,16 +45,16 @@ use rustc_hir::{
 };
 use rustc_middle::{
     mir::{BasicBlock, BinOp, ProjectionElem, START_BLOCK, UnOp, tcx::PlaceTy},
-    ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
+    ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::VariantIdx;
-use rustc_type_ir::{IntTy, UintTy};
+use rustc_type_ir::{DynKind, IntTy, UintTy};
 use std::{collections::HashMap, fmt::Debug, iter::once};
 use why3::{
     Ident, Name,
     coma::{Arg, Defn, Expr, IsRef, Param, Prototype, Term, Var},
-    declaration::{Attribute, Condition, Contract, Decl, Meta, MetaArg, MetaIdent, Module},
+    declaration::{Attribute, Condition, Contract, Decl, Module},
     exp::{Binder, Constant, Exp, Pattern as WPattern},
     ty::Type,
 };
@@ -69,10 +70,7 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     let body = Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), None)));
 
     let mut decls = names.provide_deps(ctx);
-    decls.push(Decl::Meta(Meta {
-        name: MetaIdent::String("compute_max_steps".into()),
-        args: [MetaArg::Integer(1_000_000)].into(),
-    }));
+    decls.extend(common_meta_decls());
     decls.push(body);
 
     let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();
@@ -344,7 +342,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
             Box::new(|_, _| unreachable!()),
             &pl.projections,
             |ix| Exp::var(*ix),
-            DUMMY_SP,
+            self.ctx.tcx.def_span(self.def_id),
         );
         rhs.call(Some(istmts))
     }
@@ -532,7 +530,7 @@ impl<'tcx> RValue<'tcx> {
                         let prelude = match target.kind() {
                             TyKind::Int(ity) => ity_to_prelude(lower.ctx.tcx, *ity),
                             TyKind::Uint(uty) => uty_to_prelude(lower.ctx.tcx, *uty),
-                            _ => unsupported_cast(lower.ctx, source, target),
+                            _ => unsupported_cast(lower.ctx, span, source, target),
                         };
                         let arg = e.into_why(lower, istmts);
                         Exp::qvar(lower.names.in_pre(prelude, "of_bool")).app(vec![arg])
@@ -550,7 +548,7 @@ impl<'tcx> RValue<'tcx> {
                                     if lower.names.bitwise_mode() { "to_BV256" } else { "t'int" };
                                 lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *ity), fct_name)
                             }
-                            _ => unsupported_cast(lower.ctx, source, target),
+                            _ => unsupported_cast(lower.ctx, span, source, target),
                         };
                         let to_exp = Exp::qvar(to_fname).app(vec![e.into_why(lower, istmts)]);
 
@@ -571,7 +569,7 @@ impl<'tcx> RValue<'tcx> {
                                     if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
                                 lower.names.in_pre(PreMod::Char, fct_name)
                             }
-                            _ => unsupported_cast(lower.ctx, source, target),
+                            _ => unsupported_cast(lower.ctx, span, source, target),
                         };
 
                         // create final statement
@@ -584,14 +582,20 @@ impl<'tcx> RValue<'tcx> {
                         ));
                         Exp::var(of_ret_id)
                     }
-                    TyKind::RawPtr(ty1, _)
-                        if let TyKind::RawPtr(ty2, _) = target.kind()
-                            && ty1 == ty2 =>
-                    {
-                        // cast between raw pointers of the same type
-                        e.into_why(lower, istmts)
+                    // Pointer-to-pointer casts
+                    TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = target.kind() => {
+                        match ptr_cast_kind(lower.ctx.tcx, lower.names.typing_env(), ty1, ty2) {
+                            PtrCastKind::Id => e.into_why(lower, istmts),
+                            PtrCastKind::Thin => {
+                                Exp::qvar(lower.names.in_pre(PreMod::Opaque, "thin"))
+                                    .app([e.into_why(lower, istmts)])
+                            }
+                            PtrCastKind::Unknown => {
+                                unsupported_cast(&lower.ctx, span, source, target)
+                            }
+                        }
                     }
-                    _ => unsupported_cast(lower.ctx, source, target),
+                    _ => unsupported_cast(lower.ctx, span, source, target),
                 }
             }
             RValue::Len(op) => Exp::qvar(lower.names.in_pre(PreMod::Slice, "length"))
@@ -1242,9 +1246,47 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
     (lower.names.item(id, subst), args)
 }
 
-fn unsupported_cast(ctx: &crate::ctx::TranslationCtx, source: Ty, target: Ty) -> ! {
-    ctx.crash_and_error(
-        DUMMY_SP,
-        &format!("casts from {:?} to {:?} are currently unsupported", source, target),
-    )
+/// Pointer-to-pointer casts
+/// Reference: https://doc.rust-lang.org/reference/expressions/operator-expr.html#r-expr.as.pointer
+pub enum PtrCastKind {
+    /// thin-to-thin or fat-to-fat pointer casts are the identity
+    Id,
+    /// any-to-thin casts: may specialize to thin-to-thin (identity) or fat-to-thin (strip metadata)
+    /// Translates to `Opaque.thin` in Why3.
+    Thin,
+    /// Unknown casts. Type checking should prevent this, so we just error if we somehow encounter this.
+    Unknown,
+}
+
+/// Determine the kind of pointer cast between `*Ty1` and `*Ty2`.
+pub fn ptr_cast_kind<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    ty1: &Ty<'tcx>,
+    ty2: &Ty<'tcx>,
+) -> PtrCastKind {
+    // TODO: is using `is_sized` correct? Its doc says "it can be an overapproximation in generic contexts".
+    // https://doc.rust-lang.org/beta/nightly-rustc/rustc_middle/ty/struct.Ty.html#method.is_sized
+    // We really want it to be `true` only if the type is `Sized` so its pointers are known to be thin.
+    let sized1 = ty1.is_sized(tcx, typing_env);
+    let sized2 = ty2.is_sized(tcx, typing_env);
+    // If ty2 is unsized, then ty1 is also unsized.
+    // Otherwise this cast wouldn't have type checked and the compiler would have failed earlier.
+    if sized1 && sized2 || is_unsized(ty2) || ty1 == ty2 {
+        PtrCastKind::Id
+    } else if sized2 {
+        PtrCastKind::Thin
+    } else {
+        PtrCastKind::Unknown
+    }
+}
+
+/// If `true`, this is definitely an unsized type, so pointers to it must be fat.
+/// If `false`, nothing is known for sure.
+pub fn is_unsized(ty: &Ty) -> bool {
+    use rustc_type_ir::TyKind::*;
+    match ty.kind() {
+        Str | Slice(_) | Dynamic(_, _, DynKind::Dyn) => true,
+        _ => false,
+    }
 }

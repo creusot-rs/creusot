@@ -4,6 +4,10 @@ module M_02__fib [#"02.rs" 32 0 32 25]
   
   use mach.int.Int
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant i  : int
   
   function fib [#"02.rs" 32 0 32 25] (i'0: int) : int
@@ -33,22 +37,27 @@ module M_02__lemma_fib_bound [#"02.rs" 47 0 47 30]
   
   axiom fib_def: forall i: int. fib i = ([%#s02'4] if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2))
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant i  : int
   
   function lemma_fib_bound [#"02.rs" 47 0 47 30] (i'0: int) : ()
   
   goal vc_lemma_fib_bound: ([%#s02] 0 <= i)
    -> (if i = 0 then
-    [%#s02'0] fib i <= Power.power 2 i
+    [@expl:lemma_fib_bound ensures] [%#s02'0] fib i <= Power.power 2 i
   else
     if i = 1 then
-      [%#s02'0] fib i <= Power.power 2 i
+      [@expl:lemma_fib_bound ensures] [%#s02'0] fib i <= Power.power 2 i
     else
       (([@expl:lemma_fib_bound requires] [%#s02] 0 <= i - 2) /\ 0 <= ([%#s02'1] i) /\ ([%#s02'1] i - 2) < ([%#s02'1] i))
       /\ (([%#s02'0] fib (i - 2) <= Power.power 2 (i - 2))
        -> (let _ = lemma_fib_bound (i - 2) in (([@expl:lemma_fib_bound requires] [%#s02] 0 <= i - 1)
       /\ 0 <= ([%#s02'1] i) /\ ([%#s02'1] i - 1) < ([%#s02'1] i))
-      /\ (([%#s02'0] fib (i - 1) <= Power.power 2 (i - 1))  -> ([%#s02'0] fib i <= Power.power 2 i))))
+      /\ (([%#s02'0] fib (i - 1) <= Power.power 2 (i - 1))
+       -> ([@expl:lemma_fib_bound ensures] [%#s02'0] fib i <= Power.power 2 i))))
   
   )
 end
@@ -81,8 +90,8 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
   let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 161 26 161 54
   let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 21 14 21 41
   let%span smodel = "../../../creusot-contracts/src/model.rs" 44 8 44 22
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 108 20 108 37
-  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 115 20 115 37
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 117 20 117 37
   let%span sindex = "../../../creusot-contracts/src/logic/ops/index.rs" 29 8 29 31
   
   use creusot.int.UInt64
@@ -186,6 +195,8 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
     [%#s02'21] forall i: int. UInt64.t'int ((index_logic v i).t_Cell__ghost_inv).t_Fib__ix = i
   
   meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   let rec fib_memo[#"02.rs" 95 0 95 50] (mem:t_Vec) (i:UInt64.t) (return'  (x:UInt64.t))= {[@expl:fib_memo requires #0] [%#s02'8] fib_cell mem}
     {[@expl:fib_memo requires #1] [%#s02'9] UInt64.t'int i < Seq.length (view'0 mem)}

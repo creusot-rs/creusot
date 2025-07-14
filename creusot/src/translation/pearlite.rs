@@ -48,8 +48,6 @@ pub enum BinOp {
     Add,
     Sub,
     Mul,
-    Div,
-    Rem,
     BitXor,
     BitAnd,
     BitOr,
@@ -358,6 +356,7 @@ pub enum PatternKind<'tcx> {
     Wildcard,
     Binder(PIdent),
     Bool(bool),
+    Or(Box<[Pattern<'tcx>]>),
 }
 
 impl<'tcx> Pattern<'tcx> {
@@ -409,20 +408,34 @@ impl<'tcx> Pattern<'tcx> {
         }
     }
 
-    pub(crate) fn rename_binds(&mut self, binders: &mut HashMap<Ident, Ident>) {
+    pub(crate) fn rename_binds(
+        &mut self,
+        binders: &mut HashMap<Ident, Ident>,
+        seen: &mut HashSet<Ident>,
+    ) {
         match &mut self.kind {
             PatternKind::Constructor(_, fields) => {
-                fields.iter_mut().for_each(|(_, f)| f.rename_binds(binders))
+                fields.iter_mut().for_each(|(_, f)| f.rename_binds(binders, seen))
             }
-            PatternKind::Tuple(fields) => fields.iter_mut().for_each(|f| f.rename_binds(binders)),
+            PatternKind::Tuple(fields) => {
+                fields.iter_mut().for_each(|f| f.rename_binds(binders, seen))
+            }
             PatternKind::Wildcard => {}
             PatternKind::Binder(s) => {
-                let new_ident = s.0.refresh();
-                binders.insert(s.0, new_ident);
-                s.0 = new_ident;
+                if seen.contains(&s.0) {
+                    s.0 = binders[&s.0]
+                } else {
+                    let new_ident = s.0.refresh();
+                    binders.insert(s.0, new_ident);
+                    seen.insert(s.0);
+                    s.0 = new_ident
+                }
             }
             PatternKind::Bool(_) => {}
-            PatternKind::Deref(pointee) => pointee.rename_binds(binders),
+            PatternKind::Deref(pointee) => pointee.rename_binds(binders, seen),
+            PatternKind::Or(patterns) => {
+                patterns.iter_mut().for_each(|p| p.rename_binds(binders, seen))
+            }
         }
     }
 
@@ -438,6 +451,7 @@ impl<'tcx> Pattern<'tcx> {
             }
             PatternKind::Bool(_) => {}
             PatternKind::Deref(pointee) => pointee.binds(binders),
+            PatternKind::Or(patterns) => patterns.iter().for_each(|f| f.binds(binders)),
         }
     }
 }
@@ -604,8 +618,6 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Add | AddUnchecked => BinOp::Add,
                     Sub | SubUnchecked => BinOp::Sub,
                     Mul | MulUnchecked => BinOp::Mul,
-                    Div => BinOp::Div,
-                    Rem => BinOp::Rem,
                     BitXor => BinOp::BitXor,
                     BitAnd => BinOp::BitAnd,
                     BitOr => BinOp::BitOr,
@@ -615,8 +627,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Le => BinOp::Le,
                     Ge => BinOp::Ge,
                     Gt => BinOp::Gt,
-                    Ne => unreachable!(),
-                    Eq => unreachable!(),
+                    Div | Rem | Ne | Eq => unreachable!(),
                     Offset | Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => {
                         return Err(Error::msg(span, "Unsupported binary operation {op}"));
                     }
@@ -1012,6 +1023,13 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             PatKind::AscribeUserType { ascription: _, subpattern } => {
                 self.pattern_term(ctx, subpattern, mut_allowed)
             }
+            PatKind::Or { pats } => {
+                let pats = pats
+                    .iter()
+                    .map(|pat| self.pattern_term(ctx, &pat, mut_allowed))
+                    .collect::<Result<Box<[_]>, Error>>()?;
+                Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Or(pats) })
+            }
             ref pk => ctx.dcx().span_bug(pat.span, format!("Unsupported pattern kind {:?}", pk)),
         }
     }
@@ -1315,6 +1333,7 @@ pub fn super_visit_pattern<'tcx, V: TermVisitor<'tcx>>(pattern: &Pattern<'tcx>, 
         PatternKind::Deref(pattern) => visitor.visit_pattern(pattern),
         PatternKind::Tuple(patterns) => patterns.iter().for_each(|p| visitor.visit_pattern(p)),
         PatternKind::Wildcard | PatternKind::Binder(_) | PatternKind::Bool(_) => (),
+        PatternKind::Or(patterns) => patterns.iter().for_each(|p| visitor.visit_pattern(p)),
     }
 }
 
@@ -1652,14 +1671,14 @@ impl<'tcx> Term<'tcx> {
                 scrutinee.subst_with(bound, subst);
                 arms.iter_mut().for_each(|(pat, arm)| {
                     let mut bound = bound.clone();
-                    pat.rename_binds(&mut bound);
+                    pat.rename_binds(&mut bound, &mut HashSet::new());
                     arm.subst_with(&bound, subst);
                 })
             }
             TermKind::Let { pattern, arg, body } => {
                 arg.subst_with(bound, subst);
                 let mut bound = bound.clone();
-                pattern.rename_binds(&mut bound);
+                pattern.rename_binds(&mut bound, &mut HashSet::new());
                 body.subst_with(&bound, subst);
             }
             TermKind::Projection { lhs, .. } => lhs.subst_with(bound, subst),

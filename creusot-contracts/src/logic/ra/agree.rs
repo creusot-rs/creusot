@@ -15,13 +15,6 @@ impl<T> RA for Ag<T> {
 
     #[logic]
     #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
-    fn idemp(self) -> bool {
-        true
-    }
-
-    #[logic]
-    #[open]
     #[ensures(match result {
         Some(c) => factor.op(c) == Some(self),
         None => forall<c: Self> factor.op(c) != Some(self),
@@ -41,13 +34,21 @@ impl<T> RA for Ag<T> {
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic]
-    #[open(self)]
+    #[open]
     #[ensures(match result {
-        Some(b) => b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b),
-        None => forall<b: Self> ! (b.incl(self) && b.idemp()),
+        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
+        None => true
     })]
-    fn maximal_idemp(self) -> Option<Self> {
+    fn core(self) -> Option<Self> {
         Some(self)
     }
+
+    #[logic]
+    #[requires(i.op(i) == Some(i))]
+    #[requires(i.op(self) == Some(self))]
+    #[ensures(match self.core() {
+        Some(c) => i.incl(c),
+        None => false,
+    })]
+    fn core_is_maximal_idemp(self, i: Self) {}
 }

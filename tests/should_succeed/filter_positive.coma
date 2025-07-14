@@ -6,6 +6,10 @@ module M_filter_positive__num_of_pos [#"filter_positive.rs" 37 0 37 49]
   use seq.Seq
   use mach.int.Int
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant i  : int
   
   constant j  : int
@@ -45,6 +49,10 @@ module M_filter_positive__lemma_num_of_pos_increasing [#"filter_positive.rs" 65 
     if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
   )
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant i  : int
   
   constant j  : int
@@ -61,9 +69,9 @@ module M_filter_positive__lemma_num_of_pos_increasing [#"filter_positive.rs" 65 
     (([@expl:lemma_num_of_pos_increasing requires] [%#sfilter_positive] j + 1 <= k)
     /\ 0 <= ([%#sfilter_positive'1] k - j) /\ ([%#sfilter_positive'1] k - (j + 1)) < ([%#sfilter_positive'1] k - j))
     /\ (([%#sfilter_positive'0] num_of_pos i (j + 1) t <= num_of_pos i k t)
-     -> ([%#sfilter_positive'0] num_of_pos i j t <= num_of_pos i k t))
+     -> ([@expl:lemma_num_of_pos_increasing ensures] [%#sfilter_positive'0] num_of_pos i j t <= num_of_pos i k t))
   else
-    [%#sfilter_positive'0] num_of_pos i j t <= num_of_pos i k t
+    [@expl:lemma_num_of_pos_increasing ensures] [%#sfilter_positive'0] num_of_pos i j t <= num_of_pos i k t
   )
 end
 module M_filter_positive__lemma_num_of_pos_strictly_increasing [#"filter_positive.rs" 79 0 79 60]
@@ -87,6 +95,10 @@ module M_filter_positive__lemma_num_of_pos_strictly_increasing [#"filter_positiv
     if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
   )
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant i  : int
   
   constant t  : Seq.seq Int32.t
@@ -96,7 +108,8 @@ module M_filter_positive__lemma_num_of_pos_strictly_increasing [#"filter_positiv
   
   goal vc_lemma_num_of_pos_strictly_increasing: ([%#sfilter_positive] 0 <= i /\ i < Seq.length t)
    -> ([%#sfilter_positive'0] Int32.to_int (Seq.get t i) > 0)
-   -> ([%#sfilter_positive'1] num_of_pos 0 i t < num_of_pos 0 (i + 1) t)
+   -> ([@expl:lemma_num_of_pos_strictly_increasing ensures] [%#sfilter_positive'1] num_of_pos 0 i t
+  < num_of_pos 0 (i + 1) t)
 end
 module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
   let%span sfilter_positive = "filter_positive.rs" 83 27 83 28
@@ -140,9 +153,9 @@ module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
   let%span svec'9 = "../../creusot-contracts/src/std/vec.rs" 154 26 154 55
   let%span smodel = "../../creusot-contracts/src/model.rs" 44 8 44 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 62 8 62 22
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 108 20 108 37
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 115 20 115 37
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 122 20 122 88
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 117 20 117 37
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 124 20 124 88
   let%span sindex = "../../creusot-contracts/src/logic/ops/index.rs" 29 8 29 31
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
@@ -254,6 +267,8 @@ module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
     resolve _0
   
   meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   let rec m[#"filter_positive.rs" 82 0 82 33] (t:t_Vec) (return'  (x:t_Vec))= (! bb0
     [ bb0 = s0

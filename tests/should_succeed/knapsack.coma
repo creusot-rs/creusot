@@ -8,6 +8,8 @@ module M_knapsack__max [#"knapsack.rs" 16 0 16 35]
   
   meta "compute_max_steps" 1000000
   
+  meta "select_lsinst" "all"
+  
   let rec max[#"knapsack.rs" 16 0 16 35] (a:UInt64.t) (b:UInt64.t) (return'  (x:UInt64.t))= {[@expl:max requires] [%#sknapsack] true}
     (! bb0
     [ bb0 = s0
@@ -39,6 +41,10 @@ module M_knapsack__m [#"knapsack.rs" 31 0 31 57]
   type t_Item  =
     { t_Item__name: t_Name; t_Item__weight: UInt64.t; t_Item__value: UInt64.t }
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant items  : Seq.seq t_Item
   
   constant i  : int
@@ -50,13 +56,13 @@ module M_knapsack__m [#"knapsack.rs" 31 0 31 57]
   goal vc_m: ([%#sknapsack] 0 <= i /\ i <= Seq.length items)
    -> ([%#sknapsack'0] 0 <= w)
    -> (if i = 0 then
-    [%#sknapsack'1] 0 >= 0
+    [@expl:m ensures] [%#sknapsack'1] 0 >= 0
   else
     if UInt64.t'int (Seq.get items (i - 1)).t_Item__weight > w then
       ((([@expl:m requires #0] [%#sknapsack] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w))
       /\ 0 <= ([%#sknapsack'2] i) /\ ([%#sknapsack'2] i - 1) < ([%#sknapsack'2] i))
-      /\ (([%#sknapsack'1] m items (i - 1) w >= 0)  -> ([%#sknapsack'1] m items (i - 1) w >= 0))
+      /\ (([%#sknapsack'1] m items (i - 1) w >= 0)  -> ([@expl:m ensures] [%#sknapsack'1] m items (i - 1) w >= 0))
     else
       ((([@expl:m requires #0] [%#sknapsack] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w))
@@ -66,7 +72,7 @@ module M_knapsack__m [#"knapsack.rs" 31 0 31 57]
       && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight))
       /\ 0 <= ([%#sknapsack'2] i) /\ ([%#sknapsack'2] i - 1) < ([%#sknapsack'2] i))
       /\ (([%#sknapsack'1] m items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight) >= 0)
-       -> ([%#sknapsack'1] MinMax.max (m items (i - 1) w) (m items (i - 1) (w
+       -> ([@expl:m ensures] [%#sknapsack'1] MinMax.max (m items (i - 1) w) (m items (i - 1) (w
       - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight)
       + UInt64.t'int (Seq.get items (i - 1)).t_Item__value)
       >= 0)))
@@ -130,13 +136,13 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 45 0 45 91]
   let%span smodel = "../../creusot-contracts/src/model.rs" 44 8 44 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 62 8 62 22
   let%span sindex = "../../creusot-contracts/src/logic/ops/index.rs" 29 8 29 31
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 108 20 108 37
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 115 20 115 37
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 122 20 122 88
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 117 20 117 37
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 124 20 124 88
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 101 20 101 44
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 685 20 685 91
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 683 20 683 91
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   
   use creusot.int.UInt64
@@ -425,6 +431,8 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 45 0 45 91]
     [%#sindex] Seq.get (view'0 self) ix
   
   meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   let rec knapsack01_dyn[#"knapsack.rs" 45 0 45 91] (items:t_Vec'0) (max_weight:UInt64.t) (return'  (x:t_Vec'2))= {[@expl:knapsack01_dyn 'items' type invariant] [%#sknapsack'22] inv'4 items}
     {[@expl:knapsack01_dyn requires #0] [%#sknapsack'23] Seq.length (view'1 items) < 10000000}

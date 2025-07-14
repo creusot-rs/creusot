@@ -21,11 +21,16 @@ module M_05_map__qyi11082488819865755034__resolve_coherence [#"05_map.rs" 10 9 1
   predicate resolve'1 [#"05_map.rs" 10 9 10 16] (self: t_Map) =
     [%#s05_map'0] resolve'0 self.t_Map__iter /\ resolve self.t_Map__func
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant self  : t_Map
   
   function resolve_coherence [#"05_map.rs" 10 9 10 16] (self'0: t_Map) : ()
   
-  goal vc_resolve_coherence: ([%#s05_map] structural_resolve self)  -> ([%#s05_map] resolve'1 self)
+  goal vc_resolve_coherence: ([%#s05_map] structural_resolve self)
+   -> ([@expl:resolve_coherence ensures] [%#s05_map] resolve'1 self)
 end
 module M_05_map__qyi14378821460689001001__produces_refl [#"05_map.rs" 30 4 30 26] (* <Map<I, F> as common::Iterator> *)
   let%span s05_map = "05_map.rs" 29 14 29 47
@@ -115,11 +120,15 @@ module M_05_map__qyi14378821460689001001__produces_refl [#"05_map.rs" 30 4 30 26
     /\ precondition (Seq.get fs i).current (Seq.get s i)
     /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant self  : t_Map
   
   function produces_refl'0 [#"05_map.rs" 30 4 30 26] (self'0: t_Map) : ()
   
-  goal vc_produces_refl: [%#s05_map] produces'0 self (Seq.empty: Seq.seq t_B) self
+  goal vc_produces_refl: [@expl:produces_refl ensures] [%#s05_map] produces'0 self (Seq.empty: Seq.seq t_B) self
 end
 module M_05_map__qyi14378821460689001001__produces_trans [#"05_map.rs" 37 4 37 90] (* <Map<I, F> as common::Iterator> *)
   let%span s05_map = "05_map.rs" 34 15 34 32
@@ -211,6 +220,10 @@ module M_05_map__qyi14378821460689001001__produces_trans [#"05_map.rs" 37 4 37 9
     /\ precondition (Seq.get fs i).current (Seq.get s i)
     /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant a  : t_Map
   
   constant ab  : Seq.seq t_B
@@ -225,7 +238,8 @@ module M_05_map__qyi14378821460689001001__produces_trans [#"05_map.rs" 37 4 37 9
   
   
   goal vc_produces_trans: ([%#s05_map] produces'0 a ab b)
-   -> ([%#s05_map'0] produces'0 b bc c)  -> ([%#s05_map'1] produces'0 a (Seq.(++) ab bc) c)
+   -> ([%#s05_map'0] produces'0 b bc c)
+   -> ([@expl:produces_trans ensures] [%#s05_map'1] produces'0 a (Seq.(++) ab bc) c)
 end
 module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map<I, F> as common::Iterator> *)
   let%span s05_map = "05_map.rs" 66 16 66 62
@@ -396,8 +410,12 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   axiom produces_one_invariant_spec: forall self: t_Map, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter: t_I. ([%#s05_map'4] invariant''0 self)
    -> ([%#s05_map'5] produces self.t_Map__iter (Seq.singleton e) iter)
    -> ([%#s05_map'6] f.current = self.t_Map__func)
-   -> ([%#s05_map'7] postcondition_mut f.current e f.final r)
-   -> ([%#s05_map'8] preservation iter f.final) && ([%#s05_map'9] next_precondition iter f.final)
+   -> ([%#s05_map'7] postcondition_mut f.current e f.final r)  -> ([%#s05_map'8] preservation iter f.final)
+  
+  axiom produces_one_invariant_spec'0: forall self: t_Map, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter: t_I. ([%#s05_map'4] invariant''0 self)
+   -> ([%#s05_map'5] produces self.t_Map__iter (Seq.singleton e) iter)
+   -> ([%#s05_map'6] f.current = self.t_Map__func)
+   -> ([%#s05_map'7] postcondition_mut f.current e f.final r)  -> ([%#s05_map'9] next_precondition iter f.final)
   
   predicate inv'3 (_0: t_F)
   
@@ -487,6 +505,8 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   = produces'0 self (Seq.singleton visited) succ
   
   meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   let rec next'0[#"05_map.rs" 63 4 63 44] (self:MutBorrow.t t_Map) (return'  (x:t_Option'0))= {[@expl:next 'self' type invariant] [%#s05_map'1] inv'8 self}
     (! bb0
@@ -647,6 +667,10 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
     [%#s05_map'7] reinitialize
     /\ preservation self.t_Map__iter self.t_Map__func /\ next_precondition self.t_Map__iter self.t_Map__func
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant self  : t_Map
   
   constant e  : t_Item
@@ -666,7 +690,8 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
    -> ([%#s05_map'2] postcondition_mut f.current e f.final r)
    -> ([%#s05_map'5] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, i: t_I. produces iter (Seq.snoc (Seq.snoc s e1) e2) i
    -> produces self.t_Map__iter (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
-  && (let _ = () in ([%#s05_map'3] preservation iter f.final) && ([%#s05_map'4] next_precondition iter f.final))
+  && (let _ = () in ([@expl:produces_one_invariant ensures #0] [%#s05_map'3] preservation iter f.final)
+  && ([@expl:produces_one_invariant ensures #1] [%#s05_map'4] next_precondition iter f.final))
 end
 module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 125 4 125 57] (* Map<I, F> *)
   let%span s05_map = "05_map.rs" 124 14 124 68
@@ -775,6 +800,10 @@ module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 125 4 125 5
   
   axiom produces_refl_spec'0: forall self: t_Map. [%#s05_map'2] produces'0 self (Seq.empty: Seq.seq t_B) self
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant self  : t_Map
   
   constant visited  : t_B
@@ -783,7 +812,7 @@ module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 125 4 125 5
   
   predicate produces_one [#"05_map.rs" 125 4 125 57] (self'0: t_Map) (visited'0: t_B) (succ'0: t_Map)
   
-  goal vc_produces_one: [%#s05_map] ([%#s05_map'0] exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current e f.final visited]. f.current
+  goal vc_produces_one: [@expl:produces_one ensures] [%#s05_map] ([%#s05_map'0] exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current e f.final visited]. f.current
   = self.t_Map__func
   /\ f.final = succ.t_Map__func
   /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter
@@ -903,6 +932,8 @@ module M_05_map__map [#"05_map.rs" 154 0 154 81]
   
   meta "compute_max_steps" 1000000
   
+  meta "select_lsinst" "all"
+  
   let rec map[#"05_map.rs" 154 0 154 81] (iter:t_I) (func:t_F) (return'  (x:t_Map))= {[@expl:map 'iter' type invariant] [%#s05_map] inv iter}
     {[@expl:map 'func' type invariant] [%#s05_map'0] inv'0 func}
     {[@expl:map requires #0] [%#s05_map'1] forall e: t_Item, i2: t_I. produces iter (Seq.singleton e) i2
@@ -960,6 +991,10 @@ module M_05_map__qyi11082488819865755034__resolve_coherence__refines [#"05_map.r
   
   predicate resolve'1 [#"05_map.rs" 10 9 10 16] (self: t_Map) =
     [%#s05_map'0] resolve'0 self.t_Map__iter /\ resolve self.t_Map__func
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   goal refines: [%#s05_map] forall self: t_Map. structural_resolve self /\ inv'2 self
    -> structural_resolve self /\ (forall result: (). resolve'1 self  -> resolve'1 self)
@@ -1125,6 +1160,10 @@ module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44
     | C_Some a_0 -> inv'3 a_0
     end
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   goal refines: [%#s05_map] forall self: MutBorrow.t t_Map. inv'2 self
    -> inv'2 self
   /\ (forall result: t_Option. match result with
@@ -1225,6 +1264,10 @@ module M_05_map__qyi14378821460689001001__produces_refl__refines [#"05_map.rs" 3
     /\ precondition (Seq.get fs i).current (Seq.get s i)
     /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   goal refines: [%#s05_map] forall self: t_Map. forall result: (). produces'0 self (Seq.empty: Seq.seq t_B) self
    -> produces'0 self (Seq.empty: Seq.seq t_B) self
 end
@@ -1314,6 +1357,10 @@ module M_05_map__qyi14378821460689001001__produces_trans__refines [#"05_map.rs" 
      -> hist_inv self.t_Map__func (Seq.get fs i).current
     /\ precondition (Seq.get fs i).current (Seq.get s i)
     /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   goal refines: [%#s05_map] forall a: t_Map. forall ab: Seq.seq t_B. forall b: t_Map. forall bc: Seq.seq t_B. forall c: t_Map. produces'0 b bc c
   /\ produces'0 a ab b

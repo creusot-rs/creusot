@@ -53,11 +53,15 @@ module M_trigger2__resolve_seq [#"trigger2.rs" 6 0 6 43]
   predicate resolve'2 (_0: t_Vec) =
     resolve'1 _0
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant seq  : t_Vec
   
   predicate resolve_seq [#"trigger2.rs" 6 0 6 43] (seq'0: t_Vec)
   
-  goal vc_resolve_seq: [%#strigger2] resolve'2 seq
+  goal vc_resolve_seq: [@expl:resolve_seq ensures] [%#strigger2] resolve'2 seq
    -> ([%#strigger2'0] forall i: int [Seq.get (view seq) i]. 0 <= i /\ i < Seq.length (view seq)
    -> (Seq.get (view seq) i).current = (Seq.get (view seq) i).final)
 end
@@ -124,10 +128,14 @@ module M_trigger2__resolve_seq2 [#"trigger2.rs" 16 0 16 48]
   
   axiom resolve_seq_spec: forall seq: t_Vec. [%#strigger2'0] resolve'2 seq  -> resolve_seq seq
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant seq  : t_Vec
   
   predicate resolve_seq2 [#"trigger2.rs" 16 0 16 48] (seq'0: t_Vec)
   
   goal vc_resolve_seq2: ([%#strigger2'0] resolve'2 seq  -> resolve_seq seq)
-   -> ([%#strigger2] resolve'2 seq  -> resolve_seq seq)
+   -> ([@expl:resolve_seq2 ensures] [%#strigger2] resolve'2 seq  -> resolve_seq seq)
 end

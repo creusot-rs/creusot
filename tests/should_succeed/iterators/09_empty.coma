@@ -13,11 +13,15 @@ module M_09_empty__qyi7971881024803823682__produces_refl [#"09_empty.rs" 29 4 29
   predicate produces [#"09_empty.rs" 22 4 22 64] (self: t_Empty) (visited: Seq.seq t_T) (o: t_Empty) =
     [%#s09_empty'1] visited = (Seq.empty: Seq.seq t_T) /\ self = o
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant self  : t_Empty
   
   function produces_refl [#"09_empty.rs" 29 4 29 26] (self'0: t_Empty) : ()
   
-  goal vc_produces_refl: [%#s09_empty] produces self (Seq.empty: Seq.seq t_T) self
+  goal vc_produces_refl: [@expl:produces_refl ensures] [%#s09_empty] produces self (Seq.empty: Seq.seq t_T) self
 end
 module M_09_empty__qyi7971881024803823682__produces_trans [#"09_empty.rs" 36 4 36 90] (* <Empty<T> as common::Iterator> *)
   let%span s09_empty = "09_empty.rs" 33 15 33 32
@@ -36,6 +40,10 @@ module M_09_empty__qyi7971881024803823682__produces_trans [#"09_empty.rs" 36 4 3
   predicate produces [#"09_empty.rs" 22 4 22 64] (self: t_Empty) (visited: Seq.seq t_T) (o: t_Empty) =
     [%#s09_empty'3] visited = (Seq.empty: Seq.seq t_T) /\ self = o
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant a  : t_Empty
   
   constant ab  : Seq.seq t_T
@@ -50,7 +58,8 @@ module M_09_empty__qyi7971881024803823682__produces_trans [#"09_empty.rs" 36 4 3
   
   
   goal vc_produces_trans: ([%#s09_empty] produces a ab b)
-   -> ([%#s09_empty'0] produces b bc c)  -> ([%#s09_empty'1] produces a (Seq.(++) ab bc) c)
+   -> ([%#s09_empty'0] produces b bc c)
+   -> ([@expl:produces_trans ensures] [%#s09_empty'1] produces a (Seq.(++) ab bc) c)
 end
 module M_09_empty__qyi7971881024803823682__next [#"09_empty.rs" 42 4 42 35] (* <Empty<T> as common::Iterator> *)
   let%span s09_empty = "09_empty.rs" 42 26 42 35
@@ -96,6 +105,8 @@ module M_09_empty__qyi7971881024803823682__next [#"09_empty.rs" 42 4 42 35] (* <
   
   meta "compute_max_steps" 1000000
   
+  meta "select_lsinst" "all"
+  
   let rec next[#"09_empty.rs" 42 4 42 35] (self:MutBorrow.t t_Empty) (return'  (x:t_Option))= (! bb0
     [ bb0 = s0 [ s0 = -{resolve'0 self'0}- s1 | s1 =  [ &_0 <- C_None ] s2 | s2 = return''0 {_0} ]  ]
     ) [ & _0: t_Option = Any.any_l () | & self'0: MutBorrow.t t_Empty = self ] 
@@ -121,6 +132,10 @@ module M_09_empty__qyi7971881024803823682__produces_refl__refines [#"09_empty.rs
   predicate produces [#"09_empty.rs" 22 4 22 64] (self: t_Empty) (visited: Seq.seq t_T) (o: t_Empty) =
     [%#s09_empty'0] visited = (Seq.empty: Seq.seq t_T) /\ self = o
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   goal refines: [%#s09_empty] forall self: t_Empty. forall result: (). produces self (Seq.empty: Seq.seq t_T) self
    -> produces self (Seq.empty: Seq.seq t_T) self
 end
@@ -137,6 +152,10 @@ module M_09_empty__qyi7971881024803823682__produces_trans__refines [#"09_empty.r
   
   predicate produces [#"09_empty.rs" 22 4 22 64] (self: t_Empty) (visited: Seq.seq t_T) (o: t_Empty) =
     [%#s09_empty'0] visited = (Seq.empty: Seq.seq t_T) /\ self = o
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   goal refines: [%#s09_empty] forall a: t_Empty. forall ab: Seq.seq t_T. forall b: t_Empty. forall bc: Seq.seq t_T. forall c: t_Empty. produces b bc c
   /\ produces a ab b
@@ -179,6 +198,10 @@ module M_09_empty__qyi7971881024803823682__next__refines [#"09_empty.rs" 42 4 42
     | C_None -> true
     | C_Some a_0 -> inv a_0
     end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   goal refines: [%#s09_empty] forall self: MutBorrow.t t_Empty. forall result: t_Option. match result with
     | C_None -> completed self
