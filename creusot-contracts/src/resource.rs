@@ -104,8 +104,9 @@ mod m {
 
         /// Duplicate the duplicable core of a resource
         #[trusted]
-        #[requires(self@.maximal_idemp() != None)]
-        #[ensures(Some(result@) == self@.maximal_idemp())]
+        #[requires(self@.core() != None)]
+        #[ensures(result.id() == self.id())]
+        #[ensures(Some(result@) == self@.core())]
         #[pure]
         pub fn core(&self) -> Self {
             panic!("ghost code only")
@@ -120,10 +121,7 @@ mod m {
         /// `⌜a = b ⋅ c⌝ ∧ Own(a, γ) ⊢ Own(b, γ) ∗ Own(c, γ)`
         #[trusted]
         #[pure]
-        #[requires(match a.op(*b) {
-            None => false,
-            Some(ab) => ab.incl_eq(self@)
-        })]
+        #[requires(R::incl_eq_op(*a, *b, self@))]
         #[ensures(result.0.id() == self.id() && result.1.id() == self.id())]
         #[ensures(result.0@ == *a)]
         #[ensures(result.1@ == *b)]
@@ -134,10 +132,7 @@ mod m {
         /// Split a resource into two, and join it again once the mutable borrows are dropped.
         #[trusted]
         #[pure]
-        #[requires(match a.op(*b) {
-            None => false,
-            Some(ab) => ab.incl_eq(self@)
-        })]
+        #[requires(R::incl_eq_op(*a, *b, self@))]
         #[ensures(result.0.id() == self.id() && result.1.id() == self.id())]
         #[ensures(result.0@ == *a && result.1@ == *b)]
         #[ensures((^result.0).id() == self.id() && (^result.1).id() == self.id() ==>
@@ -149,10 +144,7 @@ mod m {
 
         /// Remove `r` from `self` and return it, leaving `s` in `self`.
         #[pure]
-        #[requires(match r.op(*s) {
-            None => false,
-            Some(rs) => rs.incl_eq(self@)
-        })]
+        #[requires(R::incl_eq_op(*r, *s, self@))]
         #[ensures((^self).id() == self.id() && result.id() == self.id())]
         #[ensures((^self)@ == *s)]
         #[ensures(result@ == *r)]

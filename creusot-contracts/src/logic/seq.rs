@@ -36,8 +36,6 @@ use crate::{
 /// This type is designed for this use-case, with no restriction on the capacity.
 #[trusted]
 #[cfg_attr(creusot, creusot::builtins = "seq.Seq.seq")]
-#[cfg_attr(creusot, creusot::builtins_ascription)]
-
 pub struct Seq<T>(std::marker::PhantomData<T>);
 
 /// Logical definitions
