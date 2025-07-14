@@ -12,6 +12,7 @@ use crate::{
     backend::{
         Why3Generator,
         clone_map::{Namer, PreMod},
+        common_meta_decls,
         dependency::Dependency,
         is_trusted_item,
         optimization::optimizations,
@@ -53,7 +54,7 @@ use std::{collections::HashMap, fmt::Debug, iter::once};
 use why3::{
     Ident, Name,
     coma::{Arg, Defn, Expr, IsRef, Param, Prototype, Term, Var},
-    declaration::{Attribute, Condition, Contract, Decl, Meta, MetaArg, MetaIdent, Module},
+    declaration::{Attribute, Condition, Contract, Decl, Module},
     exp::{Binder, Constant, Exp, Pattern as WPattern},
     ty::Type,
 };
@@ -69,10 +70,7 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     let body = Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), None)));
 
     let mut decls = names.provide_deps(ctx);
-    decls.push(Decl::Meta(Meta {
-        name: MetaIdent::String("compute_max_steps".into()),
-        args: [MetaArg::Integer(1_000_000)].into(),
-    }));
+    decls.extend(common_meta_decls());
     decls.push(body);
 
     let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();

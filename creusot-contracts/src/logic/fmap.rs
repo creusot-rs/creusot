@@ -36,7 +36,9 @@ impl<K, V> View for FMap<K, V> {
     /// This represents the actual content of the map: other methods are specified relative to this.
     #[trusted]
     #[logic]
-    #[ensures(forall<m1: Self, m2: Self> m1 != m2 ==> m1@ != m2@)]
+    // Adding this injectivity post-condition makes the SMT timeout on many examples
+    //#[ensures(forall<m: Self> result == m@ ==> self == m)]
+    //TODO: investigate
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -143,13 +145,8 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[logic]
     #[requires(self.disjoint(other))]
-    #[ensures(forall<k: K> result.get(k) == if self.contains(k) {
-        self.get(k)
-    } else if other.contains(k) {
-        other.get(k)
-    } else {
-        None
-    })]
+    #[ensures(forall<k: K> #[trigger(result.get(k))] !self.contains(k) ==> result.get(k) == other.get(k))]
+    #[ensures(forall<k: K> #[trigger(result.get(k))] !other.contains(k) ==> result.get(k) == self.get(k))]
     #[ensures(result.len() == self.len() + other.len())]
     pub fn union(self, other: Self) -> Self {
         dead
@@ -159,32 +156,25 @@ impl<K, V> FMap<K, V> {
     /// key is not in `other`.
     #[trusted]
     #[logic]
-    #[ensures(forall<k: K> result.get(k) == if other.contains(k) {
-        None
-    } else {
-        self.get(k)
-    })]
-    pub fn subtract_keys(self, other: Self) -> Self {
+    #[ensures(result.disjoint(other))]
+    #[ensures(other.subset(self) ==> other.union(result) == self)]
+    #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) ==
+        if other.contains(k) {
+            None
+        } else {
+            self.get(k)
+        }
+    )]
+    pub fn subtract(self, other: Self) -> Self {
         dead
     }
 
-    /// Same as [`Self::subtract_keys`], but the result is meaningless if `other` is not
-    /// a [`subset`](Self::subset) of `self`.
-    ///
-    /// In return, this gives more guarantees than `Self::subtract_keys`.
+    /// Injectivity of view. Private axiom used by ext_eq
     #[logic]
-    #[open]
-    #[requires(other.subset(self))]
-    #[ensures(result.disjoint(other))]
-    #[ensures(other.union(result).ext_eq(self))]
-    #[ensures(forall<k: K> result.get(k) == if other.contains(k) {
-        None
-    } else {
-        self.get(k)
-    })]
-    pub fn subtract(self, other: Self) -> Self {
-        self.subtract_keys(other)
-    }
+    #[trusted]
+    #[requires(self@ == other@)]
+    #[ensures(self == other)]
+    fn view_inj(self, other: Self) {}
 
     /// Extensional equality.
     ///
@@ -193,10 +183,12 @@ impl<K, V> FMap<K, V> {
     /// This is in fact equivalent with normal equality.
     #[logic]
     #[open]
-    #[ensures(result ==> self == other)]
-    #[ensures((forall<k: K> self.get(k) == other.get(k)) ==> result)]
+    #[ensures(result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
-        self.view() == other.view()
+        pearlite! {
+            let _ = Self::view_inj;
+            forall<k: K> self.get(k) == other.get(k)
+        }
     }
 
     /// Merge the two maps together
@@ -205,7 +197,7 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[logic]
     #[ensures(
-        forall<k: K>
+        forall<k: K> #[trigger(result.get(k))]
             match (self.get(k), m.get(k)) {
                 (None, y) => result.get(k) == y,
                 (x, None) => result.get(k) == x,
@@ -219,7 +211,7 @@ impl<K, V> FMap<K, V> {
     /// Map every value in `self` according to `f`. Keys are unchanged.
     #[logic]
     #[trusted]
-    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
+    #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) == match self.get(k) {
         None => None,
         Some(v) => Some(f[(k, v)]),
     })]
@@ -233,7 +225,7 @@ impl<K, V> FMap<K, V> {
     /// `p` returns `true` on this pair.
     #[logic]
     #[trusted]
-    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
+    #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) == match self.get(k) {
         None => None,
         Some(v) => if p[(k, v)] { Some(v) } else { None },
     })]
@@ -245,7 +237,7 @@ impl<K, V> FMap<K, V> {
     /// If `f` returns `false`, remove the key-value from the map.
     #[logic]
     #[trusted]
-    #[ensures(forall<k: K> result.get(k) == match self.get(k) {
+    #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) == match self.get(k) {
         None => None,
         Some(v) => f[(k, v)],
     })]

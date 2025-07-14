@@ -383,8 +383,7 @@ impl<'tcx> Dependencies<'tcx> {
         let deps =
             Dependencies { tcx: ctx.tcx, self_id, self_subst, names, dep_set: Default::default() };
 
-        let node = Dependency::Item(self_id, self_subst);
-        deps.names.dependency(node);
+        deps.names.dependency(Dependency::Item(self_id, self_subst));
         deps
     }
 

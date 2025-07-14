@@ -306,11 +306,16 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Coerce { arg } => self.build_wp(arg, k),
             // Items are just global names so
             // VC(i, Q) = Q(i)
-            TermKind::Item(id, sub) => {
-                let item_name = self.names.item(*id, sub);
-                match self.ctx.type_of(id).instantiate_identity().kind() {
-                    TyKind::FnDef(_, _) => k(Exp::unit()),
-                    _ => k(Exp::Var(item_name)),
+            TermKind::Item(id, subst) => {
+                if *id == self.self_id {
+                    self.ctx.crash_and_error(t.span, "cannot refer to the function in its own definition.")
+                }
+                // We pull (id, subst) as a dependency, because it may be useful for the proof
+                let item_name = self.names.item(*id, subst);
+                if let TyKind::FnDef(_, _) = self.ctx.type_of(id).instantiate_identity().kind() {
+                    k(Exp::unit())
+                } else {
+                    k(Exp::Var(item_name))
                 }
             }
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
@@ -330,7 +335,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     let subst = self.ctx.normalize_erasing_regions(self.typing_env, *subst);
                     let subst_id = erased_identity_for_item(self.ctx.tcx, *id);
                     if subst != subst_id {
-                        self.ctx.crash_and_error(t.span, "Polymorphic recursion is not supported.")
+                        self.ctx.crash_and_error(t.span, "polymorphic recursion is not supported.")
                     }
 
                     if let Some(variant) = variant {
@@ -338,7 +343,10 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     } else if self.structurally_recursive {
                         Exp::mk_true()
                     } else {
-                        Exp::mk_false()
+                        self.ctx.crash_and_error(
+                            self.ctx.def_span(self.self_id),
+                            "this function is recursive, but it does not use a variant and it not structurally recursive.",
+                        )
                     }
                 } else {
                     Exp::mk_true()
@@ -616,6 +624,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     )])),
                     _ => unreachable!(),
                 }
+            }
+            PatternKind::Or(patterns) => {
+                WPattern::OrP(patterns.iter().map(|p| self.build_pattern_inner(p)).collect())
             }
         }
     }

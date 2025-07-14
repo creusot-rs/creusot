@@ -36,15 +36,32 @@ use why3::{
     ty::Type,
 };
 
+fn lower_pure_raw<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    term: &Term<'tcx>,
+    weakdep: bool,
+) -> Exp {
+    let span = term.span;
+    let mut term = Lower { ctx, names, weakdep }.lower_term(term);
+    term.reassociate();
+    if let Some(attr) = names.span(span) { term.with_attr(attr) } else { term }
+}
+
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     term: &Term<'tcx>,
 ) -> Exp {
-    let span = term.span;
-    let mut term = Lower { ctx, names }.lower_term(term);
-    term.reassociate();
-    if let Some(attr) = names.span(span) { term.with_attr(attr) } else { term }
+    lower_pure_raw(ctx, names, term, false)
+}
+
+pub(crate) fn lower_pure_weakdep<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    term: &Term<'tcx>,
+) -> Exp {
+    lower_pure_raw(ctx, names, term, true)
 }
 
 pub(crate) fn lower_condition<'tcx, N: Namer<'tcx>>(
@@ -60,7 +77,7 @@ pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
     names: &N,
     pat: &Pattern<'tcx>,
 ) -> WPattern {
-    Lower { ctx, names }.lower_pat(pat)
+    Lower { ctx, names, weakdep: false }.lower_pat(pat)
 }
 
 pub(crate) fn unsupported_cast<'tcx>(
@@ -78,6 +95,7 @@ pub(crate) fn unsupported_cast<'tcx>(
 struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,
+    weakdep: bool,
 }
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&self, term: &Term<'tcx>) -> Exp {
@@ -158,12 +176,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Coerce { arg } => self.lower_term(arg),
             // FIXME: this is a weird dance.
             TermKind::Item(id, subst) => {
-                let method = (*id, *subst);
-                debug!("resolved_method={:?}", method);
-                let item_name = self.names.item(*id, subst);
-                match self.ctx.type_of(id).instantiate_identity().kind() {
-                    TyKind::FnDef(_, _) => Exp::unit(),
-                    _ => Exp::Var(item_name),
+                debug!("resolved_method={:?}", (*id, *subst));
+                if let TyKind::FnDef(_, _) = self.ctx.type_of(id).skip_binder().kind() {
+                    if !self.weakdep {
+                        self.names.item(*id, subst);
+                    }
+                    Exp::unit()
+                } else {
+                    Exp::Var(self.names.item(*id, subst))
                 }
             }
             TermKind::Var(v) => Exp::var(v.0),
@@ -417,6 +437,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     )])),
                     _ => unreachable!(),
                 }
+            }
+            PatternKind::Or(patterns) => {
+                WPattern::OrP(patterns.iter().map(|p| self.lower_pat(p)).collect())
             }
         }
     }

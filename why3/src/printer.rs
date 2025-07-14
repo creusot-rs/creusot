@@ -635,6 +635,7 @@ impl Print for MetaArg {
     {
         match self {
             MetaArg::Integer(i) => alloc.as_string(i),
+            MetaArg::String(s) => alloc.text(format!("{s:?}")),
         }
     }
 }
@@ -1030,51 +1031,62 @@ impl Print for Binder {
 }
 
 impl Print for Pattern {
-    fn pretty<'a, A: DocAllocator<'a>>(
+    fn pretty<'a, A: DocAllocator<'a, Doc: Clone>>(
         &'a self,
         alloc: &'a A,
         scope: &mut Why3Scope,
-    ) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        match self {
-            Pattern::Wildcard => alloc.text("_"),
-            Pattern::VarP(v) => {
-                scope.bind_value(*v);
-                v.pretty_value_name(alloc, scope)
-            }
-            Pattern::TupleP(pats) => {
-                alloc.intersperse(pats.iter().map(|p| p.pretty(alloc, scope)), ", ").parens()
-            }
-            Pattern::ConsP(c, pats) => {
-                let mut doc = c.pretty_value_name(alloc, scope);
-
-                if !pats.is_empty() {
-                    doc = doc.append(alloc.space()).append(alloc.intersperse(
-                        pats.iter().map(|p| {
-                            if matches!(p, Pattern::ConsP(_, _)) {
-                                p.pretty(alloc, scope).parens()
-                            } else {
-                                p.pretty(alloc, scope)
-                            }
-                        }),
-                        " ",
-                    ))
+    ) -> DocBuilder<'a, A> {
+        fn pretty_rec<'a, A: DocAllocator<'a, Doc: Clone>>(
+            p: &'a Pattern,
+            alloc: &'a A,
+            scope: &mut Why3Scope,
+            seen: &mut HashSet<Ident>,
+        ) -> DocBuilder<'a, A> {
+            match p {
+                Pattern::Wildcard => alloc.text("_"),
+                Pattern::VarP(v) => {
+                    if !seen.contains(v) {
+                        scope.bind_value(*v);
+                        seen.insert(*v);
+                    }
+                    v.pretty_value_name(alloc, scope)
                 }
-                doc
-            }
-            Pattern::RecP(pats) => {
-                let pats = pats.iter().map(|(field, pat)| {
-                    field
-                        .pretty_value_name(alloc, scope)
-                        .append(" = ")
-                        .append(pat.pretty(alloc, scope))
-                });
+                Pattern::TupleP(pats) => alloc
+                    .intersperse(pats.iter().map(|p| pretty_rec(p, alloc, scope, seen)), ", ")
+                    .parens(),
+                Pattern::ConsP(c, pats) => {
+                    let mut doc = c.pretty_value_name(alloc, scope);
 
-                alloc.intersperse(pats, " ; ").braces()
+                    if !pats.is_empty() {
+                        doc = doc.append(alloc.space()).append(alloc.intersperse(
+                            pats.iter().map(|p| {
+                                if matches!(p, Pattern::ConsP(_, _)) {
+                                    pretty_rec(p, alloc, scope, seen).parens()
+                                } else {
+                                    pretty_rec(p, alloc, scope, seen)
+                                }
+                            }),
+                            " ",
+                        ))
+                    }
+                    doc
+                }
+                Pattern::RecP(pats) => {
+                    let pats = pats.iter().map(|(field, pat)| {
+                        field
+                            .pretty_value_name(alloc, scope)
+                            .append(" = ")
+                            .append(pretty_rec(pat, alloc, scope, seen))
+                    });
+
+                    alloc.intersperse(pats, " ; ").braces()
+                }
+                Pattern::OrP(pats) => {
+                    alloc.intersperse(pats.iter().map(|p| pretty_rec(p, alloc, scope, seen)), " | ")
+                }
             }
         }
+        pretty_rec(self, alloc, scope, &mut HashSet::new())
     }
 }
 
