@@ -9,7 +9,7 @@ use ::std::alloc::Allocator;
     message = "the type `{Self}` cannot be indexed by `{I}` in logic",
     label = "`{Self}` cannot be indexed by `{I}` in logic"
 )]
-pub trait IndexLogic<I> {
+pub trait IndexLogic<I: ?Sized> {
     type Item;
 
     /// Performs the indexing (`container[index]`) operation.

@@ -1,6 +1,6 @@
 use pearlite_syn::Term as RT;
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
-use syn::{ExprMacro, Pat, UnOp, spanned::Spanned};
+use syn::{ExprMacro, Pat, PatType, UnOp, spanned::Spanned};
 
 use pearlite_syn::term::*;
 use quote::{ToTokens, quote, quote_spanned};
@@ -296,12 +296,16 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         }
         RT::Quant(TermQuant { quant_token, args, trigger, term, .. }) => {
             let mut ts = encode_term(term)?;
+            let args_ref = args.iter().map(|QuantArg { ident, ty }| match ty {
+                None => quote! { &#ident: &_ },
+                Some((_, ty)) => quote! { &#ident: &#ty },
+            });
             ts = encode_trigger(trigger, ts)?;
             ts = quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::#quant_token(
                     #[creusot::no_translate]
                     #[creusot::logic_closure]
-                    |#args| { #ts }
+                    |#(#args_ref,)*| { #ts }
                 )
             };
             Ok(ts)
@@ -309,12 +313,27 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Dead(_) => Ok(quote_spanned! {sp=> *::creusot_contracts::__stubs::dead() }),
         RT::Pearlite(term) => Ok(quote_spanned! {sp=> #term }),
         RT::Closure(clos) => {
-            let inputs = &clos.inputs;
+            if clos.inputs.len() != 1 {
+                return Err(EncodeError::Unsupported(
+                    term.span(),
+                    "logic closures can only have one parameter".into(),
+                ));
+            }
+
+            let input = match &clos.inputs[0] {
+                Pat::Type(PatType { attrs, pat, ty, .. }) => quote! { #(#attrs)* &#pat : &#ty},
+                _ => {
+                    let pat = &clos.inputs[0];
+                    quote! { &#pat }
+                }
+            };
+
             let retty = &clos.output;
             let clos = encode_term(&clos.body)?;
-            Ok(
-                quote_spanned! {sp=> ::creusot_contracts::__stubs::mapping_from_fn(#[creusot::no_translate] #[creusot::logic_closure] |#inputs| #retty #clos)},
-            )
+            Ok(quote_spanned! {sp=>
+                ::creusot_contracts::__stubs::mapping_from_fn(
+                    #[creusot::no_translate] #[creusot::logic_closure] |#input| #retty #clos)
+            })
         }
         RT::__Nonexhaustive => todo!(),
     }
