@@ -6,7 +6,9 @@
 // The `lower` module then transforms a `Term` into a WhyML expression.
 
 use crate::{
-    contracts_items::{is_assertion, is_deref, is_ghost_ty, is_index_logic, is_snap_ty, is_spec},
+    contracts_items::{
+        is_assertion, is_deref, is_ghost_ty, is_index_logic, is_logic_closure, is_snap_ty, is_spec,
+    },
     error::{CreusotResult, Error},
     translation::TranslationCtx,
 };
@@ -503,10 +505,20 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
             .chain(thir.params.iter().skip(1))
             .filter_map(to_pattern)
             .collect::<CreusotResult<_>>()
-    } else if is_closure {
-        // Skip implicit `self` parameter.
-        thir.params.iter().skip(1).filter_map(to_pattern).collect::<CreusotResult<_>>()
+    } else if is_logic_closure(ctx.tcx, did) {
+        // Skip implicit `self` parameter, and remove the & pattern which is added for parameters
+        // of logic closures
+        thir.params
+            .iter()
+            .skip(1)
+            .filter_map(to_pattern)
+            .map(|pat| match pat?.kind {
+                PatternKind::Deref(pat) => Ok(*pat),
+                _ => unreachable!(),
+            })
+            .collect::<CreusotResult<_>>()
     } else {
+        assert!(!is_closure);
         // Case of non-specs or trait item specs (which desugar to extra trait items).
         thir.params.iter().filter_map(to_pattern).collect::<CreusotResult<_>>()
     }?;
