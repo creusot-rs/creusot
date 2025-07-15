@@ -23,7 +23,7 @@ use rustc_middle::{
         StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
-    ty::{self, GenericArgKind, GenericArgsRef, Ty, TyKind, TypingEnv, TypingMode},
+    ty::{GenericArgKind, GenericArgsRef, Ty, TyKind, TypingEnv, TypingMode},
 };
 use rustc_mir_dataflow::{
     ResultsCursor,
@@ -89,7 +89,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Unreachable => term = Terminator::Abort(terminator.source_info.span),
             &Call { ref func, ref args, destination, mut target, fn_span, .. } => {
-                let Some((fun_def_id, subst)) = func_defid(func) else {
+                let &TyKind::FnDef(fun_def_id, subst) = func.ty(self.body, self.tcx()).kind()
+                else {
                     self.ctx.fatal_error(fn_span, "unsupported function call type").emit()
                 };
                 if let Some((need, resolved)) = resolved_during.take() {
@@ -308,12 +309,6 @@ fn resolve_function<'tcx>(
     }
 
     res
-}
-
-// Try to extract a function defid from an operand
-fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    let fun_ty = op.constant()?.const_.ty();
-    if let ty::TyKind::FnDef(def_id, subst) = fun_ty.kind() { Some((*def_id, subst)) } else { None }
 }
 
 // Find the place being discriminated, if there is one
