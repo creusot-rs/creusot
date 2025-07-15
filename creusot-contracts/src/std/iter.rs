@@ -48,8 +48,6 @@ pub trait Iterator: ::std::iter::Iterator {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[requires(forall<e, i2>
                     self.produces(Seq::singleton(e), i2) ==>
                     func.precondition((e, Snapshot::new(Seq::empty()))))]

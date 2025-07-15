@@ -187,7 +187,7 @@ impl<T> FSet<T> {
     /// This is in fact equivalent with normal equality.
     #[open]
     #[logic]
-    #[ensures(result ==> self == other)]
+    #[ensures(result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
             forall <e: T> self.contains(e) == other.contains(e)
