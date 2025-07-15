@@ -35,16 +35,6 @@ impl<T: RA> RA for Option<T> {
     }
 
     #[logic]
-    #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
-    fn idemp(self) -> bool {
-        match self {
-            None => true,
-            Some(x) => x.idemp(),
-        }
-    }
-
-    #[logic]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {
@@ -68,23 +58,26 @@ impl<T: RA> RA for Option<T> {
     }
 
     #[logic]
-    #[open(self)]
+    #[open]
     #[ensures(match result {
-        Some(b) => b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b),
-        None => forall<b: Self> ! (b.incl(self) && b.idemp()),
+        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
+        None => true
     })]
-    fn maximal_idemp(self) -> Option<Self> {
-        pearlite! {
-            match self {
-                None => Some(None),
-                Some(x) => {
-                    match x.maximal_idemp() {
-                        None => Some(None),
-                        Some(y) => Some(Some(y)),
-                    }
-                }
-            }
+    fn core(self) -> Option<Self> {
+        Some(self.core_total())
+    }
+
+    #[logic]
+    #[requires(i.op(i) == Some(i))]
+    #[requires(i.op(self) == Some(self))]
+    #[ensures(match self.core() {
+        Some(c) => i.incl(c),
+        None => false,
+    })]
+    fn core_is_maximal_idemp(self, i: Self) {
+        match (self, i) {
+            (Some(x), Some(i)) => x.core_is_maximal_idemp(i),
+            _ => (),
         }
     }
 }
@@ -92,10 +85,25 @@ impl<T: RA> RA for Option<T> {
 impl<T: RA> UnitRA for Option<T> {
     #[logic]
     #[open]
-    #[ensures(forall<x: Self> x.op(result) == Some(x))]
+    #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self {
         None
     }
+
+    #[logic]
+    #[open]
+    #[ensures(result.op(result) == Some(result))]
+    #[ensures(result.op(self) == Some(self))]
+    fn core_total(self) -> Self {
+        match self {
+            None => None,
+            Some(x) => x.core(),
+        }
+    }
+
+    #[logic]
+    #[ensures(self.core() == Some(self.core_total()))]
+    fn core_is_total(self) {}
 }
 
 pub struct OptionUpdate<U>(pub U);
@@ -114,6 +122,7 @@ impl<R: RA, U: Update<R>> Update<Option<R>> for OptionUpdate<U> {
 
     #[logic]
     #[open]
+    #[requires(self.premise(from))]
     fn update(self, from: Option<R>, ch: U::Choice) -> Option<R> {
         match from {
             Some(from) => Some(self.0.update(from, ch)),

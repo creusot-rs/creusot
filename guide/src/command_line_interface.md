@@ -29,7 +29,7 @@ Output Coma code in the `verif/` directory.
 ### `prove`
 
 ```
-cargo creusot prove [<COMA_FILE>] [-i|--ide-on-fail|--ide-always] [--replay] [--why3session]
+cargo creusot prove [<PATTERNS>] [-i|--ide-on-fail|--ide-always] [--replay] [--why3session]
 ```
 
 Verify contracts.
@@ -40,9 +40,12 @@ and tries to prove them.
 
 #### Options
 
-- `<COMA_FILE>`: Verify a specific file (corresponding to one Rust function).
+- `<PATTERNS>`: Select Coma files that match one of the patterns.
+  If no patterns are provided, prove all files.
+  Example patterns: `name`, `name::*`, `m/*/f`. Separators can be written as `::` or `/`.
 - `-i`, `--ide-on-fail`: Open the Why3 IDE on an unproved file to inspect its proof context.
-- `--ide-always`: Open the Why3 IDE on a single `<COMA_FILE>` regardless of whether the proof succeeded.
+- `--ide-always`: Open the Why3 IDE on a single Coma file regardless of whether the proof succeeded.
+  The command fails if `<PATTERN>` does not match exactly one file.
 - `--replay`: Don't generate new proofs, only check if the existing proofs are valid.
 - `--why3session`: Generate `why3session.xml` files (implied by `-i` and `--ide-always`).
 

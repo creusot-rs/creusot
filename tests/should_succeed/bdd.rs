@@ -4,6 +4,7 @@ use creusot_contracts::{
     Clone, PartialEq,
     invariant::{Invariant, inv},
     logic::Mapping,
+    peano::PeanoInt,
     *,
 };
 use std::cmp::Ordering::*;
@@ -249,7 +250,7 @@ pub struct Context<'arena> {
     hashcons_ghost: Snapshot<Mapping<u64, &'arena Node<'arena>>>,
     not_memo: hashmap::MyHashMap<Bdd<'arena>, Bdd<'arena>>,
     and_memo: hashmap::MyHashMap<(Bdd<'arena>, Bdd<'arena>), Bdd<'arena>>,
-    cnt: u64,
+    cnt: PeanoInt,
 }
 
 impl<'arena> Invariant for Context<'arena> {
@@ -258,7 +259,7 @@ impl<'arena> Invariant for Context<'arena> {
         pearlite! {
             (forall<n: NodeLog>
                 match self.hashcons@.get(n) {
-                    Some(b) => b.0@ == n && self.is_valid_node(*b.0) && b.1 < self.cnt &&
+                    Some(b) => b.0@ == n && self.is_valid_node(*b.0) && b.1 < self.cnt@ &&
                               self.hashcons_ghost.get(b.1) == b.0,
                     None => true
                 }) &&
@@ -422,7 +423,7 @@ impl<'arena> Context<'arena> {
             hashcons_ghost: snapshot! { Mapping::cst(t) },
             not_memo: hashmap::MyHashMap::new(),
             and_memo: hashmap::MyHashMap::new(),
-            cnt: 0,
+            cnt: PeanoInt::new(),
         }
     }
 
@@ -435,16 +436,10 @@ impl<'arena> Context<'arena> {
             proof_assert! { r.0@ == n@ };
             return r;
         }
-        let r = Bdd(self.alloc.alloc(n), self.cnt);
+        let r = Bdd(self.alloc.alloc(n), self.cnt.0);
         self.hashcons.add(n, r);
         self.hashcons_ghost = snapshot! { self.hashcons_ghost.set(r.1, r.0) };
-        if self.cnt > u64::MAX - 1 {
-            loop {
-                // prevent self from being resolved
-                self.cnt = self.cnt;
-            }
-        }
-        self.cnt += 1;
+        self.cnt = self.cnt.incr();
         r
     }
 

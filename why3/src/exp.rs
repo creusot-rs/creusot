@@ -16,11 +16,6 @@ pub enum BinOp {
     LogOr,   // i.e., \/
     LazyAnd, // i.e., &&
     LazyOr,  // i.e., ||
-    BitAnd,
-    BitOr,
-    BitXor,
-    Shl,
-    Shr,
     Add,
     FloatAdd,
     Sub,
@@ -51,11 +46,6 @@ impl BinOp {
             BinOp::LazyAnd => Conj,
             BinOp::LogOr => Disj,
             BinOp::LazyOr => Disj,
-            BinOp::BitAnd => Infix2,
-            BinOp::BitOr => Infix2,
-            BinOp::BitXor => Infix2,
-            BinOp::Shl => Infix2,
-            BinOp::Shr => Infix2,
             BinOp::Add => Infix2,
             BinOp::Sub => Infix2,
             BinOp::Mul => Infix3,
@@ -838,6 +828,7 @@ pub enum Pattern {
     TupleP(Box<[Pattern]>),
     ConsP(Name, Box<[Pattern]>),
     RecP(Box<[(Name, Pattern)]>),
+    OrP(Box<[Pattern]>),
 }
 
 impl Pattern {
@@ -875,6 +866,12 @@ impl Pattern {
                     set
                 })
             }
+            Pattern::OrP(pats) => {
+                pats.iter().map(|p| p.binders()).fold(IndexSet::new(), |mut set, x| {
+                    set.extend(x);
+                    set
+                })
+            }
         }
     }
 
@@ -890,6 +887,9 @@ impl Pattern {
             }
             Pattern::RecP(fields) => {
                 fields.iter_mut().for_each(|(_, p)| p.refresh(bound));
+            }
+            Pattern::OrP(pats) => {
+                pats.iter_mut().for_each(|p| p.refresh(bound));
             }
         }
     }

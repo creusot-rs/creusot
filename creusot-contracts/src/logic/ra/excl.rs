@@ -27,13 +27,6 @@ impl<T> RA for Excl<T> {
         None
     }
 
-    #[logic]
-    #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
-    fn idemp(self) -> bool {
-        false
-    }
-
     #[law]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
@@ -45,15 +38,23 @@ impl<T> RA for Excl<T> {
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic]
-    #[open(self)]
+    #[open]
     #[ensures(match result {
-        Some(b) => b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b),
-        None => forall<b: Self> ! (b.incl(self) && b.idemp()),
+        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
+        None => true
     })]
-    fn maximal_idemp(self) -> Option<Self> {
+    fn core(self) -> Option<Self> {
         None
     }
+
+    #[logic]
+    #[requires(i.op(i) == Some(i))]
+    #[requires(i.op(self) == Some(self))]
+    #[ensures(match self.core() {
+        Some(c) => i.incl(c),
+        None => false,
+    })]
+    fn core_is_maximal_idemp(self, i: Self) {}
 }
 
 pub struct ExclUpdate<T>(pub Snapshot<T>);
@@ -69,7 +70,8 @@ impl<T> Update<Excl<T>> for ExclUpdate<T> {
 
     #[logic]
     #[open]
-    fn update(self, _: Excl<T>, _: ()) -> Excl<T> {
+    #[requires(self.premise(from))]
+    fn update(self, from: Excl<T>, _: ()) -> Excl<T> {
         Excl(*self.0)
     }
 

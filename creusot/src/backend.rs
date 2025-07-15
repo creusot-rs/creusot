@@ -1,7 +1,7 @@
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
-use why3::declaration::Attribute;
+use why3::declaration::{Attribute, Decl, Meta, MetaArg, MetaIdent};
 
 use crate::{
     contracts_items::{is_resolve_function, is_spec, is_trusted},
@@ -176,4 +176,18 @@ pub fn is_trusted_item(tcx: TyCtxt, mut def_id: DefId) -> bool {
     }
 
     false
+}
+
+pub(crate) fn common_meta_decls() -> impl Iterator<Item = Decl> {
+    [
+        Decl::Meta(Meta {
+            name: MetaIdent::String("compute_max_steps".into()),
+            args: [MetaArg::Integer(1_000_000)].into(),
+        }),
+        Decl::Meta(Meta {
+            name: MetaIdent::String("select_lsinst".into()),
+            args: [MetaArg::String("all".into())].into(),
+        }),
+    ]
+    .into_iter()
 }

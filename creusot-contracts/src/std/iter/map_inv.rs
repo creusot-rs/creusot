@@ -94,7 +94,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> ::std::iter
                 let r = (self.func)(v, self.produced);
                 self.produced = produced;
                 #[allow(path_statements)]
-                let _: Snapshot<()> = snapshot! { { Self::produces_one_invariant; () } };
+                let _ = snapshot! { Self::produces_one_invariant };
                 proof_assert! { old_self.produces_one(r, *self) };
                 let _ = self; // Make sure self is not resolve until here.
                 Some(r)

@@ -6,17 +6,22 @@ module M_simple_trigger__id [#"simple_trigger.rs" 10 0 10 20]
   
   use mach.int.Int
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant i  : int
   
   function id [#"simple_trigger.rs" 10 0 10 20] (i'0: int) : int
   
   goal vc_id: ([%#ssimple_trigger] i >= 0)
    -> (if i = 0 then
-    [%#ssimple_trigger'0] i = 0  -> 0 = 0
+    [@expl:id ensures] [%#ssimple_trigger'0] i = 0  -> 0 = 0
   else
     (([@expl:id requires] [%#ssimple_trigger] i - 1 >= 0)
     /\ 0 <= ([%#ssimple_trigger'1] i) /\ ([%#ssimple_trigger'1] i - 1) < ([%#ssimple_trigger'1] i))
-    /\ (([%#ssimple_trigger'0] i - 1 = 0  -> id (i - 1) = 0)  -> ([%#ssimple_trigger'0] i = 0  -> id (i - 1) + 1 = 0))
+    /\ (([%#ssimple_trigger'0] i - 1 = 0  -> id (i - 1) = 0)
+     -> ([@expl:id ensures] [%#ssimple_trigger'0] i = 0  -> id (i - 1) + 1 = 0))
   )
 end
 module M_simple_trigger__test [#"simple_trigger.rs" 15 0 15 13]
@@ -42,6 +47,8 @@ module M_simple_trigger__test [#"simple_trigger.rs" 15 0 15 13]
    -> ([%#ssimple_trigger'1] i = 0  -> id_lim i = 0)
   
   meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
   
   let rec test[#"simple_trigger.rs" 15 0 15 13] (return'  (x:()))= (! bb0 [ bb0 = return''0 {_0} ] )
     [ & _0: () = Any.any_l () ]

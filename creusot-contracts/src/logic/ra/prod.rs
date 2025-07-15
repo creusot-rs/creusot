@@ -26,13 +26,6 @@ impl<T: RA, U: RA> RA for (T, U) {
         }
     }
 
-    #[logic]
-    #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
-    fn idemp(self) -> bool {
-        self.0.idemp() && self.1.idemp()
-    }
-
     #[law]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
@@ -44,25 +37,51 @@ impl<T: RA, U: RA> RA for (T, U) {
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic]
-    #[open(self)]
+    #[open]
     #[ensures(match result {
-        Some(b) => b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b),
-        None => forall<b: Self> ! (b.incl(self) && b.idemp()),
+        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
+        None => true
     })]
-    fn maximal_idemp(self) -> Option<Self> {
-        match (self.0.maximal_idemp(), self.1.maximal_idemp()) {
+    fn core(self) -> Option<Self> {
+        match (self.0.core(), self.1.core()) {
             (Some(x), Some(y)) => Some((x, y)),
             _ => None,
         }
+    }
+
+    #[logic]
+    #[requires(i.op(i) == Some(i))]
+    #[requires(i.op(self) == Some(self))]
+    #[ensures(match self.core() {
+        Some(c) => i.incl(c),
+        None => false,
+    })]
+    fn core_is_maximal_idemp(self, i: Self) {
+        self.0.core_is_maximal_idemp(i.0);
+        self.1.core_is_maximal_idemp(i.1);
     }
 }
 
 impl<T: UnitRA, U: UnitRA> UnitRA for (T, U) {
     #[logic]
-    #[ensures(forall<x: Self> x.op(result) == Some(x))]
+    #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self {
         (T::unit(), U::unit())
+    }
+
+    #[logic]
+    #[open]
+    #[ensures(result.op(result) == Some(result))]
+    #[ensures(result.op(self) == Some(self))]
+    fn core_total(self) -> Self {
+        (self.0.core_total(), self.1.core_total())
+    }
+
+    #[logic]
+    #[ensures(self.core() == Some(self.core_total()))]
+    fn core_is_total(self) {
+        self.0.core_is_total();
+        self.1.core_is_total();
     }
 }
 
@@ -79,6 +98,7 @@ impl<R1: RA, R2: RA, U1: Update<R1>, U2: Update<R2>> Update<(R1, R2)> for ProdUp
 
     #[logic]
     #[open]
+    #[requires(self.premise(from))]
     fn update(self, from: (R1, R2), ch: (U1::Choice, U2::Choice)) -> (R1, R2) {
         (self.0.update(from.0, ch.0), self.1.update(from.1, ch.1))
     }
@@ -112,11 +132,12 @@ impl<R1: RA, R2: RA, U1: LocalUpdate<R1>, U2: LocalUpdate<R2>> LocalUpdate<(R1, 
     }
 
     #[logic]
-    #[requires(LocalUpdate::premise(self, from_auth, from_frag))]
+    #[requires(self.premise(from_auth, from_frag))]
     #[requires(Some(from_frag).op(frame) == Some(Some(from_auth)))]
     #[ensures({
-        let (to_auth, to_frag) = LocalUpdate::update(self, from_auth, from_frag);
-        Some(to_frag).op(frame) == Some(Some(to_auth))})]
+        let (to_auth, to_frag) = self.update(from_auth, from_frag);
+        Some(to_frag).op(frame) == Some(Some(to_auth))
+    })]
     fn frame_preserving(self, from_auth: (R1, R2), from_frag: (R1, R2), frame: Option<(R1, R2)>) {
         self.0.frame_preserving(from_auth.0, from_frag.0, frame.map_logic(|f: (R1, R2)| f.0));
         self.1.frame_preserving(from_auth.1, from_frag.1, frame.map_logic(|f: (R1, R2)| f.1));

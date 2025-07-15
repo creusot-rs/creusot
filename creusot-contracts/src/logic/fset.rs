@@ -176,10 +176,7 @@ impl<T> FSet<T> {
     #[trusted]
     #[logic]
     #[creusot::builtins = "set.Fset.pick"]
-    pub fn peek(self) -> T
-    where
-        T: Sized,
-    {
+    pub fn peek(self) -> T {
         dead
     }
 
@@ -191,10 +188,7 @@ impl<T> FSet<T> {
     #[open]
     #[logic]
     #[ensures(result ==> self == other)]
-    pub fn ext_eq(self, other: Self) -> bool
-    where
-        T: Sized,
-    {
+    pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
             forall <e: T> self.contains(e) == other.contains(e)
         }

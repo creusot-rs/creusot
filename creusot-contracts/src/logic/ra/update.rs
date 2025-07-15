@@ -10,6 +10,7 @@ pub trait Update<R: RA>: Sized {
     fn premise(self, from: R) -> bool;
 
     #[logic]
+    #[requires(self.premise(from))]
     fn update(self, from: R, ch: Self::Choice) -> R;
 
     #[logic]
@@ -23,6 +24,7 @@ impl<R: RA> Update<R> for Snapshot<R> {
     type Choice = ();
 
     #[logic]
+    #[open]
     fn premise(self, from: R) -> bool {
         pearlite! {
             forall<y: R> from.op(y) != None ==> self.op(y) != None
@@ -31,7 +33,8 @@ impl<R: RA> Update<R> for Snapshot<R> {
 
     #[logic]
     #[open]
-    fn update(self, _: R, _: ()) -> R {
+    #[requires(self.premise(from))]
+    fn update(self, from: R, _: ()) -> R {
         *self
     }
 
@@ -46,6 +49,7 @@ impl<R: RA, Choice> Update<R> for Snapshot<Mapping<Choice, R>> {
     type Choice = Choice;
 
     #[logic]
+    #[open]
     fn premise(self, from: R) -> bool {
         pearlite! {
             forall<y: R> from.op(y) != None ==>
@@ -55,7 +59,8 @@ impl<R: RA, Choice> Update<R> for Snapshot<Mapping<Choice, R>> {
 
     #[logic]
     #[open]
-    fn update(self, _: R, ch: Choice) -> R {
+    #[requires(self.premise(from))]
+    fn update(self, from: R, ch: Choice) -> R {
         self[ch]
     }
 
@@ -80,12 +85,14 @@ pub trait LocalUpdate<R: RA>: Sized {
     #[requires(Some(from_frag).op(frame) == Some(Some(from_auth)))]
     #[ensures({
         let (to_auth, to_frag) = self.update(from_auth, from_frag);
-        Some(to_frag).op(frame) == Some(Some(to_auth))})]
+        Some(to_frag).op(frame) == Some(Some(to_auth))
+    })]
     fn frame_preserving(self, from_auth: R, from_frag: R, frame: Option<R>);
 }
 
 impl<R: RA> LocalUpdate<R> for Snapshot<(R, R)> {
     #[logic]
+    #[open]
     fn premise(self, from_auth: R, from_frag: R) -> bool {
         pearlite! {
             forall<f: Option<R>>
@@ -95,6 +102,7 @@ impl<R: RA> LocalUpdate<R> for Snapshot<(R, R)> {
     }
 
     #[logic]
+    #[open]
     fn update(self, _: R, _: R) -> (R, R) {
         *self
     }
@@ -105,6 +113,7 @@ impl<R: RA> LocalUpdate<R> for Snapshot<(R, R)> {
     #[requires(Some(from_frag).op(frame) == Some(Some(from_auth)))]
     #[ensures({
         let (to_auth, to_frag) = LocalUpdate::update(self, from_auth, from_frag);
-        Some(to_frag).op(frame) == Some(Some(to_auth))})]
+        Some(to_frag).op(frame) == Some(Some(to_auth))
+    })]
     fn frame_preserving(self, from_auth: R, from_frag: R, frame: Option<R>) {}
 }

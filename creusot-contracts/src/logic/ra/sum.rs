@@ -40,16 +40,6 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
         }
     }
 
-    #[logic]
-    #[open]
-    #[ensures(result == (self.op(self) == Some(self)))]
-    fn idemp(self) -> bool {
-        match self {
-            Self::Left(x) => x.idemp(),
-            Self::Right(x) => x.idemp(),
-        }
-    }
-
     #[law]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
@@ -61,16 +51,30 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic]
-    #[open(self)]
+    #[open]
     #[ensures(match result {
-        Some(b) => b.incl(self) && b.idemp() &&
-           forall<c: Self> c.incl(self) && c.idemp() ==> c.incl(b),
-        None => forall<b: Self> ! (b.incl(self) && b.idemp()),
+        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
+        None => true
     })]
-    fn maximal_idemp(self) -> Option<Self> {
+    fn core(self) -> Option<Self> {
         match self {
-            Self::Left(x) => x.maximal_idemp().map_logic(|l| Self::Left(l)),
-            Self::Right(x) => x.maximal_idemp().map_logic(|r| Self::Right(r)),
+            Self::Left(x) => x.core().map_logic(|l| Self::Left(l)),
+            Self::Right(x) => x.core().map_logic(|r| Self::Right(r)),
+        }
+    }
+
+    #[logic]
+    #[requires(i.op(i) == Some(i))]
+    #[requires(i.op(self) == Some(self))]
+    #[ensures(match self.core() {
+        Some(c) => i.incl(c),
+        None => false,
+    })]
+    fn core_is_maximal_idemp(self, i: Self) {
+        match (self, i) {
+            (Sum::Left(s), Sum::Left(i)) => s.core_is_maximal_idemp(i),
+            (Sum::Right(s), Sum::Right(i)) => s.core_is_maximal_idemp(i),
+            _ => (),
         }
     }
 }
@@ -91,6 +95,7 @@ impl<R1: RA, R2: RA, U: Update<R1>> Update<Sum<R1, R2>> for SumUpdateL<U> {
 
     #[logic]
     #[open]
+    #[requires(self.premise(from))]
     fn update(self, from: Sum<R1, R2>, ch: U::Choice) -> Sum<R1, R2> {
         match from {
             Sum::Left(from) => Sum::Left(self.0.update(from, ch)),
@@ -126,6 +131,7 @@ impl<R: RA, U: Update<R>, V: RA> Update<Sum<V, R>> for SumUpdateR<U> {
 
     #[logic]
     #[open]
+    #[requires(self.premise(from))]
     fn update(self, from: Sum<V, R>, ch: U::Choice) -> Sum<V, R> {
         match from {
             Sum::Right(from) => Sum::Right(self.0.update(from, ch)),
@@ -171,11 +177,12 @@ impl<R1: RA, R2: RA, U: LocalUpdate<R1>> LocalUpdate<Sum<R1, R2>> for SumLocalUp
     }
 
     #[logic]
-    #[requires(LocalUpdate::premise(self, from_auth, from_frag))]
+    #[requires(self.premise(from_auth, from_frag))]
     #[requires(Some(from_frag).op(frame) == Some(Some(from_auth)))]
     #[ensures({
-        let (to_auth, to_frag) = LocalUpdate::update(self, from_auth, from_frag);
-        Some(to_frag).op(frame) == Some(Some(to_auth))})]
+        let (to_auth, to_frag) = self.update(from_auth, from_frag);
+        Some(to_frag).op(frame) == Some(Some(to_auth))
+    })]
     fn frame_preserving(
         self,
         from_auth: Sum<R1, R2>,
@@ -220,11 +227,12 @@ impl<R1: RA, R2: RA, U: LocalUpdate<R2>> LocalUpdate<Sum<R1, R2>> for SumLocalUp
     }
 
     #[logic]
-    #[requires(LocalUpdate::premise(self, from_auth, from_frag))]
+    #[requires(self.premise(from_auth, from_frag))]
     #[requires(Some(from_frag).op(frame) == Some(Some(from_auth)))]
     #[ensures({
-        let (to_auth, to_frag) = LocalUpdate::update(self, from_auth, from_frag);
-        Some(to_frag).op(frame) == Some(Some(to_auth))})]
+        let (to_auth, to_frag) = self.update(from_auth, from_frag);
+        Some(to_frag).op(frame) == Some(Some(to_auth))
+    })]
     fn frame_preserving(
         self,
         from_auth: Sum<R1, R2>,

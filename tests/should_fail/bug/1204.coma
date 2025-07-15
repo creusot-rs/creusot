@@ -5,6 +5,10 @@ module M_1204__evil [#"1204.rs" 8 0 8 22]
   
   use mach.int.Int
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   constant x  : int
   
   function evil [#"1204.rs" 8 0 8 22] (x'0: int) : int
@@ -25,11 +29,16 @@ module M_1204__wrong [#"1204.rs" 14 0 14 10]
   
   axiom evil_def: forall x: int. ([%#s1204'0] false)  -> evil x = ([%#s1204'3] evil (- x) + 1)
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   function wrong [#"1204.rs" 14 0 14 10]  : ()
   
   goal vc_wrong: ([@expl:evil requires] [%#s1204'0] false)
   /\ ([@expl:evil requires] [%#s1204'0] false)
   /\ evil 1 = evil (- 1) + 1
   && (let _ = () in let _ = () in ([@expl:evil requires] [%#s1204'0] false)
-  /\ ([@expl:evil requires] [%#s1204'0] false) /\ evil (- 1) = evil 1 + 1 && (let _ = () in [%#s1204] false))
+  /\ ([@expl:evil requires] [%#s1204'0] false)
+  /\ evil (- 1) = evil 1 + 1 && (let _ = () in [@expl:wrong ensures] [%#s1204] false))
 end
