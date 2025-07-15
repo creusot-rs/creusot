@@ -67,6 +67,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant
     for MapInv<I, I::Item, F>
 {
     #[logic(prophetic)]
+    #[open]
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&
@@ -120,7 +121,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
 
     #[logic(prophetic)]
     #[ensures(produced == Seq::empty() ==> result == Self::preservation(iter, func))]
-    fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
+    pub fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 func.hist_inv(*f) ==>
@@ -155,8 +156,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
         }
     }
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[logic]
     #[requires(self.invariant())]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
