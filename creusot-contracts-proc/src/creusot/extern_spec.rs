@@ -485,20 +485,35 @@ fn flatten(
                 prefix.qself = Some(QSelf {
                     lt_token: Default::default(),
                     ty: impl_.self_ty.clone(),
-                    position: prefix.path.segments.len(),
+                    position: 0,
                     as_token: None,
                     gt_token: Default::default(),
                 });
                 prefix.path.leading_colon = Some(Default::default());
-            } else if let Type::Path(ty_path) = &*impl_.self_ty {
-                let mut segment = ty_path.path.segments[0].clone();
-                if let PathArguments::AngleBracketed(arg) = &mut segment.arguments {
-                    arg.colon2_token = Some(Default::default());
-                }
-
-                prefix.path.segments.push(segment);
             } else {
-                return Err(Error::new(impl_.brace_token.span.join(), "unsupported form of impl"));
+                let mut ty = &*impl_.self_ty;
+                loop {
+                    match ty {
+                        Type::Group(TypeGroup { elem, .. })
+                        | Type::Paren(TypeParen { elem, .. }) => ty = &*elem,
+                        _ => break,
+                    }
+                }
+                if let Type::Path(ty_path) = &*impl_.self_ty
+                    && ty_path.path.segments.len() == 1
+                {
+                    let mut segment = ty_path.path.segments[0].clone();
+                    if let PathArguments::AngleBracketed(arg) = &mut segment.arguments {
+                        arg.colon2_token = Some(Default::default());
+                    }
+
+                    prefix.path.segments.push(segment);
+                } else {
+                    return Err(Error::new(
+                        impl_.brace_token.span.join(),
+                        "unsupported form of impl",
+                    ));
+                }
             }
 
             item_name.add_generics(&impl_.generics);
@@ -700,12 +715,16 @@ impl Parse for ExternImpl {
         if is_impl_for {
             let for_token: Token![for] = input.parse()?;
             let mut first_ty_ref = &first_ty;
-            while let Type::Group(ty) = first_ty_ref {
-                first_ty_ref = &ty.elem;
+            while let Type::Group(TypeGroup { elem, .. }) | Type::Paren(TypeParen { elem, .. }) =
+                first_ty_ref
+            {
+                first_ty_ref = &elem;
             }
             if let Type::Path(_) = first_ty_ref {
-                while let Type::Group(ty) = first_ty {
-                    first_ty = *ty.elem;
+                while let Type::Group(TypeGroup { elem, .. })
+                | Type::Paren(TypeParen { elem, .. }) = first_ty
+                {
+                    first_ty = *elem;
                 }
                 if let Type::Path(TypePath { qself: None, path }) = first_ty {
                     trait_ = Some((path, for_token));
