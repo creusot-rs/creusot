@@ -1,3 +1,10 @@
+//! Pre-parse pearlite.
+//!
+//! Some macros accept pearlite rather than Rust. This module converts the
+//! latter to the former.
+//!
+//! For example, `1 + 2` becomes `creusot_contracts::logic::AddLogic::add(Int::new(1), Int::new(2))`.
+
 use pearlite_syn::Term as RT;
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
 use syn::{ExprMacro, Pat, PatType, UnOp, spanned::Spanned};
