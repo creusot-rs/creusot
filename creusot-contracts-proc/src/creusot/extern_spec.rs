@@ -1,5 +1,6 @@
 use crate::creusot::{doc::DocItemName, generate_unique_ident};
 use pearlite_syn::term::*;
+use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
@@ -11,8 +12,27 @@ use syn::{
     *,
 };
 
+/// The `extern_spec!` macro.
+pub fn extern_spec(tokens: TS1) -> TS1 {
+    let externs: ExternSpecs = parse_macro_input!(tokens);
+
+    let mut specs = Vec::new();
+    let externs = match externs.flatten() {
+        Ok(externs) => externs,
+        Err(err) => return TS1::from(err.to_compile_error()),
+    };
+
+    for spec in externs {
+        specs.push(spec.into_tokens());
+    }
+
+    TS1::from(quote! {
+        #(#specs)*
+    })
+}
+
 #[derive(Debug)]
-pub struct ExternSpecs(Vec<ExternSpec>);
+struct ExternSpecs(Vec<ExternSpec>);
 
 /// An extern spec is either:
 /// - A module of extern specs
@@ -83,7 +103,7 @@ struct ImplData {
 }
 
 #[derive(Clone, Debug)]
-pub struct FlatSpec {
+struct FlatSpec {
     span: Span,
     signature: Signature,
     doc_item_name: DocItemName,
@@ -94,7 +114,7 @@ pub struct FlatSpec {
 }
 
 impl ExternSpecs {
-    pub fn flatten(self) -> Result<Vec<FlatSpec>> {
+    fn flatten(self) -> Result<Vec<FlatSpec>> {
         let mut specs = Vec::new();
 
         for spec in self.0 {
@@ -127,7 +147,7 @@ impl TraitOrImpl {
 }
 
 impl FlatSpec {
-    pub fn to_tokens(mut self) -> TokenStream {
+    fn into_tokens(mut self) -> TokenStream {
         let span = self.span;
         let err = escape_self_in_contracts(&mut self.attrs);
         if let Err(e) = err {
