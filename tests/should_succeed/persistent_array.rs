@@ -29,37 +29,37 @@ pub mod implementation {
     ///
     /// If you don't, you must ensure that a [`TokensMap`] object is never used with a
     /// `PersistentArray` that is not derived from it.
-    pub struct PersistentArray<T: 'static> {
+    pub struct PersistentArray<T> {
         /// Contains a pointer to the actual value
         program_value: Rc<PCell<Inner<T>>>,
         /// Fraction of the GMap resource.
         ///
         /// This contains a fraction of the map, with only `program_value.id()` as key.
         /// The corresponding value is the logical value of the map.
-        contained_in_token: Ghost<&'static Fragment<Id, Seq<T>>>,
+        contained_in_token: Ghost<Rc<Fragment<Id, Seq<T>>>>,
         /// The [`Id`] in the public part is the id of the whole `GMap`, **not** the individual keys !
-        map_invariant: Ghost<&'static LocalInvariant<CompleteMap<T>>>,
+        map_invariant: Ghost<Rc<LocalInvariant<CompleteMap<T>>>>,
     }
 
-    impl<T: 'static> Clone for PersistentArray<T> {
+    impl<T> Clone for PersistentArray<T> {
         #[ensures(result@ == self@)]
         fn clone(&self) -> Self {
             Self {
                 program_value: self.program_value.clone(),
-                contained_in_token: self.contained_in_token,
-                map_invariant: self.map_invariant,
+                contained_in_token: self.contained_in_token.clone(),
+                map_invariant: self.map_invariant.clone(),
             }
         }
     }
 
-    impl<T: 'static> Invariant for PersistentArray<T> {
+    impl<T> Invariant for PersistentArray<T> {
         #[logic]
         fn invariant(self) -> bool {
             pearlite! {
                 // We indeed have the corresponding fractional part of the invariant
-                self.contained_in_token@.0 == self.program_value@.id()
-                && self.contained_in_token.id() == self.map_invariant.public()
-                && self.map_invariant.namespace() == PARRAY()
+                self.contained_in_token@@.0 == self.program_value@.id()
+                && self.contained_in_token@.id() == self.map_invariant@.public()
+                && self.map_invariant@.namespace() == PARRAY()
             }
         }
     }
@@ -69,12 +69,12 @@ pub mod implementation {
         Link { index: usize, value: T, next: Rc<PCell<Inner<T>>> },
     }
 
-    impl<T: 'static> View for PersistentArray<T> {
+    impl<T> View for PersistentArray<T> {
         type ViewTy = Seq<T>;
         #[logic]
         fn view(self) -> Seq<T> {
             pearlite! {
-                self.contained_in_token@.1
+                self.contained_in_token@@.1
             }
         }
     }
@@ -131,7 +131,7 @@ pub mod implementation {
         }
     }
 
-    impl<T: 'static> PersistentArray<T> {
+    impl<T> PersistentArray<T> {
         /// Create a new array from the given vector of values
         #[ensures(result@ == v@)]
         pub fn new(v: Vec<T>) -> Self {
@@ -156,12 +156,12 @@ pub mod implementation {
                     snapshot!(*gset_id),
                     snapshot!(PARRAY()),
                 );
-                &*Box::leak(Box::new(local_inv.into_inner()))
+                Rc::new(local_inv.into_inner())
             };
 
             Self {
                 program_value: Rc::new(program_value),
-                contained_in_token: ghost!(Box::leak(Box::new(frac_part))),
+                contained_in_token: ghost!(Rc::new(frac_part.into_inner())),
                 map_invariant,
             }
         }
@@ -176,12 +176,12 @@ pub mod implementation {
                 PCell::new(Inner::Link { index, value, next: self.program_value.clone() });
             let new_frac = {
                 let program_value = &program_value;
-                self.map_invariant.open(namespaces, |mut tokens| {
+                self.map_invariant.borrow().open(namespaces, |mut tokens| {
                     let cell_id = snapshot!(program_value.id());
                     let self_id = snapshot!(self.program_value@.id());
                     ghost! {
                         // prove that self is contained in the map by validity
-                        tokens.values.contains(*self.contained_in_token);
+                        tokens.values.contains(self.contained_in_token.as_ref());
                         // prove that we are inserting a _new_ value
                         let ownership = ownership.into_inner();
                         match tokens.own_map.get_mut_ghost(&cell_id) {
@@ -194,14 +194,14 @@ pub mod implementation {
                             tokens.rank.set(*cell_id, new_distance)
                         };
                         let frac = tokens.values.insert(cell_id, new_logical_value);
-                        &*Box::leak(Box::new(frac))
+                        Rc::new(frac)
                     }
                 })
             };
             Self {
                 program_value: Rc::new(program_value),
                 contained_in_token: new_frac,
-                map_invariant: self.map_invariant,
+                map_invariant: self.map_invariant.clone(),
             }
         }
 
@@ -231,10 +231,10 @@ pub mod implementation {
             i: usize,
             namespaces: Ghost<Namespaces<'a>>,
         ) -> Option<&'a T> {
-            self.map_invariant.open(namespaces, |tokens| {
+            self.map_invariant.borrow().open(namespaces, |tokens| {
                 // prove that self is contained in the map by validity
                 ghost! {
-                    tokens.values.contains(*self.contained_in_token);
+                    tokens.values.contains(self.contained_in_token.as_ref());
                 };
                 unsafe {
                     Self::get_inner_immut(&self.program_value, i, ghost!(tokens.into_inner()))
@@ -290,11 +290,11 @@ pub mod implementation {
             index: usize,
             namespaces: Ghost<Namespaces<'a>>,
         ) -> Option<&'a T> {
-            let public = snapshot!(self.map_invariant.public());
-            self.map_invariant.open(namespaces, |mut tokens| {
+            let public = snapshot!(self.map_invariant@.public());
+            self.map_invariant.borrow().open(namespaces, |mut tokens| {
                 // prove that self is contained in the map by validity
                 ghost! {
-                    tokens.values.contains(*self.contained_in_token);
+                    tokens.values.contains(self.contained_in_token.as_ref());
                 };
                 unsafe { Self::reroot(&self.program_value, public, ghost!(&mut *tokens)) };
                 let id = snapshot!(self.program_value.view().id());
