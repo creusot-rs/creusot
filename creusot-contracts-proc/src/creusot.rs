@@ -19,7 +19,7 @@ use crate::common::{ContractSubject, FnOrMethod};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::{FnArg, Ident, parse_quote};
+use syn::{FnArg, Ident, parse_macro_input, parse_quote};
 
 pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {
     let tokens = TokenStream::from(tokens);
@@ -36,6 +36,20 @@ pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
         #[allow(creusot::experimental)]
         #tokens
     })
+}
+
+pub fn declare_namespace(namespace: TS1) -> TS1 {
+    let ident = parse_macro_input!(namespace as Ident);
+    quote! {
+        #[logic]
+        #[trusted]
+        #[creusot::decl::new_namespace]
+        #[allow(nonstandard_style)]
+        pub fn #ident() -> ::creusot_contracts::local_invariant::Namespace {
+            dead
+        }
+    }
+    .into()
 }
 
 impl FnOrMethod {

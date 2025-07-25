@@ -18,6 +18,10 @@ pub fn snapshot(_: TS1) -> TS1 {
         .into()
 }
 
+pub fn declare_namespace(_: TS1) -> TS1 {
+    TS1::new()
+}
+
 pub fn ghost(body: TS1) -> TS1 {
     let body = proc_macro2::TokenStream::from(crate::ghost::ghost_preprocess(body));
     quote::quote! { if false {
