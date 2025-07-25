@@ -1,10 +1,13 @@
+use super::Diagnostics;
 use rustc_hir::Expr;
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::{lint::in_external_macro, ty};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
 declare_tool_lint! {
-    /// Blah Blah
+    /// Warns against unsupported Rust features.
+    ///
+    /// For now this lints against usage of `dyn` types.
     pub creusot::EXPERIMENTAL,
     Warn,
     "using Rust features that only have basic or experimental support in Creusot"
@@ -15,10 +18,7 @@ pub struct Experimental {}
 impl_lint_pass!(Experimental => [EXPERIMENTAL]);
 
 fn is_dyn_ty(cx: &LateContext<'_>, e: &Expr<'_>) -> bool {
-    match cx.typeck_results().expr_ty(e).peel_refs().kind() {
-        ty::Dynamic(_, _, _) => true,
-        _ => false,
-    }
+    matches!(cx.typeck_results().expr_ty(e).peel_refs().kind(), ty::Dynamic { .. })
 }
 
 impl<'tcx> LateLintPass<'tcx> for Experimental {
@@ -33,9 +33,7 @@ impl<'tcx> LateLintPass<'tcx> for Experimental {
         }
 
         if is_dyn_ty(cx, e) {
-            cx.opt_span_lint(EXPERIMENTAL, Some(e.span), |lint| {
-                lint.primary_message("support for trait objects (dyn) is limited and experimental");
-            });
+            cx.emit_span_lint(EXPERIMENTAL, e.span, Diagnostics::Experimental);
         }
     }
 }

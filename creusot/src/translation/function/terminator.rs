@@ -4,9 +4,7 @@ use crate::{
     contracts_items::{is_box_new, is_snap_from_fn},
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
-    lints::contractless_external_function::{
-        CONTRACTLESS_EXTERNAL_FUNCTION, ContractlessExternalFunction,
-    },
+    lints::{CONTRACTLESS_EXTERNAL_FUNCTION, Diagnostics},
     resolve::HasMoveDataExt,
     translation::{
         fmir::{self, *},
@@ -303,7 +301,7 @@ fn resolve_function<'tcx>(
                 CONTRACTLESS_EXTERNAL_FUNCTION,
                 lint_root,
                 span,
-                ContractlessExternalFunction { name, span },
+                Diagnostics::ContractlessExternalFunction { name, span },
             );
         }
     }
