@@ -27,11 +27,13 @@ extern_spec! {
     mod std {
         mod rc {
             impl<T> Rc<T> {
+                #[check(ghost)]
                 #[ensures(*result@ == value)]
                 fn new(value: T) -> Self;
             }
 
             impl<T, A: Allocator> AsRef for Rc<T, A> {
+                #[check(ghost)]
                 #[ensures(*result == *(*self)@)]
                 fn as_ref(&self) -> &T;
             }
@@ -39,6 +41,7 @@ extern_spec! {
     }
 
     impl<T: ?Sized, A: Allocator + Clone> Clone for Rc<T, A> {
+        #[check(ghost)]
         #[ensures(result@ == (*self)@)]
         fn clone(&self) -> Rc<T, A>;
     }
