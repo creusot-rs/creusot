@@ -193,6 +193,25 @@ impl<'a, T: LocalInvariantSpec> LocalInvariantExt<'a> for Ghost<&'a LocalInvaria
         LocalInvariant::open(self, namespaces, f)
     }
 }
+impl<'a, T: LocalInvariantSpec> LocalInvariantExt<'a>
+    for Ghost<&'a ::std::rc::Rc<LocalInvariant<T>>>
+{
+    type Inner = T;
+
+    #[requires(namespaces@.contains(self@.namespace()))]
+    #[requires(forall<t: Ghost<&mut T>> (**t).invariant_with_data(self@.public()) && inv(t) ==>
+        f.precondition((t,)) &&
+        // f must restore the invariant
+        (forall<res: A> f.postcondition_once((t,), res) ==> (^t.inner_logic()).invariant_with_data(self@.public())))]
+    #[ensures(exists<t: Ghost<&mut T>> (**t).invariant_with_data(self@.public()) && f.postcondition_once((t,), result))]
+    #[pure]
+    fn open<A, F>(self, namespaces: Ghost<Namespaces<'a>>, f: F) -> A
+    where
+        F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
+    {
+        LocalInvariant::open(ghost!(self.into_inner().as_ref()), namespaces, f)
+    }
+}
 
 impl<T: LocalInvariantSpec> LocalInvariant<T> {
     /// Construct a `LocalInvariant`
