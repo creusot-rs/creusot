@@ -9,7 +9,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Cache Cargo build
-      uses: actions/cache@v4
+      uses: actions/cache/restore@v4
       with:
         path: |
           ~/.cargo/registry
@@ -22,16 +22,14 @@ jobs:
         path: ~/.local/share/creusot/_opam
         key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
         restore-keys: ${{ runner.os }}-opam-
-    - name: Install Opam
-      uses: ocaml/setup-ocaml@v3
-      with:
-        ocaml-compiler: 5.3.0
-        opam-pin: false
     - name: Setup environment
       run: |
-        sudo apt update
+        sudo apt update && sudo apt install opam libzmq3-dev
+        opam init --bare
         opam --cli=2.1 var --global in-creusot-ci=true
     - name: Install Creusot
       # Use only 2 parallel provers, because more provers (4) makes replaying proofs unstable
       run: ./INSTALL --provers-parallelism 2
     - run: cargo test --test why3
+    - name: Minimize Opam cache
+      run: opam clean --all-switches --download-cache --logs --repo-cache --untracked
