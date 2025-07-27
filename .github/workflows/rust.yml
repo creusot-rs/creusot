@@ -23,7 +23,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Cache Cargo build
-      uses: actions/cache/restore@v4
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
@@ -39,7 +39,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Cache Cargo build
-      uses: actions/cache/restore@v4
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
@@ -62,7 +62,6 @@ jobs:
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: ${{ runner.os }}-cargo-
     - name: Build
       run: cargo build
     - name: dummy creusot setup
@@ -88,8 +87,8 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-cargo-creusot-${{ hashFiles('prelude/**', '**/Cargo.lock') }}
-        restore-keys: ${{ runner.os }}-cargo-creusot-
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-
     - name: Cache Opam switch
       uses: actions/cache/restore@v4 # This cache is saved by the install job
       with:
@@ -127,7 +126,18 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-cargo-install-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-
+    - name: Cache Cargo build
+      if: matrix.os == 'macos-latest'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-
     - name: Cache Opam switch
       if: matrix.os == 'ubuntu-latest'
       uses: actions/cache@v4
