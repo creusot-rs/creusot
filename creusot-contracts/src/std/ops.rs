@@ -48,10 +48,8 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
 
     #[law]
     #[ensures(self.postcondition_once(args, res) ==
-              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(&res_state))]
-    fn fn_mut_once(self, args: Args, res: Self::Output)
-    where
-        Self: Sized;
+              exists<res_state: Self> (&self).postcondition_mut(args, res_state, res) && resolve(&res_state))]
+    fn fn_mut_once(self, args: Args, res: Self::Output);
 }
 
 /// `FnExt` is an extension trait for the `Fn` trait, used for
