@@ -38,7 +38,6 @@ struct Args {
 fn main() {
     let mut args = Args::parse();
     if env::var("CI").is_ok() {
-        args.quiet = true;
         args.force_color = true;
     }
 
