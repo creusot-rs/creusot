@@ -32,5 +32,12 @@ jobs:
       # Use only 2 parallel provers, because more provers (4) makes replaying proofs unstable
       run: ./INSTALL --provers-parallelism 2
     - run: cargo test --test why3
+    - name: Get current date
+      run: echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+    - name: Save Why3find cache
+      uses: actions/cache/save@v4
+      with:
+        path: target/.why3find
+        key: ${{ runner.os }}-why3find-${{ env.TODAY }}-${{ hashFiles('target/.why3find/**') }}
     - name: Minimize Opam cache
       run: opam clean --all-switches --download-cache --logs --repo-cache --untracked

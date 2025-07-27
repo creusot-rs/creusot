@@ -95,6 +95,13 @@ jobs:
         path: ~/.local/share/creusot/_opam
         key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
         restore-keys: ${{ runner.os }}-opam-
+    - name: Get current date
+      run: echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+    - name: Restore Why3find cache
+      uses: actions/cache/restore@v4
+      with:
+        path: target/.why3find
+        key: ${{ runner.os }}-why3find-${{ env.TODAY }}-
     - name: Setup environment
       run: |
         sudo apt update && sudo apt install opam libzmq3-dev
@@ -109,6 +116,11 @@ jobs:
         echo -e "\n>> ~/.config/creusot/why3.conf:\n"
         cat ~/.config/creusot/why3.conf
     - run: cargo test --test why3
+    - name: Save Why3find cache
+      uses: actions/cache/save@v4
+      with:
+        path: target/.why3find
+        key: ${{ runner.os }}-why3find-${{ env.TODAY }}-${{ hashFiles('target/.why3find/**') }}
   install:
     strategy:
       matrix:
