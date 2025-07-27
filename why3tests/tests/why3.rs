@@ -94,7 +94,7 @@ fn main() {
         // if `quiet` enabled: postpone printing, store the message in `current`, only print it if the test case fails
         let mut current: &str = &format!("Testing {} ... ", file.display());
         if !args.quiet {
-            write!(out, "{}", current).unwrap();
+            write!(out, "{current}").unwrap();
             current = "";
             out.flush().unwrap();
         }
@@ -102,7 +102,7 @@ fn main() {
         if header_line.contains("WHY3SKIP") {
             write!(out, "{current}").unwrap();
             out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
-            writeln!(&mut out, "skipped").unwrap();
+            writeln!(out, "skipped").unwrap();
             out.reset().unwrap();
             continue;
         }
