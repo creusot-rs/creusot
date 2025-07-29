@@ -10,12 +10,12 @@ pub(crate) mod traits;
 use crate::{
     backend::Why3Generator,
     contracts_items::{AreContractsLoaded, are_contracts_loaded, is_no_translate},
-    ctx, metadata,
+    ctx::{HasTyCtxt as _, TranslationCtx},
+    metadata,
     options::Output,
     translated_item::FileModule,
     validate::validate,
 };
-use ctx::TranslationCtx;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::DUMMY_SP;

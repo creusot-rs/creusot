@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{
-    backend::projections::projection_ty, ctx::TranslationCtx, translation::pearlite::Term,
-};
+use crate::{backend::projections::projection_ty, translation::pearlite::Term};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
+use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     mir::{
         self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, Promoted, SourceScope, UnOp,
@@ -96,7 +95,7 @@ pub(crate) struct Statement<'tcx> {
 }
 
 // TODO: Add shared borrows?
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, TyDecodable, TyEncodable)]
 pub enum BorrowKind {
     /// Ordinary mutable borrows
     Mut,
@@ -241,6 +240,27 @@ impl Terminator<'_> {
             Terminator::Abort(_) => Box::new(empty()),
         }
     }
+
+    pub fn targets_mut(&mut self) -> Box<dyn Iterator<Item = &mut BasicBlock> + '_> {
+        use std::iter::*;
+        match self {
+            Terminator::Goto(bb) => Box::new(once(bb)),
+            Terminator::Switch(_, brs) => match brs {
+                Branches::Int(brs, def) => {
+                    Box::new(brs.iter_mut().map(|(_, b)| b).chain(once(def)))
+                }
+                Branches::Uint(brs, def) => {
+                    Box::new(brs.iter_mut().map(|(_, b)| b).chain(once(def)))
+                }
+                Branches::Constructor(_, _, brs, def) => {
+                    Box::new(brs.iter_mut().map(|(_, b)| b).chain(def))
+                }
+                Branches::Bool(f, t) => Box::new([f, t].into_iter()),
+            },
+            Terminator::Return => Box::new(empty()),
+            Terminator::Abort(_) => Box::new(empty()),
+        }
+    }
 }
 
 impl Branches<'_> {
@@ -329,6 +349,10 @@ pub struct ScopeTree<'tcx>(
 );
 
 impl<'tcx> ScopeTree<'tcx> {
+    pub fn empty() -> Self {
+        ScopeTree(HashMap::new())
+    }
+
     /// Extract the scope tree from a MIR body.
     pub fn build(
         body: &mir::Body<'tcx>,
@@ -397,30 +421,6 @@ impl<'tcx> ScopeTree<'tcx> {
         }
 
         locals
-    }
-}
-
-/// Construct a substitution for an inline Pearlite expression (`proof_assert`, `snapshot`).
-/// Pearlite identifiers come from HIR (`HirId`), which must correspond to places in the middle of a MIR body.
-/// The `places` argument is constructed by `ScopeTree::visible_places`.
-///
-/// This substitution can't just be represented as a `HashMap` because at this point we don't know its keys,
-/// which are the free variables of the Pearlite expression.
-pub(crate) fn inline_pearlite_subst<'tcx>(
-    tcx: &TranslationCtx<'tcx>,
-    places: &HashMap<rustc_span::Ident, TermKind<'tcx>>,
-) -> impl Fn(Ident) -> Option<TermKind<'tcx>> {
-    |ident| {
-        let var = *tcx
-            .corenamer
-            .borrow()
-            .get(&ident)
-            .unwrap_or_else(|| panic!("HirId not found for {:?}", ident));
-        let ident2 = tcx.tcx.hir().ident(var);
-        match places.get(&ident2) {
-            Some(term) => Some(term.clone()),
-            None => panic!("No place found for {:?}", ident2),
-        }
     }
 }
 
