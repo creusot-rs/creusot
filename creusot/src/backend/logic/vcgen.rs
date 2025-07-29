@@ -482,7 +482,6 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         self.build_pattern(&arm.0, &|pat| Ok((pat, self.build_wp(&arm.1, k)?)))
                     })
                     .collect::<Result<Box<[_]>, _>>()?;
-
                 Ok(scrut.match_(arms))
             }),
             // VC(let P = A in B, Q) = VC(A, |a| let P = a in VC(B, Q))

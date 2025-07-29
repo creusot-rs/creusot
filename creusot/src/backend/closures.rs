@@ -282,8 +282,7 @@ pub(crate) fn closure_post<'tcx>(
     // Make sure fn_once and fn_mut_once are satisfied
     post = to_resolve.iter().fold(post, |p, r| {
         if let Some((id, subst)) = ctx.resolve(typing_env, r.ty) {
-            let r = r.clone().shr_ref(ctx.tcx);
-            p.conj(Term::call_no_normalize(ctx.tcx, id, subst, [r]))
+            p.conj(Term::call_no_normalize(ctx.tcx, id, subst, [r.clone()]))
         } else {
             p
         }
@@ -316,7 +315,7 @@ pub(crate) fn closure_resolve<'tcx>(
     let typing_env = TypingEnv::non_body_analysis(ctx.tcx, def_id);
     for (ix, ty) in csubst.upvar_tys().iter().enumerate() {
         if let Some((id, subst)) = ctx.resolve(typing_env, ty) {
-            let proj = self_.clone().proj(ix.into(), ty).shr_ref(ctx.tcx);
+            let proj = self_.clone().proj(ix.into(), ty);
             resolve = Term::call(ctx.tcx, typing_env, id, subst, [proj]).conj(resolve);
         }
     }

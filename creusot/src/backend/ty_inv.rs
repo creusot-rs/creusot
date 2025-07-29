@@ -11,7 +11,7 @@ use crate::{
     },
 };
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
-use rustc_span::{DUMMY_SP, Span};
+use rustc_span::Span;
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use std::collections::HashSet;
 
@@ -219,37 +219,28 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         if variants.is_empty() {
             return Term::false_(self.ctx.tcx);
         }
-        let arms = variants
-            .iter_enumerated()
-            .map(|(var_idx, var_def)| {
-                let tuple_var = var_def.ctor.is_some();
+        let ty = term.ty;
+        let arms = variants.iter_enumerated().map(|(var_idx, var_def)| {
+            let tuple_var = var_def.ctor.is_some();
 
-                let mut exp = Some(Term::true_(self.ctx.tcx));
-                let fields = var_def.fields.iter().enumerate().map(|(field_idx, field_def)| {
-                    let field_name = if tuple_var {
-                        Ident::fresh_local(format!("a_{field_idx}"))
-                    } else {
-                        Ident::fresh_local(variable_name(
-                            field_def.ident(self.ctx.tcx).name.as_str(),
-                        ))
-                    };
+            let mut exp = Some(Term::true_(self.ctx.tcx));
+            let fields = var_def.fields.iter().enumerate().map(|(field_idx, field_def)| {
+                let field_name = if tuple_var {
+                    Ident::fresh_local(format!("a_{field_idx}"))
+                } else {
+                    Ident::fresh_local(variable_name(field_def.ident(self.ctx.tcx).name.as_str()))
+                };
 
-                    let field_ty = field_def.ty(self.ctx.tcx, substs);
+                let field_ty = field_def.ty(self.ctx.tcx, substs);
 
-                    let f_exp = self.mk_inv_call(Term::var(field_name, field_ty));
-                    exp = Some(exp.take().unwrap().conj(f_exp));
-                    (field_idx.into(), Pattern::binder(field_name, field_ty))
-                });
+                let f_exp = self.mk_inv_call(Term::var(field_name, field_ty));
+                exp = Some(exp.take().unwrap().conj(f_exp));
+                (field_idx.into(), Pattern::binder(field_name, field_ty))
+            });
 
-                (Pattern::constructor(var_idx, fields, term.ty), exp.unwrap())
-            })
-            .collect();
-
-        Term {
-            kind: TermKind::Match { scrutinee: Box::new(term), arms },
-            ty: self.ctx.types.bool,
-            span: DUMMY_SP,
-        }
+            (Pattern::constructor(var_idx, fields, ty), exp.unwrap())
+        });
+        term.match_(arms)
     }
 }
 

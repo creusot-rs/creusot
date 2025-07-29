@@ -111,7 +111,7 @@ impl<T> PCell<T> {
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(val == (^perm.inner_logic())@)]
-    #[ensures(resolve(&(*perm.inner_logic())@))]
+    #[ensures(resolve((*perm.inner_logic())@))]
     #[ensures(self.id() == (^perm.inner_logic()).id())]
     pub unsafe fn set(&self, perm: Ghost<&mut PCellOwn<T>>, val: T) {
         let _ = perm;
