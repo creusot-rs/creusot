@@ -174,28 +174,28 @@ impl<K: DeepModel, V> Resolve for Tree<K, V> {
     #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
-            forall<k, v> self.has_mapping(k, v) ==> resolve(&v)
+            forall<k, v> self.has_mapping(k, v) ==> resolve(v)
         }
     }
 
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<K: DeepModel, V> Resolve for Node<K, V> {
     #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
-            forall<k, v> self.has_mapping(k, v) ==> resolve(&v)
+            forall<k, v> self.has_mapping(k, v) ==> resolve(v)
         }
     }
 
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 /*******************************  The BST invariant ***************************/
@@ -773,15 +773,14 @@ where
     #[logic(prophetic)]
     #[open]
     fn resolve(self) -> bool {
-        pearlite! { forall<k: K::DeepModelTy> resolve(&self@.get(k)) }
+        pearlite! { forall<k: K::DeepModelTy> resolve(self@.get(k)) }
     }
 
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    #[allow(path_statements)]
-    fn resolve_coherence(&self) {
-        Tree::<K, V>::has_mapping_model;
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {
+        let _ = Tree::<K, V>::has_mapping_model;
     }
 }
 

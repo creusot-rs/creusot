@@ -48,7 +48,7 @@ impl<T> Resolve for Sparse<T> {
     #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
-            forall<i> 0 <= i && i < self.size@ ==> resolve(&self@[i])
+            forall<i> 0 <= i && i < self.size@ ==> resolve(self@[i])
         }
     }
 
@@ -56,8 +56,8 @@ impl<T> Resolve for Sparse<T> {
     #[logic(prophetic)]
     #[requires(inv(self))]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T> Invariant for Sparse<T> {

@@ -161,7 +161,7 @@ extern_spec! {
 
                 #[pure]
                 #[ensures(self == None ==> result == default)]
-                #[ensures(self == None || (self == Some(result) && resolve(&default)))]
+                #[ensures(self == None || (self == Some(result) && resolve(default)))]
                 fn unwrap_or(self, default: T) -> T {
                     match self {
                         None => default,
@@ -277,7 +277,7 @@ extern_spec! {
                 #[pure]
                 #[ensures(match self {
                     None => result == Err(err),
-                    Some(t) => result == Ok(t) && resolve(&err),
+                    Some(t) => result == Ok(t) && resolve(err),
                 })]
                 fn ok_or<E>(self, err: E) -> Result<T, E> {
                     match self {
@@ -334,7 +334,7 @@ extern_spec! {
                 #[ensures(match self {
                     None => result == None,
                     Some(t) => match result {
-                        None => predicate.postcondition_once((&t,), false) && resolve(&t),
+                        None => predicate.postcondition_once((&t,), false) && resolve(t),
                         Some(r) => predicate.postcondition_once((&t,), true) && r == t,
                     },
                 })]
@@ -374,7 +374,7 @@ extern_spec! {
                 #[pure]
                 #[ensures(match (self, optb) {
                     (None, None)         => result == None,
-                    (Some(t1), Some(t2)) => result == None && resolve(&t1) && resolve(&t2),
+                    (Some(t1), Some(t2)) => result == None && resolve(t1) && resolve(t2),
                     (Some(t), None)      => result == Some(t),
                     (None, Some(t))      => result == Some(t),
                 })]
@@ -387,7 +387,7 @@ extern_spec! {
 
                 #[pure]
                 #[ensures(match *self {
-                    Some(t) => resolve(&t),
+                    Some(t) => resolve(t),
                     None => true,
                 })]
                 #[ensures(*result == value && ^self == Some(^result))]
@@ -402,7 +402,7 @@ extern_spec! {
                 #[pure]
                 #[ensures(match *self {
                     None => *result == value && ^self == Some(^result),
-                    Some(_) => *self == Some(*result) && ^self == Some(^result) && resolve(&value),
+                    Some(_) => *self == Some(*result) && ^self == Some(^result) && resolve(value),
                 })]
                 fn get_or_insert(&mut self, value: T) -> &mut T {
                     match self {

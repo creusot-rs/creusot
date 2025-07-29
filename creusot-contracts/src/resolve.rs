@@ -9,15 +9,15 @@ pub trait Resolve {
     #[logic(prophetic)]
     #[requires(inv(self))]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self);
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self);
 }
 
 #[trusted]
 #[logic(prophetic)]
 #[open]
 #[rustc_diagnostic_item = "creusot_resolve"]
-pub fn resolve<T: ?Sized>(_: &T) -> bool {
+pub fn resolve<T: ?Sized>(_: T) -> bool {
     dead
 }
 
@@ -25,7 +25,7 @@ pub fn resolve<T: ?Sized>(_: &T) -> bool {
 #[logic(prophetic)]
 #[open]
 #[rustc_diagnostic_item = "creusot_structural_resolve"]
-pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
+pub fn structural_resolve<T: ?Sized>(_: T) -> bool {
     dead
 }
 
@@ -33,13 +33,13 @@ impl<T1, T2: ?Sized> Resolve for (T1, T2) {
     #[logic(prophetic)]
     #[open]
     fn resolve(self) -> bool {
-        resolve(&self.0) && resolve(&self.1)
+        resolve(self.0) && resolve(self.1)
     }
 
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T: ?Sized> Resolve for &mut T {
@@ -51,21 +51,21 @@ impl<T: ?Sized> Resolve for &mut T {
 
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T: ?Sized> Resolve for Box<T> {
     #[open]
     #[logic(prophetic)]
     fn resolve(self) -> bool {
-        resolve(&*self)
+        resolve(*self)
     }
 
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T> Resolve for Option<T> {
@@ -73,13 +73,13 @@ impl<T> Resolve for Option<T> {
     #[logic(prophetic)]
     fn resolve(self) -> bool {
         match self {
-            Some(x) => resolve(&x),
+            Some(x) => resolve(x),
             None => true,
         }
     }
 
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }

@@ -21,7 +21,7 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
         pearlite! {
              (self.a.completed() && (*self).b == (^self).b)
           || (exists<x: A::Item> self.a.produces(Seq::singleton(x), (^self).a) &&
-                                 resolve(&x) && self.b.completed())
+                                 resolve(x) && self.b.completed())
         }
     }
 

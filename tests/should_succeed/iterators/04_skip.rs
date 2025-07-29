@@ -27,7 +27,7 @@ where
             exists<s: Seq<Self::Item>, i: &mut I>
                    s.len() <= self.n@
                 && self.iter.produces(s, *i)
-                && (forall<i> 0 <= i && i < s.len() ==> resolve(&s[i]))
+                && (forall<i> 0 <= i && i < s.len() ==> resolve(s[i]))
                 && i.completed()
                 && ^i == (^self).iter
         }
@@ -42,7 +42,7 @@ where
             && exists<s: Seq<Self::Item>>
                    s.len() == self.n@
                 && self.iter.produces(s.concat(visited), o.iter)
-                && forall<i> 0 <= i && i < s.len() ==> resolve(&s[i])
+                && forall<i> 0 <= i && i < s.len() ==> resolve(s[i])
         }
     }
 
@@ -70,7 +70,7 @@ where
         #[invariant(inv(self))]
         #[invariant(skipped.len() + n@ == old_self.n@)]
         #[invariant(old_self.iter.produces(skipped.inner(), self.iter))]
-        #[invariant(forall<i> 0 <= i && i < skipped.len() ==> resolve(&skipped[i]))]
+        #[invariant(forall<i> 0 <= i && i < skipped.len() ==> resolve(skipped[i]))]
         #[invariant((*self).n@ == 0)]
         loop {
             let r = self.iter.next();

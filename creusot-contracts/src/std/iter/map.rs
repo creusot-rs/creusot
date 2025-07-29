@@ -31,14 +31,14 @@ impl<I, F> Resolve for Map<I, F> {
     #[open]
     #[logic(prophetic)]
     fn resolve(self) -> bool {
-        resolve(&self.iter()) && resolve(&self.func())
+        resolve(self.iter()) && resolve(self.func())
     }
 
     #[trusted]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {

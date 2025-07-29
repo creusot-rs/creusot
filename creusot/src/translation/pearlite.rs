@@ -848,6 +848,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     kind: TermKind::Constructor { variant: variant_index, fields },
                 })
             }
+            ExprKind::Deref { arg } if let Some(arg) = self.expect_shared_borrow(arg) => {
+                self.expr_term(arg)
+            }
             ExprKind::Deref { arg } => {
                 let arg_trans = self.expr_term(arg)?;
                 let arg_ty = self.thir[arg].ty;
@@ -866,12 +869,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         "Empty matches are forbidden in Pearlite, because Why3 types are always inhabited.",
                     ));
                 }
-                let arms = arms.iter().map(|arm| self.arm_term(*arm)).collect::<Result<_, _>>()?;
-                Ok(Term {
-                    ty,
-                    span,
-                    kind: TermKind::Match { scrutinee: Box::new(scrutinee), arms },
-                })
+                let arms =
+                    arms.iter().map(|arm| self.arm_term(*arm)).collect::<Result<Vec<_>, _>>()?;
+                Ok(scrutinee.match_(arms).span(span))
             }
             ExprKind::If { cond, then, else_opt, .. } => {
                 let cond = self.expr_term(cond)?;
@@ -881,17 +881,12 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 } else {
                     Term::unit(self.ctx.tcx).span(span)
                 };
-                Ok(Term {
-                    ty,
-                    span,
-                    kind: TermKind::Match {
-                        scrutinee: Box::new(cond),
-                        arms: Box::new([
-                            (Pattern::bool(self.ctx.tcx, true), then),
-                            (Pattern::bool(self.ctx.tcx, false), els),
-                        ]),
-                    },
-                })
+                Ok(cond
+                    .match_([
+                        (Pattern::bool(self.ctx.tcx, true), then),
+                        (Pattern::bool(self.ctx.tcx, false), els),
+                    ])
+                    .span(span))
             }
             ExprKind::Field { lhs, name, .. } => {
                 let lhs = self.expr_term(lhs)?;
@@ -951,6 +946,18 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             }
         };
         Ok(Term { ty, ..res? })
+    }
+
+    // Get the contents of a shared borrow expression (`&contents`), skipping through `Scope` nodes.
+    // `None` if the expression is not a shared borrow.
+    fn expect_shared_borrow(&self, mut expr: ExprId) -> Option<ExprId> {
+        loop {
+            match &self.thir[expr].kind {
+                ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => return Some(*arg),
+                ExprKind::Scope { value, .. } => expr = *value,
+                _ => return None,
+            }
+        }
     }
 
     fn arm_term(&self, arm: ArmId) -> CreusotResult<(Pattern<'tcx>, Term<'tcx>)> {
@@ -1420,6 +1427,18 @@ impl<'tcx> Term<'tcx> {
             span: pattern.span.until(body.span),
             ty: body.ty,
             kind: TermKind::Let { pattern, arg: Box::new(arg), body: Box::new(body) },
+        }
+    }
+
+    pub(crate) fn match_(
+        self,
+        arms: impl IntoIterator<Item = (Pattern<'tcx>, Term<'tcx>)>,
+    ) -> Self {
+        let arms = arms.into_iter().collect::<Box<[_]>>();
+        Term {
+            ty: arms[0].1.ty.clone(),
+            kind: TermKind::Match { scrutinee: Box::new(self), arms },
+            span: DUMMY_SP,
         }
     }
 

@@ -41,15 +41,15 @@ impl<T: ?Sized> Resolve for PCellOwn<T> {
     #[open]
     #[logic(prophetic)]
     fn resolve(self) -> bool {
-        resolve(&self.val())
+        resolve(self.val())
     }
 
     #[trusted]
     #[logic(prophetic)]
     #[requires(inv(self))]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T: Sized> Invariant for PCellOwn<T> {
@@ -111,7 +111,7 @@ impl<T> PCell<T> {
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(val == (^perm.inner_logic())@)]
-    #[ensures(resolve(&(*perm.inner_logic())@))]
+    #[ensures(resolve((*perm.inner_logic())@))]
     #[ensures(self.id() == (^perm.inner_logic()).id())]
     pub unsafe fn set(&self, perm: Ghost<&mut PCellOwn<T>>, val: T) {
         let _ = perm;

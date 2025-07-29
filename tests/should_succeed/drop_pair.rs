@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[ensures(resolve(&_x))]
+#[ensures(resolve(_x))]
 #[ensures(^_x.0 == *_x.0)]
 #[ensures(^_x.1 == *_x.1)]
 pub fn drop_pair(_x: (&mut u32, &mut u32)) {}

@@ -43,14 +43,14 @@ impl<T, A: Allocator> Resolve for Vec<T, A> {
     #[open]
     #[logic(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
+        pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self[i]) }
     }
 
     #[trusted]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 #[cfg(feature = "nightly")]
@@ -224,14 +224,14 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     #[open]
     #[logic(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(&self@[i]) }
+        pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self@[i]) }
     }
 
     #[trusted]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 #[cfg(feature = "nightly")]

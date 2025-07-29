@@ -50,14 +50,14 @@ impl<K: DeepModel, V> Resolve for List<(K, V)> {
     fn resolve(self) -> bool {
         // FIXME: we don't resolve keys because we only have access to their deep model.
         pearlite! {
-            forall<k: K::DeepModelTy> resolve(&self.get(k))
+            forall<k: K::DeepModelTy> resolve(self.get(k))
         }
     }
 
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 // A slightly simplified version of the Rust hashing mechanisms, this sufficiently captures the behavior though
@@ -99,15 +99,15 @@ impl<K: Hash, V> Resolve for MyHashMap<K, V> {
     fn resolve(self) -> bool {
         // FIXME: we don't resolve keys because we only have access to their deep model.
         pearlite! {
-            forall<k: K::DeepModelTy> resolve(&self@.get(k))
+            forall<k: K::DeepModelTy> resolve(self@.get(k))
         }
     }
 
     #[logic(prophetic)]
     #[requires(inv(self))]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<K: Hash, V> MyHashMap<K, V> {

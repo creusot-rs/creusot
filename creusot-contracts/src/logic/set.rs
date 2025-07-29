@@ -3,9 +3,9 @@ use crate::{logic::Mapping, *};
 /// A (possibly infinite) set type.
 #[trusted]
 #[cfg_attr(creusot, creusot::builtins = "set.Set.set")]
-pub struct Set<T>(std::marker::PhantomData<T>);
+pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
 
-impl<T> Set<T> {
+impl<T: ?Sized> Set<T> {
     /// The empty set.
     #[trusted]
     #[logic]

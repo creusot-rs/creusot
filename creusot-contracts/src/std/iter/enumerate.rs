@@ -29,14 +29,14 @@ impl<I> Resolve for Enumerate<I> {
     #[open]
     #[logic(prophetic)]
     fn resolve(self) -> bool {
-        resolve(&self.iter())
+        resolve(self.iter())
     }
 
     #[trusted]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<I: Iterator> Invariant for Enumerate<I> {

@@ -295,14 +295,14 @@ impl<T: InhabitedInvariant> Resolve for Subset<T> {
     #[open]
     #[logic(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! { resolve(&(self@)) }
+        pearlite! { resolve(self@) }
     }
 
     #[trusted]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T: InhabitedInvariant + DeepModel + PartialEq> PartialEq for Subset<T> {
