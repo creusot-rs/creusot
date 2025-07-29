@@ -104,14 +104,14 @@ impl<T> Resolve for Ghost<T> {
     #[open]
     #[logic(prophetic)]
     fn resolve(self) -> bool {
-        resolve(&*self)
+        resolve(*self)
     }
 
     #[trusted]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T> Ghost<T> {

@@ -31,15 +31,15 @@ impl<I> Resolve for Skip<I> {
     #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
-            resolve(&self.iter())
+            resolve(self.iter())
         }
     }
 
     #[trusted]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<I: Iterator> Iterator for Skip<I> {
@@ -51,7 +51,7 @@ impl<I: Iterator> Iterator for Skip<I> {
             exists<s: Seq<Self::Item>, i: &mut I>
                    s.len() <= (*self).n()
                 && self.iter().produces(s, *i)
-                && (forall<i> 0 <= i && i < s.len() ==> resolve(&s[i]))
+                && (forall<i> 0 <= i && i < s.len() ==> resolve(s[i]))
                 && i.completed()
                 && ^i == (^self).iter()
         }
@@ -66,7 +66,7 @@ impl<I: Iterator> Iterator for Skip<I> {
             exists<s: Seq<Self::Item>>
                    s.len() == self.n()
                 && self.iter().produces(s.concat(visited), o.iter())
-                && forall<i> 0 <= i && i < s.len() ==> resolve(&s[i])
+                && forall<i> 0 <= i && i < s.len() ==> resolve(s[i])
         }
     }
 

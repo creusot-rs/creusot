@@ -164,7 +164,7 @@ extern_spec! {
 
                 // TODO: Investigate why Self_ needed
                 #[ensures(exists<done: &mut Self_, prod>
-                    resolve(&^done) && done.completed() && self.produces(prod, *done) && B::from_iter_post(prod, result))]
+                    resolve(^done) && done.completed() && self.produces(prod, *done) && B::from_iter_post(prod, result))]
                 fn collect<B>(self) -> B
                     where Self: Sized, B: FromIterator<Self::Item>;
 
@@ -180,7 +180,7 @@ extern_spec! {
                 #[requires(T::into_iter.precondition((iter,)))]
                 #[ensures(exists<into_iter: T::IntoIter, done: &mut T::IntoIter, prod: Seq<A>>
                             T::into_iter.postcondition((iter,), into_iter) &&
-                            into_iter.produces(prod, *done) && done.completed() && resolve(&^done) &&
+                            into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
                             Self_::from_iter_post(prod, result))]
                 fn from_iter<T>(iter: T) -> Self
                     where Self: Sized, T: IntoIterator<Item = A>, T::IntoIter: Iterator;

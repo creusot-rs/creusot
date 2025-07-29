@@ -72,7 +72,7 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
     fn fn_mut(self, args: Args, res_state: Self, res: Self::Output);
 
     #[law]
-    #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(&self)))]
+    #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
     fn fn_once(self, args: Args, res: Self::Output);
 
     #[law]
@@ -171,7 +171,7 @@ impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
 
     #[law]
     #[trusted]
-    #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(&self)))]
+    #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
     fn fn_once(self, args: Args, res: Self::Output) {}
 
     #[law]

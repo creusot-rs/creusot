@@ -32,9 +32,9 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
             exists<a: &mut A, b: &mut B>
                    *a == (*self).itera() && *b == (*self).iterb()
                 && ^a == (^self).itera() && ^b == (^self).iterb()
-                && (a.completed() && resolve(&b)
+                && (a.completed() && resolve(b)
                     || exists<x: A::Item> inv(x) && (*a).produces(Seq::singleton(x), ^a) &&
-                                          resolve(&x) && (*b).completed())
+                                          resolve(x) && (*b).completed())
         }
     }
 

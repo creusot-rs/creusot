@@ -40,14 +40,14 @@ impl<I> Resolve for Take<I> {
     #[open]
     #[logic(prophetic)]
     fn resolve(self) -> bool {
-        resolve(&self.iter())
+        resolve(self.iter())
     }
 
     #[trusted]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<I: Iterator> Iterator for Take<I> {
@@ -55,7 +55,7 @@ impl<I: Iterator> Iterator for Take<I> {
     #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            self.n() == 0 && resolve(&self) ||
+            self.n() == 0 && resolve(self) ||
             (*self).n() > 0 && (*self).n() == (^self).n() + 1 && self.iter_mut().completed()
         }
     }

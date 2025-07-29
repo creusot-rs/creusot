@@ -25,11 +25,11 @@ extern_spec! {
             }
 
             #[pure]
-            #[ensures(resolve(&_x))]
-            fn drop<T>(_x: T) {}
+            #[ensures(resolve(t))]
+            fn drop<T>(t: T) {}
 
             #[pure]
-            #[ensures(resolve(&t))]
+            #[ensures(resolve(t))]
             fn forget<T>(t: T) {}
 
             #[pure]
