@@ -26,9 +26,9 @@ use crate::{
 ///
 /// This type is designed for this use-case, with no restriction on the capacity.
 #[trusted] //opaque
-pub struct FMap<K, V>(std::marker::PhantomData<K>, std::marker::PhantomData<V>);
+pub struct FMap<K: ?Sized, V>(std::marker::PhantomData<K>, std::marker::PhantomData<V>);
 
-impl<K, V> View for FMap<K, V> {
+impl<K: ?Sized, V> View for FMap<K, V> {
     type ViewTy = Mapping<K, Option<V>>;
 
     /// View of the map
@@ -45,7 +45,7 @@ impl<K, V> View for FMap<K, V> {
 }
 
 /// Logical definitions
-impl<K, V> FMap<K, V> {
+impl<K: ?Sized, V> FMap<K, V> {
     /// Returns the empty map.
     #[trusted]
     #[logic]
@@ -215,7 +215,10 @@ impl<K, V> FMap<K, V> {
         None => None,
         Some(v) => Some(f[(k, v)]),
     })]
-    pub fn map<V2>(self, f: Mapping<(K, V), V2>) -> FMap<K, V2> {
+    pub fn map<V2>(self, f: Mapping<(K, V), V2>) -> FMap<K, V2>
+    where
+        K: Sized,
+    {
         self.filter_map(|(k, v)| Some(f[(k, v)]))
     }
 
@@ -229,7 +232,10 @@ impl<K, V> FMap<K, V> {
         None => None,
         Some(v) => if p[(k, v)] { Some(v) } else { None },
     })]
-    pub fn filter(self, p: Mapping<(K, V), bool>) -> Self {
+    pub fn filter(self, p: Mapping<(K, V), bool>) -> Self
+    where
+        K: Sized,
+    {
         self.filter_map(|(k, v)| if p[(k, v)] { Some(v) } else { None })
     }
 
@@ -241,12 +247,15 @@ impl<K, V> FMap<K, V> {
         None => None,
         Some(v) => f[(k, v)],
     })]
-    pub fn filter_map<V2>(self, f: Mapping<(K, V), Option<V2>>) -> FMap<K, V2> {
+    pub fn filter_map<V2>(self, f: Mapping<(K, V), Option<V2>>) -> FMap<K, V2>
+    where
+        K: Sized,
+    {
         dead
     }
 }
 
-impl<K, V> IndexLogic<K> for FMap<K, V> {
+impl<K: ?Sized, V> IndexLogic<K> for FMap<K, V> {
     type Item = V;
 
     #[logic]
@@ -493,7 +502,7 @@ impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
 impl<K: Clone + Copy, V: Clone + Copy> Copy for FMap<K, V> {}
 
-impl<K, V> Invariant for FMap<K, V> {
+impl<K: ?Sized, V> Invariant for FMap<K, V> {
     #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]

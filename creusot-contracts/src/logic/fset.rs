@@ -23,9 +23,9 @@ use crate::{logic::Mapping, *};
 /// This type is designed for this use-case, with no restriction on the capacity.
 #[trusted]
 #[cfg_attr(creusot, creusot::builtins = "set.Fset.fset")]
-pub struct FSet<T>(std::marker::PhantomData<T>);
+pub struct FSet<T: ?Sized>(std::marker::PhantomData<T>);
 
-impl<T> FSet<T> {
+impl<T: ?Sized> FSet<T> {
     /// Returns the empty set.
     #[trusted]
     #[logic]
@@ -176,7 +176,10 @@ impl<T> FSet<T> {
     #[trusted]
     #[logic]
     #[creusot::builtins = "set.Fset.pick"]
-    pub fn peek(self) -> T {
+    pub fn peek(self) -> T
+    where
+        T: Sized,
+    {
         dead
     }
 
@@ -309,7 +312,7 @@ impl FSet<Int> {
 }
 
 /// Ghost definitions
-impl<T> FSet<T> {
+impl<T: ?Sized> FSet<T> {
     /// Create a new, empty set on the ghost heap.
     #[trusted]
     #[pure]
@@ -396,7 +399,10 @@ impl<T> FSet<T> {
     #[pure]
     #[ensures(^self == (*self).insert(value))]
     #[ensures(result == !(*self).contains(value))]
-    pub fn insert_ghost(&mut self, value: T) -> bool {
+    pub fn insert_ghost(&mut self, value: T) -> bool
+    where
+        T: Sized,
+    {
         let _ = value;
         panic!()
     }
