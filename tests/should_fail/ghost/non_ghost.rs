@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[terminates]
+#[safety(terminates)]
 fn terminating() {}
 
 pub fn calls_terminating() {

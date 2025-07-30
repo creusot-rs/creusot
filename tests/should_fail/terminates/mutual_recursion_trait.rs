@@ -3,18 +3,18 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 trait Foo {
-    #[terminates]
+    #[safety(terminates)]
     fn foo() {}
 }
 
 impl Foo for i32 {
-    #[terminates]
+    #[safety(terminates)]
     fn foo() {
         bar();
     }
 }
 
-#[terminates]
+#[safety(terminates)]
 fn bar() {
     <i32 as Foo>::foo();
 }

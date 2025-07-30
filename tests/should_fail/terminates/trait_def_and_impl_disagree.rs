@@ -3,20 +3,20 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 trait Tr {
-    #[terminates]
+    #[safety(terminates)]
     fn f();
 
-    #[pure]
+    #[safety(ghost)]
     fn g();
 
-    #[pure]
+    #[safety(ghost)]
     fn h();
 }
 
 impl Tr for i32 {
     fn f() {}
 
-    #[terminates]
+    #[safety(terminates)]
     fn g() {}
 
     fn h() {}

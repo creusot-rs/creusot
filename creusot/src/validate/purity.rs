@@ -62,7 +62,7 @@ impl Purity {
         match self {
             Purity::Ghost => "ghost",
             Purity::Program { terminates, no_panic } => match (*terminates, *no_panic) {
-                (true, true) => "program (pure)",
+                (true, true) => "program (ghost)",
                 (true, false) => "program (terminates)",
                 (false, true) => "program (no panic)",
                 (false, false) => "program",
@@ -228,7 +228,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 (Purity::Program { .. } | Purity::Ghost, Purity::Logic { .. }) => {
                                     ("program", "logic")
                                 }
-                                (Purity::Ghost, Purity::Program { .. }) => ("ghost", "non-pure"),
+                                (Purity::Ghost, Purity::Program { .. }) => ("ghost", "non-ghost"),
                                 (Purity::Logic { .. }, Purity::Program { .. } | Purity::Ghost) => {
                                     ("logic", "program")
                                 }

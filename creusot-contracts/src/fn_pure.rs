@@ -5,9 +5,9 @@ mod private {
     pub trait _Sealed {}
 }
 
-/// Marker trait for functions that are [`pure`].
+/// Marker trait for functions that are [`mode(ghost)`].
 ///
-/// Right now, this is automatically implemented for `#[pure]` closures, but not
+/// Right now, this is automatically implemented for `#[safety(ghost)]` closures, but not
 /// functions or methods.
 #[cfg_attr(creusot, rustc_diagnostic_item = "fn_pure_trait")]
 pub trait FnPure: private::_Sealed {}
@@ -20,7 +20,7 @@ impl<F> FnPure for F {}
 
 /// Structure that implements [`FnPure`].
 ///
-/// This cannot be built by itself: instead, it automatically wraps `#[pure]` closures.
+/// This cannot be built by itself: instead, it automatically wraps `#[safety(ghost)]` closures.
 #[doc(hidden)]
 #[cfg_attr(creusot, rustc_diagnostic_item = "fn_pure_ty")]
 pub struct FnPureWrapper<F>(F);
@@ -40,7 +40,7 @@ impl<I: ::std::marker::Tuple, F: FnOnce<I>> FnOnce<I> for FnPureWrapper<F> {
     #[requires(self.precondition(args))]
     #[ensures(self.postcondition_once(args, result))]
     #[trusted]
-    #[pure]
+    #[safety(ghost)]
     extern "rust-call" fn call_once(self, args: I) -> Self::Output {
         self.0.call_once(args)
     }
@@ -50,7 +50,7 @@ impl<I: ::std::marker::Tuple, F: FnMut<I>> FnMut<I> for FnPureWrapper<F> {
     #[requires((*self).precondition(args))]
     #[ensures((*self).postcondition_mut(args, ^self, result))]
     #[trusted]
-    #[pure]
+    #[safety(ghost)]
     extern "rust-call" fn call_mut(&mut self, args: I) -> Self::Output {
         self.0.call_mut(args)
     }
@@ -60,17 +60,17 @@ impl<I: ::std::marker::Tuple, F: Fn<I>> Fn<I> for FnPureWrapper<F> {
     #[requires((*self).precondition(args))]
     #[ensures((*self).postcondition(args, result))]
     #[trusted]
-    #[pure]
+    #[safety(ghost)]
     extern "rust-call" fn call(&self, args: I) -> Self::Output {
         self.0.call(args)
     }
 }
 
 impl<F> FnPureWrapper<F> {
-    /// DO NOT CALL THIS FUNCTION! This is an implementation detail, used by the `#[pure]`
+    /// DO NOT CALL THIS FUNCTION! This is an implementation detail, used by the `#[safety(ghost)]`
     /// attribute.
     #[doc(hidden)]
-    #[pure]
+    #[safety(ghost)]
     #[ensures(result@ == f)]
     pub fn __new(f: F) -> Self {
         Self(f)

@@ -262,16 +262,16 @@ impl<T> SliceIndex<[T]> for RangeToInclusive<usize> {
 
 extern_spec! {
     impl<T> [T] {
-        #[pure]
+        #[safety(ghost)]
         #[requires(self@.len() == src@.len())]
         #[ensures((^self)@ == src@)]
         fn copy_from_slice(&mut self, src: &[T]) where T: Copy;
 
-        #[pure]
+        #[safety(ghost)]
         #[ensures(self@.len() == result@)]
         fn len(&self) -> usize;
 
-        #[pure]
+        #[safety(ghost)]
         #[requires(i@ < self@.len())]
         #[requires(j@ < self@.len())]
         #[ensures((^self)@.exchange(self@, i@, j@))]
@@ -286,7 +286,7 @@ extern_spec! {
         #[ensures(ix.in_bounds(self@) || result == None)]
         fn get_mut<I: SliceIndex<[T]>>(&mut self, ix: I) -> Option<&mut <I as ::std::slice::SliceIndex<[T]>>::Output>;
 
-        #[pure]
+        #[safety(ghost)]
         #[requires(mid@ <= self@.len())]
         #[ensures({
             let (l,r) = result;  let sl = self@.len();
@@ -298,7 +298,7 @@ extern_spec! {
         })]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
-        #[pure]
+        #[safety(ghost)]
         #[ensures(match result {
             Some((first, tail)) => {
                 *first == self[0] && ^first == (^self)[0] &&
@@ -310,7 +310,7 @@ extern_spec! {
         })]
         fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
 
-        #[pure]
+        #[safety(ghost)]
         #[ensures(match result {
             Some(r) => {
                 *r == (**self)[0] && ^r == (^*self)[0] &&
@@ -322,20 +322,20 @@ extern_spec! {
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 
-        #[pure]
+        #[safety(ghost)]
         #[ensures(result@ == self)]
         fn iter(&self) -> Iter<'_, T>;
 
-        #[pure]
+        #[safety(ghost)]
         #[ensures(result@ == self)]
         fn iter_mut(&mut self) -> IterMut<'_, T>;
 
-        #[pure]
+        #[safety(ghost)]
         #[ensures(result == None ==> self@.len() == 0)]
         #[ensures(forall<x> result == Some(x) ==> self[self@.len() - 1] == *x)]
         fn last(&self) -> Option<&T>;
 
-        #[pure]
+        #[safety(ghost)]
         #[ensures(result == None ==> self@.len() == 0)]
         #[ensures(forall<x> result == Some(x) ==> self[0] == *x)]
         fn first(&self) -> Option<&T>;
@@ -352,7 +352,7 @@ extern_spec! {
         fn binary_search(&self, x: &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
 
-        #[terminates] // can OOM (?)
+        #[safety(terminates)] // can OOM (?)
         #[ensures(result@ == self_@)]
         fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
 
@@ -372,7 +372,7 @@ extern_spec! {
 
     impl<T, I> IndexMut<I> for [T]
         where I: SliceIndex<[T]> {
-        #[pure]
+        #[safety(ghost)]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
         #[ensures(ix.has_value((&^self)@, ^result))]
@@ -383,7 +383,7 @@ extern_spec! {
 
     impl<T, I> Index<I> for [T]
         where I: SliceIndex<[T]> {
-        #[pure]
+        #[safety(ghost)]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
         fn index(&self, ix: I) -> &<[T] as Index<I>>::Output;
@@ -418,12 +418,12 @@ extern_spec! {
 
     mod std {
         mod slice {
-            #[pure]
+            #[safety(ghost)]
             #[ensures(result@.len() == 1)]
             #[ensures(result@[0] == *s)]
             fn from_ref<T>(s: &T) -> &[T];
 
-            #[pure]
+            #[safety(ghost)]
             #[ensures(result@.len() == 1)]
             #[ensures(result@[0] == *s)]
             #[ensures((^result)@.len() == 1)]

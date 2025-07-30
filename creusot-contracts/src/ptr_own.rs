@@ -131,7 +131,7 @@ impl<T: ?Sized> PtrOwn<T> {
 
     /// If one owns two `PtrOwn`s in ghost code, then they are for different pointers.
     #[trusted]
-    #[pure]
+    #[safety(ghost)]
     #[ensures(own1.ptr().addr_logic() != own2.ptr().addr_logic())]
     #[ensures(*own1 == ^own1)]
     #[allow(unused_variables)]
