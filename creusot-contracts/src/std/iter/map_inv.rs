@@ -1,4 +1,6 @@
-use crate::{invariant::Invariant, resolve::structural_resolve, *};
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
+use crate::{invariant::Invariant, *};
 
 pub struct MapInv<I, B, F> {
     pub iter: I,
@@ -10,39 +12,37 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
     for MapInv<I, I::Item, F>
 {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            *(^self).produced == Seq::EMPTY &&
+            *(^self).produced == Seq::empty() &&
             self.iter.completed() && self.func == (^self).func
         }
     }
 
     #[law]
-    #[open(self)]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[creusot::why3_attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.func.hist_inv(succ.func)
             && exists<fs: Seq<&mut F>> fs.len() == visited.len()
-            && exists<s : Seq<I::Item>> s.len() == visited.len() && self.iter.produces(s, succ.iter)
+            && exists<s: Seq<I::Item>> s.len() == visited.len() && self.iter.produces(s, succ.iter)
             && succ.produced.inner() == self.produced.concat(s)
-            && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
+            && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
             && if visited.len() == 0 { self.func == succ.func }
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
-            && forall<i : Int> 0 <= i && i < visited.len() ==>
+            && forall<i> 0 <= i && i < visited.len() ==>
                  self.func.hist_inv(*fs[i])
                  && (*fs[i]).precondition((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))))
                  && (*fs[i]).postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
@@ -52,23 +52,22 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
 
 impl<I, B, F> Resolve for MapInv<I, B, F> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
-        resolve(&self.iter) && resolve(&self.func)
+        resolve(self.iter) && resolve(self.func)
     }
 
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant
     for MapInv<I, I::Item, F>
 {
-    #[open(self)]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
+    #[open]
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&
@@ -96,13 +95,13 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> ::std::iter
                 let r = (self.func)(v, self.produced);
                 self.produced = produced;
                 #[allow(path_statements)]
-                let _: Snapshot<()> = snapshot! { { Self::produces_one_invariant; () } };
+                let _ = snapshot! { Self::produces_one_invariant };
                 proof_assert! { old_self.produces_one(r, *self) };
                 let _ = self; // Make sure self is not resolve until here.
                 Some(r)
             }
             None => {
-                self.produced = snapshot! { Seq::EMPTY };
+                self.produced = snapshot! { Seq::empty() };
                 None
             }
         }
@@ -111,7 +110,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> ::std::iter
 
 impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I::Item, F> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     pub fn next_precondition(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<e: I::Item, i: I>
@@ -120,9 +119,9 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
         }
     }
 
-    #[predicate(prophetic)]
-    #[ensures(produced == Seq::EMPTY ==> result == Self::preservation(iter, func))]
-    fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
+    #[logic(prophetic)]
+    #[ensures(produced == Seq::empty() ==> result == Self::preservation(iter, func))]
+    pub fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 func.hist_inv(*f) ==>
@@ -134,7 +133,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
@@ -147,18 +146,16 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     pub fn reinitialize() -> bool {
         pearlite! {
             forall<iter: &mut I, func: F>
                 iter.completed() ==>
-                Self::next_precondition(^iter, func, Seq::EMPTY) &&
+                Self::next_precondition(^iter, func, Seq::empty()) &&
                 Self::preservation(^iter, func)
         }
     }
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[logic]
     #[requires(self.invariant())]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
@@ -175,7 +172,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {

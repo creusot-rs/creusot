@@ -134,6 +134,7 @@ fn translate_creusot_contracts(
     creusot_contracts
         .arg("creusot")
         .args(&[
+            "--no-check-version",
             "--creusot-rustc",
             creusot_rustc.to_str().unwrap(),
             "--metadata-path",
@@ -239,8 +240,6 @@ fn run_creusot(
     base_path.push("creusot");
     base_path.push("debug");
 
-    let config_paths = creusot_setup::creusot_paths().unwrap();
-
     let creusot_contract_path = base_path.join("libcreusot_contracts.rlib");
     let creusot_contract_path =
         creusot_contract_path.to_str().expect("invalid utf-8 in contract path");
@@ -281,8 +280,6 @@ fn run_creusot(
         "--creusot-extern",
         &format!("creusot_contracts={}", normalize_file_path(contracts)),
     ]);
-    cmd.arg("--why3-path").arg(&config_paths.why3);
-    cmd.arg("--why3-config-file").arg(&config_paths.why3_config);
 
     Some(cmd)
 }

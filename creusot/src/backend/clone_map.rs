@@ -2,7 +2,9 @@ use core::panic;
 use std::cell::RefCell;
 
 use crate::{
-    backend::{Why3Generator, clone_map::elaborator::Expander, dependency::Dependency},
+    backend::{
+        Why3Generator, clone_map::elaborator::Expander, dependency::Dependency, ty::ty_to_prelude,
+    },
     contracts_items::{get_builtin, get_inv_function, is_bitwise},
     ctx::*,
     options::SpanMode,
@@ -173,7 +175,7 @@ pub(crate) trait Namer<'tcx> {
             }
             (PreMod::Any, _) => ["creusot", "prelude", "Any"],
         };
-        name.into_iter().map(|s| Symbol::intern(s)).collect()
+        name.into_iter().map(Symbol::intern).collect()
     }
 
     fn in_pre(&self, module: PreMod, name: &str) -> QName {
@@ -208,6 +210,14 @@ pub(crate) trait Namer<'tcx> {
     fn span(&self, span: Span) -> Option<Attribute>;
 
     fn bitwise_mode(&self) -> bool;
+
+    fn to_int(&self, ty: &TyKind) -> why3::QName {
+        self.in_pre(ty_to_prelude(self.tcx(), ty), "t'int")
+    }
+
+    fn to_int_app(&self, ty: &TyKind, arg: why3::Exp) -> why3::Exp {
+        why3::Exp::qvar(self.to_int(ty)).app([arg])
+    }
 }
 
 impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
@@ -256,7 +266,7 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
     }
 }
 
-impl<'tcx> CloneNames<'tcx> {
+impl CloneNames<'_> {
     fn bitwise_mode(&self) -> bool {
         self.bitwise_mode
     }
@@ -372,9 +382,15 @@ impl<'tcx> Dependencies<'tcx> {
         let deps =
             Dependencies { tcx: ctx.tcx, self_id, self_subst, names, dep_set: Default::default() };
 
-        let node = Dependency::Item(self_id, self_subst);
-        deps.names.dependency(node);
+        deps.names.dependency(Dependency::Item(self_id, self_subst));
         deps
+    }
+
+    /// Get a name for an type, _without_ adding it to the list of dependencies.
+    ///
+    /// This is a hack, used to handle namespaces.
+    pub(crate) fn def_ty_no_dependency(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
+        self.names.def_ty(def_id, subst)
     }
 
     pub(crate) fn provide_deps(
@@ -386,7 +402,7 @@ impl<'tcx> Dependencies<'tcx> {
 
         let typing_env = ctx.typing_env(self.self_id);
 
-        let self_node = Dependency::Item(self.self_id, self.self_subst);
+        let self_node = (self.self_id, self.self_subst);
         let graph = Expander::new(
             &mut self.names,
             self_node,
@@ -399,7 +415,10 @@ impl<'tcx> Dependencies<'tcx> {
         let (graph, mut bodies, setters) = graph.update_graph(ctx);
 
         for scc in petgraph::algo::tarjan_scc(&graph).into_iter() {
-            if scc.iter().any(|node| node == &self_node) {
+            if scc.iter().any(|node| node == &Dependency::Item(self_node.0, self_node.1)) {
+                if scc.len() != 1 {
+                    eprintln!("{:?} {scc:?}", self.self_id);
+                }
                 assert_eq!(scc.len(), 1);
                 bodies.remove(&scc[0]);
                 continue;

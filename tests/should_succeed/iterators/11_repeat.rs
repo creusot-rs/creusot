@@ -7,30 +7,30 @@ use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Repeat<A> {
-    element: A,
+    pub element: A,
 }
 
 impl<A: Clone> Iterator for Repeat<A> {
     type Item = A;
 
     #[open]
-    #[predicate]
+    #[logic]
     fn completed(&mut self) -> bool {
         pearlite! { false }
     }
 
     #[open]
-    #[predicate]
+    #[logic]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&
-            forall<i: Int> 0 <= i && i < visited.len() ==> visited[i] == self.element
+            forall<i> 0 <= i && i < visited.len() ==> Self::Item::clone.postcondition((&self.element,), visited[i])
         }
     }
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

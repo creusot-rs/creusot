@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-trait BadLaw {
+pub trait BadLaw {
     #[law]
     fn my_law<T>(x: T);
 }

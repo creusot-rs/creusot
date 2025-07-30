@@ -29,13 +29,13 @@ impl<I> RevExt<I> for Rev<I> {
 
 impl<I: DoubleEndedIterator> Iterator for Rev<I> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.iter_mut().completed() }
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.iter().produces_back(visited, o.iter())
@@ -43,12 +43,10 @@ impl<I: DoubleEndedIterator> Iterator for Rev<I> {
     }
 
     #[law]
-    #[open(self)]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

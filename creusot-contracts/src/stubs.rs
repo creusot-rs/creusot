@@ -75,7 +75,7 @@ pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> crate::Snapshot<T>>(_: F) -> crate
 #[trusted]
 #[creusot::no_translate]
 #[creusot::builtins = "identity"]
-pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
+pub fn mapping_from_fn<A: ?Sized, B, F: FnOnce(&A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
     dead
 }
 

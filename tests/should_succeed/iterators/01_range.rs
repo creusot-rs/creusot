@@ -1,25 +1,21 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{
-    invariant::inv,
-    logic::{Int, Seq},
-    *,
-};
+use creusot_contracts::{invariant::inv, logic::Seq, *};
 
 mod common;
 use common::Iterator;
 
 struct Range {
-    start: isize,
-    end: isize,
+    pub start: isize,
+    pub end: isize,
 }
 
 impl Iterator for Range {
     type Item = isize;
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             self.resolve() && self.start >= self.end
@@ -27,20 +23,20 @@ impl Iterator for Range {
     }
 
     #[open]
-    #[predicate]
+    #[logic]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.end == o.end && self.start <= o.start
             && (visited.len() > 0 ==> o.start <= o.end)
             && visited.len() == o.start@ - self.start@
-            && forall<i : Int> 0 <= i && i < visited.len() ==>
+            && forall<i> 0 <= i && i < visited.len() ==>
                 visited[i]@ == self.start@ + i
         }
     }
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -78,7 +74,7 @@ pub fn sum_range(n: isize) -> isize {
     let mut i = 0;
     let mut it = Range { start: 0, end: n }.into_iter();
     let iter_old = snapshot! { it };
-    let mut produced = snapshot! { Seq::EMPTY };
+    let mut produced = snapshot! { Seq::empty() };
     #[invariant(inv(it))]
     #[invariant(iter_old.produces(produced.inner(), it))]
     #[invariant(i@ == produced.len() && i <= n)]

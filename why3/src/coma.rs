@@ -312,7 +312,7 @@ impl Print for Var {
             alloc,
             if matches!(self.3, IsRef::Ref) { alloc.text("& ") } else { alloc.nil() },
             self.0.pretty_value_name(alloc, scope),
-            " : ",
+            ": ",
             self.1.pretty(alloc, scope),
             " = ",
             self.2.pretty(alloc, scope)

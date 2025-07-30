@@ -1,5 +1,5 @@
 use crate::{
-    ctx::TranslationCtx,
+    ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{fmir::{self, Operand}, pearlite::Literal, traits::TraitResolved},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};

@@ -15,7 +15,6 @@ const NULL: Ptr = usize::MAX;
 impl IndexLogic<Ptr> for Memory {
     type Item = Ptr;
 
-    #[open(self)]
     #[logic]
     fn index_logic(self, i: Ptr) -> Ptr {
         pearlite! { self.0[i] }
@@ -44,14 +43,12 @@ impl IndexMut<Ptr> for Memory {
 }
 
 impl Memory {
-    #[open(self)]
-    #[predicate]
+    #[logic]
     pub fn nonnull_ptr(self, i: Ptr) -> bool {
         pearlite! { self.0@.len() <= usize::MAX@ && i@ < self.0@.len() }
     }
 
-    #[open(self)]
-    #[predicate]
+    #[logic]
     pub fn mem_is_well_formed(self) -> bool {
         pearlite! {
             forall<i: Ptr> self.nonnull_ptr(i) ==> self[i] == NULL || self.nonnull_ptr(self[i])
@@ -77,17 +74,16 @@ impl Memory {
         return r;
     }
 
-    #[predicate]
+    #[logic]
     fn list_seg(self, first: Ptr, s: Seq<Ptr>, last: Ptr, l: Int, h: Int) -> bool {
         pearlite! {
             first == if h == l { last } else { s[l] } &&
-            (forall<i: Int> l <= i && i < h ==> self.nonnull_ptr(s[i]) && self[s[i]] == if i == h - 1 { last } else { s[i+1] }) &&
-            (forall<i: Int, j: Int> l <= i && i < h && l <= j && j < h && i != j ==> s[i] != s[j])
+            (forall<i> l <= i && i < h ==> self.nonnull_ptr(s[i]) && self[s[i]] == if i == h - 1 { last } else { s[i+1] }) &&
+            (forall<i, j> l <= i && i < h && l <= j && j < h && i != j ==> s[i] != s[j])
         }
     }
 
-    #[open(self)]
-    #[predicate]
+    #[logic]
     pub fn list(self, first: Ptr, s: Seq<Ptr>) -> bool {
         pearlite! {
             self.list_seg(first, s, NULL, 0, s.len())
@@ -111,8 +107,7 @@ impl Memory {
         return r;
     }
 
-    #[open(self)]
-    #[predicate]
+    #[logic]
     pub fn loop_(self, first: Ptr, s: Seq<Ptr>) -> bool {
         pearlite! {
             self.list_seg(first, s, s[0], 0, s.len())
@@ -140,19 +135,18 @@ impl Memory {
             n = snapshot! { *n + 1 }
         }
 
-        proof_assert! { forall<i:Int> 0 <= i && i < s.len() ==>
+        proof_assert! { forall<i> 0 <= i && i < s.len() ==>
             s.subsequence(1, s.len()).reverse().push_front(s[0])[i] ==
         if i == 0 { s[0] } else { s.reverse()[i-1] } };
         return r;
     }
 
-    #[open(self)]
-    #[predicate]
+    #[logic]
     pub fn lasso(self, first: Ptr, s1: Seq<Ptr>, s2: Seq<Ptr>) -> bool {
         pearlite! {
             let mid = if s2.len() == 0 { s1[s1.len()-1] } else { s2[0] };
             s1.len() > 0 &&
-            (forall<i: Int, j: Int> 0 <= i && i < s1.len() && 0 <= j && j < s2.len() ==> s1[i] != s2[j]) &&
+            (forall<i, j> 0 <= i && i < s1.len() && 0 <= j && j < s2.len() ==> s1[i] != s2[j]) &&
             self.list_seg(first, s1, mid, 0, s1.len()) &&
             self.list_seg(mid, s2, s1[s1.len()-1], 0, s2.len())
         }
@@ -197,7 +191,7 @@ impl Memory {
     #[logic]
     #[requires(0 <= i && i <= s.len())]
     #[ensures(match result {
-        None => forall<j: Int> i <= j && j < s.len() ==> s[j]@ != p,
+        None => forall<j> i <= j && j < s.len() ==> s[j]@ != p,
         Some(j) => i <= j && j < s.len() && s[j]@ == p
     })]
     #[variant(s.len() - i)]
@@ -211,8 +205,8 @@ impl Memory {
 
     #[logic]
     #[requires(0 <= n)]
-    #[requires(forall<i: Int> 0 <= i && i < s.len() ==> s[i]@ < n)]
-    #[requires(forall<i: Int, j: Int> 0 <= i && i < s.len() && 0 <= j && j < s.len() && i != j ==> s[i] != s[j])]
+    #[requires(forall<i> 0 <= i && i < s.len() ==> s[i]@ < n)]
+    #[requires(forall<i, j> 0 <= i && i < s.len() && 0 <= j && j < s.len() && i != j ==> s[i] != s[j])]
     #[ensures(s.len() <= n)]
     #[ensures(result)]
     #[variant(n)]
@@ -260,7 +254,6 @@ impl Memory {
     }
 
     #[logic]
-    #[open(self)]
     #[requires(self.mem_is_well_formed())]
     #[requires(first == NULL || self.nonnull_ptr(first))]
     #[ensures(match result {
@@ -269,7 +262,7 @@ impl Memory {
     })]
     pub fn find_lasso(self, first: Ptr) -> (Seq<Ptr>, Option<Seq<Ptr>>) {
         pearlite! {
-             Self::find_lasso_aux(self, first, first, Seq::EMPTY)
+             Self::find_lasso_aux(self, first, first, Seq::empty())
         }
     }
 }

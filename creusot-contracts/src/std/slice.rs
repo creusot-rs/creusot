@@ -1,7 +1,10 @@
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{
     invariant::*,
-    resolve::structural_resolve,
-    std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
+    std::ops::{
+        Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
+    },
     *,
 };
 #[cfg(feature = "nightly")]
@@ -9,7 +12,7 @@ use ::std::alloc::Allocator;
 pub use ::std::slice::*;
 
 impl<T> Invariant for [T] {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
@@ -37,7 +40,7 @@ impl<T: DeepModel> DeepModel for [T] {
     #[logic]
     #[trusted]
     #[ensures((&self)@.len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < result.len() ==> result[i] == (&self)[i].deep_model())]
+    #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == (&self)[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         dead
     }
@@ -70,7 +73,7 @@ impl<T> SliceExt<T> for [T] {
     #[logic]
     #[trusted]
     #[ensures(result.len() == self@.len())]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> result[i] == &mut self[i])]
+    #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == &mut self[i])]
     // TODO: replace with a map function applied on a sequence
     fn to_mut_seq(&mut self) -> Seq<&mut T> {
         dead
@@ -79,7 +82,7 @@ impl<T> SliceExt<T> for [T] {
     #[logic]
     #[trusted]
     #[ensures(result.len() == self@.len())]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> result[i] == &self[i])]
+    #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == &self[i])]
     fn to_ref_seq(&self) -> Seq<&T> {
         dead
     }
@@ -89,118 +92,148 @@ pub trait SliceIndex<T: ?Sized>: ::std::slice::SliceIndex<T>
 where
     T: View,
 {
-    #[predicate]
+    #[logic]
     fn in_bounds(self, seq: T::ViewTy) -> bool;
 
-    #[predicate]
+    #[logic]
     fn has_value(self, seq: T::ViewTy, out: Self::Output) -> bool;
 
-    #[predicate]
+    #[logic]
     fn resolve_elswhere(self, old: T::ViewTy, fin: T::ViewTy) -> bool;
 }
 
 impl<T> SliceIndex<[T]> for usize {
-    #[predicate]
+    #[logic]
     #[open]
     #[creusot::why3_attr = "inline:trivial"]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self@ < seq.len() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     #[creusot::why3_attr = "inline:trivial"]
     fn has_value(self, seq: Seq<T>, out: T) -> bool {
         pearlite! { seq[self@] == out }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     #[creusot::why3_attr = "inline:trivial"]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i != self@ && i < old.len() ==> old[i] == fin[i] }
+        pearlite! { forall<i> 0 <= i && i != self@ && i < old.len() ==> old[i] == fin[i] }
     }
 }
 
 impl<T> SliceIndex<[T]> for Range<usize> {
-    #[predicate]
+    #[logic]
     #[open]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self.start@ <= self.end@ && self.end@ <= seq.len() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
         pearlite! { seq.subsequence(self.start@, self.end@) == out@ }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! {
-            forall<i : Int> 0 <= i && (i < self.start@ || self.end@ <= i) && i < old.len()
+            forall<i> 0 <= i && (i < self.start@ || self.end@ <= i) && i < old.len()
             ==> old[i] == fin[i]
         }
     }
 }
 
+impl<T> SliceIndex<[T]> for RangeInclusive<usize> {
+    #[logic]
+    #[trusted]
+    #[ensures(self.end_log()@ < seq.len() && self.start_log()@ <= self.end_log()@+1 ==> result)]
+    #[ensures(self.end_log()@ >= seq.len() ==> !result)]
+    fn in_bounds(self, seq: Seq<T>) -> bool {
+        dead
+    }
+
+    #[logic]
+    #[open]
+    fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
+        pearlite! {
+            if self.is_empty_log() { out@ == Seq::empty() }
+            else { seq.subsequence(self.start_log()@, self.end_log()@ + 1) == out@ }
+        }
+    }
+
+    #[logic]
+    #[open]
+    fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
+        pearlite! {
+            forall<i> 0 <= i
+                && (i < self.start_log()@ || self.end_log()@ < i || self.is_empty_log())
+                && i < old.len()
+                ==> old[i] == fin[i]
+        }
+    }
+}
+
 impl<T> SliceIndex<[T]> for RangeTo<usize> {
-    #[predicate]
+    #[logic]
     #[open]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self.end@ <= seq.len() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
         pearlite! { seq.subsequence(0, self.end@) == out@ }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
-        pearlite! { forall<i : Int> self.end@ <= i && i < old.len() ==> old[i] == fin[i] }
+        pearlite! { forall<i> self.end@ <= i && i < old.len() ==> old[i] == fin[i] }
     }
 }
 
 impl<T> SliceIndex<[T]> for RangeFrom<usize> {
-    #[predicate]
+    #[logic]
     #[open]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self.start@ <= seq.len() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
         pearlite! { seq.subsequence(self.start@, seq.len()) == out@ }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! {
-            forall<i : Int> 0 <= i && i < self.start@ && i < old.len() ==> old[i] == fin[i]
+            forall<i> 0 <= i && i < self.start@ && i < old.len() ==> old[i] == fin[i]
         }
     }
 }
 
 impl<T> SliceIndex<[T]> for RangeFull {
-    #[predicate]
+    #[logic]
     #[open]
     fn in_bounds(self, _seq: Seq<T>) -> bool {
         pearlite! { true }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
         pearlite! { seq == out@ }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn resolve_elswhere(self, _old: Seq<T>, _fin: Seq<T>) -> bool {
         pearlite! { true }
@@ -208,22 +241,22 @@ impl<T> SliceIndex<[T]> for RangeFull {
 }
 
 impl<T> SliceIndex<[T]> for RangeToInclusive<usize> {
-    #[predicate]
+    #[logic]
     #[open]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self.end@ < seq.len() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
         pearlite! { seq.subsequence(0, self.end@ + 1) == out@ }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
-        pearlite! { forall<i : Int> self.end@ < i && i < old.len() ==> old[i] == fin[i] }
+        pearlite! { forall<i> self.end@ < i && i < old.len() ==> old[i] == fin[i] }
     }
 }
 
@@ -232,7 +265,7 @@ extern_spec! {
         #[pure]
         #[requires(self@.len() == src@.len())]
         #[ensures((^self)@ == src@)]
-        fn copy_from_slice(&mut self, src: &[T]) where T : Copy;
+        fn copy_from_slice(&mut self, src: &[T]) where T: Copy;
 
         #[pure]
         #[ensures(self@.len() == result@)]
@@ -244,9 +277,14 @@ extern_spec! {
         #[ensures((^self)@.exchange(self@, i@, j@))]
         fn swap(&mut self, i: usize, j: usize);
 
-        #[ensures(ix.in_bounds(self@) ==> exists<r: _> result == Some(r) && ix.has_value(self_@, *r))]
+        #[ensures(ix.in_bounds(self@) ==> exists<r> result == Some(r) && ix.has_value(self@, *r))]
         #[ensures(ix.in_bounds(self@) || result == None)]
-        fn get<I : SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as ::std::slice::SliceIndex<[T]>>::Output>;
+        fn get<I: SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as ::std::slice::SliceIndex<[T]>>::Output>;
+
+        #[ensures((^self)@.len() == self@.len())]
+        #[ensures(ix.in_bounds(self@) ==> exists<r> result == Some(r) && ix.has_value(self@, *r) && ix.has_value((^self)@, ^r) && ix.resolve_elswhere(self@, (^self)@))]
+        #[ensures(ix.in_bounds(self@) || result == None)]
+        fn get_mut<I: SliceIndex<[T]>>(&mut self, ix: I) -> Option<&mut <I as ::std::slice::SliceIndex<[T]>>::Output>;
 
         #[pure]
         #[requires(mid@ <= self@.len())]
@@ -268,7 +306,7 @@ extern_spec! {
                 (*tail)@ == (*self)@.tail() &&
                 (^tail)@ == (^self)@.tail()
             }
-            None => self@.len() == 0 && ^self == *self && self@ == Seq::EMPTY
+            None => self@.len() == 0 && ^self == *self && self@ == Seq::empty()
         })]
         fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
 
@@ -279,7 +317,8 @@ extern_spec! {
                 (**self)@.len() > 0 && (^*self)@.len() > 0 &&
                 (*^self)@ == (**self)@.tail() && (^^self)@ == (^*self)@.tail()
             }
-            None => (*^self)@ == Seq::EMPTY && (^*self)@ == Seq::EMPTY && (**self)@ == Seq::EMPTY && (^^self)@ == Seq::EMPTY
+            None => (*^self)@ == Seq::empty() && (^*self)@ == Seq::empty() &&
+                    (**self)@ == Seq::empty() && (^^self)@ == Seq::empty()
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 
@@ -293,24 +332,24 @@ extern_spec! {
 
         #[pure]
         #[ensures(result == None ==> self@.len() == 0)]
-        #[ensures(forall<x : _> result == Some(x) ==> self[self@.len() - 1] == *x)]
+        #[ensures(forall<x> result == Some(x) ==> self[self@.len() - 1] == *x)]
         fn last(&self) -> Option<&T>;
 
         #[pure]
         #[ensures(result == None ==> self@.len() == 0)]
-        #[ensures(forall<x : _> result == Some(x) ==> self[0] == *x)]
+        #[ensures(forall<x> result == Some(x) ==> self[0] == *x)]
         fn first(&self) -> Option<&T>;
 
 
         #[requires(self.deep_model().sorted())]
         #[ensures(forall<i:usize> result == Ok(i) ==> i@ < self@.len() && (*self).deep_model()[i@] == x.deep_model())]
         #[ensures(forall<i:usize> result == Err(i) ==> i@ <= self@.len() &&
-            forall<j : _> 0 <= j && j < self@.len() ==> self.deep_model()[j] != x.deep_model())]
+            forall<j> 0 <= j && j < self@.len() ==> self.deep_model()[j] != x.deep_model())]
         #[ensures(forall<i:usize> result == Err(i) ==>
             forall<j:usize> j < i ==> self.deep_model()[j@] < x.deep_model())]
         #[ensures(forall<i:usize> result == Err(i) ==>
             forall<j:usize> i <= j && j@ < self@.len() ==> x.deep_model() < self.deep_model()[j@])]
-        fn binary_search(&self, x : &T) -> Result<usize, usize>
+        fn binary_search(&self, x: &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
 
         #[terminates] // can OOM (?)
@@ -320,7 +359,7 @@ extern_spec! {
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
         unsafe fn get_unchecked<I>(&self, ix: I) -> &<I as ::std::slice::SliceIndex<[T]>>::Output
-            where I : SliceIndex<[T]>;
+            where I: SliceIndex<[T]>;
 
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
@@ -328,22 +367,22 @@ extern_spec! {
         #[ensures(ix.resolve_elswhere(self@, (^self)@))]
         #[ensures((^self)@.len() == self@.len())]
         unsafe fn get_unchecked_mut<I>(&mut self, ix: I) -> &mut <I as ::std::slice::SliceIndex<[T]>>::Output
-            where I : SliceIndex<[T]>;
+            where I: SliceIndex<[T]>;
     }
 
     impl<T, I> IndexMut<I> for [T]
-        where I : SliceIndex<[T]> {
+        where I: SliceIndex<[T]> {
         #[pure]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
-        #[ensures(ix.has_value((^self)@, ^result))]
-        #[ensures(ix.resolve_elswhere(self@, (^self)@))]
-        #[ensures((^self)@.len() == self@.len())]
+        #[ensures(ix.has_value((&^self)@, ^result))]
+        #[ensures(ix.resolve_elswhere(self@, (&^self)@))]
+        #[ensures((&^self)@.len() == self@.len())]
         fn index_mut(&mut self, ix: I) -> &mut <[T] as Index<I>>::Output;
     }
 
     impl<T, I> Index<I> for [T]
-        where I : SliceIndex<[T]> {
+        where I: SliceIndex<[T]> {
         #[pure]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
@@ -361,14 +400,20 @@ extern_spec! {
     }
 
     impl<'a, T> Default for &'a mut [T] {
-        #[ensures((*result)@ == Seq::EMPTY)]
-        #[ensures((^result)@ == Seq::EMPTY)]
+        #[ensures((*result)@ == Seq::empty())]
+        #[ensures((^result)@ == Seq::empty())]
         fn default() -> &'a mut [T];
     }
 
     impl<'a, T> Default for &'a [T] {
-        #[ensures(result@ == Seq::EMPTY)]
+        #[ensures(result@ == Seq::empty())]
         fn default() -> &'a [T];
+    }
+
+    impl<T: Clone, A: Allocator + Clone> Clone for Box<[T], A> {
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i]))]
+        fn clone(&self) -> Box<[T], A>;
     }
 
     mod std {
@@ -399,13 +444,13 @@ impl<'a, T> View for Iter<'a, T> {
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
+        pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
@@ -415,7 +460,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -439,27 +484,26 @@ impl<'a, T> View for IterMut<'a, T> {
 
 impl<'a, T> Resolve for IterMut<'a, T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! { *self@ == ^self@ }
     }
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
+        pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
@@ -469,7 +513,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

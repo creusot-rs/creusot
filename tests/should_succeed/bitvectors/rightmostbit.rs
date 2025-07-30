@@ -22,7 +22,7 @@ fn count8_log(n: i8) -> Int {
 #[ensures(x >= 0i8 ==> 0i8 <= result && result <= x)]
 #[ensures(x <= 0i8 && x > i8::MIN ==> 0i8 <= result && result@ <= -x@)]
 #[ensures((x == i8::MIN) == (result == i8::MIN))]
-#[ensures(forall<i: _> 0i8 <= i && i < result ==> i & x == 0i8)]
+#[ensures(forall<i> 0i8 <= i && i < result ==> i & x == 0i8)]
 #[ensures(x != 0i8 ==> count8_log(result) == 1)]
 #[bitwise_proof]
 pub fn rightmost_bit_8(x: i8) -> i8 {
@@ -32,7 +32,7 @@ pub fn rightmost_bit_8(x: i8) -> i8 {
 #[ensures(x >= 0i64 ==> 0i64 <= result && result <= x)]
 #[ensures(x <= 0i64 && x > i64::MIN ==> 0i64 <= result && result@ <= -x@)]
 #[ensures((x == i64::MIN) == (result == i64::MIN))]
-#[ensures(forall<i: _> 0i64 <= i && i < result ==> i & x == 0i64)]
+#[ensures(forall<i> 0i64 <= i && i < result ==> i & x == 0i64)]
 #[bitwise_proof]
 pub fn rightmost_bit_64(x: i64) -> i64 {
     x & x.wrapping_neg()

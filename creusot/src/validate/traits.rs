@@ -2,7 +2,7 @@ use rustc_hir::def::DefKind;
 
 use crate::{
     contracts_items::{is_law, is_open_inv_result, is_trusted},
-    ctx::TranslationCtx,
+    ctx::{HasTyCtxt as _, TranslationCtx},
     validate::is_overloaded_item,
 };
 
@@ -16,14 +16,15 @@ pub(crate) fn validate_traits(ctx: &TranslationCtx) {
         let trait_item = ctx.hir().trait_item(trait_item_id);
 
         if is_law(ctx.tcx, trait_item.owner_id.def_id.to_def_id())
-            && !ctx.generics_of(trait_item.owner_id.def_id).own_params.is_empty()
+            && !(ctx.predicates_of(trait_item.owner_id.def_id).predicates.is_empty()
+                && ctx.generics_of(trait_item.owner_id.def_id).own_params.is_empty())
         {
             law_violations.push((trait_item.owner_id.def_id, trait_item.span))
         }
     }
 
     for (_, sp) in law_violations {
-        ctx.error(sp, "Laws cannot have additional generic parameters").emit();
+        ctx.error(sp, "Laws cannot have additional generic parameters or trait constraints").emit();
     }
 }
 

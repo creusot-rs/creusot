@@ -6,13 +6,13 @@ extern crate creusot_contracts;
 pub mod x {
     use creusot_contracts::*;
 
-    #[predicate]
+    #[logic]
     fn priv_symbol() -> bool {
         true
     }
 
     #[open(crate)]
-    #[predicate]
+    #[logic]
     pub fn bad() -> bool {
         priv_symbol()
     }

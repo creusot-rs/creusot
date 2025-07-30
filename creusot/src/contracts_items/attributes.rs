@@ -46,11 +46,13 @@ attribute_functions! {
     [creusot::before_loop]                   => is_before_loop
     [creusot::spec::assert]                  => is_assertion
     [creusot::spec::snapshot]                => is_snapshot_closure
+    [creusot::logic_closure]                 => is_logic_closure // marks `forall`, `exists`, and mappings
     [creusot::decl::logic]                   => is_logic
     [creusot::decl::logic::prophetic]        => is_prophetic
-    [creusot::decl::predicate]               => is_predicate
+    [creusot::decl::logic::sealed]           => is_sealed
     [creusot::decl::trusted]                 => is_trusted
     [creusot::decl::law]                     => is_law
+    [creusot::decl::new_namespace]           => is_new_namespace
     not [creusot::decl::no_trigger]          => should_replace_trigger
     [creusot::decl::open_inv_result]         => is_open_inv_result
     [creusot::extern_spec]                   => is_extern_spec
@@ -60,22 +62,23 @@ attribute_functions! {
     [creusot::clause::terminates]            => is_terminates
     [creusot::clause::no_panic]              => is_no_panic
     [creusot::bitwise]                       => is_bitwise
+    [creusot::builtins_ascription]           => is_builtins_ascription
 }
 
-pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
+pub(crate) fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
     get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"])
         .map(|a| a.value_str().map_or("expl:loop invariant".to_string(), |s| s.to_string()))
 }
 
 pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
-    is_predicate(tcx, def_id)
-        || is_spec(tcx, def_id)
+    is_spec(tcx, def_id)
+        || is_logic_closure(tcx, def_id)
         || is_logic(tcx, def_id)
         || is_assertion(tcx, def_id)
         || is_snapshot_closure(tcx, def_id)
 }
 
-/// Get the string on the right of `creusot::builtin = ...`
+/// Get the string on the right of `creusot::builtins = ...`
 pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).map(|a| {
         a.value_str().unwrap_or_else(|| {

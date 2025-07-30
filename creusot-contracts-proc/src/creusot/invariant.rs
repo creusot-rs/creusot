@@ -205,7 +205,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
     quote_spanned! {for_span=> {
         let mut #it = ::std::iter::IntoIterator::into_iter(#iter);
         let #iter_old = snapshot! { #it };
-        let mut #produced = snapshot! { ::creusot_contracts::logic::Seq::EMPTY };
+        let mut #produced = snapshot! { ::creusot_contracts::logic::Seq::empty() };
         let _ = { #[creusot::before_loop] || {} };
         #(#outer)*
         #lbl

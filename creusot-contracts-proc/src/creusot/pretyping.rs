@@ -1,6 +1,13 @@
+//! Pre-parse pearlite.
+//!
+//! Some macros accept pearlite rather than Rust. This module converts the
+//! latter to the former.
+//!
+//! For example, `1 + 2` becomes `creusot_contracts::logic::AddLogic::add(Int::new(1), Int::new(2))`.
+
 use pearlite_syn::Term as RT;
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
-use syn::{ExprMacro, Pat, UnOp, spanned::Spanned};
+use syn::{ExprMacro, Pat, PatType, UnOp, spanned::Spanned};
 
 use pearlite_syn::term::*;
 use quote::{ToTokens, quote, quote_spanned};
@@ -113,7 +120,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }
         }
-        RT::Block(TermBlock { block, .. }) => encode_block(&block),
+        RT::Block(TermBlock { block, .. }) => Ok(encode_block(block)),
         RT::Call(TermCall { func, args, .. }) => {
             let args: Vec<_> = args.into_iter().map(encode_term).collect::<Result<_, _>>()?;
             if let RT::Path(p) = &**func {
@@ -122,10 +129,11 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                         quote_spanned! {sp=> *::creusot_contracts::__stubs::old( #(#args),* ) },
                     );
                 }
+                // Don't wrap function calls in `*&`.
+                return Ok(quote_spanned! {sp=> #func (#(#args),*)});
+            } else {
+                unimplemented!("unsupported: (expr)() where (expr) is not an identifier")
             }
-
-            let func = encode_term(func)?;
-            Ok(quote_spanned! {sp=> #func (#(#args),*)})
         }
         RT::Cast(TermCast { expr, as_token, ty }) => {
             let expr_token = encode_term(expr)?;
@@ -142,6 +150,13 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             Ok(res)
         }
         RT::If(TermIf { cond, then_branch, else_branch, .. }) => {
+            let cond = if let RT::Paren(TermParen { expr, .. }) = &**cond
+                && matches!(&**expr, RT::Quant(_))
+            {
+                &**expr
+            } else {
+                cond
+            };
             let cond = encode_term(cond)?;
             let then_branch: Vec<_> =
                 then_branch.stmts.iter().map(encode_stmt).collect::<Result<_, _>>()?;
@@ -193,7 +208,10 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             });
             Ok(tokens)
         }
-        RT::Path(_) => Ok(quote_spanned! {sp=> #term }),
+        RT::Path(_) => Ok(
+            // Trick to avoid capturing unsized arguments in spec closures.
+            quote_spanned! {sp=> (*&#term) },
+        ),
         RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
         RT::Reference(TermReference { mutability, expr, .. }) => {
             let term = encode_term(expr)?;
@@ -266,7 +284,6 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 ::creusot_contracts::model::View::view(#term)
             })
         }
-        RT::Verbatim(_) => todo!(),
         RT::LogEq(TermLogEq { lhs, rhs, .. }) => {
             let lhs = encode_term(lhs)?;
             let rhs = encode_term(rhs)?;
@@ -290,11 +307,16 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         }
         RT::Quant(TermQuant { quant_token, args, trigger, term, .. }) => {
             let mut ts = encode_term(term)?;
+            let args_ref = args.iter().map(|QuantArg { ident, ty }| match ty {
+                None => quote! { &#ident: &_ },
+                Some((_, ty)) => quote! { &#ident: &#ty },
+            });
             ts = encode_trigger(trigger, ts)?;
             ts = quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::#quant_token(
                     #[creusot::no_translate]
-                    |#args| { #ts }
+                    #[creusot::logic_closure]
+                    |#(#args_ref,)*| { #ts }
                 )
             };
             Ok(ts)
@@ -302,13 +324,27 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Dead(_) => Ok(quote_spanned! {sp=> *::creusot_contracts::__stubs::dead() }),
         RT::Pearlite(term) => Ok(quote_spanned! {sp=> #term }),
         RT::Closure(clos) => {
-            let inputs = &clos.inputs;
+            if clos.inputs.len() != 1 {
+                return Err(EncodeError::Unsupported(
+                    term.span(),
+                    "logic closures can only have one parameter".into(),
+                ));
+            }
+
+            let input = match &clos.inputs[0] {
+                Pat::Type(PatType { attrs, pat, ty, .. }) => quote! { #(#attrs)* &#pat : &#ty},
+                _ => {
+                    let pat = &clos.inputs[0];
+                    quote! { &#pat }
+                }
+            };
+
             let retty = &clos.output;
             let clos = encode_term(&clos.body)?;
-
-            Ok(
-                quote_spanned! {sp=> ::creusot_contracts::__stubs::mapping_from_fn(#[creusot::no_translate] |#inputs| #retty #clos)},
-            )
+            Ok(quote_spanned! {sp=>
+                ::creusot_contracts::__stubs::mapping_from_fn(
+                    #[creusot::no_translate] #[creusot::logic_closure] |#input| #retty #clos)
+            })
         }
         RT::__Nonexhaustive => todo!(),
     }
@@ -320,23 +356,22 @@ fn encode_trigger(
 ) -> Result<TokenStream, EncodeError> {
     while let [rest @ .., last] = trigger {
         trigger = rest;
-        let mut last_trigger = TokenStream::new();
-        for pair in last.terms.pairs() {
-            last_trigger.extend(encode_term(pair.value())?);
-            pair.punct().to_tokens(&mut last_trigger)
-        }
-        ts = quote!(::creusot_contracts::__stubs::trigger((#last_trigger), #ts))
+        let trigs = last.terms.iter().map(encode_term).collect::<Result<Vec<_>, _>>()?;
+        ts = quote!(::creusot_contracts::__stubs::trigger((#(#trigs,)*), #ts))
     }
     Ok(ts)
 }
 
-pub fn encode_block(block: &TBlock) -> Result<TokenStream, EncodeError> {
-    let stmts: Vec<_> = block.stmts.iter().map(encode_stmt).collect::<Result<_, _>>()?;
+pub fn encode_block(block: &TBlock) -> TokenStream {
+    // If there are errors during encode_stmt, still emit the braces
+    // to allow the parser to skip over the body and discover more errors.
     let mut tokens = TokenStream::new();
-    block
-        .brace_token
-        .surround(&mut tokens, |tokens| stmts.iter().for_each(|stmt| stmt.to_tokens(tokens)));
-    Ok(tokens)
+    block.brace_token.surround(&mut tokens, |tokens| {
+        block.stmts.iter().for_each(|stmt| {
+            encode_stmt(stmt).unwrap_or_else(|e| e.into_tokens()).to_tokens(tokens)
+        })
+    });
+    tokens
 }
 
 pub fn encode_stmt(stmt: &TermStmt) -> Result<TokenStream, EncodeError> {
@@ -356,6 +391,7 @@ pub fn encode_stmt(stmt: &TermStmt) -> Result<TokenStream, EncodeError> {
             Ok(quote! { #term #s })
         }
         TermStmt::Item(i) => Ok(quote! { #i }),
+        TermStmt::Empty(s) => Ok(quote! { #s }),
     }
 }
 
@@ -414,13 +450,13 @@ mod tests {
 
     #[test]
     fn encode_forall() {
-        let term: Term = syn::parse_str("forall<x:Int> x == x").unwrap();
+        let term: Term = syn::parse_str("forall<x: Int> x == x").unwrap();
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
             ":: creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | x : Int | { :: creusot_contracts :: __stubs :: equal (x , x) })"
         );
 
-        let term: Term = syn::parse_str("forall<x:Int> forall<y:Int> true").unwrap();
+        let term: Term = syn::parse_str("forall<x: Int> forall<y: Int> true").unwrap();
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
             ":: creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | x : Int | { :: creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | y : Int | { true }) })"

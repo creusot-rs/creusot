@@ -20,8 +20,6 @@ use rustc_middle::{
         UpvarCapture,
     },
 };
-
-use rustc_span::DUMMY_SP;
 use rustc_target::abi::FieldIdx;
 use std::{assert_matches::assert_matches, collections::HashSet, iter::once};
 
@@ -115,7 +113,7 @@ pub(crate) fn closure_pre<'tcx>(
         pre = Term {
             kind: TermKind::Precondition { item: def_id.into(), subst, params },
             ty: ctx.types.bool,
-            span: DUMMY_SP,
+            span: ctx.def_span(def_id),
         };
         if let Some(k) = k {
             pre = k(pre)
@@ -159,7 +157,7 @@ pub(crate) fn closure_post<'tcx>(
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
                     ty: ctx.types.bool,
-                    span: DUMMY_SP,
+                    span: ctx.def_span(def_id),
                 };
                 to_resolve =
                     if target_kind == ClosureKind::FnOnce { vec![self_.clone()] } else { vec![] };
@@ -177,7 +175,7 @@ pub(crate) fn closure_post<'tcx>(
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
                     ty: ctx.types.bool,
-                    span: DUMMY_SP,
+                    span: ctx.def_span(def_id),
                 };
 
                 let result_state = match target_kind {
@@ -195,8 +193,7 @@ pub(crate) fn closure_post<'tcx>(
 
                 // Thanks to that, `postcondition_mut_hist_inv` and `fn_mut` are satisfied
                 let hist_inv = {
-                    let subst =
-                        ctx.mk_args(&[GenericArg::from(args.ty), GenericArg::from(self_.ty)]);
+                    let subst = ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from));
                     let id = get_fn_mut_impl_hist_inv(ctx.tcx);
                     Term::call_no_normalize(ctx.tcx, id, subst, [
                         self_.clone(),
@@ -205,7 +202,7 @@ pub(crate) fn closure_post<'tcx>(
                 };
 
                 post = Term::true_(ctx.tcx)
-                    .conj(bor_self.clone().cur().eq(ctx.tcx, self_.clone()))
+                    .conj(bor_self.clone().cur().eq(ctx.tcx, self_))
                     .conj(bor_self.fin().eq(ctx.tcx, result_state))
                     .conj(post)
                     .conj(hist_inv)
@@ -218,7 +215,7 @@ pub(crate) fn closure_post<'tcx>(
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
                     ty: ctx.types.bool,
-                    span: DUMMY_SP,
+                    span: ctx.def_span(def_id),
                 }
             }
         }
@@ -235,8 +232,7 @@ pub(crate) fn closure_post<'tcx>(
                 ClosSubst::post_ref(ctx, def_id, self_.clone(), result_state.clone())
                     .visit_mut_term(&mut post);
                 let hist_inv = {
-                    let subst =
-                        ctx.mk_args(&[GenericArg::from(args.ty), GenericArg::from(self_.ty)]);
+                    let subst = ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from));
                     let id = get_fn_mut_impl_hist_inv(ctx.tcx);
                     Term::call_no_normalize(ctx.tcx, id, subst, [self_, result_state])
                 };
@@ -286,8 +282,7 @@ pub(crate) fn closure_post<'tcx>(
     // Make sure fn_once and fn_mut_once are satisfied
     post = to_resolve.iter().fold(post, |p, r| {
         if let Some((id, subst)) = ctx.resolve(typing_env, r.ty) {
-            let r = r.clone().shr_ref(ctx.tcx);
-            p.conj(Term::call_no_normalize(ctx.tcx, id, subst, [r]))
+            p.conj(Term::call_no_normalize(ctx.tcx, id, subst, [r.clone()]))
         } else {
             p
         }
@@ -320,7 +315,7 @@ pub(crate) fn closure_resolve<'tcx>(
     let typing_env = TypingEnv::non_body_analysis(ctx.tcx, def_id);
     for (ix, ty) in csubst.upvar_tys().iter().enumerate() {
         if let Some((id, subst)) = ctx.resolve(typing_env, ty) {
-            let proj = self_.clone().proj(ix.into(), ty).shr_ref(ctx.tcx);
+            let proj = self_.clone().proj(ix.into(), ty);
             resolve = Term::call(ctx.tcx, typing_env, id, subst, [proj]).conj(resolve);
         }
     }
@@ -407,7 +402,8 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
         let map_cur = closure_captures(ctx, def_id)
             .map(|((f, cap), ty)| {
                 assert!(cap.place.projections.is_empty());
-                let proj = self_pre.clone().proj(f, ty);
+                let span = cap.get_path_span(ctx.tcx);
+                let proj = self_pre.clone().proj(f, ty).span(span);
                 let term = match cap.info.capture_kind {
                     UpvarCapture::ByValue => proj,
                     UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
@@ -416,8 +412,10 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                     UpvarCapture::ByRef(BorrowKind::Immutable) => proj.shr_deref(),
                 };
                 let hir_id = match cap.place.base {
-                    PlaceBase::Rvalue => todo!(),
-                    PlaceBase::StaticItem => todo!(),
+                    PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
+                        span,
+                        format!("Unexpected place in closure capture: {:?}", cap.place.base),
+                    ),
                     PlaceBase::Local(hir_id) => hir_id,
                     PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
                 };
@@ -436,8 +434,9 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
         let (map_old, map_cur) = closure_captures(ctx, def_id)
             .map(|((f, cap), ty)| {
                 assert!(cap.place.projections.is_empty());
-                let proj_pre = self_pre.clone().proj(f, ty);
-                let proj_post = self_post.clone().proj(f, ty);
+                let span = cap.get_path_span(ctx.tcx);
+                let proj_pre = self_pre.clone().proj(f, ty).span(span);
+                let proj_post = self_post.clone().proj(f, ty).span(span);
                 let (term_pre, term_post) = match cap.info.capture_kind {
                     UpvarCapture::ByValue => (proj_pre, proj_post),
                     UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
@@ -448,8 +447,10 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                     }
                 };
                 let hir_id = match cap.place.base {
-                    PlaceBase::Rvalue => todo!(),
-                    PlaceBase::StaticItem => todo!(),
+                    PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
+                        span,
+                        format!("Unexpected place in closure capture: {:?}", cap.place.base),
+                    ),
                     PlaceBase::Local(hir_id) => hir_id,
                     PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
                 };
@@ -470,7 +471,8 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
             .zip(post_owned_projs)
             .map(|(((f, cap), ty), post_owned_proj)| {
                 assert!(cap.place.projections.is_empty());
-                let proj = self_.clone().proj(f, ty);
+                let span = cap.get_path_span(ctx.tcx);
+                let proj = self_.clone().proj(f, ty).span(span);
                 let (term_pre, term_post) = match cap.info.capture_kind {
                     UpvarCapture::ByValue => (proj, post_owned_proj),
                     UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
@@ -483,8 +485,10 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                     }
                 };
                 let hir_id = match cap.place.base {
-                    PlaceBase::Rvalue => todo!(),
-                    PlaceBase::StaticItem => todo!(),
+                    PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
+                        span,
+                        format!("Unexpected place in closure capture: {:?}", cap.place.base),
+                    ),
                     PlaceBase::Local(hir_id) => hir_id,
                     PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
                 };

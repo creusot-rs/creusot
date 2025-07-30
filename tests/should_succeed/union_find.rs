@@ -22,7 +22,6 @@ mod implementation {
     impl<T> DeepModel for Element<T> {
         type DeepModelTy = usize;
         #[logic]
-        #[open(self)]
         fn deep_model(self) -> usize {
             self.0.addr_logic()
         }
@@ -72,31 +71,30 @@ mod implementation {
     }
 
     impl<T> Invariant for UnionFind<T> {
-        #[predicate]
-        #[open(self)]
+        #[logic]
         #[creusot::why3_attr = "inline:trivial"]
         fn invariant(self) -> bool {
             let domain = self.domain;
             pearlite! {
             // this invariant was not in the why3 proof: it is here because of the specifics of `DeepModel` and equality in Creusot
-            (forall<e1: _, e2: _> domain.contains(e1) && domain.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2) &&
+            (forall<e1, e2> domain.contains(e1) && domain.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2) &&
             // this invariant was not in the why3 proof: it ensures that the keys and the values of `map` agree
-            (forall<e: _> domain.contains(e) ==> self.map.contains(Snapshot::new(e.deep_model()))) &&
-            (forall<e: _> domain.contains(e) ==> e.0 == self.get_perm(e).ptr()) &&
-            (forall<e: _> domain.contains(e) ==> self.values[e] == self.values[self.root_of[e]]) &&
-            (forall<e: _> domain.contains(e) ==> self.root_of[self.root_of[e]] == self.root_of[e]) &&
-            (forall<e: _> domain.contains(e) ==> domain.contains(self.root_of[e])) &&
-            (forall<e: _> domain.contains(e) ==> match *self.get_perm(e).val() {
+            (forall<e> domain.contains(e) ==> self.map.contains(Snapshot::new(e.deep_model()))) &&
+            (forall<e> domain.contains(e) ==> e.0 == self.get_perm(e).ptr()) &&
+            (forall<e> domain.contains(e) ==> self.values[e] == self.values[self.root_of[e]]) &&
+            (forall<e> domain.contains(e) ==> self.root_of[self.root_of[e]] == self.root_of[e]) &&
+            (forall<e> domain.contains(e) ==> domain.contains(self.root_of[e])) &&
+            (forall<e> domain.contains(e) ==> match *self.get_perm(e).val() {
                 Content::Link(e2) => e != e2 && domain.contains(e2) && self.root_of[e] == self.root_of[e2],
                 Content::Root { rank: _, value: v } => self.values[e] == v && self.root_of[e] == e,
             }) &&
-            (forall<e: _> domain.contains(e) ==> match *self.get_perm(e).val() {
+            (forall<e> domain.contains(e) ==> match *self.get_perm(e).val() {
                 Content::Link(e2) => self.distance[e] < self.distance[e2],
                 Content::Root { .. } => true,
             }) &&
             *self.max_depth >= 0 &&
-            (forall<e: _> domain.contains(e) ==> 0 <= self.distance[e] && self.distance[e] <= *self.max_depth) &&
-            (forall<e: _> domain.contains(e) ==> match *self.get_perm(self.root_of[e]).val() {
+            (forall<e> domain.contains(e) ==> 0 <= self.distance[e] && self.distance[e] <= *self.max_depth) &&
+            (forall<e> domain.contains(e) ==> match *self.get_perm(self.root_of[e]).val() {
                 Content::Root { .. } => true,
                 Content::Link { .. } => false,
             })
@@ -108,7 +106,7 @@ mod implementation {
         #[ensures(result.domain.is_empty())]
         pub fn new() -> Self {
             Self {
-                domain: snapshot!(FSet::EMPTY),
+                domain: snapshot!(FSet::empty()),
                 map: FMap::new(),
                 values: snapshot!(such_that(|_| true)),
                 distance: snapshot!(such_that(|_| true)),
@@ -124,7 +122,6 @@ mod implementation {
 
         /// Returns all the element that are handled by this union-find structure.
         #[logic]
-        #[open(self)]
         #[requires(inv(self))]
         #[ensures(forall<e1: Element<T>, e2: Element<T>> result.contains(e1) && result.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2)]
         pub fn domain(self) -> FSet<Element<T>> {
@@ -136,7 +133,6 @@ mod implementation {
         /// For each element, this describes the unique root element of the associated set.
         /// The root element of a root is itself.
         #[logic]
-        #[open(self)]
         #[requires(inv(self))]
         #[ensures(forall<e: Element<T>> self.domain.contains(e) ==> result[e] == result[result[e]])]
         pub fn root_of(self) -> Mapping<Element<T>, Element<T>> {
@@ -145,7 +141,6 @@ mod implementation {
 
         /// Returns the values associated with each element.
         #[logic]
-        #[open(self)]
         #[requires(inv(self))]
         #[ensures(forall<e: Element<T>> self.domain.contains(e) ==> result[e] == result[self.root_of()[e]])]
         pub fn values(self) -> Mapping<Element<T>, T> {
@@ -153,7 +148,7 @@ mod implementation {
         }
 
         /// The internals of the union-find may have changed, but the API did not
-        #[predicate(prophetic)]
+        #[logic(prophetic)]
         #[open]
         pub fn unchanged(&mut self) -> bool {
             pearlite! {
@@ -244,7 +239,7 @@ mod implementation {
         /// Returns `true` if `x` and `y` are in the same class.
         ///
         /// This is the logical version of [`Self::equiv`]
-        #[predicate]
+        #[logic]
         #[open]
         pub fn equiv_log(self, x: Element<T>, y: Element<T>) -> bool {
             self.root_of()[x] == self.root_of()[y]
@@ -303,7 +298,7 @@ mod implementation {
                 if rx == ry {
                     let perm_mut_x = ghost!(self.map.get_mut_ghost(&x.addr()).unwrap());
                     match unsafe { PtrOwn::as_mut(x.0, perm_mut_x) } {
-                        Content::Root { rank, value: _ } => rank.incr(),
+                        Content::Root { rank, value: _ } => *rank = rank.incr(),
                         _ => {}
                     }
                 }
@@ -348,7 +343,7 @@ mod implementation {
         #[requires(self.domain().contains(y))]
         #[ensures((^self).domain() == (*self).domain())]
         #[ensures(exists<r: Element<T>> (r == (*self).root_of()[x] || r == (*self).root_of()[y]) && {
-            forall<z: _> self.domain().contains(z) ==> {
+            forall<z> self.domain().contains(z) ==> {
                 ((^self).root_of()[z] == if (*self).equiv_log(z, x) || (*self).equiv_log(z, y) {
                     r
                 } else {

@@ -9,11 +9,14 @@ pub fn derive_resolve(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
-    let eq = resolve(&name, &input.data);
+    let eq = match resolve(&name, &input.data) {
+        Ok(eq) => eq,
+        Err(e) => return e.into_compile_error().into(),
+    };
 
     let expanded = quote! {
         impl #impl_generics ::creusot_contracts::Resolve for #name #ty_generics #where_clause {
-            #[::creusot_contracts::predicate(prophetic)]
+            #[::creusot_contracts::logic(prophetic)]
             #[::creusot_contracts::open]
             fn resolve(self) -> bool {
                 #eq
@@ -22,22 +25,22 @@ pub fn derive_resolve(input: proc_macro::TokenStream) -> proc_macro::TokenStream
             #[::creusot_contracts::open(self)]
             #[::creusot_contracts::logic(prophetic)]
             #[::creusot_contracts::requires(structural_resolve(self))]
-            #[::creusot_contracts::ensures((*self).resolve())]
-            fn resolve_coherence(&self) {}
+            #[::creusot_contracts::ensures(self.resolve())]
+            fn resolve_coherence(self) {}
         }
     };
 
     proc_macro::TokenStream::from(expanded)
 }
 
-fn resolve(base_ident: &Ident, data: &Data) -> TokenStream {
+fn resolve(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
     match *data {
-        Data::Struct(ref data) => match data.fields {
+        Data::Struct(ref data) => Ok(match data.fields {
             Fields::Named(ref fields) => {
                 let recurse = fields.named.iter().map(|f| {
                     let name = &f.ident;
                     quote_spanned! {f.span()=>
-                        ::creusot_contracts::resolve(&self.#name)
+                        ::creusot_contracts::resolve(self.#name)
                     }
                 });
                 quote! {
@@ -48,7 +51,7 @@ fn resolve(base_ident: &Ident, data: &Data) -> TokenStream {
                 let recurse = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = Index::from(i);
                     quote_spanned! {f.span()=>
-                        ::creusot_contracts::resolve(&self.#index)
+                        ::creusot_contracts::resolve(self.#index)
                     }
                 });
                 quote! {
@@ -58,7 +61,7 @@ fn resolve(base_ident: &Ident, data: &Data) -> TokenStream {
             Fields::Unit => quote! {
                 true
             },
-        },
+        }),
         Data::Enum(ref data) => {
             let arms = data.variants.iter().map(|v| {
                 let ident = &v.ident;
@@ -79,13 +82,15 @@ fn resolve(base_ident: &Ident, data: &Data) -> TokenStream {
                 }
             });
 
-            quote! {
+            Ok(quote! {
                 match self {
                     #(#arms),*
                 }
-            }
+            })
         }
-        Data::Union(_) => todo!(),
+        Data::Union(_) => {
+            Err(syn::Error::new(base_ident.span(), "cannot derive `Resolve` on a union"))
+        }
     }
 }
 
@@ -105,7 +110,7 @@ fn gen_match_arm<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmAcc {
         };
         let name_1 = format_ident!("{}_1", name_base);
 
-        let call = quote!(::creusot_contracts::resolve(&#name_1));
+        let call = quote!(::creusot_contracts::resolve(#name_1));
         if named {
             acc.fields.push(quote!(#name_base: #name_1));
             acc.body.push(quote!(#call));

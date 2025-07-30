@@ -2,11 +2,10 @@ extern crate creusot_contracts;
 use creusot_contracts::{logic::FSet, *};
 
 #[logic]
-#[open(self)]
 #[requires(!s.is_empty())]
 #[variant(s.len())]
 #[ensures(s.contains(result))]
-#[ensures(forall<o : _> s.contains(o) ==> o <= result )]
+#[ensures(forall<o> s.contains(o) ==> o <= result )]
 pub fn set_max(s: FSet<Int>) -> Int {
     let x = s.peek();
     let s = s.remove(x);

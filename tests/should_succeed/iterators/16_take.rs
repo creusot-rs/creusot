@@ -8,8 +8,8 @@ use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Take<I: Iterator> {
-    iter: I,
-    n: usize,
+    pub iter: I,
+    pub n: usize,
 }
 
 impl<I> Iterator for Take<I>
@@ -19,7 +19,7 @@ where
     type Item = I::Item;
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (*self).n@ == 0 && self.resolve() ||
@@ -28,7 +28,7 @@ where
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.n@ == o.n@ + visited.len() && self.iter.produces(visited, o.iter)
@@ -37,7 +37,7 @@ where
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

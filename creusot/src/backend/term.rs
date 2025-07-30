@@ -1,9 +1,14 @@
 use crate::{
     backend::{
         Why3Generator,
-        program::borrow_generated_id,
-        ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude},
+        program::{PtrCastKind, ptr_cast_kind},
+        projections::{Focus, borrow_generated_id, projections_to_expr},
+        ty::{
+            constructor, floatty_to_prelude, ity_to_prelude, translate_ty, ty_to_prelude,
+            uty_to_prelude,
+        },
     },
+    contracts_items::{is_builtins_ascription, is_new_namespace},
     ctx::*,
     naming::name,
     translation::{
@@ -15,7 +20,10 @@ use crate::{
 };
 use rustc_ast::Mutability;
 use rustc_hir::def::DefKind;
-use rustc_middle::ty::{Ty, TyKind};
+use rustc_middle::{
+    mir::tcx::PlaceTy,
+    ty::{Ty, TyKind},
+};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
@@ -28,15 +36,32 @@ use why3::{
     ty::Type,
 };
 
+fn lower_pure_raw<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    term: &Term<'tcx>,
+    weakdep: bool,
+) -> Exp {
+    let span = term.span;
+    let mut term = Lower { ctx, names, weakdep }.lower_term(term);
+    term.reassociate();
+    if let Some(attr) = names.span(span) { term.with_attr(attr) } else { term }
+}
+
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     term: &Term<'tcx>,
 ) -> Exp {
-    let span = term.span;
-    let mut term = Lower { ctx, names }.lower_term(term);
-    term.reassociate();
-    if let Some(attr) = names.span(span) { term.with_attr(attr) } else { term }
+    lower_pure_raw(ctx, names, term, false)
+}
+
+pub(crate) fn lower_pure_weakdep<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    term: &Term<'tcx>,
+) -> Exp {
+    lower_pure_raw(ctx, names, term, true)
 }
 
 pub(crate) fn lower_condition<'tcx, N: Namer<'tcx>>(
@@ -52,12 +77,25 @@ pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
     names: &N,
     pat: &Pattern<'tcx>,
 ) -> WPattern {
-    Lower { ctx, names }.lower_pat(pat)
+    Lower { ctx, names, weakdep: false }.lower_pat(pat)
+}
+
+pub(crate) fn unsupported_cast<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    span: rustc_span::Span,
+    src: Ty<'tcx>,
+    tgt: Ty<'tcx>,
+) -> ! {
+    ctx.crash_and_error(
+        span,
+        &format!("unsupported cast from {src} to {tgt} (allowed: bool as integer, integer as integer, or pointer as pointer)"),
+    )
 }
 
 struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,
+    weakdep: bool,
 }
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&self, term: &Term<'tcx>) -> Exp {
@@ -120,63 +158,50 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                     Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([self.lower_term(arg)])])
                 }
-                _ => self.ctx.crash_and_error(
-                    DUMMY_SP,
-                    "casting from a type other than booleans and integers is not supported",
-                ),
+                // Pointer-to-pointer casts
+                TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = term.ty.kind() => {
+                    match ptr_cast_kind(self.ctx.tcx, self.names.typing_env(), ty1, ty2) {
+                        PtrCastKind::Id => self.lower_term(arg),
+                        PtrCastKind::Thin => {
+                            let thin = self.names.in_pre(PreMod::Opaque, "thin");
+                            Exp::qvar(thin).app([self.lower_term(arg)])
+                        }
+                        PtrCastKind::Unknown => {
+                            unsupported_cast(self.ctx, term.span, arg.ty, term.ty)
+                        }
+                    }
+                }
+                _ => unsupported_cast(self.ctx, term.span, arg.ty, term.ty),
             },
             TermKind::Coerce { arg } => self.lower_term(arg),
             // FIXME: this is a weird dance.
             TermKind::Item(id, subst) => {
                 debug!("resolved_method={:?}", (*id, *subst));
-                let item = match self.ctx.type_of(id).instantiate_identity().kind() {
-                    TyKind::FnDef(_, _) => Exp::unit(),
-                    _ => Exp::Var(self.names.item(*id, subst)),
-                };
-
-                if matches!(self.ctx.def_kind(*id), DefKind::AssocConst) {
-                    let ty = translate_ty(self.ctx, self.names, term.span, term.ty);
-                    item.ascribe(ty)
+                if let TyKind::FnDef(_, _) = self.ctx.type_of(id).skip_binder().kind() {
+                    if !self.weakdep {
+                        self.names.item(*id, subst);
+                    }
+                    Exp::unit()
                 } else {
-                    item
+                    Exp::Var(self.names.item(*id, subst))
                 }
             }
             TermKind::Var(v) => Exp::var(v.0),
             TermKind::Binary { op, box lhs, box rhs } => {
+                let rhs_ty = rhs.ty.kind();
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
 
                 use BinOp::*;
-                match op {
-                    BitAnd | BitOr | BitXor | Shl | Shr | Div | Rem => {
-                        let prelude = match term.ty.kind() {
-                            TyKind::Int(ity) => ity_to_prelude(self.names.tcx(), *ity),
-                            TyKind::Uint(uty) => uty_to_prelude(self.names.tcx(), *uty),
-                            _ => unreachable!("the operator {op:?} is only available on integer"),
-                        };
-
-                        let func_name = match (op, term.ty.kind()) {
-                            (BitAnd, _) => "bw_and",
-                            (BitOr, _) => "bw_or",
-                            (BitXor, _) => "bw_xor",
-                            (Shl, _) => "lsl_bv",
-                            (Shr, TyKind::Int(_)) => "asr_bv",
-                            (Shr, TyKind::Uint(_)) => "lsr_bv",
-                            (Div, TyKind::Int(_)) => "sdiv",
-                            (Div, TyKind::Uint(_)) => "udiv",
-                            (Rem, TyKind::Int(_)) => "srem",
-                            (Rem, TyKind::Uint(_)) => "urem",
-                            _ => unreachable!(),
-                        };
-
-                        Exp::qvar(self.names.in_pre(prelude, func_name)).app([lhs, rhs])
+                if let Some(fun) = binop_function(self.names, *op, term.ty.kind()) {
+                    let rhs =
+                        if binop_right_int(*op) { self.names.to_int_app(rhs_ty, rhs) } else { rhs };
+                    Exp::qvar(fun).app([lhs, rhs])
+                } else {
+                    if matches!(op, Add | Sub | Mul | Le | Ge | Lt | Gt) {
+                        self.names.import_prelude_module(PreMod::Int);
                     }
-                    _ => {
-                        if matches!(op, Add | Sub | Mul | Le | Ge | Lt | Gt) {
-                            self.names.import_prelude_module(PreMod::Int);
-                        }
-                        Exp::BinaryOp(binop_to_binop(*op), lhs.boxed(), rhs.boxed())
-                    }
+                    Exp::BinaryOp(binop_to_binop(*op), lhs.boxed(), rhs.boxed())
                 }
             }
             TermKind::Unary { op, box arg } => {
@@ -189,8 +214,22 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 };
                 Exp::UnaryOp(op, self.lower_term(arg).boxed())
             }
-            TermKind::Call { id, subst, args, .. } => Exp::Var(self.names.item(*id, *subst))
-                .app(args.into_iter().map(|arg| self.lower_term(arg))),
+            TermKind::Call { id, subst, args, .. } => {
+                // Calling a function declared by `declare_namespace`: generate an identifier for it.
+                if is_new_namespace(self.ctx.tcx, *id) {
+                    return Exp::Constructor {
+                        ctor: Name::local(self.ctx.get_namespace_constructor(*id)),
+                        args: Box::new([Exp::int(0)]),
+                    };
+                }
+                let e = Exp::Var(self.names.item(*id, subst))
+                    .app(args.into_iter().map(|arg| self.lower_term(arg)));
+                if is_builtins_ascription(self.ctx.tcx, *id) {
+                    e.ascribe(self.lower_ty(term.ty))
+                } else {
+                    e
+                }
+            }
             TermKind::Quant { kind, binder, box body, trigger } => {
                 let bound = binder.iter().map(|(s, t)| (s.0, self.lower_ty(*t)));
                 let body = self.lower_term(body);
@@ -284,26 +323,48 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                         Binder::typed(ident.0, self.lower_ty(ty))
                     })
                     .collect();
-                let body = self.lower_term(&*body);
+                let body = self.lower_term(body);
                 Exp::Lam(binders, body.boxed())
             }
-            TermKind::Reborrow { cur, fin, inner, projection } => {
-                let inner = self.lower_term(&*inner);
-                let borrow_id = borrow_generated_id(self.names, inner, &projection, |x| {
-                    if matches!(x.ty.kind(), TyKind::Uint(UintTy::Usize)) {
+            TermKind::Reborrow { inner, projections } => {
+                let ty = self.names.normalize(self.ctx, inner.ty);
+                let inner = self.lower_term(inner);
+                let idx_conv = |ix: &Term<'tcx>| {
+                    if matches!(ix.ty.kind(), TyKind::Uint(UintTy::Usize)) {
                         let qname =
                             self.names.in_pre(uty_to_prelude(self.ctx.tcx, UintTy::Usize), "t'int");
-                        Exp::qvar(qname).app([self.lower_term(x)])
+                        Exp::qvar(qname).app([self.lower_term(ix)])
                     } else {
-                        self.lower_term(x)
+                        self.lower_term(ix)
                     }
+                };
+
+                // TODO: if inner is large, do not clone it, use a "let" instead
+                let borrow_id = borrow_generated_id(
+                    self.ctx,
+                    self.names,
+                    inner.clone(),
+                    term.span,
+                    projections,
+                    idx_conv,
+                );
+                let [cur, fin] = [name::current(), name::final_()].map(|nm| {
+                    let (foc, _) = projections_to_expr(
+                        self.ctx,
+                        self.names,
+                        None,
+                        &mut PlaceTy::from_ty(ty.builtin_deref(false).unwrap()),
+                        Focus::new(|_| inner.clone().field(Name::Global(nm))),
+                        Box::new(|_, _| unreachable!()),
+                        projections,
+                        idx_conv,
+                        term.span,
+                    );
+                    foc.call(None)
                 });
 
-                Exp::qvar(self.names.in_pre(PreMod::MutBor, "borrow_logic")).app([
-                    self.lower_term(&*cur),
-                    self.lower_term(&*fin),
-                    borrow_id,
-                ])
+                Exp::qvar(self.names.in_pre(PreMod::MutBor, "borrow_logic"))
+                    .app([cur, fin, borrow_id])
             }
             TermKind::Assert { .. } => Exp::unit(), // Discard cond, use unit
             TermKind::Precondition { item, subst, params } => {
@@ -327,26 +388,30 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         match &pat.kind {
             PatternKind::Constructor(variant, fields) => {
                 let ty = self.names.normalize(self.ctx, pat.ty);
-                let (var_did, subst) = match ty.kind() {
-                    &TyKind::Adt(def, subst) => (def.variant(*variant).def_id, subst),
-                    &TyKind::Closure(did, subst) => (did, subst),
+                let (var_did, subst) = match *ty.kind() {
+                    TyKind::Adt(def, subst) => (def.variant(*variant).def_id, subst),
+                    TyKind::Closure(did, subst) => (did, subst),
                     _ => unreachable!(),
                 };
-                let flds = fields.iter().map(|pat| self.lower_pat(pat));
+                let flds = fields.iter().map(|(fld, pat)| (*fld, self.lower_pat(pat)));
                 if self.ctx.def_kind(var_did) == DefKind::Variant {
-                    WPattern::ConsP(
-                        Name::local(self.names.constructor(var_did, subst)),
-                        flds.collect(),
-                    )
+                    let mut pats: Box<[_]> = ty.ty_adt_def().unwrap().variants()[*variant]
+                        .fields
+                        .indices()
+                        .map(|_| WPattern::Wildcard)
+                        .collect();
+
+                    for (idx, pat) in flds {
+                        pats[idx.as_usize()] = pat
+                    }
+                    WPattern::ConsP(Name::local(self.names.constructor(var_did, subst)), pats)
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {
                     let flds: Box<[_]> = flds
-                        .enumerate()
-                        .map(|(i, f)| (Name::local(self.names.field(var_did, subst, i.into())), f))
-                        .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
+                        .map(|(fld, p)| (Name::local(self.names.field(var_did, subst, fld)), p))
                         .collect();
-                    if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
+                    WPattern::RecP(flds)
                 }
             }
             PatternKind::Wildcard => WPattern::Wildcard,
@@ -366,7 +431,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     })
                     .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                     .collect();
-                if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
+                if flds.is_empty() { WPattern::Wildcard } else { WPattern::RecP(flds) }
             }
             PatternKind::Deref(pointee) => {
                 let ty = self.names.normalize(self.ctx, pat.ty);
@@ -379,6 +444,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     )])),
                     _ => unreachable!(),
                 }
+            }
+            PatternKind::Or(patterns) => {
+                WPattern::OrP(patterns.iter().map(|p| self.lower_pat(p)).collect())
             }
         }
     }
@@ -453,12 +521,36 @@ pub(crate) fn binop_to_binop(op: BinOp) -> WBinOp {
         BinOp::Ne => WBinOp::Ne,
         BinOp::And => WBinOp::LogAnd,
         BinOp::Or => WBinOp::LogOr,
-        BinOp::BitAnd => WBinOp::BitAnd,
-        BinOp::BitOr => WBinOp::BitOr,
-        BinOp::BitXor => WBinOp::BitXor,
-        BinOp::Shl => WBinOp::Shl,
-        BinOp::Shr => WBinOp::Shr,
-        BinOp::Div => todo!("Refactor binop_to_binop to support Div"),
-        BinOp::Rem => todo!("Refactor binop_to_binop to support Rem"),
+        BinOp::BitAnd | BinOp::BitOr | BinOp::BitXor | BinOp::Shl | BinOp::Shr => {
+            unreachable!("Bitwise operations are handled separately")
+        }
+    }
+}
+
+/// Return the Why3 function name of a `BinOp`, if it exists.
+pub(crate) fn binop_function<'tcx, N: Namer<'tcx>>(
+    namer: &N,
+    op: BinOp,
+    ty: &TyKind,
+) -> Option<why3::QName> {
+    use BinOp::*;
+    let name = match op {
+        BitAnd => "bw_and",
+        BitOr => "bw_or",
+        BitXor => "bw_xor",
+        Shl => "lsl",
+        Shr => "shr",
+        _ => return None,
+    };
+    Some(namer.in_pre(ty_to_prelude(namer.tcx(), ty), name))
+}
+
+/// `true` if the binop expects the right operand to be cast to type `int`.
+/// This is for `Shl`/`Shr` which allow left and right operands to have different types.
+pub(crate) fn binop_right_int(op: BinOp) -> bool {
+    use BinOp::*;
+    match op {
+        Shl | Shr => true,
+        _ => false,
     }
 }

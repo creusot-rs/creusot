@@ -10,7 +10,7 @@ use ::std::iter::Step;
 
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -18,25 +18,23 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
         }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.end == o.end && self.start.deep_model() <= o.start.deep_model()
             && (visited.len() > 0 ==> o.start.deep_model() <= o.end.deep_model())
             && visited.len() == o.start.deep_model() - self.start.deep_model()
-            && forall<i : Int> 0 <= i && i < visited.len() ==>
+            && forall<i> 0 <= i && i < visited.len() ==>
                 visited[i].deep_model() == self.start.deep_model() + i
         }
     }
 
     #[law]
-    #[open(self)]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -45,25 +43,23 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
 
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for Range<Idx> {
-    #[predicate]
+    #[logic]
     #[open]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.start == o.start && self.end.deep_model() >= o.end.deep_model()
             && (visited.len() > 0 ==> o.end.deep_model() >= o.start.deep_model())
             && visited.len() == o.end.deep_model() - self.end.deep_model()
-            && forall<i : Int> 0 <= i && i < visited.len() ==>
+            && forall<i> 0 <= i && i < visited.len() ==>
                 visited[i].deep_model() == self.end.deep_model() - i
         }
     }
 
     #[law]
-    #[open(self)]
-    #[ensures(self.produces_back(Seq::EMPTY, self))]
+    #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces_back(ab, b))]
     #[requires(b.produces_back(bc, c))]
     #[ensures(a.produces_back(ab.concat(bc), c))]
@@ -82,7 +78,7 @@ pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<
 
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -90,21 +86,21 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
         }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
             (self.is_empty_log() ==> o.is_empty_log()) &&
             (o.is_empty_log() || self.end_log() == o.end_log()) &&
-            forall<i : Int> 0 <= i && i < visited.len() ==>
+            forall<i> 0 <= i && i < visited.len() ==>
                 visited[i].deep_model() == self.start_log().deep_model() + i
         }
     }
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -117,21 +113,21 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
 
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for RangeInclusive<Idx> {
-    #[predicate]
+    #[logic]
     #[open]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
             (self.is_empty_log() ==> o.is_empty_log()) &&
             (o.is_empty_log() || self.start_log() == o.start_log()) &&
-            forall<i : Int> 0 <= i && i < visited.len() ==>
+            forall<i> 0 <= i && i < visited.len() ==>
                 visited[i].deep_model() == self.end_log().deep_model() - i
         }
     }
 
     #[law]
     #[open]
-    #[ensures(self.produces_back(Seq::EMPTY, self))]
+    #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self) {}
 
     #[law]

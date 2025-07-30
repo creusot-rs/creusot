@@ -3,7 +3,6 @@ use creusot_contracts::*;
 
 pub trait Foo {
     #[logic]
-    #[open(self)]
     fn f() {}
     #[logic]
     fn g();
@@ -12,6 +11,5 @@ pub trait Foo {
 impl Foo for () {
     #[logic]
     #[ensures(Self::f() == ())]
-    #[open(self)]
     fn g() {}
 }

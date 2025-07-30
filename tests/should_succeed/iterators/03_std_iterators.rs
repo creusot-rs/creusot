@@ -25,9 +25,9 @@ pub fn vec_iter<T>(vec: &Vec<T>) -> usize {
 }
 
 #[ensures((^v)@.len() == v@.len())]
-#[ensures(forall<i : _> 0 <= i && i < v@.len() ==> (^v)[i]@ == 0)]
+#[ensures(forall<i> 0 <= i && i < v@.len() ==> (^v)[i]@ == 0)]
 pub fn all_zero(v: &mut Vec<usize>) {
-    #[invariant(forall<i : Int> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
+    #[invariant(forall<i> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
     for x in v.iter_mut() {
         *x = 0;
     }
@@ -68,23 +68,23 @@ pub fn sum_range(n: isize) -> isize {
 }
 
 pub fn enumerate_range() {
-    #[invariant(forall<i : _> 0 <= i && i < produced.len() ==> produced[i].0 == produced[i].1 )]
+    #[invariant(forall<i> 0 <= i && i < produced.len() ==> produced[i].0 == produced[i].1 )]
     for (ix, x) in (0..10).enumerate() {
         let _ = (ix, x);
     }
 }
 
-#[predicate]
+#[logic]
 fn equiv_range<T>(s1: Seq<T>, s2: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
-        forall<i : Int> l <= i && i < u ==> s1[i] == s2[i]
+        forall<i> l <= i && i < u ==> s1[i] == s2[i]
     }
 }
 
-#[predicate]
+#[logic]
 fn equiv_reverse_range<T>(s1: Seq<T>, s2: Seq<T>, l: Int, u: Int, n: Int) -> bool {
     pearlite! {
-        forall<i : Int> l <= i && i < u ==> s1[i] == s2[n-i]
+        forall<i> l <= i && i < u ==> s1[i] == s2[n-i]
     }
 }
 

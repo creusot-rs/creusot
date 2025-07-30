@@ -25,7 +25,7 @@ impl<T: View + ?Sized, A: Allocator> View for Box<T, A> {
 
 #[cfg(feature = "nightly")]
 impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
@@ -52,8 +52,19 @@ extern_spec! {
                 #[pure]
                 #[ensures(**self == *result)]
                 fn as_ref(&self) -> &T;
+
+                #[pure]
+                #[ensures(*result == *b)]
+                fn leak<'a>(b: Box<T, A>) -> &'a mut T
+                where
+                    A: 'a;
             }
         }
+    }
+
+    impl<T: Clone, A: Allocator + Clone> Clone for Box<T, A> {
+        #[ensures(T::clone.postcondition((&**self,), *result))]
+        fn clone(&self) -> Box<T, A>;
     }
 }
 

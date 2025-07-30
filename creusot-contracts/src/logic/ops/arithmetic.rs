@@ -73,3 +73,12 @@ pub trait NegLogic {
     #[logic]
     fn neg(self) -> Self::Output;
 }
+
+/// Trait for the nth bit of a bitvector in logic code.
+pub trait NthBitLogic {
+    /// The nth bit of a bitvector.
+    /// In [`bitwise_proof`] mode, this is translated to [`nth`](https://www.why3.org/stdlib/bv.html#nth_188) in Why3.
+    /// Otherwise this is an abstract function.
+    #[logic]
+    fn nth_bit(self, n: Int) -> bool;
+}

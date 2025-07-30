@@ -1,4 +1,6 @@
-use crate::{invariant::*, resolve::structural_resolve, std::iter::Take, *};
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
+use crate::{invariant::*, std::iter::Take, *};
 
 pub trait TakeExt<I> {
     #[logic]
@@ -36,30 +38,30 @@ impl<I> TakeExt<I> for Take<I> {
 
 impl<I> Resolve for Take<I> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
-        resolve(&self.iter())
+        resolve(self.iter())
     }
 
     #[trusted]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<I: Iterator> Iterator for Take<I> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            self.n() == 0 && resolve(&self) ||
+            self.n() == 0 && resolve(self) ||
             (*self).n() > 0 && (*self).n() == (^self).n() + 1 && self.iter_mut().completed()
         }
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.n() == o.n() + visited.len() && self.iter().produces(visited, o.iter())
@@ -67,12 +69,10 @@ impl<I: Iterator> Iterator for Take<I> {
     }
 
     #[law]
-    #[open(self)]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

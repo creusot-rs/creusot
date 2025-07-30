@@ -1,6 +1,13 @@
 #![cfg_attr(
     feature = "creusot",
-    feature(box_patterns, extract_if, extend_one, proc_macro_def_site, proc_macro_span)
+    feature(
+        box_patterns,
+        extract_if,
+        extend_one,
+        proc_macro_def_site,
+        proc_macro_span,
+        let_chains
+    )
 )]
 
 use proc_macro::TokenStream as TS1;
@@ -52,7 +59,6 @@ proc_macro_attributes! {
     pure
     logic
     trusted
-    predicate
     law
     open
     open_inv_result
@@ -76,6 +82,7 @@ proc_macros! {
     ghost
     pearlite
     extern_spec
+    declare_namespace
 }
 
 #[proc_macro_derive(DeepModel, attributes(DeepModelTy))]

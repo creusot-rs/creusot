@@ -146,9 +146,9 @@ pub fn main() {
     println!("v[2] = 0x{:02x}", v[2]);
     println!("v[3] = 0x{:02x}", v[3]);
     let x: u64 = peek(11, 48, &v);
-    println!("peek result : u64 = 0x{:016x}", x);
+    println!("peek result: u64 = 0x{:016x}", x);
     let res = poke(11, 17, &mut v, 0xFFFF);
-    println!("poke result : i8 = {}", res);
+    println!("poke result: i8 = {}", res);
     println!("v[0] = 0x{:02x}", v[0]);
     println!("v[1] = 0x{:02x}", v[1]);
     println!("v[2] = 0x{:02x}", v[2]);

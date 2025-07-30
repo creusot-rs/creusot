@@ -2,7 +2,7 @@ use crate::{invariant::*, std::iter::Iterator, *};
 use ::std::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     #[creusot::trusted_ignore_structural_inv]
@@ -35,7 +35,7 @@ impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
     // TODO
     // #[ensures(result.len() == N@)]
     #[ensures(self.view().len() == result.len())]
-    #[ensures(forall<i: _> 0 <= i && i < result.len() ==> result[i] == self[i].deep_model())]
+    #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         dead
     }
@@ -54,20 +54,20 @@ impl<T, const N: usize> View for IntoIter<T, N> {
 
 impl<T, const N: usize> Iterator for IntoIter<T, N> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { self@ == visited.concat(o@) }
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && self@ == Seq::EMPTY }
+        pearlite! { self.resolve() && self@ == Seq::empty() }
     }
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -82,5 +82,11 @@ extern_spec! {
     impl<T, const N: usize> IntoIterator for [T; N] {
         #[ensures(self@ == result@)]
         fn into_iter(self) -> std::array::IntoIter<T, N>;
+    }
+
+    impl<T: Clone, const N: usize> Clone for [T; N] {
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i]))]
+        fn clone(&self) -> [T; N];
     }
 }

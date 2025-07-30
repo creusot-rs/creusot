@@ -18,6 +18,10 @@ pub fn snapshot(_: TS1) -> TS1 {
         .into()
 }
 
+pub fn declare_namespace(_: TS1) -> TS1 {
+    TS1::new()
+}
+
 pub fn ghost(body: TS1) -> TS1 {
     let body = proc_macro2::TokenStream::from(crate::ghost::ghost_preprocess(body));
     quote::quote! { if false {
@@ -59,10 +63,6 @@ pub fn pure(_: TS1, tokens: TS1) -> TS1 {
 }
 
 pub fn logic(_: TS1, _: TS1) -> TS1 {
-    TS1::new()
-}
-
-pub fn predicate(_: TS1, _: TS1) -> TS1 {
     TS1::new()
 }
 

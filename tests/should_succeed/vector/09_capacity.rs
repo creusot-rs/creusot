@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 #[ensures((^v)@.len() == v@.len())]
-#[ensures(forall<i: Int> 0 <= i && i < v@.len() ==> (^v)[i] == v[i])]
+#[ensures(forall<i> 0 <= i && i < v@.len() ==> (^v)[i] == v[i])]
 pub fn change_capacity<T>(v: &mut Vec<T>) {
     v.reserve(100);
     v.reserve_exact(200);

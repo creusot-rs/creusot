@@ -77,7 +77,7 @@ fn test_model() {
 
 #[test]
 fn test_forall() {
-    snapshot!(quote!(forall<x : u32> true) as Term, @r###"
+    snapshot!(quote!(forall<x: u32> true) as Term, @r###"
     TermQuant {
         quant_token: Keyword [forall],
         lt_token: Lt,
@@ -86,21 +86,25 @@ fn test_forall() {
                 ident: Ident {
                     sym: x,
                 },
-                colon_token: Colon,
-                ty: Type::Path {
-                    qself: None,
-                    path: Path {
-                        leading_colon: None,
-                        segments: [
-                            PathSegment {
-                                ident: Ident {
-                                    sym: u32,
-                                },
-                                arguments: PathArguments::None,
+                ty: Some(
+                    (
+                        Colon,
+                        Type::Path {
+                            qself: None,
+                            path: Path {
+                                leading_colon: None,
+                                segments: [
+                                    PathSegment {
+                                        ident: Ident {
+                                            sym: u32,
+                                        },
+                                        arguments: PathArguments::None,
+                                    },
+                                ],
                             },
-                        ],
-                    },
-                },
+                        },
+                    ),
+                ),
             },
         ],
         gt_token: Gt,
@@ -116,7 +120,7 @@ fn test_forall() {
 
 #[test]
 fn test_exists() {
-    snapshot!(quote!(exists<x : u32> true) as Term, @r###"
+    snapshot!(quote!(exists<x: u32> true) as Term, @r###"
     TermQuant {
         quant_token: Keyword [exists],
         lt_token: Lt,
@@ -125,21 +129,25 @@ fn test_exists() {
                 ident: Ident {
                     sym: x,
                 },
-                colon_token: Colon,
-                ty: Type::Path {
-                    qself: None,
-                    path: Path {
-                        leading_colon: None,
-                        segments: [
-                            PathSegment {
-                                ident: Ident {
-                                    sym: u32,
-                                },
-                                arguments: PathArguments::None,
+                ty: Some(
+                    (
+                        Colon,
+                        Type::Path {
+                            qself: None,
+                            path: Path {
+                                leading_colon: None,
+                                segments: [
+                                    PathSegment {
+                                        ident: Ident {
+                                            sym: u32,
+                                        },
+                                        arguments: PathArguments::None,
+                                    },
+                                ],
                             },
-                        ],
-                    },
-                },
+                        },
+                    ),
+                ),
             },
         ],
         gt_token: Gt,
@@ -155,7 +163,7 @@ fn test_exists() {
 
 #[test]
 fn test_trigger() {
-    snapshot!(quote!(forall<x : u32, y: u32> #![trigger f(x, y)] #![trigger g(x), g(y)] true) as Term, @r###"
+    snapshot!(quote!(forall<x: u32, y: u32> #[trigger(f(x, y))] #[trigger(g(x), g(y))] true) as Term, @r###"
     TermQuant {
         quant_token: Keyword [forall],
         lt_token: Lt,
@@ -164,51 +172,59 @@ fn test_trigger() {
                 ident: Ident {
                     sym: x,
                 },
-                colon_token: Colon,
-                ty: Type::Path {
-                    qself: None,
-                    path: Path {
-                        leading_colon: None,
-                        segments: [
-                            PathSegment {
-                                ident: Ident {
-                                    sym: u32,
-                                },
-                                arguments: PathArguments::None,
+                ty: Some(
+                    (
+                        Colon,
+                        Type::Path {
+                            qself: None,
+                            path: Path {
+                                leading_colon: None,
+                                segments: [
+                                    PathSegment {
+                                        ident: Ident {
+                                            sym: u32,
+                                        },
+                                        arguments: PathArguments::None,
+                                    },
+                                ],
                             },
-                        ],
-                    },
-                },
+                        },
+                    ),
+                ),
             },
             Comma,
             QuantArg {
                 ident: Ident {
                     sym: y,
                 },
-                colon_token: Colon,
-                ty: Type::Path {
-                    qself: None,
-                    path: Path {
-                        leading_colon: None,
-                        segments: [
-                            PathSegment {
-                                ident: Ident {
-                                    sym: u32,
-                                },
-                                arguments: PathArguments::None,
+                ty: Some(
+                    (
+                        Colon,
+                        Type::Path {
+                            qself: None,
+                            path: Path {
+                                leading_colon: None,
+                                segments: [
+                                    PathSegment {
+                                        ident: Ident {
+                                            sym: u32,
+                                        },
+                                        arguments: PathArguments::None,
+                                    },
+                                ],
                             },
-                        ],
-                    },
-                },
+                        },
+                    ),
+                ),
             },
         ],
         gt_token: Gt,
         trigger: [
             Trigger {
                 pound_token: Pound,
-                bang_token: Not,
                 bracket_token: Bracket,
                 trigger_token: Keyword [trigger],
+                paren_token: Paren,
                 terms: [
                     TermCall {
                         func: TermPath {
@@ -271,9 +287,9 @@ fn test_trigger() {
             },
             Trigger {
                 pound_token: Pound,
-                bang_token: Not,
                 bracket_token: Bracket,
                 trigger_token: Keyword [trigger],
+                paren_token: Paren,
                 terms: [
                     TermCall {
                         func: TermPath {

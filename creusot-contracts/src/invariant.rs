@@ -1,6 +1,7 @@
 //! Type invariants
 
 use crate::*;
+use ::std::ops::{Deref, DerefMut};
 
 /// A user-defined _type invariant_.
 ///
@@ -17,7 +18,7 @@ use crate::*;
 /// // The type invariant constrains the set of valid `SumTo10`s to
 /// // only allow values where the sum of both fields is equal to 10.
 /// impl Invariant for SumTo10 {
-///     #[predicate]
+///     #[logic]
 ///     #[open]
 ///     fn invariant(self) -> bool {
 ///         pearlite! {
@@ -43,7 +44,7 @@ use crate::*;
 /// Examples:
 /// - `x: (T, U)` -> `inv(x.0) && inv(x.1)`
 /// - `x: &T` -> `inv(*x)`
-/// - `x: Vec<T>` -> `forall<i: Int> 0 <= i && i < x@.len() ==> inv(x@[i])`
+/// - `x: Vec<T>` -> `forall<i> 0 <= i && i < x@.len() ==> inv(x@[i])`
 ///
 /// This does not prevent the type to additionnaly implement the `Invariant` trait.
 ///
@@ -59,21 +60,21 @@ use crate::*;
 /// # use creusot_contracts::*;
 /// # struct SumTo10 { a: i32, b: i32 }
 /// # impl Invariant for SumTo10 {
-/// # #[predicate] #[open] fn invariant(self) -> bool { pearlite!{self.a@ + self.b@ == 10} }
+/// # #[logic] #[open] fn invariant(self) -> bool { pearlite!{self.a@ + self.b@ == 10} }
 /// # }
 /// #[logic]
 /// #[ensures(x.a@ + x.b@ == 10)]
 /// fn not_provable(x: SumTo10) {}
 /// ```
 pub trait Invariant {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[rustc_diagnostic_item = "creusot_invariant_user"]
     fn invariant(self) -> bool;
 }
 
 #[cfg(feature = "nightly")]
 impl Invariant for ! {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
@@ -82,7 +83,7 @@ impl Invariant for ! {
 }
 
 impl<T: ?Sized> Invariant for &T {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
@@ -92,7 +93,7 @@ impl<T: ?Sized> Invariant for &T {
 }
 
 impl<T: ?Sized> Invariant for &mut T {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
@@ -105,7 +106,7 @@ impl<T: ?Sized> Invariant for &mut T {
 ///
 /// This function is functionnaly equivalent to [`Invariant::invariant`], except that it
 /// can be called on any type (even if it does not implement [`Invariant`]).
-#[predicate(prophetic)]
+#[logic(prophetic)]
 #[trusted]
 #[rustc_diagnostic_item = "creusot_invariant_internal"]
 pub fn inv<T: ?Sized>(_: T) -> bool {
@@ -116,3 +117,201 @@ pub fn inv<T: ?Sized>(_: T) -> bool {
 pub fn inv<T: ?Sized>(_: &T) -> bool {
     panic!()
 }
+
+/// A type implements `InhabitedInvariants` when its type invariant is inhabited.
+/// This is needed to define subset types.
+pub trait InhabitedInvariant: Invariant {
+    #[logic]
+    #[ensures(result.invariant())]
+    fn inhabits() -> Self;
+}
+
+/// A _subset_ type.
+///
+/// This the same as `T`, with one exception: the invariant for `T` will also
+/// be verified in logic.
+///
+/// # Example
+///
+/// ```
+/// # use creusot_contracts::*;
+/// struct Pair(i32);
+/// impl Invariant for Pair {
+///     #[logic] fn invariant(self) -> bool { self.0 % 2 == 0 }
+/// }
+/// impl InhabitedInvariant for Pair {
+///     #[logic]
+///     #[ensures(result.invariant())]
+///     fn inhabits() -> Self { Self(0i32) }
+/// }
+///
+/// #[logic]
+/// fn pair_in_logic(x: Subset<Pair>) {
+///     proof_assert!(x.0 % 2 == 0);
+/// }
+/// ```
+#[repr(transparent)]
+#[trusted]
+pub struct Subset<T: InhabitedInvariant>(T);
+
+impl<T: InhabitedInvariant> View for Subset<T> {
+    type ViewTy = T;
+
+    #[trusted]
+    #[logic]
+    #[ensures(result.invariant())]
+    fn view(self) -> T {
+        dead
+    }
+}
+
+impl<T: InhabitedInvariant + DeepModel> DeepModel for Subset<T> {
+    type DeepModelTy = T::DeepModelTy;
+
+    #[logic]
+    fn deep_model(self) -> T::DeepModelTy {
+        pearlite! { self@.deep_model() }
+    }
+}
+
+impl<T: InhabitedInvariant> Subset<T> {
+    /// Create a new element of `Subset<T>` in logic.
+    ///
+    /// As per the [documentation of Subset](Subset), the returned value will
+    /// satisfy `T`'s type invariant.
+    #[trusted]
+    #[logic]
+    #[requires(x.invariant())]
+    #[ensures(result@ == x)]
+    pub fn new_logic(x: T) -> Self {
+        let _ = x;
+        dead
+    }
+
+    /// Characterize that `Subset<T>` indeed contains a `T` (and only a `T`).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// #[requires(x == y@)]
+    /// fn foo<T: InhabitedInvariant>(x: T, y: Subset<T>) {
+    ///     let x = Subset::new(x);
+    ///     let _ = snapshot!(Subset::<T>::view_inj);
+    ///     proof_assert!(x == y);
+    /// }
+    /// ```
+    #[trusted]
+    #[logic]
+    #[requires(self@ == other@)]
+    #[ensures(self == other)]
+    pub fn view_inj(self, other: Self) {}
+
+    /// Create a new element of `Subset<T>`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// // Use the `Pair` type defined in `Subset`'s documentation
+    /// # struct Pair(i32);
+    /// # impl Invariant for Pair {
+    /// #     #[logic] fn invariant(self) -> bool { self.0 % 2 == 0 } }
+    /// # impl InhabitedInvariant for Pair {
+    /// #     #[logic] #[ensures(result.invariant())]
+    /// #     fn inhabits() -> Self { Self(0i32) } }
+    ///
+    /// let p = Subset::new(Pair(0));
+    /// proof_assert!(p@.0 == 0i32);
+    /// ```
+    #[pure]
+    #[trusted]
+    #[ensures(result == Self::new_logic(x))]
+    pub fn new(x: T) -> Self {
+        Subset(x)
+    }
+
+    /// Unwrap the `Subset` to get the inner value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// // Use the `Pair` type defined in `Subset`'s documentation
+    /// # struct Pair(i32);
+    /// # impl Invariant for Pair {
+    /// #     #[logic] fn invariant(self) -> bool { self.0 % 2 == 0 } }
+    /// # impl InhabitedInvariant for Pair {
+    /// #     #[logic] #[ensures(result.invariant())]
+    /// #     fn inhabits() -> Self { Self(0i32) } }
+    ///
+    /// fn changes_pair(p: &mut Subset<Pair>) { /* ... */ }
+    ///
+    /// let mut p = Subset::new(Pair(0));
+    /// changes_pair(&mut p);
+    /// let inner = p.into_inner();
+    /// proof_assert!(inner.0 % 2 == 0);
+    /// ```
+    #[pure]
+    #[trusted]
+    #[ensures(result == self@)]
+    pub fn into_inner(self) -> T {
+        self.0
+    }
+}
+
+impl<T: InhabitedInvariant> Deref for Subset<T> {
+    type Target = T;
+
+    #[pure]
+    #[trusted]
+    #[ensures(*result == self@)]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: InhabitedInvariant> DerefMut for Subset<T> {
+    #[pure]
+    #[trusted]
+    #[ensures(*result == self@)]
+    #[ensures(^result == (^self)@)]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<T: InhabitedInvariant + Clone> Clone for Subset<T> {
+    #[ensures(T::clone.postcondition((&(self@),), result@))]
+    fn clone(&self) -> Self {
+        snapshot! { Self::view_inj };
+        Self::new(self.deref().clone())
+    }
+}
+
+impl<T: InhabitedInvariant + Copy> Copy for Subset<T> {}
+
+impl<T: InhabitedInvariant> Resolve for Subset<T> {
+    #[open]
+    #[logic(prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! { resolve(self@) }
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
+}
+
+impl<T: InhabitedInvariant + DeepModel + PartialEq> PartialEq for Subset<T> {
+    #[pure]
+    #[trusted]
+    #[ensures(result == (self.deep_model() == rhs.deep_model()))]
+    fn eq(&self, rhs: &Self) -> bool {
+        self.0 == rhs.0
+    }
+}
+
+impl<T: InhabitedInvariant + DeepModel + Eq> Eq for Subset<T> {}

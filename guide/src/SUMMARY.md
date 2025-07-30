@@ -1,6 +1,7 @@
 # Summary
 
 - [Quickstart](./quickstart.md)
+  - [Editor configuration](./quickstart/editor_config.md)
 - [Tutorial](./tutorial.md)
 - [Basic concepts](./basic_concepts.md)
   - [`requires` and `ensures`](basic_concepts/requires_ensures.md)

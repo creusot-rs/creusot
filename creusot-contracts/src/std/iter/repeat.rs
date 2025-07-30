@@ -12,27 +12,25 @@ impl<T> View for Repeat<T> {
 
 impl<T: Clone> Iterator for Repeat<T> {
     #[open]
-    #[predicate]
+    #[logic]
     fn completed(&mut self) -> bool {
         pearlite! { false }
     }
 
     #[open]
-    #[predicate]
+    #[logic]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&
-            forall<i: Int> 0 <= i && i < visited.len() ==> visited[i] == self@
+            forall<i> 0 <= i && i < visited.len() ==> T::clone.postcondition((&self@,), visited[i])
         }
     }
 
     #[law]
-    #[open(self)]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

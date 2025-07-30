@@ -5,19 +5,34 @@ use std::{
 
 use crate::{
     backend::{
-        clone_map::Namer as _, logic::Dependencies, signature::lower_contract, term::{binop_to_binop, lower_literal, lower_pure}, ty::{constructor, is_int, ity_to_prelude, translate_ty, ty_to_prelude, uty_to_prelude}, Why3Generator
+        Why3Generator,
+        clone_map::Namer as _,
+        logic::Dependencies,
+        program::{PtrCastKind, ptr_cast_kind},
+        projections::{Focus, borrow_generated_id, projections_to_expr},
+        signature::lower_contract,
+        term::{
+            binop_function, binop_right_int, binop_to_binop, lower_literal, lower_pure,
+            unsupported_cast,
+        },
+        ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
     },
-    contracts_items::get_builtin,
-    ctx::{item_type, ItemType, PreMod},
+    contracts_items::is_builtins_ascription,
+    ctx::{HasTyCtxt, PreMod},
     naming::name,
     translation::pearlite::{
-        BinOp, Literal, Pattern, PatternKind, QuantKind, Term, TermKind, TermVisitor, UnOp, super_visit_term, },
+        BinOp, Literal, Pattern, PatternKind, Term, TermKind, TermVisitor, UnOp, super_visit_term,
+    },
     util::erased_identity_for_item,
 };
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
-use rustc_span::Span;
+use rustc_middle::{
+    mir::{ProjectionElem, tcx::PlaceTy},
+    ty::{EarlyBinder, Ty, TyCtxt, TyKind, TypingEnv},
+};
+use rustc_span::{DUMMY_SP, Span};
+use rustc_type_ir::UintTy;
 use why3::{
     Exp, Ident, Name,
     exp::{Pattern as WPattern, UnOp as WUnOp},
@@ -186,10 +201,8 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
 pub enum VCError<'tcx> {
     /// `old` doesn't currently make sense inside of a lemma function
     OldInLemma(Span),
-    /// Too lazy to implement this atm.
-    UnimplementedReborrow(Span),
-    /// Same here...
-    UnimplementedClosure(Span),
+    /// Inferred pre- / postconditions should not appear in these terms
+    PrePostInLemma(Span),
     /// Variants are currently restricted to `Int`
     #[allow(dead_code)] // this lint is too agressive
     UnsupportedVariant(Ty<'tcx>, Span),
@@ -198,10 +211,9 @@ pub enum VCError<'tcx> {
 impl VCError<'_> {
     pub fn span(&self) -> Span {
         match self {
-            VCError::OldInLemma(s) => *s,
-            VCError::UnimplementedReborrow(s) => *s,
-            VCError::UnimplementedClosure(s) => *s,
-            VCError::UnsupportedVariant(_, s) => *s,
+            VCError::OldInLemma(s)
+            | VCError::UnsupportedVariant(_, s)
+            | VCError::PrePostInLemma(s) => *s,
         }
     }
 }
@@ -220,6 +232,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
     }
 
     fn build_wp(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Result<Exp, VCError<'tcx>> {
+        use BinOp::*;
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => k(Exp::var(v.0)),
@@ -235,7 +248,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
                         TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
                         _ if is_int(self.ctx.tcx, t.ty) => ("to_int", PreMod::Bool),
-                        _ => self.ctx.crash_and_error(
+                        _ => self.crash_and_error(
                             t.span,
                             "bool cast to non integral casts are currently unsupported",
                         ),
@@ -277,16 +290,30 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         k(Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([arg])]))
                     })
                 }
-                _ => self.ctx.crash_and_error(t.span, "unsupported cast"),
+                // Pointer-to-pointer casts
+                TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = t.ty.kind() => {
+                    match ptr_cast_kind(self.ctx.tcx, self.names.typing_env(), ty1, ty2) {
+                        PtrCastKind::Id => self.build_wp(arg, k),
+                        PtrCastKind::Thin => self.build_wp(arg, &|arg| {
+                            let thin = self.names.in_pre(PreMod::Opaque, "thin");
+                            k(Exp::qvar(thin).app([arg]))
+                        }),
+                        PtrCastKind::Unknown => unsupported_cast(self.ctx, t.span, arg.ty, t.ty),
+                    }
+                }
+                _ => unsupported_cast(self.ctx, t.span, arg.ty, t.ty),
             },
             TermKind::Coerce { arg } => self.build_wp(arg, k),
             // Items are just global names so
             // VC(i, Q) = Q(i)
-            TermKind::Item(id, sub) => {
-                let item_name = self.names.item(*id, sub);
-                if get_builtin(self.ctx.tcx, *id).is_some() {
-                    // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
-                    k(Exp::Var(item_name).ascribe(self.ty(t.ty)))
+            TermKind::Item(id, subst) => {
+                if *id == self.self_id {
+                    self.ctx.crash_and_error(t.span, "cannot refer to the function in its own definition.")
+                }
+                // We pull (id, subst) as a dependency, because it may be useful for the proof
+                let item_name = self.names.item(*id, subst);
+                if let TyKind::FnDef(_, _) = self.ctx.type_of(id).instantiate_identity().kind() {
+                    k(Exp::unit())
                 } else {
                     k(Exp::Var(item_name))
                 }
@@ -308,7 +335,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     let subst = self.ctx.normalize_erasing_regions(self.typing_env, *subst);
                     let subst_id = erased_identity_for_item(self.ctx.tcx, *id);
                     if subst != subst_id {
-                        self.ctx.crash_and_error(t.span, "Polymorphic recursion is not supported.")
+                        self.ctx.crash_and_error(t.span, "polymorphic recursion is not supported.")
                     }
 
                     if let Some(variant) = variant {
@@ -316,13 +343,19 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     } else if self.structurally_recursive {
                         Exp::mk_true()
                     } else {
-                        Exp::mk_false()
+                        self.ctx.crash_and_error(
+                            self.ctx.def_span(self.self_id),
+                            "this function is recursive, but it does not use a variant and it not structurally recursive.",
+                        )
                     }
                 } else {
                     Exp::mk_true()
                 };
 
-                let call = Exp::Var(self.names.item(*id, subst)).app(args.clone());
+                let mut call = Exp::Var(self.names.item(*id, subst)).app(args.clone());
+                if is_builtins_ascription(self.ctx.tcx, *id) {
+                    call = call.ascribe(self.ty(t.ty))
+                }
                 let call_subst = pre_sig
                     .inputs
                     .iter()
@@ -345,25 +378,22 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(A || B, Q) = VC(A, |a| if a then Q(true) else VC(B, Q))
             // VC(A OP B, Q) = VC(A, |a| VC(B, |b| Q(a OP B)))
             TermKind::Binary { op, lhs, rhs } => match op {
-                BinOp::And => self.build_wp(lhs, &|lhs| {
+                And => self.build_wp(lhs, &|lhs| {
                     Ok(Exp::if_(lhs, self.build_wp(rhs, k)?, k(Exp::mk_false())?))
                 }),
-                BinOp::Or => self.build_wp(lhs, &|lhs| {
+                Or => self.build_wp(lhs, &|lhs| {
                     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_wp(rhs, k)?))
                 }),
-                BinOp::Div => {
-                    let prelude = ty_to_prelude(self.ctx.tcx, lhs.ty.kind());
+                _ if let Some(fun) = binop_function(self.names, *op, t.ty.kind()) => {
+                    let rhs_ty = rhs.ty.kind();
                     self.build_wp(lhs, &|lhs| {
                         self.build_wp(rhs, &|rhs| {
-                            k(Exp::qvar(self.names.in_pre(prelude, "div")).app([lhs.clone(), rhs]))
-                        })
-                    })
-                }
-                BinOp::Rem => {
-                    let prelude = ty_to_prelude(self.ctx.tcx, lhs.ty.kind());
-                    self.build_wp(lhs, &|lhs| {
-                        self.build_wp(rhs, &|rhs| {
-                            k(Exp::qvar(self.names.in_pre(prelude, "mod")).app([lhs.clone(), rhs]))
+                            let rhs = if binop_right_int(*op) {
+                                self.names.to_int_app(rhs_ty, rhs)
+                            } else {
+                                rhs
+                            };
+                            k(Exp::qvar(fun.clone()).app([lhs.clone(), rhs]))
                         })
                     })
                 }
@@ -382,25 +412,12 @@ impl<'tcx> VCGen<'_, 'tcx> {
 
                 k(Exp::UnaryOp(op, arg.boxed()))
             }),
-            // // the dual rule should be the one below but that seems weird...
-            // // VC(forall<x> P(x), Q) => (exists<x> VC(P, false)) \/ Q(forall<x>P(x))
-            // // Instead, I think the rule should just be the same as for the existential quantifiers?
-            TermKind::Quant { kind: QuantKind::Forall, binder, body, .. } => {
-                let forall_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
-
-                let forall_pre =
-                    Exp::forall(binder.iter().map(|(s, t)| (s.0, self.ty(*t))), forall_pre);
-                let forall_pure = self.lower_pure(t);
-                Ok(forall_pre.log_and(k(forall_pure)?))
-            }
-            // // VC(exists<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(exists<x>P(x))
-            TermKind::Quant { kind: QuantKind::Exists, binder, body, .. } => {
-                let exists_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
-
-                let exists_pre =
-                    Exp::forall(binder.iter().map(|(s, t)| (s.0, self.ty(*t))), exists_pre);
-                let exists_pure = self.lower_pure(t);
-                Ok(exists_pre.log_and(k(exists_pure)?))
+            // VC(forall<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(forall<x>P(x))
+            // VC(exists<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(exists<x>P(x))
+            TermKind::Quant { binder, body, .. } => {
+                let body = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
+                let body_wp = Exp::forall(binder.iter().map(|(s, t)| (s.0, self.ty(*t))), body);
+                Ok(body_wp.log_and(k(self.lower_pure(t))?))
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
             TermKind::Tuple { fields } => {
@@ -465,7 +482,6 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         self.build_pattern(&arm.0, &|pat| Ok((pat, self.build_wp(&arm.1, k)?)))
                     })
                     .collect::<Result<Box<[_]>, _>>()?;
-
                 Ok(scrut.match_(arms))
             }),
             // VC(let P = A in B, Q) = VC(A, |a| let P = a in VC(B, Q))
@@ -488,11 +504,48 @@ impl<'tcx> VCGen<'_, 'tcx> {
 
                 self.build_wp(lhs, &|lhs| k(lhs.field(Name::local(field))))
             }
+            // VC(&mut (*A).f, Q) = VC(A, |a| Q(&mut (*a).f))
+            TermKind::Reborrow { inner, projections } => {
+                let ty = self.ctx.normalize_erasing_regions(self.typing_env, inner.ty);
+                self.build_wp(inner, &|inner| {
+                    self.build_wp_projections(projections, &|projs| {
+                        let borrow_id = borrow_generated_id(
+                            self.ctx,
+                            self.names,
+                            inner.clone(),
+                            t.span,
+                            &projs,
+                            Clone::clone,
+                        );
+                        let [cur, fin] = [name::current(), name::final_()].map(|nm| {
+                            let (foc, _) = projections_to_expr(
+                                self.ctx,
+                                self.names,
+                                None,
+                                &mut PlaceTy::from_ty(ty.builtin_deref(false).unwrap()),
+                                Focus::new(|_| inner.clone().field(Name::Global(nm))),
+                                Box::new(|_, _| unreachable!()),
+                                &projs,
+                                Clone::clone,
+                                t.span,
+                            );
+                            foc.call(None)
+                        });
+                        k(Exp::qvar(self.names.in_pre(PreMod::MutBor, "borrow_logic"))
+                            .app([cur, fin, borrow_id]))
+                    })
+                })
+            }
+            // VC(|x| A(x), Q) = (forall<x>, VC(A(x), true)) /\ Q(|x| A(x))
+            TermKind::Closure { bound, body } => {
+                let body = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
+                let wp_pre = Exp::forall(bound.iter().map(|(s, t)| (s.0, self.ty(*t))), body);
+                Ok(wp_pre.log_and(k(self.lower_pure(t))?))
+            }
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
-            TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
-            TermKind::Reborrow { .. } => Err(VCError::UnimplementedReborrow(t.span)),
-            TermKind::Precondition { .. } => Err(VCError::UnimplementedClosure(t.span)),
-            TermKind::Postcondition { .. } => Err(VCError::UnimplementedClosure(t.span)),
+            TermKind::Precondition { .. } | TermKind::Postcondition { .. } => {
+                Err(VCError::PrePostInLemma(t.span))
+            }
         }
     }
 
@@ -516,21 +569,25 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     TyKind::Closure(did, subst) => (did, subst),
                     _ => unreachable!(),
                 };
-                let flds = fields.iter().map(|pat| self.build_pattern_inner(pat));
+                let flds = fields.iter().map(|(fld, pat)| (*fld, self.build_pattern_inner(pat)));
                 if self.ctx.def_kind(var_did) == DefKind::Variant {
-                    WPattern::ConsP(
-                        Name::local(self.names.constructor(var_did, subst)),
-                        flds.collect(),
-                    )
+                    let mut pats: Box<[_]> = ty.ty_adt_def().unwrap().variants()[*variant]
+                        .fields
+                        .indices()
+                        .map(|_| WPattern::Wildcard)
+                        .collect();
+
+                    for (idx, pat) in flds {
+                        pats[idx.as_usize()] = pat
+                    }
+                    WPattern::ConsP(Name::local(self.names.constructor(var_did, subst)), pats)
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {
                     let flds: Box<[_]> = flds
-                        .enumerate()
-                        .map(|(i, f)| (Name::local(self.names.field(var_did, subst, i.into())), f))
-                        .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
+                        .map(|(fld, p)| (Name::local(self.names.field(var_did, subst, fld)), p))
                         .collect();
-                    if flds.is_empty() { WPattern::Wildcard } else { WPattern::RecP(flds) }
+                    WPattern::RecP(flds)
                 }
             }
             PatternKind::Wildcard => WPattern::Wildcard,
@@ -567,6 +624,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     _ => unreachable!(),
                 }
             }
+            PatternKind::Or(patterns) => {
+                WPattern::OrP(patterns.iter().map(|p| self.build_pattern_inner(p)).collect())
+            }
         }
     }
 
@@ -575,29 +635,82 @@ impl<'tcx> VCGen<'_, 'tcx> {
         t: &[Term<'tcx>],
         k: PostCont<'_, 'tcx, Box<[Exp]>>,
     ) -> Result<Exp, VCError<'tcx>> {
-        self.build_wp_slice_inner(t.len(), t, k)
+        self.build_wp_slice_inner(0, t, k)
     }
 
     fn build_wp_slice_inner(
         &self,
-        len: usize,
+        i: usize,
         t: &[Term<'tcx>],
         k: PostCont<'_, 'tcx, Box<[Exp]>>,
     ) -> Result<Exp, VCError<'tcx>> {
         if t.is_empty() {
-            k(repeat_n(/* Dummy */ Exp::mk_true(), len).collect())
+            k(repeat_n(/* Dummy */ Exp::mk_true(), i).collect())
         } else {
             self.build_wp(&t[0], &|v| {
-                self.build_wp_slice_inner(len, &t[1..], &|mut args| {
-                    args[len - t.len()] = v.clone();
+                self.build_wp_slice_inner(i + 1, &t[1..], &|mut args| {
+                    args[i] = v.clone();
                     k(args)
                 })
             })
         }
     }
 
+    fn build_wp_projections(
+        &self,
+        projs: &[ProjectionElem<Term<'tcx>, Ty<'tcx>>],
+        k: PostCont<'_, 'tcx, Box<[ProjectionElem<Exp, Ty<'tcx>>]>>,
+    ) -> Result<Exp, VCError<'tcx>> {
+        self.build_wp_projections_inner(0, projs, k)
+    }
+
+    fn build_wp_projections_inner(
+        &self,
+        i: usize,
+        projs: &[ProjectionElem<Term<'tcx>, Ty<'tcx>>],
+        k: PostCont<'_, 'tcx, Box<[ProjectionElem<Exp, Ty<'tcx>>]>>,
+    ) -> Result<Exp, VCError<'tcx>> {
+        if projs.is_empty() {
+            k(repeat_n(/* Dummy */ ProjectionElem::Deref, i).collect())
+        } else {
+            let def = |p: ProjectionElem<Exp, Ty<'tcx>>| {
+                self.build_wp_projections_inner(i + 1, &projs[1..], &|mut projs| {
+                    projs[i] = p.clone();
+                    k(projs)
+                })
+            };
+            match projs[0] {
+                ProjectionElem::Index(ref ix) => self.build_wp(ix, &|mut idx| {
+                    if matches!(ix.ty.kind(), TyKind::Uint(UintTy::Usize)) {
+                        let qname =
+                            self.names.in_pre(uty_to_prelude(self.ctx.tcx, UintTy::Usize), "t'int");
+                        idx = Exp::qvar(qname).app([idx])
+                    }
+
+                    self.build_wp_projections_inner(i + 1, &projs[1..], &|mut projs| {
+                        projs[i] = ProjectionElem::Index(idx.clone());
+                        k(projs)
+                    })
+                }),
+                ProjectionElem::Deref => def(ProjectionElem::Deref),
+                ProjectionElem::Field(field_idx, ty) => def(ProjectionElem::Field(field_idx, ty)),
+                ProjectionElem::ConstantIndex { offset, min_length, from_end } => {
+                    def(ProjectionElem::ConstantIndex { offset, min_length, from_end })
+                }
+                ProjectionElem::Subslice { from, to, from_end } => {
+                    def(ProjectionElem::Subslice { from, to, from_end })
+                }
+                ProjectionElem::Downcast(symbol, variant_idx) => {
+                    def(ProjectionElem::Downcast(symbol, variant_idx))
+                }
+                ProjectionElem::OpaqueCast(ty) => def(ProjectionElem::OpaqueCast(ty)),
+                ProjectionElem::Subtype(ty) => def(ProjectionElem::Subtype(ty)),
+            }
+        }
+    }
+
     fn ty(&self, ty: Ty<'tcx>) -> Type {
-        translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
+        translate_ty(self.ctx, self.names, DUMMY_SP, ty)
     }
 
     // Generates the expression to test the validity of the variant for a recursive call.
@@ -625,5 +738,11 @@ impl<'tcx> VCGen<'_, 'tcx> {
         } else {
             Err(VCError::UnsupportedVariant(variant_ty, span))
         }
+    }
+}
+
+impl<'a, 'tcx> HasTyCtxt<'tcx> for VCGen<'a, 'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.ctx.tcx
     }
 }

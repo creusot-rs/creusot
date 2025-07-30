@@ -26,22 +26,18 @@ use crate::{logic::Mapping, *};
 pub struct FSet<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T: ?Sized> FSet<T> {
-    /// The empty set.
-    #[cfg(creusot)]
-    #[trusted]
-    #[creusot::builtins = "set.Fset.empty"]
-    pub const EMPTY: Self = { FSet(std::marker::PhantomData) };
-
     /// Returns the empty set.
+    #[trusted]
     #[logic]
-    #[open]
+    #[creusot::builtins = "set.Fset.empty"]
+    #[creusot::builtins_ascription]
     pub fn empty() -> Self {
-        Self::EMPTY
+        dead
     }
 
     /// Returns `true` if `e` is in the set.
     #[open]
-    #[predicate]
+    #[logic]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, e: T) -> bool {
         Self::mem(e, self)
@@ -79,7 +75,7 @@ impl<T: ?Sized> FSet<T> {
 
     /// Returns `true` if the set contains no elements.
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "set.Fset.is_empty"]
     pub fn is_empty(self) -> bool {
         dead
@@ -139,7 +135,7 @@ impl<T: ?Sized> FSet<T> {
 
     /// Returns `true` if every element of `self` is in `other`.
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "set.Fset.subset"]
     pub fn is_subset(self, other: Self) -> bool {
         let _ = other;
@@ -148,7 +144,7 @@ impl<T: ?Sized> FSet<T> {
 
     /// Returns `true` if every element of `other` is in `self`.
     #[open]
-    #[predicate]
+    #[logic]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn is_superset(self, other: Self) -> bool {
         Self::is_subset(other, self)
@@ -156,7 +152,7 @@ impl<T: ?Sized> FSet<T> {
 
     /// Returns `true` if `self` and `other` are disjoint.
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "set.Fset.disjoint"]
     pub fn disjoint(self, other: Self) -> bool {
         let _ = other;
@@ -193,12 +189,9 @@ impl<T: ?Sized> FSet<T> {
     ///
     /// This is in fact equivalent with normal equality.
     #[open]
-    #[predicate]
-    #[ensures(result ==> self == other)]
-    pub fn ext_eq(self, other: Self) -> bool
-    where
-        T: Sized,
-    {
+    #[logic]
+    #[ensures(result == (self == other))]
+    pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
             forall <e: T> self.contains(e) == other.contains(e)
         }
@@ -211,7 +204,7 @@ impl<T> FSet<T> {
     #[open]
     #[ensures(forall<y: T> result.contains(y) == (x == y))]
     pub fn singleton(x: T) -> Self {
-        FSet::EMPTY.insert(x)
+        FSet::empty().insert(x)
     }
 
     /// Returns the union of sets `f(t)` over all `t: T`.
@@ -221,7 +214,7 @@ impl<T> FSet<T> {
     #[variant(self.len())]
     pub fn unions<U>(self, f: Mapping<T, FSet<U>>) -> FSet<U> {
         if self.len() == 0 {
-            FSet::EMPTY
+            FSet::empty()
         } else {
             let x = self.peek();
             f.get(x).union(self.remove(x).unions(f))
@@ -279,10 +272,10 @@ impl<T> FSet<T> {
     pub fn replicate(self, n: Int) -> FSet<Seq<T>> {
         pearlite! {
             if n == 0 {
-                proof_assert! { forall<xs: Seq<T>> xs.len() == 0 ==> xs == Seq::EMPTY };
-                FSet::singleton(Seq::EMPTY)
+                proof_assert! { forall<xs: Seq<T>> xs.len() == 0 ==> xs == Seq::empty() };
+                FSet::singleton(Seq::empty())
             } else {
-                proof_assert! { forall<xs: Seq<T>, i: Int> 0 < i && i < xs.len() ==> xs[i] == xs.tail()[i-1] };
+                proof_assert! { forall<xs: Seq<T>, i> 0 < i && i < xs.len() ==> xs[i] == xs.tail()[i-1] };
                 FSet::cons(self, self.replicate(n - 1))
             }
         }
@@ -297,8 +290,8 @@ impl<T> FSet<T> {
     pub fn replicate_up_to(self, n: Int) -> FSet<Seq<T>> {
         pearlite! {
             if n == 0 {
-                proof_assert! { forall<xs: Seq<T>> xs.len() == 0 ==> xs == Seq::EMPTY };
-                FSet::singleton(Seq::EMPTY)
+                proof_assert! { forall<xs: Seq<T>> xs.len() == 0 ==> xs == Seq::empty() };
+                FSet::singleton(Seq::empty())
             } else {
                 self.replicate_up_to(n - 1).union(self.replicate(n))
             }
@@ -459,12 +452,12 @@ impl<T: ?Sized> FSet<T> {
     ///     s.insert_ghost(2);
     ///     s.insert_ghost(3);
     ///     s.clear_ghost();
-    ///     proof_assert!(s == FSet::EMPTY);
+    ///     proof_assert!(s == FSet::empty());
     /// };
     /// ```
     #[trusted]
     #[pure]
-    #[ensures(^self == Self::EMPTY)]
+    #[ensures(^self == Self::empty())]
     pub fn clear_ghost(&mut self) {}
 }
 
@@ -480,12 +473,13 @@ impl<T: Clone + Copy> Clone for FSet<T> {
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
 impl<T: Clone + Copy> Copy for FSet<T> {}
 
-impl<T: ?Sized> Invariant for FSet<T> {
-    #[predicate(prophetic)]
+impl<T> Invariant for FSet<T> {
+    #[logic(prophetic)]
     #[open]
+    #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { forall<x: &T> self.contains(*x) ==> inv(*x) }
+        pearlite! { forall<x: T> self.contains(x) ==> inv(x) }
     }
 }
 
@@ -541,14 +535,14 @@ pub fn concat_replicate<T>(n: Int, m: Int, s: FSet<T>) {
     }
 }
 
-/// The neutral element of `FSet::concat` is `FSet::singleton(Seq::EMPTY)`.
+/// The neutral element of `FSet::concat` is `FSet::singleton(Seq::empty())`.
 #[logic]
 #[open]
-#[ensures(FSet::concat(FSet::singleton(Seq::EMPTY), s) == s)]
-#[ensures(FSet::concat(s, FSet::singleton(Seq::EMPTY)) == s)]
+#[ensures(FSet::concat(FSet::singleton(Seq::empty()), s) == s)]
+#[ensures(FSet::concat(s, FSet::singleton(Seq::empty())) == s)]
 pub fn concat_empty<T>(s: FSet<Seq<T>>) {
-    proof_assert! { forall<xs: Seq<T>> xs.concat(Seq::EMPTY) == xs };
-    proof_assert! { forall<xs: Seq<T>> Seq::EMPTY.concat(xs) == xs };
+    proof_assert! { forall<xs: Seq<T>> xs.concat(Seq::empty()) == xs };
+    proof_assert! { forall<xs: Seq<T>> Seq::empty().concat(xs) == xs };
 }
 
 /// An equation relating `s.replicate_up_to(m)` and `s.replicate_up_to(n)`.

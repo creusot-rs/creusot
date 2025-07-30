@@ -9,7 +9,6 @@ use crate::{
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv};
 use rustc_span::{DUMMY_SP, Span};
-use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
 use why3::{
     Ident, Name,
@@ -45,9 +44,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
             let cons = MlT::TConstructor(names.ty(ty));
             cons.tapp(s.types().map(|t| translate_ty(ctx, names, span, t)))
         }
-        Adt(def, _) if def.is_struct() && def.variant(VariantIdx::ZERO).fields.is_empty() => {
-            MlT::unit()
-        }
+        Adt(def, _) if def.is_struct() && def.non_enum_variant().fields.is_empty() => MlT::unit(),
         Adt(def, _) if def.is_enum() && def.variants().is_empty() => MlT::unit(),
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
@@ -182,7 +179,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
     } else {
         assert!(adt.is_struct() || adt.is_union());
         let fields: Box<[_]> = adt
-            .variant(VariantIdx::ZERO)
+            .non_enum_variant()
             .fields
             .iter_enumerated()
             .map(|(ix, f)| {
@@ -306,8 +303,7 @@ pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
 }
 
 pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N) -> MlT {
-    let int_id = get_int_ty(ctx.tcx);
-    let ty = ctx.type_of(int_id).no_bound_vars().unwrap();
+    let ty = ctx.type_of(get_int_ty(ctx.tcx)).no_bound_vars().unwrap();
     translate_ty(ctx, names, DUMMY_SP, ty)
 }
 

@@ -1,11 +1,10 @@
 use rustc_ast::Mutability;
 use rustc_middle::ty::{Ty, TypingEnv};
-use rustc_span::DUMMY_SP;
 use rustc_type_ir::TyKind;
 
 use crate::{
-    contracts_items::{get_builtin, is_snap_ty, is_trusted},
-    translation::pearlite::{Ident, Pattern, Term, TermKind},
+    contracts_items::{get_builtin, is_trusted},
+    translation::pearlite::{Ident, Pattern, Term},
 };
 
 use super::Why3Generator;
@@ -22,38 +21,26 @@ pub fn structural_resolve<'tcx>(
             Some(resolve_of(ctx, typing_env, subject.coerce(args.type_at(0))))
         }
         TyKind::Adt(adt, _) if is_trusted(ctx.tcx, adt.did()) => None,
-        TyKind::Adt(adt, _) if is_snap_ty(ctx.tcx, adt.did()) => Some(Term::true_(ctx.tcx)),
-        TyKind::Adt(adt, _) if get_builtin(ctx.tcx, adt.did()).is_some() => {
-            Some(Term::true_(ctx.tcx))
-        }
         TyKind::Adt(adt, args) => {
-            let arms = adt
-                .variants()
-                .iter_enumerated()
-                .map(|(varidx, var)| {
-                    let (fields, exps): (Vec<_>, Vec<_>) = var
-                        .fields
-                        .iter_enumerated()
-                        .map(|(ix, f)| {
-                            let sym = Ident::fresh_local(&format!("x{}", ix.as_usize()));
-                            let fty = f.ty(ctx.tcx, args);
-                            (
-                                Pattern::binder(sym, fty),
-                                resolve_of(ctx, typing_env, Term::var(sym, fty)),
-                            )
-                        })
-                        .unzip();
+            assert!(get_builtin(ctx.tcx, adt.did()).is_none());
+            let arms = adt.variants().iter_enumerated().map(|(varidx, var)| {
+                let (fields, exps): (Vec<_>, Vec<_>) = var
+                    .fields
+                    .iter_enumerated()
+                    .map(|(ix, f)| {
+                        let sym = Ident::fresh_local(&format!("x{}", ix.as_usize()));
+                        let fty = f.ty(ctx.tcx, args);
+                        (
+                            (ix, Pattern::binder(sym, fty)),
+                            resolve_of(ctx, typing_env, Term::var(sym, fty)),
+                        )
+                    })
+                    .unzip();
 
-                    let body = exps.into_iter().rfold(Term::true_(ctx.tcx), Term::conj);
-                    (Pattern::constructor(varidx, fields, ty), body)
-                })
-                .collect();
-
-            Some(Term {
-                ty: ctx.types.bool,
-                kind: TermKind::Match { scrutinee: Box::new(subject), arms },
-                span: DUMMY_SP,
-            })
+                let body = exps.into_iter().rfold(Term::true_(ctx.tcx), Term::conj);
+                (Pattern::constructor(varidx, fields, ty), body)
+            });
+            Some(subject.match_(arms))
         }
         TyKind::Tuple(tys) => {
             let (fields, exps): (Vec<_>, Vec<_>) = tys
@@ -64,17 +51,8 @@ pub fn structural_resolve<'tcx>(
                     (Pattern::binder(sym, ty), resolve_of(ctx, typing_env, Term::var(sym, ty)))
                 })
                 .unzip();
-
             let body = exps.into_iter().rfold(Term::true_(ctx.tcx), Term::conj);
-
-            Some(Term {
-                ty: ctx.types.bool,
-                kind: TermKind::Match {
-                    scrutinee: Box::new(subject),
-                    arms: Box::new([(Pattern::tuple(fields, ty), body)]),
-                },
-                span: DUMMY_SP,
-            })
+            Some(Term::let_(Pattern::tuple(fields, ty), subject, body))
         }
         TyKind::Ref(_, _, Mutability::Mut) => {
             Some(subject.clone().fin().eq(ctx.tcx, subject.cur()))

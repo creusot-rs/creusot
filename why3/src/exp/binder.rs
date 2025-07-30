@@ -15,7 +15,7 @@ pub enum Binder {
     UnNamed(Type),
     /// `let f a  = ..          `
     Named(Ident),
-    /// `let f (ghost? a _ c : int) = ..`
+    /// `let f (ghost? a _ c: int) = ..`
     Typed(bool, Box<[Option<Ident>]>, Type),
 }
 

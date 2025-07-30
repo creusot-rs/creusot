@@ -1,5 +1,6 @@
 use crate::creusot::{doc::DocItemName, generate_unique_ident};
 use pearlite_syn::term::*;
+use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
@@ -11,8 +12,27 @@ use syn::{
     *,
 };
 
+/// The `extern_spec!` macro.
+pub fn extern_spec(tokens: TS1) -> TS1 {
+    let externs: ExternSpecs = parse_macro_input!(tokens);
+
+    let mut specs = Vec::new();
+    let externs = match externs.flatten() {
+        Ok(externs) => externs,
+        Err(err) => return TS1::from(err.to_compile_error()),
+    };
+
+    for spec in externs {
+        specs.push(spec.into_tokens());
+    }
+
+    TS1::from(quote! {
+        #(#specs)*
+    })
+}
+
 #[derive(Debug)]
-pub struct ExternSpecs(Vec<ExternSpec>);
+struct ExternSpecs(Vec<ExternSpec>);
 
 /// An extern spec is either:
 /// - A module of extern specs
@@ -82,8 +102,8 @@ struct ImplData {
     where_clause: Option<Punctuated<WherePredicate, Comma>>,
 }
 
-#[derive(Debug)]
-pub struct FlatSpec {
+#[derive(Clone, Debug)]
+struct FlatSpec {
     span: Span,
     signature: Signature,
     doc_item_name: DocItemName,
@@ -94,7 +114,7 @@ pub struct FlatSpec {
 }
 
 impl ExternSpecs {
-    pub fn flatten(self) -> Result<Vec<FlatSpec>> {
+    fn flatten(self) -> Result<Vec<FlatSpec>> {
         let mut specs = Vec::new();
 
         for spec in self.0 {
@@ -127,7 +147,7 @@ impl TraitOrImpl {
 }
 
 impl FlatSpec {
-    pub fn to_tokens(mut self) -> TokenStream {
+    fn into_tokens(mut self) -> TokenStream {
         let span = self.span;
         let err = escape_self_in_contracts(&mut self.attrs);
         if let Err(e) = err {
@@ -215,7 +235,7 @@ impl FlatSpec {
             if let TraitOrImpl::Trait(trait_name, generics) = data.self_ty {
                 where_clause
                     .predicates
-                    .push(parse_quote_spanned! {span=> Self_ : #trait_name #generics });
+                    .push(parse_quote_spanned! {span=> Self_: ?::std::marker::Sized + #trait_name #generics });
 
                 self.signature.generics.params.insert(0, parse_quote_spanned! {span=> Self_ });
 
@@ -422,7 +442,6 @@ fn escape_self_in_term(t: &mut Term) {
         Term::Dead(TermDead { .. }) => {}
         Term::Pearlite(TermPearlite { block, .. }) => escape_self_in_tblock(block),
         Term::Lit(TermLit { .. }) => {}
-        Term::Verbatim(_) => {}
         Term::Closure(TermClosure { body, .. }) => escape_self_in_term(body),
         Term::__Nonexhaustive => {}
     }
@@ -486,20 +505,35 @@ fn flatten(
                 prefix.qself = Some(QSelf {
                     lt_token: Default::default(),
                     ty: impl_.self_ty.clone(),
-                    position: prefix.path.segments.len(),
+                    position: 0,
                     as_token: None,
                     gt_token: Default::default(),
                 });
                 prefix.path.leading_colon = Some(Default::default());
-            } else if let Type::Path(ty_path) = &*impl_.self_ty {
-                let mut segment = ty_path.path.segments[0].clone();
-                if let PathArguments::AngleBracketed(arg) = &mut segment.arguments {
-                    arg.colon2_token = Some(Default::default());
-                }
-
-                prefix.path.segments.push(segment);
             } else {
-                return Err(Error::new(impl_.brace_token.span.join(), "unsupported form of impl"));
+                let mut ty = &*impl_.self_ty;
+                loop {
+                    match ty {
+                        Type::Group(TypeGroup { elem, .. })
+                        | Type::Paren(TypeParen { elem, .. }) => ty = &*elem,
+                        _ => break,
+                    }
+                }
+                if let Type::Path(ty_path) = &*impl_.self_ty
+                    && ty_path.path.segments.len() == 1
+                {
+                    let mut segment = ty_path.path.segments[0].clone();
+                    if let PathArguments::AngleBracketed(arg) = &mut segment.arguments {
+                        arg.colon2_token = Some(Default::default());
+                    }
+
+                    prefix.path.segments.push(segment);
+                } else {
+                    return Err(Error::new(
+                        impl_.brace_token.span.join(),
+                        "unsupported form of impl",
+                    ));
+                }
             }
 
             item_name.add_generics(&impl_.generics);
@@ -522,10 +556,10 @@ fn flatten(
             }
         }
         ExternSpec::Fn(fun) => {
-            prefix
-                .path
-                .segments
-                .push(PathSegment { ident: fun.sig.ident.clone(), arguments: PathArguments::None });
+            prefix.path.segments.push(PathSegment {
+                ident: fun.sig.ident.clone(),
+                arguments: generic_arguments(&fun.sig),
+            });
             item_name.add_ident(&fun.sig.ident);
             flat.push(FlatSpec {
                 span: fun.span,
@@ -539,6 +573,34 @@ fn flatten(
         }
     }
     Ok(())
+}
+
+fn generic_arguments(sig: &Signature) -> PathArguments {
+    generic_arguments_opt(&sig.generics).unwrap_or(PathArguments::None)
+}
+
+fn generic_arguments_opt(generics: &Generics) -> Option<PathArguments> {
+    Some(PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+        colon2_token: None,
+        lt_token: generics.lt_token?,
+        args: generics.params.iter().filter_map(param_to_argument).collect(),
+        gt_token: generics.gt_token?,
+    }))
+}
+
+fn param_to_argument(t: &GenericParam) -> Option<GenericArgument> {
+    match t {
+        GenericParam::Lifetime(_) => None, // cannot specify lifetime arguments explicitly if late bound lifetime parameters are present
+        GenericParam::Type(t) => Some(GenericArgument::Type(Type::Path(TypePath {
+            qself: None,
+            path: t.ident.clone().into(),
+        }))),
+        GenericParam::Const(c) => Some(GenericArgument::Const(Expr::Path(ExprPath {
+            attrs: vec![],
+            qself: None,
+            path: c.ident.clone().into(),
+        }))),
+    }
 }
 
 impl Parse for ExternSpecs {
@@ -673,12 +735,16 @@ impl Parse for ExternImpl {
         if is_impl_for {
             let for_token: Token![for] = input.parse()?;
             let mut first_ty_ref = &first_ty;
-            while let Type::Group(ty) = first_ty_ref {
-                first_ty_ref = &ty.elem;
+            while let Type::Group(TypeGroup { elem, .. }) | Type::Paren(TypeParen { elem, .. }) =
+                first_ty_ref
+            {
+                first_ty_ref = &elem;
             }
             if let Type::Path(_) = first_ty_ref {
-                while let Type::Group(ty) = first_ty {
-                    first_ty = *ty.elem;
+                while let Type::Group(TypeGroup { elem, .. })
+                | Type::Paren(TypeParen { elem, .. }) = first_ty
+                {
+                    first_ty = *elem;
                 }
                 if let Type::Path(TypePath { qself: None, path }) = first_ty {
                     trait_ = Some((path, for_token));

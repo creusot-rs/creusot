@@ -26,37 +26,35 @@ impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
 
 impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             exists<a: &mut A, b: &mut B>
                    *a == (*self).itera() && *b == (*self).iterb()
                 && ^a == (^self).itera() && ^b == (^self).iterb()
-                && (a.completed() && resolve(&b)
+                && (a.completed() && resolve(b)
                     || exists<x: A::Item> inv(x) && (*a).produces(Seq::singleton(x), ^a) &&
-                                          resolve(&x) && (*b).completed())
+                                          resolve(x) && (*b).completed())
         }
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             // Using an `unzip` definition doesn't work well because of issues related to datatypes and `match`
-            exists<p1 : Seq<_>, p2 : Seq<_>>
+            exists<p1: Seq<_>, p2: Seq<_>>
                    p1.len() == p2.len() && p2.len() == visited.len()
-                && (forall<i :_> 0 <= i && i < visited.len() ==> visited[i] == (p1[i], p2[i]))
+                && (forall<i> 0 <= i && i < visited.len() ==> visited[i] == (p1[i], p2[i]))
                 && self.itera().produces(p1, o.itera()) && self.iterb().produces(p2, o.iterb())
         }
     }
 
     #[law]
-    #[open(self)]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

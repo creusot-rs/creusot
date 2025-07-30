@@ -3,23 +3,23 @@ use crate::{
     callbacks,
     contracts_items::{
         get_inv_function, get_resolve_function, get_resolve_method, is_extern_spec, is_logic,
-        is_open_inv_param, is_predicate, is_prophetic, opacity_witness_name,
+        is_open_inv_param, is_prophetic, opacity_witness_name,
     },
     creusot_items::{self, CreusotItems},
-    error::{CannotFetchThir, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
     naming::variable_name,
     options::Options,
     translation::{
         self,
         external::{ExternSpec, extract_extern_specs_from_item},
-        fmir, pearlite,
-        pearlite::ScopedTerm,
+        fmir,
+        pearlite::{self, ScopedTerm},
         specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
-        traits::{TraitImpl, TraitResolved},
+        traits::{Refinement, TraitResolved},
     },
     util::{erased_identity_for_item, parent_module},
 };
+use indexmap::IndexMap;
 use once_map::unsync::OnceMap;
 use rustc_ast::{
     Fn, FnSig, NodeId,
@@ -96,21 +96,11 @@ impl BodyId {
 }
 
 #[derive(Copy, Clone)]
-pub(crate) struct Opacity(Visibility<DefId>);
-
-impl Opacity {
-    pub(crate) fn scope(self) -> Option<DefId> {
-        match self.0 {
-            Visibility::Public => None,
-            Visibility::Restricted(modl) => Some(modl),
-        }
-    }
-}
+pub(crate) struct Opacity(pub Visibility<DefId>);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ItemType {
     Logic { prophetic: bool },
-    Predicate { prophetic: bool },
     Program,
     Closure,
     Trait,
@@ -128,8 +118,6 @@ impl ItemType {
         match self {
             ItemType::Logic { prophetic: false } => "logic function",
             ItemType::Logic { prophetic: true } => "prophetic logic function",
-            ItemType::Predicate { prophetic: false } => "predicate",
-            ItemType::Predicate { prophetic: true } => "prophetic predicate",
             ItemType::Program => "program function",
             ItemType::Closure => "closure",
             ItemType::Trait => "trait declaration",
@@ -146,11 +134,40 @@ impl ItemType {
     pub(crate) fn can_implement(self, trait_type: Self) -> bool {
         match (self, trait_type) {
             (ItemType::Logic { prophetic: false }, ItemType::Logic { prophetic: true }) => true,
-            (ItemType::Predicate { prophetic: false }, ItemType::Predicate { prophetic: true }) => {
-                true
-            }
             _ => self == trait_type,
         }
+    }
+}
+
+pub trait HasTyCtxt<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx>;
+
+    fn crash_and_error(&self, span: Span, msg: &str) -> ! {
+        // TODO: try to add a code back in
+        self.tcx().dcx().span_fatal(span, msg.to_string())
+    }
+
+    fn fatal_error(&self, span: Span, msg: &str) -> Diag<'tcx, FatalAbort> {
+        // TODO: try to add a code back in
+        self.tcx().dcx().struct_span_fatal(span, msg.to_string())
+    }
+
+    fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
+        self.tcx().dcx().struct_span_err(span, msg.to_string())
+    }
+
+    fn warn(&self, span: Span, msg: impl Into<String>) {
+        self.tcx().dcx().span_warn(span, msg.into())
+    }
+
+    fn span_bug(&self, span: Span, msg: impl Into<String>) -> ! {
+        self.tcx().dcx().span_bug(span, msg.into())
+    }
+}
+
+impl<'tcx> HasTyCtxt<'tcx> for TyCtxt<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        *self
     }
 }
 
@@ -161,13 +178,14 @@ pub struct TranslationCtx<'tcx> {
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
     creusot_items: CreusotItems,
+    pub(crate) thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
     terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
-    trait_impl: OnceMap<DefId, Box<TraitImpl<'tcx>>>,
+    trait_impl: OnceMap<DefId, Box<Vec<Refinement<'tcx>>>>,
     sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
     bodies: OnceMap<LocalDefId, Box<BodyWithBorrowckFacts<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
@@ -234,6 +252,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             renamer: Default::default(),
             corenamer: Default::default(),
             crate_name: Default::default(),
+            thir: Default::default(),
         }
     }
 
@@ -241,70 +260,54 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.externs.load(self.tcx, &self.opts.extern_paths);
     }
 
-    /// Fetch the THIR of the given function.
-    ///
-    /// If type-checking this function fails, this will return [`CannotFetchThir`], which
-    /// should then be bubbled up the stack.
-    pub(crate) fn fetch_thir(
-        &self,
-        local_id: LocalDefId,
-    ) -> Result<
-        (&'tcx rustc_data_structures::steal::Steal<thir::Thir<'tcx>>, thir::ExprId),
-        CannotFetchThir,
-    > {
-        match self.tcx.thir_body(local_id) {
-            Ok(body) => Ok(body),
-            Err(err) => Err(err.into()),
+    /// Clone all THIR bodies before they are stolen by `analysis`
+    pub(crate) fn clone_all_thir(&mut self) {
+        for def_id in self.tcx.hir().body_owners() {
+            // If a body is missing, it means that there was an error, and we know that because `Err` is `ErrorGuaranteed`.
+            // Keep going. We will abort later in `translation::after_analysis` after doing more checks that could raise more errors.
+            if let Ok((thir, expr0)) = self.tcx.thir_body(def_id) {
+                self.thir.insert(def_id, (thir.borrow().clone(), expr0));
+            }
         }
     }
 
-    queryish!(trait_impl, DefId, TraitImpl<'tcx>, translate_impl);
+    /// If this returns `None`, there must have been a type error in the body.
+    /// Callers can then skip whatever they were doing silently because Creusot will abort in the end (in `after_analysis`).
+    pub(crate) fn get_thir(&self, def_id: LocalDefId) -> Option<(&thir::Thir<'tcx>, thir::ExprId)> {
+        self.thir.get(&def_id).map(|&(ref thir, expr)| (thir, expr))
+    }
+
+    queryish!(trait_impl, DefId, Vec<Refinement<'tcx>>, translate_impl);
 
     queryish!(fmir_body, BodyId, fmir::Body<'tcx>, translation::function::fmir);
 
     /// Compute the pearlite term associated with `def_id`.
     ///
     /// # Returns
-    /// - `Ok(None)` if `def_id` does not have a body
-    /// - `Ok(Some(term))` if `def_id` has a body, in this crate or in a dependency.
-    /// - `Err(CannotFetchThir)` if typechecking the body of `def_id` failed.
-    pub(crate) fn term<'a>(
-        &'a self,
-        def_id: DefId,
-    ) -> Result<Option<&'a ScopedTerm<'tcx>>, CannotFetchThir> {
+    /// - `None` if `def_id` does not have a body
+    /// - `Some(term)` if `def_id` has a body, in this crate or in a dependency.
+    pub(crate) fn term<'a>(&'a self, def_id: DefId) -> Option<&'a ScopedTerm<'tcx>> {
         let Some(local_id) = def_id.as_local() else {
-            return Ok(self.externs.term(def_id));
+            return self.externs.term(def_id);
         };
 
         self.terms
-            .try_insert(def_id, |_| {
+            .insert(def_id, |_| {
                 if self.tcx.hir().maybe_body_owned_by(local_id).is_some() {
                     let (bound, term) = match pearlite::pearlite(self, local_id) {
                         Ok(t) => t,
-                        Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
-                        Err(Error::TypeCheck(thir)) => return Err(thir),
+                        Err(err) => err.abort(self.tcx),
                     };
                     let bound = bound.iter().map(|b| b.0).collect();
-                    Ok(Box::new(Some(ScopedTerm(
+                    Box::new(Some(ScopedTerm(
                         bound,
                         pearlite::normalize(self.tcx, self.typing_env(def_id), term),
-                    ))))
+                    )))
                 } else {
-                    Ok(Box::new(None))
+                    Box::new(None)
                 }
             })
-            .map(|x| x.as_ref())
-    }
-
-    /// Same as [`Self::term`], but aborts if an error was found.
-    ///
-    /// This should only be used in [`after_analysis`](crate::translation::after_analysis),
-    /// where we are confident that typechecking errors have already been reported.
-    pub(crate) fn term_fail_fast(&self, def_id: DefId) -> Option<&ScopedTerm<'tcx>> {
-        self.term(def_id).unwrap_or_else(|_| {
-            self.tcx.dcx().abort_if_errors();
-            None
-        })
+            .as_ref()
     }
 
     pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&Vec<usize>> {
@@ -317,24 +320,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     queryish!(sig, DefId, PreSignature<'tcx>, (pre_sig_of));
 
     pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
-        self.bodies.insert(def_id, |_| {
-            let mut body = callbacks::get_body(self.tcx, def_id)
-                .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
-
-            // We need to remove false edges. They are used in compilation of pattern matchings
-            // in ways that may result in move paths that are marked live and uninitilized at the
-            // same time. We cannot handle this in the generation of resolution.
-            // On the other hand, it is necessary to keep false unwind edges, because they are needed
-            // by liveness analysis.
-            for bbd in body.body.basic_blocks_mut().iter_mut() {
-                let term = bbd.terminator_mut();
-                if let TerminatorKind::FalseEdge { real_target, .. } = term.kind {
-                    term.kind = TerminatorKind::Goto { target: real_target };
-                }
-            }
-
-            Box::new(body)
-        })
+        self.bodies.insert(def_id, |_| Box::new(body_with_facts(self.tcx, def_id)))
     }
 
     /// `span` is used for diagnostics.
@@ -376,24 +362,6 @@ impl<'tcx> TranslationCtx<'tcx> {
         Some((get_resolve_function(self.tcx), substs))
     }
 
-    pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
-        // TODO: try to add a code back in
-        self.tcx.dcx().span_fatal(span, msg.to_string())
-    }
-
-    pub(crate) fn fatal_error(&self, span: Span, msg: &str) -> Diag<'tcx, FatalAbort> {
-        // TODO: try to add a code back in
-        self.tcx.dcx().struct_span_fatal(span, msg.to_string())
-    }
-
-    pub(crate) fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
-        self.tcx.dcx().struct_span_err(span, msg.to_string())
-    }
-
-    pub(crate) fn warn(&self, span: Span, msg: impl Into<String>) {
-        self.tcx.dcx().span_warn(span, msg.into())
-    }
-
     queryish!(laws, DefId, [DefId], laws_inner);
 
     // TODO Make private
@@ -411,17 +379,17 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     queryish!(opacity, DefId, Opacity, mk_opacity);
 
-    /// We encodes the opacity of functions using 'witnesses', funcitons that have the target opacity
+    /// We encodes the opacity of functions using 'witnesses', functions that have the target opacity
     /// set as their *visibility*.
     fn mk_opacity(&self, item: DefId) -> Opacity {
-        if !matches!(self.item_type(item), ItemType::Predicate { .. } | ItemType::Logic { .. }) {
+        if !matches!(self.item_type(item), ItemType::Logic { .. }) {
             return Opacity(Visibility::Public);
         };
 
-        let witness = opacity_witness_name(self.tcx, item)
-            .and_then(|nm| self.creusot_item(nm))
-            .map(|id| self.visibility(id))
-            .unwrap_or_else(|| Visibility::Restricted(parent_module(self.tcx, item)));
+        let witness = opacity_witness_name(self.tcx, item).map_or_else(
+            || Visibility::Restricted(parent_module(self.tcx, item)),
+            |nm| self.visibility(self.creusot_item(nm).unwrap()),
+        );
         Opacity(witness)
     }
 
@@ -455,11 +423,9 @@ impl<'tcx> TranslationCtx<'tcx> {
             let base_predicates =
                 self.tcx.param_env(def_id).caller_bounds().into_iter().map(Clause::as_predicate);
             let additional_predicates = es.predicates_for(self.tcx, subst).into_iter();
-            let clauses = base_predicates
-                .chain(additional_predicates)
-                .map(Predicate::expect_clause)
-                .collect::<Vec<_>>();
-            let res = ParamEnv::new(self.mk_clauses(&clauses));
+            let clauses =
+                base_predicates.chain(additional_predicates).map(Predicate::expect_clause);
+            let res = ParamEnv::new(self.mk_clauses_from_iter(clauses));
             let res = normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy());
             res
         } else {
@@ -483,25 +449,22 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.tcx.hir().maybe_body_owned_by(local_id).is_some()
         } else {
             match self.item_type(def_id) {
-                ItemType::Logic { .. } | ItemType::Predicate { .. } => {
-                    matches!(self.term(def_id), Ok(Some(_)))
-                }
+                ItemType::Logic { .. } => self.term(def_id).is_some(),
                 _ => false,
             }
         }
     }
 
-    pub(crate) fn load_extern_specs(&mut self) -> CreusotResult<()> {
+    pub(crate) fn load_extern_specs(&mut self) {
         let mut traits_or_impls = Vec::new();
 
-        for def_id in self.tcx.hir().body_owners() {
+        for (&def_id, thir) in self.thir.iter() {
             if is_extern_spec(self.tcx, def_id.to_def_id()) {
                 if let Some(container) = self.opt_associated_item(def_id.to_def_id()) {
                     traits_or_impls.push(container.def_id)
                 }
 
-                let (i, es) = extract_extern_specs_from_item(self, def_id)?;
-                let c = es.contract.clone();
+                let (i, es) = extract_extern_specs_from_item(self, def_id, thir);
 
                 if self.extern_spec(i).is_some() {
                     self.crash_and_error(
@@ -513,19 +476,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 let _ = self.extern_specs.insert(i, es);
 
                 self.extern_spec_items.insert(def_id, i);
-
-                for id in c.iter_ids() {
-                    self.term(id)?.unwrap();
-                }
             }
-        }
-
-        // Force extern spec items to get loaded so we export them properly
-        let need_to_load: Vec<_> =
-            self.extern_specs.values().flat_map(|e| e.contract.iter_ids()).collect();
-
-        for id in need_to_load {
-            self.term(id)?;
         }
 
         for def_id in traits_or_impls {
@@ -545,8 +496,6 @@ impl<'tcx> TranslationCtx<'tcx> {
                 additional_predicates,
             });
         }
-
-        Ok(())
     }
 
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
@@ -576,14 +525,12 @@ pub fn item_type(tcx: TyCtxt, def_id: DefId) -> ItemType {
         Trait => ItemType::Trait,
         Impl { .. } => ItemType::Impl,
         Fn | AssocFn => {
-            if is_predicate(tcx, def_id) {
-                ItemType::Predicate { prophetic: is_prophetic(tcx, def_id) }
-            } else if is_logic(tcx, def_id) {
-                ItemType::Logic { prophetic: is_prophetic(tcx, def_id) }
-            } else {
-                ItemType::Program
+                if is_logic(tcx, def_id) {
+                    ItemType::Logic { prophetic: is_prophetic(tcx, def_id) }
+                } else {
+                    ItemType::Program
+                }
             }
-        }
         AssocConst | Const | ConstParam | InlineConst => ItemType::Constant,
         Closure => ItemType::Closure,
         Struct | Enum | Union => ItemType::Type,
@@ -595,6 +542,31 @@ pub fn item_type(tcx: TyCtxt, def_id: DefId) -> ItemType {
     }
 }
 
+impl<'tcx> HasTyCtxt<'tcx> for TranslationCtx<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.tcx
+    }
+}
+
 pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
     tcx.crate_name(LOCAL_CRATE).as_str().into()
+}
+
+/// This should only be called at most once per `def_id` (for more info, see `callbacks::get_body`).
+pub(crate) fn body_with_facts(tcx: TyCtxt, def_id: LocalDefId) -> BodyWithBorrowckFacts {
+    let mut body = callbacks::get_body(tcx, def_id)
+        .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
+
+    // We need to remove false edges. They are used in compilation of pattern matchings
+    // in ways that may result in move paths that are marked live and uninitilized at the
+    // same time. We cannot handle this in the generation of resolution.
+    // On the other hand, it is necessary to keep false unwind edges, because they are needed
+    // by liveness analysis.
+    for bbd in body.body.basic_blocks_mut().iter_mut() {
+        let term = bbd.terminator_mut();
+        if let TerminatorKind::FalseEdge { real_target, .. } = term.kind {
+            term.kind = TerminatorKind::Goto { target: real_target };
+        }
+    }
+    body
 }

@@ -192,7 +192,7 @@ pub mod macros {
     /// let mut v = Vec::new();
     /// // For annoying reasons, examples cannot use invariants. Please imagine that they are uncommented :)
     /// // #[invariant(v@.len() == produced.len())]
-    /// // #[invariant(forall<j: Int> 0 <= j && j < produced.len() ==> v@[j]@ == j)]
+    /// // #[invariant(forall<j> 0 <= j && j < produced.len() ==> v@[j]@ == j)]
     /// for i in 0..10 {
     ///     v.push(i);
     /// }
@@ -220,30 +220,8 @@ pub mod macros {
     /// }
     /// ```
     /// Such a logic function cannot be used in [`snapshot!`] anymore, and cannot be
-    /// called from a regular [`logic`] or [`predicate`] function.
+    /// called from a regular [`logic`] function.
     pub use base_macros::logic;
-
-    /// Declare a function as being a predicate
-    ///
-    /// This declaration must be pure and total. It cannot be called from Rust programs,
-    /// but in exchange it can use logical operations and syntax with the help of the
-    /// [`pearlite!`] macro.
-    ///
-    /// It **must** return a boolean.
-    ///
-    /// # `prophetic`
-    ///
-    /// If you wish to use the `^` operator on mutable borrows to get the final value, you need to
-    /// specify that the function is _prophetic_, like so:
-    /// ```ignore
-    /// #[predicate(prophetic)]
-    /// fn uses_prophecies(x: &mut Int) -> bool {
-    ///     pearlite! { ^x == 0 }
-    /// }
-    /// ```
-    /// Such a predicate function cannot be used in [`snapshot!`] anymore, and cannot be
-    /// called from a regular [`logic`] or [`predicate`] function.
-    pub use base_macros::predicate;
 
     /// Inserts a *logical* assertion into the code
     ///
@@ -311,11 +289,11 @@ pub mod macros {
     ///
     /// ```
     /// # use creusot_contracts::*;
-    /// #[predicate]
+    /// #[logic]
     /// fn all_ones(s: Seq<Int>) -> bool {
     ///     // Allow access to `forall` and `==>` among other things
     ///     pearlite! {
-    ///         forall<i: Int> 0 <= i && i < s.len() ==> s[i] == 1
+    ///         forall<i> 0 <= i && i < s.len() ==> s[i] == 1
     ///     }
     /// }
     /// ```
@@ -351,7 +329,6 @@ pub mod macros {
     /// mod inner {
     ///     use creusot_contracts::*;
     ///     #[logic]
-    ///     #[open(self)]
     ///     #[ensures(result == x + 1)]
     ///     pub(super) fn foo(x: Int) -> Int {
     ///         // ...
@@ -386,12 +363,14 @@ pub mod num_rational;
 pub mod fn_pure;
 pub mod ghost;
 pub mod invariant;
+pub mod local_invariant;
 pub mod logic;
 pub mod model;
 pub mod pcell;
 pub mod peano;
 pub mod ptr_own;
 pub mod resolve;
+pub mod resource;
 pub mod snapshot;
 pub mod util;
 pub mod well_founded;
@@ -426,10 +405,13 @@ mod base_prelude {
         char::CharExt as _,
         iter::{SkipExt as _, TakeExt as _},
         ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
+        option::OptionExt as _,
         ptr::PointerExt as _,
         slice::SliceExt as _,
     };
 
+    #[cfg(creusot)]
+    pub use crate::std::mem::size_of_logic;
     #[cfg(creusot)]
     pub use crate::util::such_that;
 }

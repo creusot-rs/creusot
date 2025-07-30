@@ -18,11 +18,11 @@ pub fn test_fnmut(mut x: u32) {
 }
 
 #[requires(f.precondition(()))]
-#[requires(forall<st1: _, r: _> f.postcondition_mut((), st1, r) ==> st1.precondition(()))]
-#[ensures(exists<st1: _, st2: _, r: _>
+#[requires(forall<st1, r> f.postcondition_mut((), st1, r) ==> st1.precondition(()))]
+#[ensures(exists<st1, st2, r>
     f.postcondition_mut((), st1, r) &&
     st1.postcondition_mut((), st2, result) &&
-    resolve(&st2))]
+    resolve(st2))]
 fn call_fnmut<F: FnMut() -> i32>(mut f: F) -> i32 {
     f();
     f()

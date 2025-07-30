@@ -11,8 +11,8 @@ use crate::{
     },
 };
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
-use rustc_span::{DUMMY_SP, Span};
-use rustc_target::abi::VariantIdx;
+use rustc_span::Span;
+use rustc_target::abi::{FieldIdx, VariantIdx};
 use std::collections::HashSet;
 
 /// # Errors
@@ -41,7 +41,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         match user_inv {
             TraitResolved::NotATraitItem => unreachable!(),
             TraitResolved::NoInstance => (),
-            TraitResolved::Instance(uinv_did, _)
+            TraitResolved::Instance { def: (uinv_did, _), .. }
                 if is_tyinv_trivial_if_param_trivial(tcx, uinv_did) => {}
             _ => return false,
         }
@@ -114,9 +114,9 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
         match resolve_user_inv(self.ctx.tcx, ty, self.typing_env) {
             TraitResolved::NotATraitItem => unreachable!(),
-            TraitResolved::Instance(uinv_did, uinv_subst) => {
-                rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, uinv_did, uinv_subst, [
-                    subject.clone(),
+            TraitResolved::Instance { def, .. } => {
+                rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, def.0, def.1, [
+                    subject.clone()
                 ]))
             }
             TraitResolved::UnknownFound => {
@@ -150,9 +150,9 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
     }
 
     fn structural_invariant(&mut self, term: Term<'tcx>, ty: Ty<'tcx>) -> Term<'tcx> {
-        if let TraitResolved::Instance(uinv_did, _) =
+        if let TraitResolved::Instance { def, .. } =
             resolve_user_inv(self.ctx.tcx, ty, self.typing_env)
-            && is_ignore_structural_inv(self.ctx.tcx, uinv_did)
+            && is_ignore_structural_inv(self.ctx.tcx, def.0)
         {
             return Term::true_(self.ctx.tcx);
         }
@@ -184,15 +184,15 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                 let idsty: Vec<_> = tys
                     .iter()
                     .enumerate()
-                    .map(|(i, ty)| (Ident::fresh_local(format!("x{i}")), ty))
+                    .map(|(i, ty)| (FieldIdx::from(i), Ident::fresh_local(format!("x{i}")), ty))
                     .collect();
 
-                let body = idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(id, ty)| {
+                let body = idsty.iter().fold(Term::true_(self.ctx.tcx), |acc, &(_, id, ty)| {
                     acc.conj(self.mk_inv_call(Term::var(id, ty)))
                 });
                 let pattern = Pattern::constructor(
                     VariantIdx::ZERO,
-                    idsty.iter().map(|&(id, ty)| Pattern::binder(id, ty)),
+                    idsty.iter().map(|&(fld, id, ty)| (fld, Pattern::binder(id, ty))),
                     ty,
                 );
                 Term::let_(pattern, term, body)
@@ -219,37 +219,28 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         if variants.is_empty() {
             return Term::false_(self.ctx.tcx);
         }
-        let arms = variants
-            .iter_enumerated()
-            .map(|(var_idx, var_def)| {
-                let tuple_var = var_def.ctor.is_some();
+        let ty = term.ty;
+        let arms = variants.iter_enumerated().map(|(var_idx, var_def)| {
+            let tuple_var = var_def.ctor.is_some();
 
-                let mut exp = Some(Term::true_(self.ctx.tcx));
-                let fields = var_def.fields.iter().enumerate().map(|(field_idx, field_def)| {
-                    let field_name = if tuple_var {
-                        Ident::fresh_local(format!("a_{field_idx}"))
-                    } else {
-                        Ident::fresh_local(variable_name(
-                            field_def.ident(self.ctx.tcx).name.as_str(),
-                        ))
-                    };
+            let mut exp = Some(Term::true_(self.ctx.tcx));
+            let fields = var_def.fields.iter().enumerate().map(|(field_idx, field_def)| {
+                let field_name = if tuple_var {
+                    Ident::fresh_local(format!("a_{field_idx}"))
+                } else {
+                    Ident::fresh_local(variable_name(field_def.ident(self.ctx.tcx).name.as_str()))
+                };
 
-                    let field_ty = field_def.ty(self.ctx.tcx, substs);
+                let field_ty = field_def.ty(self.ctx.tcx, substs);
 
-                    let f_exp = self.mk_inv_call(Term::var(field_name, field_ty));
-                    exp = Some(exp.take().unwrap().conj(f_exp));
-                    Pattern::binder(field_name, field_ty)
-                });
+                let f_exp = self.mk_inv_call(Term::var(field_name, field_ty));
+                exp = Some(exp.take().unwrap().conj(f_exp));
+                (field_idx.into(), Pattern::binder(field_name, field_ty))
+            });
 
-                (Pattern::constructor(var_idx, fields, term.ty), exp.unwrap())
-            })
-            .collect();
-
-        Term {
-            kind: TermKind::Match { scrutinee: Box::new(term), arms },
-            ty: self.ctx.types.bool,
-            span: DUMMY_SP,
-        }
+            (Pattern::constructor(var_idx, fields, ty), exp.unwrap())
+        });
+        term.match_(arms)
     }
 }
 

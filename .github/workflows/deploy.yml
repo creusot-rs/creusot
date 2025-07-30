@@ -25,19 +25,19 @@ jobs:
           name: guide
           path: |
             guide/book/
-  
+
   build-docs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/cache@v4
+    - uses: actions/cache/restore@v4
       with:
         path: |
           ~/.rustup
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'prelude-generator/**') }}
     - name: Install Creusot
       run: |
         ./INSTALL --external why3-and-why3find --skip-extra-tools
@@ -53,12 +53,12 @@ jobs:
         name: creusot_contracts
         path: |
           ci/build-docs/doc/
-  
+
   deploy:
     needs: [build-guide, build-docs]
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # To push a branch 
+      contents: write  # To push a branch
       pages: write  # To push to a GitHub Pages site
       id-token: write # To update the deployment status
     steps:

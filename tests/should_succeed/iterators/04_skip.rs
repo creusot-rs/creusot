@@ -9,8 +9,8 @@ use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Skip<I: Iterator> {
-    iter: I,
-    n: usize,
+    pub iter: I,
+    pub n: usize,
 }
 
 impl<I> Iterator for Skip<I>
@@ -20,35 +20,35 @@ where
     type Item = I::Item;
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (^self).n@ == 0 &&
             exists<s: Seq<Self::Item>, i: &mut I>
                    s.len() <= self.n@
                 && self.iter.produces(s, *i)
-                && (forall<i: Int> 0 <= i && i < s.len() ==> resolve(&s[i]))
+                && (forall<i> 0 <= i && i < s.len() ==> resolve(s[i]))
                 && i.completed()
                 && ^i == (^self).iter
         }
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited == Seq::EMPTY && self == o ||
+            visited == Seq::empty() && self == o ||
             o.n@ == 0 && visited.len() > 0
             && exists<s: Seq<Self::Item>>
                    s.len() == self.n@
                 && self.iter.produces(s.concat(visited), o.iter)
-                && forall<i: Int> 0 <= i && i < s.len() ==> resolve(&s[i])
+                && forall<i> 0 <= i && i < s.len() ==> resolve(s[i])
         }
     }
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
@@ -65,12 +65,12 @@ where
     fn next(&mut self) -> Option<I::Item> {
         let old_self = snapshot! { self };
         let mut n = std::mem::take(&mut self.n);
-        let mut skipped = snapshot! { Seq::EMPTY };
+        let mut skipped = snapshot! { Seq::empty() };
 
         #[invariant(inv(self))]
         #[invariant(skipped.len() + n@ == old_self.n@)]
         #[invariant(old_self.iter.produces(skipped.inner(), self.iter))]
-        #[invariant(forall<i: Int> 0 <= i && i < skipped.len() ==> resolve(&skipped[i]))]
+        #[invariant(forall<i> 0 <= i && i < skipped.len() ==> resolve(skipped[i]))]
         #[invariant((*self).n@ == 0)]
         loop {
             let r = self.iter.next();

@@ -4,6 +4,7 @@ use creusot_contracts::{
     Clone, PartialEq,
     invariant::{Invariant, inv},
     logic::Mapping,
+    peano::PeanoInt,
     *,
 };
 use std::cmp::Ordering::*;
@@ -80,7 +81,6 @@ mod hashmap {
             self.0.hash().wrapping_add(self.1.hash().wrapping_mul(17))
         }
 
-        #[open(self)]
         #[logic]
         fn hash_log(x: Self::DeepModelTy) -> Int {
             pearlite! { (U::hash_log(x.0) + V::hash_log(x.1) * 17) % (u64::MAX@ + 1) }
@@ -126,7 +126,6 @@ impl<'arena> hashmap::Hash for Node<'arena> {
         }
     }
 
-    #[open(self)]
     #[logic]
     fn hash_log(x: Self::DeepModelTy) -> Int {
         pearlite! {
@@ -146,7 +145,6 @@ impl<'arena> hashmap::Hash for Bdd<'arena> {
         self.1
     }
 
-    #[open(self)]
     #[logic]
     fn hash_log(x: Self::DeepModelTy) -> Int {
         pearlite! { x@ }
@@ -156,7 +154,6 @@ impl<'arena> hashmap::Hash for Bdd<'arena> {
 impl<'arena> DeepModel for Node<'arena> {
     type DeepModelTy = NodeLog;
 
-    #[open(self)]
     #[logic]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! {
@@ -173,7 +170,6 @@ impl<'arena> DeepModel for Node<'arena> {
 impl<'arena> View for Node<'arena> {
     type ViewTy = NodeLog;
 
-    #[open(self)]
     #[logic]
     fn view(self) -> Self::ViewTy {
         pearlite! { self.deep_model() }
@@ -183,7 +179,6 @@ impl<'arena> View for Node<'arena> {
 impl<'arena> DeepModel for Bdd<'arena> {
     type DeepModelTy = u64;
 
-    #[open(self)]
     #[logic]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { self.1 }
@@ -193,7 +188,6 @@ impl<'arena> DeepModel for Bdd<'arena> {
 impl<'arena> View for Bdd<'arena> {
     type ViewTy = u64;
 
-    #[open(self)]
     #[logic]
     fn view(self) -> Self::ViewTy {
         pearlite! { self.deep_model() }
@@ -256,17 +250,16 @@ pub struct Context<'arena> {
     hashcons_ghost: Snapshot<Mapping<u64, &'arena Node<'arena>>>,
     not_memo: hashmap::MyHashMap<Bdd<'arena>, Bdd<'arena>>,
     and_memo: hashmap::MyHashMap<(Bdd<'arena>, Bdd<'arena>), Bdd<'arena>>,
-    cnt: u64,
+    cnt: PeanoInt,
 }
 
 impl<'arena> Invariant for Context<'arena> {
-    #[open(self)]
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! {
             (forall<n: NodeLog>
                 match self.hashcons@.get(n) {
-                    Some(b) => b.0@ == n && self.is_valid_node(*b.0) && b.1 < self.cnt &&
+                    Some(b) => b.0@ == n && self.is_valid_node(*b.0) && b.1 < self.cnt@ &&
                               self.hashcons_ghost.get(b.1) == b.0,
                     None => true
                 }) &&
@@ -276,7 +269,7 @@ impl<'arena> Invariant for Context<'arena> {
                     Some(n) => {
                         let b = Bdd (self.hashcons_ghost.get(bm), bm);
                         self.is_valid_bdd(n) && self.is_valid_bdd(b) &&
-                        (forall<v:_> n.interp(v) == !b.interp(v)) &&
+                        (forall<v> n.interp(v) == !b.interp(v)) &&
                         b.leastvar() <= n.leastvar()
                 }}) &&
             (forall<abm: (u64, u64)>
@@ -286,7 +279,7 @@ impl<'arena> Invariant for Context<'arena> {
                         let a = Bdd (self.hashcons_ghost.get(abm.0), abm.0);
                         let b = Bdd (self.hashcons_ghost.get(abm.1), abm.1);
                         self.is_valid_bdd(n) && self.is_valid_bdd(a) && self.is_valid_bdd(b) &&
-                        (forall<v:_> n.interp(v) == (a.interp(v) && b.interp(v))) &&
+                        (forall<v> n.interp(v) == (a.interp(v) && b.interp(v))) &&
                         (a.leastvar() <= n.leastvar() || b.leastvar() <= n.leastvar())
                 }})
         }
@@ -294,8 +287,7 @@ impl<'arena> Invariant for Context<'arena> {
 }
 
 impl<'arena> Context<'arena> {
-    #[open(self)]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     pub fn grows(&mut self) -> bool {
         pearlite! {
             self.cnt@ <= (^self).cnt@ &&
@@ -307,15 +299,14 @@ impl<'arena> Context<'arena> {
         }
     }
 
-    #[open(self)]
-    #[predicate]
+    #[logic]
     pub fn is_valid_bdd(self, b: Bdd<'arena>) -> bool {
         pearlite! {
             self.hashcons@.get(b.0@) == Some(b)
         }
     }
 
-    #[predicate]
+    #[logic]
     fn is_valid_node(self, n: Node<'arena>) -> bool {
         pearlite! {
             match n {
@@ -332,14 +323,12 @@ impl<'arena> Context<'arena> {
     }
 
     #[logic]
-    #[open(self)]
     #[requires(self.grows())]
     #[requires(self.is_valid_bdd(b))]
     #[ensures((^self).is_valid_bdd(b))]
     pub fn grows_is_valid_bdd(&mut self, b: Bdd<'arena>) {}
 
     #[logic]
-    #[open(self)]
     #[requires(self.grows())]
     #[requires(o.grows())]
     #[requires(^self == *o)]
@@ -374,7 +363,7 @@ impl<'arena> Context<'arena> {
     #[allow(path_statements)]
     fn discr_valuation(self, a: Bdd<'arena>, b: Bdd<'arena>) -> Mapping<u64, bool> {
         pearlite! {
-            Self::set_irrelevent_var;
+            let _ = Self::set_irrelevent_var;
             if a.leastvar() < b.leastvar() {
                 match a {
                     Bdd(&If { v, childt, childf }, _) =>
@@ -414,15 +403,14 @@ impl<'arena> Context<'arena> {
     }
 
     #[logic]
-    #[open(self)]
     #[requires(inv(self))]
     #[requires(self.is_valid_bdd(a))]
     #[requires(self.is_valid_bdd(b))]
-    #[requires(forall<v: _> a.interp(v) == b.interp(v))]
+    #[requires(forall<v> a.interp(v) == b.interp(v))]
     #[ensures(a == b)]
     #[allow(path_statements)]
     pub fn bdd_canonical(self, a: Bdd<'arena>, b: Bdd<'arena>) {
-        Self::discr_valuation;
+        let _ = Self::discr_valuation;
     }
 }
 
@@ -435,7 +423,7 @@ impl<'arena> Context<'arena> {
             hashcons_ghost: snapshot! { Mapping::cst(t) },
             not_memo: hashmap::MyHashMap::new(),
             and_memo: hashmap::MyHashMap::new(),
-            cnt: 0,
+            cnt: PeanoInt::new(),
         }
     }
 
@@ -448,16 +436,10 @@ impl<'arena> Context<'arena> {
             proof_assert! { r.0@ == n@ };
             return r;
         }
-        let r = Bdd(self.alloc.alloc(n), self.cnt);
+        let r = Bdd(self.alloc.alloc(n), self.cnt.0);
         self.hashcons.add(n, r);
         self.hashcons_ghost = snapshot! { self.hashcons_ghost.set(r.1, r.0) };
-        if self.cnt > u64::MAX - 1 {
-            loop {
-                // prevent self from being resolved
-                self.cnt = self.cnt;
-            }
-        }
-        self.cnt += 1;
+        self.cnt = self.cnt.incr();
         r
     }
 
@@ -466,7 +448,7 @@ impl<'arena> Context<'arena> {
     #[requires(x@ < childt.leastvar() && x@ < childf.leastvar())]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> result.interp(v) == if v.get(x) { childt.interp(v) } else { childf.interp(v) })]
+    #[ensures(forall<v> result.interp(v) == if v.get(x) { childt.interp(v) } else { childf.interp(v) })]
     #[ensures(x@ <= result.leastvar())]
     fn node(&mut self, x: u64, childt: Bdd<'arena>, childf: Bdd<'arena>) -> Bdd<'arena> {
         if childt == childf {
@@ -477,7 +459,7 @@ impl<'arena> Context<'arena> {
 
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> result.interp(v))]
+    #[ensures(forall<v> result.interp(v))]
     #[ensures(u64::MAX@+1 == result.leastvar())]
     pub fn true_(&mut self) -> Bdd<'arena> {
         self.hashcons(True)
@@ -485,7 +467,7 @@ impl<'arena> Context<'arena> {
 
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> !result.interp(v))]
+    #[ensures(forall<v> !result.interp(v))]
     #[ensures(u64::MAX@+1 == result.leastvar())]
     pub fn false_(&mut self) -> Bdd<'arena> {
         self.hashcons(False)
@@ -493,7 +475,7 @@ impl<'arena> Context<'arena> {
 
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> result.interp(v) == v.get(x))]
+    #[ensures(forall<v> result.interp(v) == v.get(x))]
     pub fn v(&mut self, x: u64) -> Bdd<'arena> {
         let t = self.true_();
         let f = self.false_();
@@ -503,7 +485,7 @@ impl<'arena> Context<'arena> {
     #[requires(self.is_valid_bdd(x))]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> result.interp(v) == !x.interp(v))]
+    #[ensures(forall<v> result.interp(v) == !x.interp(v))]
     #[ensures(x.leastvar() <= result.leastvar())]
     #[variant(x.size())]
     pub fn not(&mut self, x: Bdd<'arena>) -> Bdd<'arena> {
@@ -527,7 +509,7 @@ impl<'arena> Context<'arena> {
     #[requires(self.is_valid_bdd(b))]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
-    #[ensures(forall<v:_> result.interp(v) == (a.interp(v) && b.interp(v)))]
+    #[ensures(forall<v> result.interp(v) == (a.interp(v) && b.interp(v)))]
     #[ensures(a.leastvar() <= result.leastvar() || b.leastvar() <= result.leastvar())]
     #[variant(a.size() + b.size())]
     pub fn and(&mut self, a: Bdd<'arena>, b: Bdd<'arena>) -> Bdd<'arena> {

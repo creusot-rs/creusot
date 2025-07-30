@@ -16,7 +16,7 @@ pub fn omg() {}
 
 pub fn ghost_copy() {
     let a = 0;
-    let mut _s = snapshot! { Seq::EMPTY.push_back(0i32) };
+    let mut _s = snapshot! { Seq::empty().push_back(0i32) };
     _s = snapshot! { _s.push_back(a) };
 }
 

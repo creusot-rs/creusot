@@ -5,13 +5,13 @@ mod x {
     use creusot_contracts::*;
 
     #[open]
-    #[predicate]
+    #[logic]
     pub fn transparent() -> bool {
         true
     }
 
     #[open(crate)]
-    #[predicate]
+    #[logic]
     pub fn transparent_crate() -> bool {
         true
     }

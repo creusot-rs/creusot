@@ -20,7 +20,7 @@ pub fn takes_pure_fn<F: Fn(i32) -> i32 + FnPure>(f: F) -> i32 {
 }
 
 #[requires(f.precondition((1i32,)))]
-#[ensures(exists<f2: _> f.postcondition_mut((1i32,), f2, result))]
+#[ensures(exists<f2> f.postcondition_mut((1i32,), f2, result))]
 #[pure]
 pub fn takes_pure_fnmut<F: FnMut(i32) -> i32 + FnPure>(mut f: F) -> i32 {
     f(1)

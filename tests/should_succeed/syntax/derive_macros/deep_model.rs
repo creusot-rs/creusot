@@ -7,16 +7,16 @@ use creusot_contracts::*;
 pub struct UnitStruct;
 
 #[derive(DeepModel)]
-pub struct TupleStruct(i32, bool);
+pub struct TupleStruct(pub i32, pub bool);
 
 #[derive(DeepModel)]
 pub struct Struct {
-    x: i32,
-    b: bool,
+    pub x: i32,
+    pub b: bool,
 }
 
 #[derive(DeepModel)]
-pub struct TupleStructGenerics<T: DeepModel, U>(i32, T, U)
+pub struct TupleStructGenerics<T: DeepModel, U>(pub i32, pub T, pub U)
 where
     U: DeepModel;
 
@@ -25,9 +25,9 @@ pub struct StructGenerics<T: DeepModel, U>
 where
     U: DeepModel,
 {
-    x: i32,
-    t: T,
-    u: U,
+    pub x: i32,
+    pub t: T,
+    pub u: U,
 }
 
 // FIXME: unsupported for now

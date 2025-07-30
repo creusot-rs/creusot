@@ -7,8 +7,6 @@ use creusot_contracts::{logic::Int, *};
 pub trait Tr {
     #[logic]
     fn logical(&self) -> Int;
-    #[predicate]
-    fn predicate(&self) -> bool;
     fn program(&self) {}
 }
 

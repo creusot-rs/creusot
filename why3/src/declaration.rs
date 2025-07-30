@@ -330,4 +330,5 @@ pub enum MetaIdent {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum MetaArg {
     Integer(i128),
+    String(String),
 }

@@ -4,14 +4,14 @@ use creusot_contracts::{
     *,
 };
 
-#[predicate]
+#[logic]
 fn sorted_range(s: Seq<u32>, l: Int, u: Int) -> bool {
     pearlite! {
-        forall<i : Int, j : Int> l <= i && i < j && j < u ==> s[i] <= s[j]
+        forall<i, j> l <= i && i < j && j < u ==> s[i] <= s[j]
     }
 }
 
-#[predicate]
+#[logic]
 fn sorted(s: Seq<u32>) -> bool {
     sorted_range(s, 0, s.len())
 }
@@ -31,8 +31,8 @@ pub fn binary_search(arr: &Vec<u32>, elem: u32) -> Result<usize, usize> {
     let mut base = 0;
 
     #[invariant(0 < size@ && size@ + base@ <= arr@.len())]
-    #[invariant(forall<i : usize> i < base ==> arr[i@] <= elem)]
-    #[invariant(forall<i : usize> base@ + size@ < i@ && i@ < arr@.len() ==> elem < arr[i@])]
+    #[invariant(forall<i: usize> i < base ==> arr[i@] <= elem)]
+    #[invariant(forall<i: usize> base@ + size@ < i@ && i@ < arr@.len() ==> elem < arr[i@])]
     while size > 1 {
         let half = size / 2;
         let mid = base + half;

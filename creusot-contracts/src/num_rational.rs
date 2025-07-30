@@ -40,7 +40,7 @@ impl OrdLogic for Real {
 
     #[trusted]
     #[open]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "real.Real.(<=)"]
     fn le_log(self, _: Self) -> bool {
         true
@@ -48,7 +48,7 @@ impl OrdLogic for Real {
 
     #[trusted]
     #[open]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "real.Real.(<)"]
     fn lt_log(self, _: Self) -> bool {
         true
@@ -56,7 +56,7 @@ impl OrdLogic for Real {
 
     #[trusted]
     #[open]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "real.Real.(>=)"]
     fn ge_log(self, _: Self) -> bool {
         true
@@ -64,7 +64,7 @@ impl OrdLogic for Real {
 
     #[trusted]
     #[open]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "real.Real.(>)"]
     fn gt_log(self, _: Self) -> bool {
         true

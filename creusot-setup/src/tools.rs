@@ -146,7 +146,7 @@ fn detect_cvc5_version(cvc5: &Path) -> anyhow::Result<String> {
 }
 
 // Wrapper for Command::output(), error is wrapped in anyhow::Error
-fn run(cmd: &mut Command) -> anyhow::Result<String> {
+pub fn run(cmd: &mut Command) -> anyhow::Result<String> {
     cmd.output()
         .map_err(|e| {
             if e.kind() == std::io::ErrorKind::NotFound {

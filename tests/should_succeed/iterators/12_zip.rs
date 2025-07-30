@@ -8,38 +8,38 @@ use common::Iterator;
 #[allow(dead_code)]
 #[derive(Resolve)]
 struct Zip<A: Iterator, B: Iterator> {
-    a: A,
-    b: B,
+    pub a: A,
+    pub b: B,
 }
 
 impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     type Item = (A::Item, B::Item);
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
              (self.a.completed() && (*self).b == (^self).b)
           || (exists<x: A::Item> self.a.produces(Seq::singleton(x), (^self).a) &&
-                                 resolve(&x) && self.b.completed())
+                                 resolve(x) && self.b.completed())
         }
     }
 
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             // Using an `unzip` definition doesn't work well because of issues related to datatypes and `match`
-            exists<p1 : Seq<_>, p2 : Seq<_>>
+            exists<p1: Seq<_>, p2: Seq<_>>
                    p1.len() == p2.len() && p2.len() == visited.len()
-                && (forall<i :_> 0 <= i && i < visited.len() ==> visited[i] == (p1[i], p2[i]))
+                && (forall<i> 0 <= i && i < visited.len() ==> visited[i] == (p1[i], p2[i]))
                 && self.a.produces(p1, tl.a) && self.b.produces(p2, tl.b)
         }
     }
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

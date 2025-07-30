@@ -4,8 +4,7 @@ use creusot_contracts::{invariant::*, *};
 pub struct Zero<T>(u32, T);
 
 impl<T> Invariant for Zero<T> {
-    #[predicate]
-    #[open(self)]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! { self.0@ == 0 }
     }

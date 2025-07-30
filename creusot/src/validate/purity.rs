@@ -2,11 +2,10 @@ use crate::{
     backend::is_trusted_item,
     contracts_items::{
         get_builtin, get_fn_pure_trait, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner,
-        is_ghost_new, is_logic, is_no_translate, is_predicate, is_prophetic, is_snapshot_closure,
-        is_snapshot_deref, is_spec,
+        is_ghost_new, is_logic, is_no_translate, is_prophetic, is_snap_from_fn,
+        is_snapshot_closure, is_snapshot_deref, is_spec,
     },
-    ctx::TranslationCtx,
-    error::CannotFetchThir,
+    ctx::{HasTyCtxt, TranslationCtx},
     translation::{
         pearlite::{Stub, pearlite_stub},
         traits::TraitResolved,
@@ -17,9 +16,8 @@ use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     thir::{self, ClosureExpr, ExprKind, Thir},
-    ty::{FnDef, TypingEnv},
+    ty::{FnDef, TyCtxt, TypingEnv},
 };
-use rustc_span::ErrorGuaranteed;
 use rustc_trait_selection::infer::InferCtxtExt;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -39,12 +37,11 @@ pub(crate) enum Purity {
 impl Purity {
     pub(crate) fn of_def_id(ctx: &TranslationCtx, def_id: DefId) -> Self {
         let is_snapshot = is_snapshot_closure(ctx.tcx, def_id);
-        if is_predicate(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
-            || is_logic(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
+        if is_logic(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
             || is_spec(ctx.tcx, def_id) && !is_snapshot
         {
             Purity::Logic { prophetic: true }
-        } else if is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id) || is_snapshot {
+        } else if is_logic(ctx.tcx, def_id) || is_snapshot {
             Purity::Logic { prophetic: false }
         } else {
             let contract = &ctx.sig(def_id).contract;
@@ -90,30 +87,26 @@ impl Purity {
     }
 }
 
-pub(crate) fn validate_purity(
-    ctx: &TranslationCtx,
+pub(crate) fn validate_purity<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
     def_id: LocalDefId,
-) -> Result<(), CannotFetchThir> {
-    let (thir, expr) = ctx.fetch_thir(def_id)?;
-    let thir = thir.borrow();
-    if thir.exprs.is_empty() {
-        // TODO: put this inside `fetch_thir`?
-        return Err(ctx.dcx().span_err(ctx.def_span(def_id), "Empty body is not allowed").into());
-    }
-
+    &(ref thir, expr): &(thir::Thir<'tcx>, thir::ExprId),
+) {
     let def_id = def_id.to_def_id();
+    // Only start traversing from top-level definitions. Closures will be visited during the traversal of their parents
+    // so that they can inherit the context from their parent.
+    if ctx.tcx.is_closure_like(def_id) {
+        return;
+    }
     let purity = Purity::of_def_id(ctx, def_id);
     if matches!(purity, Purity::Program { .. })
         && (is_no_translate(ctx.tcx, def_id) || is_trusted_item(ctx.tcx, def_id))
     {
-        return Ok(());
+        return;
     }
     let typing_env = ctx.typing_env(def_id);
-
-    let mut visitor =
-        PurityVisitor { ctx, thir: &thir, context: purity, typing_env, thir_failed: None };
-    thir::visit::walk_expr(&mut visitor, &thir[expr]);
-    if let Some(err) = visitor.thir_failed { Err(err.into()) } else { Ok(()) }
+    let mut visitor = PurityVisitor { ctx, thir, context: purity, typing_env };
+    thir::visit::walk_expr(&mut visitor, &thir[expr])
 }
 
 struct PurityVisitor<'a, 'tcx> {
@@ -122,8 +115,6 @@ struct PurityVisitor<'a, 'tcx> {
     context: Purity,
     /// Typing environment of the caller function
     typing_env: TypingEnv<'tcx>,
-    // If `Some`, we should error with a [`CannotFetchThir`] error.
-    thir_failed: Option<ErrorGuaranteed>,
 }
 
 impl PurityVisitor<'_, '_> {
@@ -131,13 +122,10 @@ impl PurityVisitor<'_, '_> {
         let tcx = self.ctx.tcx;
         let stub = pearlite_stub(tcx, self.thir[fun].ty);
 
-        if matches!(stub, Some(Stub::Fin))
-            || is_predicate(tcx, func_did) && is_prophetic(tcx, func_did)
-            || is_logic(tcx, func_did) && is_prophetic(tcx, func_did)
+        if matches!(stub, Some(Stub::Fin)) || is_logic(tcx, func_did) && is_prophetic(tcx, func_did)
         {
             Purity::Logic { prophetic: true }
-        } else if is_predicate(tcx, func_did)
-            || is_logic(tcx, func_did)
+        } else if is_logic(tcx, func_did)
             || get_builtin(tcx, func_did).is_some()
             || stub.is_some()
             || is_snapshot_deref(tcx, func_did)
@@ -172,6 +160,62 @@ impl PurityVisitor<'_, '_> {
         let res = infcx.type_implements_trait(get_fn_pure_trait(tcx), [ty], param_env);
         res.must_apply_considering_regions()
     }
+
+    /// If the statement is a spec statement, visit it and return `true`, otherwise return `false`.
+    fn try_visit_spec_statement(&mut self, stmt: &thir::Stmt) -> bool {
+        let thir::StmtKind::Let { ref pattern, initializer: Some(init), else_block, span, .. } =
+            stmt.kind
+        else {
+            return false;
+        };
+        let Some(closure_id) = self.get_spec_closure(init) else { return false };
+        let thir::PatKind::Wild = pattern.kind else {
+            self.ctx.dcx().span_fatal(pattern.span, "expected a wildcard pattern in spec statement")
+        };
+        let None = else_block else {
+            self.ctx.dcx().span_fatal(span, "expected no else block in spec statement")
+        };
+        self.validate_spec_purity(closure_id, true);
+        true
+    }
+
+    /// If the expression is a closure with attribute `creusot::spec`, return `Some` of its `LocalDefId`, otherwise `None`.
+    fn get_spec_closure(&self, mut expr: thir::ExprId) -> Option<LocalDefId> {
+        loop {
+            match self.thir[expr].kind {
+                ExprKind::Scope { value, .. } => expr = value,
+                ExprKind::Block { block } => {
+                    let block = &self.thir[block];
+                    if !block.stmts.is_empty() {
+                        return None;
+                    }
+                    let Some(expr_) = block.expr else { return None };
+                    expr = expr_;
+                }
+                ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
+                    if is_spec(self.ctx.tcx, closure_id.to_def_id()) {
+                        return Some(closure_id);
+                    } else {
+                        return None;
+                    }
+                }
+                _ => return None,
+            }
+        }
+    }
+
+    /// Validate the body of a spec closure.
+    fn validate_spec_purity(&mut self, closure_id: LocalDefId, prophetic: bool) {
+        // If this is None there must be a type error that will be reported later so we can skip this silently.
+        let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
+        let mut visitor = PurityVisitor {
+            ctx: self.ctx,
+            thir,
+            context: Purity::Logic { prophetic },
+            typing_env: self.typing_env,
+        };
+        thir::visit::walk_expr(&mut visitor, &thir[expr]);
+    }
 }
 
 impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
@@ -181,20 +225,14 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
 
     fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
         match expr.kind {
-            ExprKind::Call { fun, ref args, fn_span, .. } => {
+            ExprKind::Call { fun, ref args, .. } => {
                 if let &FnDef(func_did, subst) = self.thir[fun].ty.kind() {
                     // try to specialize the called function if it is a trait method.
                     let subst = self.ctx.erase_regions(subst);
-                    let Some((func_did, _)) =
+                    let (func_did, _) =
                         TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, func_did, subst)
                             .to_opt(func_did, subst)
-                    else {
-                        self.thir_failed = Some(self.ctx.dcx().span_err(
-                            fn_span,
-                            format!("no instance of {} found", self.ctx.def_path_str(func_did)),
-                        ));
-                        return;
-                    };
+                            .unwrap();
 
                     let fn_purity = self.purity(fun, func_did, args);
                     if !(self.context.can_call(fn_purity)
@@ -215,7 +253,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 "cannot create a ghost variable in program context"
                             };
 
-                            let mut err = self.ctx.error(expr.span, msg);
+                            let mut err = self.error(expr.span, msg);
                             if is_ghost_new(tcx, func_did) {
                                 err = err.with_span_suggestion(
                                     expr.span,
@@ -251,6 +289,17 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             self.ctx.dcx().span_err(self.thir[fun].span, msg);
                         }
                     }
+                    if is_snap_from_fn(self.ctx.tcx, func_did) {
+                        assert!(args.len() == 1);
+                        let Some(closure_id) = self.get_spec_closure(args[0]) else {
+                            self.ctx.dcx().span_fatal(
+                                expr.span,
+                                "expected a spec closure as argument to `snapshot_from_fn`",
+                            );
+                        };
+                        self.validate_spec_purity(closure_id, false);
+                        return;
+                    }
                 } else if matches!(self.context, Purity::Logic { .. }) {
                     // TODO Add a "code" back in
                     self.ctx.dcx().span_fatal(expr.span, "non function call in logical context")
@@ -258,30 +307,20 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
             }
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 if is_spec(self.ctx.tcx, closure_id.into()) {
-                    return;
+                    self.ctx.dcx().span_fatal(
+                        expr.span,
+                        format!("unexpected spec closure {}", self.ctx.def_path_str(closure_id)),
+                    );
                 }
-
-                let (thir, expr) = match self.ctx.thir_body(closure_id) {
-                    Ok(t) => t,
-                    Err(err) => {
-                        self.thir_failed = Some(err);
-                        return;
-                    }
-                };
-                let thir = thir.borrow();
-
+                // If this is None there must be a type error that will be reported later so we can skip this silently.
+                let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
                 let mut visitor = PurityVisitor {
                     ctx: self.ctx,
                     thir: &thir,
                     context: self.context,
                     typing_env: self.typing_env,
-                    thir_failed: None,
                 };
                 thir::visit::walk_expr(&mut visitor, &thir[expr]);
-                if let Some(err) = visitor.thir_failed {
-                    self.thir_failed = Some(err);
-                    return;
-                }
             }
             ExprKind::Scope {
                 region_scope: _,
@@ -298,5 +337,17 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
             _ => {}
         }
         thir::visit::walk_expr(self, expr)
+    }
+
+    fn visit_stmt(&mut self, stmt: &'a thir::Stmt<'tcx>) {
+        if !self.try_visit_spec_statement(stmt) {
+            thir::visit::walk_stmt(self, stmt);
+        }
+    }
+}
+
+impl<'a, 'tcx> HasTyCtxt<'tcx> for PurityVisitor<'a, 'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.ctx.tcx
     }
 }

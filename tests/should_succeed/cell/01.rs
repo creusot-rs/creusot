@@ -4,7 +4,7 @@ use creusot_contracts::*;
 use std::marker::PhantomData;
 
 pub trait Inv<T> {
-    #[predicate]
+    #[logic]
     fn inv(x: T) -> bool;
 }
 
@@ -31,7 +31,7 @@ pub struct Even;
 
 impl Inv<u32> for Even {
     #[open]
-    #[predicate]
+    #[logic]
     fn inv(x: u32) -> bool {
         x.view() % 2 == 0
     }

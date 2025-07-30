@@ -1,4 +1,6 @@
-use crate::*;
+#[cfg(creusot)]
+use crate::util::such_that;
+use crate::{logic::Mapping, *};
 use ::std::cmp::Ordering;
 pub use ::std::option::*;
 
@@ -18,7 +20,7 @@ impl<T: DeepModel> DeepModel for Option<T> {
 extern_spec! {
     mod std {
         mod option {
-            impl<T : PartialEq + DeepModel> PartialEq for Option<T> {
+            impl<T: PartialEq + DeepModel> PartialEq for Option<T> {
                 #[allow(unstable_name_collisions)]
                 #[ensures(result == (self.deep_model() == rhs.deep_model()))]
                 fn eq(&self, rhs: &Self) -> bool {
@@ -31,6 +33,21 @@ extern_spec! {
             }
         }
     }
+
+    impl<T: Clone> Clone for Option<T> {
+        #[ensures(match (*self, result) {
+            (None, None) => true,
+            (Some(s), Some(r)) => T::clone.postcondition((&s,), r),
+            _ => false
+        })]
+        fn clone(&self) -> Option<T> {
+            match self {
+                None => None,
+                Some(x) => Some(x.clone())
+            }
+        }
+    }
+
 }
 
 extern_spec! {
@@ -144,7 +161,7 @@ extern_spec! {
 
                 #[pure]
                 #[ensures(self == None ==> result == default)]
-                #[ensures(self == None || (self == Some(result) && resolve(&default)))]
+                #[ensures(self == None || (self == Some(result) && resolve(default)))]
                 fn unwrap_or(self, default: T) -> T {
                     match self {
                         None => default,
@@ -193,7 +210,7 @@ extern_spec! {
                 })]
                 #[ensures(match self {
                     None => result == None,
-                    Some(t) => exists<r: _> result == Some(r) && f.postcondition_once((t,), r),
+                    Some(t) => exists<r> result == Some(r) && f.postcondition_once((t,), r),
                 })]
                 fn map<U, F>(self, f: F) -> Option<U>
                 where
@@ -260,7 +277,7 @@ extern_spec! {
                 #[pure]
                 #[ensures(match self {
                     None => result == Err(err),
-                    Some(t) => result == Ok(t) && resolve(&err),
+                    Some(t) => result == Ok(t) && resolve(err),
                 })]
                 fn ok_or<E>(self, err: E) -> Result<T, E> {
                     match self {
@@ -271,7 +288,7 @@ extern_spec! {
 
                 #[requires(self == None ==> err.precondition(()))]
                 #[ensures(match self {
-                    None => exists<r: _> result == Err(r) && err.postcondition_once((), r),
+                    None => exists<r> result == Err(r) && err.postcondition_once((), r),
                     Some(t) => result == Ok(t),
                 })]
                 fn ok_or_else<E, F>(self, err: F) -> Result<T, E>
@@ -317,7 +334,7 @@ extern_spec! {
                 #[ensures(match self {
                     None => result == None,
                     Some(t) => match result {
-                        None => predicate.postcondition_once((&t,), false) && resolve(&t),
+                        None => predicate.postcondition_once((&t,), false) && resolve(t),
                         Some(r) => predicate.postcondition_once((&t,), true) && r == t,
                     },
                 })]
@@ -357,7 +374,7 @@ extern_spec! {
                 #[pure]
                 #[ensures(match (self, optb) {
                     (None, None)         => result == None,
-                    (Some(t1), Some(t2)) => result == None && resolve(&t1) && resolve(&t2),
+                    (Some(t1), Some(t2)) => result == None && resolve(t1) && resolve(t2),
                     (Some(t), None)      => result == Some(t),
                     (None, Some(t))      => result == Some(t),
                 })]
@@ -370,7 +387,7 @@ extern_spec! {
 
                 #[pure]
                 #[ensures(match *self {
-                    Some(t) => resolve(&t),
+                    Some(t) => resolve(t),
                     None => true,
                 })]
                 #[ensures(*result == value && ^self == Some(^result))]
@@ -385,7 +402,7 @@ extern_spec! {
                 #[pure]
                 #[ensures(match *self {
                     None => *result == value && ^self == Some(^result),
-                    Some(_) => *self == Some(*result) && ^self == Some(^result) && resolve(&value),
+                    Some(_) => *self == Some(*result) && ^self == Some(^result) && resolve(value),
                 })]
                 fn get_or_insert(&mut self, value: T) -> &mut T {
                     match self {
@@ -477,8 +494,10 @@ extern_spec! {
 
             impl<T> Option<&T> {
                 #[pure]
-                #[ensures(self == None ==> result == None)]
-                #[ensures(self == None || exists<t: &T> self == Some(t) && result == Some(*t))]
+                #[ensures(match self {
+                    None => result == None,
+                    Some(s) => result == Some(*s)
+                })]
                 fn copied(self) -> Option<T>
                 where
                     T: Copy {
@@ -488,8 +507,11 @@ extern_spec! {
                     }
                 }
 
-                #[ensures(self == None ==> result == None)]
-                #[ensures(self == None || exists<t: &T> self == Some(t) && result == Some(*t))]
+                #[ensures(match (self, result) {
+                    (None, None) => true,
+                    (Some(s), Some(r)) =>T::clone.postcondition((s,), r),
+                    _ => false
+                })]
                 fn cloned(self) -> Option<T>
                 where
                     T: Clone {
@@ -502,11 +524,10 @@ extern_spec! {
 
             impl<T> Option<&mut T> {
                 #[pure]
-                #[ensures(self == None ==> result == None)]
-                #[ensures(
-                    self == None
-                    || exists<t: &mut T> self == Some(t) && result == Some(*t) && t.resolve()
-                )]
+                #[ensures(match self {
+                    None => result == None,
+                    Some(s) => result == Some(*s) && ^s == *s
+                })]
                 fn copied(self) -> Option<T>
                 where
                     T: Copy {
@@ -516,11 +537,11 @@ extern_spec! {
                     }
                 }
 
-                #[ensures(self == None ==> result == None)]
-                #[ensures(
-                    self == None
-                    || exists<t: &mut T> self == Some(t) && result == Some(*t) && t.resolve()
-                )]
+                #[ensures(match (self, result) {
+                    (None, None) => true,
+                    (Some(s), Some(r)) => T::clone.postcondition((s,), r) && ^s == *s,
+                    _ => false
+                })]
                 fn cloned(self) -> Option<T>
                 where
                     T: Clone {
@@ -609,28 +630,26 @@ impl<T> View for IntoIter<T> {
 }
 
 impl<T> Iterator for IntoIter<T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited == Seq::EMPTY && self == o ||
+            visited == Seq::empty() && self == o ||
             exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
     #[law]
-    #[open(self)]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -648,28 +667,26 @@ impl<'a, T> View for Iter<'a, T> {
 }
 
 impl<T> Iterator for Iter<'_, T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited == Seq::EMPTY && self == o ||
+            visited == Seq::empty() && self == o ||
             exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
     #[law]
-    #[open(self)]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -687,30 +704,73 @@ impl<'a, T> View for IterMut<'a, T> {
 }
 
 impl<T> Iterator for IterMut<'_, T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited == Seq::EMPTY && self == o ||
+            visited == Seq::empty() && self == o ||
             exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
     #[law]
-    #[open(self)]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]
-    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+pub trait OptionExt<T> {
+    /// Same as [`Option::unwrap`], but in logic.
+    #[logic]
+    #[requires(false)]
+    fn unwrap_logic(self) -> T;
+
+    /// Same as [`Option::and_then`], but in logic.
+    #[logic]
+    fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U>;
+
+    /// Same as [`Option::map`], but in logic.
+    #[logic]
+    fn map_logic<U>(self, f: Mapping<T, U>) -> Option<U>;
+}
+
+impl<T> OptionExt<T> for Option<T> {
+    #[logic]
+    #[open]
+    #[requires(self != None)]
+    fn unwrap_logic(self) -> T {
+        match self {
+            Some(x) => x,
+            None => such_that(|_| true),
+        }
+    }
+
+    #[logic]
+    #[open]
+    fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U> {
+        match self {
+            None => None,
+            Some(x) => f.get(x),
+        }
+    }
+
+    #[logic]
+    #[open]
+    fn map_logic<U>(self, f: Mapping<T, U>) -> Option<U> {
+        match self {
+            None => None,
+            Some(x) => Some(f.get(x)),
+        }
+    }
 }

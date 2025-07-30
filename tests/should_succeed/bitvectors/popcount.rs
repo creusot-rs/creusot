@@ -7,8 +7,8 @@ use creusot_contracts::*;
  *   https://toccata.gitlabpages.inria.fr/toccata/gallery/bitcount.en.html
  *
  * Needed for specifying such code in general:
- *    - nth_bit(b:bv,n:int):bool : true when n-th bit of b is set
- *    - eq_sub(b1:bv,b2:bv,i:int,j:int):bv : b1 and b1 coincide on range i..j of their bits
+ *    - nth_bit(b:bv,n:int):bool: true when n-th bit of b is set
+ *    - eq_sub(b1:bv,b2:bv,i:int,j:int):bv: b1 and b1 coincide on range i..j of their bits
  */
 
 #[logic]

@@ -6,21 +6,6 @@ pub trait CreusotArgsExt {
     fn to_options(self) -> Result<Options, String>;
 }
 
-fn why3_command(
-    path: PathBuf,
-    config_file: PathBuf,
-    cmd: LegacyCreusotSubCommand,
-) -> options::Why3Command {
-    let LegacyCreusotSubCommand::Why3 { command, args, .. } = cmd else {
-        unreachable!();
-    };
-    let sub = match command {
-        Why3SubCommand::Prove => options::Why3Sub::Prove,
-        Why3SubCommand::Ide => options::Why3Sub::Ide,
-        Why3SubCommand::Replay => options::Why3Sub::Replay,
-    };
-    options::Why3Command { path, config_file, sub, args }
-}
 impl CreusotArgsExt for CreusotArgs {
     fn to_options(self) -> Result<Options, String> {
         let metadata_path = self.options.metadata_path;
@@ -70,12 +55,6 @@ impl CreusotArgsExt for CreusotArgs {
             monolithic: self.options.monolithic,
             prefix: Vec::new(), // to be set in callbacks::ToWhy::set_output_dir
             simple_triggers: self.options.simple_triggers,
-            why3_cmd: match self.subcommand {
-                Some(cmd @ LegacyCreusotSubCommand::Why3 { .. }) => {
-                    Some(why3_command(self.why3_path, self.why3_config_file, cmd))
-                }
-                _ => None,
-            },
         })
     }
 }

@@ -38,7 +38,6 @@ struct Args {
 fn main() {
     let mut args = Args::parse();
     if env::var("CI").is_ok() {
-        args.quiet = true;
         args.force_color = true;
     }
 
@@ -58,15 +57,9 @@ fn main() {
     // Use the Creusot installation for Why3, Why3find, and solvers (because they're a pain to keep track of if we allow them to come from anywhere)
     let creusot_setup::Paths { why3, why3find, why3_config, .. } =
         creusot_setup::creusot_paths().unwrap();
+
     // Use the local prelude, so that it's easy to test quick changes.
-    let build_prelude_success = Command::new("cargo")
-        .args(["run", "-p", "creusot-install", "--", "--only-build-prelude"])
-        .status()
-        .unwrap()
-        .success();
-    if !build_prelude_success {
-        exit(1);
-    }
+    prelude_generator::build_prelude().unwrap_or_else(|_| exit(1));
 
     let changed =
         if let Some(diff) = args.diff_from { Some(changed_comas(&diff).unwrap()) } else { None };
@@ -101,7 +94,7 @@ fn main() {
         // if `quiet` enabled: postpone printing, store the message in `current`, only print it if the test case fails
         let mut current: &str = &format!("Testing {} ... ", file.display());
         if !args.quiet {
-            write!(out, "{}", current).unwrap();
+            write!(out, "{current}").unwrap();
             current = "";
             out.flush().unwrap();
         }
@@ -109,7 +102,7 @@ fn main() {
         if header_line.contains("WHY3SKIP") {
             write!(out, "{current}").unwrap();
             out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
-            writeln!(&mut out, "skipped").unwrap();
+            writeln!(out, "skipped").unwrap();
             out.reset().unwrap();
             continue;
         }

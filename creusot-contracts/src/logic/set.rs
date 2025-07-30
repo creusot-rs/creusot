@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{logic::Mapping, *};
 
 /// A (possibly infinite) set type.
 #[trusted]
@@ -7,14 +7,25 @@ pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T: ?Sized> Set<T> {
     /// The empty set.
-    #[cfg(creusot)]
     #[trusted]
+    #[logic]
     #[creusot::builtins = "set.Set.empty"]
-    pub const EMPTY: Self = { Set(std::marker::PhantomData) };
+    #[creusot::builtins_ascription]
+    pub fn empty() -> Self {
+        dead
+    }
+
+    /// Build a set from a predicate, given as a `Mapping`.
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "identity"]
+    pub fn from_predicate(_: Mapping<T, bool>) -> Self {
+        dead
+    }
 
     /// Returns `true` if `e` is in the set.
     #[open]
-    #[predicate]
+    #[logic]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, e: T) -> bool {
         Self::mem(e, self)
@@ -52,7 +63,7 @@ impl<T: ?Sized> Set<T> {
 
     /// Returns `true` if the set contains no elements.
     #[trusted]
-    #[predicate]
+    #[logic]
     #[creusot::builtins = "set.Set.is_empty"]
     pub fn is_empty(self) -> bool {
         dead

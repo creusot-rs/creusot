@@ -29,7 +29,7 @@ impl List {
     }
 }
 
-#[ensures(forall<i:Int> 0 <= i && i < l.len() ==> (^l).get(i) == Some(0u32))]
+#[ensures(forall<i> 0 <= i && i < l.len() ==> (^l).get(i) == Some(0u32))]
 #[ensures((*l).len() == (^l).len())]
 pub fn all_zero(l: &mut List) {
     use List::*;
@@ -37,8 +37,8 @@ pub fn all_zero(l: &mut List) {
     let mut loop_l = l;
 
     #[invariant(
-        (forall<i:Int> 0 <= i && i < loop_l.len() ==> (^loop_l).get(i) == Some(0u32)) ==>
-            forall<i:Int> 0 <= i && i < old_l.len() ==> (^*old_l).get(i) == Some(0u32))]
+        (forall<i> 0 <= i && i < loop_l.len() ==> (^loop_l).get(i) == Some(0u32)) ==>
+            forall<i> 0 <= i && i < old_l.len() ==> (^*old_l).get(i) == Some(0u32))]
     #[invariant((^loop_l).len() == loop_l.len() ==> (^*old_l).len() == old_l.len())]
     while let Cons(value, next) = loop_l {
         *value = 0;

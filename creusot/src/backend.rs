@@ -1,30 +1,29 @@
+use crate::{
+    contracts_items::{is_resolve_function, is_spec, is_trusted},
+    ctx::{HasTyCtxt, ItemType, TranslatedItem, TranslationCtx},
+    naming::ModulePath,
+    options::SpanMode,
+    util::path_of_span,
+};
+use indexmap::IndexMap;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
-use why3::declaration::Attribute;
-
-use crate::{
-    contracts_items::{is_resolve_function, is_spec, is_trusted},
-    ctx::{ItemType, TranslatedItem, TranslationCtx},
-    error::CannotFetchThir,
-    naming::ModulePath,
-    options::SpanMode,
-    run_why3::SpanMap,
-    util::path_of_span,
-};
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     ops::{Deref, DerefMut},
     path::PathBuf,
 };
+use why3::declaration::{Attribute, Decl, Meta, MetaArg, MetaIdent};
 
 pub(crate) mod clone_map;
 pub(crate) mod closures;
 pub(crate) mod dependency;
 pub(crate) mod logic;
+pub(crate) mod namespace;
 pub(crate) mod optimization;
-pub(crate) mod place;
 pub(crate) mod program;
+pub(crate) mod projections;
 pub(crate) mod signature;
 pub(crate) mod structural_resolve;
 pub(crate) mod term;
@@ -33,10 +32,16 @@ pub(crate) mod ty;
 pub(crate) mod ty_inv;
 pub(crate) mod wto;
 
+/// Stores the translation of Rust items to why3.
 pub struct Why3Generator<'tcx> {
     pub ctx: TranslationCtx<'tcx>,
+    /// The set of namespaces that appears in the current function.
+    ///
+    /// It is reset at the start of each function.
+    namespaces: RefCell<IndexMap<DefId, why3::Ident>>,
+    /// `true` if we need to generate the namespace type for the current module.
+    used_namespaces: Cell<bool>,
     functions: Vec<TranslatedItem>,
-    pub(crate) span_map: RefCell<SpanMap>,
 }
 
 impl<'tcx> Deref for Why3Generator<'tcx> {
@@ -47,7 +52,7 @@ impl<'tcx> Deref for Why3Generator<'tcx> {
     }
 }
 
-impl<'tcx> DerefMut for Why3Generator<'tcx> {
+impl DerefMut for Why3Generator<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.ctx
     }
@@ -55,52 +60,74 @@ impl<'tcx> DerefMut for Why3Generator<'tcx> {
 
 impl<'tcx> Why3Generator<'tcx> {
     pub fn new(ctx: TranslationCtx<'tcx>) -> Self {
-        Why3Generator { ctx, functions: Default::default(), span_map: Default::default() }
+        Why3Generator {
+            ctx,
+            functions: Default::default(),
+            namespaces: Default::default(),
+            used_namespaces: Cell::new(false),
+        }
     }
 
-    pub(crate) fn translate(&mut self, def_id: DefId) -> Result<(), CannotFetchThir> {
+    /// Translate `def_id` to a why3 module, and stores it internally.
+    pub(crate) fn translate(&mut self, def_id: DefId) {
         debug!("translating {:?}", def_id);
 
-        match self.item_type(def_id) {
+        let translated_item = match self.item_type(def_id) {
             ItemType::Impl if self.tcx.impl_trait_ref(def_id).is_some() => {
                 let modls = traits::lower_impl(self, def_id);
-                self.functions.push(TranslatedItem::Impl { modls });
+                TranslatedItem::Impl { modls }
             }
-            ItemType::Predicate { .. } if is_resolve_function(self.tcx, def_id) => {
-                self.functions.push(TranslatedItem::Logic { proof_modl: None });
+            ItemType::Logic { .. } if is_resolve_function(self.tcx, def_id) => {
+                TranslatedItem::Logic { proof_modl: None }
             }
-            ItemType::Logic { .. } | ItemType::Predicate { .. } => {
-                let proof_modl = logic::translate_logic_or_predicate(self, def_id)?;
-                self.functions.push(TranslatedItem::Logic { proof_modl });
+            ItemType::Logic { .. } => {
+                let proof_modl = logic::translate_logic(self, def_id);
+                TranslatedItem::Logic { proof_modl }
             }
             ItemType::Program => {
                 let modl = program::translate_function(self, def_id);
-                self.functions.push(TranslatedItem::Program { modl });
+                TranslatedItem::Program { modl }
             }
             ItemType::Field | ItemType::Variant => unreachable!(),
             ItemType::Unsupported(dk) => self.crash_and_error(
                 self.tcx.def_span(def_id),
                 &format!("unsupported definition kind {:?} {:?}", def_id, dk),
             ),
-            _ => (),
-        }
-        Ok(())
+            ItemType::Closure
+            | ItemType::Trait
+            | ItemType::Type
+            | ItemType::AssocTy
+            | ItemType::Impl
+            | ItemType::Constant => return,
+        };
+        self.functions.push(translated_item);
+    }
+
+    /// Get the name of the namespace.
+    ///
+    /// This also:
+    /// - Caches the generated name for future uses
+    /// - Allow all the names defined in the current function to be later retrieved, in
+    ///   order to generate the namespace type.
+    pub(crate) fn get_namespace_constructor(&self, namespace_fun: DefId) -> why3::Ident {
+        self.used_namespaces.set(true);
+        *self.namespaces.borrow_mut().entry(namespace_fun).or_insert_with(|| {
+            let name = self.ctx.item_name(namespace_fun);
+            why3::Ident::fresh_local(format!(
+                "Namespace_{name}_{}'{}",
+                namespace_fun.krate.index(),
+                namespace_fun.index.index()
+            ))
+        })
     }
 
     pub(crate) fn modules(&mut self) -> impl Iterator<Item = TranslatedItem> + '_ {
         self.functions.drain(..)
     }
 
-    fn is_logical(&self, item: DefId) -> bool {
-        matches!(self.item_type(item), ItemType::Logic { .. } | ItemType::Predicate { .. })
-    }
-
+    /// Get a why3 attribute corresponding to this span.
     pub(crate) fn span_attr(&self, span: Span) -> Option<Attribute> {
         let path = path_of_span(self.tcx, span, &self.opts.span_mode)?;
-
-        if let Some(span) = self.span_map.borrow_mut().encode_span(&self.ctx.opts, span) {
-            return Some(span);
-        };
 
         let lo = self.sess.source_map().lookup_char_pos(span.lo());
         let hi = self.sess.source_map().lookup_char_pos(span.hi());
@@ -146,10 +173,8 @@ impl<'tcx> Why3Generator<'tcx> {
         let mut id = def_id;
         loop {
             let key = tcx.def_key(id);
-            let parent_id = match key.parent {
-                None => return None, // The last segment is CrateRoot. Skip it.
-                Some(parent_id) => parent_id,
-            };
+            let parent_id = key.parent?; // The last segment is CrateRoot. Skip it.
+
             if key.disambiguated_data.data == rustc_hir::definitions::DefPathData::Impl {
                 return Some(display_impl_subject(&tcx.impl_subject(id).skip_binder()));
             }
@@ -159,6 +184,12 @@ impl<'tcx> Why3Generator<'tcx> {
 
     pub(crate) fn module_path(&self, def_id: DefId) -> ModulePath {
         ModulePath::new(self.tcx, def_id)
+    }
+}
+
+impl<'tcx> HasTyCtxt<'tcx> for Why3Generator<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.ctx.tcx
     }
 }
 
@@ -189,4 +220,18 @@ pub fn is_trusted_item(tcx: TyCtxt, mut def_id: DefId) -> bool {
     }
 
     false
+}
+
+pub(crate) fn common_meta_decls() -> impl Iterator<Item = Decl> {
+    [
+        Decl::Meta(Meta {
+            name: MetaIdent::String("compute_max_steps".into()),
+            args: [MetaArg::Integer(1_000_000)].into(),
+        }),
+        Decl::Meta(Meta {
+            name: MetaIdent::String("select_lsinst".into()),
+            args: [MetaArg::String("all".into())].into(),
+        }),
+    ]
+    .into_iter()
 }

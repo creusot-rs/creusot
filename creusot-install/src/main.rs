@@ -1,19 +1,18 @@
-#![feature(try_blocks, unbounded_shifts)]
+#![feature(try_blocks)]
 use anyhow::{Context as _, anyhow, bail};
 use clap::*;
 use creusot_setup::{
     self as setup, Binary, CfgPaths, PROVERS,
     config::{Config, ExternalTool, ManagedTool},
+    run,
     tools_versions_urls::*,
 };
 use indoc::writedoc;
-use reqwest::blocking::Client;
+use prelude_generator::build_prelude;
 use std::{
-    env,
     ffi::OsStr,
     fs,
-    fs::{File, copy, create_dir_all, read_to_string},
-    io::{self, BufWriter, Write},
+    io::Write,
     os::unix::ffi::OsStrExt as _,
     path::{Path, PathBuf},
     process::Command,
@@ -23,29 +22,23 @@ use std::{
 pub struct ManagedBinary {
     pub bin: setup::Binary,
     url: &'static Url,
-    download_with: fn(&Client, &Url, &Path, &Path) -> anyhow::Result<()>,
+    download: fn(&Url, &Path, &Path) -> anyhow::Result<()>,
 }
 
 const ALTERGO: ManagedBinary = ManagedBinary {
     bin: setup::ALTERGO,
     url: &URLS.altergo,
-    download_with: download_from_url_with_cache,
+    download: download_from_url_with_cache,
 };
 
 const Z3: ManagedBinary =
-    ManagedBinary { bin: setup::Z3, url: &URLS.z3, download_with: download_z3_from_url };
+    ManagedBinary { bin: setup::Z3, url: &URLS.z3, download: download_z3_from_url };
 
-const CVC4: ManagedBinary = ManagedBinary {
-    bin: setup::CVC4,
-    url: &URLS.cvc4,
-    download_with: download_from_url_with_cache,
-};
+const CVC4: ManagedBinary =
+    ManagedBinary { bin: setup::CVC4, url: &URLS.cvc4, download: download_from_url_with_cache };
 
-const CVC5: ManagedBinary = ManagedBinary {
-    bin: setup::CVC5,
-    url: &URLS.cvc5,
-    download_with: download_from_url_with_cache,
-};
+const CVC5: ManagedBinary =
+    ManagedBinary { bin: setup::CVC5, url: &URLS.cvc5, download: download_from_url_with_cache };
 
 /// Install Creusot
 #[derive(Debug, Parser)]
@@ -65,7 +58,10 @@ struct Args {
     /// Use existing creusot-rustc
     #[arg(long)]
     skip_creusot_rustc: bool,
-    /// Skip installing Why3, Why3find, and provers
+    /// Skip installing Why3 and Why3find
+    #[arg(long)]
+    skip_why3: bool,
+    /// Skip installing provers
     #[arg(long)]
     skip_extra_tools: bool,
     /// Only build the prelude, don't install anything (implies the skip options)
@@ -110,7 +106,7 @@ fn main() -> anyhow::Result<()> {
 
 fn install(args: Args) -> anyhow::Result<()> {
     let paths = setup::get_config_paths()?;
-    if !args.external.contains(&SetupManagedTool::Why3AndWhy3find) && !args.skip_extra_tools {
+    if !args.external.contains(&SetupManagedTool::Why3AndWhy3find) && !args.skip_why3 {
         install_why3(&paths)?;
     }
     if !args.skip_cargo_creusot {
@@ -333,21 +329,16 @@ pub fn sha256sum(file: &Path) -> anyhow::Result<String> {
     Ok(hex::encode(hasher.finalize()))
 }
 
-fn download_from_url(client: &Client, url: &Url, dest: &Path) -> anyhow::Result<()> {
+fn download_from_url(url: &Url, dest: &Path) -> anyhow::Result<()> {
     const DOWNLOAD_RETRIES: u32 = 1;
-    let do_download = || -> anyhow::Result<()> {
-        let mut resp = client.get(url.url).send()?;
-        let mut file = fs::File::create(dest)?;
-        resp.copy_to(&mut file)?;
-        Ok(())
-    };
     let mut success = false;
     let mut tries: u32 = 0;
     while !success && tries <= DOWNLOAD_RETRIES {
         if tries > 0 {
             eprintln!("Retrying...")
         };
-        do_download().with_context(|| format!("downloading {} to {}", url.url, dest.display()))?;
+        run(Command::new("curl").arg(url.url).arg("-fLo").arg(dest))
+            .with_context(|| format!("downloading {} to {}", url.url, dest.display()))?;
         let file_hash = sha256sum(dest)?;
         if file_hash == url.sha256 {
             success = true
@@ -365,15 +356,10 @@ fn download_from_url(client: &Client, url: &Url, dest: &Path) -> anyhow::Result<
 
 // looks up [cache_dir] to try to find a cached download; if not, stores the
 // result of the download in [cache_dir] (using the hash as the filename).
-fn download_from_url_with_cache(
-    client: &Client,
-    url: &Url,
-    cache_dir: &Path,
-    dest: &Path,
-) -> anyhow::Result<()> {
+fn download_from_url_with_cache(url: &Url, cache_dir: &Path, dest: &Path) -> anyhow::Result<()> {
     let cached_path = cache_dir.join(url.sha256);
     if !(cached_path.is_file() && sha256sum(&cached_path)? == url.sha256) {
-        download_from_url(client, url, &cached_path)?;
+        download_from_url(url, &cached_path)?;
     }
     if cached_path != dest {
         fs::copy(cached_path, dest)?;
@@ -493,12 +479,11 @@ fn generate_strategy(f: &mut dyn Write) -> anyhow::Result<()> {
 // download a list [ManagedBinary]s
 
 fn download_all(bins: &[ManagedBinary], cache_dir: &Path, dest_dir: &Path) -> anyhow::Result<()> {
-    let client = Client::new();
     for bin in bins {
         println!("Downloading {} {}...", bin.bin.display_name, bin.bin.version);
         let path = dest_dir.join(bin.bin.binary_name);
-        let dl = bin.download_with;
-        dl(&client, bin.url, cache_dir, &path)?;
+        let dl = bin.download;
+        dl(bin.url, cache_dir, &path)?;
         set_executable(&path)?;
     }
     Ok(())
@@ -508,16 +493,11 @@ fn download_all(bins: &[ManagedBinary], cache_dir: &Path, dest_dir: &Path) -> an
 // interested in the z3 binary, so we extract it from the archive and throw away
 // the rest.
 
-fn download_z3_from_url(
-    client: &Client,
-    url: &Url,
-    cache_dir: &Path,
-    dest: &Path,
-) -> anyhow::Result<()> {
+fn download_z3_from_url(url: &Url, cache_dir: &Path, dest: &Path) -> anyhow::Result<()> {
     use zip::read::ZipArchive;
     // just use the zip file stored in the cache
     let zip_path = cache_dir.join(url.sha256);
-    download_from_url_with_cache(client, url, cache_dir, &zip_path)?;
+    download_from_url_with_cache(url, cache_dir, &zip_path)?;
     {
         // extract the z3 binary from the .zip archive
         let zipfile = std::fs::File::open(&zip_path)?;
@@ -558,103 +538,4 @@ fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> std::io
     {
         std::os::windows::fs::symlink_file(original, link)
     }
-}
-
-fn int_prelude_maker(template_filepath: &Path, int_prelude_filepath: &Path) -> io::Result<()> {
-    let template = read_to_string(template_filepath)?;
-
-    let file = File::create(int_prelude_filepath)?;
-    let mut writer = BufWriter::new(file);
-
-    // take the template and replace each variable for integer type (signed and unsigned)
-    let mut write_modules = |bits_count| {
-        let min_signed_value = format!("0x{:X}", 1u128 << (bits_count - 1));
-        let max_signed_value = format!("0x{:X}", (1u128 << (bits_count - 1)) - 1);
-        let max_unsigned_value = format!("0x{:X}", 1u128.unbounded_shl(bits_count).wrapping_sub(1));
-
-        let r = template.replace("$bits_count$", &bits_count.to_string());
-        let r = r.replace("$min_signed_value$", &min_signed_value);
-        let r = r.replace("$max_signed_value$", &max_signed_value);
-        let r = r.replace("$max_unsigned_value$", &max_unsigned_value);
-        let s = String::from("0x1")
-            + &std::iter::repeat_n("0", bits_count as usize / 4).collect::<String>();
-        let r = r.replace("$two_power_size$", &s);
-
-        writer.write_all(r.as_bytes())?;
-        writeln!(writer)
-    };
-
-    write_modules(8)?;
-    write_modules(16)?;
-    write_modules(32)?;
-    write_modules(64)?;
-    write_modules(128)
-}
-
-fn slice_prelude_maker(template_filepath: &Path, slice_prelude_filepath: &Path) -> io::Result<()> {
-    let template = read_to_string(template_filepath)?;
-
-    let file = File::create(slice_prelude_filepath)?;
-    let mut writer = BufWriter::new(file);
-
-    // take the template and replace each variable for integer type (signed and unsigned)
-    let mut write_modules = |bits_count: u8| {
-        let bits_count = bits_count.to_string();
-
-        let r = template.replace("$bits_count$", &bits_count);
-
-        writer.write_all(r.as_bytes())?;
-        writeln!(writer)
-    };
-
-    write_modules(16)?;
-    write_modules(32)?;
-    write_modules(64)
-}
-
-// This needs to run when installing Creusot of course,
-// and also before replaying the proofs in the test suite.
-fn build_prelude() -> anyhow::Result<()> {
-    println!("Building prelude...");
-
-    // Get the path  to the crate directory
-    let crate_dirpath = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
-    let tgt_prelude_dirpath = crate_dirpath.join("..").join("target").join("creusot");
-    create_dir_all(&tgt_prelude_dirpath)?;
-
-    let src_prelude_dirpath = crate_dirpath.join("..").join("prelude");
-
-    // Create integer prelude
-    let int_template_filepath = src_prelude_dirpath.join("int.in.coma");
-    int_prelude_maker(&int_template_filepath, &tgt_prelude_dirpath.join("int.coma"))?;
-
-    // Create slice prelude
-    let slice_template_filepath = src_prelude_dirpath.join("slice.in.coma");
-    slice_prelude_maker(&slice_template_filepath, &tgt_prelude_dirpath.join("slice.coma"))?;
-
-    // Copy prelude in target directory
-    copy_if_newer(
-        src_prelude_dirpath.join("prelude.coma"),
-        tgt_prelude_dirpath.join("prelude.coma"),
-    )?;
-    copy_if_newer(src_prelude_dirpath.join("float.coma"), tgt_prelude_dirpath.join("float.coma"))?;
-
-    // Copy why3find conf in target directory
-    copy_if_newer(
-        crate_dirpath.join("..").join("why3find.json"),
-        crate_dirpath.join("..").join("target").join("why3find.json"),
-    )?;
-
-    Ok(())
-}
-
-fn copy_if_newer(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
-    let src_meta = fs::metadata(&src)?;
-    if let Ok(dst_meta) = fs::metadata(&dst) {
-        if src_meta.modified().unwrap() <= dst_meta.modified().unwrap() {
-            return Ok(());
-        }
-    }
-    copy(src, dst).unwrap();
-    Ok(())
 }

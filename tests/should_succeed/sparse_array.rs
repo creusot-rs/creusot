@@ -45,10 +45,10 @@ impl<T> View for Sparse<T> {
 
 impl<T> Resolve for Sparse<T> {
     #[open(self)]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
-            forall<i: _> 0 <= i && i < self.size@ ==> resolve(&self@[i])
+            forall<i> 0 <= i && i < self.size@ ==> resolve(self@[i])
         }
     }
 
@@ -56,20 +56,20 @@ impl<T> Resolve for Sparse<T> {
     #[logic(prophetic)]
     #[requires(inv(self))]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T> Invariant for Sparse<T> {
     #[open(self)]
-    #[predicate]
+    #[logic]
     fn invariant(self) -> bool {
         pearlite! {
             self.n@ <= self.size@
                 && self.values@.len() == self.size@
                 && self.idx@.len() == self.size@
                 && self.back@.len() == self.size@
-                && forall<i: Int> 0 <= i && i < self.n@ ==>
+                && forall<i> 0 <= i && i < self.n@ ==>
                 { let j = self.back[i];
                   0 <= j@ && j@ < self.size@ && self.idx[j@]@ == i }
         }
@@ -111,7 +111,7 @@ impl<T> Sparse<T> {
     #[requires(0 <= i && i < self.size@)]
     #[ensures(self.is_elt(i))]
     fn lemma_permutation(self, i: Int) {
-        self.lemma_permutation_aux(FSet::EMPTY, i, i);
+        self.lemma_permutation_aux(FSet::empty(), i, i);
     }
 
     #[logic]
@@ -119,7 +119,7 @@ impl<T> Sparse<T> {
     #[requires(inv(self))]
     #[requires(self.n == self.size)]
     #[requires(0 <= cur && cur < self.size@)]
-    #[requires(forall<k: Int> seen.contains(k) ==>
+    #[requires(forall<k> seen.contains(k) ==>
         0 <= k && k < self.size@ &&
         (k == i || seen.contains(self.idx[k]@)))]
     #[requires(i == cur || (seen.contains(i) && seen.contains(self.idx[cur]@)))]
@@ -139,7 +139,7 @@ impl<T> Sparse<T> {
 
     #[logic]
     #[variant(bnd)]
-    #[requires(forall<x: Int> s.contains(x) ==> 0 <= x && x < bnd)]
+    #[requires(forall<x> s.contains(x) ==> 0 <= x && x < bnd)]
     #[requires(bnd >= 0)]
     #[ensures(s.len() <= bnd)]
     fn bounded_fset_len(s: FSet<Int>, bnd: Int) {
@@ -152,7 +152,7 @@ impl<T> Sparse<T> {
      */
     #[requires(i@ < self@.len())]
     #[ensures((^self)@.len() == self@.len())]
-    #[ensures(forall<j: Int> 0 <= j && j < self@.len() && j != i@ ==> (^self)@[j] == self@[j])]
+    #[ensures(forall<j> 0 <= j && j < self@.len() && j != i@ ==> (^self)@[j] == self@[j])]
     #[ensures((^self)@[i@] == Some(v))]
     pub fn set(&mut self, i: usize, v: T) {
         self.values[i] = v;
@@ -175,7 +175,7 @@ impl<T> Sparse<T> {
  * to create non-initialized arrays.
  */
 #[ensures(result.size == sz)]
-#[ensures(forall<i: Int> 0 <= i && i < sz@ ==> result@[i] == None)]
+#[ensures(forall<i> 0 <= i && i < sz@ ==> result@[i] == None)]
 pub fn create<T: Copy>(sz: usize, dummy: T) -> Sparse<T> {
     Sparse { size: sz, n: 0, values: vec![dummy; sz], idx: vec![0; sz], back: vec![0; sz] }
 }

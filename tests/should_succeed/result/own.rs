@@ -11,19 +11,18 @@ pub enum OwnResult<T, E> {
 
 impl<T, E> Resolve for OwnResult<T, E> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
         match self {
-            OwnResult::Ok(t) => resolve(&t),
-            OwnResult::Err(e) => resolve(&e),
+            OwnResult::Ok(t) => resolve(t),
+            OwnResult::Err(e) => resolve(e),
         }
     }
 
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T, E> OwnResult<T, E> {
@@ -174,8 +173,11 @@ impl<T, E> OwnResult<&T, E> {
         }
     }
 
-    #[ensures(forall<t: &T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t))]
-    #[ensures(forall<e: E> self == OwnResult::Err(e) ==> result == OwnResult::Err(e))]
+    #[ensures(match (self, result) {
+        (OwnResult::Ok(s), OwnResult::Ok(r)) => T::clone.postcondition((s,), r),
+        (OwnResult::Err(s), OwnResult::Err(r)) => s == r,
+        _ => false
+    })]
     pub fn cloned(self) -> OwnResult<T, E>
     where
         T: Clone,
@@ -189,7 +191,7 @@ impl<T, E> OwnResult<&T, E> {
 }
 
 impl<T, E> OwnResult<&mut T, E> {
-    #[ensures(forall<t: &mut T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t) && resolve(&t))]
+    #[ensures(forall<t: &mut T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t) && resolve(t))]
     #[ensures(forall<e: E> self == OwnResult::Err(e) ==> result == OwnResult::Err(e))]
     pub fn copied(self) -> OwnResult<T, E>
     where
@@ -202,8 +204,11 @@ impl<T, E> OwnResult<&mut T, E> {
         }
     }
 
-    #[ensures(forall<t: &mut T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t) && resolve(&t))]
-    #[ensures(forall<e: E> self == OwnResult::Err(e) ==> result == OwnResult::Err(e))]
+    #[ensures(match (self, result) {
+        (OwnResult::Ok(s), OwnResult::Ok(r)) => T::clone.postcondition((s,), r),
+        (OwnResult::Err(s), OwnResult::Err(r)) => s == r,
+        _ => false
+    })]
     pub fn cloned(self) -> OwnResult<T, E>
     where
         T: Clone,

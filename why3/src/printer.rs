@@ -84,9 +84,9 @@ struct Scope {
     /// generates
     ///
     /// ```ignore
-    /// constant x : usize
-    /// function f (x : usize) : ()    (* x is shadowed here (also unused) *)
-    /// goal vc_f : ... POST(f(x-1)) -> POST(...)
+    /// constant x: usize
+    /// function f (x: usize): ()    (* x is shadowed here (also unused) *)
+    /// goal vc_f: ... POST(f(x-1)) -> POST(...)
     /// ```
     ///
     /// I don't know if it's the only place to fix; we can probably avoid shadowing if we really want to.
@@ -401,7 +401,7 @@ impl Print for Axiom {
         alloc
             .text("axiom ")
             .append(self.name.pretty_value_name(alloc, scope))
-            .append(if self.rewrite { " [@rewrite] : " } else { " : " })
+            .append(if self.rewrite { " [@rewrite]: " } else { ": " })
             .append(self.axiom.pretty(alloc, scope))
     }
 }
@@ -419,7 +419,7 @@ impl Print for Goal {
         alloc
             .text("goal ")
             .append(self.name.pretty_value_name(alloc, scope))
-            .append(" : ")
+            .append(": ")
             .append(self.goal.pretty(alloc, scope))
     }
 }
@@ -439,7 +439,7 @@ impl Print for declaration::Constant {
             alloc,
             "constant ",
             self.name.pretty_value_name(alloc, scope),
-            " : ",
+            ": ",
             self.type_.pretty(alloc, scope),
             match &self.body {
                 Some(b) => alloc.text(" = ").append(b.pretty(alloc, scope)),
@@ -552,7 +552,7 @@ where
     A::Doc: Clone,
 {
     scope.bind_value(*id);
-    id.pretty_value_name(alloc, scope).append(" : ").append(ty.pretty(alloc, scope)).parens()
+    id.pretty_value_name(alloc, scope).append(": ").append(ty.pretty(alloc, scope)).parens()
 }
 
 impl Print for LogicDefn {
@@ -635,6 +635,7 @@ impl Print for MetaArg {
     {
         match self {
             MetaArg::Integer(i) => alloc.as_string(i),
+            MetaArg::String(s) => alloc.text(format!("{s:?}")),
         }
     }
 }
@@ -889,7 +890,7 @@ impl Print for Exp {
                     binders.iter().map(|(b, t)| {
                         scope.bind_value(*b);
                         b.pretty_value_name(alloc, scope)
-                            .append(" : ")
+                            .append(": ")
                             .append(t.pretty(alloc, scope))
                     }),
                     ", ",
@@ -904,7 +905,7 @@ impl Print for Exp {
                         .append("]");
                 }
 
-                let doc = res.append(" . ").append(exp.pretty(alloc, scope));
+                let doc = res.append(". ").append(exp.pretty(alloc, scope));
                 scope.close();
                 doc
             }
@@ -914,7 +915,7 @@ impl Print for Exp {
                     binders.iter().map(|(b, t)| {
                         scope.bind_value(*b);
                         b.pretty_value_name(alloc, scope)
-                            .append(" : ")
+                            .append(": ")
                             .append(t.pretty(alloc, scope))
                     }),
                     ", ",
@@ -929,7 +930,7 @@ impl Print for Exp {
                         .append("]");
                 }
 
-                let doc = res.append(" . ").append(exp.pretty(alloc, scope));
+                let doc = res.append(". ").append(exp.pretty(alloc, scope));
                 scope.close();
                 doc
             }
@@ -944,7 +945,7 @@ impl Print for Exp {
                 hyp.append(impl_)
             }
             Exp::Ascribe(e, t) => {
-                parens!(alloc, scope, self, e).append(" : ").append(t.pretty(alloc, scope)).group()
+                parens!(alloc, scope, self, e).append(": ").append(t.pretty(alloc, scope)).group()
             }
             Exp::RecUp { record, updates } => {
                 alloc
@@ -1020,7 +1021,7 @@ impl Print for Binder {
                                 }),
                                 alloc.space(),
                             )
-                            .append(" : ")
+                            .append(": ")
                             .append(ty.pretty(alloc, scope)),
                     )
                     .parens()
@@ -1030,51 +1031,62 @@ impl Print for Binder {
 }
 
 impl Print for Pattern {
-    fn pretty<'a, A: DocAllocator<'a>>(
+    fn pretty<'a, A: DocAllocator<'a, Doc: Clone>>(
         &'a self,
         alloc: &'a A,
         scope: &mut Why3Scope,
-    ) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        match self {
-            Pattern::Wildcard => alloc.text("_"),
-            Pattern::VarP(v) => {
-                scope.bind_value(*v);
-                v.pretty_value_name(alloc, scope)
-            }
-            Pattern::TupleP(pats) => {
-                alloc.intersperse(pats.iter().map(|p| p.pretty(alloc, scope)), ", ").parens()
-            }
-            Pattern::ConsP(c, pats) => {
-                let mut doc = c.pretty_value_name(alloc, scope);
-
-                if !pats.is_empty() {
-                    doc = doc.append(alloc.space()).append(alloc.intersperse(
-                        pats.iter().map(|p| {
-                            if matches!(p, Pattern::ConsP(_, _)) {
-                                p.pretty(alloc, scope).parens()
-                            } else {
-                                p.pretty(alloc, scope)
-                            }
-                        }),
-                        " ",
-                    ))
+    ) -> DocBuilder<'a, A> {
+        fn pretty_rec<'a, A: DocAllocator<'a, Doc: Clone>>(
+            p: &'a Pattern,
+            alloc: &'a A,
+            scope: &mut Why3Scope,
+            seen: &mut HashSet<Ident>,
+        ) -> DocBuilder<'a, A> {
+            match p {
+                Pattern::Wildcard => alloc.text("_"),
+                Pattern::VarP(v) => {
+                    if !seen.contains(v) {
+                        scope.bind_value(*v);
+                        seen.insert(*v);
+                    }
+                    v.pretty_value_name(alloc, scope)
                 }
-                doc
-            }
-            Pattern::RecP(pats) => {
-                let pats = pats.iter().map(|(field, pat)| {
-                    field
-                        .pretty_value_name(alloc, scope)
-                        .append(" = ")
-                        .append(pat.pretty(alloc, scope))
-                });
+                Pattern::TupleP(pats) => alloc
+                    .intersperse(pats.iter().map(|p| pretty_rec(p, alloc, scope, seen)), ", ")
+                    .parens(),
+                Pattern::ConsP(c, pats) => {
+                    let mut doc = c.pretty_value_name(alloc, scope);
 
-                alloc.intersperse(pats, " ; ").braces()
+                    if !pats.is_empty() {
+                        doc = doc.append(alloc.space()).append(alloc.intersperse(
+                            pats.iter().map(|p| {
+                                if matches!(p, Pattern::ConsP(_, _)) {
+                                    pretty_rec(p, alloc, scope, seen).parens()
+                                } else {
+                                    pretty_rec(p, alloc, scope, seen)
+                                }
+                            }),
+                            " ",
+                        ))
+                    }
+                    doc
+                }
+                Pattern::RecP(pats) => {
+                    let pats = pats.iter().map(|(field, pat)| {
+                        field
+                            .pretty_value_name(alloc, scope)
+                            .append(" = ")
+                            .append(pretty_rec(pat, alloc, scope, seen))
+                    });
+
+                    alloc.intersperse(pats, " ; ").braces()
+                }
+                Pattern::OrP(pats) => {
+                    alloc.intersperse(pats.iter().map(|p| pretty_rec(p, alloc, scope, seen)), " | ")
+                }
             }
         }
+        pretty_rec(self, alloc, scope, &mut HashSet::new())
     }
 }
 
@@ -1135,11 +1147,6 @@ fn bin_op_to_string(op: &BinOp) -> &str {
         LazyAnd => "&&",
         LogOr => "\\/",
         LazyOr => "||",
-        BitAnd => unreachable!("the & operator can't be instanced in infix notation"),
-        BitOr => unreachable!("the | operator can't be instanced in infix notation"),
-        BitXor => unreachable!("the ^ operator can't be instanced in infix notation"),
-        Shl => unreachable!("the << operator can't be instanced in infix notation"),
-        Shr => unreachable!("the >> operator can't be instanced in infix notation"),
         Add => "+",
         Sub => "-",
         Mul => "*",
@@ -1183,14 +1190,14 @@ impl Print for Constant {
             }
             Constant::Char(c, t) => {
                 let c = *c as u32;
-                alloc.as_string(c).append(" : ").append(t.pretty(alloc, scope)).parens()
+                alloc.as_string(c).append(": ").append(t.pretty(alloc, scope)).parens()
             }
             Constant::Int(i, Some(t)) => {
-                alloc.as_string(i).append(" : ").append(t.pretty(alloc, scope)).parens()
+                alloc.as_string(i).append(": ").append(t.pretty(alloc, scope)).parens()
             }
             Constant::Int(i, None) => alloc.as_string(i),
             Constant::Uint(i, Some(t)) => {
-                alloc.as_string(i).append(" : ").append(t.pretty(alloc, scope)).parens()
+                alloc.as_string(i).append(": ").append(t.pretty(alloc, scope)).parens()
             }
             Constant::String(s) => alloc.text(format!("{s:?}")),
             Constant::Uint(i, None) => alloc.as_string(i),
@@ -1205,7 +1212,7 @@ impl Print for Constant {
             Constant::Float(f, Some(t)) => {
                 assert!(f.is_finite());
                 let f_str = print_float(*f);
-                alloc.text(f_str).append(" : ").append(t.pretty(alloc, scope)).parens()
+                alloc.text(f_str).append(": ").append(t.pretty(alloc, scope)).parens()
             }
         }
     }

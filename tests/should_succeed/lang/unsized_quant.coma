@@ -1,0 +1,39 @@
+module M_unsized_quant__l [#"unsized_quant.rs" 19 0 19 10]
+  let%span sunsized_quant = "unsized_quant.rs" 18 10 18 13
+  let%span sunsized_quant'0 = "unsized_quant.rs" 19 11 19 13
+  let%span sunsized_quant'1 = "unsized_quant.rs" 10 8 10 38
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 30 14 30 41
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 31 14 31 42
+  let%span smapping = "../../../creusot-contracts/src/logic/mapping.rs" 70 8 70 19
+  
+  use creusot.slice.Slice64
+  use creusot.int.Int32
+  use seq.Seq
+  use creusot.int.UInt64
+  use mach.int.Int
+  use map.Map
+  
+  constant v_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view (self: Slice64.slice Int32.t) : Seq.seq Int32.t
+  
+  axiom view_spec: forall self: Slice64.slice Int32.t. [%#sslice] Seq.length (view self) <= UInt64.t'int v_MAX
+  
+  axiom view_spec'0: forall self: Slice64.slice Int32.t. [%#sslice'0] view self = Slice64.id self
+  
+  function index_logic (self: Map.map (Slice64.slice Int32.t) int) (a: Slice64.slice Int32.t) : int =
+    [%#smapping] Map.get self a
+  
+  predicate f [#"unsized_quant.rs" 8 0 8 18]  =
+    [%#sunsized_quant'1] let len = fun (x: Slice64.slice Int32.t) -> Seq.length (view x) in forall x: Slice64.slice Int32.t, y: Slice64.slice Int32.t. index_logic len x
+    + index_logic len y
+    >= 0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function l [#"unsized_quant.rs" 19 0 19 10]  : ()
+  
+  goal vc_l: [@expl:l ensures] [%#sunsized_quant] f
+end

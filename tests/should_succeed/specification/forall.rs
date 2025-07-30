@@ -6,11 +6,11 @@ use creusot_contracts::{logic::Int, *};
 pub fn f() {}
 
 #[open]
-#[predicate]
+#[logic]
 #[requires(a <= b)]
 #[ensures(true)]
 pub fn omg(a: Int, b: Int) -> bool {
     pearlite! { {
-        exists<c : Int> a + c == b
+        exists<c> a + c == b
     } }
 }

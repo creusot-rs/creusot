@@ -1,4 +1,6 @@
-use crate::{logic::ops::IndexLogic, resolve::structural_resolve, *};
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
+use crate::{logic::ops::IndexLogic, *};
 #[cfg(feature = "nightly")]
 use ::std::alloc::Allocator;
 pub use ::std::collections::VecDeque;
@@ -26,7 +28,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     #[logic]
     #[trusted]
     #[ensures(self.view().len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < self.view().len()
+    #[ensures(forall<i> 0 <= i && i < self.view().len()
               ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         dead
@@ -59,16 +61,16 @@ impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
 
 impl<T> Resolve for VecDeque<T> {
     #[open]
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
+        pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self[i]) }
     }
 
     #[trusted]
     #[logic(prophetic)]
     #[requires(structural_resolve(self))]
-    #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 extern_spec! {
@@ -155,13 +157,13 @@ impl<'a, T> View for Iter<'a, T> {
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    #[predicate(prophetic)]
+    #[logic(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
+        pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
     }
 
-    #[predicate]
+    #[logic]
     #[open]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
@@ -171,7 +173,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
     #[law]
     #[open]
-    #[ensures(self.produces(Seq::EMPTY, self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[law]

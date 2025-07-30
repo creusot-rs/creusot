@@ -8,7 +8,7 @@ pub enum Q {
 use Q::*;
 
 impl Invariant for Q {
-    #[predicate]
+    #[logic]
     #[open]
     fn invariant(self) -> bool {
         true

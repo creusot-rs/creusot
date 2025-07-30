@@ -2,12 +2,13 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 #[trusted]
-trait Trusted {}
+pub trait Trusted {}
 
 impl Trusted for () {}
 
-trait HasPredicate {
-    #[predicate]
+pub trait HasPredicate {
+    #[logic]
+    #[open(self)]
     fn my_predicate() -> bool {
         true
     }

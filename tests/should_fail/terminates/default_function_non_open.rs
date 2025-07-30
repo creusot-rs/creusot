@@ -1,9 +1,9 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-mod inner {
+pub mod inner {
     use super::*;
-    pub(super) trait Foo {
+    pub trait Foo {
         #[open(self)]
         #[logic]
         fn f() {}
