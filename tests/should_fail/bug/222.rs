@@ -24,7 +24,7 @@ impl A for () {
 }
 
 // Check that we can still see the bodies of default implementations which are marked as final though.
-trait Invariant {
+pub trait Invariant {
     #[logic]
     fn invariant(self) -> bool {
         true

@@ -9,7 +9,7 @@ pub trait Inv<T> {
 pub struct Cell<T, I> {
     inner: std::cell::Cell<T>,
     // Pretend that `I` is ghost
-    ghost_inv: I,
+    pub ghost_inv: I,
 }
 
 impl<T: Copy, I: Inv<T>> Cell<T, I> {
@@ -81,7 +81,7 @@ pub type FibCache = Vec<Cell<Option<usize>, Fib>>;
 
 #[open(crate)]
 #[logic]
-fn fib_cell(v: FibCache) -> bool {
+pub fn fib_cell(v: FibCache) -> bool {
     pearlite! {
         forall<i: Int> v[i].ghost_inv.ix@ == i
     }

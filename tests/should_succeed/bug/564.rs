@@ -21,6 +21,6 @@ pub fn emits_pure_implies() -> bool {
 }
 
 #[logic]
-fn invariants() -> bool {
+pub fn invariants() -> bool {
     true
 }

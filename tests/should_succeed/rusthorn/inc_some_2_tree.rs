@@ -18,7 +18,8 @@ fn random() -> bool {
 
 impl Tree {
     #[logic]
-    fn sum(self) -> Int {
+    #[open]
+    pub fn sum(self) -> Int {
         pearlite! {
             match self {
                 Node(tl, a, tr) => tl.sum() + a@ + tr.sum(),

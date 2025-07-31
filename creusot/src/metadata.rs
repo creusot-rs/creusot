@@ -1,5 +1,4 @@
 use crate::{
-    creusot_items::CreusotItems,
     ctx::*,
     translation::{external::ExternSpec, pearlite::ScopedTerm},
 };
@@ -73,7 +72,7 @@ impl<'tcx> Metadata<'tcx> {
 
 pub struct CrateMetadata<'tcx> {
     terms: IndexMap<DefId, ScopedTerm<'tcx>>,
-    creusot_items: CreusotItems,
+    creusot_items: HashMap<Symbol, DefId>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
 }
 
@@ -97,7 +96,7 @@ impl<'tcx> CrateMetadata<'tcx> {
     }
 
     pub(crate) fn creusot_item(&self, sym: Symbol) -> Option<DefId> {
-        self.creusot_items.symbol_to_id.get(&sym).cloned()
+        self.creusot_items.get(&sym).cloned()
     }
 
     fn load(
@@ -131,7 +130,7 @@ impl<'tcx> CrateMetadata<'tcx> {
 #[derive(TyDecodable, TyEncodable)]
 pub(crate) struct BinaryMetadata<'tcx> {
     terms: Vec<(DefId, ScopedTerm<'tcx>)>,
-    creusot_items: CreusotItems,
+    creusot_items: HashMap<Symbol, DefId>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
 }
@@ -139,7 +138,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
 impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
         terms: &mut OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
-        items: &CreusotItems,
+        items: &HashMap<Symbol, DefId>,
         extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
         params_open_inv: &HashMap<DefId, Vec<usize>>,
     ) -> Self {

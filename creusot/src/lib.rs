@@ -43,7 +43,6 @@ mod analysis;
 mod backend;
 mod cleanup_spec_closures;
 mod contracts_items;
-mod creusot_items;
 mod ctx;
 mod error;
 mod extended_location;

@@ -1,6 +1,6 @@
 use super::BodyTranslator;
 use crate::{
-    contracts_items::{is_box_new, is_snap_from_fn},
+    contracts_items::{is_box_new, is_ghost_deref, is_ghost_deref_mut, is_snap_from_fn},
     ctx::{HasTyCtxt as _, TranslationCtx},
     lints::{CONTRACTLESS_EXTERNAL_FUNCTION, Diagnostics},
     translation::{
@@ -10,7 +10,6 @@ use crate::{
     },
 };
 use itertools::Itertools;
-use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     mir::{
@@ -18,9 +17,8 @@ use rustc_middle::{
         StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
-    ty::{GenericArgKind, GenericArgsRef, Ty, TyKind, TypingEnv, TypingMode},
+    ty::{GenericArgKind, Ty, TyKind, TypingMode},
 };
-use rustc_span::Span;
 use rustc_trait_selection::error_reporting::InferCtxtErrorExt;
 use std::collections::{HashMap, HashSet};
 
@@ -91,15 +89,33 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             infcx.err_ctxt().report_fulfillment_errors(errs);
                         }
 
-                        let (fun_def_id, subst) = resolve_function(
-                            self.ctx,
+                        let tr_res = TraitResolved::resolve_item(
+                            self.ctx.tcx,
                             self.typing_env(),
                             fun_def_id,
                             subst,
-                            (self.body, span, loc),
                         );
+                        let (fun_def_id, subst) =
+                            tr_res.to_opt(fun_def_id, subst).expect("could not find instance");
 
-                        if self.ctx.sig(fun_def_id).contract.is_requires_false() {
+                        if self.ctx.sig(fun_def_id).contract.extern_no_spec
+                            && let Some(lint_root) =
+                                self.body.source_info(loc).scope.lint_root(&self.body.source_scopes)
+                        {
+                            let name = self.ctx.tcx.item_name(fun_def_id);
+                            self.ctx.emit_node_span_lint(
+                                CONTRACTLESS_EXTERNAL_FUNCTION,
+                                lint_root,
+                                span,
+                                Diagnostics::ContractlessExternalFunction { name, span },
+                            );
+                        }
+
+                        if self.ctx.sig(fun_def_id).contract.is_requires_false()
+                            && !is_ghost_deref(self.tcx(), fun_def_id)
+                            && !is_ghost_deref_mut(self.tcx(), fun_def_id)
+                            && !matches!(tr_res, TraitResolved::UnknownFound)
+                        {
                             target = None
                         } else {
                             let subst =
@@ -211,41 +227,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             _ => unreachable!("Resume assertions"),
         }
     }
-}
-
-/// # Parameters
-///
-/// - `report_location`: used to emit an eventual warning.
-fn resolve_function<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
-    typing_env: TypingEnv<'tcx>,
-    def_id: DefId,
-    subst: GenericArgsRef<'tcx>,
-    report_location: (&mir::Body<'tcx>, Span, Location),
-) -> (DefId, GenericArgsRef<'tcx>) {
-    let res = if ctx.trait_of_item(def_id).is_some() {
-        TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
-            .to_opt(def_id, subst)
-            .expect("could not find instance")
-    } else {
-        (def_id, subst)
-    };
-
-    if ctx.sig(res.0).contract.extern_no_spec {
-        let (body, span, location) = report_location;
-        let name = ctx.tcx.item_name(def_id);
-        let source_info = body.source_info(location);
-        if let Some(lint_root) = source_info.scope.lint_root(&body.source_scopes) {
-            ctx.emit_node_span_lint(
-                CONTRACTLESS_EXTERNAL_FUNCTION,
-                lint_root,
-                span,
-                Diagnostics::ContractlessExternalFunction { name, span },
-            );
-        }
-    }
-
-    res
 }
 
 // Find the place being discriminated, if there is one

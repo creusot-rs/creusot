@@ -3,12 +3,12 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-enum T {
+pub enum T {
     A,
     B,
 }
 
-struct S<A, B>(A, B);
+pub struct S<A, B>(pub A, pub B);
 
 pub enum List<A> {
     Cons(A, Box<List<A>>),

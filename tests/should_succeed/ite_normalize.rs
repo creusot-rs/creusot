@@ -118,7 +118,8 @@ impl Expr {
     }
 
     #[logic]
-    fn is_normalized(self) -> bool {
+    #[open]
+    pub fn is_normalized(self) -> bool {
         match self {
             Expr::IfThenElse { c, t, e } => {
                 c.is_normalized()
@@ -149,7 +150,8 @@ impl Expr {
     }
 
     #[logic]
-    fn is_simplified(self) -> bool {
+    #[open]
+    pub fn is_simplified(self) -> bool {
         match self {
             Expr::IfThenElse { c, t, e } => match *c {
                 Expr::Var { v } => t.does_not_contain(v) && e.does_not_contain(v),
@@ -160,7 +162,8 @@ impl Expr {
     }
 
     #[logic]
-    fn does_not_contain(self, vp: usize) -> bool {
+    #[open]
+    pub fn does_not_contain(self, vp: usize) -> bool {
         match self {
             Expr::IfThenElse { c, t, e } => {
                 c.does_not_contain(vp) && t.does_not_contain(vp) && e.does_not_contain(vp)

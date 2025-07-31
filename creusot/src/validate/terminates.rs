@@ -458,10 +458,10 @@ impl CallGraph {
             let (thir, expr) = ctx.get_thir(local_id).unwrap();
 
             // Collect functions called by this function
-            let mut visitor = FunctionCalls { def_id, thir: &thir, ctx, calls: IndexSet::new() };
-            visitor.visit_expr(&thir[expr]);
+            let calls = &mut IndexSet::new();
+            FunctionCalls { def_id, thir: &thir, ctx, calls }.visit_expr(&thir[expr]);
 
-            for (called_id, generic_args, call_span) in visitor.calls {
+            for &(called_id, generic_args, call_span) in calls.iter() {
                 build_call_graph.function_call(
                     ctx,
                     node,
@@ -486,7 +486,7 @@ struct FunctionCalls<'a, 'tcx> {
     /// - The id of the _called_ function.
     /// - The generic args for this call.
     /// - The span of the call (for error messages).
-    calls: IndexSet<(DefId, &'tcx GenericArgs<'tcx>, Span)>,
+    calls: &'a mut IndexSet<(DefId, &'tcx GenericArgs<'tcx>, Span)>,
 }
 
 impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
@@ -503,15 +503,8 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
             }
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
-                let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
-                let mut closure_visitor = FunctionCalls {
-                    def_id: self.def_id,
-                    thir: &thir,
-                    ctx: self.ctx,
-                    calls: std::mem::take(&mut self.calls),
-                };
-                thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
-                self.calls.extend(closure_visitor.calls);
+                let Some((ref thir, expr)) = self.ctx.get_thir(closure_id) else { return };
+                FunctionCalls { thir, calls: self.calls, ..*self }.visit_expr(&thir[expr]);
             }
             thir::ExprKind::Loop { .. } => {
                 let fun_span = self.ctx.def_span(self.def_id);
@@ -542,10 +535,8 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> {
         match expr.kind {
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
-                let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
-                let mut closure_visitor =
-                    GhostLoops { thir: &thir, ctx: self.ctx, is_in_ghost: self.is_in_ghost };
-                thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
+                let Some((ref thir, expr)) = self.ctx.get_thir(closure_id) else { return };
+                GhostLoops { thir, ..*self }.visit_expr(&thir[expr]);
             }
             thir::ExprKind::Loop { .. } if self.is_in_ghost => {
                 self.ctx.error(expr.span, "`ghost!` blocks must not contain loops.").emit();

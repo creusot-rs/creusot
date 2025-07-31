@@ -7,7 +7,7 @@ use creusot_contracts::{
 };
 
 struct T {
-    a: i32,
+    pub a: i32,
 }
 
 impl View for T {

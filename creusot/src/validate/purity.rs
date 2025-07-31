@@ -1,21 +1,16 @@
 use crate::{
     backend::is_trusted_item,
     contracts_items::{
-        get_builtin, get_fn_pure_trait, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner,
-        is_ghost_new, is_logic, is_no_translate, is_prophetic, is_snap_from_fn,
-        is_snapshot_closure, is_snapshot_deref, is_spec,
+        get_fn_pure_trait, is_box_new, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner,
+        is_ghost_new, is_logic, is_prophetic, is_snap_from_fn, is_snapshot_closure, is_spec,
     },
     ctx::{HasTyCtxt, TranslationCtx},
-    translation::{
-        pearlite::{Stub, pearlite_stub},
-        traits::TraitResolved,
-    },
-    validate::is_overloaded_item,
+    translation::traits::TraitResolved,
 };
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
-    thir::{self, ClosureExpr, ExprKind, Thir},
+    thir::{self, ClosureExpr, ExprId, ExprKind, Thir, visit::Visitor},
     ty::{FnDef, TyCtxt, TypingEnv},
 };
 use rustc_trait_selection::infer::InferCtxtExt;
@@ -36,23 +31,14 @@ pub(crate) enum Purity {
 
 impl Purity {
     pub(crate) fn of_def_id(ctx: &TranslationCtx, def_id: DefId) -> Self {
-        let is_snapshot = is_snapshot_closure(ctx.tcx, def_id);
-        if is_logic(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
-            || is_spec(ctx.tcx, def_id) && !is_snapshot
-        {
-            Purity::Logic { prophetic: true }
-        } else if is_logic(ctx.tcx, def_id) || is_snapshot {
-            Purity::Logic { prophetic: false }
+        if is_logic(ctx.tcx, def_id) {
+            Purity::Logic { prophetic: is_prophetic(ctx.tcx, def_id) }
+        } else if is_spec(ctx.tcx, def_id) {
+            Purity::Logic { prophetic: !is_snapshot_closure(ctx.tcx, def_id) }
         } else {
             let contract = &ctx.sig(def_id).contract;
-            let terminates = contract.terminates;
-            let no_panic = contract.no_panic;
-            Purity::Program { terminates, no_panic }
+            Purity::Program { terminates: contract.terminates, no_panic: contract.no_panic }
         }
-    }
-
-    fn is_logic(self) -> bool {
-        matches!(self, Self::Logic { .. })
     }
 
     fn can_call(self, other: Purity) -> bool {
@@ -89,24 +75,18 @@ impl Purity {
 
 pub(crate) fn validate_purity<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    def_id: LocalDefId,
-    &(ref thir, expr): &(thir::Thir<'tcx>, thir::ExprId),
+    def_id: DefId,
+    &(ref thir, expr): &(Thir<'tcx>, ExprId),
 ) {
-    let def_id = def_id.to_def_id();
-    // Only start traversing from top-level definitions. Closures will be visited during the traversal of their parents
-    // so that they can inherit the context from their parent.
-    if ctx.tcx.is_closure_like(def_id) {
+    // Only start traversing from top-level definitions. Closures will be visited during the traversal
+    // of their parents so that they can inherit the context from their parent.
+    if ctx.tcx.is_closure_like(def_id) || is_trusted_item(ctx.tcx, def_id) {
         return;
     }
-    let purity = Purity::of_def_id(ctx, def_id);
-    if matches!(purity, Purity::Program { .. })
-        && (is_no_translate(ctx.tcx, def_id) || is_trusted_item(ctx.tcx, def_id))
-    {
-        return;
-    }
+
     let typing_env = ctx.typing_env(def_id);
-    let mut visitor = PurityVisitor { ctx, thir, context: purity, typing_env };
-    thir::visit::walk_expr(&mut visitor, &thir[expr])
+    PurityVisitor { ctx, thir, context: Purity::of_def_id(ctx, def_id), typing_env }
+        .visit_expr(&thir[expr]);
 }
 
 struct PurityVisitor<'a, 'tcx> {
@@ -118,23 +98,13 @@ struct PurityVisitor<'a, 'tcx> {
 }
 
 impl PurityVisitor<'_, '_> {
-    fn purity(&self, fun: thir::ExprId, func_did: DefId, args: &[thir::ExprId]) -> Purity {
-        let tcx = self.ctx.tcx;
-        let stub = pearlite_stub(tcx, self.thir[fun].ty);
-
-        if matches!(stub, Some(Stub::Fin)) || is_logic(tcx, func_did) && is_prophetic(tcx, func_did)
-        {
-            Purity::Logic { prophetic: true }
-        } else if is_logic(tcx, func_did)
-            || get_builtin(tcx, func_did).is_some()
-            || stub.is_some()
-            || is_snapshot_deref(tcx, func_did)
-        {
-            Purity::Logic { prophetic: false }
-        } else if is_ghost_into_inner(tcx, func_did)
-            || is_ghost_new(tcx, func_did)
-            || is_ghost_deref(tcx, func_did)
-            || is_ghost_deref_mut(tcx, func_did)
+    fn purity(&self, func_did: DefId, args: &[ExprId]) -> Purity {
+        if is_logic(self.ctx.tcx, func_did) {
+            Purity::Logic { prophetic: is_prophetic(self.ctx.tcx, func_did) }
+        } else if is_ghost_into_inner(self.ctx.tcx, func_did)
+            || is_ghost_new(self.ctx.tcx, func_did)
+            || is_ghost_deref(self.ctx.tcx, func_did)
+            || is_ghost_deref_mut(self.ctx.tcx, func_did)
         {
             Purity::Ghost
         } else {
@@ -148,7 +118,7 @@ impl PurityVisitor<'_, '_> {
 
     /// Returns `true` if `func_did` is one of `call`, `call_mut` or `call_once`, and
     /// the closure being called implements `FnPure`.
-    fn implements_fn_pure(&self, func_did: DefId, args: &[thir::ExprId]) -> bool {
+    fn implements_fn_pure(&self, func_did: DefId, args: &[ExprId]) -> bool {
         let tcx = self.ctx.tcx;
         let Some(trait_did) = tcx.trait_of_item(func_did) else { return false };
         if !tcx.is_fn_trait(trait_did) {
@@ -161,26 +131,8 @@ impl PurityVisitor<'_, '_> {
         res.must_apply_considering_regions()
     }
 
-    /// If the statement is a spec statement, visit it and return `true`, otherwise return `false`.
-    fn try_visit_spec_statement(&mut self, stmt: &thir::Stmt) -> bool {
-        let thir::StmtKind::Let { ref pattern, initializer: Some(init), else_block, span, .. } =
-            stmt.kind
-        else {
-            return false;
-        };
-        let Some(closure_id) = self.get_spec_closure(init) else { return false };
-        let thir::PatKind::Wild = pattern.kind else {
-            self.ctx.dcx().span_fatal(pattern.span, "expected a wildcard pattern in spec statement")
-        };
-        let None = else_block else {
-            self.ctx.dcx().span_fatal(span, "expected no else block in spec statement")
-        };
-        self.validate_spec_purity(closure_id, true);
-        true
-    }
-
     /// If the expression is a closure with attribute `creusot::spec`, return `Some` of its `LocalDefId`, otherwise `None`.
-    fn get_spec_closure(&self, mut expr: thir::ExprId) -> Option<LocalDefId> {
+    fn get_spec_closure(&self, mut expr: ExprId) -> Option<LocalDefId> {
         loop {
             match self.thir[expr].kind {
                 ExprKind::Scope { value, .. } => expr = value,
@@ -208,18 +160,13 @@ impl PurityVisitor<'_, '_> {
     fn validate_spec_purity(&mut self, closure_id: LocalDefId, prophetic: bool) {
         // If this is None there must be a type error that will be reported later so we can skip this silently.
         let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
-        let mut visitor = PurityVisitor {
-            ctx: self.ctx,
-            thir,
-            context: Purity::Logic { prophetic },
-            typing_env: self.typing_env,
-        };
-        thir::visit::walk_expr(&mut visitor, &thir[expr]);
+        PurityVisitor { thir, context: Purity::Logic { prophetic }, ..*self }
+            .visit_expr(&thir[expr]);
     }
 }
 
-impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
-    fn thir(&self) -> &'a thir::Thir<'tcx> {
+impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
+    fn thir(&self) -> &'a Thir<'tcx> {
         self.thir
     }
 
@@ -234,10 +181,16 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             .to_opt(func_did, subst)
                             .unwrap();
 
-                    let fn_purity = self.purity(fun, func_did, args);
-                    if !(self.context.can_call(fn_purity)
-                        || self.context.is_logic() && is_overloaded_item(self.ctx.tcx, func_did))
+                    let fn_purity = self.purity(func_did, args);
+                    if matches!(self.context, Purity::Logic { .. })
+                        && (
+                            // These methods are allowed to cheat the purity restrictions
+                            is_box_new(self.ctx.tcx, func_did)
+                                || is_ghost_deref(self.ctx.tcx, func_did)
+                                || is_ghost_deref_mut(self.ctx.tcx, func_did)
+                        )
                     {
+                    } else if !self.context.can_call(fn_purity) {
                         // Emit a nicer error specifically for calls of ghost functions.
                         if fn_purity == Purity::Ghost
                             && matches!(self.context, Purity::Program { .. })
@@ -313,14 +266,8 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     );
                 }
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
-                let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
-                let mut visitor = PurityVisitor {
-                    ctx: self.ctx,
-                    thir: &thir,
-                    context: self.context,
-                    typing_env: self.typing_env,
-                };
-                thir::visit::walk_expr(&mut visitor, &thir[expr]);
+                let Some((ref thir, expr)) = self.ctx.get_thir(closure_id) else { return };
+                PurityVisitor { thir, ..*self }.visit_expr(&thir[expr]);
             }
             ExprKind::Scope {
                 region_scope: _,
@@ -340,8 +287,23 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
     }
 
     fn visit_stmt(&mut self, stmt: &'a thir::Stmt<'tcx>) {
-        if !self.try_visit_spec_statement(stmt) {
-            thir::visit::walk_stmt(self, stmt);
+        if let thir::StmtKind::Let {
+            ref pattern, initializer: Some(init), else_block, span, ..
+        } = stmt.kind
+            && let Some(closure_id) = self.get_spec_closure(init)
+        {
+            // If the statement is a spec statement, visit it.
+            let thir::PatKind::Wild = pattern.kind else {
+                self.ctx
+                    .dcx()
+                    .span_fatal(pattern.span, "expected a wildcard pattern in spec statement")
+            };
+            if else_block.is_some() {
+                self.ctx.dcx().span_fatal(span, "expected no else block in spec statement")
+            };
+            self.validate_spec_purity(closure_id, true)
+        } else {
+            thir::visit::walk_stmt(self, stmt)
         }
     }
 }

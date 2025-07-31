@@ -43,7 +43,6 @@ macro_rules! mach_int {
             type Output = Self;
             #[logic]
             #[trusted]
-            #[creusot::no_translate]
             #[creusot::builtins = concat!($ty_nm, ".add")]
             #[allow(unused_variables)]
             fn add(self, other: Self) -> Self {
@@ -55,7 +54,6 @@ macro_rules! mach_int {
             type Output = Self;
             #[logic]
             #[trusted]
-            #[creusot::no_translate]
             #[creusot::builtins = concat!($ty_nm, ".sub")]
             #[allow(unused_variables)]
             fn sub(self, other: Self) -> Self {
@@ -67,7 +65,6 @@ macro_rules! mach_int {
             type Output = Self;
             #[logic]
             #[trusted]
-            #[creusot::no_translate]
             #[creusot::builtins = concat!($ty_nm, ".mul")]
             #[allow(unused_variables)]
             fn mul(self, other: Self) -> Self {
@@ -79,7 +76,6 @@ macro_rules! mach_int {
             type Output = Self;
             #[logic]
             #[trusted]
-            #[creusot::no_translate]
             #[creusot::builtins = concat!($ty_nm, ".neg")]
             fn neg(self) -> Self {
                 dead
@@ -89,7 +85,6 @@ macro_rules! mach_int {
         impl NthBitLogic for $t {
             #[logic]
             #[trusted]
-            #[creusot::no_translate]
             #[creusot::builtins = concat!($ty_nm, ".nth")]
             #[allow(unused_variables)]
             fn nth_bit(self, n: Int) -> bool {

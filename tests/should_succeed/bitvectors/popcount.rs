@@ -12,7 +12,7 @@ use creusot_contracts::*;
  */
 
 #[logic]
-fn count8_log(n: u8) -> Int {
+pub fn count8_log(n: u8) -> Int {
     (if n & 1u8 == 0u8 { 0 } else { 1 })
         + (if n & 2u8 == 0u8 { 0 } else { 1 })
         + (if n & 4u8 == 0u8 { 0 } else { 1 })

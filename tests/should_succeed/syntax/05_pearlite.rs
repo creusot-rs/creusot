@@ -15,7 +15,7 @@ pub fn has_len_3(v: &[u32]) -> bool {
 // Tests that we can use field access syntax in pearlite.
 
 pub struct A {
-    a: bool,
+    pub a: bool,
 }
 
 #[trusted]

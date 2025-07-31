@@ -174,7 +174,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
     #[open]
     #[logic(prophetic)]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
-    fn produces_one(self, visited: B, succ: Self) -> bool {
+    pub fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
             exists<f: &mut F, e: I::Item>
                 *f == self.func && ^f == succ.func

@@ -1,5 +1,5 @@
 use crate::{
-    contracts_items::{get_builtin, is_box_new},
+    contracts_items::{get_builtin, is_box_new, is_ghost_deref, is_ghost_deref_mut},
     translation::{
         pearlite::{BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp, super_visit_mut_term},
         traits::TraitResolved,
@@ -77,7 +77,7 @@ fn optimize_builtin<'tcx>(
     }
 
     match builtin_str {
-        None if is_box_new(tcx, id) => {
+        None if is_box_new(tcx, id) || is_ghost_deref(tcx, id) || is_ghost_deref_mut(tcx, id) => {
             let [arg] = *args.into_array::<1>().unwrap();
             return Coerce { arg: Box::new(arg) };
         }

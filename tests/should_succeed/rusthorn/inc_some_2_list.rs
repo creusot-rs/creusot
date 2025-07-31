@@ -18,7 +18,8 @@ fn random() -> bool {
 
 impl List {
     #[logic]
-    fn sum(self) -> Int {
+    #[open]
+    pub fn sum(self) -> Int {
         pearlite! {
             match self {
                 Cons(a, l) => a@ + l.sum(),

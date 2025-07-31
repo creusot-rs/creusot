@@ -4,7 +4,7 @@ use creusot_contracts::{logic::Int, *};
 pub struct List(u32, Option<Box<List>>);
 impl List {
     #[logic]
-    fn len(self: List) -> Int {
+    pub fn len(self: List) -> Int {
         {
             let List(_, ls) = self;
             1 + match ls {
@@ -15,7 +15,7 @@ impl List {
     }
 
     #[logic]
-    fn get(self: List, ix: Int) -> Option<u32> {
+    pub fn get(self: List, ix: Int) -> Option<u32> {
         {
             let List(i, ls) = self;
             match ix > 0 {

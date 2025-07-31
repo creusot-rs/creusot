@@ -3,7 +3,7 @@
 use crate::*;
 
 #[cfg(creusot)]
-use crate::std::ops::Deref;
+use crate::std::ops::{Deref, DerefMut};
 
 /// A copyable snapshot, usable in pearlite.
 ///
@@ -34,10 +34,22 @@ impl<T: ?Sized> Deref for Snapshot<T> {
     type Target = T;
 
     #[trusted]
+    #[logic]
     #[rustc_diagnostic_item = "snapshot_deref"]
     #[creusot::builtins = "identity"]
     fn deref(&self) -> &Self::Target {
-        panic!()
+        dead
+    }
+}
+
+#[cfg(creusot)]
+impl<T: ?Sized> DerefMut for Snapshot<T> {
+    #[trusted]
+    #[logic]
+    #[rustc_diagnostic_item = "snapshot_deref_mut"]
+    #[creusot::builtins = "identity"]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        dead
     }
 }
 

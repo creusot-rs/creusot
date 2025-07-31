@@ -3,7 +3,7 @@ use crate::{
         Why3Generator, clone_map::Dependencies, common_meta_decls, is_trusted_item,
         term::lower_pure,
     },
-    contracts_items::{get_namespace_ty, is_snapshot_deref},
+    contracts_items::get_namespace_ty,
     ctx::FileModule,
 };
 use rustc_hir::def_id::DefId;
@@ -22,11 +22,6 @@ pub(crate) fn lower_impl(ctx: &Why3Generator<'_>, def_id: DefId) -> Vec<FileModu
 
     for refn in ctx.trait_impl(def_id) {
         let impl_did = refn.impl_item;
-
-        // HACK: Snapshot::deref is a (very) special case, do not generate refinement obligations for it.
-        if is_snapshot_deref(ctx.tcx, impl_did) {
-            continue;
-        }
 
         let names = Dependencies::new(ctx, impl_did);
         let namespace_ty =

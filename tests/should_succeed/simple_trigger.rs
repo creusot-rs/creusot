@@ -7,7 +7,7 @@ use creusot_contracts::*;
 #[requires(i >= 0)]
 #[variant(i)]
 #[ensures(i == 0 ==> result == 0)]
-fn id(i: Int) -> Int {
+pub fn id(i: Int) -> Int {
     if i == 0 { 0 } else { id(i - 1) + 1 }
 }
 

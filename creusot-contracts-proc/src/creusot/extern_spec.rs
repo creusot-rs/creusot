@@ -169,14 +169,6 @@ impl FlatSpec {
             })
             .collect();
 
-        let body_attrs = self.attrs.clone();
-        self.attrs.push(Attribute {
-            pound_token: Default::default(),
-            style: AttrStyle::Outer,
-            bracket_token: Default::default(),
-            meta: parse_quote_spanned! {span=> creusot::no_translate },
-        });
-
         let block = Block {
             brace_token: Brace::default(),
             stmts: vec![Stmt::Expr(
@@ -245,7 +237,7 @@ impl FlatSpec {
             }
         }
 
-        let mut sig = Signature {
+        let sig = Signature {
             constness: None,
             asyncness: None,
             unsafety: self.signature.unsafety,
@@ -258,25 +250,22 @@ impl FlatSpec {
             variadic: None,
             output: self.signature.output,
         };
-
-        let f = ItemFn {
-            attrs: self.attrs,
-            vis: Visibility::Inherited,
-            sig: sig.clone(),
-            block: Box::new(block),
-        };
+        let attrs = self.attrs;
 
         let f_with_body = if let Some(mut b) = self.body {
             escape_self_in_block(&mut b);
+            let mut sig = sig.clone();
             sig.ident = Ident::new(&format!("{}_body", self.doc_item_name.0), sig.ident.span());
-            let f =
-                ItemFn { attrs: body_attrs, vis: Visibility::Inherited, sig, block: Box::new(b) };
+            let attrs = attrs.clone();
+            let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(b) };
             Some(quote! { #[allow(dead_code)] #f })
         } else {
             None
         };
 
-        quote_spanned! {span=> #[creusot::extern_spec] #[allow(dead_code)] #f #f_with_body }
+        let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(block) };
+
+        quote_spanned! {span=> #[creusot::no_translate] #[creusot::extern_spec] #[allow(dead_code)] #f #f_with_body }
     }
 }
 

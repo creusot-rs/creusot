@@ -1,9 +1,10 @@
 use rustc_hir::def::DefKind;
 
 use crate::{
-    contracts_items::{is_law, is_open_inv_result, is_trusted},
+    contracts_items::{
+        is_law, is_open_inv_result, is_snapshot_deref, is_snapshot_deref_mut, is_trusted,
+    },
     ctx::{HasTyCtxt as _, TranslationCtx},
-    validate::is_overloaded_item,
 };
 
 /// Validate that laws have no additional generic parameters.
@@ -103,7 +104,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                 ).emit();
             }
 
-            if is_overloaded_item(ctx.tcx, trait_item) {
+            if is_snapshot_deref(ctx.tcx, impl_item) || is_snapshot_deref_mut(ctx.tcx, impl_item) {
                 continue;
             };
 

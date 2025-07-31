@@ -45,7 +45,7 @@ pub fn ghost_check() {
 
 pub struct MyStruct {
     f: u32,
-    g: Snapshot<u32>,
+    pub g: Snapshot<u32>,
 }
 
 #[requires(x.g@ == 0)]

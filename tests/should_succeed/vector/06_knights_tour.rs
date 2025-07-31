@@ -3,8 +3,8 @@ use creusot_contracts::{std::clone::Clone, vec, *};
 
 #[derive(Copy, Clone)]
 struct Point {
-    x: isize,
-    y: isize,
+    pub x: isize,
+    pub y: isize,
 }
 
 // ISSUE: patterns in function binders are unsupported!

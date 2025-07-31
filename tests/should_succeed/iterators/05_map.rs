@@ -74,7 +74,8 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
 
 impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     #[logic(prophetic)]
-    fn next_precondition(iter: I, func: F) -> bool {
+    #[open]
+    pub fn next_precondition(iter: I, func: F) -> bool {
         pearlite! {
             forall<e: I::Item, i: I>
                 #[trigger(iter.produces(Seq::singleton(e), i))]
@@ -84,7 +85,8 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     }
 
     #[logic(prophetic)]
-    fn preservation(iter: I, func: F) -> bool {
+    #[open]
+    pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 #[trigger(iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b))]
@@ -97,7 +99,8 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     }
 
     #[logic(prophetic)]
-    fn reinitialize() -> bool {
+    #[open]
+    pub fn reinitialize() -> bool {
         pearlite! {
             forall<iter: &mut I, func: F>
                 iter.completed() ==>
@@ -121,8 +124,9 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     }
 
     #[logic(prophetic)]
+    #[open]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
-    fn produces_one(self, visited: B, succ: Self) -> bool {
+    pub fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
             exists<f: &mut F, e: I::Item>
                 #[trigger((*f).postcondition_mut((e,), ^f, visited))]

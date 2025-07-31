@@ -64,6 +64,7 @@ impl<T> Deref for Ghost<T> {
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_deref")]
     #[trusted]
     #[pure]
+    #[requires(false)] // If called from generic context, false precondition
     #[ensures(self.inner_logic() == *result)]
     fn deref(&self) -> &Self::Target {
         panic!()
@@ -74,8 +75,8 @@ impl<T> DerefMut for Ghost<T> {
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_deref_mut")]
     #[trusted]
     #[pure]
-    #[ensures(*result == **self)]
-    #[ensures(^result == *^self)]
+    #[requires(false)] // If called from generic context, false precondition
+    #[ensures(result == &mut **self)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         panic!()
     }
