@@ -2,7 +2,7 @@ use anyhow::{Result, anyhow};
 use clap::*;
 use creusot_setup::{Paths, creusot_paths};
 use std::{
-    ffi::{OsStr, OsString},
+    ffi::OsStr,
     path::{Component, Path, PathBuf},
     process::Command,
 };
@@ -27,7 +27,7 @@ pub struct ProveArgs {
     #[clap(long)]
     pub why3session: bool,
     /// Run why3find on files that match one of the patterns.
-    /// Examples: `name`, `name::*`, `m/*/f`.
+    /// Examples: `name`, `name::*`, `m/*/f`, or whole paths `verif/a/M_b.coma`.
     #[clap(value_parser = Pattern::parse)]
     pub patterns: Vec<Pattern>,
 }
@@ -100,7 +100,12 @@ fn raw_prove(args: ProveArgs, paths: &Paths, files: &[PathBuf]) -> Result<()> {
 }
 
 pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
+    let paths = creusot_paths()?;
+    check_why3find_json_exists(root)?;
     let files = match_patterns(&args.patterns)?;
+    if files.is_empty() {
+        return Ok(());
+    }
     // Validate `--ide-always`: it only works with a single Coma file.
     let coma = if !args.ide.ide_always {
         None
@@ -109,8 +114,6 @@ pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
     } else {
         return Err(anyhow!("The flag --ide-always requires exacly one Coma file argument"));
     };
-    let paths = creusot_paths()?;
-    check_why3find_json_exists(root)?;
     // If the proof fails, we still want to run the IDE if `--ide-always` was set.
     let prove_result = raw_prove(args, &paths, &files);
     if let Some(coma) = coma {
@@ -121,39 +124,70 @@ pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
 
 /// A pattern is a list of segments which match individual path components.
 /// A pattern matches a path if a subsequence of components matches the segments.
+/// A pattern must have at least one segment.
 ///
 /// The last component of a path is expected to be of the form `M_example.coma`,
 /// and we strip the `M_` and `.coma` before matching.
 ///
 /// Examples:
 ///
-/// - `"a::b"` and `"a/b"` are parsed as the same pattern `[Seg("a"), Seg("b")]`
+/// - `"a::b"`, `"a/b"` are parsed as the same pattern `[Seg("a"), Seg("b")]`
 /// - `"a::b"` matches the files `"verif/a/b/M_z.coma"` and `"verif/a/M_b.coma"`
+/// - a file path like `verif/a/M_b.coma` (where the last segment starts with `M_` and ends with `.coma`)
+///   can also be used as a pattern which must match a file name exactly (`match_whole` is set to `true`).
 #[derive(Clone, Debug)]
-pub struct Pattern(Vec<Segment>);
+pub struct Pattern {
+    segments: Vec<Segment>,
+    match_whole: bool,
+}
+
+impl Pattern {
+    /// Argument parser for clap
+    fn parse(s: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let mut pattern = Pattern {
+            segments: s
+                .replace("::", "/")
+                .split('/')
+                .map(|s| if s == "*" { Segment::Any } else { Segment::Seg(s.into()) })
+                .collect(),
+            match_whole: false,
+        };
+        let Some(last) = pattern.segments.last_mut() else {
+            return Err(anyhow!("Pattern must have at least one segment").into());
+        };
+        // If the last segment is `M_f.coma` we want to match whole paths against this pattern.
+        if let Segment::Seg(last) = last {
+            if let Some(stripped) = strip_coma_str(last) {
+                *last = stripped.into();
+                pattern.match_whole = true;
+            }
+        }
+        Ok(pattern)
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum Segment {
     Any,
-    Seg(OsString),
+    Seg(String),
 }
 
 impl Pattern {
-    fn parse(s: &str) -> Result<Pattern, Box<dyn std::error::Error + Send + Sync + 'static>> {
-        Ok(Pattern(
-            s.replace("::", "/")
-                .split('/')
-                .map(|s| if s == "*" { Segment::Any } else { Segment::Seg(s.into()) })
-                .collect(),
-        ))
-    }
-
     fn matches(&self, path: &Path) -> bool {
         let components: Box<[_]> = path.components().collect();
-        (0..=components.len() - self.0.len()).any(|i| {
-            let suffix = &components[i..];
-            self.0.iter().zip(suffix).all(|(seg, c)| seg.matches(*c))
-        })
+        if components.len() < self.segments.len() {
+            return false;
+        }
+        if self.match_whole {
+            self.segments.len() == components.len()
+                && self.segments.iter().zip(components).all(|(seg, c)| seg.matches(c))
+        } else {
+            components.len() >= self.segments.len()
+                && (0..=components.len() - self.segments.len()).any(|i| {
+                    let suffix = &components[i..];
+                    self.segments.iter().zip(suffix).all(|(seg, c)| seg.matches(*c))
+                })
+        }
     }
 }
 
@@ -162,7 +196,7 @@ impl Segment {
         match self {
             Segment::Any => true,
             Segment::Seg(seg) => match c {
-                Component::Normal(c) => seg == c,
+                Component::Normal(c) => c == OsStr::new(seg),
                 _ => false,
             },
         }
@@ -172,8 +206,13 @@ impl Segment {
 /// `strip_coma("prefix/M_example.coma") == Some("prefix/example")`
 fn strip_coma(path: &Path) -> Option<PathBuf> {
     let name = path.file_name()?.to_str()?;
-    let name = name.strip_prefix("M_")?.strip_suffix(".coma")?;
+    let name = strip_coma_str(name)?;
     Some(path.with_file_name(name))
+}
+
+/// `strip_coma_str("M_example.coma") == Some("example")`
+fn strip_coma_str(name: &str) -> Option<&str> {
+    name.strip_prefix("M_")?.strip_suffix(".coma")
 }
 
 /// If no patterns, return `"verif/"`.
