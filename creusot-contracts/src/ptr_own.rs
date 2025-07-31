@@ -94,9 +94,8 @@ impl<T: ?Sized> PtrOwn<T> {
     #[allow(unused_variables)]
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
-    // Currently .inner_logic() is needed instead of *; see issue #1257
-    #[ensures((^own.inner_logic()).ptr() == own.ptr())]
-    #[ensures(*(^own.inner_logic()).val() == ^result)]
+    #[ensures((^*own).ptr() == own.ptr())]
+    #[ensures(*(^*own).val() == ^result)]
     pub unsafe fn as_mut(ptr: RawPtr<T>, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
         unsafe { &mut *(ptr as *mut _) }
     }

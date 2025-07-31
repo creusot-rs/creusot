@@ -127,8 +127,7 @@ impl<T> Ghost<T> {
     /// Transforms a `&mut Ghost<T>` into a `Ghost<&mut T>`.
     #[trusted]
     #[pure]
-    #[ensures(*result.inner_logic() == **self)]
-    #[ensures(^result.inner_logic() == *^self)]
+    #[ensures(*result == &mut **self)]
     pub fn borrow_mut(&mut self) -> Ghost<&mut T> {
         Ghost::conjure()
     }
