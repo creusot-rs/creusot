@@ -141,6 +141,24 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                         ),
                     )
                     .emit();
+                } else if is_law(ctx.tcx, impl_item) && !is_law(ctx.tcx, trait_item) {
+                    ctx.error(
+                        ctx.def_span(impl_item),
+                        &format!(
+                            "Method `{}` should not be a `#[law]`, as specified by the trait declaration",
+                            ctx.item_name(impl_item),
+                        ),
+                    )
+                    .emit();
+                } else if !is_law(ctx.tcx, impl_item) && is_law(ctx.tcx, trait_item) {
+                    ctx.error(
+                        ctx.def_span(impl_item),
+                        &format!(
+                            "Expected `{}` to be a `#[law]` as specified by the trait declaration",
+                            ctx.item_name(impl_item),
+                        ),
+                    )
+                    .emit();
                 }
             }
         }

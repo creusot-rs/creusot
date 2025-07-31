@@ -34,7 +34,7 @@ impl<T: RA> RA for Option<T> {
         }
     }
 
-    #[logic]
+    #[law]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {
