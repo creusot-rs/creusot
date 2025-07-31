@@ -203,7 +203,7 @@ impl<'arena> PartialEq for Bdd<'arena> {
 
 impl<'arena> Bdd<'arena> {
     #[logic]
-    fn interp(self, vars: Mapping<u64, bool>) -> bool {
+    pub fn interp(self, vars: Mapping<u64, bool>) -> bool {
         pearlite! {
             match self {
                 Bdd(True, _) => true,
@@ -233,7 +233,7 @@ impl<'arena> Bdd<'arena> {
     }
 
     #[logic]
-    fn leastvar(self) -> Int {
+    pub fn leastvar(self) -> Int {
         pearlite! {
             match self {
                 Bdd(True, _) => u64::MAX@+1,

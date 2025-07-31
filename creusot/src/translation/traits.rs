@@ -180,7 +180,7 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
 
 /// The result of [`Self::resolve_assoc_item_opt`]: given the id of a trait item and some
 /// type parameters, we might find an actual implementation of the item.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) enum TraitResolved<'tcx> {
     NotATraitItem,
     /// An instance (like `impl Clone for i32 { ... }`) exists for the given type parameters.

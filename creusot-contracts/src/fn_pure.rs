@@ -26,7 +26,7 @@ impl<F> FnPure for F {}
 pub struct FnPureWrapper<F>(F);
 
 impl<F: Clone> Clone for FnPureWrapper<F> {
-    #[ensures(F::clone.postcondition((&self.0,), result.0))]
+    #[ensures(F::clone.postcondition((&self@,), result@))]
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
@@ -78,6 +78,7 @@ impl<F> FnPureWrapper<F> {
 }
 impl<F> View for FnPureWrapper<F> {
     type ViewTy = F;
+
     #[logic]
     fn view(self) -> Self::ViewTy {
         self.0

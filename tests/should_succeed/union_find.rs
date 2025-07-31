@@ -57,7 +57,7 @@ mod implementation {
     /// the values of [`Element`]s.
     pub struct UnionFind<T> {
         /// which "pointers" are involved
-        domain: Snapshot<FSet<Element<T>>>,
+        pub domain: Snapshot<FSet<Element<T>>>,
         /// Maps an element to its logical content (represented by the permission to access it).
         map: Ghost<FMap<LogicAddr, PtrOwn<Content<T>>>>,
         /// Map each element in [`Self::domain`] to its value.

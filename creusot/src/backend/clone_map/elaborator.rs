@@ -18,8 +18,9 @@ use crate::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
         get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
         is_fn_impl_postcond, is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond,
-        is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_logic,
-        is_namespace_ty, is_resolve_function, is_size_of_logic, is_structural_resolve,
+        is_fn_once_impl_postcond, is_fn_once_impl_precond, is_fn_pure_ty, is_ghost_deref,
+        is_ghost_deref_mut, is_inv_function, is_logic, is_namespace_ty, is_resolve_function,
+        is_size_of_logic, is_structural_resolve,
     },
     ctx::{BodyId, ItemType},
     naming::name,
@@ -120,55 +121,62 @@ fn expand_program<'tcx>(
     let names = elab.namer(dep);
     let name = names.dependency(dep).ident();
 
-    if ctx.def_kind(def_id) != DefKind::Closure {
-        let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
-            .instantiate(ctx.tcx, subst)
-            .normalize(ctx.tcx, typing_env);
+    if ctx.def_kind(def_id) == DefKind::Closure {
+        // Inline the body of closures
+        let bid = BodyId { def_id: def_id.expect_local(), promoted: None };
+        let coma = program::to_why(ctx, &names, name, bid);
+        return vec![Decl::Coma(coma)];
+    }
 
-        if let TraitResolved::UnknownFound = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
+    let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
+        .instantiate(ctx.tcx, subst)
+        .normalize(ctx.tcx, typing_env);
+
+    if is_ghost_deref(ctx.tcx, def_id) || is_ghost_deref_mut(ctx.tcx, def_id) {
+        // If `Ghost::deref`` or `Ghost::deref_mut` are called direclty, then
+        // the validation pass has checked that the call is in the right context.
+        // Hence we can remove the precondition `#[requires(false)]` which was protecting
+        // against indirect calls (via generics).
+        pre_sig.contract.requires.clear();
+    }
+
+    if let TraitResolved::UnknownFound = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
                 // These conditions are important to make sure the Fn trait familly is implemented
                 && ctx.fn_sig(def_id).skip_binder().is_fn_trait_compatible()
                 && ctx.codegen_fn_attrs(def_id).target_features.is_empty()
-        {
-            let fn_name = ctx.item_name(def_id);
+    {
+        let fn_name = ctx.item_name(def_id);
 
-            let args =
-                Term::tuple(ctx.tcx, pre_sig.inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)));
-            let fndef_ty = Ty::new_fn_def(ctx.tcx, def_id, subst);
+        let args =
+            Term::tuple(ctx.tcx, pre_sig.inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)));
+        let fndef_ty = Ty::new_fn_def(ctx.tcx, def_id, subst);
 
-            let pre_post_subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
+        let pre_post_subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
 
-            let pre_did = get_fn_once_impl_precond(ctx.tcx);
-            let pre = Term::call(ctx.tcx, typing_env, pre_did, pre_post_subst, [
-                Term::unit(ctx.tcx).coerce(fndef_ty),
-                args.clone(),
-            ]);
-            let expl_pre = format!("expl:{} requires", fn_name);
-            pre_sig.contract.requires = vec![Condition { term: pre, expl: expl_pre }];
+        let pre_did = get_fn_once_impl_precond(ctx.tcx);
+        let pre = Term::call(ctx.tcx, typing_env, pre_did, pre_post_subst, [
+            Term::unit(ctx.tcx).coerce(fndef_ty),
+            args.clone(),
+        ]);
+        let expl_pre = format!("expl:{} requires", fn_name);
+        pre_sig.contract.requires = vec![Condition { term: pre, expl: expl_pre }];
 
-            let post_did = get_fn_once_impl_postcond(ctx.tcx);
-            let post = Term::call(ctx.tcx, typing_env, post_did, pre_post_subst, [
-                Term::unit(ctx.tcx).coerce(fndef_ty),
-                args,
-                Term::var(name::result(), pre_sig.output),
-            ]);
-            let expl_post = format!("expl:{} ensures", fn_name);
-            pre_sig.contract.ensures = vec![Condition { term: post, expl: expl_post }]
-        } else {
-            pre_sig.add_type_invariant_spec(ctx, def_id, typing_env)
-        }
-
-        let return_ident = Ident::fresh_local("return");
-        let (sig, contract, return_ty) =
-            lower_program_sig(ctx, &names, name, pre_sig, def_id, return_ident);
-        return vec![program::val(sig, contract, return_ident, return_ty)];
+        let post_did = get_fn_once_impl_postcond(ctx.tcx);
+        let post = Term::call(ctx.tcx, typing_env, post_did, pre_post_subst, [
+            Term::unit(ctx.tcx).coerce(fndef_ty),
+            args,
+            Term::var(name::result(), pre_sig.output),
+        ]);
+        let expl_post = format!("expl:{} ensures", fn_name);
+        pre_sig.contract.ensures = vec![Condition { term: post, expl: expl_post }]
+    } else {
+        pre_sig.add_type_invariant_spec(ctx, def_id, typing_env)
     }
 
-    // Inline the body of closures
-    let bid = BodyId { def_id: def_id.expect_local(), promoted: None };
-
-    let coma = program::to_why(ctx, &names, name, bid);
-    vec![Decl::Coma(coma)]
+    let return_ident = Ident::fresh_local("return");
+    let (sig, contract, return_ty) =
+        lower_program_sig(ctx, &names, name, pre_sig, def_id, return_ident);
+    vec![program::val(sig, contract, return_ident, return_ty)]
 }
 
 fn expand_promoted<'tcx>(
@@ -206,10 +214,14 @@ fn expand_logic<'tcx>(
         match elab.namer.dependency(dep) {
             Kind::Named(_) => return vec![],
             Kind::UsedBuiltin(qname) => {
-                return vec![Decl::UseDecls(Box::new([Use {
-                    name: qname.module.clone(),
-                    export: false,
-                }]))];
+                if qname.module.is_empty() {
+                    return vec![];
+                } else {
+                    return vec![Decl::UseDecls(Box::new([Use {
+                        name: qname.module.clone(),
+                        export: false,
+                    }]))];
+                }
             }
             Kind::Unnamed => unreachable!(),
         }
@@ -584,7 +596,7 @@ fn fn_once_postcond_term<'tcx>(
             Some(post)
         }
         // Handle `FnPureWrapper`
-        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+        TyKind::Adt(def, subst_inner) if is_fn_pure_ty(tcx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
             let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);
@@ -681,7 +693,7 @@ fn fn_mut_postcond_term<'tcx>(
             Some(post)
         }
         // Handle `FnPureWrapper`
-        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+        TyKind::Adt(def, subst_inner) if is_fn_pure_ty(tcx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
             let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);
@@ -781,7 +793,7 @@ fn fn_postcond_term<'tcx>(
             Some(post)
         }
         // Handle `FnPureWrapper`
-        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+        TyKind::Adt(def, subst_inner) if is_fn_pure_ty(tcx, def.did()) => {
             let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(closure_ty);
@@ -837,7 +849,7 @@ fn post_fndef<'tcx>(
     args: Term<'tcx>,
     res: Term<'tcx>,
 ) -> Option<Term<'tcx>> {
-    if is_logic(ctx.tcx, did) || get_builtin(ctx.tcx, did).is_some() {
+    if is_logic(ctx.tcx, did) {
         return None;
     }
 
@@ -899,7 +911,7 @@ fn fn_once_precond_term<'tcx>(
             pre_fndef(ctx, typing_env, did, subst, args)
         }
         // Handle `FnPureWrapper`
-        TyKind::Adt(def, subst_inner) if crate::contracts_items::is_fn_pure_ty(tcx, def.did()) => {
+        TyKind::Adt(def, subst_inner) if is_fn_pure_ty(tcx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
             let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);
@@ -924,7 +936,9 @@ fn pre_fndef<'tcx>(
     subst: GenericArgsRef<'tcx>,
     args: Term<'tcx>,
 ) -> Option<Term<'tcx>> {
-    if is_logic(ctx.tcx, did) || get_builtin(ctx.tcx, did).is_some() {
+    if is_logic(ctx.tcx, did) {
+        // This is especially important for Snapshot::deref, which should keep have a false
+        // precondition if called in a program via a generic.
         return None;
     }
     let mut sig = EarlyBinder::bind(ctx.sig(did).clone())

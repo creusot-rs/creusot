@@ -17,10 +17,11 @@ fn max(a: usize, b: usize) -> usize {
 }
 
 #[logic]
+#[open]
 #[variant(s.len()-i)]
 #[requires(0 <= i && i <= s.len())]
 #[ensures(result >= 0)]
-fn sum_weights<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
+pub fn sum_weights<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
     pearlite! {
         if i == s.len() { 0 }
         else { s[i].weight@ + sum_weights(s, i+1) }
@@ -28,9 +29,10 @@ fn sum_weights<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
 }
 
 #[logic]
+#[open]
 #[variant(s.len()-i)]
 #[requires(i >= 0 && i <= s.len())]
-fn sum_values<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
+pub fn sum_values<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
     pearlite! {
         if i == s.len() { 0 }
         else { s[i].value@ + sum_values(s, i+1) }
@@ -38,10 +40,11 @@ fn sum_values<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
 }
 
 #[logic]
+#[open]
 #[variant(i2)]
 #[requires(0 <= i1 && i1 <= s1.len())]
 #[requires(0 <= i2 && i2 <= s2.len())]
-fn subseq_rev<T>(s1: Seq<&T>, i1: Int, s2: Seq<T>, i2: Int) -> bool {
+pub fn subseq_rev<T>(s1: Seq<&T>, i1: Int, s2: Seq<T>, i2: Int) -> bool {
     pearlite! {
         if i2 == 0 { i1 == s1.len() }
         else {

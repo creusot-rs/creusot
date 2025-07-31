@@ -5,12 +5,12 @@ use creusot_contracts::Default;
 pub struct Unit;
 
 #[derive(Default)]
-pub struct Tuple(i32, i64);
+pub struct Tuple(pub i32, pub i64);
 
 #[derive(Default)]
 pub struct Named<T> {
-    x: i32,
-    y: T,
+    pub x: i32,
+    pub y: T,
 }
 
 #[derive(Default)]

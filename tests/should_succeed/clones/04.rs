@@ -13,7 +13,7 @@ fn b(x: u32) -> bool {
 }
 
 #[logic]
-fn c(x: u32) -> bool {
+pub fn c(x: u32) -> bool {
     x < 50u32 && b(x)
 }
 

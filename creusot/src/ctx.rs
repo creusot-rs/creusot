@@ -2,10 +2,9 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     callbacks,
     contracts_items::{
-        get_inv_function, get_resolve_function, get_resolve_method, is_extern_spec, is_logic,
-        is_open_inv_param, is_prophetic, opacity_witness_name,
+        get_creusot_item, get_inv_function, get_resolve_function, get_resolve_method,
+        is_extern_spec, is_logic, is_open_inv_param, is_prophetic, opacity_witness_name,
     },
-    creusot_items::{self, CreusotItems},
     metadata::{BinaryMetadata, Metadata},
     naming::variable_name,
     options::Options,
@@ -165,7 +164,7 @@ pub struct TranslationCtx<'tcx> {
 
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
-    creusot_items: CreusotItems,
+    creusot_items: HashMap<Symbol, DefId>,
     pub(crate) thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
@@ -220,7 +219,14 @@ fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
 impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, opts: Options) -> Self {
         let params_open_inv = gather_params_open_inv(tcx);
-        let creusot_items = creusot_items::local_creusot_items(tcx);
+        let creusot_items = tcx
+            .hir()
+            .body_owners()
+            .filter_map(|did| {
+                let did = did.to_def_id();
+                Some((get_creusot_item(tcx, did)?, did))
+            })
+            .collect();
 
         Self {
             tcx,
@@ -370,15 +376,14 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// We encodes the opacity of functions using 'witnesses', functions that have the target opacity
     /// set as their *visibility*.
     fn mk_opacity(&self, item: DefId) -> Opacity {
-        if !matches!(self.item_type(item), ItemType::Logic { .. }) {
-            return Opacity(Visibility::Public);
-        };
-
-        let witness = opacity_witness_name(self.tcx, item).map_or_else(
-            || Visibility::Restricted(parent_module(self.tcx, item)),
-            |nm| self.visibility(self.creusot_item(nm).unwrap()),
-        );
-        Opacity(witness)
+        match self.item_type(item) {
+            ItemType::Constant => Opacity(Visibility::Public),
+            ItemType::Logic { .. } => Opacity(opacity_witness_name(self.tcx, item).map_or_else(
+                || Visibility::Restricted(parent_module(self.tcx, item)),
+                |nm| self.visibility(self.creusot_item(nm).unwrap()),
+            )),
+            _ => unreachable!(),
+        }
     }
 
     /// Checks if `item` is transparent in the scope of `modl`.
@@ -397,11 +402,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn creusot_item(&self, name: Symbol) -> Option<DefId> {
-        self.creusot_items
-            .symbol_to_id
-            .get(&name)
-            .cloned()
-            .or_else(|| self.externs.creusot_item(name))
+        self.creusot_items.get(&name).cloned().or_else(|| self.externs.creusot_item(name))
     }
 
     pub(crate) fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {

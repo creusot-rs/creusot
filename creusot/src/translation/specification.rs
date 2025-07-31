@@ -44,7 +44,13 @@ pub struct PreContract<'tcx> {
 
 impl<'tcx> PreContract<'tcx> {
     pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> Self {
-        for term in self.terms_mut() {
+        for term in self
+            .requires
+            .iter_mut()
+            .chain(self.ensures.iter_mut())
+            .map(|cond| &mut cond.term)
+            .chain(self.variant.iter_mut())
+        {
             *term = normalize(tcx, typing_env, std::mem::replace(term, /*Dummy*/ Term::true_(tcx)));
         }
         self
@@ -56,23 +62,6 @@ impl<'tcx> PreContract<'tcx> {
 
     pub(crate) fn is_empty(&self) -> bool {
         self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn terms(&self) -> impl Iterator<Item = &Term<'tcx>> {
-        self.requires
-            .iter()
-            .chain(self.ensures.iter())
-            .map(|cond| &cond.term)
-            .chain(self.variant.iter())
-    }
-
-    fn terms_mut(&mut self) -> impl Iterator<Item = &mut Term<'tcx>> {
-        self.requires
-            .iter_mut()
-            .chain(self.ensures.iter_mut())
-            .map(|cond| &mut cond.term)
-            .chain(self.variant.iter_mut())
     }
 
     pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
@@ -125,37 +114,39 @@ impl ContractClauses {
         let has_user_contract =
             !self.requires.is_empty() || !self.ensures.is_empty() || self.variant.is_some();
         let n_requires = self.requires.len();
-        let mut requires = Vec::new();
-        for req_id in self.requires {
-            log::trace!("require clause {:?}", req_id);
-            let term = ctx.term(req_id).unwrap().rename(bound);
-            let expl = if n_requires == 1 {
-                format!("expl:{} requires", fn_name)
-            } else {
-                format!("expl:{} requires #{}", fn_name, requires.len())
-            };
-            requires.push(Condition { term, expl });
-        }
+        let requires = self
+            .requires
+            .into_iter()
+            .enumerate()
+            .map(|(i, req_id)| {
+                log::trace!("require clause {:?}", req_id);
+                let mut expl = format!("expl:{fn_name} requires");
+                if n_requires > 1 {
+                    expl.push_str(&format!(" #{i}"))
+                }
+                Condition { term: ctx.term(req_id).unwrap().rename(bound), expl }
+            })
+            .collect();
 
         let n_ensures = self.ensures.len();
-        let mut ensures = Vec::new();
-        for ens_id in self.ensures {
-            log::trace!("ensures clause {:?}", ens_id);
-            let term = ctx.term(ens_id).unwrap().rename(bound_with_result);
-            let expl = if n_ensures == 1 {
-                format!("expl:{} ensures", fn_name)
-            } else {
-                format!("expl:{} ensures #{}", fn_name, ensures.len())
-            };
-            ensures.push(Condition { term, expl });
-        }
+        let ensures = self
+            .ensures
+            .into_iter()
+            .enumerate()
+            .map(|(i, ens_id)| {
+                log::trace!("ensures clause {:?}", ens_id);
+                let mut expl = format!("expl:{fn_name} ensures");
+                if n_ensures > 1 {
+                    expl.push_str(&format!(" #{i}"))
+                }
+                Condition { term: ctx.term(ens_id).unwrap().rename(bound_with_result), expl }
+            })
+            .collect();
 
-        let mut variant = None;
-        if let Some(var_id) = self.variant {
+        let variant = self.variant.map(|var_id| {
             log::trace!("variant clause {:?}", var_id);
-            let term = ctx.term(var_id).unwrap().rename(bound);
-            variant = Some(term);
-        };
+            ctx.term(var_id).unwrap().rename(bound)
+        });
         log::trace!("no_panic: {}", self.no_panic);
         log::trace!("terminates: {}", self.terminates);
         EarlyBinder::bind(PreContract {
@@ -198,11 +189,10 @@ pub(crate) fn contract_clauses_of(
     let ensures = creusot_clause_attrs(ctx.tcx, def_id, "ensures")
         .map(get_creusot_item)
         .collect::<Result<Vec<_>, _>>()?;
-    let mut variant = None;
-    for arg in creusot_clause_attrs(ctx.tcx, def_id, "variant") {
-        if std::mem::replace(&mut variant, Some(get_creusot_item(arg)?)).is_some() {
-            return Err(MultipleVariant { id: def_id });
-        }
+    let mut it_variant = creusot_clause_attrs(ctx.tcx, def_id, "variant").map(get_creusot_item);
+    let variant = it_variant.next().transpose()?;
+    if it_variant.next().transpose()?.is_some() {
+        return Err(MultipleVariant { id: def_id });
     }
     let terminates = is_terminates(ctx.tcx, def_id);
     let no_panic = is_no_panic(ctx.tcx, def_id);
@@ -355,8 +345,6 @@ impl<'tcx> PreSignature<'tcx> {
 
 pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
     let mut presig = contract_of(ctx, def_id);
-    let contract = &mut presig.contract;
-
     let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
 
     if let TyKind::Closure(_, subst) = fn_ty.kind() {
@@ -371,7 +359,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         };
 
         let mut pre_subst = ClosSubst::pre(ctx, def_id.expect_local(), self_pre.clone());
-        for pre in &mut contract.requires {
+        for pre in &mut presig.contract.requires {
             pre_subst.visit_mut_term(&mut pre.term);
         }
 
@@ -387,7 +375,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             ClosSubst::post_ref(ctx, def_id.expect_local(), self_pre, self_post)
         };
 
-        for post in &mut contract.ensures {
+        for post in &mut presig.contract.ensures {
             post_subst.visit_mut_term(&mut post.term);
         }
 
@@ -403,10 +391,10 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
                 self_.fin(),
             ]);
             let expl = "expl:closure hist_inv post".to_string();
-            contract.ensures.push(Condition { term, expl });
+            presig.contract.ensures.push(Condition { term, expl });
         };
 
-        assert!(contract.variant.is_none());
+        assert!(presig.contract.variant.is_none());
     }
 
     for (input, _, _) in &presig.inputs {

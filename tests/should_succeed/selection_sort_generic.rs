@@ -6,14 +6,16 @@ use creusot_contracts::{
 };
 
 #[logic]
-fn sorted_range<T: OrdLogic>(s: Seq<T>, l: Int, u: Int) -> bool {
+#[open]
+pub fn sorted_range<T: OrdLogic>(s: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
         forall<i, j> l <= i && i < j && j < u ==> s[i] <= s[j]
     }
 }
 
 #[logic]
-fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
+#[open]
+pub fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
     pearlite! {
         sorted_range(s, 0, s.len())
     }

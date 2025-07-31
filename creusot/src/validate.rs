@@ -14,16 +14,12 @@ use self::{
     traits::{validate_impls, validate_traits},
 };
 
-use rustc_hir::{HirId, def_id::DefId};
+use rustc_hir::HirId;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 
 use crate::{
-    backend::is_trusted_item,
-    contracts_items::{
-        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_logic, is_snapshot_deref, is_spec,
-        is_trusted,
-    },
+    contracts_items::{get_builtin, is_extern_spec, is_no_translate, is_spec, is_trusted},
     ctx::{HasTyCtxt as _, TranslationCtx},
 };
 
@@ -41,22 +37,6 @@ fn validate_trusted(ctx: &TranslationCtx) {
     }
 }
 
-fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
-    // These methods are allowed to cheat the purity restrictions because they are lang items we cannot redefine
-    if let Some(name) = tcx.get_diagnostic_name(def_id) {
-        match name.as_str() {
-            "box_new" => true,
-            _ => {
-                is_snapshot_deref(tcx, def_id)
-                    || is_ghost_deref(tcx, def_id)
-                    || is_ghost_deref_mut(tcx, def_id)
-            }
-        }
-    } else {
-        false
-    }
-}
-
 fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
     let attrs = tcx.hir().attrs(id);
     attrs
@@ -66,11 +46,11 @@ fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
 
 pub(crate) fn validate(ctx: &TranslationCtx) {
     for (&def_id, thir) in ctx.thir.iter() {
-        validate_purity(ctx, def_id, thir);
         let def_id = def_id.to_def_id();
-        if (is_spec(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
-            && !is_trusted_item(ctx.tcx, def_id)
-        {
+        if is_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
+            validate_purity(ctx, def_id, thir);
+        }
+        if is_extern_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
             validate_opacity(ctx, def_id);
         }
     }

@@ -161,7 +161,6 @@ impl AddLogic for Int {
     type Output = Self;
     #[logic]
     #[trusted]
-    #[creusot::no_translate]
     #[creusot::builtins = "mach.int.Int.(+)"]
     #[allow(unused_variables)]
     fn add(self, other: Self) -> Self {
@@ -173,7 +172,6 @@ impl SubLogic for Int {
     type Output = Self;
     #[logic]
     #[trusted]
-    #[creusot::no_translate]
     #[creusot::builtins = "mach.int.Int.(-)"]
     #[allow(unused_variables)]
     fn sub(self, other: Self) -> Self {
@@ -185,7 +183,6 @@ impl MulLogic for Int {
     type Output = Self;
     #[logic]
     #[trusted]
-    #[creusot::no_translate]
     #[creusot::builtins = "mach.int.Int.(*)"]
     #[allow(unused_variables)]
     fn mul(self, other: Self) -> Self {
@@ -197,7 +194,6 @@ impl DivLogic for Int {
     type Output = Self;
     #[logic]
     #[trusted]
-    #[creusot::no_translate]
     #[creusot::builtins = "mach.int.Int.div"]
     #[allow(unused_variables)]
     fn div(self, other: Self) -> Self {
@@ -209,7 +205,6 @@ impl RemLogic for Int {
     type Output = Self;
     #[logic]
     #[trusted]
-    #[creusot::no_translate]
     #[creusot::builtins = "mach.int.Int.mod"]
     #[allow(unused_variables)]
     fn rem(self, other: Self) -> Self {
@@ -221,7 +216,6 @@ impl NegLogic for Int {
     type Output = Self;
     #[logic]
     #[trusted]
-    #[creusot::no_translate]
     #[creusot::builtins = "mach.int.Int.(-_)"]
     fn neg(self) -> Self {
         dead

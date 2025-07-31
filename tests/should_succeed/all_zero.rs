@@ -10,7 +10,7 @@ use List::*;
 
 impl List {
     #[logic]
-    fn len(self) -> Int {
+    pub fn len(self) -> Int {
         match self {
             Cons(_, ls) => 1 + ls.len(),
             Nil => 0,
@@ -18,7 +18,7 @@ impl List {
     }
 
     #[logic]
-    fn get(self, ix: Int) -> Option<u32> {
+    pub fn get(self, ix: Int) -> Option<u32> {
         match self {
             Cons(x, ls) => match pearlite! { ix == 0 } {
                 true => Some(x),

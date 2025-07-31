@@ -19,7 +19,7 @@ use List::*;
 impl<T> List<T> {
     #[logic]
     #[ensures(result >= 0)]
-    fn len_logic(self) -> Int {
+    pub fn len_logic(self) -> Int {
         match self {
             Cons(_, ls) => 1 + ls.len_logic(),
             Nil => 0,
@@ -27,7 +27,7 @@ impl<T> List<T> {
     }
 
     #[logic]
-    fn get(self, ix: Int) -> Option<T> {
+    pub fn get(self, ix: Int) -> Option<T> {
         match self {
             Cons(t, ls) => {
                 if ix == 0 {
@@ -77,7 +77,7 @@ impl<T> List<T> {
     }
 
     #[logic]
-    fn get_default(self, ix: Int, def: T) -> T {
+    pub fn get_default(self, ix: Int, def: T) -> T {
         match self.get(ix) {
             Some(v) => v,
             None => def,
@@ -87,7 +87,7 @@ impl<T> List<T> {
 
 impl List<u32> {
     #[logic]
-    fn is_sorted(self) -> bool {
+    pub fn is_sorted(self) -> bool {
         {
             pearlite! {
                 forall<x1, x2> x1 <= x2 ==>

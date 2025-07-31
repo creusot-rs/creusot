@@ -200,6 +200,18 @@ extern_spec! {
                 #[ensures((*self).postcondition(arg, result))]
                 fn call(&self, arg: Args) -> Self::Output;
             }
+
+            trait Deref {
+                #[pure]
+                #[requires(false)]
+                fn deref(&self) -> &Self::Target;
+            }
+
+            trait DerefMut {
+                #[pure]
+                #[requires(false)]
+                fn deref_mut(&mut self) -> &mut Self::Target;
+            }
         }
     }
 }

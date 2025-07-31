@@ -15,7 +15,7 @@ impl Tr for () {
 
 #[trusted]
 #[logic]
-fn x<T: Tr>(_x: T) -> T::A {
+pub fn x<T: Tr>(_x: T) -> T::A {
     dead
 }
 

@@ -84,6 +84,8 @@ contracts_items! {{
         is_snap_from_fn                 get_snap_from_fn
     fn Snapshot::deref                   ["snapshot_deref"]
         is_snapshot_deref               get_snapshot_deref
+    fn Snapshot::deref_mut               ["snapshot_deref_mut"]
+        is_snapshot_deref_mut           get_snapshot_deref_mut
     fn Ghost::new                        ["ghost_new"]
         is_ghost_new                    get_ghost_new
     fn Ghost::into_inner                 ["ghost_into_inner"]

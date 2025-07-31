@@ -174,7 +174,7 @@ impl<T> Sparse<T> {
  * element of type `T`, required because Rust would not accept
  * to create non-initialized arrays.
  */
-#[ensures(result.size == sz)]
+#[ensures(result@.len() == sz@)]
 #[ensures(forall<i> 0 <= i && i < sz@ ==> result@[i] == None)]
 pub fn create<T: Copy>(sz: usize, dummy: T) -> Sparse<T> {
     Sparse { size: sz, n: 0, values: vec![dummy; sz], idx: vec![0; sz], back: vec![0; sz] }

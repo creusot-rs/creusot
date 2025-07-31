@@ -10,7 +10,7 @@ pub trait Inv<T> {
 #[trusted]
 struct MutexInner<T>(std::sync::Mutex<T>);
 
-pub struct Mutex<T, I>(MutexInner<T>, I);
+pub struct Mutex<T, I>(MutexInner<T>, pub I);
 // We ignore poisoning, thus we don't use `LockResult` like in `std`.
 impl<T, I: Inv<T>> Mutex<T, I> {
     #[trusted]
@@ -42,7 +42,7 @@ impl<T, I: Inv<T>> Mutex<T, I> {
 #[trusted]
 struct GuardInner<'a, T: ?Sized + 'a>(std::sync::MutexGuard<'a, T>);
 
-pub struct MutexGuard<'a, T: ?Sized + 'a, I>(GuardInner<'a, T>, Snapshot<I>);
+pub struct MutexGuard<'a, T: ?Sized + 'a, I>(GuardInner<'a, T>, pub Snapshot<I>);
 
 impl<'a, T, I: Inv<T>> MutexGuard<'a, T, I> {
     #[trusted]
@@ -131,13 +131,7 @@ impl<T, I: Inv<T>> JoinHandle<T, I> {
 fn spawn<T: Send + 'static, F: Send + 'static + FakeFnOnce<Return = T>>(
     f: F,
 ) -> JoinHandle<T, SpawnPostCond<F>> {
-    JoinHandle(
-        JoinHandleInner(std::thread::spawn(
-            #[creusot::no_translate]
-            || f.call(),
-        )),
-        snapshot! { SpawnPostCond { f } },
-    )
+    JoinHandle(JoinHandleInner(std::thread::spawn(|| f.call())), snapshot! { SpawnPostCond { f } })
 }
 
 struct SpawnPostCond<F> {

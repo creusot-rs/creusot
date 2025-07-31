@@ -7,10 +7,10 @@ use std::ops::{Index, IndexMut};
 
 /* Memory model */
 
-struct Memory(Vec<Ptr>);
+struct Memory(pub Vec<Ptr>);
 type Ptr = usize;
 
-const NULL: Ptr = usize::MAX;
+pub const NULL: Ptr = usize::MAX;
 
 impl IndexLogic<Ptr> for Memory {
     type Item = Ptr;

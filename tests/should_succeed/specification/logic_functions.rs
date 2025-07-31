@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::{logic::Int, *};
 
 #[logic]
-fn logic() -> bool {
+pub fn logic() -> bool {
     true
 }
 
@@ -11,7 +11,7 @@ pub fn use_logic() {}
 
 // When we want to use pearlite syntax, we use pearlite! macro
 #[logic]
-fn logic_pearlite() -> bool {
+pub fn logic_pearlite() -> bool {
     pearlite! { 0 == 0 }
 }
 

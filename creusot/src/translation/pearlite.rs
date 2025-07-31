@@ -7,7 +7,8 @@
 
 use crate::{
     contracts_items::{
-        is_assertion, is_deref, is_ghost_ty, is_index_logic, is_logic_closure, is_snap_ty, is_spec,
+        is_assertion, is_deref, is_deref_mut, is_ghost_ty, is_index_logic, is_logic_closure,
+        is_snap_ty, is_spec,
     },
     error::{CreusotResult, Error},
     translation::TranslationCtx,
@@ -570,9 +571,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
         expr: ExprId,
         triggers: &mut Vec<Trigger<'tcx>>,
     ) -> CreusotResult<ExprId> {
-        match &self.thir[expr].kind {
-            ExprKind::Call { ty, args, .. } => {
-                if let Some(Stub::Trigger) = pearlite_stub(self.ctx.tcx, *ty) {
+        match self.unscope(expr).kind {
+            ExprKind::Call { ty, ref args, .. } => {
+                if let Some(Stub::Trigger) = pearlite_stub(self.ctx.tcx, ty) {
                     let trigger = self.expr_term(args[0])?;
                     if let TermKind::Tuple { fields } = trigger.kind {
                         triggers.push(Trigger(fields));
@@ -586,14 +587,20 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 }
             }
             ExprKind::Block { block } => {
-                if let Block { stmts: box [], expr: Some(expr), .. } = self.thir[*block] {
+                if let Block { stmts: box [], expr: Some(expr), .. } = self.thir[block] {
                     self.collect_triggers(expr, triggers)
                 } else {
                     Ok(expr)
                 }
             }
-            ExprKind::Scope { value, .. } => self.collect_triggers(*value, triggers),
             _ => Ok(expr),
+        }
+    }
+
+    fn unscope(&self, expr: ExprId) -> &thir::Expr<'tcx> {
+        match self.thir[expr] {
+            thir::Expr { kind: ExprKind::Scope { value, .. }, .. } => self.unscope(value),
+            ref r => r,
         }
     }
 
@@ -601,13 +608,32 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
         PIdent(self.ctx.rename(id))
     }
 
+    fn not_spec(&self, id: StmtId) -> bool {
+        match self.thir[id].kind {
+            StmtKind::Expr { expr, .. } => self.not_spec_expr(expr),
+            StmtKind::Let { initializer, .. } => {
+                if let Some(initializer) = initializer {
+                    self.not_spec_expr(initializer)
+                } else {
+                    true
+                }
+            }
+        }
+    }
+
+    fn not_spec_expr(&self, id: ExprId) -> bool {
+        match self.unscope(id).kind {
+            ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
+                !is_spec(self.ctx.tcx, closure_id.to_def_id())
+            }
+            _ => true,
+        }
+    }
+
     /// Translate a THIR expression into a term.
     fn expr_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
-        let ty = self.thir[expr].ty;
-        let thir_term = &self.thir[expr];
-        let span = thir_term.span;
-        let res = match thir_term.kind {
-            ExprKind::Scope { value, .. } => self.expr_term(value),
+        let thir::Expr { span, ty, ref kind, .. } = *self.unscope(expr);
+        let res = match *kind {
             ExprKind::Block { block } => {
                 let Block { ref stmts, expr, .. } = self.thir[block];
                 let mut inner = match expr {
@@ -615,8 +641,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     None => Term::unit(self.ctx.tcx).span(span),
                 };
 
-                for stmt in stmts.iter().rev().filter(|id| not_spec(self.ctx.tcx, self.thir, **id))
-                {
+                for stmt in stmts.iter().rev().filter(|id| self.not_spec(**id)) {
                     inner = self.stmt_term(*stmt, inner)?;
                 }
                 Ok(inner)
@@ -750,8 +775,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         let mut term = args[0];
                         // Peel off everything to get to the array literal
                         let items = loop {
-                            match &self.thir[term].kind {
-                                ExprKind::Scope { value, .. } => term = *value,
+                            match &self.unscope(term).kind {
                                 ExprKind::PointerCoercion { source, .. } => term = *source,
                                 ExprKind::Borrow { arg, .. } => term = *arg,
                                 ExprKind::Deref { arg, .. } => term = *arg,
@@ -776,7 +800,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         let TermKind::Item(id, subst) = fun.kind else {
                             unreachable!("Call on non-function type");
                         };
-                        // HACK: allow dereferencing of `Ghost` in pearlite
+                        // Allow dereferencing of `Ghost` in pearlite
                         if is_deref(self.ctx.tcx, id)
                             && let Some(adt) = subst.type_at(0).ty_adt_def()
                             && is_ghost_ty(self.ctx.tcx, adt.did())
@@ -848,8 +872,24 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     kind: TermKind::Constructor { variant: variant_index, fields },
                 })
             }
-            ExprKind::Deref { arg } if let Some(arg) = self.expect_shared_borrow(arg) => {
+            ExprKind::Deref { arg }
+                if let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } =
+                    self.unscope(arg).kind =>
+            {
                 self.expr_term(arg)
+            }
+            ExprKind::Deref { arg }
+                if let ExprKind::Call { ty, ref args, .. } = self.unscope(arg).kind
+                    && let &TyKind::FnDef(f_did, subst) = ty.kind()
+                    && is_deref_mut(self.ctx.tcx, f_did)
+                    && let ExprKind::Borrow { borrow_kind, arg } = self.unscope(args[0]).kind =>
+            {
+                // We have just detected `*deref_mut(&mut x)`, which can happen only for Ghost and Snapshot
+                assert_matches!(borrow_kind, BorrowKind::Mut { .. });
+                assert_matches!(subst.type_at(0).kind(),
+                    TyKind::Adt(adt, _) if is_snap_ty(self.ctx.tcx, adt.did()) ||
+                                           is_ghost_ty(self.ctx.tcx,adt.did()));
+                Ok(self.expr_term(arg)?.coerce(ty).span(span))
             }
             ExprKind::Deref { arg } => {
                 let arg_trans = self.expr_term(arg)?;
@@ -946,18 +986,6 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             }
         };
         Ok(Term { ty, ..res? })
-    }
-
-    // Get the contents of a shared borrow expression (`&contents`), skipping through `Scope` nodes.
-    // `None` if the expression is not a shared borrow.
-    fn expect_shared_borrow(&self, mut expr: ExprId) -> Option<ExprId> {
-        loop {
-            match &self.thir[expr].kind {
-                ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => return Some(*arg),
-                ExprKind::Scope { value, .. } => expr = *value,
-                _ => return None,
-            }
-        }
     }
 
     fn arm_term(&self, arm: ArmId) -> CreusotResult<(Pattern<'tcx>, Term<'tcx>)> {
@@ -1087,13 +1115,13 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
         &self,
         body: ExprId,
     ) -> CreusotResult<(Box<[(PIdent, Ty<'tcx>)]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
-        trace!("{:?}", self.thir[body].kind);
-        match self.thir[body].kind {
-            ExprKind::Scope { value, .. } => self.quant_term(value),
+        let e = self.unscope(body);
+        trace!("{:?}", e.kind);
+        match e.kind {
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 pearlite_with_triggers(self.ctx, closure_id)
             }
-            _ => Err(Error::msg(self.thir[body].span, "unexpected error in quantifier")),
+            _ => Err(Error::msg(e.span, "unexpected error in quantifier")),
         }
     }
 
@@ -1114,10 +1142,13 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     /// This is not fully satisfactory, but the other choice where we correspond to the behavior of programs is not stable under
     /// substitution.
     fn logical_reborrow(&self, rebor_id: ExprId) -> Result<TermKind<'tcx>, Error> {
-        // Check for the simple `&mut * x` case.
-        if let ExprKind::Deref { arg } = self.thir[rebor_id].kind {
+        // Check for the simple `&mut * x` case (with x a mutable borrow).
+        if let ExprKind::Deref { arg } = self.unscope(rebor_id).kind
+            && let TyKind::Ref(_, _, Mutability::Mut) = self.thir[arg].ty.kind()
+        {
             return Ok(self.expr_term(arg)?.kind);
         };
+
         // Handle every other case.
         let (inner, projections) = self.logical_reborrow_inner(rebor_id)?;
         Ok(TermKind::Reborrow { inner: Box::new(inner), projections: projections.into() })
@@ -1127,51 +1158,48 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
         &self,
         rebor_id: ExprId,
     ) -> Result<(Term<'tcx>, Vec<ProjectionElem<Term<'tcx>, Ty<'tcx>>>), Error> {
-        let ty = self.thir[rebor_id].ty;
-        let span = self.thir[rebor_id].span;
-        match &self.thir[rebor_id].kind {
-            ExprKind::Scope { value, .. } => self.logical_reborrow_inner(*value),
+        let thir::Expr { ty, span, ref kind, .. } = *self.unscope(rebor_id);
+        match *kind {
             ExprKind::Block { block } => {
-                let Block { stmts, expr, .. } = &self.thir[*block];
+                let Block { stmts, expr, .. } = &self.thir[block];
                 assert!(stmts.is_empty());
-                self.logical_reborrow_inner(expr.unwrap())
+                return self.logical_reborrow_inner(expr.unwrap());
             }
             ExprKind::Field { lhs, name, .. } => {
-                let (inner, mut proj) = self.logical_reborrow_inner(*lhs)?;
-                proj.push(ProjectionElem::Field(*name, ty));
-                Ok((inner, proj))
+                let (inner, mut proj) = self.logical_reborrow_inner(lhs)?;
+                proj.push(ProjectionElem::Field(name, ty));
+                return Ok((inner, proj));
             }
-            ExprKind::Deref { arg } => {
-                // Detect * snapshot_deref & and treat that as a single 'projection'
-                if self.is_snapshot_deref(*arg) {
-                    let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
-                    let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } =
-                        self.thir[args[0]].kind
-                    else {
-                        unreachable!()
-                    };
-
-                    return self.logical_reborrow_inner(arg);
-                };
-
-                match self.thir[*arg].ty.kind() {
-                    TyKind::Ref(_, _, Mutability::Mut) => {
-                        let inner = self.expr_term(*arg)?;
-                        Ok((inner.span(span), Vec::new()))
-                    }
-                    TyKind::Adt(adtdef, _) if adtdef.is_box() => {
-                        let mut res = self.logical_reborrow_inner(*arg)?;
-                        res.1.push(ProjectionElem::Deref);
-                        Ok(res)
-                    }
-                    _ => unreachable!("Unexpected deref type: {ty:?}."),
+            ExprKind::Deref { arg } => match self.thir[arg].ty.kind() {
+                TyKind::Ref(_, _, Mutability::Mut) => {
+                    let inner = self.expr_term(arg)?;
+                    return Ok((inner.span(span), Vec::new()));
                 }
-            }
-            e @ ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
-                let TyKind::FnDef(id, _) = fn_ty.kind() else { panic!("expected function type") };
-
-                let (inner, mut proj) = self.logical_reborrow_inner(args[0])?;
-
+                TyKind::Ref(_, _, Mutability::Not)
+                    if let ExprKind::Call { ty, ref args, .. } = self.unscope(arg).kind
+                        && let &TyKind::FnDef(f_did, subst) = ty.kind()
+                        && is_deref(self.ctx.tcx, f_did)
+                        && let ExprKind::Borrow { borrow_kind, arg } =
+                            self.unscope(args[0]).kind =>
+                {
+                    // We have just detected * deref &. Treat it as nop.
+                    assert_matches!(borrow_kind, BorrowKind::Shared);
+                    assert_matches!(subst.type_at(0).kind(),
+                    TyKind::Adt(adt, _) if is_snap_ty(self.ctx.tcx, adt.did()) ||
+                                           is_ghost_ty(self.ctx.tcx,adt.did()));
+                    return self.logical_reborrow_inner(arg);
+                }
+                TyKind::Adt(adtdef, _) if adtdef.is_box() => {
+                    let mut res = self.logical_reborrow_inner(arg)?;
+                    res.1.push(ProjectionElem::Deref);
+                    return Ok(res);
+                }
+                _ => (),
+            },
+            ExprKind::Call { ty: fn_ty, ref args, .. }
+                if let TyKind::FnDef(id, _) = fn_ty.kind()
+                    && is_index_logic(self.ctx.tcx, *id) =>
+            {
                 if !matches!(
                     self.thir[args[0]].ty.kind(),
                     TyKind::Str | TyKind::Array(_, _) | TyKind::Slice(_)
@@ -1179,33 +1207,24 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     return Err(Error::msg(
                         span,
                         format!(
-                            "unsupported logical reborrow of indexing {e:?}, only slice indexing is supported"
+                            "Unsupported logical reborrow of indexing, only slice indexing is supported"
                         ),
                     ));
                 }
 
-                if is_index_logic(self.ctx.tcx, *id) {
-                    let index = self.expr_term(args[1])?;
-                    proj.push(ProjectionElem::Index(index.clone()));
-                    Ok((inner, proj))
-                } else {
-                    Err(Error::msg(span, format!("unsupported projection {id:?}")))
-                }
+                let (inner, mut proj) = self.logical_reborrow_inner(args[0])?;
+                proj.push(ProjectionElem::Index(self.expr_term(args[1])?));
+                return Ok((inner, proj));
             }
-            e => Err(Error::msg(
-                span,
-                format!(
-                    "unsupported logical reborrow {e:?}, only field projections and slice indexing are supported"
-                ),
-            )),
+            _ => (),
         }
-    }
 
-    pub(crate) fn is_snapshot_deref(&self, expr_id: ExprId) -> bool {
-        let ExprKind::Call { ty, .. } = &self.thir[expr_id].kind else { return false };
-        let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
-        is_deref(self.ctx.tcx, *id)
-            && sub.type_at(0).ty_adt_def().is_some_and(|d| is_snap_ty(self.ctx.tcx, d.did()))
+        Err(Error::msg(
+            span,
+            format!(
+                "Unsupported logical reborrow, only field projections and slice indexing are supported"
+            ),
+        ))
     }
 }
 
@@ -1260,29 +1279,6 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
         }
     } else {
         None
-    }
-}
-
-fn not_spec(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: StmtId) -> bool {
-    match thir[id].kind {
-        StmtKind::Expr { expr, .. } => not_spec_expr(tcx, thir, expr),
-        StmtKind::Let { initializer, .. } => {
-            if let Some(initializer) = initializer {
-                not_spec_expr(tcx, thir, initializer)
-            } else {
-                true
-            }
-        }
-    }
-}
-
-fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
-    match thir[id].kind {
-        ExprKind::Scope { value, .. } => not_spec_expr(tcx, thir, value),
-        ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-            !is_spec(tcx, closure_id.to_def_id())
-        }
-        _ => true,
     }
 }
 
@@ -1929,15 +1925,9 @@ fn print_thir_expr(fmt: &mut Formatter, thir: &Thir, expr_id: ExprId) -> std::fm
             write!(fmt, "{}", lit.node)?;
         }
         ExprKind::Use { source } => print_thir_expr(fmt, thir, *source)?,
-        ExprKind::VarRef { id } => {
-            write!(fmt, "{:?}", id.0)?;
-        }
-        ExprKind::Scope { value, .. } => {
-            print_thir_expr(fmt, thir, *value)?;
-        }
-        _ => {
-            write!(fmt, "{:?}", thir[expr_id])?;
-        }
+        ExprKind::VarRef { id } => write!(fmt, "{:?}", id.0)?,
+        ExprKind::Scope { value, .. } => print_thir_expr(fmt, thir, *value)?,
+        _ => write!(fmt, "{:?}", thir[expr_id])?,
     }
     Ok(())
 }

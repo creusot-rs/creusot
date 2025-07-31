@@ -6,12 +6,12 @@ use creusot_contracts::*;
 // the implementation of simple between itself and `uses_simple`.
 
 #[logic]
-fn simple() -> bool {
+pub fn simple() -> bool {
     true
 }
 
 #[logic]
-fn uses_simple() -> bool {
+pub fn uses_simple() -> bool {
     simple()
 }
 

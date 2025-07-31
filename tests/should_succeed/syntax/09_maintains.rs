@@ -9,18 +9,18 @@ pub struct A {}
 
 impl A {
     #[logic]
-    fn invariant(self, b: bool, c: u64) -> bool {
+    pub fn invariant(self, b: bool, c: u64) -> bool {
         true
     }
 
     #[logic]
-    fn inv2(self, b: Int) -> bool {
+    pub fn inv2(self, b: Int) -> bool {
         true
     }
 }
 
 #[logic]
-fn other_inv(a: A, b: bool) -> bool {
+pub fn other_inv(a: A, b: bool) -> bool {
     true
 }
 
