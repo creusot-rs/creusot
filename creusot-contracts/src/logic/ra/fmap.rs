@@ -49,7 +49,11 @@ impl<K, V: RA> RA for FMap<K, V> {
     #[law]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {
-        let _ = Self::ext_eq;
+        proof_assert!(match (a.op(b), b.op(a)) {
+            (Some(ab), Some(ba)) => ab.ext_eq(ba),
+            (None, None) => true,
+            _ => false,
+        })
     }
 
     #[law]
