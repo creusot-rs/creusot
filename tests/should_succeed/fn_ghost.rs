@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 pub fn foo() {
-    let f = #[pure]
+    let f = #[check(ghost)]
     |x: i32| x + 1;
     let result = takes_ghost_fn(f);
     assert!(result == 2);
