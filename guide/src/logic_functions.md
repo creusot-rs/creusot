@@ -1,13 +1,11 @@
 # Logic functions
 
-We provide two new attributes on Rust functions: `logic` and `predicate`.
+Functions marked with `#[logic]` can be used in specs and other logical conditions (`requires`/`ensures` and `invariant`), but cannot be called from normal Rust code (the body of a `logic` function is replaced with a panic). Typically, `logic` functions manipulate variables of logical model types such as `Int` and `Seq<Int>` rather than normal Rust types such as `i32` and `&[i32]`. Within a `logic` function, there are two modes: They can freely use logical, non-executable operationsuse ghost functions
 
-Marked `#[logic]` or `#[predicate]`, a function can be used in specs and other logical conditions (`requires`/`ensures` and `invariant`). They can use ghost functions.
-The two attributes have the following difference:
+- Statements not enclosed by the `pearlite! { ... }` macro can only use normal Rust syntax, but can perform logical operations such as equalities, comparisons, etc. of logical model types such as `Int`. They cannot call non-`logic` functions (raising the syntax error "program code in logic context"). Loops are not currently supported, and see the next section on recursion.
+- Within the `pearlite! { ... }` macro, you can additionally use special pearlite syntax such as quantifiers (e.g., `forall<i> ...`) and implications (`... i > 3 ==> i > 2`).
 
-- A `logic` function can freely have logical, non-executable operations, such as quantifiers, logic equalities, etc. Instead, this function can't be called in normal Rust code (the function body of a `logic` function is replaced with a panic).
-  You can use pearlite syntax for any part in the logic function by marking that part with the `pearlite! { ... }` macro.
-- A `predicate` is a logical function which returns a proposition (in practice, returns a boolean value).
+By default, `logic` functions are *opaque* outside of the module they are defined in (in other words, they are only *open* at the module level). When a function is opaque, only its pre- and postconditions are visible. This is useful if the function is only used to express (and prove) that the preconditions imply the postconditions and we do not care about the result (a *lemma*). However, if you do want to use the result in a specification outside of the module (e.g. if you are using it as a *predicate* in one or more contracts), you can mark the function with `#[open]`. The `open` attribute takes an optional argument, similar to `pub`, e.g. you could specify that a function is to be `#[open(super)]` or `#[open(crate)]`.
 
 ## Recursion
 
@@ -69,4 +67,3 @@ Prophetic:
 TODO
 ```
 
-<!-- TODO: Explain `#[open(...)]` -->
