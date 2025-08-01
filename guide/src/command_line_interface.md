@@ -57,7 +57,7 @@ cargo creusot doc
 
 Build documentation.
 
-This is a variant of `cargo doc` that also renders contracts (`requires` and `ensures`), logic functions, and predicates.
+This is a variant of `cargo doc` that also renders contracts (`requires` and `ensures`) and logic functions.
 
 
 ### `clean`
