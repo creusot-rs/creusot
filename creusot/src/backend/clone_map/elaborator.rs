@@ -16,11 +16,11 @@ use crate::{
     },
     contracts_items::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
-        get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method,
+        get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method, is_fn_ghost_ty,
         is_fn_impl_postcond, is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond,
-        is_fn_once_impl_postcond, is_fn_once_impl_precond, is_fn_pure_ty, is_ghost_deref,
-        is_ghost_deref_mut, is_inv_function, is_logic, is_namespace_ty, is_resolve_function,
-        is_size_of_logic, is_structural_resolve,
+        is_fn_once_impl_postcond, is_fn_once_impl_precond, is_ghost_deref, is_ghost_deref_mut,
+        is_inv_function, is_logic, is_namespace_ty, is_resolve_function, is_size_of_logic,
+        is_structural_resolve,
     },
     ctx::{BodyId, ItemType},
     naming::name,
@@ -595,8 +595,8 @@ fn fn_once_postcond_term<'tcx>(
             post.subst(&SmallRenaming([(name::result(), result)]));
             Some(post)
         }
-        // Handle `FnPureWrapper`
-        TyKind::Adt(def, subst_inner) if is_fn_pure_ty(tcx, def.did()) => {
+        // Handle `FnGhostWrapper`
+        TyKind::Adt(def, subst_inner) if is_fn_ghost_ty(tcx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
             let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);
@@ -692,8 +692,8 @@ fn fn_mut_postcond_term<'tcx>(
             post.subst(&SmallRenaming([(name::result(), result)]));
             Some(post)
         }
-        // Handle `FnPureWrapper`
-        TyKind::Adt(def, subst_inner) if is_fn_pure_ty(tcx, def.did()) => {
+        // Handle `FnGhostWrapper`
+        TyKind::Adt(def, subst_inner) if is_fn_ghost_ty(tcx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
             let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);
@@ -792,8 +792,8 @@ fn fn_postcond_term<'tcx>(
             post.subst(&SmallRenaming([(name::result(), result)]));
             Some(post)
         }
-        // Handle `FnPureWrapper`
-        TyKind::Adt(def, subst_inner) if is_fn_pure_ty(tcx, def.did()) => {
+        // Handle `FnGhostWrapper`
+        TyKind::Adt(def, subst_inner) if is_fn_ghost_ty(tcx, def.did()) => {
             let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(closure_ty);
@@ -910,8 +910,8 @@ fn fn_once_precond_term<'tcx>(
             }
             pre_fndef(ctx, typing_env, did, subst, args)
         }
-        // Handle `FnPureWrapper`
-        TyKind::Adt(def, subst_inner) if is_fn_pure_ty(tcx, def.did()) => {
+        // Handle `FnGhostWrapper`
+        TyKind::Adt(def, subst_inner) if is_fn_ghost_ty(tcx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
             let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);

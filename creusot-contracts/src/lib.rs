@@ -119,7 +119,7 @@ pub mod macros {
     /// Note that ghost blocks are subject to some constraints, that ensure the behavior
     /// of the code stays the same with and without ghost blocks:
     /// - They may not contain code that crashes or runs indefinitely. In other words,
-    ///   they can only call [`pure`] functions.
+    ///   they can only call [`mode(ghost)`] functions.
     /// - All variables that are read in the ghost block must either be [`Copy`], or a
     ///   [`Ghost`].
     /// - All variables that are modified in the ghost block must be [`Ghost`]s.
@@ -360,7 +360,7 @@ pub mod std;
 #[cfg(creusot)]
 pub mod num_rational;
 
-pub mod fn_pure;
+pub mod fn_ghost;
 pub mod ghost;
 pub mod invariant;
 pub mod local_invariant;
@@ -378,7 +378,7 @@ pub mod well_founded;
 // We add some common things at the root of the creusot-contracts library
 mod base_prelude {
     pub use crate::{
-        fn_pure::FnPure,
+        fn_ghost::FnGhost,
         ghost::Ghost,
         logic::{Int, OrdLogic, Seq, ops::IndexLogic as _},
         model::{DeepModel, View},
