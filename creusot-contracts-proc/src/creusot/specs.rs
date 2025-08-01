@@ -214,9 +214,9 @@ pub fn safety(args: TS1, tokens: TS1) -> TS1 {
         #rest
     };
     if is_closure {
-        // Implement `FnPure` on the closure
+        // Implement `FnGhost` on the closure
         result = quote! {
-            ::creusot_contracts::fn_pure::FnPureWrapper::__new(#result)
+            ::creusot_contracts::fn_ghost::FnGhostWrapper::__new(#result)
         }
     }
     result.into()
