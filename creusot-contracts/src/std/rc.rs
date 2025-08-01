@@ -1,7 +1,7 @@
 use crate::*;
 #[cfg(feature = "nightly")]
 use ::std::alloc::Allocator;
-use ::std::rc::Rc;
+use ::std::{ops::Deref, rc::Rc};
 
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Rc<T, A> {
@@ -41,6 +41,11 @@ extern_spec! {
     impl<T: ?Sized, A: Allocator + Clone> Clone for Rc<T, A> {
         #[ensures(result@ == (*self)@)]
         fn clone(&self) -> Rc<T, A>;
+    }
+
+    impl<T: ?Sized, A: Allocator> Deref for Rc<T, A> {
+        #[ensures(*result == *(*self)@)]
+        fn deref(&self) -> &T;
     }
 }
 
