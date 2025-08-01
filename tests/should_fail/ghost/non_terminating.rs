@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[pure]
+#[safety(ghost)]
 pub fn recursive() {
     ghost! {
         f();
@@ -9,7 +9,7 @@ pub fn recursive() {
     };
 }
 
-#[pure]
+#[safety(ghost)]
 fn f() {
     recursive();
 }

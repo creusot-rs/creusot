@@ -2,14 +2,14 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 pub trait Foo {
-    #[terminates]
+    #[safety(terminates)]
     fn f() {}
-    #[terminates]
+    #[safety(terminates)]
     fn g();
 }
 
 impl Foo for i32 {
-    #[terminates]
+    #[safety(terminates)]
     fn g() {
         Self::f(); // this assumes f could call g
     }

@@ -2,7 +2,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[terminates]
+#[safety(terminates)]
 fn i_terminate() {
     i_dont();
 }
