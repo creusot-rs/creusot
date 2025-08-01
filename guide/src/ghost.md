@@ -19,7 +19,7 @@ ghost! {
 In `ghost!` block, you may write any kind of Rust code, with the following restrictions :
 
 - ghost code must terminate (see [termination](termination.md) for details)
-- all functions called must have the `#[pure]` attribute
+- all functions called must have the `#[check(ghost)]` attribute
 - When reading an outer variable, the variable must be of type `Ghost<T>`, or implement `Copy`
 - When writing an outer variable, the variable must be of type `Ghost<T>` or `Snapshot<T>`
 - The output of the `ghost!` block will automatically be wrapped in `Ghost::new`
@@ -47,7 +47,7 @@ proof_assert!(g@ == 100);
 - Calling a function in ghost code:
 
 ```rust
-#[pure]
+#[check(ghost)]
 #[requires(*g < i32::MAX)]
 #[ensures((^g)@ == (*g)@ + 1)]
 fn add_one(g: &mut i32) {
