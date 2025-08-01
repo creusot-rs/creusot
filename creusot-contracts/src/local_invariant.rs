@@ -194,6 +194,33 @@ impl<'a, T: LocalInvariantSpec> LocalInvariantExt<'a> for Ghost<&'a LocalInvaria
     }
 }
 
+impl<'a, T, L> LocalInvariantExt<'a> for Ghost<&'a L>
+where
+    T: 'a + LocalInvariantSpec,
+    L: ::std::ops::Deref<Target = LocalInvariant<T>>,
+{
+    type Inner = T;
+
+    #[requires(L::deref.precondition((*self,)))]
+    #[requires(forall<this> L::deref.postcondition((*self,), this) ==>
+        namespaces@.contains(this.namespace()))]
+    #[requires(forall<this> L::deref.postcondition((*self,), this) ==>
+        forall<t: Ghost<&mut T>> (**t).invariant_with_data(this.public()) && inv(t) ==>
+            f.precondition((t,)) &&
+            // f must restore the invariant
+            (forall<res: A> f.postcondition_once((t,), res) ==> (^*t).invariant_with_data(this.public())))]
+    #[ensures(exists<this> L::deref.postcondition((*self,), this) &&
+        exists<t: Ghost<&mut T>> (**t).invariant_with_data(this.public()) && f.postcondition_once((t,), result))]
+    #[pure]
+    fn open<A, F>(self, namespaces: Ghost<Namespaces<'a>>, f: F) -> A
+    where
+        F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
+    {
+        let this: Ghost<&LocalInvariant<T>> = ghost!(&self);
+        LocalInvariant::open(this, namespaces, f)
+    }
+}
+
 impl<T: LocalInvariantSpec> LocalInvariant<T> {
     /// Construct a `LocalInvariant`
     ///
