@@ -327,7 +327,7 @@ begin:"\\b(\\d[\\d_]*(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?)"+o}],relevance:0},{
 begin:[/fn/,/\s+/,i],className:{1:"keyword",3:"title.function"}},{
 scope:"keyword.creusot",match:/\bghost\s*!/},{className:"meta",begin:"#!?\\[",
 end:"\\]",keywords:{
-"keyword.creusot":["law","logic","open","predicate","prophetic","pure","terminates","trusted"]
+"keyword.creusot":["law","logic","open","prophetic","pure","terminates","trusted"]
 },contains:[{scope:"creusot",begin:/(?:requires|ensures|invariant|variant)\(/,
 beginScope:"keyword.creusot",endScope:"keyword.creusot",end:/[()]/,
 "on:begin":(e,t)=>{t.data.nesting=0},"on:end":(e,t)=>{
