@@ -1,7 +1,7 @@
 use crate::{
     backend::is_trusted_item,
     contracts_items::{
-        get_fn_pure_trait, is_box_new, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner,
+        get_fn_ghost_trait, is_box_new, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner,
         is_ghost_new, is_logic, is_prophetic, is_snap_from_fn, is_snapshot_closure, is_spec,
     },
     ctx::{HasTyCtxt, TranslationCtx},
@@ -109,16 +109,16 @@ impl PurityVisitor<'_, '_> {
             Purity::Ghost
         } else {
             let contract = &self.ctx.sig(func_did).contract;
-            let is_pure = self.implements_fn_pure(func_did, args);
-            let terminates = contract.terminates || is_pure;
-            let no_panic = contract.no_panic || is_pure;
+            let is_ghost = self.implements_fn_ghost(func_did, args);
+            let terminates = contract.terminates || is_ghost;
+            let no_panic = contract.no_panic || is_ghost;
             Purity::Program { terminates, no_panic }
         }
     }
 
     /// Returns `true` if `func_did` is one of `call`, `call_mut` or `call_once`, and
-    /// the closure being called implements `FnPure`.
-    fn implements_fn_pure(&self, func_did: DefId, args: &[ExprId]) -> bool {
+    /// the closure being called implements `FnGhost`.
+    fn implements_fn_ghost(&self, func_did: DefId, args: &[ExprId]) -> bool {
         let tcx = self.ctx.tcx;
         let Some(trait_did) = tcx.trait_of_item(func_did) else { return false };
         if !tcx.is_fn_trait(trait_did) {
@@ -127,7 +127,7 @@ impl PurityVisitor<'_, '_> {
         tcx.trait_of_item(func_did);
         let ty = self.thir[args[0]].ty.peel_refs();
         let (infcx, param_env) = tcx.infer_ctxt().build_with_typing_env(self.typing_env);
-        let res = infcx.type_implements_trait(get_fn_pure_trait(tcx), [ty], param_env);
+        let res = infcx.type_implements_trait(get_fn_ghost_trait(tcx), [ty], param_env);
         res.must_apply_considering_regions()
     }
 
@@ -228,7 +228,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 (Purity::Program { .. } | Purity::Ghost, Purity::Logic { .. }) => {
                                     ("program", "logic")
                                 }
-                                (Purity::Ghost, Purity::Program { .. }) => ("ghost", "non-pure"),
+                                (Purity::Ghost, Purity::Program { .. }) => ("ghost", "non-ghost"),
                                 (Purity::Logic { .. }, Purity::Program { .. } | Purity::Ghost) => {
                                     ("logic", "program")
                                 }

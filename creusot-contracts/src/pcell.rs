@@ -81,7 +81,7 @@ impl<T: ?Sized> PCellOwn<T> {
 
     /// If one owns two `PCellOwn`s in ghost code, then they have different ids.
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(own1.id() != own2.id())]
     #[ensures(*own1 == ^own1)]
     #[allow(unused_variables)]

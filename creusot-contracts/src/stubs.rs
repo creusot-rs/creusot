@@ -76,7 +76,7 @@ pub fn variant_check<R: crate::well_founded::WellFounded>(_: R) -> R {
 #[rustc_diagnostic_item = "closure_result_constraint"]
 pub fn closure_result<R: ?Sized>(_: R, _: R) {}
 
-#[pure]
+#[check(ghost)]
 #[trusted]
 #[rustc_diagnostic_item = "snapshot_from_fn"]
 pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> crate::Snapshot<T>>(_: F) -> crate::Snapshot<T> {

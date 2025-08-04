@@ -4,7 +4,7 @@ pub use ::std::mem::*;
 extern_spec! {
     mod std {
         mod mem {
-            #[pure]
+            #[check(ghost)]
             #[ensures(^dest == src)]
             #[ensures(result == *dest)]
             fn replace<T>(dest: &mut T, src: T) -> T {
@@ -13,7 +13,7 @@ extern_spec! {
                 src
             }
 
-            #[pure]
+            #[check(ghost)]
             #[ensures(^x == *y)]
             #[ensures(^y == *x)]
             fn swap<T>(x: &mut T, y: &mut T);
@@ -24,15 +24,15 @@ extern_spec! {
                 replace(dest, T::default())
             }
 
-            #[pure]
+            #[check(ghost)]
             #[ensures(resolve(t))]
             fn drop<T>(t: T) {}
 
-            #[pure]
+            #[check(ghost)]
             #[ensures(resolve(t))]
             fn forget<T>(t: T) {}
 
-            #[pure]
+            #[check(ghost)]
             #[ensures(result@ == size_of_logic::<T>())]
             fn size_of<T>() -> usize;
         }

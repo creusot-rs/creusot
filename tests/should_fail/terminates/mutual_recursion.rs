@@ -3,18 +3,18 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 mod m {
-    #[super::terminates]
+    #[super::check(terminates)]
     pub fn f1() {
         super::f2();
     }
 }
 
-#[terminates]
+#[check(terminates)]
 fn f2() {
     f3();
 }
 
-#[terminates]
+#[check(terminates)]
 fn f3() {
     m::f1();
 }

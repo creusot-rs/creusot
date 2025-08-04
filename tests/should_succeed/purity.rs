@@ -8,11 +8,11 @@ trait Foo {
 }
 
 impl Foo for i32 {
-    #[terminates]
+    #[check(terminates)]
     fn f() {}
 }
 
-#[terminates]
+#[check(terminates)]
 pub fn calls_f() {
     <i32 as Foo>::f()
 }
@@ -41,7 +41,7 @@ pub fn result() {
 }
 
 // Shows that a trait impl in an external crate (creusot_contracts) is correctly specialized.
-#[pure]
+#[check(ghost)]
 pub fn clone_id(i: Id) {
     let _ = i.clone();
 }

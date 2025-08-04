@@ -12,7 +12,7 @@ pub use self::{
     extern_spec::extern_spec,
     logic::{law, logic, open, pearlite},
     proof::{ghost, invariant, proof_assert, snapshot},
-    specs::{bitwise_proof, ensures, maintains, pure, requires, terminates, variant},
+    specs::{bitwise_proof, check, ensures, maintains, requires, variant},
 };
 
 use crate::common::{ContractSubject, FnOrMethod};

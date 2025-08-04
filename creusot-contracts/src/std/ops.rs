@@ -202,13 +202,13 @@ extern_spec! {
             }
 
             trait Deref {
-                #[pure]
+                #[check(ghost)]
                 #[requires(false)]
                 fn deref(&self) -> &Self::Target;
             }
 
             trait DerefMut {
-                #[pure]
+                #[check(ghost)]
                 #[requires(false)]
                 fn deref_mut(&mut self) -> &mut Self::Target;
             }

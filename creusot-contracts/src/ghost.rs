@@ -50,7 +50,7 @@ impl<T: Copy> Copy for Ghost<T> {}
 
 impl<T: Clone> Clone for Ghost<T> {
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
         Self::conjure()
@@ -63,7 +63,7 @@ impl<T> Deref for Ghost<T> {
     /// This function can only be called in `ghost!` context
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_deref")]
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[requires(false)] // If called from generic context, false precondition
     #[ensures(self.inner_logic() == *result)]
     fn deref(&self) -> &Self::Target {
@@ -74,7 +74,7 @@ impl<T> DerefMut for Ghost<T> {
     /// This function can only be called in `ghost!` context
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_deref_mut")]
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[requires(false)] // If called from generic context, false precondition
     #[ensures(result == &mut **self)]
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -118,7 +118,7 @@ impl<T> Resolve for Ghost<T> {
 impl<T> Ghost<T> {
     /// Transforms a `&Ghost<T>` into `Ghost<&T>`
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(**result == **self)]
     pub fn borrow(&self) -> Ghost<&T> {
         Ghost::conjure()
@@ -126,7 +126,7 @@ impl<T> Ghost<T> {
 
     /// Transforms a `&mut Ghost<T>` into a `Ghost<&mut T>`.
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(*result == &mut **self)]
     pub fn borrow_mut(&mut self) -> Ghost<&mut T> {
         Ghost::conjure()
@@ -139,7 +139,7 @@ impl<T> Ghost<T> {
     /// contexts, when axiomatizing an API that is believed to be sound for
     /// external reasons.
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[requires(false)]
     pub fn conjure() -> Self {
         Ghost(PhantomData)
@@ -158,7 +158,7 @@ impl<T> Ghost<T> {
     ///
     /// This function can only be called in `ghost!` code.
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(*result == x)]
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_new")]
     pub fn new(x: T) -> Self {
@@ -177,7 +177,7 @@ impl<T> Ghost<T> {
     ///
     /// This function can only be called in `ghost!` context.
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == *self)]
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_into_inner")]
     pub fn into_inner(self) -> T {
@@ -197,7 +197,7 @@ impl<T> Ghost<T> {
 }
 
 impl<T, U> Ghost<(T, U)> {
-    #[pure]
+    #[check(ghost)]
     #[trusted]
     #[ensures(*self == (*result.0, *result.1))]
     pub fn split(self) -> (Ghost<T>, Ghost<U>) {

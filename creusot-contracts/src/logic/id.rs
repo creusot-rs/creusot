@@ -15,7 +15,7 @@ use ::std::marker::PhantomData;
 pub struct Id(PhantomData<()>);
 
 impl Clone for Id {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
         *self
@@ -25,14 +25,14 @@ impl Copy for Id {}
 
 impl PartialEq for Id {
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == (*self == *other))]
     #[allow(unused_variables)]
     fn eq(&self, other: &Self) -> bool {
         unreachable!("BUG: called ghost function in normal code")
     }
 
-    #[pure]
+    #[check(ghost)]
     #[ensures(result != (*self == *other))]
     fn ne(&self, other: &Self) -> bool {
         !self.eq(other)

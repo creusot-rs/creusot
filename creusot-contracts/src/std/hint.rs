@@ -3,29 +3,29 @@ use crate::*;
 extern_spec! {
     mod std {
         mod hint {
-            #[pure]
+            #[check(ghost)]
             #[requires(cond)]
             unsafe fn assert_unchecked(cond: bool) {}
 
-            #[pure]
+            #[check(ghost)]
             #[ensures(result == dummy)]
             fn black_box<T>(dummy: T) -> T {
                 dummy
             }
 
-            #[pure]
+            #[check(ghost)]
             #[requires(true)]
             #[ensures(true)]
             fn spin_loop() {}
 
-            #[pure]
+            #[check(ghost)]
             #[requires(false)]
             unsafe fn unreachable_unchecked() -> ! {
                 unreachable!()
             }
 
             #[cfg(feature = "nightly")]
-            #[pure]
+            #[check(ghost)]
             #[ensures(result == value)]
             fn must_use<T>(value: T) -> T {
                 value

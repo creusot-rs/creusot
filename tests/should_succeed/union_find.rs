@@ -28,7 +28,7 @@ mod implementation {
     }
 
     impl<T> Element<T> {
-        #[pure]
+        #[check(ghost)]
         #[ensures(*result == self.deep_model())]
         fn addr(self) -> Snapshot<usize> {
             snapshot!(self.deep_model())
@@ -42,7 +42,7 @@ mod implementation {
 
     impl<T> Clone for Element<T> {
         #[ensures(*self == result)]
-        #[pure]
+        #[check(ghost)]
         fn clone(&self) -> Self {
             Self(self.0)
         }

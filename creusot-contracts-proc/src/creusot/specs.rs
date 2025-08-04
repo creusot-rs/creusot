@@ -7,11 +7,10 @@ use super::{
 use crate::common::ContractSubject;
 use pearlite_syn::{Term, TermPath};
 use proc_macro::TokenStream as TS1;
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
-    Attribute, FnArg, Ident, ImplItemFn, Item, Path, ReturnType, Signature, Stmt, Token,
-    parenthesized,
+    Attribute, FnArg, Ident, Item, Path, ReturnType, Signature, Stmt, Token, parenthesized,
     parse::{self, Parse},
     parse_macro_input, parse_quote,
     punctuated::Punctuated,
@@ -145,60 +144,79 @@ pub fn maintains(attr: TS1, body: TS1) -> TS1 {
     }
 }
 
-pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
-    let documentation = document_spec("terminates", doc::LogicBody::None);
-    if let Ok(item) = syn::parse::<ImplItemFn>(tokens.clone()) {
-        if let Some(def) = item.defaultness {
-            return syn::Error::new(
-                def.span(),
-                "`terminates` functions cannot use the `default` modifier",
-            )
+pub fn check(args: TS1, tokens: TS1) -> TS1 {
+    let modes = parse_macro_input!(args with Punctuated<Ident, Token![,]>::parse_terminated);
+    let mut terminates = false;
+    let mut ghost = false;
+    for mode in modes {
+        let err = |msg| syn::Error::new(mode.span(), msg).into_compile_error().into();
+        if mode == "terminates" {
+            if terminates {
+                return err("modes can only be specified once".to_string());
+            }
+            terminates = true;
+        } else if mode == "ghost" {
+            if ghost {
+                return err("modes can only be specified once".to_string());
+            }
+            ghost = true;
+            terminates = true;
+        } else {
+            return err(format!(
+                "unknown mode `{mode}`. Accepted modes are `terminates` or `ghost`"
+            ));
+        }
+    }
+
+    if !(terminates || ghost) {
+        return syn::Error::new(Span::call_site(), "you must specify at least one mode")
             .into_compile_error()
             .into();
-        }
-    };
-
-    let Attributes { attrs, rest } = syn::parse(tokens).unwrap();
-    quote! {
-        #[creusot::clause::terminates]
-        #(#attrs)*
-        #documentation
-        #rest
     }
-    .into()
-}
+    let mut documentation = TokenStream::new();
+    let mut clauses = TokenStream::new();
+    if terminates {
+        documentation.extend(document_spec("terminates", doc::LogicBody::None));
+        clauses.extend(quote!(#[creusot::clause::terminates]));
+    }
+    if ghost {
+        documentation.extend(document_spec("ghost", doc::LogicBody::None));
+        clauses.extend(quote!(#[creusot::clause::no_panic]));
+    }
 
-pub fn pure(_: TS1, tokens: TS1) -> TS1 {
-    let documentation = document_spec("pure", doc::LogicBody::None);
     let item = tokens.clone();
     let item = parse_macro_input!(item as ContractSubject);
-    let is_closure = match item {
-        ContractSubject::FnOrMethod(fn_or_method) => {
-            if let Some(def) = fn_or_method.defaultness {
-                return syn::Error::new(
-                    def.span(),
-                    "`pure` functions cannot use the `default` modifier",
-                )
-                .into_compile_error()
-                .into();
-            } else {
-                false
+    let is_closure = if ghost {
+        match item {
+            ContractSubject::FnOrMethod(fn_or_method) => {
+                if let Some(def) = fn_or_method.defaultness {
+                    return syn::Error::new(
+                        def.span(),
+                        "`ghost` functions cannot use the `default` modifier",
+                    )
+                    .into_compile_error()
+                    .into();
+                } else {
+                    false
+                }
             }
+            ContractSubject::Closure(_) => true,
         }
-        ContractSubject::Closure(_) => true,
+    } else {
+        false
     };
+
     let Attributes { attrs, rest } = syn::parse(tokens).unwrap();
     let mut result = quote! {
-        #[creusot::clause::no_panic]
-        #[creusot::clause::terminates]
+        #clauses
         #(#attrs)*
         #documentation
         #rest
     };
     if is_closure {
-        // Implement `FnPure` on the closure
+        // Implement `FnGhost` on the closure
         result = quote! {
-            ::creusot_contracts::fn_pure::FnPureWrapper::__new(#result)
+            ::creusot_contracts::fn_ghost::FnGhostWrapper::__new(#result)
         }
     }
     result.into()

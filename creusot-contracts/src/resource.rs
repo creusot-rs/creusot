@@ -63,7 +63,7 @@ mod m {
         /// Get the id for this resource.
         ///
         /// This is the same as [`Self::id`], but for ghost code.
-        #[pure]
+        #[check(ghost)]
         #[trusted]
         #[ensures(result == self.id())]
         pub fn id_ghost(&self) -> Id {
@@ -83,7 +83,7 @@ mod m {
         ///
         /// `⊢ |=> ∃γ, Own(value, γ)`
         #[trusted]
-        #[pure]
+        #[check(ghost)]
         #[ensures(result@ == *r)]
         pub fn alloc(r: Snapshot<R>) -> Ghost<Self> {
             Ghost::conjure()
@@ -97,7 +97,7 @@ mod m {
         /// otherwise axiomatized. These proofs are morally trusted, but being to prove them is
         /// a good measure against stupid mistakes in their specifications.
         #[trusted]
-        #[pure]
+        #[check(ghost)]
         fn dummy() -> Self {
             panic!("ghost code only")
         }
@@ -107,7 +107,7 @@ mod m {
         #[requires(self@.core() != None)]
         #[ensures(result.id() == self.id())]
         #[ensures(Some(result@) == self@.core())]
-        #[pure]
+        #[check(ghost)]
         pub fn core(&self) -> Self {
             panic!("ghost code only")
         }
@@ -120,7 +120,7 @@ mod m {
         ///
         /// `⌜a = b ⋅ c⌝ ∧ Own(a, γ) ⊢ Own(b, γ) ∗ Own(c, γ)`
         #[trusted]
-        #[pure]
+        #[check(ghost)]
         #[requires(R::incl_eq_op(*a, *b, self@))]
         #[ensures(result.0.id() == self.id() && result.1.id() == self.id())]
         #[ensures(result.0@ == *a)]
@@ -131,7 +131,7 @@ mod m {
 
         /// Split a resource into two, and join it again once the mutable borrows are dropped.
         #[trusted]
-        #[pure]
+        #[check(ghost)]
         #[requires(R::incl_eq_op(*a, *b, self@))]
         #[ensures(result.0.id() == self.id() && result.1.id() == self.id())]
         #[ensures(result.0@ == *a && result.1@ == *b)]
@@ -143,7 +143,7 @@ mod m {
         }
 
         /// Remove `r` from `self` and return it, leaving `s` in `self`.
-        #[pure]
+        #[check(ghost)]
         #[requires(R::incl_eq_op(*r, *s, self@))]
         #[ensures((^self).id() == self.id() && result.id() == self.id())]
         #[ensures((^self)@ == *s)]
@@ -163,7 +163,7 @@ mod m {
         ///
         /// `⌜c = a ⋅ b⌝ ∗ Own(a, γ) ∗ Own(b, γ) ⊢ Own(c, γ)`
         #[trusted]
-        #[pure]
+        #[check(ghost)]
         #[requires(self.id() == other.id())]
         #[ensures(result.id() == self.id())]
         #[ensures(Some(result@) == self@.op(other@))]
@@ -172,7 +172,7 @@ mod m {
         }
 
         /// Same as [`Self::join`], but put the result into `self`.
-        #[pure]
+        #[check(ghost)]
         #[requires(self.id() == other.id())]
         #[ensures((^self).id() == self.id())]
         #[ensures(Some((^self)@) == self@.op(other@))]
@@ -188,7 +188,7 @@ mod m {
         ///
         /// `⌜a ≼ c⌝ ∧ ⌜b ≼ c⌝ ∧ Own(a, γ) ∧ Own(b, γ) ⊢ Own(c, γ)`
         #[trusted]
-        #[pure]
+        #[check(ghost)]
         #[requires(self.id() == other.id())]
         #[ensures(result.id() == self.id())]
         #[ensures(self@.incl_eq(result@) && other@.incl_eq(result@))]
@@ -197,7 +197,7 @@ mod m {
         }
 
         /// Transforms `self` into `target`, given that `target` is included in `self`.
-        #[pure]
+        #[check(ghost)]
         #[requires(target.incl(self@))]
         #[ensures((^self).id() == self.id())]
         #[ensures((^self)@ == *target)]
@@ -208,7 +208,7 @@ mod m {
 
         /// Validate the composition of `self` and `other`.
         #[trusted]
-        #[pure]
+        #[check(ghost)]
         #[requires(self.id() == other.id())]
         #[ensures(^self == *self)]
         #[ensures(self@.op(other@) != None)]
@@ -216,7 +216,7 @@ mod m {
 
         /// This private function axiomatizes updates as they are formalized in Iris.
         #[trusted]
-        #[pure]
+        #[check(ghost)]
         #[requires(forall<f: Option<R>> Some(self@).op(f) != None ==>
                         exists<x: R> target_s.contains(x) && Some(x).op(f) != None)]
         #[ensures((^self).id() == self.id())]
@@ -231,7 +231,7 @@ mod m {
         /// # Corresponding reasoning
         ///
         /// `⌜a ⇝ B⌝ ∧ Own(a, γ) ⊢ ∃b∈B, Own(b, γ)`
-        #[pure]
+        #[check(ghost)]
         #[requires(upd.premise(self@))]
         #[ensures((^self).id() == self.id())]
         #[ensures((^self)@ == upd.update(self@, *result))]

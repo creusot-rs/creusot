@@ -9,9 +9,9 @@ pub fn foo() {
     };
 }
 
-// Check that we can make snapshots in pure functions.
-#[pure]
-pub fn is_pure() {
+// Check that we can make snapshots in ghost functions.
+#[check(ghost)]
+pub fn is_ghost() {
     let x = snapshot!(1);
     proof_assert!(*x == 1);
 }

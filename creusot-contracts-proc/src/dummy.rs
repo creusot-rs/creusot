@@ -54,11 +54,7 @@ pub fn invariant(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
 
-pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
-    tokens
-}
-
-pub fn pure(_: TS1, tokens: TS1) -> TS1 {
+pub fn check(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
 

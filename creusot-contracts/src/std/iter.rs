@@ -95,29 +95,29 @@ extern_spec! {
                 })]
                 fn next(&mut self) -> Option<Self::Item>;
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result.iter() == self && result.n() == n@)]
                 fn skip(self, n: usize) -> Skip<Self>
                     where Self: Sized;
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result.iter() == self && result.n() == n@)]
                 fn take(self, n: usize) -> Take<Self>
                     where Self: Sized;
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result.iter() == self)]
                 fn cloned<'a, T>(self) -> Cloned<Self>
                     where T: 'a + Clone,
                         Self: Sized + Iterator<Item = &'a T>;
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result.iter() == self)]
                 fn copied<'a, T>(self) -> Copied<Self>
                     where T: 'a + Copy,
                         Self: Sized + Iterator<Item = &'a T>;
 
-                #[pure]
+                #[check(ghost)]
                 #[requires(forall<e, i2>
                                 self.produces(Seq::singleton(e), i2) ==>
                                 f.precondition((e,)))]
@@ -127,7 +127,7 @@ extern_spec! {
                 fn map<B, F>(self, f: F) -> Map<Self, F>
                     where Self: Sized, F: FnMut(Self_::Item) -> B;
 
-                #[pure]
+                #[check(ghost)]
                 #[requires(filter::immutable(f))]
                 #[requires(filter::no_precondition(f))]
                 #[requires(filter::precise(f))]
@@ -135,7 +135,7 @@ extern_spec! {
                 fn filter<P>(self, f: P) -> Filter<Self, P>
                     where Self: Sized, P: for<'a> FnMut(&Self_::Item) -> bool;
 
-                #[pure]
+                #[check(ghost)]
                 #[requires(filter_map::immutable(f))]
                 #[requires(filter_map::no_precondition(f))]
                 #[requires(filter_map::precise(f))]
@@ -143,7 +143,7 @@ extern_spec! {
                 fn filter_map<B, F>(self, f: F) -> FilterMap<Self, F>
                     where Self: Sized, F: for<'a> FnMut(Self_::Item) -> Option<B>;
 
-                #[pure]
+                #[check(ghost)]
                 // These two requirements are here only to prove the absence of overflows
                 #[requires(forall<i: &mut Self_> (*i).completed() ==> (*i).produces(Seq::empty(), ^i))]
                 #[requires(forall<s: Seq<Self_::Item>, i: Self_> self.produces(s, i) ==> s.len() < std::usize::MAX@)]
@@ -155,7 +155,7 @@ extern_spec! {
                 fn fuse(self) -> Fuse<Self>
                     where Self: Sized;
 
-                #[pure]
+                #[check(ghost)]
                 #[requires(U::into_iter.precondition((other,)))]
                 #[ensures(result.itera() == self)]
                 #[ensures(U::into_iter.postcondition((other,), result.iterb()))]
@@ -168,7 +168,7 @@ extern_spec! {
                 fn collect<B>(self) -> B
                     where Self: Sized, B: FromIterator<Self::Item>;
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result.iter() == self)]
                 fn rev(self) -> Rev<Self>
                     where Self: Sized + DoubleEndedIterator;
@@ -186,14 +186,14 @@ extern_spec! {
                     where Self: Sized, T: IntoIterator<Item = A>, T::IntoIter: Iterator;
             }
 
-            #[pure]
+            #[check(ghost)]
             fn empty<T>() -> Empty<T>;
 
-            #[pure]
+            #[check(ghost)]
             #[ensures(result@ == Some(value))]
             fn once<T>(value: T) -> Once<T>;
 
-            #[pure]
+            #[check(ghost)]
             #[ensures(result@ == elt)]
             fn repeat<T: Clone>(elt: T) -> Repeat<T>;
 

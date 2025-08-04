@@ -224,7 +224,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// let p = Subset::new(Pair(0));
     /// proof_assert!(p@.0 == 0i32);
     /// ```
-    #[pure]
+    #[check(ghost)]
     #[trusted]
     #[ensures(result == Self::new_logic(x))]
     pub fn new(x: T) -> Self {
@@ -252,7 +252,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// let inner = p.into_inner();
     /// proof_assert!(inner.0 % 2 == 0);
     /// ```
-    #[pure]
+    #[check(ghost)]
     #[trusted]
     #[ensures(result == self@)]
     pub fn into_inner(self) -> T {
@@ -263,7 +263,7 @@ impl<T: InhabitedInvariant> Subset<T> {
 impl<T: InhabitedInvariant> Deref for Subset<T> {
     type Target = T;
 
-    #[pure]
+    #[check(ghost)]
     #[trusted]
     #[ensures(*result == self@)]
     fn deref(&self) -> &Self::Target {
@@ -272,7 +272,7 @@ impl<T: InhabitedInvariant> Deref for Subset<T> {
 }
 
 impl<T: InhabitedInvariant> DerefMut for Subset<T> {
-    #[pure]
+    #[check(ghost)]
     #[trusted]
     #[ensures(*result == self@)]
     #[ensures(^result == (^self)@)]
@@ -306,7 +306,7 @@ impl<T: InhabitedInvariant> Resolve for Subset<T> {
 }
 
 impl<T: InhabitedInvariant + DeepModel + PartialEq> PartialEq for Subset<T> {
-    #[pure]
+    #[check(ghost)]
     #[trusted]
     #[ensures(result == (self.deep_model() == rhs.deep_model()))]
     fn eq(&self, rhs: &Self) -> bool {

@@ -28,7 +28,7 @@ pub struct Int();
 
 impl crate::Clone for Int {
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
         *self
@@ -52,7 +52,7 @@ impl Int {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(*result == value@)]
     #[allow(unreachable_code)]
     #[allow(unused_variables)]
@@ -226,7 +226,7 @@ impl NegLogic for Int {
 
 impl PartialEq for Int {
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == (*self == *other))]
     #[allow(unused_variables)]
     fn eq(&self, other: &Self) -> bool {
@@ -236,7 +236,7 @@ impl PartialEq for Int {
 
 impl PartialOrd for Int {
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == Some(self.cmp_log(*other)))]
     #[allow(unused_variables)]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
@@ -244,7 +244,7 @@ impl PartialOrd for Int {
     }
 
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self.lt_log(*other))]
     #[allow(unused_variables)]
     fn lt(&self, other: &Self) -> bool {
@@ -252,7 +252,7 @@ impl PartialOrd for Int {
     }
 
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self.le_log(*other))]
     #[allow(unused_variables)]
     fn le(&self, other: &Self) -> bool {
@@ -260,7 +260,7 @@ impl PartialOrd for Int {
     }
 
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self.gt_log(*other))]
     #[allow(unused_variables)]
     fn gt(&self, other: &Self) -> bool {
@@ -268,7 +268,7 @@ impl PartialOrd for Int {
     }
 
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self.ge_log(*other))]
     #[allow(unused_variables)]
     fn ge(&self, other: &Self) -> bool {
@@ -279,7 +279,7 @@ impl PartialOrd for Int {
 impl Add for Int {
     type Output = Int;
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self + other)]
     #[allow(unused_variables)]
     fn add(self, other: Int) -> Self {
@@ -290,7 +290,7 @@ impl Add for Int {
 impl Sub for Int {
     type Output = Int;
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self - other)]
     #[allow(unused_variables)]
     fn sub(self, other: Int) -> Self {
@@ -301,7 +301,7 @@ impl Sub for Int {
 impl Mul for Int {
     type Output = Int;
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self * other)]
     #[allow(unused_variables)]
     fn mul(self, other: Int) -> Self {
@@ -312,7 +312,7 @@ impl Mul for Int {
 impl Div for Int {
     type Output = Int;
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self / other)]
     #[allow(unused_variables)]
     fn div(self, other: Int) -> Self {
@@ -323,7 +323,7 @@ impl Div for Int {
 impl Rem for Int {
     type Output = Int;
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self % other)]
     #[allow(unused_variables)]
     fn rem(self, other: Int) -> Self {
@@ -334,7 +334,7 @@ impl Rem for Int {
 impl Neg for Int {
     type Output = Int;
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == -self)]
     fn neg(self) -> Self {
         unreachable!("BUG: called ghost function in normal code")

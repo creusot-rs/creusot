@@ -2,7 +2,7 @@
 
 ## Using imperative data structures in ghost code
 
-Usual imperative structures like `Vec`, `HashMap` or `HashSet` cannot be used in ghost code. To be precise, you may notice that functions like `Vec::push` are not marked with the `#[pure]` attribute, and so they cannot be called in ghost code.
+Usual imperative structures like `Vec`, `HashMap` or `HashSet` cannot be used in ghost code. To be precise, you may notice that functions like `Vec::push` are not marked with the `#[check(ghost)]` attribute, and so they cannot be called in ghost code.
 
 This is because this function (and other like it) allocate memory, which on the actual machine, is finite. This currently translates to a possible inconsistency when using `Vec` in ghost code:
 

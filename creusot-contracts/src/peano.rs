@@ -84,21 +84,21 @@ impl View for PeanoInt {
 }
 
 impl PartialOrd for PeanoInt {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == Some((*self).cmp_log(*other)))]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 impl Ord for PeanoInt {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == (*self).cmp_log(*other))]
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0)
     }
 }
 impl PartialEq for PeanoInt {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == (*self == *other))]
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
@@ -107,7 +107,7 @@ impl PartialEq for PeanoInt {
 
 impl PeanoInt {
     /// Create a new peano integer with value `0`.
-    #[pure]
+    #[check(ghost)]
     #[ensures(result.0 == 0u64)]
     pub fn new() -> Self {
         Self(0)
@@ -128,7 +128,7 @@ impl PeanoInt {
     /// Since the backing integer is 64 bits long, no program could ever actually reach
     /// the point where the integer overflows.
     #[trusted]
-    #[terminates]
+    #[check(terminates)]
     #[ensures(result.0@ == self.0@ + 1)]
     pub fn incr(self) -> Self {
         // Use volatile read, to avoid optimizing successive increments.
@@ -138,14 +138,14 @@ impl PeanoInt {
     }
 
     /// Get the underlying integer.
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self.0)]
     pub fn to_u64(self) -> u64 {
         self.0
     }
 
     /// Get the underlying integer.
-    #[pure]
+    #[check(ghost)]
     #[trusted]
     #[ensures(result@ == self.0@)]
     pub fn to_i64(self) -> i64 {
@@ -153,14 +153,14 @@ impl PeanoInt {
     }
 
     /// Get the underlying integer.
-    #[pure]
+    #[check(ghost)]
     #[ensures(result@ == self.0@)]
     pub fn to_u128(self) -> u128 {
         self.0 as u128
     }
 
     /// Get the underlying integer.
-    #[pure]
+    #[check(ghost)]
     #[ensures(result@ == self.0@)]
     pub fn to_i128(self) -> i128 {
         self.0 as i128
@@ -168,7 +168,7 @@ impl PeanoInt {
 }
 
 impl From<PeanoInt> for u64 {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == val.0)]
     fn from(val: PeanoInt) -> Self {
         val.to_u64()
@@ -176,7 +176,7 @@ impl From<PeanoInt> for u64 {
 }
 
 impl From<PeanoInt> for i64 {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result@ == val.0@)]
     fn from(val: PeanoInt) -> Self {
         val.to_i64()
@@ -184,7 +184,7 @@ impl From<PeanoInt> for i64 {
 }
 
 impl From<PeanoInt> for u128 {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result@ == val.0@)]
     fn from(val: PeanoInt) -> Self {
         val.to_u128()
@@ -192,7 +192,7 @@ impl From<PeanoInt> for u128 {
 }
 
 impl From<PeanoInt> for i128 {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result@ == val.0@)]
     fn from(val: PeanoInt) -> Self {
         val.to_i128()
