@@ -107,7 +107,7 @@ impl<K, V> Authority<K, V> {
     }
 
     /// Create a new, empty authoritative map.
-    #[pure]
+    #[check(ghost)]
     #[ensures(result@ == FMap::empty())]
     pub fn new() -> Ghost<Self> {
         let resource = Resource::alloc(snapshot!(ViewRA::new_auth(FMap::empty())));
@@ -121,7 +121,7 @@ impl<K, V> Authority<K, V> {
     #[ensures((^self).id() == self.id())]
     #[ensures(result@ == (*k, *v))]
     #[ensures(result.id() == self.id())]
-    #[pure]
+    #[check(ghost)]
     #[allow(unused_variables)]
     pub fn insert(&mut self, k: Snapshot<K>, v: Snapshot<V>) -> Fragment<K, V> {
         let auth = snapshot!(self@.insert(*k, *v));
@@ -138,7 +138,7 @@ impl<K, V> Authority<K, V> {
     /// Asserts that the fragment represented by `frag` is contained in `self`.
     #[requires(self.id() == frag.id())]
     #[ensures(self@.get(frag@.0) == Some(frag@.1))]
-    #[pure]
+    #[check(ghost)]
     #[allow(unused_variables)]
     pub fn contains(&self, frag: &Fragment<K, V>) {
         let new_resource = self.0.join_shared(&frag.0);
@@ -154,7 +154,7 @@ impl<K, V> Fragment<K, V> {
 }
 
 impl<K, V> Clone for Fragment<K, V> {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result@ == self@)]
     fn clone(&self) -> Self {
         Self(self.0.core(), self.1, self.2)

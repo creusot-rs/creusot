@@ -55,8 +55,7 @@ proc_macro_attributes! {
     ensures
     invariant
     variant
-    terminates
-    pure
+    check
     logic
     trusted
     law

@@ -41,7 +41,7 @@ extern_spec! {
     mod std {
         mod iter {
             impl<T> Iterator for Once<T> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match result {
                     None => self.completed(),
                     Some(v) => (*self).produces(Seq::singleton(v), ^self)

@@ -136,22 +136,22 @@ $(
 
 extern_spec! {
     impl PartialEq<$t> for $t {
-        #[pure]
+        #[check(ghost)]
         #[ensures(result == (self.deep_model() == rhs.deep_model()))]
         fn eq(&self, rhs: &$t) -> bool;
 
-        #[pure]
+        #[check(ghost)]
         #[ensures(result == (self.deep_model() != rhs.deep_model()))]
         fn ne(&self, rhs: &$t) -> bool;
     }
 
     impl PartialOrd<$t> for $t
     {
-        #[pure]
+        #[check(ghost)]
         #[ensures(result == Some((*self).deep_model().cmp_log((*rhs).deep_model())))]
         fn partial_cmp(&self, rhs: &$t) -> Option<Ordering>;
 
-        #[pure]
+        #[check(ghost)]
         #[ensures(result == (self.deep_model() < other.deep_model()))]
         fn lt(&self, other: &$t) -> bool {
             match self.partial_cmp(other) {
@@ -160,7 +160,7 @@ extern_spec! {
             }
         }
 
-        #[pure]
+        #[check(ghost)]
         #[ensures(result == (self.deep_model() <= other.deep_model()))]
         fn le(&self, other: &$t) -> bool {
             match self.partial_cmp(other) {
@@ -169,7 +169,7 @@ extern_spec! {
             }
         }
 
-        #[pure]
+        #[check(ghost)]
         #[ensures(result == (self.deep_model() > other.deep_model()))]
         fn gt(&self, other: &$t) -> bool {
             match self.partial_cmp(other) {
@@ -178,7 +178,7 @@ extern_spec! {
             }
         }
 
-        #[pure]
+        #[check(ghost)]
         #[ensures(result == (self.deep_model() >= other.deep_model()))]
         fn ge(&self, other: &$t) -> bool {
             match self.partial_cmp(other) {
@@ -190,16 +190,16 @@ extern_spec! {
 
     impl Ord for $t
     {
-        #[pure]
+        #[check(ghost)]
         #[ensures(result == (*self).deep_model().cmp_log((*rhs).deep_model()))]
         fn cmp(&self, rhs: &Self) -> Ordering;
 
-        // TODO: cannot write a `#[pure]` extern specs for the rest of the
+        // TODO: cannot write a `#[check(ghost)]` extern specs for the rest of the
         // items, because they have a default implementation, which means we
         // cannot differentiate an extern spec for `Ord::max` from a one for
         // `<$t as Ord>::max`.
 
-        // #[pure]
+        // #[check(ghost)]
         // #[ensures(result.deep_model() >= self.deep_model())]
         // #[ensures(result.deep_model() >= o.deep_model())]
         // #[ensures(result == self || result == o)]
@@ -207,7 +207,7 @@ extern_spec! {
         // #[ensures(o.deep_model() < self.deep_model() ==> result == self)]
         // fn max(self, o: Self) -> Self;
 
-        // #[pure]
+        // #[check(ghost)]
         // #[ensures(result.deep_model() <= self.deep_model())]
         // #[ensures(result.deep_model() <= o.deep_model())]
         // #[ensures(result == self || result == o)]
@@ -215,7 +215,7 @@ extern_spec! {
         // #[ensures(o.deep_model() <= self.deep_model() ==> result == o)]
         // fn min(self, o: Self) -> Self;
 
-        // #[pure]
+        // #[check(ghost)]
         // #[requires(min.deep_model() <= max.deep_model())]
         // #[ensures(result.deep_model() >= min.deep_model())]
         // #[ensures(result.deep_model() <= max.deep_model())]

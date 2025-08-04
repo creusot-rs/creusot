@@ -140,39 +140,66 @@ pub mod macros {
     /// [`Ghost`]: crate::ghost::Ghost
     pub use base_macros::ghost;
 
-    /// Indicate that the function terminates: fulfilling the `requires` clauses
-    /// ensures that this function will not loop forever.
-    pub use base_macros::terminates;
-
-    /// Indicate that the function is pure: fulfilling the `requires` clauses ensures
-    /// that this function will terminate, and will not panic.
+    /// Specify that the function can be called in additionnal contexts.
+    ///
+    /// # Syntax
+    ///
+    /// Checking modes are specified as arguments:
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// #[check(terminates)]
+    /// fn foo() { /* */ }
+    ///
+    /// #[check(ghost)]
+    /// fn bar() { /* */ }
+    ///
+    /// // cannot be called in neither ghost nor terminates contexts
+    /// fn baz() { /* */ }
+    /// ```
+    ///
+    /// # Terminates
+    ///
+    /// The function is guaranteed to terminate.
+    ///
+    /// At this moment, this means that:
+    /// - the function cannot be recursive
+    /// - the function cannot contain loops
+    /// - the function can only call other `terminates` or `ghost` functions.
+    ///
+    /// The first two limitations may be lifted at some point.
+    ///
+    /// # Ghost
+    ///
+    /// The function can be called from ghost code. In particular, this means
+    /// that the fuction will not panic.
     ///
     /// # No panics ?
     ///
     /// "But I though Creusot was supposed to check the absence of panics ?"
     ///
-    /// That's true, but with a caveat: some functions of the standard library are
-    /// allowed to panic in specific cases. The main example is `Vec::push`: we want its
-    /// specification to be
+    /// That's true, but with a caveat: some functions of the standard library
+    /// are allowed to panic in specific cases. The main example is `Vec::push`:
+    /// we want its specification to be
     /// ```ignore
     /// #[ensures((^self)@ == self@.push(v))]
     /// fn push(&mut self, v: T) { /* ... */ }
     /// ```
     ///
     /// But the length of a vector [cannot overflow `isize::MAX`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push).
-    /// This is a very annoying condition to require, so we don't.
-    /// In exchange, this means `Vec::push` might panic in some cases, even though your
+    /// This is a very annoying condition to check, so we don't. In exchange,
+    /// this means `Vec::push` might panic in some cases, even though your
     /// code passed Creusot's verification.
     ///
-    /// # Non-pure std function
+    /// # Non-ghost std function
     ///
-    /// Here are some examples of functions in `std` that are not marked as terminates
-    /// but not pure (this list might not be exhaustive):
+    /// Here are some examples of functions in `std` that are not marked as
+    /// `terminates` but not `ghost` (this list is not exhaustive):
     /// - `Vec::push`, `Vec::insert`, `Vec::reserve`, `Vec::with_capacity`
     /// - `str::to_string`
     /// - `<&[T]>::into_vec`
     /// - `Deque::push_front`, `Deque::push_back`, `Deque::with_capacity`
-    pub use base_macros::pure;
+    pub use base_macros::check;
 
     /// A loop invariant
     ///

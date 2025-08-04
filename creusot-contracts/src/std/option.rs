@@ -54,7 +54,7 @@ extern_spec! {
     mod std {
         mod option {
             impl<T> Option<T> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result == (*self != None))]
                 fn is_some(&self) -> bool {
                     match self {
@@ -78,7 +78,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result == (*self == None))]
                 fn is_none(&self) -> bool {
                     match self {
@@ -87,7 +87,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(*self == None ==> result == None)]
                 #[ensures(
                     *self == None || exists<r: &T> result == Some(r) && *self == Some(*r)
@@ -99,7 +99,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(*self == None ==> result == None && ^self == None)]
                 #[ensures(
                     *self == None
@@ -112,7 +112,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match *self {
                     None => result@.len() == 0,
                     Some(t) => result@.len() == 1 && result@[0] == t
@@ -124,7 +124,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match *self {
                     None => result@.len() == 0,
                     Some(_) => exists<b:&mut T>
@@ -139,7 +139,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[requires(self != None)]
                 #[ensures(Some(result) == self)]
                 fn expect(self, msg: &str) -> T {
@@ -149,7 +149,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[requires(self != None)]
                 #[ensures(Some(result) == self)]
                 fn unwrap(self) -> T {
@@ -159,7 +159,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(self == None ==> result == default)]
                 #[ensures(self == None || (self == Some(result) && resolve(default)))]
                 fn unwrap_or(self, default: T) -> T {
@@ -194,7 +194,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[requires(self != None)]
                 #[ensures(Some(result) == self)]
                 unsafe fn unwrap_unchecked(self) -> T {
@@ -274,7 +274,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match self {
                     None => result == Err(err),
                     Some(t) => result == Ok(t) && resolve(err),
@@ -300,7 +300,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(self == None ==> result == None && optb.resolve())]
                 #[ensures(self == None || (result == optb && self.resolve()))]
                 fn and<U>(self, optb: Option<U>) -> Option<U> {
@@ -347,7 +347,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(self == None ==> result == optb)]
                 #[ensures(self == None || (result == self && optb.resolve()))]
                 fn or(self, optb: Option<T>) -> Option<T> {
@@ -371,7 +371,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match (self, optb) {
                     (None, None)         => result == None,
                     (Some(t1), Some(t2)) => result == None && resolve(t1) && resolve(t2),
@@ -385,7 +385,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match *self {
                     Some(t) => resolve(t),
                     None => true,
@@ -399,7 +399,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match *self {
                     None => *result == value && ^self == Some(^result),
                     Some(_) => *self == Some(*result) && ^self == Some(^result) && resolve(value),
@@ -429,7 +429,7 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result == *self && ^self == None)]
                 fn take(&mut self) -> Option<T> {
                     std::mem::replace(self, None)
@@ -458,13 +458,13 @@ extern_spec! {
                     }
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result == *self && ^self == Some(value))]
                 fn replace(&mut self, value: T) -> Option<T> {
                     std::mem::replace(self, Some(value))
                 }
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match (self, other) {
                     (None, _)          => result == None && other.resolve(),
                     (_, None)          => result == None && self.resolve(),
@@ -479,7 +479,7 @@ extern_spec! {
             }
 
             impl<T, U> Option<(T, U)> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match self {
                     None => result == (None, None),
                     Some((t, u)) => result == (Some(t), Some(u)),
@@ -493,7 +493,7 @@ extern_spec! {
             }
 
             impl<T> Option<&T> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match self {
                     None => result == None,
                     Some(s) => result == Some(*s)
@@ -523,7 +523,7 @@ extern_spec! {
             }
 
             impl<T> Option<&mut T> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match self {
                     None => result == None,
                     Some(s) => result == Some(*s) && ^s == *s
@@ -553,7 +553,7 @@ extern_spec! {
             }
 
             impl<T, E> Option<Result<T, E>> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match self {
                     None => result == Ok(None),
                     Some(Ok(ok)) => result == Ok(Some(ok)),
@@ -569,7 +569,7 @@ extern_spec! {
             }
 
             impl<T> Option<Option<T>> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(self == None ==> result == None)]
                 #[ensures(self == None || self == Some(result))]
                 fn flatten(self) -> Option<T> {

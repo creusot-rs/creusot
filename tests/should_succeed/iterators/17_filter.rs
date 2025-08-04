@@ -103,7 +103,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
     }
 }
 
-#[pure]
+#[check(ghost)]
 #[requires(immutable(f))]
 #[requires(no_precondition(f))]
 #[requires(precise(f))]

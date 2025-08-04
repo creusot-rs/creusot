@@ -431,7 +431,7 @@ impl<T> Seq<T> {
     /// proof_assert!(seq == Seq::create());
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(*result == Self::empty())]
     #[allow(unreachable_code)]
     pub fn new() -> Ghost<Self> {
@@ -456,7 +456,7 @@ impl<T> Seq<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self.len())]
     pub fn len_ghost(&self) -> Int {
         panic!()
@@ -468,7 +468,7 @@ impl<T> Seq<T> {
     ///
     /// ```rust,creusot
     /// use creusot_contracts::*;
-    /// #[pure]
+    /// #[check(ghost)]
     /// #[requires(s.len() == 0)]
     /// pub fn foo(mut s: Seq<i32>) {
     ///     assert!(s.is_empty_ghost());
@@ -480,7 +480,7 @@ impl<T> Seq<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == (self.len() == 0))]
     pub fn is_empty_ghost(&self) -> bool {
         panic!()
@@ -501,7 +501,7 @@ impl<T> Seq<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(^self == self.push_front(x))]
     pub fn push_front_ghost(&mut self, x: T) {
         let _ = x;
@@ -523,7 +523,7 @@ impl<T> Seq<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(^self == self.push_back(x))]
     pub fn push_back_ghost(&mut self, x: T) {
         let _ = x;
@@ -548,7 +548,7 @@ impl<T> Seq<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(match self.get(index) {
         None => result == None,
         Some(v) => result == Some(&v),
@@ -577,7 +577,7 @@ impl<T> Seq<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(match result {
         None => self.get(index) == None && *self == ^self,
         Some(r) => self.get(index) == Some(*r) && ^r == (^self)[index],
@@ -606,7 +606,7 @@ impl<T> Seq<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(match result {
         None => *self == Seq::empty() && *self == ^self,
         Some(r) => *self == (^self).push_back(r)
@@ -632,7 +632,7 @@ impl<T> Seq<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(match result {
         None => *self == Seq::empty() && *self == ^self,
         Some(r) => *self == (^self).push_front(r)
@@ -657,14 +657,14 @@ impl<T> Seq<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(^self == Self::empty())]
     pub fn clear_ghost(&mut self) {}
 }
 
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
 impl<T: Clone + Copy> Clone for Seq<T> {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == *self)]
     #[trusted]
     fn clone(&self) -> Self {

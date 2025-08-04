@@ -125,7 +125,7 @@ impl Namespaces<'_> {
     #[trusted]
     #[ensures((*self).namespaces() == result.namespaces())]
     #[ensures((^self).namespaces() == result.namespaces())]
-    #[pure]
+    #[check(ghost)]
     pub fn reborrow(&mut self) -> Namespaces {
         Namespaces(::std::marker::PhantomData)
     }
@@ -170,7 +170,7 @@ pub trait LocalInvariantExt<'a> {
     /// Alias for [`LocalInvariant::open`], to use method call syntax (`inv.open(...)`).
     #[requires(false)]
     #[ensures(true)]
-    #[pure]
+    #[check(ghost)]
     fn open<A, F>(self, namespaces: Ghost<Namespaces<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A;
@@ -185,7 +185,7 @@ impl<'a, T: LocalInvariantSpec> LocalInvariantExt<'a> for Ghost<&'a LocalInvaria
         // f must restore the invariant
         (forall<res: A> f.postcondition_once((t,), res) ==> (^*t).invariant_with_data(self.public())))]
     #[ensures(exists<t: Ghost<&mut T>> (**t).invariant_with_data(self.public()) && f.postcondition_once((t,), result))]
-    #[pure]
+    #[check(ghost)]
     fn open<A, F>(self, namespaces: Ghost<Namespaces<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
@@ -207,7 +207,7 @@ impl<T: LocalInvariantSpec> LocalInvariant<T> {
     #[requires(value.invariant_with_data(*public))]
     #[ensures(result.public() == *public)]
     #[ensures(result.namespace() == *namespace)]
-    #[pure]
+    #[check(ghost)]
     pub fn new(
         value: Ghost<T>,
         #[allow(unused)] public: Snapshot<T::Public>,
@@ -241,7 +241,7 @@ impl<T: LocalInvariantSpec> LocalInvariant<T> {
         // f must restore the invariant
         (forall<res: A> f.postcondition_once((t,), res) ==> (^*t).invariant_with_data(this.public())))]
     #[ensures(exists<t: Ghost<&mut T>> (**t).invariant_with_data(this.public()) && f.postcondition_once((t,), result))]
-    #[pure]
+    #[check(ghost)]
     pub fn open<'a, A>(
         this: Ghost<&'a Self>,
         namespaces: Ghost<Namespaces<'a>>,

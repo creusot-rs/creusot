@@ -270,7 +270,7 @@ impl<K: ?Sized, V> IndexLogic<K> for FMap<K, V> {
 impl<K, V> FMap<K, V> {
     /// Create a new, empty map on the ghost heap.
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result.is_empty())]
     #[allow(unreachable_code)]
     pub fn new() -> Ghost<Self> {
@@ -297,7 +297,7 @@ impl<K, V> FMap<K, V> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self.len())]
     pub fn len_ghost(&self) -> Int {
         panic!()
@@ -317,7 +317,7 @@ impl<K, V> FMap<K, V> {
     ///     proof_assert!(!b2);
     /// };
     /// ```
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self.contains(*key))]
     pub fn contains_ghost(&self, key: &K) -> bool {
         self.get_ghost(key).is_some()
@@ -339,7 +339,7 @@ impl<K, V> FMap<K, V> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self.get(*key).map_logic(|v|&v))]
     pub fn get_ghost(&self, key: &K) -> Option<&V> {
         let _ = key;
@@ -362,7 +362,7 @@ impl<K, V> FMap<K, V> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(if self.contains(*key) {
             match result {
                 None => false,
@@ -401,7 +401,7 @@ impl<K, V> FMap<K, V> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(if self.contains(*key) {
         *result.1 == (*self).remove(*key) &&
         match result.0 {
@@ -436,7 +436,7 @@ impl<K, V> FMap<K, V> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(^self == (*self).insert(key, value))]
     #[ensures(result == (*self).get(key))]
     pub fn insert_ghost(&mut self, key: K, value: V) -> Option<V> {
@@ -461,7 +461,7 @@ impl<K, V> FMap<K, V> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(^self == (*self).remove(*key))]
     #[ensures(result == (*self).get(*key))]
     pub fn remove_ghost(&mut self, key: &K) -> Option<V> {
@@ -485,13 +485,13 @@ impl<K, V> FMap<K, V> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(^self == Self::empty())]
     pub fn clear_ghost(&mut self) {}
 }
 
 impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == *self)]
     #[trusted]
     fn clone(&self) -> Self {

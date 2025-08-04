@@ -15,17 +15,17 @@ extern_spec! {
     mod std {
         mod string {
             impl Deref for String {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result@ == self@)]
                 fn deref(&self) -> &str;
             }
 
             impl String {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result@ == self@.to_bytes().len())]
                 fn len(&self) -> usize;
 
-                #[pure]
+                #[check(ghost)]
                 #[requires(exists<s: Seq<char>> s.to_bytes() == bytes@)]
                 #[ensures(result@.to_bytes() == bytes@)]
                 unsafe fn from_utf8_unchecked(bytes: Vec<u8>) -> String;
@@ -36,15 +36,15 @@ extern_spec! {
 
 extern_spec! {
     impl str {
-        #[pure]
+        #[check(ghost)]
         #[ensures(result@ == self@.to_bytes().len())]
         fn len(&self) -> usize;
 
-        #[terminates] // can OOM (?)
+        #[check(terminates)] // can OOM (?)
         #[ensures(result@ == self@)]
         fn to_string(&self) -> String;
 
-        #[pure]
+        #[check(ghost)]
         #[requires(exists<i0> 0 <= i0 && i0 <= self@.len() && self@.subsequence(0, i0).to_bytes().len() == ix@)]
         #[ensures(result.0@.concat(result.1@) == self@)]
         #[ensures(result.0@.to_bytes().len() == ix@)]

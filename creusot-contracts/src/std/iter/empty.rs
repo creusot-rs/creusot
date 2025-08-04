@@ -28,7 +28,7 @@ extern_spec! {
     mod std {
         mod iter {
             impl<T> Iterator for Empty<T> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result == None && self.completed())]
                 fn next(&mut self) -> Option<T>;
             }

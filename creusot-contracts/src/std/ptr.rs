@@ -5,7 +5,7 @@ pub use ::std::ptr::*;
 /// metadata*.
 ///
 /// This is to account for provenance
-/// (<https://doc.rust-lang.org/std/ptr/index.html#using-strict-provenance>) and
+/// (<https://doc.rust-lang.org/std/ptr/index.html#[check(ghost)]sing-strict-provenance>) and
 /// wide pointers. See e.g.
 /// <https://doc.rust-lang.org/std/primitive.pointer.html#method.is_null>: "unsized
 /// types have many possible null pointers, as only the raw data pointer is

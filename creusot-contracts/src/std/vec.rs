@@ -68,24 +68,24 @@ extern_spec! {
     mod std {
         mod vec {
             impl<T> Vec<T> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result@.len() == 0)]
                 fn new() -> Vec<T>;
 
-                #[terminates] // can OOM
+                #[check(terminates)] // can OOM
                 #[ensures(result@.len() == 0)]
                 fn with_capacity(capacity: usize) -> Vec<T>;
             }
             impl<T, A: Allocator> Vec<T, A> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result@ == self@.len())]
                 fn len(&self) -> usize;
 
-                #[terminates] // can OOM
+                #[check(terminates)] // can OOM
                 #[ensures((^self)@ == self@.push_back(v))]
                 fn push(&mut self, v: T);
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(match result {
                     Some(t) =>
                         (^self)@ == self@.subsequence(0, self@.len() - 1) &&
@@ -94,41 +94,41 @@ extern_spec! {
                 })]
                 fn pop(&mut self) -> Option<T>;
 
-                #[pure]
+                #[check(ghost)]
                 #[requires(ix@ < self@.len())]
                 #[ensures(result == self[ix@])]
                 #[ensures((^self)@ == self@.subsequence(0, ix@).concat(self@.subsequence(ix@ + 1, self@.len())))]
                 #[ensures((^self)@.len() == self@.len() - 1)]
                 fn remove(&mut self, ix: usize) -> T;
 
-                #[terminates] // can OOM
+                #[check(terminates)] // can OOM
                 #[ensures((^self)@.len() == self@.len() + 1)]
                 #[ensures(forall<i> 0 <= i && i < index@ ==> (^self)[i] == self[i])]
                 #[ensures((^self)[index@] == element)]
                 #[ensures(forall<i> index@ < i && i < (^self)@.len() ==> (^self)[i] == self[i - 1])]
                 fn insert(&mut self, index: usize, element: T);
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result@ >= self@.len())]
                 fn capacity(&self) -> usize;
 
-                #[terminates] // can OOM
+                #[check(terminates)] // can OOM
                 #[ensures((^self)@ == self@)]
                 fn reserve(&mut self, additional: usize);
 
-                #[terminates] // can OOM
+                #[check(terminates)] // can OOM
                 #[ensures((^self)@ == self@)]
                 fn reserve_exact(&mut self, additional: usize);
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures((^self)@ == self@)]
                 fn shrink_to_fit(&mut self);
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures((^self)@ == self@)]
                 fn shrink_to(&mut self, min_capacity: usize);
 
-                #[pure]
+                #[check(ghost)]
                 #[ensures((^self)@.len() == 0)]
                 fn clear(&mut self);
             }
@@ -146,7 +146,7 @@ extern_spec! {
             }
 
             impl<T, I: SliceIndex<[T]>, A: Allocator> IndexMut<I> for Vec<T, A> {
-                #[pure]
+                #[check(ghost)]
                 #[requires(ix.in_bounds(self@))]
                 #[ensures(ix.has_value(self@, *result))]
                 #[ensures(ix.has_value((^self)@, ^result))]
@@ -156,20 +156,20 @@ extern_spec! {
             }
 
             impl<T, I: SliceIndex<[T]>, A: Allocator> Index<I> for Vec<T, A> {
-                #[pure]
+                #[check(ghost)]
                 #[requires(ix.in_bounds(self@))]
                 #[ensures(ix.has_value(self@, *result))]
                 fn index(&self, ix: I) -> & <Vec<T, A> as Index<I>>::Output;
             }
 
             impl<T, A: Allocator> Deref for Vec<T, A> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result@ == self@)]
                 fn deref(&self) -> &[T];
             }
 
             impl<T, A: Allocator> DerefMut for Vec<T, A> {
-                #[pure]
+                #[check(ghost)]
                 #[ensures(result@ == self@)]
                 #[ensures((^result)@ == (^self)@)]
                 fn deref_mut(&mut self) -> &mut [T];

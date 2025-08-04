@@ -127,7 +127,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                     ctx.error(
                         ctx.def_span(impl_item),
                         &format!(
-                            "Expected `{}` to be `#[pure]` as specified by the trait declaration",
+                            "Expected `{}` to be `#[check(ghost)]` as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
                     )

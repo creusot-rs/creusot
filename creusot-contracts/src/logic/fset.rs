@@ -315,7 +315,7 @@ impl FSet<Int> {
 impl<T: ?Sized> FSet<T> {
     /// Create a new, empty set on the ghost heap.
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result.is_empty())]
     #[allow(unreachable_code)]
     pub fn new() -> Ghost<Self> {
@@ -342,7 +342,7 @@ impl<T: ?Sized> FSet<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == self.len())]
     pub fn len_ghost(&self) -> Int {
         panic!()
@@ -362,7 +362,7 @@ impl<T: ?Sized> FSet<T> {
     ///     proof_assert!(!b2);
     /// };
     /// ```
-    #[pure]
+    #[check(ghost)]
     #[trusted]
     #[ensures(result == self.contains(*value))]
     pub fn contains_ghost(&self, value: &T) -> bool {
@@ -396,7 +396,7 @@ impl<T: ?Sized> FSet<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(^self == (*self).insert(value))]
     #[ensures(result == !(*self).contains(value))]
     pub fn insert_ghost(&mut self, value: T) -> bool
@@ -409,7 +409,7 @@ impl<T: ?Sized> FSet<T> {
 
     /// Same as [`Self::insert_ghost`], but for unsized values.
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(^self == (*self).insert(*value))]
     #[ensures(result == !(*self).contains(*value))]
     pub fn insert_ghost_unsized(&mut self, value: Box<T>) -> bool {
@@ -432,7 +432,7 @@ impl<T: ?Sized> FSet<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(^self == (*self).remove(*value))]
     #[ensures(result == (*self).contains(*value))]
     pub fn remove_ghost(&mut self, value: &T) -> bool {
@@ -456,13 +456,13 @@ impl<T: ?Sized> FSet<T> {
     /// };
     /// ```
     #[trusted]
-    #[pure]
+    #[check(ghost)]
     #[ensures(^self == Self::empty())]
     pub fn clear_ghost(&mut self) {}
 }
 
 impl<T: Clone + Copy> Clone for FSet<T> {
-    #[pure]
+    #[check(ghost)]
     #[ensures(result == *self)]
     #[trusted]
     fn clone(&self) -> Self {

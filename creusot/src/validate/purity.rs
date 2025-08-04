@@ -228,7 +228,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 (Purity::Program { .. } | Purity::Ghost, Purity::Logic { .. }) => {
                                     ("program", "logic")
                                 }
-                                (Purity::Ghost, Purity::Program { .. }) => ("ghost", "non-pure"),
+                                (Purity::Ghost, Purity::Program { .. }) => ("ghost", "non-ghost"),
                                 (Purity::Logic { .. }, Purity::Program { .. } | Purity::Ghost) => {
                                     ("logic", "program")
                                 }
