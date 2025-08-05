@@ -194,6 +194,47 @@ impl<'a, T: LocalInvariantSpec> LocalInvariantExt<'a> for Ghost<&'a LocalInvaria
     }
 }
 
+impl<'a, T> LocalInvariantExt<'a> for Ghost<&'a T>
+where
+    T: ::std::ops::Deref,
+    Ghost<&'a T::Target>: LocalInvariantExt<'a>,
+{
+    type Inner = <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::Inner;
+
+    #[requires(T::deref.precondition((*self,)))]
+    #[requires(forall<this> T::deref.postcondition((*self,), this) ==>
+        <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::open.precondition((Ghost::new_logic(this), namespaces, f))
+    )]
+    #[ensures(exists<this> T::deref.postcondition((*self,), this) &&
+        <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::open.postcondition((Ghost::new_logic(this), namespaces, f), result)
+    )]
+    #[check(ghost)]
+    fn open<A, F>(self, namespaces: Ghost<Namespaces<'a>>, f: F) -> A
+    where
+        F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
+    {
+        let this: Ghost<&T::Target> = ghost!(&self);
+        this.open(namespaces, f)
+    }
+}
+
+impl<'a, L> LocalInvariantExt<'a> for &'a Ghost<L>
+where
+    Ghost<&'a L>: LocalInvariantExt<'a>,
+{
+    type Inner = <Ghost<&'a L> as LocalInvariantExt<'a>>::Inner;
+
+    #[requires(<Ghost<&'a L> as LocalInvariantExt<'a>>::open.precondition((Ghost::new_logic(&**self), namespaces, f)))]
+    #[ensures(<Ghost<&'a L> as LocalInvariantExt<'a>>::open.postcondition((Ghost::new_logic(&**self), namespaces, f), result))]
+    #[check(ghost)]
+    fn open<A, F>(self, namespaces: Ghost<Namespaces<'a>>, f: F) -> A
+    where
+        F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
+    {
+        self.borrow().open(namespaces, f)
+    }
+}
+
 impl<T: LocalInvariantSpec> LocalInvariant<T> {
     /// Construct a `LocalInvariant`
     ///

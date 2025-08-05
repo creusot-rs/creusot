@@ -36,13 +36,12 @@ impl<T: Invariant> CellInv<T> {
     #[requires(namespaces.contains(PCELL()))]
     pub fn read<'a>(&'a self, namespaces: Ghost<Namespaces<'a>>) -> &'a T {
         self.permission
-            .borrow()
             .open(namespaces, move |perm| unsafe { self.data.borrow(ghost!(&perm.into_inner().0)) })
     }
 
     #[requires(namespaces.contains(PCELL()))]
     pub fn write(&self, x: T, namespaces: Ghost<Namespaces>) {
-        self.permission.borrow().open(namespaces, move |perm| unsafe {
+        self.permission.open(namespaces, move |perm| unsafe {
             *self.data.borrow_mut(ghost!(&mut perm.into_inner().0)) = x
         })
     }
