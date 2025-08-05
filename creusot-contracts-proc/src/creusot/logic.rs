@@ -9,7 +9,6 @@ use pearlite_syn::TBlock;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, TokenStreamExt as _, quote, quote_spanned};
-use std::iter::{once, repeat};
 use syn::{
     Attribute, Error, Ident, Item, Result, Signature, Stmt, Token, VisRestricted, Visibility,
     braced,
@@ -161,46 +160,69 @@ enum LogicKind {
     Law,
 }
 
-enum LogicTag {
-    Law,
-    Logic,
-    Prophetic,
-    Sealed,
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct LogicTag(u8);
+
+impl LogicTag {
+    const NONE: Self = Self(0);
+    const LAW: Self = Self(1);
+    const PROPHETIC: Self = Self(2);
+    const SEALED: Self = Self(4);
+
+    fn has(self, tag: Self) -> bool {
+        self.0 & tag.0 > 0
+    }
+    fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+    fn add(&mut self, tag: Self) {
+        self.0 |= tag.0;
+    }
+    fn doc_str(self) -> &'static str {
+        if self == Self::LAW {
+            "law"
+        } else if self == Self::PROPHETIC {
+            "prophetic"
+        } else {
+            "sealed"
+        }
+    }
 }
 
 impl ToTokens for LogicTag {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            Self::Logic => tokens.extend(quote!(#[creusot::decl::logic])),
-            Self::Prophetic => tokens.extend(quote!(#[creusot::decl::logic::prophetic])),
-            Self::Sealed => tokens.extend(quote!(#[creusot::decl::logic::sealed])),
-            Self::Law => tokens.extend(
-                quote!(#[creusot::decl::logic] #[creusot::decl::law] #[creusot::decl::no_trigger]),
-            ),
+        tokens.extend(quote!(#[creusot::decl::logic]));
+        if self.has(Self::PROPHETIC) {
+            tokens.extend(quote!(#[creusot::decl::logic::prophetic]));
+        }
+        if self.has(Self::SEALED) {
+            tokens.extend(quote!(#[creusot::decl::logic::sealed]));
+        }
+        if self.has(Self::LAW) {
+            tokens.extend(quote!(#[creusot::decl::law] #[creusot::decl::no_trigger]));
         }
     }
 }
 
 fn logic_gen(tags: TS1, tokens: TS1, kind: LogicKind) -> TS1 {
-    let tags = parse_macro_input!(tags with Punctuated<Ident, Token![,]>::parse_terminated);
-    let tags: Result<Vec<LogicTag>> = tags
-        .into_pairs()
-        .map(|p| {
-            let t = p.into_value();
-            if t == "prophetic" {
-                Ok(LogicTag::Prophetic)
-            } else if t == "sealed" {
-                Ok(LogicTag::Sealed)
-            } else {
-                Err(syn::Error::new(
-                    t.span(),
-                    "unsupported modifier. The only supported modifiers are `prophetic` and `sealed`",
-                ))
-            }
-        })
-        .collect();
-
-    let Ok(mut tags) = tags else { return tags.err().unwrap().into_compile_error().into() };
+    let tags_idents = parse_macro_input!(tags with Punctuated<Ident, Token![,]>::parse_terminated);
+    let mut tags = LogicTag::NONE;
+    for tag in tags_idents {
+        if tag == "prophetic" {
+            tags.add(LogicTag::PROPHETIC);
+        } else if tag == "sealed" {
+            tags.add(LogicTag::SEALED);
+        } else if tag == "law" {
+            tags.add(LogicTag::LAW);
+        } else {
+            return syn::Error::new(
+                tag.span(),
+                "unsupported modifier. The only supported modifiers are `prophetic` and `sealed`",
+            )
+            .into_compile_error()
+            .into();
+        }
+    }
     let log = parse_macro_input!(tokens as LogicInput);
 
     let mut doc_str: String = match kind {
@@ -209,12 +231,14 @@ fn logic_gen(tags: TS1, tokens: TS1, kind: LogicKind) -> TS1 {
     };
     if !tags.is_empty() {
         doc_str.push('(');
-        for (t, sep) in tags.iter().zip(once("").chain(repeat(", "))) {
-            doc_str.push_str(sep);
-            match t {
-                LogicTag::Prophetic => doc_str.push_str("prophetic"),
-                LogicTag::Sealed => doc_str.push_str("sealed"),
-                LogicTag::Law | LogicTag::Logic => unreachable!(),
+        let mut comma = false;
+        for tag in [LogicTag::LAW, LogicTag::PROPHETIC, LogicTag::SEALED] {
+            if tags.has(tag) {
+                if comma {
+                    doc_str.push_str(", ");
+                }
+                comma = true;
+                doc_str.push_str(tag.doc_str());
             }
         }
         doc_str.push(')')
@@ -225,8 +249,8 @@ fn logic_gen(tags: TS1, tokens: TS1, kind: LogicKind) -> TS1 {
     );
 
     match kind {
-        LogicKind::Law => tags.push(LogicTag::Law),
-        LogicKind::Logic => tags.push(LogicTag::Logic),
+        LogicKind::Law => tags.add(LogicTag::LAW),
+        LogicKind::Logic => (),
     }
     match log {
         LogicInput::Item(log) => logic_item(log, tags, documentation),
@@ -234,19 +258,19 @@ fn logic_gen(tags: TS1, tokens: TS1, kind: LogicKind) -> TS1 {
     }
 }
 
-fn logic_sig(mut sig: TraitItemSignature, tags: Vec<LogicTag>, documentation: TokenStream) -> TS1 {
+fn logic_sig(mut sig: TraitItemSignature, tags: LogicTag, documentation: TokenStream) -> TS1 {
     let span = sig.span();
     let attrs = std::mem::take(&mut sig.attrs);
 
     TS1::from(quote_spanned! {span =>
-        #(#tags)*
+        #tags
         #(#attrs)*
         #documentation
         #sig
     })
 }
 
-fn logic_item(log: LogicItem, tags: Vec<LogicTag>, documentation: TokenStream) -> TS1 {
+fn logic_item(log: LogicItem, tags: LogicTag, documentation: TokenStream) -> TS1 {
     let span = log.sig.span();
 
     let term = log.body;
@@ -257,7 +281,7 @@ fn logic_item(log: LogicItem, tags: Vec<LogicTag>, documentation: TokenStream) -
     let req_body = pretyping::encode_block(&term);
 
     TS1::from(quote_spanned! {span =>
-        #(#tags)*
+        #tags
         #(#attrs)*
         #documentation
         #vis #def #sig #req_body
