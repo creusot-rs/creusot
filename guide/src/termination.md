@@ -10,10 +10,10 @@ fn nonsense() -> u64 {
 }
 ```
 
-This can be avoided at the cost of more complicated verification, by adding the `terminates` attribute to a function:
+This can be avoided at the cost of more complicated verification, by adding the `check(terminates)` attribute to a function:
 
 ```rust
-#[terminates]
+#[check(terminates)]
 #[ensures(result@ == 42)]
 fn nonsense() -> u64 { // Fails to compile now !
     while true {}
@@ -21,7 +21,7 @@ fn nonsense() -> u64 { // Fails to compile now !
 }
 ```
 
-A function with the `terminates` attribute cannot:
+A function with the `check(terminates)` attribute cannot:
 
 - Call a non-`terminates` function.
 - Use a loop construct (`for`, `while`, `loop`). This restriction may be lifted in the future.
@@ -30,7 +30,7 @@ A function with the `terminates` attribute cannot:
   This means that this function will not be accepted:
 
   ```rust
-  #[terminates]
+  #[check(terminates)]
   fn f(x: u32) -> bool {
       if x == 0 { false } else { f(x - 1) }
   }
@@ -39,7 +39,7 @@ A function with the `terminates` attribute cannot:
   But this one will (the variant will be checked by why3):
 
   ```rust
-  #[terminates]
+  #[check(terminates)]
   #[variant(x)]
   fn f(x: u32) -> bool {
       if x == 0 { false } else { f(x - 1) }
@@ -49,10 +49,10 @@ A function with the `terminates` attribute cannot:
 - Use mutual recursion, like in the following example:
 
   ```rust
-  #[terminates]
+  #[check(terminates)]
   fn f() { g() } // Error: mutually recursive functions
 
-  #[terminates]
+  #[check(terminates)]
   fn g() { f() }
   ```
 
