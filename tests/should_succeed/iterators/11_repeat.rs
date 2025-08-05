@@ -27,12 +27,12 @@ impl<A: Clone> Iterator for Repeat<A> {
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]

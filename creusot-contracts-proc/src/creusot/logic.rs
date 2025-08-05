@@ -19,11 +19,51 @@ use syn::{
 };
 
 pub fn logic(tags: TS1, tokens: TS1) -> TS1 {
-    logic_gen(tags, tokens, LogicKind::Logic)
-}
+    let tags_idents = parse_macro_input!(tags with Punctuated<Ident, Token![,]>::parse_terminated);
+    let mut tags = LogicTag::NONE;
+    for tag in tags_idents {
+        if tag == "prophetic" {
+            tags.add(LogicTag::PROPHETIC);
+        } else if tag == "sealed" {
+            tags.add(LogicTag::SEALED);
+        } else if tag == "law" {
+            tags.add(LogicTag::LAW);
+        } else {
+            return syn::Error::new(
+                tag.span(),
+                "unsupported modifier. The only supported modifiers are `prophetic` and `sealed`",
+            )
+            .into_compile_error()
+            .into();
+        }
+    }
+    let log = parse_macro_input!(tokens as LogicInput);
 
-pub fn law(tags: TS1, tokens: TS1) -> TS1 {
-    logic_gen(tags, tokens, LogicKind::Law)
+    let mut doc_str = "logic".to_string();
+    if !tags.is_empty() {
+        doc_str.push('(');
+        let mut comma = false;
+        for tag in [LogicTag::LAW, LogicTag::PROPHETIC, LogicTag::SEALED] {
+            if tags.has(tag) {
+                if comma {
+                    doc_str.push_str(", ");
+                }
+                comma = true;
+                doc_str.push_str(tag.doc_str());
+            }
+        }
+        doc_str.push(')')
+    }
+
+    let documentation = document_spec(
+        &doc_str,
+        if tags.has(LogicTag::LAW) { doc::LogicBody::None } else { log.logic_body() },
+    );
+
+    match log {
+        LogicInput::Item(log) => logic_item(log, tags, documentation),
+        LogicInput::Sig(sig) => logic_sig(sig, tags, documentation),
+    }
 }
 
 pub fn pearlite(tokens: TS1) -> TS1 {
@@ -155,11 +195,6 @@ impl LogicInput {
     }
 }
 
-enum LogicKind {
-    Logic,
-    Law,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct LogicTag(u8);
 
@@ -201,60 +236,6 @@ impl ToTokens for LogicTag {
         if self.has(Self::LAW) {
             tokens.extend(quote!(#[creusot::decl::law] #[creusot::decl::no_trigger]));
         }
-    }
-}
-
-fn logic_gen(tags: TS1, tokens: TS1, kind: LogicKind) -> TS1 {
-    let tags_idents = parse_macro_input!(tags with Punctuated<Ident, Token![,]>::parse_terminated);
-    let mut tags = LogicTag::NONE;
-    for tag in tags_idents {
-        if tag == "prophetic" {
-            tags.add(LogicTag::PROPHETIC);
-        } else if tag == "sealed" {
-            tags.add(LogicTag::SEALED);
-        } else if tag == "law" {
-            tags.add(LogicTag::LAW);
-        } else {
-            return syn::Error::new(
-                tag.span(),
-                "unsupported modifier. The only supported modifiers are `prophetic` and `sealed`",
-            )
-            .into_compile_error()
-            .into();
-        }
-    }
-    let log = parse_macro_input!(tokens as LogicInput);
-
-    let mut doc_str: String = match kind {
-        LogicKind::Logic => "logic".into(),
-        LogicKind::Law => "law".into(),
-    };
-    if !tags.is_empty() {
-        doc_str.push('(');
-        let mut comma = false;
-        for tag in [LogicTag::LAW, LogicTag::PROPHETIC, LogicTag::SEALED] {
-            if tags.has(tag) {
-                if comma {
-                    doc_str.push_str(", ");
-                }
-                comma = true;
-                doc_str.push_str(tag.doc_str());
-            }
-        }
-        doc_str.push(')')
-    }
-    let documentation = document_spec(
-        &doc_str,
-        if matches!(kind, LogicKind::Law) { doc::LogicBody::None } else { log.logic_body() },
-    );
-
-    match kind {
-        LogicKind::Law => tags.add(LogicTag::LAW),
-        LogicKind::Logic => (),
-    }
-    match log {
-        LogicInput::Item(log) => logic_item(log, tags, documentation),
-        LogicInput::Sig(sig) => logic_sig(sig, tags, documentation),
     }
 }
 

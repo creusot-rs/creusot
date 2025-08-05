@@ -244,10 +244,6 @@ pub mod macros {
     /// ```
     pub use base_macros::invariant;
 
-    /// Declares a trait item as being a law which is autoloaded as soon another
-    /// trait item is used in a function
-    pub use base_macros::law;
-
     /// Declare a function as being a logical function
     ///
     /// This declaration must be pure and total. It cannot be called from Rust programs,
@@ -267,6 +263,21 @@ pub mod macros {
     /// ```
     /// Such a logic function cannot be used in [`snapshot!`] anymore, and cannot be
     /// called from a regular [`logic`] function.
+    ///
+    /// # law
+    ///
+    /// Declares a trait item as being a law which is autoloaded as soon another
+    /// trait item is used in a function.
+    ///
+    /// ```ignore
+    /// trait CommutativeOp {
+    ///     fn op(self, other: Self) -> Int;
+    ///
+    ///     #[logic(law)]
+    ///     #[ensures(forall<x: Self, y: Self> x.op(y) == y.op(x))]
+    ///     fn commutative();
+    /// }
+    /// ```
     pub use base_macros::logic;
 
     /// Inserts a *logical* assertion into the code

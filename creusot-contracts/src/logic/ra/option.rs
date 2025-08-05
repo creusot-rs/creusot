@@ -36,14 +36,14 @@ impl<T: RA> RA for Option<T> {
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {
         let _ = <T as RA>::commutative;
     }
 
-    #[law]
+    #[logic(law)]
     #[open(self)]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {

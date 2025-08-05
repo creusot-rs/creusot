@@ -42,12 +42,12 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}
 
-    #[law]
+    #[logic(law)]
     #[open(self)]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {}

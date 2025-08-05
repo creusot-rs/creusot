@@ -82,7 +82,7 @@ pub trait RA: Sized {
         other.factor(self) != None
     }
 
-    #[law(sealed)]
+    #[logic(law, sealed)]
     #[requires(self.op(other) == Some(comb))]
     #[ensures(self.incl(comb))]
     fn incl_op(self, other: Self, comb: Self) {}
@@ -126,17 +126,17 @@ pub trait RA: Sized {
     // Laws
 
     /// [`Self::op`] is commutative.
-    #[law]
+    #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self);
 
     /// [`Self::op`] is associative.
-    #[law]
+    #[logic(law)]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self);
 
     /// [`RA::incl`] is transitive.
-    #[law(sealed)]
+    #[logic(law, sealed)]
     #[open(self)]
     #[requires(a.incl(b))]
     #[requires(b.incl(c))]
@@ -171,13 +171,13 @@ pub trait UnitRA: RA {
     #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self;
 
-    #[law(sealed)]
+    #[logic(law, sealed)]
     #[ensures(forall<x: Self> x.incl(x))]
     fn incl_refl() {
         let _ = Self::unit();
     }
 
-    #[law(sealed)]
+    #[logic(law, sealed)]
     #[ensures(Self::unit().core_total() == Self::unit())]
     fn unit_core() {}
 

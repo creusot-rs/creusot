@@ -67,10 +67,6 @@ pub fn logic(_: TS1, _: TS1) -> TS1 {
     TS1::new()
 }
 
-pub fn law(_: TS1, _: TS1) -> TS1 {
-    TS1::new()
-}
-
 pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }

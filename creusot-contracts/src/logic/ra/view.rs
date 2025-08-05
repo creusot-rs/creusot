@@ -20,18 +20,18 @@ pub trait ViewRel {
     #[logic]
     fn rel(a: Option<Self::Auth>, f: Self::Frag) -> bool;
 
-    #[law]
+    #[logic(law)]
     #[requires(Self::rel(a, f1))]
     #[requires(f2.incl(f1))]
     #[ensures(Self::rel(a, f2))]
     fn rel_mono(a: Option<Self::Auth>, f1: Self::Frag, f2: Self::Frag);
 
-    #[law]
+    #[logic(law)]
     #[requires(Self::rel(a, f))]
     #[ensures(Self::rel(None, f))]
     fn rel_none(a: Option<Self::Auth>, f: Self::Frag);
 
-    #[law]
+    #[logic(law)]
     #[ensures(Self::rel(a, Self::Frag::unit()))]
     fn rel_unit(a: Option<Self::Auth>);
 }
@@ -155,12 +155,12 @@ impl<R: ViewRel> RA for View<R> {
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}
 
-    #[law]
+    #[logic(law)]
     #[open(self)]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {

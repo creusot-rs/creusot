@@ -1,11 +1,10 @@
-use rustc_hir::def::DefKind;
-
 use crate::{
     contracts_items::{
         is_law, is_open_inv_result, is_snapshot_deref, is_snapshot_deref_mut, is_trusted,
     },
     ctx::{HasTyCtxt as _, TranslationCtx},
 };
+use rustc_hir::def::DefKind;
 
 /// Validate that laws have no additional generic parameters.
 ///
@@ -148,7 +147,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                     ctx.error(
                         ctx.def_span(impl_item),
                         format!(
-                            "Method `{}` should not be a `#[law]`, as specified by the trait declaration",
+                            "Method `{}` should not be a `#[logic(law)]`, as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
                     )
@@ -157,7 +156,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                     ctx.error(
                         ctx.def_span(impl_item),
                         format!(
-                            "Expected `{}` to be a `#[law]` as specified by the trait declaration",
+                            "Expected `{}` to be a `#[logic(law)]` as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
                     )

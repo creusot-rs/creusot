@@ -36,12 +36,12 @@ impl<I: Iterator> Iterator for Fuse<I> {
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
@@ -50,7 +50,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
 }
 
 pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
-    #[law]
+    #[logic(law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::empty() && ^self == next)]
@@ -58,7 +58,7 @@ pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
 }
 
 impl<I: Iterator> FusedIterator for Fuse<I> {
-    #[law]
+    #[logic(law)]
     #[open]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]

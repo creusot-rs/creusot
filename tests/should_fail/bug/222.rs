@@ -9,7 +9,7 @@ pub trait A {
     }
 
     // Should not be provable
-    #[law]
+    #[logic(law)]
     #[ensures(Self::mktrue() <= 10)]
     fn is_true() {
         ()

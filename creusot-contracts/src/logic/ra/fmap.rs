@@ -48,7 +48,7 @@ impl<K, V: RA> RA for FMap<K, V> {
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {
         proof_assert!(match (a.op(b), b.op(a)) {
@@ -58,7 +58,7 @@ impl<K, V: RA> RA for FMap<K, V> {
         })
     }
 
-    #[law]
+    #[logic(law)]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {
         match (a.op(b), b.op(c)) {

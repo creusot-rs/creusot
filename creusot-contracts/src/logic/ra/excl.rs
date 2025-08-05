@@ -27,12 +27,12 @@ impl<T> RA for Excl<T> {
         None
     }
 
-    #[law]
+    #[logic(law)]
     #[open(self)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}
 
-    #[law]
+    #[logic(law)]
     #[open(self)]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {}
