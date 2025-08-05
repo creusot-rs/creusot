@@ -3,24 +3,24 @@
 //! Care is taken around the interaction with traits, like the following example:
 //! ```ignore
 //! pub trait Foo {
-//!     #[terminates]
+//!     #[check(terminates)]
 //!     fn foo() {}
 //! }
 //!
 //! impl Foo for i32 {
-//!     #[terminates]
+//!     #[check(terminates)]
 //!     fn foo() {
 //!         bar::<i32>(); // infinite recursion !
 //!     }
 //! }
 //!
-//! #[terminates]
+//! #[check(terminates)]
 //! pub fn bar<T: Foo>() {
 //!     T::foo();
 //! }
 //! ```
 //!
-//! The main idea is that `#[terminates]` functions must be ordonnable: if there exists
+//! The main idea is that `#[check(terminates)]` functions must be ordonnable: if there exists
 //! an order, such that no function can refer to a function defined before, then there
 //! can be no cycles.
 //!
@@ -68,7 +68,7 @@ use rustc_trait_selection::traits::{
     normalize_param_env_or_error, specialization_graph, translate_args,
 };
 
-/// Validate that a `#[terminates]` function cannot loop indefinitely. This includes:
+/// Validate that a `#[check(terminates)]` function cannot loop indefinitely. This includes:
 /// - forbidding program function from using loops of any kind (this should be relaxed
 ///   later).
 /// - forbidding (mutual) recursive calls, especially when traits are involved.
@@ -435,7 +435,7 @@ impl CallGraph {
     /// Build the call graph of all functions appearing in the current crate,
     /// exclusively for the purpose of termination checking.
     ///
-    /// In particular, this means it only contains `#[terminates]` functions.
+    /// In particular, this means it only contains `#[check(terminates)]` functions.
     fn build(ctx: &TranslationCtx) -> Self {
         let mut build_call_graph = BuildFunctionsGraph::default();
 
@@ -508,8 +508,9 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
             }
             thir::ExprKind::Loop { .. } => {
                 let fun_span = self.ctx.def_span(self.def_id);
-                let mut error =
-                    self.ctx.error(fun_span, "`#[terminates]` function must not contain loops.");
+                let mut error = self
+                    .ctx
+                    .error(fun_span, "`#[check(terminates)]` function must not contain loops.");
                 error.span_note(expr.span, "looping occurs here");
                 error.emit();
             }

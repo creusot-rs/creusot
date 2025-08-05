@@ -37,13 +37,13 @@ pub(crate) fn validate_traits(ctx: &TranslationCtx) {
 /// trait Tr {
 ///     #[logic]
 ///     fn foo();
-///     #[terminates]
+///     #[check(terminates)]
 ///     fn bar();
 /// }
 ///
 /// impl Tr for MyType {
 ///     fn foo() {} // ! ERROR ! foo should be marked `#[logic]`
-///     fn bar() {} // ! ERROR ! bar should be marked `#[terminates]`
+///     fn bar() {} // ! ERROR ! bar should be marked `#[check(terminates)]`
 /// }
 /// ```
 pub(crate) fn validate_impls(ctx: &TranslationCtx) {
@@ -136,7 +136,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                     ctx.error(
                         ctx.def_span(impl_item),
                         &format!(
-                            "Expected `{}` to be `#[terminates]` as specified by the trait declaration",
+                            "Expected `{}` to be `#[check(terminates)]` as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
                     )
