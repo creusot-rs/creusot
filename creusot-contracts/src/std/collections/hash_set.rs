@@ -115,12 +115,12 @@ impl<T: DeepModel> Iterator for IntoIter<T> {
         pearlite! { (self@).is_empty() }
     }
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
@@ -154,12 +154,12 @@ impl<'a, T: DeepModel> Iterator for Iter<'a, T> {
         pearlite! { (self@).is_empty() }
     }
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
@@ -212,12 +212,12 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Intersection<'a,
         pearlite! { self.resolve() && (self@).is_empty() }
     }
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
@@ -240,12 +240,12 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Difference<'a, T
         pearlite! { self.resolve() && (self@).is_empty() }
     }
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]

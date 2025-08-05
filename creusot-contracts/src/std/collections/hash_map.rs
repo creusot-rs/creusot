@@ -92,12 +92,12 @@ impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
         pearlite! { self.resolve() && self@.is_empty() }
     }
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
@@ -144,12 +144,12 @@ impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
         pearlite! { self.resolve() && self@.is_empty() }
     }
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
@@ -196,12 +196,12 @@ impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
         pearlite! { self.resolve() && self@.is_empty() }
     }
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]

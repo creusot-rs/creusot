@@ -11,12 +11,12 @@ impl Invariant for WithInvariant {
     }
 }
 
-#[law]
+#[logic(law)]
 #[open]
 #[ensures(forall<x: WithInvariant> x.invariant())]
 pub fn forall() {}
 
-#[law]
+#[logic(law)]
 #[open]
 #[ensures(exists<_x: WithInvariant> true)]
 pub fn exists() {}

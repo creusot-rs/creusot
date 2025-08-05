@@ -58,7 +58,6 @@ proc_macro_attributes! {
     check
     logic
     trusted
-    law
     open
     open_inv_result
     bitwise_proof
