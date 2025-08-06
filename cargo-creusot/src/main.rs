@@ -94,10 +94,10 @@ fn invoke_cargo(
         exit(1);
     }
     let mut cmd = Command::new(cargo_path);
-    cmd.arg(format!("+{toolchain}"))
-        .arg(cargo_cmd)
+    cmd.arg(cargo_cmd)
         .args(cargo_flags)
         .args(["-F", "creusot-contracts/creusot creusot-contracts/nightly"])
+        .env("RUSTUP_TOOLCHAIN", toolchain)
         .env("RUSTC", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");
     // Incremental compilation causes Creusot to not see all of a crate's code
