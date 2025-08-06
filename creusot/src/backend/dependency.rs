@@ -99,6 +99,11 @@ impl<'tcx> Dependency<'tcx> {
                 _ if is_size_of_logic(tcx, did) => {
                     Some(Symbol::intern(&type_string(tcx, "size_of".into(), subst.type_at(0))))
                 }
+               /* DefKind::ConstParam => {
+                    // get name from typing env
+                    Some(  )
+                } */
+                _ if let None = tcx.opt_item_name(did) => { panic!("no item name for {did:?} {:?} {:?}", tcx.def_span(did), tcx.def_key(did)) }
                 _ => {
                     Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
                 }

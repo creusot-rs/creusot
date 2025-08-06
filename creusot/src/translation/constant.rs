@@ -17,7 +17,14 @@ pub(crate) fn from_mir_constant<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     c: &ConstOperand<'tcx>,
 ) -> Operand<'tcx> {
-    from_mir_constant_kind(ctx, c.const_, env, c.span)
+    use mir::Const::*;
+    eprintln!("from_mir_constant: {:?}", c.const_);
+    match c.const_ {
+        Ty(ty, _) => todo!(),
+        Unevaluated(u, ty) if let Some(promoted) = u.promoted => Operand::Promoted(promoted, ty),
+        Unevaluated(u, ty) => Operand::Constant(Term { kind: TermKind::Item(u.def, u.args), ty, span: c.span }),
+        Val(const_value, ty) => todo!(),
+    }
 }
 
 fn from_mir_constant_kind<'tcx>(
@@ -72,19 +79,16 @@ pub(crate) fn from_ty_const<'tcx>(
     env: TypingEnv<'tcx>,
     span: Span,
 ) -> Term<'tcx> {
-    // Check if a constant is builtin and thus should not be evaluated further
-    // Builtin constants are given a body which panics
-    if let ConstKind::Unevaluated(u) = c.kind()
-        && get_builtin(ctx.tcx, u.def).is_some()
-    {
-        return Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty, span };
-    };
-
-    if let ConstKind::Param(_) = c.kind() {
-        ctx.crash_and_error(span, "const generic parameters are not yet supported");
+    use rustc_type_ir::ConstKind::*;
+    match c.kind() {
+        Unevaluated(u) if get_builtin(ctx.tcx, u.def).is_some() => Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty, span },
+        Value(_, _) => todo!{"value"},
+        Unevaluated(u) => {
+            Term { kind: TermKind::Item(u.def, u.args), ty, span }}
+        Param(_) => todo!("param"),
+        Expr(_) => todo!(),
+        Infer(_) | Bound(_, _) | Placeholder(_) | Error(_) => unreachable!(),
     }
-
-    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, ty, span, c)), ty, span };
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
