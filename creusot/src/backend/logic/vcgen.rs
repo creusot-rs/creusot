@@ -238,6 +238,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Var(v) => k(Exp::var(v.0)),
             // VC(l, Q) = Q(l)
             TermKind::Lit(l) => k(self.lower_literal(l)),
+            TermKind::ConstParam(def_id) => { k(Exp::qvar(why3::QName::unqual("TODO"))) }
             TermKind::SeqLiteral(elts) => self.build_wp_slice(elts, &|elts: Box<[Exp]>| {
                 k(Exp::qvar(name::seq_create())
                     .app([Exp::int(elts.len() as i128), Exp::FunLiteral(elts)]))

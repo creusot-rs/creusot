@@ -162,6 +162,7 @@ pub enum TermKind<'tcx> {
         arg: Box<Term<'tcx>>,
     },
     Item(DefId, GenericArgsRef<'tcx>),
+    ConstParam(DefId),
     Assert {
         cond: Box<Term<'tcx>>,
     },
@@ -981,6 +982,13 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::PointerCoercion {
                 cast: PointerCoercion::MutToConstPointer, source, ..
             } => Ok(self.expr_term(source)?.coerce(ty).span(span)),
+            ExprKind::ConstParam { param: _, def_id } => {
+                Ok(Term {
+                    ty,
+                    span,
+                    kind: TermKind::ConstParam(def_id),
+                })
+            }
             ref ek => {
                 self.ctx.dcx().span_bug(span, format!("Unsupported expression kind {:?}", ek))
             }
@@ -1294,7 +1302,7 @@ pub trait TermVisitor<'tcx>: Sized {
 
 pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: &mut V) {
     match &term.kind {
-        TermKind::Var(_) | TermKind::Lit(_) => (),
+        TermKind::Var(_) | TermKind::Lit(_) | TermKind::ConstParam(_) => (),
         TermKind::SeqLiteral(fields) => fields.iter().for_each(|a| visitor.visit_term(a)),
         TermKind::Cast { arg } => visitor.visit_term(arg),
         TermKind::Coerce { arg } => visitor.visit_term(arg),
@@ -1363,7 +1371,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
     visitor: &mut V,
 ) {
     match &mut term.kind {
-        TermKind::Var(_) | TermKind::Lit(_) => (),
+        TermKind::Var(_) | TermKind::Lit(_) | TermKind::ConstParam(_) => (),
         TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
         TermKind::Cast { arg } => visitor.visit_mut_term(&mut *arg),
         TermKind::Coerce { arg } => visitor.visit_mut_term(arg),
@@ -1657,6 +1665,7 @@ impl<'tcx> Term<'tcx> {
                 None => {}
             },
             TermKind::Lit(_) => {}
+            TermKind::ConstParam(_) => {}
             TermKind::SeqLiteral(fields) => {
                 fields.iter_mut().for_each(|a| a.subst_with(bound, subst))
             }
@@ -1747,6 +1756,7 @@ impl<'tcx> Term<'tcx> {
                 }
             }
             TermKind::Lit(_) => {}
+            TermKind::ConstParam(_) => {}
             TermKind::SeqLiteral(fields) => {
                 fields.iter().for_each(|a| a.free_vars_inner(bound, free))
             }

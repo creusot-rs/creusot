@@ -101,6 +101,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
             TermKind::Lit(l) => lower_literal(self.ctx, self.names, l),
+            TermKind::ConstParam(def_id) => {
+                Exp::qvar(why3::QName::unqual("TODO"))
+            }
             TermKind::SeqLiteral(elts) => {
                 let elts: Box<[Exp]> = elts.iter().map(|elt| self.lower_term(elt)).collect();
                 Exp::qvar(name::seq_create())
