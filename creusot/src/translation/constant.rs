@@ -3,6 +3,7 @@ use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{fmir::Operand, pearlite::Literal, traits::TraitResolved},
 };
+use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{self, interpret::AllocRange, ConstOperand, ConstValue, UnevaluatedConst},
     ty::{self, Const, ConstKind, Ty, TyCtxt, TypingEnv},
@@ -95,6 +96,7 @@ fn try_scalar_to_literal<'tcx>(
     })
 }
 
+/*
 fn from_mir_constant_kind<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     ck: mir::Const<'tcx>,
@@ -139,24 +141,61 @@ fn from_mir_constant_kind<'tcx>(
         span,
     })
 }
+ */
 
 pub(crate) fn from_ty_const<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     c: Const<'tcx>,
     ty: Ty<'tcx>,
+    body_id: DefId,
     env: TypingEnv<'tcx>,
     span: Span,
 ) -> Term<'tcx> {
     use rustc_type_ir::ConstKind::*;
     match c.kind() {
         Unevaluated(u) if get_builtin(ctx.tcx, u.def).is_some() => Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty, span },
-        Value(_, _) => todo!{"value"},
+        Value(ty, value) => valtree_to_term(ctx, value, ty, env, span).unwrap_or_else(|| {
+            ctx.crash_and_error(span, &format!("Unsupported constant value: {value:?}"))
+        }),
         Unevaluated(u) => {
             Term { kind: TermKind::Item(u.def, u.args), ty, span }}
-        Param(_) => todo!("param"),
+        Param(p) => {
+            let def_id = ctx.generics_of(body_id).const_param(p, ctx.tcx).def_id;
+            Term {
+                kind: todo!(),
+                ty,
+                span
+            }
+        }
         Expr(_) => todo!(),
         Infer(_) | Bound(_, _) | Placeholder(_) | Error(_) => unreachable!(),
     }
+}
+
+fn valtree_to_term<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    valtree: ty::ValTree<'tcx>,
+    ty: Ty<'tcx>,
+    env: TypingEnv<'tcx>,
+    span: Span,
+) -> Option<Term<'tcx>> {
+    use ty::ValTree::*;
+    let kind = match valtree {
+        Leaf(scalar) => TermKind::Lit(scalar_to_literal(ctx, env, span, ty, scalar)),
+        Branch(_) => {
+            let ty::DestructuredConst { variant, fields } = ctx.destructure_const(ty::Const::new_value(ctx.tcx, valtree, ty));
+            let fields = fields.into_iter().map(|field| {
+                let ty::ConstKind::Value(ty, val) = field.kind() else { unreachable!() };
+                valtree_to_term(ctx, val, ty, env, span)
+            }).collect::<Option<Box<[_]>>>()?;
+            match ty.kind() {
+                ty::TyKind::Tuple(_) => TermKind::Tuple { fields },
+                ty::TyKind::Adt(__, _) => TermKind::Constructor { variant: variant.unwrap(), fields },
+                _ => return None,
+            }
+        }
+    };
+    Some(Term { kind, ty, span })
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(

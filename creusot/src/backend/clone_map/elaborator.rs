@@ -1085,7 +1085,7 @@ fn term<'tcx>(
         let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
         let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
         let span = ctx.def_span(def_id);
-        let res = from_ty_const(&ctx.ctx, constant, ty, typing_env, span);
+        let res = todo!("{def_id:?}"); // from_ty_const(&ctx.ctx, constant, ty, typing_env, span);
         Some(res)
     } else {
         let term = ctx.term(def_id).unwrap().rename(bound);

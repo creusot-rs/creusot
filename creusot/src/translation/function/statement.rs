@@ -160,6 +160,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.ctx,
                     *len,
                     self.ctx.types.usize,
+                    self.body_id.def_id.to_def_id(),
                     self.typing_env(),
                     si.span,
                 )),
