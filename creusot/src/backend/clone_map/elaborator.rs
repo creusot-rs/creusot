@@ -15,7 +15,7 @@ use crate::{
     ctx::{BodyId, ItemType},
     naming::name,
     translation::{
-        constant::from_ty_const,
+        constant::{const_to_term, logic_const},
         pearlite::{normalize, BinOp, Literal, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger},
         specification::Condition,
         traits::TraitResolved,
@@ -238,12 +238,10 @@ fn expand_logic<'tcx>(
     let names = elab.namer(dep);
     let name = names.dependency(dep).ident();
     let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
-    let kind = match ctx.item_type(def_id) {
-        ItemType::Logic { .. } if sig.args.is_empty() && sig.retty != None => DeclKind::Constant,
-        ItemType::Logic { .. } if sig.retty == None => DeclKind::Predicate,
-        ItemType::Logic { .. } => DeclKind::Function,
-        ItemType::Constant => DeclKind::Constant,
-        _ => unreachable!(),
+    let kind = match sig.retty {
+        None => DeclKind::Predicate,
+        Some(_) if sig.args.is_empty() => DeclKind::Constant,
+        _ => DeclKind::Function,
     };
     if !opaque && let Some(term) = term(ctx, typing_env, &bound, def_id, subst) {
         lower_logical_defn(ctx, &names, sig, kind, term)
@@ -314,7 +312,32 @@ fn expand_constant<'tcx>(
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Vec<Decl> {
-    expand_logic(elab, ctx, def_id, subst)
+    let body_id = elab.self_key.0;
+    let dep = Dependency::Item(def_id, subst);
+
+    let typing_env = elab.typing_env;
+    let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
+        .instantiate(ctx.tcx, subst)
+        .normalize(ctx.tcx, typing_env);
+    let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
+    assert_matches!(
+        trait_resol,
+        TraitResolved::NotATraitItem
+            | TraitResolved::Instance { .. } // The default impl is known to be the final instance
+            | TraitResolved::UnknownFound // Unresolved trait method
+    );
+    let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
+        || !ctx.is_transparent_from(def_id, elab.self_key.0);
+
+    let names = elab.namer(dep);
+    let name = names.dependency(dep).ident();
+    let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
+
+    if !opaque && let Some(term) = logic_const(ctx, typing_env, body_id, def_id, subst) {
+        lower_logical_defn(ctx, &names, sig, DeclKind::Constant, term)
+    } else {
+        val(sig, DeclKind::Constant)
+    }
 }
 
 // TODO Deprecate and fold into LogicElab

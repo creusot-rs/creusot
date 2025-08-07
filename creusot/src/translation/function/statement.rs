@@ -5,7 +5,7 @@ use crate::{
     },
     ctx::HasTyCtxt as _,
     translation::{
-        constant::from_ty_const,
+        constant::const_to_term,
         fmir::{self, Operand, RValue},
     },
 };
@@ -156,10 +156,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Repeat(op, len) => RValue::Repeat(
                 self.translate_operand(op, span),
-                Operand::Constant(from_ty_const(
+                Operand::Constant(const_to_term(
                     self.ctx,
                     *len,
-                    self.ctx.types.usize,
                     self.body_id.def_id.to_def_id(),
                     self.typing_env(),
                     si.span,
