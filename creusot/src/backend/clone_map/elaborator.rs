@@ -175,7 +175,7 @@ fn expand_program<'tcx>(
 
     let return_ident = Ident::fresh_local("return");
     let (sig, contract, return_ty) =
-        lower_program_sig(ctx, &names, name, pre_sig, def_id, return_ident);
+        lower_program_sig(ctx, &names, name, pre_sig, def_id, Some(return_ident));
     vec![program::val(sig, contract, return_ident, return_ty)]
 }
 

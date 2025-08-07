@@ -9,7 +9,7 @@ use crate::{
     translation::{
         constant::from_mir_constant,
         fmir::{self, LocalDecls, RValue, TrivialInv},
-        pearlite::{Ident, Term},
+        pearlite::{Ident, PIdent, Term},
     },
 };
 use indexmap::IndexMap;
@@ -341,7 +341,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     mir::ProjectionElem::Deref
                 }
                 mir::ProjectionElem::Field(ix, ty) => mir::ProjectionElem::Field(ix, ty),
-                mir::ProjectionElem::Index(l) => mir::ProjectionElem::Index(self.locals[&l].1),
+                mir::ProjectionElem::Index(l) => mir::ProjectionElem::Index(PIdent(self.locals[&l].1)),
                 mir::ProjectionElem::ConstantIndex { offset, min_length, from_end } => {
                     mir::ProjectionElem::ConstantIndex { offset, min_length, from_end }
                 }

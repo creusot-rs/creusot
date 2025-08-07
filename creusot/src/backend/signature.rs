@@ -34,7 +34,7 @@ pub(crate) fn lower_program_sig<'tcx, N: Namer<'tcx>>(
     // FIXME: Get rid of this def id
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
-    return_ident: Ident,
+    return_ident: Option<Ident>,
 ) -> (Prototype, Contract, why3::ty::Type) {
     let span = ctx.tcx.def_span(def_id);
     let return_ty = translate_ty(ctx, names, span, pre_sig.output);
@@ -42,11 +42,11 @@ pub(crate) fn lower_program_sig<'tcx, N: Namer<'tcx>>(
         .inputs
         .iter()
         .map(|(id, span, ty)| Param::Term(id.0, translate_ty(ctx, names, *span, *ty)))
-        .chain([Param::Cont(
-            return_ident,
+        .chain(return_ident.map(|ident| Param::Cont(
+            ident,
             [].into(),
             [Param::Term(Ident::fresh_local("x"), return_ty.clone())].into(),
-        )])
+        )))
         .collect();
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);

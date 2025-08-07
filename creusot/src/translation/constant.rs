@@ -22,7 +22,7 @@ pub(crate) fn from_mir_constant<'tcx>(
     match c.const_ {
         Ty(ty, _) => todo!(),
         Unevaluated(u, ty) if let Some(promoted) = u.promoted => Operand::Promoted(promoted, ty),
-        Unevaluated(u, ty) => Operand::Constant(Term { kind: TermKind::Item(u.def, u.args), ty, span: c.span }),
+        Unevaluated(u, ty) => Operand::AnonConst(u.def, u.args, ty),
         Val(const_value, ty) => todo!(),
     }
 }
