@@ -10,23 +10,13 @@
 
 use crate::{
     backend::{
-        Why3Generator,
-        clone_map::{Namer, PreMod},
-        common_meta_decls,
-        dependency::Dependency,
-        is_trusted_item,
-        optimization::optimizations,
-        projections::{Focus, borrow_generated_id, projections_to_expr},
-        signature::lower_program_sig,
-        term::{lower_pat, lower_pure, unsupported_cast},
-        ty::{
+        clone_map::{Namer, PreMod}, common_meta_decls, dependency::Dependency, is_trusted_item, optimization::optimizations, projections::{borrow_generated_id, projections_to_expr, Focus}, signature::lower_program_sig, term::{lower_pat, lower_pure, unsupported_cast}, ty::{
             constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, ty_to_prelude,
             uty_to_prelude,
-        },
-        wto::{Component, weak_topological_order},
+        }, wto::{weak_topological_order, Component}, Why3Generator
     },
     contracts_items::get_namespace_ty,
-    ctx::{BodyId, Dependencies},
+    ctx::{BodyId, Dependencies, ItemType},
     naming::name,
     translated_item::FileModule,
     translation::{
@@ -242,7 +232,9 @@ pub fn to_why_<'tcx, N: Namer<'tcx>>(
         // a closure with no contract
         inferred_closure_spec
         // a promoted item
-        || body_id.promoted.is_some();
+        || body_id.promoted.is_some()
+        // a constant
+        || matches!(ctx.item_type(body_id.def_id()), ItemType::Constant);
 
     let ensures = contract.ensures.into_iter().map(Condition::labelled_exp);
     let mut postcond = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
@@ -380,8 +372,8 @@ pub fn const_to_expr<'tcx, N: Namer<'tcx>>(
     subst: GenericArgsRef<'tcx>,
     start: Ident,
     cont: Ident,
-) -> Defn {
-    to_why_(ctx, names, start, BodyId::new(def_id.expect_local(), None), Some(subst), cont, false)
+) -> Expr {
+    to_why_(ctx, names, start, BodyId::new(def_id.expect_local(), None), Some(subst), cont, false).body
 }
 
 impl<'tcx> Operand<'tcx> {
@@ -954,10 +946,8 @@ where
         IntermediateStmt::Assign(id, exp) => tail.assign(id, exp),
         IntermediateStmt::Call(params, fun, args) => Expr::Name(fun)
             .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, tail.boxed()))])),
-        IntermediateStmt::Expr(defn, k, x, ty) => {
-            let start = defn.prototype.name;
-            Expr::Defn(Expr::Name(Name::local(start)).into(), false, [
-                defn,
+        IntermediateStmt::Expr(expr, k, x, ty) => {
+            Expr::Defn(expr.into(), false, [
                 Defn { prototype: Prototype { name: k, attrs: vec![], params: [Param::Term(x, ty)].into() }, body: tail },
             ].into())}
         IntermediateStmt::Assume(e) => Expr::assume(e, tail),
@@ -984,8 +974,8 @@ pub(crate) enum IntermediateStmt {
     Assign(Ident, Exp),
     // E [ARGS] (id: ty -> K)
     Call(Box<[Param]>, Name, Box<[Arg]>),
-    /// `START [ START -> E | K (X : T) -> _ ]`
-    Expr(Defn /* START -> E */, Ident /* K */, Ident /* X */, Type /* T */),
+    /// `E [ K (X : T) -> _ ]`
+    Expr(Expr /* E */, Ident /* K */, Ident /* X */, Type /* T */),
     // -{ E }- K
     Assume(Exp),
     // { E } K
