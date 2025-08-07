@@ -162,7 +162,7 @@ pub(crate) fn from_ty_const<'tcx>(
         Param(p) => {
             let def_id = ctx.generics_of(body_id).const_param(p, ctx.tcx).def_id;
             Term {
-                kind: todo!(),
+                kind: TermKind::Lit(Literal::String(format!("{def_id:?}"))),
                 ty,
                 span
             }

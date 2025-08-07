@@ -1,18 +1,8 @@
 use crate::{
     backend::{
-        TranslationCtx, Why3Generator,
-        clone_map::{CloneNames, Dependency, Kind, Namer},
-        closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve},
-        is_trusted_item,
-        logic::{lower_logical_defn, spec_axioms},
-        program,
-        signature::{lower_logic_sig, lower_program_sig},
-        structural_resolve::structural_resolve,
-        term::{lower_pure, lower_pure_weakdep},
-        ty::{
+        clone_map::{CloneNames, Dependency, Kind, Namer}, closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve}, is_trusted_item, logic::{lower_logical_defn, spec_axioms}, program, signature::{lower_logic_sig, lower_program_sig}, structural_resolve::structural_resolve, term::{lower_pure, lower_pure_weakdep}, ty::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
-        },
-        ty_inv::InvariantElaborator,
+        }, ty_inv::InvariantElaborator, TranslationCtx, Why3Generator
     },
     contracts_items::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
@@ -26,7 +16,7 @@ use crate::{
     naming::name,
     translation::{
         constant::from_ty_const,
-        pearlite::{BinOp, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
+        pearlite::{normalize, BinOp, Literal, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger},
         specification::Condition,
         traits::TraitResolved,
     },
@@ -1085,8 +1075,7 @@ fn term<'tcx>(
         let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
         let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
         let span = ctx.def_span(def_id);
-        let res = todo!("{def_id:?}"); // from_ty_const(&ctx.ctx, constant, ty, typing_env, span);
-        Some(res)
+        Some(Term { kind: TermKind::Lit(Literal::String(format!("{def_id:?}"))), ty, span })
     } else {
         let term = ctx.term(def_id).unwrap().rename(bound);
         let term =

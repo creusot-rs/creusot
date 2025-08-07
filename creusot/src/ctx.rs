@@ -498,12 +498,11 @@ impl<'tcx> TranslationCtx<'tcx> {
                     ItemType::Program
                 }
             }
-            DefKind::AssocConst | DefKind::Const => ItemType::Constant,
+            DefKind::AssocConst | DefKind::Const | DefKind::AnonConst | DefKind::InlineConst => ItemType::Constant,
             DefKind::Closure => ItemType::Closure,
             DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,
             DefKind::AssocTy => ItemType::AssocTy,
             DefKind::Field => ItemType::Field,
-            DefKind::AnonConst => panic!(),
             DefKind::Variant => ItemType::Variant,
             dk => ItemType::Unsupported(dk),
         }
