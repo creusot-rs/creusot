@@ -163,7 +163,7 @@ pub fn to_why_<'tcx, N: Namer<'tcx>>(
     let inner_return = outer_return.refresh();
 
     let body = ctx.fmir_body(body_id).clone();
-    let mut body = if let Some(subst) = subst { ty::EarlyBinder::bind(body).instantiate(subst) } else { body };
+    let mut body = if let Some(subst) = subst { ty::EarlyBinder::bind(body).instantiate(ctx.tcx, subst) } else { body };
     let block_idents: IndexMap<BasicBlock, Ident> = body
         .blocks
         .iter()
@@ -349,7 +349,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
             Focus::new(|_| Exp::var(lhs.local)),
             Box::new(|_, x| x),
             &lhs.projections,
-            |ix| Exp::var(*ix),
+            |ix| Exp::var(ix.0),
             span,
         );
 
@@ -366,7 +366,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
             Focus::new(|_| Exp::var(pl.local)),
             Box::new(|_, _| unreachable!()),
             &pl.projections,
-            |ix| Exp::var(*ix),
+            |ix| Exp::var(ix.0),
             self.ctx.tcx.def_span(self.def_id),
         );
         rhs.call(Some(istmts))
@@ -381,7 +381,7 @@ pub fn const_to_expr<'tcx, N: Namer<'tcx>>(
     start: Ident,
     cont: Ident,
 ) -> Defn {
-    to_why_(ctx, names, start, BodyId::new(def_id.expect_local(), None), cont, false)
+    to_why_(ctx, names, start, BodyId::new(def_id.expect_local(), None), Some(subst), cont, false)
 }
 
 impl<'tcx> Operand<'tcx> {
@@ -393,12 +393,13 @@ impl<'tcx> Operand<'tcx> {
         match self {
             Operand::Move(pl) | Operand::Copy(pl) => lower.rplace_to_expr(&pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
-            Operand::AnonConst(def_id, subst, _ty) => {
+            Operand::AnonConst(def_id, subst, ty) => {
                 let start = Ident::fresh_local(format!("_const_start"));
                 let ret = Ident::fresh_local(format!("_const_ret"));
                 let defn = const_to_expr(lower.ctx, lower.names, def_id, subst, start, ret);
                 let result = Ident::fresh_local(format!("_const"));
-                istmts.push(IntermediateStmt::Expr(defn, ret, result, ()));
+                let ty = lower.ty(ty);
+                istmts.push(IntermediateStmt::Expr(defn, ret, result, ty));
                 Exp::var(result)
             }
             Operand::Promoted(pid, ty) => {
@@ -1037,7 +1038,7 @@ impl<'tcx> Statement<'tcx> {
                         Focus::new(|_| Exp::var(rhs.local)),
                         Box::new(|_, x| x),
                         &rhs.projections[..deref_index],
-                        |ix| Exp::var(*ix),
+                        |ix| Exp::var(ix.0),
                         self.span,
                     );
                     let (foc, constr) = projections_to_expr(
@@ -1048,7 +1049,7 @@ impl<'tcx> Statement<'tcx> {
                         original_borrow.clone(),
                         original_borrow_constr,
                         &rhs.projections[deref_index..],
-                        |ix| Exp::var(*ix),
+                        |ix| Exp::var(ix.0),
                         self.span,
                     );
                     rhs_rplace = foc.call(Some(&mut istmts));
@@ -1066,7 +1067,7 @@ impl<'tcx> Statement<'tcx> {
                                     .names
                                     .in_pre(uty_to_prelude(lower.ctx.tcx, UintTy::Usize), "t'int"),
                             )
-                            .app([Exp::var(*sym)])
+                            .app([Exp::var(sym.0)])
                         },
                     );
 
@@ -1080,7 +1081,7 @@ impl<'tcx> Statement<'tcx> {
                         Focus::new(|_| Exp::var(rhs.local)),
                         Box::new(|_, x| x),
                         &rhs.projections,
-                        |ix| Exp::var(*ix),
+                        |ix| Exp::var(ix.0),
                         self.span,
                     );
                     rhs_rplace = foc.call(Some(&mut istmts));

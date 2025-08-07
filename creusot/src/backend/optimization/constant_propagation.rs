@@ -127,6 +127,7 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
                     // self.move_chain(p.local);
                 }
                 Operand::Constant(t) => self.visit_term(t),
+                Operand::AnonConst(_, _, _) => {}
                 Operand::Promoted(_, _) => {}
             },
             RValue::BinOp(_, l, r) => {
@@ -151,6 +152,7 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
             Operand::Move(p) => self.read_place(p),
             Operand::Copy(p) => self.read_place(p),
             Operand::Constant(t) => self.visit_term(t),
+            Operand::AnonConst(_, _, _) |
             Operand::Promoted(_, _) => {}
         }
     }
@@ -161,7 +163,7 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
         self.read(p.local, p.projections.is_empty());
         p.projections.iter().for_each(|p| {
             if let mir::ProjectionElem::Index(l) = p {
-                self.read(*l, true)
+                self.read(l.0, true)
             }
         })
     }
@@ -173,7 +175,7 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
         p.projections.iter().for_each(|p| {
             if let mir::ProjectionElem::Index(l) = p {
                 // Indices (like `i` is `x[i] = ...`) are merely read
-                self.read(*l, true)
+                self.read(l.0, true)
             }
         })
     }
@@ -343,7 +345,8 @@ impl<'tcx> SimplePropagator<'tcx> {
                     *op = v;
                 }
             }
-            Operand::Constant(_) => {}
+            Operand::Constant(_) |
+            Operand::AnonConst(_, _, _) |
             Operand::Promoted(_, _) => {}
         }
     }
