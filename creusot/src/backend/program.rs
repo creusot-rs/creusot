@@ -370,9 +370,9 @@ pub fn const_to_expr<'tcx, N: Namer<'tcx>>(
     names: &N,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
-    start: Ident,
     cont: Ident,
 ) -> Expr {
+    let start = Ident::fresh_local(format!("_const_start")); // This name will be discarded, we only need the body, but refactoring is a pain
     to_why_(ctx, names, start, BodyId::new(def_id.expect_local(), None), Some(subst), cont, false).body
 }
 
@@ -386,9 +386,8 @@ impl<'tcx> Operand<'tcx> {
             Operand::Move(pl) | Operand::Copy(pl) => lower.rplace_to_expr(&pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::AnonConst(def_id, subst, ty) => {
-                let start = Ident::fresh_local(format!("_const_start"));
                 let ret = Ident::fresh_local(format!("_const_ret"));
-                let defn = const_to_expr(lower.ctx, lower.names, def_id, subst, start, ret);
+                let defn = const_to_expr(lower.ctx, lower.names, def_id, subst, ret);
                 let result = Ident::fresh_local(format!("_const"));
                 let ty = lower.ty(ty);
                 istmts.push(IntermediateStmt::Expr(defn, ret, result, ty));

@@ -308,6 +308,15 @@ fn expand_logic<'tcx>(
     }
 }
 
+fn expand_constant<'tcx>(
+    elab: &mut Expander<'_, 'tcx>,
+    ctx: &Why3Generator<'tcx>,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> Vec<Decl> {
+    expand_logic(elab, ctx, def_id, subst)
+}
+
 // TODO Deprecate and fold into LogicElab
 fn expand_ty_inv_axiom<'tcx>(
     elab: &mut Expander<'_, 'tcx>,
@@ -432,8 +441,10 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         let decls = match dep {
             Dependency::Type(ty) => expand_type(self, ctx, ty),
             Dependency::Item(def_id, subst) => {
-                if matches!(ctx.item_type(def_id), ItemType::Constant | ItemType::Logic { .. }) {
+                if matches!(ctx.item_type(def_id), ItemType::Logic { .. }) {
                     expand_logic(self, ctx, def_id, subst)
+                } else if matches!(ctx.item_type(def_id), ItemType::Constant) {
+                    expand_constant(self, ctx, def_id, subst)
                 } else if matches!(ctx.def_kind(def_id), DefKind::Field | DefKind::Variant) {
                     self.namer(dep).def_ty(ctx.parent(def_id), subst);
                     vec![]
