@@ -3,12 +3,12 @@ use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{fmir::Operand, pearlite::Literal, traits::TraitResolved},
 };
+use rustc_abi::Size;
 use rustc_middle::{
     mir::{self, ConstOperand, ConstValue, UnevaluatedConst, interpret::AllocRange},
     ty::{Const, ConstKind, Ty, TyCtxt, TypingEnv},
 };
 use rustc_span::{DUMMY_SP, Span};
-use rustc_target::abi::Size;
 
 use super::pearlite::{Term, TermKind};
 
@@ -37,9 +37,10 @@ fn from_mir_constant_kind<'tcx>(
     // let ck = ck.normalize(ctx.tcx, env);
 
     if ck.ty().peel_refs().is_str() {
-        if let mir::Const::Val(ConstValue::Slice { data, meta }, _) = ck {
+        if let mir::Const::Val(ConstValue::Slice { alloc_id, meta, .. }, _) = ck {
             let start = Size::from_bytes(0);
             let size = Size::from_bytes(meta);
+            let data = ctx.tcx.global_alloc(alloc_id).unwrap_memory();
             let bytes = data
                 .inner()
                 .get_bytes_strip_provenance(&ctx.tcx, AllocRange { start, size })
@@ -167,7 +168,7 @@ trait ToBits<'tcx> {
 impl<'tcx> ToBits<'tcx> for Const<'tcx> {
     fn get_bits(&self, tcx: TyCtxt<'tcx>, env: TypingEnv<'tcx>, ty: Ty<'tcx>) -> Option<u128> {
         let scalar = match self.kind() {
-            ConstKind::Value(_, _) => self.try_to_scalar()?.0,
+            ConstKind::Value(cv) => cv.valtree.try_to_scalar()?,
             ConstKind::Unevaluated(u) => {
                 tcx.const_eval_resolve_for_typeck(env, u, DUMMY_SP).ok()?.ok()?.try_to_scalar()?
             }

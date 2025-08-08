@@ -1,4 +1,5 @@
-use rustc_data_structures::stable_hasher::{Hash64, StableHasher};
+use rustc_data_structures::stable_hasher::StableHasher;
+use rustc_hashes::Hash64;
 use rustc_hir::{
     def_id::{CrateNum, DefId},
     definitions::{DefPath, DefPathData, DisambiguatedDefPathData},
@@ -109,20 +110,25 @@ impl<CTX> VeryStableHash<CTX> for DisambiguatedDefPathData {
 impl<CTX> VeryStableHash<CTX> for DefPathData {
     fn very_stable_hash(&self, tcx: &CTX, hcx: &mut StableHasher) {
         std::mem::discriminant(self).hash(hcx);
+        use DefPathData::*;
         match self {
-            DefPathData::CrateRoot => {}
-            DefPathData::Impl => {}
-            DefPathData::ForeignMod => {}
-            DefPathData::Use => {}
-            DefPathData::GlobalAsm => {}
-            DefPathData::TypeNs(symbol) => symbol.very_stable_hash(tcx, hcx),
-            DefPathData::ValueNs(symbol) => symbol.very_stable_hash(tcx, hcx),
-            DefPathData::MacroNs(symbol) => symbol.very_stable_hash(tcx, hcx),
-            DefPathData::LifetimeNs(symbol) => symbol.very_stable_hash(tcx, hcx),
-            DefPathData::Closure => {}
-            DefPathData::Ctor => {}
-            DefPathData::AnonConst => {}
-            DefPathData::OpaqueTy => {}
+            CrateRoot
+            | Impl
+            | ForeignMod
+            | Use
+            | GlobalAsm
+            | Closure
+            | Ctor
+            | AnonConst
+            | OpaqueTy
+            | SyntheticCoroutineBody
+            | NestedStatic => {}
+            TypeNs(symbol)
+            | ValueNs(symbol)
+            | MacroNs(symbol)
+            | LifetimeNs(symbol)
+            | OpaqueLifetime(symbol)
+            | AnonAssocTy(symbol) => symbol.very_stable_hash(tcx, hcx),
         }
     }
 }
@@ -258,10 +264,13 @@ impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::ExistentialPredicate<'tcx> {
 
 impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::PatternKind<'tcx> {
     fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
-        let ty::PatternKind::Range { start, end, include_end } = self;
-        start.very_stable_hash(tcx, hcx);
-        end.very_stable_hash(tcx, hcx);
-        include_end.very_stable_hash(tcx, hcx);
+        match self {
+            ty::PatternKind::Range { start, end } => {
+                start.very_stable_hash(tcx, hcx);
+                end.very_stable_hash(tcx, hcx);
+            }
+            ty::PatternKind::Or(pats) => pats.very_stable_hash(tcx, hcx),
+        }
     }
 }
 
@@ -279,9 +288,22 @@ impl VeryStableHash<TyCtxt<'_>> for ty::FnHeader<TyCtxt<'_>> {
     }
 }
 
-impl<CTX> VeryStableHash<CTX> for rustc_target::spec::abi::Abi {
-    fn very_stable_hash(&self, _tcx: &CTX, hcx: &mut StableHasher) {
+impl<CTX> VeryStableHash<CTX> for rustc_abi::ExternAbi {
+    fn very_stable_hash(&self, tcx: &CTX, hcx: &mut StableHasher) {
         std::mem::discriminant(self).hash(hcx);
+        use rustc_abi::ExternAbi::*;
+        match self {
+            C { unwind }
+            | System { unwind }
+            | Cdecl { unwind }
+            | Stdcall { unwind }
+            | Fastcall { unwind }
+            | Thiscall { unwind }
+            | Vectorcall { unwind }
+            | SysV64 { unwind }
+            | Win64 { unwind } => unwind.very_stable_hash(tcx, hcx),
+            _ => (),
+        }
     }
 }
 
@@ -359,11 +381,14 @@ impl VeryStableHash<TyCtxt<'_>> for ty::LateParamRegionKind {
         std::mem::discriminant(self).hash(hcx);
         match self {
             ty::LateParamRegionKind::Anon(n) => n.very_stable_hash(tcx, hcx),
-            ty::LateParamRegionKind::Named(def_id, symbol) => {
+            ty::LateParamRegionKind::Named(def_id) => {
                 def_id.very_stable_hash(tcx, hcx);
-                symbol.very_stable_hash(tcx, hcx);
             }
             ty::LateParamRegionKind::ClosureEnv => {}
+            ty::LateParamRegionKind::NamedAnon(id, sym) => {
+                id.very_stable_hash(tcx, hcx);
+                sym.very_stable_hash(tcx, hcx);
+            }
         }
     }
 }
@@ -373,11 +398,13 @@ impl VeryStableHash<TyCtxt<'_>> for ty::BoundRegionKind {
         std::mem::discriminant(self).hash(hcx);
         match self {
             ty::BoundRegionKind::Anon => {}
-            ty::BoundRegionKind::Named(id, name) => {
+            ty::BoundRegionKind::Named(id) => {
                 id.very_stable_hash(tcx, hcx);
-                name.very_stable_hash(tcx, hcx);
             }
             ty::BoundRegionKind::ClosureEnv => {}
+            ty::BoundRegionKind::NamedAnon(sym) => {
+                sym.very_stable_hash(tcx, hcx);
+            }
         }
     }
 }
@@ -442,9 +469,8 @@ impl VeryStableHash<TyCtxt<'_>> for ty::BoundTyKind {
         std::mem::discriminant(self).hash(hcx);
         match self {
             ty::BoundTyKind::Anon => {}
-            ty::BoundTyKind::Param(def_id, symbol) => {
+            ty::BoundTyKind::Param(def_id) => {
                 def_id.very_stable_hash(tcx, hcx);
-                symbol.very_stable_hash(tcx, hcx);
             }
         }
     }
@@ -502,10 +528,11 @@ impl<CTX> VeryStableHash<CTX> for ty::ScalarInt {
 
 impl<CTX> VeryStableHash<CTX> for ty::ValTree<'_> {
     fn very_stable_hash(&self, tcx: &CTX, hcx: &mut StableHasher) {
-        std::mem::discriminant(self).hash(hcx);
-        match self {
-            ty::ValTree::Leaf(ty) => ty.very_stable_hash(tcx, hcx),
-            ty::ValTree::Branch(b) => b.very_stable_hash(tcx, hcx),
+        let kind = **self;
+        std::mem::discriminant(kind).hash(hcx);
+        match kind {
+            ty::ValTreeKind::Leaf(ty) => ty.very_stable_hash(tcx, hcx),
+            ty::ValTreeKind::Branch(b) => b.very_stable_hash(tcx, hcx),
         }
     }
 }
@@ -523,9 +550,9 @@ impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::ConstKind<'tcx> {
         match self {
             ty::ConstKind::Unevaluated(unev) => unev.very_stable_hash(tcx, hcx),
             ty::ConstKind::Param(param) => param.very_stable_hash(tcx, hcx),
-            ty::ConstKind::Value(ty, v) => {
-                ty.very_stable_hash(tcx, hcx);
-                v.very_stable_hash(tcx, hcx);
+            ty::ConstKind::Value(v) => {
+                v.ty.very_stable_hash(tcx, hcx);
+                v.valtree.very_stable_hash(tcx, hcx);
             }
             ty::ConstKind::Infer(_) => todo!(),
             ty::ConstKind::Bound(i, b) => {
@@ -539,6 +566,12 @@ impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::ConstKind<'tcx> {
     }
 }
 
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::BoundConst {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
+        self.var.very_stable_hash(tcx, hcx)
+    }
+}
+
 impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::UnevaluatedConst<'tcx> {
     fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         self.def.very_stable_hash(tcx, hcx);
@@ -548,7 +581,7 @@ impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::UnevaluatedConst<'tcx> {
 
 impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::GenericArg<'tcx> {
     fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
-        let gak = self.unpack();
+        let gak = self.kind();
         std::mem::discriminant(&gak).hash(hcx);
         match gak {
             rustc_type_ir::GenericArgKind::Lifetime(l) => l.very_stable_hash(tcx, hcx),

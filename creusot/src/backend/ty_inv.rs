@@ -10,9 +10,9 @@ use crate::{
         traits::TraitResolved,
     },
 };
+use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
 use rustc_span::Span;
-use rustc_target::abi::{FieldIdx, VariantIdx};
 use std::collections::HashSet;
 
 /// # Errors
@@ -115,16 +115,24 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         match resolve_user_inv(self.ctx.tcx, ty, self.typing_env) {
             TraitResolved::NotATraitItem => unreachable!(),
             TraitResolved::Instance { def, .. } => {
-                rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, def.0, def.1, [
-                    subject.clone()
-                ]))
+                rhs = rhs.conj(Term::call(
+                    self.ctx.tcx,
+                    self.typing_env,
+                    def.0,
+                    def.1,
+                    [subject.clone()],
+                ))
             }
             TraitResolved::UnknownFound => {
                 let trait_item_did = get_invariant_method(self.ctx.tcx);
                 let subst = self.ctx.tcx.mk_args(&[GenericArg::from(ty)]);
-                rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, trait_item_did, subst, [
-                    subject.clone(),
-                ]))
+                rhs = rhs.conj(Term::call(
+                    self.ctx.tcx,
+                    self.typing_env,
+                    trait_item_did,
+                    subst,
+                    [subject.clone()],
+                ))
             }
             TraitResolved::UnknownNotFound => use_imples = true,
             TraitResolved::NoInstance => (),

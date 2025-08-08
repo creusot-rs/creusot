@@ -39,17 +39,17 @@ use crate::{
 };
 use indexmap::IndexMap;
 use petgraph::graphmap::DiGraphMap;
+use rustc_abi::VariantIdx;
 use rustc_hir::{
     Safety,
     def::DefKind,
     def_id::{DefId, LocalDefId},
 };
 use rustc_middle::{
-    mir::{BasicBlock, BinOp, ProjectionElem, START_BLOCK, UnOp, tcx::PlaceTy},
+    mir::{BasicBlock, BinOp, PlaceTy, ProjectionElem, START_BLOCK, UnOp},
     ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
 use rustc_span::{DUMMY_SP, Span};
-use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{DynKind, IntTy, UintTy};
 use std::{collections::HashMap, fmt::Debug, iter::once};
 use why3::{
@@ -504,9 +504,12 @@ impl<'tcx> RValue<'tcx> {
                 let neg = lower.names.in_pre(prelude, "neg");
                 let ret_ident = Ident::fresh_local("_ret");
                 let arg = Arg::Term(arg.into_why(lower, istmts));
-                istmts.push(IntermediateStmt::call(ret_ident, lower.ty(ty), Name::Global(neg), [
-                    arg,
-                ]));
+                istmts.push(IntermediateStmt::call(
+                    ret_ident,
+                    lower.ty(ty),
+                    Name::Global(neg),
+                    [arg],
+                ));
                 Exp::var(ret_ident)
             }
             RValue::Constructor(id, subst, args) => {
@@ -795,10 +798,13 @@ impl<'tcx> Branches<'tcx> {
                 Expr::Defn(Expr::Any.boxed(), false, brs)
             }
             Branches::Bool(f, t) => {
-                let brs = mk_switch_branches(discr, vec![
-                    (Exp::mk_false(), mk_goto(block_idents, f)),
-                    (Exp::mk_true(), mk_goto(block_idents, t)),
-                ]);
+                let brs = mk_switch_branches(
+                    discr,
+                    vec![
+                        (Exp::mk_false(), mk_goto(block_idents, f)),
+                        (Exp::mk_true(), mk_goto(block_idents, t)),
+                    ],
+                );
 
                 Expr::Defn(Expr::Any.boxed(), false, brs.collect())
             }
@@ -978,10 +984,13 @@ impl<'tcx> Statement<'tcx> {
                     None
                 };
 
-                let func = lower.names.in_pre(PreMod::MutBor, match bor_kind {
-                    BorrowKind::Mut => "borrow_mut",
-                    BorrowKind::Final(_) => "borrow_final",
-                });
+                let func = lower.names.in_pre(
+                    PreMod::MutBor,
+                    match bor_kind {
+                        BorrowKind::Mut => "borrow_mut",
+                        BorrowKind::Final(_) => "borrow_final",
+                    },
+                );
 
                 let bor_id_arg;
                 let rhs_rplace;
@@ -1163,6 +1172,7 @@ fn pattern_of_place<'tcx>(
             | ProjectionElem::Subtype(_) => {
                 unreachable!("These ProjectionElem should not be move paths")
             }
+            ProjectionElem::UnwrapUnsafeBinder(_) => todo!(),
         }
     }
 

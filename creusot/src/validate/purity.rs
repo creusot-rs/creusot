@@ -120,11 +120,10 @@ impl PurityVisitor<'_, '_> {
     /// the closure being called implements `FnGhost`.
     fn implements_fn_ghost(&self, func_did: DefId, args: &[ExprId]) -> bool {
         let tcx = self.ctx.tcx;
-        let Some(trait_did) = tcx.trait_of_item(func_did) else { return false };
+        let Some(trait_did) = tcx.trait_of_assoc(func_did) else { return false };
         if !tcx.is_fn_trait(trait_did) {
             return false;
         };
-        tcx.trait_of_item(func_did);
         let ty = self.thir[args[0]].ty.peel_refs();
         let (infcx, param_env) = tcx.infer_ctxt().build_with_typing_env(self.typing_env);
         let res = infcx.type_implements_trait(get_fn_ghost_trait(tcx), [ty], param_env);

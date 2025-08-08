@@ -21,7 +21,7 @@ use crate::{
 use rustc_ast::Mutability;
 use rustc_hir::def::DefKind;
 use rustc_middle::{
-    mir::tcx::PlaceTy,
+    mir::PlaceTy,
     ty::{Ty, TyKind},
 };
 use rustc_span::DUMMY_SP;

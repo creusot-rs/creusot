@@ -1,4 +1,5 @@
 use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
+use rustc_data_structures::fx::FxHashMap;
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::def_id::LocalDefId;
 use rustc_interface::{Config, interface::Compiler};
@@ -91,16 +92,18 @@ impl Callbacks for ToWhy {
             providers.mir_borrowck = |tcx, def_id| {
                 let opts = ConsumerOptions::RegionInferenceContext;
 
-                let body_with_facts =
-                    rustc_borrowck::consumers::get_body_with_borrowck_facts(tcx, def_id, opts);
+                let bodies_with_facts =
+                    rustc_borrowck::consumers::get_bodies_with_borrowck_facts(tcx, def_id, opts);
 
                 // SAFETY: The reader casts the 'static lifetime to 'tcx before using it.
-                let body_with_facts: BodyWithBorrowckFacts<'static> =
-                    unsafe { std::mem::transmute(body_with_facts) };
+                let bodies_with_facts: FxHashMap<LocalDefId, BodyWithBorrowckFacts<'static>> =
+                    unsafe { std::mem::transmute(bodies_with_facts) };
 
                 MIR_BODIES.with(|state| {
                     let mut map = state.borrow_mut();
-                    assert!(map.insert(def_id, body_with_facts).is_none());
+                    for (def_id, body_with_facts) in bodies_with_facts {
+                        assert!(map.insert(def_id, body_with_facts).is_none());
+                    }
                 });
 
                 (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_borrowck)(tcx, def_id)

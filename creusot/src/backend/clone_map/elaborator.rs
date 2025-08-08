@@ -154,19 +154,24 @@ fn expand_program<'tcx>(
         let pre_post_subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
 
         let pre_did = get_fn_once_impl_precond(ctx.tcx);
-        let pre = Term::call(ctx.tcx, typing_env, pre_did, pre_post_subst, [
-            Term::unit(ctx.tcx).coerce(fndef_ty),
-            args.clone(),
-        ]);
+        let pre = Term::call(
+            ctx.tcx,
+            typing_env,
+            pre_did,
+            pre_post_subst,
+            [Term::unit(ctx.tcx).coerce(fndef_ty), args.clone()],
+        );
         let expl_pre = format!("expl:{} requires", fn_name);
         pre_sig.contract.requires = vec![Condition { term: pre, expl: expl_pre }];
 
         let post_did = get_fn_once_impl_postcond(ctx.tcx);
-        let post = Term::call(ctx.tcx, typing_env, post_did, pre_post_subst, [
-            Term::unit(ctx.tcx).coerce(fndef_ty),
-            args,
-            Term::var(name::result(), pre_sig.output),
-        ]);
+        let post = Term::call(
+            ctx.tcx,
+            typing_env,
+            post_did,
+            pre_post_subst,
+            [Term::unit(ctx.tcx).coerce(fndef_ty), args, Term::var(name::result(), pre_sig.output)],
+        );
         let expl_post = format!("expl:{} ensures", fn_name);
         pre_sig.contract.ensures = vec![Condition { term: post, expl: expl_post }]
     } else {
@@ -265,10 +270,13 @@ fn expand_logic<'tcx>(
                 let args_id = Ident::fresh_local("args").into();
                 let args = Term::var(args_id, subst.type_at(0));
                 if let Some(pre) = pre_fndef(ctx, typing_env, did_f, subst_f, args.clone()) {
-                    let call = Term::call(ctx.tcx, typing_env, def_id, subst, [
-                        Term::unit(ctx.tcx).coerce(subst.type_at(1)),
-                        args,
-                    ]);
+                    let call = Term::call(
+                        ctx.tcx,
+                        typing_env,
+                        def_id,
+                        subst,
+                        [Term::unit(ctx.tcx).coerce(subst.type_at(1)), args],
+                    );
                     let trig = Box::new([Trigger(Box::new([call.clone()]))]);
                     let axiom = pre.implies(call).forall_trig((args_id, subst.type_at(0)), trig);
                     decls.push(Decl::Axiom(Axiom {
@@ -601,15 +609,21 @@ fn fn_once_postcond_term<'tcx>(
             let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
-                Term {
-                    ty: closure_ty,
-                    span: self_.span,
-                    kind: TermKind::Projection { lhs: Box::new(self_), idx: 0usize.into() },
-                },
-                args,
-                res,
-            ]))
+            Some(Term::call(
+                tcx,
+                typing_env,
+                get_fn_impl_postcond(tcx),
+                subst_postcond,
+                [
+                    Term {
+                        ty: closure_ty,
+                        span: self_.span,
+                        kind: TermKind::Projection { lhs: Box::new(self_), idx: 0usize.into() },
+                    },
+                    args,
+                    res,
+                ],
+            ))
         }
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
@@ -627,11 +641,13 @@ fn fn_once_postcond_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(ctx.tcx, typing_env, get_fn_impl_postcond(ctx.tcx), subst_postcond, [
-                self_.coerce(*cl),
-                args,
-                res,
-            ]))
+            Some(Term::call(
+                ctx.tcx,
+                typing_env,
+                get_fn_impl_postcond(ctx.tcx),
+                subst_postcond,
+                [self_.coerce(*cl), args, res],
+            ))
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
             let mut subst_postcond = subst.to_vec();
@@ -699,18 +715,24 @@ fn fn_mut_postcond_term<'tcx>(
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             Some(
-                Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
-                    Term {
-                        ty: closure_ty,
-                        kind: TermKind::Projection {
-                            lhs: Box::new(self_.clone()),
-                            idx: 0usize.into(),
+                Term::call(
+                    tcx,
+                    typing_env,
+                    get_fn_impl_postcond(tcx),
+                    subst_postcond,
+                    [
+                        Term {
+                            ty: closure_ty,
+                            kind: TermKind::Projection {
+                                lhs: Box::new(self_.clone()),
+                                idx: 0usize.into(),
+                            },
+                            span: self_.span,
                         },
-                        span: self_.span,
-                    },
-                    args,
-                    res,
-                ])
+                        args,
+                        res,
+                    ],
+                )
                 .conj(self_.eq(ctx.tcx, result_state)),
             )
         }
@@ -719,12 +741,13 @@ fn fn_mut_postcond_term<'tcx>(
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             Some(
-                Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, [
-                    self_.clone().cur(),
-                    args,
-                    result_state.clone().cur(),
-                    res,
-                ])
+                Term::call(
+                    tcx,
+                    typing_env,
+                    get_fn_mut_impl_postcond(tcx),
+                    subst_postcond,
+                    [self_.clone().cur(), args, result_state.clone().cur(), res],
+                )
                 .conj(self_.fin().eq(ctx.tcx, result_state.fin())),
             )
         }
@@ -733,11 +756,13 @@ fn fn_mut_postcond_term<'tcx>(
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             Some(
-                Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
-                    self_.clone().coerce(*cl),
-                    args,
-                    res,
-                ])
+                Term::call(
+                    tcx,
+                    typing_env,
+                    get_fn_impl_postcond(tcx),
+                    subst_postcond,
+                    [self_.clone().coerce(*cl), args, res],
+                )
                 .conj(self_.eq(ctx.tcx, result_state)),
             )
         }
@@ -745,12 +770,18 @@ fn fn_mut_postcond_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = bsubst[0];
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, [
-                self_.coerce(bsubst.type_at(0)),
-                args,
-                result_state.coerce(bsubst.type_at(0)),
-                res,
-            ]))
+            Some(Term::call(
+                tcx,
+                typing_env,
+                get_fn_mut_impl_postcond(tcx),
+                subst_postcond,
+                [
+                    self_.coerce(bsubst.type_at(0)),
+                    args,
+                    result_state.coerce(bsubst.type_at(0)),
+                    res,
+                ],
+            ))
         }
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
@@ -798,35 +829,37 @@ fn fn_postcond_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
-                Term {
-                    ty: closure_ty,
-                    kind: TermKind::Projection { lhs: Box::new(self_.clone()), idx: 0usize.into() },
-                    span: self_.span,
-                },
-                args,
-                res,
-            ]))
+            Some(Term::call(
+                tcx,
+                typing_env,
+                get_fn_impl_postcond(tcx),
+                subst_postcond,
+                [self_.proj(0usize.into(), closure_ty), args, res],
+            ))
         }
         &TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(cl);
             let subst_postcond = tcx.mk_args(&subst_postcond);
-            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
-                self_.clone().coerce(cl),
-                args,
-                res,
-            ]))
+            Some(Term::call(
+                tcx,
+                typing_env,
+                get_fn_impl_postcond(tcx),
+                subst_postcond,
+                [self_.clone().coerce(cl), args, res],
+            ))
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = bsubst[0];
             let subst_postcond = tcx.mk_args(&subst_postcond);
-            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
-                self_.coerce(bsubst.type_at(0)),
-                args,
-                res,
-            ]))
+            Some(Term::call(
+                tcx,
+                typing_env,
+                get_fn_impl_postcond(tcx),
+                subst_postcond,
+                [self_.coerce(bsubst.type_at(0)), args, res],
+            ))
         }
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
@@ -888,18 +921,25 @@ fn fn_once_precond_term<'tcx>(
             subst_pre[1] = GenericArg::from(cl);
             let subst_pre = ctx.mk_args(&subst_pre);
             let self_ = if m == Mutability::Mut { self_.clone().cur() } else { self_.coerce(cl) };
-            Some(Term::call(ctx.tcx, typing_env, get_fn_once_impl_precond(ctx.tcx), subst_pre, [
-                self_, args,
-            ]))
+            Some(Term::call(
+                ctx.tcx,
+                typing_env,
+                get_fn_once_impl_precond(ctx.tcx),
+                subst_pre,
+                [self_, args],
+            ))
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
             let mut subst_pre = subst.to_vec();
             subst_pre[1] = bsubst[0];
             let subst_pre = ctx.mk_args(&subst_pre);
-            Some(Term::call(ctx.tcx, typing_env, get_fn_once_impl_precond(ctx.tcx), subst_pre, [
-                self_.coerce(bsubst.type_at(0)),
-                args,
-            ]))
+            Some(Term::call(
+                ctx.tcx,
+                typing_env,
+                get_fn_once_impl_precond(ctx.tcx),
+                subst_pre,
+                [self_.coerce(bsubst.type_at(0)), args],
+            ))
         }
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
@@ -916,14 +956,23 @@ fn fn_once_precond_term<'tcx>(
             let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            Some(Term::call(ctx.tcx, typing_env, get_fn_once_impl_precond(tcx), subst_postcond, [
-                Term {
-                    ty: closure_ty,
-                    kind: TermKind::Projection { lhs: Box::new(self_.clone()), idx: 0usize.into() },
-                    span: self_.span,
-                },
-                args,
-            ]))
+            Some(Term::call(
+                ctx.tcx,
+                typing_env,
+                get_fn_once_impl_precond(tcx),
+                subst_postcond,
+                [
+                    Term {
+                        ty: closure_ty,
+                        kind: TermKind::Projection {
+                            lhs: Box::new(self_.clone()),
+                            idx: 0usize.into(),
+                        },
+                        span: self_.span,
+                    },
+                    args,
+                ],
+            ))
         }
         _ => None,
     }
@@ -980,10 +1029,13 @@ fn fn_mut_hist_inv_term<'tcx>(
             subst_hist_inv[1] = GenericArg::from(*cl);
             let subst_hist_inv = ctx.mk_args(&subst_hist_inv);
             Some(
-                Term::call(ctx.tcx, typing_env, hist_inv, subst_hist_inv, [
-                    Term::var(self_, ty_self).cur(),
-                    Term::var(future, ty_self).cur(),
-                ])
+                Term::call(
+                    ctx.tcx,
+                    typing_env,
+                    hist_inv,
+                    subst_hist_inv,
+                    [Term::var(self_, ty_self).cur(), Term::var(future, ty_self).cur()],
+                )
                 .conj(
                     Term::var(self_, ty_self).fin().eq(ctx.tcx, Term::var(future, ty_self).fin()),
                 ),
@@ -994,10 +1046,16 @@ fn fn_mut_hist_inv_term<'tcx>(
             let mut subst_hist_inv = subst.to_vec();
             subst_hist_inv[1] = bsubst[0];
             let subst_hist_inv = ctx.mk_args(&subst_hist_inv);
-            Some(Term::call(ctx.tcx, typing_env, hist_inv, subst_hist_inv, [
-                Term::var(self_, ty_self).coerce(bsubst.type_at(0)),
-                Term::var(future, ty_self).coerce(bsubst.type_at(0)),
-            ]))
+            Some(Term::call(
+                ctx.tcx,
+                typing_env,
+                hist_inv,
+                subst_hist_inv,
+                [
+                    Term::var(self_, ty_self).coerce(bsubst.type_at(0)),
+                    Term::var(future, ty_self).coerce(bsubst.type_at(0)),
+                ],
+            ))
         }
         TyKind::FnDef(_, _) => Some(Term::true_(ctx.tcx)),
         _ => None,
@@ -1039,7 +1097,10 @@ fn size_of_array<'tcx>(
     int_ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     let n = match n.kind() {
-        ConstKind::Value(_, ty::ValTree::Leaf(scalar)) => scalar.to_target_usize(ctx.tcx) as i128,
+        ConstKind::Value(v) => match *v.valtree {
+            ty::ValTreeKind::Leaf(scalar) => scalar.to_target_usize(ctx.tcx) as i128,
+            ty::ValTreeKind::Branch(_) => return None,
+        },
         // TODO: ConstKind::Param
         _ => return None,
     };

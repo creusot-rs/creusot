@@ -28,7 +28,7 @@ use crate::{
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
-    mir::{ProjectionElem, tcx::PlaceTy},
+    mir::{PlaceTy, ProjectionElem},
     ty::{EarlyBinder, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::{DUMMY_SP, Span};
@@ -705,6 +705,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 }
                 ProjectionElem::OpaqueCast(ty) => def(ProjectionElem::OpaqueCast(ty)),
                 ProjectionElem::Subtype(ty) => def(ProjectionElem::Subtype(ty)),
+                ProjectionElem::UnwrapUnsafeBinder(ty) => {
+                    def(ProjectionElem::UnwrapUnsafeBinder(ty))
+                }
             }
         }
     }
