@@ -27,22 +27,6 @@ impl<'a> FilterAttrs<'a> for &'a [Attribute] {
     }
 }
 
-pub struct TraitItemSignature {
-    pub attrs: Vec<Attribute>,
-    pub defaultness: Option<Token![default]>,
-    pub sig: Signature,
-    pub semi_token: Token![;],
-}
-
-impl ToTokens for TraitItemSignature {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        tokens.append_all(self.attrs.outer());
-        self.defaultness.to_tokens(tokens);
-        self.sig.to_tokens(tokens);
-        self.semi_token.to_tokens(tokens);
-    }
-}
-
 pub struct FnOrMethod {
     pub defaultness: Option<Token![default]>,
     pub visibility: Visibility,
