@@ -5,10 +5,9 @@ use crate::{
     analysis::{self, BodyData, BodySpecs},
     backend::ty_inv::is_tyinv_trivial,
     ctx::*,
-    gather_spec_closures::LoopSpecKind,
     translation::{
         constant::from_mir_constant,
-        fmir::{self, LocalDecls, RValue, TrivialInv},
+        fmir::{self, LocalDecls, RValue, TrivialInv, Variant},
         pearlite::{Ident, Term},
     },
 };
@@ -53,7 +52,18 @@ struct BodyTranslator<'a, 'tcx> {
     // Fresh BlockId
     fresh_id: usize,
 
-    invariants: HashMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
+    /// Store invariants.
+    ///
+    /// The basic block is the loop entry. It then contains a series of
+    /// invariants, each with a possible description for Why3.
+    invariants: HashMap<BasicBlock, Vec<(String, Term<'tcx>)>>,
+    /// Maps a basic block representing a loop head to the variant of the loop.
+    loop_variants: HashMap<BasicBlock, (Term<'tcx>, Ident)>,
+    /// Names for the eventual variant for the function.
+    ///
+    /// This identifier is the name of the variable holding the variant's value
+    /// at the start of the function
+    function_variant: Ident,
     /// Invariants to translate as assertions.
     invariant_assertions: HashMap<DefId, (Term<'tcx>, String)>,
     /// Map of the `proof_assert!` blocks to their translated version.
@@ -105,11 +115,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let typing_env = ctx.typing_env(body.source.def_id());
         let mut assertions = analysis::BodySpecs::from_body(ctx, body);
         let body_data = match body_id.promoted {
-            None => analysis::run_with_specs(ctx, &body_with_facts, &mut assertions),
+            None => analysis::run_with_specs(ctx, body_with_facts, &mut assertions),
             Some(_) => BodyData::new(),
         };
         let BodySpecs {
             invariants,
+            variants,
             invariant_assertions,
             assertions,
             snapshots,
@@ -117,6 +128,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             vars,
             erased_locals,
         } = assertions;
+        let mut loop_variants = HashMap::new();
+        for (loop_head, term) in variants {
+            let variant_old_name =
+                Ident::fresh_local(format!("variant_old_bb{}", loop_head.as_usize()));
+            loop_variants.insert(loop_head, (term, variant_old_name));
+        }
         f(BodyTranslator {
             body,
             body_id,
@@ -131,6 +148,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             ctx,
             fresh_id: body.basic_blocks.len(),
             invariants,
+            loop_variants,
+            function_variant: Ident::fresh_local("function_variant"),
             invariant_assertions,
             assertions,
             snapshots,
@@ -146,21 +165,14 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             let mut invariants = Vec::new();
             let mut variant = None;
-            for (kind, body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
-                match kind {
-                    LoopSpecKind::Variant => {
-                        if variant.is_some() {
-                            self.ctx.crash_and_error(
-                                body.span,
-                                "Only one variant can be provided for each loop",
-                            );
-                        }
-                        variant = Some(body);
-                    }
-                    LoopSpecKind::Invariant(expl) => {
-                        invariants.push(fmir::Invariant { body, expl });
-                    }
-                }
+            // compute invariants assertions to insert in this basic block
+            for (expl, body) in self.invariants.remove(&bb).into_iter().flatten() {
+                invariants.push(fmir::Invariant { body, expl });
+            }
+
+            // compute an eventual variant assertion to insert in this basic block
+            if let Some((term, old_name)) = self.loop_variants.remove(&bb) {
+                variant = Some(Variant { term, old_name });
             }
 
             let mut loc = bb.start_location();
@@ -189,8 +201,16 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         assert!(self.snapshots.is_empty(), "unused snapshots");
         assert!(self.invariants.is_empty(), "unused invariants");
 
+        let variant_locals = self
+            .past_blocks
+            .values()
+            .filter_map(|b| b.variant.as_ref().map(|v| (v.old_name, v.term.ty, v.term.span)))
+            .collect();
+
         fmir::Body {
             locals: self.vars,
+            variant_locals,
+            function_variant: self.function_variant,
             arg_count: self.body.arg_count,
             blocks: self.past_blocks,
             fresh: self.fresh_id,
@@ -204,7 +224,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn typing_env(&self) -> TypingEnv<'tcx> {
-        self.typing_env.clone()
+        self.typing_env
     }
 
     fn emit_statement(&mut self, s: fmir::Statement<'tcx>) {

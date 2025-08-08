@@ -1068,6 +1068,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_ptr_in_seq [#"list_re
   let%span slist_reversal_lasso'0 = "list_reversal_lasso.rs" 193 14 196 5
   let%span slist_reversal_lasso'1 = "list_reversal_lasso.rs" 197 14 197 25
   let%span slist_reversal_lasso'2 = "list_reversal_lasso.rs" 200 12 202 53
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use creusot.int.UInt64
   use seq.Seq
@@ -1076,6 +1077,9 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_ptr_in_seq [#"list_re
   type t_Option  =
     | C_None
     | C_Some int
+  
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -1104,8 +1108,8 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_ptr_in_seq [#"list_re
         end
     else
       (([@expl:find_ptr_in_seq requires] [%#slist_reversal_lasso] 0 <= i + 1 /\ i + 1 <= Seq.length s)
-      /\ 0 <= ([%#slist_reversal_lasso'1] Seq.length s - i)
-      /\ ([%#slist_reversal_lasso'1] Seq.length s - (i + 1)) < ([%#slist_reversal_lasso'1] Seq.length s - i))
+      /\ well_founded_relation ([%#slist_reversal_lasso'1] Seq.length s - i) ([%#slist_reversal_lasso'1] Seq.length s
+      - (i + 1)))
       /\ (([%#slist_reversal_lasso'0] match find_ptr_in_seq s (i + 1) p with
         | C_None -> forall j: int. i + 1 <= j /\ j < Seq.length s  -> UInt64.t'int (Seq.get s j) <> p
         | C_Some j -> i + 1 <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
@@ -1129,6 +1133,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__pigeon [#"list_reversal_la
   let%span slist_reversal_lasso'7 = "list_reversal_lasso.rs" 197 14 197 25
   let%span slist_reversal_lasso'8 = "list_reversal_lasso.rs" 215 12 225 13
   let%span slist_reversal_lasso'9 = "list_reversal_lasso.rs" 200 12 202 53
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use creusot.int.UInt64
   use seq.Seq
@@ -1155,6 +1160,9 @@ module M_list_reversal_lasso__qyi2644757663130641572__pigeon [#"list_reversal_la
     | C_None -> forall j: int. i <= j /\ j < Seq.length s  -> UInt64.t'int (Seq.get s j) <> p
     | C_Some j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
     end)
+  
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -1185,7 +1193,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__pigeon [#"list_reversal_la
        -> UInt64.t'int (Seq.get s i) < n - 1)
       && ([@expl:pigeon requires #2] [%#slist_reversal_lasso'1] forall i: int, j: int. 0 <= i
       /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j))
-      /\ 0 <= ([%#slist_reversal_lasso'4] n) /\ ([%#slist_reversal_lasso'4] n - 1) < ([%#slist_reversal_lasso'4] n))
+      /\ well_founded_relation ([%#slist_reversal_lasso'4] n) ([%#slist_reversal_lasso'4] n - 1))
       /\ (([%#slist_reversal_lasso'2] Seq.length s <= n - 1) && ([%#slist_reversal_lasso'3] pigeon s (n - 1))
        -> ([@expl:pigeon ensures #0] [%#slist_reversal_lasso'2] Seq.length s <= n)
       && ([@expl:pigeon ensures #1] [%#slist_reversal_lasso'3] pigeon s (n - 1)))
@@ -1204,7 +1212,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__pigeon [#"list_reversal_la
         /\ 0 <= j /\ j < Seq.length (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) /\ i'0 <> j
          -> Seq.get (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) i'0
         <> Seq.get (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) j))
-        /\ 0 <= ([%#slist_reversal_lasso'4] n) /\ ([%#slist_reversal_lasso'4] n - 1) < ([%#slist_reversal_lasso'4] n))
+        /\ well_founded_relation ([%#slist_reversal_lasso'4] n) ([%#slist_reversal_lasso'4] n - 1))
         /\ (([%#slist_reversal_lasso'2] Seq.length (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s)))
         <= n - 1)
         && ([%#slist_reversal_lasso'3] pigeon (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) (n
@@ -1245,6 +1253,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso_aux [#"list_rev
   let%span slist_reversal_lasso'22 = "list_reversal_lasso.rs" 20 8 20 31
   let%span svec = "../../creusot-contracts/src/std/vec.rs" 21 14 21 41
   let%span sindex = "../../creusot-contracts/src/logic/ops/index.rs" 41 8 41 32
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -1379,6 +1388,9 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso_aux [#"list_rev
   /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
    -> ([%#slist_reversal_lasso'11] pigeon s n)
   
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -1422,9 +1434,8 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso_aux [#"list_rev
         && ([@expl:find_lasso_aux requires #1] [%#slist_reversal_lasso'0] index_logic'0 self last = v_NULL
         \/ nonnull_ptr self (index_logic'0 self last))
         && ([@expl:find_lasso_aux requires #2] [%#slist_reversal_lasso'1] list_seg self first (Seq.snoc s last) (index_logic'0 self last) 0 (Seq.length (Seq.snoc s last))))
-        /\ 0 <= ([%#slist_reversal_lasso'3] Seq.length (view self.t_Memory__0) - Seq.length s)
-        /\ ([%#slist_reversal_lasso'3] Seq.length (view self.t_Memory__0) - Seq.length (Seq.snoc s last))
-        < ([%#slist_reversal_lasso'3] Seq.length (view self.t_Memory__0) - Seq.length s))
+        /\ well_founded_relation ([%#slist_reversal_lasso'3] Seq.length (view self.t_Memory__0)
+        - Seq.length s) ([%#slist_reversal_lasso'3] Seq.length (view self.t_Memory__0) - Seq.length (Seq.snoc s last)))
         /\ (([%#slist_reversal_lasso'2] match find_lasso_aux self first (index_logic'0 self last) (Seq.snoc s last) with
           | {_p0 = s'0 ; _p1 = C_None} -> list self first s'0
           | {_p0 = s1 ; _p1 = C_Some s2} -> lasso self first s1 s2

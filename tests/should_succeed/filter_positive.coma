@@ -1,10 +1,14 @@
 module M_filter_positive__num_of_pos [#"filter_positive.rs" 37 0 37 49]
   let%span sfilter_positive = "filter_positive.rs" 36 10 36 13
   let%span sfilter_positive'0 = "filter_positive.rs" 39 8 45 9
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use creusot.int.Int32
   use seq.Seq
   use mach.int.Int
+  
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -22,9 +26,9 @@ module M_filter_positive__num_of_pos [#"filter_positive.rs" 37 0 37 49]
     true
   else
     if Int32.to_int (Seq.get t (j - 1)) > 0 then
-      0 <= ([%#sfilter_positive] j - i) /\ ([%#sfilter_positive] j - 1 - i) < ([%#sfilter_positive] j - i)
+      well_founded_relation ([%#sfilter_positive] j - i) ([%#sfilter_positive] j - 1 - i)
     else
-      0 <= ([%#sfilter_positive] j - i) /\ ([%#sfilter_positive] j - 1 - i) < ([%#sfilter_positive] j - i)
+      well_founded_relation ([%#sfilter_positive] j - i) ([%#sfilter_positive] j - 1 - i)
   
 
 end
@@ -35,6 +39,7 @@ module M_filter_positive__lemma_num_of_pos_increasing [#"filter_positive.rs" 65 
   let%span sfilter_positive'2 = "filter_positive.rs" 67 8 69 9
   let%span sfilter_positive'3 = "filter_positive.rs" 36 10 36 13
   let%span sfilter_positive'4 = "filter_positive.rs" 39 8 45 9
+  let%span swell_founded = "../../creusot-contracts/src/well_founded.rs" 44 8 44 33
   
   use creusot.int.Int32
   use seq.Seq
@@ -48,6 +53,9 @@ module M_filter_positive__lemma_num_of_pos_increasing [#"filter_positive.rs" 65 
   else
     if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
   )
+  
+  predicate well_founded_relation (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -67,7 +75,7 @@ module M_filter_positive__lemma_num_of_pos_increasing [#"filter_positive.rs" 65 
   goal vc_lemma_num_of_pos_increasing: ([%#sfilter_positive] j <= k)
    -> (if j < k then
     (([@expl:lemma_num_of_pos_increasing requires] [%#sfilter_positive] j + 1 <= k)
-    /\ 0 <= ([%#sfilter_positive'1] k - j) /\ ([%#sfilter_positive'1] k - (j + 1)) < ([%#sfilter_positive'1] k - j))
+    /\ well_founded_relation ([%#sfilter_positive'1] k - j) ([%#sfilter_positive'1] k - (j + 1)))
     /\ (([%#sfilter_positive'0] num_of_pos i (j + 1) t <= num_of_pos i k t)
      -> ([@expl:lemma_num_of_pos_increasing ensures] [%#sfilter_positive'0] num_of_pos i j t <= num_of_pos i k t))
   else
