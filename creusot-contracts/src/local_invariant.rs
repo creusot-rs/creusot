@@ -126,7 +126,7 @@ impl Namespaces<'_> {
     #[ensures((*self).namespaces() == result.namespaces())]
     #[ensures((^self).namespaces() == result.namespaces())]
     #[check(ghost)]
-    pub fn reborrow(&mut self) -> Namespaces {
+    pub fn reborrow<'a>(&'a mut self) -> Namespaces<'a> {
         Namespaces(::std::marker::PhantomData)
     }
 

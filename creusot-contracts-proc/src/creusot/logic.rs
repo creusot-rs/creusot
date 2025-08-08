@@ -4,11 +4,11 @@ use super::{
     doc::{self, document_spec},
     generate_unique_ident, pretyping,
 };
-use crate::common::{ContractSubject, TraitItemSignature};
+use crate::common::{ContractSubject, FilterAttrs as _};
 use pearlite_syn::TBlock;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
-use quote::{ToTokens, quote, quote_spanned};
+use quote::{ToTokens, TokenStreamExt as _, quote, quote_spanned};
 use std::iter::{once, repeat};
 use syn::{
     Attribute, Error, Ident, Item, Result, Signature, Stmt, Token, VisRestricted, Visibility,
@@ -77,6 +77,22 @@ pub fn open(attr: TS1, body: TS1) -> TS1 {
         ContractSubject::Closure(_) => TS1::from(
             Error::new(Span::call_site(), "Cannot mark closure as open").to_compile_error(),
         ),
+    }
+}
+
+pub struct TraitItemSignature {
+    pub attrs: Vec<Attribute>,
+    pub defaultness: Option<Token![default]>,
+    pub sig: Signature,
+    pub semi_token: Token![;],
+}
+
+impl ToTokens for TraitItemSignature {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        tokens.append_all(self.attrs.outer());
+        self.defaultness.to_tokens(tokens);
+        self.sig.to_tokens(tokens);
+        self.semi_token.to_tokens(tokens);
     }
 }
 
