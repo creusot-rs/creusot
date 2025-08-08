@@ -1,13 +1,6 @@
 #![cfg_attr(
     feature = "creusot",
-    feature(
-        box_patterns,
-        extract_if,
-        extend_one,
-        proc_macro_def_site,
-        proc_macro_span,
-        let_chains
-    )
+    feature(box_patterns, extend_one, proc_macro_def_site, proc_macro_span,)
 )]
 
 use proc_macro::TokenStream as TS1;

@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use crate::{
-    AbsoluteBytePos, EncodedSourceFileId, Footer, SYMBOL_OFFSET, SYMBOL_PREINTERNED, SYMBOL_STR,
+    AbsoluteBytePos, EncodedSourceFileId, Footer, SYMBOL_OFFSET, SYMBOL_PREDEFINED, SYMBOL_STR,
     SourceFileIndex, TAG_FULL_SPAN, TAG_PARTIAL_SPAN,
 };
-use rustc_data_structures::{fx::FxHashMap, sync::Lrc};
+use rustc_data_structures::fx::FxHashMap;
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex, DefPathHash, StableCrateId};
 use rustc_middle::{
     implement_ty_decoder,
@@ -14,7 +16,7 @@ use rustc_serialize::{
 };
 use rustc_span::{
     BytePos, DUMMY_SP, ExpnData, ExpnHash, ExpnId, SourceFile, Span, Symbol, SyntaxContext,
-    hygiene::{HygieneDecodeContext, SyntaxContextData},
+    hygiene::{HygieneDecodeContext, SyntaxContextKey},
 };
 
 // This is only safe to decode the metadata of a single crate or the `ty_rcache` might confuse shorthands (see #360)
@@ -22,7 +24,7 @@ pub struct MetadataDecoder<'a, 'tcx> {
     opaque: MemDecoder<'a>,
     tcx: TyCtxt<'tcx>,
     ty_rcache: FxHashMap<usize, Ty<'tcx>>,
-    file_index_to_file: FxHashMap<SourceFileIndex, Lrc<SourceFile>>,
+    file_index_to_file: FxHashMap<SourceFileIndex, Arc<SourceFile>>,
     file_index_to_stable_id: FxHashMap<SourceFileIndex, EncodedSourceFileId>,
     syntax_contexts: &'a FxHashMap<u32, AbsoluteBytePos>,
     expn_data: FxHashMap<(StableCrateId, u32), AbsoluteBytePos>,
@@ -30,7 +32,7 @@ pub struct MetadataDecoder<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
-    fn file_index_to_file(&mut self, index: SourceFileIndex) -> Lrc<SourceFile> {
+    fn file_index_to_file(&mut self, index: SourceFileIndex) -> Arc<SourceFile> {
         self.file_index_to_file
             .entry(index)
             .or_insert_with(|| {
@@ -94,14 +96,16 @@ impl SpanDecoder for MetadataDecoder<'_, '_> {
                 });
                 sym
             }
-            SYMBOL_PREINTERNED => {
+            SYMBOL_PREDEFINED => {
                 let symbol_index = self.read_u32();
-                Symbol::new_from_decoded(symbol_index)
+                Symbol::new(symbol_index)
             }
             _ => unreachable!(),
         }
     }
-
+    fn decode_byte_symbol(&mut self) -> rustc_span::ByteSymbol {
+        todo!()
+    }
     fn decode_expn_id(&mut self) -> ExpnId {
         let stable_id = StableCrateId::decode(self);
         let cnum = self.tcx.stable_crate_id_to_crate_num(stable_id);
@@ -123,7 +127,7 @@ impl SpanDecoder for MetadataDecoder<'_, '_> {
             // This closure is invoked if we haven't already decoded the data for the `SyntaxContext` we are deserializing.
             // We look up the position of the associated `SyntaxData` and decode it.
             let pos = syntax_contexts.get(&id).unwrap();
-            this.with_position(pos.to_usize(), |decoder| SyntaxContextData::decode(decoder))
+            this.with_position(pos.to_usize(), |decoder| SyntaxContextKey::decode(decoder))
         })
     }
     fn decode_crate_num(&mut self) -> CrateNum {
@@ -147,13 +151,11 @@ impl SpanDecoder for MetadataDecoder<'_, '_> {
     }
 }
 
-impl<'a, 'tcx> TyDecoder for MetadataDecoder<'a, 'tcx> {
+impl<'a, 'tcx> TyDecoder<'tcx> for MetadataDecoder<'a, 'tcx> {
     // Whether crate-local information can be cleared while encoding
     const CLEAR_CROSS_CRATE: bool = true;
 
-    type I = TyCtxt<'tcx>;
-
-    fn interner(&self) -> Self::I {
+    fn interner(&self) -> TyCtxt<'tcx> {
         self.tcx
     }
 

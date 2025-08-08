@@ -16,6 +16,7 @@ use indexmap::IndexSet;
 use itertools::{Either, Itertools};
 use once_map::unsync::OnceMap;
 use petgraph::prelude::DiGraphMap;
+use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -28,7 +29,6 @@ use rustc_middle::{
     },
 };
 use rustc_span::Span;
-use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
     Ident, Name, QName, Symbol,
     declaration::{Attribute, Decl, Span as WSpan, TyDecl},

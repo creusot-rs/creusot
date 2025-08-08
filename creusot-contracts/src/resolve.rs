@@ -29,7 +29,7 @@ pub fn structural_resolve<T: ?Sized>(_: T) -> bool {
     dead
 }
 
-impl<T1, T2: ?Sized> Resolve for (T1, T2) {
+impl<T1, T2> Resolve for (T1, T2) {
     #[logic(prophetic)]
     #[open]
     fn resolve(self) -> bool {

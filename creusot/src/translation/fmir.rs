@@ -2,17 +2,17 @@ use std::collections::HashMap;
 
 use crate::{backend::projections::projection_ty, translation::pearlite::Term};
 use indexmap::IndexMap;
+use rustc_abi::VariantIdx;
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     mir::{
-        self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, Promoted, SourceScope, UnOp,
-        tcx::PlaceTy,
+        self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, PlaceTy, Promoted, SourceScope,
+        UnOp,
     },
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
 use rustc_span::{Span, Symbol};
-use rustc_target::abi::VariantIdx;
 use why3::Ident;
 
 use super::pearlite::TermKind;

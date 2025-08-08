@@ -53,7 +53,7 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
 
     #[law]
     #[ensures(self.postcondition_once(args, res) ==
-              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
+              exists<res_state: &Self> self.postcondition_mut(args, *res_state, res) && resolve(res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output);
 }
 
@@ -149,7 +149,7 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
     #[law]
     #[trusted]
     #[ensures(self.postcondition_once(args, res) ==
-              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
+              exists<res_state: &Self> self.postcondition_mut(args, *res_state, res) && resolve(res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 

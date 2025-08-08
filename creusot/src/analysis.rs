@@ -11,6 +11,7 @@ use std::{
 use borrows::*;
 use liveness_no_drop::*;
 use not_final_places::NotFinalPlaces;
+use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_borrowck::consumers::{BodyWithBorrowckFacts, TwoPhaseActivation};
 use rustc_hir::{
     HirId,
@@ -30,7 +31,6 @@ use rustc_mir_dataflow::{
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::Symbol;
-use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::TyKind;
 use why3::Ident;
 
@@ -222,7 +222,7 @@ impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
                 .corenamer
                 .get(&ident)
                 .unwrap_or_else(|| panic!("HirId not found for {:?}", ident));
-            let ident2 = tcx.hir().ident(var);
+            let ident2 = tcx.hir_ident(var);
             match places.get(&ident2) {
                 Some(term) => Some(term.clone()),
                 None => panic!("No place found for {:?}", ident2),
@@ -755,7 +755,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                     self.fatal_error(fn_span, "unsupported function call type").emit()
                 };
                 if let Some(ty) = subst.get(1)
-                    && let ty::GenericArgKind::Type(ty) = ty.unpack()
+                    && let ty::GenericArgKind::Type(ty) = ty.kind()
                 {
                     if let ty::TyKind::Closure(def_id, _) = ty.kind() {
                         let tcx = self.tcx();
@@ -921,12 +921,15 @@ fn translate_vars<'tcx>(
         let ident = Ident::fresh(crate_name, &name);
         locals.insert(loc, (Symbol::intern(&name), ident));
         let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
-        vars.insert(ident, fmir::LocalDecl {
-            span: d.source_info.span,
-            ty: d.ty,
-            temp: !d.is_user_variable(),
-            arg: is_arg,
-        });
+        vars.insert(
+            ident,
+            fmir::LocalDecl {
+                span: d.source_info.span,
+                ty: d.ty,
+                temp: !d.is_user_variable(),
+                arg: is_arg,
+            },
+        );
     }
     (vars, locals)
 }

@@ -127,7 +127,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     #[logic]
     #[open]
     pub fn disjoint(self, other: Self) -> bool {
-        pearlite! {forall<k: K> !self.contains(k) || !other.contains(k)}
+        pearlite! {forall<k: &K> !self.contains(*k) || !other.contains(*k)}
     }
 
     /// Returns `true` if all key-value pairs in `self` are also in `other`.
@@ -135,7 +135,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     #[open]
     pub fn subset(self, other: Self) -> bool {
         pearlite! {
-            forall<k: K> self.contains(k) ==> other.get(k) == self.get(k)
+            forall<k: &K> self.contains(*k) ==> other.get(*k) == self.get(*k)
         }
     }
 
@@ -145,8 +145,8 @@ impl<K: ?Sized, V> FMap<K, V> {
     #[trusted]
     #[logic]
     #[requires(self.disjoint(other))]
-    #[ensures(forall<k: K> #[trigger(result.get(k))] !self.contains(k) ==> result.get(k) == other.get(k))]
-    #[ensures(forall<k: K> #[trigger(result.get(k))] !other.contains(k) ==> result.get(k) == self.get(k))]
+    #[ensures(forall<k: &K> #[trigger(result.get(*k))] !self.contains(*k) ==> result.get(*k) == other.get(*k))]
+    #[ensures(forall<k: &K> #[trigger(result.get(*k))] !other.contains(*k) ==> result.get(*k) == self.get(*k))]
     #[ensures(result.len() == self.len() + other.len())]
     pub fn union(self, other: Self) -> Self {
         dead
@@ -158,11 +158,11 @@ impl<K: ?Sized, V> FMap<K, V> {
     #[logic]
     #[ensures(result.disjoint(other))]
     #[ensures(other.subset(self) ==> other.union(result) == self)]
-    #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) ==
-        if other.contains(k) {
+    #[ensures(forall<k: &K> #[trigger(result.get(*k))] result.get(*k) ==
+        if other.contains(*k) {
             None
         } else {
-            self.get(k)
+            self.get(*k)
         }
     )]
     pub fn subtract(self, other: Self) -> Self {
@@ -187,7 +187,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
             let _ = Self::view_inj;
-            forall<k: K> self.get(k) == other.get(k)
+            forall<k: &K> self.get(*k) == other.get(*k)
         }
     }
 
@@ -197,11 +197,11 @@ impl<K: ?Sized, V> FMap<K, V> {
     #[trusted]
     #[logic]
     #[ensures(
-        forall<k: K> #[trigger(result.get(k))]
-            match (self.get(k), m.get(k)) {
-                (None, y) => result.get(k) == y,
-                (x, None) => result.get(k) == x,
-                (Some(x), Some(y)) => result.get(k) == Some(f[(x, y)]),
+        forall<k: &K> #[trigger(result.get(*k))]
+            match (self.get(*k), m.get(*k)) {
+                (None, y) => result.get(*k) == y,
+                (x, None) => result.get(*k) == x,
+                (Some(x), Some(y)) => result.get(*k) == Some(f[(x, y)]),
             }
     )]
     pub fn merge(self, m: FMap<K, V>, f: Mapping<(V, V), V>) -> FMap<K, V> {
@@ -211,9 +211,9 @@ impl<K: ?Sized, V> FMap<K, V> {
     /// Map every value in `self` according to `f`. Keys are unchanged.
     #[logic]
     #[trusted]
-    #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) == match self.get(k) {
+    #[ensures(forall<k: &K> #[trigger(result.get(*k))] result.get(*k) == match self.get(*k) {
         None => None,
-        Some(v) => Some(f[(k, v)]),
+        Some(v) => Some(f[(*k, v)]),
     })]
     pub fn map<V2>(self, f: Mapping<(K, V), V2>) -> FMap<K, V2>
     where
@@ -502,7 +502,7 @@ impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
 impl<K: Clone + Copy, V: Clone + Copy> Copy for FMap<K, V> {}
 
-impl<K: ?Sized, V> Invariant for FMap<K, V> {
+impl<K, V> Invariant for FMap<K, V> {
     #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]

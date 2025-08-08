@@ -1,3 +1,4 @@
+use rustc_abi::FieldIdx;
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -5,10 +6,9 @@ use rustc_hir::{
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::Promoted,
-    ty::{GenericArgKind, GenericArgsRef, List, Ty, TyCtxt, TyKind, ValTree},
+    ty::{self, GenericArgKind, GenericArgsRef, List, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
-use rustc_target::abi::FieldIdx;
 use rustc_type_ir::AliasTyKind;
 
 use crate::{
@@ -147,7 +147,9 @@ fn type_string_walk(tcx: TyCtxt, prefix: &mut String, ty: Ty) {
             push_(prefix, "array");
             type_string_walk(tcx, prefix, *ty);
             match len.kind() {
-                rustc_type_ir::ConstKind::Value(_, ValTree::Leaf(scalar)) => {
+                rustc_type_ir::ConstKind::Value(v)
+                    if let ty::ValTreeKind::Leaf(scalar) = *v.valtree =>
+                {
                     push_(prefix, &scalar.to_target_usize(tcx).to_string())
                 }
                 _ => push_(prefix, "n"),
@@ -182,7 +184,7 @@ fn type_string_walk(tcx: TyCtxt, prefix: &mut String, ty: Ty) {
                 Some(name) => push_(prefix, &to_alphanumeric(name.as_str())),
             };
             for arg in args.iter() {
-                let GenericArgKind::Type(ty) = arg.unpack() else { continue };
+                let GenericArgKind::Type(ty) = arg.kind() else { continue };
                 type_string_walk(tcx, prefix, ty)
             }
         }

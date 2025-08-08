@@ -38,7 +38,7 @@ fn validate_trusted(ctx: &TranslationCtx) {
 }
 
 fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
-    let attrs = tcx.hir().attrs(id);
+    let attrs = tcx.hir_attrs(id);
     attrs
         .iter()
         .any(|a| a.path_matches(&[Symbol::intern("creusot"), Symbol::intern("ghost_block")]))

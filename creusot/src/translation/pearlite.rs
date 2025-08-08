@@ -14,6 +14,7 @@ use crate::{
     translation::TranslationCtx,
 };
 use log::*;
+use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_ast::{ByRef, LitIntType, LitKind, Mutability, visit::VisitorResult};
 use rustc_hir::{
     HirId, OwnerId,
@@ -29,12 +30,10 @@ use rustc_middle::{
     ty::{
         CanonicalUserType, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable,
         TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind, adjustment::PointerCoercion,
-        int_ty, uint_ty,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{DUMMY_SP, Span};
-use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 use std::{
     assert_matches::assert_matches,
@@ -129,6 +128,10 @@ impl<I: Interner> TypeFoldable<I> for PIdent {
         F: rustc_middle::ty::FallibleTypeFolder<I>,
     {
         Ok(self)
+    }
+
+    fn fold_with<F: rustc_type_ir::TypeFolder<I>>(self, folder: &mut F) -> Self {
+        self
     }
 }
 
@@ -279,6 +282,10 @@ impl<I: Interner> TypeFoldable<I> for Literal<'_> {
         _: &mut F,
     ) -> Result<Self, F::Error> {
         Ok(self)
+    }
+
+    fn fold_with<F: rustc_type_ir::TypeFolder<I>>(self, folder: &mut F) -> Self {
+        self
     }
 }
 
@@ -711,9 +718,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         match lty {
                             LitIntType::Signed(ity) => {
                                 let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                                Literal::MachSigned(val, int_ty(ity))
+                                Literal::MachSigned(val, ity)
                             }
-                            LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uint_ty(uty)),
+                            LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uty),
                             LitIntType::Unsuffixed => match ty.kind() {
                                 TyKind::Int(ity) => {
                                     let val =
@@ -846,11 +853,12 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                             .collect();
 
                         for missing_field in missing {
+                            let missing_field: FieldIdx = missing_field.into();
                             fields.push((
-                                missing_field.into(),
+                                missing_field,
                                 base.clone().proj(
-                                    missing_field.into(),
-                                    variant.fields[missing_field.into()].ty(self.ctx.tcx, args),
+                                    missing_field,
+                                    variant.fields[missing_field].ty(self.ctx.tcx, args),
                                 ),
                             ));
                         }
@@ -1101,7 +1109,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         init_scope.span(self.ctx.tcx, self.ctx.region_scope_tree(self.item_id));
                     Ok(Term::let_(pattern, initializer, inner).span(span))
                 } else {
-                    let span = self.ctx.hir().span(HirId {
+                    let span = self.ctx.hir_span(HirId {
                         owner: OwnerId { def_id: self.item_id },
                         local_id: init_scope.local_id,
                     });
