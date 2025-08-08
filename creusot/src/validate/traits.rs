@@ -145,7 +145,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                     ctx.error(
                         ctx.def_span(impl_item),
                         &format!(
-                            "Method `{}` should not be a `#[law]`, as specified by the trait declaration",
+                            "Method `{}` should not be a `#[logic(law)]`, as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
                     )
@@ -154,7 +154,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                     ctx.error(
                         ctx.def_span(impl_item),
                         &format!(
-                            "Expected `{}` to be a `#[law]` as specified by the trait declaration",
+                            "Expected `{}` to be a `#[logic(law)]` as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
                     )

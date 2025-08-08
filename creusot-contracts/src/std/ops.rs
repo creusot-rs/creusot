@@ -36,22 +36,22 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
     #[logic(prophetic)]
     fn hist_inv(self, _: Self) -> bool;
 
-    #[law]
+    #[logic(law)]
     #[requires(self.postcondition_mut(args, res_state, res))]
     #[ensures(self.hist_inv(res_state))]
     fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output);
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.hist_inv(self))]
     fn hist_inv_refl(self);
 
-    #[law]
+    #[logic(law)]
     #[requires(self.hist_inv(b))]
     #[requires(b.hist_inv(c))]
     #[ensures(self.hist_inv(c))]
     fn hist_inv_trans(self, b: Self, c: Self);
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.postcondition_once(args, res) ==
               exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output);
@@ -67,15 +67,15 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
     #[logic(prophetic)]
     fn postcondition(self, _: Args, _: Self::Output) -> bool;
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
     fn fn_mut(self, args: Args, res_state: Self, res: Self::Output);
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
     fn fn_once(self, args: Args, res: Self::Output);
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.hist_inv(res_state) == (self == res_state))]
     fn fn_hist_inv(self, res_state: Self);
 }
@@ -129,24 +129,24 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
     }
 
     #[trusted]
-    #[law]
+    #[logic(law)]
     #[requires(self.postcondition_mut(args, res_state, res))]
     #[ensures(self.hist_inv(res_state))]
     fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[trusted]
-    #[law]
+    #[logic(law)]
     #[ensures(self.hist_inv(self))]
     fn hist_inv_refl(self) {}
 
     #[trusted]
-    #[law]
+    #[logic(law)]
     #[requires(self.hist_inv(b))]
     #[requires(b.hist_inv(c))]
     #[ensures(self.hist_inv(c))]
     fn hist_inv_trans(self, b: Self, c: Self) {}
 
-    #[law]
+    #[logic(law)]
     #[trusted]
     #[ensures(self.postcondition_once(args, res) ==
               exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
@@ -164,17 +164,17 @@ impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
         dead
     }
 
-    #[law]
+    #[logic(law)]
     #[trusted]
     #[ensures(self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
     fn fn_mut(self, args: Args, res_state: Self, res: Self::Output) {}
 
-    #[law]
+    #[logic(law)]
     #[trusted]
     #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
     fn fn_once(self, args: Args, res: Self::Output) {}
 
-    #[law]
+    #[logic(law)]
     #[trusted]
     #[ensures(self.hist_inv(res_state) == (self == res_state))]
     fn fn_hist_inv(self, res_state: Self) {}

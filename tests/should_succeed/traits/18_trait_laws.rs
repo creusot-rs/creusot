@@ -5,7 +5,7 @@ pub trait Symmetric {
     #[logic]
     fn op(self, _: Self) -> Self;
 
-    #[law]
+    #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn reflexive(a: Self, b: Self);
 }
@@ -24,7 +24,7 @@ impl Symmetric for () {
         ()
     }
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[ensures(a.op(b) == b.op(a))]
     fn reflexive(a: Self, b: Self) {}

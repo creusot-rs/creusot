@@ -38,11 +38,11 @@ pub trait Iterator: ::std::iter::Iterator {
     #[logic(prophetic)]
     fn completed(&mut self) -> bool;
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self);
 
-    #[law]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -72,11 +72,11 @@ pub trait DoubleEndedIterator: ::std::iter::DoubleEndedIterator + Iterator {
     #[logic(prophetic)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self);
 
-    #[law]
+    #[logic(law)]
     #[requires(a.produces_back(ab, b))]
     #[requires(b.produces_back(bc, c))]
     #[ensures(a.produces_back(ab.concat(bc), c))]
@@ -227,12 +227,12 @@ impl<I: Iterator + ?Sized> Iterator for &mut I {
         pearlite! { (*self).completed() && ^*self == ^^self }
     }
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
