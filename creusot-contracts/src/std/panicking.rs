@@ -13,10 +13,6 @@ extern_spec! {
 
             #[check(ghost)]
             #[requires(false)]
-            fn panic_explicit() -> !;
-
-            #[check(ghost)]
-            #[requires(false)]
             fn panic_display<T: fmt::Display>(x: &T) -> !;
 
             #[check(ghost)]

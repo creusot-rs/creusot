@@ -207,7 +207,7 @@ pub(crate) fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<String> {
     once(translate_name(krate.as_str()))
         .chain(ident_path_segments_(tcx, def_id).into_iter().map(|seg| match seg {
             Segment::Impl(hash) => format!("qyi{}", hash),
-            Segment::Other(data) => translate_name(&data.to_string()),
+            Segment::Other(data) => translate_name(&data.as_sym(false).as_str()),
         }))
         .collect()
 }

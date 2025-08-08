@@ -202,7 +202,7 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
         }
         RT::Field(TermField { base, member, .. }) => {
             let base = encode_term_(base, locals)?;
-            Ok(quote!({ #base . #member }))
+            Ok(quote!(#base . #member))
         }
         RT::Group(TermGroup { expr, .. }) => {
             let term = encode_term_(expr, locals)?;

@@ -1,5 +1,3 @@
-#![feature(unbounded_shifts)]
-
 use std::{
     env, fs,
     fs::{File, copy, create_dir_all, read_to_string},

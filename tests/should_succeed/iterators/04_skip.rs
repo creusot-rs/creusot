@@ -1,7 +1,5 @@
 // WHY3PROVE
-#![feature(slice_take)]
 extern crate creusot_contracts;
-
 use creusot_contracts::{invariant::inv, *};
 
 mod common;
