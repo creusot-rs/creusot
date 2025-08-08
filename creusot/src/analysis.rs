@@ -11,6 +11,7 @@ use std::{
 use borrows::*;
 use liveness_no_drop::*;
 use not_final_places::NotFinalPlaces;
+use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_borrowck::consumers::{BodyWithBorrowckFacts, TwoPhaseActivation};
 use rustc_hir::{
     HirId,
@@ -30,14 +31,14 @@ use rustc_mir_dataflow::{
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::Symbol;
-use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::TyKind;
 use why3::Ident;
 
 use crate::{
     analysis::resolve::{HasMoveDataExt as _, Resolver, place_contains_borrow_deref},
+    callbacks,
     contracts_items::{is_snapshot_closure, is_spec},
-    ctx::{HasTyCtxt, TranslationCtx, body_with_facts},
+    ctx::{HasTyCtxt, TranslationCtx},
     extended_location::ExtendedLocation,
     gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
     naming::variable_name,
@@ -222,7 +223,7 @@ impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
                 .corenamer
                 .get(&ident)
                 .unwrap_or_else(|| panic!("HirId not found for {:?}", ident));
-            let ident2 = tcx.hir().ident(var);
+            let ident2 = tcx.hir_ident(var);
             match places.get(&ident2) {
                 Some(term) => Some(term.clone()),
                 None => panic!("No place found for {:?}", ident2),
@@ -755,7 +756,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                     self.fatal_error(fn_span, "unsupported function call type").emit()
                 };
                 if let Some(ty) = subst.get(1)
-                    && let ty::GenericArgKind::Type(ty) = ty.unpack()
+                    && let ty::GenericArgKind::Type(ty) = ty.kind()
                 {
                     if let ty::TyKind::Closure(def_id, _) = ty.kind() {
                         let tcx = self.tcx();
@@ -852,7 +853,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
 // TODO: this will be used very soon
 #[allow(dead_code)]
 pub(crate) fn run_without_specs<'a, 'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) -> BodyData<'tcx> {
-    let body = body_with_facts(tcx, def_id);
+    let body = callbacks::get_body(tcx, def_id);
     let mut body_specs = BodySpecs::empty();
     let corenamer = HashMap::new();
     let analysis_env = AnalysisEnv::new(fmir::ScopeTree::empty(), &corenamer, HashMap::new());
@@ -924,12 +925,10 @@ fn translate_vars<'tcx>(
         let ident = Ident::fresh(crate_name, &name);
         locals.insert(loc, (Symbol::intern(&name), ident));
         let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
-        vars.insert(ident, fmir::LocalDecl {
-            span: d.source_info.span,
-            ty: d.ty,
-            temp,
-            arg: is_arg,
-        });
+        vars.insert(
+            ident,
+            fmir::LocalDecl { span: d.source_info.span, ty: d.ty, temp, arg: is_arg },
+        );
     }
     (vars, locals)
 }

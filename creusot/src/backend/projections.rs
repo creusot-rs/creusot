@@ -13,12 +13,12 @@ use crate::{
         traits::TraitResolved,
     },
 };
+use rustc_abi::VariantIdx;
 use rustc_middle::{
-    mir::{ProjectionElem, tcx::PlaceTy},
+    mir::{PlaceTy, ProjectionElem},
     ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::Span;
-use rustc_target::abi::VariantIdx;
 use rustc_type_ir::UintTy;
 use std::{assert_matches::assert_matches, cell::RefCell, fmt::Debug, rc::Rc};
 use why3::{
@@ -97,10 +97,13 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         Focus::new(move |is| focus.call(is).field(Name::Global(name::current())));
                     constructor = Box::new(move |is, t| {
                         let record = Box::new(focus1.call(is));
-                        constructor(is, Exp::RecUp {
-                            record,
-                            updates: Box::new([(Name::Global(name::current()), t)]),
-                        })
+                        constructor(
+                            is,
+                            Exp::RecUp {
+                                record,
+                                updates: Box::new([(Name::Global(name::current()), t)]),
+                            },
+                        )
                     });
                 }
             }
@@ -234,7 +237,8 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
             ProjectionElem::ConstantIndex { .. }
             | ProjectionElem::Subslice { .. }
             | ProjectionElem::OpaqueCast(_)
-            | ProjectionElem::Subtype(_) => {
+            | ProjectionElem::Subtype(_)
+            | ProjectionElem::UnwrapUnsafeBinder(_) => {
                 ctx.dcx().span_bug(span, format!("Unsupported projection {proj:?}"))
             }
         }
@@ -248,7 +252,7 @@ pub(crate) fn projection_ty<'tcx, V: Debug>(
     tcx: TyCtxt<'tcx>,
     elem: &ProjectionElem<V, Ty<'tcx>>,
 ) -> PlaceTy<'tcx> {
-    pty.projection_ty_core(tcx, elem, |_, _, ty| ty, |_, ty| ty)
+    pty.projection_ty_core(tcx, elem, |ty| ty, |_, _, _, ty| ty, |ty| ty)
 }
 
 /// Generate the ID for a final reborrow of `original_borrow`.
@@ -282,8 +286,9 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, N: Namer<'tcx>>(
                 borrow_id =
                     Exp::qvar(names.in_pre(PreMod::MutBor, "inherit_id")).app([borrow_id, idx]);
             }
-
-            ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
+            ProjectionElem::ConstantIndex { .. }
+            | ProjectionElem::Subslice { .. }
+            | ProjectionElem::UnwrapUnsafeBinder(_) => {
                 // those should inherit a different id instead
                 ctx.dcx().span_bug(span, format!("Unsupported projection {proj:?} in reborrow"))
             }
@@ -374,7 +379,12 @@ pub(crate) fn projections_term<'tcx, 'a, V: Debug>(
             (ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. }, _) => {
                 tcx.dcx().span_bug(span, "Array and slice patterns are currently not supported")
             }
-            (ProjectionElem::OpaqueCast(_) | ProjectionElem::Subtype(_), _) => {
+            (
+                ProjectionElem::OpaqueCast(_)
+                | ProjectionElem::Subtype(_)
+                | ProjectionElem::UnwrapUnsafeBinder(_),
+                _,
+            ) => {
                 unreachable!("{el:?} unsupported projection.")
             }
         }

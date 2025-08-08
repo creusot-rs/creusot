@@ -193,7 +193,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::CopyForDeref(_)
             | Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)
-            | Rvalue::ThreadLocalRef(_) => self.ctx.crash_and_error(
+            | Rvalue::ThreadLocalRef(_)
+            | Rvalue::WrapUnsafeBinder(_, _) => self.ctx.crash_and_error(
                 si.span,
                 format!("MIR code used an unsupported Rvalue {:?}", rvalue),
             ),

@@ -14,7 +14,7 @@ pub(crate) fn validate_traits(ctx: &TranslationCtx) {
     let mut law_violations = Vec::new();
 
     for trait_item_id in ctx.hir_crate_items(()).trait_items() {
-        let trait_item = ctx.hir().trait_item(trait_item_id);
+        let trait_item = ctx.hir_trait_item(trait_item_id);
 
         if is_law(ctx.tcx, trait_item.owner_id.def_id.to_def_id())
             && !(ctx.predicates_of(trait_item.owner_id.def_id).predicates.is_empty()
@@ -83,7 +83,10 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                 let open_inv_impl = ctx.params_open_inv(impl_item).unwrap();
                 for &i in open_inv_trait {
                     if !open_inv_impl.contains(&i) {
-                        let name_param = ctx.fn_arg_names(impl_item)[i];
+                        let name_param = match ctx.fn_arg_idents(impl_item)[i] {
+                            Some(ident) => ident.to_string(),
+                            None => "_".into(),
+                        };
                         ctx.error(
                             ctx.def_span(impl_item),
                             format!(

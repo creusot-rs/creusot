@@ -40,6 +40,26 @@ impl<'tcx> ExternSpec<'tcx> {
 }
 
 // Must be run before MIR generation.
+//
+// An extern spec desugars to a wrapper function:
+//
+// ```
+// extern_spec! {
+//   #[requires(p(x))]
+//   fn f<T>(x: T) -> U;
+// }
+// ```
+//
+// becomes, approximately:
+//
+// ```
+// #[requires(p(x))]
+// fn extern_spec_f<T>(x: T) -> U {
+//   f::<T>(x)
+// }
+// ```
+//
+// `local_def_id` is the `LocalDefId` of `extern_spec_f`.
 pub(crate) fn extract_extern_specs_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     local_def_id: LocalDefId,
@@ -52,7 +72,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     visit.visit_expr(&thir[expr]);
     let (id, subst) = visit.items.pop().unwrap();
 
-    let (id, _) =
+    let (id, inner_subst) =
         TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
                 ctx.def_span(def_id),
@@ -63,106 +83,59 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
             err.emit()
         });
 
-    // Generics of the actual item.
-    let mut inner_subst = erased_identity_for_item(ctx.tcx, id).to_vec();
+    // The following computes a substitution `subst` that we can apply to the contract of
+    // `extern_spec_f` given some type arguments for `f`:
+    // 1. check that `inner_generics` is a permutation of `outer_subst`;
+    // 2. invert it.
     // Generics of our stub.
     let outer_subst = erased_identity_for_item(ctx.tcx, def_id);
-
-    // FIXME: I don't remember the original reason for introducing this...
-    let extra_parameters = inner_subst.len() - outer_subst.len();
-
-    // Move Self_ to the front of the list like rustc does for real trait impls (not expressible in surface rust).
-    // This only matters when we also have lifetime parameters.
-    let self_pos = outer_subst.iter().position(|e| {
-        if let GenericArgKind::Type(t) = e.unpack()
-            && let TyKind::Param(t) = t.kind()
-            && t.name.as_str().starts_with("Self")
-        {
-            true
-        } else {
-            false
-        }
-    });
-
-    if let Some(ix) = self_pos {
-        let self_ = inner_subst.remove(ix + extra_parameters);
-        inner_subst.insert(extra_parameters, self_);
+    // Generics of the actual item.
+    let inner_generics = erased_identity_for_item(ctx.tcx, id).to_vec();
+    let mut subst = vec![None; inner_generics.len()];
+    let crash = || -> ! {
+        ctx.crash_and_error(
+            span,
+            format!(
+                "extern spec generics don't match\n {} {:?}\n {} {:?}",
+                ctx.def_path_str(def_id),
+                outer_subst,
+                ctx.def_path_str(id),
+                inner_subst
+            ),
+        )
     };
-
-    // since `outer_subst` has all its generic coming from a function (no `impl`),
-    // it always puts lifetimes first.
-    inner_subst.sort_by(|a1, a2| {
-        use std::cmp::Ordering;
-        match (a1.unpack(), a2.unpack()) {
-            (GenericArgKind::Lifetime(_), GenericArgKind::Lifetime(_)) => Ordering::Equal,
-            (GenericArgKind::Lifetime(_), _) => Ordering::Less,
-            (_, GenericArgKind::Lifetime(_)) => Ordering::Greater,
-            _ => Ordering::Equal,
-        }
-    });
-
-    let mut subst = Vec::new();
-    let mut errors = Vec::new();
-    for i in 0..outer_subst.len() {
-        match (inner_subst[i + extra_parameters].unpack(), outer_subst[i].unpack()) {
-            (GenericArgKind::Type(t1), GenericArgKind::Type(t2)) => match (t1.kind(), t2.kind()) {
-                (TyKind::Param(param1), TyKind::Param(param2))
-                    if param1.name == param2.name || param1.name.as_str().starts_with("Self") =>
-                {
-                    subst.push(inner_subst[i + extra_parameters]);
-                }
-                _ => {
-                    let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
-                    err.warn(format!("expected parameter `{:?}` to be called `{:?}`", t2, t1));
-                    errors.push(err);
-                }
+    // Traverse `inner_subst` (= the type arguments of `f` in the body of `extern_spec_f`),
+    // check that they are all variables, that each variable is mentioned exactly once, and invert the substitution.
+    // Lifetimes are ignored and erased.
+    for (param, arg) in inner_generics.into_iter().zip(inner_subst) {
+        match arg.kind() {
+            GenericArgKind::Type(ty) => match ty.kind() {
+                TyKind::Param(p) => match subst[p.index as usize] {
+                    ref mut q @ None => *q = Some(param),
+                    Some(_) => crash(),
+                },
+                _ => crash(),
             },
-            (GenericArgKind::Const(c1), GenericArgKind::Const(c2)) => {
-                let is_eq = match (c1.kind(), c2.kind()) {
-                    (ConstKind::Param(param1), ConstKind::Param(param2)) => {
-                        param1.name == param2.name
-                    }
-                    // TODO: also compare the name only in these other cases (if this is not already the case)
-                    (_, _) => c1 == c2,
-                };
-                if is_eq {
-                    subst.push(inner_subst[i + extra_parameters]);
-                } else {
-                    let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
-                    err.warn(format!("expected parameter `{:?}` to be called `{:?}`", c2, c1));
-                    errors.push(err);
-                }
-            }
-            (GenericArgKind::Lifetime(l1), GenericArgKind::Lifetime(l2)) => {
-                if l1.get_name() == l2.get_name() {
-                    subst.push(inner_subst[i + extra_parameters]);
-                } else {
-                    let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
-                    err.warn(format!("expected parameter `{:?}` to be called `{:?}`", l2, l1));
-                    errors.push(err);
-                }
-            }
-            (arg_expected, arg) => {
-                let p_str = |arg| match arg {
-                    GenericArgKind::Lifetime(l) => format!("lifetime `{l:?}`"),
-                    GenericArgKind::Type(t) => format!("type `{t:?}`"),
-                    GenericArgKind::Const(c) => format!("constant `{c:?}`"),
-                };
-                let err = ctx.dcx().struct_span_fatal(
-                    span,
-                    format!(
-                        "mismatched parameter kinds in `extern_spec!`: expected {}, got {}",
-                        p_str(arg_expected),
-                        p_str(arg)
-                    ),
-                );
-                errors.push(err);
-            }
+            GenericArgKind::Const(c) => match c.kind() {
+                ConstKind::Param(p) => match subst[p.index as usize] {
+                    ref mut q @ None => *q = Some(param),
+                    Some(_) => crash(),
+                },
+                _ => crash(),
+            },
+            GenericArgKind::Lifetime(_) => {}
         }
     }
-
-    errors.into_iter().for_each(|e| e.emit());
-
+    let subst = subst
+        .into_iter()
+        .zip(outer_subst)
+        .map(|(o, p)| {
+            o.unwrap_or_else(|| match p.kind() {
+                GenericArgKind::Lifetime(_) => p,
+                _ => crash(),
+            })
+        })
+        .collect::<Box<[_]>>();
     let subst = ctx.mk_args(&subst);
 
     let additional_predicates = ctx

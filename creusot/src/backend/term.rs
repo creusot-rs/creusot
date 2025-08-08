@@ -556,7 +556,7 @@ pub(crate) fn tyconst_to_term_final<'tcx>(
 ) -> Term<'tcx> {
     use rustc_type_ir::ConstKind::*;
     match c.kind() {
-        Value(ty, value) => valtree_to_term(value, ctx, ty, env, span),
+        Value(ty::Value { ty, valtree }) => valtree_to_term(valtree, ctx, ty, env, span),
         Unevaluated(ty::UnevaluatedConst { def, args }) => Some(Term::item(def, args, ty)),
         Param(p) => {
             let tcx = ctx.tcx;

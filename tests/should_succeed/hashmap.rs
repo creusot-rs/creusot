@@ -5,7 +5,7 @@ use creusot_contracts::{
     vec, *,
 };
 
-enum List<T> {
+pub enum List<T> {
     Nil,
     Cons(T, Box<List<T>>),
 }

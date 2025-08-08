@@ -53,7 +53,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.fatal_error(fn_span, "unsupported function call type").emit()
                 };
                 if is_snap_from_fn(self.ctx.tcx, fun_def_id) {
-                    let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else {
+                    let GenericArgKind::Type(ty) = subst.get(1).unwrap().kind() else {
                         unreachable!()
                     };
                     let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };

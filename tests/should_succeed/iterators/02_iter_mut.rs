@@ -1,6 +1,4 @@
-#![feature(slice_take)]
 extern crate creusot_contracts;
-
 use creusot_contracts::{
     invariant::{Invariant, inv},
     logic::Seq,
@@ -62,7 +60,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
-        (self.inner).take_first_mut()
+        (self.inner).split_off_first_mut()
     }
 }
 

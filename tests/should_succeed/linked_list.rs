@@ -68,10 +68,13 @@ impl<T> List<T> {
             self.last = cell_ptr;
         } else {
             let cell_last = unsafe {
-                PtrOwn::as_mut(self.last, ghost! {
-                    let off = self.seq.len_ghost() - 1int;
-                    self.seq.get_mut_ghost(off).unwrap()
-                })
+                PtrOwn::as_mut(
+                    self.last,
+                    ghost! {
+                        let off = self.seq.len_ghost() - 1int;
+                        self.seq.get_mut_ghost(off).unwrap()
+                    },
+                )
             };
             cell_last.next = cell_ptr;
             self.last = cell_ptr;

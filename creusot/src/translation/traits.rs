@@ -15,8 +15,8 @@ use rustc_infer::{
     },
 };
 use rustc_middle::ty::{
-    Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv, ParamTy, Predicate,
-    TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv, TypingMode,
+    Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv, ParamEnvAnd, ParamTy,
+    Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv, TypingMode,
 };
 use rustc_span::{DUMMY_SP, ErrorGuaranteed, Span};
 use rustc_trait_selection::{
@@ -24,8 +24,8 @@ use rustc_trait_selection::{
     traits::{FulfillmentError, ImplSource, InCrate, TraitEngineExt, orphan_check_trait_ref},
 };
 use rustc_type_ir::{
+    TypeSuperFoldable,
     fast_reject::{TreatParams, simplify_type},
-    fold::TypeSuperFoldable,
 };
 use std::{collections::HashMap, iter};
 
@@ -225,8 +225,8 @@ impl<'tcx> TraitResolved<'tcx> {
     ) -> Self {
         trace!("TraitResolved::resolve {:?} {:?}", trait_item_def_id, substs);
 
-        let trait_ref = if let Some(did) = tcx.trait_of_item(trait_item_def_id) {
-            TraitRef::from_method(tcx, did, substs)
+        let trait_ref = if let Some(did) = tcx.trait_of_assoc(trait_item_def_id) {
+            TraitRef::from_assoc(tcx, did, substs)
         } else {
             return TraitResolved::NotATraitItem;
         };
@@ -458,8 +458,8 @@ impl<'tcx> GraphTraversal<'tcx> {
         trait_ref: TraitRef<'tcx>,
     ) -> Result<Self, ErrorGuaranteed> {
         let infcx = tcx.infer_ctxt().ignoring_regions().build(rustc_type_ir::TypingMode::Coherence);
-        let (param_env, trait_ref) =
-            instantiate_params_with_infer(&infcx, param_env.and(trait_ref)).into_parts();
+        let ParamEnvAnd { param_env, value: trait_ref } =
+            instantiate_params_with_infer(&infcx, param_env.and(trait_ref));
 
         let graph = tcx.specialization_graph_of(trait_ref.def_id)?;
         Ok(GraphTraversal { tcx, infcx, param_env, trait_ref, graph })

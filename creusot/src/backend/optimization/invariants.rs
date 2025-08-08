@@ -20,7 +20,7 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
 use rustc_middle::{
-    mir::{BasicBlock, ProjectionElem, START_BLOCK, tcx::PlaceTy},
+    mir::{BasicBlock, PlaceTy, ProjectionElem, START_BLOCK},
     ty::{Ty, TyCtxt},
 };
 use rustc_span::DUMMY_SP;
@@ -51,12 +51,8 @@ pub(crate) fn infer_proph_invariants<'tcx>(
             let subst = ctx.mk_args(&[u.ty(tcx, &body.locals).into()]);
             let ty = Ty::new_adt(tcx, ctx.adt_def(snap_ty), subst);
 
-            body.locals.insert(local, fmir::LocalDecl {
-                span: DUMMY_SP,
-                ty,
-                temp: true,
-                arg: false,
-            });
+            body.locals
+                .insert(local, fmir::LocalDecl { span: DUMMY_SP, ty, temp: true, arg: false });
 
             for p in &incoming {
                 let mut prev_block = body.blocks.get_mut(p).unwrap();
@@ -68,12 +64,15 @@ pub(crate) fn infer_proph_invariants<'tcx>(
                             *tgt = new_block;
                         }
                     }
-                    body.blocks.insert(new_block, Block {
-                        invariants: vec![],
-                        variant: None,
-                        stmts: vec![],
-                        terminator: Terminator::Goto(*k),
-                    });
+                    body.blocks.insert(
+                        new_block,
+                        Block {
+                            invariants: vec![],
+                            variant: None,
+                            stmts: vec![],
+                            terminator: Terminator::Goto(*k),
+                        },
+                    );
                     prev_block = body.blocks.get_mut(&new_block).unwrap();
                 }
                 if let Terminator::Goto(t) = prev_block.terminator
@@ -95,10 +94,13 @@ pub(crate) fn infer_proph_invariants<'tcx>(
             let old = Term::var(local, ty);
             let blk = body.blocks.get_mut(k).unwrap();
 
-            blk.invariants.insert(0, fmir::Invariant {
-                body: old.coerce(u.ty(tcx, &body.locals)).fin().eq(tcx, pterm.fin()),
-                expl: "expl:mut invariant".to_string(),
-            });
+            blk.invariants.insert(
+                0,
+                fmir::Invariant {
+                    body: old.coerce(u.ty(tcx, &body.locals)).fin().eq(tcx, pterm.fin()),
+                    expl: "expl:mut invariant".to_string(),
+                },
+            );
         }
     }
 }
@@ -126,6 +128,7 @@ fn place_to_term<'tcx>(
             ProjectionElem::Downcast(_, _) => return None,
             ProjectionElem::OpaqueCast(_) => return None,
             ProjectionElem::Subtype(_) => return None,
+            ProjectionElem::UnwrapUnsafeBinder(_) => return None,
         }
 
         pty = res_ty;

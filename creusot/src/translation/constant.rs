@@ -2,13 +2,13 @@ use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{fmir::Operand, pearlite::Literal, traits::TraitResolved},
 };
+use rustc_abi::Size;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{self, ConstOperand, ConstValue, TerminatorKind, interpret::AllocRange},
     ty::{self, ConstKind, Ty, TypingEnv},
 };
 use rustc_span::Span;
-use rustc_target::abi::Size;
 
 use super::pearlite::{Term, TermKind};
 
@@ -34,7 +34,7 @@ pub(crate) fn mirconst_to_operand<'tcx>(
 }
 
 fn value_to_term<'tcx>(
-    value: ConstValue<'tcx>,
+    value: ConstValue,
     ty: Ty<'tcx>,
     ctx: &TranslationCtx<'tcx>,
     env: TypingEnv<'tcx>,
@@ -45,9 +45,10 @@ fn value_to_term<'tcx>(
     let kind = match value {
         Scalar(Scalar::Int(scalar)) => TermKind::Lit(scalar_to_literal(scalar, ty, ctx, env, span)),
         ZeroSized => TermKind::Lit(Literal::ZST),
-        Slice { data, meta } if ty.peel_refs().is_str() => {
+        Slice { alloc_id, meta } if ty.peel_refs().is_str() => {
             let start = Size::from_bytes(0);
             let size = Size::from_bytes(meta);
+            let data = ctx.tcx.global_alloc(alloc_id).unwrap_memory();
             let bytes = data
                 .inner()
                 .get_bytes_strip_provenance(&ctx.tcx, AllocRange { start, size })
@@ -153,17 +154,18 @@ pub(crate) fn valtree_to_term<'tcx>(
     env: TypingEnv<'tcx>,
     span: Span,
 ) -> Option<Term<'tcx>> {
-    use ty::ValTree::*;
-    let kind = match valtree {
-        Leaf(scalar) => TermKind::Lit(scalar_to_literal(scalar, ty, ctx, env, span)),
-        Branch(_) if matches!(ty.kind(), ty::TyKind::Adt(_, _) | ty::TyKind::Tuple(_)) => {
+    let kind = match valtree.try_to_scalar_int() {
+        Some(scalar) => TermKind::Lit(scalar_to_literal(scalar, ty, ctx, env, span)),
+        None if matches!(ty.kind(), ty::TyKind::Adt(_, _) | ty::TyKind::Tuple(_)) => {
             let ty::DestructuredConst { variant, fields } =
                 ctx.destructure_const(ty::Const::new_value(ctx.tcx, valtree, ty));
             let fields = fields
                 .into_iter()
                 .map(|field| {
-                    let ty::ConstKind::Value(ty, val) = field.kind() else { unreachable!() };
-                    valtree_to_term(val, ctx, ty, env, span)
+                    let ty::ConstKind::Value(ty::Value { ty, valtree }) = field.kind() else {
+                        unreachable!()
+                    };
+                    valtree_to_term(valtree, ctx, ty, env, span)
                 })
                 .collect::<Option<Box<[_]>>>()?;
             match ty.kind() {
@@ -174,7 +176,7 @@ pub(crate) fn valtree_to_term<'tcx>(
                 _ => return None,
             }
         }
-        _ => return None,
+        None => return None,
     };
     Some(Term { kind, ty, span })
 }

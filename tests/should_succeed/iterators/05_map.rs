@@ -1,7 +1,6 @@
 // WHY3PROVE
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
-
 use creusot_contracts::{invariant::Invariant, *};
 
 mod common;

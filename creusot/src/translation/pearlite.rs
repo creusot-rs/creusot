@@ -14,6 +14,7 @@ use crate::{
     translation::TranslationCtx,
 };
 use log::*;
+use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_ast::{ByRef, LitIntType, LitKind, Mutability, visit::VisitorResult};
 use rustc_hir::{
     HirId, OwnerId,
@@ -28,12 +29,11 @@ use rustc_middle::{
     },
     ty::{
         Const, GenericArgsRef, ParamConst, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
-        TypingEnv, adjustment::PointerCoercion, int_ty, uint_ty,
+        TypingEnv, adjustment::PointerCoercion,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{DUMMY_SP, Span};
-use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 use std::{
     assert_matches::assert_matches,
@@ -128,6 +128,10 @@ impl<I: Interner> TypeFoldable<I> for PIdent {
         F: rustc_middle::ty::FallibleTypeFolder<I>,
     {
         Ok(self)
+    }
+
+    fn fold_with<F: rustc_type_ir::TypeFolder<I>>(self, _: &mut F) -> Self {
+        self
     }
 }
 
@@ -253,6 +257,10 @@ impl<I: Interner> TypeFoldable<I> for Literal<'_> {
         _: &mut F,
     ) -> Result<Self, F::Error> {
         Ok(self)
+    }
+
+    fn fold_with<F: rustc_type_ir::TypeFolder<I>>(self, _: &mut F) -> Self {
+        self
     }
 }
 
@@ -691,9 +699,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         match lty {
                             LitIntType::Signed(ity) => {
                                 let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                                Literal::MachSigned(val, int_ty(ity))
+                                Literal::MachSigned(val, ity)
                             }
-                            LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uint_ty(uty)),
+                            LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uty),
                             LitIntType::Unsuffixed => match ty.kind() {
                                 TyKind::Int(ity) => {
                                     let val =
@@ -826,11 +834,12 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                             .collect();
 
                         for missing_field in missing {
+                            let missing_field: FieldIdx = missing_field.into();
                             fields.push((
-                                missing_field.into(),
+                                missing_field,
                                 base.clone().proj(
-                                    missing_field.into(),
-                                    variant.fields[missing_field.into()].ty(self.ctx.tcx, args),
+                                    missing_field,
+                                    variant.fields[missing_field].ty(self.ctx.tcx, args),
                                 ),
                             ));
                         }
@@ -1009,7 +1018,8 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Ok(Pattern::constructor(VariantIdx::ZERO, fields, pat.ty).span(pat.span))
                 }
             }
-            PatKind::Deref { subpattern } => Ok(Pattern {
+            PatKind::Deref { subpattern }
+            | PatKind::DerefPattern { subpattern, borrow: ByRef::No } => Ok(Pattern {
                 ty: pat.ty,
                 span: pat.span,
                 kind: PatternKind::Deref(Box::new(self.pattern_term(
@@ -1066,7 +1076,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         init_scope.span(self.ctx.tcx, self.ctx.region_scope_tree(self.item_id));
                     Ok(Term::let_(pattern, initializer, inner).span(span))
                 } else {
-                    let span = self.ctx.hir().span(HirId {
+                    let span = self.ctx.hir_span(HirId {
                         owner: OwnerId { def_id: self.item_id },
                         local_id: init_scope.local_id,
                     });
@@ -1252,6 +1262,7 @@ pub trait TermVisitor<'tcx>: Sized {
         super_visit_term(term, self);
     }
 
+    #[allow(dead_code)] // TODO: not checking patterns causes `opacity.rs` to be overly permissive
     fn visit_pattern(&mut self, pat: &Pattern<'tcx>) {
         super_visit_pattern(pat, self);
     }
@@ -1286,9 +1297,13 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         }
         TermKind::Match { scrutinee, arms } => {
             visitor.visit_term(scrutinee);
-            arms.iter().for_each(|(_, arm)| visitor.visit_term(arm))
+            arms.iter().for_each(|(_pattern, arm)| {
+                // visitor.visit_pattern(pattern); // Issue #1672
+                visitor.visit_term(arm)
+            })
         }
         TermKind::Let { pattern: _, arg, body } => {
+            // visitor.visit_pattern(pattern); // Issue #1672
             visitor.visit_term(arg);
             visitor.visit_term(body)
         }
@@ -1359,9 +1374,13 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         }
         TermKind::Match { scrutinee, arms } => {
             visitor.visit_mut_term(&mut *scrutinee);
-            arms.iter_mut().for_each(|(_, arm)| visitor.visit_mut_term(&mut *arm))
+            arms.iter_mut().for_each(|(_pattern, arm)| {
+                // visitor.visit_mut_pattern(pattern); // Issue #1672
+                visitor.visit_mut_term(&mut *arm)
+            })
         }
         TermKind::Let { pattern: _, arg, body } => {
+            // visitor.visit_mut_pattern(pattern); // Issue #1672
             visitor.visit_mut_term(&mut *arg);
             visitor.visit_mut_term(&mut *body)
         }

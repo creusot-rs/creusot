@@ -27,7 +27,6 @@
     allow(incomplete_features, internal_features),
     feature(
         fn_traits,
-        slice_take,
         print_internals,
         fmt_internals,
         fmt_helpers_for_derive,

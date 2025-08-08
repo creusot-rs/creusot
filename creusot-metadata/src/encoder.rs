@@ -1,8 +1,8 @@
 use crate::{
-    AbsoluteBytePos, EncodedSourceFileId, Footer, SYMBOL_OFFSET, SYMBOL_PREINTERNED, SYMBOL_STR,
+    AbsoluteBytePos, EncodedSourceFileId, Footer, SYMBOL_OFFSET, SYMBOL_PREDEFINED, SYMBOL_STR,
     SourceFileIndex, TAG_FULL_SPAN, TAG_PARTIAL_SPAN,
 };
-use rustc_data_structures::{fx::FxHashMap, sync::Lrc};
+use rustc_data_structures::fx::FxHashMap;
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex};
 use rustc_middle::{
     dep_graph::DepContext,
@@ -20,6 +20,7 @@ use std::{
     collections::hash_map::Entry,
     io::Error,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 pub struct MetadataEncoder<'a, 'tcx> {
@@ -29,7 +30,7 @@ pub struct MetadataEncoder<'a, 'tcx> {
     predicate_shorthands: FxHashMap<PredicateKind<'tcx>, usize>,
     file_to_file_index: FxHashMap<*const SourceFile, SourceFileIndex>,
     hygiene_context: &'a HygieneEncodeContext,
-    symbol_table: FxHashMap<Symbol, usize>,
+    symbol_index_table: FxHashMap<u32, usize>,
 }
 
 impl<'a, 'tcx> MetadataEncoder<'a, 'tcx> {
@@ -37,8 +38,35 @@ impl<'a, 'tcx> MetadataEncoder<'a, 'tcx> {
         self.opaque.finish()
     }
 
-    fn source_file_index(&mut self, source_file: Lrc<SourceFile>) -> SourceFileIndex {
+    fn source_file_index(&mut self, source_file: Arc<SourceFile>) -> SourceFileIndex {
         self.file_to_file_index[&(&*source_file as *const SourceFile)]
+    }
+
+    fn encode_symbol_or_byte_symbol(
+        &mut self,
+        index: u32,
+        emit_str_or_byte_str: impl Fn(&mut Self),
+    ) {
+        // if symbol preinterned, emit tag and symbol index
+        if Symbol::is_predefined(index) {
+            self.opaque.emit_u8(SYMBOL_PREDEFINED);
+            self.opaque.emit_u32(index);
+        } else {
+            // otherwise write it as string or as offset to it
+            match self.symbol_index_table.entry(index) {
+                Entry::Vacant(o) => {
+                    self.opaque.emit_u8(SYMBOL_STR);
+                    let pos = self.opaque.position();
+                    o.insert(pos);
+                    emit_str_or_byte_str(self);
+                }
+                Entry::Occupied(o) => {
+                    let x = *o.get();
+                    self.emit_u8(SYMBOL_OFFSET);
+                    self.emit_usize(x);
+                }
+            }
+        }
     }
 }
 
@@ -99,26 +127,12 @@ impl SpanEncoder for MetadataEncoder<'_, '_> {
         len.encode(self);
     }
     fn encode_symbol(&mut self, sym: Symbol) {
-        // if symbol preinterned, emit tag and symbol index
-        if sym.is_preinterned() {
-            self.opaque.emit_u8(SYMBOL_PREINTERNED);
-            self.opaque.emit_u32(sym.as_u32());
-        } else {
-            // otherwise write it as string or as offset to it
-            match self.symbol_table.entry(sym) {
-                Entry::Vacant(o) => {
-                    self.opaque.emit_u8(SYMBOL_STR);
-                    let pos = self.opaque.position();
-                    o.insert(pos);
-                    self.emit_str(sym.as_str());
-                }
-                Entry::Occupied(o) => {
-                    let x = *o.get();
-                    self.emit_u8(SYMBOL_OFFSET);
-                    self.emit_usize(x);
-                }
-            }
-        }
+        self.encode_symbol_or_byte_symbol(sym.as_u32(), |this| this.emit_str(sym.as_str()));
+    }
+    fn encode_byte_symbol(&mut self, sym: rustc_span::ByteSymbol) {
+        self.encode_symbol_or_byte_symbol(sym.as_u32(), |this| {
+            this.emit_byte_str(sym.as_byte_str())
+        });
     }
     fn encode_expn_id(&mut self, eid: ExpnId) {
         self.hygiene_context.schedule_expn_data_for_encoding(eid);
@@ -139,9 +153,7 @@ impl SpanEncoder for MetadataEncoder<'_, '_> {
     }
 }
 
-impl<'a, 'tcx> TyEncoder for MetadataEncoder<'a, 'tcx> {
-    type I = TyCtxt<'tcx>;
-
+impl<'a, 'tcx> TyEncoder<'tcx> for MetadataEncoder<'a, 'tcx> {
     // Whether crate-local information can be cleared while encoding
     const CLEAR_CROSS_CRATE: bool = true;
 
@@ -226,7 +238,7 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
         type_shorthands: Default::default(),
         predicate_shorthands: Default::default(),
         hygiene_context: &hygiene_context,
-        symbol_table: Default::default(),
+        symbol_index_table: Default::default(),
         file_to_file_index,
     };
     x.encode(&mut encoder);
