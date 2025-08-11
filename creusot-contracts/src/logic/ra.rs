@@ -145,9 +145,9 @@ pub trait RA: Sized {
         let _ = Self::associative;
     }
 
-    /// The core of an element, when it exists, is inclded in that element, and idempotent.
-    /// Note that the statement `c.op(self) == Some(self)` is equivalent to `c.incl(self)` for
-    /// idempotent elements.
+    /// The core of an element, when it exists, is included in that element,
+    /// and idempotent. Note that the statement `c.op(self) == Some(self)` is
+    /// equivalent to `c.incl(self)` for idempotent elements.
     #[logic]
     #[ensures(match result {
         Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
