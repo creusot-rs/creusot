@@ -141,6 +141,16 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     name: Ident,
     body_id: BodyId,
 ) -> Defn {
+    let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
+        && !ctx.sig(body_id.def_id()).contract.has_user_contract;
+
+    // We remove the barrier around the definition in the following edge cases:
+    let open_body =
+        // a closure with no contract
+        inferred_closure_spec
+        // a promoted item
+        || body_id.promoted.is_some();
+
     // The function receives `outer_return` as an argument handler and
     // defines the `inner_return` that wraps `outer_return` with the postcondition:
     //
@@ -148,7 +158,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     //   ... inner_return result ...
     //   [ inner_return x -> {postcondition} (! outer_return x ) ]
     let outer_return = Ident::fresh_local("return");
-    let inner_return = outer_return.refresh();
+    let inner_return = if open_body { outer_return } else { outer_return.refresh() };
 
     let mut body = ctx.fmir_body(body_id).clone();
     let block_idents: IndexMap<BasicBlock, Ident> = body
@@ -218,49 +228,36 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         })
         .collect();
 
-    let mut body = Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks);
-
-    let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
-        && !ctx.sig(body_id.def_id()).contract.has_user_contract;
-
-    // We remove the barrier around the definition in the following edge cases:
-    let open_body =
-        // a closure with no contract
-        inferred_closure_spec
-        // a promoted item
-        || body_id.promoted.is_some();
-
-    let ensures = contract.ensures.into_iter().map(Condition::labelled_exp);
-    let mut postcond = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
-    if !open_body {
-        postcond = postcond.black_box();
-        postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
-
-        body = body.black_box()
-    };
-
     if inferred_closure_spec {
         sig.attrs.push(Attribute::Attr("coma:extspec".into()));
     }
 
+    let mut body = Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks);
+
+    if !open_body {
+        body = body.black_box();
+    }
+
     body = body.let_(vars);
 
-    body = Expr::Defn(
-        body.boxed(),
-        false,
-        [Defn {
-            prototype: Prototype {
-                name: inner_return,
-                attrs: vec![],
-                params: [Param::Term(name::result(), return_ty)].into(),
-            },
-            body: postcond,
-        }]
-        .into(),
-    );
-
-    let requires = contract.requires.into_iter().map(Condition::labelled_exp);
     if !open_body {
+        let ensures = contract.ensures.into_iter().map(Condition::labelled_exp);
+        let return_ = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
+        let postcond = ensures.rfold(return_.black_box(), |acc, cond| Expr::assert(cond, acc));
+        body = Expr::Defn(
+            body.boxed(),
+            false,
+            [Defn {
+                prototype: Prototype {
+                    name: inner_return,
+                    attrs: vec![],
+                    params: [Param::Term(name::result(), return_ty)].into(),
+                },
+                body: postcond,
+            }]
+            .into(),
+        );
+        let requires = contract.requires.into_iter().map(Condition::labelled_exp);
         body = requires.rfold(body, |acc, req| Expr::assert(req, acc));
     }
     Defn { prototype: sig, body }
