@@ -9,7 +9,8 @@ mod m {
     ///
     /// The usual usage is this:
     /// - [Create](Self::alloc) some ghost resource
-    /// - [Split](Self::split) it into multiple parts, some of which may be [duplicable](RA::idemp)
+    /// - [Split](Self::split) it into multiple parts.
+    ///   This may be used to duplicate the resource if we have `self.op(self) == self`.
     /// - [Join](Self::join) these parts later. By exploiting validity of the combination, this allows
     ///   one to learn information about one part from the other.
     ///
@@ -23,7 +24,7 @@ mod m {
     ///     let part = res.split_off(snapshot!(Ag(1)), snapshot!(Ag(1)));
     ///     // Pass `part` around, forget what it contained...
     ///     let _ = res.join_shared(&part);
-    ///     // And now we remember: the only way this works is if `part` contained `1`!
+    ///     // And now we remember: the only way the above worked is if `part` contained `1`!
     ///     proof_assert!(part@ == Ag(1));
     /// };
     /// ```
