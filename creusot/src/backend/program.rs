@@ -211,6 +211,11 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
             ret_ty,
         )
     };
+
+    if inferred_closure_spec {
+        sig.attrs.push(Attribute::Attr("coma:extspec".into()));
+    }
+
     // Bind local variables in the body
     let vars: Box<[_]> = body
         .locals
@@ -227,25 +232,13 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
             Var(id, ty.clone(), init, IsRef::Ref)
         })
         .collect();
-
-    if inferred_closure_spec {
-        sig.attrs.push(Attribute::Attr("coma:extspec".into()));
-    }
-
-    let mut body = Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks);
-
-    if !open_body {
-        body = body.black_box();
-    }
-
-    body = body.let_(vars);
-
+    let mut body = Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks).let_(vars);
     if !open_body {
         let ensures = contract.ensures.into_iter().map(Condition::labelled_exp);
         let return_ = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
         let postcond = ensures.rfold(return_.black_box(), |acc, cond| Expr::assert(cond, acc));
         body = Expr::Defn(
-            body.boxed(),
+            body.black_box().boxed(),
             false,
             [Defn {
                 prototype: Prototype {
