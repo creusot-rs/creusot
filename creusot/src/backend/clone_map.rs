@@ -468,7 +468,7 @@ impl<'tcx> Dependencies<'tcx> {
                 {
                     ctx.crash_and_error(
                         ctx.def_span(scc[0].did().unwrap().0),
-                        &format!("encountered a cycle during translation: {:?}", scc),
+                        format!("encountered a cycle during translation: {:?}", scc),
                     );
                 }
 

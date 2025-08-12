@@ -31,7 +31,7 @@ impl OpacityVisitor<'_, '_> {
     fn error(&self, id: DefId, span: Span) {
         self.ctx.error(
                 span,
-                &format!(
+                format!(
                     "Cannot make `{:?}` transparent in `{:?}` as it would call a less-visible item.",
                     self.ctx.def_path_str(id), self.ctx.def_path_str(self.item)
                 ),

@@ -269,7 +269,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         TyKind::Uint(ity) => uty_to_prelude(self.ctx.tcx, *ity),
                         _ => self.ctx.crash_and_error(
                             t.span,
-                            &format!("casts {:?} are currently unsupported", arg.ty.kind()),
+                            format!("casts {:?} are currently unsupported", arg.ty.kind()),
                         ),
                     };
 
@@ -280,7 +280,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         TyKind::Uint(ity) => uty_to_prelude(self.ctx.tcx, *ity),
                         _ => self.ctx.crash_and_error(
                             t.span,
-                            &format!("casts {:?} are currently unsupported", arg.ty.kind()),
+                            format!("casts {:?} are currently unsupported", arg.ty.kind()),
                         ),
                     };
 

@@ -101,7 +101,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
         name::result(),
         postcondition.clone(),
     )
-    .unwrap_or_else(|e| ctx.fatal_error(e.span(), &format!("translate_logic: {e:?}")).emit());
+    .unwrap_or_else(|e| ctx.fatal_error(e.span(), format!("translate_logic: {e:?}")).emit());
 
     let goal = sig.contract.requires_implies(wp);
 

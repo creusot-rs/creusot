@@ -292,6 +292,6 @@ fn make_switch<'tcx>(
             let branches = targets.iter().map(|(val, tgt)| (val as i128, tgt)).collect();
             Terminator::Switch(discr, Branches::Int(branches, targets.otherwise()))
         }
-        ty => ctx.crash_and_error(si.span, &format!("match on {:?} is currently unsupported", ty)),
+        ty => ctx.crash_and_error(si.span, format!("match on {:?} is currently unsupported", ty)),
     }
 }

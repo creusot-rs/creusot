@@ -245,7 +245,7 @@ impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
                 && free_vars.contains(ident)
             {
                 let msg = format!("Use of borrowed or uninitialized variable {}", sym.as_str());
-                tcx.crash_and_error(term.span, &msg);
+                tcx.crash_and_error(term.span, msg);
             }
         }
     }
