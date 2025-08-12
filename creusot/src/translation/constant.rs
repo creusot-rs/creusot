@@ -97,7 +97,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
     use rustc_middle::ty::{FloatTy, IntTy, UintTy};
     use rustc_type_ir::TyKind::{Bool, Char, Float, FnDef, Int, Uint};
     let Some(bits) = c.get_bits(ctx.tcx, env, ty) else {
-        ctx.fatal_error(span, &format!("Could not determine value of constant. Creusot currently does not support generic associated constants.")).emit()
+        ctx.fatal_error(span, format!("Could not determine value of constant. Creusot currently does not support generic associated constants.")).emit()
     };
 
     let target_width = ctx.tcx.sess.target.pointer_width;
@@ -155,7 +155,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
             Literal::Function(method.0, method.1)
         }
         _ => {
-            ctx.crash_and_error(span, &format!("unsupported constant expression"));
+            ctx.crash_and_error(span, format!("unsupported constant expression"));
         }
     }
 }

@@ -91,7 +91,7 @@ impl<'tcx> Why3Generator<'tcx> {
             ItemType::Field | ItemType::Variant => unreachable!(),
             ItemType::Unsupported(dk) => self.crash_and_error(
                 self.tcx.def_span(def_id),
-                &format!("unsupported definition kind {:?} {:?}", def_id, dk),
+                format!("unsupported definition kind {:?} {:?}", def_id, dk),
             ),
             ItemType::Closure
             | ItemType::Trait

@@ -142,7 +142,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     Array(_) => RValue::Array(fields),
                     _ => self.crash_and_error(
                         si.span,
-                        &format!("the rvalue {:?} is not currently supported", kind),
+                        format!("the rvalue {:?} is not currently supported", kind),
                     ),
                 }
             }
@@ -194,14 +194,14 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 _,
             ) => self.ctx.crash_and_error(
                 si.span,
-                &format!("Pointer casts are currently unsupported {rvalue:?}"),
+                format!("Pointer casts are currently unsupported {rvalue:?}"),
             ),
             Rvalue::CopyForDeref(_)
             | Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)
             | Rvalue::ThreadLocalRef(_) => self.ctx.crash_and_error(
                 si.span,
-                &format!("MIR code used an unsupported Rvalue {:?}", rvalue),
+                format!("MIR code used an unsupported Rvalue {:?}", rvalue),
             ),
         };
 

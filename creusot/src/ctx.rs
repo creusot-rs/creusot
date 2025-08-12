@@ -25,7 +25,7 @@ use rustc_ast::{
     visit::{FnKind, Visitor, walk_fn},
 };
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
-use rustc_errors::{Diag, FatalAbort};
+use rustc_errors::{Diag, DiagMessage, FatalAbort};
 use rustc_hir::{
     HirId,
     def::DefKind,
@@ -129,22 +129,26 @@ impl ItemType {
 pub trait HasTyCtxt<'tcx> {
     fn tcx(&self) -> TyCtxt<'tcx>;
 
-    fn crash_and_error(&self, span: Span, msg: &str) -> ! {
+    fn crash_and_error(&self, span: Span, msg: impl Into<DiagMessage>) -> ! {
         // TODO: try to add a code back in
-        self.tcx().dcx().span_fatal(span, msg.to_string())
+        self.tcx().dcx().span_fatal(span, msg)
     }
 
-    fn fatal_error(&self, span: Span, msg: &str) -> Diag<'tcx, FatalAbort> {
+    fn fatal_error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx, FatalAbort> {
         // TODO: try to add a code back in
-        self.tcx().dcx().struct_span_fatal(span, msg.to_string())
+        self.tcx().dcx().struct_span_fatal(span, msg)
     }
 
-    fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
-        self.tcx().dcx().struct_span_err(span, msg.to_string())
+    fn error(
+        &self,
+        span: Span,
+        msg: impl Into<DiagMessage>,
+    ) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
+        self.tcx().dcx().struct_span_err(span, msg)
     }
 
-    fn warn(&self, span: Span, msg: impl Into<String>) {
-        self.tcx().dcx().span_warn(span, msg.into())
+    fn warn(&self, span: Span, msg: impl Into<DiagMessage>) {
+        self.tcx().dcx().span_warn(span, msg)
     }
 
     fn span_bug(&self, span: Span, msg: impl Into<String>) -> ! {
@@ -458,7 +462,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 if self.extern_spec(i).is_some() {
                     self.crash_and_error(
                         self.def_span(def_id),
-                        &format!("duplicate extern specification for {i:?}"),
+                        format!("duplicate extern specification for {i:?}"),
                     );
                 };
 

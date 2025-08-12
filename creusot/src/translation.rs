@@ -41,7 +41,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn st
                 message.push_str(item);
             }
             message.push_str(". Maybe your version of `creusot-contracts` is wrong?");
-            ctx.fatal_error(DUMMY_SP, &message).emit()
+            ctx.fatal_error(DUMMY_SP, message).emit()
         },
     }
 

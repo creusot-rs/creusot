@@ -145,7 +145,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
         let root_def_id = call_graph.node_weight(root).unwrap().def_id();
         let mut error = ctx.error(
             ctx.def_span(root_def_id),
-            &format!(
+            format!(
                 "Mutually recursive functions: when calling `{}`...",
                 ctx.def_path_str(root_def_id)
             ),

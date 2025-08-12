@@ -78,7 +78,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         | Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
             MlT::TConstructor(names.ty(ty))
         }
-        _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
+        _ => ctx.crash_and_error(span, format!("unsupported type {:?}", ty)),
     }
 }
 

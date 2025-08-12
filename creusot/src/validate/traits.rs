@@ -67,7 +67,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                     trait_ref.print_only_trait_path()
                 )
             };
-            ctx.error(ctx.def_span(impl_id.to_def_id()), &msg).emit();
+            ctx.error(ctx.def_span(impl_id.to_def_id()), msg).emit();
         }
 
         let implementors = ctx.impl_item_implementor_ids(impl_id.to_def_id());
@@ -86,7 +86,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                         let name_param = ctx.fn_arg_names(impl_item)[i];
                         ctx.error(
                             ctx.def_span(impl_item),
-                            &format!(
+                            format!(
                                 "Parameter `{name_param}` has the `#[creusot::open_inv]` attribute in the trait declaration, but not in the implementation."
                             ),
                         ).emit();
@@ -97,7 +97,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
             if is_open_inv_result(ctx.tcx, impl_item) && !is_open_inv_result(ctx.tcx, trait_item) {
                 ctx.error(
                     ctx.def_span(impl_item),
-                    &format!(
+                    format!(
                         "Function `{}` should not have the `#[open_inv_result]` attribute, as specified by the trait declaration",
                         ctx.item_name(impl_item),
                     ),
@@ -113,7 +113,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
             if !item_type.can_implement(trait_type) {
                 ctx.error(
                     ctx.def_span(impl_item),
-                    &format!(
+                    format!(
                         "Expected `{}` to be a {} as specified by the trait declaration",
                         ctx.item_name(impl_item),
                         trait_type.to_str()
@@ -126,7 +126,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                 if trait_contract.no_panic && !item_contract.no_panic {
                     ctx.error(
                         ctx.def_span(impl_item),
-                        &format!(
+                        format!(
                             "Expected `{}` to be `#[check(ghost)]` as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
@@ -135,7 +135,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                 } else if trait_contract.terminates && !item_contract.terminates {
                     ctx.error(
                         ctx.def_span(impl_item),
-                        &format!(
+                        format!(
                             "Expected `{}` to be `#[check(terminates)]` as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
@@ -144,7 +144,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                 } else if is_law(ctx.tcx, impl_item) && !is_law(ctx.tcx, trait_item) {
                     ctx.error(
                         ctx.def_span(impl_item),
-                        &format!(
+                        format!(
                             "Method `{}` should not be a `#[law]`, as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
@@ -153,7 +153,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                 } else if !is_law(ctx.tcx, impl_item) && is_law(ctx.tcx, trait_item) {
                     ctx.error(
                         ctx.def_span(impl_item),
-                        &format!(
+                        format!(
                             "Expected `{}` to be a `#[law]` as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
