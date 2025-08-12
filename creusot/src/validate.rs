@@ -2,6 +2,7 @@
 
 mod erasure;
 mod ghost;
+mod incorrect_attributes;
 mod opacity;
 mod purity;
 mod terminates;
@@ -14,6 +15,7 @@ pub(crate) use self::{
 };
 
 use self::{
+    incorrect_attributes::validate_incorrect_attributes,
     opacity::validate_opacity,
     purity::validate_purity,
     terminates::validate_terminates,
@@ -55,6 +57,7 @@ pub(crate) fn validate(ctx: &TranslationCtx) {
         if is_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
             validate_purity(ctx, def_id, thir);
             validate_tokens_new(ctx, def_id, thir);
+            validate_incorrect_attributes(ctx.tcx, def_id);
         }
         if is_extern_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
             validate_opacity(ctx, def_id);
