@@ -1,12 +1,6 @@
-use rustc_hir::{
-    def::DefKind,
-    def_id::{DefId, LocalDefId},
-};
+use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
-use rustc_middle::{
-    mir::Promoted,
-    ty::{GenericArgKind, GenericArgsRef, List, Ty, TyCtxt, TyKind, ValTree},
-};
+use rustc_middle::ty::{GenericArgKind, GenericArgsRef, List, Ty, TyCtxt, TyKind, ValTree};
 use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 use rustc_type_ir::AliasTyKind;
@@ -32,7 +26,6 @@ pub(crate) enum Dependency<'tcx> {
     TupleField(&'tcx List<Ty<'tcx>>, FieldIdx),
     PreMod(PreMod),
     Eliminator(DefId, GenericArgsRef<'tcx>),
-    Promoted(LocalDefId, Promoted),
 }
 
 impl<'tcx> Dependency<'tcx> {
@@ -109,15 +102,6 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::Eliminator(did, _) => {
                 Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
             }
-            Dependency::Promoted(did, prom) => Some(Symbol::intern(&format!(
-                "promoted{}__{}",
-                prom.as_usize(),
-                value_name(&translate_name(
-                    &tcx.opt_item_name(did.to_def_id())
-                        .map(|s| s.as_str().to_string())
-                        .unwrap_or_else(|| tcx.def_path_str(did.to_def_id()))
-                ))
-            ))),
             Dependency::PreMod(_) => None,
         }
     }
