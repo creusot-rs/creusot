@@ -16,16 +16,10 @@ use indexmap::IndexSet;
 use itertools::{Either, Itertools};
 use once_map::unsync::OnceMap;
 use petgraph::prelude::DiGraphMap;
-use rustc_hir::{
-    def::DefKind,
-    def_id::{DefId, LocalDefId},
-};
+use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
-use rustc_middle::{
-    mir::Promoted,
-    ty::{
-        self, GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
-    },
+use rustc_middle::ty::{
+    self, GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
 };
 use rustc_span::Span;
 use rustc_target::abi::{FieldIdx, VariantIdx};
@@ -129,10 +123,6 @@ pub(crate) trait Namer<'tcx> {
 
     fn eliminator(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
         self.dependency(Dependency::Eliminator(def_id, subst)).ident()
-    }
-
-    fn promoted(&self, def_id: LocalDefId, prom: Promoted) -> Ident {
-        self.dependency(Dependency::Promoted(def_id, prom)).ident()
     }
 
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T;

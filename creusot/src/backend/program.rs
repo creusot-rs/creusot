@@ -68,7 +68,7 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     }
 
     let name = names.item_ident(names.self_id, names.self_subst);
-    let body = Decl::Coma(to_why(ctx, &names, name, BodyId::new(def_id.expect_local(), None)));
+    let body = Decl::Coma(to_why(ctx, &names, name, def_id.expect_local()));
 
     let namespace_ty =
         names.def_ty_no_dependency(get_namespace_ty(ctx.ctx.tcx), GenericArgsRef::default());
@@ -139,17 +139,12 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     name: Ident,
-    body_id: BodyId,
+    body_id: LocalDefId,
 ) -> Defn {
-    let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
-        && !ctx.sig(body_id.def_id()).contract.has_user_contract;
-
-    // We remove the barrier around the definition in the following edge cases:
-    let open_body =
-        // a closure with no contract
-        inferred_closure_spec
-        // a promoted item
-        || body_id.promoted.is_some();
+    let def_id = body_id.to_def_id();
+    let inferred_closure_spec =
+        ctx.is_closure_like(def_id) && !ctx.sig(def_id).contract.has_user_contract;
+    let open_body = inferred_closure_spec; // This will include constants as an extra case soon
 
     // The function receives `outer_return` as an argument handler and
     // defines the `inner_return` that wraps `outer_return` with the postcondition:
@@ -158,8 +153,50 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     //   ... inner_return result ...
     //   [ inner_return x -> {postcondition} (! outer_return x ) ]
     let outer_return = Ident::fresh_local("return");
-    let inner_return = if open_body { outer_return } else { outer_return.refresh() };
+    let sig = ctx.sig(def_id);
+    let args = sig.inputs.iter().map(|(name, _, _)| name.0).collect::<Box<[_]>>();
 
+    let body_id = BodyId::new(body_id, None);
+    let inner_return = if open_body { outer_return } else { outer_return.refresh() };
+    let mut body = why_body(ctx, names, body_id, &args, inner_return);
+    let (mut sig, contract, return_ty) = {
+        let typing_env = names.typing_env();
+        let mut pre_sig = sig.clone().normalize(ctx.tcx, typing_env);
+        pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
+        lower_program_sig(ctx, names, name, pre_sig, def_id, outer_return)
+    };
+    if !open_body {
+        let ensures = contract.ensures.into_iter().map(Condition::labelled_exp);
+        let return_ = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
+        let postcond = ensures.rfold(return_.black_box(), |acc, cond| Expr::assert(cond, acc));
+        body = Expr::Defn(
+            body.black_box().boxed(),
+            false,
+            [Defn {
+                prototype: Prototype {
+                    name: inner_return,
+                    attrs: vec![],
+                    params: [Param::Term(name::result(), return_ty)].into(),
+                },
+                body: postcond,
+            }]
+            .into(),
+        );
+        let requires = contract.requires.into_iter().map(Condition::labelled_exp);
+        body = requires.rfold(body, |acc, req| Expr::assert(req, acc));
+    } else {
+        sig.attrs.push(Attribute::Attr("coma:extspec".into()));
+    }
+    Defn { prototype: sig, body }
+}
+
+pub fn why_body<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    body_id: BodyId,
+    params: &[Ident],
+    inner_return: Ident,
+) -> Expr {
     let mut body = ctx.fmir_body(body_id).clone();
     let block_idents: IndexMap<BasicBlock, Ident> = body
         .blocks
@@ -187,35 +224,6 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         })
         .collect();
 
-    let (mut sig, contract, return_ty) = if body_id.promoted.is_none() {
-        let def_id = body_id.def_id();
-        let typing_env = ctx.typing_env(def_id);
-        let mut pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
-        pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
-        lower_program_sig(ctx, names, name, pre_sig, def_id, outer_return)
-    } else {
-        let ret = body.locals.first().map(|(_, decl)| decl.clone()).unwrap();
-        let ret_ty = translate_ty(ctx, names, ret.span, ret.ty);
-        (
-            Prototype {
-                name,
-                attrs: vec![],
-                params: [Param::Cont(
-                    outer_return,
-                    [].into(),
-                    [Param::Term(Ident::fresh_local("x"), ret_ty.clone())].into(), // argument that has to be named for useless reasons (difficult to fix in Coma/Why3 parser)
-                )]
-                .into(),
-            },
-            Contract::default(),
-            ret_ty,
-        )
-    };
-
-    if inferred_closure_spec {
-        sig.attrs.push(Attribute::Attr("coma:extspec".into()));
-    }
-
     // Bind local variables in the body
     let vars: Box<[_]> = body
         .locals
@@ -223,37 +231,14 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         .map(|(id, decl)| {
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
             let init = if decl.arg {
-                let (id2, ty2) = sig.params[arg_index[&id]].as_term();
-                assert_eq! {ty, *ty2};
-                Exp::var(id2)
+                Exp::var(params[arg_index[&id]])
             } else {
                 Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])
             };
             Var(id, ty.clone(), init, IsRef::Ref)
         })
         .collect();
-    let mut body = Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks).let_(vars);
-    if !open_body {
-        let ensures = contract.ensures.into_iter().map(Condition::labelled_exp);
-        let return_ = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
-        let postcond = ensures.rfold(return_.black_box(), |acc, cond| Expr::assert(cond, acc));
-        body = Expr::Defn(
-            body.black_box().boxed(),
-            false,
-            [Defn {
-                prototype: Prototype {
-                    name: inner_return,
-                    attrs: vec![],
-                    params: [Param::Term(name::result(), return_ty)].into(),
-                },
-                body: postcond,
-            }]
-            .into(),
-        );
-        let requires = contract.requires.into_iter().map(Condition::labelled_exp);
-        body = requires.rfold(body, |acc, req| Expr::assert(req, acc));
-    }
-    Defn { prototype: sig, body }
+    Expr::Defn(Expr::var(block_idents[0]).boxed(), true, blocks).let_(vars)
 }
 
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
@@ -349,6 +334,15 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
     }
 }
 
+pub fn promoted_to_expr<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    body_id: BodyId,
+    cont: Ident,
+) -> Expr {
+    why_body(ctx, names, body_id, &[], cont)
+}
+
 impl<'tcx> Operand<'tcx> {
     fn into_why<N: Namer<'tcx>>(
         self,
@@ -359,14 +353,13 @@ impl<'tcx> Operand<'tcx> {
             Operand::Move(pl) | Operand::Copy(pl) => lower.rplace_to_expr(&pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::Promoted(pid, ty) => {
-                let var = Ident::fresh_local(format!("pr{}", pid.as_usize()));
-                istmts.push(IntermediateStmt::call(
-                    var,
-                    lower.ty(ty),
-                    Name::local(lower.names.promoted(lower.def_id, pid)),
-                    [],
-                ));
-                Exp::var(var)
+                let ret = Ident::fresh_local("_promoted_ret");
+                let result = Ident::fresh_local("_promoted");
+                let body_id = BodyId { def_id: lower.def_id, promoted: Some(pid) };
+                let defn = promoted_to_expr(lower.ctx, lower.names, body_id, ret);
+                let ty = lower.ty(ty);
+                istmts.push(IntermediateStmt::Expr(defn, ret, result, ty));
+                Exp::var(result)
             }
         }
     }
@@ -912,6 +905,19 @@ where
             .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, tail.boxed()))])),
         IntermediateStmt::Assume(e) => Expr::assume(e, tail),
         IntermediateStmt::Assert(e) => Expr::assert(e, tail),
+        IntermediateStmt::Expr(expr, k, x, ty) => Expr::Defn(
+            expr.into(),
+            false,
+            [Defn {
+                prototype: Prototype {
+                    name: k,
+                    attrs: vec![],
+                    params: [Param::Term(x, ty)].into(),
+                },
+                body: tail,
+            }]
+            .into(),
+        ),
         IntermediateStmt::Any(id, ty) => Expr::Defn(
             Expr::Any.boxed(),
             false,
@@ -934,6 +940,8 @@ pub(crate) enum IntermediateStmt {
     Assign(Ident, Exp),
     // E [ARGS] (id: ty -> K)
     Call(Box<[Param]>, Name, Box<[Arg]>),
+    /// `E [ K (X : T) -> _ ]`
+    Expr(Expr /* E */, Ident /* K */, Ident /* X */, Type /* T */),
     // -{ E }- K
     Assume(Exp),
     // { E } K

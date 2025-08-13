@@ -22,7 +22,7 @@ use crate::{
         is_inv_function, is_logic, is_namespace_ty, is_resolve_function, is_size_of_logic,
         is_structural_resolve,
     },
-    ctx::{BodyId, ItemType},
+    ctx::ItemType,
     naming::name,
     translation::{
         constant::from_ty_const,
@@ -33,16 +33,10 @@ use crate::{
 };
 use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
-use rustc_hir::{
-    def::DefKind,
-    def_id::{DefId, LocalDefId},
-};
-use rustc_middle::{
-    mir::Promoted,
-    ty::{
-        self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind,
-        TypeFoldable, TypingEnv, UnevaluatedConst,
-    },
+use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_middle::ty::{
+    self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind,
+    TypeFoldable, TypingEnv, UnevaluatedConst,
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
@@ -123,8 +117,7 @@ fn expand_program<'tcx>(
 
     if ctx.def_kind(def_id) == DefKind::Closure {
         // Inline the body of closures
-        let bid = BodyId { def_id: def_id.expect_local(), promoted: None };
-        let coma = program::to_why(ctx, &names, name, bid);
+        let coma = program::to_why(ctx, &names, name, def_id.expect_local());
         return vec![Decl::Coma(coma)];
     }
 
@@ -177,20 +170,6 @@ fn expand_program<'tcx>(
     let (sig, contract, return_ty) =
         lower_program_sig(ctx, &names, name, pre_sig, def_id, return_ident);
     vec![program::val(sig, contract, return_ident, return_ty)]
-}
-
-fn expand_promoted<'tcx>(
-    elab: &mut Expander<'_, 'tcx>,
-    ctx: &Why3Generator<'tcx>,
-    def_id: LocalDefId,
-    prom: Promoted,
-) -> Vec<Decl> {
-    let names = elab.namer(Dependency::Promoted(def_id, prom));
-    let name = names.dependency(Dependency::Promoted(def_id, prom)).ident();
-    // Inline the body of promoteds
-    let bid = BodyId { def_id, promoted: Some(prom) };
-    let coma = program::to_why(ctx, &names, name, bid);
-    vec![Decl::Coma(coma)]
 }
 
 /// Expand a logical item
@@ -462,7 +441,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             Dependency::Eliminator(def_id, subst) => {
                 vec![eliminator(ctx, &self.namer(dep), def_id, subst)]
             }
-            Dependency::Promoted(def_id, prom) => expand_promoted(self, ctx, def_id, prom),
         };
 
         self.dep_bodies.insert(dep, decls);
