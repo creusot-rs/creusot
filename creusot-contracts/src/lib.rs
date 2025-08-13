@@ -250,6 +250,40 @@ pub mod macros {
     /// but in exchange it can use logical operations and syntax with the help of the
     /// [`pearlite!`] macro.
     ///
+    /// # `open`
+    ///
+    /// Allows the body of a logical definition to be made visible to provers
+    ///
+    /// By default, bodies are *opaque*: they are only visible to definitions in the same
+    /// module (like `pub(self)` for visibility).
+    /// An optional visibility modifier can be provided to restrict the context in which
+    /// the body is opened.
+    ///
+    /// A body can only be visible in contexts where all the symbols used in the body are also visible.
+    /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// mod inner {
+    ///     use creusot_contracts::*;
+    ///     #[logic]
+    ///     #[ensures(result == x + 1)]
+    ///     pub(super) fn foo(x: Int) -> Int {
+    ///         // ...
+    /// # x + 1
+    ///     }
+    ///
+    ///     #[logic(open)]
+    ///     pub(super) fn bar(x: Int) -> Int {
+    ///         x + 1
+    ///     }
+    /// }
+    ///
+    /// // The body of `foo` is not visible here, only the `ensures`.
+    /// // But the whole body of `bar` is visible
+    /// ```
+    ///
     /// # `prophetic`
     ///
     /// If you wish to use the `^` operator on mutable borrows to get the final value, you need to
@@ -369,33 +403,6 @@ pub mod macros {
     /// Generates a `requires` and `ensures` clause in the shape of the input expression, with
     /// `mut` replaced by `*` in the `requires` and `^` in the ensures.
     pub use base_macros::maintains;
-
-    /// Allows the body of a logical definition to be made visible to provers
-    ///
-    /// By default, bodies are *opaque*: they are only visible to definitions in the same
-    /// module (like `pub(self)` for visibility).
-    /// An optional visibility modifier can be provided to restrict the context in which
-    /// the body is opened.
-    ///
-    /// A body can only be visible in contexts where all the symbols used in the body are also visible.
-    /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// mod inner {
-    ///     use creusot_contracts::*;
-    ///     #[logic]
-    ///     #[ensures(result == x + 1)]
-    ///     pub(super) fn foo(x: Int) -> Int {
-    ///         // ...
-    /// # x + 1
-    ///     }
-    /// }
-    ///
-    /// // The body of `foo` is not visible here, only the `ensures`.
-    /// ```
-    pub use base_macros::open;
 
     /// This attribute can be used on a function or closure to instruct Creusot not to ensure as a postcondition that the
     /// return value of the function satisfies its [type invariant](crate::Invariant).
