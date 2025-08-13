@@ -122,6 +122,12 @@ pub struct Prototype {
     pub params: Box<[Param]>,
 }
 
+impl Prototype {
+    pub fn new(name: Ident, params: impl Into<Box<[Param]>>) -> Self {
+        Prototype { name, attrs: vec![], params: params.into() }
+    }
+}
+
 /// A coma handler, introduced with `let`.
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]

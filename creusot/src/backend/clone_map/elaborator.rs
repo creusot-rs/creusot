@@ -1,6 +1,6 @@
 use crate::{
     backend::{
-        TranslationCtx, Why3Generator,
+        self, TranslationCtx, Why3Generator,
         clone_map::{CloneNames, Dependency, Kind, Namer},
         closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve},
         is_trusted_item,
@@ -22,10 +22,10 @@ use crate::{
         is_inv_function, is_logic, is_namespace_ty, is_resolve_function, is_size_of_logic,
         is_structural_resolve,
     },
-    ctx::ItemType,
+    ctx::{BodyId, HasTyCtxt as _, ItemType},
     naming::name,
     translation::{
-        constant::from_ty_const,
+        constant::try_const_to_term,
         pearlite::{BinOp, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
         specification::Condition,
         traits::TraitResolved,
@@ -36,7 +36,7 @@ use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
     self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind,
-    TypeFoldable, TypingEnv, UnevaluatedConst,
+    TypeFoldable, TypingEnv,
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
@@ -46,7 +46,8 @@ use std::{
     collections::{HashMap, HashSet, VecDeque},
 };
 use why3::{
-    Ident,
+    Exp, Ident,
+    coma::{Defn, Expr, Param, Prototype},
     declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
 };
 
@@ -85,6 +86,10 @@ impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, 'tcx> {
     fn raw_dependency(&self, dep: Dependency<'tcx>) -> &Kind {
         self.expansion_queue.borrow_mut().push_back((self.source, Strength::Strong, dep));
         self.namer.raw_dependency(dep)
+    }
+
+    fn register_constant_setter(&mut self, setter: Ident) {
+        self.namer.register_constant_setter(setter);
     }
 
     fn tcx(&self) -> TyCtxt<'tcx> {
@@ -227,12 +232,10 @@ fn expand_logic<'tcx>(
     let names = elab.namer(dep);
     let name = names.dependency(dep).ident();
     let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
-    let kind = match ctx.item_type(def_id) {
-        ItemType::Logic { .. } if sig.args.is_empty() && sig.retty != None => DeclKind::Constant,
-        ItemType::Logic { .. } if sig.retty == None => DeclKind::Predicate,
-        ItemType::Logic { .. } => DeclKind::Function,
-        ItemType::Constant => DeclKind::Constant,
-        _ => unreachable!(),
+    let kind = match sig.retty {
+        None => DeclKind::Predicate,
+        Some(_) if sig.args.is_empty() => DeclKind::Constant,
+        _ => DeclKind::Function,
     };
     if !opaque && let Some(term) = term(ctx, typing_env, &bound, def_id, subst) {
         lower_logical_defn(ctx, &names, sig, kind, term)
@@ -295,6 +298,88 @@ fn expand_logic<'tcx>(
 
         decls
     }
+}
+
+/// Constants require some special handling because they can be defined with arbitrary Rust expressions
+/// which we only know how to translate to Coma, but we also want to be able to use them in logic contexts (Pearlite).
+///
+/// For simple definitions (variables, literals, constructors), we call `try_const_to_term` to translate them
+/// to a pure Why3 expression as the body of a `constant` declaration.
+///
+/// Otherwise, a constant is translated to a `constant` declaration with no body and a Coma function which we call its "constant setter".
+/// The constant setter contains the Coma translation of the constant definition. It constructs the value of the constant,
+/// and performs an *assume* statement that the constructed value is equal to the previously declared constant.
+/// In the final declaration of each module, we wrap the body with calls to all constant setters.
+fn expand_constant<'tcx>(
+    elab: &mut Expander<'_, 'tcx>,
+    ctx: &Why3Generator<'tcx>,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> Vec<Decl> {
+    let caller_id = elab.self_key.0;
+    let dep = Dependency::Item(def_id, subst);
+
+    let typing_env = elab.typing_env;
+    let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
+        .instantiate(ctx.tcx, subst)
+        .normalize(ctx.tcx, typing_env);
+    let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
+    assert_matches!(
+        trait_resol,
+        TraitResolved::NotATraitItem
+            | TraitResolved::Instance { .. } // The default impl is known to be the final instance
+            | TraitResolved::UnknownFound // Unresolved trait method
+    );
+    let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
+        || !ctx.is_transparent_from(def_id, elab.self_key.0)
+        || ctx.def_kind(def_id) == DefKind::ConstParam;
+
+    let mut names = elab.namer(dep);
+    let name = names.dependency(dep).ident();
+    let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
+
+    if opaque {
+        val(sig, DeclKind::Constant)
+    } else if let Some(term) = try_const_to_term(def_id, subst, ctx, typing_env, caller_id) {
+        lower_logical_defn(ctx, &names, sig, DeclKind::Constant, term)
+    } else {
+        let mut decls = val(sig, DeclKind::Constant);
+        decls.push(const_setter(ctx, &mut names, name, def_id, subst));
+        decls
+    }
+}
+
+/// Generate a constant setter. The constant `(def_id, subst)` is expected to have a body.
+fn const_setter<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &mut N,
+    name: Ident,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> Decl {
+    let span = ctx.def_span(def_id);
+    let body_id = BodyId::from_def_id(def_id);
+    let outer_return = Ident::fresh_local("ret");
+    let inner_return = Ident::fresh_local("const_ret");
+    let value_name = Ident::fresh_local("_const");
+    let setter = Ident::fresh_local(format!(
+        "set_{}",
+        crate::naming::translate_name(ctx.ctx.item_name(def_id).as_str())
+    ));
+    let body = program::why_body(ctx, names, body_id, Some(subst), &[], inner_return);
+    let ty = translate_ty(ctx, names, span, ctx.sig(def_id).output);
+    let inner_def = Defn {
+        prototype: Prototype::new(inner_return, [Param::Term(value_name, ty)]),
+        body: Expr::Assume(
+            Exp::var(name).eq(Exp::var(value_name)).boxed(),
+            Expr::var(outer_return).app([]).boxed(),
+        ),
+    };
+    let prototype = Prototype::new(setter, [Param::Cont(outer_return, [].into(), [].into())]);
+    let body = Expr::Defn(body.boxed(), false, [inner_def].into());
+    let defn = Defn { prototype, body };
+    names.register_constant_setter(setter);
+    Decl::Coma(defn)
 }
 
 // TODO Deprecate and fold into LogicElab
@@ -420,16 +505,20 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
         let decls = match dep {
             Dependency::Type(ty) => expand_type(self, ctx, ty),
-            Dependency::Item(def_id, subst) => {
-                if matches!(ctx.item_type(def_id), ItemType::Constant | ItemType::Logic { .. }) {
-                    expand_logic(self, ctx, def_id, subst)
-                } else if matches!(ctx.def_kind(def_id), DefKind::Field | DefKind::Variant) {
+            Dependency::Item(def_id, subst) => match ctx.item_type(def_id) {
+                ItemType::Logic { .. } => expand_logic(self, ctx, def_id, subst),
+                ItemType::Constant => expand_constant(self, ctx, def_id, subst),
+                ItemType::Field | ItemType::Variant => {
                     self.namer(dep).def_ty(ctx.parent(def_id), subst);
                     vec![]
-                } else {
-                    expand_program(self, ctx, def_id, subst)
                 }
-            }
+                ItemType::Program | ItemType::Closure => expand_program(self, ctx, def_id, subst),
+                item_type => {
+                    let path = ctx.def_path_str(def_id);
+                    let self_path = ctx.def_path_str(self.self_key.0);
+                    ctx.crash_and_error(self.root_span, format!("expanding {path:?} failed because of unexpected kind {item_type:?} while translating {self_path:?}"))
+                }
+            },
             Dependency::TyInvAxiom(ty) => expand_ty_inv_axiom(self, ctx, ty),
             Dependency::ClosureAccessor(_, _, _) | Dependency::TupleField(_, _) => vec![],
             Dependency::PreMod(b) => {
@@ -501,8 +590,10 @@ fn expand_laws<'tcx>(
 }
 
 fn val(mut sig: Signature, kind: DeclKind) -> Vec<Decl> {
-    if let DeclKind::Predicate = kind {
-        sig.retty = None;
+    if let None = sig.retty
+        && let DeclKind::Constant = kind
+    {
+        sig.retty = Some(backend::ty::bool());
     }
     let mut d = spec_axioms(&sig).collect::<Vec<_>>();
     sig.contract = Default::default();
@@ -1057,14 +1148,6 @@ fn term<'tcx>(
         } else {
             None
         }
-    } else if matches!(ctx.item_type(def_id), ItemType::Constant) {
-        let ct = UnevaluatedConst::new(def_id, subst);
-        let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(ct));
-        let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
-        let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
-        let span = ctx.def_span(def_id);
-        let res = from_ty_const(&ctx.ctx, constant, ty, typing_env, span);
-        Some(res)
     } else {
         let term = ctx.term(def_id).unwrap().rename(bound);
         let term =

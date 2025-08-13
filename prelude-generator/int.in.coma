@@ -53,6 +53,10 @@ module UInt$bits_count$
   function shr (a:t) (b:int) : t
   function nth (x: t) (i: int) : bool
 
+  function add_with_overflow (a:t) (b:t) : (t, bool) = (add a b, not in_bounds(t'int a + t'int b))
+  function sub_with_overflow (a:t) (b:t) : (t, bool) = (sub a b, not in_bounds(t'int a - t'int b))
+  function mul_with_overflow (a:t) (b:t) : (t, bool) = (mul a b, not in_bounds(t'int a * t'int b))
+
   let of_int (n:int) { [@expl:integer overflow] in_bounds n }
     (ret (result : t) { t'int result = n }) = any
 
@@ -93,6 +97,7 @@ module UInt$bits_count$BW
   use mach.int.Int
 
   constant max_uint_as_BV256 : BV256.t = $max_unsigned_value$
+  predicate in_bounds [@inline:trivial] (n:int) = 0 <= n <= $max_unsigned_value$
 
   function to_BV256 (x: t) : BV256.t = toBig x
   function of_BV256 (x: BV256.t) : t = toSmall x
@@ -104,6 +109,10 @@ module UInt$bits_count$BW
   predicate gt (a:t) (b:t) = ugt a b
 
   function shr (a:t) (b:int) : t = lsr a b
+
+  function add_with_overflow (a:t) (b:t) : (t, bool) = (add a b, not in_bounds(t'int a + t'int b))
+  function sub_with_overflow (a:t) (b:t) : (t, bool) = (sub a b, not in_bounds(t'int a - t'int b))
+  function mul_with_overflow (a:t) (b:t) : (t, bool) = (mul a b, not in_bounds(t'int a * t'int b))
 
   let of_BV256 (a:BV256.t)
     { [@expl:arithmetic overflow] BV256.t'int a >= 0 /\ BV256.t'int a < two_power_size }
@@ -197,6 +206,10 @@ module Int$bits_count$
   function lsl (a:t) (b:int) : t
   function shr (a:t) (b:int) : t
 
+  function add_with_overflow (a:t) (b:t) : (t, bool) = (add a b, not in_bounds(t'int a + t'int b))
+  function sub_with_overflow (a:t) (b:t) : (t, bool) = (sub a b, not in_bounds(t'int a - t'int b))
+  function mul_with_overflow (a:t) (b:t) : (t, bool) = (mul a b, not in_bounds(t'int a * t'int b))
+
   let of_int (n:int) { [@expl:integer overflow] in_bounds n }
     (ret (result : t) { to_int result = n }) = any
   let neg (a:t)
@@ -245,6 +258,7 @@ module Int$bits_count$BW
   constant minus_one : t = $max_unsigned_value$
   constant min_sint_as_BV256 : BV256.t = $min_signed_value$
   constant max_sint_as_BV256 : BV256.t = $max_signed_value$
+  predicate in_bounds [@inline:trivial] (n:int) = - $min_signed_value$ <= n <= $max_unsigned_value$
 
   function to_BV256 (x: t) : BV256.t = stoBig x
   function of_BV256 (x: BV256.t) : t = toSmall x
@@ -257,6 +271,10 @@ module Int$bits_count$BW
   predicate gt (a:t) (b:t) = sgt a b
 
   function shr (a:t) (b:int) : t = asr a b
+
+  function add_with_overflow (a:t) (b:t) : (t, bool) = (add a b, not in_bounds(t'int a + t'int b))
+  function sub_with_overflow (a:t) (b:t) : (t, bool) = (sub a b, not in_bounds(t'int a - t'int b))
+  function mul_with_overflow (a:t) (b:t) : (t, bool) = (mul a b, not in_bounds(t'int a * t'int b))
 
   let of_BV256 (a:BV256.t)
     { [@expl:arithmetic overflow] BV256.to_int a >= 0 /\ BV256.to_int a < two_power_size }

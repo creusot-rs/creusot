@@ -1,4 +1,4 @@
-use rustc_hir::def_id::DefId;
+use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{ProjectionElem, tcx::PlaceTy},
     ty::{TyKind, TypingEnv},
@@ -44,6 +44,9 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
         match &term.kind {
             TermKind::Item(id, _) => {
                 if let TyKind::FnDef(_, _) = self.ctx.type_of(id).skip_binder().kind() {
+                    return;
+                }
+                if matches!(self.ctx.def_kind(*id), DefKind::ConstParam) {
                     return;
                 }
                 if !self.is_visible_enough(*id) {

@@ -901,6 +901,7 @@ fn translate_vars<'tcx>(
 ) -> (fmir::LocalDecls<'tcx>, HashMap<Local, (Symbol, Ident)>) {
     let mut vars = fmir::LocalDecls::with_capacity(body.local_decls.len());
     let mut locals = HashMap::new();
+    let external_body = !body.source.def_id().is_local();
 
     use mir::VarDebugInfoContents::Place;
 
@@ -908,7 +909,9 @@ fn translate_vars<'tcx>(
         if erased_locals.contains(loc) {
             continue;
         }
-        let name = if !d.is_user_variable() {
+        // `is_user_variable` panics if the body comes from another crate
+        let temp = external_body || !d.is_user_variable();
+        let name = if temp {
             format!("_{}", loc.index())
         } else {
             let x = body.var_debug_info.iter().find(|var_info| match var_info.value {
@@ -924,7 +927,7 @@ fn translate_vars<'tcx>(
         vars.insert(ident, fmir::LocalDecl {
             span: d.source_info.span,
             ty: d.ty,
-            temp: !d.is_user_variable(),
+            temp,
             arg: is_arg,
         });
     }
