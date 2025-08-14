@@ -123,8 +123,14 @@ pub enum Exp {
     Ascribe(Box<Exp>, Type),
     // Predicates
     Impl(Box<Exp>, Box<Exp>),
-    Forall(Box<[(Ident, Type)]>, Box<[Trigger]>, Box<Exp>),
-    Exists(Box<[(Ident, Type)]>, Box<[Trigger]>, Box<Exp>),
+    Quant(Quant, Box<[(Ident, Type)]>, Box<[Trigger]>, Box<Exp>),
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub enum Quant {
+    Forall,
+    Exists,
 }
 
 pub trait ExpMutVisitor: Sized {
@@ -177,11 +183,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(l);
             f.visit_mut(r)
         }
-        Exp::Forall(_, t, e) => {
-            t.iter_mut().for_each(|t| f.visit_trigger_mut(t));
-            f.visit_mut(e)
-        }
-        Exp::Exists(_, t, e) => {
+        Exp::Quant(_, _, t, e) => {
             t.iter_mut().for_each(|t| f.visit_trigger_mut(t));
             f.visit_mut(e)
         }
@@ -239,16 +241,7 @@ impl<'a> ExpMutVisitor for BoundSubst<'a> {
                     BoundSubst { bound, ..*self }.visit_mut(br);
                 }
             }
-            Exp::Forall(binders, trig, exp) => {
-                let mut bound = self.bound.clone();
-                for (id, _) in binders {
-                    refresh_var(id, &mut bound);
-                }
-                let mut s = BoundSubst { bound, ..*self };
-                trig.iter_mut().for_each(|t| s.visit_trigger_mut(t));
-                s.visit_mut(exp);
-            }
-            Exp::Exists(binders, trig, exp) => {
+            Exp::Quant(_kind, binders, trig, exp) => {
                 let mut bound = self.bound.clone();
                 for (id, _) in binders {
                     refresh_var(id, &mut bound);
@@ -312,11 +305,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(l);
             f.visit(r)
         }
-        Exp::Forall(_, t, e) => {
-            t.iter().for_each(|t| f.visit_trigger(t));
-            f.visit(e)
-        }
-        Exp::Exists(_, t, e) => {
+        Exp::Quant(_, _, t, e) => {
             t.iter().for_each(|t| f.visit_trigger(t));
             f.visit(e)
         }
@@ -446,7 +435,12 @@ impl Exp {
         if body.is_true() || bound.peek().is_none() {
             body
         } else {
-            Exp::Forall(bound.collect(), trigger.into_iter().collect(), Box::new(body))
+            Exp::Quant(
+                Quant::Forall,
+                bound.collect(),
+                trigger.into_iter().collect(),
+                Box::new(body),
+            )
         }
     }
 
@@ -466,7 +460,12 @@ impl Exp {
         if body.is_false() || bound.peek().is_none() {
             body
         } else {
-            Exp::Exists(bound.collect(), trigger.into_iter().collect(), Box::new(body))
+            Exp::Quant(
+                Quant::Exists,
+                bound.collect(),
+                trigger.into_iter().collect(),
+                Box::new(body),
+            )
         }
     }
 
@@ -688,8 +687,7 @@ impl Exp {
             Exp::BinaryOp(op, _, _) => op.precedence(),
             Exp::Call(_, _) => App,
             Exp::Impl(_, _) => Impl,
-            Exp::Forall(_, _, _) => IfLet,
-            Exp::Exists(_, _, _) => IfLet,
+            Exp::Quant(_, _, _, _) => IfLet,
             Exp::Ascribe(_, _) => Cast,
             Exp::Attr(_, _) => Attr,
             Exp::Record { fields: _ } => Atom,
@@ -731,16 +729,7 @@ impl Exp {
                         self.visit(arg);
                         occurs.drain().for_each(|(k, v)| *self.occurs.entry(k).or_insert(0) += v);
                     }
-                    Exp::Forall(bnds, trig, exp) => {
-                        let mut fvs = std::mem::take(&mut self.occurs);
-                        self.visit(exp);
-                        trig.iter().for_each(|t| self.visit_trigger(t));
-                        bnds.iter().for_each(|(l, _)| {
-                            self.occurs.remove(l);
-                        });
-                        fvs.drain().for_each(|(k, v)| *self.occurs.entry(k).or_insert(0) += v);
-                    }
-                    Exp::Exists(bnds, trig, exp) => {
+                    Exp::Quant(_kind, bnds, trig, exp) => {
                         let mut fvs = std::mem::take(&mut self.occurs);
                         self.visit(exp);
                         trig.iter().for_each(|t| self.visit_trigger(t));

@@ -2,7 +2,9 @@ use std::iter::once;
 
 use crate::{
     backend::Why3Generator,
-    contracts_items::{get_builtin, get_int_ty, is_int_ty, is_logic, is_snap_ty, is_trusted},
+    contracts_items::{
+        get_builtin, get_int_ty, is_ghost_ty, is_int_ty, is_logic, is_snap_ty, is_trusted,
+    },
     ctx::*,
     naming::{name, variable_name},
 };
@@ -34,7 +36,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Uint(uty) => MlT::qconstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t")),
         Float(flty) => MlT::qconstructor(names.in_pre(floatty_to_prelude(*flty), "t")),
         Adt(def, s) if def.is_box() => translate_ty(ctx, names, span, s[0].expect_ty()),
-        Adt(def, s) if is_snap_ty(ctx.tcx, def.did()) => {
+        Adt(def, s) if is_snap_ty(ctx.tcx, def.did()) || is_ghost_ty(ctx.tcx, def.did()) => {
             // Make sure we create a cycle of dependency if we create a type which is recursive through Snapshot
             // See test should_fail/bug/436_2.rs, and #436
             names.ty(ty);

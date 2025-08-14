@@ -1,7 +1,7 @@
 use crate::{
     Ident, Name, QName,
     declaration::{Attribute, Use},
-    printer::{Print, Why3Scope},
+    printer::{Print, Why3Scope, pre_separate},
     ty::Type,
 };
 
@@ -189,13 +189,16 @@ impl Expr {
     }
 
     pub fn let_(self, vars: impl IntoIterator<Item = Var>) -> Self {
-        Expr::Let(Box::new(self), vars.into_iter().collect())
+        let vars: Box<[Var]> = vars.into_iter().collect();
+        if vars.is_empty() { self } else { Expr::Let(Box::new(self), vars) }
     }
 
     /// Adds a set of mutually recursive where bindings around `self`
     pub fn where_(self, defs: Box<[Defn]>) -> Self {
         // If we have `x [ x = z ]` replace this by `z`
-        if defs.len() == 1
+        if defs.is_empty() {
+            self
+        } else if defs.len() == 1
             && !defs[0].body.occurs(&defs[0].prototype.name)
             && self.as_variable().is_some_and(|qn| qn == &defs[0].prototype.name)
         {
@@ -274,12 +277,12 @@ impl Print for Param {
             Param::Ty(ty) => docs![alloc, "< ", ty.pretty(alloc, scope), " >"],
             Param::Term(id, ty) => {
                 scope.bind_value(*id);
-                docs![alloc, id.pretty_value_name(alloc, scope), ":", ty.pretty(alloc, scope)]
+                docs![alloc, id.pretty_value_name(alloc, scope), ": ", ty.pretty(alloc, scope)]
                     .parens()
             }
             Param::Reference(id, ty) => {
                 scope.bind_value(*id);
-                docs![alloc, "&", id.pretty_value_name(alloc, scope), ":", ty.pretty(alloc, scope)]
+                docs![alloc, "&", id.pretty_value_name(alloc, scope), ": ", ty.pretty(alloc, scope)]
             }
             Param::Cont(id, writes, params) => {
                 scope.bind_value(*id);
@@ -288,13 +291,13 @@ impl Print for Param {
                 let doc = docs![
                     alloc,
                     id.pretty_value_name(alloc, scope),
-                    alloc.space(),
-                    brackets(alloc.intersperse(
-                        writes.iter().map(|a| a.pretty_value_name(alloc, scope)),
-                        " "
-                    )),
-                    alloc.space(),
-                    alloc.intersperse(params.iter().map(|a| a.pretty(alloc, scope)), " "),
+                    if writes.is_empty() {
+                        alloc.nil()
+                    } else {
+                        let writes = writes.iter().map(|a| a.pretty_value_name(alloc, scope));
+                        alloc.space().append(alloc.intersperse(writes, " ").brackets())
+                    },
+                    pre_separate(alloc, params.iter().map(|a| a.pretty(alloc, scope)), " "),
                 ]
                 .parens();
                 scope.close();
@@ -379,22 +382,13 @@ impl Print for Expr {
 
                 docs![
                     alloc,
-                    docs![
-                        alloc,
-                        if needs_paren { doc.parens() } else { doc },
-                        alloc.line(),
-                        alloc.intersperse(
-                            ty_term.iter().map(|a| a.pretty(alloc, scope)),
-                            alloc.line()
-                        )
-                    ]
-                    .group(),
-                    if !ty_term.is_empty() && !conts.is_empty() {
-                        alloc.line()
-                    } else {
-                        alloc.line_()
-                    },
-                    alloc.intersperse(conts.iter().map(|a| a.pretty(alloc, scope)), alloc.line()),
+                    if needs_paren { doc.parens() } else { doc },
+                    alloc.concat(
+                        ty_term.iter().map(|a| alloc.softline().append(a.pretty(alloc, scope)))
+                    ),
+                    alloc
+                        .concat(conts.iter().map(|a| alloc.line().append(a.pretty(alloc, scope))))
+                        .group(),
                 ]
                 .group()
                 .nest(2)
@@ -427,11 +421,16 @@ impl Print for Expr {
                 scope.open();
                 let doc = if *rec {
                     handlers.iter().for_each(|defn| scope.bind_value(defn.prototype.name));
-                    cont.pretty(alloc, scope).append(bracket_list(
-                        alloc,
-                        handlers.iter().map(|d| print_rec_defn(d, alloc, scope)),
-                        alloc.line().append(alloc.text("| ")),
-                    ))
+                    cont.pretty(alloc, scope).append(
+                        alloc.line().append(
+                            bracket_list(
+                                alloc,
+                                handlers.iter().map(|d| print_rec_defn(d, alloc, scope)),
+                                alloc.line().append(alloc.text("| ")),
+                            )
+                            .group(),
+                        ),
+                    )
                 } else {
                     // Print the handler bodies
                     let handlers: Box<[_]> =
@@ -440,23 +439,31 @@ impl Print for Expr {
                     let handlers: Box<[_]> =
                         handlers.into_iter().map(|d| d.pretty(alloc, scope)).collect();
                     // Print the main body
-                    cont.pretty(alloc, scope).append(bracket_list(
-                        alloc,
-                        handlers.into_iter(),
-                        alloc.line().append(alloc.text("| ")),
-                    ))
+                    cont.pretty(alloc, scope).append(
+                        alloc
+                            .line()
+                            .append(bracket_list(
+                                alloc,
+                                handlers.into_iter(),
+                                alloc.line().append(alloc.text("| ")),
+                            ))
+                            .group(),
+                    )
                 };
                 scope.close();
                 doc
             }
             Expr::Let(cont, lets) => {
                 scope.open();
-                let lets = bracket_list(
-                    alloc,
-                    lets.iter().map(|l| l.pretty(alloc, scope)),
-                    alloc.line().append(alloc.text("| ")),
-                );
-                let doc = docs![alloc, cont.pretty(alloc, scope), lets,];
+                let lets = alloc
+                    .line()
+                    .append(bracket_list(
+                        alloc,
+                        lets.iter().map(|l| l.pretty(alloc, scope)),
+                        alloc.line().append(alloc.text("| ")),
+                    ))
+                    .group();
+                let doc = docs![alloc, cont.pretty(alloc, scope), lets];
                 scope.close();
                 doc
             }
@@ -476,8 +483,9 @@ impl Print for Expr {
                             t.pretty(alloc, scope)
                         ]),
                         alloc.line().append(alloc.text("| "))
-                    ),
-                    if asgns.is_empty() { alloc.nil() } else { alloc.line_() },
+                    )
+                    .append(alloc.softline())
+                    .group(),
                     if needs_parens {
                         cont.pretty(alloc, scope).parens()
                     } else {
@@ -508,15 +516,6 @@ impl Print for Expr {
     }
 }
 
-fn brackets<'a, A: pretty::DocAllocator<'a>>(
-    doc: pretty::DocBuilder<'a, A>,
-) -> pretty::DocBuilder<'a, A>
-where
-    A::Doc: Clone,
-{
-    if !matches!(&*doc.1, pretty::Doc::Nil) { doc.brackets().nest(2) } else { doc }
-}
-
 fn bracket_list<'a, S, A: pretty::DocAllocator<'a>>(
     alloc: &'a A,
     docs: impl Iterator<Item = pretty::DocBuilder<'a, A>>,
@@ -526,17 +525,7 @@ where
     S: pretty::Pretty<'a, A> + Clone,
 {
     let body = alloc.intersperse(docs, sep).group();
-    if matches!(&*body.1, pretty::Doc::Nil) {
-        return body;
-    }
-
-    docs![
-        alloc,
-        alloc.line(),
-        alloc.space().append(body).append(alloc.space()).brackets().nest(0),
-        alloc.line()
-    ]
-    .group()
+    alloc.space().append(body).append(alloc.space()).brackets()
 }
 
 /// The caller must have already bound the name of the definition.
@@ -553,15 +542,21 @@ where
     let doc = docs![
         alloc,
         defn.prototype.name.pretty_value_name(alloc, scope),
-        alloc.intersperse(
+        pre_separate(
+            alloc,
             defn.prototype.attrs.iter().map(|a| a.pretty(alloc, scope)),
-            alloc.space()
-        ),
-        alloc.space(),
-        alloc.intersperse(defn.prototype.params.iter().map(|a| a.pretty(alloc, scope)), " "),
-        "=",
-        alloc.space(),
-        defn.body.pretty(alloc, scope).nest(2).group(),
+            alloc.softline()
+        )
+        .nest(2),
+        pre_separate(
+            alloc,
+            defn.prototype.params.iter().map(|a| a.pretty(alloc, scope)),
+            alloc.softline()
+        )
+        .nest(2)
+        .group(),
+        " =",
+        alloc.softline().append(defn.body.pretty(alloc, scope)).nest(2).group(),
     ];
     scope.close();
     doc
@@ -586,10 +581,8 @@ impl<'a, A: pretty::DocAllocator<'a>> NonRecDefnDoc<'a, A> {
             alloc,
             self.name.pretty_value_name(alloc, scope),
             self.attrs,
-            alloc.space(),
             self.params,
-            "->",
-            alloc.space(),
+            " ->",
             self.body
         ]
     }
@@ -606,13 +599,20 @@ where
     scope.open();
     let doc = NonRecDefnDoc {
         name: defn.prototype.name,
-        attrs: alloc.intersperse(
+        attrs: pre_separate(
+            alloc,
             defn.prototype.attrs.iter().map(|a| a.pretty(alloc, scope)),
             alloc.space(),
-        ),
-        params: alloc
-            .intersperse(defn.prototype.params.iter().map(|a| a.pretty(alloc, scope)), " "),
-        body: defn.body.pretty(alloc, scope).nest(2).group(),
+        )
+        .nest(2),
+        params: pre_separate(
+            alloc,
+            defn.prototype.params.iter().map(|a| a.pretty(alloc, scope)),
+            alloc.softline(),
+        )
+        .nest(2)
+        .group(),
+        body: alloc.softline().append(defn.body.pretty(alloc, scope).nest(2)).group(),
     };
     scope.close();
     doc
