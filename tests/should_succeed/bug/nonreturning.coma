@@ -2,8 +2,7 @@ module M_nonreturning__f [#"nonreturning.rs" 5 0 5 11]
   let%span snonreturning = "nonreturning.rs" 5 10 5 11
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 81 8 81 13
   
-  predicate invariant' (self: ()) =
-    [%#sinvariant] false
+  predicate invariant' (self: ()) = [%#sinvariant] false
   
   predicate inv (_0: ())
   
@@ -13,9 +12,9 @@ module M_nonreturning__f [#"nonreturning.rs" 5 0 5 11]
   
   meta "select_lsinst" "all"
   
-  let rec f[#"nonreturning.rs" 5 0 5 11] (return'  (x:()))= (! bb0 [ bb0 = bb1 | bb1 = bb1'0 [ bb1'0 = (! bb1'0) ]  ] )
-    [ return''0 (result:())-> {[@expl:f result type invariant] [%#snonreturning] inv result} (! return' {result}) ]
-
+  let rec f [#"nonreturning.rs" 5 0 5 11] (return' (x: ())) = (! bb0
+    [ bb0 = bb1 | bb1 = bb1'0 [ bb1'0 = (! bb1'0) ] ])
+    [ return''0 (result: ()) -> {[@expl:f result type invariant] [%#snonreturning] inv result} (! return' {result}) ]
 end
 module M_nonreturning__g [#"nonreturning.rs" 11 0 11 17]
   let%span snonreturning = "nonreturning.rs" 13 8 13 11
@@ -25,24 +24,21 @@ module M_nonreturning__g [#"nonreturning.rs" 11 0 11 17]
   
   use creusot.prelude.Any
   
-  predicate invariant' (self: ()) =
-    [%#sinvariant] false
+  predicate invariant' (self: ()) = [%#sinvariant] false
   
   predicate inv (_0: ())
   
   axiom inv_axiom [@rewrite]: forall x: () [inv x]. inv x = invariant' x
   
-  let rec f (return'  (x:()))= any [ return''0 (result:())-> {[%#snonreturning'1] inv result} (! return' {result}) ] 
+  let rec f (return' (x: ())) = any [ return''0 (result: ()) -> {[%#snonreturning'1] inv result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec g[#"nonreturning.rs" 11 0 11 17] (b:bool) (return'  (x:()))= (! bb0
-    [ bb0 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ] 
-    | bb1 = s0 [ s0 = f (fun (_ret:()) ->  [ &_5 <- _ret ] s1) | s1 = {[%#snonreturning] false} any ] 
-    | bb2 = return''0 {_0} ]
-     [ & _0: () = Any.any_l () | & b'0: bool = b | & _5: () = Any.any_l () ] )
-    [ return''0 (result:())-> {[@expl:g ensures] [%#snonreturning'0] not b} (! return' {result}) ]
-
+  let rec g [#"nonreturning.rs" 11 0 11 17] (b: bool) (return' (x: ())) = (! bb0
+    [ bb0 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ]
+    | bb1 = s0 [ s0 = f (fun (_ret: ()) -> [ &_5 <- _ret ] s1) | s1 = {[%#snonreturning] false} any ]
+    | bb2 = return''0 {_0} ] [ & _0: () = Any.any_l () | & b'0: bool = b | & _5: () = Any.any_l () ])
+    [ return''0 (result: ()) -> {[@expl:g ensures] [%#snonreturning'0] not b} (! return' {result}) ]
 end

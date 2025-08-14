@@ -91,88 +91,68 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Nanoseconds  =
-    { t_Nanoseconds__0: UInt32.t }
+  type t_Nanoseconds = { t_Nanoseconds__0: UInt32.t }
   
-  type t_Timespec  =
-    { t_Timespec__tv_sec: Int64.t; t_Timespec__tv_nsec: t_Nanoseconds }
+  type t_Timespec = { t_Timespec__tv_sec: Int64.t; t_Timespec__tv_nsec: t_Nanoseconds }
   
-  type t_Instant  =
-    { t_Instant__t: t_Timespec }
+  type t_Instant = { t_Instant__t: t_Timespec }
   
-  type t_Instant'0  =
-    { t_Instant__0: t_Instant }
+  type t_Instant'0 = { t_Instant__0: t_Instant }
   
   function view (self: t_Instant'0) : int
   
   axiom view_spec: forall self: t_Instant'0. [%#stime'6] view self >= 0
   
-  let rec now (return'  (x:t_Instant'0))= any
-    [ return''0 (result:t_Instant'0)-> {[%#stime] view result >= 0} (! return' {result}) ]
+  let rec now (return' (x: t_Instant'0)) = any
+    [ return''0 (result: t_Instant'0) -> {[%#stime] view result >= 0} (! return' {result}) ]
   
+  type t_Duration = { t_Duration__secs: UInt64.t; t_Duration__nanos: t_Nanoseconds }
   
-  type t_Duration  =
-    { t_Duration__secs: UInt64.t; t_Duration__nanos: t_Nanoseconds }
-  
-  function secs_to_nanos (secs: int) : int =
-    [%#stime'20] secs * 1000000000
+  function secs_to_nanos (secs: int) : int = [%#stime'20] secs * 1000000000
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function view'0 (self: t_Duration) : int
   
   axiom view_spec'0: forall self: t_Duration. [%#stime'19] view'0 self >= 0
-  /\ view'0 self <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999
+      /\ view'0 self <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999
   
-  let rec from_secs (secs:UInt64.t) (return'  (x:t_Duration))= any
-    [ return''0 (result:t_Duration)-> {[%#stime'0] view'0 result = secs_to_nanos (UInt64.t'int secs)}
+  let rec from_secs (secs: UInt64.t) (return' (x: t_Duration)) = any
+    [ return''0 (result: t_Duration) -> {[%#stime'0] view'0 result = secs_to_nanos (UInt64.t'int secs)}
       (! return' {result}) ]
   
+  let rec elapsed (self_: t_Instant'0) (return' (x: t_Duration)) = any
+    [ return''0 (result: t_Duration) -> {[%#stime'1] view'0 result >= 0} (! return' {result}) ]
   
-  let rec elapsed (self_:t_Instant'0) (return'  (x:t_Duration))= any
-    [ return''0 (result:t_Duration)-> {[%#stime'1] view'0 result >= 0} (! return' {result}) ]
+  function deep_model (self: t_Duration) : int = [%#stime'21] view'0 self
   
+  function deep_model'0 (self: t_Duration) : int = [%#smodel] deep_model self
   
-  function deep_model (self: t_Duration) : int =
-    [%#stime'21] view'0 self
+  let rec ge (self_: t_Duration) (other: t_Duration) (return' (x: bool)) = any
+    [ return''0 (result: bool) -> {[%#scmp] result = (deep_model'0 self_ >= deep_model'0 other)} (! return' {result}) ]
   
-  function deep_model'0 (self: t_Duration) : int =
-    [%#smodel] deep_model self
+  type t_Option = C_None | C_Some t_Instant'0
   
-  let rec ge (self_:t_Duration) (other:t_Duration) (return'  (x:bool))= any
-    [ return''0 (result:bool)-> {[%#scmp] result = (deep_model'0 self_ >= deep_model'0 other)} (! return' {result}) ]
+  type t_Option'0 = C_None'0 | C_Some'0 int
   
+  function deep_model'1 (self: t_Instant'0) : int = [%#stime'22] view self
   
-  type t_Option  =
-    | C_None
-    | C_Some t_Instant'0
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 int
-  
-  function deep_model'1 (self: t_Instant'0) : int =
-    [%#stime'22] view self
-  
-  function deep_model'2 (self: t_Option) : t_Option'0 =
-    [%#soption'3] match self with
+  function deep_model'2 (self: t_Option) : t_Option'0 = [%#soption'3] match self with
       | C_Some t -> C_Some'0 (deep_model'1 t)
       | C_None -> C_None'0
       end
   
-  function view'1 (self: t_Instant'0) : int =
-    [%#smodel'0] view self
+  function view'1 (self: t_Instant'0) : int = [%#smodel'0] view self
   
-  type t_Ordering  =
-    | C_Less
-    | C_Equal
-    | C_Greater
+  type t_Ordering = C_Less | C_Equal | C_Greater
   
-  type tuple  =
-    { _p0: t_Option'0; _p1: t_Option'0 }
+  type tuple = { _p0: t_Option'0; _p1: t_Option'0 }
   
-  function cmp_log (self: int) (o: int) : t_Ordering =
-    [%#sord'16] if self < o then C_Less else if self = o then C_Equal else C_Greater
+  function cmp_log (self: int) (o: int) : t_Ordering = [%#sord'16] if self < o then
+      C_Less
+    else
+      if self = o then C_Equal else C_Greater
+  
   
   function eq_cmp (x: int) (y: int) : ()
   
@@ -181,17 +161,17 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   function antisym2 (x: int) (y: int) : ()
   
   axiom antisym2_spec: forall x: int, y: int. ([%#sord'27] cmp_log x y = C_Greater)
-   -> ([%#sord'28] cmp_log y x = C_Less)
+      -> ([%#sord'28] cmp_log y x = C_Less)
   
   function antisym1 (x: int) (y: int) : ()
   
   axiom antisym1_spec: forall x: int, y: int. ([%#sord'25] cmp_log x y = C_Less)
-   -> ([%#sord'26] cmp_log y x = C_Greater)
+      -> ([%#sord'26] cmp_log y x = C_Greater)
   
   function trans (x: int) (y: int) (z: int) (o: t_Ordering) : ()
   
   axiom trans_spec: forall x: int, y: int, z: int, o: t_Ordering. ([%#sord'22] cmp_log x y = o)
-   -> ([%#sord'23] cmp_log y z = o)  -> ([%#sord'24] cmp_log x z = o)
+      -> ([%#sord'23] cmp_log y z = o) -> ([%#sord'24] cmp_log x z = o)
   
   function refl (x: int) : ()
   
@@ -213,12 +193,11 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   
   axiom cmp_le_log_spec: forall x: int, y: int. [%#sord'17] (x <= y) = (cmp_log x y <> C_Greater)
   
-  function cmp_log'0 (self: t_Option'0) (o: t_Option'0) : t_Ordering =
-    [%#soption'4] match { _p0 = self; _p1 = o } with
-      | {_p0 = C_None'0 ; _p1 = C_None'0} -> C_Equal
-      | {_p0 = C_None'0 ; _p1 = C_Some'0 _} -> C_Less
-      | {_p0 = C_Some'0 _ ; _p1 = C_None'0} -> C_Greater
-      | {_p0 = C_Some'0 x ; _p1 = C_Some'0 y} -> cmp_log x y
+  function cmp_log'0 (self: t_Option'0) (o: t_Option'0) : t_Ordering = [%#soption'4] match { _p0 = self; _p1 = o } with
+      | {_p0 = C_None'0; _p1 = C_None'0} -> C_Equal
+      | {_p0 = C_None'0; _p1 = C_Some'0 _} -> C_Less
+      | {_p0 = C_Some'0 _; _p1 = C_None'0} -> C_Greater
+      | {_p0 = C_Some'0 x; _p1 = C_Some'0 y} -> cmp_log x y
       end
   
   function eq_cmp'0 (x: t_Option'0) (y: t_Option'0) : ()
@@ -228,220 +207,187 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   function antisym2'0 (x: t_Option'0) (y: t_Option'0) : ()
   
   axiom antisym2_spec'0: forall x: t_Option'0, y: t_Option'0. ([%#sord'11] cmp_log'0 x y = C_Greater)
-   -> ([%#sord'12] cmp_log'0 y x = C_Less)
+      -> ([%#sord'12] cmp_log'0 y x = C_Less)
   
   function antisym1'0 (x: t_Option'0) (y: t_Option'0) : ()
   
   axiom antisym1_spec'0: forall x: t_Option'0, y: t_Option'0. ([%#sord'9] cmp_log'0 x y = C_Less)
-   -> ([%#sord'10] cmp_log'0 y x = C_Greater)
+      -> ([%#sord'10] cmp_log'0 y x = C_Greater)
   
   function trans'0 (x: t_Option'0) (y: t_Option'0) (z: t_Option'0) (o: t_Ordering) : ()
   
   axiom trans_spec'0: forall x: t_Option'0, y: t_Option'0, z: t_Option'0, o: t_Ordering. ([%#sord'6] cmp_log'0 x y = o)
-   -> ([%#sord'7] cmp_log'0 y z = o)  -> ([%#sord'8] cmp_log'0 x z = o)
+      -> ([%#sord'7] cmp_log'0 y z = o) -> ([%#sord'8] cmp_log'0 x z = o)
   
   function refl'0 (x: t_Option'0) : ()
   
   axiom refl_spec'0: forall x: t_Option'0. [%#sord'5] cmp_log'0 x x = C_Equal
   
-  predicate gt_log (self: t_Option'0) (o: t_Option'0) =
-    [%#sord'0] cmp_log'0 self o = C_Greater
+  predicate gt_log (self: t_Option'0) (o: t_Option'0) = [%#sord'0] cmp_log'0 self o = C_Greater
   
   function cmp_gt_log'0 (x: t_Option'0) (y: t_Option'0) : ()
   
   axiom cmp_gt_log_spec'0: forall x: t_Option'0, y: t_Option'0. [%#sord'4] gt_log x y = (cmp_log'0 x y = C_Greater)
   
-  predicate ge_log (self: t_Option'0) (o: t_Option'0) =
-    [%#sord'15] cmp_log'0 self o <> C_Less
+  predicate ge_log (self: t_Option'0) (o: t_Option'0) = [%#sord'15] cmp_log'0 self o <> C_Less
   
   function cmp_ge_log'0 (x: t_Option'0) (y: t_Option'0) : ()
   
   axiom cmp_ge_log_spec'0: forall x: t_Option'0, y: t_Option'0. [%#sord'3] ge_log x y = (cmp_log'0 x y <> C_Less)
   
-  predicate lt_log (self: t_Option'0) (o: t_Option'0) =
-    [%#sord] cmp_log'0 self o = C_Less
+  predicate lt_log (self: t_Option'0) (o: t_Option'0) = [%#sord] cmp_log'0 self o = C_Less
   
   function cmp_lt_log'0 (x: t_Option'0) (y: t_Option'0) : ()
   
   axiom cmp_lt_log_spec'0: forall x: t_Option'0, y: t_Option'0. [%#sord'2] lt_log x y = (cmp_log'0 x y = C_Less)
   
-  predicate le_log (self: t_Option'0) (o: t_Option'0) =
-    [%#sord'14] cmp_log'0 self o <> C_Greater
+  predicate le_log (self: t_Option'0) (o: t_Option'0) = [%#sord'14] cmp_log'0 self o <> C_Greater
   
   function cmp_le_log'0 (x: t_Option'0) (y: t_Option'0) : ()
   
   axiom cmp_le_log_spec'0: forall x: t_Option'0, y: t_Option'0. [%#sord'1] le_log x y = (cmp_log'0 x y <> C_Greater)
   
-  let rec checked_add (self_:t_Instant'0) (duration:t_Duration) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#stime'2] view'0 duration = 0  -> deep_model'2 result = C_Some'0 (view'1 self_)}
-      {[%#stime'3] view'0 duration > 0 /\ result <> C_None  -> lt_log (C_Some'0 (view'1 self_)) (deep_model'2 result)}
+  let rec checked_add (self_: t_Instant'0) (duration: t_Duration) (return' (x: t_Option)) = any
+    [ return''0 (result: t_Option) -> {[%#stime'2] view'0 duration = 0 -> deep_model'2 result = C_Some'0 (view'1 self_)}
+      {[%#stime'3] view'0 duration > 0 /\ result <> C_None -> lt_log (C_Some'0 (view'1 self_)) (deep_model'2 result)}
       (! return' {result}) ]
   
+  let rec unwrap (self_: t_Option) (return' (x: t_Instant'0)) = {[@expl:unwrap requires] [%#soption] self_ <> C_None}
+    any [ return''0 (result: t_Instant'0) -> {[%#soption'0] C_Some result = self_} (! return' {result}) ]
   
-  let rec unwrap (self_:t_Option) (return'  (x:t_Instant'0))= {[@expl:unwrap requires] [%#soption] self_ <> C_None}
-    any [ return''0 (result:t_Instant'0)-> {[%#soption'0] C_Some result = self_} (! return' {result}) ] 
+  function deep_model'3 (self: t_Instant'0) : int = [%#smodel] deep_model'1 self
   
-  function deep_model'3 (self: t_Instant'0) : int =
-    [%#smodel] deep_model'1 self
+  let rec eq (self_: t_Instant'0) (rhs: t_Instant'0) (return' (x: bool)) = any
+    [ return''0 (result: bool) -> {[%#scmp'0] result = (deep_model'3 self_ = deep_model'3 rhs)} (! return' {result}) ]
   
-  let rec eq (self_:t_Instant'0) (rhs:t_Instant'0) (return'  (x:bool))= any
-    [ return''0 (result:bool)-> {[%#scmp'0] result = (deep_model'3 self_ = deep_model'3 rhs)} (! return' {result}) ]
-  
-  
-  let rec add (self_:t_Instant'0) (rhs:t_Duration) (return'  (x:t_Instant'0))= any
-    [ return''0 (result:t_Instant'0)-> {[%#stime'4] view'0 rhs = 0  -> view self_ = view result}
-      {[%#stime'5] view'0 rhs > 0  -> view self_ < view result}
+  let rec add (self_: t_Instant'0) (rhs: t_Duration) (return' (x: t_Instant'0)) = any
+    [ return''0 (result: t_Instant'0) -> {[%#stime'4] view'0 rhs = 0 -> view self_ = view result}
+      {[%#stime'5] view'0 rhs > 0 -> view self_ < view result}
       (! return' {result}) ]
   
-  
-  let rec checked_sub (self_:t_Instant'0) (duration:t_Duration) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#stime'7] view'0 duration = 0  -> deep_model'2 result = C_Some'0 (view'1 self_)}
-      {[%#stime'8] view'0 duration > 0 /\ result <> C_None  -> gt_log (C_Some'0 (view'1 self_)) (deep_model'2 result)}
+  let rec checked_sub (self_: t_Instant'0) (duration: t_Duration) (return' (x: t_Option)) = any
+    [ return''0 (result: t_Option) -> {[%#stime'7] view'0 duration = 0 -> deep_model'2 result = C_Some'0 (view'1 self_)}
+      {[%#stime'8] view'0 duration > 0 /\ result <> C_None -> gt_log (C_Some'0 (view'1 self_)) (deep_model'2 result)}
       (! return' {result}) ]
   
-  
-  let rec sub (self_:t_Instant'0) (rhs:t_Duration) (return'  (x:t_Instant'0))= any
-    [ return''0 (result:t_Instant'0)-> {[%#stime'9] view'0 rhs = 0  -> view self_ = view result}
-      {[%#stime'10] view'0 rhs > 0  -> view self_ > view result}
+  let rec sub (self_: t_Instant'0) (rhs: t_Duration) (return' (x: t_Instant'0)) = any
+    [ return''0 (result: t_Instant'0) -> {[%#stime'9] view'0 rhs = 0 -> view self_ = view result}
+      {[%#stime'10] view'0 rhs > 0 -> view self_ > view result}
       (! return' {result}) ]
   
-  
-  let rec sub'0 (self_:t_Instant'0) (other:t_Instant'0) (return'  (x:t_Duration))= any
-    [ return''0 (result:t_Duration)-> {[%#stime'11] view self_ > view other  -> view'0 result > 0}
-      {[%#stime'12] view self_ <= view other  -> view'0 result = 0}
+  let rec sub'0 (self_: t_Instant'0) (other: t_Instant'0) (return' (x: t_Duration)) = any
+    [ return''0 (result: t_Duration) -> {[%#stime'11] view self_ > view other -> view'0 result > 0}
+      {[%#stime'12] view self_ <= view other -> view'0 result = 0}
       (! return' {result}) ]
   
+  let rec eq'0 (self_: t_Duration) (rhs: t_Duration) (return' (x: bool)) = any
+    [ return''0 (result: bool) -> {[%#scmp'0] result = (deep_model'0 self_ = deep_model'0 rhs)} (! return' {result}) ]
   
-  let rec eq'0 (self_:t_Duration) (rhs:t_Duration) (return'  (x:bool))= any
-    [ return''0 (result:bool)-> {[%#scmp'0] result = (deep_model'0 self_ = deep_model'0 rhs)} (! return' {result}) ]
+  let rec gt (self_: t_Duration) (other: t_Duration) (return' (x: bool)) = any
+    [ return''0 (result: bool) -> {[%#scmp'1] result = (deep_model'0 self_ > deep_model'0 other)} (! return' {result}) ]
   
-  
-  let rec gt (self_:t_Duration) (other:t_Duration) (return'  (x:bool))= any
-    [ return''0 (result:bool)-> {[%#scmp'1] result = (deep_model'0 self_ > deep_model'0 other)} (! return' {result}) ]
-  
-  
-  let rec duration_since (self_:t_Instant'0) (earlier:t_Instant'0) (return'  (x:t_Duration))= any
-    [ return''0 (result:t_Duration)-> {[%#stime'13] view'1 self_ > view earlier  -> view'0 result > 0}
-      {[%#stime'14] view'1 self_ <= view earlier  -> view'0 result = 0}
+  let rec duration_since (self_: t_Instant'0) (earlier: t_Instant'0) (return' (x: t_Duration)) = any
+    [ return''0 (result: t_Duration) -> {[%#stime'13] view'1 self_ > view earlier -> view'0 result > 0}
+      {[%#stime'14] view'1 self_ <= view earlier -> view'0 result = 0}
       (! return' {result}) ]
   
+  type t_Option'1 = C_None'1 | C_Some'1 t_Duration
   
-  type t_Option'1  =
-    | C_None'1
-    | C_Some'1 t_Duration
-  
-  let rec checked_duration_since (self_:t_Instant'0) (earlier:t_Instant'0) (return'  (x:t_Option'1))= any
-    [ return''0 (result:t_Option'1)-> {[%#stime'15] view'1 self_ >= view earlier  -> result <> C_None'1}
-      {[%#stime'16] view'1 self_ < view earlier  -> result = C_None'1}
+  let rec checked_duration_since (self_: t_Instant'0) (earlier: t_Instant'0) (return' (x: t_Option'1)) = any
+    [ return''0 (result: t_Option'1) -> {[%#stime'15] view'1 self_ >= view earlier -> result <> C_None'1}
+      {[%#stime'16] view'1 self_ < view earlier -> result = C_None'1}
       (! return' {result}) ]
   
+  let rec is_some (self_: t_Option'1) (return' (x: bool)) = any
+    [ return''0 (result: bool) -> {[%#soption'1] result = (self_ <> C_None'1)} (! return' {result}) ]
   
-  let rec is_some (self_:t_Option'1) (return'  (x:bool))= any
-    [ return''0 (result:bool)-> {[%#soption'1] result = (self_ <> C_None'1)} (! return' {result}) ]
+  let rec is_none (self_: t_Option'1) (return' (x: bool)) = any
+    [ return''0 (result: bool) -> {[%#soption'2] result = (self_ = C_None'1)} (! return' {result}) ]
   
-  
-  let rec is_none (self_:t_Option'1) (return'  (x:bool))= any
-    [ return''0 (result:bool)-> {[%#soption'2] result = (self_ = C_None'1)} (! return' {result}) ]
-  
-  
-  let rec saturating_duration_since (self_:t_Instant'0) (earlier:t_Instant'0) (return'  (x:t_Duration))= any
-    [ return''0 (result:t_Duration)-> {[%#stime'17] view'1 self_ > view earlier  -> view'0 result > 0}
-      {[%#stime'18] view'1 self_ <= view earlier  -> view'0 result = 0}
+  let rec saturating_duration_since (self_: t_Instant'0) (earlier: t_Instant'0) (return' (x: t_Duration)) = any
+    [ return''0 (result: t_Duration) -> {[%#stime'17] view'1 self_ > view earlier -> view'0 result > 0}
+      {[%#stime'18] view'1 self_ <= view earlier -> view'0 result = 0}
       (! return' {result}) ]
-  
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_instant[#"instant.rs" 7 0 7 21] (return'  (x:()))= (! bb0
-    [ bb0 = s0 [ s0 = now (fun (_ret:t_Instant'0) ->  [ &instant <- _ret ] s1) | s1 = bb1 ] 
+  let rec test_instant [#"instant.rs" 7 0 7 21] (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = now (fun (_ret: t_Instant'0) -> [ &instant <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = from_secs {[%#sinstant] (0: UInt64.t)} (fun (_ret:t_Duration) ->  [ &zero_dur <- _ret ] s1) | s1 = bb2 ]
-    
-    | bb2 = s0 [ s0 = elapsed {instant} (fun (_ret:t_Duration) ->  [ &_6 <- _ret ] s1) | s1 = bb3 ] 
-    | bb3 = s0 [ s0 = ge {_6} {zero_dur} (fun (_ret:bool) ->  [ &_4 <- _ret ] s1) | s1 = bb4 ] 
-    | bb4 = any [ br0 -> {_4 = false} (! bb6) | br1 -> {_4} (! bb5) ] 
-    | bb5 = s0 [ s0 = checked_add {instant} {zero_dur} (fun (_ret:t_Option) ->  [ &_14 <- _ret ] s1) | s1 = bb7 ] 
-    | bb7 = s0 [ s0 = unwrap {_14} (fun (_ret:t_Instant'0) ->  [ &_13 <- _ret ] s1) | s1 = bb8 ] 
-    | bb8 = s0 [ s0 = eq {_13} {instant} (fun (_ret:bool) ->  [ &_11 <- _ret ] s1) | s1 = bb9 ] 
-    | bb9 = any [ br0 -> {_11 = false} (! bb11) | br1 -> {_11} (! bb10) ] 
-    | bb10 = s0 [ s0 = add {instant} {zero_dur} (fun (_ret:t_Instant'0) ->  [ &_22 <- _ret ] s1) | s1 = bb12 ] 
-    | bb12 = s0 [ s0 = eq {_22} {instant} (fun (_ret:bool) ->  [ &_20 <- _ret ] s1) | s1 = bb13 ] 
-    | bb13 = any [ br0 -> {_20 = false} (! bb15) | br1 -> {_20} (! bb14) ] 
+      [ s0 = from_secs {[%#sinstant] (0: UInt64.t)} (fun (_ret: t_Duration) -> [ &zero_dur <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = elapsed {instant} (fun (_ret: t_Duration) -> [ &_6 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = s0 [ s0 = ge {_6} {zero_dur} (fun (_ret: bool) -> [ &_4 <- _ret ] s1) | s1 = bb4 ]
+    | bb4 = any [ br0 -> {_4 = false} (! bb6) | br1 -> {_4} (! bb5) ]
+    | bb5 = s0 [ s0 = checked_add {instant} {zero_dur} (fun (_ret: t_Option) -> [ &_14 <- _ret ] s1) | s1 = bb7 ]
+    | bb7 = s0 [ s0 = unwrap {_14} (fun (_ret: t_Instant'0) -> [ &_13 <- _ret ] s1) | s1 = bb8 ]
+    | bb8 = s0 [ s0 = eq {_13} {instant} (fun (_ret: bool) -> [ &_11 <- _ret ] s1) | s1 = bb9 ]
+    | bb9 = any [ br0 -> {_11 = false} (! bb11) | br1 -> {_11} (! bb10) ]
+    | bb10 = s0 [ s0 = add {instant} {zero_dur} (fun (_ret: t_Instant'0) -> [ &_22 <- _ret ] s1) | s1 = bb12 ]
+    | bb12 = s0 [ s0 = eq {_22} {instant} (fun (_ret: bool) -> [ &_20 <- _ret ] s1) | s1 = bb13 ]
+    | bb13 = any [ br0 -> {_20 = false} (! bb15) | br1 -> {_20} (! bb14) ]
     | bb14 = s0
-      [ s0 = from_secs {[%#sinstant'0] (3: UInt64.t)} (fun (_ret:t_Duration) ->  [ &three_seconds <- _ret ] s1)
+      [ s0 = from_secs {[%#sinstant'0] (3: UInt64.t)} (fun (_ret: t_Duration) -> [ &three_seconds <- _ret ] s1)
       | s1 = bb16 ]
-    
     | bb16 = s0
-      [ s0 = add {instant} {three_seconds} (fun (_ret:t_Instant'0) ->  [ &greater_instant <- _ret ] s1) | s1 = bb17 ]
-    
+      [ s0 = add {instant} {three_seconds} (fun (_ret: t_Instant'0) -> [ &greater_instant <- _ret ] s1) | s1 = bb17 ]
     | bb17 = s0
       [ s0 = {[@expl:assertion] [%#sinstant'1] view instant < view greater_instant} s1
-      | s1 = add {greater_instant} {three_seconds} (fun (_ret:t_Instant'0) ->  [ &even_greater_instant <- _ret ] s2)
+      | s1 = add {greater_instant} {three_seconds} (fun (_ret: t_Instant'0) -> [ &even_greater_instant <- _ret ] s2)
       | s2 = bb18 ]
-    
     | bb18 = s0
       [ s0 = {[@expl:assertion] [%#sinstant'2] view instant < view even_greater_instant} s1
-      | s1 = checked_sub {instant} {zero_dur} (fun (_ret:t_Option) ->  [ &_42 <- _ret ] s2)
+      | s1 = checked_sub {instant} {zero_dur} (fun (_ret: t_Option) -> [ &_42 <- _ret ] s2)
       | s2 = bb19 ]
-    
-    | bb19 = s0 [ s0 = unwrap {_42} (fun (_ret:t_Instant'0) ->  [ &_41 <- _ret ] s1) | s1 = bb20 ] 
-    | bb20 = s0 [ s0 = eq {_41} {instant} (fun (_ret:bool) ->  [ &_39 <- _ret ] s1) | s1 = bb21 ] 
-    | bb21 = any [ br0 -> {_39 = false} (! bb23) | br1 -> {_39} (! bb22) ] 
-    | bb22 = s0 [ s0 = sub {instant} {zero_dur} (fun (_ret:t_Instant'0) ->  [ &_50 <- _ret ] s1) | s1 = bb24 ] 
-    | bb24 = s0 [ s0 = eq {_50} {instant} (fun (_ret:bool) ->  [ &_48 <- _ret ] s1) | s1 = bb25 ] 
-    | bb25 = any [ br0 -> {_48 = false} (! bb27) | br1 -> {_48} (! bb26) ] 
+    | bb19 = s0 [ s0 = unwrap {_42} (fun (_ret: t_Instant'0) -> [ &_41 <- _ret ] s1) | s1 = bb20 ]
+    | bb20 = s0 [ s0 = eq {_41} {instant} (fun (_ret: bool) -> [ &_39 <- _ret ] s1) | s1 = bb21 ]
+    | bb21 = any [ br0 -> {_39 = false} (! bb23) | br1 -> {_39} (! bb22) ]
+    | bb22 = s0 [ s0 = sub {instant} {zero_dur} (fun (_ret: t_Instant'0) -> [ &_50 <- _ret ] s1) | s1 = bb24 ]
+    | bb24 = s0 [ s0 = eq {_50} {instant} (fun (_ret: bool) -> [ &_48 <- _ret ] s1) | s1 = bb25 ]
+    | bb25 = any [ br0 -> {_48 = false} (! bb27) | br1 -> {_48} (! bb26) ]
     | bb26 = s0
-      [ s0 = sub {instant} {three_seconds} (fun (_ret:t_Instant'0) ->  [ &lesser_instant <- _ret ] s1) | s1 = bb28 ]
-    
+      [ s0 = sub {instant} {three_seconds} (fun (_ret: t_Instant'0) -> [ &lesser_instant <- _ret ] s1) | s1 = bb28 ]
     | bb28 = s0
       [ s0 = {[@expl:assertion] [%#sinstant'3] view instant > view lesser_instant} s1
-      | s1 = sub'0 {instant} {instant} (fun (_ret:t_Duration) ->  [ &_63 <- _ret ] s2)
+      | s1 = sub'0 {instant} {instant} (fun (_ret: t_Duration) -> [ &_63 <- _ret ] s2)
       | s2 = bb29 ]
-    
-    | bb29 = s0 [ s0 = eq'0 {_63} {zero_dur} (fun (_ret:bool) ->  [ &_61 <- _ret ] s1) | s1 = bb30 ] 
-    | bb30 = any [ br0 -> {_61 = false} (! bb32) | br1 -> {_61} (! bb31) ] 
-    | bb31 = s0 [ s0 = sub'0 {instant} {greater_instant} (fun (_ret:t_Duration) ->  [ &_71 <- _ret ] s1) | s1 = bb33 ] 
-    | bb33 = s0 [ s0 = eq'0 {_71} {zero_dur} (fun (_ret:bool) ->  [ &_69 <- _ret ] s1) | s1 = bb34 ] 
-    | bb34 = any [ br0 -> {_69 = false} (! bb36) | br1 -> {_69} (! bb35) ] 
-    | bb35 = s0 [ s0 = sub'0 {greater_instant} {instant} (fun (_ret:t_Duration) ->  [ &_79 <- _ret ] s1) | s1 = bb37 ] 
-    | bb37 = s0 [ s0 = gt {_79} {zero_dur} (fun (_ret:bool) ->  [ &_77 <- _ret ] s1) | s1 = bb38 ] 
-    | bb38 = any [ br0 -> {_77 = false} (! bb40) | br1 -> {_77} (! bb39) ] 
+    | bb29 = s0 [ s0 = eq'0 {_63} {zero_dur} (fun (_ret: bool) -> [ &_61 <- _ret ] s1) | s1 = bb30 ]
+    | bb30 = any [ br0 -> {_61 = false} (! bb32) | br1 -> {_61} (! bb31) ]
+    | bb31 = s0 [ s0 = sub'0 {instant} {greater_instant} (fun (_ret: t_Duration) -> [ &_71 <- _ret ] s1) | s1 = bb33 ]
+    | bb33 = s0 [ s0 = eq'0 {_71} {zero_dur} (fun (_ret: bool) -> [ &_69 <- _ret ] s1) | s1 = bb34 ]
+    | bb34 = any [ br0 -> {_69 = false} (! bb36) | br1 -> {_69} (! bb35) ]
+    | bb35 = s0 [ s0 = sub'0 {greater_instant} {instant} (fun (_ret: t_Duration) -> [ &_79 <- _ret ] s1) | s1 = bb37 ]
+    | bb37 = s0 [ s0 = gt {_79} {zero_dur} (fun (_ret: bool) -> [ &_77 <- _ret ] s1) | s1 = bb38 ]
+    | bb38 = any [ br0 -> {_77 = false} (! bb40) | br1 -> {_77} (! bb39) ]
     | bb39 = s0
-      [ s0 = duration_since {greater_instant} {instant} (fun (_ret:t_Duration) ->  [ &_87 <- _ret ] s1) | s1 = bb41 ]
-    
-    | bb41 = s0 [ s0 = gt {_87} {zero_dur} (fun (_ret:bool) ->  [ &_85 <- _ret ] s1) | s1 = bb42 ] 
-    | bb42 = any [ br0 -> {_85 = false} (! bb44) | br1 -> {_85} (! bb43) ] 
+      [ s0 = duration_since {greater_instant} {instant} (fun (_ret: t_Duration) -> [ &_87 <- _ret ] s1) | s1 = bb41 ]
+    | bb41 = s0 [ s0 = gt {_87} {zero_dur} (fun (_ret: bool) -> [ &_85 <- _ret ] s1) | s1 = bb42 ]
+    | bb42 = any [ br0 -> {_85 = false} (! bb44) | br1 -> {_85} (! bb43) ]
     | bb43 = s0
-      [ s0 = duration_since {instant} {greater_instant} (fun (_ret:t_Duration) ->  [ &_95 <- _ret ] s1) | s1 = bb45 ]
-    
-    | bb45 = s0 [ s0 = eq'0 {_95} {zero_dur} (fun (_ret:bool) ->  [ &_93 <- _ret ] s1) | s1 = bb46 ] 
-    | bb46 = any [ br0 -> {_93 = false} (! bb48) | br1 -> {_93} (! bb47) ] 
+      [ s0 = duration_since {instant} {greater_instant} (fun (_ret: t_Duration) -> [ &_95 <- _ret ] s1) | s1 = bb45 ]
+    | bb45 = s0 [ s0 = eq'0 {_95} {zero_dur} (fun (_ret: bool) -> [ &_93 <- _ret ] s1) | s1 = bb46 ]
+    | bb46 = any [ br0 -> {_93 = false} (! bb48) | br1 -> {_93} (! bb47) ]
     | bb47 = s0
-      [ s0 = checked_duration_since {greater_instant} {instant} (fun (_ret:t_Option'1) ->  [ &_103 <- _ret ] s1)
+      [ s0 = checked_duration_since {greater_instant} {instant} (fun (_ret: t_Option'1) -> [ &_103 <- _ret ] s1)
       | s1 = bb49 ]
-    
-    | bb49 = s0 [ s0 = is_some {_103} (fun (_ret:bool) ->  [ &_101 <- _ret ] s1) | s1 = bb50 ] 
-    | bb50 = any [ br0 -> {_101 = false} (! bb52) | br1 -> {_101} (! bb51) ] 
+    | bb49 = s0 [ s0 = is_some {_103} (fun (_ret: bool) -> [ &_101 <- _ret ] s1) | s1 = bb50 ]
+    | bb50 = any [ br0 -> {_101 = false} (! bb52) | br1 -> {_101} (! bb51) ]
     | bb51 = s0
-      [ s0 = checked_duration_since {instant} {greater_instant} (fun (_ret:t_Option'1) ->  [ &_110 <- _ret ] s1)
+      [ s0 = checked_duration_since {instant} {greater_instant} (fun (_ret: t_Option'1) -> [ &_110 <- _ret ] s1)
       | s1 = bb53 ]
-    
-    | bb53 = s0 [ s0 = is_none {_110} (fun (_ret:bool) ->  [ &_108 <- _ret ] s1) | s1 = bb54 ] 
-    | bb54 = any [ br0 -> {_108 = false} (! bb56) | br1 -> {_108} (! bb55) ] 
+    | bb53 = s0 [ s0 = is_none {_110} (fun (_ret: bool) -> [ &_108 <- _ret ] s1) | s1 = bb54 ]
+    | bb54 = any [ br0 -> {_108 = false} (! bb56) | br1 -> {_108} (! bb55) ]
     | bb55 = s0
-      [ s0 = saturating_duration_since {greater_instant} {instant} (fun (_ret:t_Duration) ->  [ &_117 <- _ret ] s1)
+      [ s0 = saturating_duration_since {greater_instant} {instant} (fun (_ret: t_Duration) -> [ &_117 <- _ret ] s1)
       | s1 = bb57 ]
-    
-    | bb57 = s0 [ s0 = gt {_117} {zero_dur} (fun (_ret:bool) ->  [ &_115 <- _ret ] s1) | s1 = bb58 ] 
-    | bb58 = any [ br0 -> {_115 = false} (! bb60) | br1 -> {_115} (! bb59) ] 
+    | bb57 = s0 [ s0 = gt {_117} {zero_dur} (fun (_ret: bool) -> [ &_115 <- _ret ] s1) | s1 = bb58 ]
+    | bb58 = any [ br0 -> {_115 = false} (! bb60) | br1 -> {_115} (! bb59) ]
     | bb59 = s0
-      [ s0 = saturating_duration_since {instant} {greater_instant} (fun (_ret:t_Duration) ->  [ &_125 <- _ret ] s1)
+      [ s0 = saturating_duration_since {instant} {greater_instant} (fun (_ret: t_Duration) -> [ &_125 <- _ret ] s1)
       | s1 = bb61 ]
-    
-    | bb61 = s0 [ s0 = eq'0 {_125} {zero_dur} (fun (_ret:bool) ->  [ &_123 <- _ret ] s1) | s1 = bb62 ] 
-    | bb62 = any [ br0 -> {_123 = false} (! bb64) | br1 -> {_123} (! bb63) ] 
+    | bb61 = s0 [ s0 = eq'0 {_125} {zero_dur} (fun (_ret: bool) -> [ &_123 <- _ret ] s1) | s1 = bb62 ]
+    | bb62 = any [ br0 -> {_123 = false} (! bb64) | br1 -> {_123} (! bb63) ]
     | bb63 = return''0 {_0}
     | bb64 = {[%#sinstant'4] false} any
     | bb60 = {[%#sinstant'5] false} any
@@ -457,7 +403,6 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
     | bb15 = {[%#sinstant'15] false} any
     | bb11 = {[%#sinstant'16] false} any
     | bb6 = {[%#sinstant'17] false} any ]
-    
     [ & _0: () = Any.any_l ()
     | & instant: t_Instant'0 = Any.any_l ()
     | & zero_dur: t_Duration = Any.any_l ()
@@ -494,6 +439,5 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
     | & _115: bool = Any.any_l ()
     | & _117: t_Duration = Any.any_l ()
     | & _123: bool = Any.any_l ()
-    | & _125: t_Duration = Any.any_l () ]
-    ) [ return''0 (result:())-> (! return' {result}) ] 
+    | & _125: t_Duration = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end

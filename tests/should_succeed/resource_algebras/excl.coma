@@ -28,34 +28,28 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
   
   function id (self: t_Resource) : t_Id
   
-  let rec id_ghost (self:t_Resource) (return'  (x:t_Id))= any
-    [ return''0 (result:t_Id)-> {[%#sresource] result = id self} (! return' {result}) ]
+  let rec id_ghost (self: t_Resource) (return' (x: t_Id)) = any
+    [ return''0 (result: t_Id) -> {[%#sresource] result = id self} (! return' {result}) ]
   
+  let rec eq (self: t_Id) (other: t_Id) (return' (x: bool)) = any
+    [ return''0 (result: bool) -> {[%#sid] result = (self = other)} (! return' {result}) ]
   
-  let rec eq (self:t_Id) (other:t_Id) (return'  (x:bool))= any
-    [ return''0 (result:bool)-> {[%#sid] result = (self = other)} (! return' {result}) ]
+  type t_Excl = { t_Excl__0: Int32.t }
   
+  type t_Option = C_None | C_Some t_Excl
   
-  type t_Excl  =
-    { t_Excl__0: Int32.t }
-  
-  type t_Option  =
-    | C_None
-    | C_Some t_Excl
-  
-  function and_then_logic (self: t_Option) (f: Map.map t_Excl t_Option) : t_Option =
-    [%#soption] match self with
+  function and_then_logic (self: t_Option) (f: Map.map t_Excl t_Option) : t_Option = [%#soption] match self with
       | C_None -> C_None
       | C_Some x -> Map.get f x
       end
   
-  function op (self: t_Excl) (_other: t_Excl) : t_Option =
-    [%#sexcl'3] C_None
+  function op (self: t_Excl) (_other: t_Excl) : t_Option = [%#sexcl'3] C_None
   
   function associative (a: t_Excl) (b: t_Excl) (c: t_Excl) : ()
   
-  axiom associative_spec: forall a: t_Excl, b: t_Excl, c: t_Excl. [%#sexcl'5] and_then_logic (op a b) (fun (ab: t_Excl) -> op ab c)
-  = and_then_logic (op b c) (fun (bc: t_Excl) -> op a bc)
+  axiom associative_spec:
+    forall a: t_Excl, b: t_Excl, c: t_Excl. [%#sexcl'5] and_then_logic (op a b) (fun (ab: t_Excl) -> op ab c)
+      = and_then_logic (op b c) (fun (bc: t_Excl) -> op a bc)
   
   function commutative (a: t_Excl) (b: t_Excl) : ()
   
@@ -63,52 +57,43 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
   
   function val' (self: t_Resource) : t_Excl
   
-  function view (self: t_Resource) : t_Excl =
-    [%#sresource'3] val' self
+  function view (self: t_Resource) : t_Excl = [%#sresource'3] val' self
   
-  function view'0 (self: MutBorrow.t t_Resource) : t_Excl =
-    [%#smodel] view self.current
+  function view'0 (self: MutBorrow.t t_Resource) : t_Excl = [%#smodel] view self.current
   
-  function view'1 (self: t_Resource) : t_Excl =
-    [%#smodel'0] view self
+  function view'1 (self: t_Resource) : t_Excl = [%#smodel'0] view self
   
-  let rec valid_shared (self:MutBorrow.t t_Resource) (other:t_Resource) (return'  (x:()))= {[@expl:valid_shared requires] [%#sresource'0] id self.current
-    = id other}
+  let rec valid_shared (self: MutBorrow.t t_Resource) (other: t_Resource) (return' (x: ())) =
+    {[@expl:valid_shared requires] [%#sresource'0] id self.current = id other}
     any
-    [ return''0 (result:())-> {[%#sresource'1] self.final = self.current}
+    [ return''0 (result: ()) -> {[%#sresource'1] self.final = self.current}
       {[%#sresource'2] op (view'0 self) (view'1 other) <> C_None}
       (! return' {result}) ]
   
+  predicate resolve (self: MutBorrow.t t_Resource) = [%#sresolve] self.final = self.current
   
-  predicate resolve (self: MutBorrow.t t_Resource) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0: MutBorrow.t t_Resource) =
-    resolve _0
+  predicate resolve'0 (_0: MutBorrow.t t_Resource) = resolve _0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec exclusivity[#"excl.rs" 6 0 6 72] (x:MutBorrow.t t_Resource) (y:t_Resource) (return'  (x'0:()))= (! bb0
-    [ bb0 = s0 [ s0 = id_ghost {x'0.current} (fun (_ret:t_Id) ->  [ &_7 <- _ret ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 = id_ghost {y'0} (fun (_ret:t_Id) ->  [ &_10 <- _ret ] s1) | s1 = bb2 ] 
-    | bb2 = s0 [ s0 = eq {_7} {_10} (fun (_ret:bool) ->  [ &_5 <- _ret ] s1) | s1 = bb3 ] 
-    | bb3 = any [ br0 -> {_5 = false} (! bb8) | br1 -> {_5} (! bb4) ] 
+  let rec exclusivity [#"excl.rs" 6 0 6 72] (x: MutBorrow.t t_Resource) (y: t_Resource) (return' (x'0: ())) = (! bb0
+    [ bb0 = s0 [ s0 = id_ghost {x'0.current} (fun (_ret: t_Id) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = id_ghost {y'0} (fun (_ret: t_Id) -> [ &_10 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = eq {_7} {_10} (fun (_ret: bool) -> [ &_5 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = any [ br0 -> {_5 = false} (! bb8) | br1 -> {_5} (! bb4) ]
     | bb4 = s0
       [ s0 = MutBorrow.borrow_final <t_Resource> {x'0.current} {MutBorrow.get_id x'0}
-          (fun (_ret:MutBorrow.t t_Resource) ->  [ &_13 <- _ret ]  [ &x'0 <- { x'0 with current = _ret.final } ] s1)
-      | s1 = valid_shared {_13} {y'0} (fun (_ret:()) ->  [ &_12 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t t_Resource) -> [ &_13 <- _ret ] [ &x'0 <- { x'0 with current = _ret.final } ] s1)
+      | s1 = valid_shared {_13} {y'0} (fun (_ret: ()) -> [ &_12 <- _ret ] s2)
       | s2 = bb5 ]
-    
     | bb5 = s0
       [ s0 = -{resolve'0 x'0}- s1
-      | s1 = any [ br0 -> {([%#sexcl] false) = false} (! bb6) | br1 -> {[%#sexcl] false} (! bb9) ]  ]
-    
+      | s1 = any [ br0 -> {([%#sexcl] false) = false} (! bb6) | br1 -> {[%#sexcl] false} (! bb9) ] ]
     | bb6 = {[%#sexcl'0] false} any
-    | bb8 = s0 [ s0 = -{resolve'0 x'0}- s1 | s1 = bb9 ] 
+    | bb8 = s0 [ s0 = -{resolve'0 x'0}- s1 | s1 = bb9 ]
     | bb9 = return''0 {_0} ]
-    
     [ & _0: () = Any.any_l ()
     | & x'0: MutBorrow.t t_Resource = x
     | & y'0: t_Resource = y
@@ -116,10 +101,8 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
     | & _7: t_Id = Any.any_l ()
     | & _10: t_Id = Any.any_l ()
     | & _12: () = Any.any_l ()
-    | & _13: MutBorrow.t t_Resource = Any.any_l () ]
-    )
-    [ return''0 (result:())-> {[@expl:exclusivity ensures #0] [%#sexcl'1] id x.current <> id y}
+    | & _13: MutBorrow.t t_Resource = Any.any_l () ])
+    [ return''0 (result: ()) -> {[@expl:exclusivity ensures #0] [%#sexcl'1] id x.current <> id y}
       {[@expl:exclusivity ensures #1] [%#sexcl'2] x.current = x.final}
       (! return' {result}) ]
-
 end

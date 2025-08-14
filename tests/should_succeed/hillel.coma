@@ -37,23 +37,17 @@ module M_hillel__right_pad [#"hillel.rs" 17 0 17 59]
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
   type t_T
   
@@ -63,114 +57,98 @@ module M_hillel__right_pad [#"hillel.rs" 17 0 17 59]
   
   axiom view_spec: forall self: t_Vec. [%#svec'4] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq t_T =
-    [%#smodel] view self.current
+  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
   
-  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq t_T =
-    [%#smodel'0] view'0 self
+  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'0] view'0 self
   
-  function view'2 (self: MutBorrow.t t_Vec) : Seq.seq t_T =
-    [%#ssnapshot] view'1 self
+  function view'2 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'1 self
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T =
-    [%#sindex] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#sindex] Seq.get (view self) ix
   
   predicate inv (_0: t_T)
   
-  predicate invariant' (self: t_T) =
-    [%#sboxed] inv self
+  predicate invariant' (self: t_T) = [%#sboxed] inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'0 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   predicate inv'1 (_0: Seq.seq t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
   
-  predicate invariant''1 (self: t_Vec) =
-    [%#svec'5] inv'1 (view self)
+  predicate invariant''1 (self: t_Vec) = [%#svec'5] inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) =
-    [%#sinvariant'0] inv'2 self
+  predicate invariant''2 (self: t_Vec) = [%#sinvariant'0] inv'2 self
   
   predicate inv'3 (_0: t_Vec)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'3 (self: t_Vec) : Seq.seq t_T =
-    [%#smodel'0] view self
+  function view'3 (self: t_Vec) : Seq.seq t_T = [%#smodel'0] view self
   
-  let rec len (self_:t_Vec) (return'  (x:UInt64.t))= {[@expl:len 'self_' type invariant] [%#svec] inv'3 self_}
+  let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] [%#svec] inv'3 self_}
     any
-    [ return''0 (result:UInt64.t)-> {[%#svec'0] UInt64.t'int result = Seq.length (view'3 self_)} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {[%#svec'0] UInt64.t'int result = Seq.length (view'3 self_)}
+      (! return' {result}) ]
   
-  
-  predicate invariant''3 (self: MutBorrow.t t_Vec) =
-    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''3 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
   predicate inv'4 (_0: MutBorrow.t t_Vec)
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'4 x]. inv'4 x = invariant''3 x
   
-  let rec push (self_:MutBorrow.t t_Vec) (v:t_T) (return'  (x:()))= {[@expl:push 'self_' type invariant] [%#svec'1] inv'4 self_}
+  let rec push (self_: MutBorrow.t t_Vec) (v: t_T) (return' (x: ())) =
+    {[@expl:push 'self_' type invariant] [%#svec'1] inv'4 self_}
     {[@expl:push 'v' type invariant] [%#svec'2] inv v}
-    any [ return''0 (result:())-> {[%#svec'3] view self_.final = Seq.snoc (view'0 self_) v} (! return' {result}) ] 
+    any [ return''0 (result: ()) -> {[%#svec'3] view self_.final = Seq.snoc (view'0 self_) v} (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_Vec) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_Vec) =
-    resolve _0
+  predicate resolve'0 (_0: MutBorrow.t t_Vec) = resolve _0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec right_pad[#"hillel.rs" 17 0 17 59] (str:MutBorrow.t t_Vec) (len'0:UInt64.t) (pad:t_T) (return'  (x:()))= {[@expl:right_pad 'str' type invariant] [%#shillel'5] inv'4 str}
+  let rec right_pad [#"hillel.rs" 17 0 17 59] (str: MutBorrow.t t_Vec) (len'0: UInt64.t) (pad: t_T) (return' (x: ())) =
+    {[@expl:right_pad 'str' type invariant] [%#shillel'5] inv'4 str}
     {[@expl:right_pad 'pad' type invariant] [%#shillel'6] inv pad}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_str <- [%#shillel] str'0 ] s1 | s1 = bb1 ] 
-    | bb1 = s0 [ s0 =  [ &old_2_0 <- str'0 ] s1 | s1 = bb2 ] 
+    [ bb0 = s0 [ s0 = [ &old_str <- [%#shillel] str'0 ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &old_2_0 <- str'0 ] s1 | s1 = bb2 ]
     | bb2 = bb2'0
       [ bb2'0 = {[@expl:mut invariant] old_2_0.final = str'0.final}
         {[@expl:loop invariant #0] [%#shillel'4] Seq.length (view'2 old_str) <= Seq.length (view'0 str'0)}
         {[@expl:loop invariant #1] [%#shillel'3] Seq.length (view'2 old_str) < UInt64.t'int len'1
-         -> Seq.length (view'0 str'0) <= UInt64.t'int len'1}
+        -> Seq.length (view'0 str'0) <= UInt64.t'int len'1}
         {[@expl:loop invariant #2] [%#shillel'2] Seq.length (view'0 str'0) > UInt64.t'int len'1
-         -> Seq.length (view'0 str'0) = Seq.length (view'2 old_str)}
+        -> Seq.length (view'0 str'0) = Seq.length (view'2 old_str)}
         {[@expl:loop invariant #3] [%#shillel'1] forall i: int. 0 <= i /\ i < Seq.length (view'2 old_str)
-         -> index_logic str'0.current i = index_logic old_str.current i}
+          -> index_logic str'0.current i = index_logic old_str.current i}
         {[@expl:loop invariant #4] [%#shillel'0] forall i: int. Seq.length (view'2 old_str) <= i
-        /\ i < Seq.length (view'0 str'0)  -> index_logic str'0.current i = pad'0}
-        (! s0) [ s0 = bb3 ] 
-        [ bb3 = s0 [ s0 = len {str'0.current} (fun (_ret:UInt64.t) ->  [ &_20 <- _ret ] s1) | s1 = bb4 ] 
+            /\ i < Seq.length (view'0 str'0) -> index_logic str'0.current i = pad'0}
+        (! s0)
+        [ s0 = bb3 ]
+        [ bb3 = s0 [ s0 = len {str'0.current} (fun (_ret: UInt64.t) -> [ &_20 <- _ret ] s1) | s1 = bb4 ]
         | bb4 = s0
-          [ s0 =  [ &_19 <- UInt64.lt _20 len'1 ] s1
-          | s1 = any [ br0 -> {_19 = false} (! bb7) | br1 -> {_19} (! bb5) ]  ]
-        
+          [ s0 = [ &_19 <- UInt64.lt _20 len'1 ] s1 | s1 = any [ br0 -> {_19 = false} (! bb7) | br1 -> {_19} (! bb5) ] ]
         | bb5 = s0
           [ s0 = {inv'2 str'0.current}
             MutBorrow.borrow_mut <t_Vec> {str'0.current}
-              (fun (_ret:MutBorrow.t t_Vec) ->
-                 [ &_24 <- _ret ] 
-                -{inv'2 _ret.final}-
-                 [ &str'0 <- { str'0 with current = _ret.final } ] 
-                s1)
-          | s1 = push {_24} {pad'0} (fun (_ret:()) ->  [ &_23 <- _ret ] s2)
-          | s2 = bb2'0 ]
-         ]
-       ]
-    
-    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'4 str'0} s1 | s1 = -{resolve'0 str'0}- s2 | s2 = return''0 {_0} ]  ]
-    
+              (fun (_ret: MutBorrow.t t_Vec) ->
+                [ &_24 <- _ret ] -{inv'2 _ret.final}-
+                [ &str'0 <- { str'0 with current = _ret.final } ] s1)
+          | s1 = push {_24} {pad'0} (fun (_ret: ()) -> [ &_23 <- _ret ] s2)
+          | s2 = bb2'0 ] ] ]
+    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'4 str'0} s1 | s1 = -{resolve'0 str'0}- s2 | s2 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & str'0: MutBorrow.t t_Vec = str
     | & len'1: UInt64.t = len'0
@@ -180,23 +158,21 @@ module M_hillel__right_pad [#"hillel.rs" 17 0 17 59]
     | & _20: UInt64.t = Any.any_l ()
     | & _23: () = Any.any_l ()
     | & _24: MutBorrow.t t_Vec = Any.any_l ()
-    | & old_2_0: MutBorrow.t t_Vec = Any.any_l () ]
-    )
-    [ return''0 (result:())-> {[@expl:right_pad ensures #0] [%#shillel'7] Seq.length (view str.final)
-      >= UInt64.t'int len'0
+    | & old_2_0: MutBorrow.t t_Vec = Any.any_l () ])
+    [ return''0 (result: ()) -> {[@expl:right_pad ensures #0] [%#shillel'7] Seq.length (view str.final)
+        >= UInt64.t'int len'0
       /\ Seq.length (view str.final) >= Seq.length (view'0 str)}
       {[@expl:right_pad ensures #1] [%#shillel'8] Seq.length (view str.final) = UInt64.t'int len'0
       \/ Seq.length (view str.final) = Seq.length (view'0 str)}
       {[@expl:right_pad ensures #2] [%#shillel'9] UInt64.t'int len'0 <= Seq.length (view'0 str)
-       -> Seq.length (view str.final) = Seq.length (view'0 str)}
+      -> Seq.length (view str.final) = Seq.length (view'0 str)}
       {[@expl:right_pad ensures #3] [%#shillel'10] UInt64.t'int len'0 > Seq.length (view'0 str)
-       -> Seq.length (view str.final) = UInt64.t'int len'0}
+      -> Seq.length (view str.final) = UInt64.t'int len'0}
       {[@expl:right_pad ensures #4] [%#shillel'11] forall i: int. 0 <= i /\ i < Seq.length (view'0 str)
-       -> index_logic str.final i = index_logic str.current i}
+        -> index_logic str.final i = index_logic str.current i}
       {[@expl:right_pad ensures #5] [%#shillel'12] forall i: int. Seq.length (view'0 str) <= i /\ i < UInt64.t'int len'0
-       -> index_logic str.final i = pad}
+        -> index_logic str.final i = pad}
       (! return' {result}) ]
-
 end
 module M_hillel__left_pad [#"hillel.rs" 34 0 34 58]
   let%span shillel = "hillel.rs" 35 18 35 35
@@ -242,23 +218,17 @@ module M_hillel__left_pad [#"hillel.rs" 34 0 34 58]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
   type t_T
   
@@ -268,125 +238,108 @@ module M_hillel__left_pad [#"hillel.rs" 34 0 34 58]
   
   axiom view_spec: forall self: t_Vec. [%#svec'7] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T =
-    [%#sindex] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#sindex] Seq.get (view self) ix
   
-  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq t_T =
-    [%#smodel] view self.current
+  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
   
-  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq t_T =
-    [%#smodel'0] view'0 self
+  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'0] view'0 self
   
-  function view'2 (self: MutBorrow.t t_Vec) : Seq.seq t_T =
-    [%#ssnapshot] view'1 self
+  function view'2 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'1 self
   
   predicate inv (_0: t_T)
   
-  predicate invariant' (self: t_T) =
-    [%#sboxed] inv self
+  predicate invariant' (self: t_T) = [%#sboxed] inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'0 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   predicate inv'1 (_0: Seq.seq t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
   
-  predicate invariant''1 (self: t_Vec) =
-    [%#svec'8] inv'1 (view self)
+  predicate invariant''1 (self: t_Vec) = [%#svec'8] inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) =
-    [%#sinvariant'0] inv'2 self
+  predicate invariant''2 (self: t_Vec) = [%#sinvariant'0] inv'2 self
   
   predicate inv'3 (_0: t_Vec)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'3 (self: t_Vec) : Seq.seq t_T =
-    [%#smodel'0] view self
+  function view'3 (self: t_Vec) : Seq.seq t_T = [%#smodel'0] view self
   
-  let rec len (self_:t_Vec) (return'  (x:UInt64.t))= {[@expl:len 'self_' type invariant] [%#svec] inv'3 self_}
+  let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] [%#svec] inv'3 self_}
     any
-    [ return''0 (result:UInt64.t)-> {[%#svec'0] UInt64.t'int result = Seq.length (view'3 self_)} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {[%#svec'0] UInt64.t'int result = Seq.length (view'3 self_)}
+      (! return' {result}) ]
   
-  
-  predicate invariant''3 (self: MutBorrow.t t_Vec) =
-    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''3 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
   predicate inv'4 (_0: MutBorrow.t t_Vec)
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'4 x]. inv'4 x = invariant''3 x
   
-  let rec insert (self_:MutBorrow.t t_Vec) (index:UInt64.t) (element:t_T) (return'  (x:()))= {[@expl:insert 'self_' type invariant] [%#svec'1] inv'4 self_}
+  let rec insert (self_: MutBorrow.t t_Vec) (index: UInt64.t) (element: t_T) (return' (x: ())) =
+    {[@expl:insert 'self_' type invariant] [%#svec'1] inv'4 self_}
     {[@expl:insert 'element' type invariant] [%#svec'2] inv element}
     any
-    [ return''0 (result:())-> {[%#svec'3] Seq.length (view self_.final) = Seq.length (view'0 self_) + 1}
+    [ return''0 (result: ()) -> {[%#svec'3] Seq.length (view self_.final) = Seq.length (view'0 self_) + 1}
       {[%#svec'4] forall i: int. 0 <= i /\ i < UInt64.t'int index
-       -> index_logic self_.final i = index_logic self_.current i}
+        -> index_logic self_.final i = index_logic self_.current i}
       {[%#svec'5] index_logic self_.final (UInt64.t'int index) = element}
       {[%#svec'6] forall i: int. UInt64.t'int index < i /\ i < Seq.length (view self_.final)
-       -> index_logic self_.final i = index_logic self_.current (i - 1)}
+        -> index_logic self_.final i = index_logic self_.current (i - 1)}
       (! return' {result}) ]
   
+  predicate resolve (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
-  predicate resolve (self: MutBorrow.t t_Vec) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0: MutBorrow.t t_Vec) =
-    resolve _0
+  predicate resolve'0 (_0: MutBorrow.t t_Vec) = resolve _0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec left_pad[#"hillel.rs" 34 0 34 58] (str:MutBorrow.t t_Vec) (len'0:UInt64.t) (pad:t_T) (return'  (x:()))= {[@expl:left_pad 'str' type invariant] [%#shillel'9] inv'4 str}
+  let rec left_pad [#"hillel.rs" 34 0 34 58] (str: MutBorrow.t t_Vec) (len'0: UInt64.t) (pad: t_T) (return' (x: ())) =
+    {[@expl:left_pad 'str' type invariant] [%#shillel'9] inv'4 str}
     {[@expl:left_pad 'pad' type invariant] [%#shillel'10] inv pad}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_str <- [%#shillel] str'0 ] s1 | s1 = bb1 ] 
-    | bb1 = s0 [ s0 =  [ &c <- [%#shillel'0] 0 ] s1 | s1 = bb2 ] 
-    | bb2 = s0 [ s0 =  [ &old_3_0 <- str'0 ] s1 | s1 = bb3 ] 
+    [ bb0 = s0 [ s0 = [ &old_str <- [%#shillel] str'0 ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &c <- [%#shillel'0] 0 ] s1 | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &old_3_0 <- str'0 ] s1 | s1 = bb3 ]
     | bb3 = bb3'0
       [ bb3'0 = {[@expl:mut invariant] old_3_0.final = str'0.final}
         {[@expl:loop invariant #0] [%#shillel'6] Seq.length (view'2 old_str) <= Seq.length (view'0 str'0)}
         {[@expl:loop invariant #1] [%#shillel'5] Seq.length (view'2 old_str) < UInt64.t'int len'1
-         -> Seq.length (view'0 str'0) <= UInt64.t'int len'1}
+        -> Seq.length (view'0 str'0) <= UInt64.t'int len'1}
         {[@expl:loop invariant #2] [%#shillel'4] Seq.length (view'0 str'0) > UInt64.t'int len'1
-         -> Seq.length (view'0 str'0) = Seq.length (view'2 old_str)}
+        -> Seq.length (view'0 str'0) = Seq.length (view'2 old_str)}
         {[@expl:loop invariant #3] [%#shillel'3] c = Seq.length (view'0 str'0) - Seq.length (view'2 old_str)}
         {[@expl:loop invariant #4] [%#shillel'2] forall i: int. c <= i /\ i < Seq.length (view'0 str'0)
-         -> index_logic str'0.current i = index_logic old_str.current (i - c)}
-        {[@expl:loop invariant #5] [%#shillel'1] forall i: int. 0 <= i /\ i < c  -> index_logic str'0.current i = pad'0}
-        (! s0) [ s0 = bb4 ] 
-        [ bb4 = s0 [ s0 = len {str'0.current} (fun (_ret:UInt64.t) ->  [ &_21 <- _ret ] s1) | s1 = bb5 ] 
+          -> index_logic str'0.current i = index_logic old_str.current (i - c)}
+        {[@expl:loop invariant #5] [%#shillel'1] forall i: int. 0 <= i /\ i < c -> index_logic str'0.current i = pad'0}
+        (! s0)
+        [ s0 = bb4 ]
+        [ bb4 = s0 [ s0 = len {str'0.current} (fun (_ret: UInt64.t) -> [ &_21 <- _ret ] s1) | s1 = bb5 ]
         | bb5 = s0
-          [ s0 =  [ &_20 <- UInt64.lt _21 len'1 ] s1
-          | s1 = any [ br0 -> {_20 = false} (! bb9) | br1 -> {_20} (! bb6) ]  ]
-        
+          [ s0 = [ &_20 <- UInt64.lt _21 len'1 ] s1 | s1 = any [ br0 -> {_20 = false} (! bb9) | br1 -> {_20} (! bb6) ] ]
         | bb6 = s0
           [ s0 = {inv'2 str'0.current}
             MutBorrow.borrow_mut <t_Vec> {str'0.current}
-              (fun (_ret:MutBorrow.t t_Vec) ->
-                 [ &_25 <- _ret ] 
-                -{inv'2 _ret.final}-
-                 [ &str'0 <- { str'0 with current = _ret.final } ] 
-                s1)
-          | s1 = insert {_25} {[%#shillel'7] (0: UInt64.t)} {pad'0} (fun (_ret:()) ->  [ &_24 <- _ret ] s2)
+              (fun (_ret: MutBorrow.t t_Vec) ->
+                [ &_25 <- _ret ] -{inv'2 _ret.final}-
+                [ &str'0 <- { str'0 with current = _ret.final } ] s1)
+          | s1 = insert {_25} {[%#shillel'7] (0: UInt64.t)} {pad'0} (fun (_ret: ()) -> [ &_24 <- _ret ] s2)
           | s2 = bb7 ]
-        
-        | bb7 = s0 [ s0 =  [ &_27 <- [%#shillel'8] 1 + c ] s1 | s1 = bb8 ] 
-        | bb8 = s0 [ s0 =  [ &c <- _27 ] s1 | s1 = bb3'0 ]  ]
-       ]
-    
-    | bb9 = s0 [ s0 = {[@expl:type invariant] inv'4 str'0} s1 | s1 = -{resolve'0 str'0}- s2 | s2 = return''0 {_0} ]  ]
-    
+        | bb7 = s0 [ s0 = [ &_27 <- [%#shillel'8] 1 + c ] s1 | s1 = bb8 ]
+        | bb8 = s0 [ s0 = [ &c <- _27 ] s1 | s1 = bb3'0 ] ] ]
+    | bb9 = s0 [ s0 = {[@expl:type invariant] inv'4 str'0} s1 | s1 = -{resolve'0 str'0}- s2 | s2 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & str'0: MutBorrow.t t_Vec = str
     | & len'1: UInt64.t = len'0
@@ -398,20 +351,18 @@ module M_hillel__left_pad [#"hillel.rs" 34 0 34 58]
     | & _24: () = Any.any_l ()
     | & _25: MutBorrow.t t_Vec = Any.any_l ()
     | & _27: int = Any.any_l ()
-    | & old_3_0: MutBorrow.t t_Vec = Any.any_l () ]
-    )
-    [ return''0 (result:())-> {[@expl:left_pad ensures #0] [%#shillel'11] Seq.length (view str.final)
-      >= UInt64.t'int len'0
+    | & old_3_0: MutBorrow.t t_Vec = Any.any_l () ])
+    [ return''0 (result: ()) -> {[@expl:left_pad ensures #0] [%#shillel'11] Seq.length (view str.final)
+        >= UInt64.t'int len'0
       /\ Seq.length (view str.final) >= Seq.length (view'0 str)}
       {[@expl:left_pad ensures #1] [%#shillel'12] Seq.length (view str.final) = UInt64.t'int len'0
       \/ Seq.length (view str.final) = Seq.length (view'0 str)}
       {[@expl:left_pad ensures #2] [%#shillel'13] forall i: int. 0 <= i
-      /\ i < Seq.length (view str.final) - Seq.length (view'0 str)  -> index_logic str.final i = pad}
+          /\ i < Seq.length (view str.final) - Seq.length (view'0 str) -> index_logic str.final i = pad}
       {[@expl:left_pad ensures #3] [%#shillel'14] forall i: int. 0 <= i /\ i < Seq.length (view'0 str)
-       -> index_logic str.final (i + (Seq.length (view str.final) - Seq.length (view'0 str)))
-      = index_logic str.current i}
+        -> index_logic str.final (i + (Seq.length (view str.final) - Seq.length (view'0 str)))
+        = index_logic str.current i}
       (! return' {result}) ]
-
 end
 module M_hillel__subset_push [#"hillel.rs" 73 0 73 37]
   let%span shillel = "hillel.rs" 72 10 72 41
@@ -428,15 +379,15 @@ module M_hillel__subset_push [#"hillel.rs" 73 0 73 37]
     [%#shillel'2] exists i: int. 0 <= i /\ i < Seq.length seq /\ Seq.get seq i = elem
   
   predicate is_subset [#"hillel.rs" 65 0 65 49] (sub: Seq.seq t_T) (sup: Seq.seq t_T) =
-    [%#shillel'1] forall i: int. 0 <= i /\ i < Seq.length sub  -> contains sup (Seq.get sub i)
+    [%#shillel'1] forall i: int. 0 <= i /\ i < Seq.length sub -> contains sup (Seq.get sub i)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant s  : Seq.seq t_T
+  constant s : Seq.seq t_T
   
-  constant elem  : t_T
+  constant elem : t_T
   
   function subset_push [#"hillel.rs" 73 0 73 37] (s'0: Seq.seq t_T) (elem'0: t_T) : ()
   
@@ -523,30 +474,25 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
     [%#shillel'21] exists i: int. 0 <= i /\ i < Seq.length seq /\ Seq.get seq i = elem
   
   predicate is_subset [#"hillel.rs" 65 0 65 49] (sub: Seq.seq t_DeepModelTy) (sup: Seq.seq t_DeepModelTy) =
-    [%#shillel'20] forall i: int. 0 <= i /\ i < Seq.length sub  -> contains sup (Seq.get sub i)
+    [%#shillel'20] forall i: int. 0 <= i /\ i < Seq.length sub -> contains sup (Seq.get sub i)
   
   function subset_push [#"hillel.rs" 73 0 73 37] (s: Seq.seq t_DeepModelTy) (elem: t_DeepModelTy) : () =
     [%#shillel'19] ()
   
-  axiom subset_push_spec: forall s: Seq.seq t_DeepModelTy, elem: t_DeepModelTy. [%#shillel'18] is_subset s (Seq.snoc s elem)
+  axiom subset_push_spec:
+    forall s: Seq.seq t_DeepModelTy, elem: t_DeepModelTy. [%#shillel'18] is_subset s (Seq.snoc s elem)
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
   type t_T
   
@@ -558,44 +504,39 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   
   function deep_model (self: t_T) : t_DeepModelTy
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T =
-    [%#sindex'0] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#sindex'0] Seq.get (view self) ix
   
   function deep_model'0 (self: t_Vec) : Seq.seq t_DeepModelTy
   
   axiom deep_model_spec: forall self: t_Vec. [%#svec'4] Seq.length (view self) = Seq.length (deep_model'0 self)
   
   axiom deep_model_spec'0: forall self: t_Vec. [%#svec'5] forall i: int. 0 <= i /\ i < Seq.length (view self)
-   -> Seq.get (deep_model'0 self) i = deep_model (index_logic self i)
+        -> Seq.get (deep_model'0 self) i = deep_model (index_logic self i)
   
-  function deep_model'1 (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy =
-    [%#smodel] deep_model'0 self.current
+  function deep_model'1 (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy = [%#smodel] deep_model'0 self.current
   
   predicate inv (_0: t_T)
   
-  predicate invariant' (self: t_T) =
-    [%#sboxed] inv self
+  predicate invariant' (self: t_T) = [%#sboxed] inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'0 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   predicate inv'1 (_0: Seq.seq t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
   
-  predicate invariant''1 (self: t_Vec) =
-    [%#svec'7] inv'1 (view self)
+  predicate invariant''1 (self: t_Vec) = [%#svec'7] inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) =
-    [%#sinvariant'0] inv'2 self
+  predicate invariant''2 (self: t_Vec) = [%#sinvariant'0] inv'2 self
   
   predicate inv'3 (_0: t_Vec)
   
@@ -607,53 +548,45 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   
   axiom view_spec'1: forall self: Slice64.slice t_T. [%#sslice'12] view'0 self = Slice64.id self
   
-  predicate invariant''3 (self: Slice64.slice t_T) =
-    [%#sslice'13] inv'1 (view'0 self)
+  predicate invariant''3 (self: Slice64.slice t_T) = [%#sslice'13] inv'1 (view'0 self)
   
   predicate inv'4 (_0: Slice64.slice t_T)
   
   axiom inv_axiom'3 [@rewrite]: forall x: Slice64.slice t_T [inv'4 x]. inv'4 x = invariant''3 x
   
-  predicate invariant''4 (self: Slice64.slice t_T) =
-    [%#sinvariant'0] inv'4 self
+  predicate invariant''4 (self: Slice64.slice t_T) = [%#sinvariant'0] inv'4 self
   
   predicate inv'5 (_0: Slice64.slice t_T)
   
   axiom inv_axiom'4 [@rewrite]: forall x: Slice64.slice t_T [inv'5 x]. inv'5 x = invariant''4 x
   
-  function view'1 (self: Slice64.slice t_T) : Seq.seq t_T =
-    [%#smodel'1] view'0 self
+  function view'1 (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel'1] view'0 self
   
-  function view'2 (self: t_Vec) : Seq.seq t_T =
-    [%#smodel'1] view self
+  function view'2 (self: t_Vec) : Seq.seq t_T = [%#smodel'1] view self
   
-  let rec deref (self_:t_Vec) (return'  (x:Slice64.slice t_T))= {[@expl:deref 'self_' type invariant] [%#svec] inv'3 self_}
+  let rec deref (self_: t_Vec) (return' (x: Slice64.slice t_T)) =
+    {[@expl:deref 'self_' type invariant] [%#svec] inv'3 self_}
     any
-    [ return''0 (result:Slice64.slice t_T)-> {inv'5 result}
+    [ return''0 (result: Slice64.slice t_T) -> {inv'5 result}
       {[%#svec'0] view'1 result = view'2 self_}
       (! return' {result}) ]
   
+  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
   
-  type t_NonNull'0  =
-    { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_Iter  =
-    { t_Iter__ptr: t_NonNull'0; t_Iter__end_or_len: Opaque.ptr; t_Iter__qy95zmarker: () }
+  type t_Iter = { t_Iter__ptr: t_NonNull'0; t_Iter__end_or_len: Opaque.ptr; t_Iter__qy95zmarker: () }
   
   function view'3 (self: t_Iter) : Slice64.slice t_T
   
-  let rec iter (self_:Slice64.slice t_T) (return'  (x:t_Iter))= {[@expl:iter 'self_' type invariant] [%#sslice] inv'5 self_}
-    any [ return''0 (result:t_Iter)-> {[%#sslice'0] view'3 result = self_} (! return' {result}) ] 
+  let rec iter (self_: Slice64.slice t_T) (return' (x: t_Iter)) =
+    {[@expl:iter 'self_' type invariant] [%#sslice] inv'5 self_}
+    any [ return''0 (result: t_Iter) -> {[%#sslice'0] view'3 result = self_} (! return' {result}) ]
   
-  let rec into_iter (self_:t_Iter) (return'  (x:t_Iter))= any
-    [ return''0 (result:t_Iter)-> {[%#siter] result = self_} (! return' {result}) ]
+  let rec into_iter (self_: t_Iter) (return' (x: t_Iter)) = any
+    [ return''0 (result: t_Iter) -> {[%#siter] result = self_} (! return' {result}) ]
   
+  function deep_model'2 (self: t_T) : t_DeepModelTy = [%#smodel'0] deep_model self
   
-  function deep_model'2 (self: t_T) : t_DeepModelTy =
-    [%#smodel'0] deep_model self
-  
-  function index_logic'0 [@inline:trivial] (self: Seq.seq t_T) (ix: int) : t_T =
-    [%#sindex] Seq.get self ix
+  function index_logic'0 [@inline:trivial] (self: Seq.seq t_T) (ix: int) : t_T = [%#sindex] Seq.get self ix
   
   function index_logic'1 [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T =
     [%#sindex'1] Seq.get (view'0 self) ix
@@ -661,22 +594,21 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
   axiom to_ref_seq_spec: forall self: Slice64.slice t_T. [%#sslice'8] Seq.length (to_ref_seq self)
-  = Seq.length (view'1 self)
+      = Seq.length (view'1 self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. [%#sslice'9] forall i: int. 0 <= i
-  /\ i < Seq.length (to_ref_seq self)  -> Seq.get (to_ref_seq self) i = index_logic'1 self i
+          /\ i < Seq.length (to_ref_seq self) -> Seq.get (to_ref_seq self) i = index_logic'1 self i
   
   predicate produces (self: t_Iter) (visited: Seq.seq t_T) (tl: t_Iter) =
     [%#sslice'1] to_ref_seq (view'3 self) = Seq.(++) visited (to_ref_seq (view'3 tl))
   
-  function produces_trans (a: t_Iter) (ab: Seq.seq t_T) (b: t_Iter) (bc: Seq.seq t_T) (c: t_Iter) : () =
-    [%#sslice'7] ()
+  function produces_trans (a: t_Iter) (ab: Seq.seq t_T) (b: t_Iter) (bc: Seq.seq t_T) (c: t_Iter) : () = [%#sslice'7] ()
   
-  axiom produces_trans_spec: forall a: t_Iter, ab: Seq.seq t_T, b: t_Iter, bc: Seq.seq t_T, c: t_Iter. ([%#sslice'4] produces a ab b)
-   -> ([%#sslice'5] produces b bc c)  -> ([%#sslice'6] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_Iter, ab: Seq.seq t_T, b: t_Iter, bc: Seq.seq t_T, c: t_Iter. ([%#sslice'4] produces a ab b)
+      -> ([%#sslice'5] produces b bc c) -> ([%#sslice'6] produces a (Seq.(++) ab bc) c)
   
-  function produces_refl (self: t_Iter) : () =
-    [%#sslice'3] ()
+  function produces_refl (self: t_Iter) : () = [%#sslice'3] ()
   
   axiom produces_refl_spec: forall self: t_Iter. [%#sslice'2] produces self (Seq.empty: Seq.seq t_T) self
   
@@ -684,161 +616,142 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_Iter [inv'6 x]. inv'6 x = true
   
-  predicate invariant''5 (self: t_T) =
-    [%#sinvariant'0] inv self
+  predicate invariant''5 (self: t_T) = [%#sinvariant'0] inv self
   
   predicate inv'7 (_0: t_T)
   
   axiom inv_axiom'6 [@rewrite]: forall x: t_T [inv'7 x]. inv'7 x = invariant''5 x
   
-  predicate invariant''6 (self: t_T) =
-    [%#sboxed] inv'7 self
+  predicate invariant''6 (self: t_T) = [%#sboxed] inv'7 self
   
   predicate inv'8 (_0: t_T)
   
   axiom inv_axiom'7 [@rewrite]: forall x: t_T [inv'8 x]. inv'8 x = invariant''6 x
   
   predicate invariant''7 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'8 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'8 (Seq.get self i)
   
   predicate inv'9 (_0: Seq.seq t_T)
   
   axiom inv_axiom'8 [@rewrite]: forall x: Seq.seq t_T [inv'9 x]. inv'9 x = invariant''7 x
   
-  type t_Option  =
-    | C_None
-    | C_Some t_T
+  type t_Option = C_None | C_Some t_T
   
   predicate inv'10 (_0: t_Option)
   
   axiom inv_axiom'9 [@rewrite]: forall x: t_Option [inv'10 x]. inv'10 x
-  = match x with
-    | C_None -> true
-    | C_Some a_0 -> inv'7 a_0
-    end
+      = match x with
+        | C_None -> true
+        | C_Some a_0 -> inv'7 a_0
+        end
   
-  predicate resolve (self: MutBorrow.t t_Iter) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t t_Iter) = [%#sresolve] self.final = self.current
   
-  function view'4 (self: MutBorrow.t t_Iter) : Slice64.slice t_T =
-    [%#smodel'2] view'3 self.current
+  function view'4 (self: MutBorrow.t t_Iter) : Slice64.slice t_T = [%#smodel'2] view'3 self.current
   
   predicate completed (self: MutBorrow.t t_Iter) =
     [%#sslice'10] resolve self /\ view'0 (view'4 self) = (Seq.empty: Seq.seq t_T)
   
-  let rec next (self_:MutBorrow.t t_Iter) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {inv'10 result}
+  let rec next (self_: MutBorrow.t t_Iter) (return' (x: t_Option)) = any
+    [ return''0 (result: t_Option) -> {inv'10 result}
       {[%#siter'0] match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return' {result}) ]
   
+  predicate resolve'0 (_0: MutBorrow.t t_Iter) = resolve _0
   
-  predicate resolve'0 (_0: MutBorrow.t t_Iter) =
-    resolve _0
-  
-  let rec v_Some (input:t_Option) (ret  (field_0:t_T))= any
-    [ good (field_0:t_T)-> {C_Some field_0 = input} (! ret {field_0})
+  let rec v_Some (input: t_Option) (ret (field_0: t_T)) = any
+    [ good (field_0: t_T) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_T [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  
-  predicate invariant''8 (self: t_T) =
-    [%#sinvariant'0] inv'7 self
+  predicate invariant''8 (self: t_T) = [%#sinvariant'0] inv'7 self
   
   predicate inv'11 (_0: t_T)
   
   axiom inv_axiom'10 [@rewrite]: forall x: t_T [inv'11 x]. inv'11 x = invariant''8 x
   
-  function deep_model'3 (self: t_T) : t_DeepModelTy =
-    [%#smodel'0] deep_model'2 self
+  function deep_model'3 (self: t_T) : t_DeepModelTy = [%#smodel'0] deep_model'2 self
   
-  let rec eq (self_:t_T) (rhs:t_T) (return'  (x:bool))= {[@expl:eq 'self_' type invariant] [%#scmp] inv'11 self_}
+  let rec eq (self_: t_T) (rhs: t_T) (return' (x: bool)) = {[@expl:eq 'self_' type invariant] [%#scmp] inv'11 self_}
     {[@expl:eq 'rhs' type invariant] [%#scmp'0] inv'11 rhs}
     any
-    [ return''0 (result:bool)-> {[%#scmp'1] result = (deep_model'3 self_ = deep_model'3 rhs)} (! return' {result}) ]
-  
+    [ return''0 (result: bool) -> {[%#scmp'1] result = (deep_model'3 self_ = deep_model'3 rhs)} (! return' {result}) ]
   
   predicate resolve'1 (_0: t_T)
   
-  predicate invariant''9 (self: MutBorrow.t t_Vec) =
-    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''9 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
   predicate inv'12 (_0: MutBorrow.t t_Vec)
   
   axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'12 x]. inv'12 x = invariant''9 x
   
-  predicate resolve'2 (self: MutBorrow.t t_Vec) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'2 (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
-  predicate resolve'3 (_0: MutBorrow.t t_Vec) =
-    resolve'2 _0
+  predicate resolve'3 (_0: MutBorrow.t t_Vec) = resolve'2 _0
   
   predicate is_unique [#"hillel.rs" 51 0 51 34] (s: Seq.seq t_DeepModelTy) =
     [%#shillel'22] forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s
-     -> Seq.get s i = Seq.get s j  -> i = j
+      -> Seq.get s i = Seq.get s j -> i = j
   
-  function view'5 (self: MutBorrow.t t_Vec) : Seq.seq t_T =
-    [%#smodel'2] view self.current
+  function view'5 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'2] view self.current
   
-  let rec push (self_:MutBorrow.t t_Vec) (v:t_T) (return'  (x:()))= {[@expl:push 'self_' type invariant] [%#svec'1] inv'12 self_}
+  let rec push (self_: MutBorrow.t t_Vec) (v: t_T) (return' (x: ())) =
+    {[@expl:push 'self_' type invariant] [%#svec'1] inv'12 self_}
     {[@expl:push 'v' type invariant] [%#svec'2] inv v}
-    any [ return''0 (result:())-> {[%#svec'3] view self_.final = Seq.snoc (view'5 self_) v} (! return' {result}) ] 
+    any [ return''0 (result: ()) -> {[%#svec'3] view self_.final = Seq.snoc (view'5 self_) v} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec insert_unique[#"hillel.rs" 80 0 80 62] (vec:MutBorrow.t t_Vec) (elem:t_T) (return'  (x:()))= {[@expl:insert_unique 'vec' type invariant] [%#shillel'11] inv'12 vec}
+  let rec insert_unique [#"hillel.rs" 80 0 80 62] (vec: MutBorrow.t t_Vec) (elem: t_T) (return' (x: ())) =
+    {[@expl:insert_unique 'vec' type invariant] [%#shillel'11] inv'12 vec}
     {[@expl:insert_unique 'elem' type invariant] [%#shillel'12] inv elem}
     {[@expl:insert_unique requires] [%#shillel'13] is_unique (deep_model'1 vec)}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &_8 <- [%#shillel] () ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = [ &_8 <- [%#shillel] () ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {[@expl:assertion] [%#shillel'0] is_subset (deep_model'1 vec'0) (Seq.snoc (deep_model'1 vec'0) (deep_model elem'0))}
+      [ s0 =
+        {[@expl:assertion] [%#shillel'0] is_subset (deep_model'1 vec'0) (Seq.snoc (deep_model'1 vec'0) (deep_model elem'0))}
         s1
-      | s1 =  [ &ghost_vec <- [%#shillel'1] vec'0 ] s2
+      | s1 = [ &ghost_vec <- [%#shillel'1] vec'0 ] s2
       | s2 = bb2 ]
-    
-    | bb2 = s0 [ s0 = deref {vec'0.current} (fun (_ret:Slice64.slice t_T) ->  [ &_18 <- _ret ] s1) | s1 = bb3 ] 
-    | bb3 = s0 [ s0 = iter {_18} (fun (_ret:t_Iter) ->  [ &_16 <- _ret ] s1) | s1 = bb4 ] 
-    | bb4 = s0 [ s0 = into_iter {_16} (fun (_ret:t_Iter) ->  [ &iter'0 <- _ret ] s1) | s1 = bb5 ] 
-    | bb5 = s0 [ s0 =  [ &iter_old <- [%#shillel'2] iter'0 ] s1 | s1 = bb6 ] 
-    | bb6 = s0 [ s0 =  [ &produced <- [%#shillel'3] Seq.empty: Seq.seq t_T ] s1 | s1 = bb8 ] 
+    | bb2 = s0 [ s0 = deref {vec'0.current} (fun (_ret: Slice64.slice t_T) -> [ &_18 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = s0 [ s0 = iter {_18} (fun (_ret: t_Iter) -> [ &_16 <- _ret ] s1) | s1 = bb4 ]
+    | bb4 = s0 [ s0 = into_iter {_16} (fun (_ret: t_Iter) -> [ &iter'0 <- _ret ] s1) | s1 = bb5 ]
+    | bb5 = s0 [ s0 = [ &iter_old <- [%#shillel'2] iter'0 ] s1 | s1 = bb6 ]
+    | bb6 = s0 [ s0 = [ &produced <- [%#shillel'3] Seq.empty: Seq.seq t_T ] s1 | s1 = bb8 ]
     | bb8 = bb8'0
       [ bb8'0 = {[@expl:for invariant] [%#shillel'5] inv'9 produced}
         {[@expl:for invariant] [%#shillel'5] inv'6 iter'0}
         {[@expl:for invariant] [%#shillel'5] produces iter_old produced iter'0}
         {[@expl:loop invariant] [%#shillel'4] forall j: int. 0 <= j /\ j < Seq.length produced
-         -> deep_model'2 (index_logic'0 produced j) <> deep_model elem'0}
-        (! s0) [ s0 = bb9 ] 
+          -> deep_model'2 (index_logic'0 produced j) <> deep_model elem'0}
+        (! s0)
+        [ s0 = bb9 ]
         [ bb9 = s0
           [ s0 = MutBorrow.borrow_mut <t_Iter> {iter'0}
-              (fun (_ret:MutBorrow.t t_Iter) ->  [ &_32 <- _ret ]  [ &iter'0 <- _ret.final ] s1)
+              (fun (_ret: MutBorrow.t t_Iter) -> [ &_32 <- _ret ] [ &iter'0 <- _ret.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Iter> {_32.current} {MutBorrow.get_id _32}
-              (fun (_ret:MutBorrow.t t_Iter) ->  [ &_31 <- _ret ]  [ &_32 <- { _32 with current = _ret.final } ] s2)
-          | s2 = next {_31} (fun (_ret:t_Option) ->  [ &_30 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Iter) -> [ &_31 <- _ret ] [ &_32 <- { _32 with current = _ret.final } ] s2)
+          | s2 = next {_31} (fun (_ret: t_Option) -> [ &_30 <- _ret ] s3)
           | s3 = bb10 ]
-        
         | bb10 = s0
           [ s0 = -{resolve'0 _32}- s1
-          | s1 = any [ br0 -> {_30 = C_None} (! bb13) | br1 (x0:t_T)-> {_30 = C_Some x0} (! bb14) ]  ]
-        
+          | s1 = any [ br0 -> {_30 = C_None} (! bb13) | br1 (x0: t_T) -> {_30 = C_Some x0} (! bb14) ] ]
         | bb14 = s0
-          [ s0 = v_Some {_30} (fun (r0:t_T) ->  [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 =  [ &_35 <- [%#shillel'6] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = v_Some {_30} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_35 <- [%#shillel'6] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb15 ]
-        
         | bb15 = s0
-          [ s0 =  [ &produced <- _35 ] s1
-          | s1 =  [ &e <- __creusot_proc_iter_elem ] s2
+          [ s0 = [ &produced <- _35 ] s1
+          | s1 = [ &e <- __creusot_proc_iter_elem ] s2
           | s2 = {[@expl:assertion] [%#shillel'7] e = index_logic ghost_vec.current (Seq.length produced - 1)} s3
-          | s3 = eq {e} {elem'0} (fun (_ret:bool) ->  [ &_40 <- _ret ] s4)
+          | s3 = eq {e} {elem'0} (fun (_ret: bool) -> [ &_40 <- _ret ] s4)
           | s4 = bb16 ]
-        
-        | bb16 = any [ br0 -> {_40 = false} (! bb8'0) | br1 -> {_40} (! bb17) ]  ]
-       ]
-    
+        | bb16 = any [ br0 -> {_40 = false} (! bb8'0) | br1 -> {_40} (! bb17) ] ] ]
     | bb17 = s0
       [ s0 = {[@expl:type invariant] inv elem'0} s1
       | s1 = -{resolve'1 elem'0}- s2
@@ -846,23 +759,18 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
       | s3 = -{resolve'3 vec'0}- s4
       | s4 = {[@expl:assertion] [%#shillel'8] contains (deep_model'1 vec'0) (deep_model elem'0)} s5
       | s5 = bb20 ]
-    
     | bb13 = s0
       [ s0 = {[@expl:assertion] [%#shillel'9] vec'0.final = ghost_vec.final} s1
       | s1 = {[@expl:assertion] [%#shillel'10] is_unique (Seq.snoc (deep_model'1 vec'0) (deep_model elem'0))} s2
       | s2 = {inv'2 vec'0.current}
         MutBorrow.borrow_final <t_Vec> {vec'0.current} {MutBorrow.get_id vec'0}
-          (fun (_ret:MutBorrow.t t_Vec) ->
-             [ &_53 <- _ret ] 
-            -{inv'2 _ret.final}-
-             [ &vec'0 <- { vec'0 with current = _ret.final } ] 
-            s3)
-      | s3 = push {_53} {elem'0} (fun (_ret:()) ->  [ &_52 <- _ret ] s4)
+          (fun (_ret: MutBorrow.t t_Vec) ->
+            [ &_53 <- _ret ] -{inv'2 _ret.final}-
+            [ &vec'0 <- { vec'0 with current = _ret.final } ] s3)
+      | s3 = push {_53} {elem'0} (fun (_ret: ()) -> [ &_52 <- _ret ] s4)
       | s4 = bb19 ]
-    
-    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'12 vec'0} s1 | s1 = -{resolve'3 vec'0}- s2 | s2 = bb20 ] 
+    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'12 vec'0} s1 | s1 = -{resolve'3 vec'0}- s2 | s2 = bb20 ]
     | bb20 = return''0 {_0} ]
-    
     [ & _0: () = Any.any_l ()
     | & vec'0: MutBorrow.t t_Vec = vec
     | & elem'0: t_T = elem
@@ -881,14 +789,12 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
     | & e: t_T = Any.any_l ()
     | & _40: bool = Any.any_l ()
     | & _52: () = Any.any_l ()
-    | & _53: MutBorrow.t t_Vec = Any.any_l () ]
-    )
-    [ return''0 (result:())-> {[@expl:insert_unique ensures #0] [%#shillel'14] is_unique (deep_model'0 vec.final)}
+    | & _53: MutBorrow.t t_Vec = Any.any_l () ])
+    [ return''0 (result: ()) -> {[@expl:insert_unique ensures #0] [%#shillel'14] is_unique (deep_model'0 vec.final)}
       {[@expl:insert_unique ensures #1] [%#shillel'15] is_subset (deep_model'1 vec) (deep_model'0 vec.final)}
       {[@expl:insert_unique ensures #2] [%#shillel'16] is_subset (deep_model'0 vec.final) (Seq.snoc (deep_model'1 vec) (deep_model elem))}
       {[@expl:insert_unique ensures #3] [%#shillel'17] contains (deep_model'0 vec.final) (deep_model elem)}
       (! return' {result}) ]
-
 end
 module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   let%span shillel = "hillel.rs" 104 40 104 66
@@ -960,37 +866,30 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
   type t_T
   
   predicate inv (_0: t_T)
   
-  predicate invariant' (self: t_T) =
-    [%#sboxed] inv self
+  predicate invariant' (self: t_T) = [%#sboxed] inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'0 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -1002,16 +901,14 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   
   axiom view_spec: forall self: t_Vec. [%#svec'2] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate invariant''1 (self: t_Vec) =
-    [%#svec'3] inv'1 (view self)
+  predicate invariant''1 (self: t_Vec) = [%#svec'3] inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  let rec new (return'  (x:t_Vec))= any
-    [ return''0 (result:t_Vec)-> {inv'2 result} {[%#svec] Seq.length (view result) = 0} (! return' {result}) ]
-  
+  let rec new (return' (x: t_Vec)) = any
+    [ return''0 (result: t_Vec) -> {inv'2 result} {[%#svec] Seq.length (view result) = 0} (! return' {result}) ]
   
   function view'0 (self: Slice64.slice t_T) : Seq.seq t_T
   
@@ -1019,35 +916,30 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   
   axiom view_spec'1: forall self: Slice64.slice t_T. [%#sslice'4] view'0 self = Slice64.id self
   
-  predicate invariant''2 (self: Slice64.slice t_T) =
-    [%#sslice'5] inv'1 (view'0 self)
+  predicate invariant''2 (self: Slice64.slice t_T) = [%#sslice'5] inv'1 (view'0 self)
   
   predicate inv'3 (_0: Slice64.slice t_T)
   
   axiom inv_axiom'2 [@rewrite]: forall x: Slice64.slice t_T [inv'3 x]. inv'3 x = invariant''2 x
   
-  predicate invariant''3 (self: Slice64.slice t_T) =
-    [%#sinvariant'0] inv'3 self
+  predicate invariant''3 (self: Slice64.slice t_T) = [%#sinvariant'0] inv'3 self
   
   predicate inv'4 (_0: Slice64.slice t_T)
   
   axiom inv_axiom'3 [@rewrite]: forall x: Slice64.slice t_T [inv'4 x]. inv'4 x = invariant''3 x
   
-  function view'1 (self: Slice64.slice t_T) : Seq.seq t_T =
-    [%#smodel'0] view'0 self
+  function view'1 (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel'0] view'0 self
   
-  let rec len (self_:Slice64.slice t_T) (return'  (x:UInt64.t))= {[@expl:len 'self_' type invariant] [%#sslice] inv'4 self_}
+  let rec len (self_: Slice64.slice t_T) (return' (x: UInt64.t)) =
+    {[@expl:len 'self_' type invariant] [%#sslice] inv'4 self_}
     any
-    [ return''0 (result:UInt64.t)-> {[%#sslice'0] Seq.length (view'1 self_) = UInt64.t'int result}
+    [ return''0 (result: UInt64.t) -> {[%#sslice'0] Seq.length (view'1 self_) = UInt64.t'int result}
       (! return' {result}) ]
   
+  type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
-  type t_Range  =
-    { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
-  
-  let rec into_iter (self_:t_Range) (return'  (x:t_Range))= any
-    [ return''0 (result:t_Range)-> {[%#siter] result = self_} (! return' {result}) ]
-  
+  let rec into_iter (self_: t_Range) (return' (x: t_Range)) = any
+    [ return''0 (result: t_Range) -> {[%#siter] result = self_} (! return' {result}) ]
   
   type t_DeepModelTy
   
@@ -1055,7 +947,7 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
     [%#shillel'27] exists i: int. 0 <= i /\ i < Seq.length seq /\ Seq.get seq i = elem
   
   predicate is_subset [#"hillel.rs" 65 0 65 49] (sub: Seq.seq t_DeepModelTy) (sup: Seq.seq t_DeepModelTy) =
-    [%#shillel'18] forall i: int. 0 <= i /\ i < Seq.length sub  -> contains sup (Seq.get sub i)
+    [%#shillel'18] forall i: int. 0 <= i /\ i < Seq.length sub -> contains sup (Seq.get sub i)
   
   function deep_model (self: t_T) : t_DeepModelTy
   
@@ -1065,43 +957,41 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   function deep_model'0 (self: Slice64.slice t_T) : Seq.seq t_DeepModelTy
   
   axiom deep_model_spec: forall self: Slice64.slice t_T. [%#sslice'1] Seq.length (view'1 self)
-  = Seq.length (deep_model'0 self)
+      = Seq.length (deep_model'0 self)
   
   axiom deep_model_spec'0: forall self: Slice64.slice t_T. [%#sslice'2] forall i: int. 0 <= i
-  /\ i < Seq.length (deep_model'0 self)  -> Seq.get (deep_model'0 self) i = deep_model (index_logic self i)
+          /\ i < Seq.length (deep_model'0 self) -> Seq.get (deep_model'0 self) i = deep_model (index_logic self i)
   
-  function deep_model'1 (self: Slice64.slice t_T) : Seq.seq t_DeepModelTy =
-    [%#smodel] deep_model'0 self
+  function deep_model'1 (self: Slice64.slice t_T) : Seq.seq t_DeepModelTy = [%#smodel] deep_model'0 self
   
-  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : t_T =
-    [%#sindex] Seq.get (view self) ix
+  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#sindex] Seq.get (view self) ix
   
   function deep_model'2 (self: t_Vec) : Seq.seq t_DeepModelTy
   
   axiom deep_model_spec'1: forall self: t_Vec. [%#svec'0] Seq.length (view self) = Seq.length (deep_model'2 self)
   
   axiom deep_model_spec'2: forall self: t_Vec. [%#svec'1] forall i: int. 0 <= i /\ i < Seq.length (view self)
-   -> Seq.get (deep_model'2 self) i = deep_model (index_logic'0 self i)
+        -> Seq.get (deep_model'2 self) i = deep_model (index_logic'0 self i)
   
   predicate is_unique [#"hillel.rs" 51 0 51 34] (s: Seq.seq t_DeepModelTy) =
     [%#shillel'19] forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s
-     -> Seq.get s i = Seq.get s j  -> i = j
+      -> Seq.get s i = Seq.get s j -> i = j
   
-  function deep_model'3 (self: UInt64.t) : int =
-    [%#snum] UInt64.t'int self
+  function deep_model'3 (self: UInt64.t) : int = [%#snum] UInt64.t'int self
   
   predicate produces (self: t_Range) (visited: Seq.seq UInt64.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end
     /\ deep_model'3 self.t_Range__start <= deep_model'3 o.t_Range__start
-    /\ (Seq.length visited > 0  -> deep_model'3 o.t_Range__start <= deep_model'3 o.t_Range__end)
+    /\ (Seq.length visited > 0 -> deep_model'3 o.t_Range__start <= deep_model'3 o.t_Range__end)
     /\ Seq.length visited = deep_model'3 o.t_Range__start - deep_model'3 self.t_Range__start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> deep_model'3 (Seq.get visited i) = deep_model'3 self.t_Range__start + i)
+      -> deep_model'3 (Seq.get visited i) = deep_model'3 self.t_Range__start + i)
   
   function produces_trans (a: t_Range) (ab: Seq.seq UInt64.t) (b: t_Range) (bc: Seq.seq UInt64.t) (c: t_Range) : ()
   
-  axiom produces_trans_spec: forall a: t_Range, ab: Seq.seq UInt64.t, b: t_Range, bc: Seq.seq UInt64.t, c: t_Range. ([%#srange'1] produces a ab b)
-   -> ([%#srange'2] produces b bc c)  -> ([%#srange'3] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_Range, ab: Seq.seq UInt64.t, b: t_Range, bc: Seq.seq UInt64.t, c: t_Range. ([%#srange'1] produces a ab b)
+      -> ([%#srange'2] produces b bc c) -> ([%#srange'3] produces a (Seq.(++) ab bc) c)
   
   function produces_refl (self: t_Range) : ()
   
@@ -1115,75 +1005,65 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   
   axiom inv_axiom'5 [@rewrite]: forall x: Seq.seq UInt64.t [inv'6 x]. inv'6 x = true
   
-  type t_Option  =
-    | C_None
-    | C_Some UInt64.t
+  type t_Option = C_None | C_Some UInt64.t
   
-  predicate resolve (self: MutBorrow.t t_Range) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
   
   predicate completed (self: MutBorrow.t t_Range) =
     [%#srange'4] resolve self /\ deep_model'3 (self.current).t_Range__start >= deep_model'3 (self.current).t_Range__end
   
-  let rec next (self_:MutBorrow.t t_Range) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#siter'0] match result with
+  let rec next (self_: MutBorrow.t t_Range) (return' (x: t_Option)) = any
+    [ return''0 (result: t_Option) -> {[%#siter'0] match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return' {result}) ]
   
+  predicate resolve'0 (_0: MutBorrow.t t_Range) = resolve _0
   
-  predicate resolve'0 (_0: MutBorrow.t t_Range) =
-    resolve _0
-  
-  let rec v_Some (input:t_Option) (ret  (field_0:UInt64.t))= any
-    [ good (field_0:UInt64.t)-> {C_Some field_0 = input} (! ret {field_0})
+  let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
+    [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt64.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  
-  predicate invariant''4 (self: MutBorrow.t t_Vec) =
-    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''4 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
   predicate inv'7 (_0: MutBorrow.t t_Vec)
   
   axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'7 x]. inv'7 x = invariant''4 x
   
-  function deep_model'4 (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy =
-    [%#smodel'1] deep_model'2 self.current
+  function deep_model'4 (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy = [%#smodel'1] deep_model'2 self.current
   
-  let rec insert_unique (vec:MutBorrow.t t_Vec) (elem:t_T) (return'  (x:()))= {[@expl:insert_unique 'vec' type invariant] [%#shillel'20] inv'7 vec}
+  let rec insert_unique (vec: MutBorrow.t t_Vec) (elem: t_T) (return' (x: ())) =
+    {[@expl:insert_unique 'vec' type invariant] [%#shillel'20] inv'7 vec}
     {[@expl:insert_unique 'elem' type invariant] [%#shillel'21] inv elem}
     {[@expl:insert_unique requires] [%#shillel'22] is_unique (deep_model'4 vec)}
     any
-    [ return''0 (result:())-> {[%#shillel'23] is_unique (deep_model'2 vec.final)}
+    [ return''0 (result: ()) -> {[%#shillel'23] is_unique (deep_model'2 vec.final)}
       {[%#shillel'24] is_subset (deep_model'4 vec) (deep_model'2 vec.final)}
       {[%#shillel'25] is_subset (deep_model'2 vec.final) (Seq.snoc (deep_model'4 vec) (deep_model elem))}
       {[%#shillel'26] contains (deep_model'2 vec.final) (deep_model elem)}
       (! return' {result}) ]
   
+  predicate resolve'1 (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
-  predicate resolve'1 (self: MutBorrow.t t_Vec) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'2 (_0: MutBorrow.t t_Vec) =
-    resolve'1 _0
+  predicate resolve'2 (_0: MutBorrow.t t_Vec) = resolve'1 _0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec unique[#"hillel.rs" 102 0 102 56] (str:Slice64.slice t_T) (return'  (x:t_Vec))= {[@expl:unique 'str' type invariant] [%#shillel'13] inv'4 str}
+  let rec unique [#"hillel.rs" 102 0 102 56] (str: Slice64.slice t_T) (return' (x: t_Vec)) =
+    {[@expl:unique 'str' type invariant] [%#shillel'13] inv'4 str}
     (! bb0
-    [ bb0 = s0 [ s0 = new (fun (_ret:t_Vec) ->  [ &unique'0 <- _ret ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 =  [ &sub_str <- [%#shillel] Seq.empty: Seq.seq t_T ] s1 | s1 = bb2 ] 
-    | bb2 = s0 [ s0 = len {str'0} (fun (_ret:UInt64.t) ->  [ &_11 <- _ret ] s1) | s1 = bb3 ] 
+    [ bb0 = s0 [ s0 = new (fun (_ret: t_Vec) -> [ &unique'0 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &sub_str <- [%#shillel] Seq.empty: Seq.seq t_T ] s1 | s1 = bb2 ]
+    | bb2 = s0 [ s0 = len {str'0} (fun (_ret: UInt64.t) -> [ &_11 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
-      [ s0 =  [ &_10 <- { t_Range__start = ([%#shillel'0] (0: UInt64.t)); t_Range__end = _11 } ] s1
-      | s1 = into_iter {_10} (fun (_ret:t_Range) ->  [ &iter <- _ret ] s2)
+      [ s0 = [ &_10 <- { t_Range__start = ([%#shillel'0] (0: UInt64.t)); t_Range__end = _11 } ] s1
+      | s1 = into_iter {_10} (fun (_ret: t_Range) -> [ &iter <- _ret ] s2)
       | s2 = bb4 ]
-    
-    | bb4 = s0 [ s0 =  [ &iter_old <- [%#shillel'1] iter ] s1 | s1 = bb5 ] 
-    | bb5 = s0 [ s0 =  [ &produced <- [%#shillel'2] Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb7 ] 
+    | bb4 = s0 [ s0 = [ &iter_old <- [%#shillel'1] iter ] s1 | s1 = bb5 ]
+    | bb5 = s0 [ s0 = [ &produced <- [%#shillel'2] Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb7 ]
     | bb7 = bb7'0
       [ bb7'0 = {[@expl:for invariant] [%#shillel'7] inv'6 produced}
         {[@expl:for invariant] [%#shillel'7] inv'5 iter}
@@ -1192,67 +1072,58 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
         {[@expl:loop invariant #1] [%#shillel'5] is_unique (deep_model'2 unique'0)}
         {[@expl:loop invariant #2] [%#shillel'4] is_subset (deep_model'2 unique'0) (deep_model'1 str'0)}
         {[@expl:loop invariant #3] [%#shillel'3] is_subset (Seq.([..]) (deep_model'1 str'0) 0 (Seq.length produced)) (deep_model'2 unique'0)}
-        (! s0) [ s0 = bb8 ] 
+        (! s0)
+        [ s0 = bb8 ]
         [ bb8 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range> {iter}
-              (fun (_ret:MutBorrow.t t_Range) ->  [ &_28 <- _ret ]  [ &iter <- _ret.final ] s1)
+              (fun (_ret: MutBorrow.t t_Range) -> [ &_28 <- _ret ] [ &iter <- _ret.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Range> {_28.current} {MutBorrow.get_id _28}
-              (fun (_ret:MutBorrow.t t_Range) ->  [ &_27 <- _ret ]  [ &_28 <- { _28 with current = _ret.final } ] s2)
-          | s2 = next {_27} (fun (_ret:t_Option) ->  [ &_26 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Range) -> [ &_27 <- _ret ] [ &_28 <- { _28 with current = _ret.final } ] s2)
+          | s2 = next {_27} (fun (_ret: t_Option) -> [ &_26 <- _ret ] s3)
           | s3 = bb9 ]
-        
         | bb9 = s0
           [ s0 = -{resolve'0 _28}- s1
-          | s1 = any [ br0 -> {_26 = C_None} (! bb12) | br1 (x0:UInt64.t)-> {_26 = C_Some x0} (! bb13) ]  ]
-        
+          | s1 = any [ br0 -> {_26 = C_None} (! bb12) | br1 (x0: UInt64.t) -> {_26 = C_Some x0} (! bb13) ] ]
         | bb13 = s0
-          [ s0 = v_Some {_26} (fun (r0:UInt64.t) ->  [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 =  [ &_31 <- [%#shillel'8] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = v_Some {_26} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_31 <- [%#shillel'8] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb14 ]
-        
         | bb14 = s0
-          [ s0 =  [ &produced <- _31 ] s1
-          | s1 =  [ &i <- __creusot_proc_iter_elem ] s2
-          | s2 =  [ &_35 <- i ] s3
-          | s3 =  [ &_36 <- Slice64.length str'0 ] s4
-          | s4 =  [ &_37 <- UInt64.lt _35 _36 ] s5
+          [ s0 = [ &produced <- _31 ] s1
+          | s1 = [ &i <- __creusot_proc_iter_elem ] s2
+          | s2 = [ &_35 <- i ] s3
+          | s3 = [ &_36 <- Slice64.length str'0 ] s4
+          | s4 = [ &_37 <- UInt64.lt _35 _36 ] s5
           | s5 = {[@expl:index in bounds] [%#shillel'9] _37} s6
           | s6 = bb15 ]
-        
         | bb15 = s0
-          [ s0 = Slice64.get <t_T> {str'0} {_35} (fun (r:t_T) ->  [ &elem <- r ] s1)
+          [ s0 = Slice64.get <t_T> {str'0} {_35} (fun (r: t_T) -> [ &elem <- r ] s1)
           | s1 = {inv'2 unique'0}
             MutBorrow.borrow_mut <t_Vec> {unique'0}
-              (fun (_ret:MutBorrow.t t_Vec) ->  [ &_40 <- _ret ] -{inv'2 _ret.final}-  [ &unique'0 <- _ret.final ] s2)
+              (fun (_ret: MutBorrow.t t_Vec) -> [ &_40 <- _ret ] -{inv'2 _ret.final}- [ &unique'0 <- _ret.final ] s2)
           | s2 = {inv'2 _40.current}
             MutBorrow.borrow_final <t_Vec> {_40.current} {MutBorrow.get_id _40}
-              (fun (_ret:MutBorrow.t t_Vec) ->
-                 [ &_39 <- _ret ] 
-                -{inv'2 _ret.final}-
-                 [ &_40 <- { _40 with current = _ret.final } ] 
-                s3)
-          | s3 = insert_unique {_39} {elem} (fun (_ret:()) ->  [ &_38 <- _ret ] s4)
+              (fun (_ret: MutBorrow.t t_Vec) ->
+                [ &_39 <- _ret ] -{inv'2 _ret.final}-
+                [ &_40 <- { _40 with current = _ret.final } ] s3)
+          | s3 = insert_unique {_39} {elem} (fun (_ret: ()) -> [ &_38 <- _ret ] s4)
           | s4 = bb16 ]
-        
         | bb16 = s0
           [ s0 = {[@expl:type invariant] inv'7 _40} s1
           | s1 = -{resolve'2 _40}- s2
-          | s2 =  [ &_42 <- [%#shillel'10] Seq.snoc sub_str elem ] s3
+          | s2 = [ &_42 <- [%#shillel'10] Seq.snoc sub_str elem ] s3
           | s3 = bb17 ]
-        
-        | bb17 = s0 [ s0 =  [ &sub_str <- _42 ] s1 | s1 = bb7'0 ]  ]
-       ]
-    
+        | bb17 = s0 [ s0 = [ &sub_str <- _42 ] s1 | s1 = bb7'0 ] ] ]
     | bb12 = s0
-      [ s0 = {[@expl:assertion] [%#shillel'11] is_subset (Seq.([..]) (deep_model'1 str'0) 0 (Seq.length (view'1 str'0))) (deep_model'2 unique'0)}
+      [ s0 =
+        {[@expl:assertion] [%#shillel'11] is_subset (Seq.([..]) (deep_model'1 str'0) 0 (Seq.length (view'1 str'0))) (deep_model'2 unique'0)}
         s1
-      | s1 = {[@expl:assertion] [%#shillel'12] Seq.(==) (Seq.([..]) (deep_model'1 str'0) 0 (Seq.length (view'1 str'0))) (deep_model'1 str'0)}
+      | s1 =
+        {[@expl:assertion] [%#shillel'12] Seq.(==) (Seq.([..]) (deep_model'1 str'0) 0 (Seq.length (view'1 str'0))) (deep_model'1 str'0)}
         s2
-      | s2 =  [ &_0 <- unique'0 ] s3
+      | s2 = [ &_0 <- unique'0 ] s3
       | s3 = bb18 ]
-    
     | bb18 = return''0 {_0} ]
-    
     [ & _0: t_Vec = Any.any_l ()
     | & str'0: Slice64.slice t_T = str
     | & unique'0: t_Vec = Any.any_l ()
@@ -1275,14 +1146,12 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
     | & _38: () = Any.any_l ()
     | & _39: MutBorrow.t t_Vec = Any.any_l ()
     | & _40: MutBorrow.t t_Vec = Any.any_l ()
-    | & _42: Seq.seq t_T = Any.any_l () ]
-    )
-    [ return''0 (result:t_Vec)-> {[@expl:unique result type invariant] [%#shillel'14] inv'2 result}
+    | & _42: Seq.seq t_T = Any.any_l () ])
+    [ return''0 (result: t_Vec) -> {[@expl:unique result type invariant] [%#shillel'14] inv'2 result}
       {[@expl:unique ensures #0] [%#shillel'15] is_unique (deep_model'2 result)}
       {[@expl:unique ensures #1] [%#shillel'16] is_subset (deep_model'2 result) (deep_model'1 str)}
       {[@expl:unique ensures #2] [%#shillel'17] is_subset (deep_model'1 str) (deep_model'2 result)}
       (! return' {result}) ]
-
 end
 module M_hillel__sum_range [#"hillel.rs" 125 0 125 54]
   let%span shillel = "hillel.rs" 123 11 123 53
@@ -1298,23 +1167,23 @@ module M_hillel__sum_range [#"hillel.rs" 125 0 125 54]
   
   meta "select_lsinst" "all"
   
-  constant seq  : Seq.seq UInt32.t
+  constant seq : Seq.seq UInt32.t
   
-  constant from  : int
+  constant from : int
   
-  constant to'  : int
+  constant to' : int
   
   function sum_range [#"hillel.rs" 125 0 125 54] (seq'0: Seq.seq UInt32.t) (from'0: int) (to''0: int) : int
   
   goal vc_sum_range: ([%#shillel] 0 <= from /\ from <= to' /\ to' <= Seq.length seq)
-   -> (if to' - from > 0 then
-    (([@expl:sum_range requires] [%#shillel] 0 <= from + 1 /\ from + 1 <= to' /\ to' <= Seq.length seq)
-    /\ 0 <= ([%#shillel'1] to' - from) /\ ([%#shillel'1] to' - (from + 1)) < ([%#shillel'1] to' - from))
-    /\ (([%#shillel'0] sum_range seq (from + 1) to' >= 0)
-     -> ([@expl:sum_range ensures] [%#shillel'0] UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' >= 0))
-  else
-    [@expl:sum_range ensures] [%#shillel'0] 0 >= 0
-  )
+    -> (if to' - from > 0 then
+      (([@expl:sum_range requires] [%#shillel] 0 <= from + 1 /\ from + 1 <= to' /\ to' <= Seq.length seq)
+        /\ 0 <= ([%#shillel'1] to' - from) /\ ([%#shillel'1] to' - (from + 1)) < ([%#shillel'1] to' - from))
+      /\ (([%#shillel'0] sum_range seq (from + 1) to' >= 0)
+      -> ([@expl:sum_range ensures] [%#shillel'0] UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' >= 0))
+    else
+      [@expl:sum_range ensures] [%#shillel'0] 0 >= 0
+    )
 end
 module M_hillel__sum_range_split [#"hillel.rs" 137 0 137 61]
   let%span shillel = "hillel.rs" 135 11 135 63
@@ -1333,39 +1202,39 @@ module M_hillel__sum_range_split [#"hillel.rs" 137 0 137 61]
   function sum_range [#"hillel.rs" 125 0 125 54] (seq: Seq.seq UInt32.t) (from: int) (to': int) : int
   
   axiom sum_range_def: forall seq: Seq.seq UInt32.t, from: int, to': int. ([%#shillel'3] 0 <= from
-  /\ from <= to' /\ to' <= Seq.length seq)
-   -> sum_range seq from to'
-  = ([%#shillel'6] if to' - from > 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
+        /\ from <= to' /\ to' <= Seq.length seq)
+      -> sum_range seq from to'
+      = ([%#shillel'6] if to' - from > 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
   
   axiom sum_range_spec: forall seq: Seq.seq UInt32.t, from: int, to': int. ([%#shillel'3] 0 <= from
-  /\ from <= to' /\ to' <= Seq.length seq)  -> ([%#shillel'4] sum_range seq from to' >= 0)
+        /\ from <= to' /\ to' <= Seq.length seq) -> ([%#shillel'4] sum_range seq from to' >= 0)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant seq  : Seq.seq UInt32.t
+  constant seq : Seq.seq UInt32.t
   
-  constant from  : int
+  constant from : int
   
-  constant to'  : int
+  constant to' : int
   
-  constant i  : int
+  constant i : int
   
   function sum_range_split [#"hillel.rs" 137 0 137 61] (seq'0: Seq.seq UInt32.t) (from'0: int) (to''0: int) (i'0: int) : ()
   
-  
   goal vc_sum_range_split: ([%#shillel] 0 <= from /\ from <= i /\ i <= to' /\ to' <= Seq.length seq)
-   -> (if i > from then
-    (([@expl:sum_range_split requires] [%#shillel] 0 <= from + 1 /\ from + 1 <= i /\ i <= to' /\ to' <= Seq.length seq)
-    /\ 0 <= ([%#shillel'1] i - from) /\ ([%#shillel'1] i - (from + 1)) < ([%#shillel'1] i - from))
-    /\ (([%#shillel'0] sum_range seq (from + 1) to' = sum_range seq (from + 1) i + sum_range seq i to')
-     -> (let _ = sum_range_split seq (from
-    + 1) to' i in [@expl:sum_range_split ensures] [%#shillel'0] sum_range seq from to'
-    = sum_range seq from i + sum_range seq i to'))
-  else
-    [@expl:sum_range_split ensures] [%#shillel'0] sum_range seq from to' = sum_range seq from i + sum_range seq i to'
-  )
+    -> (if i > from then
+      (([@expl:sum_range_split requires] [%#shillel] 0 <= from + 1
+          /\ from + 1 <= i /\ i <= to' /\ to' <= Seq.length seq)
+        /\ 0 <= ([%#shillel'1] i - from) /\ ([%#shillel'1] i - (from + 1)) < ([%#shillel'1] i - from))
+      /\ (([%#shillel'0] sum_range seq (from + 1) to' = sum_range seq (from + 1) i + sum_range seq i to')
+      -> (let _ = sum_range_split seq (from
+      + 1) to' i in [@expl:sum_range_split ensures] [%#shillel'0] sum_range seq from to'
+      = sum_range seq from i + sum_range seq i to'))
+    else
+      [@expl:sum_range_split ensures] [%#shillel'0] sum_range seq from to' = sum_range seq from i + sum_range seq i to'
+    )
 end
 module M_hillel__score [#"hillel.rs" 147 0 147 38]
   let%span shillel = "hillel.rs" 144 11 144 35
@@ -1389,51 +1258,50 @@ module M_hillel__score [#"hillel.rs" 147 0 147 38]
   function sum_range [#"hillel.rs" 125 0 125 54] (seq: Seq.seq UInt32.t) (from: int) (to': int) : int
   
   axiom sum_range_def: forall seq: Seq.seq UInt32.t, from: int, to': int. ([%#shillel'5] 0 <= from
-  /\ from <= to' /\ to' <= Seq.length seq)
-   -> sum_range seq from to'
-  = ([%#shillel'9] if to' - from > 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
+        /\ from <= to' /\ to' <= Seq.length seq)
+      -> sum_range seq from to'
+      = ([%#shillel'9] if to' - from > 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
   
   axiom sum_range_spec: forall seq: Seq.seq UInt32.t, from: int, to': int. ([%#shillel'5] 0 <= from
-  /\ from <= to' /\ to' <= Seq.length seq)  -> ([%#shillel'6] sum_range seq from to' >= 0)
+        /\ from <= to' /\ to' <= Seq.length seq) -> ([%#shillel'6] sum_range seq from to' >= 0)
   
   function sum_range_split [#"hillel.rs" 137 0 137 61] (seq: Seq.seq UInt32.t) (from: int) (to': int) (i: int) : ()
   
   axiom sum_range_split_def: forall seq: Seq.seq UInt32.t, from: int, to': int, i: int. ([%#shillel'2] 0 <= from
-  /\ from <= i /\ i <= to' /\ to' <= Seq.length seq)
-   -> sum_range_split seq from to' i
-  = ([%#shillel'10] if i > from then let _ = sum_range_split seq (from + 1) to' i in () else ())
+        /\ from <= i /\ i <= to' /\ to' <= Seq.length seq)
+      -> sum_range_split seq from to' i
+      = ([%#shillel'10] if i > from then let _ = sum_range_split seq (from + 1) to' i in () else ())
   
   axiom sum_range_split_spec: forall seq: Seq.seq UInt32.t, from: int, to': int, i: int. ([%#shillel'2] 0 <= from
-  /\ from <= i /\ i <= to' /\ to' <= Seq.length seq)
-   -> ([%#shillel'3] sum_range seq from to' = sum_range seq from i + sum_range seq i to')
+        /\ from <= i /\ i <= to' /\ to' <= Seq.length seq)
+      -> ([%#shillel'3] sum_range seq from to' = sum_range seq from i + sum_range seq i to')
   
-  function abs_diff (self: int) (other: int) : int =
-    [%#sint] if self < other then other - self else self - other
+  function abs_diff (self: int) (other: int) : int = [%#sint] if self < other then other - self else self - other
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant seq  : Seq.seq UInt32.t
+  constant seq : Seq.seq UInt32.t
   
-  constant i  : int
+  constant i : int
   
   function score [#"hillel.rs" 147 0 147 38] (seq'0: Seq.seq UInt32.t) (i'0: int) : int
   
   goal vc_score: ([%#shillel] 0 <= i /\ i <= Seq.length seq)
-   -> ([@expl:sum_range_split requires] [%#shillel'2] 0 <= 0
-  /\ 0 <= i /\ i <= Seq.length seq /\ Seq.length seq <= Seq.length seq)
-  /\ (([%#shillel'3] sum_range seq 0 (Seq.length seq) = sum_range seq 0 i + sum_range seq i (Seq.length seq))
-   -> (let _ = sum_range_split seq 0 (Seq.length seq) i in ([@expl:sum_range requires] [%#shillel'5] 0 <= 0
-  /\ 0 <= i /\ i <= Seq.length seq)
-  /\ (([%#shillel'6] sum_range seq 0 i >= 0)
-   -> ([@expl:sum_range requires] [%#shillel'5] 0 <= i /\ i <= Seq.length seq /\ Seq.length seq <= Seq.length seq)
-  /\ (([%#shillel'6] sum_range seq i (Seq.length seq) >= 0)
-   -> (let result = abs_diff (sum_range seq 0 i) (sum_range seq i (Seq.length seq)) in ([@expl:score ensures #0] [%#shillel'0] 0
-  <= result
-  /\ result <= sum_range seq 0 (Seq.length seq))
-  && ([@expl:score ensures #1] [%#shillel'1] 0 = i \/ i = Seq.length seq
-   -> result = sum_range seq 0 (Seq.length seq)))))))
+    -> ([@expl:sum_range_split requires] [%#shillel'2] 0 <= 0
+      /\ 0 <= i /\ i <= Seq.length seq /\ Seq.length seq <= Seq.length seq)
+    /\ (([%#shillel'3] sum_range seq 0 (Seq.length seq) = sum_range seq 0 i + sum_range seq i (Seq.length seq))
+    -> (let _ = sum_range_split seq 0 (Seq.length seq) i in ([@expl:sum_range requires] [%#shillel'5] 0 <= 0
+      /\ 0 <= i /\ i <= Seq.length seq)
+    /\ (([%#shillel'6] sum_range seq 0 i >= 0)
+    -> ([@expl:sum_range requires] [%#shillel'5] 0 <= i /\ i <= Seq.length seq /\ Seq.length seq <= Seq.length seq)
+    /\ (([%#shillel'6] sum_range seq i (Seq.length seq) >= 0)
+    -> (let result = abs_diff (sum_range seq 0 i) (sum_range seq i (Seq.length seq)) in ([@expl:score ensures #0] [%#shillel'0] 0
+        <= result
+      /\ result <= sum_range seq 0 (Seq.length seq))
+    && ([@expl:score ensures #1] [%#shillel'1] 0 = i \/ i = Seq.length seq
+    -> result = sum_range seq 0 (Seq.length seq)))))))
 end
 module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   let%span shillel = "hillel.rs" 160 25 160 26
@@ -1512,27 +1380,24 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Iter  =
-    { t_Iter__ptr: t_NonNull; t_Iter__end_or_len: Opaque.ptr; t_Iter__qy95zmarker: () }
+  type t_Iter = { t_Iter__ptr: t_NonNull; t_Iter__end_or_len: Opaque.ptr; t_Iter__qy95zmarker: () }
   
   function view (self: t_Iter) : Slice64.slice UInt32.t
   
-  let rec into_iter (self_:Slice64.slice UInt32.t) (return'  (x:t_Iter))= any
-    [ return''0 (result:t_Iter)-> {[%#sslice] self_ = view result} (! return' {result}) ]
-  
+  let rec into_iter (self_: Slice64.slice UInt32.t) (return' (x: t_Iter)) = any
+    [ return''0 (result: t_Iter) -> {[%#sslice] self_ = view result} (! return' {result}) ]
   
   function sum_range [#"hillel.rs" 125 0 125 54] (seq: Seq.seq UInt32.t) (from: int) (to': int) : int
   
   axiom sum_range_def: forall seq: Seq.seq UInt32.t, from: int, to': int. ([%#shillel'24] 0 <= from
-  /\ from <= to' /\ to' <= Seq.length seq)
-   -> sum_range seq from to'
-  = ([%#shillel'27] if to' - from > 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
+        /\ from <= to' /\ to' <= Seq.length seq)
+      -> sum_range seq from to'
+      = ([%#shillel'27] if to' - from > 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
   
   axiom sum_range_spec: forall seq: Seq.seq UInt32.t, from: int, to': int. ([%#shillel'24] 0 <= from
-  /\ from <= to' /\ to' <= Seq.length seq)  -> ([%#shillel'25] sum_range seq from to' >= 0)
+        /\ from <= to' /\ to' <= Seq.length seq) -> ([%#shillel'25] sum_range seq from to' >= 0)
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -1542,8 +1407,7 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   
   axiom view_spec'0: forall self: Slice64.slice UInt32.t. [%#sslice'3] view'0 self = Slice64.id self
   
-  function view'1 (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t =
-    [%#smodel] view'0 self
+  function view'1 (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = [%#smodel] view'0 self
   
   function index_logic [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
     [%#sindex] Seq.get (view'0 self) ix
@@ -1551,10 +1415,10 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   function to_ref_seq (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t
   
   axiom to_ref_seq_spec: forall self: Slice64.slice UInt32.t. [%#sslice'10] Seq.length (to_ref_seq self)
-  = Seq.length (view'1 self)
+      = Seq.length (view'1 self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice UInt32.t. [%#sslice'11] forall i: int. 0 <= i
-  /\ i < Seq.length (to_ref_seq self)  -> Seq.get (to_ref_seq self) i = index_logic self i
+          /\ i < Seq.length (to_ref_seq self) -> Seq.get (to_ref_seq self) i = index_logic self i
   
   predicate produces (self: t_Iter) (visited: Seq.seq UInt32.t) (tl: t_Iter) =
     [%#sslice'0] to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
@@ -1562,11 +1426,11 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   function produces_trans (a: t_Iter) (ab: Seq.seq UInt32.t) (b: t_Iter) (bc: Seq.seq UInt32.t) (c: t_Iter) : () =
     [%#sslice'9] ()
   
-  axiom produces_trans_spec: forall a: t_Iter, ab: Seq.seq UInt32.t, b: t_Iter, bc: Seq.seq UInt32.t, c: t_Iter. ([%#sslice'6] produces a ab b)
-   -> ([%#sslice'7] produces b bc c)  -> ([%#sslice'8] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_Iter, ab: Seq.seq UInt32.t, b: t_Iter, bc: Seq.seq UInt32.t, c: t_Iter. ([%#sslice'6] produces a ab b)
+      -> ([%#sslice'7] produces b bc c) -> ([%#sslice'8] produces a (Seq.(++) ab bc) c)
   
-  function produces_refl (self: t_Iter) : () =
-    [%#sslice'5] ()
+  function produces_refl (self: t_Iter) : () = [%#sslice'5] ()
   
   axiom produces_refl_spec: forall self: t_Iter. [%#sslice'4] produces self (Seq.empty: Seq.seq UInt32.t) self
   
@@ -1578,85 +1442,74 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq UInt32.t [inv'0 x]. inv'0 x = true
   
-  type t_Option  =
-    | C_None
-    | C_Some UInt32.t
+  type t_Option = C_None | C_Some UInt32.t
   
-  predicate resolve (self: MutBorrow.t t_Iter) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t t_Iter) = [%#sresolve] self.final = self.current
   
-  function view'2 (self: MutBorrow.t t_Iter) : Slice64.slice UInt32.t =
-    [%#smodel'0] view self.current
+  function view'2 (self: MutBorrow.t t_Iter) : Slice64.slice UInt32.t = [%#smodel'0] view self.current
   
   predicate completed (self: MutBorrow.t t_Iter) =
     [%#sslice'12] resolve self /\ view'0 (view'2 self) = (Seq.empty: Seq.seq UInt32.t)
   
-  let rec next (self_:MutBorrow.t t_Iter) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#siter] match result with
+  let rec next (self_: MutBorrow.t t_Iter) (return' (x: t_Option)) = any
+    [ return''0 (result: t_Option) -> {[%#siter] match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return' {result}) ]
   
+  predicate resolve'0 (_0: MutBorrow.t t_Iter) = resolve _0
   
-  predicate resolve'0 (_0: MutBorrow.t t_Iter) =
-    resolve _0
-  
-  let rec v_Some (input:t_Option) (ret  (field_0:UInt32.t))= any
-    [ good (field_0:UInt32.t)-> {C_Some field_0 = input} (! ret {field_0})
+  let rec v_Some (input: t_Option) (ret (field_0: UInt32.t)) = any
+    [ good (field_0: UInt32.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  
-  let rec len (self_:Slice64.slice UInt32.t) (return'  (x:UInt64.t))= any
-    [ return''0 (result:UInt64.t)-> {[%#sslice'1] Seq.length (view'1 self_) = UInt64.t'int result}
+  let rec len (self_: Slice64.slice UInt32.t) (return' (x: UInt64.t)) = any
+    [ return''0 (result: UInt64.t) -> {[%#sslice'1] Seq.length (view'1 self_) = UInt64.t'int result}
       (! return' {result}) ]
   
+  type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
-  type t_Range  =
-    { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
-  
-  let rec into_iter'0 (self_:t_Range) (return'  (x:t_Range))= any
-    [ return''0 (result:t_Range)-> {[%#siter'0] result = self_} (! return' {result}) ]
-  
+  let rec into_iter'0 (self_: t_Range) (return' (x: t_Range)) = any
+    [ return''0 (result: t_Range) -> {[%#siter'0] result = self_} (! return' {result}) ]
   
   function sum_range_split [#"hillel.rs" 137 0 137 61] (seq: Seq.seq UInt32.t) (from: int) (to': int) (i: int) : ()
   
   axiom sum_range_split_def: forall seq: Seq.seq UInt32.t, from: int, to': int, i: int. ([%#shillel'32] 0 <= from
-  /\ from <= i /\ i <= to' /\ to' <= Seq.length seq)
-   -> sum_range_split seq from to' i
-  = ([%#shillel'35] if i > from then let _ = sum_range_split seq (from + 1) to' i in () else ())
+        /\ from <= i /\ i <= to' /\ to' <= Seq.length seq)
+      -> sum_range_split seq from to' i
+      = ([%#shillel'35] if i > from then let _ = sum_range_split seq (from + 1) to' i in () else ())
   
   axiom sum_range_split_spec: forall seq: Seq.seq UInt32.t, from: int, to': int, i: int. ([%#shillel'32] 0 <= from
-  /\ from <= i /\ i <= to' /\ to' <= Seq.length seq)
-   -> ([%#shillel'33] sum_range seq from to' = sum_range seq from i + sum_range seq i to')
+        /\ from <= i /\ i <= to' /\ to' <= Seq.length seq)
+      -> ([%#shillel'33] sum_range seq from to' = sum_range seq from i + sum_range seq i to')
   
-  function abs_diff (self: int) (other: int) : int =
-    [%#sint] if self < other then other - self else self - other
+  function abs_diff (self: int) (other: int) : int = [%#sint] if self < other then other - self else self - other
   
   function score [#"hillel.rs" 147 0 147 38] (seq: Seq.seq UInt32.t) (i: int) : int =
     [%#shillel'31] let _ = sum_range_split seq 0 (Seq.length seq) i in abs_diff (sum_range seq 0 i) (sum_range seq i (Seq.length seq))
   
   axiom score_spec: forall seq: Seq.seq UInt32.t, i: int. ([%#shillel'28] 0 <= i /\ i <= Seq.length seq)
-   -> ([%#shillel'29] 0 <= score seq i /\ score seq i <= sum_range seq 0 (Seq.length seq))
+      -> ([%#shillel'29] 0 <= score seq i /\ score seq i <= sum_range seq 0 (Seq.length seq))
   
   axiom score_spec'0: forall seq: Seq.seq UInt32.t, i: int. ([%#shillel'28] 0 <= i /\ i <= Seq.length seq)
-   -> ([%#shillel'30] 0 = i \/ i = Seq.length seq  -> score seq i = sum_range seq 0 (Seq.length seq))
+      -> ([%#shillel'30] 0 = i \/ i = Seq.length seq -> score seq i = sum_range seq 0 (Seq.length seq))
   
-  function deep_model (self: UInt64.t) : int =
-    [%#snum'0] UInt64.t'int self
+  function deep_model (self: UInt64.t) : int = [%#snum'0] UInt64.t'int self
   
   predicate produces'0 (self: t_Range) (visited: Seq.seq UInt64.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end
     /\ deep_model self.t_Range__start <= deep_model o.t_Range__start
-    /\ (Seq.length visited > 0  -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
+    /\ (Seq.length visited > 0 -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
     /\ Seq.length visited = deep_model o.t_Range__start - deep_model self.t_Range__start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> deep_model (Seq.get visited i) = deep_model self.t_Range__start + i)
+      -> deep_model (Seq.get visited i) = deep_model self.t_Range__start + i)
   
   function produces_trans'0 (a: t_Range) (ab: Seq.seq UInt64.t) (b: t_Range) (bc: Seq.seq UInt64.t) (c: t_Range) : ()
   
-  axiom produces_trans_spec'0: forall a: t_Range, ab: Seq.seq UInt64.t, b: t_Range, bc: Seq.seq UInt64.t, c: t_Range. ([%#srange'1] produces'0 a ab b)
-   -> ([%#srange'2] produces'0 b bc c)  -> ([%#srange'3] produces'0 a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec'0:
+    forall a: t_Range, ab: Seq.seq UInt64.t, b: t_Range, bc: Seq.seq UInt64.t, c: t_Range. ([%#srange'1] produces'0 a ab b)
+      -> ([%#srange'2] produces'0 b bc c) -> ([%#srange'3] produces'0 a (Seq.(++) ab bc) c)
   
   function produces_refl'0 (self: t_Range) : ()
   
@@ -1670,52 +1523,45 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   
   axiom inv_axiom'2 [@rewrite]: forall x: Seq.seq UInt64.t [inv'2 x]. inv'2 x = true
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 UInt64.t
+  type t_Option'0 = C_None'0 | C_Some'0 UInt64.t
   
-  predicate resolve'1 (self: MutBorrow.t t_Range) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'1 (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
   
   predicate completed'0 (self: MutBorrow.t t_Range) =
     [%#srange'4] resolve'1 self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
   
-  let rec next'0 (self_:MutBorrow.t t_Range) (return'  (x:t_Option'0))= any
-    [ return''0 (result:t_Option'0)-> {[%#siter] match result with
+  let rec next'0 (self_: MutBorrow.t t_Range) (return' (x: t_Option'0)) = any
+    [ return''0 (result: t_Option'0) -> {[%#siter] match result with
         | C_None'0 -> completed'0 self_
         | C_Some'0 v -> produces'0 self_.current (Seq.singleton v) self_.final
         end}
       (! return' {result}) ]
   
+  predicate resolve'2 (_0: MutBorrow.t t_Range) = resolve'1 _0
   
-  predicate resolve'2 (_0: MutBorrow.t t_Range) =
-    resolve'1 _0
-  
-  let rec v_Some'0 (input:t_Option'0) (ret  (field_0:UInt64.t))= any
-    [ good (field_0:UInt64.t)-> {C_Some'0 field_0 = input} (! ret {field_0})
+  let rec v_Some'0 (input: t_Option'0) (ret (field_0: UInt64.t)) = any
+    [ good (field_0: UInt64.t) -> {C_Some'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt64.t [C_Some'0 field_0: t_Option'0]. C_Some'0 field_0 <> input} (! {false} any) ]
   
-  
-  let rec abs_diff'0 (self_:UInt32.t) (other:UInt32.t) (return'  (x:UInt32.t))= any
-    [ return''0 (result:UInt32.t)-> {[%#snum] UInt32.t'int result = abs_diff (UInt32.t'int self_) (UInt32.t'int other)}
+  let rec abs_diff'0 (self_: UInt32.t) (other: UInt32.t) (return' (x: UInt32.t)) = any
+    [ return''0 (result: UInt32.t) -> {[%#snum] UInt32.t'int result
+      = abs_diff (UInt32.t'int self_) (UInt32.t'int other)}
       (! return' {result}) ]
-  
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec fulcrum[#"hillel.rs" 159 0 159 30] (s:Slice64.slice UInt32.t) (return'  (x:UInt64.t))= {[@expl:fulcrum requires #0] [%#shillel'20] sum_range (view'1 s) 0 (Seq.length (view'1 s))
-    <= 1000}
+  let rec fulcrum [#"hillel.rs" 159 0 159 30] (s: Slice64.slice UInt32.t) (return' (x: UInt64.t)) =
+    {[@expl:fulcrum requires #0] [%#shillel'20] sum_range (view'1 s) 0 (Seq.length (view'1 s)) <= 1000}
     {[@expl:fulcrum requires #1] [%#shillel'21] Seq.length (view'1 s) > 0}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &total <- [%#shillel] (0: UInt32.t) ] s1
-      | s1 = into_iter {s'0} (fun (_ret:t_Iter) ->  [ &iter <- _ret ] s2)
+      [ s0 = [ &total <- [%#shillel] (0: UInt32.t) ] s1
+      | s1 = into_iter {s'0} (fun (_ret: t_Iter) -> [ &iter <- _ret ] s2)
       | s2 = bb1 ]
-    
-    | bb1 = s0 [ s0 =  [ &iter_old <- [%#shillel'0] iter ] s1 | s1 = bb2 ] 
-    | bb2 = s0 [ s0 =  [ &produced <- [%#shillel'1] Seq.empty: Seq.seq UInt32.t ] s1 | s1 = bb4 ] 
+    | bb1 = s0 [ s0 = [ &iter_old <- [%#shillel'0] iter ] s1 | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &produced <- [%#shillel'1] Seq.empty: Seq.seq UInt32.t ] s1 | s1 = bb4 ]
     | bb4 = bb4'0
       [ bb4'0 = {[@expl:for invariant] [%#shillel'4] inv'0 produced}
         {[@expl:for invariant] [%#shillel'4] inv iter}
@@ -1723,48 +1569,41 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
         {[@expl:loop invariant #0] [%#shillel'3] UInt32.t'int total = sum_range (view'1 s'0) 0 (Seq.length produced)}
         {[@expl:loop invariant #1] [%#shillel'2] UInt32.t'int total
         <= sum_range (view'1 s'0) 0 (Seq.length (view'1 s'0))}
-        (! s0) [ s0 = bb5 ] 
+        (! s0)
+        [ s0 = bb5 ]
         [ bb5 = s0
           [ s0 = MutBorrow.borrow_mut <t_Iter> {iter}
-              (fun (_ret:MutBorrow.t t_Iter) ->  [ &_23 <- _ret ]  [ &iter <- _ret.final ] s1)
+              (fun (_ret: MutBorrow.t t_Iter) -> [ &_23 <- _ret ] [ &iter <- _ret.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Iter> {_23.current} {MutBorrow.get_id _23}
-              (fun (_ret:MutBorrow.t t_Iter) ->  [ &_22 <- _ret ]  [ &_23 <- { _23 with current = _ret.final } ] s2)
-          | s2 = next {_22} (fun (_ret:t_Option) ->  [ &_21 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Iter) -> [ &_22 <- _ret ] [ &_23 <- { _23 with current = _ret.final } ] s2)
+          | s2 = next {_22} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s3)
           | s3 = bb6 ]
-        
         | bb6 = s0
           [ s0 = -{resolve'0 _23}- s1
-          | s1 = any [ br0 -> {_21 = C_None} (! bb9) | br1 (x0:UInt32.t)-> {_21 = C_Some x0} (! bb10) ]  ]
-        
+          | s1 = any [ br0 -> {_21 = C_None} (! bb9) | br1 (x0: UInt32.t) -> {_21 = C_Some x0} (! bb10) ] ]
         | bb10 = s0
-          [ s0 = v_Some {_21} (fun (r0:UInt32.t) ->  [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 =  [ &_26 <- [%#shillel'5] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = v_Some {_21} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_26 <- [%#shillel'5] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb11 ]
-        
         | bb11 = s0
-          [ s0 =  [ &produced <- _26 ] s1
-          | s1 =  [ &x <- __creusot_proc_iter_elem ] s2
-          | s2 = UInt32.add {total} {x} (fun (_ret:UInt32.t) ->  [ &total <- _ret ] s3)
-          | s3 = bb4'0 ]
-         ]
-       ]
-    
+          [ s0 = [ &produced <- _26 ] s1
+          | s1 = [ &x <- __creusot_proc_iter_elem ] s2
+          | s2 = UInt32.add {total} {x} (fun (_ret: UInt32.t) -> [ &total <- _ret ] s3)
+          | s3 = bb4'0 ] ] ]
     | bb9 = s0
       [ s0 = {[@expl:assertion] [%#shillel'6] UInt32.t'int total = sum_range (view'1 s'0) 0 (Seq.length (view'1 s'0))}
         s1
-      | s1 =  [ &min_i <- [%#shillel'7] (0: UInt64.t) ] s2
-      | s2 =  [ &min_dist <- total ] s3
-      | s3 =  [ &sum <- [%#shillel'8] (0: UInt32.t) ] s4
-      | s4 = len {s'0} (fun (_ret:UInt64.t) ->  [ &_39 <- _ret ] s5)
+      | s1 = [ &min_i <- [%#shillel'7] (0: UInt64.t) ] s2
+      | s2 = [ &min_dist <- total ] s3
+      | s3 = [ &sum <- [%#shillel'8] (0: UInt32.t) ] s4
+      | s4 = len {s'0} (fun (_ret: UInt64.t) -> [ &_39 <- _ret ] s5)
       | s5 = bb12 ]
-    
     | bb12 = s0
-      [ s0 =  [ &_38 <- { t_Range__start = ([%#shillel'9] (0: UInt64.t)); t_Range__end = _39 } ] s1
-      | s1 = into_iter'0 {_38} (fun (_ret:t_Range) ->  [ &iter'0 <- _ret ] s2)
+      [ s0 = [ &_38 <- { t_Range__start = ([%#shillel'9] (0: UInt64.t)); t_Range__end = _39 } ] s1
+      | s1 = into_iter'0 {_38} (fun (_ret: t_Range) -> [ &iter'0 <- _ret ] s2)
       | s2 = bb13 ]
-    
-    | bb13 = s0 [ s0 =  [ &iter_old'0 <- [%#shillel'10] iter'0 ] s1 | s1 = bb14 ] 
-    | bb14 = s0 [ s0 =  [ &produced'0 <- [%#shillel'11] Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb16 ] 
+    | bb13 = s0 [ s0 = [ &iter_old'0 <- [%#shillel'10] iter'0 ] s1 | s1 = bb14 ]
+    | bb14 = s0 [ s0 = [ &produced'0 <- [%#shillel'11] Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb16 ]
     | bb16 = bb16'0
       [ bb16'0 = {[@expl:for invariant] [%#shillel'17] inv'2 produced'0}
         {[@expl:for invariant] [%#shillel'17] inv'1 iter'0}
@@ -1775,53 +1614,44 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
         /\ UInt64.t'int min_i < Seq.length (view'1 s'0)}
         {[@expl:loop invariant #3] [%#shillel'13] UInt32.t'int min_dist = score (view'1 s'0) (UInt64.t'int min_i)}
         {[@expl:loop invariant #4] [%#shillel'12] forall j: int. 0 <= j /\ j < Seq.length produced'0
-         -> score (view'1 s'0) (UInt64.t'int min_i) <= score (view'1 s'0) j}
-        (! s0) [ s0 = bb17 ] 
+          -> score (view'1 s'0) (UInt64.t'int min_i) <= score (view'1 s'0) j}
+        (! s0)
+        [ s0 = bb17 ]
         [ bb17 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range> {iter'0}
-              (fun (_ret:MutBorrow.t t_Range) ->  [ &_56 <- _ret ]  [ &iter'0 <- _ret.final ] s1)
+              (fun (_ret: MutBorrow.t t_Range) -> [ &_56 <- _ret ] [ &iter'0 <- _ret.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Range> {_56.current} {MutBorrow.get_id _56}
-              (fun (_ret:MutBorrow.t t_Range) ->  [ &_55 <- _ret ]  [ &_56 <- { _56 with current = _ret.final } ] s2)
-          | s2 = next'0 {_55} (fun (_ret:t_Option'0) ->  [ &_54 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Range) -> [ &_55 <- _ret ] [ &_56 <- { _56 with current = _ret.final } ] s2)
+          | s2 = next'0 {_55} (fun (_ret: t_Option'0) -> [ &_54 <- _ret ] s3)
           | s3 = bb18 ]
-        
         | bb18 = s0
           [ s0 = -{resolve'2 _56}- s1
-          | s1 = any [ br0 -> {_54 = C_None'0} (! bb21) | br1 (x0:UInt64.t)-> {_54 = C_Some'0 x0} (! bb22) ]  ]
-        
+          | s1 = any [ br0 -> {_54 = C_None'0} (! bb21) | br1 (x0: UInt64.t) -> {_54 = C_Some'0 x0} (! bb22) ] ]
         | bb22 = s0
-          [ s0 = v_Some'0 {_54} (fun (r0:UInt64.t) ->  [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
-          | s1 =  [ &_59 <- [%#shillel'18] Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
+          [ s0 = v_Some'0 {_54} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
+          | s1 = [ &_59 <- [%#shillel'18] Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
           | s2 = bb23 ]
-        
         | bb23 = s0
-          [ s0 =  [ &produced'0 <- _59 ] s1
-          | s1 =  [ &i <- __creusot_proc_iter_elem'0 ] s2
-          | s2 = UInt32.sub {total} {sum} (fun (_ret:UInt32.t) ->  [ &_64 <- _ret ] s3)
-          | s3 = abs_diff'0 {sum} {_64} (fun (_ret:UInt32.t) ->  [ &dist <- _ret ] s4)
+          [ s0 = [ &produced'0 <- _59 ] s1
+          | s1 = [ &i <- __creusot_proc_iter_elem'0 ] s2
+          | s2 = UInt32.sub {total} {sum} (fun (_ret: UInt32.t) -> [ &_64 <- _ret ] s3)
+          | s3 = abs_diff'0 {sum} {_64} (fun (_ret: UInt32.t) -> [ &dist <- _ret ] s4)
           | s4 = bb24 ]
-        
         | bb24 = s0
-          [ s0 =  [ &_68 <- UInt32.lt dist min_dist ] s1
-          | s1 = any [ br0 -> {_68 = false} (! bb27) | br1 -> {_68} (! bb25) ]  ]
-        
-        | bb25 = s0 [ s0 =  [ &min_i <- i ] s1 | s1 =  [ &min_dist <- dist ] s2 | s2 = bb27 ] 
+          [ s0 = [ &_68 <- UInt32.lt dist min_dist ] s1
+          | s1 = any [ br0 -> {_68 = false} (! bb27) | br1 -> {_68} (! bb25) ] ]
+        | bb25 = s0 [ s0 = [ &min_i <- i ] s1 | s1 = [ &min_dist <- dist ] s2 | s2 = bb27 ]
         | bb27 = s0
-          [ s0 =  [ &_74 <- i ] s1
-          | s1 =  [ &_75 <- Slice64.length s'0 ] s2
-          | s2 =  [ &_76 <- UInt64.lt _74 _75 ] s3
+          [ s0 = [ &_74 <- i ] s1
+          | s1 = [ &_75 <- Slice64.length s'0 ] s2
+          | s2 = [ &_76 <- UInt64.lt _74 _75 ] s3
           | s3 = {[@expl:index in bounds] [%#shillel'19] _76} s4
           | s4 = bb28 ]
-        
         | bb28 = s0
           [ s0 = Slice64.get <UInt32.t> {s'0} {_74}
-              (fun (r:UInt32.t) -> UInt32.add {sum} {r} (fun (_ret:UInt32.t) ->  [ &sum <- _ret ] s1))
-          | s1 = bb16'0 ]
-         ]
-       ]
-    
-    | bb21 = s0 [ s0 =  [ &_0 <- min_i ] s1 | s1 = return''0 {_0} ]  ]
-    
+              (fun (r: UInt32.t) -> UInt32.add {sum} {r} (fun (_ret: UInt32.t) -> [ &sum <- _ret ] s1))
+          | s1 = bb16'0 ] ] ]
+    | bb21 = s0 [ s0 = [ &_0 <- min_i ] s1 | s1 = return''0 {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
     | & s'0: Slice64.slice UInt32.t = s
     | & total: UInt32.t = Any.any_l ()
@@ -1853,12 +1683,10 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
     | & _68: bool = Any.any_l ()
     | & _74: UInt64.t = Any.any_l ()
     | & _75: UInt64.t = Any.any_l ()
-    | & _76: bool = Any.any_l () ]
-    )
-    [ return''0 (result:UInt64.t)-> {[@expl:fulcrum ensures #0] [%#shillel'22] 0 <= UInt64.t'int result
+    | & _76: bool = Any.any_l () ])
+    [ return''0 (result: UInt64.t) -> {[@expl:fulcrum ensures #0] [%#shillel'22] 0 <= UInt64.t'int result
       /\ UInt64.t'int result < Seq.length (view'1 s)}
       {[@expl:fulcrum ensures #1] [%#shillel'23] forall i: int. 0 <= i /\ i < Seq.length (view'1 s)
-       -> score (view'1 s) (UInt64.t'int result) <= score (view'1 s) i}
+        -> score (view'1 s) (UInt64.t'int result) <= score (view'1 s) i}
       (! return' {result}) ]
-
 end

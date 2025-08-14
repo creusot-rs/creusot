@@ -28,8 +28,7 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' (self: t_F) =
-    [%#sinvariant] inv self
+  predicate invariant' (self: t_F) = [%#sinvariant] inv self
   
   predicate inv'0 (_0: t_F)
   
@@ -54,14 +53,14 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   function fn_mut_once (self: t_F) (args: t_A) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_A, res: t_B. [%#sops'12] postcondition_once self args res
-  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
   axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'9] hist_inv self b)
-   -> ([%#sops'10] hist_inv b c)  -> ([%#sops'11] hist_inv self c)
+      -> ([%#sops'10] hist_inv b c) -> ([%#sops'11] hist_inv self c)
   
   function hist_inv_refl (self: t_F) : ()
   
@@ -69,8 +68,9 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   function postcondition_mut_hist_inv (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: t_A, res_state: t_F, res: t_B. ([%#sops'6] postcondition_mut self args res_state res)
-   -> ([%#sops'7] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_A, res_state: t_F, res: t_B. ([%#sops'6] postcondition_mut self args res_state res)
+      -> ([%#sops'7] hist_inv self res_state)
   
   function fn_hist_inv (self: t_F) (res_state: t_F) : ()
   
@@ -81,32 +81,32 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   function fn_once (self: t_F) (args: t_A) (res: t_B) : ()
   
   axiom fn_once_spec: forall self: t_F, args: t_A, res: t_B. [%#sops'4] postcondition_once self args res
-  = (postcondition self args res /\ resolve self)
+      = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
-  axiom fn_mut_spec: forall self: t_F, args: t_A, res_state: t_F, res: t_B. [%#sops'3] postcondition_mut self args res_state res
-  = (postcondition self args res /\ self = res_state)
+  axiom fn_mut_spec:
+    forall self: t_F, args: t_A, res_state: t_F, res: t_B. [%#sops'3] postcondition_mut self args res_state res
+      = (postcondition self args res /\ self = res_state)
   
-  let rec call (self_:t_F) (arg:t_A) (return'  (x:t_B))= {[@expl:call 'self_' type invariant] [%#sops] inv'0 self_}
+  let rec call (self_: t_F) (arg: t_A) (return' (x: t_B)) = {[@expl:call 'self_' type invariant] [%#sops] inv'0 self_}
     {[@expl:call 'arg' type invariant] [%#sops'0] inv'2 arg}
     {[@expl:call requires] [%#sops'1] precondition self_ arg}
-    any [ return''0 (result:t_B)-> {inv'3 result} {[%#sops'2] postcondition self_ arg result} (! return' {result}) ] 
+    any [ return''0 (result: t_B) -> {inv'3 result} {[%#sops'2] postcondition self_ arg result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec generic_closure[#"04_generic_closure.rs" 5 0 5 56] (f:t_F) (a:t_A) (return'  (x:t_B))= {[@expl:generic_closure 'f' type invariant] [%#s04_generic_closure] inv f}
+  let rec generic_closure [#"04_generic_closure.rs" 5 0 5 56] (f: t_F) (a: t_A) (return' (x: t_B)) =
+    {[@expl:generic_closure 'f' type invariant] [%#s04_generic_closure] inv f}
     {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure'0] inv'1 a}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &_4 <- a'0 ] s1 | s1 = call {f'0} {_4} (fun (_ret:t_B) ->  [ &_0 <- _ret ] s2) | s2 = bb1 ] 
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb4 ] 
-    | bb4 = return''0 {_0} ]
-     [ & _0: t_B = Any.any_l () | & f'0: t_F = f | & a'0: t_A = a | & _4: t_A = Any.any_l () ] )
-    [ return''0 (result:t_B)-> {[@expl:generic_closure result type invariant] [%#s04_generic_closure'1] inv'3 result}
+    [ bb0 = s0 [ s0 = [ &_4 <- a'0 ] s1 | s1 = call {f'0} {_4} (fun (_ret: t_B) -> [ &_0 <- _ret ] s2) | s2 = bb1 ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb4 ]
+    | bb4 = return''0 {_0} ] [ & _0: t_B = Any.any_l () | & f'0: t_F = f | & a'0: t_A = a | & _4: t_A = Any.any_l () ])
+    [ return''0 (result: t_B) -> {[@expl:generic_closure result type invariant] [%#s04_generic_closure'1] inv'3 result}
       (! return' {result}) ]
-
 end
 module M_04_generic_closure__mapper [#"04_generic_closure.rs" 9 0 9 22]
   let%span s04_generic_closure = "04_generic_closure.rs" 9 17 9 18
@@ -121,25 +121,24 @@ module M_04_generic_closure__mapper [#"04_generic_closure.rs" 9 0 9 22]
   
   predicate resolve (_0: t_A)
   
-  let rec closure0[#"04_generic_closure.rs" 10 28 10 32] [@coma:extspec] (self:()) (_a:t_A) (return'  (x:()))= bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv _a'0} s1 | s1 = -{resolve _a'0}- s2 | s2 = bb1 ] 
-    | bb1 = return' {_0} ]
-     [ & _0: () = Any.any_l () | & _a'0: t_A = _a ] 
+  let rec closure0 [#"04_generic_closure.rs" 10 28 10 32] [@coma:extspec] (self: ()) (_a: t_A) (return' (x: ())) = bb0
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv _a'0} s1 | s1 = -{resolve _a'0}- s2 | s2 = bb1 ]
+    | bb1 = return' {_0} ] [ & _0: () = Any.any_l () | & _a'0: t_A = _a ]
   
-  let rec generic_closure (f:()) (a:t_A) (return'  (x:()))= {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure'1] inv a}
-    any [ return''0 (result:())-> (! return' {result}) ] 
+  let rec generic_closure (f: ()) (a: t_A) (return' (x: ())) =
+    {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure'1] inv a}
+    any [ return''0 (result: ()) -> (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec mapper[#"04_generic_closure.rs" 9 0 9 22] (x:t_A) (return'  (x'0:()))= {[@expl:mapper 'x' type invariant] [%#s04_generic_closure] inv x}
+  let rec mapper [#"04_generic_closure.rs" 9 0 9 22] (x: t_A) (return' (x'0: ())) =
+    {[@expl:mapper 'x' type invariant] [%#s04_generic_closure] inv x}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_3 <- () ] s1 | s1 = generic_closure {_3} {x'0} (fun (_ret:()) ->  [ &_2 <- _ret ] s2) | s2 = bb2 ]
-    
+      [ s0 = [ &_3 <- () ] s1 | s1 = generic_closure {_3} {x'0} (fun (_ret: ()) -> [ &_2 <- _ret ] s2) | s2 = bb2 ]
     | bb2 = return''0 {_0} ]
-     [ & _0: () = Any.any_l () | & x'0: t_A = x | & _2: () = Any.any_l () | & _3: () = Any.any_l () ] )
-    [ return''0 (result:())-> (! return' {result}) ]
-
+    [ & _0: () = Any.any_l () | & x'0: t_A = x | & _2: () = Any.any_l () | & _3: () = Any.any_l () ])
+    [ return''0 (result: ()) -> (! return' {result}) ]
 end

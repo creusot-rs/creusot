@@ -284,7 +284,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
         block.body = block.body.black_box();
     }
 
-    let inner = Expr::Defn(block.body.boxed(), true, defns);
+    let inner = block.body.boxed().where_(defns);
     block.body = Expr::Defn(
         Expr::var(block.prototype.name).boxed(),
         true,

@@ -57,23 +57,17 @@ module M_08_haystack__search [#"08_haystack.rs" 22 0 22 60]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -81,69 +75,66 @@ module M_08_haystack__search [#"08_haystack.rs" 22 0 22 60]
   
   axiom view_spec: forall self: t_Vec. [%#svec'2] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 (self: t_Vec) : Seq.seq UInt8.t =
-    [%#smodel] view self
+  function view'0 (self: t_Vec) : Seq.seq UInt8.t = [%#smodel] view self
   
-  let rec len (self_:t_Vec) (return'  (x:UInt64.t))= any
-    [ return''0 (result:UInt64.t)-> {[%#svec] UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
+  let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
+    [ return''0 (result: UInt64.t) -> {[%#svec] UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
   
-  
-  type t_RangeInclusive  =
-    { t_RangeInclusive__start: UInt64.t; t_RangeInclusive__end: UInt64.t; t_RangeInclusive__exhausted: bool }
+  type t_RangeInclusive = {
+    t_RangeInclusive__start: UInt64.t;
+    t_RangeInclusive__end: UInt64.t;
+    t_RangeInclusive__exhausted: bool }
   
   function start_log (self: t_RangeInclusive) : UInt64.t
   
   function end_log (self: t_RangeInclusive) : UInt64.t
   
-  function deep_model (self: UInt64.t) : int =
-    [%#snum] UInt64.t'int self
+  function deep_model (self: UInt64.t) : int = [%#snum] UInt64.t'int self
   
   predicate is_empty_log (self: t_RangeInclusive)
   
   axiom is_empty_log_spec: forall self: t_RangeInclusive. [%#sops'2] not is_empty_log self
-   -> deep_model (start_log self) <= deep_model (end_log self)
+      -> deep_model (start_log self) <= deep_model (end_log self)
   
-  let rec new (start:UInt64.t) (end':UInt64.t) (return'  (x:t_RangeInclusive))= any
-    [ return''0 (result:t_RangeInclusive)-> {[%#sops] start_log result = start}
+  let rec new (start: UInt64.t) (end': UInt64.t) (return' (x: t_RangeInclusive)) = any
+    [ return''0 (result: t_RangeInclusive) -> {[%#sops] start_log result = start}
       {[%#sops'0] end_log result = end'}
-      {[%#sops'1] deep_model start <= deep_model end'  -> not is_empty_log result}
+      {[%#sops'1] deep_model start <= deep_model end' -> not is_empty_log result}
       (! return' {result}) ]
   
+  let rec into_iter (self_: t_RangeInclusive) (return' (x: t_RangeInclusive)) = any
+    [ return''0 (result: t_RangeInclusive) -> {[%#siter] result = self_} (! return' {result}) ]
   
-  let rec into_iter (self_:t_RangeInclusive) (return'  (x:t_RangeInclusive))= any
-    [ return''0 (result:t_RangeInclusive)-> {[%#siter] result = self_} (! return' {result}) ]
-  
-  
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt8.t =
-    [%#sindex] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt8.t = [%#sindex] Seq.get (view self) ix
   
   predicate match_at [#"08_haystack.rs" 8 0 8 81] (needle: t_Vec) (haystack: t_Vec) (pos: int) (len'0: int) =
     [%#s08_haystack'15] len'0 <= Seq.length (view'0 needle)
     /\ pos <= Seq.length (view'0 haystack) - len'0
-    /\ (forall i: int. 0 <= i /\ i < len'0  -> index_logic needle i = index_logic haystack (pos + i))
+    /\ (forall i: int. 0 <= i /\ i < len'0 -> index_logic needle i = index_logic haystack (pos + i))
   
-  function range_inclusive_len (r: t_RangeInclusive) : int =
-    [%#srange'8] if is_empty_log r then 0 else deep_model (end_log r) - deep_model (start_log r) + 1
+  function range_inclusive_len (r: t_RangeInclusive) : int = [%#srange'8] if is_empty_log r then
+      0
+    else
+      deep_model (end_log r) - deep_model (start_log r) + 1
+  
   
   axiom range_inclusive_len_spec: forall r: t_RangeInclusive. [%#srange'7] is_empty_log r = (range_inclusive_len r = 0)
   
   predicate produces (self: t_RangeInclusive) (visited: Seq.seq UInt64.t) (o: t_RangeInclusive) =
     [%#srange] Seq.length visited = range_inclusive_len self - range_inclusive_len o
-    /\ (is_empty_log self  -> is_empty_log o)
+    /\ (is_empty_log self -> is_empty_log o)
     /\ (is_empty_log o \/ end_log self = end_log o)
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> deep_model (Seq.get visited i) = deep_model (start_log self) + i)
+      -> deep_model (Seq.get visited i) = deep_model (start_log self) + i)
   
   function produces_trans (a: t_RangeInclusive) (ab: Seq.seq UInt64.t) (b: t_RangeInclusive) (bc: Seq.seq UInt64.t) (c: t_RangeInclusive) : ()
+   = [%#srange'6] ()
   
-   =
-    [%#srange'6] ()
+  axiom produces_trans_spec:
+    forall a: t_RangeInclusive, ab: Seq.seq UInt64.t, b: t_RangeInclusive, bc: Seq.seq UInt64.t, c: t_RangeInclusive. ([%#srange'3] produces a ab b)
+      -> ([%#srange'4] produces b bc c) -> ([%#srange'5] produces a (Seq.(++) ab bc) c)
   
-  axiom produces_trans_spec: forall a: t_RangeInclusive, ab: Seq.seq UInt64.t, b: t_RangeInclusive, bc: Seq.seq UInt64.t, c: t_RangeInclusive. ([%#srange'3] produces a ab b)
-   -> ([%#srange'4] produces b bc c)  -> ([%#srange'5] produces a (Seq.(++) ab bc) c)
-  
-  function produces_refl (self: t_RangeInclusive) : () =
-    [%#srange'2] ()
+  function produces_refl (self: t_RangeInclusive) : () = [%#srange'2] ()
   
   axiom produces_refl_spec: forall self: t_RangeInclusive. [%#srange'1] produces self (Seq.empty: Seq.seq UInt64.t) self
   
@@ -155,51 +146,44 @@ module M_08_haystack__search [#"08_haystack.rs" 22 0 22 60]
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq UInt64.t [inv'0 x]. inv'0 x = true
   
-  type t_Option  =
-    | C_None
-    | C_Some UInt64.t
+  type t_Option = C_None | C_Some UInt64.t
   
   predicate completed (self: MutBorrow.t t_RangeInclusive) =
     [%#srange'9] is_empty_log self.current /\ is_empty_log self.final
   
-  let rec next (self_:MutBorrow.t t_RangeInclusive) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#siter'0] match result with
+  let rec next (self_: MutBorrow.t t_RangeInclusive) (return' (x: t_Option)) = any
+    [ return''0 (result: t_Option) -> {[%#siter'0] match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return' {result}) ]
   
+  predicate resolve (self: MutBorrow.t t_RangeInclusive) = [%#sresolve] self.final = self.current
   
-  predicate resolve (self: MutBorrow.t t_RangeInclusive) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'0 (_0: MutBorrow.t t_RangeInclusive) = resolve _0
   
-  predicate resolve'0 (_0: MutBorrow.t t_RangeInclusive) =
-    resolve _0
-  
-  let rec v_Some (input:t_Option) (ret  (field_0:UInt64.t))= any
-    [ good (field_0:UInt64.t)-> {C_Some field_0 = input} (! ret {field_0})
+  let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
+    [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt64.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
+  type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
-  type t_Range  =
-    { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
-  
-  let rec into_iter'0 (self_:t_Range) (return'  (x:t_Range))= any
-    [ return''0 (result:t_Range)-> {[%#siter] result = self_} (! return' {result}) ]
-  
+  let rec into_iter'0 (self_: t_Range) (return' (x: t_Range)) = any
+    [ return''0 (result: t_Range) -> {[%#siter] result = self_} (! return' {result}) ]
   
   predicate produces'0 (self: t_Range) (visited: Seq.seq UInt64.t) (o: t_Range) =
     [%#srange'0] self.t_Range__end = o.t_Range__end
     /\ deep_model self.t_Range__start <= deep_model o.t_Range__start
-    /\ (Seq.length visited > 0  -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
+    /\ (Seq.length visited > 0 -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
     /\ Seq.length visited = deep_model o.t_Range__start - deep_model self.t_Range__start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> deep_model (Seq.get visited i) = deep_model self.t_Range__start + i)
+      -> deep_model (Seq.get visited i) = deep_model self.t_Range__start + i)
   
   function produces_trans'0 (a: t_Range) (ab: Seq.seq UInt64.t) (b: t_Range) (bc: Seq.seq UInt64.t) (c: t_Range) : ()
   
-  axiom produces_trans_spec'0: forall a: t_Range, ab: Seq.seq UInt64.t, b: t_Range, bc: Seq.seq UInt64.t, c: t_Range. ([%#srange'11] produces'0 a ab b)
-   -> ([%#srange'12] produces'0 b bc c)  -> ([%#srange'13] produces'0 a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec'0:
+    forall a: t_Range, ab: Seq.seq UInt64.t, b: t_Range, bc: Seq.seq UInt64.t, c: t_Range. ([%#srange'11] produces'0 a ab b)
+      -> ([%#srange'12] produces'0 b bc c) -> ([%#srange'13] produces'0 a (Seq.(++) ab bc) c)
   
   function produces_refl'0 (self: t_Range) : ()
   
@@ -209,22 +193,19 @@ module M_08_haystack__search [#"08_haystack.rs" 22 0 22 60]
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Range [inv'1 x]. inv'1 x = true
   
-  predicate resolve'1 (self: MutBorrow.t t_Range) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'1 (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
   
   predicate completed'0 (self: MutBorrow.t t_Range) =
     [%#srange'14] resolve'1 self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
   
-  let rec next'0 (self_:MutBorrow.t t_Range) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#siter'0] match result with
+  let rec next'0 (self_: MutBorrow.t t_Range) (return' (x: t_Option)) = any
+    [ return''0 (result: t_Option) -> {[%#siter'0] match result with
         | C_None -> completed'0 self_
         | C_Some v -> produces'0 self_.current (Seq.singleton v) self_.final
         end}
       (! return' {result}) ]
   
-  
-  predicate resolve'2 (_0: MutBorrow.t t_Range) =
-    resolve'1 _0
+  predicate resolve'2 (_0: MutBorrow.t t_Range) = resolve'1 _0
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt8.t) =
     [%#sslice] UInt64.t'int self < Seq.length seq
@@ -232,116 +213,97 @@ module M_08_haystack__search [#"08_haystack.rs" 22 0 22 60]
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt8.t) (out: UInt8.t) =
     [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
   
-  let rec index (self_:t_Vec) (ix:UInt64.t) (return'  (x:UInt8.t))= {[@expl:index requires] [%#svec'0] in_bounds ix (view'0 self_)}
-    any [ return''0 (result:UInt8.t)-> {[%#svec'1] has_value ix (view'0 self_) result} (! return' {result}) ] 
+  let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: UInt8.t)) =
+    {[@expl:index requires] [%#svec'0] in_bounds ix (view'0 self_)}
+    any [ return''0 (result: UInt8.t) -> {[%#svec'1] has_value ix (view'0 self_) result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec search[#"08_haystack.rs" 22 0 22 60] (needle:t_Vec) (haystack:t_Vec) (return'  (x:UInt64.t))= {[@expl:search requires] [%#s08_haystack'11] Seq.length (view'0 needle)
-    >= 1
+  let rec search [#"08_haystack.rs" 22 0 22 60] (needle: t_Vec) (haystack: t_Vec) (return' (x: UInt64.t)) =
+    {[@expl:search requires] [%#s08_haystack'11] Seq.length (view'0 needle) >= 1
     /\ Seq.length (view'0 needle) <= Seq.length (view'0 haystack)}
     (! bb0
-    [ bb0 = s0 [ s0 = len {haystack'0} (fun (_ret:UInt64.t) ->  [ &_12 <- _ret ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 = len {needle'0} (fun (_ret:UInt64.t) ->  [ &_14 <- _ret ] s1) | s1 = bb2 ] 
+    [ bb0 = s0 [ s0 = len {haystack'0} (fun (_ret: UInt64.t) -> [ &_12 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = len {needle'0} (fun (_ret: UInt64.t) -> [ &_14 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = UInt64.sub {_12} {_14} (fun (_ret:UInt64.t) ->  [ &_11 <- _ret ] s1)
-      | s1 = new {[%#s08_haystack] (0: UInt64.t)} {_11} (fun (_ret:t_RangeInclusive) ->  [ &_10 <- _ret ] s2)
+      [ s0 = UInt64.sub {_12} {_14} (fun (_ret: UInt64.t) -> [ &_11 <- _ret ] s1)
+      | s1 = new {[%#s08_haystack] (0: UInt64.t)} {_11} (fun (_ret: t_RangeInclusive) -> [ &_10 <- _ret ] s2)
       | s2 = bb3 ]
-    
-    | bb3 = s0 [ s0 = into_iter {_10} (fun (_ret:t_RangeInclusive) ->  [ &iter <- _ret ] s1) | s1 = bb4 ] 
-    | bb4 = s0 [ s0 =  [ &iter_old <- [%#s08_haystack'0] iter ] s1 | s1 = bb5 ] 
-    | bb5 = s0 [ s0 =  [ &produced <- [%#s08_haystack'1] Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb7 ] 
+    | bb3 = s0 [ s0 = into_iter {_10} (fun (_ret: t_RangeInclusive) -> [ &iter <- _ret ] s1) | s1 = bb4 ]
+    | bb4 = s0 [ s0 = [ &iter_old <- [%#s08_haystack'0] iter ] s1 | s1 = bb5 ]
+    | bb5 = s0 [ s0 = [ &produced <- [%#s08_haystack'1] Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb7 ]
     | bb7 = bb7'0
       [ bb7'0 = {[@expl:for invariant] [%#s08_haystack'3] inv'0 produced}
         {[@expl:for invariant] [%#s08_haystack'3] inv iter}
         {[@expl:for invariant] [%#s08_haystack'3] produces iter_old produced iter}
         {[@expl:loop invariant] [%#s08_haystack'2] forall k: int. 0 <= k /\ k < Seq.length produced
-         -> not match_at needle'0 haystack'0 k (Seq.length (view'0 needle'0))}
-        (! s0) [ s0 = bb8 ] 
+          -> not match_at needle'0 haystack'0 k (Seq.length (view'0 needle'0))}
+        (! s0)
+        [ s0 = bb8 ]
         [ bb8 = s0
           [ s0 = MutBorrow.borrow_mut <t_RangeInclusive> {iter}
-              (fun (_ret:MutBorrow.t t_RangeInclusive) ->  [ &_28 <- _ret ]  [ &iter <- _ret.final ] s1)
+              (fun (_ret: MutBorrow.t t_RangeInclusive) -> [ &_28 <- _ret ] [ &iter <- _ret.final ] s1)
           | s1 = MutBorrow.borrow_final <t_RangeInclusive> {_28.current} {MutBorrow.get_id _28}
-              (fun (_ret:MutBorrow.t t_RangeInclusive) ->
-                 [ &_27 <- _ret ] 
-                 [ &_28 <- { _28 with current = _ret.final } ] 
-                s2)
-          | s2 = next {_27} (fun (_ret:t_Option) ->  [ &_26 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_RangeInclusive) ->
+                [ &_27 <- _ret ] [ &_28 <- { _28 with current = _ret.final } ] s2)
+          | s2 = next {_27} (fun (_ret: t_Option) -> [ &_26 <- _ret ] s3)
           | s3 = bb9 ]
-        
         | bb9 = s0
           [ s0 = -{resolve'0 _28}- s1
-          | s1 = any [ br0 -> {_26 = C_None} (! bb12) | br1 (x0:UInt64.t)-> {_26 = C_Some x0} (! bb13) ]  ]
-        
+          | s1 = any [ br0 -> {_26 = C_None} (! bb12) | br1 (x0: UInt64.t) -> {_26 = C_Some x0} (! bb13) ] ]
         | bb13 = s0
-          [ s0 = v_Some {_26} (fun (r0:UInt64.t) ->  [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 =  [ &_31 <- [%#s08_haystack'4] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = v_Some {_26} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_31 <- [%#s08_haystack'4] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb14 ]
-        
         | bb14 = s0
-          [ s0 =  [ &produced <- _31 ] s1
-          | s1 =  [ &i <- __creusot_proc_iter_elem ] s2
-          | s2 = len {needle'0} (fun (_ret:UInt64.t) ->  [ &_38 <- _ret ] s3)
+          [ s0 = [ &produced <- _31 ] s1
+          | s1 = [ &i <- __creusot_proc_iter_elem ] s2
+          | s2 = len {needle'0} (fun (_ret: UInt64.t) -> [ &_38 <- _ret ] s3)
           | s3 = bb15 ]
-        
         | bb15 = s0
-          [ s0 =  [ &_37 <- { t_Range__start = ([%#s08_haystack'5] (0: UInt64.t)); t_Range__end = _38 } ] s1
-          | s1 = into_iter'0 {_37} (fun (_ret:t_Range) ->  [ &iter'0 <- _ret ] s2)
+          [ s0 = [ &_37 <- { t_Range__start = ([%#s08_haystack'5] (0: UInt64.t)); t_Range__end = _38 } ] s1
+          | s1 = into_iter'0 {_37} (fun (_ret: t_Range) -> [ &iter'0 <- _ret ] s2)
           | s2 = bb16 ]
-        
-        | bb16 = s0 [ s0 =  [ &iter_old'0 <- [%#s08_haystack'6] iter'0 ] s1 | s1 = bb17 ] 
-        | bb17 = s0 [ s0 =  [ &produced'0 <- [%#s08_haystack'7] Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb19 ] 
+        | bb16 = s0 [ s0 = [ &iter_old'0 <- [%#s08_haystack'6] iter'0 ] s1 | s1 = bb17 ]
+        | bb17 = s0 [ s0 = [ &produced'0 <- [%#s08_haystack'7] Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb19 ]
         | bb19 = bb19'0
           [ bb19'0 = {[@expl:for invariant] [%#s08_haystack'9] inv'0 produced'0}
             {[@expl:for invariant] [%#s08_haystack'9] inv'1 iter'0}
             {[@expl:for invariant] [%#s08_haystack'9] produces'0 iter_old'0 produced'0 iter'0}
             {[@expl:loop invariant] [%#s08_haystack'8] match_at needle'0 haystack'0 (UInt64.t'int i) (Seq.length produced'0)}
-            (! s0) [ s0 = bb20 ] 
+            (! s0)
+            [ s0 = bb20 ]
             [ bb20 = s0
               [ s0 = MutBorrow.borrow_mut <t_Range> {iter'0}
-                  (fun (_ret:MutBorrow.t t_Range) ->  [ &_51 <- _ret ]  [ &iter'0 <- _ret.final ] s1)
+                  (fun (_ret: MutBorrow.t t_Range) -> [ &_51 <- _ret ] [ &iter'0 <- _ret.final ] s1)
               | s1 = MutBorrow.borrow_final <t_Range> {_51.current} {MutBorrow.get_id _51}
-                  (fun (_ret:MutBorrow.t t_Range) ->
-                     [ &_50 <- _ret ] 
-                     [ &_51 <- { _51 with current = _ret.final } ] 
-                    s2)
-              | s2 = next'0 {_50} (fun (_ret:t_Option) ->  [ &_49 <- _ret ] s3)
+                  (fun (_ret: MutBorrow.t t_Range) -> [ &_50 <- _ret ] [ &_51 <- { _51 with current = _ret.final } ] s2)
+              | s2 = next'0 {_50} (fun (_ret: t_Option) -> [ &_49 <- _ret ] s3)
               | s3 = bb21 ]
-            
             | bb21 = s0
               [ s0 = -{resolve'2 _51}- s1
-              | s1 = any [ br0 -> {_49 = C_None} (! bb24) | br1 (x0:UInt64.t)-> {_49 = C_Some x0} (! bb25) ]  ]
-            
+              | s1 = any [ br0 -> {_49 = C_None} (! bb24) | br1 (x0: UInt64.t) -> {_49 = C_Some x0} (! bb25) ] ]
             | bb25 = s0
-              [ s0 = v_Some {_49} (fun (r0:UInt64.t) ->  [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
-              | s1 =  [ &_54 <- [%#s08_haystack'10] Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
+              [ s0 = v_Some {_49} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
+              | s1 = [ &_54 <- [%#s08_haystack'10] Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
               | s2 = bb26 ]
-            
             | bb26 = s0
-              [ s0 =  [ &produced'0 <- _54 ] s1
-              | s1 =  [ &j <- __creusot_proc_iter_elem'0 ] s2
-              | s2 = index {needle'0} {j} (fun (_ret:UInt8.t) ->  [ &_59 <- _ret ] s3)
+              [ s0 = [ &produced'0 <- _54 ] s1
+              | s1 = [ &j <- __creusot_proc_iter_elem'0 ] s2
+              | s2 = index {needle'0} {j} (fun (_ret: UInt8.t) -> [ &_59 <- _ret ] s3)
               | s3 = bb27 ]
-            
             | bb27 = s0
-              [ s0 = UInt64.add {i} {j} (fun (_ret:UInt64.t) ->  [ &_65 <- _ret ] s1)
-              | s1 = index {haystack'0} {_65} (fun (_ret:UInt8.t) ->  [ &_63 <- _ret ] s2)
+              [ s0 = UInt64.add {i} {j} (fun (_ret: UInt64.t) -> [ &_65 <- _ret ] s1)
+              | s1 = index {haystack'0} {_65} (fun (_ret: UInt8.t) -> [ &_63 <- _ret ] s2)
               | s2 = bb28 ]
-            
             | bb28 = s0
-              [ s0 =  [ &_57 <- _59 <> _63 ] s1
-              | s1 = any [ br0 -> {_57 = false} (! bb19'0) | br1 -> {_57} (! bb7'0) ]  ]
-             ]
-           ]
-         ]
-       ]
-    
-    | bb24 = s0 [ s0 =  [ &_0 <- i ] s1 | s1 = bb32 ] 
-    | bb12 = s0 [ s0 = len {haystack'0} (fun (_ret:UInt64.t) ->  [ &_0 <- _ret ] s1) | s1 = bb32 ] 
+              [ s0 = [ &_57 <- _59 <> _63 ] s1
+              | s1 = any [ br0 -> {_57 = false} (! bb19'0) | br1 -> {_57} (! bb7'0) ] ] ] ] ] ]
+    | bb24 = s0 [ s0 = [ &_0 <- i ] s1 | s1 = bb32 ]
+    | bb12 = s0 [ s0 = len {haystack'0} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = bb32 ]
     | bb32 = return''0 {_0} ]
-    
     [ & _0: UInt64.t = Any.any_l ()
     | & needle'0: t_Vec = needle
     | & haystack'0: t_Vec = haystack
@@ -372,18 +334,16 @@ module M_08_haystack__search [#"08_haystack.rs" 22 0 22 60]
     | & _57: bool = Any.any_l ()
     | & _59: UInt8.t = Any.any_l ()
     | & _63: UInt8.t = Any.any_l ()
-    | & _65: UInt64.t = Any.any_l () ]
-    )
-    [ return''0 (result:UInt64.t)-> {[@expl:search ensures #0] [%#s08_haystack'12] UInt64.t'int result
-      = Seq.length (view'0 haystack)
+    | & _65: UInt64.t = Any.any_l () ])
+    [ return''0 (result: UInt64.t) -> {[@expl:search ensures #0] [%#s08_haystack'12] UInt64.t'int result
+        = Seq.length (view'0 haystack)
       \/ UInt64.t'int result < Seq.length (view'0 haystack) - Seq.length (view'0 needle) + 1}
       {[@expl:search ensures #1] [%#s08_haystack'13] UInt64.t'int result < Seq.length (view'0 haystack)
-       -> match_at needle haystack (UInt64.t'int result) (Seq.length (view'0 needle))
+      -> match_at needle haystack (UInt64.t'int result) (Seq.length (view'0 needle))
       /\ (forall i: int. 0 <= i /\ i < UInt64.t'int result
-       -> not match_at needle haystack i (Seq.length (view'0 needle)))}
+        -> not match_at needle haystack i (Seq.length (view'0 needle)))}
       {[@expl:search ensures #2] [%#s08_haystack'14] UInt64.t'int result = Seq.length (view'0 haystack)
-       -> (forall i: int. 0 <= i /\ i < Seq.length (view'0 haystack)
-       -> not match_at needle haystack i (Seq.length (view'0 needle)))}
+      -> (forall i: int. 0 <= i /\ i < Seq.length (view'0 haystack)
+        -> not match_at needle haystack i (Seq.length (view'0 needle)))}
       (! return' {result}) ]
-
 end

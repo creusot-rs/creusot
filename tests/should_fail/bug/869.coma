@@ -11,52 +11,46 @@ module M_869__unsound [#"869.rs" 5 0 5 16]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve (self: MutBorrow.t bool) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t bool) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t bool) =
-    resolve _0
+  predicate resolve'0 (_0: MutBorrow.t bool) = resolve _0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec unsound[#"869.rs" 5 0 5 16] (return'  (x:()))= (! bb0
-    [ bb0 = s0 [ s0 =  [ &x <- [%#s869] true ] s1 | s1 = bb1 ] 
+  let rec unsound [#"869.rs" 5 0 5 16] (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = [ &x <- [%#s869] true ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = MutBorrow.borrow_mut <bool> {x} (fun (_ret:MutBorrow.t bool) ->  [ &_4 <- _ret ]  [ &x <- _ret.final ] s1)
+      [ s0 = MutBorrow.borrow_mut <bool> {x} (fun (_ret: MutBorrow.t bool) -> [ &_4 <- _ret ] [ &x <- _ret.final ] s1)
       | s1 = MutBorrow.borrow_final <bool> {_4.current} {MutBorrow.get_id _4}
-          (fun (_ret:MutBorrow.t bool) ->  [ &xm <- _ret ]  [ &_4 <- { _4 with current = _ret.final } ] s2)
+          (fun (_ret: MutBorrow.t bool) -> [ &xm <- _ret ] [ &_4 <- { _4 with current = _ret.final } ] s2)
       | s2 = -{resolve'0 _4}- s3
       | s3 = MutBorrow.borrow_mut <bool> {xm.current}
-          (fun (_ret:MutBorrow.t bool) ->  [ &_6 <- _ret ]  [ &xm <- { xm with current = _ret.final } ] s4)
+          (fun (_ret: MutBorrow.t bool) -> [ &_6 <- _ret ] [ &xm <- { xm with current = _ret.final } ] s4)
       | s4 = MutBorrow.borrow_final <bool> {_6.current} {MutBorrow.get_id _6}
-          (fun (_ret:MutBorrow.t bool) ->  [ &b <- _ret ]  [ &_6 <- { _6 with current = _ret.final } ] s5)
+          (fun (_ret: MutBorrow.t bool) -> [ &b <- _ret ] [ &_6 <- { _6 with current = _ret.final } ] s5)
       | s5 = -{resolve'0 b}- s6
       | s6 = -{resolve'0 _6}- s7
-      | s7 =  [ &bg <- [%#s869'0] b ] s8
+      | s7 = [ &bg <- [%#s869'0] b ] s8
       | s8 = bb2 ]
-    
     | bb2 = s0
       [ s0 = {[@expl:assertion] [%#s869'1] bg.current = true /\ bg.final = true} s1
       | s1 = MutBorrow.borrow_final <bool> {xm.current} {MutBorrow.get_id xm}
-          (fun (_ret:MutBorrow.t bool) ->  [ &_12 <- _ret ]  [ &xm <- { xm with current = _ret.final } ] s2)
+          (fun (_ret: MutBorrow.t bool) -> [ &_12 <- _ret ] [ &xm <- { xm with current = _ret.final } ] s2)
       | s2 = MutBorrow.borrow_final <bool> {_12.current} {MutBorrow.get_id _12}
-          (fun (_ret:MutBorrow.t bool) ->  [ &evil <- _ret ]  [ &_12 <- { _12 with current = _ret.final } ] s3)
+          (fun (_ret: MutBorrow.t bool) -> [ &evil <- _ret ] [ &_12 <- { _12 with current = _ret.final } ] s3)
       | s3 = -{resolve'0 _12}- s4
       | s4 = {[@expl:assertion] [%#s869'2] (evil = bg) = (evil.final = true)} s5
-      | s5 =  [ &_15 <- [%#s869'3] if evil = bg then false else true ] s6
+      | s5 = [ &_15 <- [%#s869'3] if evil = bg then false else true ] s6
       | s6 = bb3 ]
-    
     | bb3 = s0
-      [ s0 =  [ &evil <- { evil with current = _15 } ] s1
+      [ s0 = [ &evil <- { evil with current = _15 } ] s1
       | s1 = -{resolve'0 evil}- s2
       | s2 = -{resolve'0 xm}- s3
       | s3 = {[@expl:assertion] [%#s869'4] evil.current = (not evil.final)} s4
       | s4 = {[@expl:assertion] [%#s869'5] evil.current = (not evil.current)} s5
-      | s5 = return''0 {_0} ]
-     ]
-    
+      | s5 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: bool = Any.any_l ()
     | & xm: MutBorrow.t bool = Any.any_l ()
@@ -66,6 +60,5 @@ module M_869__unsound [#"869.rs" 5 0 5 16]
     | & bg: MutBorrow.t bool = Any.any_l ()
     | & evil: MutBorrow.t bool = Any.any_l ()
     | & _12: MutBorrow.t bool = Any.any_l ()
-    | & _15: bool = Any.any_l () ]
-    ) [ return''0 (result:())-> (! return' {result}) ] 
+    | & _15: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end

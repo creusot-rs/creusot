@@ -23,39 +23,33 @@ module M_linked_list__qyi10858349784728989480__new [#"linked_list.rs" 58 4 58 27
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
-  predicate is_null_logic (self: Opaque.ptr) =
-    [%#sptr'1] addr_logic self = (0: UInt64.t)
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'1] addr_logic self = (0: UInt64.t)
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr'0] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
-  let rec null (return'  (x:Opaque.ptr))= any
-    [ return''0 (result:Opaque.ptr)-> {[%#sptr] is_null_logic result} (! return' {result}) ]
-  
+  let rec null (return' (x: Opaque.ptr)) = any
+    [ return''0 (result: Opaque.ptr) -> {[%#sptr] is_null_logic result} (! return' {result}) ]
   
   type t_T
   
-  type t_Cell  =
-    { t_Cell__v: t_T; t_Cell__next: Opaque.ptr }
+  type t_Cell = { t_Cell__v: t_T; t_Cell__next: Opaque.ptr }
   
-  type t_PtrOwn  =
-    { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Cell }
+  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Cell }
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant' (self: t_PtrOwn) =
-    [%#sptr_own] not is_null_logic (ptr self)
+  predicate invariant' (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
   
   predicate inv (_0: t_T)
   
   predicate inv'0 (_0: t_Cell)
   
   axiom inv_axiom [@rewrite]: forall x: t_Cell [inv'0 x]. inv'0 x
-  = match x with
-    | {t_Cell__v = v ; t_Cell__next = next} -> inv v
-    end
+      = match x with
+        | {t_Cell__v = v; t_Cell__next = next} -> inv v
+        end
   
-  predicate invariant''0 (self: t_Cell) =
-    [%#sboxed] inv'0 self
+  predicate invariant''0 (self: t_Cell) = [%#sboxed] inv'0 self
   
   predicate inv'1 (_0: t_Cell)
   
@@ -64,60 +58,56 @@ module M_linked_list__qyi10858349784728989480__new [#"linked_list.rs" 58 4 58 27
   predicate inv'2 (_0: t_PtrOwn)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x
-  = (invariant' x
-  /\ match x with
-    | {t_PtrOwn__ptr = ptr'0 ; t_PtrOwn__val = val'} -> inv'1 val'
-    end)
+      = (invariant' x
+      /\ match x with
+        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> inv'1 val'
+        end)
   
-  predicate invariant''1 (self: t_PtrOwn) =
-    [%#sboxed] inv'2 self
+  predicate invariant''1 (self: t_PtrOwn) = [%#sboxed] inv'2 self
   
   predicate inv'3 (_0: t_PtrOwn)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate invariant''2 (self: Seq.seq t_PtrOwn) =
-    [%#sseq'1] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'3 (Seq.get self i)
+    [%#sseq'1] forall i: int. 0 <= i /\ i < Seq.length self -> inv'3 (Seq.get self i)
   
   predicate inv'4 (_0: Seq.seq t_PtrOwn)
   
   axiom inv_axiom'3 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'4 x]. inv'4 x = invariant''2 x
   
-  predicate invariant''3 (self:  (Seq.seq t_PtrOwn)) =
-    [%#sghost] inv'4 self
+  predicate invariant''3 (self: Seq.seq t_PtrOwn) = [%#sghost] inv'4 self
   
-  predicate inv'5 (_0:  (Seq.seq t_PtrOwn))
+  predicate inv'5 (_0: Seq.seq t_PtrOwn)
   
-  axiom inv_axiom'4 [@rewrite]: forall x:  (Seq.seq t_PtrOwn) [inv'5 x]. inv'5 x = invariant''3 x
+  axiom inv_axiom'4 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'5 x]. inv'5 x = invariant''3 x
   
-  let rec new (return'  (x: (Seq.seq t_PtrOwn)))= any
-    [ return''0 (result: (Seq.seq t_PtrOwn))-> {[%#sseq] inv'5 result}
+  let rec new (return' (x: Seq.seq t_PtrOwn)) = any
+    [ return''0 (result: Seq.seq t_PtrOwn) -> {[%#sseq] inv'5 result}
       {[%#sseq'0] result = (Seq.empty: Seq.seq t_PtrOwn)}
       (! return' {result}) ]
   
-  
-  type t_List  =
-    { t_List__first: Opaque.ptr; t_List__last: Opaque.ptr; t_List__seq:  (Seq.seq t_PtrOwn) }
+  type t_List = { t_List__first: Opaque.ptr; t_List__last: Opaque.ptr; t_List__seq: Seq.seq t_PtrOwn }
   
   function val' (self: t_PtrOwn) : t_Cell
   
   predicate invariant''4 [#"linked_list.rs" 23 4 23 30] (self: t_List) =
     [%#slinked_list'3] self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
-    /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
+      /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
     \/ Seq.length self.t_List__seq > 0
     /\ self.t_List__first = ptr (Seq.get self.t_List__seq 0)
     /\ self.t_List__last = ptr (Seq.get self.t_List__seq (Seq.length self.t_List__seq - 1))
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.t_List__seq - 1
-     -> (val' (Seq.get self.t_List__seq i)).t_Cell__next = ptr (Seq.get self.t_List__seq (i + 1)))
+        -> (val' (Seq.get self.t_List__seq i)).t_Cell__next = ptr (Seq.get self.t_List__seq (i + 1)))
     /\ is_null_logic (val' (Seq.get self.t_List__seq (Seq.length self.t_List__seq - 1))).t_Cell__next
   
   predicate inv'6 (_0: t_List)
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_List [inv'6 x]. inv'6 x
-  = (invariant''4 x
-  /\ match x with
-    | {t_List__first = first ; t_List__last = last ; t_List__seq = seq} -> inv'5 seq
-    end)
+      = (invariant''4 x
+      /\ match x with
+        | {t_List__first = first; t_List__last = last; t_List__seq = seq} -> inv'5 seq
+        end)
   
   function seq_map [#"linked_list.rs" 52 0 52 66] (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
     [%#slinked_list'2] Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))
@@ -129,23 +119,19 @@ module M_linked_list__qyi10858349784728989480__new [#"linked_list.rs" 58 4 58 27
   
   meta "select_lsinst" "all"
   
-  let rec new'0[#"linked_list.rs" 58 4 58 27] (return'  (x:t_List))= (! bb0
-    [ bb0 = s0 [ s0 = null (fun (_ret:Opaque.ptr) ->  [ &_2 <- _ret ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 = null (fun (_ret:Opaque.ptr) ->  [ &_3 <- _ret ] s1) | s1 = bb2 ] 
-    | bb2 = s0 [ s0 = new (fun (_ret: (Seq.seq t_PtrOwn)) ->  [ &_4 <- _ret ] s1) | s1 = bb3 ] 
+  let rec new'0 [#"linked_list.rs" 58 4 58 27] (return' (x: t_List)) = (! bb0
+    [ bb0 = s0 [ s0 = null (fun (_ret: Opaque.ptr) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = null (fun (_ret: Opaque.ptr) -> [ &_3 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = new (fun (_ret: Seq.seq t_PtrOwn) -> [ &_4 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
-      [ s0 =  [ &_0 <- { t_List__first = _2; t_List__last = _3; t_List__seq = _4 } ] s1 | s1 = return''0 {_0} ]
-     ]
-    
+      [ s0 = [ &_0 <- { t_List__first = _2; t_List__last = _3; t_List__seq = _4 } ] s1 | s1 = return''0 {_0} ] ]
     [ & _0: t_List = Any.any_l ()
     | & _2: Opaque.ptr = Any.any_l ()
     | & _3: Opaque.ptr = Any.any_l ()
-    | & _4:  (Seq.seq t_PtrOwn) = Any.any_l () ]
-    )
-    [ return''0 (result:t_List)-> {[@expl:new result type invariant] [%#slinked_list] inv'6 result}
+    | & _4: Seq.seq t_PtrOwn = Any.any_l () ])
+    [ return''0 (result: t_List) -> {[@expl:new result type invariant] [%#slinked_list] inv'6 result}
       {[@expl:new ensures] [%#slinked_list'0] view result = (Seq.empty: Seq.seq t_T)}
       (! return' {result}) ]
-
 end
 module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4 63 37] (* List<T> *)
   let%span slinked_list = "linked_list.rs" 72 53 72 57
@@ -215,37 +201,31 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
-  predicate is_null_logic (self: Opaque.ptr) =
-    [%#sptr'2] addr_logic self = (0: UInt64.t)
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'2] addr_logic self = (0: UInt64.t)
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr'1] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
-  let rec null (return'  (x:Opaque.ptr))= any
-    [ return''0 (result:Opaque.ptr)-> {[%#sptr] is_null_logic result} (! return' {result}) ]
-  
+  let rec null (return' (x: Opaque.ptr)) = any
+    [ return''0 (result: Opaque.ptr) -> {[%#sptr] is_null_logic result} (! return' {result}) ]
   
   type t_T
   
-  type t_Cell  =
-    { t_Cell__v: t_T; t_Cell__next: Opaque.ptr }
+  type t_Cell = { t_Cell__v: t_T; t_Cell__next: Opaque.ptr }
   
-  type t_PtrOwn  =
-    { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Cell }
+  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Cell }
   
-  type tuple  =
-    { _p0: Opaque.ptr; _p1:  t_PtrOwn }
+  type tuple = { _p0: Opaque.ptr; _p1: t_PtrOwn }
   
   predicate inv (_0: t_T)
   
   predicate inv'0 (_0: t_Cell)
   
   axiom inv_axiom [@rewrite]: forall x: t_Cell [inv'0 x]. inv'0 x
-  = match x with
-    | {t_Cell__v = v ; t_Cell__next = next} -> inv v
-    end
+      = match x with
+        | {t_Cell__v = v; t_Cell__next = next} -> inv v
+        end
   
-  predicate invariant' (self: t_Cell) =
-    [%#sboxed] inv'0 self
+  predicate invariant' (self: t_Cell) = [%#sboxed] inv'0 self
   
   predicate inv'1 (_0: t_Cell)
   
@@ -253,128 +233,113 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant''0 (self: t_PtrOwn) =
-    [%#sptr_own'8] not is_null_logic (ptr self)
+  predicate invariant''0 (self: t_PtrOwn) = [%#sptr_own'8] not is_null_logic (ptr self)
   
   predicate inv'2 (_0: t_PtrOwn)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x
-  = (invariant''0 x
-  /\ match x with
-    | {t_PtrOwn__ptr = ptr'0 ; t_PtrOwn__val = val'} -> inv'1 val'
-    end)
+      = (invariant''0 x
+      /\ match x with
+        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> inv'1 val'
+        end)
   
-  predicate invariant''1 (self:  t_PtrOwn) =
-    [%#sghost'11] inv'2 self
+  predicate invariant''1 (self: t_PtrOwn) = [%#sghost'11] inv'2 self
   
-  predicate inv'3 (_0:  t_PtrOwn)
+  predicate inv'3 (_0: t_PtrOwn)
   
-  axiom inv_axiom'2 [@rewrite]: forall x:  t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate inv'4 (_0: tuple)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: tuple [inv'4 x]. inv'4 x = (let {_p0 = x0 ; _p1 = x1} = x in inv'3 x1)
+  axiom inv_axiom'3 [@rewrite]: forall x: tuple [inv'4 x]. inv'4 x = (let {_p0 = x0; _p1 = x1} = x in inv'3 x1)
   
   function val' (self: t_PtrOwn) : t_Cell
   
-  let rec from_box (val''0:t_Cell) (return'  (x:tuple))= {[@expl:from_box 'val' type invariant] [%#sptr_own] inv'1 val''0}
+  let rec from_box (val''0: t_Cell) (return' (x: tuple)) =
+    {[@expl:from_box 'val' type invariant] [%#sptr_own] inv'1 val''0}
     any
-    [ return''0 (result:tuple)-> {[%#sptr_own'0] inv'4 result}
+    [ return''0 (result: tuple) -> {[%#sptr_own'0] inv'4 result}
       {[%#sptr_own'1] ptr result._p1 = result._p0 /\ val' result._p1 = val''0}
       (! return' {result}) ]
   
+  type t_List = { t_List__first: Opaque.ptr; t_List__last: Opaque.ptr; t_List__seq: Seq.seq t_PtrOwn }
   
-  type t_List  =
-    { t_List__first: Opaque.ptr; t_List__last: Opaque.ptr; t_List__seq:  (Seq.seq t_PtrOwn) }
+  let rec is_null (self_: Opaque.ptr) (return' (x: bool)) = any
+    [ return''0 (result: bool) -> {[%#sptr'0] result = is_null_logic self_} (! return' {result}) ]
   
-  let rec is_null (self_:Opaque.ptr) (return'  (x:bool))= any
-    [ return''0 (result:bool)-> {[%#sptr'0] result = is_null_logic self_} (! return' {result}) ]
-  
-  
-  predicate invariant''2 (self: t_PtrOwn) =
-    [%#sboxed] inv'2 self
+  predicate invariant''2 (self: t_PtrOwn) = [%#sboxed] inv'2 self
   
   predicate inv'5 (_0: t_PtrOwn)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''2 x
   
   predicate invariant''3 (self: Seq.seq t_PtrOwn) =
-    [%#sseq'10] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
+    [%#sseq'10] forall i: int. 0 <= i /\ i < Seq.length self -> inv'5 (Seq.get self i)
   
   predicate inv'6 (_0: Seq.seq t_PtrOwn)
   
   axiom inv_axiom'5 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate invariant''4 (self:  (Seq.seq t_PtrOwn)) =
-    [%#sghost'11] inv'6 self
+  predicate invariant''4 (self: Seq.seq t_PtrOwn) = [%#sghost'11] inv'6 self
   
-  predicate inv'7 (_0:  (Seq.seq t_PtrOwn))
+  predicate inv'7 (_0: Seq.seq t_PtrOwn)
   
-  axiom inv_axiom'6 [@rewrite]: forall x:  (Seq.seq t_PtrOwn) [inv'7 x]. inv'7 x = invariant''4 x
+  axiom inv_axiom'6 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'7 x]. inv'7 x = invariant''4 x
   
-  predicate invariant''5 (self:  (Seq.seq t_PtrOwn)) =
-    [%#sinvariant'0] inv'7 self
+  predicate invariant''5 (self: Seq.seq t_PtrOwn) = [%#sinvariant'0] inv'7 self
   
-  predicate inv'8 (_0:  (Seq.seq t_PtrOwn))
+  predicate inv'8 (_0: Seq.seq t_PtrOwn)
   
-  axiom inv_axiom'7 [@rewrite]: forall x:  (Seq.seq t_PtrOwn) [inv'8 x]. inv'8 x = invariant''5 x
+  axiom inv_axiom'7 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'8 x]. inv'8 x = invariant''5 x
   
-  predicate invariant''6 (self: Seq.seq t_PtrOwn) =
-    [%#sinvariant'0] inv'6 self
+  predicate invariant''6 (self: Seq.seq t_PtrOwn) = [%#sinvariant'0] inv'6 self
   
   predicate inv'9 (_0: Seq.seq t_PtrOwn)
   
   axiom inv_axiom'8 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'9 x]. inv'9 x = invariant''6 x
   
-  let rec deref (self: (Seq.seq t_PtrOwn)) (return'  (x:Seq.seq t_PtrOwn))= {[@expl:deref 'self' type invariant] [%#sghost] inv'8 self}
+  let rec deref (self: Seq.seq t_PtrOwn) (return' (x: Seq.seq t_PtrOwn)) =
+    {[@expl:deref 'self' type invariant] [%#sghost] inv'8 self}
     any
-    [ return''0 (result:Seq.seq t_PtrOwn)-> {[%#sghost'0] inv'9 result}
+    [ return''0 (result: Seq.seq t_PtrOwn) -> {[%#sghost'0] inv'9 result}
       {[%#sghost'1] self = result}
       (! return' {result}) ]
   
+  let rec len_ghost (self: Seq.seq t_PtrOwn) (return' (x: int)) =
+    {[@expl:len_ghost 'self' type invariant] [%#sseq] inv'9 self}
+    any [ return''0 (result: int) -> {[%#sseq'0] result = Seq.length self} (! return' {result}) ]
   
-  let rec len_ghost (self:Seq.seq t_PtrOwn) (return'  (x:int))= {[@expl:len_ghost 'self' type invariant] [%#sseq] inv'9 self}
-    any [ return''0 (result:int)-> {[%#sseq'0] result = Seq.length self} (! return' {result}) ] 
+  let rec new (value: Int128.t) (return' (x: int)) = any
+    [ return''0 (result: int) -> {[%#sint] result = Int128.to_int value} (! return' {result}) ]
   
-  let rec new (value:Int128.t) (return'  (x: int))= any
-    [ return''0 (result: int)-> {[%#sint] result = Int128.to_int value} (! return' {result}) ]
+  let rec into_inner (self: int) (return' (x: int)) = any
+    [ return''0 (result: int) -> {[%#sghost'2] result = self} (! return' {result}) ]
   
+  let rec sub (self: int) (other: int) (return' (x: int)) = any
+    [ return''0 (result: int) -> {[%#sint'0] result = self - other} (! return' {result}) ]
   
-  let rec into_inner (self: int) (return'  (x:int))= any
-    [ return''0 (result:int)-> {[%#sghost'2] result = self} (! return' {result}) ]
+  predicate invariant''7 (self: MutBorrow.t (Seq.seq t_PtrOwn)) = [%#sinvariant] inv'7 self.current /\ inv'7 self.final
   
+  predicate inv'10 (_0: MutBorrow.t (Seq.seq t_PtrOwn))
   
-  let rec sub (self:int) (other:int) (return'  (x:int))= any
-    [ return''0 (result:int)-> {[%#sint'0] result = self - other} (! return' {result}) ]
+  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'10 x]. inv'10 x = invariant''7 x
   
-  
-  predicate invariant''7 (self: MutBorrow.t ( (Seq.seq t_PtrOwn))) =
-    [%#sinvariant] inv'7 self.current /\ inv'7 self.final
-  
-  predicate inv'10 (_0: MutBorrow.t ( (Seq.seq t_PtrOwn)))
-  
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t ( (Seq.seq t_PtrOwn)) [inv'10 x]. inv'10 x = invariant''7 x
-  
-  predicate invariant''8 (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''8 (self: MutBorrow.t (Seq.seq t_PtrOwn)) = [%#sinvariant] inv'6 self.current /\ inv'6 self.final
   
   predicate inv'11 (_0: MutBorrow.t (Seq.seq t_PtrOwn))
   
   axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'11 x]. inv'11 x = invariant''8 x
   
-  let rec deref_mut (self:MutBorrow.t ( (Seq.seq t_PtrOwn))) (return'  (x:MutBorrow.t (Seq.seq t_PtrOwn)))= {[@expl:deref_mut 'self' type invariant] [%#sghost'3] inv'10 self}
+  let rec deref_mut (self: MutBorrow.t (Seq.seq t_PtrOwn)) (return' (x: MutBorrow.t (Seq.seq t_PtrOwn))) =
+    {[@expl:deref_mut 'self' type invariant] [%#sghost'3] inv'10 self}
     any
-    [ return''0 (result:MutBorrow.t (Seq.seq t_PtrOwn))-> {[%#sghost'4] inv'11 result}
+    [ return''0 (result: MutBorrow.t (Seq.seq t_PtrOwn)) -> {[%#sghost'4] inv'11 result}
       {[%#sghost'5] result = self}
       (! return' {result}) ]
   
+  type t_Option = C_None | C_Some (MutBorrow.t t_PtrOwn)
   
-  type t_Option  =
-    | C_None
-    | C_Some (MutBorrow.t t_PtrOwn)
-  
-  predicate invariant''9 (self: MutBorrow.t t_PtrOwn) =
-    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''9 (self: MutBorrow.t t_PtrOwn) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
   predicate inv'12 (_0: MutBorrow.t t_PtrOwn)
   
@@ -383,130 +348,120 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4
   predicate inv'13 (_0: t_Option)
   
   axiom inv_axiom'12 [@rewrite]: forall x: t_Option [inv'13 x]. inv'13 x
-  = match x with
-    | C_None -> true
-    | C_Some a_0 -> inv'12 a_0
-    end
+      = match x with
+        | C_None -> true
+        | C_Some a_0 -> inv'12 a_0
+        end
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_PtrOwn
+  type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
   
-  function get (self: Seq.seq t_PtrOwn) (ix: int) : t_Option'0 =
-    [%#sseq'9] if 0 <= ix /\ ix < Seq.length self then C_Some'0 (Seq.get self ix) else C_None'0
+  function get (self: Seq.seq t_PtrOwn) (ix: int) : t_Option'0 = [%#sseq'9] if 0 <= ix /\ ix < Seq.length self then
+      C_Some'0 (Seq.get self ix)
+    else
+      C_None'0
   
-  let rec get_mut_ghost (self:MutBorrow.t (Seq.seq t_PtrOwn)) (index:int) (return'  (x:t_Option))= {[@expl:get_mut_ghost 'self' type invariant] [%#sseq'1] inv'11 self}
+  
+  let rec get_mut_ghost (self: MutBorrow.t (Seq.seq t_PtrOwn)) (index: int) (return' (x: t_Option)) =
+    {[@expl:get_mut_ghost 'self' type invariant] [%#sseq'1] inv'11 self}
     any
-    [ return''0 (result:t_Option)-> {[%#sseq'2] inv'13 result}
+    [ return''0 (result: t_Option) -> {[%#sseq'2] inv'13 result}
       {[%#sseq'3] match result with
         | C_None -> get self.current index = C_None'0 /\ self.current = self.final
         | C_Some r -> get self.current index = C_Some'0 (r.current) /\ r.final = Seq.get self.final index
         end}
-      {[%#sseq'4] forall i: int. i <> index  -> get self.current i = get self.final i}
+      {[%#sseq'4] forall i: int. i <> index -> get self.current i = get self.final i}
       {[%#sseq'5] Seq.length self.current = Seq.length self.final}
       (! return' {result}) ]
   
-  
-  let rec unwrap (self_:t_Option) (return'  (x:MutBorrow.t t_PtrOwn))= {[@expl:unwrap 'self_' type invariant] [%#soption] inv'13 self_}
+  let rec unwrap (self_: t_Option) (return' (x: MutBorrow.t t_PtrOwn)) =
+    {[@expl:unwrap 'self_' type invariant] [%#soption] inv'13 self_}
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None}
     any
-    [ return''0 (result:MutBorrow.t t_PtrOwn)-> {inv'12 result}
+    [ return''0 (result: MutBorrow.t t_PtrOwn) -> {inv'12 result}
       {[%#soption'1] C_Some result = self_}
       (! return' {result}) ]
   
+  predicate invariant''10 (self: MutBorrow.t t_PtrOwn) = [%#sghost'11] inv'12 self
   
-  predicate invariant''10 (self:  (MutBorrow.t t_PtrOwn)) =
-    [%#sghost'11] inv'12 self
+  predicate inv'14 (_0: MutBorrow.t t_PtrOwn)
   
-  predicate inv'14 (_0:  (MutBorrow.t t_PtrOwn))
+  axiom inv_axiom'13 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'14 x]. inv'14 x = invariant''10 x
   
-  axiom inv_axiom'13 [@rewrite]: forall x:  (MutBorrow.t t_PtrOwn) [inv'14 x]. inv'14 x = invariant''10 x
-  
-  let rec new'0 (x:MutBorrow.t t_PtrOwn) (return'  (x'0: (MutBorrow.t t_PtrOwn)))= {[@expl:new 'x' type invariant] [%#sghost'6] inv'12 x}
+  let rec new'0 (x: MutBorrow.t t_PtrOwn) (return' (x'0: MutBorrow.t t_PtrOwn)) =
+    {[@expl:new 'x' type invariant] [%#sghost'6] inv'12 x}
     any
-    [ return''0 (result: (MutBorrow.t t_PtrOwn))-> {[%#sghost'7] inv'14 result}
+    [ return''0 (result: MutBorrow.t t_PtrOwn) -> {[%#sghost'7] inv'14 result}
       {[%#sghost'8] result = x}
       (! return' {result}) ]
   
-  
-  predicate invariant''11 (self: MutBorrow.t t_Cell) =
-    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
+  predicate invariant''11 (self: MutBorrow.t t_Cell) = [%#sinvariant] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'15 (_0: MutBorrow.t t_Cell)
   
   axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_Cell [inv'15 x]. inv'15 x = invariant''11 x
   
-  let rec as_mut (ptr'0:Opaque.ptr) (own: (MutBorrow.t t_PtrOwn)) (return'  (x:MutBorrow.t t_Cell))= {[@expl:as_mut 'own' type invariant] [%#sptr_own'2] inv'14 own}
+  let rec as_mut (ptr'0: Opaque.ptr) (own: MutBorrow.t t_PtrOwn) (return' (x: MutBorrow.t t_Cell)) =
+    {[@expl:as_mut 'own' type invariant] [%#sptr_own'2] inv'14 own}
     {[@expl:as_mut requires] [%#sptr_own'3] ptr'0 = ptr own.current}
     any
-    [ return''0 (result:MutBorrow.t t_Cell)-> {[%#sptr_own'4] inv'15 result}
+    [ return''0 (result: MutBorrow.t t_Cell) -> {[%#sptr_own'4] inv'15 result}
       {[%#sptr_own'5] result.current = val' own.current}
       {[%#sptr_own'6] ptr own.final = ptr own.current}
       {[%#sptr_own'7] val' own.final = result.final}
       (! return' {result}) ]
   
+  predicate resolve (self: MutBorrow.t (Seq.seq t_PtrOwn)) = [%#sresolve] self.final = self.current
   
-  predicate resolve (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'0 (_0: MutBorrow.t (Seq.seq t_PtrOwn)) = resolve _0
   
-  predicate resolve'0 (_0: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    resolve _0
+  predicate resolve'1 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
   
-  predicate resolve'1 (self: MutBorrow.t t_PtrOwn) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'2 (_0: MutBorrow.t t_PtrOwn) = resolve'1 _0
   
-  predicate resolve'2 (_0: MutBorrow.t t_PtrOwn) =
-    resolve'1 _0
+  predicate resolve'3 (self: MutBorrow.t t_Cell) = [%#sresolve] self.final = self.current
   
-  predicate resolve'3 (self: MutBorrow.t t_Cell) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'4 (_0: MutBorrow.t t_Cell) = resolve'3 _0
   
-  predicate resolve'4 (_0: MutBorrow.t t_Cell) =
-    resolve'3 _0
-  
-  let rec into_inner'0 (self: t_PtrOwn) (return'  (x:t_PtrOwn))= {[@expl:into_inner 'self' type invariant] [%#sghost'9] inv'3 self}
+  let rec into_inner'0 (self: t_PtrOwn) (return' (x: t_PtrOwn)) =
+    {[@expl:into_inner 'self' type invariant] [%#sghost'9] inv'3 self}
     any
-    [ return''0 (result:t_PtrOwn)-> {[%#sghost'10] inv'2 result} {[%#sghost'2] result = self} (! return' {result}) ]
+    [ return''0 (result: t_PtrOwn) -> {[%#sghost'10] inv'2 result} {[%#sghost'2] result = self} (! return' {result}) ]
   
-  
-  let rec push_back_ghost (self:MutBorrow.t (Seq.seq t_PtrOwn)) (x:t_PtrOwn) (return'  (x'0:()))= {[@expl:push_back_ghost 'self' type invariant] [%#sseq'6] inv'11 self}
+  let rec push_back_ghost (self: MutBorrow.t (Seq.seq t_PtrOwn)) (x: t_PtrOwn) (return' (x'0: ())) =
+    {[@expl:push_back_ghost 'self' type invariant] [%#sseq'6] inv'11 self}
     {[@expl:push_back_ghost 'x' type invariant] [%#sseq'7] inv'2 x}
-    any [ return''0 (result:())-> {[%#sseq'8] self.final = Seq.snoc self.current x} (! return' {result}) ] 
+    any [ return''0 (result: ()) -> {[%#sseq'8] self.final = Seq.snoc self.current x} (! return' {result}) ]
   
   predicate invariant''12 [#"linked_list.rs" 23 4 23 30] (self: t_List) =
     [%#slinked_list'5] self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
-    /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
+      /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
     \/ Seq.length self.t_List__seq > 0
     /\ self.t_List__first = ptr (Seq.get self.t_List__seq 0)
     /\ self.t_List__last = ptr (Seq.get self.t_List__seq (Seq.length self.t_List__seq - 1))
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.t_List__seq - 1
-     -> (val' (Seq.get self.t_List__seq i)).t_Cell__next = ptr (Seq.get self.t_List__seq (i + 1)))
+        -> (val' (Seq.get self.t_List__seq i)).t_Cell__next = ptr (Seq.get self.t_List__seq (i + 1)))
     /\ is_null_logic (val' (Seq.get self.t_List__seq (Seq.length self.t_List__seq - 1))).t_Cell__next
   
   predicate inv'16 (_0: t_List)
   
   axiom inv_axiom'15 [@rewrite]: forall x: t_List [inv'16 x]. inv'16 x
-  = (invariant''12 x
-  /\ match x with
-    | {t_List__first = first ; t_List__last = last ; t_List__seq = seq} -> inv'7 seq
-    end)
+      = (invariant''12 x
+      /\ match x with
+        | {t_List__first = first; t_List__last = last; t_List__seq = seq} -> inv'7 seq
+        end)
   
-  predicate invariant''13 (self: MutBorrow.t t_List) =
-    [%#sinvariant] inv'16 self.current /\ inv'16 self.final
+  predicate invariant''13 (self: MutBorrow.t t_List) = [%#sinvariant] inv'16 self.current /\ inv'16 self.final
   
   predicate inv'17 (_0: MutBorrow.t t_List)
   
   axiom inv_axiom'16 [@rewrite]: forall x: MutBorrow.t t_List [inv'17 x]. inv'17 x = invariant''13 x
   
-  predicate resolve'5 (self: MutBorrow.t t_List) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'5 (self: MutBorrow.t t_List) = [%#sresolve] self.final = self.current
   
-  predicate resolve'6 (_0: MutBorrow.t t_List) =
-    resolve'5 _0
+  predicate resolve'6 (_0: MutBorrow.t t_List) = resolve'5 _0
   
-  let rec new'1 (x:()) (return'  (x'0: ()))= any
-    [ return''0 (result: ())-> {[%#sghost'8] result = x} (! return' {result}) ]
-  
+  let rec new'1 (x: ()) (return' (x'0: ())) = any
+    [ return''0 (result: ()) -> {[%#sghost'8] result = x} (! return' {result}) ]
   
   function seq_map [#"linked_list.rs" 52 0 52 66] (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
     [%#slinked_list'4] Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))
@@ -518,85 +473,69 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4
   
   meta "select_lsinst" "all"
   
-  let rec push_back[#"linked_list.rs" 63 4 63 37] (self:MutBorrow.t t_List) (x:t_T) (return'  (x'0:()))= {[@expl:push_back 'self' type invariant] [%#slinked_list'0] inv'17 self}
+  let rec push_back [#"linked_list.rs" 63 4 63 37] (self: MutBorrow.t t_List) (x: t_T) (return' (x'0: ())) =
+    {[@expl:push_back 'self' type invariant] [%#slinked_list'0] inv'17 self}
     {[@expl:push_back 'x' type invariant] [%#slinked_list'1] inv x}
     (! bb0
-    [ bb0 = s0 [ s0 = null (fun (_ret:Opaque.ptr) ->  [ &_7 <- _ret ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 =  [ &_5 <- { t_Cell__v = x'0; t_Cell__next = _7 } ] s1 | s1 = bb2 ] 
-    | bb2 = s0 [ s0 =  [ &cell <- _5 ] s1 | s1 = bb3 ] 
-    | bb3 = s0 [ s0 = from_box {cell} (fun (_ret:tuple) ->  [ &_10 <- _ret ] s1) | s1 = bb4 ] 
+    [ bb0 = s0 [ s0 = null (fun (_ret: Opaque.ptr) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &_5 <- { t_Cell__v = x'0; t_Cell__next = _7 } ] s1 | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &cell <- _5 ] s1 | s1 = bb3 ]
+    | bb3 = s0 [ s0 = from_box {cell} (fun (_ret: tuple) -> [ &_10 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0
-      [ s0 =  [ &cell_ptr <- _10._p0 ] s1
-      | s1 =  [ &cell_own <- _10._p1 ] s2
-      | s2 = is_null {(self'0.current).t_List__last} (fun (_ret:bool) ->  [ &_13 <- _ret ] s3)
+      [ s0 = [ &cell_ptr <- _10._p0 ] s1
+      | s1 = [ &cell_own <- _10._p1 ] s2
+      | s2 = is_null {(self'0.current).t_List__last} (fun (_ret: bool) -> [ &_13 <- _ret ] s3)
       | s3 = bb5 ]
-    
-    | bb5 = any [ br0 -> {_13 = false} (! bb7) | br1 -> {_13} (! bb6) ] 
+    | bb5 = any [ br0 -> {_13 = false} (! bb7) | br1 -> {_13} (! bb6) ]
     | bb6 = s0
-      [ s0 =  [ &self'0 <- { self'0 with current = { self'0.current with t_List__first = cell_ptr } } ] s1
-      | s1 =  [ &self'0 <- { self'0 with current = { self'0.current with t_List__last = cell_ptr } } ] s2
+      [ s0 = [ &self'0 <- { self'0 with current = { self'0.current with t_List__first = cell_ptr } } ] s1
+      | s1 = [ &self'0 <- { self'0 with current = { self'0.current with t_List__last = cell_ptr } } ] s2
       | s2 = bb18 ]
-    
     | bb7 = s0
-      [ s0 = deref {(self'0.current).t_List__seq} (fun (_ret:Seq.seq t_PtrOwn) ->  [ &_26 <- _ret ] s1) | s1 = bb8 ]
-    
-    | bb8 = s0 [ s0 = len_ghost {_26} (fun (_ret:int) ->  [ &_24 <- _ret ] s1) | s1 = bb9 ] 
-    | bb9 = s0 [ s0 = new {[%#slinked_list] (1: Int128.t)} (fun (_ret: int) ->  [ &_29 <- _ret ] s1) | s1 = bb10 ] 
-    | bb10 = s0 [ s0 = into_inner {_29} (fun (_ret:int) ->  [ &_28 <- _ret ] s1) | s1 = bb11 ] 
-    | bb11 = s0 [ s0 = sub {_24} {_28} (fun (_ret:int) ->  [ &off <- _ret ] s1) | s1 = bb12 ] 
+      [ s0 = deref {(self'0.current).t_List__seq} (fun (_ret: Seq.seq t_PtrOwn) -> [ &_26 <- _ret ] s1) | s1 = bb8 ]
+    | bb8 = s0 [ s0 = len_ghost {_26} (fun (_ret: int) -> [ &_24 <- _ret ] s1) | s1 = bb9 ]
+    | bb9 = s0 [ s0 = new {[%#slinked_list] (1: Int128.t)} (fun (_ret: int) -> [ &_29 <- _ret ] s1) | s1 = bb10 ]
+    | bb10 = s0 [ s0 = into_inner {_29} (fun (_ret: int) -> [ &_28 <- _ret ] s1) | s1 = bb11 ]
+    | bb11 = s0 [ s0 = sub {_24} {_28} (fun (_ret: int) -> [ &off <- _ret ] s1) | s1 = bb12 ]
     | bb12 = s0
       [ s0 = {inv'7 (self'0.current).t_List__seq}
-        MutBorrow.borrow_mut < (Seq.seq t_PtrOwn)> {(self'0.current).t_List__seq}
-          (fun (_ret:MutBorrow.t ( (Seq.seq t_PtrOwn))) ->
-             [ &_34 <- _ret ] 
-            -{inv'7 _ret.final}-
-             [ &self'0 <- { self'0 with current = { self'0.current with t_List__seq = _ret.final } } ] 
-            s1)
-      | s1 = deref_mut {_34} (fun (_ret:MutBorrow.t (Seq.seq t_PtrOwn)) ->  [ &_33 <- _ret ] s2)
+        MutBorrow.borrow_mut <Seq.seq t_PtrOwn> {(self'0.current).t_List__seq}
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn)) ->
+            [ &_34 <- _ret ] -{inv'7 _ret.final}-
+            [ &self'0 <- { self'0 with current = { self'0.current with t_List__seq = _ret.final } } ] s1)
+      | s1 = deref_mut {_34} (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn)) -> [ &_33 <- _ret ] s2)
       | s2 = bb13 ]
-    
     | bb13 = s0
       [ s0 = {inv'6 _33.current}
         MutBorrow.borrow_final <Seq.seq t_PtrOwn> {_33.current} {MutBorrow.get_id _33}
-          (fun (_ret:MutBorrow.t (Seq.seq t_PtrOwn)) ->
-             [ &_32 <- _ret ] 
-            -{inv'6 _ret.final}-
-             [ &_33 <- { _33 with current = _ret.final } ] 
-            s1)
-      | s1 = get_mut_ghost {_32} {off} (fun (_ret:t_Option) ->  [ &_31 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn)) ->
+            [ &_32 <- _ret ] -{inv'6 _ret.final}-
+            [ &_33 <- { _33 with current = _ret.final } ] s1)
+      | s1 = get_mut_ghost {_32} {off} (fun (_ret: t_Option) -> [ &_31 <- _ret ] s2)
       | s2 = bb14 ]
-    
-    | bb14 = s0 [ s0 = unwrap {_31} (fun (_ret:MutBorrow.t t_PtrOwn) ->  [ &_30 <- _ret ] s1) | s1 = bb15 ] 
+    | bb14 = s0 [ s0 = unwrap {_31} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_30 <- _ret ] s1) | s1 = bb15 ]
     | bb15 = s0
       [ s0 = {inv'2 _30.current}
         MutBorrow.borrow_final <t_PtrOwn> {_30.current} {MutBorrow.get_id _30}
-          (fun (_ret:MutBorrow.t t_PtrOwn) ->
-             [ &_22 <- _ret ] 
-            -{inv'2 _ret.final}-
-             [ &_30 <- { _30 with current = _ret.final } ] 
-            s1)
+          (fun (_ret: MutBorrow.t t_PtrOwn) ->
+            [ &_22 <- _ret ] -{inv'2 _ret.final}-
+            [ &_30 <- { _30 with current = _ret.final } ] s1)
       | s1 = {inv'2 _22.current}
         MutBorrow.borrow_final <t_PtrOwn> {_22.current} {MutBorrow.get_id _22}
-          (fun (_ret:MutBorrow.t t_PtrOwn) ->
-             [ &_21 <- _ret ] 
-            -{inv'2 _ret.final}-
-             [ &_22 <- { _22 with current = _ret.final } ] 
-            s2)
-      | s2 = new'0 {_21} (fun (_ret: (MutBorrow.t t_PtrOwn)) ->  [ &_20 <- _ret ] s3)
+          (fun (_ret: MutBorrow.t t_PtrOwn) ->
+            [ &_21 <- _ret ] -{inv'2 _ret.final}-
+            [ &_22 <- { _22 with current = _ret.final } ] s2)
+      | s2 = new'0 {_21} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_20 <- _ret ] s3)
       | s3 = bb16 ]
-    
     | bb16 = s0
-      [ s0 = as_mut {(self'0.current).t_List__last} {_20} (fun (_ret:MutBorrow.t t_Cell) ->  [ &_18 <- _ret ] s1)
+      [ s0 = as_mut {(self'0.current).t_List__last} {_20} (fun (_ret: MutBorrow.t t_Cell) -> [ &_18 <- _ret ] s1)
       | s1 = bb17 ]
-    
     | bb17 = s0
       [ s0 = {inv'0 _18.current}
         MutBorrow.borrow_final <t_Cell> {_18.current} {MutBorrow.get_id _18}
-          (fun (_ret:MutBorrow.t t_Cell) ->
-             [ &cell_last <- _ret ] 
-            -{inv'0 _ret.final}-
-             [ &_18 <- { _18 with current = _ret.final } ] 
-            s1)
+          (fun (_ret: MutBorrow.t t_Cell) ->
+            [ &cell_last <- _ret ] -{inv'0 _ret.final}-
+            [ &_18 <- { _18 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'11 _33} s2
       | s2 = -{resolve'0 _33}- s3
       | s3 = {[@expl:type invariant] inv'12 _30} s4
@@ -605,48 +544,37 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4
       | s6 = -{resolve'2 _22}- s7
       | s7 = {[@expl:type invariant] inv'15 _18} s8
       | s8 = -{resolve'4 _18}- s9
-      | s9 =  [ &cell_last <- { cell_last with current = { cell_last.current with t_Cell__next = cell_ptr } } ] s10
+      | s9 = [ &cell_last <- { cell_last with current = { cell_last.current with t_Cell__next = cell_ptr } } ] s10
       | s10 = {[@expl:type invariant] inv'15 cell_last} s11
       | s11 = -{resolve'4 cell_last}- s12
-      | s12 =  [ &self'0 <- { self'0 with current = { self'0.current with t_List__last = cell_ptr } } ] s13
+      | s12 = [ &self'0 <- { self'0 with current = { self'0.current with t_List__last = cell_ptr } } ] s13
       | s13 = bb18 ]
-    
     | bb18 = s0
       [ s0 = {inv'7 (self'0.current).t_List__seq}
-        MutBorrow.borrow_final
-          < (Seq.seq t_PtrOwn)>
-          {(self'0.current).t_List__seq}
+        MutBorrow.borrow_final <Seq.seq t_PtrOwn> {(self'0.current).t_List__seq}
           {MutBorrow.inherit_id (MutBorrow.get_id self'0) 3}
-          (fun (_ret:MutBorrow.t ( (Seq.seq t_PtrOwn))) ->
-             [ &_42 <- _ret ] 
-            -{inv'7 _ret.final}-
-             [ &self'0 <- { self'0 with current = { self'0.current with t_List__seq = _ret.final } } ] 
-            s1)
-      | s1 = deref_mut {_42} (fun (_ret:MutBorrow.t (Seq.seq t_PtrOwn)) ->  [ &_41 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn)) ->
+            [ &_42 <- _ret ] -{inv'7 _ret.final}-
+            [ &self'0 <- { self'0 with current = { self'0.current with t_List__seq = _ret.final } } ] s1)
+      | s1 = deref_mut {_42} (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn)) -> [ &_41 <- _ret ] s2)
       | s2 = bb19 ]
-    
-    | bb19 = s0 [ s0 = into_inner'0 {cell_own} (fun (_ret:t_PtrOwn) ->  [ &_43 <- _ret ] s1) | s1 = bb20 ] 
+    | bb19 = s0 [ s0 = into_inner'0 {cell_own} (fun (_ret: t_PtrOwn) -> [ &_43 <- _ret ] s1) | s1 = bb20 ]
     | bb20 = s0
       [ s0 = {inv'6 _41.current}
         MutBorrow.borrow_final <Seq.seq t_PtrOwn> {_41.current} {MutBorrow.get_id _41}
-          (fun (_ret:MutBorrow.t (Seq.seq t_PtrOwn)) ->
-             [ &_40 <- _ret ] 
-            -{inv'6 _ret.final}-
-             [ &_41 <- { _41 with current = _ret.final } ] 
-            s1)
-      | s1 = push_back_ghost {_40} {_43} (fun (_ret:()) ->  [ &_39 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn)) ->
+            [ &_40 <- _ret ] -{inv'6 _ret.final}-
+            [ &_41 <- { _41 with current = _ret.final } ] s1)
+      | s1 = push_back_ghost {_40} {_43} (fun (_ret: ()) -> [ &_39 <- _ret ] s2)
       | s2 = bb21 ]
-    
     | bb21 = s0
       [ s0 = {[@expl:type invariant] inv'11 _41} s1
       | s1 = -{resolve'0 _41}- s2
       | s2 = {[@expl:type invariant] inv'17 self'0} s3
       | s3 = -{resolve'6 self'0}- s4
-      | s4 = new'1 {_39} (fun (_ret: ()) ->  [ &_38 <- _ret ] s5)
+      | s4 = new'1 {_39} (fun (_ret: ()) -> [ &_38 <- _ret ] s5)
       | s5 = bb24 ]
-    
     | bb24 = return''0 {_0} ]
-    
     [ & _0: () = Any.any_l ()
     | & self'0: MutBorrow.t t_List = self
     | & x'0: t_T = x
@@ -654,35 +582,33 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4
     | & _5: t_Cell = Any.any_l ()
     | & _7: Opaque.ptr = Any.any_l ()
     | & cell_ptr: Opaque.ptr = Any.any_l ()
-    | & cell_own:  t_PtrOwn = Any.any_l ()
+    | & cell_own: t_PtrOwn = Any.any_l ()
     | & _10: tuple = Any.any_l ()
     | & _13: bool = Any.any_l ()
     | & cell_last: MutBorrow.t t_Cell = Any.any_l ()
     | & _18: MutBorrow.t t_Cell = Any.any_l ()
-    | & _20:  (MutBorrow.t t_PtrOwn) = Any.any_l ()
+    | & _20: MutBorrow.t t_PtrOwn = Any.any_l ()
     | & _21: MutBorrow.t t_PtrOwn = Any.any_l ()
     | & _22: MutBorrow.t t_PtrOwn = Any.any_l ()
     | & off: int = Any.any_l ()
     | & _24: int = Any.any_l ()
     | & _26: Seq.seq t_PtrOwn = Any.any_l ()
     | & _28: int = Any.any_l ()
-    | & _29:  int = Any.any_l ()
+    | & _29: int = Any.any_l ()
     | & _30: MutBorrow.t t_PtrOwn = Any.any_l ()
     | & _31: t_Option = Any.any_l ()
     | & _32: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
     | & _33: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
-    | & _34: MutBorrow.t ( (Seq.seq t_PtrOwn)) = Any.any_l ()
-    | & _38:  () = Any.any_l ()
+    | & _34: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
+    | & _38: () = Any.any_l ()
     | & _39: () = Any.any_l ()
     | & _40: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
     | & _41: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
-    | & _42: MutBorrow.t ( (Seq.seq t_PtrOwn)) = Any.any_l ()
-    | & _43: t_PtrOwn = Any.any_l () ]
-    )
-    [ return''0 (result:())-> {[@expl:push_back ensures] [%#slinked_list'2] view self.final
+    | & _42: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
+    | & _43: t_PtrOwn = Any.any_l () ])
+    [ return''0 (result: ()) -> {[@expl:push_back ensures] [%#slinked_list'2] view self.final
       = Seq.snoc (view self.current) x}
       (! return' {result}) ]
-
 end
 module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 83 4 83 38] (* List<T> *)
   let%span slinked_list = "linked_list.rs" 83 27 83 31
@@ -725,41 +651,34 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 83 
   
   type t_T
   
-  type t_Cell  =
-    { t_Cell__v: t_T; t_Cell__next: Opaque.ptr }
+  type t_Cell = { t_Cell__v: t_T; t_Cell__next: Opaque.ptr }
   
-  type t_PtrOwn  =
-    { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Cell }
+  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Cell }
   
-  type t_List  =
-    { t_List__first: Opaque.ptr; t_List__last: Opaque.ptr; t_List__seq:  (Seq.seq t_PtrOwn) }
+  type t_List = { t_List__first: Opaque.ptr; t_List__last: Opaque.ptr; t_List__seq: Seq.seq t_PtrOwn }
   
-  type tuple  =
-    { _p0: Opaque.ptr; _p1:  t_PtrOwn }
+  type tuple = { _p0: Opaque.ptr; _p1: t_PtrOwn }
   
   predicate inv (_0: t_T)
   
   predicate inv'0 (_0: t_Cell)
   
   axiom inv_axiom [@rewrite]: forall x: t_Cell [inv'0 x]. inv'0 x
-  = match x with
-    | {t_Cell__v = v ; t_Cell__next = next} -> inv v
-    end
+      = match x with
+        | {t_Cell__v = v; t_Cell__next = next} -> inv v
+        end
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
-  predicate is_null_logic (self: Opaque.ptr) =
-    [%#sptr'1] addr_logic self = (0: UInt64.t)
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'1] addr_logic self = (0: UInt64.t)
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr'0] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant' (self: t_PtrOwn) =
-    [%#sptr_own'2] not is_null_logic (ptr self)
+  predicate invariant' (self: t_PtrOwn) = [%#sptr_own'2] not is_null_logic (ptr self)
   
-  predicate invariant''0 (self: t_Cell) =
-    [%#sboxed] inv'0 self
+  predicate invariant''0 (self: t_Cell) = [%#sboxed] inv'0 self
   
   predicate inv'1 (_0: t_Cell)
   
@@ -768,127 +687,117 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 83 
   predicate inv'2 (_0: t_PtrOwn)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x
-  = (invariant' x
-  /\ match x with
-    | {t_PtrOwn__ptr = ptr'0 ; t_PtrOwn__val = val'} -> inv'1 val'
-    end)
+      = (invariant' x
+      /\ match x with
+        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> inv'1 val'
+        end)
   
-  predicate invariant''1 (self:  t_PtrOwn) =
-    [%#sghost'6] inv'2 self
+  predicate invariant''1 (self: t_PtrOwn) = [%#sghost'6] inv'2 self
   
-  predicate inv'3 (_0:  t_PtrOwn)
+  predicate inv'3 (_0: t_PtrOwn)
   
-  axiom inv_axiom'2 [@rewrite]: forall x:  t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate inv'4 (_0: tuple)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: tuple [inv'4 x]. inv'4 x = (let {_p0 = x0 ; _p1 = x1} = x in inv'3 x1)
+  axiom inv_axiom'3 [@rewrite]: forall x: tuple [inv'4 x]. inv'4 x = (let {_p0 = x0; _p1 = x1} = x in inv'3 x1)
   
   function val' (self: t_PtrOwn) : t_Cell
   
-  let rec new (v:t_Cell) (return'  (x:tuple))= {[@expl:new 'v' type invariant] [%#sptr_own] inv'0 v}
+  let rec new (v: t_Cell) (return' (x: tuple)) = {[@expl:new 'v' type invariant] [%#sptr_own] inv'0 v}
     any
-    [ return''0 (result:tuple)-> {[%#sptr_own'0] inv'4 result}
+    [ return''0 (result: tuple) -> {[%#sptr_own'0] inv'4 result}
       {[%#sptr_own'1] ptr result._p1 = result._p0 /\ val' result._p1 = v}
       (! return' {result}) ]
   
+  let rec is_null (self_: Opaque.ptr) (return' (x: bool)) = any
+    [ return''0 (result: bool) -> {[%#sptr] result = is_null_logic self_} (! return' {result}) ]
   
-  let rec is_null (self_:Opaque.ptr) (return'  (x:bool))= any
-    [ return''0 (result:bool)-> {[%#sptr] result = is_null_logic self_} (! return' {result}) ]
-  
-  
-  predicate invariant''2 (self: t_PtrOwn) =
-    [%#sboxed] inv'2 self
+  predicate invariant''2 (self: t_PtrOwn) = [%#sboxed] inv'2 self
   
   predicate inv'5 (_0: t_PtrOwn)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''2 x
   
   predicate invariant''3 (self: Seq.seq t_PtrOwn) =
-    [%#sseq'3] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
+    [%#sseq'3] forall i: int. 0 <= i /\ i < Seq.length self -> inv'5 (Seq.get self i)
   
   predicate inv'6 (_0: Seq.seq t_PtrOwn)
   
   axiom inv_axiom'5 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate invariant''4 (self:  (Seq.seq t_PtrOwn)) =
-    [%#sghost'6] inv'6 self
+  predicate invariant''4 (self: Seq.seq t_PtrOwn) = [%#sghost'6] inv'6 self
   
-  predicate inv'7 (_0:  (Seq.seq t_PtrOwn))
+  predicate inv'7 (_0: Seq.seq t_PtrOwn)
   
-  axiom inv_axiom'6 [@rewrite]: forall x:  (Seq.seq t_PtrOwn) [inv'7 x]. inv'7 x = invariant''4 x
+  axiom inv_axiom'6 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'7 x]. inv'7 x = invariant''4 x
   
-  predicate invariant''5 (self: MutBorrow.t ( (Seq.seq t_PtrOwn))) =
-    [%#sinvariant] inv'7 self.current /\ inv'7 self.final
+  predicate invariant''5 (self: MutBorrow.t (Seq.seq t_PtrOwn)) = [%#sinvariant] inv'7 self.current /\ inv'7 self.final
   
-  predicate inv'8 (_0: MutBorrow.t ( (Seq.seq t_PtrOwn)))
+  predicate inv'8 (_0: MutBorrow.t (Seq.seq t_PtrOwn))
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t ( (Seq.seq t_PtrOwn)) [inv'8 x]. inv'8 x = invariant''5 x
+  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'8 x]. inv'8 x = invariant''5 x
   
-  predicate invariant''6 (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''6 (self: MutBorrow.t (Seq.seq t_PtrOwn)) = [%#sinvariant] inv'6 self.current /\ inv'6 self.final
   
   predicate inv'9 (_0: MutBorrow.t (Seq.seq t_PtrOwn))
   
   axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'9 x]. inv'9 x = invariant''6 x
   
-  let rec deref_mut (self:MutBorrow.t ( (Seq.seq t_PtrOwn))) (return'  (x:MutBorrow.t (Seq.seq t_PtrOwn)))= {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'8 self}
+  let rec deref_mut (self: MutBorrow.t (Seq.seq t_PtrOwn)) (return' (x: MutBorrow.t (Seq.seq t_PtrOwn))) =
+    {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'8 self}
     any
-    [ return''0 (result:MutBorrow.t (Seq.seq t_PtrOwn))-> {[%#sghost'0] inv'9 result}
+    [ return''0 (result: MutBorrow.t (Seq.seq t_PtrOwn)) -> {[%#sghost'0] inv'9 result}
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
-  
-  let rec into_inner (self: t_PtrOwn) (return'  (x:t_PtrOwn))= {[@expl:into_inner 'self' type invariant] [%#sghost'2] inv'3 self}
-    any [ return''0 (result:t_PtrOwn)-> {[%#sghost'3] inv'2 result} {[%#sghost'4] result = self} (! return' {result}) ] 
+  let rec into_inner (self: t_PtrOwn) (return' (x: t_PtrOwn)) =
+    {[@expl:into_inner 'self' type invariant] [%#sghost'2] inv'3 self}
+    any
+    [ return''0 (result: t_PtrOwn) -> {[%#sghost'3] inv'2 result} {[%#sghost'4] result = self} (! return' {result}) ]
   
   function push_front [@inline:trivial] (self: Seq.seq t_PtrOwn) (x: t_PtrOwn) : Seq.seq t_PtrOwn =
     [%#sseq'2] Seq.cons x self
   
-  let rec push_front_ghost (self:MutBorrow.t (Seq.seq t_PtrOwn)) (x:t_PtrOwn) (return'  (x'0:()))= {[@expl:push_front_ghost 'self' type invariant] [%#sseq] inv'9 self}
+  let rec push_front_ghost (self: MutBorrow.t (Seq.seq t_PtrOwn)) (x: t_PtrOwn) (return' (x'0: ())) =
+    {[@expl:push_front_ghost 'self' type invariant] [%#sseq] inv'9 self}
     {[@expl:push_front_ghost 'x' type invariant] [%#sseq'0] inv'2 x}
-    any [ return''0 (result:())-> {[%#sseq'1] self.final = push_front self.current x} (! return' {result}) ] 
+    any [ return''0 (result: ()) -> {[%#sseq'1] self.final = push_front self.current x} (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t (Seq.seq t_PtrOwn)) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    resolve _0
+  predicate resolve'0 (_0: MutBorrow.t (Seq.seq t_PtrOwn)) = resolve _0
   
   predicate invariant''7 [#"linked_list.rs" 23 4 23 30] (self: t_List) =
     [%#slinked_list'4] self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
-    /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
+      /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
     \/ Seq.length self.t_List__seq > 0
     /\ self.t_List__first = ptr (Seq.get self.t_List__seq 0)
     /\ self.t_List__last = ptr (Seq.get self.t_List__seq (Seq.length self.t_List__seq - 1))
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.t_List__seq - 1
-     -> (val' (Seq.get self.t_List__seq i)).t_Cell__next = ptr (Seq.get self.t_List__seq (i + 1)))
+        -> (val' (Seq.get self.t_List__seq i)).t_Cell__next = ptr (Seq.get self.t_List__seq (i + 1)))
     /\ is_null_logic (val' (Seq.get self.t_List__seq (Seq.length self.t_List__seq - 1))).t_Cell__next
   
   predicate inv'10 (_0: t_List)
   
   axiom inv_axiom'9 [@rewrite]: forall x: t_List [inv'10 x]. inv'10 x
-  = (invariant''7 x
-  /\ match x with
-    | {t_List__first = first ; t_List__last = last ; t_List__seq = seq} -> inv'7 seq
-    end)
+      = (invariant''7 x
+      /\ match x with
+        | {t_List__first = first; t_List__last = last; t_List__seq = seq} -> inv'7 seq
+        end)
   
-  predicate invariant''8 (self: MutBorrow.t t_List) =
-    [%#sinvariant] inv'10 self.current /\ inv'10 self.final
+  predicate invariant''8 (self: MutBorrow.t t_List) = [%#sinvariant] inv'10 self.current /\ inv'10 self.final
   
   predicate inv'11 (_0: MutBorrow.t t_List)
   
   axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_List [inv'11 x]. inv'11 x = invariant''8 x
   
-  predicate resolve'1 (self: MutBorrow.t t_List) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'1 (self: MutBorrow.t t_List) = [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0: MutBorrow.t t_List) =
-    resolve'1 _0
+  predicate resolve'2 (_0: MutBorrow.t t_List) = resolve'1 _0
   
-  let rec new'0 (x:()) (return'  (x'0: ()))= any
-    [ return''0 (result: ())-> {[%#sghost'5] result = x} (! return' {result}) ]
-  
+  let rec new'0 (x: ()) (return' (x'0: ())) = any
+    [ return''0 (result: ()) -> {[%#sghost'5] result = x} (! return' {result}) ]
   
   function seq_map [#"linked_list.rs" 52 0 52 66] (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
     [%#slinked_list'3] Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))
@@ -896,82 +805,68 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 83 
   function view [#"linked_list.rs" 44 4 44 33] (self: t_List) : Seq.seq t_T =
     [%#slinked_list'2] seq_map self.t_List__seq (fun (ptr_own: t_PtrOwn) -> (val' ptr_own).t_Cell__v)
   
-  function push_front'0 [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T =
-    [%#sseq'2] Seq.cons x self
+  function push_front'0 [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = [%#sseq'2] Seq.cons x self
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec push_front'1[#"linked_list.rs" 83 4 83 38] (self:MutBorrow.t t_List) (x:t_T) (return'  (x'0:()))= {[@expl:push_front 'self' type invariant] [%#slinked_list] inv'11 self}
+  let rec push_front'1 [#"linked_list.rs" 83 4 83 38] (self: MutBorrow.t t_List) (x: t_T) (return' (x'0: ())) =
+    {[@expl:push_front 'self' type invariant] [%#slinked_list] inv'11 self}
     {[@expl:push_front 'x' type invariant] [%#slinked_list'0] inv x}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &_7 <- { t_Cell__v = x'0; t_Cell__next = (self'0.current).t_List__first } ] s1 | s1 = bb1 ] 
-    | bb1 = s0 [ s0 = new {_7} (fun (_ret:tuple) ->  [ &_6 <- _ret ] s1) | s1 = bb2 ] 
+    [ bb0 = s0 [ s0 = [ &_7 <- { t_Cell__v = x'0; t_Cell__next = (self'0.current).t_List__first } ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = new {_7} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
-      [ s0 =  [ &cell_ptr <- _6._p0 ] s1
-      | s1 =  [ &cell_own <- _6._p1 ] s2
-      | s2 =  [ &self'0 <- { self'0 with current = { self'0.current with t_List__first = cell_ptr } } ] s3
-      | s3 = is_null {(self'0.current).t_List__last} (fun (_ret:bool) ->  [ &_12 <- _ret ] s4)
+      [ s0 = [ &cell_ptr <- _6._p0 ] s1
+      | s1 = [ &cell_own <- _6._p1 ] s2
+      | s2 = [ &self'0 <- { self'0 with current = { self'0.current with t_List__first = cell_ptr } } ] s3
+      | s3 = is_null {(self'0.current).t_List__last} (fun (_ret: bool) -> [ &_12 <- _ret ] s4)
       | s4 = bb3 ]
-    
-    | bb3 = any [ br0 -> {_12 = false} (! bb6) | br1 -> {_12} (! bb4) ] 
+    | bb3 = any [ br0 -> {_12 = false} (! bb6) | br1 -> {_12} (! bb4) ]
     | bb4 = s0
-      [ s0 =  [ &self'0 <- { self'0 with current = { self'0.current with t_List__last = cell_ptr } } ] s1 | s1 = bb6 ]
-    
+      [ s0 = [ &self'0 <- { self'0 with current = { self'0.current with t_List__last = cell_ptr } } ] s1 | s1 = bb6 ]
     | bb6 = s0
       [ s0 = {inv'7 (self'0.current).t_List__seq}
-        MutBorrow.borrow_final
-          < (Seq.seq t_PtrOwn)>
-          {(self'0.current).t_List__seq}
+        MutBorrow.borrow_final <Seq.seq t_PtrOwn> {(self'0.current).t_List__seq}
           {MutBorrow.inherit_id (MutBorrow.get_id self'0) 3}
-          (fun (_ret:MutBorrow.t ( (Seq.seq t_PtrOwn))) ->
-             [ &_19 <- _ret ] 
-            -{inv'7 _ret.final}-
-             [ &self'0 <- { self'0 with current = { self'0.current with t_List__seq = _ret.final } } ] 
-            s1)
-      | s1 = deref_mut {_19} (fun (_ret:MutBorrow.t (Seq.seq t_PtrOwn)) ->  [ &_18 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn)) ->
+            [ &_19 <- _ret ] -{inv'7 _ret.final}-
+            [ &self'0 <- { self'0 with current = { self'0.current with t_List__seq = _ret.final } } ] s1)
+      | s1 = deref_mut {_19} (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn)) -> [ &_18 <- _ret ] s2)
       | s2 = bb7 ]
-    
-    | bb7 = s0 [ s0 = into_inner {cell_own} (fun (_ret:t_PtrOwn) ->  [ &_20 <- _ret ] s1) | s1 = bb8 ] 
+    | bb7 = s0 [ s0 = into_inner {cell_own} (fun (_ret: t_PtrOwn) -> [ &_20 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
       [ s0 = {inv'6 _18.current}
         MutBorrow.borrow_final <Seq.seq t_PtrOwn> {_18.current} {MutBorrow.get_id _18}
-          (fun (_ret:MutBorrow.t (Seq.seq t_PtrOwn)) ->
-             [ &_17 <- _ret ] 
-            -{inv'6 _ret.final}-
-             [ &_18 <- { _18 with current = _ret.final } ] 
-            s1)
-      | s1 = push_front_ghost {_17} {_20} (fun (_ret:()) ->  [ &_16 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn)) ->
+            [ &_17 <- _ret ] -{inv'6 _ret.final}-
+            [ &_18 <- { _18 with current = _ret.final } ] s1)
+      | s1 = push_front_ghost {_17} {_20} (fun (_ret: ()) -> [ &_16 <- _ret ] s2)
       | s2 = bb9 ]
-    
     | bb9 = s0
       [ s0 = {[@expl:type invariant] inv'9 _18} s1
       | s1 = -{resolve'0 _18}- s2
       | s2 = {[@expl:type invariant] inv'11 self'0} s3
       | s3 = -{resolve'2 self'0}- s4
-      | s4 = new'0 {_16} (fun (_ret: ()) ->  [ &_15 <- _ret ] s5)
+      | s4 = new'0 {_16} (fun (_ret: ()) -> [ &_15 <- _ret ] s5)
       | s5 = bb11 ]
-    
     | bb11 = return''0 {_0} ]
-    
     [ & _0: () = Any.any_l ()
     | & self'0: MutBorrow.t t_List = self
     | & x'0: t_T = x
     | & cell_ptr: Opaque.ptr = Any.any_l ()
-    | & cell_own:  t_PtrOwn = Any.any_l ()
+    | & cell_own: t_PtrOwn = Any.any_l ()
     | & _6: tuple = Any.any_l ()
     | & _7: t_Cell = Any.any_l ()
     | & _12: bool = Any.any_l ()
-    | & _15:  () = Any.any_l ()
+    | & _15: () = Any.any_l ()
     | & _16: () = Any.any_l ()
     | & _17: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
     | & _18: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
-    | & _19: MutBorrow.t ( (Seq.seq t_PtrOwn)) = Any.any_l ()
-    | & _20: t_PtrOwn = Any.any_l () ]
-    )
-    [ return''0 (result:())-> {[@expl:push_front ensures] [%#slinked_list'1] view self.final
+    | & _19: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
+    | & _20: t_PtrOwn = Any.any_l () ])
+    [ return''0 (result: ()) -> {[@expl:push_front ensures] [%#slinked_list'1] view self.final
       = push_front'0 (view self.current) x}
       (! return' {result}) ]
-
 end

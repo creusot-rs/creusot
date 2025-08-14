@@ -35,17 +35,13 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_UnsafeCell  =
-    { t_UnsafeCell__value: Int32.t }
+  type t_UnsafeCell = { t_UnsafeCell__value: Int32.t }
   
-  type t_PCell  =
-    { t_PCell__0: t_UnsafeCell }
+  type t_PCell = { t_PCell__0: t_UnsafeCell }
   
-  type t_PCellOwn  =
-    { t_PCellOwn__0: () }
+  type t_PCellOwn = { t_PCellOwn__0: () }
   
-  type tuple  =
-    { _p0: t_PCell; _p1:  t_PCellOwn }
+  type tuple = { _p0: t_PCell; _p1: t_PCellOwn }
   
   type t_Id
   
@@ -55,140 +51,118 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   
   function val' (self: t_PCellOwn) : Int32.t
   
-  function view (self: t_PCellOwn) : Int32.t =
-    [%#spcell'23] val' self
+  function view (self: t_PCellOwn) : Int32.t = [%#spcell'23] val' self
   
-  let rec new (value:Int32.t) (return'  (x:tuple))= any
-    [ return''0 (result:tuple)-> {[%#spcell'9] id result._p0 = id'0 result._p1}
+  let rec new (value: Int32.t) (return' (x: tuple)) = any
+    [ return''0 (result: tuple) -> {[%#spcell'9] id result._p0 = id'0 result._p1}
       {[%#spcell'10] view result._p1 = value}
       (! return' {result}) ]
   
+  let rec borrow (self: t_PCellOwn) (return' (x: t_PCellOwn)) = any
+    [ return''0 (result: t_PCellOwn) -> {[%#sghost] result = self} (! return' {result}) ]
   
-  let rec borrow (self: t_PCellOwn) (return'  (x: t_PCellOwn))= any
-    [ return''0 (result: t_PCellOwn)-> {[%#sghost] result = self} (! return' {result}) ]
+  function view'0 (self: t_PCellOwn) : Int32.t = [%#smodel] view self
   
+  function view'1 (self: t_PCellOwn) : Int32.t = [%#sghost'1] view'0 self
   
-  function view'0 (self: t_PCellOwn) : Int32.t =
-    [%#smodel] view self
+  let rec borrow'0 (self: t_PCell) (perm: t_PCellOwn) (return' (x: Int32.t)) =
+    {[@expl:borrow requires] [%#spcell'11] id self = id'0 perm}
+    any [ return''0 (result: Int32.t) -> {[%#spcell'12] result = view'1 perm} (! return' {result}) ]
   
-  function view'1 (self:  t_PCellOwn) : Int32.t =
-    [%#sghost'1] view'0 self
+  let rec borrow_mut (self: MutBorrow.t t_PCellOwn) (return' (x: MutBorrow.t t_PCellOwn)) = any
+    [ return''0 (result: MutBorrow.t t_PCellOwn) -> {[%#sghost'0] result = self} (! return' {result}) ]
   
-  let rec borrow'0 (self:t_PCell) (perm: t_PCellOwn) (return'  (x:Int32.t))= {[@expl:borrow requires] [%#spcell'11] id self
-    = id'0 perm}
-    any [ return''0 (result:Int32.t)-> {[%#spcell'12] result = view'1 perm} (! return' {result}) ] 
+  function view'2 (self: MutBorrow.t t_PCellOwn) : Int32.t = [%#smodel'0] view self.current
   
-  let rec borrow_mut (self:MutBorrow.t ( t_PCellOwn)) (return'  (x: (MutBorrow.t t_PCellOwn)))= any
-    [ return''0 (result: (MutBorrow.t t_PCellOwn))-> {[%#sghost'0] result = self} (! return' {result}) ]
+  function view'3 (self: MutBorrow.t t_PCellOwn) : Int32.t = [%#sghost'1] view'2 self
   
-  
-  function view'2 (self: MutBorrow.t t_PCellOwn) : Int32.t =
-    [%#smodel'0] view self.current
-  
-  function view'3 (self:  (MutBorrow.t t_PCellOwn)) : Int32.t =
-    [%#sghost'1] view'2 self
-  
-  let rec borrow_mut'0 (self:t_PCell) (perm: (MutBorrow.t t_PCellOwn)) (return'  (x:MutBorrow.t Int32.t))= {[@expl:borrow_mut requires] [%#spcell'13] id self
-    = id'0 perm.current}
+  let rec borrow_mut'0 (self: t_PCell) (perm: MutBorrow.t t_PCellOwn) (return' (x: MutBorrow.t Int32.t)) =
+    {[@expl:borrow_mut requires] [%#spcell'13] id self = id'0 perm.current}
     any
-    [ return''0 (result:MutBorrow.t Int32.t)-> {[%#spcell'14] id self = id'0 perm.final}
+    [ return''0 (result: MutBorrow.t Int32.t) -> {[%#spcell'14] id self = id'0 perm.final}
       {[%#spcell'15] result.current = view'3 perm}
       {[%#spcell'16] result.final = view perm.final}
       (! return' {result}) ]
   
+  predicate resolve (self: MutBorrow.t Int32.t) = [%#sresolve] self.final = self.current
   
-  predicate resolve (self: MutBorrow.t Int32.t) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'0 (_0: MutBorrow.t Int32.t) = resolve _0
   
-  predicate resolve'0 (_0: MutBorrow.t Int32.t) =
-    resolve _0
-  
-  let rec replace (self:t_PCell) (perm: (MutBorrow.t t_PCellOwn)) (val''0:Int32.t) (return'  (x:Int32.t))= {[@expl:replace requires] [%#spcell'17] id self
-    = id'0 perm.current}
+  let rec replace (self: t_PCell) (perm: MutBorrow.t t_PCellOwn) (val''0: Int32.t) (return' (x: Int32.t)) =
+    {[@expl:replace requires] [%#spcell'17] id self = id'0 perm.current}
     any
-    [ return''0 (result:Int32.t)-> {[%#spcell'18] val''0 = view perm.final}
+    [ return''0 (result: Int32.t) -> {[%#spcell'18] val''0 = view perm.final}
       {[%#spcell'19] result = view'3 perm}
       {[%#spcell'20] id self = id'0 perm.final}
       (! return' {result}) ]
   
+  function view'4 (self: t_PCellOwn) : Int32.t = [%#sghost'1] view self
   
-  function view'4 (self:  t_PCellOwn) : Int32.t =
-    [%#sghost'1] view self
-  
-  let rec into_inner (self:t_PCell) (perm: t_PCellOwn) (return'  (x:Int32.t))= {[@expl:into_inner requires] [%#spcell'21] id self
-    = id'0 perm}
-    any [ return''0 (result:Int32.t)-> {[%#spcell'22] result = view'4 perm} (! return' {result}) ] 
+  let rec into_inner (self: t_PCell) (perm: t_PCellOwn) (return' (x: Int32.t)) =
+    {[@expl:into_inner requires] [%#spcell'21] id self = id'0 perm}
+    any [ return''0 (result: Int32.t) -> {[%#spcell'22] result = view'4 perm} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec foo[#"pcell.rs" 5 0 5 19] (return'  (x:Int32.t))= (! bb0
-    [ bb0 = s0 [ s0 = new {[%#spcell] (1: Int32.t)} (fun (_ret:tuple) ->  [ &_4 <- _ret ] s1) | s1 = bb1 ] 
+  let rec foo [#"pcell.rs" 5 0 5 19] (return' (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = new {[%#spcell] (1: Int32.t)} (fun (_ret: tuple) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 =  [ &p <- _4._p0 ] s1
-      | s1 =  [ &own <- _4._p1 ] s2
-      | s2 = borrow {own} (fun (_ret: t_PCellOwn) ->  [ &_10 <- _ret ] s3)
+      [ s0 = [ &p <- _4._p0 ] s1
+      | s1 = [ &own <- _4._p1 ] s2
+      | s2 = borrow {own} (fun (_ret: t_PCellOwn) -> [ &_10 <- _ret ] s3)
       | s3 = bb2 ]
-    
-    | bb2 = s0 [ s0 = borrow'0 {p} {_10} (fun (_ret:Int32.t) ->  [ &_8 <- _ret ] s1) | s1 = bb3 ] 
+    | bb2 = s0 [ s0 = borrow'0 {p} {_10} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
-      [ s0 =  [ &_6 <- _8 = ([%#spcell'0] (1: Int32.t)) ] s1
-      | s1 = any [ br0 -> {_6 = false} (! bb5) | br1 -> {_6} (! bb4) ]  ]
-    
+      [ s0 = [ &_6 <- _8 = ([%#spcell'0] (1: Int32.t)) ] s1
+      | s1 = any [ br0 -> {_6 = false} (! bb5) | br1 -> {_6} (! bb4) ] ]
     | bb4 = s0
-      [ s0 = MutBorrow.borrow_mut < t_PCellOwn> {own}
-          (fun (_ret:MutBorrow.t ( t_PCellOwn)) ->  [ &_17 <- _ret ]  [ &own <- _ret.final ] s1)
-      | s1 = borrow_mut {_17} (fun (_ret: (MutBorrow.t t_PCellOwn)) ->  [ &_16 <- _ret ] s2)
+      [ s0 = MutBorrow.borrow_mut <t_PCellOwn> {own}
+          (fun (_ret: MutBorrow.t t_PCellOwn) -> [ &_17 <- _ret ] [ &own <- _ret.final ] s1)
+      | s1 = borrow_mut {_17} (fun (_ret: MutBorrow.t t_PCellOwn) -> [ &_16 <- _ret ] s2)
       | s2 = bb6 ]
-    
-    | bb6 = s0 [ s0 = borrow_mut'0 {p} {_16} (fun (_ret:MutBorrow.t Int32.t) ->  [ &_14 <- _ret ] s1) | s1 = bb7 ] 
+    | bb6 = s0 [ s0 = borrow_mut'0 {p} {_16} (fun (_ret: MutBorrow.t Int32.t) -> [ &_14 <- _ret ] s1) | s1 = bb7 ]
     | bb7 = s0
-      [ s0 =  [ &_14 <- { _14 with current = ([%#spcell'1] (2: Int32.t)) } ] s1
+      [ s0 = [ &_14 <- { _14 with current = ([%#spcell'1] (2: Int32.t)) } ] s1
       | s1 = -{resolve'0 _14}- s2
-      | s2 = borrow {own} (fun (_ret: t_PCellOwn) ->  [ &_23 <- _ret ] s3)
+      | s2 = borrow {own} (fun (_ret: t_PCellOwn) -> [ &_23 <- _ret ] s3)
       | s3 = bb8 ]
-    
-    | bb8 = s0 [ s0 = borrow'0 {p} {_23} (fun (_ret:Int32.t) ->  [ &_21 <- _ret ] s1) | s1 = bb9 ] 
+    | bb8 = s0 [ s0 = borrow'0 {p} {_23} (fun (_ret: Int32.t) -> [ &_21 <- _ret ] s1) | s1 = bb9 ]
     | bb9 = s0
-      [ s0 =  [ &_19 <- _21 = ([%#spcell'2] (2: Int32.t)) ] s1
-      | s1 = any [ br0 -> {_19 = false} (! bb11) | br1 -> {_19} (! bb10) ]  ]
-    
+      [ s0 = [ &_19 <- _21 = ([%#spcell'2] (2: Int32.t)) ] s1
+      | s1 = any [ br0 -> {_19 = false} (! bb11) | br1 -> {_19} (! bb10) ] ]
     | bb10 = s0
-      [ s0 = MutBorrow.borrow_mut < t_PCellOwn> {own}
-          (fun (_ret:MutBorrow.t ( t_PCellOwn)) ->  [ &_31 <- _ret ]  [ &own <- _ret.final ] s1)
-      | s1 = borrow_mut {_31} (fun (_ret: (MutBorrow.t t_PCellOwn)) ->  [ &_30 <- _ret ] s2)
+      [ s0 = MutBorrow.borrow_mut <t_PCellOwn> {own}
+          (fun (_ret: MutBorrow.t t_PCellOwn) -> [ &_31 <- _ret ] [ &own <- _ret.final ] s1)
+      | s1 = borrow_mut {_31} (fun (_ret: MutBorrow.t t_PCellOwn) -> [ &_30 <- _ret ] s2)
       | s2 = bb12 ]
-    
     | bb12 = s0
-      [ s0 = replace {p} {_30} {[%#spcell'3] (3: Int32.t)} (fun (_ret:Int32.t) ->  [ &_28 <- _ret ] s1) | s1 = bb13 ]
-    
+      [ s0 = replace {p} {_30} {[%#spcell'3] (3: Int32.t)} (fun (_ret: Int32.t) -> [ &_28 <- _ret ] s1) | s1 = bb13 ]
     | bb13 = s0
-      [ s0 =  [ &_27 <- _28 = ([%#spcell'4] (2: Int32.t)) ] s1
-      | s1 = any [ br0 -> {_27 = false} (! bb15) | br1 -> {_27} (! bb14) ]  ]
-    
-    | bb14 = s0 [ s0 = into_inner {p} {own} (fun (_ret:Int32.t) ->  [ &_0 <- _ret ] s1) | s1 = bb16 ] 
+      [ s0 = [ &_27 <- _28 = ([%#spcell'4] (2: Int32.t)) ] s1
+      | s1 = any [ br0 -> {_27 = false} (! bb15) | br1 -> {_27} (! bb14) ] ]
+    | bb14 = s0 [ s0 = into_inner {p} {own} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb16 ]
     | bb16 = return''0 {_0}
     | bb15 = {[%#spcell'5] false} any
     | bb11 = {[%#spcell'6] false} any
     | bb5 = {[%#spcell'7] false} any ]
-    
     [ & _0: Int32.t = Any.any_l ()
     | & p: t_PCell = Any.any_l ()
-    | & own:  t_PCellOwn = Any.any_l ()
+    | & own: t_PCellOwn = Any.any_l ()
     | & _4: tuple = Any.any_l ()
     | & _6: bool = Any.any_l ()
     | & _8: Int32.t = Any.any_l ()
-    | & _10:  t_PCellOwn = Any.any_l ()
+    | & _10: t_PCellOwn = Any.any_l ()
     | & _14: MutBorrow.t Int32.t = Any.any_l ()
-    | & _16:  (MutBorrow.t t_PCellOwn) = Any.any_l ()
-    | & _17: MutBorrow.t ( t_PCellOwn) = Any.any_l ()
+    | & _16: MutBorrow.t t_PCellOwn = Any.any_l ()
+    | & _17: MutBorrow.t t_PCellOwn = Any.any_l ()
     | & _19: bool = Any.any_l ()
     | & _21: Int32.t = Any.any_l ()
-    | & _23:  t_PCellOwn = Any.any_l ()
+    | & _23: t_PCellOwn = Any.any_l ()
     | & _27: bool = Any.any_l ()
     | & _28: Int32.t = Any.any_l ()
-    | & _30:  (MutBorrow.t t_PCellOwn) = Any.any_l ()
-    | & _31: MutBorrow.t ( t_PCellOwn) = Any.any_l () ]
-    ) [ return''0 (result:Int32.t)-> {[@expl:foo ensures] [%#spcell'8] Int32.to_int result = 3} (! return' {result}) ] 
+    | & _30: MutBorrow.t t_PCellOwn = Any.any_l ()
+    | & _31: MutBorrow.t t_PCellOwn = Any.any_l () ])
+    [ return''0 (result: Int32.t) -> {[@expl:foo ensures] [%#spcell'8] Int32.to_int result = 3} (! return' {result}) ]
 end

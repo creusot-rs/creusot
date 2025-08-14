@@ -32,81 +32,68 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
   
   axiom len_spec: forall self: t_FMap. [%#sfmap'4] len self >= 0
   
-  type t_Option  =
-    | C_None
-    | C_Some int
+  type t_Option = C_None | C_Some int
   
   function view (self: t_FMap) : Map.map int t_Option
   
-  constant empty  : t_FMap
+  constant empty : t_FMap
   
   axiom empty_spec: [%#sfmap] len empty = 0
   
   axiom empty_spec'0: [%#sfmap'0] view empty = Const.const (C_None)
   
-  function get [@inline:trivial] (self: t_FMap) (k: int) : t_Option =
-    [%#sfmap'7] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: int) : t_Option = [%#sfmap'7] Map.get (view self) k
   
-  predicate contains [@inline:trivial] (self: t_FMap) (k: int) =
-    [%#sfmap'5] get self k <> C_None
+  predicate contains [@inline:trivial] (self: t_FMap) (k: int) = [%#sfmap'5] get self k <> C_None
   
   function insert (self: t_FMap) (k: int) (v: int) : t_FMap
   
   axiom insert_spec: forall self: t_FMap, k: int, v: int. [%#sfmap'1] view (insert self k v)
-  = Map.set (view self) k (C_Some v)
+      = Map.set (view self) k (C_Some v)
   
   axiom insert_spec'0: forall self: t_FMap, k: int, v: int. [%#sfmap'2] len (insert self k v)
-  = (if contains self k then len self else len self + 1)
+      = (if contains self k then len self else len self + 1)
   
-  predicate index_logic (self: Map.map int bool) (a: int) =
-    [%#smapping] Map.get self a
+  predicate index_logic (self: Map.map int bool) (a: int) = [%#smapping] Map.get self a
   
   function such_that (p: Map.map int bool) : int
   
   axiom such_that_spec: forall p: Map.map int bool. ([%#sutil] exists x: int. index_logic p x)
-   -> ([%#sutil'0] index_logic p (such_that p))
+      -> ([%#sutil'0] index_logic p (such_that p))
   
-  function unwrap_logic (self: t_Option) : int =
-    [%#soption'0] match self with
+  function unwrap_logic (self: t_Option) : int = [%#soption'0] match self with
       | C_Some x -> x
       | C_None -> such_that (fun (__0: int) -> true)
       end
   
-  function lookup [@inline:trivial] (self: t_FMap) (k: int) : int =
-    [%#sfmap'6] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: int) : int = [%#sfmap'6] unwrap_logic (get self k)
   
-  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: int) : int =
-    [%#sfmap'3] lookup self key
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: int) : int = [%#sfmap'3] lookup self key
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec foo[#"fmap_indexing.rs" 4 0 4 12] (return'  (x:()))= (! bb0
-    [ bb0 = s0 [ s0 =  [ &map <- [%#sfmap_indexing] empty ] s1 | s1 = bb1 ] 
-    | bb1 = s0 [ s0 =  [ &_3 <- [%#sfmap_indexing'0] insert map 1 3 ] s1 | s1 = bb2 ] 
+  let rec foo [#"fmap_indexing.rs" 4 0 4 12] (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = [ &map <- [%#sfmap_indexing] empty ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &_3 <- [%#sfmap_indexing'0] insert map 1 3 ] s1 | s1 = bb2 ]
     | bb2 = s0
-      [ s0 =  [ &map <- _3 ] s1
+      [ s0 = [ &map <- _3 ] s1
       | s1 = {[@expl:assertion] [%#sfmap_indexing'1] index_logic'0 map 1 = 3} s2
-      | s2 =  [ &_7 <- [%#sfmap_indexing'2] insert map 2 42 ] s3
+      | s2 = [ &_7 <- [%#sfmap_indexing'2] insert map 2 42 ] s3
       | s3 = bb3 ]
-    
     | bb3 = s0
-      [ s0 =  [ &map <- _7 ] s1
+      [ s0 = [ &map <- _7 ] s1
       | s1 = {[@expl:assertion] [%#sfmap_indexing'3] index_logic'0 map 1 = 3 /\ index_logic'0 map 2 = 42} s2
-      | s2 =  [ &_11 <- [%#sfmap_indexing'4] insert map 1 4 ] s3
+      | s2 = [ &_11 <- [%#sfmap_indexing'4] insert map 1 4 ] s3
       | s3 = bb4 ]
-    
     | bb4 = s0
-      [ s0 =  [ &map <- _11 ] s1
+      [ s0 = [ &map <- _11 ] s1
       | s1 = {[@expl:assertion] [%#sfmap_indexing'5] index_logic'0 map 1 = 4 /\ index_logic'0 map 2 = 42} s2
-      | s2 = return''0 {_0} ]
-     ]
-    
+      | s2 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & map: t_FMap = Any.any_l ()
     | & _3: t_FMap = Any.any_l ()
     | & _7: t_FMap = Any.any_l ()
-    | & _11: t_FMap = Any.any_l () ]
-    ) [ return''0 (result:())-> (! return' {result}) ] 
+    | & _11: t_FMap = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end

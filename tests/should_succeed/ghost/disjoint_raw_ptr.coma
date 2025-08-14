@@ -30,184 +30,157 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_PtrOwn  =
-    { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: Int32.t }
+  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: Int32.t }
   
-  type tuple  =
-    { _p0: Opaque.ptr; _p1:  t_PtrOwn }
+  type tuple = { _p0: Opaque.ptr; _p1: t_PtrOwn }
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
-  predicate is_null_logic (self: Opaque.ptr) =
-    [%#sptr'0] addr_logic self = (0: UInt64.t)
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'0] addr_logic self = (0: UInt64.t)
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant' (self: t_PtrOwn) =
-    [%#sptr_own'5] not is_null_logic (ptr self)
+  predicate invariant' (self: t_PtrOwn) = [%#sptr_own'5] not is_null_logic (ptr self)
   
   predicate inv (_0: t_PtrOwn)
   
   axiom inv_axiom [@rewrite]: forall x: t_PtrOwn [inv x]. inv x
-  = (invariant' x
-  /\ match x with
-    | {t_PtrOwn__ptr = ptr'0 ; t_PtrOwn__val = val'} -> true
-    end)
+      = (invariant' x
+      /\ match x with
+        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> true
+        end)
   
-  predicate invariant''0 (self:  t_PtrOwn) =
-    [%#sghost'6] inv self
+  predicate invariant''0 (self: t_PtrOwn) = [%#sghost'6] inv self
   
-  predicate inv'0 (_0:  t_PtrOwn)
+  predicate inv'0 (_0: t_PtrOwn)
   
-  axiom inv_axiom'0 [@rewrite]: forall x:  t_PtrOwn [inv'0 x]. inv'0 x = invariant''0 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant''0 x
   
   predicate inv'1 (_0: tuple)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {_p0 = x0 ; _p1 = x1} = x in inv'0 x1)
+  axiom inv_axiom'1 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {_p0 = x0; _p1 = x1} = x in inv'0 x1)
   
   function val' (self: t_PtrOwn) : Int32.t
   
-  let rec new (v:Int32.t) (return'  (x:tuple))= any
-    [ return''0 (result:tuple)-> {[%#sptr_own] inv'1 result}
+  let rec new (v: Int32.t) (return' (x: tuple)) = any
+    [ return''0 (result: tuple) -> {[%#sptr_own] inv'1 result}
       {[%#sptr_own'0] ptr result._p1 = result._p0 /\ val' result._p1 = v}
       (! return' {result}) ]
   
+  predicate invariant''1 (self: MutBorrow.t t_PtrOwn) = [%#sinvariant] inv'0 self.current /\ inv'0 self.final
   
-  predicate invariant''1 (self: MutBorrow.t ( t_PtrOwn)) =
-    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
+  predicate inv'2 (_0: MutBorrow.t t_PtrOwn)
   
-  predicate inv'2 (_0: MutBorrow.t ( t_PtrOwn))
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t ( t_PtrOwn) [inv'2 x]. inv'2 x = invariant''1 x
-  
-  predicate invariant''2 (self: MutBorrow.t t_PtrOwn) =
-    [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant''2 (self: MutBorrow.t t_PtrOwn) = [%#sinvariant] inv self.current /\ inv self.final
   
   predicate inv'3 (_0: MutBorrow.t t_PtrOwn)
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'3 x]. inv'3 x = invariant''2 x
   
-  let rec deref_mut (self:MutBorrow.t ( t_PtrOwn)) (return'  (x:MutBorrow.t t_PtrOwn))= {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'2 self}
+  let rec deref_mut (self: MutBorrow.t t_PtrOwn) (return' (x: MutBorrow.t t_PtrOwn)) =
+    {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'2 self}
     any
-    [ return''0 (result:MutBorrow.t t_PtrOwn)-> {[%#sghost'0] inv'3 result}
+    [ return''0 (result: MutBorrow.t t_PtrOwn) -> {[%#sghost'0] inv'3 result}
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
+  predicate invariant''3 (self: t_PtrOwn) = [%#sinvariant'0] inv'0 self
   
-  predicate invariant''3 (self:  t_PtrOwn) =
-    [%#sinvariant'0] inv'0 self
+  predicate inv'4 (_0: t_PtrOwn)
   
-  predicate inv'4 (_0:  t_PtrOwn)
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'4 x]. inv'4 x = invariant''3 x
   
-  axiom inv_axiom'4 [@rewrite]: forall x:  t_PtrOwn [inv'4 x]. inv'4 x = invariant''3 x
-  
-  predicate invariant''4 (self: t_PtrOwn) =
-    [%#sinvariant'0] inv self
+  predicate invariant''4 (self: t_PtrOwn) = [%#sinvariant'0] inv self
   
   predicate inv'5 (_0: t_PtrOwn)
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''4 x
   
-  let rec deref (self: t_PtrOwn) (return'  (x:t_PtrOwn))= {[@expl:deref 'self' type invariant] [%#sghost'2] inv'4 self}
-    any [ return''0 (result:t_PtrOwn)-> {[%#sghost'3] inv'5 result} {[%#sghost'4] self = result} (! return' {result}) ] 
+  let rec deref (self: t_PtrOwn) (return' (x: t_PtrOwn)) = {[@expl:deref 'self' type invariant] [%#sghost'2] inv'4 self}
+    any
+    [ return''0 (result: t_PtrOwn) -> {[%#sghost'3] inv'5 result} {[%#sghost'4] self = result} (! return' {result}) ]
   
-  let rec disjoint_lemma (own1:MutBorrow.t t_PtrOwn) (own2:t_PtrOwn) (return'  (x:()))= {[@expl:disjoint_lemma 'own1' type invariant] [%#sptr_own'1] inv'3 own1}
+  let rec disjoint_lemma (own1: MutBorrow.t t_PtrOwn) (own2: t_PtrOwn) (return' (x: ())) =
+    {[@expl:disjoint_lemma 'own1' type invariant] [%#sptr_own'1] inv'3 own1}
     {[@expl:disjoint_lemma 'own2' type invariant] [%#sptr_own'2] inv'5 own2}
     any
-    [ return''0 (result:())-> {[%#sptr_own'3] addr_logic (ptr own1.current) <> addr_logic (ptr own2)}
+    [ return''0 (result: ()) -> {[%#sptr_own'3] addr_logic (ptr own1.current) <> addr_logic (ptr own2)}
       {[%#sptr_own'4] own1.current = own1.final}
       (! return' {result}) ]
   
+  predicate resolve (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
   
-  predicate resolve (self: MutBorrow.t ( t_PtrOwn)) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'0 (_0: MutBorrow.t t_PtrOwn) = resolve _0
   
-  predicate resolve'0 (_0: MutBorrow.t ( t_PtrOwn)) =
-    resolve _0
+  predicate resolve'1 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
   
-  predicate resolve'1 (self: MutBorrow.t t_PtrOwn) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'2 (_0: MutBorrow.t t_PtrOwn) = resolve'1 _0
   
-  predicate resolve'2 (_0: MutBorrow.t t_PtrOwn) =
-    resolve'1 _0
-  
-  let rec new'0 (x:()) (return'  (x'0: ()))= any
-    [ return''0 (result: ())-> {[%#sghost'5] result = x} (! return' {result}) ]
-  
+  let rec new'0 (x: ()) (return' (x'0: ())) = any
+    [ return''0 (result: ()) -> {[%#sghost'5] result = x} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec foo[#"disjoint_raw_ptr.rs" 4 0 4 12] (return'  (x:()))= (! bb0
-    [ bb0 = s0 [ s0 = new {[%#sdisjoint_raw_ptr] (1: Int32.t)} (fun (_ret:tuple) ->  [ &_3 <- _ret ] s1) | s1 = bb1 ] 
+  let rec foo [#"disjoint_raw_ptr.rs" 4 0 4 12] (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = new {[%#sdisjoint_raw_ptr] (1: Int32.t)} (fun (_ret: tuple) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 =  [ &p1 <- _3._p0 ] s1
-      | s1 =  [ &own1 <- _3._p1 ] s2
-      | s2 = new {[%#sdisjoint_raw_ptr'0] (1: Int32.t)} (fun (_ret:tuple) ->  [ &_6 <- _ret ] s3)
+      [ s0 = [ &p1 <- _3._p0 ] s1
+      | s1 = [ &own1 <- _3._p1 ] s2
+      | s2 = new {[%#sdisjoint_raw_ptr'0] (1: Int32.t)} (fun (_ret: tuple) -> [ &_6 <- _ret ] s3)
       | s3 = bb2 ]
-    
     | bb2 = s0
-      [ s0 =  [ &p2 <- _6._p0 ] s1
-      | s1 =  [ &own2 <- _6._p1 ] s2
+      [ s0 = [ &p2 <- _6._p0 ] s1
+      | s1 = [ &own2 <- _6._p1 ] s2
       | s2 = {inv'0 own1}
-        MutBorrow.borrow_mut < t_PtrOwn> {own1}
-          (fun (_ret:MutBorrow.t ( t_PtrOwn)) ->  [ &_13 <- _ret ] -{inv'0 _ret.final}-  [ &own1 <- _ret.final ] s3)
+        MutBorrow.borrow_mut <t_PtrOwn> {own1}
+          (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_13 <- _ret ] -{inv'0 _ret.final}- [ &own1 <- _ret.final ] s3)
       | s3 = {inv'0 _13.current}
-        MutBorrow.borrow_final < t_PtrOwn> {_13.current} {MutBorrow.get_id _13}
-          (fun (_ret:MutBorrow.t ( t_PtrOwn)) ->
-             [ &_12 <- _ret ] 
-            -{inv'0 _ret.final}-
-             [ &_13 <- { _13 with current = _ret.final } ] 
-            s4)
-      | s4 = deref_mut {_12} (fun (_ret:MutBorrow.t t_PtrOwn) ->  [ &_11 <- _ret ] s5)
+        MutBorrow.borrow_final <t_PtrOwn> {_13.current} {MutBorrow.get_id _13}
+          (fun (_ret: MutBorrow.t t_PtrOwn) ->
+            [ &_12 <- _ret ] -{inv'0 _ret.final}-
+            [ &_13 <- { _13 with current = _ret.final } ] s4)
+      | s4 = deref_mut {_12} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_11 <- _ret ] s5)
       | s5 = bb3 ]
-    
-    | bb3 = s0
-      [ s0 =  [ &_17 <- own2 ] s1 | s1 = deref {_17} (fun (_ret:t_PtrOwn) ->  [ &_15 <- _ret ] s2) | s2 = bb4 ]
-    
+    | bb3 = s0 [ s0 = [ &_17 <- own2 ] s1 | s1 = deref {_17} (fun (_ret: t_PtrOwn) -> [ &_15 <- _ret ] s2) | s2 = bb4 ]
     | bb4 = s0
       [ s0 = {inv _11.current}
         MutBorrow.borrow_final <t_PtrOwn> {_11.current} {MutBorrow.get_id _11}
-          (fun (_ret:MutBorrow.t t_PtrOwn) ->
-             [ &_10 <- _ret ] 
-            -{inv _ret.final}-
-             [ &_11 <- { _11 with current = _ret.final } ] 
-            s1)
-      | s1 = disjoint_lemma {_10} {_15} (fun (_ret:()) ->  [ &_9 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t t_PtrOwn) ->
+            [ &_10 <- _ret ] -{inv _ret.final}-
+            [ &_11 <- { _11 with current = _ret.final } ] s1)
+      | s1 = disjoint_lemma {_10} {_15} (fun (_ret: ()) -> [ &_9 <- _ret ] s2)
       | s2 = bb5 ]
-    
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'2 _13} s1
       | s1 = -{resolve'0 _13}- s2
       | s2 = {[@expl:type invariant] inv'3 _11} s3
       | s3 = -{resolve'2 _11}- s4
-      | s4 = new'0 {_8} (fun (_ret: ()) ->  [ &_7 <- _ret ] s5)
+      | s4 = new'0 {_8} (fun (_ret: ()) -> [ &_7 <- _ret ] s5)
       | s5 = bb6 ]
-    
     | bb6 = s0
       [ s0 = {[@expl:assertion] [%#sdisjoint_raw_ptr'1] own1 <> own2} s1
       | s1 = {[@expl:assertion] [%#sdisjoint_raw_ptr'2] p1 <> p2} s2
-      | s2 = return''0 {_0} ]
-     ]
-    
+      | s2 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & p1: Opaque.ptr = Any.any_l ()
-    | & own1:  t_PtrOwn = Any.any_l ()
+    | & own1: t_PtrOwn = Any.any_l ()
     | & _3: tuple = Any.any_l ()
     | & p2: Opaque.ptr = Any.any_l ()
-    | & own2:  t_PtrOwn = Any.any_l ()
+    | & own2: t_PtrOwn = Any.any_l ()
     | & _6: tuple = Any.any_l ()
-    | & _7:  () = Any.any_l ()
+    | & _7: () = Any.any_l ()
     | & _8: () = Any.any_l ()
     | & _9: () = Any.any_l ()
     | & _10: MutBorrow.t t_PtrOwn = Any.any_l ()
     | & _11: MutBorrow.t t_PtrOwn = Any.any_l ()
-    | & _12: MutBorrow.t ( t_PtrOwn) = Any.any_l ()
-    | & _13: MutBorrow.t ( t_PtrOwn) = Any.any_l ()
+    | & _12: MutBorrow.t t_PtrOwn = Any.any_l ()
+    | & _13: MutBorrow.t t_PtrOwn = Any.any_l ()
     | & _15: t_PtrOwn = Any.any_l ()
-    | & _17:  t_PtrOwn = Any.any_l () ]
-    ) [ return''0 (result:())-> (! return' {result}) ] 
+    | & _17: t_PtrOwn = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end

@@ -8,14 +8,14 @@ module M_sum_of_odds__sum_of_odd [#"sum_of_odds.rs" 18 0 18 28]
   
   meta "select_lsinst" "all"
   
-  constant x  : int
+  constant x : int
   
   function sum_of_odd [#"sum_of_odds.rs" 18 0 18 28] (x'0: int) : int
   
   goal vc_sum_of_odd: if x <= 0 then
-    true
-  else
-    0 <= ([%#ssum_of_odds] x) /\ ([%#ssum_of_odds] x - 1) < ([%#ssum_of_odds] x)
+      true
+    else
+      0 <= ([%#ssum_of_odds] x) /\ ([%#ssum_of_odds] x - 1) < ([%#ssum_of_odds] x)
 
 end
 module M_sum_of_odds__sum_of_odd_is_sqr [#"sum_of_odds.rs" 26 0 26 28]
@@ -32,28 +32,27 @@ module M_sum_of_odds__sum_of_odd_is_sqr [#"sum_of_odds.rs" 26 0 26 28]
   function sum_of_odd [#"sum_of_odds.rs" 18 0 18 28] (x: int) : int
   
   axiom sum_of_odd_def: forall x: int. sum_of_odd x
-  = ([%#ssum_of_odds'4] if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1)
+      = ([%#ssum_of_odds'4] if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1)
   
-  function sqr [#"sum_of_odds.rs" 7 0 7 21] (x: int) : int =
-    [%#ssum_of_odds'5] x * x
+  function sqr [#"sum_of_odds.rs" 7 0 7 21] (x: int) : int = [%#ssum_of_odds'5] x * x
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant x  : int
+  constant x : int
   
   function sum_of_odd_is_sqr [#"sum_of_odds.rs" 26 0 26 28] (x'0: int) : ()
   
   goal vc_sum_of_odd_is_sqr: ([%#ssum_of_odds] x >= 0)
-   -> (if x > 0 then
-    (([@expl:sum_of_odd_is_sqr requires] [%#ssum_of_odds] x - 1 >= 0)
-    /\ 0 <= ([%#ssum_of_odds'1] x) /\ ([%#ssum_of_odds'1] x - 1) < ([%#ssum_of_odds'1] x))
-    /\ (([%#ssum_of_odds'0] sum_of_odd (x - 1) = sqr (x - 1))
-     -> ([@expl:sum_of_odd_is_sqr ensures] [%#ssum_of_odds'0] sum_of_odd x = sqr x))
-  else
-    [@expl:sum_of_odd_is_sqr ensures] [%#ssum_of_odds'0] sum_of_odd x = sqr x
-  )
+    -> (if x > 0 then
+      (([@expl:sum_of_odd_is_sqr requires] [%#ssum_of_odds] x - 1 >= 0)
+        /\ 0 <= ([%#ssum_of_odds'1] x) /\ ([%#ssum_of_odds'1] x - 1) < ([%#ssum_of_odds'1] x))
+      /\ (([%#ssum_of_odds'0] sum_of_odd (x - 1) = sqr (x - 1))
+      -> ([@expl:sum_of_odd_is_sqr ensures] [%#ssum_of_odds'0] sum_of_odd x = sqr x))
+    else
+      [@expl:sum_of_odd_is_sqr ensures] [%#ssum_of_odds'0] sum_of_odd x = sqr x
+    )
 end
 module M_sum_of_odds__compute_sum_of_odd [#"sum_of_odds.rs" 32 0 32 36]
   let%span ssum_of_odds = "sum_of_odds.rs" 33 21 33 22
@@ -92,33 +91,31 @@ module M_sum_of_odds__compute_sum_of_odd [#"sum_of_odds.rs" 32 0 32 36]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_Range  =
-    { t_Range__start: UInt32.t; t_Range__end: UInt32.t }
+  type t_Range = { t_Range__start: UInt32.t; t_Range__end: UInt32.t }
   
-  let rec into_iter (self_:t_Range) (return'  (x:t_Range))= any
-    [ return''0 (result:t_Range)-> {[%#siter] result = self_} (! return' {result}) ]
-  
+  let rec into_iter (self_: t_Range) (return' (x: t_Range)) = any
+    [ return''0 (result: t_Range) -> {[%#siter] result = self_} (! return' {result}) ]
   
   function sum_of_odd [#"sum_of_odds.rs" 18 0 18 28] (x: int) : int
   
   axiom sum_of_odd_def: forall x: int. sum_of_odd x
-  = ([%#ssum_of_odds'12] if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1)
+      = ([%#ssum_of_odds'12] if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1)
   
-  function deep_model (self: UInt32.t) : int =
-    [%#snum] UInt32.t'int self
+  function deep_model (self: UInt32.t) : int = [%#snum] UInt32.t'int self
   
   predicate produces (self: t_Range) (visited: Seq.seq UInt32.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end
     /\ deep_model self.t_Range__start <= deep_model o.t_Range__start
-    /\ (Seq.length visited > 0  -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
+    /\ (Seq.length visited > 0 -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
     /\ Seq.length visited = deep_model o.t_Range__start - deep_model self.t_Range__start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> deep_model (Seq.get visited i) = deep_model self.t_Range__start + i)
+      -> deep_model (Seq.get visited i) = deep_model self.t_Range__start + i)
   
   function produces_trans (a: t_Range) (ab: Seq.seq UInt32.t) (b: t_Range) (bc: Seq.seq UInt32.t) (c: t_Range) : ()
   
-  axiom produces_trans_spec: forall a: t_Range, ab: Seq.seq UInt32.t, b: t_Range, bc: Seq.seq UInt32.t, c: t_Range. ([%#srange'1] produces a ab b)
-   -> ([%#srange'2] produces b bc c)  -> ([%#srange'3] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_Range, ab: Seq.seq UInt32.t, b: t_Range, bc: Seq.seq UInt32.t, c: t_Range. ([%#srange'1] produces a ab b)
+      -> ([%#srange'2] produces b bc c) -> ([%#srange'3] produces a (Seq.(++) ab bc) c)
   
   function produces_refl (self: t_Range) : ()
   
@@ -132,94 +129,80 @@ module M_sum_of_odds__compute_sum_of_odd [#"sum_of_odds.rs" 32 0 32 36]
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq UInt32.t [inv'0 x]. inv'0 x = true
   
-  type t_Option  =
-    | C_None
-    | C_Some UInt32.t
+  type t_Option = C_None | C_Some UInt32.t
   
-  predicate resolve (self: MutBorrow.t t_Range) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
   
   predicate completed (self: MutBorrow.t t_Range) =
     [%#srange'4] resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
   
-  let rec next (self_:MutBorrow.t t_Range) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#siter'0] match result with
+  let rec next (self_: MutBorrow.t t_Range) (return' (x: t_Option)) = any
+    [ return''0 (result: t_Option) -> {[%#siter'0] match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return' {result}) ]
   
+  predicate resolve'0 (_0: MutBorrow.t t_Range) = resolve _0
   
-  predicate resolve'0 (_0: MutBorrow.t t_Range) =
-    resolve _0
-  
-  let rec v_Some (input:t_Option) (ret  (field_0:UInt32.t))= any
-    [ good (field_0:UInt32.t)-> {C_Some field_0 = input} (! ret {field_0})
+  let rec v_Some (input: t_Option) (ret (field_0: UInt32.t)) = any
+    [ good (field_0: UInt32.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  
-  function sqr [#"sum_of_odds.rs" 7 0 7 21] (x: int) : int =
-    [%#ssum_of_odds'17] x * x
+  function sqr [#"sum_of_odds.rs" 7 0 7 21] (x: int) : int = [%#ssum_of_odds'17] x * x
   
   function sum_of_odd_is_sqr [#"sum_of_odds.rs" 26 0 26 28] (x: int) : ()
   
   axiom sum_of_odd_is_sqr_def: forall x: int. ([%#ssum_of_odds'13] x >= 0)
-   -> sum_of_odd_is_sqr x = ([%#ssum_of_odds'16] if x > 0 then sum_of_odd_is_sqr (x - 1) else ())
+      -> sum_of_odd_is_sqr x = ([%#ssum_of_odds'16] if x > 0 then sum_of_odd_is_sqr (x - 1) else ())
   
   axiom sum_of_odd_is_sqr_spec: forall x: int. ([%#ssum_of_odds'13] x >= 0)
-   -> ([%#ssum_of_odds'14] sum_of_odd x = sqr x)
+      -> ([%#ssum_of_odds'14] sum_of_odd x = sqr x)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec compute_sum_of_odd[#"sum_of_odds.rs" 32 0 32 36] (x:UInt32.t) (return'  (x'0:UInt32.t))= {[@expl:compute_sum_of_odd requires] [%#ssum_of_odds'9] UInt32.t'int x
-    < 65536}
+  let rec compute_sum_of_odd [#"sum_of_odds.rs" 32 0 32 36] (x: UInt32.t) (return' (x'0: UInt32.t)) =
+    {[@expl:compute_sum_of_odd requires] [%#ssum_of_odds'9] UInt32.t'int x < 65536}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &s <- [%#ssum_of_odds] (0: UInt32.t) ] s1
-      | s1 =  [ &_8 <- { t_Range__start = ([%#ssum_of_odds'0] (0: UInt32.t)); t_Range__end = x'0 } ] s2
-      | s2 = into_iter {_8} (fun (_ret:t_Range) ->  [ &iter <- _ret ] s3)
+      [ s0 = [ &s <- [%#ssum_of_odds] (0: UInt32.t) ] s1
+      | s1 = [ &_8 <- { t_Range__start = ([%#ssum_of_odds'0] (0: UInt32.t)); t_Range__end = x'0 } ] s2
+      | s2 = into_iter {_8} (fun (_ret: t_Range) -> [ &iter <- _ret ] s3)
       | s3 = bb1 ]
-    
-    | bb1 = s0 [ s0 =  [ &iter_old <- [%#ssum_of_odds'1] iter ] s1 | s1 = bb2 ] 
-    | bb2 = s0 [ s0 =  [ &produced <- [%#ssum_of_odds'2] Seq.empty: Seq.seq UInt32.t ] s1 | s1 = bb4 ] 
+    | bb1 = s0 [ s0 = [ &iter_old <- [%#ssum_of_odds'1] iter ] s1 | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &produced <- [%#ssum_of_odds'2] Seq.empty: Seq.seq UInt32.t ] s1 | s1 = bb4 ]
     | bb4 = bb4'0
       [ bb4'0 = {[@expl:for invariant] [%#ssum_of_odds'4] inv'0 produced}
         {[@expl:for invariant] [%#ssum_of_odds'4] inv iter}
         {[@expl:for invariant] [%#ssum_of_odds'4] produces iter_old produced iter}
         {[@expl:loop invariant] [%#ssum_of_odds'3] UInt32.t'int s = sum_of_odd (Seq.length produced)}
-        (! s0) [ s0 = bb5 ] 
+        (! s0)
+        [ s0 = bb5 ]
         [ bb5 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range> {iter}
-              (fun (_ret:MutBorrow.t t_Range) ->  [ &_22 <- _ret ]  [ &iter <- _ret.final ] s1)
+              (fun (_ret: MutBorrow.t t_Range) -> [ &_22 <- _ret ] [ &iter <- _ret.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Range> {_22.current} {MutBorrow.get_id _22}
-              (fun (_ret:MutBorrow.t t_Range) ->  [ &_21 <- _ret ]  [ &_22 <- { _22 with current = _ret.final } ] s2)
-          | s2 = next {_21} (fun (_ret:t_Option) ->  [ &_20 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Range) -> [ &_21 <- _ret ] [ &_22 <- { _22 with current = _ret.final } ] s2)
+          | s2 = next {_21} (fun (_ret: t_Option) -> [ &_20 <- _ret ] s3)
           | s3 = bb6 ]
-        
         | bb6 = s0
           [ s0 = -{resolve'0 _22}- s1
-          | s1 = any [ br0 -> {_20 = C_None} (! bb9) | br1 (x0:UInt32.t)-> {_20 = C_Some x0} (! bb10) ]  ]
-        
+          | s1 = any [ br0 -> {_20 = C_None} (! bb9) | br1 (x0: UInt32.t) -> {_20 = C_Some x0} (! bb10) ] ]
         | bb10 = s0
-          [ s0 = v_Some {_20} (fun (r0:UInt32.t) ->  [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 =  [ &_25 <- [%#ssum_of_odds'5] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = v_Some {_20} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_25 <- [%#ssum_of_odds'5] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb11 ]
-        
         | bb11 = s0
-          [ s0 =  [ &produced <- _25 ] s1
-          | s1 =  [ &i <- __creusot_proc_iter_elem ] s2
+          [ s0 = [ &produced <- _25 ] s1
+          | s1 = [ &i <- __creusot_proc_iter_elem ] s2
           | s2 = {[@expl:assertion] [%#ssum_of_odds'6] let _ = sum_of_odd_is_sqr (UInt32.t'int i) in true} s3
-          | s3 = UInt32.mul {[%#ssum_of_odds'7] (2: UInt32.t)} {i} (fun (_ret:UInt32.t) ->  [ &_31 <- _ret ] s4)
-          | s4 = UInt32.add {_31} {[%#ssum_of_odds'8] (1: UInt32.t)} (fun (_ret:UInt32.t) ->  [ &_30 <- _ret ] s5)
-          | s5 = UInt32.add {s} {_30} (fun (_ret:UInt32.t) ->  [ &s <- _ret ] s6)
-          | s6 = bb4'0 ]
-         ]
-       ]
-    
-    | bb9 = s0 [ s0 =  [ &_0 <- s ] s1 | s1 = return''0 {_0} ]  ]
-    
+          | s3 = UInt32.mul {[%#ssum_of_odds'7] (2: UInt32.t)} {i} (fun (_ret: UInt32.t) -> [ &_31 <- _ret ] s4)
+          | s4 = UInt32.add {_31} {[%#ssum_of_odds'8] (1: UInt32.t)} (fun (_ret: UInt32.t) -> [ &_30 <- _ret ] s5)
+          | s5 = UInt32.add {s} {_30} (fun (_ret: UInt32.t) -> [ &s <- _ret ] s6)
+          | s6 = bb4'0 ] ] ]
+    | bb9 = s0 [ s0 = [ &_0 <- s ] s1 | s1 = return''0 {_0} ] ]
     [ & _0: UInt32.t = Any.any_l ()
     | & x'0: UInt32.t = x
     | & s: UInt32.t = Any.any_l ()
@@ -234,12 +217,10 @@ module M_sum_of_odds__compute_sum_of_odd [#"sum_of_odds.rs" 32 0 32 36]
     | & _25: Seq.seq UInt32.t = Any.any_l ()
     | & i: UInt32.t = Any.any_l ()
     | & _30: UInt32.t = Any.any_l ()
-    | & _31: UInt32.t = Any.any_l () ]
-    )
-    [ return''0 (result:UInt32.t)-> {[@expl:compute_sum_of_odd ensures] [%#ssum_of_odds'10] UInt32.t'int result
+    | & _31: UInt32.t = Any.any_l () ])
+    [ return''0 (result: UInt32.t) -> {[@expl:compute_sum_of_odd ensures] [%#ssum_of_odds'10] UInt32.t'int result
       = sum_of_odd (UInt32.t'int x)}
       (! return' {result}) ]
-
 end
 module M_sum_of_odds__test [#"sum_of_odds.rs" 46 0 46 19]
   let%span ssum_of_odds = "sum_of_odds.rs" 49 8 49 29
@@ -262,42 +243,37 @@ module M_sum_of_odds__test [#"sum_of_odds.rs" 46 0 46 19]
   function sum_of_odd [#"sum_of_odds.rs" 18 0 18 28] (x: int) : int
   
   axiom sum_of_odd_def: forall x: int. sum_of_odd x
-  = ([%#ssum_of_odds'9] if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1)
+      = ([%#ssum_of_odds'9] if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1)
   
-  let rec compute_sum_of_odd (x:UInt32.t) (return'  (x'0:UInt32.t))= {[@expl:compute_sum_of_odd requires] [%#ssum_of_odds'1] UInt32.t'int x
-    < 65536}
+  let rec compute_sum_of_odd (x: UInt32.t) (return' (x'0: UInt32.t)) =
+    {[@expl:compute_sum_of_odd requires] [%#ssum_of_odds'1] UInt32.t'int x < 65536}
     any
-    [ return''0 (result:UInt32.t)-> {[%#ssum_of_odds'2] UInt32.t'int result = sum_of_odd (UInt32.t'int x)}
+    [ return''0 (result: UInt32.t) -> {[%#ssum_of_odds'2] UInt32.t'int result = sum_of_odd (UInt32.t'int x)}
       (! return' {result}) ]
   
-  
-  function sqr [#"sum_of_odds.rs" 7 0 7 21] (x: int) : int =
-    [%#ssum_of_odds'10] x * x
+  function sqr [#"sum_of_odds.rs" 7 0 7 21] (x: int) : int = [%#ssum_of_odds'10] x * x
   
   function sum_of_odd_is_sqr [#"sum_of_odds.rs" 26 0 26 28] (x: int) : ()
   
   axiom sum_of_odd_is_sqr_def: forall x: int. ([%#ssum_of_odds'3] x >= 0)
-   -> sum_of_odd_is_sqr x = ([%#ssum_of_odds'6] if x > 0 then sum_of_odd_is_sqr (x - 1) else ())
+      -> sum_of_odd_is_sqr x = ([%#ssum_of_odds'6] if x > 0 then sum_of_odd_is_sqr (x - 1) else ())
   
-  axiom sum_of_odd_is_sqr_spec: forall x: int. ([%#ssum_of_odds'3] x >= 0)  -> ([%#ssum_of_odds'4] sum_of_odd x = sqr x)
+  axiom sum_of_odd_is_sqr_spec: forall x: int. ([%#ssum_of_odds'3] x >= 0) -> ([%#ssum_of_odds'4] sum_of_odd x = sqr x)
   
-  predicate is_square [#"sum_of_odds.rs" 12 0 12 28] (y: int) =
-    [%#ssum_of_odds'7] exists z: int. y = sqr z
+  predicate is_square [#"sum_of_odds.rs" 12 0 12 28] (y: int) = [%#ssum_of_odds'7] exists z: int. y = sqr z
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test[#"sum_of_odds.rs" 46 0 46 19] (x:UInt32.t) (return'  (x'0:()))= {[@expl:test requires] [%#ssum_of_odds'0] UInt32.t'int x
-    < 65536}
+  let rec test [#"sum_of_odds.rs" 46 0 46 19] (x: UInt32.t) (return' (x'0: ())) =
+    {[@expl:test requires] [%#ssum_of_odds'0] UInt32.t'int x < 65536}
     (! bb0
-    [ bb0 = s0 [ s0 = compute_sum_of_odd {x'0} (fun (_ret:UInt32.t) ->  [ &y <- _ret ] s1) | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = compute_sum_of_odd {x'0} (fun (_ret: UInt32.t) -> [ &y <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {[@expl:assertion] [%#ssum_of_odds] let _ = sum_of_odd_is_sqr (UInt32.t'int x'0) in is_square (UInt32.t'int y)}
+      [ s0 =
+        {[@expl:assertion] [%#ssum_of_odds] let _ = sum_of_odd_is_sqr (UInt32.t'int x'0) in is_square (UInt32.t'int y)}
         s1
-      | s1 = return''0 {_0} ]
-     ]
-     [ & _0: () = Any.any_l () | & x'0: UInt32.t = x | & y: UInt32.t = Any.any_l () ] )
-    [ return''0 (result:())-> (! return' {result}) ]
-
+      | s1 = return''0 {_0} ] ] [ & _0: () = Any.any_l () | & x'0: UInt32.t = x | & y: UInt32.t = Any.any_l () ])
+    [ return''0 (result: ()) -> (! return' {result}) ]
 end
