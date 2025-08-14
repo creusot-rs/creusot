@@ -68,17 +68,17 @@ macro_rules! queryish {
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub struct BodyId {
-    pub def_id: LocalDefId,
+    pub def_id: DefId,
     pub promoted: Option<Promoted>,
 }
 
 impl BodyId {
-    pub fn new(def_id: LocalDefId, promoted: Option<Promoted>) -> Self {
-        BodyId { def_id, promoted }
+    pub fn local(def_id: LocalDefId) -> Self {
+        BodyId { def_id: def_id.to_def_id(), promoted: None }
     }
 
-    pub fn def_id(self) -> DefId {
-        self.def_id.to_def_id()
+    pub fn from_def_id(def_id: DefId) -> Self {
+        BodyId { def_id, promoted: None }
     }
 }
 
@@ -502,12 +502,13 @@ impl<'tcx> TranslationCtx<'tcx> {
                     ItemType::Program
                 }
             }
-            DefKind::AssocConst | DefKind::Const => ItemType::Constant,
+            DefKind::AssocConst | DefKind::Const | DefKind::InlineConst | DefKind::ConstParam => {
+                ItemType::Constant
+            }
             DefKind::Closure => ItemType::Closure,
             DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,
             DefKind::AssocTy => ItemType::AssocTy,
             DefKind::Field => ItemType::Field,
-            DefKind::AnonConst => panic!(),
             DefKind::Variant => ItemType::Variant,
             dk => ItemType::Unsupported(dk),
         }

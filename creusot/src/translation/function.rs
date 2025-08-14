@@ -7,9 +7,9 @@ use crate::{
     ctx::*,
     gather_spec_closures::LoopSpecKind,
     translation::{
-        constant::from_mir_constant,
+        constant::mirconst_to_operand,
         fmir::{self, LocalDecls, RValue, TrivialInv},
-        pearlite::{Ident, Term},
+        pearlite::{Ident, PIdent, Term},
     },
 };
 use indexmap::IndexMap;
@@ -97,17 +97,29 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         body_id: BodyId,
         f: F,
     ) -> R {
-        let body_with_facts = ctx.body_with_facts(body_id.def_id);
-        let body = match body_id.promoted {
-            None => &body_with_facts.body,
-            Some(promoted) => body_with_facts.promoted.get(promoted).unwrap(),
+        let (body, body_specs, body_data) = match body_id.def_id.as_local() {
+            Some(def_id) => {
+                let body_with_facts = ctx.body_with_facts(def_id);
+                let body = match body_id.promoted {
+                    None => &body_with_facts.body,
+                    Some(promoted) => body_with_facts.promoted.get(promoted).unwrap(),
+                };
+                let mut body_specs = analysis::BodySpecs::from_body(ctx, body);
+                let body_data = match body_id.promoted {
+                    None => analysis::run_with_specs(ctx, &body_with_facts, &mut body_specs),
+                    Some(_) => BodyData::new(),
+                };
+                (body, body_specs, body_data)
+            }
+            None => {
+                assert!(body_id.promoted.is_none());
+                let body = ctx.tcx.mir_for_ctfe(body_id.def_id);
+                let body_specs = analysis::BodySpecs::from_body(ctx, &body);
+                let body_data = BodyData::new();
+                (body, body_specs, body_data)
+            }
         };
-        let typing_env = ctx.typing_env(body.source.def_id());
-        let mut assertions = analysis::BodySpecs::from_body(ctx, body);
-        let body_data = match body_id.promoted {
-            None => analysis::run_with_specs(ctx, &body_with_facts, &mut assertions),
-            Some(_) => BodyData::new(),
-        };
+        let typing_env = ctx.typing_env(body_id.def_id);
         let BodySpecs {
             invariants,
             invariant_assertions,
@@ -116,7 +128,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             locals,
             vars,
             erased_locals,
-        } = assertions;
+        } = body_specs;
         f(BodyTranslator {
             body,
             body_id,
@@ -194,6 +206,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             arg_count: self.body.arg_count,
             blocks: self.past_blocks,
             fresh: self.fresh_id,
+            block_spans: self
+                .body
+                .basic_blocks
+                .indices()
+                .map(|bb| (bb, self.body.source_info(bb.start_location()).span))
+                .collect(),
         }
     }
 
@@ -287,7 +305,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.tcx(),
             self.typing_env(),
             rhs_ty,
-            self.tcx().def_span(self.body_id.def_id()),
+            self.tcx().def_span(self.body_id.def_id),
         ) {
             TrivialInv::Trivial
         } else {
@@ -321,7 +339,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         match operand {
             Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(pl.as_ref(), span)),
             Operand::Move(pl) => fmir::Operand::Move(self.translate_place(pl.as_ref(), span)),
-            Operand::Constant(c) => from_mir_constant(self.typing_env(), self.ctx, c),
+            Operand::Constant(c) => {
+                mirconst_to_operand(c, self.ctx, self.typing_env(), self.body_id.def_id)
+            }
         }
     }
 
@@ -341,7 +361,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     mir::ProjectionElem::Deref
                 }
                 mir::ProjectionElem::Field(ix, ty) => mir::ProjectionElem::Field(ix, ty),
-                mir::ProjectionElem::Index(l) => mir::ProjectionElem::Index(self.locals[&l].1),
+                mir::ProjectionElem::Index(l) => {
+                    mir::ProjectionElem::Index(PIdent(self.locals[&l].1))
+                }
                 mir::ProjectionElem::ConstantIndex { offset, min_length, from_end } => {
                     mir::ProjectionElem::ConstantIndex { offset, min_length, from_end }
                 }

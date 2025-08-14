@@ -24,8 +24,9 @@ use rustc_middle::ty::{
 use rustc_span::Span;
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
-    Ident, Name, QName, Symbol,
-    declaration::{Attribute, Decl, Span as WSpan, TyDecl},
+    Exp, Ident, Name, QName, Symbol,
+    coma::{Defn, Expr, Param, Prototype},
+    declaration::{Attribute, Decl, Goal, Span as WSpan, TyDecl},
 };
 
 mod elaborator;
@@ -194,6 +195,8 @@ pub(crate) trait Namer<'tcx> {
         }
     }
 
+    fn register_constant_setter(&mut self, setter: Ident);
+
     fn tcx(&self) -> TyCtxt<'tcx>;
 
     fn typing_env(&self) -> TypingEnv<'tcx>;
@@ -231,6 +234,10 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
                 Kind::Named(Ident::fresh(crate_name(self.tcx), base.as_str()))
             }))
         })
+    }
+
+    fn register_constant_setter(&mut self, setter: Ident) {
+        self.constant_setters.0.push(setter);
     }
 
     fn tcx(&self) -> TyCtxt<'tcx> {
@@ -281,6 +288,10 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         self.names.raw_dependency(key)
     }
 
+    fn register_constant_setter(&mut self, setter: Ident) {
+        self.names.register_constant_setter(setter);
+    }
+
     fn span(&self, span: Span) -> Option<Attribute> {
         self.names.span(span)
     }
@@ -313,6 +324,8 @@ pub(crate) struct CloneNames<'tcx> {
     names: OnceMap<Dependency<'tcx>, Box<Kind>>,
     /// Maps spans to a unique name
     spans: OnceMap<Span, Box<Ident>>,
+    /// Program functions to call to set the value of constants
+    constant_setters: Setters,
 }
 
 impl<'tcx> CloneNames<'tcx> {
@@ -329,6 +342,7 @@ impl<'tcx> CloneNames<'tcx> {
             bitwise_mode,
             names: Default::default(),
             spans: Default::default(),
+            constant_setters: Setters::new(),
         }
     }
 }
@@ -384,7 +398,7 @@ impl<'tcx> Dependencies<'tcx> {
         self.names.def_ty(def_id, subst)
     }
 
-    pub(crate) fn provide_deps(mut self, ctx: &Why3Generator<'tcx>) -> Vec<Decl> {
+    pub(crate) fn provide_deps(mut self, ctx: &Why3Generator<'tcx>) -> (Vec<Decl>, Setters) {
         trace!("emitting dependencies for {:?}", self.self_id);
         let mut decls = Vec::new();
 
@@ -521,12 +535,49 @@ impl<'tcx> Dependencies<'tcx> {
             })
             .collect();
 
-        if spans.is_empty() {
+        let decls = if spans.is_empty() {
             decls
         } else {
             let mut tmp = vec![Decl::LetSpans(spans)];
             tmp.extend(decls);
             tmp
+        };
+        (decls, self.names.constant_setters)
+    }
+}
+
+/// Names of constant setters declared in the current module.
+/// Use `call_setters` or `mk_goal` to wrap a Coma or Why3 expression with calls to these setters.
+pub struct Setters(Vec<Ident>);
+
+impl Setters {
+    fn new() -> Self {
+        Setters(vec![])
+    }
+
+    fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn call_setters(self, mut body: why3::coma::Expr) -> why3::coma::Expr {
+        for setter in self.0.into_iter() {
+            body = why3::coma::Expr::var(setter).app([why3::coma::Arg::Cont(body)]);
+        }
+        body
+    }
+
+    pub fn mk_goal(self, name: Ident, goal: Exp) -> Decl {
+        if self.is_empty() {
+            Decl::Goal(Goal { name, goal })
+        } else {
+            let return_ = Ident::fresh_local("ret");
+            let prototype = Prototype {
+                name,
+                attrs: vec![],
+                params: [Param::Cont(return_, [].into(), [].into())].into(),
+            };
+            let body = self.call_setters(Expr::Assert(goal.boxed(), Expr::var(return_).boxed()));
+            Decl::Coma(Defn { prototype, body })
         }
     }
 }

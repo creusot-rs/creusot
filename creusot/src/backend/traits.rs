@@ -8,10 +8,7 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::GenericArgsRef;
-use why3::{
-    Ident,
-    declaration::{Decl, Goal, Module},
-};
+use why3::{Ident, declaration::Module};
 
 pub(crate) fn lower_impl(ctx: &Why3Generator<'_>, def_id: DefId) -> Vec<FileModule> {
     if is_trusted_item(ctx.tcx, def_id) {
@@ -30,9 +27,10 @@ pub(crate) fn lower_impl(ctx: &Why3Generator<'_>, def_id: DefId) -> Vec<FileModu
         if goal.is_true() {
             continue;
         }
-        let mut decls = names.provide_deps(ctx);
+        let (mut decls, setters) = names.provide_deps(ctx);
         decls.extend(common_meta_decls());
-        decls.push(Decl::Goal(Goal { name: Ident::fresh(ctx.crate_name(), "refines"), goal }));
+        let name = Ident::fresh(ctx.crate_name(), "refines");
+        decls.push(setters.mk_goal(name, goal));
 
         if ctx.used_namespaces.get() {
             let mut new_decls = ctx.generate_namespace_type(namespace_ty);

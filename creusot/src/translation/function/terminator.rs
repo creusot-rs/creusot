@@ -143,18 +143,19 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
                 let mut cond = match cond {
-                    Operand::Copy(pl) | Operand::Move(pl) => {
-                        if let Some(locl) = pl.as_local() {
-                            Term {
-                                // hack
-                                kind: TermKind::Var(self.locals[&locl].1.into()),
-                                span,
-                                ty: cond.ty(self.body, self.tcx()),
-                            }
-                        } else {
-                            unreachable!("assertion contains something other than local")
-                        }
-                    }
+                    Operand::Copy(pl) | Operand::Move(pl) => Term {
+                        kind: fmir::place_to_term(
+                            self.tcx(),
+                            *pl,
+                            &self.locals,
+                            &self.body.local_decls,
+                        )
+                        .unwrap_or_else(|_| {
+                            self.ctx.dcx().span_bug(span, "Unsupported place in assert")
+                        }),
+                        ty: cond.ty(self.body, self.tcx()),
+                        span,
+                    },
                     Operand::Constant(_) => {
                         self.ctx.dcx().span_bug(span, "assert value is a constant")
                     }

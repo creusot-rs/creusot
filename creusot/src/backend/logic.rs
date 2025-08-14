@@ -1,7 +1,10 @@
 use crate::{
     backend::{
-        Why3Generator, common_meta_decls, is_trusted_item, logic::vcgen::wp,
-        signature::lower_logic_sig, term::lower_pure_weakdep, ty::translate_ty,
+        Why3Generator, common_meta_decls, is_trusted_item,
+        logic::vcgen::wp,
+        signature::lower_logic_sig,
+        term::lower_pure_weakdep,
+        ty::{self, translate_ty},
     },
     contracts_items::{get_builtin, get_namespace_ty},
     ctx::*,
@@ -104,13 +107,12 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     .unwrap_or_else(|e| ctx.fatal_error(e.span(), format!("translate_logic: {e:?}")).emit());
 
     let goal = sig.contract.requires_implies(wp);
-
     let vc_ident = sig.name.refresh_with(|s| format!("vc_{s}"));
-    body_decls.push(Decl::Goal(Goal { name: vc_ident, goal }));
 
-    let mut decls = names.provide_deps(ctx);
+    let (mut decls, setters) = names.provide_deps(ctx);
     decls.extend(common_meta_decls());
     decls.extend(body_decls);
+    decls.push(setters.mk_goal(vc_ident, goal));
 
     if ctx.used_namespaces.get() {
         decls.splice(0..0, ctx.generate_namespace_type(namespace_ty));
@@ -151,7 +153,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
             DeclKind::Predicate => Decl::PredDecl(Predicate { sig, body }),
             DeclKind::Constant => Decl::ConstantDecl(Constant {
                 name: sig.name,
-                type_: sig.retty.unwrap(),
+                type_: sig.retty.unwrap_or_else(|| ty::bool()),
                 body: Some(body),
             }),
         };

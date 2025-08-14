@@ -981,6 +981,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::PointerCoercion {
                 cast: PointerCoercion::MutToConstPointer, source, ..
             } => Ok(self.expr_term(source)?.coerce(ty).span(span)),
+            ExprKind::ConstParam { param: _, def_id } => {
+                Ok(Term::const_param(self.ctx.tcx, def_id, ty, span))
+            }
             ref ek => {
                 self.ctx.dcx().span_bug(span, format!("Unsupported expression kind {:?}", ek))
             }
@@ -1626,6 +1629,19 @@ impl<'tcx> Term<'tcx> {
 
     pub(crate) fn int(int_ty: Ty<'tcx>, int: i128) -> Self {
         Term { ty: int_ty, kind: TermKind::Lit(Literal::Integer(int)), span: DUMMY_SP }
+    }
+
+    pub(crate) fn item(
+        def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+        ty: Ty<'tcx>,
+        span: Span,
+    ) -> Self {
+        Term { ty, span, kind: TermKind::Item(def_id, subst) }
+    }
+
+    pub(crate) fn const_param(tcx: TyCtxt<'tcx>, def_id: DefId, ty: Ty<'tcx>, span: Span) -> Self {
+        Term { ty, span, kind: TermKind::Item(def_id, GenericArgs::identity_for_item(tcx, def_id)) }
     }
 
     pub(crate) fn span(mut self, sp: Span) -> Self {

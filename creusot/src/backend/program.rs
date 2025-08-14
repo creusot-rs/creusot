@@ -26,7 +26,7 @@ use crate::{
         wto::{Component, weak_topological_order},
     },
     contracts_items::get_namespace_ty,
-    ctx::{BodyId, Dependencies},
+    ctx::{BodyId, Dependencies, HasTyCtxt as _, ItemType},
     naming::name,
     translated_item::FileModule,
     translation::{
@@ -68,14 +68,15 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     }
 
     let name = names.item_ident(names.self_id, names.self_subst);
-    let body = Decl::Coma(to_why(ctx, &names, name, def_id.expect_local()));
+    let mut defn = to_why(ctx, &names, name, def_id.expect_local());
 
     let namespace_ty =
         names.def_ty_no_dependency(get_namespace_ty(ctx.ctx.tcx), GenericArgsRef::default());
 
-    let mut decls = names.provide_deps(ctx);
+    let (mut decls, setters) = names.provide_deps(ctx);
+    defn.body = setters.call_setters(defn.body);
     decls.extend(common_meta_decls());
-    decls.push(body);
+    decls.push(Decl::Coma(defn));
 
     let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();
     let meta = ctx.display_impl_of(def_id);
@@ -144,7 +145,13 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     let def_id = body_id.to_def_id();
     let inferred_closure_spec =
         ctx.is_closure_like(def_id) && !ctx.sig(def_id).contract.has_user_contract;
-    let open_body = inferred_closure_spec; // This will include constants as an extra case soon
+
+    // We remove the barrier around the definition in the following cases:
+    let open_body =
+        // a closure with no contract
+        inferred_closure_spec
+        // a constant
+        || matches!(ctx.item_type(def_id), ItemType::Constant);
 
     // The function receives `outer_return` as an argument handler and
     // defines the `inner_return` that wraps `outer_return` with the postcondition:
@@ -153,12 +160,11 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     //   ... inner_return result ...
     //   [ inner_return x -> {postcondition} (! outer_return x ) ]
     let outer_return = Ident::fresh_local("return");
+    let inner_return = if open_body { outer_return } else { outer_return.refresh() };
     let sig = ctx.sig(def_id);
     let args = sig.inputs.iter().map(|(name, _, _)| name.0).collect::<Box<[_]>>();
-
-    let body_id = BodyId::new(body_id, None);
-    let inner_return = if open_body { outer_return } else { outer_return.refresh() };
-    let mut body = why_body(ctx, names, body_id, &args, inner_return);
+    let body_id = BodyId::local(body_id);
+    let mut body = why_body(ctx, names, body_id, None, &args, inner_return);
     let (mut sig, contract, return_ty) = {
         let typing_env = names.typing_env();
         let mut pre_sig = sig.clone().normalize(ctx.tcx, typing_env);
@@ -194,10 +200,16 @@ pub fn why_body<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     body_id: BodyId,
+    subst: Option<GenericArgsRef<'tcx>>,
     params: &[Ident],
     inner_return: Ident,
 ) -> Expr {
     let mut body = ctx.fmir_body(body_id).clone();
+    body = if let Some(subst) = subst {
+        ty::EarlyBinder::bind(body).instantiate(ctx.tcx, subst)
+    } else {
+        body
+    };
     let block_idents: IndexMap<BasicBlock, Ident> = body
         .blocks
         .iter()
@@ -213,7 +225,7 @@ pub fn why_body<'tcx, N: Namer<'tcx>>(
         .map(|(i, k)| (k, i))
         .collect::<HashMap<_, _>>();
 
-    optimizations(ctx, &mut body, body_id);
+    optimizations(ctx, &mut body);
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
 
@@ -245,7 +257,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    def_id: LocalDefId,
+    def_id: DefId,
     block_idents: &IndexMap<BasicBlock, Ident>,
     return_ident: Ident,
     c: Component<BasicBlock>,
@@ -285,7 +297,7 @@ pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) ctx: &'a Why3Generator<'tcx>,
     pub(super) names: &'a N,
     pub(super) locals: &'a LocalDecls<'tcx>,
-    pub(super) def_id: LocalDefId,
+    pub(super) def_id: DefId,
     block_idents: &'a IndexMap<BasicBlock, Ident>,
     return_ident: Ident,
 }
@@ -310,7 +322,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
             Focus::new(|_| Exp::var(lhs.local)),
             Box::new(|_, x| x),
             &lhs.projections,
-            |ix| Exp::var(*ix),
+            |ix| Exp::var(ix.0),
             span,
         );
 
@@ -327,20 +339,11 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
             Focus::new(|_| Exp::var(pl.local)),
             Box::new(|_, _| unreachable!()),
             &pl.projections,
-            |ix| Exp::var(*ix),
+            |ix| Exp::var(ix.0),
             self.ctx.tcx.def_span(self.def_id),
         );
         rhs.call(Some(istmts))
     }
-}
-
-pub fn promoted_to_expr<'tcx, N: Namer<'tcx>>(
-    ctx: &Why3Generator<'tcx>,
-    names: &N,
-    body_id: BodyId,
-    cont: Ident,
-) -> Expr {
-    why_body(ctx, names, body_id, &[], cont)
 }
 
 impl<'tcx> Operand<'tcx> {
@@ -351,12 +354,12 @@ impl<'tcx> Operand<'tcx> {
     ) -> Exp {
         match self {
             Operand::Move(pl) | Operand::Copy(pl) => lower.rplace_to_expr(&pl, istmts),
-            Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
-            Operand::Promoted(pid, ty) => {
-                let ret = Ident::fresh_local("_promoted_ret");
-                let result = Ident::fresh_local("_promoted");
-                let body_id = BodyId { def_id: lower.def_id, promoted: Some(pid) };
-                let defn = promoted_to_expr(lower.ctx, lower.names, body_id, ret);
+            Operand::Term(c) => lower_pure(lower.ctx, lower.names, &c),
+            Operand::InlineConst(def_id, promoted, subst, ty) => {
+                let ret = Ident::fresh_local("_const_ret");
+                let result = Ident::fresh_local("_const");
+                let body_id = BodyId { def_id, promoted };
+                let defn = why_body(lower.ctx, lower.names, body_id, subst, &[], ret);
                 let ty = lower.ty(ty);
                 istmts.push(IntermediateStmt::Expr(defn, ret, result, ty));
                 Exp::var(result)
@@ -418,46 +421,77 @@ impl<'tcx> RValue<'tcx> {
                     _ => r.into_why(lower, istmts),
                 };
 
+                enum OpKind {
+                    Program,
+                    Logic,
+                    /// A logic function which outputs a pair
+                    LogicPair,
+                }
                 use BinOp::*;
-                let (opname, logic) = match op {
-                    Add | AddUnchecked => ("add", false),
-                    Sub | SubUnchecked => ("sub", false),
-                    Mul | MulUnchecked => ("mul", false),
-                    Div => ("div", false),
-                    Rem => ("rem", false),
-                    Shl | ShlUnchecked => ("shl", false),
-                    Shr | ShrUnchecked => ("shr", false),
+                use OpKind::*;
+                let (opname, opkind) = match op {
+                    Add | AddUnchecked => ("add", Program),
+                    Sub | SubUnchecked => ("sub", Program),
+                    Mul | MulUnchecked => ("mul", Program),
+                    Div => ("div", Program),
+                    Rem => ("rem", Program),
+                    Shl | ShlUnchecked => ("shl", Program),
+                    Shr | ShrUnchecked => ("shr", Program),
 
-                    Eq => ("eq", true),
-                    Ne => ("ne", true),
-                    Lt => ("lt", true),
-                    Le => ("le", true),
-                    Ge => ("ge", true),
-                    Gt => ("gt", true),
-                    BitXor => ("bw_xor", true),
-                    BitAnd => ("bw_and", true),
-                    BitOr => ("bw_or", true),
+                    Eq => ("eq", Logic),
+                    Ne => ("ne", Logic),
+                    Lt => ("lt", Logic),
+                    Le => ("le", Logic),
+                    Ge => ("ge", Logic),
+                    Gt => ("gt", Logic),
+                    BitXor => ("bw_xor", Logic),
+                    BitAnd => ("bw_and", Logic),
+                    BitOr => ("bw_or", Logic),
+                    AddWithOverflow => ("add_with_overflow", LogicPair),
+                    SubWithOverflow => ("sub_with_overflow", LogicPair),
+                    MulWithOverflow => ("mul_with_overflow", LogicPair),
 
-                    Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => {
-                        lower.ctx.dcx().span_bug(span, "Unsupported binary operation {op}")
-                    }
-                    Offset => lower.ctx.dcx().span_bug(span, "pointer offsets are unsupported"),
+                    Cmp => lower.ctx.span_bug(span, format!("Unsupported binary operation {op:?}")),
+                    Offset => lower.ctx.span_bug(span, "pointer offsets are unsupported"),
                 };
 
                 let fname = lower.names.in_pre(prelude, opname);
                 let args = [l.into_why(lower, istmts), r];
 
-                if logic {
-                    Exp::qvar(fname).app(args)
-                } else {
-                    let ret_ident = Ident::fresh_local("_ret");
-                    istmts.push(IntermediateStmt::call(
-                        ret_ident,
-                        lower.ty(ty),
-                        Name::Global(fname),
-                        args.map(Arg::Term),
-                    ));
-                    Exp::var(ret_ident)
+                match opkind {
+                    Logic => Exp::qvar(fname).app(args),
+                    Program => {
+                        let ret_ident = Ident::fresh_local("_ret");
+                        istmts.push(IntermediateStmt::call(
+                            ret_ident,
+                            lower.ty(ty),
+                            Name::Global(fname),
+                            args.map(Arg::Term),
+                        ));
+                        Exp::var(ret_ident)
+                    }
+                    LogicPair => {
+                        let TyKind::Tuple(tys) = ty.kind() else { unreachable!() };
+                        let fst = Ident::fresh_local("_fst");
+                        let snd = Ident::fresh_local("_snd");
+                        use why3::exp::Pattern::{TupleP, VarP};
+                        Exp::Let {
+                            pattern: TupleP([VarP(fst), VarP(snd)].into()),
+                            arg: Exp::qvar(fname).app(args).boxed(),
+                            body: Exp::Record {
+                                fields: [(0usize, fst), (1, snd)]
+                                    .into_iter()
+                                    .map(|(ix, f)| {
+                                        (
+                                            Name::local(lower.names.tuple_field(tys, ix.into())),
+                                            Exp::var(f),
+                                        )
+                                    })
+                                    .collect(),
+                            }
+                            .boxed(),
+                        }
+                    }
                 }
             }
             RValue::UnaryOp(UnOp::Not, arg) => {
@@ -994,7 +1028,7 @@ impl<'tcx> Statement<'tcx> {
                         Focus::new(|_| Exp::var(rhs.local)),
                         Box::new(|_, x| x),
                         &rhs.projections[..deref_index],
-                        |ix| Exp::var(*ix),
+                        |ix| Exp::var(ix.0),
                         self.span,
                     );
                     let (foc, constr) = projections_to_expr(
@@ -1005,7 +1039,7 @@ impl<'tcx> Statement<'tcx> {
                         original_borrow.clone(),
                         original_borrow_constr,
                         &rhs.projections[deref_index..],
-                        |ix| Exp::var(*ix),
+                        |ix| Exp::var(ix.0),
                         self.span,
                     );
                     rhs_rplace = foc.call(Some(&mut istmts));
@@ -1023,7 +1057,7 @@ impl<'tcx> Statement<'tcx> {
                                     .names
                                     .in_pre(uty_to_prelude(lower.ctx.tcx, UintTy::Usize), "t'int"),
                             )
-                            .app([Exp::var(*sym)])
+                            .app([Exp::var(sym.0)])
                         },
                     );
 
@@ -1037,7 +1071,7 @@ impl<'tcx> Statement<'tcx> {
                         Focus::new(|_| Exp::var(rhs.local)),
                         Box::new(|_, x| x),
                         &rhs.projections,
-                        |ix| Exp::var(*ix),
+                        |ix| Exp::var(ix.0),
                         self.span,
                     );
                     rhs_rplace = foc.call(Some(&mut istmts));

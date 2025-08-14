@@ -1,15 +1,20 @@
 use std::collections::HashMap;
 
-use crate::{backend::projections::projection_ty, translation::pearlite::Term};
+use crate::{
+    backend::projections::projection_ty,
+    ctx::HasTyCtxt as _,
+    translation::pearlite::{PIdent, Term},
+};
 use indexmap::IndexMap;
+use rustc_ast_ir::{try_visit, visit::VisitorResult};
 use rustc_hir::def_id::DefId;
-use rustc_macros::{TyDecodable, TyEncodable};
+use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{
         self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, Promoted, SourceScope, UnOp,
         tcx::PlaceTy,
     },
-    ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
+    ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TypeFoldable, TypeVisitable},
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
@@ -17,11 +22,13 @@ use why3::Ident;
 
 use super::pearlite::TermKind;
 
-pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<Ident, Ty<'tcx>>;
+pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<PIdent, Ty<'tcx>>;
 
 /// The equivalent of [`mir::Place`], but for fMIR
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, TypeFoldable, TypeVisitable)]
 pub struct Place<'tcx> {
+    #[type_visitable(ignore)]
+    #[type_foldable(identity)]
     pub(crate) local: Ident,
     pub(crate) projections: Box<[ProjectionElem<'tcx>]>,
 }
@@ -78,7 +85,7 @@ impl<'tcx> PlaceRef<'_, 'tcx> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum StatementKind<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>),
     Resolve { did: DefId, subst: GenericArgsRef<'tcx>, pl: Place<'tcx> },
@@ -88,14 +95,14 @@ pub enum StatementKind<'tcx> {
     Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub(crate) struct Statement<'tcx> {
     pub(crate) kind: StatementKind<'tcx>,
     pub(crate) span: Span,
 }
 
 // TODO: Add shared borrows?
-#[derive(Clone, Copy, Debug, TyDecodable, TyEncodable)]
+#[derive(Clone, Copy, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum BorrowKind {
     /// Ordinary mutable borrows
     Mut,
@@ -107,13 +114,13 @@ pub enum BorrowKind {
     Final(usize),
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, TypeFoldable, TypeVisitable)]
 pub enum TrivialInv {
     Trivial,
     NonTrivial,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum RValue<'tcx> {
     Snapshot(Term<'tcx>),
     Borrow(BorrowKind, Place<'tcx>, TrivialInv),
@@ -183,26 +190,37 @@ impl RValue<'_> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum Operand<'tcx> {
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
-    Constant(Term<'tcx>),
-    Promoted(Promoted, Ty<'tcx>),
+    Term(Term<'tcx>),
+    /// Either:
+    /// - Inline `const { ... }` expressions (`Option<Promoted>` is `None` and `Option<GenericArgsRef>` is `Some`)
+    /// - Promoted constants (`Option<Promoted>` is `Some` and `Option<GenericArgsRef>` is `None`)
+    InlineConst(DefId, Option<Promoted>, Option<GenericArgsRef<'tcx>>, Ty<'tcx>),
 }
 
 impl<'tcx> Operand<'tcx> {
+    pub fn inline_const(def_id: DefId, subst: GenericArgsRef<'tcx>, ty: Ty<'tcx>) -> Self {
+        Operand::InlineConst(def_id, None, Some(subst), ty)
+    }
+
+    pub fn promoted(def_id: DefId, promoted: Promoted, ty: Ty<'tcx>) -> Self {
+        Operand::InlineConst(def_id, Some(promoted), None, ty)
+    }
+
     pub fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> Ty<'tcx> {
         match self {
             Operand::Move(pl) => pl.ty(tcx, locals),
             Operand::Copy(pl) => pl.ty(tcx, locals),
-            Operand::Constant(t) => t.ty,
-            Operand::Promoted(_, ty) => *ty,
+            Operand::Term(t) => t.ty,
+            Operand::InlineConst(_, _, _, ty) => *ty,
         }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum Terminator<'tcx> {
     Goto(BasicBlock),
     Switch(self::Operand<'tcx>, Branches<'tcx>),
@@ -210,13 +228,27 @@ pub enum Terminator<'tcx> {
     Abort(Span),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum Branches<'tcx> {
-    Int(Box<[(i128, BasicBlock)]>, BasicBlock),
-    Uint(Box<[(u128, BasicBlock)]>, BasicBlock),
+    Int(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        Box<[(i128, BasicBlock)]>,
+        BasicBlock,
+    ),
+    Uint(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        Box<[(u128, BasicBlock)]>,
+        BasicBlock,
+    ),
     Constructor(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
         AdtDef<'tcx>,
         GenericArgsRef<'tcx>,
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
         Box<[(VariantIdx, BasicBlock)]>,
         Option<BasicBlock>,
     ),
@@ -277,14 +309,14 @@ impl Branches<'_> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct Invariant<'tcx> {
     pub(crate) body: Term<'tcx>,
     /// Label ("explanation") for the corresponding Why3 subgoal, including the "expl:" prefix
     pub(crate) expl: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct Block<'tcx> {
     pub(crate) invariants: Vec<Invariant<'tcx>>,
     pub(crate) variant: Option<Term<'tcx>>,
@@ -294,7 +326,7 @@ pub struct Block<'tcx> {
 
 pub type LocalDecls<'tcx> = IndexMap<Ident, LocalDecl<'tcx>>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct LocalDecl<'tcx> {
     // Original MIR local
     pub(crate) span: Span,
@@ -313,6 +345,45 @@ pub struct Body<'tcx> {
     pub(crate) arg_count: usize,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
     pub(crate) fresh: usize,
+    pub(crate) block_spans: HashMap<BasicBlock, Span>,
+}
+
+impl<'tcx> TypeVisitable<TyCtxt<'tcx>> for Body<'tcx> {
+    fn visit_with<V>(&self, v: &mut V) -> <V as rustc_middle::ty::TypeVisitor<TyCtxt<'tcx>>>::Result
+    where
+        V: rustc_middle::ty::TypeVisitor<TyCtxt<'tcx>>,
+    {
+        for local in self.locals.values() {
+            try_visit!(local.visit_with(v));
+        }
+        for block in self.blocks.values() {
+            try_visit!(block.visit_with(v));
+        }
+        VisitorResult::output()
+    }
+}
+
+impl<'tcx> TypeFoldable<TyCtxt<'tcx>> for Body<'tcx> {
+    fn try_fold_with<F>(self, f: &mut F) -> Result<Self, F::Error>
+    where
+        F: rustc_middle::ty::FallibleTypeFolder<TyCtxt<'tcx>>,
+    {
+        Ok(Self {
+            arg_count: self.arg_count,
+            fresh: self.fresh,
+            locals: self
+                .locals
+                .into_iter()
+                .map(|(k, v)| v.try_fold_with(f).map(|v| (k, v)))
+                .collect::<Result<_, _>>()?,
+            blocks: self
+                .blocks
+                .into_iter()
+                .map(|(k, v)| v.try_fold_with(f).map(|v| (k, v)))
+                .collect::<Result<_, _>>()?,
+            block_spans: self.block_spans,
+        })
+    }
 }
 
 /// The scope tree is MIR metadata that we use to map HIR variables (`HirId`)
@@ -370,7 +441,11 @@ impl<'tcx> ScopeTree<'tcx> {
             // If the variable is local to the function the place will have no projections.
             // Else this is a captured variable.
             let p = match var_info.value {
-                Place(p) => place_to_term(tcx, p, locals, body),
+                Place(p) => {
+                    place_to_term(tcx, p, locals, &body.local_decls).unwrap_or_else(|span| {
+                        tcx.span_bug(span, "Partial captures are not supported here")
+                    })
+                }
                 _ => panic!(),
             };
             let info = var_info.source_info;
@@ -431,16 +506,16 @@ impl<'tcx> ScopeTree<'tcx> {
 ///   + a `Deref` projection if the closure is FnMut.
 ///   + a `Field` projection.
 ///   + a `Deref` projection if the capture is mutable.
-fn place_to_term<'tcx>(
+pub fn place_to_term<'tcx>(
     tcx: TyCtxt<'tcx>,
     p: mir::Place<'tcx>,
     locals: &HashMap<Local, (Symbol, Ident)>,
-    body: &mir::Body<'tcx>,
-) -> TermKind<'tcx> {
-    let span = body.local_decls[p.local].source_info.span;
+    local_decls: &mir::LocalDecls<'tcx>,
+) -> Result<TermKind<'tcx>, Span> {
+    let span = local_decls[p.local].source_info.span;
     let mut kind = TermKind::Var(locals[&p.local].1.into());
     for (place_ref, proj) in p.iter_projections() {
-        let ty = place_ref.ty(&body.local_decls, tcx).ty;
+        let ty = place_ref.ty(local_decls, tcx).ty;
         match proj {
             mir::ProjectionElem::Deref => {
                 if ty.is_mutable_ptr() {
@@ -455,11 +530,11 @@ fn place_to_term<'tcx>(
             // The rest are impossible for a place generated by a closure capture.
             // FIXME: is this still true in 2021 (with partial captures) ?
             _ => {
-                tcx.dcx().struct_span_err(span, "Partial captures are not supported here").emit();
+                return Err(span);
             }
         };
     }
-    kind
+    Ok(kind)
 }
 
 pub(crate) trait FmirVisitor<'tcx>: Sized {
@@ -543,8 +618,7 @@ pub(crate) fn super_visit_operand<'tcx, V: FmirVisitor<'tcx>>(
         Operand::Copy(place) | Operand::Move(place) => {
             visitor.visit_place(place);
         }
-        Operand::Constant(_) => (),
-        Operand::Promoted(_, _) => (),
+        Operand::Term(_) | Operand::InlineConst(_, _, _, _) => (),
     }
 }
 

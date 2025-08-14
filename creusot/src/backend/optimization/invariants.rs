@@ -11,7 +11,7 @@ use crate::{
         wto::{Component, weak_topological_order},
     },
     contracts_items::get_snap_ty,
-    ctx::{BodyId, TranslationCtx},
+    ctx::TranslationCtx,
     translation::{
         fmir::{self, Block, FmirVisitor, Place, RValue, Statement, StatementKind, Terminator},
         pearlite::{Ident, Term},
@@ -29,9 +29,7 @@ use rustc_span::DUMMY_SP;
 pub(crate) fn infer_proph_invariants<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     body: &mut fmir::Body<'tcx>,
-    body_id: BodyId,
 ) {
-    let mir_body = &ctx.body_with_facts(body_id.def_id).body;
     let graph = node_graph(body);
 
     let wto = weak_topological_order(&graph, START_BLOCK);
@@ -84,7 +82,7 @@ pub(crate) fn infer_proph_invariants<'tcx>(
                 } else {
                     panic!()
                 }
-                let span = mir_body.source_info(p.start_location()).span;
+                let span = body.block_spans[p];
                 prev_block.stmts.push(Statement {
                     kind: StatementKind::Assignment(
                         Place { local, projections: Box::new([]) },

@@ -26,7 +26,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
 ) -> MlT {
     let ty = names.normalize(ctx, ty);
     match ty.kind() {
-        Bool => MlT::qconstructor(name::bool()),
+        Bool => bool(),
         Char => MlT::qconstructor(names.in_pre(PreMod::Char, "t")),
         Tuple(args) if args.is_empty() => MlT::unit(),
         Tuple(args) if args.len() == 1 => translate_ty(ctx, names, span, args[0]),
@@ -346,4 +346,8 @@ pub fn ty_to_prelude(tcx: TyCtxt<'_>, ty: &TyKind) -> PreMod {
         TyKind::Char => PreMod::Char,
         _ => unreachable!("non-primitive type {ty:?}"),
     }
+}
+
+pub fn bool() -> MlT {
+    MlT::qconstructor(name::bool())
 }

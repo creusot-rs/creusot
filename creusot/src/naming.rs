@@ -27,23 +27,23 @@ use crate::very_stable_hash::get_very_stable_hash;
 
 // Why3 value names must start with a lower case letter.
 // Rust function names conventionally start with a lower case letter,
-// but that is not mandatory, in which case we insert a prefix `v_`.
-// To make this encoding injective, also insert `v_` if the source name already starts with an `v_`.
-// This makes decoding simple: if the name starts with `v_`, just strip it.
-pub fn value_name(name: &str) -> String {
-    if name.starts_with(|c: char| c.is_ascii_lowercase()) && !name.starts_with("v_") {
+// but that is not mandatory, in which case we insert a `prefix` (for example `v_`).
+// To make this encoding injective, also insert the prefix if the source name already starts with the prefix.
+// This makes decoding simple: if the name starts with the prefix, just strip it.
+pub fn lowercase_prefix(prefix: &str, name: &str) -> String {
+    if name.starts_with(|c: char| c.is_ascii_lowercase()) && !name.starts_with(prefix) {
         name.to_string()
     } else {
-        format!("v_{}", name)
+        format!("{prefix}{name}")
     }
 }
 
+pub fn value_name(name: &str) -> String {
+    lowercase_prefix("v_", name)
+}
+
 pub fn type_name(name: &str) -> String {
-    if name.starts_with(|c: char| c.is_ascii_lowercase()) && !name.starts_with("t_") {
-        name.to_string()
-    } else {
-        format!("t_{}", name)
-    }
+    lowercase_prefix("t_", name)
 }
 
 pub fn translate_accessor_name(variant: &str, field: &str) -> String {
