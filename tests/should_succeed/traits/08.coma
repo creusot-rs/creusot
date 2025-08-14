@@ -9,8 +9,7 @@ module M_08__Tr__program [#"08.rs" 10 4 10 21]
   
   predicate inv (_0: t_Self)
   
-  predicate invariant' (self: t_Self) =
-    [%#sinvariant] inv self
+  predicate invariant' (self: t_Self) = [%#sinvariant] inv self
   
   predicate inv'0 (_0: t_Self)
   
@@ -19,19 +18,22 @@ module M_08__Tr__program [#"08.rs" 10 4 10 21]
   predicate precondition (self: ()) (args: t_Self)
   
   axiom precondition_fndef: [%#s08'0] forall args: t_Self [precondition () args]. (let self = args in inv'0 self)
-   -> precondition () args
+      -> precondition () args
   
   predicate postcondition_once (self: ()) (args: t_Self) (result: ())
   
-  axiom postcondition_fndef: [%#s08'0] forall args: t_Self, res: () [postcondition_once () args res]. postcondition_once () args res
-   -> (let self = args in true)
+  axiom postcondition_fndef:
+    [%#s08'0] forall args: t_Self, res: () [postcondition_once () args res]. postcondition_once () args res
+      -> (let self = args in true)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec program[#"08.rs" 10 4 10 21] (self:t_Self) (return'  (x:()))= {[@expl:program 'self' type invariant] [%#s08] inv'0 self}
-    (! bb0 [ bb0 = return''0 {_0} ]  [ & _0: () = Any.any_l () ] ) [ return''0 (result:())-> (! return' {result}) ] 
+  let rec program [#"08.rs" 10 4 10 21] (self: t_Self) (return' (x: ())) =
+    {[@expl:program 'self' type invariant] [%#s08] inv'0 self}
+    (! bb0
+    [ bb0 = return''0 {_0} ] [ & _0: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end
 module M_08__test [#"08.rs" 13 0 13 24]
   use creusot.prelude.Any
@@ -46,9 +48,9 @@ module M_08__test [#"08.rs" 13 0 13 24]
   
   meta "select_lsinst" "all"
   
-  let rec test[#"08.rs" 13 0 13 24] (_0:t_T) (return'  (x:()))= {[@expl:test '_0' type invariant] inv _0}
+  let rec test [#"08.rs" 13 0 13 24] (_0: t_T) (return' (x: ())) = {[@expl:test '_0' type invariant] inv _0}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv _1} s1 | s1 = -{resolve _1}- s2 | s2 = bb1 ] 
-    | bb1 = return''0 {_0'0} ]
-     [ & _0'0: () = Any.any_l () | & _1: t_T = _0 ] ) [ return''0 (result:())-> (! return' {result}) ] 
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv _1} s1 | s1 = -{resolve _1}- s2 | s2 = bb1 ]
+    | bb1 = return''0 {_0'0} ] [ & _0'0: () = Any.any_l () | & _1: t_T = _0 ])
+    [ return''0 (result: ()) -> (! return' {result}) ]
 end

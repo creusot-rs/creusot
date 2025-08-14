@@ -12,13 +12,11 @@ module M_06__test [#"06.rs" 9 0 11 15]
   
   type t_T
   
-  type tuple  =
-    { _p0: t_T; _p1: UInt64.t }
+  type tuple = { _p0: t_T; _p1: UInt64.t }
   
   predicate inv (_0: t_T)
   
-  predicate invariant' (self: t_T) =
-    [%#sinvariant] inv self
+  predicate invariant' (self: t_T) = [%#sinvariant] inv self
   
   predicate inv'0 (_0: t_T)
   
@@ -26,29 +24,29 @@ module M_06__test [#"06.rs" 9 0 11 15]
   
   predicate precondition (self: ()) (args: tuple)
   
-  axiom precondition_fndef: [%#s06'2] forall args: tuple [precondition () args]. (let {_p0 = self ; _p1 = ix} = args in inv'0 self)
-   -> precondition () args
+  axiom precondition_fndef:
+    [%#s06'2] forall args: tuple [precondition () args]. (let {_p0 = self; _p1 = ix} = args in inv'0 self)
+      -> precondition () args
   
   predicate inv'1 (_0: t_Tgt)
   
   predicate postcondition_once (self: ()) (args: tuple) (result: t_Tgt)
   
-  axiom postcondition_fndef: [%#s06'2] forall args: tuple, res: t_Tgt [postcondition_once () args res]. postcondition_once () args res
-   -> (let {_p0 = self ; _p1 = ix} = args in inv'1 res)
+  axiom postcondition_fndef:
+    [%#s06'2] forall args: tuple, res: t_Tgt [postcondition_once () args res]. postcondition_once () args res
+      -> (let {_p0 = self; _p1 = ix} = args in inv'1 res)
   
-  let rec ix (self:t_T) (ix'0:UInt64.t) (return'  (x:t_Tgt))= {[@expl:ix requires] precondition () { _p0 = self;
-                                                                                                     _p1 = ix'0 }}
-    any [ return''0 (result:t_Tgt)-> {postcondition_once () { _p0 = self; _p1 = ix'0 } result} (! return' {result}) ] 
+  let rec ix (self: t_T) (ix'0: UInt64.t) (return' (x: t_Tgt)) = {[@expl:ix requires] precondition () { _p0 = self;
+                                                                                                        _p1 = ix'0 }}
+    any [ return''0 (result: t_Tgt) -> {postcondition_once () { _p0 = self; _p1 = ix'0 } result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test[#"06.rs" 9 0 11 15] (a:t_T) (return'  (x:t_Tgt))= {[@expl:test 'a' type invariant] [%#s06'0] inv'0 a}
+  let rec test [#"06.rs" 9 0 11 15] (a: t_T) (return' (x: t_Tgt)) = {[@expl:test 'a' type invariant] [%#s06'0] inv'0 a}
     (! bb0
-    [ bb0 = s0 [ s0 = ix {a'0} {[%#s06] (0: UInt64.t)} (fun (_ret:t_Tgt) ->  [ &_0 <- _ret ] s1) | s1 = bb1 ] 
-    | bb1 = return''0 {_0} ]
-     [ & _0: t_Tgt = Any.any_l () | & a'0: t_T = a ] )
-    [ return''0 (result:t_Tgt)-> {[@expl:test result type invariant] [%#s06'1] inv'1 result} (! return' {result}) ]
-
+    [ bb0 = s0 [ s0 = ix {a'0} {[%#s06] (0: UInt64.t)} (fun (_ret: t_Tgt) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = return''0 {_0} ] [ & _0: t_Tgt = Any.any_l () | & a'0: t_T = a ])
+    [ return''0 (result: t_Tgt) -> {[@expl:test result type invariant] [%#s06'1] inv'1 result} (! return' {result}) ]
 end

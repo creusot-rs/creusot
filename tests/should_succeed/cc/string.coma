@@ -19,38 +19,30 @@ module M_string__test_string_len [#"string.rs" 7 0 7 42]
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  type t_String  =
-    { t_String__vec: t_Vec }
+  type t_String = { t_String__vec: t_Vec }
   
-  function tail (self: Seq.seq Char.t) : Seq.seq Char.t =
-    [%#sseq'1] Seq.([..]) self 1 (Seq.length self)
+  function tail (self: Seq.seq Char.t) : Seq.seq Char.t = [%#sseq'1] Seq.([..]) self 1 (Seq.length self)
   
   function flat_map (self: Seq.seq Char.t) (other: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
   
   axiom flat_map_def: forall self: Seq.seq Char.t, other: Map.map Char.t (Seq.seq UInt8.t). flat_map self other
-  = ([%#sseq'0] if Seq.length self = 0 then
-    Seq.empty: Seq.seq UInt8.t
-  else
-    Seq.(++) (Map.get other (Seq.get self 0)) (flat_map (tail self) other)
-  )
+      = ([%#sseq'0] if Seq.length self = 0 then
+        Seq.empty: Seq.seq UInt8.t
+      else
+        Seq.(++) (Map.get other (Seq.get self 0)) (flat_map (tail self) other)
+      )
   
   function to_utf8 (self: Char.t) : Seq.seq UInt8.t
   
@@ -61,28 +53,25 @@ module M_string__test_string_len [#"string.rs" 7 0 7 42]
   
   function view (self: t_String) : Seq.seq Char.t
   
-  function view'0 (self: t_String) : Seq.seq Char.t =
-    [%#smodel] view self
+  function view'0 (self: t_String) : Seq.seq Char.t = [%#smodel] view self
   
-  let rec len (self_:t_String) (return'  (x:UInt64.t))= any
-    [ return''0 (result:UInt64.t)-> {[%#sstring'2] UInt64.t'int result = Seq.length (to_bytes (view'0 self_))}
+  let rec len (self_: t_String) (return' (x: UInt64.t)) = any
+    [ return''0 (result: UInt64.t) -> {[%#sstring'2] UInt64.t'int result = Seq.length (to_bytes (view'0 self_))}
       (! return' {result}) ]
-  
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_string_len[#"string.rs" 7 0 7 42] (s:t_String) (return'  (x:UInt64.t))= {[@expl:test_string_len requires #0] [%#sstring] view s
-    = Seq.create 1 [|Char.of_int 195|]}
+  let rec test_string_len [#"string.rs" 7 0 7 42] (s: t_String) (return' (x: UInt64.t)) =
+    {[@expl:test_string_len requires #0] [%#sstring] view s = Seq.create 1 [|Char.of_int 195|]}
     {[@expl:test_string_len requires #1] [%#sstring'0] to_utf8 (Char.of_int 195)
     = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|]}
     (! bb0
-    [ bb0 = s0 [ s0 = len {s'0} (fun (_ret:UInt64.t) ->  [ &_0 <- _ret ] s1) | s1 = bb2 ]  | bb2 = return''0 {_0} ]
-     [ & _0: UInt64.t = Any.any_l () | & s'0: t_String = s ] )
-    [ return''0 (result:UInt64.t)-> {[@expl:test_string_len ensures] [%#sstring'1] UInt64.t'int result = 2}
+    [ bb0 = s0 [ s0 = len {s'0} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = bb2 ] | bb2 = return''0 {_0} ]
+    [ & _0: UInt64.t = Any.any_l () | & s'0: t_String = s ])
+    [ return''0 (result: UInt64.t) -> {[@expl:test_string_len ensures] [%#sstring'1] UInt64.t'int result = 2}
       (! return' {result}) ]
-
 end
 module M_string__test_str_len [#"string.rs" 14 0 14 37]
   let%span sstring = "string.rs" 11 11 11 26
@@ -104,17 +93,16 @@ module M_string__test_str_len [#"string.rs" 14 0 14 37]
   use mach.int.Int
   use creusot.prelude.Any
   
-  function tail (self: Seq.seq Char.t) : Seq.seq Char.t =
-    [%#sseq'1] Seq.([..]) self 1 (Seq.length self)
+  function tail (self: Seq.seq Char.t) : Seq.seq Char.t = [%#sseq'1] Seq.([..]) self 1 (Seq.length self)
   
   function flat_map (self: Seq.seq Char.t) (other: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
   
   axiom flat_map_def: forall self: Seq.seq Char.t, other: Map.map Char.t (Seq.seq UInt8.t). flat_map self other
-  = ([%#sseq'0] if Seq.length self = 0 then
-    Seq.empty: Seq.seq UInt8.t
-  else
-    Seq.(++) (Map.get other (Seq.get self 0)) (flat_map (tail self) other)
-  )
+      = ([%#sseq'0] if Seq.length self = 0 then
+        Seq.empty: Seq.seq UInt8.t
+      else
+        Seq.(++) (Map.get other (Seq.get self 0)) (flat_map (tail self) other)
+      )
   
   function to_utf8 (self: Char.t) : Seq.seq UInt8.t
   
@@ -125,28 +113,25 @@ module M_string__test_str_len [#"string.rs" 14 0 14 37]
   
   function view (self: string) : Seq.seq Char.t
   
-  function view'0 (self: string) : Seq.seq Char.t =
-    [%#smodel] view self
+  function view'0 (self: string) : Seq.seq Char.t = [%#smodel] view self
   
-  let rec len (self_:string) (return'  (x:UInt64.t))= any
-    [ return''0 (result:UInt64.t)-> {[%#sstring'2] UInt64.t'int result = Seq.length (to_bytes (view'0 self_))}
+  let rec len (self_: string) (return' (x: UInt64.t)) = any
+    [ return''0 (result: UInt64.t) -> {[%#sstring'2] UInt64.t'int result = Seq.length (to_bytes (view'0 self_))}
       (! return' {result}) ]
-  
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_str_len[#"string.rs" 14 0 14 37] (s:string) (return'  (x:UInt64.t))= {[@expl:test_str_len requires #0] [%#sstring] view'0 s
-    = Seq.create 1 [|Char.of_int 195|]}
+  let rec test_str_len [#"string.rs" 14 0 14 37] (s: string) (return' (x: UInt64.t)) =
+    {[@expl:test_str_len requires #0] [%#sstring] view'0 s = Seq.create 1 [|Char.of_int 195|]}
     {[@expl:test_str_len requires #1] [%#sstring'0] to_utf8 (Char.of_int 195)
     = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|]}
     (! bb0
-    [ bb0 = s0 [ s0 = len {s'0} (fun (_ret:UInt64.t) ->  [ &_0 <- _ret ] s1) | s1 = bb1 ]  | bb1 = return''0 {_0} ]
-     [ & _0: UInt64.t = Any.any_l () | & s'0: string = s ] )
-    [ return''0 (result:UInt64.t)-> {[@expl:test_str_len ensures] [%#sstring'1] UInt64.t'int result = 2}
+    [ bb0 = s0 [ s0 = len {s'0} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return''0 {_0} ]
+    [ & _0: UInt64.t = Any.any_l () | & s'0: string = s ])
+    [ return''0 (result: UInt64.t) -> {[@expl:test_str_len ensures] [%#sstring'1] UInt64.t'int result = 2}
       (! return' {result}) ]
-
 end
 module M_string__test_split_at [#"string.rs" 21 0 21 45]
   let%span sstring = "string.rs" 22 4 22 62
@@ -175,30 +160,27 @@ module M_string__test_split_at [#"string.rs" 21 0 21 45]
   use mach.int.Int
   use creusot.prelude.Any
   
-  function tail (self: Seq.seq Char.t) : Seq.seq Char.t =
-    [%#sseq'3] Seq.([..]) self 1 (Seq.length self)
+  function tail (self: Seq.seq Char.t) : Seq.seq Char.t = [%#sseq'3] Seq.([..]) self 1 (Seq.length self)
   
   function flat_map (self: Seq.seq Char.t) (other: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
   
   axiom flat_map_def: forall self: Seq.seq Char.t, other: Map.map Char.t (Seq.seq UInt8.t). flat_map self other
-  = ([%#sseq'2] if Seq.length self = 0 then
-    Seq.empty: Seq.seq UInt8.t
-  else
-    Seq.(++) (Map.get other (Seq.get self 0)) (flat_map (tail self) other)
-  )
+      = ([%#sseq'2] if Seq.length self = 0 then
+        Seq.empty: Seq.seq UInt8.t
+      else
+        Seq.(++) (Map.get other (Seq.get self 0)) (flat_map (tail self) other)
+      )
   
   constant flat_map_singleton: () = [%#sseq'0] ()
   
-  axiom flat_map_singleton_spec: [%#sseq] forall x: Char.t, f: Map.map Char.t (Seq.seq UInt8.t). flat_map (Seq.singleton x) f
-  = Map.get f x
+  axiom flat_map_singleton_spec:
+    [%#sseq] forall x: Char.t, f: Map.map Char.t (Seq.seq UInt8.t). flat_map (Seq.singleton x) f = Map.get f x
   
   function view (self: string) : Seq.seq Char.t
   
-  function view'0 (self: string) : Seq.seq Char.t =
-    [%#smodel] view self
+  function view'0 (self: string) : Seq.seq Char.t = [%#smodel] view self
   
-  type tuple  =
-    { _p0: string; _p1: string }
+  type tuple = { _p0: string; _p1: string }
   
   function to_utf8 (self: Char.t) : Seq.seq UInt8.t
   
@@ -207,34 +189,30 @@ module M_string__test_split_at [#"string.rs" 21 0 21 45]
   function to_bytes (self: Seq.seq Char.t) : Seq.seq UInt8.t =
     [%#sstring'8] flat_map self (fun (c: Char.t) -> to_utf8 c)
   
-  let rec split_at (self_:string) (ix:UInt64.t) (return'  (x:tuple))= {[@expl:split_at requires] [%#sstring'5] exists i0: int. 0
-    <= i0
-    /\ i0 <= Seq.length (view'0 self_) /\ Seq.length (to_bytes (Seq.([..]) (view'0 self_) 0 i0)) = UInt64.t'int ix}
+  let rec split_at (self_: string) (ix: UInt64.t) (return' (x: tuple)) =
+    {[@expl:split_at requires] [%#sstring'5] exists i0: int. 0 <= i0
+      /\ i0 <= Seq.length (view'0 self_) /\ Seq.length (to_bytes (Seq.([..]) (view'0 self_) 0 i0)) = UInt64.t'int ix}
     any
-    [ return''0 (result:tuple)-> {[%#sstring'6] Seq.(++) (view'0 result._p0) (view'0 result._p1) = view'0 self_}
+    [ return''0 (result: tuple) -> {[%#sstring'6] Seq.(++) (view'0 result._p0) (view'0 result._p1) = view'0 self_}
       {[%#sstring'7] Seq.length (to_bytes (view'0 result._p0)) = UInt64.t'int ix}
       (! return' {result}) ]
-  
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_split_at[#"string.rs" 21 0 21 45] (s:string) (return'  (x:tuple))= {[@expl:test_split_at requires #0] [%#sstring'2] view'0 s
-    = Seq.create 1 [|Char.of_int 195|]}
+  let rec test_split_at [#"string.rs" 21 0 21 45] (s: string) (return' (x: tuple)) =
+    {[@expl:test_split_at requires #0] [%#sstring'2] view'0 s = Seq.create 1 [|Char.of_int 195|]}
     {[@expl:test_split_at requires #1] [%#sstring'3] to_utf8 (Char.of_int 195)
     = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|]}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &_5 <- [%#sstring] flat_map_singleton ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = [ &_5 <- [%#sstring] flat_map_singleton ] s1 | s1 = bb1 ]
     | bb1 = s0
       [ s0 = {[@expl:assertion] [%#sstring'0] Seq.([..]) (view'0 s'0) 0 1 = view'0 s'0} s1
-      | s1 = split_at {s'0} {[%#sstring'1] (2: UInt64.t)} (fun (_ret:tuple) ->  [ &_0 <- _ret ] s2)
+      | s1 = split_at {s'0} {[%#sstring'1] (2: UInt64.t)} (fun (_ret: tuple) -> [ &_0 <- _ret ] s2)
       | s2 = bb2 ]
-    
-    | bb2 = return''0 {_0} ]
-     [ & _0: tuple = Any.any_l () | & s'0: string = s | & _5: () = Any.any_l () ] )
-    [ return''0 (result:tuple)-> {[@expl:test_split_at ensures] [%#sstring'4] view'0 result._p0 = view'0 s
+    | bb2 = return''0 {_0} ] [ & _0: tuple = Any.any_l () | & s'0: string = s | & _5: () = Any.any_l () ])
+    [ return''0 (result: tuple) -> {[@expl:test_split_at ensures] [%#sstring'4] view'0 result._p0 = view'0 s
       /\ view'0 result._p1 = (Seq.empty: Seq.seq Char.t)}
       (! return' {result}) ]
-
 end

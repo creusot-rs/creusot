@@ -7,43 +7,36 @@ module M_box_borrow_resolve__borrow_in_box [#"box_borrow_resolve.rs" 6 0 6 50]
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  predicate resolve (self: MutBorrow.t Int32.t) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t Int32.t) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t Int32.t) =
-    resolve _0
+  predicate resolve'0 (_0: MutBorrow.t Int32.t) = resolve _0
   
-  predicate resolve'1 (self: MutBorrow.t Int32.t) =
-    [%#sresolve'0] resolve'0 self
+  predicate resolve'1 (self: MutBorrow.t Int32.t) = [%#sresolve'0] resolve'0 self
   
-  predicate resolve'2 (_0: MutBorrow.t Int32.t) =
-    resolve'1 _0
+  predicate resolve'2 (_0: MutBorrow.t Int32.t) = resolve'1 _0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec borrow_in_box[#"box_borrow_resolve.rs" 6 0 6 50] (x:MutBorrow.t Int32.t) (return'  (x'0:MutBorrow.t Int32.t))= (! bb0
+  let rec borrow_in_box [#"box_borrow_resolve.rs" 6 0 6 50] (x: MutBorrow.t Int32.t)
+    (return' (x'0: MutBorrow.t Int32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <Int32.t> {x'0.current} {MutBorrow.get_id x'0}
-          (fun (_ret:MutBorrow.t Int32.t) ->  [ &_4 <- _ret ]  [ &x'0 <- { x'0 with current = _ret.final } ] s1)
+          (fun (_ret: MutBorrow.t Int32.t) -> [ &_4 <- _ret ] [ &x'0 <- { x'0 with current = _ret.final } ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_4.current} {MutBorrow.get_id _4}
-          (fun (_ret:MutBorrow.t Int32.t) ->  [ &_2 <- _ret ]  [ &_4 <- { _4 with current = _ret.final } ] s2)
+          (fun (_ret: MutBorrow.t Int32.t) -> [ &_2 <- _ret ] [ &_4 <- { _4 with current = _ret.final } ] s2)
       | s2 = MutBorrow.borrow_final <Int32.t> {_2.current} {MutBorrow.get_id _2}
-          (fun (_ret:MutBorrow.t Int32.t) ->  [ &_0 <- _ret ]  [ &_2 <- { _2 with current = _ret.final } ] s3)
+          (fun (_ret: MutBorrow.t Int32.t) -> [ &_0 <- _ret ] [ &_2 <- { _2 with current = _ret.final } ] s3)
       | s3 = -{resolve'0 _4}- s4
       | s4 = -{resolve'0 _2}- s5
       | s5 = -{resolve'2 x'0}- s6
       | s6 = bb1 ]
-    
     | bb1 = return''0 {_0} ]
-    
     [ & _0: MutBorrow.t Int32.t = Any.any_l ()
     | & x'0: MutBorrow.t Int32.t = x
     | & _2: MutBorrow.t Int32.t = Any.any_l ()
-    | & _4: MutBorrow.t Int32.t = Any.any_l () ]
-    )
-    [ return''0 (result:MutBorrow.t Int32.t)-> {[@expl:borrow_in_box ensures] [%#sbox_borrow_resolve] result = x}
+    | & _4: MutBorrow.t Int32.t = Any.any_l () ])
+    [ return''0 (result: MutBorrow.t Int32.t) -> {[@expl:borrow_in_box ensures] [%#sbox_borrow_resolve] result = x}
       (! return' {result}) ]
-
 end

@@ -11,27 +11,21 @@ module M_761__try_option [#"761.rs" 5 0 5 47]
   
   type t_T
   
-  type t_Option  =
-    | C_None
-    | C_Some ()
+  type t_Option = C_None | C_Some ()
   
-  type t_ControlFlow  =
-    | C_Continue t_T
-    | C_Break t_Option
+  type t_ControlFlow = C_Continue t_T | C_Break t_Option
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_T
+  type t_Option'0 = C_None'0 | C_Some'0 t_T
   
   predicate inv (_0: t_T)
   
   predicate inv'0 (_0: t_Option'0)
   
   axiom inv_axiom [@rewrite]: forall x: t_Option'0 [inv'0 x]. inv'0 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv a_0
-    end
+      = match x with
+        | C_None'0 -> true
+        | C_Some'0 a_0 -> inv a_0
+        end
   
   predicate inv'1 (_0: ())
   
@@ -40,69 +34,65 @@ module M_761__try_option [#"761.rs" 5 0 5 47]
   predicate inv'2 (_0: t_Option)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
-  = match x with
-    | C_None -> true
-    | C_Some a_0 -> inv'1 a_0
-    end
+      = match x with
+        | C_None -> true
+        | C_Some a_0 -> inv'1 a_0
+        end
   
   predicate inv'3 (_0: t_ControlFlow)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_ControlFlow [inv'3 x]. inv'3 x
-  = match x with
-    | C_Continue a_0 -> inv a_0
-    | C_Break a_0 -> inv'2 a_0
-    end
+      = match x with
+        | C_Continue a_0 -> inv a_0
+        | C_Break a_0 -> inv'2 a_0
+        end
   
-  let rec branch (self_:t_Option'0) (return'  (x:t_ControlFlow))= {[@expl:branch 'self_' type invariant] [%#sops] inv'0 self_}
+  let rec branch (self_: t_Option'0) (return' (x: t_ControlFlow)) =
+    {[@expl:branch 'self_' type invariant] [%#sops] inv'0 self_}
     any
-    [ return''0 (result:t_ControlFlow)-> {inv'3 result}
+    [ return''0 (result: t_ControlFlow) -> {inv'3 result}
       {[%#sops'0] match self_ with
         | C_Some'0 v -> result = C_Continue v
         | C_None'0 -> result = C_Break (C_None)
         end}
       (! return' {result}) ]
   
-  
-  let rec v_Break (input:t_ControlFlow) (ret  (field_0:t_Option))= any
-    [ good (field_0:t_Option)-> {C_Break field_0 = input} (! ret {field_0})
+  let rec v_Break (input: t_ControlFlow) (ret (field_0: t_Option)) = any
+    [ good (field_0: t_Option) -> {C_Break field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_Option [C_Break field_0: t_ControlFlow]. C_Break field_0 <> input} (! {false} any) ]
   
+  let rec from_residual (residual: t_Option) (return' (x: t_Option'0)) =
+    {[@expl:from_residual 'residual' type invariant] [%#sops'1] inv'2 residual}
+    any [ return''0 (result: t_Option'0) -> {inv'0 result} {[%#sops'2] result = C_None'0} (! return' {result}) ]
   
-  let rec from_residual (residual:t_Option) (return'  (x:t_Option'0))= {[@expl:from_residual 'residual' type invariant] [%#sops'1] inv'2 residual}
-    any [ return''0 (result:t_Option'0)-> {inv'0 result} {[%#sops'2] result = C_None'0} (! return' {result}) ] 
-  
-  let rec v_Continue (input:t_ControlFlow) (ret  (field_0:t_T))= any
-    [ good (field_0:t_T)-> {C_Continue field_0 = input} (! ret {field_0})
+  let rec v_Continue (input: t_ControlFlow) (ret (field_0: t_T)) = any
+    [ good (field_0: t_T) -> {C_Continue field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_T [C_Continue field_0: t_ControlFlow]. C_Continue field_0 <> input} (! {false} any) ]
-  
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec try_option[#"761.rs" 5 0 5 47] (x:t_Option'0) (return'  (x'0:t_Option'0))= {[@expl:try_option 'x' type invariant] [%#s761] inv'0 x}
+  let rec try_option [#"761.rs" 5 0 5 47] (x: t_Option'0) (return' (x'0: t_Option'0)) =
+    {[@expl:try_option 'x' type invariant] [%#s761] inv'0 x}
     (! bb0
-    [ bb0 = s0 [ s0 = branch {x'0} (fun (_ret:t_ControlFlow) ->  [ &_4 <- _ret ] s1) | s1 = bb1 ] 
-    | bb1 = any [ br0 (x0:t_T)-> {_4 = C_Continue x0} (! bb4) | br1 (x0:t_Option)-> {_4 = C_Break x0} (! bb5) ] 
+    [ bb0 = s0 [ s0 = branch {x'0} (fun (_ret: t_ControlFlow) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = any [ br0 (x0: t_T) -> {_4 = C_Continue x0} (! bb4) | br1 (x0: t_Option) -> {_4 = C_Break x0} (! bb5) ]
     | bb5 = s0
-      [ s0 = v_Break {_4} (fun (r0:t_Option) ->  [ &residual <- r0 ] s1)
-      | s1 = from_residual {residual} (fun (_ret:t_Option'0) ->  [ &_0 <- _ret ] s2)
+      [ s0 = v_Break {_4} (fun (r0: t_Option) -> [ &residual <- r0 ] s1)
+      | s1 = from_residual {residual} (fun (_ret: t_Option'0) -> [ &_0 <- _ret ] s2)
       | s2 = bb11 ]
-    
-    | bb4 = s0 [ s0 = v_Continue {_4} (fun (r0:t_T) ->  [ &val' <- r0 ] s1) | s1 = bb7 ] 
-    | bb7 = s0 [ s0 =  [ &_0 <- C_Some'0 val' ] s1 | s1 = bb11 ] 
+    | bb4 = s0 [ s0 = v_Continue {_4} (fun (r0: t_T) -> [ &val' <- r0 ] s1) | s1 = bb7 ]
+    | bb7 = s0 [ s0 = [ &_0 <- C_Some'0 val' ] s1 | s1 = bb11 ]
     | bb11 = return''0 {_0} ]
-    
     [ & _0: t_Option'0 = Any.any_l ()
     | & x'0: t_Option'0 = x
     | & _4: t_ControlFlow = Any.any_l ()
     | & residual: t_Option = Any.any_l ()
-    | & val': t_T = Any.any_l () ]
-    )
-    [ return''0 (result:t_Option'0)-> {[@expl:try_option result type invariant] [%#s761'0] inv'0 result}
+    | & val': t_T = Any.any_l () ])
+    [ return''0 (result: t_Option'0) -> {[@expl:try_option result type invariant] [%#s761'0] inv'0 result}
       {[@expl:try_option ensures] [%#s761'1] result = x}
       (! return' {result}) ]
-
 end
 module M_761__try_result [#"761.rs" 10 0 10 56]
   let%span s761 = "761.rs" 10 24 10 25
@@ -131,17 +121,11 @@ module M_761__try_result [#"761.rs" 10 0 10 56]
   
   type t_E
   
-  type t_Result  =
-    | C_Ok ()
-    | C_Err t_E
+  type t_Result = C_Ok () | C_Err t_E
   
-  type t_ControlFlow  =
-    | C_Continue t_T
-    | C_Break t_Result
+  type t_ControlFlow = C_Continue t_T | C_Break t_Result
   
-  type t_Result'0  =
-    | C_Ok'0 t_T
-    | C_Err'0 t_E
+  type t_Result'0 = C_Ok'0 t_T | C_Err'0 t_E
   
   predicate inv (_0: t_T)
   
@@ -150,10 +134,10 @@ module M_761__try_result [#"761.rs" 10 0 10 56]
   predicate inv'1 (_0: t_Result'0)
   
   axiom inv_axiom [@rewrite]: forall x: t_Result'0 [inv'1 x]. inv'1 x
-  = match x with
-    | C_Ok'0 a_0 -> inv a_0
-    | C_Err'0 a_0 -> inv'0 a_0
-    end
+      = match x with
+        | C_Ok'0 a_0 -> inv a_0
+        | C_Err'0 a_0 -> inv'0 a_0
+        end
   
   predicate inv'2 (_0: ())
   
@@ -162,42 +146,38 @@ module M_761__try_result [#"761.rs" 10 0 10 56]
   predicate inv'3 (_0: t_Result)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Result [inv'3 x]. inv'3 x
-  = match x with
-    | C_Ok a_0 -> inv'2 a_0
-    | C_Err a_0 -> inv'0 a_0
-    end
+      = match x with
+        | C_Ok a_0 -> inv'2 a_0
+        | C_Err a_0 -> inv'0 a_0
+        end
   
   predicate inv'4 (_0: t_ControlFlow)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_ControlFlow [inv'4 x]. inv'4 x
-  = match x with
-    | C_Continue a_0 -> inv a_0
-    | C_Break a_0 -> inv'3 a_0
-    end
+      = match x with
+        | C_Continue a_0 -> inv a_0
+        | C_Break a_0 -> inv'3 a_0
+        end
   
-  let rec branch (self_:t_Result'0) (return'  (x:t_ControlFlow))= {[@expl:branch 'self_' type invariant] [%#sops] inv'1 self_}
+  let rec branch (self_: t_Result'0) (return' (x: t_ControlFlow)) =
+    {[@expl:branch 'self_' type invariant] [%#sops] inv'1 self_}
     any
-    [ return''0 (result:t_ControlFlow)-> {inv'4 result}
+    [ return''0 (result: t_ControlFlow) -> {inv'4 result}
       {[%#sops'0] match self_ with
         | C_Ok'0 v -> result = C_Continue v
         | C_Err'0 e -> result = C_Break (C_Err e)
         end}
       (! return' {result}) ]
   
-  
-  let rec v_Break (input:t_ControlFlow) (ret  (field_0:t_Result))= any
-    [ good (field_0:t_Result)-> {C_Break field_0 = input} (! ret {field_0})
+  let rec v_Break (input: t_ControlFlow) (ret (field_0: t_Result)) = any
+    [ good (field_0: t_Result) -> {C_Break field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_Result [C_Break field_0: t_ControlFlow]. C_Break field_0 <> input} (! {false} any) ]
   
+  type tuple = { _p0: t_Result'0; _p1: t_Result }
   
-  type tuple  =
-    { _p0: t_Result'0; _p1: t_Result }
+  predicate postcondition_once (self: ()) (args: t_E) (result: t_E) = let self_ = args in result = self_ /\ inv'0 result
   
-  predicate postcondition_once (self: ()) (args: t_E) (result: t_E) =
-    let self_ = args in result = self_ /\ inv'0 result
-  
-  predicate resolve (_0: ()) =
-    true
+  predicate resolve (_0: ()) = true
   
   predicate postcondition_mut (self: ()) (args: t_E) (result_state: ()) (result: t_E) =
     let self_ = args in result = self_ /\ inv'0 result
@@ -205,15 +185,14 @@ module M_761__try_result [#"761.rs" 10 0 10 56]
   function fn_mut_once (self: ()) (args: t_E) (res: t_E) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: t_E, res: t_E. [%#sops'12] postcondition_once self args res
-  = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate hist_inv (self: ()) (result_state: ()) =
-    true
+  predicate hist_inv (self: ()) (result_state: ()) = true
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
   axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'9] hist_inv self b)
-   -> ([%#sops'10] hist_inv b c)  -> ([%#sops'11] hist_inv self c)
+      -> ([%#sops'10] hist_inv b c) -> ([%#sops'11] hist_inv self c)
   
   function hist_inv_refl (self: ()) : ()
   
@@ -221,71 +200,68 @@ module M_761__try_result [#"761.rs" 10 0 10 56]
   
   function postcondition_mut_hist_inv (self: ()) (args: t_E) (res_state: ()) (res: t_E) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: (), args: t_E, res_state: (), res: t_E. ([%#sops'6] postcondition_mut self args res_state res)
-   -> ([%#sops'7] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: (), args: t_E, res_state: (), res: t_E. ([%#sops'6] postcondition_mut self args res_state res)
+      -> ([%#sops'7] hist_inv self res_state)
   
   function fn_hist_inv (self: ()) (res_state: ()) : ()
   
   axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'5] hist_inv self res_state = (self = res_state)
   
-  predicate postcondition (self: ()) (args: t_E) (result: t_E) =
-    let self_ = args in result = self_ /\ inv'0 result
+  predicate postcondition (self: ()) (args: t_E) (result: t_E) = let self_ = args in result = self_ /\ inv'0 result
   
   function fn_once (self: ()) (args: t_E) (res: t_E) : ()
   
   axiom fn_once_spec: forall self: (), args: t_E, res: t_E. [%#sops'4] postcondition_once self args res
-  = (postcondition self args res /\ resolve self)
+      = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: ()) (args: t_E) (res_state: ()) (res: t_E) : ()
   
-  axiom fn_mut_spec: forall self: (), args: t_E, res_state: (), res: t_E. [%#sops'3] postcondition_mut self args res_state res
-  = (postcondition self args res /\ self = res_state)
+  axiom fn_mut_spec:
+    forall self: (), args: t_E, res_state: (), res: t_E. [%#sops'3] postcondition_mut self args res_state res
+      = (postcondition self args res /\ self = res_state)
   
-  let rec from (self_:t_E) (return'  (x:t_E))= {[@expl:from 'self_' type invariant] [%#sconvert] inv'0 self_}
-    any [ return''0 (result:t_E)-> {inv'0 result} {[%#sconvert'0] result = self_} (! return' {result}) ] 
+  let rec from (self_: t_E) (return' (x: t_E)) = {[@expl:from 'self_' type invariant] [%#sconvert] inv'0 self_}
+    any [ return''0 (result: t_E) -> {inv'0 result} {[%#sconvert'0] result = self_} (! return' {result}) ]
   
-  let rec from_residual (residual:t_Result) (return'  (x:t_Result'0))= {[@expl:from_residual 'residual' type invariant] [%#sops'1] inv'3 residual}
+  let rec from_residual (residual: t_Result) (return' (x: t_Result'0)) =
+    {[@expl:from_residual 'residual' type invariant] [%#sops'1] inv'3 residual}
     any
-    [ return''0 (result:t_Result'0)-> {inv'1 result}
+    [ return''0 (result: t_Result'0) -> {inv'1 result}
       {[%#sops'2] match { _p0 = result; _p1 = residual } with
-        | {_p0 = C_Err'0 result'0 ; _p1 = C_Err residual'0} -> postcondition () residual'0 result'0
+        | {_p0 = C_Err'0 result'0; _p1 = C_Err residual'0} -> postcondition () residual'0 result'0
         | _ -> false
         end}
       (! return' {result}) ]
   
-  
-  let rec v_Continue (input:t_ControlFlow) (ret  (field_0:t_T))= any
-    [ good (field_0:t_T)-> {C_Continue field_0 = input} (! ret {field_0})
+  let rec v_Continue (input: t_ControlFlow) (ret (field_0: t_T)) = any
+    [ good (field_0: t_T) -> {C_Continue field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_T [C_Continue field_0: t_ControlFlow]. C_Continue field_0 <> input} (! {false} any) ]
-  
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec try_result[#"761.rs" 10 0 10 56] (x:t_Result'0) (return'  (x'0:t_Result'0))= {[@expl:try_result 'x' type invariant] [%#s761] inv'1 x}
+  let rec try_result [#"761.rs" 10 0 10 56] (x: t_Result'0) (return' (x'0: t_Result'0)) =
+    {[@expl:try_result 'x' type invariant] [%#s761] inv'1 x}
     (! bb0
-    [ bb0 = s0 [ s0 = branch {x'0} (fun (_ret:t_ControlFlow) ->  [ &_4 <- _ret ] s1) | s1 = bb1 ] 
-    | bb1 = any [ br0 (x0:t_T)-> {_4 = C_Continue x0} (! bb4) | br1 (x0:t_Result)-> {_4 = C_Break x0} (! bb5) ] 
+    [ bb0 = s0 [ s0 = branch {x'0} (fun (_ret: t_ControlFlow) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = any [ br0 (x0: t_T) -> {_4 = C_Continue x0} (! bb4) | br1 (x0: t_Result) -> {_4 = C_Break x0} (! bb5) ]
     | bb5 = s0
-      [ s0 = v_Break {_4} (fun (r0:t_Result) ->  [ &residual <- r0 ] s1)
-      | s1 = from_residual {residual} (fun (_ret:t_Result'0) ->  [ &_0 <- _ret ] s2)
+      [ s0 = v_Break {_4} (fun (r0: t_Result) -> [ &residual <- r0 ] s1)
+      | s1 = from_residual {residual} (fun (_ret: t_Result'0) -> [ &_0 <- _ret ] s2)
       | s2 = bb12 ]
-    
-    | bb4 = s0 [ s0 = v_Continue {_4} (fun (r0:t_T) ->  [ &val' <- r0 ] s1) | s1 = bb7 ] 
-    | bb7 = s0 [ s0 =  [ &_0 <- C_Ok'0 val' ] s1 | s1 = bb12 ] 
+    | bb4 = s0 [ s0 = v_Continue {_4} (fun (r0: t_T) -> [ &val' <- r0 ] s1) | s1 = bb7 ]
+    | bb7 = s0 [ s0 = [ &_0 <- C_Ok'0 val' ] s1 | s1 = bb12 ]
     | bb12 = return''0 {_0} ]
-    
     [ & _0: t_Result'0 = Any.any_l ()
     | & x'0: t_Result'0 = x
     | & _4: t_ControlFlow = Any.any_l ()
     | & residual: t_Result = Any.any_l ()
-    | & val': t_T = Any.any_l () ]
-    )
-    [ return''0 (result:t_Result'0)-> {[@expl:try_result result type invariant] [%#s761'0] inv'1 result}
+    | & val': t_T = Any.any_l () ])
+    [ return''0 (result: t_Result'0) -> {[@expl:try_result result type invariant] [%#s761'0] inv'1 result}
       {[@expl:try_result ensures] [%#s761'1] result = x}
       (! return' {result}) ]
-
 end
 module M_761__elim_empty [#"761.rs" 16 0 16 27]
   let%span s761 = "761.rs" 17 10 17 11
@@ -299,6 +275,8 @@ module M_761__elim_empty [#"761.rs" 16 0 16 27]
   
   meta "select_lsinst" "all"
   
-  let rec elim_empty[#"761.rs" 16 0 16 27] (x:()) (return'  (x'0:()))= {[@expl:elim_empty 'x' type invariant] [%#s761'0] inv x}
-    (! bb0 [ bb0 = {[%#s761] false} any ] ) [ return''0 (result:())-> (! return' {result}) ] 
+  let rec elim_empty [#"761.rs" 16 0 16 27] (x: ()) (return' (x'0: ())) =
+    {[@expl:elim_empty 'x' type invariant] [%#s761'0] inv x}
+    (! bb0
+    [ bb0 = {[%#s761] false} any ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end

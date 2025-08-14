@@ -23,20 +23,17 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   type t_T
   
-  type closure0  =
-    { _0: t_T }
+  type closure0 = { _0: t_T }
   
   predicate inv (_0'0: t_T)
   
-  predicate invariant' (self: t_T) =
-    [%#sinvariant] inv self
+  predicate invariant' (self: t_T) = [%#sinvariant] inv self
   
   predicate inv'0 (_0'0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: t_T) =
-    [%#sinvariant] inv'0 self
+  predicate invariant''0 (self: t_T) = [%#sinvariant] inv'0 self
   
   predicate inv'1 (_0'0: t_T)
   
@@ -46,38 +43,32 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   axiom inv_axiom'1 [@rewrite]: forall x: closure0 [inv'2 x]. inv'2 x = (let {_0 = x0} = x in inv'1 x0)
   
-  predicate invariant''1 (self: closure0) =
-    [%#sinvariant] inv'2 self
+  predicate invariant''1 (self: closure0) = [%#sinvariant] inv'2 self
   
   predicate inv'3 (_0'0: closure0)
   
   axiom inv_axiom'2 [@rewrite]: forall x: closure0 [inv'3 x]. inv'3 x = invariant''1 x
   
-  let rec closure0[#"08_multiple_calls.rs" 5 12 5 31] (self:closure0) (return'  (x:UInt32.t))= {[@expl:closure 'self' type invariant] [%#s08_multiple_calls'1] inv'3 self}
+  let rec closure0 [#"08_multiple_calls.rs" 5 12 5 31] (self: closure0) (return' (x: UInt32.t)) =
+    {[@expl:closure 'self' type invariant] [%#s08_multiple_calls'1] inv'3 self}
     {[@expl:closure requires] [%#s08_multiple_calls'2] self._0 = self._0}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &res <- [%#s08_multiple_calls'0] (0: UInt32.t) ] s1
-      | s1 =  [ &_0'0 <- res ] s2
-      | s2 = return''0 {_0'0} ]
-     ]
-     [ & _0'0: UInt32.t = Any.any_l () | & res: UInt32.t = Any.any_l () ] )
-    [ return''0 (result:UInt32.t)-> (! return' {result}) ]
+      [ s0 = [ &res <- [%#s08_multiple_calls'0] (0: UInt32.t) ] s1
+      | s1 = [ &_0'0 <- res ] s2
+      | s2 = return''0 {_0'0} ] ] [ & _0'0: UInt32.t = Any.any_l () | & res: UInt32.t = Any.any_l () ])
+    [ return''0 (result: UInt32.t) -> (! return' {result}) ]
   
-  
-  predicate precondition (self: closure0) (args: ()) =
-    [%#s08_multiple_calls'1] let () = args in self._0 = self._0
+  predicate precondition (self: closure0) (args: ()) = [%#s08_multiple_calls'1] let () = args in self._0 = self._0
   
   predicate postcondition_once (self: closure0) (args: ()) (result: UInt32.t) =
     [%#s08_multiple_calls'1] let () = args in true
   
   predicate resolve (_0'0: t_T)
   
-  predicate resolve'0 (_0'0: closure0) =
-    resolve _0'0._0
+  predicate resolve'0 (_0'0: closure0) = resolve _0'0._0
   
-  predicate hist_inv (self: closure0) (result_state: closure0) =
-    self = result_state
+  predicate hist_inv (self: closure0) (result_state: closure0) = self = result_state
   
   predicate postcondition_mut (self: closure0) (args: ()) (result_state: closure0) (result: UInt32.t) =
     [%#s08_multiple_calls'1] let () = args in hist_inv self result_state
@@ -85,12 +76,12 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   function fn_mut_once (self: closure0) (args: ()) (res: UInt32.t) : ()
   
   axiom fn_mut_once_spec: forall self: closure0, args: (), res: UInt32.t. [%#sops'8] postcondition_once self args res
-  = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'0 res_state)
+      = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'0 res_state)
   
   function hist_inv_trans (self: closure0) (b: closure0) (c: closure0) : ()
   
   axiom hist_inv_trans_spec: forall self: closure0, b: closure0, c: closure0. ([%#sops'5] hist_inv self b)
-   -> ([%#sops'6] hist_inv b c)  -> ([%#sops'7] hist_inv self c)
+      -> ([%#sops'6] hist_inv b c) -> ([%#sops'7] hist_inv self c)
   
   function hist_inv_refl (self: closure0) : ()
   
@@ -98,13 +89,14 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   function postcondition_mut_hist_inv (self: closure0) (args: ()) (res_state: closure0) (res: UInt32.t) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: closure0, args: (), res_state: closure0, res: UInt32.t. ([%#sops'2] postcondition_mut self args res_state res)
-   -> ([%#sops'3] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: closure0, args: (), res_state: closure0, res: UInt32.t. ([%#sops'2] postcondition_mut self args res_state res)
+      -> ([%#sops'3] hist_inv self res_state)
   
   function fn_hist_inv (self: closure0) (res_state: closure0) : ()
   
   axiom fn_hist_inv_spec: forall self: closure0, res_state: closure0. [%#sops'1] hist_inv self res_state
-  = (self = res_state)
+      = (self = res_state)
   
   predicate postcondition (self: closure0) (args: ()) (result: UInt32.t) =
     [%#s08_multiple_calls'1] let () = args in true
@@ -112,34 +104,33 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   function fn_once (self: closure0) (args: ()) (res: UInt32.t) : ()
   
   axiom fn_once_spec: forall self: closure0, args: (), res: UInt32.t. [%#sops'0] postcondition_once self args res
-  = (postcondition self args res /\ resolve'0 self)
+      = (postcondition self args res /\ resolve'0 self)
   
   function fn_mut (self: closure0) (args: ()) (res_state: closure0) (res: UInt32.t) : ()
   
-  axiom fn_mut_spec: forall self: closure0, args: (), res_state: closure0, res: UInt32.t. [%#sops] postcondition_mut self args res_state res
-  = (postcondition self args res /\ self = res_state)
+  axiom fn_mut_spec:
+    forall self: closure0, args: (), res_state: closure0, res: UInt32.t. [%#sops] postcondition_mut self args res_state res
+      = (postcondition self args res /\ self = res_state)
   
-  predicate postcondition_once'0 (self: closure0) (args: ()) (result: UInt32.t) =
-    postcondition self args result
+  predicate postcondition_once'0 (self: closure0) (args: ()) (result: UInt32.t) = postcondition self args result
   
-  predicate resolve'1 (_0'0: closure0) =
-    true
+  predicate resolve'1 (_0'0: closure0) = true
   
   predicate postcondition_mut'0 (self: closure0) (args: ()) (result_state: closure0) (result: UInt32.t) =
     postcondition self args result /\ self = result_state
   
   function fn_mut_once'0 (self: closure0) (args: ()) (res: UInt32.t) : ()
   
-  axiom fn_mut_once_spec'0: forall self: closure0, args: (), res: UInt32.t. [%#sops'8] postcondition_once'0 self args res
-  = (exists res_state: closure0. postcondition_mut'0 self args res_state res /\ resolve'1 res_state)
+  axiom fn_mut_once_spec'0:
+    forall self: closure0, args: (), res: UInt32.t. [%#sops'8] postcondition_once'0 self args res
+      = (exists res_state: closure0. postcondition_mut'0 self args res_state res /\ resolve'1 res_state)
   
-  predicate hist_inv'0 (self: closure0) (result_state: closure0) =
-    self = result_state
+  predicate hist_inv'0 (self: closure0) (result_state: closure0) = self = result_state
   
   function hist_inv_trans'0 (self: closure0) (b: closure0) (c: closure0) : ()
   
   axiom hist_inv_trans_spec'0: forall self: closure0, b: closure0, c: closure0. ([%#sops'5] hist_inv'0 self b)
-   -> ([%#sops'6] hist_inv'0 b c)  -> ([%#sops'7] hist_inv'0 self c)
+      -> ([%#sops'6] hist_inv'0 b c) -> ([%#sops'7] hist_inv'0 self c)
   
   function hist_inv_refl'0 (self: closure0) : ()
   
@@ -147,44 +138,45 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   function postcondition_mut_hist_inv'0 (self: closure0) (args: ()) (res_state: closure0) (res: UInt32.t) : ()
   
-  axiom postcondition_mut_hist_inv_spec'0: forall self: closure0, args: (), res_state: closure0, res: UInt32.t. ([%#sops'2] postcondition_mut'0 self args res_state res)
-   -> ([%#sops'3] hist_inv'0 self res_state)
+  axiom postcondition_mut_hist_inv_spec'0:
+    forall self: closure0, args: (), res_state: closure0, res: UInt32.t. ([%#sops'2] postcondition_mut'0 self args res_state res)
+      -> ([%#sops'3] hist_inv'0 self res_state)
   
   function fn_hist_inv'0 (self: closure0) (res_state: closure0) : ()
   
   axiom fn_hist_inv_spec'0: forall self: closure0, res_state: closure0. [%#sops'1] hist_inv'0 self res_state
-  = (self = res_state)
+      = (self = res_state)
   
-  predicate postcondition'0 (self: closure0) (args: ()) (result: UInt32.t) =
-    postcondition self args result
+  predicate postcondition'0 (self: closure0) (args: ()) (result: UInt32.t) = postcondition self args result
   
   function fn_once'0 (self: closure0) (args: ()) (res: UInt32.t) : ()
   
   axiom fn_once_spec'0: forall self: closure0, args: (), res: UInt32.t. [%#sops'0] postcondition_once'0 self args res
-  = (postcondition'0 self args res /\ resolve'1 self)
+      = (postcondition'0 self args res /\ resolve'1 self)
   
   function fn_mut'0 (self: closure0) (args: ()) (res_state: closure0) (res: UInt32.t) : ()
   
-  axiom fn_mut_spec'0: forall self: closure0, args: (), res_state: closure0, res: UInt32.t. [%#sops] postcondition_mut'0 self args res_state res
-  = (postcondition'0 self args res /\ self = res_state)
+  axiom fn_mut_spec'0:
+    forall self: closure0, args: (), res_state: closure0, res: UInt32.t. [%#sops] postcondition_mut'0 self args res_state res
+      = (postcondition'0 self args res /\ self = res_state)
   
-  let rec uses_fn (f:closure0) (return'  (x:()))= {[@expl:uses_fn 'f' type invariant] [%#s08_multiple_calls'3] inv'2 f}
+  let rec uses_fn (f: closure0) (return' (x: ())) =
+    {[@expl:uses_fn 'f' type invariant] [%#s08_multiple_calls'3] inv'2 f}
     {[@expl:uses_fn requires] [%#s08_multiple_calls'4] precondition f ()}
     any
-    [ return''0 (result:())-> {[%#s08_multiple_calls'5] exists f2: closure0, r: UInt32.t. f2 = f
-      /\ postcondition'0 f2 () r}
+    [ return''0 (result: ()) -> {[%#s08_multiple_calls'5] exists f2: closure0, r: UInt32.t. f2 = f
+        /\ postcondition'0 f2 () r}
       (! return' {result}) ]
-  
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec multi_use[#"08_multiple_calls.rs" 4 0 4 26] (x:t_T) (return'  (x'0:()))= {[@expl:multi_use 'x' type invariant] [%#s08_multiple_calls] inv'0 x}
+  let rec multi_use [#"08_multiple_calls.rs" 4 0 4 26] (x: t_T) (return' (x'0: ())) =
+    {[@expl:multi_use 'x' type invariant] [%#s08_multiple_calls] inv'0 x}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &c <- { _0 = x'0 } ] s1 | s1 = uses_fn {c} (fun (_ret:()) ->  [ &_4 <- _ret ] s2) | s2 = bb1 ] 
+    [ bb0 = s0 [ s0 = [ &c <- { _0 = x'0 } ] s1 | s1 = uses_fn {c} (fun (_ret: ()) -> [ &_4 <- _ret ] s2) | s2 = bb1 ]
     | bb1 = return''0 {_0'0} ]
-     [ & _0'0: () = Any.any_l () | & x'0: t_T = x | & c: closure0 = Any.any_l () | & _4: () = Any.any_l () ] )
-    [ return''0 (result:())-> (! return' {result}) ]
-
+    [ & _0'0: () = Any.any_l () | & x'0: t_T = x | & c: closure0 = Any.any_l () | & _4: () = Any.any_l () ])
+    [ return''0 (result: ()) -> (! return' {result}) ]
 end

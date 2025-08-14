@@ -7,42 +7,34 @@ module M_while_let__f [#"while_let.rs" 4 0 4 10]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_Option  =
-    | C_None
-    | C_Some Int32.t
+  type t_Option = C_None | C_Some Int32.t
   
-  predicate resolve (self: MutBorrow.t t_Option) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t t_Option) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_Option) =
-    resolve _0
+  predicate resolve'0 (_0: MutBorrow.t t_Option) = resolve _0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f[#"while_let.rs" 4 0 4 10] (return'  (x:()))= (! bb0
+  let rec f [#"while_let.rs" 4 0 4 10] (return' (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 =  [ &a <- C_Some ([%#swhile_let] (10: Int32.t)) ] s1
+      [ s0 = [ &a <- C_Some ([%#swhile_let] (10: Int32.t)) ] s1
       | s1 = MutBorrow.borrow_mut <t_Option> {a}
-          (fun (_ret:MutBorrow.t t_Option) ->  [ &b <- _ret ]  [ &a <- _ret.final ] s2)
-      | s2 =  [ &old_1_0 <- b ] s3
+          (fun (_ret: MutBorrow.t t_Option) -> [ &b <- _ret ] [ &a <- _ret.final ] s2)
+      | s2 = [ &old_1_0 <- b ] s3
       | s3 = bb1 ]
-    
     | bb1 = bb1'0
       [ bb1'0 = {[@expl:mut invariant] old_1_0.final = b.final}
         {[@expl:loop invariant] [%#swhile_let'0] true}
-        (! s0) [ s0 = bb2 ] 
-        [ bb2 = any [ br0 -> {b.current = C_None} (! bb5) | br1 (x0:Int32.t)-> {b.current = C_Some x0} (! bb4) ] 
-        | bb4 = s0 [ s0 =  [ &_7 <- C_None ] s1 | s1 =  [ &b <- { b with current = _7 } ] s2 | s2 = bb1'0 ]  ]
-       ]
-    
-    | bb5 = s0 [ s0 = -{resolve'0 b}- s1 | s1 = return''0 {_0} ]  ]
-    
+        (! s0)
+        [ s0 = bb2 ]
+        [ bb2 = any [ br0 -> {b.current = C_None} (! bb5) | br1 (x0: Int32.t) -> {b.current = C_Some x0} (! bb4) ]
+        | bb4 = s0 [ s0 = [ &_7 <- C_None ] s1 | s1 = [ &b <- { b with current = _7 } ] s2 | s2 = bb1'0 ] ] ]
+    | bb5 = s0 [ s0 = -{resolve'0 b}- s1 | s1 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a: t_Option = Any.any_l ()
     | & b: MutBorrow.t t_Option = Any.any_l ()
     | & _7: t_Option = Any.any_l ()
-    | & old_1_0: MutBorrow.t t_Option = Any.any_l () ]
-    ) [ return''0 (result:())-> (! return' {result}) ] 
+    | & old_1_0: MutBorrow.t t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end

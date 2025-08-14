@@ -24,30 +24,26 @@ module M_inc_max_3__inc_max_3 [#"inc_max_3.rs" 12 0 12 79]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  let rec swap (mma:MutBorrow.t (MutBorrow.t UInt32.t)) (mmb:MutBorrow.t (MutBorrow.t UInt32.t)) (return'  (x:()))= any
-    [ return''0 (result:())-> {[%#sinc_max_3'3] mma.final = mmb.current /\ mmb.final = mma.current}
+  let rec swap (mma: MutBorrow.t (MutBorrow.t UInt32.t)) (mmb: MutBorrow.t (MutBorrow.t UInt32.t)) (return' (x: ())) =
+    any
+    [ return''0 (result: ()) -> {[%#sinc_max_3'3] mma.final = mmb.current /\ mmb.final = mma.current}
       (! return' {result}) ]
   
+  predicate resolve (self: MutBorrow.t (MutBorrow.t UInt32.t)) = [%#sresolve] self.final = self.current
   
-  predicate resolve (self: MutBorrow.t (MutBorrow.t UInt32.t)) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'0 (_0: MutBorrow.t (MutBorrow.t UInt32.t)) = resolve _0
   
-  predicate resolve'0 (_0: MutBorrow.t (MutBorrow.t UInt32.t)) =
-    resolve _0
+  predicate resolve'1 (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
   
-  predicate resolve'1 (self: MutBorrow.t UInt32.t) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'2 (_0: MutBorrow.t UInt32.t) = resolve'1 _0
   
-  predicate resolve'2 (_0: MutBorrow.t UInt32.t) =
-    resolve'1 _0
+  type t_Ordering = C_Less | C_Equal | C_Greater
   
-  type t_Ordering  =
-    | C_Less
-    | C_Equal
-    | C_Greater
+  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering = [%#sord'12] if UInt32.lt self o then
+      C_Less
+    else
+      if self = o then C_Equal else C_Greater
   
-  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering =
-    [%#sord'12] if UInt32.lt self o then C_Less else if self = o then C_Equal else C_Greater
   
   function eq_cmp (x: UInt32.t) (y: UInt32.t) : ()
   
@@ -56,17 +52,17 @@ module M_inc_max_3__inc_max_3 [#"inc_max_3.rs" 12 0 12 79]
   function antisym2 (x: UInt32.t) (y: UInt32.t) : ()
   
   axiom antisym2_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'9] cmp_log x y = C_Greater)
-   -> ([%#sord'10] cmp_log y x = C_Less)
+      -> ([%#sord'10] cmp_log y x = C_Less)
   
   function antisym1 (x: UInt32.t) (y: UInt32.t) : ()
   
   axiom antisym1_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'7] cmp_log x y = C_Less)
-   -> ([%#sord'8] cmp_log y x = C_Greater)
+      -> ([%#sord'8] cmp_log y x = C_Greater)
   
   function trans (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
   
   axiom trans_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-   -> ([%#sord'5] cmp_log y z = o)  -> ([%#sord'6] cmp_log x z = o)
+      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
   
   function refl (x: UInt32.t) : ()
   
@@ -92,89 +88,71 @@ module M_inc_max_3__inc_max_3 [#"inc_max_3.rs" 12 0 12 79]
   
   meta "select_lsinst" "all"
   
-  let rec inc_max_3[#"inc_max_3.rs" 12 0 12 79] (ma:MutBorrow.t UInt32.t) (mb:MutBorrow.t UInt32.t) (mc:MutBorrow.t UInt32.t) (return'  (x:()))= {[@expl:inc_max_3 requires] [%#sinc_max_3'1] UInt32.le ma.current (1000000: UInt32.t)
+  let rec inc_max_3 [#"inc_max_3.rs" 12 0 12 79] (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t)
+    (mc: MutBorrow.t UInt32.t) (return' (x: ())) =
+    {[@expl:inc_max_3 requires] [%#sinc_max_3'1] UInt32.le ma.current (1000000: UInt32.t)
     /\ UInt32.le mb.current (1000000: UInt32.t) /\ UInt32.le mc.current (1000000: UInt32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_7 <- UInt32.lt ma'0.current mb'0.current ] s1
-      | s1 = any [ br0 -> {_7 = false} (! bb4) | br1 -> {_7} (! bb1) ]  ]
-    
+      [ s0 = [ &_7 <- UInt32.lt ma'0.current mb'0.current ] s1
+      | s1 = any [ br0 -> {_7 = false} (! bb4) | br1 -> {_7} (! bb1) ] ]
     | bb1 = s0
       [ s0 = MutBorrow.borrow_mut <MutBorrow.t UInt32.t> {ma'0}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->  [ &_12 <- _ret ]  [ &ma'0 <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) -> [ &_12 <- _ret ] [ &ma'0 <- _ret.final ] s1)
       | s1 = MutBorrow.borrow_mut <MutBorrow.t UInt32.t> {mb'0}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->  [ &_14 <- _ret ]  [ &mb'0 <- _ret.final ] s2)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) -> [ &_14 <- _ret ] [ &mb'0 <- _ret.final ] s2)
       | s2 = MutBorrow.borrow_final <MutBorrow.t UInt32.t> {_12.current} {MutBorrow.get_id _12}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->
-             [ &_11 <- _ret ] 
-             [ &_12 <- { _12 with current = _ret.final } ] 
-            s3)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) ->
+            [ &_11 <- _ret ] [ &_12 <- { _12 with current = _ret.final } ] s3)
       | s3 = MutBorrow.borrow_final <MutBorrow.t UInt32.t> {_14.current} {MutBorrow.get_id _14}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->
-             [ &_13 <- _ret ] 
-             [ &_14 <- { _14 with current = _ret.final } ] 
-            s4)
-      | s4 = swap {_11} {_13} (fun (_ret:()) ->  [ &_10 <- _ret ] s5)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) ->
+            [ &_13 <- _ret ] [ &_14 <- { _14 with current = _ret.final } ] s4)
+      | s4 = swap {_11} {_13} (fun (_ret: ()) -> [ &_10 <- _ret ] s5)
       | s5 = bb2 ]
-    
-    | bb2 = s0 [ s0 = -{resolve'0 _14}- s1 | s1 = -{resolve'0 _12}- s2 | s2 = bb4 ] 
+    | bb2 = s0 [ s0 = -{resolve'0 _14}- s1 | s1 = -{resolve'0 _12}- s2 | s2 = bb4 ]
     | bb4 = s0
-      [ s0 =  [ &_16 <- UInt32.lt mb'0.current mc'0.current ] s1
-      | s1 = any [ br0 -> {_16 = false} (! bb7) | br1 -> {_16} (! bb5) ]  ]
-    
+      [ s0 = [ &_16 <- UInt32.lt mb'0.current mc'0.current ] s1
+      | s1 = any [ br0 -> {_16 = false} (! bb7) | br1 -> {_16} (! bb5) ] ]
     | bb5 = s0
       [ s0 = MutBorrow.borrow_mut <MutBorrow.t UInt32.t> {mb'0}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->  [ &_21 <- _ret ]  [ &mb'0 <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) -> [ &_21 <- _ret ] [ &mb'0 <- _ret.final ] s1)
       | s1 = MutBorrow.borrow_mut <MutBorrow.t UInt32.t> {mc'0}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->  [ &_23 <- _ret ]  [ &mc'0 <- _ret.final ] s2)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) -> [ &_23 <- _ret ] [ &mc'0 <- _ret.final ] s2)
       | s2 = MutBorrow.borrow_final <MutBorrow.t UInt32.t> {_21.current} {MutBorrow.get_id _21}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->
-             [ &_20 <- _ret ] 
-             [ &_21 <- { _21 with current = _ret.final } ] 
-            s3)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) ->
+            [ &_20 <- _ret ] [ &_21 <- { _21 with current = _ret.final } ] s3)
       | s3 = MutBorrow.borrow_final <MutBorrow.t UInt32.t> {_23.current} {MutBorrow.get_id _23}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->
-             [ &_22 <- _ret ] 
-             [ &_23 <- { _23 with current = _ret.final } ] 
-            s4)
-      | s4 = swap {_20} {_22} (fun (_ret:()) ->  [ &_19 <- _ret ] s5)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) ->
+            [ &_22 <- _ret ] [ &_23 <- { _23 with current = _ret.final } ] s4)
+      | s4 = swap {_20} {_22} (fun (_ret: ()) -> [ &_19 <- _ret ] s5)
       | s5 = bb6 ]
-    
-    | bb6 = s0 [ s0 = -{resolve'0 _23}- s1 | s1 = -{resolve'0 _21}- s2 | s2 = -{resolve'2 mc'0}- s3 | s3 = bb8 ] 
-    | bb7 = s0 [ s0 = -{resolve'2 mc'0}- s1 | s1 = bb8 ] 
+    | bb6 = s0 [ s0 = -{resolve'0 _23}- s1 | s1 = -{resolve'0 _21}- s2 | s2 = -{resolve'2 mc'0}- s3 | s3 = bb8 ]
+    | bb7 = s0 [ s0 = -{resolve'2 mc'0}- s1 | s1 = bb8 ]
     | bb8 = s0
-      [ s0 =  [ &_25 <- UInt32.lt ma'0.current mb'0.current ] s1
-      | s1 = any [ br0 -> {_25 = false} (! bb12) | br1 -> {_25} (! bb9) ]  ]
-    
+      [ s0 = [ &_25 <- UInt32.lt ma'0.current mb'0.current ] s1
+      | s1 = any [ br0 -> {_25 = false} (! bb12) | br1 -> {_25} (! bb9) ] ]
     | bb9 = s0
       [ s0 = MutBorrow.borrow_mut <MutBorrow.t UInt32.t> {ma'0}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->  [ &_30 <- _ret ]  [ &ma'0 <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) -> [ &_30 <- _ret ] [ &ma'0 <- _ret.final ] s1)
       | s1 = MutBorrow.borrow_mut <MutBorrow.t UInt32.t> {mb'0}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->  [ &_32 <- _ret ]  [ &mb'0 <- _ret.final ] s2)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) -> [ &_32 <- _ret ] [ &mb'0 <- _ret.final ] s2)
       | s2 = MutBorrow.borrow_final <MutBorrow.t UInt32.t> {_30.current} {MutBorrow.get_id _30}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->
-             [ &_29 <- _ret ] 
-             [ &_30 <- { _30 with current = _ret.final } ] 
-            s3)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) ->
+            [ &_29 <- _ret ] [ &_30 <- { _30 with current = _ret.final } ] s3)
       | s3 = MutBorrow.borrow_final <MutBorrow.t UInt32.t> {_32.current} {MutBorrow.get_id _32}
-          (fun (_ret:MutBorrow.t (MutBorrow.t UInt32.t)) ->
-             [ &_31 <- _ret ] 
-             [ &_32 <- { _32 with current = _ret.final } ] 
-            s4)
-      | s4 = swap {_29} {_31} (fun (_ret:()) ->  [ &_28 <- _ret ] s5)
+          (fun (_ret: MutBorrow.t (MutBorrow.t UInt32.t)) ->
+            [ &_31 <- _ret ] [ &_32 <- { _32 with current = _ret.final } ] s4)
+      | s4 = swap {_29} {_31} (fun (_ret: ()) -> [ &_28 <- _ret ] s5)
       | s5 = bb10 ]
-    
-    | bb10 = s0 [ s0 = -{resolve'0 _32}- s1 | s1 = -{resolve'0 _30}- s2 | s2 = bb12 ] 
+    | bb10 = s0 [ s0 = -{resolve'0 _32}- s1 | s1 = -{resolve'0 _30}- s2 | s2 = bb12 ]
     | bb12 = s0
       [ s0 = UInt32.add {ma'0.current} {[%#sinc_max_3] (2: UInt32.t)}
-          (fun (_ret:UInt32.t) ->  [ &ma'0 <- { ma'0 with current = _ret } ] s1)
+          (fun (_ret: UInt32.t) -> [ &ma'0 <- { ma'0 with current = _ret } ] s1)
       | s1 = -{resolve'2 ma'0}- s2
       | s2 = UInt32.add {mb'0.current} {[%#sinc_max_3'0] (1: UInt32.t)}
-          (fun (_ret:UInt32.t) ->  [ &mb'0 <- { mb'0 with current = _ret } ] s3)
+          (fun (_ret: UInt32.t) -> [ &mb'0 <- { mb'0 with current = _ret } ] s3)
       | s3 = -{resolve'2 mb'0}- s4
-      | s4 = return''0 {_0} ]
-     ]
-    
+      | s4 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & ma'0: MutBorrow.t UInt32.t = ma
     | & mb'0: MutBorrow.t UInt32.t = mb
@@ -196,12 +174,10 @@ module M_inc_max_3__inc_max_3 [#"inc_max_3.rs" 12 0 12 79]
     | & _29: MutBorrow.t (MutBorrow.t UInt32.t) = Any.any_l ()
     | & _30: MutBorrow.t (MutBorrow.t UInt32.t) = Any.any_l ()
     | & _31: MutBorrow.t (MutBorrow.t UInt32.t) = Any.any_l ()
-    | & _32: MutBorrow.t (MutBorrow.t UInt32.t) = Any.any_l () ]
-    )
-    [ return''0 (result:())-> {[@expl:inc_max_3 ensures] [%#sinc_max_3'2] ma.final <> mb.final
+    | & _32: MutBorrow.t (MutBorrow.t UInt32.t) = Any.any_l () ])
+    [ return''0 (result: ()) -> {[@expl:inc_max_3 ensures] [%#sinc_max_3'2] ma.final <> mb.final
       /\ mb.final <> mc.final /\ mc.final <> ma.final}
       (! return' {result}) ]
-
 end
 module M_inc_max_3__test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57]
   let%span sinc_max_3 = "inc_max_3.rs" 29 4 29 39
@@ -228,13 +204,13 @@ module M_inc_max_3__test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57]
   use creusot.int.UInt32
   use creusot.prelude.Any
   
-  type t_Ordering  =
-    | C_Less
-    | C_Equal
-    | C_Greater
+  type t_Ordering = C_Less | C_Equal | C_Greater
   
-  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering =
-    [%#sord'12] if UInt32.lt self o then C_Less else if self = o then C_Equal else C_Greater
+  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering = [%#sord'12] if UInt32.lt self o then
+      C_Less
+    else
+      if self = o then C_Equal else C_Greater
+  
   
   function eq_cmp (x: UInt32.t) (y: UInt32.t) : ()
   
@@ -243,17 +219,17 @@ module M_inc_max_3__test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57]
   function antisym2 (x: UInt32.t) (y: UInt32.t) : ()
   
   axiom antisym2_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'9] cmp_log x y = C_Greater)
-   -> ([%#sord'10] cmp_log y x = C_Less)
+      -> ([%#sord'10] cmp_log y x = C_Less)
   
   function antisym1 (x: UInt32.t) (y: UInt32.t) : ()
   
   axiom antisym1_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'7] cmp_log x y = C_Less)
-   -> ([%#sord'8] cmp_log y x = C_Greater)
+      -> ([%#sord'8] cmp_log y x = C_Greater)
   
   function trans (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
   
   axiom trans_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-   -> ([%#sord'5] cmp_log y z = o)  -> ([%#sord'6] cmp_log x z = o)
+      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
   
   function refl (x: UInt32.t) : ()
   
@@ -275,54 +251,50 @@ module M_inc_max_3__test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57]
   
   axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord] UInt32.le x y = (cmp_log x y <> C_Greater)
   
-  let rec inc_max_3 (ma:MutBorrow.t UInt32.t) (mb:MutBorrow.t UInt32.t) (mc:MutBorrow.t UInt32.t) (return'  (x:()))= {[@expl:inc_max_3 requires] [%#sinc_max_3'1] UInt32.le ma.current (1000000: UInt32.t)
+  let rec inc_max_3 (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (mc: MutBorrow.t UInt32.t) (return' (x: ())) =
+    {[@expl:inc_max_3 requires] [%#sinc_max_3'1] UInt32.le ma.current (1000000: UInt32.t)
     /\ UInt32.le mb.current (1000000: UInt32.t) /\ UInt32.le mc.current (1000000: UInt32.t)}
     any
-    [ return''0 (result:())-> {[%#sinc_max_3'2] ma.final <> mb.final /\ mb.final <> mc.final /\ mc.final <> ma.final}
+    [ return''0 (result: ()) -> {[%#sinc_max_3'2] ma.final <> mb.final /\ mb.final <> mc.final /\ mc.final <> ma.final}
       (! return' {result}) ]
   
+  predicate resolve (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
   
-  predicate resolve (self: MutBorrow.t UInt32.t) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0: MutBorrow.t UInt32.t) =
-    resolve _0
+  predicate resolve'0 (_0: MutBorrow.t UInt32.t) = resolve _0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_inc_max_3[#"inc_max_3.rs" 27 0 27 57] (a:UInt32.t) (b:UInt32.t) (c:UInt32.t) (return'  (x:()))= {[@expl:test_inc_max_3 requires] [%#sinc_max_3'0] UInt32.le a (1000000: UInt32.t)
+  let rec test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57] (a: UInt32.t) (b: UInt32.t) (c: UInt32.t) (return' (x: ())) =
+    {[@expl:test_inc_max_3 requires] [%#sinc_max_3'0] UInt32.le a (1000000: UInt32.t)
     /\ UInt32.le b (1000000: UInt32.t) /\ UInt32.le c (1000000: UInt32.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <UInt32.t> {a'0}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_7 <- _ret ]  [ &a'0 <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_7 <- _ret ] [ &a'0 <- _ret.final ] s1)
       | s1 = MutBorrow.borrow_mut <UInt32.t> {b'0}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_9 <- _ret ]  [ &b'0 <- _ret.final ] s2)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_9 <- _ret ] [ &b'0 <- _ret.final ] s2)
       | s2 = MutBorrow.borrow_mut <UInt32.t> {c'0}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_11 <- _ret ]  [ &c'0 <- _ret.final ] s3)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_11 <- _ret ] [ &c'0 <- _ret.final ] s3)
       | s3 = MutBorrow.borrow_final <UInt32.t> {_7.current} {MutBorrow.get_id _7}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_6 <- _ret ]  [ &_7 <- { _7 with current = _ret.final } ] s4)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_6 <- _ret ] [ &_7 <- { _7 with current = _ret.final } ] s4)
       | s4 = MutBorrow.borrow_final <UInt32.t> {_9.current} {MutBorrow.get_id _9}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_8 <- _ret ]  [ &_9 <- { _9 with current = _ret.final } ] s5)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_8 <- _ret ] [ &_9 <- { _9 with current = _ret.final } ] s5)
       | s5 = MutBorrow.borrow_final <UInt32.t> {_11.current} {MutBorrow.get_id _11}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_10 <- _ret ]  [ &_11 <- { _11 with current = _ret.final } ] s6)
-      | s6 = inc_max_3 {_6} {_8} {_10} (fun (_ret:()) ->  [ &_5 <- _ret ] s7)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_10 <- _ret ] [ &_11 <- { _11 with current = _ret.final } ] s6)
+      | s6 = inc_max_3 {_6} {_8} {_10} (fun (_ret: ()) -> [ &_5 <- _ret ] s7)
       | s7 = bb1 ]
-    
     | bb1 = s0
       [ s0 = -{resolve'0 _11}- s1
       | s1 = -{resolve'0 _9}- s2
       | s2 = -{resolve'0 _7}- s3
-      | s3 =  [ &_13 <- a'0 <> b'0 ] s4
-      | s4 = any [ br0 -> {_13 = false} (! bb8) | br1 -> {_13} (! bb2) ]  ]
-    
-    | bb2 = s0 [ s0 =  [ &_16 <- b'0 <> c'0 ] s1 | s1 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb3) ]  ] 
-    | bb3 = s0 [ s0 =  [ &_19 <- c'0 <> a'0 ] s1 | s1 = any [ br0 -> {_19 = false} (! bb8) | br1 -> {_19} (! bb4) ]  ] 
+      | s3 = [ &_13 <- a'0 <> b'0 ] s4
+      | s4 = any [ br0 -> {_13 = false} (! bb8) | br1 -> {_13} (! bb2) ] ]
+    | bb2 = s0 [ s0 = [ &_16 <- b'0 <> c'0 ] s1 | s1 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb3) ] ]
+    | bb3 = s0 [ s0 = [ &_19 <- c'0 <> a'0 ] s1 | s1 = any [ br0 -> {_19 = false} (! bb8) | br1 -> {_19} (! bb4) ] ]
     | bb4 = return''0 {_0}
     | bb8 = {[%#sinc_max_3] false} any ]
-    
     [ & _0: () = Any.any_l ()
     | & a'0: UInt32.t = a
     | & b'0: UInt32.t = b
@@ -336,6 +308,5 @@ module M_inc_max_3__test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57]
     | & _11: MutBorrow.t UInt32.t = Any.any_l ()
     | & _13: bool = Any.any_l ()
     | & _16: bool = Any.any_l ()
-    | & _19: bool = Any.any_l () ]
-    ) [ return''0 (result:())-> (! return' {result}) ] 
+    | & _19: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end

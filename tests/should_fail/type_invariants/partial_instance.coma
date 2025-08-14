@@ -12,37 +12,33 @@ module M_partial_instance__mk_s [#"partial_instance.rs" 17 0 17 26]
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
-  predicate is_null_logic (self: Opaque.ptr) =
-    [%#sptr'1] addr_logic self = (0: UInt64.t)
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'1] addr_logic self = (0: UInt64.t)
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr'0] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
-  let rec null (return'  (x:Opaque.ptr))= any
-    [ return''0 (result:Opaque.ptr)-> {[%#sptr] is_null_logic result} (! return' {result}) ]
+  let rec null (return' (x: Opaque.ptr)) = any
+    [ return''0 (result: Opaque.ptr) -> {[%#sptr] is_null_logic result} (! return' {result}) ]
   
-  
-  type t_S  =
-    { t_S__0: Int32.t; t_S__1: Opaque.ptr }
+  type t_S = { t_S__0: Int32.t; t_S__1: Opaque.ptr }
   
   predicate inv (_0: t_S)
   
   axiom inv_axiom: forall x: t_S [inv x]. inv x
-   -> match x with
-    | {t_S__0 = a_0 ; t_S__1 = a_1} -> true
-    end
+      -> match x with
+        | {t_S__0 = a_0; t_S__1 = a_1} -> true
+        end
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec mk_s[#"partial_instance.rs" 17 0 17 26] (t:Int32.t) (return'  (x:t_S))= (! bb0
-    [ bb0 = s0 [ s0 = null (fun (_ret:Opaque.ptr) ->  [ &_5 <- _ret ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 =  [ &_0 <- { t_S__0 = t'0; t_S__1 = _5 } ] s1 | s1 = return''0 {_0} ]  ]
-     [ & _0: t_S = Any.any_l () | & t'0: Int32.t = t | & _5: Opaque.ptr = Any.any_l () ] )
-    [ return''0 (result:t_S)-> {[@expl:mk_s result type invariant] [%#spartial_instance] inv result}
+  let rec mk_s [#"partial_instance.rs" 17 0 17 26] (t: Int32.t) (return' (x: t_S)) = (! bb0
+    [ bb0 = s0 [ s0 = null (fun (_ret: Opaque.ptr) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &_0 <- { t_S__0 = t'0; t_S__1 = _5 } ] s1 | s1 = return''0 {_0} ] ]
+    [ & _0: t_S = Any.any_l () | & t'0: Int32.t = t | & _5: Opaque.ptr = Any.any_l () ])
+    [ return''0 (result: t_S) -> {[@expl:mk_s result type invariant] [%#spartial_instance] inv result}
       {[@expl:mk_s ensures] [%#spartial_instance'0] result.t_S__0 = t}
       (! return' {result}) ]
-
 end
 module M_partial_instance__evil [#"partial_instance.rs" 21 0 21 13]
   let%span spartial_instance = "partial_instance.rs" 22 25 22 26
@@ -55,8 +51,7 @@ module M_partial_instance__evil [#"partial_instance.rs" 21 0 21 13]
   use creusot.prelude.Opaque
   use creusot.prelude.Any
   
-  type t_S  =
-    { t_S__0: Int32.t; t_S__1: Opaque.ptr }
+  type t_S = { t_S__0: Int32.t; t_S__1: Opaque.ptr }
   
   predicate invariant' [#"partial_instance.rs" 11 4 11 30] (self: t_S) =
     [%#spartial_instance'3] Int32.to_int self.t_S__0 = 0
@@ -64,23 +59,22 @@ module M_partial_instance__evil [#"partial_instance.rs" 21 0 21 13]
   predicate inv (_0: t_S)
   
   axiom inv_axiom [@rewrite]: forall x: t_S [inv x]. inv x
-  = (invariant' x
-  /\ match x with
-    | {t_S__0 = a_0 ; t_S__1 = a_1} -> true
-    end)
+      = (invariant' x
+      /\ match x with
+        | {t_S__0 = a_0; t_S__1 = a_1} -> true
+        end)
   
-  let rec mk_s (t:Int32.t) (return'  (x:t_S))= any
-    [ return''0 (result:t_S)-> {[%#spartial_instance'1] inv result}
+  let rec mk_s (t: Int32.t) (return' (x: t_S)) = any
+    [ return''0 (result: t_S) -> {[%#spartial_instance'1] inv result}
       {[%#spartial_instance'2] result.t_S__0 = t}
       (! return' {result}) ]
-  
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec evil[#"partial_instance.rs" 21 0 21 13] (return'  (x:()))= (! bb0
-    [ bb0 = s0 [ s0 = mk_s {[%#spartial_instance] (1: Int32.t)} (fun (_ret:t_S) ->  [ &_s <- _ret ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 = {[@expl:assertion] [%#spartial_instance'0] false} s1 | s1 = return''0 {_0} ]  ]
-     [ & _0: () = Any.any_l () | & _s: t_S = Any.any_l () ] ) [ return''0 (result:())-> (! return' {result}) ] 
+  let rec evil [#"partial_instance.rs" 21 0 21 13] (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = mk_s {[%#spartial_instance] (1: Int32.t)} (fun (_ret: t_S) -> [ &_s <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = {[@expl:assertion] [%#spartial_instance'0] false} s1 | s1 = return''0 {_0} ] ]
+    [ & _0: () = Any.any_l () | & _s: t_S = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end

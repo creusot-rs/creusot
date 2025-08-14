@@ -20,36 +20,28 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence [#"sparse_array
   use mach.int.Int
   use seq.Seq
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  type t_RawVec'0  =
-    { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
+  type t_RawVec'0 = { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
   
-  type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+  type t_Vec'0 = { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  type t_Sparse  =
-    { t_Sparse__size: UInt64.t;
-      t_Sparse__n: UInt64.t;
-      t_Sparse__values: t_Vec;
-      t_Sparse__idx: t_Vec'0;
-      t_Sparse__back: t_Vec'0 }
+  type t_Sparse = {
+    t_Sparse__size: UInt64.t;
+    t_Sparse__n: UInt64.t;
+    t_Sparse__values: t_Vec;
+    t_Sparse__idx: t_Vec'0;
+    t_Sparse__back: t_Vec'0 }
   
   type t_T
   
@@ -63,8 +55,7 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence [#"sparse_array
   
   axiom view_spec'0: forall self: t_Vec'0. [%#svec'0] Seq.length (view'0 self) <= UInt64.t'int const_MAX
   
-  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t =
-    [%#sindex] Seq.get (view'0 self) ix
+  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t = [%#sindex] Seq.get (view'0 self) ix
   
   predicate invariant' [#"sparse_array.rs" 66 4 66 30] (self: t_Sparse) =
     [%#ssparse_array'5] UInt64.t'int self.t_Sparse__n <= UInt64.t'int self.t_Sparse__size
@@ -72,28 +63,26 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence [#"sparse_array
     /\ Seq.length (view'0 self.t_Sparse__idx) = UInt64.t'int self.t_Sparse__size
     /\ Seq.length (view'0 self.t_Sparse__back) = UInt64.t'int self.t_Sparse__size
     /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.t_Sparse__n
-     -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
-    /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
-    /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
+      -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
+      /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
+      /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
   
   predicate inv (_0: t_T)
   
-  predicate invariant''0 (self: t_T) =
-    [%#sboxed] inv self
+  predicate invariant''0 (self: t_T) = [%#sboxed] inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
   predicate invariant''1 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'0 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   predicate inv'1 (_0: Seq.seq t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) =
-    [%#svec'1] inv'1 (view self)
+  predicate invariant''2 (self: t_Vec) = [%#svec'1] inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
@@ -102,40 +91,34 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence [#"sparse_array
   predicate inv'3 (_0: t_Sparse)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Sparse [inv'3 x]. inv'3 x
-  = (invariant' x
-  /\ match x with
-    | {t_Sparse__size = size ; t_Sparse__n = n ; t_Sparse__values = values ; t_Sparse__idx = idx ; t_Sparse__back = back} -> inv'2 values
-    end)
+      = (invariant' x
+      /\ match x with
+        | {t_Sparse__size = size; t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
+        end)
   
-  predicate resolve (_0: UInt64.t) =
-    true
+  predicate resolve (_0: UInt64.t) = true
   
   predicate resolve'0 (self: t_Vec'0) =
-    [%#svec] forall i: int. 0 <= i /\ i < Seq.length (view'0 self)  -> resolve (index_logic self i)
+    [%#svec] forall i: int. 0 <= i /\ i < Seq.length (view'0 self) -> resolve (index_logic self i)
   
-  predicate resolve'1 (_0: t_Vec'0) =
-    resolve'0 _0
+  predicate resolve'1 (_0: t_Vec'0) = resolve'0 _0
   
   predicate resolve'2 (_0: t_T)
   
-  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : t_T =
-    [%#sindex] Seq.get (view self) ix
+  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#sindex] Seq.get (view self) ix
   
   predicate resolve'3 (self: t_Vec) =
-    [%#svec] forall i: int. 0 <= i /\ i < Seq.length (view self)  -> resolve'2 (index_logic'0 self i)
+    [%#svec] forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'2 (index_logic'0 self i)
   
-  predicate resolve'4 (_0: t_Vec) =
-    resolve'3 _0
+  predicate resolve'4 (_0: t_Vec) = resolve'3 _0
   
   predicate structural_resolve (_0: t_Sparse) =
     match _0 with
-      | {t_Sparse__size = x0 ; t_Sparse__n = x1 ; t_Sparse__values = x2 ; t_Sparse__idx = x3 ; t_Sparse__back = x4} -> resolve'1 x4
+      | {t_Sparse__size = x0; t_Sparse__n = x1; t_Sparse__values = x2; t_Sparse__idx = x3; t_Sparse__back = x4} -> resolve'1 x4
       /\ resolve'1 x3 /\ resolve'4 x2
       end
   
-  type t_Option  =
-    | C_None
-    | C_Some t_T
+  type t_Option = C_None | C_Some t_T
   
   predicate resolve'5 (self: t_Option) =
     [%#sresolve] match self with
@@ -143,8 +126,7 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence [#"sparse_array
       | C_None -> true
       end
   
-  predicate resolve'6 (_0: t_Option) =
-    resolve'5 _0
+  predicate resolve'6 (_0: t_Option) = resolve'5 _0
   
   predicate is_elt [#"sparse_array.rs" 86 4 86 36] (self: t_Sparse) (i: int) =
     [%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
@@ -159,19 +141,19 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence [#"sparse_array
   
   predicate resolve'7 [#"sparse_array.rs" 49 4 49 28] (self: t_Sparse) =
     [%#ssparse_array'3] forall i: int. 0 <= i /\ i < UInt64.t'int self.t_Sparse__size
-     -> resolve'6 (Seq.get (view'1 self) i)
+      -> resolve'6 (Seq.get (view'1 self) i)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self  : t_Sparse
+  constant self : t_Sparse
   
   function resolve_coherence [#"sparse_array.rs" 60 4 60 30] (self'0: t_Sparse) : ()
   
   goal vc_resolve_coherence: ([%#ssparse_array] inv'3 self)
-   -> ([%#ssparse_array'0] structural_resolve self)
-   -> ([@expl:resolve_coherence ensures] [%#ssparse_array'1] resolve'7 self)
+    -> ([%#ssparse_array'0] structural_resolve self)
+    -> ([@expl:resolve_coherence ensures] [%#ssparse_array'1] resolve'7 self)
 end
 module M_sparse_array__qyi16402981711463100202__get [#"sparse_array.rs" 101 4 101 45] (* Sparse<T> *)
   let%span ssparse_array = "sparse_array.rs" 101 16 101 20
@@ -201,36 +183,28 @@ module M_sparse_array__qyi16402981711463100202__get [#"sparse_array.rs" 101 4 10
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  type t_RawVec'0  =
-    { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
+  type t_RawVec'0 = { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
   
-  type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+  type t_Vec'0 = { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  type t_Sparse  =
-    { t_Sparse__size: UInt64.t;
-      t_Sparse__n: UInt64.t;
-      t_Sparse__values: t_Vec;
-      t_Sparse__idx: t_Vec'0;
-      t_Sparse__back: t_Vec'0 }
+  type t_Sparse = {
+    t_Sparse__size: UInt64.t;
+    t_Sparse__n: UInt64.t;
+    t_Sparse__values: t_Vec;
+    t_Sparse__idx: t_Vec'0;
+    t_Sparse__back: t_Vec'0 }
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
     [%#sslice] UInt64.t'int self < Seq.length seq
@@ -241,28 +215,27 @@ module M_sparse_array__qyi16402981711463100202__get [#"sparse_array.rs" 101 4 10
   
   axiom view_spec: forall self: t_Vec'0. [%#svec'2] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 (self: t_Vec'0) : Seq.seq UInt64.t =
-    [%#smodel] view self
+  function view'0 (self: t_Vec'0) : Seq.seq UInt64.t = [%#smodel] view self
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
     [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
   
-  let rec index (self_:t_Vec'0) (ix:UInt64.t) (return'  (x:UInt64.t))= {[@expl:index requires] [%#svec] in_bounds ix (view'0 self_)}
-    any [ return''0 (result:UInt64.t)-> {[%#svec'0] has_value ix (view'0 self_) result} (! return' {result}) ] 
+  let rec index (self_: t_Vec'0) (ix: UInt64.t) (return' (x: UInt64.t)) =
+    {[@expl:index requires] [%#svec] in_bounds ix (view'0 self_)}
+    any [ return''0 (result: UInt64.t) -> {[%#svec'0] has_value ix (view'0 self_) result} (! return' {result}) ]
   
   type t_T
   
   predicate inv (_0: t_T)
   
-  predicate invariant' (self: t_T) =
-    [%#sboxed] inv self
+  predicate invariant' (self: t_T) = [%#sboxed] inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'0 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -272,15 +245,13 @@ module M_sparse_array__qyi16402981711463100202__get [#"sparse_array.rs" 101 4 10
   
   axiom view_spec'0: forall self: t_Vec. [%#svec'2] Seq.length (view'1 self) <= UInt64.t'int const_MAX
   
-  predicate invariant''1 (self: t_Vec) =
-    [%#svec'3] inv'1 (view'1 self)
+  predicate invariant''1 (self: t_Vec) = [%#svec'3] inv'1 (view'1 self)
   
   predicate inv'2 (_0: t_Vec)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) =
-    [%#sinvariant] inv'2 self
+  predicate invariant''2 (self: t_Vec) = [%#sinvariant] inv'2 self
   
   predicate inv'3 (_0: t_Vec)
   
@@ -289,11 +260,9 @@ module M_sparse_array__qyi16402981711463100202__get [#"sparse_array.rs" 101 4 10
   predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) =
     [%#sslice] UInt64.t'int self < Seq.length seq
   
-  function view'2 (self: t_Vec) : Seq.seq t_T =
-    [%#smodel] view'1 self
+  function view'2 (self: t_Vec) : Seq.seq t_T = [%#smodel] view'1 self
   
-  predicate invariant''3 (self: t_T) =
-    [%#sinvariant] inv self
+  predicate invariant''3 (self: t_T) = [%#sinvariant] inv self
   
   predicate inv'4 (_0: t_T)
   
@@ -302,18 +271,15 @@ module M_sparse_array__qyi16402981711463100202__get [#"sparse_array.rs" 101 4 10
   predicate has_value'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
     [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
   
-  let rec index'0 (self_:t_Vec) (ix:UInt64.t) (return'  (x:t_T))= {[@expl:index 'self_' type invariant] [%#svec'1] inv'3 self_}
+  let rec index'0 (self_: t_Vec) (ix: UInt64.t) (return' (x: t_T)) =
+    {[@expl:index 'self_' type invariant] [%#svec'1] inv'3 self_}
     {[@expl:index requires] [%#svec] in_bounds'0 ix (view'2 self_)}
     any
-    [ return''0 (result:t_T)-> {inv'4 result} {[%#svec'0] has_value'0 ix (view'2 self_) result} (! return' {result}) ]
+    [ return''0 (result: t_T) -> {inv'4 result} {[%#svec'0] has_value'0 ix (view'2 self_) result} (! return' {result}) ]
   
+  type t_Option = C_None | C_Some t_T
   
-  type t_Option  =
-    | C_None
-    | C_Some t_T
-  
-  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t =
-    [%#sindex] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t = [%#sindex] Seq.get (view self) ix
   
   predicate invariant''4 [#"sparse_array.rs" 66 4 66 30] (self: t_Sparse) =
     [%#ssparse_array'6] UInt64.t'int self.t_Sparse__n <= UInt64.t'int self.t_Sparse__size
@@ -321,35 +287,31 @@ module M_sparse_array__qyi16402981711463100202__get [#"sparse_array.rs" 101 4 10
     /\ Seq.length (view self.t_Sparse__idx) = UInt64.t'int self.t_Sparse__size
     /\ Seq.length (view self.t_Sparse__back) = UInt64.t'int self.t_Sparse__size
     /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.t_Sparse__n
-     -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
-    /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
-    /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
+      -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
+      /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
+      /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
   
   predicate inv'5 (_0: t_Sparse)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Sparse [inv'5 x]. inv'5 x
-  = (invariant''4 x
-  /\ match x with
-    | {t_Sparse__size = size ; t_Sparse__n = n ; t_Sparse__values = values ; t_Sparse__idx = idx ; t_Sparse__back = back} -> inv'2 values
-    end)
+      = (invariant''4 x
+      /\ match x with
+        | {t_Sparse__size = size; t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
+        end)
   
-  predicate invariant''5 (self: t_Sparse) =
-    [%#sinvariant] inv'5 self
+  predicate invariant''5 (self: t_Sparse) = [%#sinvariant] inv'5 self
   
   predicate inv'6 (_0: t_Sparse)
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_Sparse [inv'6 x]. inv'6 x = invariant''5 x
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_T
+  type t_Option'0 = C_None'0 | C_Some'0 t_T
   
   predicate is_elt [#"sparse_array.rs" 86 4 86 36] (self: t_Sparse) (i: int) =
     [%#ssparse_array'5] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic self.t_Sparse__back (UInt64.t'int (index_logic self.t_Sparse__idx i))) = i
   
-  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : t_T =
-    [%#sindex] Seq.get (view'1 self) ix
+  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#sindex] Seq.get (view'1 self) ix
   
   function view'3 [#"sparse_array.rs" 38 4 38 33] (self: t_Sparse) : Seq.seq t_Option'0 =
     [%#ssparse_array'4] Seq.create (UInt64.t'int self.t_Sparse__size) (fun (i: int) -> if is_elt self i then
@@ -358,39 +320,35 @@ module M_sparse_array__qyi16402981711463100202__get [#"sparse_array.rs" 101 4 10
       C_None'0
     )
   
-  function view'4 (self: t_Sparse) : Seq.seq t_Option'0 =
-    [%#smodel] view'3 self
+  function view'4 (self: t_Sparse) : Seq.seq t_Option'0 = [%#smodel] view'3 self
   
   predicate inv'7 (_0: t_Option)
   
   axiom inv_axiom'6 [@rewrite]: forall x: t_Option [inv'7 x]. inv'7 x
-  = match x with
-    | C_None -> true
-    | C_Some a_0 -> inv'4 a_0
-    end
+      = match x with
+        | C_None -> true
+        | C_Some a_0 -> inv'4 a_0
+        end
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec get[#"sparse_array.rs" 101 4 101 45] (self:t_Sparse) (i:UInt64.t) (return'  (x:t_Option))= {[@expl:get 'self' type invariant] [%#ssparse_array] inv'6 self}
+  let rec get [#"sparse_array.rs" 101 4 101 45] (self: t_Sparse) (i: UInt64.t) (return' (x: t_Option)) =
+    {[@expl:get 'self' type invariant] [%#ssparse_array] inv'6 self}
     {[@expl:get requires] [%#ssparse_array'0] UInt64.t'int i < Seq.length (view'4 self)}
     (! bb0
-    [ bb0 = s0 [ s0 = index {self'0.t_Sparse__idx} {i'0} (fun (_ret:UInt64.t) ->  [ &_7 <- _ret ] s1) | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = index {self'0.t_Sparse__idx} {i'0} (fun (_ret: UInt64.t) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 =  [ &index'1 <- _7 ] s1
-      | s1 =  [ &_10 <- UInt64.lt index'1 self'0.t_Sparse__n ] s2
-      | s2 = any [ br0 -> {_10 = false} (! bb8) | br1 -> {_10} (! bb2) ]  ]
-    
-    | bb2 = s0
-      [ s0 = index {self'0.t_Sparse__back} {index'1} (fun (_ret:UInt64.t) ->  [ &_15 <- _ret ] s1) | s1 = bb3 ]
-    
-    | bb3 = s0 [ s0 =  [ &_13 <- _15 = i'0 ] s1 | s1 = any [ br0 -> {_13 = false} (! bb8) | br1 -> {_13} (! bb4) ]  ] 
-    | bb4 = s0 [ s0 = index'0 {self'0.t_Sparse__values} {i'0} (fun (_ret:t_T) ->  [ &_21 <- _ret ] s1) | s1 = bb5 ] 
-    | bb5 = s0 [ s0 =  [ &_20 <- _21 ] s1 | s1 =  [ &_0 <- C_Some _20 ] s2 | s2 = bb9 ] 
-    | bb8 = s0 [ s0 =  [ &_0 <- C_None ] s1 | s1 = bb9 ] 
+      [ s0 = [ &index'1 <- _7 ] s1
+      | s1 = [ &_10 <- UInt64.lt index'1 self'0.t_Sparse__n ] s2
+      | s2 = any [ br0 -> {_10 = false} (! bb8) | br1 -> {_10} (! bb2) ] ]
+    | bb2 = s0 [ s0 = index {self'0.t_Sparse__back} {index'1} (fun (_ret: UInt64.t) -> [ &_15 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = s0 [ s0 = [ &_13 <- _15 = i'0 ] s1 | s1 = any [ br0 -> {_13 = false} (! bb8) | br1 -> {_13} (! bb4) ] ]
+    | bb4 = s0 [ s0 = index'0 {self'0.t_Sparse__values} {i'0} (fun (_ret: t_T) -> [ &_21 <- _ret ] s1) | s1 = bb5 ]
+    | bb5 = s0 [ s0 = [ &_20 <- _21 ] s1 | s1 = [ &_0 <- C_Some _20 ] s2 | s2 = bb9 ]
+    | bb8 = s0 [ s0 = [ &_0 <- C_None ] s1 | s1 = bb9 ]
     | bb9 = return''0 {_0} ]
-    
     [ & _0: t_Option = Any.any_l ()
     | & self'0: t_Sparse = self
     | & i'0: UInt64.t = i
@@ -400,9 +358,8 @@ module M_sparse_array__qyi16402981711463100202__get [#"sparse_array.rs" 101 4 10
     | & _13: bool = Any.any_l ()
     | & _15: UInt64.t = Any.any_l ()
     | & _20: t_T = Any.any_l ()
-    | & _21: t_T = Any.any_l () ]
-    )
-    [ return''0 (result:t_Option)-> {[@expl:get result type invariant] [%#ssparse_array'1] inv'7 result}
+    | & _21: t_T = Any.any_l () ])
+    [ return''0 (result: t_Option) -> {[@expl:get result type invariant] [%#ssparse_array'1] inv'7 result}
       {[@expl:get ensures #0] [%#ssparse_array'2] match result with
         | C_None -> Seq.get (view'4 self) (UInt64.t'int i) = C_None'0
         | C_Some x -> Seq.get (view'4 self) (UInt64.t'int i) = C_Some'0 x
@@ -412,7 +369,6 @@ module M_sparse_array__qyi16402981711463100202__get [#"sparse_array.rs" 101 4 10
         | C_Some'0 _ -> true
         end}
       (! return' {result}) ]
-
 end
 module M_sparse_array__qyi16402981711463100202__lemma_permutation [#"sparse_array.rs" 113 4 113 38] (* Sparse<T> *)
   let%span ssparse_array = "sparse_array.rs" 109 15 109 24
@@ -452,36 +408,28 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation [#"sparse_arra
   use seq.Seq
   use set.Fset
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  type t_RawVec'0  =
-    { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
+  type t_RawVec'0 = { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
   
-  type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+  type t_Vec'0 = { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  type t_Sparse  =
-    { t_Sparse__size: UInt64.t;
-      t_Sparse__n: UInt64.t;
-      t_Sparse__values: t_Vec;
-      t_Sparse__idx: t_Vec'0;
-      t_Sparse__back: t_Vec'0 }
+  type t_Sparse = {
+    t_Sparse__size: UInt64.t;
+    t_Sparse__n: UInt64.t;
+    t_Sparse__values: t_Vec;
+    t_Sparse__idx: t_Vec'0;
+    t_Sparse__back: t_Vec'0 }
   
   type t_T
   
@@ -495,8 +443,7 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation [#"sparse_arra
   
   axiom view_spec'0: forall self: t_Vec'0. [%#svec] Seq.length (view'0 self) <= UInt64.t'int const_MAX
   
-  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t =
-    [%#sindex] Seq.get (view'0 self) ix
+  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t = [%#sindex] Seq.get (view'0 self) ix
   
   predicate invariant' [#"sparse_array.rs" 66 4 66 30] (self: t_Sparse) =
     [%#ssparse_array'20] UInt64.t'int self.t_Sparse__n <= UInt64.t'int self.t_Sparse__size
@@ -504,28 +451,26 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation [#"sparse_arra
     /\ Seq.length (view'0 self.t_Sparse__idx) = UInt64.t'int self.t_Sparse__size
     /\ Seq.length (view'0 self.t_Sparse__back) = UInt64.t'int self.t_Sparse__size
     /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.t_Sparse__n
-     -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
-    /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
-    /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
+      -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
+      /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
+      /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
   
   predicate inv (_0: t_T)
   
-  predicate invariant''0 (self: t_T) =
-    [%#sboxed] inv self
+  predicate invariant''0 (self: t_T) = [%#sboxed] inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
   predicate invariant''1 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'0 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   predicate inv'1 (_0: Seq.seq t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) =
-    [%#svec'0] inv'1 (view self)
+  predicate invariant''2 (self: t_Vec) = [%#svec'0] inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
@@ -534,106 +479,109 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation [#"sparse_arra
   predicate inv'3 (_0: t_Sparse)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Sparse [inv'3 x]. inv'3 x
-  = (invariant' x
-  /\ match x with
-    | {t_Sparse__size = size ; t_Sparse__n = n ; t_Sparse__values = values ; t_Sparse__idx = idx ; t_Sparse__back = back} -> inv'2 values
-    end)
+      = (invariant' x
+      /\ match x with
+        | {t_Sparse__size = size; t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
+        end)
   
   predicate is_elt [#"sparse_array.rs" 86 4 86 36] (self: t_Sparse) (i: int) =
     [%#ssparse_array'13] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic self.t_Sparse__back (UInt64.t'int (index_logic self.t_Sparse__idx i))) = i
   
-  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) =
-    [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
   
-  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int =
-    [%#sfset'1] Fset.remove e self
+  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'1] Fset.remove e self
   
   function bounded_fset_len [#"sparse_array.rs" 145 4 145 47] (s: Fset.fset int) (bnd: int) : ()
   
   axiom bounded_fset_len_def: forall s: Fset.fset int, bnd: int. ([%#ssparse_array'15] forall x: int. contains s x
-   -> 0 <= x /\ x < bnd)
-   -> ([%#ssparse_array'16] bnd >= 0)
-   -> bounded_fset_len s bnd
-  = ([%#ssparse_array'19] if bnd > 0 then bounded_fset_len (remove s (bnd - 1)) (bnd - 1) else ())
+          -> 0 <= x /\ x < bnd)
+      -> ([%#ssparse_array'16] bnd >= 0)
+      -> bounded_fset_len s bnd
+      = ([%#ssparse_array'19] if bnd > 0 then bounded_fset_len (remove s (bnd - 1)) (bnd - 1) else ())
   
   axiom bounded_fset_len_spec: forall s: Fset.fset int, bnd: int. ([%#ssparse_array'15] forall x: int. contains s x
-   -> 0 <= x /\ x < bnd)  -> ([%#ssparse_array'16] bnd >= 0)  -> ([%#ssparse_array'17] Fset.cardinal s <= bnd)
+          -> 0 <= x /\ x < bnd) -> ([%#ssparse_array'16] bnd >= 0) -> ([%#ssparse_array'17] Fset.cardinal s <= bnd)
   
-  function insert [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int =
-    [%#sfset'0] Fset.add e self
+  function insert [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.add e self
   
   function lemma_permutation_aux [#"sparse_array.rs" 129 4 129 76] (self: t_Sparse) (seen: Fset.fset int) (i: int) (cur: int) : int
   
+  axiom lemma_permutation_aux_def:
+    forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'3] inv'3 self)
+      -> ([%#ssparse_array'4] self.t_Sparse__n = self.t_Sparse__size)
+      -> ([%#ssparse_array'5] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
+      -> ([%#ssparse_array'6] forall k: int. contains seen k
+          -> 0 <= k
+          /\ k < UInt64.t'int self.t_Sparse__size
+          /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
+      -> ([%#ssparse_array'7] i = cur
+        \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
+      -> ([%#ssparse_array'8] not contains seen cur)
+      -> lemma_permutation_aux self seen i cur
+      = ([%#ssparse_array'14] if UInt64.t'int (index_logic self.t_Sparse__back cur) = i then
+        cur
+      else
+        let _ = bounded_fset_len seen (UInt64.t'int self.t_Sparse__size) in lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur))
+      )
   
-  axiom lemma_permutation_aux_def: forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'3] inv'3 self)
-   -> ([%#ssparse_array'4] self.t_Sparse__n = self.t_Sparse__size)
-   -> ([%#ssparse_array'5] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
-   -> ([%#ssparse_array'6] forall k: int. contains seen k
-   -> 0 <= k
-  /\ k < UInt64.t'int self.t_Sparse__size /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
-   -> ([%#ssparse_array'7] i = cur
-  \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
-   -> ([%#ssparse_array'8] not contains seen cur)
-   -> lemma_permutation_aux self seen i cur
-  = ([%#ssparse_array'14] if UInt64.t'int (index_logic self.t_Sparse__back cur) = i then
-    cur
-  else
-    let _ = bounded_fset_len seen (UInt64.t'int self.t_Sparse__size) in lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur))
-  )
+  axiom lemma_permutation_aux_spec:
+    forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'3] inv'3 self)
+      -> ([%#ssparse_array'4] self.t_Sparse__n = self.t_Sparse__size)
+      -> ([%#ssparse_array'5] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
+      -> ([%#ssparse_array'6] forall k: int. contains seen k
+          -> 0 <= k
+          /\ k < UInt64.t'int self.t_Sparse__size
+          /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
+      -> ([%#ssparse_array'7] i = cur
+        \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
+      -> ([%#ssparse_array'8] not contains seen cur)
+      -> ([%#ssparse_array'9] 0 <= lemma_permutation_aux self seen i cur
+      /\ lemma_permutation_aux self seen i cur < UInt64.t'int self.t_Sparse__size)
   
-  axiom lemma_permutation_aux_spec: forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'3] inv'3 self)
-   -> ([%#ssparse_array'4] self.t_Sparse__n = self.t_Sparse__size)
-   -> ([%#ssparse_array'5] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
-   -> ([%#ssparse_array'6] forall k: int. contains seen k
-   -> 0 <= k
-  /\ k < UInt64.t'int self.t_Sparse__size /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
-   -> ([%#ssparse_array'7] i = cur
-  \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
-   -> ([%#ssparse_array'8] not contains seen cur)
-   -> ([%#ssparse_array'9] 0 <= lemma_permutation_aux self seen i cur
-  /\ lemma_permutation_aux self seen i cur < UInt64.t'int self.t_Sparse__size)
-  
-  axiom lemma_permutation_aux_spec'0: forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'3] inv'3 self)
-   -> ([%#ssparse_array'4] self.t_Sparse__n = self.t_Sparse__size)
-   -> ([%#ssparse_array'5] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
-   -> ([%#ssparse_array'6] forall k: int. contains seen k
-   -> 0 <= k
-  /\ k < UInt64.t'int self.t_Sparse__size /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
-   -> ([%#ssparse_array'7] i = cur
-  \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
-   -> ([%#ssparse_array'8] not contains seen cur)
-   -> ([%#ssparse_array'10] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self seen i cur)) = i)
+  axiom lemma_permutation_aux_spec'0:
+    forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'3] inv'3 self)
+      -> ([%#ssparse_array'4] self.t_Sparse__n = self.t_Sparse__size)
+      -> ([%#ssparse_array'5] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
+      -> ([%#ssparse_array'6] forall k: int. contains seen k
+          -> 0 <= k
+          /\ k < UInt64.t'int self.t_Sparse__size
+          /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
+      -> ([%#ssparse_array'7] i = cur
+        \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
+      -> ([%#ssparse_array'8] not contains seen cur)
+      -> ([%#ssparse_array'10] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self seen i cur))
+      = i)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self  : t_Sparse
+  constant self : t_Sparse
   
-  constant i  : int
+  constant i : int
   
   function lemma_permutation [#"sparse_array.rs" 113 4 113 38] (self'0: t_Sparse) (i'0: int) : ()
   
   goal vc_lemma_permutation: ([%#ssparse_array] inv'3 self)
-   -> ([%#ssparse_array'0] self.t_Sparse__n = self.t_Sparse__size)
-   -> ([%#ssparse_array'1] 0 <= i /\ i < UInt64.t'int self.t_Sparse__size)
-   -> (([@expl:lemma_permutation_aux requires #0] [%#ssparse_array'3] inv'3 self)
-  && ([@expl:lemma_permutation_aux requires #1] [%#ssparse_array'4] self.t_Sparse__n = self.t_Sparse__size)
-  && ([@expl:lemma_permutation_aux requires #2] [%#ssparse_array'5] 0 <= i /\ i < UInt64.t'int self.t_Sparse__size)
-  && ([@expl:lemma_permutation_aux requires #3] [%#ssparse_array'6] forall k: int. contains (Fset.empty: Fset.fset int) k
-   -> 0 <= k
-  /\ k < UInt64.t'int self.t_Sparse__size
-  /\ (k = i \/ contains (Fset.empty: Fset.fset int) (UInt64.t'int (index_logic self.t_Sparse__idx k))))
-  && ([@expl:lemma_permutation_aux requires #4] [%#ssparse_array'7] i = i
-  \/ contains (Fset.empty: Fset.fset int) i
-  /\ contains (Fset.empty: Fset.fset int) (UInt64.t'int (index_logic self.t_Sparse__idx i)))
-  && ([@expl:lemma_permutation_aux requires #5] [%#ssparse_array'8] not contains (Fset.empty: Fset.fset int) i))
-  /\ (([%#ssparse_array'9] 0 <= lemma_permutation_aux self (Fset.empty: Fset.fset int) i i
-  /\ lemma_permutation_aux self (Fset.empty: Fset.fset int) i i < UInt64.t'int self.t_Sparse__size)
-  && ([%#ssparse_array'10] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self (Fset.empty: Fset.fset int) i i))
-  = i)
-   -> (let _ = lemma_permutation_aux self (Fset.empty: Fset.fset int) i i in [@expl:lemma_permutation ensures] [%#ssparse_array'2] is_elt self i))
+    -> ([%#ssparse_array'0] self.t_Sparse__n = self.t_Sparse__size)
+    -> ([%#ssparse_array'1] 0 <= i /\ i < UInt64.t'int self.t_Sparse__size)
+    -> (([@expl:lemma_permutation_aux requires #0] [%#ssparse_array'3] inv'3 self)
+      && ([@expl:lemma_permutation_aux requires #1] [%#ssparse_array'4] self.t_Sparse__n = self.t_Sparse__size)
+      && ([@expl:lemma_permutation_aux requires #2] [%#ssparse_array'5] 0 <= i /\ i < UInt64.t'int self.t_Sparse__size)
+      && ([@expl:lemma_permutation_aux requires #3] [%#ssparse_array'6] forall k: int. contains (Fset.empty: Fset.fset int) k
+          -> 0 <= k
+          /\ k < UInt64.t'int self.t_Sparse__size
+          /\ (k = i \/ contains (Fset.empty: Fset.fset int) (UInt64.t'int (index_logic self.t_Sparse__idx k))))
+      && ([@expl:lemma_permutation_aux requires #4] [%#ssparse_array'7] i = i
+        \/ contains (Fset.empty: Fset.fset int) i
+        /\ contains (Fset.empty: Fset.fset int) (UInt64.t'int (index_logic self.t_Sparse__idx i)))
+      && ([@expl:lemma_permutation_aux requires #5] [%#ssparse_array'8] not contains (Fset.empty: Fset.fset int) i))
+    /\ (([%#ssparse_array'9] 0 <= lemma_permutation_aux self (Fset.empty: Fset.fset int) i i
+        /\ lemma_permutation_aux self (Fset.empty: Fset.fset int) i i < UInt64.t'int self.t_Sparse__size)
+      && ([%#ssparse_array'10] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self (Fset.empty: Fset.fset int) i i))
+      = i)
+    -> (let _ = lemma_permutation_aux self (Fset.empty: Fset.fset int) i i in [@expl:lemma_permutation ensures] [%#ssparse_array'2] is_elt self i))
 end
 module M_sparse_array__qyi16402981711463100202__lemma_permutation_aux [#"sparse_array.rs" 129 4 129 76] (* Sparse<T> *)
   let%span ssparse_array = "sparse_array.rs" 119 15 119 24
@@ -667,36 +615,28 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation_aux [#"sparse_
   use mach.int.Int
   use seq.Seq
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  type t_RawVec'0  =
-    { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
+  type t_RawVec'0 = { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
   
-  type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+  type t_Vec'0 = { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  type t_Sparse  =
-    { t_Sparse__size: UInt64.t;
-      t_Sparse__n: UInt64.t;
-      t_Sparse__values: t_Vec;
-      t_Sparse__idx: t_Vec'0;
-      t_Sparse__back: t_Vec'0 }
+  type t_Sparse = {
+    t_Sparse__size: UInt64.t;
+    t_Sparse__n: UInt64.t;
+    t_Sparse__values: t_Vec;
+    t_Sparse__idx: t_Vec'0;
+    t_Sparse__back: t_Vec'0 }
   
   type t_T
   
@@ -710,8 +650,7 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation_aux [#"sparse_
   
   axiom view_spec'0: forall self: t_Vec'0. [%#svec] Seq.length (view'0 self) <= UInt64.t'int const_MAX
   
-  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t =
-    [%#sindex] Seq.get (view'0 self) ix
+  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t = [%#sindex] Seq.get (view'0 self) ix
   
   predicate invariant' [#"sparse_array.rs" 66 4 66 30] (self: t_Sparse) =
     [%#ssparse_array'14] UInt64.t'int self.t_Sparse__n <= UInt64.t'int self.t_Sparse__size
@@ -719,28 +658,26 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation_aux [#"sparse_
     /\ Seq.length (view'0 self.t_Sparse__idx) = UInt64.t'int self.t_Sparse__size
     /\ Seq.length (view'0 self.t_Sparse__back) = UInt64.t'int self.t_Sparse__size
     /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.t_Sparse__n
-     -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
-    /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
-    /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
+      -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
+      /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
+      /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
   
   predicate inv (_0: t_T)
   
-  predicate invariant''0 (self: t_T) =
-    [%#sboxed] inv self
+  predicate invariant''0 (self: t_T) = [%#sboxed] inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
   predicate invariant''1 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'0 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   predicate inv'1 (_0: Seq.seq t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) =
-    [%#svec'0] inv'1 (view self)
+  predicate invariant''2 (self: t_Vec) = [%#svec'0] inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
@@ -749,94 +686,91 @@ module M_sparse_array__qyi16402981711463100202__lemma_permutation_aux [#"sparse_
   predicate inv'3 (_0: t_Sparse)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Sparse [inv'3 x]. inv'3 x
-  = (invariant' x
-  /\ match x with
-    | {t_Sparse__size = size ; t_Sparse__n = n ; t_Sparse__values = values ; t_Sparse__idx = idx ; t_Sparse__back = back} -> inv'2 values
-    end)
+      = (invariant' x
+      /\ match x with
+        | {t_Sparse__size = size; t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
+        end)
   
-  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) =
-    [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
   
-  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int =
-    [%#sfset'1] Fset.remove e self
+  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'1] Fset.remove e self
   
   function bounded_fset_len [#"sparse_array.rs" 145 4 145 47] (s: Fset.fset int) (bnd: int) : ()
   
   axiom bounded_fset_len_def: forall s: Fset.fset int, bnd: int. ([%#ssparse_array'8] forall x: int. contains s x
-   -> 0 <= x /\ x < bnd)
-   -> ([%#ssparse_array'9] bnd >= 0)
-   -> bounded_fset_len s bnd
-  = ([%#ssparse_array'13] if bnd > 0 then bounded_fset_len (remove s (bnd - 1)) (bnd - 1) else ())
+          -> 0 <= x /\ x < bnd)
+      -> ([%#ssparse_array'9] bnd >= 0)
+      -> bounded_fset_len s bnd
+      = ([%#ssparse_array'13] if bnd > 0 then bounded_fset_len (remove s (bnd - 1)) (bnd - 1) else ())
   
   axiom bounded_fset_len_spec: forall s: Fset.fset int, bnd: int. ([%#ssparse_array'8] forall x: int. contains s x
-   -> 0 <= x /\ x < bnd)  -> ([%#ssparse_array'9] bnd >= 0)  -> ([%#ssparse_array'10] Fset.cardinal s <= bnd)
+          -> 0 <= x /\ x < bnd) -> ([%#ssparse_array'9] bnd >= 0) -> ([%#ssparse_array'10] Fset.cardinal s <= bnd)
   
-  function insert [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int =
-    [%#sfset'0] Fset.add e self
+  function insert [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.add e self
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self  : t_Sparse
+  constant self : t_Sparse
   
-  constant seen  : Fset.fset int
+  constant seen : Fset.fset int
   
-  constant i  : int
+  constant i : int
   
-  constant cur  : int
+  constant cur : int
   
   function lemma_permutation_aux [#"sparse_array.rs" 129 4 129 76] (self'0: t_Sparse) (seen'0: Fset.fset int) (i'0: int) (cur'0: int) : int
   
-  
   goal vc_lemma_permutation_aux: ([%#ssparse_array] inv'3 self)
-   -> ([%#ssparse_array'0] self.t_Sparse__n = self.t_Sparse__size)
-   -> ([%#ssparse_array'1] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
-   -> ([%#ssparse_array'2] forall k: int. contains seen k
-   -> 0 <= k
-  /\ k < UInt64.t'int self.t_Sparse__size /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
-   -> ([%#ssparse_array'3] i = cur
-  \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
-   -> ([%#ssparse_array'4] not contains seen cur)
-   -> (if UInt64.t'int (index_logic self.t_Sparse__back cur) = i then
-    let result = cur in ([@expl:lemma_permutation_aux ensures #0] [%#ssparse_array'5] 0 <= result
-    /\ result < UInt64.t'int self.t_Sparse__size)
-    && ([@expl:lemma_permutation_aux ensures #1] [%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__back result)
-    = i)
-  else
-    (([@expl:bounded_fset_len requires #0] [%#ssparse_array'8] forall x: int. contains seen x
-     -> 0 <= x /\ x < UInt64.t'int self.t_Sparse__size)
-    && ([@expl:bounded_fset_len requires #1] [%#ssparse_array'9] UInt64.t'int self.t_Sparse__size >= 0))
-    /\ (([%#ssparse_array'10] Fset.cardinal seen <= UInt64.t'int self.t_Sparse__size)
-     -> (let _ = bounded_fset_len seen (UInt64.t'int self.t_Sparse__size) in ((([@expl:lemma_permutation_aux requires #0] [%#ssparse_array] inv'3 self)
-    && ([@expl:lemma_permutation_aux requires #1] [%#ssparse_array'0] self.t_Sparse__n = self.t_Sparse__size)
-    && ([@expl:lemma_permutation_aux requires #2] [%#ssparse_array'1] 0
-    <= UInt64.t'int (index_logic self.t_Sparse__back cur)
-    /\ UInt64.t'int (index_logic self.t_Sparse__back cur) < UInt64.t'int self.t_Sparse__size)
-    && ([@expl:lemma_permutation_aux requires #3] [%#ssparse_array'2] forall k: int. contains (insert seen cur) k
-     -> 0 <= k
-    /\ k < UInt64.t'int self.t_Sparse__size
-    /\ (k = i \/ contains (insert seen cur) (UInt64.t'int (index_logic self.t_Sparse__idx k))))
-    && ([@expl:lemma_permutation_aux requires #4] [%#ssparse_array'3] i
-    = UInt64.t'int (index_logic self.t_Sparse__back cur)
-    \/ contains (insert seen cur) i
-    /\ contains (insert seen cur) (UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int (index_logic self.t_Sparse__back cur)))))
-    && ([@expl:lemma_permutation_aux requires #5] [%#ssparse_array'4] not contains (insert seen cur) (UInt64.t'int (index_logic self.t_Sparse__back cur))))
-    /\ 0 <= ([%#ssparse_array'7] UInt64.t'int self.t_Sparse__size - Fset.cardinal seen)
-    /\ ([%#ssparse_array'7] UInt64.t'int self.t_Sparse__size - Fset.cardinal (insert seen cur))
-    < ([%#ssparse_array'7] UInt64.t'int self.t_Sparse__size - Fset.cardinal seen))
-    /\ (([%#ssparse_array'5] 0
-    <= lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur))
-    /\ lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur))
-    < UInt64.t'int self.t_Sparse__size)
-    && ([%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur))))
-    = i)
-     -> (let result = lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur)) in ([@expl:lemma_permutation_aux ensures #0] [%#ssparse_array'5] 0
-    <= result
-    /\ result < UInt64.t'int self.t_Sparse__size)
-    && ([@expl:lemma_permutation_aux ensures #1] [%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__back result)
-    = i)))))
-  )
+    -> ([%#ssparse_array'0] self.t_Sparse__n = self.t_Sparse__size)
+    -> ([%#ssparse_array'1] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
+    -> ([%#ssparse_array'2] forall k: int. contains seen k
+        -> 0 <= k
+        /\ k < UInt64.t'int self.t_Sparse__size
+        /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
+    -> ([%#ssparse_array'3] i = cur
+      \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
+    -> ([%#ssparse_array'4] not contains seen cur)
+    -> (if UInt64.t'int (index_logic self.t_Sparse__back cur) = i then
+      let result = cur in ([@expl:lemma_permutation_aux ensures #0] [%#ssparse_array'5] 0 <= result
+        /\ result < UInt64.t'int self.t_Sparse__size)
+      && ([@expl:lemma_permutation_aux ensures #1] [%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__back result)
+      = i)
+    else
+      (([@expl:bounded_fset_len requires #0] [%#ssparse_array'8] forall x: int. contains seen x
+            -> 0 <= x /\ x < UInt64.t'int self.t_Sparse__size)
+        && ([@expl:bounded_fset_len requires #1] [%#ssparse_array'9] UInt64.t'int self.t_Sparse__size >= 0))
+      /\ (([%#ssparse_array'10] Fset.cardinal seen <= UInt64.t'int self.t_Sparse__size)
+      -> (let _ = bounded_fset_len seen (UInt64.t'int self.t_Sparse__size) in ((([@expl:lemma_permutation_aux requires #0] [%#ssparse_array] inv'3 self)
+          && ([@expl:lemma_permutation_aux requires #1] [%#ssparse_array'0] self.t_Sparse__n = self.t_Sparse__size)
+          && ([@expl:lemma_permutation_aux requires #2] [%#ssparse_array'1] 0
+              <= UInt64.t'int (index_logic self.t_Sparse__back cur)
+            /\ UInt64.t'int (index_logic self.t_Sparse__back cur) < UInt64.t'int self.t_Sparse__size)
+          && ([@expl:lemma_permutation_aux requires #3] [%#ssparse_array'2] forall k: int. contains (insert seen cur) k
+              -> 0 <= k
+              /\ k < UInt64.t'int self.t_Sparse__size
+              /\ (k = i \/ contains (insert seen cur) (UInt64.t'int (index_logic self.t_Sparse__idx k))))
+          && ([@expl:lemma_permutation_aux requires #4] [%#ssparse_array'3] i
+              = UInt64.t'int (index_logic self.t_Sparse__back cur)
+            \/ contains (insert seen cur) i
+            /\ contains (insert seen cur) (UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int (index_logic self.t_Sparse__back cur)))))
+          && ([@expl:lemma_permutation_aux requires #5] [%#ssparse_array'4] not contains (insert seen cur) (UInt64.t'int (index_logic self.t_Sparse__back cur))))
+        /\ 0 <= ([%#ssparse_array'7] UInt64.t'int self.t_Sparse__size - Fset.cardinal seen)
+        /\ ([%#ssparse_array'7] UInt64.t'int self.t_Sparse__size - Fset.cardinal (insert seen cur))
+        < ([%#ssparse_array'7] UInt64.t'int self.t_Sparse__size - Fset.cardinal seen))
+      /\ (([%#ssparse_array'5] 0
+            <= lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur))
+          /\ lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur))
+          < UInt64.t'int self.t_Sparse__size)
+        && ([%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur))))
+        = i)
+      -> (let result = lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur)) in ([@expl:lemma_permutation_aux ensures #0] [%#ssparse_array'5] 0
+          <= result
+        /\ result < UInt64.t'int self.t_Sparse__size)
+      && ([@expl:lemma_permutation_aux ensures #1] [%#ssparse_array'6] UInt64.t'int (index_logic self.t_Sparse__back result)
+      = i)))))
+    )
 end
 module M_sparse_array__qyi16402981711463100202__bounded_fset_len [#"sparse_array.rs" 145 4 145 47] (* Sparse<T> *)
   let%span ssparse_array = "sparse_array.rs" 142 15 142 60
@@ -850,34 +784,32 @@ module M_sparse_array__qyi16402981711463100202__bounded_fset_len [#"sparse_array
   use set.Fset
   use mach.int.Int
   
-  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) =
-    [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
   
-  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int =
-    [%#sfset'0] Fset.remove e self
+  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.remove e self
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant s  : Fset.fset int
+  constant s : Fset.fset int
   
-  constant bnd  : int
+  constant bnd : int
   
   function bounded_fset_len [#"sparse_array.rs" 145 4 145 47] (s'0: Fset.fset int) (bnd'0: int) : ()
   
-  goal vc_bounded_fset_len: ([%#ssparse_array] forall x: int. contains s x  -> 0 <= x /\ x < bnd)
-   -> ([%#ssparse_array'0] bnd >= 0)
-   -> (if bnd > 0 then
-    ((([@expl:bounded_fset_len requires #0] [%#ssparse_array] forall x: int. contains (remove s (bnd - 1)) x
-     -> 0 <= x /\ x < bnd - 1)
-    && ([@expl:bounded_fset_len requires #1] [%#ssparse_array'0] bnd - 1 >= 0))
-    /\ 0 <= ([%#ssparse_array'2] bnd) /\ ([%#ssparse_array'2] bnd - 1) < ([%#ssparse_array'2] bnd))
-    /\ (([%#ssparse_array'1] Fset.cardinal (remove s (bnd - 1)) <= bnd - 1)
-     -> ([@expl:bounded_fset_len ensures] [%#ssparse_array'1] Fset.cardinal s <= bnd))
-  else
-    [@expl:bounded_fset_len ensures] [%#ssparse_array'1] Fset.cardinal s <= bnd
-  )
+  goal vc_bounded_fset_len: ([%#ssparse_array] forall x: int. contains s x -> 0 <= x /\ x < bnd)
+    -> ([%#ssparse_array'0] bnd >= 0)
+    -> (if bnd > 0 then
+      ((([@expl:bounded_fset_len requires #0] [%#ssparse_array] forall x: int. contains (remove s (bnd - 1)) x
+              -> 0 <= x /\ x < bnd - 1)
+          && ([@expl:bounded_fset_len requires #1] [%#ssparse_array'0] bnd - 1 >= 0))
+        /\ 0 <= ([%#ssparse_array'2] bnd) /\ ([%#ssparse_array'2] bnd - 1) < ([%#ssparse_array'2] bnd))
+      /\ (([%#ssparse_array'1] Fset.cardinal (remove s (bnd - 1)) <= bnd - 1)
+      -> ([@expl:bounded_fset_len ensures] [%#ssparse_array'1] Fset.cardinal s <= bnd))
+    else
+      [@expl:bounded_fset_len ensures] [%#ssparse_array'1] Fset.cardinal s <= bnd
+    )
 end
 module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 157 41] (* Sparse<T> *)
   let%span ssparse_array = "sparse_array.rs" 162 12 162 46
@@ -944,37 +876,30 @@ module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 15
   use set.Fset
   use creusot.prelude.Any
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
   type t_T
   
   predicate inv (_0: t_T)
   
-  predicate invariant' (self: t_T) =
-    [%#sboxed] inv self
+  predicate invariant' (self: t_T) = [%#sboxed] inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'0 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -986,28 +911,24 @@ module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 15
   
   axiom view_spec: forall self: t_Vec. [%#svec'7] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate invariant''1 (self: t_Vec) =
-    [%#svec'8] inv'1 (view self)
+  predicate invariant''1 (self: t_Vec) = [%#svec'8] inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  type t_RawVec'0  =
-    { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
+  type t_RawVec'0 = { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
   
-  type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+  type t_Vec'0 = { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  type t_Sparse  =
-    { t_Sparse__size: UInt64.t;
-      t_Sparse__n: UInt64.t;
-      t_Sparse__values: t_Vec;
-      t_Sparse__idx: t_Vec'0;
-      t_Sparse__back: t_Vec'0 }
+  type t_Sparse = {
+    t_Sparse__size: UInt64.t;
+    t_Sparse__n: UInt64.t;
+    t_Sparse__values: t_Vec;
+    t_Sparse__idx: t_Vec'0;
+    t_Sparse__back: t_Vec'0 }
   
-  predicate invariant''2 (self: MutBorrow.t t_Vec) =
-    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''2 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
   predicate inv'3 (_0: MutBorrow.t t_Vec)
   
@@ -1016,11 +937,9 @@ module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 15
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) =
     [%#sslice] UInt64.t'int self < Seq.length seq
   
-  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq t_T =
-    [%#smodel] view self.current
+  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
   
-  predicate invariant''3 (self: MutBorrow.t t_T) =
-    [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant''3 (self: MutBorrow.t t_T) = [%#sinvariant] inv self.current /\ inv self.final
   
   predicate inv'4 (_0: MutBorrow.t t_T)
   
@@ -1031,26 +950,24 @@ module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 15
   
   predicate resolve_elswhere [@inline:trivial] (self: UInt64.t) (old': Seq.seq t_T) (fin: Seq.seq t_T) =
     [%#sslice'1] forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
-     -> Seq.get old' i = Seq.get fin i
+      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut (self_:MutBorrow.t t_Vec) (ix:UInt64.t) (return'  (x:MutBorrow.t t_T))= {[@expl:index_mut 'self_' type invariant] [%#svec] inv'3 self_}
+  let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t t_T)) =
+    {[@expl:index_mut 'self_' type invariant] [%#svec] inv'3 self_}
     {[@expl:index_mut requires] [%#svec'0] in_bounds ix (view'0 self_)}
     any
-    [ return''0 (result:MutBorrow.t t_T)-> {inv'4 result}
+    [ return''0 (result: MutBorrow.t t_T) -> {inv'4 result}
       {[%#svec'1] has_value ix (view'0 self_) result.current}
       {[%#svec'2] has_value ix (view self_.final) result.final}
       {[%#svec'3] resolve_elswhere ix (view'0 self_) (view self_.final)}
       {[%#svec'4] Seq.length (view self_.final) = Seq.length (view'0 self_)}
       (! return' {result}) ]
   
-  
   predicate resolve (_0: t_T)
   
-  predicate resolve'0 (self: MutBorrow.t t_T) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'0 (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
   
-  predicate resolve'1 (_0: MutBorrow.t t_T) =
-    resolve'0 _0
+  predicate resolve'1 (_0: MutBorrow.t t_T) = resolve'0 _0
   
   predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
     [%#sslice] UInt64.t'int self < Seq.length seq
@@ -1059,17 +976,16 @@ module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 15
   
   axiom view_spec'0: forall self: t_Vec'0. [%#svec'7] Seq.length (view'1 self) <= UInt64.t'int const_MAX
   
-  function view'2 (self: t_Vec'0) : Seq.seq UInt64.t =
-    [%#smodel'0] view'1 self
+  function view'2 (self: t_Vec'0) : Seq.seq UInt64.t = [%#smodel'0] view'1 self
   
   predicate has_value'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
     [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
   
-  let rec index (self_:t_Vec'0) (ix:UInt64.t) (return'  (x:UInt64.t))= {[@expl:index requires] [%#svec'5] in_bounds'0 ix (view'2 self_)}
-    any [ return''0 (result:UInt64.t)-> {[%#svec'6] has_value'0 ix (view'2 self_) result} (! return' {result}) ] 
+  let rec index (self_: t_Vec'0) (ix: UInt64.t) (return' (x: UInt64.t)) =
+    {[@expl:index requires] [%#svec'5] in_bounds'0 ix (view'2 self_)}
+    any [ return''0 (result: UInt64.t) -> {[%#svec'6] has_value'0 ix (view'2 self_) result} (! return' {result}) ]
   
-  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t =
-    [%#sindex] Seq.get (view'1 self) ix
+  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t = [%#sindex] Seq.get (view'1 self) ix
   
   predicate invariant''4 [#"sparse_array.rs" 66 4 66 30] (self: t_Sparse) =
     [%#ssparse_array'30] UInt64.t'int self.t_Sparse__n <= UInt64.t'int self.t_Sparse__size
@@ -1077,132 +993,126 @@ module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 15
     /\ Seq.length (view'1 self.t_Sparse__idx) = UInt64.t'int self.t_Sparse__size
     /\ Seq.length (view'1 self.t_Sparse__back) = UInt64.t'int self.t_Sparse__size
     /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.t_Sparse__n
-     -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
-    /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
-    /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
+      -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
+      /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
+      /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
   
   predicate inv'5 (_0: t_Sparse)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Sparse [inv'5 x]. inv'5 x
-  = (invariant''4 x
-  /\ match x with
-    | {t_Sparse__size = size ; t_Sparse__n = n ; t_Sparse__values = values ; t_Sparse__idx = idx ; t_Sparse__back = back} -> inv'2 values
-    end)
+      = (invariant''4 x
+      /\ match x with
+        | {t_Sparse__size = size; t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
+        end)
   
-  predicate invariant''5 (self: MutBorrow.t t_Sparse) =
-    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
+  predicate invariant''5 (self: MutBorrow.t t_Sparse) = [%#sinvariant] inv'5 self.current /\ inv'5 self.final
   
   predicate inv'6 (_0: MutBorrow.t t_Sparse)
   
   axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_Sparse [inv'6 x]. inv'6 x = invariant''5 x
   
-  predicate resolve'2 (self: MutBorrow.t t_Sparse) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'2 (self: MutBorrow.t t_Sparse) = [%#sresolve] self.final = self.current
   
-  predicate resolve'3 (_0: MutBorrow.t t_Sparse) =
-    resolve'2 _0
+  predicate resolve'3 (_0: MutBorrow.t t_Sparse) = resolve'2 _0
   
   predicate is_elt [#"sparse_array.rs" 86 4 86 36] (self: t_Sparse) (i: int) =
     [%#ssparse_array'14] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic self.t_Sparse__back (UInt64.t'int (index_logic self.t_Sparse__idx i))) = i
   
-  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) =
-    [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
   
-  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int =
-    [%#sfset'1] Fset.remove e self
+  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'1] Fset.remove e self
   
   function bounded_fset_len [#"sparse_array.rs" 145 4 145 47] (s: Fset.fset int) (bnd: int) : ()
   
   axiom bounded_fset_len_def: forall s: Fset.fset int, bnd: int. ([%#ssparse_array'25] forall x: int. contains s x
-   -> 0 <= x /\ x < bnd)
-   -> ([%#ssparse_array'26] bnd >= 0)
-   -> bounded_fset_len s bnd
-  = ([%#ssparse_array'29] if bnd > 0 then bounded_fset_len (remove s (bnd - 1)) (bnd - 1) else ())
+          -> 0 <= x /\ x < bnd)
+      -> ([%#ssparse_array'26] bnd >= 0)
+      -> bounded_fset_len s bnd
+      = ([%#ssparse_array'29] if bnd > 0 then bounded_fset_len (remove s (bnd - 1)) (bnd - 1) else ())
   
   axiom bounded_fset_len_spec: forall s: Fset.fset int, bnd: int. ([%#ssparse_array'25] forall x: int. contains s x
-   -> 0 <= x /\ x < bnd)  -> ([%#ssparse_array'26] bnd >= 0)  -> ([%#ssparse_array'27] Fset.cardinal s <= bnd)
+          -> 0 <= x /\ x < bnd) -> ([%#ssparse_array'26] bnd >= 0) -> ([%#ssparse_array'27] Fset.cardinal s <= bnd)
   
-  function insert [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int =
-    [%#sfset'0] Fset.add e self
+  function insert [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.add e self
   
   function lemma_permutation_aux [#"sparse_array.rs" 129 4 129 76] (self: t_Sparse) (seen: Fset.fset int) (i: int) (cur: int) : int
   
+  axiom lemma_permutation_aux_def:
+    forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'15] inv'5 self)
+      -> ([%#ssparse_array'16] self.t_Sparse__n = self.t_Sparse__size)
+      -> ([%#ssparse_array'17] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
+      -> ([%#ssparse_array'18] forall k: int. contains seen k
+          -> 0 <= k
+          /\ k < UInt64.t'int self.t_Sparse__size
+          /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
+      -> ([%#ssparse_array'19] i = cur
+        \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
+      -> ([%#ssparse_array'20] not contains seen cur)
+      -> lemma_permutation_aux self seen i cur
+      = ([%#ssparse_array'24] if UInt64.t'int (index_logic self.t_Sparse__back cur) = i then
+        cur
+      else
+        let _ = bounded_fset_len seen (UInt64.t'int self.t_Sparse__size) in lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur))
+      )
   
-  axiom lemma_permutation_aux_def: forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'15] inv'5 self)
-   -> ([%#ssparse_array'16] self.t_Sparse__n = self.t_Sparse__size)
-   -> ([%#ssparse_array'17] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
-   -> ([%#ssparse_array'18] forall k: int. contains seen k
-   -> 0 <= k
-  /\ k < UInt64.t'int self.t_Sparse__size /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
-   -> ([%#ssparse_array'19] i = cur
-  \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
-   -> ([%#ssparse_array'20] not contains seen cur)
-   -> lemma_permutation_aux self seen i cur
-  = ([%#ssparse_array'24] if UInt64.t'int (index_logic self.t_Sparse__back cur) = i then
-    cur
-  else
-    let _ = bounded_fset_len seen (UInt64.t'int self.t_Sparse__size) in lemma_permutation_aux self (insert seen cur) i (UInt64.t'int (index_logic self.t_Sparse__back cur))
-  )
+  axiom lemma_permutation_aux_spec:
+    forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'15] inv'5 self)
+      -> ([%#ssparse_array'16] self.t_Sparse__n = self.t_Sparse__size)
+      -> ([%#ssparse_array'17] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
+      -> ([%#ssparse_array'18] forall k: int. contains seen k
+          -> 0 <= k
+          /\ k < UInt64.t'int self.t_Sparse__size
+          /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
+      -> ([%#ssparse_array'19] i = cur
+        \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
+      -> ([%#ssparse_array'20] not contains seen cur)
+      -> ([%#ssparse_array'21] 0 <= lemma_permutation_aux self seen i cur
+      /\ lemma_permutation_aux self seen i cur < UInt64.t'int self.t_Sparse__size)
   
-  axiom lemma_permutation_aux_spec: forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'15] inv'5 self)
-   -> ([%#ssparse_array'16] self.t_Sparse__n = self.t_Sparse__size)
-   -> ([%#ssparse_array'17] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
-   -> ([%#ssparse_array'18] forall k: int. contains seen k
-   -> 0 <= k
-  /\ k < UInt64.t'int self.t_Sparse__size /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
-   -> ([%#ssparse_array'19] i = cur
-  \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
-   -> ([%#ssparse_array'20] not contains seen cur)
-   -> ([%#ssparse_array'21] 0 <= lemma_permutation_aux self seen i cur
-  /\ lemma_permutation_aux self seen i cur < UInt64.t'int self.t_Sparse__size)
-  
-  axiom lemma_permutation_aux_spec'0: forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'15] inv'5 self)
-   -> ([%#ssparse_array'16] self.t_Sparse__n = self.t_Sparse__size)
-   -> ([%#ssparse_array'17] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
-   -> ([%#ssparse_array'18] forall k: int. contains seen k
-   -> 0 <= k
-  /\ k < UInt64.t'int self.t_Sparse__size /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
-   -> ([%#ssparse_array'19] i = cur
-  \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
-   -> ([%#ssparse_array'20] not contains seen cur)
-   -> ([%#ssparse_array'22] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self seen i cur)) = i)
+  axiom lemma_permutation_aux_spec'0:
+    forall self: t_Sparse, seen: Fset.fset int, i: int, cur: int. ([%#ssparse_array'15] inv'5 self)
+      -> ([%#ssparse_array'16] self.t_Sparse__n = self.t_Sparse__size)
+      -> ([%#ssparse_array'17] 0 <= cur /\ cur < UInt64.t'int self.t_Sparse__size)
+      -> ([%#ssparse_array'18] forall k: int. contains seen k
+          -> 0 <= k
+          /\ k < UInt64.t'int self.t_Sparse__size
+          /\ (k = i \/ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx k))))
+      -> ([%#ssparse_array'19] i = cur
+        \/ contains seen i /\ contains seen (UInt64.t'int (index_logic self.t_Sparse__idx cur)))
+      -> ([%#ssparse_array'20] not contains seen cur)
+      -> ([%#ssparse_array'22] UInt64.t'int (index_logic self.t_Sparse__back (lemma_permutation_aux self seen i cur))
+      = i)
   
   function lemma_permutation [#"sparse_array.rs" 113 4 113 38] (self: t_Sparse) (i: int) : () =
     [%#ssparse_array'12] let _ = lemma_permutation_aux self (Fset.empty: Fset.fset int) i i in ()
   
   axiom lemma_permutation_spec: forall self: t_Sparse, i: int. ([%#ssparse_array'8] inv'5 self)
-   -> ([%#ssparse_array'9] self.t_Sparse__n = self.t_Sparse__size)
-   -> ([%#ssparse_array'10] 0 <= i /\ i < UInt64.t'int self.t_Sparse__size)  -> ([%#ssparse_array'11] is_elt self i)
+      -> ([%#ssparse_array'9] self.t_Sparse__n = self.t_Sparse__size)
+      -> ([%#ssparse_array'10] 0 <= i /\ i < UInt64.t'int self.t_Sparse__size) -> ([%#ssparse_array'11] is_elt self i)
   
-  function view'3 (self: MutBorrow.t t_Vec'0) : Seq.seq UInt64.t =
-    [%#smodel] view'1 self.current
+  function view'3 (self: MutBorrow.t t_Vec'0) : Seq.seq UInt64.t = [%#smodel] view'1 self.current
   
   predicate resolve_elswhere'0 [@inline:trivial] (self: UInt64.t) (old': Seq.seq UInt64.t) (fin: Seq.seq UInt64.t) =
     [%#sslice'1] forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
-     -> Seq.get old' i = Seq.get fin i
+      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'0 (self_:MutBorrow.t t_Vec'0) (ix:UInt64.t) (return'  (x:MutBorrow.t UInt64.t))= {[@expl:index_mut requires] [%#svec'0] in_bounds'0 ix (view'3 self_)}
+  let rec index_mut'0 (self_: MutBorrow.t t_Vec'0) (ix: UInt64.t) (return' (x: MutBorrow.t UInt64.t)) =
+    {[@expl:index_mut requires] [%#svec'0] in_bounds'0 ix (view'3 self_)}
     any
-    [ return''0 (result:MutBorrow.t UInt64.t)-> {[%#svec'1] has_value'0 ix (view'3 self_) result.current}
+    [ return''0 (result: MutBorrow.t UInt64.t) -> {[%#svec'1] has_value'0 ix (view'3 self_) result.current}
       {[%#svec'2] has_value'0 ix (view'1 self_.final) result.final}
       {[%#svec'3] resolve_elswhere'0 ix (view'3 self_) (view'1 self_.final)}
       {[%#svec'4] Seq.length (view'1 self_.final) = Seq.length (view'3 self_)}
       (! return' {result}) ]
   
+  predicate resolve'4 (self: MutBorrow.t UInt64.t) = [%#sresolve] self.final = self.current
   
-  predicate resolve'4 (self: MutBorrow.t UInt64.t) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'5 (_0: MutBorrow.t UInt64.t) = resolve'4 _0
   
-  predicate resolve'5 (_0: MutBorrow.t UInt64.t) =
-    resolve'4 _0
+  type t_Option = C_None | C_Some t_T
   
-  type t_Option  =
-    | C_None
-    | C_Some t_T
-  
-  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : t_T =
-    [%#sindex] Seq.get (view self) ix
+  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#sindex] Seq.get (view self) ix
   
   function view'4 [#"sparse_array.rs" 38 4 38 33] (self: t_Sparse) : Seq.seq t_Option =
     [%#ssparse_array'13] Seq.create (UInt64.t'int self.t_Sparse__size) (fun (i: int) -> if is_elt self i then
@@ -1211,31 +1121,26 @@ module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 15
       C_None
     )
   
-  function view'5 (self: MutBorrow.t t_Sparse) : Seq.seq t_Option =
-    [%#smodel] view'4 self.current
+  function view'5 (self: MutBorrow.t t_Sparse) : Seq.seq t_Option = [%#smodel] view'4 self.current
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec set[#"sparse_array.rs" 157 4 157 41] (self:MutBorrow.t t_Sparse) (i:UInt64.t) (v:t_T) (return'  (x:()))= {[@expl:set 'self' type invariant] [%#ssparse_array'2] inv'6 self}
+  let rec set [#"sparse_array.rs" 157 4 157 41] (self: MutBorrow.t t_Sparse) (i: UInt64.t) (v: t_T) (return' (x: ())) =
+    {[@expl:set 'self' type invariant] [%#ssparse_array'2] inv'6 self}
     {[@expl:set 'v' type invariant] [%#ssparse_array'3] inv v}
     {[@expl:set requires] [%#ssparse_array'4] UInt64.t'int i < Seq.length (view'5 self)}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'2 (self'0.current).t_Sparse__values}
-        MutBorrow.borrow_final
-          <t_Vec>
-          {(self'0.current).t_Sparse__values}
+        MutBorrow.borrow_final <t_Vec> {(self'0.current).t_Sparse__values}
           {MutBorrow.inherit_id (MutBorrow.get_id self'0) 3}
-          (fun (_ret:MutBorrow.t t_Vec) ->
-             [ &_10 <- _ret ] 
-            -{inv'2 _ret.final}-
-             [ &self'0 <- { self'0 with current = { self'0.current with t_Sparse__values = _ret.final } } ] 
-            s1)
-      | s1 = index_mut {_10} {i'0} (fun (_ret:MutBorrow.t t_T) ->  [ &_9 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t t_Vec) ->
+            [ &_10 <- _ret ] -{inv'2 _ret.final}-
+            [ &self'0 <- { self'0 with current = { self'0.current with t_Sparse__values = _ret.final } } ] s1)
+      | s1 = index_mut {_10} {i'0} (fun (_ret: MutBorrow.t t_T) -> [ &_9 <- _ret ] s2)
       | s2 = bb2 ]
-    
     | bb2 = s0
       [ s0 = {[@expl:type invariant] match _9 with
           | {current = x} -> inv x
@@ -1247,68 +1152,53 @@ module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 15
           | _ -> true
           end}-
         s2
-      | s2 =  [ &_9 <- { _9 with current = v'0 } ] s3
+      | s2 = [ &_9 <- { _9 with current = v'0 } ] s3
       | s3 = {[@expl:type invariant] inv'4 _9} s4
       | s4 = -{resolve'1 _9}- s5
       | s5 = bb4 ]
-    
     | bb4 = s0
-      [ s0 = index {(self'0.current).t_Sparse__idx} {i'0} (fun (_ret:UInt64.t) ->  [ &_13 <- _ret ] s1) | s1 = bb5 ]
-    
+      [ s0 = index {(self'0.current).t_Sparse__idx} {i'0} (fun (_ret: UInt64.t) -> [ &_13 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 =  [ &index'0 <- _13 ] s1
-      | s1 =  [ &_16 <- UInt64.lt index'0 (self'0.current).t_Sparse__n ] s2
-      | s2 = any [ br0 -> {_16 = false} (! bb11) | br1 -> {_16} (! bb6) ]  ]
-    
+      [ s0 = [ &index'0 <- _13 ] s1
+      | s1 = [ &_16 <- UInt64.lt index'0 (self'0.current).t_Sparse__n ] s2
+      | s2 = any [ br0 -> {_16 = false} (! bb11) | br1 -> {_16} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = index {(self'0.current).t_Sparse__back} {index'0} (fun (_ret:UInt64.t) ->  [ &_21 <- _ret ] s1)
+      [ s0 = index {(self'0.current).t_Sparse__back} {index'0} (fun (_ret: UInt64.t) -> [ &_21 <- _ret ] s1)
       | s1 = bb7 ]
-    
-    | bb7 = s0 [ s0 =  [ &_19 <- _21 = i'0 ] s1 | s1 = any [ br0 -> {_19 = false} (! bb11) | br1 -> {_19} (! bb8) ]  ] 
-    | bb8 = s0 [ s0 = {[@expl:type invariant] inv'6 self'0} s1 | s1 = -{resolve'3 self'0}- s2 | s2 = bb16 ] 
-    | bb11 = s0 [ s0 =  [ &_25 <- [%#ssparse_array] () ] s1 | s1 = bb12 ] 
+    | bb7 = s0 [ s0 = [ &_19 <- _21 = i'0 ] s1 | s1 = any [ br0 -> {_19 = false} (! bb11) | br1 -> {_19} (! bb8) ] ]
+    | bb8 = s0 [ s0 = {[@expl:type invariant] inv'6 self'0} s1 | s1 = -{resolve'3 self'0}- s2 | s2 = bb16 ]
+    | bb11 = s0 [ s0 = [ &_25 <- [%#ssparse_array] () ] s1 | s1 = bb12 ]
     | bb12 = s0
       [ s0 = {[@expl:assertion] [%#ssparse_array'0] UInt64.t'int (self'0.current).t_Sparse__n
         < UInt64.t'int (self'0.current).t_Sparse__size}
         s1
-      | s1 = MutBorrow.borrow_final
-          <t_Vec'0>
-          {(self'0.current).t_Sparse__idx}
+      | s1 = MutBorrow.borrow_final <t_Vec'0> {(self'0.current).t_Sparse__idx}
           {MutBorrow.inherit_id (MutBorrow.get_id self'0) 4}
-          (fun (_ret:MutBorrow.t t_Vec'0) ->
-             [ &_31 <- _ret ] 
-             [ &self'0 <- { self'0 with current = { self'0.current with t_Sparse__idx = _ret.final } } ] 
+          (fun (_ret: MutBorrow.t t_Vec'0) ->
+            [ &_31 <- _ret ] [ &self'0 <- { self'0 with current = { self'0.current with t_Sparse__idx = _ret.final } } ]
             s2)
-      | s2 = index_mut'0 {_31} {i'0} (fun (_ret:MutBorrow.t UInt64.t) ->  [ &_30 <- _ret ] s3)
+      | s2 = index_mut'0 {_31} {i'0} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_30 <- _ret ] s3)
       | s3 = bb13 ]
-    
     | bb13 = s0
-      [ s0 =  [ &_30 <- { _30 with current = (self'0.current).t_Sparse__n } ] s1
+      [ s0 = [ &_30 <- { _30 with current = (self'0.current).t_Sparse__n } ] s1
       | s1 = -{resolve'5 _30}- s2
-      | s2 = MutBorrow.borrow_final
-          <t_Vec'0>
-          {(self'0.current).t_Sparse__back}
+      | s2 = MutBorrow.borrow_final <t_Vec'0> {(self'0.current).t_Sparse__back}
           {MutBorrow.inherit_id (MutBorrow.get_id self'0) 5}
-          (fun (_ret:MutBorrow.t t_Vec'0) ->
-             [ &_35 <- _ret ] 
-             [ &self'0 <- { self'0 with current = { self'0.current with t_Sparse__back = _ret.final } } ] 
-            s3)
-      | s3 = index_mut'0 {_35} {(self'0.current).t_Sparse__n} (fun (_ret:MutBorrow.t UInt64.t) ->  [ &_34 <- _ret ] s4)
+          (fun (_ret: MutBorrow.t t_Vec'0) ->
+            [ &_35 <- _ret ]
+            [ &self'0 <- { self'0 with current = { self'0.current with t_Sparse__back = _ret.final } } ] s3)
+      | s3 = index_mut'0 {_35} {(self'0.current).t_Sparse__n} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_34 <- _ret ] s4)
       | s4 = bb14 ]
-    
     | bb14 = s0
-      [ s0 =  [ &_34 <- { _34 with current = i'0 } ] s1
+      [ s0 = [ &_34 <- { _34 with current = i'0 } ] s1
       | s1 = -{resolve'5 _34}- s2
       | s2 = UInt64.add {(self'0.current).t_Sparse__n} {[%#ssparse_array'1] (1: UInt64.t)}
-          (fun (_ret:UInt64.t) ->
-             [ &self'0 <- { self'0 with current = { self'0.current with t_Sparse__n = _ret } } ] 
-            s3)
+          (fun (_ret: UInt64.t) ->
+            [ &self'0 <- { self'0 with current = { self'0.current with t_Sparse__n = _ret } } ] s3)
       | s3 = {[@expl:type invariant] inv'6 self'0} s4
       | s4 = -{resolve'3 self'0}- s5
       | s5 = bb16 ]
-    
     | bb16 = return''0 {_0} ]
-    
     [ & _0: () = Any.any_l ()
     | & self'0: MutBorrow.t t_Sparse = self
     | & i'0: UInt64.t = i
@@ -1324,16 +1214,14 @@ module M_sparse_array__qyi16402981711463100202__set [#"sparse_array.rs" 157 4 15
     | & _30: MutBorrow.t UInt64.t = Any.any_l ()
     | & _31: MutBorrow.t t_Vec'0 = Any.any_l ()
     | & _34: MutBorrow.t UInt64.t = Any.any_l ()
-    | & _35: MutBorrow.t t_Vec'0 = Any.any_l () ]
-    )
-    [ return''0 (result:())-> {[@expl:set ensures #0] [%#ssparse_array'5] Seq.length (view'4 self.final)
+    | & _35: MutBorrow.t t_Vec'0 = Any.any_l () ])
+    [ return''0 (result: ()) -> {[@expl:set ensures #0] [%#ssparse_array'5] Seq.length (view'4 self.final)
       = Seq.length (view'5 self)}
       {[@expl:set ensures #1] [%#ssparse_array'6] forall j: int. 0 <= j
-      /\ j < Seq.length (view'5 self) /\ j <> UInt64.t'int i
-       -> Seq.get (view'4 self.final) j = Seq.get (view'5 self) j}
+          /\ j < Seq.length (view'5 self) /\ j <> UInt64.t'int i
+        -> Seq.get (view'4 self.final) j = Seq.get (view'5 self) j}
       {[@expl:set ensures #2] [%#ssparse_array'7] Seq.get (view'4 self.final) (UInt64.t'int i) = C_Some v}
       (! return' {result}) ]
-
 end
 module M_sparse_array__create [#"sparse_array.rs" 179 0 179 56]
   let%span ssparse_array = "sparse_array.rs" 180 64 180 65
@@ -1361,37 +1249,30 @@ module M_sparse_array__create [#"sparse_array.rs" 179 0 179 56]
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
   type t_T
   
   predicate inv (_0: t_T)
   
-  predicate invariant' (self: t_T) =
-    [%#sboxed] inv self
+  predicate invariant' (self: t_T) = [%#sboxed] inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'0 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -1403,49 +1284,43 @@ module M_sparse_array__create [#"sparse_array.rs" 179 0 179 56]
   
   axiom view_spec: forall self: t_Vec. [%#svec'2] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate invariant''1 (self: t_Vec) =
-    [%#svec'3] inv'1 (view self)
+  predicate invariant''1 (self: t_Vec) = [%#svec'3] inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T =
-    [%#sindex] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#sindex] Seq.get (view self) ix
   
-  let rec from_elem (elem:t_T) (n:UInt64.t) (return'  (x:t_Vec))= {[@expl:from_elem 'elem' type invariant] [%#svec] inv elem}
+  let rec from_elem (elem: t_T) (n: UInt64.t) (return' (x: t_Vec)) =
+    {[@expl:from_elem 'elem' type invariant] [%#svec] inv elem}
     any
-    [ return''0 (result:t_Vec)-> {inv'2 result}
+    [ return''0 (result: t_Vec) -> {inv'2 result}
       {[%#svec'0] Seq.length (view result) = UInt64.t'int n}
-      {[%#svec'1] forall i: int. 0 <= i /\ i < UInt64.t'int n  -> index_logic result i = elem}
+      {[%#svec'1] forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic result i = elem}
       (! return' {result}) ]
   
+  type t_RawVec'0 = { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
   
-  type t_RawVec'0  =
-    { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
-  
-  type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+  type t_Vec'0 = { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
   function view'0 (self: t_Vec'0) : Seq.seq UInt64.t
   
   axiom view_spec'0: forall self: t_Vec'0. [%#svec'2] Seq.length (view'0 self) <= UInt64.t'int const_MAX
   
-  function index_logic'0 [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t =
-    [%#sindex] Seq.get (view'0 self) ix
+  function index_logic'0 [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t = [%#sindex] Seq.get (view'0 self) ix
   
-  let rec from_elem'0 (elem:UInt64.t) (n:UInt64.t) (return'  (x:t_Vec'0))= any
-    [ return''0 (result:t_Vec'0)-> {[%#svec'0] Seq.length (view'0 result) = UInt64.t'int n}
-      {[%#svec'1] forall i: int. 0 <= i /\ i < UInt64.t'int n  -> index_logic'0 result i = elem}
+  let rec from_elem'0 (elem: UInt64.t) (n: UInt64.t) (return' (x: t_Vec'0)) = any
+    [ return''0 (result: t_Vec'0) -> {[%#svec'0] Seq.length (view'0 result) = UInt64.t'int n}
+      {[%#svec'1] forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic'0 result i = elem}
       (! return' {result}) ]
   
-  
-  type t_Sparse  =
-    { t_Sparse__size: UInt64.t;
-      t_Sparse__n: UInt64.t;
-      t_Sparse__values: t_Vec;
-      t_Sparse__idx: t_Vec'0;
-      t_Sparse__back: t_Vec'0 }
+  type t_Sparse = {
+    t_Sparse__size: UInt64.t;
+    t_Sparse__n: UInt64.t;
+    t_Sparse__values: t_Vec;
+    t_Sparse__idx: t_Vec'0;
+    t_Sparse__back: t_Vec'0 }
   
   predicate invariant''2 [#"sparse_array.rs" 66 4 66 30] (self: t_Sparse) =
     [%#ssparse_array'8] UInt64.t'int self.t_Sparse__n <= UInt64.t'int self.t_Sparse__size
@@ -1453,21 +1328,19 @@ module M_sparse_array__create [#"sparse_array.rs" 179 0 179 56]
     /\ Seq.length (view'0 self.t_Sparse__idx) = UInt64.t'int self.t_Sparse__size
     /\ Seq.length (view'0 self.t_Sparse__back) = UInt64.t'int self.t_Sparse__size
     /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.t_Sparse__n
-     -> (let j = index_logic'0 self.t_Sparse__back i in 0 <= UInt64.t'int j
-    /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
-    /\ UInt64.t'int (index_logic'0 self.t_Sparse__idx (UInt64.t'int j)) = i))
+      -> (let j = index_logic'0 self.t_Sparse__back i in 0 <= UInt64.t'int j
+      /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
+      /\ UInt64.t'int (index_logic'0 self.t_Sparse__idx (UInt64.t'int j)) = i))
   
   predicate inv'3 (_0: t_Sparse)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Sparse [inv'3 x]. inv'3 x
-  = (invariant''2 x
-  /\ match x with
-    | {t_Sparse__size = size ; t_Sparse__n = n ; t_Sparse__values = values ; t_Sparse__idx = idx ; t_Sparse__back = back} -> inv'2 values
-    end)
+      = (invariant''2 x
+      /\ match x with
+        | {t_Sparse__size = size; t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
+        end)
   
-  type t_Option  =
-    | C_None
-    | C_Some t_T
+  type t_Option = C_None | C_Some t_T
   
   predicate is_elt [#"sparse_array.rs" 86 4 86 36] (self: t_Sparse) (i: int) =
     [%#ssparse_array'7] UInt64.t'int (index_logic'0 self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
@@ -1484,43 +1357,35 @@ module M_sparse_array__create [#"sparse_array.rs" 179 0 179 56]
   
   meta "select_lsinst" "all"
   
-  let rec create[#"sparse_array.rs" 179 0 179 56] (sz:UInt64.t) (dummy:t_T) (return'  (x:t_Sparse))= {[@expl:create 'dummy' type invariant] [%#ssparse_array'2] inv dummy}
+  let rec create [#"sparse_array.rs" 179 0 179 56] (sz: UInt64.t) (dummy: t_T) (return' (x: t_Sparse)) =
+    {[@expl:create 'dummy' type invariant] [%#ssparse_array'2] inv dummy}
     (! bb0
-    [ bb0 = s0 [ s0 = from_elem {dummy'0} {sz'0} (fun (_ret:t_Vec) ->  [ &_6 <- _ret ] s1) | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = from_elem {dummy'0} {sz'0} (fun (_ret: t_Vec) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = from_elem'0 {[%#ssparse_array] (0: UInt64.t)} {sz'0} (fun (_ret:t_Vec'0) ->  [ &_9 <- _ret ] s1)
+      [ s0 = from_elem'0 {[%#ssparse_array] (0: UInt64.t)} {sz'0} (fun (_ret: t_Vec'0) -> [ &_9 <- _ret ] s1)
       | s1 = bb2 ]
-    
     | bb2 = s0
-      [ s0 = from_elem'0 {[%#ssparse_array'0] (0: UInt64.t)} {sz'0} (fun (_ret:t_Vec'0) ->  [ &_11 <- _ret ] s1)
+      [ s0 = from_elem'0 {[%#ssparse_array'0] (0: UInt64.t)} {sz'0} (fun (_ret: t_Vec'0) -> [ &_11 <- _ret ] s1)
       | s1 = bb3 ]
-    
     | bb3 = s0
-      [ s0 = 
-        [ &_0 <- { t_Sparse__size = sz'0;
-                   t_Sparse__n = ([%#ssparse_array'1] (0: UInt64.t));
-                   t_Sparse__values = _6;
-                   t_Sparse__idx = _9;
-                   t_Sparse__back = _11 } ]
-        
-        s1
+      [ s0 = [ &_0 <- { t_Sparse__size = sz'0;
+                        t_Sparse__n = ([%#ssparse_array'1] (0: UInt64.t));
+                        t_Sparse__values = _6;
+                        t_Sparse__idx = _9;
+                        t_Sparse__back = _11 } ] s1
       | s1 = bb6 ]
-    
     | bb6 = return''0 {_0} ]
-    
     [ & _0: t_Sparse = Any.any_l ()
     | & sz'0: UInt64.t = sz
     | & dummy'0: t_T = dummy
     | & _6: t_Vec = Any.any_l ()
     | & _9: t_Vec'0 = Any.any_l ()
-    | & _11: t_Vec'0 = Any.any_l () ]
-    )
-    [ return''0 (result:t_Sparse)-> {[@expl:create result type invariant] [%#ssparse_array'3] inv'3 result}
+    | & _11: t_Vec'0 = Any.any_l () ])
+    [ return''0 (result: t_Sparse) -> {[@expl:create result type invariant] [%#ssparse_array'3] inv'3 result}
       {[@expl:create ensures #0] [%#ssparse_array'4] Seq.length (view'1 result) = UInt64.t'int sz}
       {[@expl:create ensures #1] [%#ssparse_array'5] forall i: int. 0 <= i /\ i < UInt64.t'int sz
-       -> Seq.get (view'1 result) i = C_None}
+        -> Seq.get (view'1 result) i = C_None}
       (! return' {result}) ]
-
 end
 module M_sparse_array__f [#"sparse_array.rs" 185 0 185 10]
   let%span ssparse_array = "sparse_array.rs" 186 18 186 19
@@ -1576,36 +1441,28 @@ module M_sparse_array__f [#"sparse_array.rs" 185 0 185 10]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  type t_RawVec'0  =
-    { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
+  type t_RawVec'0 = { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
   
-  type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+  type t_Vec'0 = { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  type t_Sparse  =
-    { t_Sparse__size: UInt64.t;
-      t_Sparse__n: UInt64.t;
-      t_Sparse__values: t_Vec;
-      t_Sparse__idx: t_Vec'0;
-      t_Sparse__back: t_Vec'0 }
+  type t_Sparse = {
+    t_Sparse__size: UInt64.t;
+    t_Sparse__n: UInt64.t;
+    t_Sparse__values: t_Vec;
+    t_Sparse__idx: t_Vec'0;
+    t_Sparse__back: t_Vec'0 }
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -1617,8 +1474,7 @@ module M_sparse_array__f [#"sparse_array.rs" 185 0 185 10]
   
   axiom view_spec'0: forall self: t_Vec'0. [%#svec] Seq.length (view'0 self) <= UInt64.t'int const_MAX
   
-  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t =
-    [%#sindex] Seq.get (view'0 self) ix
+  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t = [%#sindex] Seq.get (view'0 self) ix
   
   predicate invariant' [#"sparse_array.rs" 66 4 66 30] (self: t_Sparse) =
     [%#ssparse_array'36] UInt64.t'int self.t_Sparse__n <= UInt64.t'int self.t_Sparse__size
@@ -1626,28 +1482,25 @@ module M_sparse_array__f [#"sparse_array.rs" 185 0 185 10]
     /\ Seq.length (view'0 self.t_Sparse__idx) = UInt64.t'int self.t_Sparse__size
     /\ Seq.length (view'0 self.t_Sparse__back) = UInt64.t'int self.t_Sparse__size
     /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.t_Sparse__n
-     -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
-    /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
-    /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
+      -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
+      /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
+      /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
   
   predicate inv (_0: t_Sparse)
   
   axiom inv_axiom [@rewrite]: forall x: t_Sparse [inv x]. inv x
-  = (invariant' x
-  /\ match x with
-    | {t_Sparse__size = size ; t_Sparse__n = n ; t_Sparse__values = values ; t_Sparse__idx = idx ; t_Sparse__back = back} -> true
-    end)
+      = (invariant' x
+      /\ match x with
+        | {t_Sparse__size = size; t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> true
+        end)
   
-  type t_Option  =
-    | C_None
-    | C_Some Int32.t
+  type t_Option = C_None | C_Some Int32.t
   
   predicate is_elt [#"sparse_array.rs" 86 4 86 36] (self: t_Sparse) (i: int) =
     [%#ssparse_array'35] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic self.t_Sparse__back (UInt64.t'int (index_logic self.t_Sparse__idx i))) = i
   
-  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t =
-    [%#sindex] Seq.get (view self) ix
+  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = [%#sindex] Seq.get (view self) ix
   
   function view'1 [#"sparse_array.rs" 38 4 38 33] (self: t_Sparse) : Seq.seq t_Option =
     [%#ssparse_array'34] Seq.create (UInt64.t'int self.t_Sparse__size) (fun (i: int) -> if is_elt self i then
@@ -1656,31 +1509,27 @@ module M_sparse_array__f [#"sparse_array.rs" 185 0 185 10]
       C_None
     )
   
-  let rec create (sz:UInt64.t) (dummy:Int32.t) (return'  (x:t_Sparse))= any
-    [ return''0 (result:t_Sparse)-> {[%#ssparse_array'22] inv result}
+  let rec create (sz: UInt64.t) (dummy: Int32.t) (return' (x: t_Sparse)) = any
+    [ return''0 (result: t_Sparse) -> {[%#ssparse_array'22] inv result}
       {[%#ssparse_array'23] Seq.length (view'1 result) = UInt64.t'int sz}
-      {[%#ssparse_array'24] forall i: int. 0 <= i /\ i < UInt64.t'int sz  -> Seq.get (view'1 result) i = C_None}
+      {[%#ssparse_array'24] forall i: int. 0 <= i /\ i < UInt64.t'int sz -> Seq.get (view'1 result) i = C_None}
       (! return' {result}) ]
   
+  type t_Option'0 = C_None'0 | C_Some'0 Int32.t
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 Int32.t
-  
-  predicate invariant''0 (self: t_Sparse) =
-    [%#sinvariant] inv self
+  predicate invariant''0 (self: t_Sparse) = [%#sinvariant] inv self
   
   predicate inv'0 (_0: t_Sparse)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Sparse [inv'0 x]. inv'0 x = invariant''0 x
   
-  function view'2 (self: t_Sparse) : Seq.seq t_Option =
-    [%#smodel] view'1 self
+  function view'2 (self: t_Sparse) : Seq.seq t_Option = [%#smodel] view'1 self
   
-  let rec get (self:t_Sparse) (i:UInt64.t) (return'  (x:t_Option'0))= {[@expl:get 'self' type invariant] [%#ssparse_array'25] inv'0 self}
+  let rec get (self: t_Sparse) (i: UInt64.t) (return' (x: t_Option'0)) =
+    {[@expl:get 'self' type invariant] [%#ssparse_array'25] inv'0 self}
     {[@expl:get requires] [%#ssparse_array'26] UInt64.t'int i < Seq.length (view'2 self)}
     any
-    [ return''0 (result:t_Option'0)-> {[%#ssparse_array'27] match result with
+    [ return''0 (result: t_Option'0) -> {[%#ssparse_array'27] match result with
         | C_None'0 -> Seq.get (view'2 self) (UInt64.t'int i) = C_None
         | C_Some'0 x -> Seq.get (view'2 self) (UInt64.t'int i) = C_Some x
         end}
@@ -1690,77 +1539,65 @@ module M_sparse_array__f [#"sparse_array.rs" 185 0 185 10]
         end}
       (! return' {result}) ]
   
-  
-  predicate invariant''1 (self: MutBorrow.t t_Sparse) =
-    [%#sinvariant'0] inv self.current /\ inv self.final
+  predicate invariant''1 (self: MutBorrow.t t_Sparse) = [%#sinvariant'0] inv self.current /\ inv self.final
   
   predicate inv'1 (_0: MutBorrow.t t_Sparse)
   
   axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_Sparse [inv'1 x]. inv'1 x = invariant''1 x
   
-  function view'3 (self: MutBorrow.t t_Sparse) : Seq.seq t_Option =
-    [%#smodel'0] view'1 self.current
+  function view'3 (self: MutBorrow.t t_Sparse) : Seq.seq t_Option = [%#smodel'0] view'1 self.current
   
-  let rec set (self:MutBorrow.t t_Sparse) (i:UInt64.t) (v:Int32.t) (return'  (x:()))= {[@expl:set 'self' type invariant] [%#ssparse_array'29] inv'1 self}
+  let rec set (self: MutBorrow.t t_Sparse) (i: UInt64.t) (v: Int32.t) (return' (x: ())) =
+    {[@expl:set 'self' type invariant] [%#ssparse_array'29] inv'1 self}
     {[@expl:set requires] [%#ssparse_array'30] UInt64.t'int i < Seq.length (view'3 self)}
     any
-    [ return''0 (result:())-> {[%#ssparse_array'31] Seq.length (view'1 self.final) = Seq.length (view'3 self)}
+    [ return''0 (result: ()) -> {[%#ssparse_array'31] Seq.length (view'1 self.final) = Seq.length (view'3 self)}
       {[%#ssparse_array'32] forall j: int. 0 <= j /\ j < Seq.length (view'3 self) /\ j <> UInt64.t'int i
-       -> Seq.get (view'1 self.final) j = Seq.get (view'3 self) j}
+        -> Seq.get (view'1 self.final) j = Seq.get (view'3 self) j}
       {[%#ssparse_array'33] Seq.get (view'1 self.final) (UInt64.t'int i) = C_Some v}
       (! return' {result}) ]
   
-  
-  function view'4 (self: Int32.t) : int =
-    [%#smodel] Int32.to_int self
+  function view'4 (self: Int32.t) : int = [%#smodel] Int32.to_int self
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f[#"sparse_array.rs" 185 0 185 10] (return'  (x:()))= (! bb0
+  let rec f [#"sparse_array.rs" 185 0 185 10] (return' (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 =  [ &default <- [%#ssparse_array] (0: Int32.t) ] s1
-      | s1 = create {[%#ssparse_array'0] (10: UInt64.t)} {default} (fun (_ret:t_Sparse) ->  [ &a <- _ret ] s2)
+      [ s0 = [ &default <- [%#ssparse_array] (0: Int32.t) ] s1
+      | s1 = create {[%#ssparse_array'0] (10: UInt64.t)} {default} (fun (_ret: t_Sparse) -> [ &a <- _ret ] s2)
       | s2 = bb1 ]
-    
     | bb1 = s0
-      [ s0 = create {[%#ssparse_array'1] (20: UInt64.t)} {default} (fun (_ret:t_Sparse) ->  [ &b <- _ret ] s1)
+      [ s0 = create {[%#ssparse_array'1] (20: UInt64.t)} {default} (fun (_ret: t_Sparse) -> [ &b <- _ret ] s1)
       | s1 = bb2 ]
-    
     | bb2 = s0
-      [ s0 = get {a} {[%#ssparse_array'2] (5: UInt64.t)} (fun (_ret:t_Option'0) ->  [ &x <- _ret ] s1) | s1 = bb3 ]
-    
+      [ s0 = get {a} {[%#ssparse_array'2] (5: UInt64.t)} (fun (_ret: t_Option'0) -> [ &x <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
-      [ s0 = get {b} {[%#ssparse_array'3] (7: UInt64.t)} (fun (_ret:t_Option'0) ->  [ &y <- _ret ] s1) | s1 = bb4 ]
-    
+      [ s0 = get {b} {[%#ssparse_array'3] (7: UInt64.t)} (fun (_ret: t_Option'0) -> [ &y <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0
       [ s0 = {[@expl:assertion] [%#ssparse_array'4] x = C_None'0 /\ y = C_None'0} s1
       | s1 = {inv a}
         MutBorrow.borrow_mut <t_Sparse> {a}
-          (fun (_ret:MutBorrow.t t_Sparse) ->  [ &_13 <- _ret ] -{inv _ret.final}-  [ &a <- _ret.final ] s2)
+          (fun (_ret: MutBorrow.t t_Sparse) -> [ &_13 <- _ret ] -{inv _ret.final}- [ &a <- _ret.final ] s2)
       | s2 = set {_13} {[%#ssparse_array'5] (5: UInt64.t)} {[%#ssparse_array'6] (1: Int32.t)}
-          (fun (_ret:()) ->  [ &_12 <- _ret ] s3)
+          (fun (_ret: ()) -> [ &_12 <- _ret ] s3)
       | s3 = bb5 ]
-    
     | bb5 = s0
       [ s0 = {inv b}
         MutBorrow.borrow_mut <t_Sparse> {b}
-          (fun (_ret:MutBorrow.t t_Sparse) ->  [ &_15 <- _ret ] -{inv _ret.final}-  [ &b <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t t_Sparse) -> [ &_15 <- _ret ] -{inv _ret.final}- [ &b <- _ret.final ] s1)
       | s1 = set {_15} {[%#ssparse_array'7] (7: UInt64.t)} {[%#ssparse_array'8] (2: Int32.t)}
-          (fun (_ret:()) ->  [ &_14 <- _ret ] s2)
+          (fun (_ret: ()) -> [ &_14 <- _ret ] s2)
       | s2 = bb6 ]
-    
     | bb6 = s0
-      [ s0 = get {a} {[%#ssparse_array'9] (5: UInt64.t)} (fun (_ret:t_Option'0) ->  [ &_16 <- _ret ] s1) | s1 = bb7 ]
-    
+      [ s0 = get {a} {[%#ssparse_array'9] (5: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_16 <- _ret ] s1) | s1 = bb7 ]
     | bb7 = s0
-      [ s0 =  [ &x <- _16 ] s1
-      | s1 = get {b} {[%#ssparse_array'10] (7: UInt64.t)} (fun (_ret:t_Option'0) ->  [ &_18 <- _ret ] s2)
+      [ s0 = [ &x <- _16 ] s1
+      | s1 = get {b} {[%#ssparse_array'10] (7: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_18 <- _ret ] s2)
       | s2 = bb8 ]
-    
     | bb8 = s0
-      [ s0 =  [ &y <- _18 ] s1
+      [ s0 = [ &y <- _18 ] s1
       | s1 = {[@expl:assertion] [%#ssparse_array'11] match x with
           | C_None'0 -> false
           | C_Some'0 z -> view'4 z = 1
@@ -1771,43 +1608,35 @@ module M_sparse_array__f [#"sparse_array.rs" 185 0 185 10]
           | C_Some'0 z -> view'4 z = 2
           end}
         s3
-      | s3 = get {a} {[%#ssparse_array'13] (7: UInt64.t)} (fun (_ret:t_Option'0) ->  [ &_24 <- _ret ] s4)
+      | s3 = get {a} {[%#ssparse_array'13] (7: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_24 <- _ret ] s4)
       | s4 = bb9 ]
-    
     | bb9 = s0
-      [ s0 =  [ &x <- _24 ] s1
-      | s1 = get {b} {[%#ssparse_array'14] (5: UInt64.t)} (fun (_ret:t_Option'0) ->  [ &_26 <- _ret ] s2)
+      [ s0 = [ &x <- _24 ] s1
+      | s1 = get {b} {[%#ssparse_array'14] (5: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_26 <- _ret ] s2)
       | s2 = bb10 ]
-    
     | bb10 = s0
-      [ s0 =  [ &y <- _26 ] s1
+      [ s0 = [ &y <- _26 ] s1
       | s1 = {[@expl:assertion] [%#ssparse_array'15] x = C_None'0 /\ y = C_None'0} s2
-      | s2 = get {a} {[%#ssparse_array'16] (0: UInt64.t)} (fun (_ret:t_Option'0) ->  [ &_30 <- _ret ] s3)
+      | s2 = get {a} {[%#ssparse_array'16] (0: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_30 <- _ret ] s3)
       | s3 = bb11 ]
-    
     | bb11 = s0
-      [ s0 =  [ &x <- _30 ] s1
-      | s1 = get {b} {[%#ssparse_array'17] (0: UInt64.t)} (fun (_ret:t_Option'0) ->  [ &_32 <- _ret ] s2)
+      [ s0 = [ &x <- _30 ] s1
+      | s1 = get {b} {[%#ssparse_array'17] (0: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_32 <- _ret ] s2)
       | s2 = bb12 ]
-    
     | bb12 = s0
-      [ s0 =  [ &y <- _32 ] s1
+      [ s0 = [ &y <- _32 ] s1
       | s1 = {[@expl:assertion] [%#ssparse_array'18] x = C_None'0 /\ y = C_None'0} s2
-      | s2 = get {a} {[%#ssparse_array'19] (9: UInt64.t)} (fun (_ret:t_Option'0) ->  [ &_36 <- _ret ] s3)
+      | s2 = get {a} {[%#ssparse_array'19] (9: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_36 <- _ret ] s3)
       | s3 = bb13 ]
-    
     | bb13 = s0
-      [ s0 =  [ &x <- _36 ] s1
-      | s1 = get {b} {[%#ssparse_array'20] (9: UInt64.t)} (fun (_ret:t_Option'0) ->  [ &_38 <- _ret ] s2)
+      [ s0 = [ &x <- _36 ] s1
+      | s1 = get {b} {[%#ssparse_array'20] (9: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_38 <- _ret ] s2)
       | s2 = bb14 ]
-    
     | bb14 = s0
-      [ s0 =  [ &y <- _38 ] s1
+      [ s0 = [ &y <- _38 ] s1
       | s1 = {[@expl:assertion] [%#ssparse_array'21] x = C_None'0 /\ y = C_None'0} s2
       | s2 = bb16 ]
-    
     | bb16 = return''0 {_0} ]
-    
     [ & _0: () = Any.any_l ()
     | & default: Int32.t = Any.any_l ()
     | & a: t_Sparse = Any.any_l ()
@@ -1825,8 +1654,7 @@ module M_sparse_array__f [#"sparse_array.rs" 185 0 185 10]
     | & _30: t_Option'0 = Any.any_l ()
     | & _32: t_Option'0 = Any.any_l ()
     | & _36: t_Option'0 = Any.any_l ()
-    | & _38: t_Option'0 = Any.any_l () ]
-    ) [ return''0 (result:())-> (! return' {result}) ] 
+    | & _38: t_Option'0 = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end
 module M_sparse_array__qyi1509881402265219485__resolve_coherence__refines [#"sparse_array.rs" 60 4 60 30] (* <Sparse<T> as creusot_contracts::Resolve> *)
   let%span ssparse_array = "sparse_array.rs" 60 4 60 30
@@ -1847,36 +1675,28 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence__refines [#"spa
   use mach.int.Int
   use seq.Seq
   
-  type t_NonNull  =
-    { t_NonNull__pointer: Opaque.ptr }
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
-  type t_Unique  =
-    { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
   
-  type t_UsizeNoHighBit  =
-    { t_UsizeNoHighBit__0: UInt64.t }
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
   
-  type t_RawVecInner  =
-    { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
   
-  type t_RawVec  =
-    { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
   
-  type t_Vec  =
-    { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  type t_RawVec'0  =
-    { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
+  type t_RawVec'0 = { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
   
-  type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+  type t_Vec'0 = { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  type t_Sparse  =
-    { t_Sparse__size: UInt64.t;
-      t_Sparse__n: UInt64.t;
-      t_Sparse__values: t_Vec;
-      t_Sparse__idx: t_Vec'0;
-      t_Sparse__back: t_Vec'0 }
+  type t_Sparse = {
+    t_Sparse__size: UInt64.t;
+    t_Sparse__n: UInt64.t;
+    t_Sparse__values: t_Vec;
+    t_Sparse__idx: t_Vec'0;
+    t_Sparse__back: t_Vec'0 }
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -1884,17 +1704,14 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence__refines [#"spa
   
   axiom view_spec: forall self: t_Vec'0. [%#svec'0] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate resolve (_0: UInt64.t) =
-    true
+  predicate resolve (_0: UInt64.t) = true
   
-  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t =
-    [%#sindex] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : UInt64.t = [%#sindex] Seq.get (view self) ix
   
   predicate resolve'0 (self: t_Vec'0) =
-    [%#svec] forall i: int. 0 <= i /\ i < Seq.length (view self)  -> resolve (index_logic self i)
+    [%#svec] forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve (index_logic self i)
   
-  predicate resolve'1 (_0: t_Vec'0) =
-    resolve'0 _0
+  predicate resolve'1 (_0: t_Vec'0) = resolve'0 _0
   
   type t_T
   
@@ -1904,18 +1721,16 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence__refines [#"spa
   
   predicate resolve'2 (_0: t_T)
   
-  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : t_T =
-    [%#sindex] Seq.get (view'0 self) ix
+  function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#sindex] Seq.get (view'0 self) ix
   
   predicate resolve'3 (self: t_Vec) =
-    [%#svec] forall i: int. 0 <= i /\ i < Seq.length (view'0 self)  -> resolve'2 (index_logic'0 self i)
+    [%#svec] forall i: int. 0 <= i /\ i < Seq.length (view'0 self) -> resolve'2 (index_logic'0 self i)
   
-  predicate resolve'4 (_0: t_Vec) =
-    resolve'3 _0
+  predicate resolve'4 (_0: t_Vec) = resolve'3 _0
   
   predicate structural_resolve (_0: t_Sparse) =
     match _0 with
-      | {t_Sparse__size = x0 ; t_Sparse__n = x1 ; t_Sparse__values = x2 ; t_Sparse__idx = x3 ; t_Sparse__back = x4} -> resolve'1 x4
+      | {t_Sparse__size = x0; t_Sparse__n = x1; t_Sparse__values = x2; t_Sparse__idx = x3; t_Sparse__back = x4} -> resolve'1 x4
       /\ resolve'1 x3 /\ resolve'4 x2
       end
   
@@ -1925,28 +1740,26 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence__refines [#"spa
     /\ Seq.length (view self.t_Sparse__idx) = UInt64.t'int self.t_Sparse__size
     /\ Seq.length (view self.t_Sparse__back) = UInt64.t'int self.t_Sparse__size
     /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.t_Sparse__n
-     -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
-    /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
-    /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
+      -> (let j = index_logic self.t_Sparse__back i in 0 <= UInt64.t'int j
+      /\ UInt64.t'int j < UInt64.t'int self.t_Sparse__size
+      /\ UInt64.t'int (index_logic self.t_Sparse__idx (UInt64.t'int j)) = i))
   
   predicate inv (_0: t_T)
   
-  predicate invariant''0 (self: t_T) =
-    [%#sboxed] inv self
+  predicate invariant''0 (self: t_T) = [%#sboxed] inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
   predicate invariant''1 (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self  -> inv'0 (Seq.get self i)
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   predicate inv'1 (_0: Seq.seq t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) =
-    [%#svec'1] inv'1 (view'0 self)
+  predicate invariant''2 (self: t_Vec) = [%#svec'1] inv'1 (view'0 self)
   
   predicate inv'2 (_0: t_Vec)
   
@@ -1955,14 +1768,12 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence__refines [#"spa
   predicate inv'3 (_0: t_Sparse)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Sparse [inv'3 x]. inv'3 x
-  = (invariant' x
-  /\ match x with
-    | {t_Sparse__size = size ; t_Sparse__n = n ; t_Sparse__values = values ; t_Sparse__idx = idx ; t_Sparse__back = back} -> inv'2 values
-    end)
+      = (invariant' x
+      /\ match x with
+        | {t_Sparse__size = size; t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
+        end)
   
-  type t_Option  =
-    | C_None
-    | C_Some t_T
+  type t_Option = C_None | C_Some t_T
   
   predicate resolve'5 (self: t_Option) =
     [%#sresolve] match self with
@@ -1970,8 +1781,7 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence__refines [#"spa
       | C_None -> true
       end
   
-  predicate resolve'6 (_0: t_Option) =
-    resolve'5 _0
+  predicate resolve'6 (_0: t_Option) = resolve'5 _0
   
   predicate is_elt [#"sparse_array.rs" 86 4 86 36] (self: t_Sparse) (i: int) =
     [%#ssparse_array'3] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
@@ -1986,12 +1796,12 @@ module M_sparse_array__qyi1509881402265219485__resolve_coherence__refines [#"spa
   
   predicate resolve'7 [#"sparse_array.rs" 49 4 49 28] (self: t_Sparse) =
     [%#ssparse_array'0] forall i: int. 0 <= i /\ i < UInt64.t'int self.t_Sparse__size
-     -> resolve'6 (Seq.get (view'1 self) i)
+      -> resolve'6 (Seq.get (view'1 self) i)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: [%#ssparse_array] forall self: t_Sparse. structural_resolve self /\ inv'3 self
-   -> structural_resolve self /\ inv'3 self /\ (forall result: (). resolve'7 self  -> resolve'7 self)
+      -> structural_resolve self /\ inv'3 self /\ (forall result: (). resolve'7 self -> resolve'7 self)
 end

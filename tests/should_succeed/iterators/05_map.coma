@@ -6,8 +6,7 @@ module M_05_map__qyi11082488819865755034__resolve_coherence [#"05_map.rs" 10 9 1
   
   type t_F
   
-  type t_Map  =
-    { t_Map__iter: t_I; t_Map__func: t_F }
+  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
   
   predicate resolve (_0: t_F)
   
@@ -15,7 +14,7 @@ module M_05_map__qyi11082488819865755034__resolve_coherence [#"05_map.rs" 10 9 1
   
   predicate structural_resolve (_0: t_Map) =
     match _0 with
-      | {t_Map__iter = x0 ; t_Map__func = x1} -> resolve x1 /\ resolve'0 x0
+      | {t_Map__iter = x0; t_Map__func = x1} -> resolve x1 /\ resolve'0 x0
       end
   
   predicate resolve'1 [#"05_map.rs" 10 9 10 16] (self: t_Map) =
@@ -25,12 +24,12 @@ module M_05_map__qyi11082488819865755034__resolve_coherence [#"05_map.rs" 10 9 1
   
   meta "select_lsinst" "all"
   
-  constant self  : t_Map
+  constant self : t_Map
   
   function resolve_coherence [#"05_map.rs" 10 9 10 16] (self'0: t_Map) : ()
   
   goal vc_resolve_coherence: ([%#s05_map] structural_resolve self)
-   -> ([@expl:resolve_coherence ensures] [%#s05_map] resolve'1 self)
+    -> ([@expl:resolve_coherence ensures] [%#s05_map] resolve'1 self)
 end
 module M_05_map__qyi14378821460689001001__produces_refl [#"05_map.rs" 30 4 30 26] (* <Map<I, F> as common::Iterator> *)
   let%span s05_map = "05_map.rs" 29 14 29 47
@@ -56,8 +55,7 @@ module M_05_map__qyi14378821460689001001__produces_refl [#"05_map.rs" 30 4 30 26
   
   type t_F
   
-  type t_Map  =
-    { t_Map__iter: t_I; t_Map__func: t_F }
+  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
   
   type t_B
   
@@ -67,9 +65,9 @@ module M_05_map__qyi14378821460689001001__produces_refl [#"05_map.rs" 30 4 30 26
   
   function produces_trans [#"common.rs" 21 4 21 91] (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
-   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
+      -> ([%#scommon'1] produces b bc c) -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self: t_I) : ()
   
@@ -84,14 +82,14 @@ module M_05_map__qyi14378821460689001001__produces_refl [#"05_map.rs" 30 4 30 26
   function fn_mut_once (self: t_F) (args: t_Item) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_Item, res: t_B. [%#sops'5] postcondition_once self args res
-  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
   axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'2] hist_inv self b)
-   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+      -> ([%#sops'3] hist_inv b c) -> ([%#sops'4] hist_inv self c)
   
   function hist_inv_refl (self: t_F) : ()
   
@@ -99,32 +97,33 @@ module M_05_map__qyi14378821460689001001__produces_refl [#"05_map.rs" 30 4 30 26
   
   function postcondition_mut_hist_inv (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
+      -> ([%#sops'0] hist_inv self res_state)
   
   predicate precondition (self: t_F) (args: t_Item)
   
   predicate produces'0 [@inline:trivial] [#"05_map.rs" 42 4 42 67] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
     [%#s05_map'1] hist_inv self.t_Map__func succ.t_Map__func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-    /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-    /\ produces self.t_Map__iter s succ.t_Map__iter
-    /\ (forall i: int. 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
-    /\ (if Seq.length visited = 0 then
-      self.t_Map__func = succ.t_Map__func
-    else
-      (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
-    )
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> hist_inv self.t_Map__func (Seq.get fs i).current
-    /\ precondition (Seq.get fs i).current (Seq.get s i)
-    /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
+        /\ produces self.t_Map__iter s succ.t_Map__iter
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            self.t_Map__func = succ.t_Map__func
+          else
+            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv self.t_Map__func (Seq.get fs i).current
+          /\ precondition (Seq.get fs i).current (Seq.get s i)
+          /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self  : t_Map
+  constant self : t_Map
   
   function produces_refl'0 [#"05_map.rs" 30 4 30 26] (self'0: t_Map) : ()
   
@@ -156,8 +155,7 @@ module M_05_map__qyi14378821460689001001__produces_trans [#"05_map.rs" 37 4 37 9
   
   type t_F
   
-  type t_Map  =
-    { t_Map__iter: t_I; t_Map__func: t_F }
+  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
   
   type t_B
   
@@ -167,9 +165,9 @@ module M_05_map__qyi14378821460689001001__produces_trans [#"05_map.rs" 37 4 37 9
   
   function produces_trans [#"common.rs" 21 4 21 91] (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
-   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
+      -> ([%#scommon'1] produces b bc c) -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self: t_I) : ()
   
@@ -184,14 +182,14 @@ module M_05_map__qyi14378821460689001001__produces_trans [#"05_map.rs" 37 4 37 9
   function fn_mut_once (self: t_F) (args: t_Item) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_Item, res: t_B. [%#sops'5] postcondition_once self args res
-  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
   axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'2] hist_inv self b)
-   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+      -> ([%#sops'3] hist_inv b c) -> ([%#sops'4] hist_inv self c)
   
   function hist_inv_refl (self: t_F) : ()
   
@@ -199,47 +197,47 @@ module M_05_map__qyi14378821460689001001__produces_trans [#"05_map.rs" 37 4 37 9
   
   function postcondition_mut_hist_inv (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
+      -> ([%#sops'0] hist_inv self res_state)
   
   predicate precondition (self: t_F) (args: t_Item)
   
   predicate produces'0 [@inline:trivial] [#"05_map.rs" 42 4 42 67] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
     [%#s05_map'3] hist_inv self.t_Map__func succ.t_Map__func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-    /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-    /\ produces self.t_Map__iter s succ.t_Map__iter
-    /\ (forall i: int. 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
-    /\ (if Seq.length visited = 0 then
-      self.t_Map__func = succ.t_Map__func
-    else
-      (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
-    )
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> hist_inv self.t_Map__func (Seq.get fs i).current
-    /\ precondition (Seq.get fs i).current (Seq.get s i)
-    /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
+        /\ produces self.t_Map__iter s succ.t_Map__iter
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            self.t_Map__func = succ.t_Map__func
+          else
+            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv self.t_Map__func (Seq.get fs i).current
+          /\ precondition (Seq.get fs i).current (Seq.get s i)
+          /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant a  : t_Map
+  constant a : t_Map
   
-  constant ab  : Seq.seq t_B
+  constant ab : Seq.seq t_B
   
-  constant b  : t_Map
+  constant b : t_Map
   
-  constant bc  : Seq.seq t_B
+  constant bc : Seq.seq t_B
   
-  constant c  : t_Map
+  constant c : t_Map
   
   function produces_trans'0 [#"05_map.rs" 37 4 37 90] (a'0: t_Map) (ab'0: Seq.seq t_B) (b'0: t_Map) (bc'0: Seq.seq t_B) (c'0: t_Map) : ()
   
-  
   goal vc_produces_trans: ([%#s05_map] produces'0 a ab b)
-   -> ([%#s05_map'0] produces'0 b bc c)
-   -> ([@expl:produces_trans ensures] [%#s05_map'1] produces'0 a (Seq.(++) ab bc) c)
+    -> ([%#s05_map'0] produces'0 b bc c)
+    -> ([@expl:produces_trans ensures] [%#s05_map'1] produces'0 a (Seq.(++) ab bc) c)
 end
 module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map<I, F> as common::Iterator> *)
   let%span s05_map = "05_map.rs" 66 16 66 62
@@ -292,8 +290,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   
   type t_F
   
-  type t_Map  =
-    { t_Map__iter: t_I; t_Map__func: t_F }
+  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
   
   type t_Item
   
@@ -301,20 +298,17 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   
   function produces_trans [#"common.rs" 21 4 21 91] (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
-   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
+      -> ([%#scommon'1] produces b bc c) -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self: t_I) : ()
   
   axiom produces_refl_spec: forall self: t_I. [%#scommon] produces self (Seq.empty: Seq.seq t_Item) self
   
-  type t_Option  =
-    | C_None
-    | C_Some t_Item
+  type t_Option = C_None | C_Some t_Item
   
-  predicate invariant' (self: MutBorrow.t t_I) =
-    [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant' (self: MutBorrow.t t_I) = [%#sinvariant] inv self.current /\ inv self.final
   
   predicate inv'0 (_0: MutBorrow.t t_I)
   
@@ -322,8 +316,9 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   
   predicate precondition (self: ()) (args: MutBorrow.t t_I)
   
-  axiom precondition_fndef: [%#s05_map'14] forall args: MutBorrow.t t_I [precondition () args]. (let self = args in inv'0 self)
-   -> precondition () args
+  axiom precondition_fndef:
+    [%#s05_map'14] forall args: MutBorrow.t t_I [precondition () args]. (let self = args in inv'0 self)
+      -> precondition () args
   
   predicate completed [#"common.rs" 11 4 11 36] (self: MutBorrow.t t_I)
   
@@ -332,27 +327,27 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   predicate inv'2 (_0: t_Option)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
-  = match x with
-    | C_None -> true
-    | C_Some a_0 -> inv'1 a_0
-    end
+      = match x with
+        | C_None -> true
+        | C_Some a_0 -> inv'1 a_0
+        end
   
   predicate postcondition_once (self: ()) (args: MutBorrow.t t_I) (result: t_Option)
   
-  axiom postcondition_fndef: [%#s05_map'14] forall args: MutBorrow.t t_I, res: t_Option [postcondition_once () args res]. postcondition_once () args res
-   -> (let self = args in match res with
-    | C_None -> completed self
-    | C_Some v -> produces self.current (Seq.singleton v) self.final
-    end
-  /\ inv'2 res)
+  axiom postcondition_fndef:
+    [%#s05_map'14] forall args: MutBorrow.t t_I, res: t_Option [postcondition_once () args res]. postcondition_once () args res
+      -> (let self = args in match res with
+          | C_None -> completed self
+          | C_Some v -> produces self.current (Seq.singleton v) self.final
+          end
+      /\ inv'2 res)
   
-  let rec next (self:MutBorrow.t t_I) (return'  (x:t_Option))= {[@expl:next requires] precondition () self}
-    any [ return''0 (result:t_Option)-> {postcondition_once () self result} (! return' {result}) ] 
+  let rec next (self: MutBorrow.t t_I) (return' (x: t_Option)) = {[@expl:next requires] precondition () self}
+    any [ return''0 (result: t_Option) -> {postcondition_once () self result} (! return' {result}) ]
   
-  let rec v_Some (input:t_Option) (ret  (field_0:t_Item))= any
-    [ good (field_0:t_Item)-> {C_Some field_0 = input} (! ret {field_0})
+  let rec v_Some (input: t_Option) (ret (field_0: t_Item)) = any
+    [ good (field_0: t_Item) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_Item [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
-  
   
   predicate precondition'0 (self: t_F) (args: t_Item)
   
@@ -360,7 +355,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   
   predicate next_precondition [#"05_map.rs" 78 4 78 54] (iter: t_I) (func: t_F) =
     [%#s05_map'17] forall e: t_Item, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
-     -> precondition'0 func e
+      -> precondition'0 func e
   
   predicate postcondition_once'0 (self: t_F) (args: t_Item) (result: t_B)
   
@@ -371,14 +366,14 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   function fn_mut_once (self: t_F) (args: t_Item) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_Item, res: t_B. [%#sops'9] postcondition_once'0 self args res
-  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
   axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'6] hist_inv self b)
-   -> ([%#sops'7] hist_inv b c)  -> ([%#sops'8] hist_inv self c)
+      -> ([%#sops'7] hist_inv b c) -> ([%#sops'8] hist_inv self c)
   
   function hist_inv_refl (self: t_F) : ()
   
@@ -386,41 +381,41 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   
   function postcondition_mut_hist_inv (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops'3] postcondition_mut self args res_state res)
-   -> ([%#sops'4] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops'3] postcondition_mut self args res_state res)
+      -> ([%#sops'4] hist_inv self res_state)
   
   predicate preservation [#"05_map.rs" 89 4 89 49] (iter: t_I) (func: t_F) =
     [%#s05_map'16] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current e1 f.final b]. hist_inv func f.current
-     -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current e1  -> postcondition_mut f.current e1 f.final b  -> precondition'0 f.final e2
+      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition'0 f.current e1 -> postcondition_mut f.current e1 f.final b -> precondition'0 f.final e2
   
-  predicate reinitialize [#"05_map.rs" 103 4 103 33]  =
+  predicate reinitialize [#"05_map.rs" 103 4 103 33] =
     [%#s05_map'19] forall iter: MutBorrow.t t_I, func: t_F. completed iter
-     -> next_precondition iter.final func /\ preservation iter.final func
+      -> next_precondition iter.final func /\ preservation iter.final func
   
   predicate invariant''0 [#"05_map.rs" 143 4 143 30] (self: t_Map) =
     [%#s05_map'15] reinitialize
     /\ preservation self.t_Map__iter self.t_Map__func /\ next_precondition self.t_Map__iter self.t_Map__func
   
   function produces_one_invariant [#"05_map.rs" 118 4 118 73] (self: t_Map) (e: t_Item) (r: t_B) (f: MutBorrow.t t_F) (iter: t_I) : ()
+   = [%#s05_map'10] let _ = () in ()
   
-   =
-    [%#s05_map'10] let _ = () in ()
+  axiom produces_one_invariant_spec:
+    forall self: t_Map, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter: t_I. ([%#s05_map'4] invariant''0 self)
+      -> ([%#s05_map'5] produces self.t_Map__iter (Seq.singleton e) iter)
+      -> ([%#s05_map'6] f.current = self.t_Map__func)
+      -> ([%#s05_map'7] postcondition_mut f.current e f.final r) -> ([%#s05_map'8] preservation iter f.final)
   
-  axiom produces_one_invariant_spec: forall self: t_Map, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter: t_I. ([%#s05_map'4] invariant''0 self)
-   -> ([%#s05_map'5] produces self.t_Map__iter (Seq.singleton e) iter)
-   -> ([%#s05_map'6] f.current = self.t_Map__func)
-   -> ([%#s05_map'7] postcondition_mut f.current e f.final r)  -> ([%#s05_map'8] preservation iter f.final)
-  
-  axiom produces_one_invariant_spec'0: forall self: t_Map, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter: t_I. ([%#s05_map'4] invariant''0 self)
-   -> ([%#s05_map'5] produces self.t_Map__iter (Seq.singleton e) iter)
-   -> ([%#s05_map'6] f.current = self.t_Map__func)
-   -> ([%#s05_map'7] postcondition_mut f.current e f.final r)  -> ([%#s05_map'9] next_precondition iter f.final)
+  axiom produces_one_invariant_spec'0:
+    forall self: t_Map, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter: t_I. ([%#s05_map'4] invariant''0 self)
+      -> ([%#s05_map'5] produces self.t_Map__iter (Seq.singleton e) iter)
+      -> ([%#s05_map'6] f.current = self.t_Map__func)
+      -> ([%#s05_map'7] postcondition_mut f.current e f.final r) -> ([%#s05_map'9] next_precondition iter f.final)
   
   predicate inv'3 (_0: t_F)
   
-  predicate invariant''1 (self: MutBorrow.t t_F) =
-    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  predicate invariant''1 (self: MutBorrow.t t_F) = [%#sinvariant] inv'3 self.current /\ inv'3 self.final
   
   predicate inv'4 (_0: MutBorrow.t t_F)
   
@@ -432,47 +427,42 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   
   predicate inv'6 (_0: t_B)
   
-  let rec call_mut (self_:MutBorrow.t t_F) (arg:t_Item) (return'  (x:t_B))= {[@expl:call_mut 'self_' type invariant] [%#sops] inv'4 self_}
+  let rec call_mut (self_: MutBorrow.t t_F) (arg: t_Item) (return' (x: t_B)) =
+    {[@expl:call_mut 'self_' type invariant] [%#sops] inv'4 self_}
     {[@expl:call_mut 'arg' type invariant] [%#sops'0] inv'5 arg}
     {[@expl:call_mut requires] [%#sops'1] precondition'0 self_.current arg}
     any
-    [ return''0 (result:t_B)-> {inv'6 result}
+    [ return''0 (result: t_B) -> {inv'6 result}
       {[%#sops'2] postcondition_mut self_.current arg self_.final result}
       (! return' {result}) ]
-  
   
   predicate inv'7 (_0: t_Map)
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_Map [inv'7 x]. inv'7 x
-  = (invariant''0 x
-  /\ match x with
-    | {t_Map__iter = iter ; t_Map__func = func} -> inv iter /\ inv'3 func
-    end)
+      = (invariant''0 x
+      /\ match x with
+        | {t_Map__iter = iter; t_Map__func = func} -> inv iter /\ inv'3 func
+        end)
   
-  predicate invariant''2 (self: MutBorrow.t t_Map) =
-    [%#sinvariant] inv'7 self.current /\ inv'7 self.final
+  predicate invariant''2 (self: MutBorrow.t t_Map) = [%#sinvariant] inv'7 self.current /\ inv'7 self.final
   
   predicate inv'8 (_0: MutBorrow.t t_Map)
   
   axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Map [inv'8 x]. inv'8 x = invariant''2 x
   
-  predicate resolve'0 (self: MutBorrow.t t_Map) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'0 (self: MutBorrow.t t_Map) = [%#sresolve] self.final = self.current
   
-  predicate resolve'1 (_0: MutBorrow.t t_Map) =
-    resolve'0 _0
+  predicate resolve'1 (_0: MutBorrow.t t_Map) = resolve'0 _0
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_B
+  type t_Option'0 = C_None'0 | C_Some'0 t_B
   
   predicate inv'9 (_0: t_Option'0)
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'9 x]. inv'9 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'6 a_0
-    end
+      = match x with
+        | C_None'0 -> true
+        | C_Some'0 a_0 -> inv'6 a_0
+        end
   
   predicate completed'0 [#"05_map.rs" 23 4 23 35] (self: MutBorrow.t t_Map) =
     [%#s05_map'11] completed (MutBorrow.borrow_logic (self.current).t_Map__iter (self.final).t_Map__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
@@ -481,75 +471,67 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   predicate produces'0 [@inline:trivial] [#"05_map.rs" 42 4 42 67] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
     [%#s05_map'18] hist_inv self.t_Map__func succ.t_Map__func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-    /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-    /\ produces self.t_Map__iter s succ.t_Map__iter
-    /\ (forall i: int. 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
-    /\ (if Seq.length visited = 0 then
-      self.t_Map__func = succ.t_Map__func
-    else
-      (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
-    )
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> hist_inv self.t_Map__func (Seq.get fs i).current
-    /\ precondition'0 (Seq.get fs i).current (Seq.get s i)
-    /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
+        /\ produces self.t_Map__iter s succ.t_Map__iter
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            self.t_Map__func = succ.t_Map__func
+          else
+            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv self.t_Map__func (Seq.get fs i).current
+          /\ precondition'0 (Seq.get fs i).current (Seq.get s i)
+          /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   predicate produces_one [#"05_map.rs" 129 4 129 61] (self: t_Map) (visited: t_B) (succ: t_Map) =
     [%#s05_map'13] exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current e f.final visited]. f.current
-    = self.t_Map__func
-    /\ f.final = succ.t_Map__func
-    /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter
-    /\ precondition'0 f.current e /\ postcondition_mut f.current e f.final visited
+        = self.t_Map__func
+      /\ f.final = succ.t_Map__func
+      /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter
+      /\ precondition'0 f.current e /\ postcondition_mut f.current e f.final visited
   
   axiom produces_one_spec: forall self: t_Map, visited: t_B, succ: t_Map. [%#s05_map'12] produces_one self visited succ
-  = produces'0 self (Seq.singleton visited) succ
+      = produces'0 self (Seq.singleton visited) succ
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec next'0[#"05_map.rs" 63 4 63 44] (self:MutBorrow.t t_Map) (return'  (x:t_Option'0))= {[@expl:next 'self' type invariant] [%#s05_map'1] inv'8 self}
+  let rec next'0 [#"05_map.rs" 63 4 63 44] (self: MutBorrow.t t_Map) (return' (x: t_Option'0)) =
+    {[@expl:next 'self' type invariant] [%#s05_map'1] inv'8 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv (self'0.current).t_Map__iter}
         MutBorrow.borrow_final <t_I> {(self'0.current).t_Map__iter} {MutBorrow.inherit_id (MutBorrow.get_id self'0) 1}
-          (fun (_ret:MutBorrow.t t_I) ->
-             [ &_4 <- _ret ] 
-            -{inv _ret.final}-
-             [ &self'0 <- { self'0 with current = { self'0.current with t_Map__iter = _ret.final } } ] 
-            s1)
-      | s1 = next {_4} (fun (_ret:t_Option) ->  [ &_3 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t t_I) ->
+            [ &_4 <- _ret ] -{inv _ret.final}-
+            [ &self'0 <- { self'0 with current = { self'0.current with t_Map__iter = _ret.final } } ] s1)
+      | s1 = next {_4} (fun (_ret: t_Option) -> [ &_3 <- _ret ] s2)
       | s2 = bb1 ]
-    
-    | bb1 = any [ br0 -> {_3 = C_None} (! bb4) | br1 (x0:t_Item)-> {_3 = C_Some x0} (! bb5) ] 
+    | bb1 = any [ br0 -> {_3 = C_None} (! bb4) | br1 (x0: t_Item) -> {_3 = C_Some x0} (! bb5) ]
     | bb5 = s0
-      [ s0 = v_Some {_3} (fun (r0:t_Item) ->  [ &v <- r0 ] s1)
+      [ s0 = v_Some {_3} (fun (r0: t_Item) -> [ &v <- r0 ] s1)
       | s1 = {[@expl:assertion] [%#s05_map] precondition'0 (self'0.current).t_Map__func v} s2
-      | s2 =  [ &_9 <- [%#s05_map'0] () ] s3
+      | s2 = [ &_9 <- [%#s05_map'0] () ] s3
       | s3 = bb6 ]
-    
     | bb6 = s0
       [ s0 = {inv'3 (self'0.current).t_Map__func}
         MutBorrow.borrow_final <t_F> {(self'0.current).t_Map__func} {MutBorrow.inherit_id (MutBorrow.get_id self'0) 2}
-          (fun (_ret:MutBorrow.t t_F) ->
-             [ &_12 <- _ret ] 
-            -{inv'3 _ret.final}-
-             [ &self'0 <- { self'0 with current = { self'0.current with t_Map__func = _ret.final } } ] 
-            s1)
-      | s1 =  [ &_13 <- v ] s2
-      | s2 = call_mut {_12} {_13} (fun (_ret:t_B) ->  [ &_11 <- _ret ] s3)
+          (fun (_ret: MutBorrow.t t_F) ->
+            [ &_12 <- _ret ] -{inv'3 _ret.final}-
+            [ &self'0 <- { self'0 with current = { self'0.current with t_Map__func = _ret.final } } ] s1)
+      | s1 = [ &_13 <- v ] s2
+      | s2 = call_mut {_12} {_13} (fun (_ret: t_B) -> [ &_11 <- _ret ] s3)
       | s3 = bb7 ]
-    
-    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'8 self'0} s1 | s1 = -{resolve'1 self'0}- s2 | s2 = bb8 ] 
-    | bb8 = s0 [ s0 =  [ &_0 <- C_Some'0 _11 ] s1 | s1 = bb12 ] 
+    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'8 self'0} s1 | s1 = -{resolve'1 self'0}- s2 | s2 = bb8 ]
+    | bb8 = s0 [ s0 = [ &_0 <- C_Some'0 _11 ] s1 | s1 = bb12 ]
     | bb4 = s0
       [ s0 = {[@expl:type invariant] inv'8 self'0} s1
       | s1 = -{resolve'1 self'0}- s2
-      | s2 =  [ &_0 <- C_None'0 ] s3
+      | s2 = [ &_0 <- C_None'0 ] s3
       | s3 = bb12 ]
-    
     | bb12 = return''0 {_0} ]
-    
     [ & _0: t_Option'0 = Any.any_l ()
     | & self'0: MutBorrow.t t_Map = self
     | & _3: t_Option = Any.any_l ()
@@ -558,15 +540,13 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
     | & _9: () = Any.any_l ()
     | & _11: t_B = Any.any_l ()
     | & _12: MutBorrow.t t_F = Any.any_l ()
-    | & _13: t_Item = Any.any_l () ]
-    )
-    [ return''0 (result:t_Option'0)-> {[@expl:next result type invariant] [%#s05_map'2] inv'9 result}
+    | & _13: t_Item = Any.any_l () ])
+    [ return''0 (result: t_Option'0) -> {[@expl:next result type invariant] [%#s05_map'2] inv'9 result}
       {[@expl:next ensures] [%#s05_map'3] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces_one self.current v self.final
         end}
       (! return' {result}) ]
-
 end
 module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 118 4 118 73] (* Map<I, F> *)
   let%span s05_map = "05_map.rs" 112 15 112 31
@@ -600,8 +580,7 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
   
   type t_F
   
-  type t_Map  =
-    { t_Map__iter: t_I; t_Map__func: t_F }
+  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
   
   type t_Item
   
@@ -609,9 +588,9 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
   
   function produces_trans [#"common.rs" 21 4 21 91] (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
-   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
+      -> ([%#scommon'1] produces b bc c) -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self: t_I) : ()
   
@@ -625,7 +604,7 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
   
   predicate next_precondition [#"05_map.rs" 78 4 78 54] (iter: t_I) (func: t_F) =
     [%#s05_map'9] forall e: t_Item, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
-     -> precondition func e
+      -> precondition func e
   
   predicate postcondition_once (self: t_F) (args: t_Item) (result: t_B)
   
@@ -636,14 +615,14 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
   function fn_mut_once (self: t_F) (args: t_Item) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_Item, res: t_B. [%#sops'5] postcondition_once self args res
-  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
   axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'2] hist_inv self b)
-   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+      -> ([%#sops'3] hist_inv b c) -> ([%#sops'4] hist_inv self c)
   
   function hist_inv_refl (self: t_F) : ()
   
@@ -651,17 +630,18 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
   
   function postcondition_mut_hist_inv (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
+      -> ([%#sops'0] hist_inv self res_state)
   
   predicate preservation [#"05_map.rs" 89 4 89 49] (iter: t_I) (func: t_F) =
     [%#s05_map'8] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current e1 f.final b]. hist_inv func f.current
-     -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition f.current e1  -> postcondition_mut f.current e1 f.final b  -> precondition f.final e2
+      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition f.current e1 -> postcondition_mut f.current e1 f.final b -> precondition f.final e2
   
-  predicate reinitialize [#"05_map.rs" 103 4 103 33]  =
+  predicate reinitialize [#"05_map.rs" 103 4 103 33] =
     [%#s05_map'10] forall iter: MutBorrow.t t_I, func: t_F. completed iter
-     -> next_precondition iter.final func /\ preservation iter.final func
+      -> next_precondition iter.final func /\ preservation iter.final func
   
   predicate invariant' [#"05_map.rs" 143 4 143 30] (self: t_Map) =
     [%#s05_map'7] reinitialize
@@ -671,27 +651,26 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
   
   meta "select_lsinst" "all"
   
-  constant self  : t_Map
+  constant self : t_Map
   
-  constant e  : t_Item
+  constant e : t_Item
   
-  constant r  : t_B
+  constant r : t_B
   
-  constant f  : MutBorrow.t t_F
+  constant f : MutBorrow.t t_F
   
-  constant iter  : t_I
+  constant iter : t_I
   
   function produces_one_invariant [#"05_map.rs" 118 4 118 73] (self'0: t_Map) (e'0: t_Item) (r'0: t_B) (f'0: MutBorrow.t t_F) (iter'0: t_I) : ()
   
-  
   goal vc_produces_one_invariant: ([%#s05_map] invariant' self)
-   -> ([%#s05_map'0] produces self.t_Map__iter (Seq.singleton e) iter)
-   -> ([%#s05_map'1] f.current = self.t_Map__func)
-   -> ([%#s05_map'2] postcondition_mut f.current e f.final r)
-   -> ([%#s05_map'5] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, i: t_I. produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-   -> produces self.t_Map__iter (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
-  && (let _ = () in ([@expl:produces_one_invariant ensures #0] [%#s05_map'3] preservation iter f.final)
-  && ([@expl:produces_one_invariant ensures #1] [%#s05_map'4] next_precondition iter f.final))
+    -> ([%#s05_map'0] produces self.t_Map__iter (Seq.singleton e) iter)
+    -> ([%#s05_map'1] f.current = self.t_Map__func)
+    -> ([%#s05_map'2] postcondition_mut f.current e f.final r)
+    -> ([%#s05_map'5] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, i: t_I. produces iter (Seq.snoc (Seq.snoc s e1) e2) i
+        -> produces self.t_Map__iter (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
+    && (let _ = () in ([@expl:produces_one_invariant ensures #0] [%#s05_map'3] preservation iter f.final)
+    && ([@expl:produces_one_invariant ensures #1] [%#s05_map'4] next_precondition iter f.final))
 end
 module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 129 4 129 61] (* Map<I, F> *)
   let%span s05_map = "05_map.rs" 128 14 128 68
@@ -723,8 +702,7 @@ module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 129 4 129 6
   
   type t_F
   
-  type t_Map  =
-    { t_Map__iter: t_I; t_Map__func: t_F }
+  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
   
   type t_B
   
@@ -734,9 +712,9 @@ module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 129 4 129 6
   
   function produces_trans [#"common.rs" 21 4 21 91] (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
-   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
+      -> ([%#scommon'1] produces b bc c) -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self: t_I) : ()
   
@@ -751,14 +729,14 @@ module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 129 4 129 6
   function fn_mut_once (self: t_F) (args: t_Item) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_Item, res: t_B. [%#sops'5] postcondition_once self args res
-  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
   axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'2] hist_inv self b)
-   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+      -> ([%#sops'3] hist_inv b c) -> ([%#sops'4] hist_inv self c)
   
   function hist_inv_refl (self: t_F) : ()
   
@@ -766,37 +744,36 @@ module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 129 4 129 6
   
   function postcondition_mut_hist_inv (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
+      -> ([%#sops'0] hist_inv self res_state)
   
   predicate precondition (self: t_F) (args: t_Item)
   
   predicate produces'0 [@inline:trivial] [#"05_map.rs" 42 4 42 67] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
     [%#s05_map'1] hist_inv self.t_Map__func succ.t_Map__func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-    /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-    /\ produces self.t_Map__iter s succ.t_Map__iter
-    /\ (forall i: int. 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
-    /\ (if Seq.length visited = 0 then
-      self.t_Map__func = succ.t_Map__func
-    else
-      (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
-    )
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> hist_inv self.t_Map__func (Seq.get fs i).current
-    /\ precondition (Seq.get fs i).current (Seq.get s i)
-    /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
+        /\ produces self.t_Map__iter s succ.t_Map__iter
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            self.t_Map__func = succ.t_Map__func
+          else
+            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv self.t_Map__func (Seq.get fs i).current
+          /\ precondition (Seq.get fs i).current (Seq.get s i)
+          /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   function produces_trans'0 [#"05_map.rs" 37 4 37 90] (a: t_Map) (ab: Seq.seq t_B) (b: t_Map) (bc: Seq.seq t_B) (c: t_Map) : ()
+   = [%#s05_map'7] ()
   
-   =
-    [%#s05_map'7] ()
+  axiom produces_trans_spec'0:
+    forall a: t_Map, ab: Seq.seq t_B, b: t_Map, bc: Seq.seq t_B, c: t_Map. ([%#s05_map'4] produces'0 a ab b)
+      -> ([%#s05_map'5] produces'0 b bc c) -> ([%#s05_map'6] produces'0 a (Seq.(++) ab bc) c)
   
-  axiom produces_trans_spec'0: forall a: t_Map, ab: Seq.seq t_B, b: t_Map, bc: Seq.seq t_B, c: t_Map. ([%#s05_map'4] produces'0 a ab b)
-   -> ([%#s05_map'5] produces'0 b bc c)  -> ([%#s05_map'6] produces'0 a (Seq.(++) ab bc) c)
-  
-  function produces_refl'0 [#"05_map.rs" 30 4 30 26] (self: t_Map) : () =
-    [%#s05_map'3] ()
+  function produces_refl'0 [#"05_map.rs" 30 4 30 26] (self: t_Map) : () = [%#s05_map'3] ()
   
   axiom produces_refl_spec'0: forall self: t_Map. [%#s05_map'2] produces'0 self (Seq.empty: Seq.seq t_B) self
   
@@ -804,20 +781,21 @@ module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 129 4 129 6
   
   meta "select_lsinst" "all"
   
-  constant self  : t_Map
+  constant self : t_Map
   
-  constant visited  : t_B
+  constant visited : t_B
   
-  constant succ  : t_Map
+  constant succ : t_Map
   
   predicate produces_one [#"05_map.rs" 129 4 129 61] (self'0: t_Map) (visited'0: t_B) (succ'0: t_Map)
   
-  goal vc_produces_one: [@expl:produces_one ensures] [%#s05_map] ([%#s05_map'0] exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current e f.final visited]. f.current
-  = self.t_Map__func
-  /\ f.final = succ.t_Map__func
-  /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter
-  /\ precondition f.current e /\ postcondition_mut f.current e f.final visited)
-  = produces'0 self (Seq.singleton visited) succ
+  goal vc_produces_one:
+    [@expl:produces_one ensures] [%#s05_map] ([%#s05_map'0] exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current e f.final visited]. f.current
+          = self.t_Map__func
+        /\ f.final = succ.t_Map__func
+        /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter
+        /\ precondition f.current e /\ postcondition_mut f.current e f.final visited)
+    = produces'0 self (Seq.singleton visited) succ
 end
 module M_05_map__map [#"05_map.rs" 158 0 158 81]
   let%span s05_map = "05_map.rs" 158 51 158 55
@@ -851,8 +829,7 @@ module M_05_map__map [#"05_map.rs" 158 0 158 81]
   
   type t_F
   
-  type t_Map  =
-    { t_Map__iter: t_I; t_Map__func: t_F }
+  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
   
   predicate inv (_0: t_I)
   
@@ -864,9 +841,9 @@ module M_05_map__map [#"05_map.rs" 158 0 158 81]
   
   function produces_trans [#"common.rs" 21 4 21 91] (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
-   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
+      -> ([%#scommon'1] produces b bc c) -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self: t_I) : ()
   
@@ -878,7 +855,7 @@ module M_05_map__map [#"05_map.rs" 158 0 158 81]
   
   predicate next_precondition [#"05_map.rs" 78 4 78 54] (iter: t_I) (func: t_F) =
     [%#s05_map'8] forall e: t_Item, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
-     -> precondition func e
+      -> precondition func e
   
   type t_B
   
@@ -891,14 +868,14 @@ module M_05_map__map [#"05_map.rs" 158 0 158 81]
   function fn_mut_once (self: t_F) (args: t_Item) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_Item, res: t_B. [%#sops'5] postcondition_once self args res
-  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
   axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'2] hist_inv self b)
-   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+      -> ([%#sops'3] hist_inv b c) -> ([%#sops'4] hist_inv self c)
   
   function hist_inv_refl (self: t_F) : ()
   
@@ -906,17 +883,18 @@ module M_05_map__map [#"05_map.rs" 158 0 158 81]
   
   function postcondition_mut_hist_inv (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
+      -> ([%#sops'0] hist_inv self res_state)
   
   predicate preservation [#"05_map.rs" 89 4 89 49] (iter: t_I) (func: t_F) =
     [%#s05_map'7] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current e1 f.final b]. hist_inv func f.current
-     -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition f.current e1  -> postcondition_mut f.current e1 f.final b  -> precondition f.final e2
+      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition f.current e1 -> postcondition_mut f.current e1 f.final b -> precondition f.final e2
   
-  predicate reinitialize [#"05_map.rs" 103 4 103 33]  =
+  predicate reinitialize [#"05_map.rs" 103 4 103 33] =
     [%#s05_map'6] forall iter: MutBorrow.t t_I, func: t_F. completed iter
-     -> next_precondition iter.final func /\ preservation iter.final func
+      -> next_precondition iter.final func /\ preservation iter.final func
   
   predicate invariant' [#"05_map.rs" 143 4 143 30] (self: t_Map) =
     [%#s05_map'9] reinitialize
@@ -925,30 +903,29 @@ module M_05_map__map [#"05_map.rs" 158 0 158 81]
   predicate inv'1 (_0: t_Map)
   
   axiom inv_axiom [@rewrite]: forall x: t_Map [inv'1 x]. inv'1 x
-  = (invariant' x
-  /\ match x with
-    | {t_Map__iter = iter ; t_Map__func = func} -> inv iter /\ inv'0 func
-    end)
+      = (invariant' x
+      /\ match x with
+        | {t_Map__iter = iter; t_Map__func = func} -> inv iter /\ inv'0 func
+        end)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec map[#"05_map.rs" 158 0 158 81] (iter:t_I) (func:t_F) (return'  (x:t_Map))= {[@expl:map 'iter' type invariant] [%#s05_map] inv iter}
+  let rec map [#"05_map.rs" 158 0 158 81] (iter: t_I) (func: t_F) (return' (x: t_Map)) =
+    {[@expl:map 'iter' type invariant] [%#s05_map] inv iter}
     {[@expl:map 'func' type invariant] [%#s05_map'0] inv'0 func}
     {[@expl:map requires #0] [%#s05_map'1] forall e: t_Item, i2: t_I. produces iter (Seq.singleton e) i2
-     -> precondition func e}
+      -> precondition func e}
     {[@expl:map requires #1] [%#s05_map'2] reinitialize}
     {[@expl:map requires #2] [%#s05_map'3] preservation iter func}
     (! bb0
     [ bb0 = bb1
-    | bb1 = s0 [ s0 =  [ &_0 <- { t_Map__iter = iter'0; t_Map__func = func'0 } ] s1 | s1 = bb5 ] 
-    | bb5 = return''0 {_0} ]
-     [ & _0: t_Map = Any.any_l () | & iter'0: t_I = iter | & func'0: t_F = func ] )
-    [ return''0 (result:t_Map)-> {[@expl:map result type invariant] [%#s05_map'4] inv'1 result}
+    | bb1 = s0 [ s0 = [ &_0 <- { t_Map__iter = iter'0; t_Map__func = func'0 } ] s1 | s1 = bb5 ]
+    | bb5 = return''0 {_0} ] [ & _0: t_Map = Any.any_l () | & iter'0: t_I = iter | & func'0: t_F = func ])
+    [ return''0 (result: t_Map) -> {[@expl:map result type invariant] [%#s05_map'4] inv'1 result}
       {[@expl:map ensures] [%#s05_map'5] result = { t_Map__iter = iter; t_Map__func = func }}
       (! return' {result}) ]
-
 end
 module M_05_map__qyi11082488819865755034__resolve_coherence__refines [#"05_map.rs" 10 9 10 16] (* <Map<I, F> as creusot_contracts::Resolve> *)
   let%span s05_map = "05_map.rs" 10 9 10 16
@@ -958,8 +935,7 @@ module M_05_map__qyi11082488819865755034__resolve_coherence__refines [#"05_map.r
   
   type t_F
   
-  type t_Map  =
-    { t_Map__iter: t_I; t_Map__func: t_F }
+  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
   
   predicate resolve (_0: t_F)
   
@@ -967,7 +943,7 @@ module M_05_map__qyi11082488819865755034__resolve_coherence__refines [#"05_map.r
   
   predicate structural_resolve (_0: t_Map) =
     match _0 with
-      | {t_Map__iter = x0 ; t_Map__func = x1} -> resolve x1 /\ resolve'0 x0
+      | {t_Map__iter = x0; t_Map__func = x1} -> resolve x1 /\ resolve'0 x0
       end
   
   predicate inv (_0: t_I)
@@ -977,9 +953,9 @@ module M_05_map__qyi11082488819865755034__resolve_coherence__refines [#"05_map.r
   predicate inv'1 (_0: t_Map)
   
   axiom inv_axiom: forall x: t_Map [inv'1 x]. inv'1 x
-   -> match x with
-    | {t_Map__iter = iter ; t_Map__func = func} -> inv iter /\ inv'0 func
-    end
+      -> match x with
+        | {t_Map__iter = iter; t_Map__func = func} -> inv iter /\ inv'0 func
+        end
   
   predicate resolve'1 [#"05_map.rs" 10 9 10 16] (self: t_Map) =
     [%#s05_map'0] resolve'0 self.t_Map__iter /\ resolve self.t_Map__func
@@ -989,7 +965,7 @@ module M_05_map__qyi11082488819865755034__resolve_coherence__refines [#"05_map.r
   meta "select_lsinst" "all"
   
   goal refines: [%#s05_map] forall self: t_Map. structural_resolve self /\ inv'1 self
-   -> structural_resolve self /\ (forall result: (). resolve'1 self  -> resolve'1 self)
+      -> structural_resolve self /\ (forall result: (). resolve'1 self -> resolve'1 self)
 end
 module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44] (* <Map<I, F> as common::Iterator> *)
   let%span s05_map = "05_map.rs" 63 4 63 44
@@ -1022,8 +998,7 @@ module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44
   
   type t_F
   
-  type t_Map  =
-    { t_Map__iter: t_I; t_Map__func: t_F }
+  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
   
   type t_Item
   
@@ -1031,9 +1006,9 @@ module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44
   
   function produces_trans [#"common.rs" 21 4 21 91] (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
-   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
+      -> ([%#scommon'1] produces b bc c) -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self: t_I) : ()
   
@@ -1045,7 +1020,7 @@ module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44
   
   predicate next_precondition [#"05_map.rs" 78 4 78 54] (iter: t_I) (func: t_F) =
     [%#s05_map'7] forall e: t_Item, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
-     -> precondition func e
+      -> precondition func e
   
   type t_B
   
@@ -1058,14 +1033,14 @@ module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44
   function fn_mut_once (self: t_F) (args: t_Item) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_Item, res: t_B. [%#sops'5] postcondition_once self args res
-  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
   axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'2] hist_inv self b)
-   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+      -> ([%#sops'3] hist_inv b c) -> ([%#sops'4] hist_inv self c)
   
   function hist_inv_refl (self: t_F) : ()
   
@@ -1073,17 +1048,18 @@ module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44
   
   function postcondition_mut_hist_inv (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
+      -> ([%#sops'0] hist_inv self res_state)
   
   predicate preservation [#"05_map.rs" 89 4 89 49] (iter: t_I) (func: t_F) =
     [%#s05_map'6] forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current e1 f.final b]. hist_inv func f.current
-     -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition f.current e1  -> postcondition_mut f.current e1 f.final b  -> precondition f.final e2
+      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition f.current e1 -> postcondition_mut f.current e1 f.final b -> precondition f.final e2
   
-  predicate reinitialize [#"05_map.rs" 103 4 103 33]  =
+  predicate reinitialize [#"05_map.rs" 103 4 103 33] =
     [%#s05_map'5] forall iter: MutBorrow.t t_I, func: t_F. completed iter
-     -> next_precondition iter.final func /\ preservation iter.final func
+      -> next_precondition iter.final func /\ preservation iter.final func
   
   predicate invariant' [#"05_map.rs" 143 4 143 30] (self: t_Map) =
     [%#s05_map'4] reinitialize
@@ -1096,21 +1072,18 @@ module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44
   predicate inv'1 (_0: t_Map)
   
   axiom inv_axiom [@rewrite]: forall x: t_Map [inv'1 x]. inv'1 x
-  = (invariant' x
-  /\ match x with
-    | {t_Map__iter = iter ; t_Map__func = func} -> inv iter /\ inv'0 func
-    end)
+      = (invariant' x
+      /\ match x with
+        | {t_Map__iter = iter; t_Map__func = func} -> inv iter /\ inv'0 func
+        end)
   
-  predicate invariant''0 (self: MutBorrow.t t_Map) =
-    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
+  predicate invariant''0 (self: MutBorrow.t t_Map) = [%#sinvariant] inv'1 self.current /\ inv'1 self.final
   
   predicate inv'2 (_0: MutBorrow.t t_Map)
   
   axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Map [inv'2 x]. inv'2 x = invariant''0 x
   
-  type t_Option  =
-    | C_None
-    | C_Some t_B
+  type t_Option = C_None | C_Some t_B
   
   predicate completed'0 [#"05_map.rs" 23 4 23 35] (self: MutBorrow.t t_Map) =
     [%#s05_map'0] completed (MutBorrow.borrow_logic (self.current).t_Map__iter (self.final).t_Map__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
@@ -1119,55 +1092,55 @@ module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44
   predicate produces'0 [@inline:trivial] [#"05_map.rs" 42 4 42 67] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
     [%#s05_map'3] hist_inv self.t_Map__func succ.t_Map__func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-    /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-    /\ produces self.t_Map__iter s succ.t_Map__iter
-    /\ (forall i: int. 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
-    /\ (if Seq.length visited = 0 then
-      self.t_Map__func = succ.t_Map__func
-    else
-      (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
-    )
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> hist_inv self.t_Map__func (Seq.get fs i).current
-    /\ precondition (Seq.get fs i).current (Seq.get s i)
-    /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
+        /\ produces self.t_Map__iter s succ.t_Map__iter
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            self.t_Map__func = succ.t_Map__func
+          else
+            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv self.t_Map__func (Seq.get fs i).current
+          /\ precondition (Seq.get fs i).current (Seq.get s i)
+          /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   predicate produces_one [#"05_map.rs" 129 4 129 61] (self: t_Map) (visited: t_B) (succ: t_Map) =
     [%#s05_map'2] exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current e f.final visited]. f.current
-    = self.t_Map__func
-    /\ f.final = succ.t_Map__func
-    /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter
-    /\ precondition f.current e /\ postcondition_mut f.current e f.final visited
+        = self.t_Map__func
+      /\ f.final = succ.t_Map__func
+      /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter
+      /\ precondition f.current e /\ postcondition_mut f.current e f.final visited
   
   axiom produces_one_spec: forall self: t_Map, visited: t_B, succ: t_Map. [%#s05_map'1] produces_one self visited succ
-  = produces'0 self (Seq.singleton visited) succ
+      = produces'0 self (Seq.singleton visited) succ
   
   predicate inv'3 (_0: t_B)
   
   predicate inv'4 (_0: t_Option)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
-  = match x with
-    | C_None -> true
-    | C_Some a_0 -> inv'3 a_0
-    end
+      = match x with
+        | C_None -> true
+        | C_Some a_0 -> inv'3 a_0
+        end
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: [%#s05_map] forall self: MutBorrow.t t_Map. inv'2 self
-   -> inv'2 self
-  /\ (forall result: t_Option. match result with
-    | C_None -> completed'0 self
-    | C_Some v -> produces_one self.current v self.final
-    end
-  /\ inv'4 result
-   -> match result with
-    | C_None -> completed'0 self
-    | C_Some v -> produces'0 self.current (Seq.singleton v) self.final
-    end
-  /\ inv'4 result)
+      -> inv'2 self
+      /\ (forall result: t_Option. match result with
+              | C_None -> completed'0 self
+              | C_Some v -> produces_one self.current v self.final
+              end
+          /\ inv'4 result
+        -> match result with
+            | C_None -> completed'0 self
+            | C_Some v -> produces'0 self.current (Seq.singleton v) self.final
+            end
+        /\ inv'4 result)
 end
 module M_05_map__qyi14378821460689001001__produces_refl__refines [#"05_map.rs" 30 4 30 26] (* <Map<I, F> as common::Iterator> *)
   let%span s05_map = "05_map.rs" 30 4 30 26
@@ -1192,8 +1165,7 @@ module M_05_map__qyi14378821460689001001__produces_refl__refines [#"05_map.rs" 3
   
   type t_F
   
-  type t_Map  =
-    { t_Map__iter: t_I; t_Map__func: t_F }
+  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
   
   type t_B
   
@@ -1203,9 +1175,9 @@ module M_05_map__qyi14378821460689001001__produces_refl__refines [#"05_map.rs" 3
   
   function produces_trans [#"common.rs" 21 4 21 91] (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
-   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
+      -> ([%#scommon'1] produces b bc c) -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self: t_I) : ()
   
@@ -1220,14 +1192,14 @@ module M_05_map__qyi14378821460689001001__produces_refl__refines [#"05_map.rs" 3
   function fn_mut_once (self: t_F) (args: t_Item) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_Item, res: t_B. [%#sops'5] postcondition_once self args res
-  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
   axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'2] hist_inv self b)
-   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+      -> ([%#sops'3] hist_inv b c) -> ([%#sops'4] hist_inv self c)
   
   function hist_inv_refl (self: t_F) : ()
   
@@ -1235,33 +1207,34 @@ module M_05_map__qyi14378821460689001001__produces_refl__refines [#"05_map.rs" 3
   
   function postcondition_mut_hist_inv (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
+      -> ([%#sops'0] hist_inv self res_state)
   
   predicate precondition (self: t_F) (args: t_Item)
   
   predicate produces'0 [@inline:trivial] [#"05_map.rs" 42 4 42 67] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
     [%#s05_map'0] hist_inv self.t_Map__func succ.t_Map__func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-    /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-    /\ produces self.t_Map__iter s succ.t_Map__iter
-    /\ (forall i: int. 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
-    /\ (if Seq.length visited = 0 then
-      self.t_Map__func = succ.t_Map__func
-    else
-      (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
-    )
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> hist_inv self.t_Map__func (Seq.get fs i).current
-    /\ precondition (Seq.get fs i).current (Seq.get s i)
-    /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
+        /\ produces self.t_Map__iter s succ.t_Map__iter
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            self.t_Map__func = succ.t_Map__func
+          else
+            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv self.t_Map__func (Seq.get fs i).current
+          /\ precondition (Seq.get fs i).current (Seq.get s i)
+          /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: [%#s05_map] forall self: t_Map. forall result: (). produces'0 self (Seq.empty: Seq.seq t_B) self
-   -> produces'0 self (Seq.empty: Seq.seq t_B) self
+        -> produces'0 self (Seq.empty: Seq.seq t_B) self
 end
 module M_05_map__qyi14378821460689001001__produces_trans__refines [#"05_map.rs" 37 4 37 90] (* <Map<I, F> as common::Iterator> *)
   let%span s05_map = "05_map.rs" 37 4 37 90
@@ -1286,8 +1259,7 @@ module M_05_map__qyi14378821460689001001__produces_trans__refines [#"05_map.rs" 
   
   type t_F
   
-  type t_Map  =
-    { t_Map__iter: t_I; t_Map__func: t_F }
+  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
   
   type t_B
   
@@ -1297,9 +1269,9 @@ module M_05_map__qyi14378821460689001001__produces_trans__refines [#"05_map.rs" 
   
   function produces_trans [#"common.rs" 21 4 21 91] (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
-   -> ([%#scommon'1] produces b bc c)  -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. ([%#scommon'0] produces a ab b)
+      -> ([%#scommon'1] produces b bc c) -> ([%#scommon'2] produces a (Seq.(++) ab bc) c)
   
   function produces_refl [#"common.rs" 15 4 15 27] (self: t_I) : ()
   
@@ -1314,14 +1286,14 @@ module M_05_map__qyi14378821460689001001__produces_trans__refines [#"05_map.rs" 
   function fn_mut_once (self: t_F) (args: t_Item) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_Item, res: t_B. [%#sops'5] postcondition_once self args res
-  = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
   axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'2] hist_inv self b)
-   -> ([%#sops'3] hist_inv b c)  -> ([%#sops'4] hist_inv self c)
+      -> ([%#sops'3] hist_inv b c) -> ([%#sops'4] hist_inv self c)
   
   function hist_inv_refl (self: t_F) : ()
   
@@ -1329,33 +1301,36 @@ module M_05_map__qyi14378821460689001001__produces_trans__refines [#"05_map.rs" 
   
   function postcondition_mut_hist_inv (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec: forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
-   -> ([%#sops'0] hist_inv self res_state)
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_Item, res_state: t_F, res: t_B. ([%#sops] postcondition_mut self args res_state res)
+      -> ([%#sops'0] hist_inv self res_state)
   
   predicate precondition (self: t_F) (args: t_Item)
   
   predicate produces'0 [@inline:trivial] [#"05_map.rs" 42 4 42 67] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
     [%#s05_map'0] hist_inv self.t_Map__func succ.t_Map__func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-    /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-    /\ produces self.t_Map__iter s succ.t_Map__iter
-    /\ (forall i: int. 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
-    /\ (if Seq.length visited = 0 then
-      self.t_Map__func = succ.t_Map__func
-    else
-      (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
-    )
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> hist_inv self.t_Map__func (Seq.get fs i).current
-    /\ precondition (Seq.get fs i).current (Seq.get s i)
-    /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
+        /\ produces self.t_Map__iter s succ.t_Map__iter
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            self.t_Map__func = succ.t_Map__func
+          else
+            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv self.t_Map__func (Seq.get fs i).current
+          /\ precondition (Seq.get fs i).current (Seq.get s i)
+          /\ postcondition_mut (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: [%#s05_map] forall a: t_Map. forall ab: Seq.seq t_B. forall b: t_Map. forall bc: Seq.seq t_B. forall c: t_Map. produces'0 b bc c
-  /\ produces'0 a ab b
-   -> produces'0 b bc c
-  /\ produces'0 a ab b /\ (forall result: (). produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
+  goal refines:
+    [%#s05_map] forall a: t_Map. forall ab: Seq.seq t_B. forall b: t_Map. forall bc: Seq.seq t_B. forall c: t_Map. produces'0 b bc c
+                /\ produces'0 a ab b
+              -> produces'0 b bc c
+              /\ produces'0 a ab b
+              /\ (forall result: (). produces'0 a (Seq.(++) ab bc) c -> produces'0 a (Seq.(++) ab bc) c)
 end

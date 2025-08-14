@@ -22,13 +22,13 @@ module M_mc91__mc91 [#"mc91.rs" 7 0 7 26]
   use creusot.prelude.Any
   use mach.int.Int
   
-  type t_Ordering  =
-    | C_Less
-    | C_Equal
-    | C_Greater
+  type t_Ordering = C_Less | C_Equal | C_Greater
   
-  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering =
-    [%#sord'12] if UInt32.lt self o then C_Less else if self = o then C_Equal else C_Greater
+  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering = [%#sord'12] if UInt32.lt self o then
+      C_Less
+    else
+      if self = o then C_Equal else C_Greater
+  
   
   function eq_cmp (x: UInt32.t) (y: UInt32.t) : ()
   
@@ -37,17 +37,17 @@ module M_mc91__mc91 [#"mc91.rs" 7 0 7 26]
   function antisym2 (x: UInt32.t) (y: UInt32.t) : ()
   
   axiom antisym2_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'9] cmp_log x y = C_Greater)
-   -> ([%#sord'10] cmp_log y x = C_Less)
+      -> ([%#sord'10] cmp_log y x = C_Less)
   
   function antisym1 (x: UInt32.t) (y: UInt32.t) : ()
   
   axiom antisym1_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'7] cmp_log x y = C_Less)
-   -> ([%#sord'8] cmp_log y x = C_Greater)
+      -> ([%#sord'8] cmp_log y x = C_Greater)
   
   function trans (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
   
   axiom trans_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-   -> ([%#sord'5] cmp_log y z = o)  -> ([%#sord'6] cmp_log x z = o)
+      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
   
   function refl (x: UInt32.t) : ()
   
@@ -73,30 +73,24 @@ module M_mc91__mc91 [#"mc91.rs" 7 0 7 26]
   
   meta "select_lsinst" "all"
   
-  let rec mc91[#"mc91.rs" 7 0 7 26] (x:UInt32.t) (return'  (x'0:UInt32.t))= (! bb0
+  let rec mc91 [#"mc91.rs" 7 0 7 26] (x: UInt32.t) (return' (x'0: UInt32.t)) = (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_3 <- UInt32.gt x'0 ([%#smc91] (100: UInt32.t)) ] s1
-      | s1 = any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb1) ]  ]
-    
+      [ s0 = [ &_3 <- UInt32.gt x'0 ([%#smc91] (100: UInt32.t)) ] s1
+      | s1 = any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb1) ] ]
     | bb1 = s0
-      [ s0 = UInt32.sub {x'0} {[%#smc91'0] (10: UInt32.t)} (fun (_ret:UInt32.t) ->  [ &_0 <- _ret ] s1) | s1 = bb5 ]
-    
+      [ s0 = UInt32.sub {x'0} {[%#smc91'0] (10: UInt32.t)} (fun (_ret: UInt32.t) -> [ &_0 <- _ret ] s1) | s1 = bb5 ]
     | bb2 = s0
-      [ s0 = UInt32.add {x'0} {[%#smc91'1] (11: UInt32.t)} (fun (_ret:UInt32.t) ->  [ &_7 <- _ret ] s1)
-      | s1 = mc91 {_7} (fun (_ret:UInt32.t) ->  [ &_6 <- _ret ] s2)
+      [ s0 = UInt32.add {x'0} {[%#smc91'1] (11: UInt32.t)} (fun (_ret: UInt32.t) -> [ &_7 <- _ret ] s1)
+      | s1 = mc91 {_7} (fun (_ret: UInt32.t) -> [ &_6 <- _ret ] s2)
       | s2 = bb3 ]
-    
-    | bb3 = s0 [ s0 = mc91 {_6} (fun (_ret:UInt32.t) ->  [ &_0 <- _ret ] s1) | s1 = bb5 ] 
+    | bb3 = s0 [ s0 = mc91 {_6} (fun (_ret: UInt32.t) -> [ &_0 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = return''0 {_0} ]
-    
     [ & _0: UInt32.t = Any.any_l ()
     | & x'0: UInt32.t = x
     | & _3: bool = Any.any_l ()
     | & _6: UInt32.t = Any.any_l ()
-    | & _7: UInt32.t = Any.any_l () ]
-    )
-    [ return''0 (result:UInt32.t)-> {[@expl:mc91 ensures] [%#smc91'2] UInt32.le x (100: UInt32.t)
-       -> UInt32.t'int result = 91 /\ UInt32.gt x (100: UInt32.t)  -> UInt32.t'int result = UInt32.t'int x - 10}
+    | & _7: UInt32.t = Any.any_l () ])
+    [ return''0 (result: UInt32.t) -> {[@expl:mc91 ensures] [%#smc91'2] UInt32.le x (100: UInt32.t)
+      -> UInt32.t'int result = 91 /\ UInt32.gt x (100: UInt32.t) -> UInt32.t'int result = UInt32.t'int x - 10}
       (! return' {result}) ]
-
 end

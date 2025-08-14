@@ -4,53 +4,42 @@ module M_ite_normalize__qyi15119799284333837974__clone [#"ite_normalize.rs" 64 4
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Expr  =
-    | C_IfThenElse t_Expr t_Expr t_Expr
-    | C_Var UInt64.t
-    | C_True
-    | C_False
+  type t_Expr = C_IfThenElse t_Expr t_Expr t_Expr | C_Var UInt64.t | C_True | C_False
   
-  let rec v_Var (input:t_Expr) (ret  (v:UInt64.t))= any
-    [ good (v:UInt64.t)-> {C_Var v = input} (! ret {v})
+  let rec v_Var (input: t_Expr) (ret (v: UInt64.t)) = any
+    [ good (v: UInt64.t) -> {C_Var v = input} (! ret {v})
     | bad -> {forall v: UInt64.t [C_Var v: t_Expr]. C_Var v <> input} (! {false} any) ]
   
-  
-  let rec v_IfThenElse (input:t_Expr) (ret  (c:t_Expr) (t:t_Expr) (e:t_Expr))= any
-    [ good (c:t_Expr) (t:t_Expr) (e:t_Expr)-> {C_IfThenElse c t e = input} (! ret {c} {t} {e})
+  let rec v_IfThenElse (input: t_Expr) (ret (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
+    [ good (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {C_IfThenElse c t e = input} (! ret {c} {t} {e})
     | bad -> {forall c: t_Expr, t: t_Expr, e: t_Expr [C_IfThenElse c t e: t_Expr]. C_IfThenElse c t e <> input}
       (! {false}
       any) ]
-  
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec clone'[#"ite_normalize.rs" 64 4 64 27] (self:t_Expr) (return'  (x:t_Expr))= (! bb0
+  let rec clone' [#"ite_normalize.rs" 64 4 64 27] (self: t_Expr) (return' (x: t_Expr)) = (! bb0
     [ bb0 = any
-      [ br0 (x0:t_Expr) (x1:t_Expr) (x2:t_Expr)-> {self'0 = C_IfThenElse x0 x1 x2} (! bb8)
-      | br1 (x0:UInt64.t)-> {self'0 = C_Var x0} (! bb7)
+      [ br0 (x0: t_Expr) (x1: t_Expr) (x2: t_Expr) -> {self'0 = C_IfThenElse x0 x1 x2} (! bb8)
+      | br1 (x0: UInt64.t) -> {self'0 = C_Var x0} (! bb7)
       | br2 -> {self'0 = C_True} (! bb6)
       | br3 -> {self'0 = C_False} (! bb5) ]
-    
-    | bb5 = s0 [ s0 =  [ &_0 <- C_False ] s1 | s1 = bb18 ] 
-    | bb6 = s0 [ s0 =  [ &_0 <- C_True ] s1 | s1 = bb18 ] 
-    | bb7 = s0
-      [ s0 = v_Var {self'0} (fun (rv:UInt64.t) ->  [ &v <- rv ] s1) | s1 =  [ &_0 <- C_Var v ] s2 | s2 = bb18 ]
-    
+    | bb5 = s0 [ s0 = [ &_0 <- C_False ] s1 | s1 = bb18 ]
+    | bb6 = s0 [ s0 = [ &_0 <- C_True ] s1 | s1 = bb18 ]
+    | bb7 = s0 [ s0 = v_Var {self'0} (fun (rv: UInt64.t) -> [ &v <- rv ] s1) | s1 = [ &_0 <- C_Var v ] s2 | s2 = bb18 ]
     | bb8 = s0
-      [ s0 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &c <- rc ] s1)
-      | s1 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &t <- rt ] s2)
-      | s2 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &e <- re ] s3)
-      | s3 =  [ &_10 <- c ] s4
-      | s4 = clone' {_10} (fun (_ret:t_Expr) ->  [ &_8 <- _ret ] s5)
+      [ s0 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &c <- rc ] s1)
+      | s1 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &t <- rt ] s2)
+      | s2 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &e <- re ] s3)
+      | s3 = [ &_10 <- c ] s4
+      | s4 = clone' {_10} (fun (_ret: t_Expr) -> [ &_8 <- _ret ] s5)
       | s5 = bb10 ]
-    
-    | bb10 = s0 [ s0 =  [ &_14 <- t ] s1 | s1 = clone' {_14} (fun (_ret:t_Expr) ->  [ &_12 <- _ret ] s2) | s2 = bb12 ] 
-    | bb12 = s0 [ s0 =  [ &_18 <- e ] s1 | s1 = clone' {_18} (fun (_ret:t_Expr) ->  [ &_16 <- _ret ] s2) | s2 = bb14 ] 
-    | bb14 = s0 [ s0 =  [ &_0 <- C_IfThenElse _8 _12 _16 ] s1 | s1 = bb18 ] 
+    | bb10 = s0 [ s0 = [ &_14 <- t ] s1 | s1 = clone' {_14} (fun (_ret: t_Expr) -> [ &_12 <- _ret ] s2) | s2 = bb12 ]
+    | bb12 = s0 [ s0 = [ &_18 <- e ] s1 | s1 = clone' {_18} (fun (_ret: t_Expr) -> [ &_16 <- _ret ] s2) | s2 = bb14 ]
+    | bb14 = s0 [ s0 = [ &_0 <- C_IfThenElse _8 _12 _16 ] s1 | s1 = bb18 ]
     | bb18 = return''0 {_0} ]
-    
     [ & _0: t_Expr = Any.any_l ()
     | & self'0: t_Expr = self
     | & c: t_Expr = Any.any_l ()
@@ -62,8 +51,8 @@ module M_ite_normalize__qyi15119799284333837974__clone [#"ite_normalize.rs" 64 4
     | & _14: t_Expr = Any.any_l ()
     | & _16: t_Expr = Any.any_l ()
     | & _18: t_Expr = Any.any_l ()
-    | & v: UInt64.t = Any.any_l () ]
-    ) [ return''0 (result:t_Expr)-> {[@expl:clone ensures] [%#site_normalize] result = self} (! return' {result}) ] 
+    | & v: UInt64.t = Any.any_l () ])
+    [ return''0 (result: t_Expr) -> {[@expl:clone ensures] [%#site_normalize] result = self} (! return' {result}) ]
 end
 module M_ite_normalize__qyi12210208226808281580__from [#"ite_normalize.rs" 79 4 79 29] (* <Expr as std::convert::From<usize>> *)
   let%span site_normalize = "ite_normalize.rs" 96 14 96 39
@@ -71,44 +60,35 @@ module M_ite_normalize__qyi12210208226808281580__from [#"ite_normalize.rs" 79 4 
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Expr  =
-    | C_IfThenElse t_Expr t_Expr t_Expr
-    | C_Var UInt64.t
-    | C_True
-    | C_False
+  type t_Expr = C_IfThenElse t_Expr t_Expr t_Expr | C_Var UInt64.t | C_True | C_False
   
-  let rec variable (v:UInt64.t) (return'  (x:t_Expr))= any
-    [ return''0 (result:t_Expr)-> {[%#site_normalize] result = C_Var v} (! return' {result}) ]
-  
+  let rec variable (v: UInt64.t) (return' (x: t_Expr)) = any
+    [ return''0 (result: t_Expr) -> {[%#site_normalize] result = C_Var v} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec from[#"ite_normalize.rs" 79 4 79 29] (a:UInt64.t) (return'  (x:t_Expr))= (! bb0
-    [ bb0 = s0 [ s0 = variable {a'0} (fun (_ret:t_Expr) ->  [ &_0 <- _ret ] s1) | s1 = bb1 ]  | bb1 = return''0 {_0} ]
-     [ & _0: t_Expr = Any.any_l () | & a'0: UInt64.t = a ] ) [ return''0 (result:t_Expr)-> (! return' {result}) ] 
+  let rec from [#"ite_normalize.rs" 79 4 79 29] (a: UInt64.t) (return' (x: t_Expr)) = (! bb0
+    [ bb0 = s0 [ s0 = variable {a'0} (fun (_ret: t_Expr) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return''0 {_0} ]
+    [ & _0: t_Expr = Any.any_l () | & a'0: UInt64.t = a ]) [ return''0 (result: t_Expr) -> (! return' {result}) ]
 end
 module M_ite_normalize__qyi1874907776010341903__from [#"ite_normalize.rs" 85 4 85 28] (* <Expr as std::convert::From<bool>> *)
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Expr  =
-    | C_IfThenElse t_Expr t_Expr t_Expr
-    | C_Var UInt64.t
-    | C_True
-    | C_False
+  type t_Expr = C_IfThenElse t_Expr t_Expr t_Expr | C_Var UInt64.t | C_True | C_False
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec from[#"ite_normalize.rs" 85 4 85 28] (b:bool) (return'  (x:t_Expr))= (! bb0
-    [ bb0 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ] 
-    | bb1 = s0 [ s0 =  [ &_0 <- C_True ] s1 | s1 = bb3 ] 
-    | bb2 = s0 [ s0 =  [ &_0 <- C_False ] s1 | s1 = bb3 ] 
-    | bb3 = return''0 {_0} ]
-     [ & _0: t_Expr = Any.any_l () | & b'0: bool = b ] ) [ return''0 (result:t_Expr)-> (! return' {result}) ] 
+  let rec from [#"ite_normalize.rs" 85 4 85 28] (b: bool) (return' (x: t_Expr)) = (! bb0
+    [ bb0 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ]
+    | bb1 = s0 [ s0 = [ &_0 <- C_True ] s1 | s1 = bb3 ]
+    | bb2 = s0 [ s0 = [ &_0 <- C_False ] s1 | s1 = bb3 ]
+    | bb3 = return''0 {_0} ] [ & _0: t_Expr = Any.any_l () | & b'0: bool = b ])
+    [ return''0 (result: t_Expr) -> (! return' {result}) ]
 end
 module M_ite_normalize__qyi17570407315987535457__ite [#"ite_normalize.rs" 92 4 92 49] (* Expr *)
   let%span site_normalize = "ite_normalize.rs" 91 14 91 91
@@ -116,22 +96,17 @@ module M_ite_normalize__qyi17570407315987535457__ite [#"ite_normalize.rs" 92 4 9
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Expr  =
-    | C_IfThenElse t_Expr t_Expr t_Expr
-    | C_Var UInt64.t
-    | C_True
-    | C_False
+  type t_Expr = C_IfThenElse t_Expr t_Expr t_Expr | C_Var UInt64.t | C_True | C_False
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec ite[#"ite_normalize.rs" 92 4 92 49] (c:t_Expr) (t:t_Expr) (e:t_Expr) (return'  (x:t_Expr))= (! bb0
-    [ bb0 = bb3 | bb3 = s0 [ s0 =  [ &_0 <- C_IfThenElse c'0 t'0 e'0 ] s1 | s1 = bb9 ]  | bb9 = return''0 {_0} ]
-     [ & _0: t_Expr = Any.any_l () | & c'0: t_Expr = c | & t'0: t_Expr = t | & e'0: t_Expr = e ] )
-    [ return''0 (result:t_Expr)-> {[@expl:ite ensures] [%#site_normalize] result = C_IfThenElse c t e}
+  let rec ite [#"ite_normalize.rs" 92 4 92 49] (c: t_Expr) (t: t_Expr) (e: t_Expr) (return' (x: t_Expr)) = (! bb0
+    [ bb0 = bb3 | bb3 = s0 [ s0 = [ &_0 <- C_IfThenElse c'0 t'0 e'0 ] s1 | s1 = bb9 ] | bb9 = return''0 {_0} ]
+    [ & _0: t_Expr = Any.any_l () | & c'0: t_Expr = c | & t'0: t_Expr = t | & e'0: t_Expr = e ])
+    [ return''0 (result: t_Expr) -> {[@expl:ite ensures] [%#site_normalize] result = C_IfThenElse c t e}
       (! return' {result}) ]
-
 end
 module M_ite_normalize__qyi17570407315987535457__variable [#"ite_normalize.rs" 97 4 97 37] (* Expr *)
   let%span site_normalize = "ite_normalize.rs" 96 14 96 39
@@ -139,21 +114,17 @@ module M_ite_normalize__qyi17570407315987535457__variable [#"ite_normalize.rs" 9
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Expr  =
-    | C_IfThenElse t_Expr t_Expr t_Expr
-    | C_Var UInt64.t
-    | C_True
-    | C_False
+  type t_Expr = C_IfThenElse t_Expr t_Expr t_Expr | C_Var UInt64.t | C_True | C_False
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec variable[#"ite_normalize.rs" 97 4 97 37] (v:UInt64.t) (return'  (x:t_Expr))= (! bb0
-    [ bb0 = s0 [ s0 =  [ &_0 <- C_Var v'0 ] s1 | s1 = return''0 {_0} ]  ]
-     [ & _0: t_Expr = Any.any_l () | & v'0: UInt64.t = v ] )
-    [ return''0 (result:t_Expr)-> {[@expl:variable ensures] [%#site_normalize] result = C_Var v} (! return' {result}) ]
-
+  let rec variable [#"ite_normalize.rs" 97 4 97 37] (v: UInt64.t) (return' (x: t_Expr)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- C_Var v'0 ] s1 | s1 = return''0 {_0} ] ]
+    [ & _0: t_Expr = Any.any_l () | & v'0: UInt64.t = v ])
+    [ return''0 (result: t_Expr) -> {[@expl:variable ensures] [%#site_normalize] result = C_Var v}
+      (! return' {result}) ]
 end
 module M_ite_normalize__qyi17570407315987535457__transpose [#"ite_normalize.rs" 105 4 105 52] (* Expr *)
   let%span site_normalize = "ite_normalize.rs" 101 15 101 35
@@ -166,22 +137,16 @@ module M_ite_normalize__qyi17570407315987535457__transpose [#"ite_normalize.rs" 
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Expr  =
-    | C_IfThenElse t_Expr t_Expr t_Expr
-    | C_Var UInt64.t
-    | C_True
-    | C_False
+  type t_Expr = C_IfThenElse t_Expr t_Expr t_Expr | C_Var UInt64.t | C_True | C_False
   
-  let rec v_IfThenElse (input:t_Expr) (ret  (c:t_Expr) (t:t_Expr) (e:t_Expr))= any
-    [ good (c:t_Expr) (t:t_Expr) (e:t_Expr)-> {C_IfThenElse c t e = input} (! ret {c} {t} {e})
+  let rec v_IfThenElse (input: t_Expr) (ret (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
+    [ good (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {C_IfThenElse c t e = input} (! ret {c} {t} {e})
     | bad -> {forall c: t_Expr, t: t_Expr, e: t_Expr [C_IfThenElse c t e: t_Expr]. C_IfThenElse c t e <> input}
       (! {false}
       any) ]
   
-  
-  let rec clone' (self:t_Expr) (return'  (x:t_Expr))= any
-    [ return''0 (result:t_Expr)-> {[%#site_normalize'3] result = self} (! return' {result}) ]
-  
+  let rec clone' (self: t_Expr) (return' (x: t_Expr)) = any
+    [ return''0 (result: t_Expr) -> {[%#site_normalize'3] result = self} (! return' {result}) ]
   
   predicate is_normalized [#"ite_normalize.rs" 122 4 122 38] (self: t_Expr) =
     [%#site_normalize'4] match self with
@@ -201,32 +166,30 @@ module M_ite_normalize__qyi17570407315987535457__transpose [#"ite_normalize.rs" 
   
   meta "select_lsinst" "all"
   
-  let rec transpose[#"ite_normalize.rs" 105 4 105 52] (self:t_Expr) (a:t_Expr) (b:t_Expr) (return'  (x:t_Expr))= {[@expl:transpose requires #0] [%#site_normalize] is_normalized self}
+  let rec transpose [#"ite_normalize.rs" 105 4 105 52] (self: t_Expr) (a: t_Expr) (b: t_Expr) (return' (x: t_Expr)) =
+    {[@expl:transpose requires #0] [%#site_normalize] is_normalized self}
     {[@expl:transpose requires #1] [%#site_normalize'0] is_normalized a}
     {[@expl:transpose requires #2] [%#site_normalize'1] is_normalized b}
     (! bb0
     [ bb0 = any
-      [ br0 (x0:t_Expr) (x1:t_Expr) (x2:t_Expr)-> {self'0 = C_IfThenElse x0 x1 x2} (! bb8)
-      | br1 (x0:UInt64.t)-> {self'0 = C_Var x0} (! bb23)
+      [ br0 (x0: t_Expr) (x1: t_Expr) (x2: t_Expr) -> {self'0 = C_IfThenElse x0 x1 x2} (! bb8)
+      | br1 (x0: UInt64.t) -> {self'0 = C_Var x0} (! bb23)
       | br2 -> {self'0 = C_True} (! bb6)
       | br3 -> {self'0 = C_False} (! bb5) ]
-    
-    | bb5 = s0 [ s0 =  [ &_0 <- b'0 ] s1 | s1 = bb30 ] 
-    | bb6 = s0 [ s0 =  [ &_0 <- a'0 ] s1 | s1 = bb30 ] 
-    | bb23 = s0 [ s0 =  [ &_0 <- C_IfThenElse self'0 a'0 b'0 ] s1 | s1 = bb30 ] 
+    | bb5 = s0 [ s0 = [ &_0 <- b'0 ] s1 | s1 = bb30 ]
+    | bb6 = s0 [ s0 = [ &_0 <- a'0 ] s1 | s1 = bb30 ]
+    | bb23 = s0 [ s0 = [ &_0 <- C_IfThenElse self'0 a'0 b'0 ] s1 | s1 = bb30 ]
     | bb8 = s0
-      [ s0 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &c <- rc ] s1)
-      | s1 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &t <- rt ] s2)
-      | s2 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &e <- re ] s3)
-      | s3 = clone' {a'0} (fun (_ret:t_Expr) ->  [ &_16 <- _ret ] s4)
+      [ s0 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &c <- rc ] s1)
+      | s1 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &t <- rt ] s2)
+      | s2 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &e <- re ] s3)
+      | s3 = clone' {a'0} (fun (_ret: t_Expr) -> [ &_16 <- _ret ] s4)
       | s4 = bb9 ]
-    
-    | bb9 = s0 [ s0 = clone' {b'0} (fun (_ret:t_Expr) ->  [ &_18 <- _ret ] s1) | s1 = bb10 ] 
-    | bb10 = s0 [ s0 = transpose {t} {_16} {_18} (fun (_ret:t_Expr) ->  [ &_14 <- _ret ] s1) | s1 = bb12 ] 
-    | bb12 = s0 [ s0 = transpose {e} {a'0} {b'0} (fun (_ret:t_Expr) ->  [ &_21 <- _ret ] s1) | s1 = bb14 ] 
-    | bb14 = s0 [ s0 =  [ &_0 <- C_IfThenElse c _14 _21 ] s1 | s1 = bb30 ] 
+    | bb9 = s0 [ s0 = clone' {b'0} (fun (_ret: t_Expr) -> [ &_18 <- _ret ] s1) | s1 = bb10 ]
+    | bb10 = s0 [ s0 = transpose {t} {_16} {_18} (fun (_ret: t_Expr) -> [ &_14 <- _ret ] s1) | s1 = bb12 ]
+    | bb12 = s0 [ s0 = transpose {e} {a'0} {b'0} (fun (_ret: t_Expr) -> [ &_21 <- _ret ] s1) | s1 = bb14 ]
+    | bb14 = s0 [ s0 = [ &_0 <- C_IfThenElse c _14 _21 ] s1 | s1 = bb30 ]
     | bb30 = return''0 {_0} ]
-    
     [ & _0: t_Expr = Any.any_l ()
     | & self'0: t_Expr = self
     | & a'0: t_Expr = a
@@ -237,11 +200,9 @@ module M_ite_normalize__qyi17570407315987535457__transpose [#"ite_normalize.rs" 
     | & _14: t_Expr = Any.any_l ()
     | & _16: t_Expr = Any.any_l ()
     | & _18: t_Expr = Any.any_l ()
-    | & _21: t_Expr = Any.any_l () ]
-    )
-    [ return''0 (result:t_Expr)-> {[@expl:transpose ensures] [%#site_normalize'2] is_normalized result}
+    | & _21: t_Expr = Any.any_l () ])
+    [ return''0 (result: t_Expr) -> {[@expl:transpose ensures] [%#site_normalize'2] is_normalized result}
       (! return' {result}) ]
-
 end
 module M_ite_normalize__qyi17570407315987535457__normalize [#"ite_normalize.rs" 140 4 140 35] (* Expr *)
   let%span site_normalize = "ite_normalize.rs" 139 14 139 36
@@ -255,22 +216,16 @@ module M_ite_normalize__qyi17570407315987535457__normalize [#"ite_normalize.rs" 
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Expr  =
-    | C_IfThenElse t_Expr t_Expr t_Expr
-    | C_Var UInt64.t
-    | C_True
-    | C_False
+  type t_Expr = C_IfThenElse t_Expr t_Expr t_Expr | C_Var UInt64.t | C_True | C_False
   
-  let rec clone' (self:t_Expr) (return'  (x:t_Expr))= any
-    [ return''0 (result:t_Expr)-> {[%#site_normalize'0] result = self} (! return' {result}) ]
+  let rec clone' (self: t_Expr) (return' (x: t_Expr)) = any
+    [ return''0 (result: t_Expr) -> {[%#site_normalize'0] result = self} (! return' {result}) ]
   
-  
-  let rec v_IfThenElse (input:t_Expr) (ret  (c:t_Expr) (t:t_Expr) (e:t_Expr))= any
-    [ good (c:t_Expr) (t:t_Expr) (e:t_Expr)-> {C_IfThenElse c t e = input} (! ret {c} {t} {e})
+  let rec v_IfThenElse (input: t_Expr) (ret (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
+    [ good (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {C_IfThenElse c t e = input} (! ret {c} {t} {e})
     | bad -> {forall c: t_Expr, t: t_Expr, e: t_Expr [C_IfThenElse c t e: t_Expr]. C_IfThenElse c t e <> input}
       (! {false}
       any) ]
-  
   
   predicate is_normalized [#"ite_normalize.rs" 122 4 122 38] (self: t_Expr) =
     [%#site_normalize'5] match self with
@@ -286,37 +241,33 @@ module M_ite_normalize__qyi17570407315987535457__normalize [#"ite_normalize.rs" 
       | C_False -> true
       end
   
-  let rec transpose (self:t_Expr) (a:t_Expr) (b:t_Expr) (return'  (x:t_Expr))= {[@expl:transpose requires #0] [%#site_normalize'1] is_normalized self}
+  let rec transpose (self: t_Expr) (a: t_Expr) (b: t_Expr) (return' (x: t_Expr)) =
+    {[@expl:transpose requires #0] [%#site_normalize'1] is_normalized self}
     {[@expl:transpose requires #1] [%#site_normalize'2] is_normalized a}
     {[@expl:transpose requires #2] [%#site_normalize'3] is_normalized b}
-    any [ return''0 (result:t_Expr)-> {[%#site_normalize'4] is_normalized result} (! return' {result}) ] 
+    any [ return''0 (result: t_Expr) -> {[%#site_normalize'4] is_normalized result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec normalize[#"ite_normalize.rs" 140 4 140 35] (self:t_Expr) (return'  (x:t_Expr))= (! bb0
+  let rec normalize [#"ite_normalize.rs" 140 4 140 35] (self: t_Expr) (return' (x: t_Expr)) = (! bb0
     [ bb0 = any
-      [ br0 (x0:t_Expr) (x1:t_Expr) (x2:t_Expr)-> {self'0 = C_IfThenElse x0 x1 x2} (! bb3)
-      | br1 (x0:UInt64.t)-> {self'0 = C_Var x0} (! bb1)
+      [ br0 (x0: t_Expr) (x1: t_Expr) (x2: t_Expr) -> {self'0 = C_IfThenElse x0 x1 x2} (! bb3)
+      | br1 (x0: UInt64.t) -> {self'0 = C_Var x0} (! bb1)
       | br2 -> {self'0 = C_True} (! bb1)
       | br3 -> {self'0 = C_False} (! bb1) ]
-    
-    | bb1 = s0
-      [ s0 =  [ &e'0 <- self'0 ] s1 | s1 = clone' {e'0} (fun (_ret:t_Expr) ->  [ &_0 <- _ret ] s2) | s2 = bb12 ]
-    
+    | bb1 = s0 [ s0 = [ &e'0 <- self'0 ] s1 | s1 = clone' {e'0} (fun (_ret: t_Expr) -> [ &_0 <- _ret ] s2) | s2 = bb12 ]
     | bb3 = s0
-      [ s0 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &c <- rc ] s1)
-      | s1 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &t <- rt ] s2)
-      | s2 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &e <- re ] s3)
-      | s3 = normalize {c} (fun (_ret:t_Expr) ->  [ &cp <- _ret ] s4)
+      [ s0 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &c <- rc ] s1)
+      | s1 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &t <- rt ] s2)
+      | s2 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &e <- re ] s3)
+      | s3 = normalize {c} (fun (_ret: t_Expr) -> [ &cp <- _ret ] s4)
       | s4 = bb4 ]
-    
-    | bb4 = s0 [ s0 = normalize {t} (fun (_ret:t_Expr) ->  [ &tp <- _ret ] s1) | s1 = bb5 ] 
-    | bb5 = s0 [ s0 = normalize {e} (fun (_ret:t_Expr) ->  [ &ep <- _ret ] s1) | s1 = bb6 ] 
-    | bb6 = s0 [ s0 = transpose {cp} {tp} {ep} (fun (_ret:t_Expr) ->  [ &_0 <- _ret ] s1) | s1 = bb12 ] 
+    | bb4 = s0 [ s0 = normalize {t} (fun (_ret: t_Expr) -> [ &tp <- _ret ] s1) | s1 = bb5 ]
+    | bb5 = s0 [ s0 = normalize {e} (fun (_ret: t_Expr) -> [ &ep <- _ret ] s1) | s1 = bb6 ]
+    | bb6 = s0 [ s0 = transpose {cp} {tp} {ep} (fun (_ret: t_Expr) -> [ &_0 <- _ret ] s1) | s1 = bb12 ]
     | bb12 = return''0 {_0} ]
-    
     [ & _0: t_Expr = Any.any_l ()
     | & self'0: t_Expr = self
     | & c: t_Expr = Any.any_l ()
@@ -325,11 +276,9 @@ module M_ite_normalize__qyi17570407315987535457__normalize [#"ite_normalize.rs" 
     | & cp: t_Expr = Any.any_l ()
     | & tp: t_Expr = Any.any_l ()
     | & ep: t_Expr = Any.any_l ()
-    | & e'0: t_Expr = Any.any_l () ]
-    )
-    [ return''0 (result:t_Expr)-> {[@expl:normalize ensures] [%#site_normalize] is_normalized result}
+    | & e'0: t_Expr = Any.any_l () ])
+    [ return''0 (result: t_Expr) -> {[@expl:normalize ensures] [%#site_normalize] is_normalized result}
       (! return' {result}) ]
-
 end
 module M_ite_normalize__qyi17570407315987535457__simplify [#"ite_normalize.rs" 178 4 178 33] (* Expr *)
   let%span site_normalize = "ite_normalize.rs" 176 15 176 35
@@ -347,13 +296,9 @@ module M_ite_normalize__qyi17570407315987535457__simplify [#"ite_normalize.rs" 1
   
   type t_BTreeMap
   
-  let rec new (return'  (x:t_BTreeMap))= any [ return''0 (result:t_BTreeMap)-> (! return' {result}) ] 
+  let rec new (return' (x: t_BTreeMap)) = any [ return''0 (result: t_BTreeMap) -> (! return' {result}) ]
   
-  type t_Expr  =
-    | C_IfThenElse t_Expr t_Expr t_Expr
-    | C_Var UInt64.t
-    | C_True
-    | C_False
+  type t_Expr = C_IfThenElse t_Expr t_Expr t_Expr | C_Var UInt64.t | C_True | C_False
   
   predicate is_normalized [#"ite_normalize.rs" 122 4 122 38] (self: t_Expr) =
     [%#site_normalize'4] match self with
@@ -369,9 +314,7 @@ module M_ite_normalize__qyi17570407315987535457__simplify [#"ite_normalize.rs" 1
       | C_False -> true
       end
   
-  type t_Option  =
-    | C_None
-    | C_Some bool
+  type t_Option = C_None | C_Some bool
   
   function view [#"ite_normalize.rs" 50 4 50 33] (self: t_BTreeMap) : Map.map int t_Option
   
@@ -391,27 +334,28 @@ module M_ite_normalize__qyi17570407315987535457__simplify [#"ite_normalize.rs" 1
       | _ -> true
       end
   
-  let rec simplify_helper (self:t_Expr) (state:t_BTreeMap) (return'  (x:t_Expr))= {[@expl:simplify_helper requires] [%#site_normalize'1] is_normalized self}
+  let rec simplify_helper (self: t_Expr) (state: t_BTreeMap) (return' (x: t_Expr)) =
+    {[@expl:simplify_helper requires] [%#site_normalize'1] is_normalized self}
     any
-    [ return''0 (result:t_Expr)-> {[%#site_normalize'2] forall i: UInt64.t. (exists v: bool. Map.get (view state) (UInt64.t'int i)
-      = C_Some v)  -> does_not_contain result i}
+    [ return''0 (result: t_Expr) ->
+    {[%#site_normalize'2] forall i: UInt64.t. (exists v: bool. Map.get (view state) (UInt64.t'int i) = C_Some v)
+        -> does_not_contain result i}
       {[%#site_normalize'3] is_simplified result}
       (! return' {result}) ]
-  
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec simplify[#"ite_normalize.rs" 178 4 178 33] (self:t_Expr) (return'  (x:t_Expr))= {[@expl:simplify requires] [%#site_normalize] is_normalized self}
+  let rec simplify [#"ite_normalize.rs" 178 4 178 33] (self: t_Expr) (return' (x: t_Expr)) =
+    {[@expl:simplify requires] [%#site_normalize] is_normalized self}
     (! bb0
-    [ bb0 = s0 [ s0 = new (fun (_ret:t_BTreeMap) ->  [ &_5 <- _ret ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 = simplify_helper {self'0} {_5} (fun (_ret:t_Expr) ->  [ &_0 <- _ret ] s1) | s1 = bb3 ] 
+    [ bb0 = s0 [ s0 = new (fun (_ret: t_BTreeMap) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = simplify_helper {self'0} {_5} (fun (_ret: t_Expr) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = return''0 {_0} ]
-     [ & _0: t_Expr = Any.any_l () | & self'0: t_Expr = self | & _5: t_BTreeMap = Any.any_l () ] )
-    [ return''0 (result:t_Expr)-> {[@expl:simplify ensures] [%#site_normalize'0] is_simplified result}
+    [ & _0: t_Expr = Any.any_l () | & self'0: t_Expr = self | & _5: t_BTreeMap = Any.any_l () ])
+    [ return''0 (result: t_Expr) -> {[@expl:simplify ensures] [%#site_normalize'0] is_simplified result}
       (! return' {result}) ]
-
 end
 module M_ite_normalize__qyi17570407315987535457__simplify_helper [#"ite_normalize.rs" 185 4 185 66] (* Expr *)
   let%span site_normalize = "ite_normalize.rs" 195 46 195 50
@@ -436,69 +380,51 @@ module M_ite_normalize__qyi17570407315987535457__simplify_helper [#"ite_normaliz
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_Expr  =
-    | C_IfThenElse t_Expr t_Expr t_Expr
-    | C_Var UInt64.t
-    | C_True
-    | C_False
+  type t_Expr = C_IfThenElse t_Expr t_Expr t_Expr | C_Var UInt64.t | C_True | C_False
   
-  let rec v_Var (input:t_Expr) (ret  (v:UInt64.t))= any
-    [ good (v:UInt64.t)-> {C_Var v = input} (! ret {v})
+  let rec v_Var (input: t_Expr) (ret (v: UInt64.t)) = any
+    [ good (v: UInt64.t) -> {C_Var v = input} (! ret {v})
     | bad -> {forall v: UInt64.t [C_Var v: t_Expr]. C_Var v <> input} (! {false} any) ]
   
-  
-  type t_Option  =
-    | C_None
-    | C_Some bool
+  type t_Option = C_None | C_Some bool
   
   type t_BTreeMap
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 bool
+  type t_Option'0 = C_None'0 | C_Some'0 bool
   
   function view [#"ite_normalize.rs" 50 4 50 33] (self: t_BTreeMap) : Map.map int t_Option'0
   
-  function view'0 (self: t_BTreeMap) : Map.map int t_Option'0 =
-    [%#smodel] view self
+  function view'0 (self: t_BTreeMap) : Map.map int t_Option'0 = [%#smodel] view self
   
-  function deep_model (self: UInt64.t) : int =
-    [%#snum] UInt64.t'int self
+  function deep_model (self: UInt64.t) : int = [%#snum] UInt64.t'int self
   
-  function deep_model'0 (self: UInt64.t) : int =
-    [%#smodel'0] deep_model self
+  function deep_model'0 (self: UInt64.t) : int = [%#smodel'0] deep_model self
   
-  let rec get (self:t_BTreeMap) (key:UInt64.t) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#site_normalize'4] result = C_None
-       -> Map.get (view'0 self) (deep_model'0 key) = C_None'0}
-      {[%#site_normalize'5] forall v: bool. result = C_Some v  -> Map.get (view'0 self) (deep_model'0 key) = C_Some'0 v}
+  let rec get (self: t_BTreeMap) (key: UInt64.t) (return' (x: t_Option)) = any
+    [ return''0 (result: t_Option) -> {[%#site_normalize'4] result = C_None
+      -> Map.get (view'0 self) (deep_model'0 key) = C_None'0}
+      {[%#site_normalize'5] forall v: bool. result = C_Some v -> Map.get (view'0 self) (deep_model'0 key) = C_Some'0 v}
       (! return' {result}) ]
   
-  
-  let rec v_Some (input:t_Option) (ret  (field_0:bool))= any
-    [ good (field_0:bool)-> {C_Some field_0 = input} (! ret {field_0})
+  let rec v_Some (input: t_Option) (ret (field_0: bool)) = any
+    [ good (field_0: bool) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: bool [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  
-  let rec v_IfThenElse (input:t_Expr) (ret  (c:t_Expr) (t:t_Expr) (e:t_Expr))= any
-    [ good (c:t_Expr) (t:t_Expr) (e:t_Expr)-> {C_IfThenElse c t e = input} (! ret {c} {t} {e})
+  let rec v_IfThenElse (input: t_Expr) (ret (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
+    [ good (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {C_IfThenElse c t e = input} (! ret {c} {t} {e})
     | bad -> {forall c: t_Expr, t: t_Expr, e: t_Expr [C_IfThenElse c t e: t_Expr]. C_IfThenElse c t e <> input}
       (! {false}
       any) ]
   
+  let rec clone' (self: t_BTreeMap) (return' (x: t_BTreeMap)) = any
+    [ return''0 (result: t_BTreeMap) -> {[%#site_normalize'6] self = result} (! return' {result}) ]
   
-  let rec clone' (self:t_BTreeMap) (return'  (x:t_BTreeMap))= any
-    [ return''0 (result:t_BTreeMap)-> {[%#site_normalize'6] self = result} (! return' {result}) ]
+  function view'1 (self: MutBorrow.t t_BTreeMap) : Map.map int t_Option'0 = [%#smodel'1] view self.current
   
-  
-  function view'1 (self: MutBorrow.t t_BTreeMap) : Map.map int t_Option'0 =
-    [%#smodel'1] view self.current
-  
-  let rec insert (self:MutBorrow.t t_BTreeMap) (key:UInt64.t) (value:bool) (return'  (x:t_Option'0))= any
-    [ return''0 (result:t_Option'0)-> {[%#site_normalize'7] forall i: int. Map.get (view self.final) i
-      = (if i = deep_model key then C_Some'0 value else Map.get (view'1 self) i)}
+  let rec insert (self: MutBorrow.t t_BTreeMap) (key: UInt64.t) (value: bool) (return' (x: t_Option'0)) = any
+    [ return''0 (result: t_Option'0) -> {[%#site_normalize'7] forall i: int. Map.get (view self.final) i
+        = (if i = deep_model key then C_Some'0 value else Map.get (view'1 self) i)}
       (! return' {result}) ]
-  
   
   predicate is_normalized [#"ite_normalize.rs" 122 4 122 38] (self: t_Expr) =
     [%#site_normalize'8] match self with
@@ -534,77 +460,67 @@ module M_ite_normalize__qyi17570407315987535457__simplify_helper [#"ite_normaliz
   
   meta "select_lsinst" "all"
   
-  let rec simplify_helper[#"ite_normalize.rs" 185 4 185 66] (self:t_Expr) (state:t_BTreeMap) (return'  (x:t_Expr))= {[@expl:simplify_helper requires] [%#site_normalize'1] is_normalized self}
+  let rec simplify_helper [#"ite_normalize.rs" 185 4 185 66] (self: t_Expr) (state: t_BTreeMap) (return' (x: t_Expr)) =
+    {[@expl:simplify_helper requires] [%#site_normalize'1] is_normalized self}
     (! bb0
     [ bb0 = any
-      [ br0 (x0:t_Expr) (x1:t_Expr) (x2:t_Expr)-> {self'0 = C_IfThenElse x0 x1 x2} (! bb5)
-      | br1 (x0:UInt64.t)-> {self'0 = C_Var x0} (! bb4)
+      [ br0 (x0: t_Expr) (x1: t_Expr) (x2: t_Expr) -> {self'0 = C_IfThenElse x0 x1 x2} (! bb5)
+      | br1 (x0: UInt64.t) -> {self'0 = C_Var x0} (! bb4)
       | br2 -> {self'0 = C_True} (! bb1)
       | br3 -> {self'0 = C_False} (! bb1) ]
-    
-    | bb1 = s0 [ s0 =  [ &c'1 <- self'0 ] s1 | s1 =  [ &_0 <- c'1 ] s2 | s2 = bb51 ] 
+    | bb1 = s0 [ s0 = [ &c'1 <- self'0 ] s1 | s1 = [ &_0 <- c'1 ] s2 | s2 = bb51 ]
     | bb4 = s0
-      [ s0 = v_Var {self'0} (fun (rv:UInt64.t) ->  [ &v'0 <- rv ] s1)
-      | s1 =  [ &_51 <- v'0 ] s2
-      | s2 = get {state'0} {_51} (fun (_ret:t_Option) ->  [ &_48 <- _ret ] s3)
+      [ s0 = v_Var {self'0} (fun (rv: UInt64.t) -> [ &v'0 <- rv ] s1)
+      | s1 = [ &_51 <- v'0 ] s2
+      | s2 = get {state'0} {_51} (fun (_ret: t_Option) -> [ &_48 <- _ret ] s3)
       | s3 = bb40 ]
-    
-    | bb40 = any [ br0 -> {_48 = C_None} (! bb46) | br1 (x0:bool)-> {_48 = C_Some x0} (! bb42) ] 
-    | bb46 = s0 [ s0 =  [ &_0 <- C_Var v'0 ] s1 | s1 = bb51 ] 
+    | bb40 = any [ br0 -> {_48 = C_None} (! bb46) | br1 (x0: bool) -> {_48 = C_Some x0} (! bb42) ]
+    | bb46 = s0 [ s0 = [ &_0 <- C_Var v'0 ] s1 | s1 = bb51 ]
     | bb42 = s0
-      [ s0 = v_Some {_48} (fun (r0:bool) ->  [ &b'0 <- r0 ] s1)
-      | s1 = any [ br0 -> {b'0 = false} (! bb44) | br1 -> {b'0} (! bb43) ]  ]
-    
-    | bb43 = s0 [ s0 =  [ &_0 <- C_True ] s1 | s1 = bb51 ] 
-    | bb44 = s0 [ s0 =  [ &_0 <- C_False ] s1 | s1 = bb51 ] 
+      [ s0 = v_Some {_48} (fun (r0: bool) -> [ &b'0 <- r0 ] s1)
+      | s1 = any [ br0 -> {b'0 = false} (! bb44) | br1 -> {b'0} (! bb43) ] ]
+    | bb43 = s0 [ s0 = [ &_0 <- C_True ] s1 | s1 = bb51 ]
+    | bb44 = s0 [ s0 = [ &_0 <- C_False ] s1 | s1 = bb51 ]
     | bb5 = s0
-      [ s0 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &c <- rc ] s1)
-      | s1 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &t <- rt ] s2)
-      | s2 = v_IfThenElse {self'0} (fun (rc:t_Expr) (rt:t_Expr) (re:t_Expr) ->  [ &e <- re ] s3)
+      [ s0 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &c <- rc ] s1)
+      | s1 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &t <- rt ] s2)
+      | s2 = v_IfThenElse {self'0} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &e <- re ] s3)
       | s3 = any
-        [ br0 (x0:t_Expr) (x1:t_Expr) (x2:t_Expr)-> {c = C_IfThenElse x0 x1 x2} (! bb6)
-        | br1 (x0:UInt64.t)-> {c = C_Var x0} (! bb8)
+        [ br0 (x0: t_Expr) (x1: t_Expr) (x2: t_Expr) -> {c = C_IfThenElse x0 x1 x2} (! bb6)
+        | br1 (x0: UInt64.t) -> {c = C_Var x0} (! bb8)
         | br2 -> {c = C_True} (! bb6)
-        | br3 -> {c = C_False} (! bb6) ]
-       ]
-    
+        | br3 -> {c = C_False} (! bb6) ] ]
     | bb6 = s0
-      [ s0 =  [ &c'0 <- c ] s1
-      | s1 = simplify_helper {c'0} {state'0} (fun (_ret:t_Expr) ->  [ &_0 <- _ret ] s2)
+      [ s0 = [ &c'0 <- c ] s1
+      | s1 = simplify_helper {c'0} {state'0} (fun (_ret: t_Expr) -> [ &_0 <- _ret ] s2)
       | s2 = bb51 ]
-    
     | bb8 = s0
-      [ s0 = v_Var {c} (fun (rv:UInt64.t) ->  [ &v <- rv ] s1)
-      | s1 =  [ &_15 <- v ] s2
-      | s2 = get {state'0} {_15} (fun (_ret:t_Option) ->  [ &_12 <- _ret ] s3)
+      [ s0 = v_Var {c} (fun (rv: UInt64.t) -> [ &v <- rv ] s1)
+      | s1 = [ &_15 <- v ] s2
+      | s2 = get {state'0} {_15} (fun (_ret: t_Option) -> [ &_12 <- _ret ] s3)
       | s3 = bb9 ]
-    
-    | bb9 = any [ br0 -> {_12 = C_None} (! bb17) | br1 (x0:bool)-> {_12 = C_Some x0} (! bb11) ] 
-    | bb17 = s0 [ s0 = clone' {state'0} (fun (_ret:t_BTreeMap) ->  [ &state_t <- _ret ] s1) | s1 = bb18 ] 
+    | bb9 = any [ br0 -> {_12 = C_None} (! bb17) | br1 (x0: bool) -> {_12 = C_Some x0} (! bb11) ]
+    | bb17 = s0 [ s0 = clone' {state'0} (fun (_ret: t_BTreeMap) -> [ &state_t <- _ret ] s1) | s1 = bb18 ]
     | bb18 = s0
       [ s0 = MutBorrow.borrow_mut <t_BTreeMap> {state_t}
-          (fun (_ret:MutBorrow.t t_BTreeMap) ->  [ &_26 <- _ret ]  [ &state_t <- _ret.final ] s1)
-      | s1 = insert {_26} {v} {[%#site_normalize] true} (fun (_ret:t_Option'0) ->  [ &_25 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t t_BTreeMap) -> [ &_26 <- _ret ] [ &state_t <- _ret.final ] s1)
+      | s1 = insert {_26} {v} {[%#site_normalize] true} (fun (_ret: t_Option'0) -> [ &_25 <- _ret ] s2)
       | s2 = bb19 ]
-    
-    | bb19 = s0 [ s0 = simplify_helper {t} {state_t} (fun (_ret:t_Expr) ->  [ &tp <- _ret ] s1) | s1 = bb20 ] 
-    | bb20 = s0 [ s0 = clone' {state'0} (fun (_ret:t_BTreeMap) ->  [ &state_e <- _ret ] s1) | s1 = bb21 ] 
+    | bb19 = s0 [ s0 = simplify_helper {t} {state_t} (fun (_ret: t_Expr) -> [ &tp <- _ret ] s1) | s1 = bb20 ]
+    | bb20 = s0 [ s0 = clone' {state'0} (fun (_ret: t_BTreeMap) -> [ &state_e <- _ret ] s1) | s1 = bb21 ]
     | bb21 = s0
       [ s0 = MutBorrow.borrow_mut <t_BTreeMap> {state_e}
-          (fun (_ret:MutBorrow.t t_BTreeMap) ->  [ &_34 <- _ret ]  [ &state_e <- _ret.final ] s1)
-      | s1 = insert {_34} {v} {[%#site_normalize'0] false} (fun (_ret:t_Option'0) ->  [ &_33 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t t_BTreeMap) -> [ &_34 <- _ret ] [ &state_e <- _ret.final ] s1)
+      | s1 = insert {_34} {v} {[%#site_normalize'0] false} (fun (_ret: t_Option'0) -> [ &_33 <- _ret ] s2)
       | s2 = bb22 ]
-    
-    | bb22 = s0 [ s0 = simplify_helper {e} {state_e} (fun (_ret:t_Expr) ->  [ &ep <- _ret ] s1) | s1 = bb25 ] 
-    | bb25 = s0 [ s0 =  [ &_0 <- C_IfThenElse c tp ep ] s1 | s1 = bb51 ] 
+    | bb22 = s0 [ s0 = simplify_helper {e} {state_e} (fun (_ret: t_Expr) -> [ &ep <- _ret ] s1) | s1 = bb25 ]
+    | bb25 = s0 [ s0 = [ &_0 <- C_IfThenElse c tp ep ] s1 | s1 = bb51 ]
     | bb11 = s0
-      [ s0 = v_Some {_12} (fun (r0:bool) ->  [ &b <- r0 ] s1)
-      | s1 = any [ br0 -> {b = false} (! bb14) | br1 -> {b} (! bb12) ]  ]
-    
-    | bb12 = s0 [ s0 = simplify_helper {t} {state'0} (fun (_ret:t_Expr) ->  [ &_0 <- _ret ] s1) | s1 = bb51 ] 
-    | bb14 = s0 [ s0 = simplify_helper {e} {state'0} (fun (_ret:t_Expr) ->  [ &_0 <- _ret ] s1) | s1 = bb51 ] 
+      [ s0 = v_Some {_12} (fun (r0: bool) -> [ &b <- r0 ] s1)
+      | s1 = any [ br0 -> {b = false} (! bb14) | br1 -> {b} (! bb12) ] ]
+    | bb12 = s0 [ s0 = simplify_helper {t} {state'0} (fun (_ret: t_Expr) -> [ &_0 <- _ret ] s1) | s1 = bb51 ]
+    | bb14 = s0 [ s0 = simplify_helper {e} {state'0} (fun (_ret: t_Expr) -> [ &_0 <- _ret ] s1) | s1 = bb51 ]
     | bb51 = return''0 {_0} ]
-    
     [ & _0: t_Expr = Any.any_l ()
     | & self'0: t_Expr = self
     | & state'0: t_BTreeMap = state
@@ -628,11 +544,10 @@ module M_ite_normalize__qyi17570407315987535457__simplify_helper [#"ite_normaliz
     | & _48: t_Option = Any.any_l ()
     | & _51: UInt64.t = Any.any_l ()
     | & b'0: bool = Any.any_l ()
-    | & c'1: t_Expr = Any.any_l () ]
-    )
-    [ return''0 (result:t_Expr)-> {[@expl:simplify_helper ensures #0] [%#site_normalize'2] forall i: UInt64.t. (exists v: bool. Map.get (view state) (UInt64.t'int i)
-      = C_Some'0 v)  -> does_not_contain result i}
+    | & c'1: t_Expr = Any.any_l () ])
+    [ return''0 (result: t_Expr) ->
+    {[@expl:simplify_helper ensures #0] [%#site_normalize'2] forall i: UInt64.t. (exists v: bool. Map.get (view state) (UInt64.t'int i)
+            = C_Some'0 v) -> does_not_contain result i}
       {[@expl:simplify_helper ensures #1] [%#site_normalize'3] is_simplified result}
       (! return' {result}) ]
-
 end

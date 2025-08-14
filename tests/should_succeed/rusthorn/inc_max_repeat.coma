@@ -20,19 +20,17 @@ module M_inc_max_repeat__take_max [#"inc_max_repeat.rs" 6 0 6 64]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve (self: MutBorrow.t UInt32.t) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t UInt32.t) =
-    resolve _0
+  predicate resolve'0 (_0: MutBorrow.t UInt32.t) = resolve _0
   
-  type t_Ordering  =
-    | C_Less
-    | C_Equal
-    | C_Greater
+  type t_Ordering = C_Less | C_Equal | C_Greater
   
-  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering =
-    [%#sord'12] if UInt32.lt self o then C_Less else if self = o then C_Equal else C_Greater
+  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering = [%#sord'12] if UInt32.lt self o then
+      C_Less
+    else
+      if self = o then C_Equal else C_Greater
+  
   
   function eq_cmp (x: UInt32.t) (y: UInt32.t) : ()
   
@@ -41,17 +39,17 @@ module M_inc_max_repeat__take_max [#"inc_max_repeat.rs" 6 0 6 64]
   function antisym2 (x: UInt32.t) (y: UInt32.t) : ()
   
   axiom antisym2_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'9] cmp_log x y = C_Greater)
-   -> ([%#sord'10] cmp_log y x = C_Less)
+      -> ([%#sord'10] cmp_log y x = C_Less)
   
   function antisym1 (x: UInt32.t) (y: UInt32.t) : ()
   
   axiom antisym1_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'7] cmp_log x y = C_Less)
-   -> ([%#sord'8] cmp_log y x = C_Greater)
+      -> ([%#sord'8] cmp_log y x = C_Greater)
   
   function trans (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
   
   axiom trans_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-   -> ([%#sord'5] cmp_log y z = o)  -> ([%#sord'6] cmp_log x z = o)
+      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
   
   function refl (x: UInt32.t) : ()
   
@@ -77,53 +75,48 @@ module M_inc_max_repeat__take_max [#"inc_max_repeat.rs" 6 0 6 64]
   
   meta "select_lsinst" "all"
   
-  let rec take_max[#"inc_max_repeat.rs" 6 0 6 64] (ma:MutBorrow.t UInt32.t) (mb:MutBorrow.t UInt32.t) (return'  (x:MutBorrow.t UInt32.t))= (! bb0
+  let rec take_max [#"inc_max_repeat.rs" 6 0 6 64] (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t)
+    (return' (x: MutBorrow.t UInt32.t)) = (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_6 <- UInt32.ge ma'0.current mb'0.current ] s1
-      | s1 = any [ br0 -> {_6 = false} (! bb2) | br1 -> {_6} (! bb1) ]  ]
-    
+      [ s0 = [ &_6 <- UInt32.ge ma'0.current mb'0.current ] s1
+      | s1 = any [ br0 -> {_6 = false} (! bb2) | br1 -> {_6} (! bb1) ] ]
     | bb1 = s0
       [ s0 = -{resolve'0 mb'0}- s1
       | s1 = MutBorrow.borrow_final <UInt32.t> {ma'0.current} {MutBorrow.get_id ma'0}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_9 <- _ret ]  [ &ma'0 <- { ma'0 with current = _ret.final } ] s2)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_9 <- _ret ] [ &ma'0 <- { ma'0 with current = _ret.final } ] s2)
       | s2 = MutBorrow.borrow_final <UInt32.t> {_9.current} {MutBorrow.get_id _9}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_5 <- _ret ]  [ &_9 <- { _9 with current = _ret.final } ] s3)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &_9 <- { _9 with current = _ret.final } ] s3)
       | s3 = -{resolve'0 _9}- s4
       | s4 = bb3 ]
-    
     | bb2 = s0
       [ s0 = -{resolve'0 ma'0}- s1
       | s1 = MutBorrow.borrow_final <UInt32.t> {mb'0.current} {MutBorrow.get_id mb'0}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_5 <- _ret ]  [ &mb'0 <- { mb'0 with current = _ret.final } ] s2)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &mb'0 <- { mb'0 with current = _ret.final } ] s2)
       | s2 = bb3 ]
-    
     | bb3 = s0
       [ s0 = MutBorrow.borrow_final <UInt32.t> {_5.current} {MutBorrow.get_id _5}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_3 <- _ret ]  [ &_5 <- { _5 with current = _ret.final } ] s1)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_3 <- _ret ] [ &_5 <- { _5 with current = _ret.final } ] s1)
       | s1 = MutBorrow.borrow_final <UInt32.t> {_3.current} {MutBorrow.get_id _3}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_0 <- _ret ]  [ &_3 <- { _3 with current = _ret.final } ] s2)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_0 <- _ret ] [ &_3 <- { _3 with current = _ret.final } ] s2)
       | s2 = -{resolve'0 _5}- s3
       | s3 = -{resolve'0 _3}- s4
       | s4 = -{resolve'0 mb'0}- s5
       | s5 = -{resolve'0 ma'0}- s6
-      | s6 = return''0 {_0} ]
-     ]
-    
+      | s6 = return''0 {_0} ] ]
     [ & _0: MutBorrow.t UInt32.t = Any.any_l ()
     | & ma'0: MutBorrow.t UInt32.t = ma
     | & mb'0: MutBorrow.t UInt32.t = mb
     | & _3: MutBorrow.t UInt32.t = Any.any_l ()
     | & _5: MutBorrow.t UInt32.t = Any.any_l ()
     | & _6: bool = Any.any_l ()
-    | & _9: MutBorrow.t UInt32.t = Any.any_l () ]
-    )
-    [ return''0 (result:MutBorrow.t UInt32.t)-> {[@expl:take_max ensures] [%#sinc_max_repeat] if UInt32.ge ma.current mb.current then
+    | & _9: MutBorrow.t UInt32.t = Any.any_l () ])
+    [ return''0 (result: MutBorrow.t UInt32.t) ->
+    {[@expl:take_max ensures] [%#sinc_max_repeat] if UInt32.ge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
       }
       (! return' {result}) ]
-
 end
 module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
   let%span sinc_max_repeat = "inc_max_repeat.rs" 14 13 14 14
@@ -168,28 +161,26 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_Range  =
-    { t_Range__start: UInt32.t; t_Range__end: UInt32.t }
+  type t_Range = { t_Range__start: UInt32.t; t_Range__end: UInt32.t }
   
-  let rec into_iter (self_:t_Range) (return'  (x:t_Range))= any
-    [ return''0 (result:t_Range)-> {[%#siter] result = self_} (! return' {result}) ]
+  let rec into_iter (self_: t_Range) (return' (x: t_Range)) = any
+    [ return''0 (result: t_Range) -> {[%#siter] result = self_} (! return' {result}) ]
   
-  
-  function deep_model (self: UInt32.t) : int =
-    [%#snum] UInt32.t'int self
+  function deep_model (self: UInt32.t) : int = [%#snum] UInt32.t'int self
   
   predicate produces (self: t_Range) (visited: Seq.seq UInt32.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end
     /\ deep_model self.t_Range__start <= deep_model o.t_Range__start
-    /\ (Seq.length visited > 0  -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
+    /\ (Seq.length visited > 0 -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
     /\ Seq.length visited = deep_model o.t_Range__start - deep_model self.t_Range__start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-     -> deep_model (Seq.get visited i) = deep_model self.t_Range__start + i)
+      -> deep_model (Seq.get visited i) = deep_model self.t_Range__start + i)
   
   function produces_trans (a: t_Range) (ab: Seq.seq UInt32.t) (b: t_Range) (bc: Seq.seq UInt32.t) (c: t_Range) : ()
   
-  axiom produces_trans_spec: forall a: t_Range, ab: Seq.seq UInt32.t, b: t_Range, bc: Seq.seq UInt32.t, c: t_Range. ([%#srange'1] produces a ab b)
-   -> ([%#srange'2] produces b bc c)  -> ([%#srange'3] produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec:
+    forall a: t_Range, ab: Seq.seq UInt32.t, b: t_Range, bc: Seq.seq UInt32.t, c: t_Range. ([%#srange'1] produces a ab b)
+      -> ([%#srange'2] produces b bc c) -> ([%#srange'3] produces a (Seq.(++) ab bc) c)
   
   function produces_refl (self: t_Range) : ()
   
@@ -203,39 +194,33 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq UInt32.t [inv'0 x]. inv'0 x = true
   
-  type t_Option  =
-    | C_None
-    | C_Some UInt32.t
+  type t_Option = C_None | C_Some UInt32.t
   
-  predicate resolve (self: MutBorrow.t t_Range) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
   
   predicate completed (self: MutBorrow.t t_Range) =
     [%#srange'4] resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
   
-  let rec next (self_:MutBorrow.t t_Range) (return'  (x:t_Option))= any
-    [ return''0 (result:t_Option)-> {[%#siter'0] match result with
+  let rec next (self_: MutBorrow.t t_Range) (return' (x: t_Option)) = any
+    [ return''0 (result: t_Option) -> {[%#siter'0] match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return' {result}) ]
   
+  predicate resolve'0 (_0: MutBorrow.t t_Range) = resolve _0
   
-  predicate resolve'0 (_0: MutBorrow.t t_Range) =
-    resolve _0
-  
-  let rec v_Some (input:t_Option) (ret  (field_0:UInt32.t))= any
-    [ good (field_0:UInt32.t)-> {C_Some field_0 = input} (! ret {field_0})
+  let rec v_Some (input: t_Option) (ret (field_0: UInt32.t)) = any
+    [ good (field_0: UInt32.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
+  type t_Ordering = C_Less | C_Equal | C_Greater
   
-  type t_Ordering  =
-    | C_Less
-    | C_Equal
-    | C_Greater
+  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering = [%#sord'12] if UInt32.lt self o then
+      C_Less
+    else
+      if self = o then C_Equal else C_Greater
   
-  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering =
-    [%#sord'12] if UInt32.lt self o then C_Less else if self = o then C_Equal else C_Greater
   
   function eq_cmp (x: UInt32.t) (y: UInt32.t) : ()
   
@@ -244,17 +229,17 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
   function antisym2 (x: UInt32.t) (y: UInt32.t) : ()
   
   axiom antisym2_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'9] cmp_log x y = C_Greater)
-   -> ([%#sord'10] cmp_log y x = C_Less)
+      -> ([%#sord'10] cmp_log y x = C_Less)
   
   function antisym1 (x: UInt32.t) (y: UInt32.t) : ()
   
   axiom antisym1_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'7] cmp_log x y = C_Less)
-   -> ([%#sord'8] cmp_log y x = C_Greater)
+      -> ([%#sord'8] cmp_log y x = C_Greater)
   
   function trans (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
   
   axiom trans_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-   -> ([%#sord'5] cmp_log y z = o)  -> ([%#sord'6] cmp_log x z = o)
+      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
   
   function refl (x: UInt32.t) : ()
   
@@ -276,35 +261,32 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
   
   axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord] UInt32.le x y = (cmp_log x y <> C_Greater)
   
-  let rec take_max (ma:MutBorrow.t UInt32.t) (mb:MutBorrow.t UInt32.t) (return'  (x:MutBorrow.t UInt32.t))= any
-    [ return''0 (result:MutBorrow.t UInt32.t)-> {[%#sinc_max_repeat'9] if UInt32.ge ma.current mb.current then
+  let rec take_max (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (return' (x: MutBorrow.t UInt32.t)) = any
+    [ return''0 (result: MutBorrow.t UInt32.t) -> {[%#sinc_max_repeat'9] if UInt32.ge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
       }
       (! return' {result}) ]
   
+  predicate resolve'1 (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
   
-  predicate resolve'1 (self: MutBorrow.t UInt32.t) =
-    [%#sresolve] self.final = self.current
-  
-  predicate resolve'2 (_0: MutBorrow.t UInt32.t) =
-    resolve'1 _0
+  predicate resolve'2 (_0: MutBorrow.t UInt32.t) = resolve'1 _0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec inc_max_repeat[#"inc_max_repeat.rs" 11 0 11 53] (a:UInt32.t) (b:UInt32.t) (n:UInt32.t) (return'  (x:()))= {[@expl:inc_max_repeat requires] [%#sinc_max_repeat'8] UInt32.le a (1000000: UInt32.t)
+  let rec inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53] (a: UInt32.t) (b: UInt32.t) (n: UInt32.t) (return' (x: ())) =
+    {[@expl:inc_max_repeat requires] [%#sinc_max_repeat'8] UInt32.le a (1000000: UInt32.t)
     /\ UInt32.le b (1000000: UInt32.t) /\ UInt32.le n (1000000: UInt32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_7 <- { t_Range__start = ([%#sinc_max_repeat] (0: UInt32.t)); t_Range__end = n'0 } ] s1
-      | s1 = into_iter {_7} (fun (_ret:t_Range) ->  [ &iter <- _ret ] s2)
+      [ s0 = [ &_7 <- { t_Range__start = ([%#sinc_max_repeat] (0: UInt32.t)); t_Range__end = n'0 } ] s1
+      | s1 = into_iter {_7} (fun (_ret: t_Range) -> [ &iter <- _ret ] s2)
       | s2 = bb1 ]
-    
-    | bb1 = s0 [ s0 =  [ &iter_old <- [%#sinc_max_repeat'0] iter ] s1 | s1 = bb2 ] 
-    | bb2 = s0 [ s0 =  [ &produced <- [%#sinc_max_repeat'1] Seq.empty: Seq.seq UInt32.t ] s1 | s1 = bb4 ] 
+    | bb1 = s0 [ s0 = [ &iter_old <- [%#sinc_max_repeat'0] iter ] s1 | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &produced <- [%#sinc_max_repeat'1] Seq.empty: Seq.seq UInt32.t ] s1 | s1 = bb4 ]
     | bb4 = bb4'0
       [ bb4'0 = {[@expl:for invariant] [%#sinc_max_repeat'4] inv'0 produced}
         {[@expl:for invariant] [%#sinc_max_repeat'4] inv iter}
@@ -313,60 +295,51 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
         /\ UInt32.t'int b'0 <= 1000000 + Seq.length produced}
         {[@expl:loop invariant #1] [%#sinc_max_repeat'2] UInt32.t'int a'0 >= UInt32.t'int b'0 + Seq.length produced
         \/ UInt32.t'int b'0 >= UInt32.t'int a'0 + Seq.length produced}
-        (! s0) [ s0 = bb5 ] 
+        (! s0)
+        [ s0 = bb5 ]
         [ bb5 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range> {iter}
-              (fun (_ret:MutBorrow.t t_Range) ->  [ &_22 <- _ret ]  [ &iter <- _ret.final ] s1)
+              (fun (_ret: MutBorrow.t t_Range) -> [ &_22 <- _ret ] [ &iter <- _ret.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Range> {_22.current} {MutBorrow.get_id _22}
-              (fun (_ret:MutBorrow.t t_Range) ->  [ &_21 <- _ret ]  [ &_22 <- { _22 with current = _ret.final } ] s2)
-          | s2 = next {_21} (fun (_ret:t_Option) ->  [ &_20 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Range) -> [ &_21 <- _ret ] [ &_22 <- { _22 with current = _ret.final } ] s2)
+          | s2 = next {_21} (fun (_ret: t_Option) -> [ &_20 <- _ret ] s3)
           | s3 = bb6 ]
-        
         | bb6 = s0
           [ s0 = -{resolve'0 _22}- s1
-          | s1 = any [ br0 -> {_20 = C_None} (! bb9) | br1 (x0:UInt32.t)-> {_20 = C_Some x0} (! bb10) ]  ]
-        
+          | s1 = any [ br0 -> {_20 = C_None} (! bb9) | br1 (x0: UInt32.t) -> {_20 = C_Some x0} (! bb10) ] ]
         | bb10 = s0
-          [ s0 = v_Some {_20} (fun (r0:UInt32.t) ->  [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 =  [ &_25 <- [%#sinc_max_repeat'5] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = v_Some {_20} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_25 <- [%#sinc_max_repeat'5] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb11 ]
-        
         | bb11 = s0
-          [ s0 =  [ &produced <- _25 ] s1
+          [ s0 = [ &produced <- _25 ] s1
           | s1 = MutBorrow.borrow_mut <UInt32.t> {a'0}
-              (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_29 <- _ret ]  [ &a'0 <- _ret.final ] s2)
+              (fun (_ret: MutBorrow.t UInt32.t) -> [ &_29 <- _ret ] [ &a'0 <- _ret.final ] s2)
           | s2 = MutBorrow.borrow_mut <UInt32.t> {b'0}
-              (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_31 <- _ret ]  [ &b'0 <- _ret.final ] s3)
+              (fun (_ret: MutBorrow.t UInt32.t) -> [ &_31 <- _ret ] [ &b'0 <- _ret.final ] s3)
           | s3 = MutBorrow.borrow_final <UInt32.t> {_29.current} {MutBorrow.get_id _29}
-              (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_28 <- _ret ]  [ &_29 <- { _29 with current = _ret.final } ] s4)
+              (fun (_ret: MutBorrow.t UInt32.t) -> [ &_28 <- _ret ] [ &_29 <- { _29 with current = _ret.final } ] s4)
           | s4 = MutBorrow.borrow_final <UInt32.t> {_31.current} {MutBorrow.get_id _31}
-              (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_30 <- _ret ]  [ &_31 <- { _31 with current = _ret.final } ] s5)
-          | s5 = take_max {_28} {_30} (fun (_ret:MutBorrow.t UInt32.t) ->  [ &mc <- _ret ] s6)
+              (fun (_ret: MutBorrow.t UInt32.t) -> [ &_30 <- _ret ] [ &_31 <- { _31 with current = _ret.final } ] s5)
+          | s5 = take_max {_28} {_30} (fun (_ret: MutBorrow.t UInt32.t) -> [ &mc <- _ret ] s6)
           | s6 = bb12 ]
-        
         | bb12 = s0
           [ s0 = -{resolve'2 _31}- s1
           | s1 = -{resolve'2 _29}- s2
           | s2 = UInt32.add {mc.current} {[%#sinc_max_repeat'6] (1: UInt32.t)}
-              (fun (_ret:UInt32.t) ->  [ &mc <- { mc with current = _ret } ] s3)
+              (fun (_ret: UInt32.t) -> [ &mc <- { mc with current = _ret } ] s3)
           | s3 = -{resolve'2 mc}- s4
-          | s4 = bb4'0 ]
-         ]
-       ]
-    
+          | s4 = bb4'0 ] ] ]
     | bb9 = s0
-      [ s0 = UInt32.add {b'0} {n'0} (fun (_ret:UInt32.t) ->  [ &_36 <- _ret ] s1)
-      | s1 =  [ &_34 <- UInt32.ge a'0 _36 ] s2
-      | s2 = any [ br0 -> {_34 = false} (! bb14) | br1 -> {_34} (! bb17) ]  ]
-    
+      [ s0 = UInt32.add {b'0} {n'0} (fun (_ret: UInt32.t) -> [ &_36 <- _ret ] s1)
+      | s1 = [ &_34 <- UInt32.ge a'0 _36 ] s2
+      | s2 = any [ br0 -> {_34 = false} (! bb14) | br1 -> {_34} (! bb17) ] ]
     | bb14 = s0
-      [ s0 = UInt32.add {a'0} {n'0} (fun (_ret:UInt32.t) ->  [ &_41 <- _ret ] s1)
-      | s1 =  [ &_39 <- UInt32.ge b'0 _41 ] s2
-      | s2 = any [ br0 -> {_39 = false} (! bb16) | br1 -> {_39} (! bb17) ]  ]
-    
+      [ s0 = UInt32.add {a'0} {n'0} (fun (_ret: UInt32.t) -> [ &_41 <- _ret ] s1)
+      | s1 = [ &_39 <- UInt32.ge b'0 _41 ] s2
+      | s2 = any [ br0 -> {_39 = false} (! bb16) | br1 -> {_39} (! bb17) ] ]
     | bb17 = return''0 {_0}
     | bb16 = {[%#sinc_max_repeat'7] false} any ]
-    
     [ & _0: () = Any.any_l ()
     | & a'0: UInt32.t = a
     | & b'0: UInt32.t = b
@@ -388,6 +361,5 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
     | & _34: bool = Any.any_l ()
     | & _36: UInt32.t = Any.any_l ()
     | & _39: bool = Any.any_l ()
-    | & _41: UInt32.t = Any.any_l () ]
-    ) [ return''0 (result:())-> (! return' {result}) ] 
+    | & _41: UInt32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end

@@ -8,44 +8,35 @@ module M_unnest__unnest [#"unnest.rs" 8 0 8 64]
   use creusot.int.UInt32
   use creusot.prelude.Any
   
-  predicate resolve (self: MutBorrow.t UInt32.t) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t UInt32.t) =
-    resolve _0
+  predicate resolve'0 (_0: MutBorrow.t UInt32.t) = resolve _0
   
-  predicate resolve'1 (self: MutBorrow.t (MutBorrow.t UInt32.t)) =
-    [%#sresolve] self.final = self.current
+  predicate resolve'1 (self: MutBorrow.t (MutBorrow.t UInt32.t)) = [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0: MutBorrow.t (MutBorrow.t UInt32.t)) =
-    resolve'1 _0
+  predicate resolve'2 (_0: MutBorrow.t (MutBorrow.t UInt32.t)) = resolve'1 _0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec unnest[#"unnest.rs" 8 0 8 64] (x:MutBorrow.t (MutBorrow.t UInt32.t)) (return'  (x'0:MutBorrow.t UInt32.t))= (! bb0
+  let rec unnest [#"unnest.rs" 8 0 8 64] (x: MutBorrow.t (MutBorrow.t UInt32.t)) (return' (x'0: MutBorrow.t UInt32.t)) =
+    (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <UInt32.t> {(x'0.current).current}
-          (fun (_ret:MutBorrow.t UInt32.t) ->
-             [ &_2 <- _ret ] 
-             [ &x'0 <- { x'0 with current = { x'0.current with current = _ret.final } } ] 
-            s1)
+          (fun (_ret: MutBorrow.t UInt32.t) ->
+            [ &_2 <- _ret ] [ &x'0 <- { x'0 with current = { x'0.current with current = _ret.final } } ] s1)
       | s1 = MutBorrow.borrow_final <UInt32.t> {_2.current} {MutBorrow.get_id _2}
-          (fun (_ret:MutBorrow.t UInt32.t) ->  [ &_0 <- _ret ]  [ &_2 <- { _2 with current = _ret.final } ] s2)
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_0 <- _ret ] [ &_2 <- { _2 with current = _ret.final } ] s2)
       | s2 = -{resolve'0 _2}- s3
       | s3 = -{resolve'2 x'0}- s4
-      | s4 = return''0 {_0} ]
-     ]
-    
+      | s4 = return''0 {_0} ] ]
     [ & _0: MutBorrow.t UInt32.t = Any.any_l ()
     | & x'0: MutBorrow.t (MutBorrow.t UInt32.t) = x
-    | & _2: MutBorrow.t UInt32.t = Any.any_l () ]
-    )
-    [ return''0 (result:MutBorrow.t UInt32.t)-> {[@expl:unnest ensures #0] [%#sunnest] result.current
+    | & _2: MutBorrow.t UInt32.t = Any.any_l () ])
+    [ return''0 (result: MutBorrow.t UInt32.t) -> {[@expl:unnest ensures #0] [%#sunnest] result.current
       = (x.current).current}
       {[@expl:unnest ensures #1] [%#sunnest'0] result.final = (x.final).current}
       {[@expl:unnest ensures #2] [%#sunnest'1] (x.current).final = (x.final).final}
       (! return' {result}) ]
-
 end

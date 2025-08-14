@@ -13,8 +13,7 @@ module M_766__Trait__goo [#"766.rs" 10 4 10 21]
   
   predicate inv (_0: t_Self)
   
-  predicate invariant' (self: MutBorrow.t t_Self) =
-    [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant' (self: MutBorrow.t t_Self) = [%#sinvariant] inv self.current /\ inv self.final
   
   predicate inv'0 (_0: MutBorrow.t t_Self)
   
@@ -22,59 +21,57 @@ module M_766__Trait__goo [#"766.rs" 10 4 10 21]
   
   predicate precondition (self: ()) (args: MutBorrow.t t_Self)
   
-  axiom precondition_fndef: [%#s766'1] forall args: MutBorrow.t t_Self [precondition () args]. (let self = args in inv'0 self)
-   -> precondition () args
+  axiom precondition_fndef:
+    [%#s766'1] forall args: MutBorrow.t t_Self [precondition () args]. (let self = args in inv'0 self)
+      -> precondition () args
   
   type t_FMap
   
   function deep_model (self: t_Self) : t_FMap
   
-  function deep_model'0 (self: MutBorrow.t t_Self) : t_FMap =
-    [%#smodel] deep_model self.current
+  function deep_model'0 (self: MutBorrow.t t_Self) : t_FMap = [%#smodel] deep_model self.current
   
   predicate postcondition_once (self: ()) (args: MutBorrow.t t_Self) (result: ())
   
-  axiom postcondition_fndef: [%#s766'1] forall args: MutBorrow.t t_Self, res: () [postcondition_once () args res]. postcondition_once () args res
-   -> (let self = args in deep_model'0 self = deep_model'0 self)
+  axiom postcondition_fndef:
+    [%#s766'1] forall args: MutBorrow.t t_Self, res: () [postcondition_once () args res]. postcondition_once () args res
+      -> (let self = args in deep_model'0 self = deep_model'0 self)
   
-  let rec f (self:MutBorrow.t t_Self) (return'  (x:()))= {[@expl:f requires] precondition () self}
-    any [ return''0 (result:())-> {postcondition_once () self result} (! return' {result}) ] 
+  let rec f (self: MutBorrow.t t_Self) (return' (x: ())) = {[@expl:f requires] precondition () self}
+    any [ return''0 (result: ()) -> {postcondition_once () self result} (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_Self) =
-    [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t t_Self) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_Self) =
-    resolve _0
+  predicate resolve'0 (_0: MutBorrow.t t_Self) = resolve _0
   
   predicate precondition'0 (self: ()) (args: MutBorrow.t t_Self)
   
-  axiom precondition_fndef'0: [%#s766'0] forall args: MutBorrow.t t_Self [precondition'0 () args]. (let self = args in inv'0 self)
-   -> precondition'0 () args
+  axiom precondition_fndef'0:
+    [%#s766'0] forall args: MutBorrow.t t_Self [precondition'0 () args]. (let self = args in inv'0 self)
+      -> precondition'0 () args
   
   predicate postcondition_once'0 (self: ()) (args: MutBorrow.t t_Self) (result: ())
   
-  axiom postcondition_fndef'0: [%#s766'0] forall args: MutBorrow.t t_Self, res: () [postcondition_once'0 () args res]. postcondition_once'0 () args res
-   -> (let self = args in true)
+  axiom postcondition_fndef'0:
+    [%#s766'0] forall args: MutBorrow.t t_Self, res: () [postcondition_once'0 () args res]. postcondition_once'0 () args res
+      -> (let self = args in true)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec goo[#"766.rs" 10 4 10 21] (self:MutBorrow.t t_Self) (return'  (x:()))= {[@expl:goo 'self' type invariant] [%#s766] inv'0 self}
+  let rec goo [#"766.rs" 10 4 10 21] (self: MutBorrow.t t_Self) (return' (x: ())) =
+    {[@expl:goo 'self' type invariant] [%#s766] inv'0 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv self'0.current}
         MutBorrow.borrow_final <t_Self> {self'0.current} {MutBorrow.get_id self'0}
-          (fun (_ret:MutBorrow.t t_Self) ->
-             [ &_2 <- _ret ] 
-            -{inv _ret.final}-
-             [ &self'0 <- { self'0 with current = _ret.final } ] 
-            s1)
-      | s1 = f {_2} (fun (_ret:()) ->  [ &_0 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t t_Self) ->
+            [ &_2 <- _ret ] -{inv _ret.final}-
+            [ &self'0 <- { self'0 with current = _ret.final } ] s1)
+      | s1 = f {_2} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
       | s2 = bb1 ]
-    
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 self'0} s1 | s1 = -{resolve'0 self'0}- s2 | s2 = return''0 {_0} ]  ]
-     [ & _0: () = Any.any_l () | & self'0: MutBorrow.t t_Self = self | & _2: MutBorrow.t t_Self = Any.any_l () ] )
-    [ return''0 (result:())-> (! return' {result}) ]
-
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 self'0} s1 | s1 = -{resolve'0 self'0}- s2 | s2 = return''0 {_0} ] ]
+    [ & _0: () = Any.any_l () | & self'0: MutBorrow.t t_Self = self | & _2: MutBorrow.t t_Self = Any.any_l () ])
+    [ return''0 (result: ()) -> (! return' {result}) ]
 end
