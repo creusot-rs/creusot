@@ -208,10 +208,15 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             });
             Ok(tokens)
         }
-        RT::Path(_) => Ok(
+        RT::Path(_) => {
+            let mut res = TokenStream::new();
+            res.extend_one(TokenTree::Group(Group::new(
+                Delimiter::Parenthesis,
+                quote_spanned! {sp=> *&#term},
+            )));
             // Trick to avoid capturing unsized arguments in spec closures.
-            quote_spanned! {sp=> (*&#term) },
-        ),
+            Ok(res)
+        }
         RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
         RT::Reference(TermReference { mutability, expr, .. }) => {
             let term = encode_term(expr)?;
