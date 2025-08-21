@@ -15,15 +15,17 @@ use syn::Lit;
 
 #[derive(Debug)]
 pub enum EncodeError {
-    LocalErr,
+    /// A `let` binding is not initialized
+    LocalLetNoInit(Span),
+    /// Some expression is not supported in pearlite
     Unsupported(Span, String),
 }
 
 impl EncodeError {
     pub fn into_tokens(self) -> TokenStream {
         match self {
-            Self::LocalErr => {
-                quote! { compile_error!("LocalErr: what does this even mean?") }
+            Self::LocalLetNoInit(sp) => {
+                quote_spanned! { sp => compile_error!("This `let` binding is not initialized") }
             }
             Self::Unsupported(sp, msg) => {
                 let msg = format!("Unsupported expression: {}", msg);
@@ -46,12 +48,12 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 Ok(term.to_token_stream())
             } else {
                 Err(EncodeError::Unsupported(
-                    term.span(),
+                    sp,
                     "macros other than `pearlite!` or `proof_assert!` or `seq!` are unsupported in pearlite code".into(),
                 ))
             }
         }
-        RT::Array(_) => Err(EncodeError::Unsupported(term.span(), "Array".into())),
+        RT::Array(_) => Err(EncodeError::Unsupported(sp, "Array".into())),
         RT::Binary(TermBinary { left, op, right }) => {
             let mut left = left;
             let mut right = right;
@@ -132,7 +134,10 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 // Don't wrap function calls in `*&`.
                 return Ok(quote_spanned! {sp=> #func (#(#args),*)});
             } else {
-                unimplemented!("unsupported: (expr)() where (expr) is not an identifier")
+                Err(EncodeError::Unsupported(
+                    sp,
+                    "(expr)() where (expr) is not an identifier".to_string(),
+                ))
             }
         }
         RT::Cast(TermCast { expr, as_token, ty }) => {
@@ -208,10 +213,15 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             });
             Ok(tokens)
         }
-        RT::Path(_) => Ok(
+        RT::Path(_) => {
+            let mut res = TokenStream::new();
+            res.extend_one(TokenTree::Group(Group::new(
+                Delimiter::Parenthesis,
+                quote_spanned! {sp=> *&#term},
+            )));
             // Trick to avoid capturing unsized arguments in spec closures.
-            quote_spanned! {sp=> (*&#term) },
-        ),
+            Ok(res)
+        }
         RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
         RT::Reference(TermReference { mutability, expr, .. }) => {
             let term = encode_term(expr)?;
@@ -382,7 +392,7 @@ pub fn encode_stmt(stmt: &TermStmt) -> Result<TokenStream, EncodeError> {
                 let init = encode_term(init)?;
                 Ok(quote! { #let_token #pat #eq_token #init #semi_token })
             } else {
-                Err(EncodeError::LocalErr)
+                Err(EncodeError::LocalLetNoInit(pat.span()))
             }
         }
         TermStmt::Expr(e) => encode_term(e),
