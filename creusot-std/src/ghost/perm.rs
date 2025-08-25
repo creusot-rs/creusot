@@ -53,6 +53,11 @@ pub trait Container {
 /// Specifically, creating too many pointers contradicts the [`Perm::disjoint_lemma`],
 /// and allocating too large objects contradicts the [`Perm::invariant`] that
 /// allocations have size at most `isize::MAX`.
+///
+/// ## Layout facts
+///
+/// Certain facts about the layout and alignment of pointers can be made available
+/// through the type invariant of [`crate::std::ptr::PtrLive`] by calling [`Perm::live`].
 #[opaque]
 pub struct Perm<C: ?Sized + Container>(#[allow(unused)] [PhantomData<C::Value>]);
 
