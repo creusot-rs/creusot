@@ -732,8 +732,8 @@ impl<T> Seq<T> {
     #[trusted]
     #[check(ghost)]
     #[requires(0 <= mid && mid <= self.len())]
-    #[ensures((^self).len() == mid)]
-    #[ensures((^self).concat(result) == *self)]
+    #[ensures(^self == self[..mid])]
+    #[ensures(result == self[mid..])]
     pub fn split_off_ghost(&mut self, mid: Int) -> Self {
         let _ = mid;
         panic!("ghost code")

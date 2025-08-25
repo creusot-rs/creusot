@@ -557,7 +557,10 @@ mod base_prelude {
         num::NumExt as _,
         ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
         option::OptionExt as _,
-        ptr::{PointerExt as _, SizedPointerExt as _, SlicePointerExt as _},
+        ptr::{
+            LiveMut as _, PointerExt as _, PtrAddExt as _, SizedPointerExt as _,
+            SlicePointerExt as _,
+        },
         slice::SliceExt as _,
     };
 

@@ -4,6 +4,7 @@ use crate::{
     ghost::perm::{Container, Perm},
     prelude::*,
 };
+use core::marker::PhantomData;
 #[cfg(creusot)]
 use core::ptr::Pointee;
 
@@ -260,6 +261,37 @@ impl<T> SizedPointerExt<T> for *const T {
     fn sub_offset_logic(self, offset: Int) {}
 }
 
+// Implemented using the impl for `*const T`
+impl<T> SizedPointerExt<T> for *mut T {
+    #[logic(open, inline)]
+    #[requires(self.addr_logic()@ + offset * size_of_logic::<T>() < usize::MAX@)]
+    #[ensures(result.addr_logic()@ == self.addr_logic()@ + offset * size_of_logic::<T>())]
+    fn offset_logic(self, offset: Int) -> Self {
+        pearlite! { (self as *const T).offset_logic(offset) as *mut T }
+    }
+
+    #[logic(law)]
+    #[ensures(self.offset_logic(0) == self)]
+    fn offset_logic_zero(self) {}
+
+    #[logic(law)]
+    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
+    fn offset_logic_assoc(self, offset1: Int, offset2: Int) {}
+
+    #[logic(open, inline)]
+    fn sub_logic(self, rhs: Self) -> Int {
+        pearlite! { (self as *const T).sub_logic(rhs as *const T) }
+    }
+
+    #[logic(law)]
+    #[ensures(self.sub_logic(self) == 0)]
+    fn sub_logic_refl(self) {}
+
+    #[logic(law)]
+    #[ensures(self.offset_logic(offset).sub_logic(self) == offset)]
+    fn sub_offset_logic(self, offset: Int) {}
+}
+
 /// Extension methods for `*const [T]`
 ///
 /// `thin` and `len_logic` are wrappers around `_ as *const T` and `metadata_logic`
@@ -297,6 +329,27 @@ impl<T> SlicePointerExt<T> for *const [T] {
     #[logic(law)]
     #[ensures(self.thin() == other.thin() && self.len_logic() == other.len_logic() ==> self == other)]
     fn slice_ptr_ext(self, other: Self) {}
+}
+
+impl<T> SlicePointerExt<T> for *mut [T] {
+    /// Convert `*const [T]` to `*const T`.
+    #[logic(open, inline)]
+    fn thin(self) -> *const T {
+        self as *const T
+    }
+
+    /// Get the length metadata of the pointer.
+    #[logic(open, inline)]
+    fn len_logic(self) -> usize {
+        pearlite! { metadata_logic(self as *const [T]) }
+    }
+
+    /// Extensionality of slice pointers.
+    #[logic(law)]
+    #[ensures(self.thin() == other.thin() && self.len_logic() == other.len_logic() ==> self == other)]
+    fn slice_ptr_ext(self, other: Self) {
+        (self as *const [T]).slice_ptr_ext(other as *const [T])
+    }
 }
 
 extern_spec! {
@@ -460,13 +513,7 @@ impl<T: ?Sized> Invariant for Perm<*const T> {
     fn invariant(self) -> bool {
         pearlite! {
             !self.ward().is_null_logic()
-                && self.ptr_is_aligned_opaque()
                 && metadata_matches(*self.val(), metadata_logic(*self.ward()))
-                // Allocations can never be larger than `isize` (source: https://doc.rust-lang.org/std/ptr/index.html#allocation)
-                && size_of_val_logic(*self.val()) <= isize::MAX@
-                // The allocation fits in the address space
-                // (this is needed to verify (a `Perm` variant of) `<*const T>::add`, which checks this condition)
-                && self.ward().addr_logic()@ + size_of_val_logic(*self.val()) <= usize::MAX@
                 && inv(self.val())
         }
     }
@@ -623,17 +670,277 @@ impl<T: ?Sized> Perm<*const T> {
     pub unsafe fn drop(ptr: *mut T, own: Ghost<Box<Perm<*const T>>>) {
         let _ = unsafe { Self::to_box(ptr, own) };
     }
+}
 
-    /// The pointer of a `Perm<*const T>` is always aligned.
+/// # Permissions for slice pointers
+///
+/// Core methods:
+///
+/// - To split a `&Perm<*const [T]>`: [`split_at`](Perm::split_at), [`split_at_mut`](Perm::split_at_mut).
+/// - To index a `&Perm<*const [T]>` into `&Perm<*const T>`: [`elements`](Perm::elements), [`elements_mut`](Perm::elements_mut).
+/// - To extract a [`PtrLive<T>`][PtrLive] (evidence used by pointer arithmetic): [`live`](Perm::live), [`live_mut`](LiveMut::live_mut).
+impl<T> Perm<*const [T]> {
+    /// The number of elements in the slice.
+    #[logic(open, inline)]
+    pub fn len(self) -> Int {
+        pearlite! { self.val()@.len() }
+    }
+
+    /// Split a `&Perm<*const [T]>` into two subslices of lengths `index` and `self.len() - index`.
+    #[trusted]
     #[check(ghost)]
-    #[ensures(self.ward().is_aligned_logic())]
-    pub fn ptr_is_aligned_lemma(&self) {}
+    #[requires(0 <= index && index <= self.len())]
+    #[ensures(self.ward().thin() == result.0.ward().thin())]
+    #[ensures(self.ward().thin().offset_logic(index) == result.1.ward().thin())]
+    #[ensures(self.val()@[..index] == result.0.val()@)]
+    #[ensures(self.val()@[index..] == result.1.val()@)]
+    pub fn split_at(&self, index: Int) -> (&Self, &Self) {
+        let _ = index;
+        panic!("called ghost function in normal code")
+    }
 
-    /// Opaque wrapper around [`std::ptr::is_aligned_logic`].
-    /// We use this to hide alignment logic by default in `invariant` because it confuses SMT solvers sometimes.
-    /// The underlying property is exposed by [`Perm::ptr_is_aligned_lemma`].
-    #[logic(open(self))]
-    pub fn ptr_is_aligned_opaque(self) -> bool {
-        self.ward().is_aligned_logic()
+    /// Split a `&mut Perm<*const [T]>` into two subslices of lengths `index` and `self.len() - index`.
+    #[trusted]
+    #[check(ghost)]
+    #[requires(0 <= index && index <= self.len())]
+    #[ensures(self.ward().thin() == result.0.ward().thin())]
+    #[ensures(self.ward().thin().offset_logic(index) == result.1.ward().thin())]
+    #[ensures(self.val()@[..index] == result.0.val()@)]
+    #[ensures(self.val()@[index..] == result.1.val()@)]
+    #[ensures((^self).ward() == self.ward())]
+    #[ensures((^result.0).val()@.len() == index)]
+    #[ensures((^self).val()@ == (^result.0).val()@.concat((^result.1).val()@))]
+    pub fn split_at_mut(&mut self, index: Int) -> (&mut Perm<*const [T]>, &mut Perm<*const [T]>) {
+        let _ = index;
+        panic!("called ghost function in normal code")
+    }
+
+    /// Split `&Perm<*const [T]>` into a sequence of `&Perm<*const T>` for each element.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.len() == self.len())]
+    #[ensures(forall<i> 0 <= i && i < self.len()
+        ==> *result[i].ward() == self.ward().thin().offset_logic(i)
+        && *result[i].val() == self.val()@[i])]
+    pub fn elements(&self) -> Seq<&Perm<*const T>> {
+        panic!("called ghost function in normal code")
+    }
+
+    /// Split `&mut Perm<*const [T]>` into a sequence of `&mut Perm<*const T>` for each element.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.len() == self.len())]
+    #[ensures(forall<i> 0 <= i && i < self.len()
+        ==> *result[i].ward() == self.ward().thin().offset_logic(i)
+        && *result[i].val() == self.val()@[i])]
+    #[ensures((^self).ward() == self.ward())]
+    #[ensures(forall<i> 0 <= i && i < self.len() ==> *(^result[i]).val() == (^self).val()@[i])]
+    pub fn elements_mut(&mut self) -> Seq<&mut Perm<*const T>> {
+        panic!("called ghost function in normal code")
+    }
+
+    /// Index a `&Perm<*const [T]>` into a `&Perm<*const T>`.
+    #[check(ghost)]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(*result.ward() == self.ward().thin().offset_logic(index))]
+    #[ensures(*result.val() == self.val()@[index])]
+    pub fn index(&self, index: Int) -> &Perm<*const T> {
+        let mut r = self.elements();
+        r.split_off_ghost(index).pop_front_ghost().unwrap()
+    }
+
+    /// Index a `&mut Perm<*const [T]>` into a `&mut Perm<*const T>`.
+    #[check(ghost)]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(*result.ward() == self.ward().thin().offset_logic(index))]
+    #[ensures(*result.val() == self.val()@[index])]
+    #[ensures((^self).ward() == self.ward())]
+    #[ensures(*(^result).val() == (^self).val()@[index])]
+    #[ensures(forall<k: Int> 0 <= k && k < self.len() && k != index ==> (^self).val()@[k] == self.val()@[k])]
+    pub fn index_mut(&mut self, index: Int) -> &mut Perm<*const T> {
+        let mut r = self.elements_mut();
+        proof_assert! { forall<k> index < k && k < r.len() ==> r[k].val() == r[index..].tail()[k-index-1].val() };
+        let _r = snapshot! { r };
+        let result = r.split_off_ghost(index).pop_front_ghost().unwrap();
+        proof_assert! { forall<i> 0 <= i && i < index ==> r[i] == _r[i] }; // Unfolding of ensures of split_off_ghost r == _r[..index]
+        result
+    }
+
+    /// Extract `PtrLive<'a, T>` from `&'a Perm<*const [T]>`.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.ward() == self.ward().thin())]
+    #[ensures(result.len()@ == self.len())]
+    pub fn live(&self) -> PtrLive<'_, T> {
+        panic!("called ghost function in normal code")
+    }
+}
+
+/// Extension trait with the `live_mut` method
+///
+/// Naively, we wanted `live_mut(&'b &'a mut self) -> PtrLive<'a, T>` where `Self = Perm<*const [T]>`,
+/// but `self` being a double borrow is illegal.
+pub trait LiveMut<'a, T> {
+    /// Extract `PtrLive<'a, T>` from `&'a mut Perm<*const [T]>`.
+    fn live_mut<'b>(&'b self) -> PtrLive<'a, T>;
+}
+
+impl<'a, T> LiveMut<'a, T> for &'a mut Perm<*const [T]> {
+    /// Extract `PtrLive<'a, T>` from `&'a mut Perm<*const [T]>`.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.ward() == self.ward().thin())]
+    #[ensures(result.len()@ == self.len())]
+    fn live_mut<'b>(&'b self) -> PtrLive<'a, T> {
+        panic!("called ghost function in normal code")
+    }
+}
+
+/// Evidence that a range of memory is alive.
+///
+/// This evidence enables taking pointer offsets (see [`PtrAddExt`])
+/// without ownership of that range of memory (*i.e.*, not using [`Perm`]).
+///
+/// Its lifetime is bounded by some `&Perm<*const [T]>` (via `Perm::live`
+/// or `Perm::live_mut`) so it can't outlive the associated allocation.
+#[opaque]
+pub struct PtrLive<'a, T>(PhantomData<&'a T>);
+
+impl<T> Clone for PtrLive<'_, T> {
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        panic!("called ghost function in normal code")
+    }
+}
+
+impl<T> Copy for PtrLive<'_, T> {}
+
+impl<T> Invariant for PtrLive<'_, T> {
+    #[logic(open, prophetic)]
+    fn invariant(self) -> bool {
+        pearlite! {
+            // Allocations can never be larger than `isize` bytes
+            // (source: <https://doc.rust-lang.org/std/ptr/index.html#allocation>)
+            self.len()@ * size_of_logic::<T>() <= isize::MAX@
+            // The allocation fits in the address space
+            // (for example, this is needed to verify (a `Perm`-aware variant of)
+            // `<*const T>::add`, which checks this condition)
+            && self.ward().addr_logic()@ + self.len()@ * size_of_logic::<T>() <= usize::MAX@
+            // The pointer of a `Perm` is always aligned.
+            && self.ward().is_aligned_logic()
+        }
+    }
+}
+
+impl<T> PtrLive<'_, T> {
+    /// Base pointer, start of the range
+    #[trusted]
+    #[logic(opaque)]
+    pub fn ward(self) -> *const T {
+        dead
+    }
+
+    /// The number of elements (of type `T`) in the range.
+    ///
+    /// The length in bytes is thus `self.len()@ * size_of_logic::<T>()`.
+    #[trusted]
+    #[logic(opaque)]
+    pub fn len(self) -> usize {
+        dead
+    }
+
+    /// Range inclusion.
+    ///
+    /// The live range `self.ward()..=(self.ward() + self.len())` contains
+    /// the range `ptr..=(ptr + len)`.
+    ///
+    /// Note that the out-of-bounds pointer `self.ward() + self.len()`
+    /// is included.
+    /// The provenance of `ptr` must be the same as `self.ward()`.
+    #[logic(open, inline)]
+    pub fn contains_range(self, ptr: *const T, len: Int) -> bool {
+        pearlite! {
+            let offset = ptr.sub_logic(self.ward());
+            // This checks that the provenance is the same.
+            ptr == self.ward().offset_logic(offset)
+            && 0 <= offset && offset <= self.len()@
+            && 0 <= offset + len && offset + len <= self.len()@
+        }
+    }
+}
+
+/// Pointer offsets with [`PtrLive`] permissions.
+///
+/// This trait provides wrappers around the offset functions:
+///
+/// - [`<*const T>::add`](https://doc.rust-lang.org/core/primitive.pointer.html#method.add)
+/// - [`<*const T>::offset`](https://doc.rust-lang.org/core/primitive.pointer.html#method.offset)
+/// - [`<*mut T>::add`](https://doc.rust-lang.org/core/primitive.pointer.html#method.add-1)
+/// - [`<*mut T>::offset`](https://doc.rust-lang.org/core/primitive.pointer.html#method.offset-1)
+///
+/// with ghost permission tokens (`PtrLive`) that allow proving their safety conditions.
+///
+/// # Safety
+///
+/// Source: <https://doc.rust-lang.org/core/intrinsics/fn.offset.html>
+///
+/// > If the computed offset is non-zero, then both the starting and resulting pointer must be either in bounds or at the end of an allocation.
+/// > If either pointer is out of bounds or arithmetic overflow occurs then this operation is undefined behavior.
+///
+/// The preconditions ensure that the `live` witness contains the range between `dst` and `dst + offset`,
+/// which prevents out-of-bounds access and overflow.
+pub trait PtrAddExt<'a, T> {
+    /// Implementations refine this with a non-trivial precondition.
+    #[requires(false)]
+    unsafe fn add_live(self, offset: usize, live: Ghost<PtrLive<'a, T>>) -> Self;
+
+    /// Implementations refine this with a non-trivial precondition.
+    #[requires(false)]
+    unsafe fn offset_live(self, offset: isize, live: Ghost<PtrLive<'a, T>>) -> Self;
+}
+
+impl<'a, T> PtrAddExt<'a, T> for *const T {
+    /// Permission-aware wrapper around [`<*const T>::add`](https://doc.rust-lang.org/core/primitive.pointer.html#method.add)
+    #[trusted]
+    #[erasure(<*const T>::add)]
+    #[requires(live.contains_range(self, offset@))]
+    #[ensures(result == self.offset_logic(offset@))]
+    unsafe fn add_live(self, offset: usize, live: Ghost<PtrLive<'a, T>>) -> Self {
+        let _ = live;
+        unsafe { self.add(offset) }
+    }
+
+    /// Permission-aware wrapper around [`<*const T>::offset`](https://doc.rust-lang.org/core/primitive.pointer.html#method.offset)
+    #[trusted]
+    #[erasure(<*const T>::offset)]
+    #[requires(live.contains_range(self, offset@))]
+    #[ensures(result == self.offset_logic(offset@))]
+    unsafe fn offset_live(self, offset: isize, live: Ghost<PtrLive<'a, T>>) -> Self {
+        let _ = live;
+        unsafe { self.offset(offset) }
+    }
+}
+
+impl<'a, T> PtrAddExt<'a, T> for *mut T {
+    /// Permission-aware wrapper around [`<*mut T>::add`](https://doc.rust-lang.org/core/primitive.pointer.html#method.add-1)
+    #[trusted]
+    #[erasure(<*mut T>::add)]
+    #[requires(live.contains_range(self, offset@))]
+    #[ensures(result == self.offset_logic(offset@))]
+    unsafe fn add_live(self, offset: usize, live: Ghost<PtrLive<'a, T>>) -> Self {
+        let _ = live;
+        unsafe { self.add(offset) }
+    }
+
+    /// Permission-aware wrapper around [`<*mut T>::offset`](https://doc.rust-lang.org/core/primitive.pointer.html#method.offset-1)
+    #[trusted]
+    #[erasure(<*mut T>::offset)]
+    #[requires(live.contains_range(self, offset@))]
+    #[ensures(result == self.offset_logic(offset@))]
+    unsafe fn offset_live(self, offset: isize, live: Ghost<PtrLive<'a, T>>) -> Self {
+        let _ = live;
+        unsafe { self.offset(offset) }
     }
 }
