@@ -401,8 +401,13 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
     ) -> Self {
         let map_cur = closure_captures(ctx, def_id)
             .map(|((f, cap), ty)| {
-                assert!(cap.place.projections.is_empty());
                 let span = cap.get_path_span(ctx.tcx);
+                if !cap.place.projections.is_empty() {
+                    ctx.dcx().span_bug(
+                        span,
+                        format!("This specification captures a structure field. This is currently not supported by Creusot (see Issue #1538). The workaround is to use Rust edition 2018."),
+                    )
+                }
                 let proj = self_pre.clone().proj(f, ty).span(span);
                 let term = match cap.info.capture_kind {
                     UpvarCapture::ByValue => proj,
