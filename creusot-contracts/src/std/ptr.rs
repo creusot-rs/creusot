@@ -1,6 +1,6 @@
 #[cfg(creusot)]
 use crate::std::mem::{align_of_logic, size_of_logic};
-use crate::*;
+use crate::{ghost::PtrOwn, *};
 pub use ::std::ptr::*;
 
 /// Metadata of a pointer in logic.
@@ -176,6 +176,103 @@ impl<T: ?Sized> PointerExt<T> for *mut T {
     }
 }
 
+pub trait SizedPointerExt<T>: PointerExt<T> {
+    #[logic]
+    #[ensures(self.addr_logic()@ + offset * size_of_logic::<T>() < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset * size_of_logic::<T>())]
+    fn offset_logic(self, offset: Int) -> *const T;
+
+    #[logic(law)]
+    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
+    fn offset_logic_assoc(self, offset1: Int, offset2: Int);
+}
+
+impl<T> SizedPointerExt<T> for *const T {
+    #[trusted]
+    #[logic(opaque)]
+    #[ensures(self.addr_logic()@ + offset * size_of_logic::<T>() < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset * size_of_logic::<T>())]
+    fn offset_logic(self, offset: Int) -> *const T {
+        dead
+    }
+
+    #[trusted]
+    #[logic(law)]
+    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
+    fn offset_logic_assoc(self, offset1: Int, offset2: Int) {}
+}
+
+/// Extension methods for `*const [T]`
+pub trait SlicePointerExt<T>: PointerExt<[T]> {
+    #[logic]
+    fn as_ptr_logic(self) -> *const T;
+
+    #[logic]
+    fn len_logic(self) -> Int;
+
+    #[logic(law)]
+    #[ensures(self.as_ptr_logic() == other.as_ptr_logic() && self.len_logic() == other.len_logic() ==> self == other)]
+    fn slice_ptr_ext(self, other: Self);
+}
+
+impl<T> SlicePointerExt<T> for *const [T] {
+    /// Convert `*const [T]` to `*const T`.
+    #[logic(open)]
+    fn as_ptr_logic(self) -> *const T {
+        self as *const T
+    }
+
+    /// Get the length metadata of the pointer.
+    #[logic(open)]
+    fn len_logic(self) -> Int {
+        pearlite! { metadata_logic(self)@ }
+    }
+
+    /// Extensionality of slice pointers.
+    #[trusted]
+    #[logic(law)]
+    #[ensures(self.as_ptr_logic() == other.as_ptr_logic() && self.len_logic() == other.len_logic() ==> self == other)]
+    fn slice_ptr_ext(self, other: Self) {}
+}
+
+pub trait PtrAddExt<T>: PointerExt<T> {
+    /// Restriction of `add` that requires evidence that the addition is safe.
+    /// We simply require a borrow of the `PtrOwn<[T]>` token for the result pointer.
+    /// In particular, this accounts for one-past-the-end pointers, which point to a zero-sized slice.
+    ///
+    /// From https://doc.rust-lang.org/std/primitive.pointer.html#method.add:
+    ///
+    /// > If any of the following conditions are violated, the result is Undefined Behavior:
+    /// > - The offset in bytes, `count * size_of::<T>()`, computed on mathematical
+    /// >   integers (without “wrapping around”), must fit in an `isize`.
+    /// > - If the computed offset is non-zero, then `self` must be derived from a
+    /// >   pointer to some allocated object, and the entire memory range between
+    /// >   `self` and the result must be in bounds of that allocated object.
+    /// >   In particular, this range must not “wrap around” the edge of the address space.
+    ///
+    ///
+    #[requires(false)]
+    unsafe fn add_own(self, offset: usize, own: Ghost<&PtrOwn<[T]>>) -> Self;
+}
+
+impl<T> PtrAddExt<T> for *const T {
+    #[trusted]
+    #[requires(own.ptr().as_ptr_logic() == self.offset_logic(offset@))]
+    #[ensures(own.ptr().as_ptr_logic() == result)]
+    #[erasure(<*const T>::add)]
+    unsafe fn add_own(self, offset: usize, own: Ghost<&PtrOwn<[T]>>) -> Self {
+        unsafe { self.add(offset) }
+    }
+}
+
+impl<T> PtrAddExt<T> for *mut T {
+    #[trusted]
+    #[requires(own.ptr().as_ptr_logic() == (self as *const T).offset_logic(offset@))]
+    #[ensures(own.ptr().as_ptr_logic() == result as *const T)]
+    #[erasure(<*mut T>::add)]
+    unsafe fn add_own(self, offset: usize, own: Ghost<&PtrOwn<[T]>>) -> Self {
+        unsafe { self.add(offset) }
+    }
+}
+
 extern_spec! {
     impl<T: ?Sized> *const T {
         #[check(ghost)]
@@ -255,6 +352,16 @@ extern_spec! {
         }
     }
 
+    impl<T> *const [T] {
+        #[ensures(result@ == self.len_logic())]
+        fn len(self) -> usize;
+    }
+
+    impl<T> *mut [T] {
+        #[ensures(result@ == self.len_logic())]
+        fn len(self) -> usize;
+    }
+
     mod std {
         mod ptr {
             #[check(ghost)]
@@ -284,6 +391,12 @@ extern_spec! {
             #[check(ghost)]
             #[ensures(false)]
             unsafe fn read_volatile<T>(src: *const T) -> T;
+
+            #[ensures(result.as_ptr_logic() == data && result.len_logic() == len@)]
+            fn slice_from_raw_parts<T>(data: *const T, len: usize) -> *const [T];
+
+            #[ensures((result as *const [T]).as_ptr_logic() == data as *const T && (result as *const [T]).len_logic() == len@)]
+            fn slice_from_raw_parts_mut<T>(data: *mut T, len: usize) -> *mut [T];
         }
     }
 
