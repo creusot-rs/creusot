@@ -20,9 +20,9 @@ mod implementation {
         }
     }
     impl<T> DeepModel for Element<T> {
-        type DeepModelTy = usize;
+        type DeepModelTy = Int;
         #[logic]
-        fn deep_model(self) -> usize {
+        fn deep_model(self) -> Int {
             self.0.addr_logic()
         }
     }
@@ -30,7 +30,7 @@ mod implementation {
     impl<T> Element<T> {
         #[check(ghost)]
         #[ensures(*result == self.deep_model())]
-        fn addr(self) -> Snapshot<usize> {
+        fn addr(self) -> Snapshot<Int> {
             snapshot!(self.deep_model())
         }
     }
@@ -49,7 +49,7 @@ mod implementation {
     }
     impl<T> Copy for Element<T> {}
 
-    type LogicAddr = Snapshot<usize>;
+    type LogicAddr = Snapshot<Int>;
 
     /// Handle to the union-find data structure.
     ///
