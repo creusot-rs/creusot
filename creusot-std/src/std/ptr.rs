@@ -4,7 +4,7 @@ use crate::{
     ghost::perm::{Container, Perm},
     prelude::*,
 };
-use core::ptr::*;
+use core::{marker::PhantomData, ptr::*};
 
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
@@ -458,13 +458,7 @@ impl<T: ?Sized> Invariant for Perm<*const T> {
     fn invariant(self) -> bool {
         pearlite! {
             !self.ward().is_null_logic()
-                && self.ptr_is_aligned_opaque()
                 && metadata_matches(*self.val(), metadata_logic(*self.ward()))
-                // Allocations can never be larger than `isize` (source: https://doc.rust-lang.org/std/ptr/index.html#allocation)
-                && size_of_val_logic(*self.val()) <= isize::MAX@
-                // The allocation fits in the address space
-                // (this is needed to verify (a `Perm` variant of) `<*const T>::add`, which checks this condition)
-                && self.ward().addr_logic()@ + size_of_val_logic(*self.val()) <= usize::MAX@
                 && inv(self.val())
         }
     }
@@ -621,17 +615,185 @@ impl<T: ?Sized> Perm<*const T> {
     pub unsafe fn drop(ptr: *mut T, own: Ghost<Box<Perm<*const T>>>) {
         let _ = unsafe { Self::to_box(ptr, own) };
     }
+}
 
-    /// The pointer of a `Perm<*const T>` is always aligned.
+/// # Permissions for slice pointers
+///
+/// Core methods:
+///
+/// - To split a `&Perm<*const [T]>`: [`split_at`](Perm::split_at), [`split_at_mut`](Perm::split_at_mut).
+/// - To index a `&Perm<*const [T]>` into `&Perm<*const T>`: [`elements`](Perm::elements), [`elements_mut`](Perm::elements_mut).
+/// - To extract a [`PtrLive<T>`][PtrLive] (evidence used by pointer arithmetic): [`live`](Perm::live), [`live_mut`](Perm::live_mut).
+impl<T> Perm<*const [T]> {
+    /// The number of elements in the slice.
+    #[logic(open, inline)]
+    pub fn len(self) -> Int {
+        pearlite! { self.val()@.len() }
+    }
+
+    /// Split a `&Perm<*const [T]>` into two subslices of lengths `index` and `self.len() - index`.
+    #[trusted]
     #[check(ghost)]
-    #[ensures(self.ward().is_aligned_logic())]
-    pub fn ptr_is_aligned_lemma(&self) {}
+    #[requires(0 <= index && index <= self.len())]
+    #[ensures(self.ward().thin() == result.0.ward().thin())]
+    #[ensures(self.ward().thin().offset_logic(index) == result.1.ward().thin())]
+    #[ensures(self.val()@[0..index] == result.0.val()@)]
+    #[ensures(self.val()@[index..self.len()] == result.1.val()@)]
+    pub fn split_at(&self, index: Int) -> (&Self, &Self) {
+        let _ = index;
+        panic!("called ghost function in normal code")
+    }
 
-    /// Opaque wrapper around [`std::ptr::is_aligned_logic`].
-    /// We use this to hide alignment logic by default in `invariant` because it confuses SMT solvers sometimes.
-    /// The underlying property is exposed by [`Perm::ptr_is_aligned_lemma`].
-    #[logic(open(self))]
-    pub fn ptr_is_aligned_opaque(self) -> bool {
-        self.ward().is_aligned_logic()
+    /// Split a `&mut Perm<*const [T]>` into two subslices of lengths `index` and `self.len() - index`.
+    #[trusted]
+    #[check(ghost)]
+    #[requires(0 <= index && index <= self.len())]
+    #[ensures(self.ward().thin() == result.0.ward().thin())]
+    #[ensures(self.ward().thin().offset_logic(index) == result.1.ward().thin())]
+    #[ensures(self.val()@[0..index] == result.0.val()@)]
+    #[ensures(self.val()@[index..self.len()] == result.1.val()@)]
+    #[ensures((^self).ward() == self.ward())]
+    #[ensures((^result.0).val()@.len() == index)]
+    #[ensures((^self).val()@ == (^result.0).val()@.concat((^result.1).val()@))]
+    pub fn split_at_mut(&mut self, index: Int) -> (&mut Perm<*const [T]>, &mut Perm<*const [T]>) {
+        let _ = index;
+        panic!("called ghost function in normal code")
+    }
+
+    /// Split `&Perm<*const [T]>` into a sequence of `&Perm<*const T>` for each element.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.len() == self.len())]
+    #[ensures(forall<i> 0 <= i && i < self.len()
+        ==> *result[i].ward() == self.ward().thin().offset_logic(i)
+        && *result[i].val() == self.val()@[i])]
+    pub fn elements(&self) -> Seq<&Perm<*const T>> {
+        panic!("called ghost function in normal code")
+    }
+
+    /// Split `&mut Perm<*const [T]>` into a sequence of `&mut Perm<*const T>` for each element.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.len() == self.len())]
+    #[ensures(forall<i> 0 <= i && i < self.len()
+        ==> *result[i].ward() == self.ward().thin().offset_logic(i)
+        && *result[i].val() == self.val()@[i])]
+    #[ensures((^self).ward() == self.ward())]
+    #[ensures(forall<i> 0 <= i && i < self.len() ==> *(^result[i]).val() == (^self).val()@[i])]
+    pub fn elements_mut(&mut self) -> Seq<&mut Perm<*const T>> {
+        panic!("called ghost function in normal code")
+    }
+
+    /// Index a `&Perm<*const [T]>` into a `&Perm<*const T>`.
+    #[check(ghost)]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(*result.ward() == self.ward().thin().offset_logic(index))]
+    #[ensures(*result.val() == self.val()@[index])]
+    pub fn index(&self, index: Int) -> &Perm<*const T> {
+        let mut r = self.elements();
+        r.split_off_ghost(index).pop_front_ghost().unwrap()
+    }
+
+    /// Index a `&mut Perm<*const [T]>` into a `&mut Perm<*const T>`.
+    #[check(ghost)]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(*result.ward() == self.ward().thin().offset_logic(index))]
+    #[ensures(*result.val() == self.val()@[index])]
+    #[ensures((^self).ward() == self.ward())]
+    #[ensures(*(^result).val() == (^self).val()@[index])]
+    #[ensures(forall<k: Int> 0 <= k && k < self.len() && k != index ==> (^self).val()@[k] == self.val()@[k])]
+    pub fn index_mut(&mut self, index: Int) -> &mut Perm<*const T> {
+        let mut r = self.elements_mut();
+        proof_assert! { forall<k> index < k && k < r.len() ==> r[k].val() == r[index..r.len()].tail()[k-index-1].val() };
+        let r0 = snapshot! { r };
+        let result = r.split_off_ghost(index).pop_front_ghost().unwrap();
+        proof_assert! { forall<i> 0 <= i && i < index ==> r[i] == r0[i] }; // Unfolding of ensures of split_off_ghost r == r0[0..index]
+        result
+    }
+
+    /// Extract `PtrLive<'a, T>` from `&Perm<'a, [T]>`.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.ward() == self.ward().thin())]
+    #[ensures(result.len()@ == self.len())]
+    pub fn live(&self) -> PtrLive<'_, T> {
+        panic!("called ghost function in normal code")
+    }
+
+    /// Extract `PtrLive<'a, T>` from `&mut Perm<*const [T]>`.
+    ///
+    /// The borrow is returned so that it can be used at the same time as the `PtrLive` token.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.0 == self)]
+    #[ensures(result.1.ward() == self.ward().thin())]
+    #[ensures(result.1.len()@ == self.len())]
+    pub fn live_mut(&mut self) -> (&mut Self, PtrLive<'_, T>) {
+        panic!("called ghost function in normal code")
+    }
+}
+
+/// Evidence that a range of memory is alive.
+///
+/// This evidence enables taking pointer offsets (see [`add_live`](crate::std::intrinsics::add_live) and others)
+/// without ownership (via [`Perm`]) of that range of memory.
+///
+/// Its lifetime is bounded by some `&Perm<*const [T]>` (via `Perm::live` or `Perm::live_mut`).
+#[opaque]
+pub struct PtrLive<'a, T>(PhantomData<&'a T>);
+
+impl<T> Clone for PtrLive<'_, T> {
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        panic!("called ghost function in normal code")
+    }
+}
+
+impl<T> Copy for PtrLive<'_, T> {}
+
+impl<T> Invariant for PtrLive<'_, T> {
+    #[logic(open, prophetic)]
+    fn invariant(self) -> bool {
+        pearlite! {
+            // Allocations can never be larger than `isize` bytes
+            // (source: <https://doc.rust-lang.org/std/ptr/index.html#allocation>)
+            self.len()@ * size_of_logic::<T>() <= isize::MAX@
+            // The allocation fits in the address space
+            // (for example, this is needed to verify (a `Perm`-aware variant of)
+            // `<*const T>::add`, which checks this condition)
+            && self.ward().addr_logic()@ + self.len()@ * size_of_logic::<T>() <= usize::MAX@
+            // The pointer of a `Perm` is always aligned.
+            && self.ward().is_aligned_logic()
+        }
+    }
+}
+
+impl<T> PtrLive<'_, T> {
+    /// Base pointer, start of the range
+    #[trusted]
+    #[logic(opaque)]
+    pub fn ward(self) -> *const T {
+        dead
+    }
+
+    /// The number of elements (of type `T`) in the range.
+    ///
+    /// The length in bytes is thus `self.len()@ * size_of_logic::<T>()`.
+    #[trusted]
+    #[logic(opaque)]
+    pub fn len(self) -> usize {
+        dead
+    }
+
+    /// The live range contains `ptr`
+    #[logic(open, inline)]
+    pub fn contains(self, ptr: *const T) -> bool {
+        pearlite! {
+            let offset = ptr.sub_logic(self.ward());
+            ptr == self.ward().offset_logic(offset)
+            && 0 <= offset && offset <= self.len()@
+        }
     }
 }
