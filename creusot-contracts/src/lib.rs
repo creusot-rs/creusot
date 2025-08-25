@@ -468,7 +468,7 @@ mod base_prelude {
         iter::{SkipExt as _, TakeExt as _},
         ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
         option::OptionExt as _,
-        ptr::PointerExt as _,
+        ptr::{PointerExt as _, PtrAddExt as _, SizedPointerExt as _, SlicePointerExt as _},
         slice::SliceExt as _,
     };
 
