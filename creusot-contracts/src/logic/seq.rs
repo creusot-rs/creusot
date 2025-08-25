@@ -700,6 +700,21 @@ pub fn flat_map_push_back<A, B>(xs: Seq<A>) {
     }
 }
 
+impl<T> Resolve for Seq<T> {
+    #[logic(prophetic)]
+    #[open]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i : Int> resolve(&self.get(i)) }
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
+}
+
 /// A sequence literal `seq![a, b, c]`.
 #[macro_export]
 macro_rules! seq {

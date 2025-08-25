@@ -2,6 +2,7 @@
 use crate::resolve::structural_resolve;
 use crate::{
     invariant::*,
+    ptr_own::{PtrOwn, RawPtr},
     std::ops::{
         Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
     },
@@ -67,6 +68,12 @@ pub trait SliceExt<T> {
 
     #[logic]
     fn to_ref_seq(&self) -> Seq<&T>;
+
+    #[check(ghost)]
+    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<&PtrOwn<[T]>>);
+
+    #[check(ghost)]
+    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<&mut PtrOwn<[T]>>);
 }
 
 impl<T> SliceExt<T> for [T] {
@@ -85,6 +92,26 @@ impl<T> SliceExt<T> for [T] {
     #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == &self[i])]
     fn to_ref_seq(&self) -> Seq<&T> {
         dead
+    }
+
+    /// Convert `&[T]` to `*const T` and a shared ownership token.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.0 == result.1.ptr().as_ptr_logic())]
+    #[ensures(self@ == result.1.val()@)]
+    fn as_ptr_own(&self) -> (RawPtr<T>, Ghost<&PtrOwn<[T]>>) {
+        (self.as_ptr(), Ghost::conjure())
+    }
+
+    /// Convert `&mut [T]` to `*mut T` and a mutable ownership token.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.0 == result.1.ptr().as_ptr_logic())]
+    #[ensures(result.0 == (^result.1.inner_logic()).ptr().as_ptr_logic())]
+    #[ensures(self@ == result.1.val()@)]
+    #[ensures((^self)@ == (^result.1.inner_logic()).val()@)]
+    fn as_mut_ptr_own(&mut self) -> (RawPtr<T>, Ghost<&mut PtrOwn<[T]>>) {
+        (self.as_ptr(), Ghost::conjure())
     }
 }
 
