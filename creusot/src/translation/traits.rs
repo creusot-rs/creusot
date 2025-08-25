@@ -10,8 +10,7 @@ use rustc_hir::def_id::DefId;
 use rustc_infer::{
     infer::{DefineOpaqueTypes, InferCtxt, TyCtxtInferExt},
     traits::{
-        CodegenObligationError, Obligation, ObligationCause, TraitEngine,
-        specialization_graph::Graph,
+        solve::Goal, specialization_graph::Graph, CodegenObligationError, Obligation, ObligationCause, TraitEngine
     },
 };
 use rustc_middle::ty::{
@@ -20,12 +19,11 @@ use rustc_middle::ty::{
 };
 use rustc_span::{DUMMY_SP, ErrorGuaranteed, Span};
 use rustc_trait_selection::{
-    error_reporting::InferCtxtErrorExt,
-    traits::{FulfillmentError, ImplSource, InCrate, TraitEngineExt, orphan_check_trait_ref},
+    error_reporting::InferCtxtErrorExt, solve::inspect::{InspectGoal, ProofTreeInferCtxtExt as _, ProofTreeVisitor}, traits::{orphan_check_trait_ref, FulfillmentError, ImplSource, InCrate, TraitEngineExt}
 };
 use rustc_type_ir::{
-    fast_reject::{TreatParams, simplify_type},
-    fold::TypeSuperFoldable,
+    fast_reject::{simplify_type, TreatParams},
+    fold::TypeSuperFoldable, UpcastFrom as _,
 };
 use std::{collections::HashMap, iter};
 
@@ -217,6 +215,7 @@ impl<'tcx> TraitResolved<'tcx> {
         substs: GenericArgsRef<'tcx>,
     ) -> Self {
         trace!("TraitResolved::resolve {:?} {:?}", trait_item_def_id, substs);
+        let _ = TraitResolved::resolve_item_2(tcx, typing_env, trait_item_def_id, substs);
 
         let trait_ref = if let Some(did) = tcx.trait_of_item(trait_item_def_id) {
             TraitRef::from_method(tcx, did, substs)
@@ -377,7 +376,24 @@ impl<'tcx> TraitResolved<'tcx> {
             }
         }
     }
-
+    pub(crate) fn resolve_item_2(
+        tcx: TyCtxt<'tcx>,
+        typing_env: TypingEnv<'tcx>,
+        trait_item_def_id: DefId,
+        substs: GenericArgsRef<'tcx>,
+    ) -> Self {
+        let trait_ref = if let Some(did) = tcx.trait_of_item(trait_item_def_id) {
+            TraitRef::from_method(tcx, did, substs)
+        } else {
+            return TraitResolved::NotATraitItem;
+        };
+        let trait_ref = tcx.normalize_erasing_regions(typing_env, trait_ref);
+        let infcx = tcx.infer_ctxt().ignoring_regions().build(typing_env.typing_mode);
+        let goal = Goal { param_env: typing_env.param_env, predicate: Predicate::upcast_from(rustc_type_ir::Binder::dummy(trait_ref), tcx) };
+        let mut visitor = TraitResolver { span: DUMMY_SP, resolved: None }; // TODO: get span
+        let res = infcx.visit_proof_tree(goal, &mut visitor);
+        Self::NoInstance // TODO
+    }
     pub(crate) fn to_opt(
         self,
         did: DefId,
@@ -387,6 +403,38 @@ impl<'tcx> TraitResolved<'tcx> {
             TraitResolved::Instance { def, impl_: _ } => Some(def),
             TraitResolved::NotATraitItem | TraitResolved::UnknownFound => Some((did, substs)),
             _ => None,
+        }
+    }
+}
+
+struct TraitResolver {
+    span: Span,
+    resolved: Option<TraitResolved<'static>>,
+}
+
+impl<'tcx> ProofTreeVisitor<'tcx> for TraitResolver {
+    type Result = ();
+
+    fn span(&self) -> Span {
+        self.span
+    }
+
+    fn visit_goal(&mut self, inspect_goal: &InspectGoal<'_, 'tcx>) {
+        match inspect_goal.unique_applicable_candidate() {
+            None => eprintln!("visit_goal (no unique candidate):\n  {:?}\n  {:?}\n  {:?}", inspect_goal.goal().predicate, inspect_goal.result(), inspect_goal.candidates().into_iter().map(|c| c.kind()).collect::<Vec<_>>()),
+            Some(candidate) => {
+                match candidate.kind() {
+                    rustc_type_ir::solve::inspect::ProbeKind::TraitCandidate { source, result } => {
+                        match (source, result) {
+                            (rustc_type_ir::solve::CandidateSource::Impl(def_id), Ok(rs)) => {
+                                eprintln!("visit_goal TraitCandidate/Impl:\n  {:?}\n  {def_id:?}\n  {rs:?}", inspect_goal.goal().predicate)
+                            }
+                            _ => eprintln!("visit_goal candidate:\n  {:?}\n  {:?}", inspect_goal.goal().predicate, candidate.kind()),
+                        }
+                    }
+                    _ => eprintln!("visit_goal candidate:\n  {:?}\n  {:?}", inspect_goal.goal().predicate, candidate.kind()),
+                }
+            }
         }
     }
 }

@@ -322,8 +322,12 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             //
             // FIXME: this only handle the primary goal of the proof tree. We need to handle all the instances
             // used by this trait solving, including those that are used indirectly.
+            let w = ctx.codegen_select_candidate(typing_env.as_query_input(trait_ref));
+            if let Err(e) = w {
+                eprintln!("{called_id:?} {subst:?} {call_span:?} {e:?} {trait_ref:?} {typing_env:?}")
+            }
             if let ImplSource::Param(_) =
-                ctx.codegen_select_candidate(typing_env.as_query_input(trait_ref)).unwrap()
+                w.unwrap()
             {
                 continue;
             }
