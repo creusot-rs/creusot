@@ -22,7 +22,10 @@ use rustc_span::{DUMMY_SP, ErrorGuaranteed, Span};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
     solve::inspect::{InspectGoal, ProofTreeInferCtxtExt as _, ProofTreeVisitor},
-    traits::{FulfillmentError, ImplSource, InCrate, TraitEngineExt, orphan_check_trait_ref},
+    traits::{
+        FulfillmentError, ImplSource, InCrate, TraitEngineExt, orphan_check_trait_ref,
+        solve::CandidateSource,
+    },
 };
 use rustc_type_ir::{
     UpcastFrom as _,
@@ -212,10 +215,16 @@ pub(crate) fn resolve_item<'tcx>(
         param_env: typing_env.param_env,
         predicate: Predicate::upcast_from(rustc_type_ir::Binder::dummy(trait_ref), tcx),
     };
-    let mut visitor = TraitResolver { trait_ref, trait_item, cause_span: DUMMY_SP }; // TODO: get span
-    let res = infcx.visit_proof_tree(goal, &mut visitor).break_value().unwrap();
+    let mut visitor = TraitResolver { cause_span: DUMMY_SP }; // TODO: get span
+    let res1 = infcx.visit_proof_tree(goal, &mut visitor).break_value().unwrap();
+    let res = match res1 {
+        Err(r) => r,
+        Ok((candidate, subst)) => {
+            from_candidate(candidate, subst, tcx, typing_env, trait_item, substs, trait_ref)
+        }
+    };
     if res != old_res {
-        eprintln!("Mismatch: {res:?} {old_res:?}")
+        eprintln!("Mismatch for {trait_ref:?}\n  {res1:?}\n  {res:?}\n  {old_res:?}")
     }
     TraitResolvedResult {
         item: trait_item,
@@ -223,6 +232,122 @@ pub(crate) fn resolve_item<'tcx>(
         tcx,
         trait_ref: Some(trait_ref),
         resolved: old_res,
+    }
+}
+
+fn from_candidate<'tcx>(
+    candidate: CandidateSource<'tcx>,
+    impl_args: Option<GenericArgsRef<'tcx>>,
+    tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    trait_item: DefId,
+    substs: GenericArgsRef<'tcx>,
+    trait_ref: TraitRef<'tcx>,
+) -> TraitResolved<'tcx> {
+    match candidate {
+        CandidateSource::Impl(impl_def_id) => {
+            let impl_args = tcx.erase_regions(impl_args.unwrap());
+            // Find the id of the actual associated method we will be running
+            let leaf_def = tcx
+                .trait_def(trait_ref.def_id)
+                .ancestors(tcx, impl_def_id)
+                .unwrap()
+                .leaf_def(tcx, trait_item)
+                .unwrap_or_else(|| {
+                    panic!("{:?} not found in {:?}", trait_item, impl_def_id);
+                });
+
+            if !(leaf_def.is_final() || is_sealed(tcx, leaf_def.item.def_id)) {
+                // The instance we found is not final nor sealed. There might be a speciallized
+                // matching instance.
+                // We have found a user-defined instance, so we know for sure that there is no
+                // matching instance in a future crate. Hence we explore the descendents of the
+                // current node to make sure that there is no specialized matching instances.
+
+                let Ok(gt) = GraphTraversal::new(tcx, typing_env.param_env, trait_ref) else {
+                    // Cannot find graph because of an error. Return a dummy value.
+                    return TraitResolved::UnknownFound;
+                };
+
+                let r = gt.traverse_descendants(impl_def_id, |node| {
+                    if tcx.impl_item_implementor_ids(node).get(&trait_item).is_some() {
+                        // This is a matching instance
+                        GraphTraversalAction::Interrupt
+                    } else if tcx.defaultness(node).is_final() {
+                        // This is a final instance without a matching implementation
+                        // We know that a specializing impl cannot have an implementation
+                        // for our method
+                        GraphTraversalAction::Skip
+                    } else {
+                        GraphTraversalAction::Traverse
+                    }
+                });
+                if !r {
+                    return TraitResolved::UnknownFound;
+                }
+            }
+
+            // Translate the original substitution into one on the selected impl method
+            let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
+            let args = rustc_trait_selection::traits::translate_args(
+                &infcx,
+                typing_env.param_env,
+                impl_def_id,
+                impl_args,
+                leaf_def.defining_node,
+            );
+            let substs = substs.rebase_onto(tcx, trait_ref.def_id, args);
+
+            let leaf_substs = tcx.erase_regions(substs);
+
+            TraitResolved::Instance {
+                def: (leaf_def.item.def_id, leaf_substs),
+                impl_: Some((impl_def_id, impl_args)),
+            }
+        }
+        CandidateSource::ParamEnv(_) | CandidateSource::AliasBound => {
+            // Check whether the default impl from the trait def is sealed
+            if is_sealed(tcx, trait_item) {
+                return TraitResolved::Instance { def: (trait_item, trait_ref.args), impl_: None };
+            }
+            TraitResolved::UnknownFound
+        }
+        CandidateSource::BuiltinImpl(_) => {
+            let ty = trait_ref.args.type_at(0);
+            if matches!(ty.kind(), rustc_middle::ty::Dynamic(_, _, _)) {
+                // These types are not supported, but we want to display a proper error message because
+                // they are rather common in real Rust code, and this is not the right place to emit
+                // such an error message.
+                return TraitResolved::UnknownFound;
+            }
+
+            if [
+                tcx.lang_items().fn_trait(),
+                tcx.lang_items().fn_mut_trait(),
+                tcx.lang_items().fn_once_trait(),
+            ]
+            .contains(&Some(trait_ref.def_id))
+            {
+                match *ty.kind() {
+                    TyKind::Closure(closure_def_id, closure_substs) => {
+                        return TraitResolved::Instance {
+                            def: (closure_def_id, closure_substs),
+                            impl_: None,
+                        };
+                    }
+                    TyKind::FnDef(did, subst) => {
+                        return TraitResolved::Instance { def: (did, subst), impl_: None };
+                    }
+                    _ => (),
+                }
+            }
+            unimplemented!(
+                "Cannot handle builtin implementation of `{}` for `{}`",
+                tcx.def_path_str(trait_ref.def_id),
+                ty
+            )
+        }
+        _ => unimplemented!("from_candidate: unhandled {candidate:?}"),
     }
 }
 
@@ -455,105 +580,47 @@ impl<'tcx> TraitResolved<'tcx> {
     }
 }
 
-struct TraitResolver<'tcx> {
-    trait_ref: TraitRef<'tcx>,
-    trait_item: DefId,
+struct TraitResolver {
     cause_span: Span,
 }
 
-impl<'tcx> ProofTreeVisitor<'tcx> for TraitResolver<'tcx> {
-    type Result = ControlFlow<TraitResolved<'tcx>>;
+impl<'tcx> ProofTreeVisitor<'tcx> for TraitResolver {
+    type Result = ControlFlow<
+        Result<(CandidateSource<'tcx>, Option<GenericArgsRef<'tcx>>), TraitResolved<'tcx>>,
+        (),
+    >;
 
     fn span(&self) -> Span {
         self.cause_span
     }
 
     fn visit_goal(&mut self, inspect_goal: &InspectGoal<'_, 'tcx>) -> Self::Result {
-        let tcx = inspect_goal.infcx().tcx;
         let mut candidates = inspect_goal
             .candidates()
             .into_iter()
             .filter(|c| c.result().is_ok())
             .collect::<Vec<_>>();
-        use rustc_type_ir::solve::{CandidateSource, NoSolution, inspect::ProbeKind};
+        use rustc_type_ir::solve::{NoSolution, inspect::ProbeKind};
         if let Err(NoSolution) = inspect_goal.result() {
-            ControlFlow::Break(TraitResolved::NoInstance)
+            ControlFlow::Break(Err(TraitResolved::NoInstance))
         } else if candidates.len() == 1
             && let Some(candidate) = candidates.pop()
         {
             match candidate.kind() {
-                ProbeKind::TraitCandidate { source, result } => {
-                    use CandidateSource::*;
-                    match source {
-                        Impl(def_id) => {
-                            let subst = candidate
+                ProbeKind::TraitCandidate { source, result: _ } => {
+                    let subst = if let CandidateSource::Impl { .. } = source {
+                        Some(
+                            candidate
                                 .instantiate_nested_goals_and_opt_impl_args(self.span())
                                 .1
-                                .unwrap();
-                            ControlFlow::Break(TraitResolved::Instance {
-                                def: (def_id, subst),
-                                impl_: None,
-                            }) // TODO
-                        }
-                        ParamEnv(_) | AliasBound => {
-                            // Check whether the default impl from the trait def is sealed
-                            if is_sealed(tcx, self.trait_item) {
-                                return ControlFlow::Break(TraitResolved::Instance {
-                                    def: (self.trait_item, self.trait_ref.args),
-                                    impl_: None,
-                                });
-                            }
-                            ControlFlow::Break(TraitResolved::UnknownFound)
-                        }
-                        BuiltinImpl(source) => {
-                            let ty = self.trait_ref.args.type_at(0);
-                            if matches!(ty.kind(), rustc_middle::ty::Dynamic(_, _, _)) {
-                                // These types are not supported, but we want to display a proper error message because
-                                // they are rather common in real Rust code, and this is not the right place to emit
-                                // such an error message.
-                                return ControlFlow::Break(TraitResolved::UnknownFound);
-                            }
-
-                            if [
-                                tcx.lang_items().fn_trait(),
-                                tcx.lang_items().fn_mut_trait(),
-                                tcx.lang_items().fn_once_trait(),
-                            ]
-                            .contains(&Some(self.trait_ref.def_id))
-                            {
-                                match *ty.kind() {
-                                    TyKind::Closure(closure_def_id, closure_substs) => {
-                                        return ControlFlow::Break(TraitResolved::Instance {
-                                            def: (closure_def_id, closure_substs),
-                                            impl_: None,
-                                        });
-                                    }
-                                    TyKind::FnDef(did, subst) => {
-                                        return ControlFlow::Break(TraitResolved::Instance {
-                                            def: (did, subst),
-                                            impl_: None,
-                                        });
-                                    }
-                                    _ => (),
-                                }
-                            }
-                            unimplemented!(
-                                "Cannot handle builtin implementation of `{}` for `{}`",
-                                tcx.def_path_str(self.trait_ref.def_id),
-                                ty
-                            )
-                        }
-                        _ => {
-                            eprintln!(
-                                "visit_goal candidate:\n  {:?}\n  {:?}",
-                                inspect_goal.goal().predicate,
-                                candidate.kind()
-                            );
-                            ControlFlow::Break(TraitResolved::NoInstance) // TODO
-                        }
-                    }
+                                .unwrap(),
+                        )
+                    } else {
+                        None
+                    };
+                    ControlFlow::Break(Ok((source, subst)))
                 }
-                _ => ControlFlow::Break(TraitResolved::UnknownNotFound),
+                _ => ControlFlow::Break(Err(TraitResolved::UnknownNotFound)),
             }
         } else {
             eprintln!(
@@ -565,7 +632,7 @@ impl<'tcx> ProofTreeVisitor<'tcx> for TraitResolver<'tcx> {
                     .map(|c| (c.kind(), c.result(), c.shallow_certainty()))
                     .collect::<Vec<_>>()
             );
-            ControlFlow::Break(TraitResolved::UnknownNotFound)
+            ControlFlow::Break(Err(TraitResolved::UnknownNotFound))
         }
     }
 }
