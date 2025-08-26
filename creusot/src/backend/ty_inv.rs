@@ -7,7 +7,7 @@ use crate::{
     naming::variable_name,
     translation::{
         pearlite::{Ident, Literal, Pattern, Term, TermKind, Trigger},
-        traits::TraitResolved,
+        traits::{self, TraitResolved},
     },
 };
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
@@ -249,10 +249,11 @@ fn resolve_user_inv<'tcx>(
     ty: Ty<'tcx>,
     typing_env: TypingEnv<'tcx>,
 ) -> TraitResolved<'tcx> {
-    TraitResolved::resolve_item(
+    traits::resolve_item(
         tcx,
         typing_env,
         get_invariant_method(tcx),
         tcx.mk_args(&[GenericArg::from(ty)]),
     )
+    .resolved()
 }

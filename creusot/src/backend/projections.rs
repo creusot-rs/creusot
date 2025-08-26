@@ -3,7 +3,7 @@ use crate::{
     contracts_items::{get_index_logic, get_int_ty, is_snap_ty},
     ctx::PreMod,
     naming::name,
-    translation::traits::TraitResolved,
+    translation::traits,
 };
 use rustc_middle::{
     mir::{ProjectionElem, tcx::PlaceTy},
@@ -215,14 +215,9 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
                             let substs = ctx.mk_args(
                                 &[names.normalize(ctx, place_ty.ty), int_ty].map(GenericArg::from),
                             );
-                            let (did, substs) = TraitResolved::resolve_item(
-                                ctx.tcx,
-                                names.typing_env(),
-                                did,
-                                substs,
-                            )
-                            .to_opt(did, substs)
-                            .unwrap();
+                            let (did, substs) =
+                                traits::resolve_item(ctx.tcx, names.typing_env(), did, substs)
+                                    .expect_found(span);
                             Exp::Var(names.item(did, substs)).app([foc, ix_exp1])
                         }
                     }

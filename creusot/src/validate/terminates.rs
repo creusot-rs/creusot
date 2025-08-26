@@ -42,7 +42,7 @@ use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{
         pearlite::{Term, TermKind, TermVisitor, super_visit_term},
-        traits::TraitResolved,
+        traits::{self, TraitResolved},
     },
     util::erased_identity_for_item,
 };
@@ -275,14 +275,14 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         subst: GenericArgsRef<'tcx>,
         call_span: Span,
     ) {
-        let res = TraitResolved::resolve_item(ctx.tcx, typing_env, called_id, subst);
+        let res = traits::resolve_item(ctx.tcx, typing_env, called_id, subst);
 
         let (called_node, bounds);
 
         // If we are calling a known method, and this method has been defined in an ancestor of the impl
         // we found, and this method is logic and transparent from this impl and this impl is local, then use a
         // specialized default node
-        if let TraitResolved::Instance { def, impl_: Some(impl_)} = res &&
+        if let TraitResolved::Instance { def, impl_: Some(impl_)} = res.resolved() &&
             ctx.impl_of_method(def.0) != Some(impl_.0) && // The method is defined in an ancestor
             is_pearlite(ctx.tcx, def.0) && // The method is logic
             let Some(impl_ldid) = impl_.0.as_local() && // The impl is local
@@ -299,7 +299,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             );
         } else {
             let subst_r;
-            (called_id, subst_r) = res.to_opt(called_id, subst).unwrap();
+            (called_id, subst_r) = res.expect_found(call_span);
             called_node = self.insert_function(GraphNode::Function(called_id));
             bounds = ctx.instantiate_and_normalize_erasing_regions(
                 subst_r,
@@ -324,17 +324,17 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             // used by this trait solving, including those that are used indirectly.
             let w = ctx.codegen_select_candidate(typing_env.as_query_input(trait_ref));
             if let Err(e) = w {
-                eprintln!("{called_id:?} {subst:?} {call_span:?} {e:?} {trait_ref:?} {typing_env:?}")
+                eprintln!(
+                    "{called_id:?} {subst:?} {call_span:?} {e:?} {trait_ref:?} {typing_env:?}"
+                )
             }
-            if let ImplSource::Param(_) =
-                w.unwrap()
-            {
+            if let ImplSource::Param(_) = w.unwrap() {
                 continue;
             }
 
             for &item in ctx.associated_item_def_ids(trait_ref.def_id) {
                 let TraitResolved::Instance { def: (item_id, _), .. } =
-                    TraitResolved::resolve_item(ctx.tcx, typing_env, item, trait_ref.args)
+                    traits::resolve_item(ctx.tcx, typing_env, item, trait_ref.args).resolved()
                 else {
                     continue;
                 };

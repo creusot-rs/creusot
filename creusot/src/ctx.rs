@@ -14,7 +14,7 @@ use crate::{
         fmir,
         pearlite::{self, ScopedTerm},
         specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
-        traits::{Refinement, TraitResolved},
+        traits::{self, Refinement, TraitResolved},
     },
     util::{erased_identity_for_item, parent_module},
 };
@@ -350,7 +350,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         // a resolve
         if !ty.is_closure()
             && matches!(
-                TraitResolved::resolve_item(self.tcx, typing_env, trait_meth_id, substs),
+                traits::resolve_item(self.tcx, typing_env, trait_meth_id, substs).resolved(),
                 TraitResolved::NoInstance
             )
         {

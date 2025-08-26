@@ -1,6 +1,6 @@
 use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
-    translation::{fmir::Operand, pearlite::Literal, traits::TraitResolved},
+    translation::{fmir::Operand, pearlite::Literal, traits},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
@@ -115,9 +115,7 @@ fn try_scalar_to_literal<'tcx>(
             }
         }
         FnDef(def_id, subst) => {
-            let method = TraitResolved::resolve_item(ctx.tcx, env, *def_id, subst)
-                .to_opt(*def_id, subst)
-                .unwrap();
+            let method = traits::resolve_item(ctx.tcx, env, *def_id, subst).expect_found(span);
             Literal::Function(method.0, method.1)
         }
         kind => ctx.crash_and_error(span, format!("unsupported constant expression {kind:?}")),

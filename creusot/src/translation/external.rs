@@ -4,7 +4,7 @@ use crate::{
     translation::{
         pearlite::PIdent,
         specification::{ContractClauses, contract_clauses_of},
-        traits::TraitResolved,
+        traits,
     },
     util::erased_identity_for_item,
 };
@@ -53,13 +53,12 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let (id, subst) = visit.items.pop().unwrap();
 
     let (id, _) =
-        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id, subst).to_opt(id, subst).unwrap_or_else(|| {
+        traits::resolve_item(ctx.tcx, ctx.typing_env(def_id), id, subst).found().unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
-                ctx.def_span(def_id),
+                span,
                 "could not derive original instance from external specification",
             );
-
-            err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
+            err.span_warn(span, "the bounds on an external specification must be at least as strong as the original impl bounds");
             err.emit()
         });
 

@@ -89,14 +89,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             infcx.err_ctxt().report_fulfillment_errors(errs);
                         }
 
-                        let tr_res = TraitResolved::resolve_item(
+                        let tr_res = traits::resolve_item(
                             self.ctx.tcx,
                             self.typing_env(),
                             fun_def_id,
                             subst,
                         );
-                        let (fun_def_id, subst) =
-                            tr_res.to_opt(fun_def_id, subst).expect("could not find instance");
+                        let (fun_def_id, subst) = tr_res.expect_found(span);
 
                         if self.ctx.sig(fun_def_id).contract.extern_no_spec
                             && let Some(lint_root) =
@@ -114,7 +113,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         if self.ctx.sig(fun_def_id).contract.is_requires_false()
                             && !is_ghost_deref(self.tcx(), fun_def_id)
                             && !is_ghost_deref_mut(self.tcx(), fun_def_id)
-                            && !matches!(tr_res, TraitResolved::UnknownFound)
+                            && !matches!(tr_res.resolved(), TraitResolved::UnknownFound)
                         {
                             target = None
                         } else {

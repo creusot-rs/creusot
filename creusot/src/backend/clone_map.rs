@@ -8,7 +8,7 @@ use crate::{
     contracts_items::{get_builtin, get_inv_function, is_bitwise},
     ctx::*,
     options::SpanMode,
-    translation::traits::TraitResolved,
+    translation::traits,
     util::{erased_identity_for_item, path_of_span},
 };
 use elaborator::Strength;
@@ -186,9 +186,8 @@ pub(crate) trait Namer<'tcx> {
     fn resolve_dependency(&self, dep: Dependency<'tcx>) -> Dependency<'tcx> {
         let ctx = self.tcx();
         if let Dependency::Item(def, args) = dep {
-            let (def, args) = TraitResolved::resolve_item(ctx, self.typing_env(), def, args)
-                .to_opt(def, args)
-                .unwrap();
+            let (def, args) = traits::resolve_item(ctx, self.typing_env(), def, args)
+                .expect_found(ctx.def_span(def));
             Dependency::Item(def, args)
         } else {
             dep

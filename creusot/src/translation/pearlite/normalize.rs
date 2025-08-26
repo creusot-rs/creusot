@@ -2,7 +2,7 @@ use crate::{
     contracts_items::{get_builtin, is_box_new, is_ghost_deref, is_ghost_deref_mut},
     translation::{
         pearlite::{BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp, super_visit_mut_term},
-        traits::TraitResolved,
+        traits,
     },
 };
 use rustc_hir::def_id::DefId;
@@ -28,20 +28,14 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
         super_visit_mut_term(term, self);
         match &mut term.kind {
             TermKind::Call { id, subst, args } => {
-                (*id, *subst) = TraitResolved::resolve_item(self.tcx, self.typing_env, *id, subst)
-                    .to_opt(*id, subst)
-                    .unwrap_or_else(|| {
-                        panic!("could not resolve trait instance {:?}", (*id, *subst))
-                    });
+                (*id, *subst) = traits::resolve_item(self.tcx, self.typing_env, *id, subst)
+                    .expect_found(term.span);
                 term.kind =
                     optimize_builtin(self.tcx, *id, subst, std::mem::replace(args, Box::new([])));
             }
             TermKind::Item(id, subst) => {
-                (*id, *subst) = TraitResolved::resolve_item(self.tcx, self.typing_env, *id, subst)
-                    .to_opt(*id, subst)
-                    .unwrap_or_else(|| {
-                        panic!("could not resolve trait instance {:?}", (*id, *subst))
-                    })
+                (*id, *subst) = traits::resolve_item(self.tcx, self.typing_env, *id, subst)
+                    .expect_found(term.span)
             }
             _ => {}
         }

@@ -5,7 +5,7 @@ use crate::{
         is_ghost_new, is_logic, is_prophetic, is_snap_from_fn, is_snapshot_closure, is_spec,
     },
     ctx::{HasTyCtxt, TranslationCtx},
-    translation::traits::TraitResolved,
+    translation::traits,
 };
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::infer::TyCtxtInferExt;
@@ -177,10 +177,8 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     // try to specialize the called function if it is a trait method.
                     let subst = self.ctx.erase_regions(subst);
                     let (func_did, _) =
-                        TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, func_did, subst)
-                            .to_opt(func_did, subst)
-                            .unwrap();
-
+                        traits::resolve_item(self.ctx.tcx, self.typing_env, func_did, subst)
+                            .expect_found(expr.span);
                     let fn_purity = self.purity(func_did, args);
                     if matches!(self.context, Purity::Logic { .. })
                         && (

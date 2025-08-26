@@ -28,7 +28,7 @@ use crate::{
         constant::try_const_to_term,
         pearlite::{BinOp, Pattern, QuantKind, SmallRenaming, Term, TermKind, Trigger, normalize},
         specification::Condition,
-        traits::TraitResolved,
+        traits::{self, TraitResolved},
     },
 };
 use petgraph::graphmap::DiGraphMap;
@@ -138,7 +138,7 @@ fn expand_program<'tcx>(
         pre_sig.contract.requires.clear();
     }
 
-    if let TraitResolved::UnknownFound = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
+    if let TraitResolved::UnknownFound = traits::resolve_item(ctx.tcx, typing_env, def_id, subst).resolved()
                 // These conditions are important to make sure the Fn trait familly is implemented
                 && ctx.fn_sig(def_id).skip_binder().is_fn_trait_compatible()
                 && ctx.codegen_fn_attrs(def_id).target_features.is_empty()
@@ -217,7 +217,7 @@ fn expand_logic<'tcx>(
         .normalize(ctx.tcx, typing_env);
 
     let bound: Box<[Ident]> = pre_sig.inputs.iter().map(|(ident, _, _)| ident.0).collect();
-    let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
+    let trait_resol = traits::resolve_item(ctx.tcx, typing_env, def_id, subst).resolved();
     assert_matches!(
         trait_resol,
         TraitResolved::NotATraitItem
@@ -323,7 +323,7 @@ fn expand_constant<'tcx>(
     let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
         .instantiate(ctx.tcx, subst)
         .normalize(ctx.tcx, typing_env);
-    let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
+    let trait_resol = traits::resolve_item(ctx.tcx, typing_env, def_id, subst).resolved();
     assert_matches!(
         trait_resol,
         TraitResolved::NotATraitItem
@@ -619,7 +619,7 @@ fn resolve_term<'tcx>(
     if let &TyKind::Closure(def_id, subst) = subst[0].as_type().unwrap().kind() {
         Some(closure_resolve(ctx, def_id, subst, bound))
     } else {
-        match TraitResolved::resolve_item(ctx.tcx, typing_env, trait_meth_id, subst) {
+        match traits::resolve_item(ctx.tcx, typing_env, trait_meth_id, subst).resolved() {
             TraitResolved::NotATraitItem => unreachable!(),
             TraitResolved::Instance { def: (meth_did, meth_substs), .. } => {
                 // We know the instance => body points to it
@@ -715,7 +715,7 @@ fn fn_once_postcond_term<'tcx>(
             ))
         }
         &TyKind::FnDef(mut did, mut subst) => {
-            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
+            match traits::resolve_item(ctx.tcx, typing_env, did, subst).resolved() {
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
@@ -822,7 +822,7 @@ fn fn_mut_postcond_term<'tcx>(
             ]))
         }
         &TyKind::FnDef(mut did, mut subst) => {
-            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
+            match traits::resolve_item(ctx.tcx, typing_env, did, subst).resolved() {
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
@@ -898,7 +898,7 @@ fn fn_postcond_term<'tcx>(
             ]))
         }
         &TyKind::FnDef(mut did, mut subst) => {
-            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
+            match traits::resolve_item(ctx.tcx, typing_env, did, subst).resolved() {
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
@@ -971,7 +971,7 @@ fn fn_once_precond_term<'tcx>(
             ]))
         }
         &TyKind::FnDef(mut did, mut subst) => {
-            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
+            match traits::resolve_item(ctx.tcx, typing_env, did, subst).resolved() {
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
