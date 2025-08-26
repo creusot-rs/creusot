@@ -1,0 +1,257 @@
+module M_02_fib__fib [#"02_fib.rs" 35 0 35 25]
+  let%span s02_fib = "02_fib.rs" 34 10 34 11
+  let%span s02_fib'0 = "02_fib.rs" 36 4 42 5
+  
+  use mach.int.Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant i : int
+  
+  function fib [#"02_fib.rs" 35 0 35 25] (i'0: int) : int
+  
+  goal vc_fib: if i <= 0 then
+      true
+    else
+      if i = 1 then
+        true
+      else
+        (0 <= ([%#s02_fib] i) /\ ([%#s02_fib] i - 1) < ([%#s02_fib] i))
+        /\ 0 <= ([%#s02_fib] i) /\ ([%#s02_fib] i - 2) < ([%#s02_fib] i)
+    
+
+end
+module M_02_fib__lemma_fib_bound [#"02_fib.rs" 50 0 50 30]
+  let%span s02_fib = "02_fib.rs" 47 11 47 17
+  let%span s02_fib'0 = "02_fib.rs" 48 10 48 28
+  let%span s02_fib'1 = "02_fib.rs" 49 10 49 11
+  let%span s02_fib'2 = "02_fib.rs" 51 4 58 5
+  let%span s02_fib'3 = "02_fib.rs" 34 10 34 11
+  let%span s02_fib'4 = "02_fib.rs" 36 4 42 5
+  
+  use mach.int.Int
+  use bv.Pow2int
+  
+  function fib [#"02_fib.rs" 35 0 35 25] (i: int) : int
+  
+  axiom fib_def: forall i: int. fib i
+      = ([%#s02_fib'4] if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2))
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant i : int
+  
+  function lemma_fib_bound [#"02_fib.rs" 50 0 50 30] (i'0: int) : ()
+  
+  goal vc_lemma_fib_bound: ([%#s02_fib] 0 <= i)
+    -> (if i = 0 then
+      [@expl:lemma_fib_bound ensures] [%#s02_fib'0] fib i <= Pow2int.pow2 i
+    else
+      if i = 1 then
+        [@expl:lemma_fib_bound ensures] [%#s02_fib'0] fib i <= Pow2int.pow2 i
+      else
+        (([@expl:lemma_fib_bound requires] [%#s02_fib] 0 <= i - 2)
+          /\ 0 <= ([%#s02_fib'1] i) /\ ([%#s02_fib'1] i - 2) < ([%#s02_fib'1] i))
+        /\ (([%#s02_fib'0] fib (i - 2) <= Pow2int.pow2 (i - 2))
+        -> (let _ = lemma_fib_bound (i - 2) in (([@expl:lemma_fib_bound requires] [%#s02_fib] 0 <= i - 1)
+          /\ 0 <= ([%#s02_fib'1] i) /\ ([%#s02_fib'1] i - 1) < ([%#s02_fib'1] i))
+        /\ (([%#s02_fib'0] fib (i - 1) <= Pow2int.pow2 (i - 1))
+        -> ([@expl:lemma_fib_bound ensures] [%#s02_fib'0] fib i <= Pow2int.pow2 i))))
+    
+    )
+end
+module M_02_fib__fib_memo [#"02_fib.rs" 81 0 81 50]
+  let%span s02_fib = "02_fib.rs" 85 32 85 33
+  let%span s02_fib'0 = "02_fib.rs" 86 16 86 17
+  let%span s02_fib'1 = "02_fib.rs" 87 27 87 28
+  let%span s02_fib'2 = "02_fib.rs" 88 16 88 17
+  let%span s02_fib'3 = "02_fib.rs" 90 16 90 45
+  let%span s02_fib'4 = "02_fib.rs" 91 34 91 35
+  let%span s02_fib'5 = "02_fib.rs" 91 57 91 58
+  let%span s02_fib'6 = "02_fib.rs" 93 28 93 45
+  let%span s02_fib'7 = "02_fib.rs" 81 16 81 19
+  let%span s02_fib'8 = "02_fib.rs" 78 11 78 28
+  let%span s02_fib'9 = "02_fib.rs" 80 11 80 19
+  let%span s02_fib'10 = "02_fib.rs" 79 10 79 28
+  let%span s02_fib'11 = "02_fib.rs" 20 4 20 29
+  let%span s02_fib'12 = "02_fib.rs" 47 11 47 17
+  let%span s02_fib'13 = "02_fib.rs" 48 10 48 28
+  let%span s02_fib'14 = "02_fib.rs" 49 10 49 11
+  let%span s02_fib'15 = "02_fib.rs" 51 4 58 5
+  let%span s02_fib'16 = "02_fib.rs" 34 10 34 11
+  let%span s02_fib'17 = "02_fib.rs" 36 4 42 5
+  let%span s02_fib'18 = "02_fib.rs" 26 4 26 25
+  let%span s02_fib'19 = "02_fib.rs" 67 12 73 21
+  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 160 16 160 48
+  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 161 16 161 56
+  let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 21 14 21 41
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 117 20 117 37
+  let%span smodel = "../../../creusot-contracts/src/model.rs" 44 8 44 22
+  let%span smapping = "../../../creusot-contracts/src/logic/mapping.rs" 67 4 67 12
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
+  
+  use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use map.Map
+  use bv.Pow2int
+  use creusot.prelude.Any
+  
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
+  
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  
+  type t_FibCache = { t_FibCache__0: t_Vec }
+  
+  type t_PredCell
+  
+  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_PredCell) =
+    [%#sslice] UInt64.t'int self < Seq.length seq
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view (self: t_Vec) : Seq.seq t_PredCell
+  
+  axiom view_spec: forall self: t_Vec. [%#svec'1] Seq.length (view self) <= UInt64.t'int const_MAX
+  
+  function view'0 (self: t_Vec) : Seq.seq t_PredCell = [%#smodel] view self
+  
+  predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_PredCell) (out: t_PredCell) =
+    [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
+  
+  let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: t_PredCell)) =
+    {[@expl:index requires] [%#svec] in_bounds ix (view'0 self_)}
+    any [ return''0 (result: t_PredCell) -> {[%#svec'0] has_value ix (view'0 self_) result} (! return' {result}) ]
+  
+  type t_Option = C_None | C_Some UInt64.t
+  
+  predicate index_logic (self: Map.map t_Option bool) (a: t_Option) = [%#smapping] Map.get self a
+  
+  function view'1 [#"02_fib.rs" 13 4 13 33] (self: t_PredCell) : Map.map t_Option bool
+  
+  function view'2 (self: t_PredCell) : Map.map t_Option bool = [%#smodel] view'1 self
+  
+  let rec get (self: t_PredCell) (return' (x: t_Option)) = any
+    [ return''0 (result: t_Option) -> {[%#s02_fib'11] index_logic (view'2 self) result} (! return' {result}) ]
+  
+  let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
+    [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: UInt64.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  
+  function fib [#"02_fib.rs" 35 0 35 25] (i: int) : int
+  
+  axiom fib_def: forall i: int. fib i
+      = ([%#s02_fib'17] if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2))
+  
+  function lemma_fib_bound [#"02_fib.rs" 50 0 50 30] (i: int) : ()
+  
+  axiom lemma_fib_bound_def: forall i: int. ([%#s02_fib'12] 0 <= i)
+      -> lemma_fib_bound i
+      = ([%#s02_fib'15] if i = 0 then
+        ()
+      else
+        if i = 1 then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
+      )
+  
+  axiom lemma_fib_bound_spec: forall i: int. ([%#s02_fib'12] 0 <= i) -> ([%#s02_fib'13] fib i <= Pow2int.pow2 i)
+  
+  let rec set (self: t_PredCell) (v: t_Option) (return' (x: ())) =
+    {[@expl:set requires] [%#s02_fib'18] index_logic (view'2 self) v}
+    any [ return''0 (result: ()) -> (! return' {result}) ]
+  
+  predicate invariant' [#"02_fib.rs" 65 4 65 30] (self: t_FibCache) =
+    [%#s02_fib'19] forall i: int. 0 <= i /\ i < Seq.length (view self.t_FibCache__0)
+      -> (forall x: t_Option. index_logic (view'1 (Seq.get (view self.t_FibCache__0) i)) x
+        = match x with
+          | C_None -> true
+          | C_Some v -> UInt64.t'int v = fib i
+          end)
+  
+  predicate inv (_0: t_FibCache)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_FibCache [inv x]. inv x
+      = (invariant' x
+      /\ match x with
+        | {t_FibCache__0 = a_0} -> true
+        end)
+  
+  predicate invariant''0 (self: t_FibCache) = [%#sinvariant] inv self
+  
+  predicate inv'0 (_0: t_FibCache)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_FibCache [inv'0 x]. inv'0 x = invariant''0 x
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec fib_memo [#"02_fib.rs" 81 0 81 50] (mem: t_FibCache) (i: UInt64.t) (return' (x: UInt64.t)) =
+    {[@expl:fib_memo 'mem' type invariant] [%#s02_fib'7] inv'0 mem}
+    {[@expl:fib_memo requires #0] [%#s02_fib'8] UInt64.t'int i < Seq.length (view mem.t_FibCache__0)}
+    {[@expl:fib_memo requires #1] [%#s02_fib'9] UInt64.t'int i <= 63}
+    (! bb0
+    [ bb0 = s0 [ s0 = index {mem'0.t_FibCache__0} {i'0} (fun (_ret: t_PredCell) -> [ &_8 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = get {_8} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = any [ br0 -> {_6 = C_None} (! bb5) | br1 (x0: UInt64.t) -> {_6 = C_Some x0} (! bb6) ]
+    | bb6 = s0 [ s0 = v_Some {_6} (fun (r0: UInt64.t) -> [ &v <- r0 ] s1) | s1 = [ &_0 <- v ] s2 | s2 = bb18 ]
+    | bb5 = s0
+      [ s0 = [ &_14 <- i'0 = ([%#s02_fib] (0: UInt64.t)) ] s1
+      | s1 = any [ br0 -> {_14 = false} (! bb8) | br1 -> {_14} (! bb7) ] ]
+    | bb7 = s0 [ s0 = [ &fib_i <- [%#s02_fib'0] (0: UInt64.t) ] s1 | s1 = bb15 ]
+    | bb8 = s0
+      [ s0 = [ &_16 <- i'0 = ([%#s02_fib'1] (1: UInt64.t)) ] s1
+      | s1 = any [ br0 -> {_16 = false} (! bb10) | br1 -> {_16} (! bb9) ] ]
+    | bb9 = s0 [ s0 = [ &fib_i <- [%#s02_fib'2] (1: UInt64.t) ] s1 | s1 = bb15 ]
+    | bb10 = s0 [ s0 = [ &_18 <- [%#s02_fib'3] () ] s1 | s1 = bb11 ]
+    | bb11 = s0
+      [ s0 = UInt64.sub {i'0} {[%#s02_fib'4] (1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_22 <- _ret ] s1)
+      | s1 = fib_memo {mem'0} {_22} (fun (_ret: UInt64.t) -> [ &_20 <- _ret ] s2)
+      | s2 = bb12 ]
+    | bb12 = s0
+      [ s0 = UInt64.sub {i'0} {[%#s02_fib'5] (2: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_26 <- _ret ] s1)
+      | s1 = fib_memo {mem'0} {_26} (fun (_ret: UInt64.t) -> [ &_24 <- _ret ] s2)
+      | s2 = bb13 ]
+    | bb13 = s0 [ s0 = UInt64.add {_20} {_24} (fun (_ret: UInt64.t) -> [ &fib_i <- _ret ] s1) | s1 = bb15 ]
+    | bb15 = s0
+      [ s0 = {[@expl:assertion] [%#s02_fib'6] UInt64.t'int fib_i = fib (UInt64.t'int i'0)} s1
+      | s1 = index {mem'0.t_FibCache__0} {i'0} (fun (_ret: t_PredCell) -> [ &_32 <- _ret ] s2)
+      | s2 = bb16 ]
+    | bb16 = s0
+      [ s0 = [ &_35 <- C_Some fib_i ] s1 | s1 = set {_32} {_35} (fun (_ret: ()) -> [ &_30 <- _ret ] s2) | s2 = bb17 ]
+    | bb17 = s0 [ s0 = [ &_0 <- fib_i ] s1 | s1 = bb18 ]
+    | bb18 = return''0 {_0} ]
+    [ & _0: UInt64.t = Any.any_l ()
+    | & mem'0: t_FibCache = mem
+    | & i'0: UInt64.t = i
+    | & _6: t_Option = Any.any_l ()
+    | & _8: t_PredCell = Any.any_l ()
+    | & v: UInt64.t = Any.any_l ()
+    | & fib_i: UInt64.t = Any.any_l ()
+    | & _14: bool = Any.any_l ()
+    | & _16: bool = Any.any_l ()
+    | & _18: () = Any.any_l ()
+    | & _20: UInt64.t = Any.any_l ()
+    | & _22: UInt64.t = Any.any_l ()
+    | & _24: UInt64.t = Any.any_l ()
+    | & _26: UInt64.t = Any.any_l ()
+    | & _30: () = Any.any_l ()
+    | & _32: t_PredCell = Any.any_l ()
+    | & _35: t_Option = Any.any_l () ])
+    [ return''0 (result: UInt64.t) -> {[@expl:fib_memo ensures] [%#s02_fib'10] UInt64.t'int result
+      = fib (UInt64.t'int i)}
+      (! return' {result}) ]
+end
