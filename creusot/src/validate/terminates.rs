@@ -42,7 +42,7 @@ use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{
         pearlite::{Term, TermKind, TermVisitor, super_visit_term},
-        traits::TraitResolved,
+        traits::{ImplSource_, TraitResolved},
     },
     util::erased_identity_for_item,
 };
@@ -53,10 +53,7 @@ use petgraph::{
     visit::{Control, DfsEvent, EdgeRef as _, depth_first_search},
 };
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_infer::{
-    infer::TyCtxtInferExt as _,
-    traits::{ImplSource, ObligationCause},
-};
+use rustc_infer::{infer::TyCtxtInferExt as _, traits::ObligationCause};
 use rustc_middle::{
     thir::{self, visit::Visitor},
     ty::{
@@ -282,10 +279,10 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         // If we are calling a known method, and this method has been defined in an ancestor of the impl
         // we found, and this method is logic and transparent from this impl and this impl is local, then use a
         // specialized default node
-        if let TraitResolved::Instance { def, impl_: Some(impl_)} = res &&
-            ctx.impl_of_method(def.0) != Some(impl_.0) && // The method is defined in an ancestor
+        if let TraitResolved::Instance { def, impl_: ImplSource_::Impl(impl_defid, impl_args)} = res &&
+            ctx.impl_of_method(def.0) != Some(impl_defid) && // The method is defined in an ancestor
             is_pearlite(ctx.tcx, def.0) && // The method is logic
-            let Some(impl_ldid) = impl_.0.as_local() && // The impl is local
+            let Some(impl_ldid) = impl_defid.as_local() && // The impl is local
             ctx.is_transparent_from(def.0, ctx.parent_module_from_def_id(impl_ldid).to_def_id())
         {
             called_id = def.0;
@@ -293,7 +290,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             (called_node, bnds) =
                 self.visit_specialized_default_function(ctx, impl_ldid, called_id);
             bounds = ctx.instantiate_and_normalize_erasing_regions(
-                def.1.rebase_onto(ctx.tcx, ctx.parent(def.0), impl_.1),
+                def.1.rebase_onto(ctx.tcx, ctx.parent(def.0), impl_args),
                 typing_env,
                 EarlyBinder::bind(bnds),
             );
@@ -315,25 +312,17 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             let Some(clause) = bound.as_trait_clause() else { continue };
             let trait_ref = ctx.instantiate_bound_regions_with_erased(clause).trait_ref;
 
-            // FIXME: in the case of an ambiguity, `codegen_select_candidate` may return an error,
-            // which makes the unwrap bellow fail. So this is not the entry point of the trait solver we want.
-            // We want something that gives one possible instance, even if there are several instances
-            // available.
-            //
             // FIXME: this only handle the primary goal of the proof tree. We need to handle all the instances
             // used by this trait solving, including those that are used indirectly.
-            if let ImplSource::Param(_) =
-                ctx.codegen_select_candidate(typing_env.as_query_input(trait_ref)).unwrap()
-            {
-                continue;
-            }
-
             for &item in ctx.associated_item_def_ids(trait_ref.def_id) {
-                let TraitResolved::Instance { def: (item_id, _), .. } =
+                let TraitResolved::Instance { def: (item_id, _), impl_ } =
                     TraitResolved::resolve_item(ctx.tcx, typing_env, item, trait_ref.args)
                 else {
                     continue;
                 };
+                if matches!(impl_, ImplSource_::Param) {
+                    continue;
+                }
                 let item_node = self.insert_function(GraphNode::Function(item_id));
                 self.graph.update_edge(
                     node,

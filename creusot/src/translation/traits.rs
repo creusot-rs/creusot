@@ -178,6 +178,14 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
     if !errors.is_empty() { Err(errors) } else { Ok(()) }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum ImplSource_<'tcx> {
+    /// The id and substitution of the impl block, if any.
+    Impl(DefId, GenericArgsRef<'tcx>),
+    Param,
+    Fn,
+}
+
 /// The result of [`Self::resolve_assoc_item_opt`]: given the id of a trait item and some
 /// type parameters, we might find an actual implementation of the item.
 #[derive(Debug, Clone, Copy)]
@@ -187,8 +195,7 @@ pub(crate) enum TraitResolved<'tcx> {
     Instance {
         /// The id and substitution of the specific item found (e.g. the `clone` function in `impl Clone for i32`).
         def: (DefId, GenericArgsRef<'tcx>),
-        /// The id and substitution of the impl block, if any.
-        impl_: Option<(DefId, GenericArgsRef<'tcx>)>,
+        impl_: ImplSource_<'tcx>,
     },
     /// A known instance exists, but we don't know which one.
     UnknownFound,
@@ -323,7 +330,7 @@ impl<'tcx> TraitResolved<'tcx> {
 
                 TraitResolved::Instance {
                     def: (leaf_def.item.def_id, leaf_substs),
-                    impl_: Some((impl_data.impl_def_id, impl_data.args)),
+                    impl_: ImplSource_::Impl(impl_data.impl_def_id, impl_data.args),
                 }
             }
             ImplSource::Param(_) => {
@@ -331,7 +338,7 @@ impl<'tcx> TraitResolved<'tcx> {
                 if is_sealed(tcx, trait_item_def_id) {
                     return TraitResolved::Instance {
                         def: (trait_item_def_id, substs),
-                        impl_: None,
+                        impl_: ImplSource_::Param,
                     };
                 }
 
@@ -359,11 +366,14 @@ impl<'tcx> TraitResolved<'tcx> {
                         TyKind::Closure(closure_def_id, closure_substs) => {
                             return TraitResolved::Instance {
                                 def: (closure_def_id, closure_substs),
-                                impl_: None,
+                                impl_: ImplSource_::Fn,
                             };
                         }
                         TyKind::FnDef(did, subst) => {
-                            return TraitResolved::Instance { def: (did, subst), impl_: None };
+                            return TraitResolved::Instance {
+                                def: (did, subst),
+                                impl_: ImplSource_::Fn,
+                            };
                         }
                         _ => (),
                     }
