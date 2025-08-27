@@ -208,21 +208,15 @@ pub(crate) fn resolve_item<'tcx>(
             resolved: TraitResolved::NotATraitItem,
         };
     };
-    let old_res = TraitResolved::resolve_item_2(tcx, typing_env, trait_item, substs);
     let trait_ref = tcx.normalize_erasing_regions(typing_env, trait_ref);
-    let infcx = tcx.infer_ctxt().ignoring_regions().build(typing_env.typing_mode);
-    let goal = Goal {
-        param_env: typing_env.param_env,
-        predicate: Predicate::upcast_from(rustc_type_ir::Binder::dummy(trait_ref), tcx),
-    };
-    let mut visitor = TraitResolver { cause_span: DUMMY_SP }; // TODO: get span
-    let res1 = infcx.visit_proof_tree(goal, &mut visitor).break_value().unwrap();
+    let res1 = resolve_trait_ref(tcx, typing_env, trait_ref);
     let res = match res1 {
         Err(r) => r,
         Ok((candidate, subst)) => {
             from_candidate(candidate, subst, tcx, typing_env, trait_item, substs, trait_ref)
         }
     };
+    let old_res = TraitResolved::resolve_item_2(tcx, typing_env, trait_item, substs);
     if res != old_res {
         eprintln!("Mismatch for {trait_ref:?}\n  {res1:?}\n  {res:?}\n  {old_res:?}")
     }
@@ -233,6 +227,13 @@ pub(crate) fn resolve_item<'tcx>(
         trait_ref: Some(trait_ref),
         resolved: old_res,
     }
+}
+
+pub(crate) fn resolve_trait_ref<'tcx>(tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>, trait_ref: TraitRef<'tcx>) -> Result<(CandidateSource<'tcx>, Option<GenericArgsRef<'tcx>>), TraitResolved<'tcx>> {
+    let infcx = tcx.infer_ctxt().ignoring_regions().build(typing_env.typing_mode);
+    let goal = Goal { param_env: typing_env.param_env, predicate: Predicate::upcast_from(trait_ref, tcx) };
+    let mut visitor = TraitResolver { cause_span: DUMMY_SP }; // TODO: get span
+    infcx.visit_proof_tree(goal, &mut visitor).break_value().unwrap()
 }
 
 fn from_candidate<'tcx>(

@@ -315,23 +315,8 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             let Some(clause) = bound.as_trait_clause() else { continue };
             let trait_ref = ctx.instantiate_bound_regions_with_erased(clause).trait_ref;
 
-            // FIXME: in the case of an ambiguity, `codegen_select_candidate` may return an error,
-            // which makes the unwrap bellow fail. So this is not the entry point of the trait solver we want.
-            // We want something that gives one possible instance, even if there are several instances
-            // available.
-            //
             // FIXME: this only handle the primary goal of the proof tree. We need to handle all the instances
             // used by this trait solving, including those that are used indirectly.
-            let w = ctx.codegen_select_candidate(typing_env.as_query_input(trait_ref));
-            if let Err(e) = w {
-                eprintln!(
-                    "{called_id:?} {subst:?} {call_span:?} {e:?} {trait_ref:?} {typing_env:?}"
-                )
-            }
-            if let ImplSource::Param(_) = w.unwrap() {
-                continue;
-            }
-
             for &item in ctx.associated_item_def_ids(trait_ref.def_id) {
                 let TraitResolved::Instance { def: (item_id, _), .. } =
                     traits::resolve_item(ctx.tcx, typing_env, item, trait_ref.args).resolved()
