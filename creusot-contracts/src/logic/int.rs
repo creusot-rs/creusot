@@ -66,13 +66,29 @@ impl Int {
     ///
     /// ```
     /// # use creusot_contracts::*;
-    /// proof_assert!(2.pow(3) == 8);
+    /// proof_assert!(3.pow(4) == 729);
     /// ```
     #[trusted]
     #[logic]
     #[creusot::builtins = "int.Power.power"]
     #[allow(unused_variables)]
     pub fn pow(self, p: Int) -> Int {
+        dead
+    }
+
+    /// Compute `2^p`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// proof_assert!(pow2(4) == 16);
+    /// ```
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "bv.Pow2int.pow2"]
+    #[allow(unused_variables)]
+    pub fn pow2(self) -> Int {
         dead
     }
 
