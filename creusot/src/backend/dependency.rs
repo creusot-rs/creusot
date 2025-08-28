@@ -93,9 +93,11 @@ impl<'tcx> Dependency<'tcx> {
                 _ if is_size_of_logic(tcx, did) => {
                     Some(Symbol::intern(&type_string(tcx, "size_of".into(), subst.type_at(0))))
                 }
-                DefKind::Const | DefKind::AssocConst => tcx.opt_item_name(did).map(|name| {
-                    Symbol::intern(&lowercase_prefix("const_", &translate_name(name.as_str())))
-                }),
+                DefKind::Const | DefKind::AssocConst | DefKind::ConstParam => {
+                    tcx.opt_item_name(did).map(|name| {
+                        Symbol::intern(&lowercase_prefix("const_", &translate_name(name.as_str())))
+                    })
+                }
                 _ => tcx
                     .opt_item_name(did)
                     .map(|name| Symbol::intern(&value_name(&translate_name(name.as_str())))),
