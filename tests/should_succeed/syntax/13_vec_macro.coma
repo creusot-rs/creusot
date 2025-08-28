@@ -7,14 +7,12 @@ module M_13_vec_macro__x [#"13_vec_macro.rs" 5 0 5 10]
   let%span s13_vec_macro'4 = "13_vec_macro.rs" 12 21 12 22
   let%span s13_vec_macro'5 = "13_vec_macro.rs" 12 24 12 25
   let%span s13_vec_macro'6 = "13_vec_macro.rs" 13 20 13 34
-  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 72 26 72 44
-  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 21 14 21 41
-  let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 178 22 178 41
-  let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 179 22 179 70
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 356 18 356 35
-  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 30 14 30 41
-  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 31 14 31 42
-  let%span sindex = "../../../creusot-contracts/src/logic/ops/index.rs" 29 8 29 31
+  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 109 26 109 44
+  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 23 14 23 41
+  let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 215 22 215 41
+  let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 216 22 216 70
+  let%span svec'3 = "../../../creusot-contracts/src/std/vec.rs" 51 8 51 31
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 364 18 364 35
   let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 22 8 22 22
   
   use creusot.prelude.Opaque
@@ -55,23 +53,17 @@ module M_13_vec_macro__x [#"13_vec_macro.rs" 5 0 5 10]
   
   axiom view_spec'0: forall self: t_Vec'0. [%#svec'0] Seq.length (view'0 self) <= UInt64.t'int const_MAX
   
-  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : Int32.t = [%#sindex] Seq.get (view'0 self) ix
+  function index_logic [@inline:trivial] (self: t_Vec'0) (ix: int) : Int32.t = [%#svec'3] Seq.get (view'0 self) ix
   
   let rec from_elem (elem: Int32.t) (n: UInt64.t) (return' (x: t_Vec'0)) = any
     [ return''0 (result: t_Vec'0) -> {[%#svec'1] Seq.length (view'0 result) = UInt64.t'int n}
       {[%#svec'2] forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic result i = elem}
       (! return' {result}) ]
   
-  function view'1 (self: Slice64.slice Int32.t) : Seq.seq Int32.t
-  
-  axiom view_spec'1: forall self: Slice64.slice Int32.t. [%#sslice'0] Seq.length (view'1 self) <= UInt64.t'int const_MAX
-  
-  axiom view_spec'2: forall self: Slice64.slice Int32.t. [%#sslice'1] view'1 self = Slice64.id self
-  
-  function view'2 (self: Slice64.slice Int32.t) : Seq.seq Int32.t = [%#sboxed] view'1 self
+  function view'1 (self: Slice64.slice Int32.t) : Seq.seq Int32.t = [%#sboxed] Slice64.view self
   
   let rec into_vec (self_: Slice64.slice Int32.t) (return' (x: t_Vec'0)) = any
-    [ return''0 (result: t_Vec'0) -> {[%#sslice] view'0 result = view'2 self_} (! return' {result}) ]
+    [ return''0 (result: t_Vec'0) -> {[%#sslice] view'0 result = view'1 self_} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   

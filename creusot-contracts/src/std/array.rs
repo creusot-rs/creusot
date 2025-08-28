@@ -1,4 +1,4 @@
-use crate::{invariant::*, std::iter::Iterator, *};
+use crate::{invariant::*, logic::ops::IndexLogic, std::iter::Iterator, *};
 use ::std::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
@@ -16,12 +16,9 @@ impl<T, const N: usize> View for [T; N] {
 
     #[logic]
     #[trusted]
-    #[cfg_attr(target_pointer_width = "16", creusot::builtins = "creusot.slice.Slice16.id")]
-    #[cfg_attr(target_pointer_width = "32", creusot::builtins = "creusot.slice.Slice32.id")]
-    #[cfg_attr(target_pointer_width = "64", creusot::builtins = "creusot.slice.Slice64.id")]
-    // TODO:
-    // #[ensures(result.len() == N@)]
-    // Warning: #[ensures] and #[trusted] are incompatible, so this might require
+    #[cfg_attr(target_pointer_width = "16", creusot::builtins = "creusot.slice.Slice16.view")]
+    #[cfg_attr(target_pointer_width = "32", creusot::builtins = "creusot.slice.Slice32.view")]
+    #[cfg_attr(target_pointer_width = "64", creusot::builtins = "creusot.slice.Slice64.view")]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -32,12 +29,32 @@ impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
 
     #[logic]
     #[trusted]
-    // TODO
-    // #[ensures(result.len() == N@)]
     #[ensures(self.view().len() == result.len())]
     #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         dead
+    }
+}
+
+impl<T, const N: usize> IndexLogic<Int> for [T; N] {
+    type Item = T;
+
+    #[logic]
+    #[open]
+    #[creusot::why3_attr = "inline:trivial"]
+    fn index_logic(self, ix: Int) -> Self::Item {
+        pearlite! { self@[ix] }
+    }
+}
+
+impl<T, const N: usize> IndexLogic<usize> for [T; N] {
+    type Item = T;
+
+    #[logic]
+    #[open]
+    #[creusot::why3_attr = "inline:trivial"]
+    fn index_logic(self, ix: usize) -> Self::Item {
+        pearlite! { self@[ix@] }
     }
 }
 

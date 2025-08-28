@@ -6,7 +6,7 @@ use crate::*;
 /// This kind of model is mostly useful for notation purposes,
 /// because this trait is linked to the @ notation of pearlite.
 #[diagnostic::on_unimplemented(
-    message = "Cannot take the model of `{Self}`",
+    message = "Cannot take the view of `{Self}`",
     label = "no implementation for `{Self}@`"
 )]
 pub trait View {

@@ -2,6 +2,7 @@
 use crate::resolve::structural_resolve;
 use crate::{
     invariant::*,
+    logic::ops::IndexLogic,
     std::ops::{
         Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
     },
@@ -24,11 +25,11 @@ impl<T> Invariant for [T] {
 impl<T> View for [T] {
     type ViewTy = Seq<T>;
 
-    // We define this as trusted because builtins and ensures are incompatible
     #[logic]
     #[trusted]
-    #[ensures(result.len() <= usize::MAX@)]
-    #[ensures(result == slice_model(&self))]
+    #[cfg_attr(target_pointer_width = "16", creusot::builtins = "creusot.slice.Slice16.view")]
+    #[cfg_attr(target_pointer_width = "32", creusot::builtins = "creusot.slice.Slice32.view")]
+    #[cfg_attr(target_pointer_width = "64", creusot::builtins = "creusot.slice.Slice64.view")]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -46,19 +47,26 @@ impl<T: DeepModel> DeepModel for [T] {
     }
 }
 
-#[logic]
-#[trusted]
-#[cfg_attr(target_pointer_width = "16", creusot::builtins = "creusot.slice.Slice16.id")]
-#[cfg_attr(target_pointer_width = "32", creusot::builtins = "creusot.slice.Slice32.id")]
-#[cfg_attr(target_pointer_width = "64", creusot::builtins = "creusot.slice.Slice64.id")]
-pub fn slice_model<T>(_: &[T]) -> Seq<T> {
-    dead
+impl<T> IndexLogic<Int> for [T] {
+    type Item = T;
+
+    #[logic]
+    #[open]
+    #[creusot::why3_attr = "inline:trivial"]
+    fn index_logic(self, ix: Int) -> Self::Item {
+        pearlite! { self@[ix] }
+    }
 }
 
-#[logic]
-#[open]
-pub fn slice_len<T>(x: [T]) -> Int {
-    pearlite! { x@.len() }
+impl<T> IndexLogic<usize> for [T] {
+    type Item = T;
+
+    #[logic]
+    #[open]
+    #[creusot::why3_attr = "inline:trivial"]
+    fn index_logic(self, ix: usize) -> Self::Item {
+        pearlite! { self@[ix@] }
+    }
 }
 
 pub trait SliceExt<T> {
