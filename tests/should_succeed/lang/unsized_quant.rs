@@ -1,6 +1,3 @@
-#![allow(incomplete_features)]
-#![feature(unsized_locals)]
-
 extern crate creusot_contracts;
 use creusot_contracts::*;
 

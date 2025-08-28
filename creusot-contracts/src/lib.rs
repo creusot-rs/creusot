@@ -26,7 +26,6 @@
     feature = "nightly",
     allow(incomplete_features, internal_features),
     feature(
-        unsized_locals,
         fn_traits,
         slice_take,
         print_internals,
