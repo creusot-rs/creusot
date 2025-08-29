@@ -507,15 +507,21 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
             .filter_map(to_pattern)
             .collect::<CreusotResult<_>>()
     } else if is_logic_closure(ctx.tcx, did) {
-        // Skip implicit `self` parameter, and remove the & pattern which is added for parameters
-        // of logic closures
+        // Skip implicit `self` parameter, and remove the & pattern which is sometimes
+        // added for parameters of mappings.
+        // In other cases, binders are just variables and they are left intact.
+        // The only case where users can write arbitrary patterns in closure binders is
+        // the one where the desugaring wraps it in `&`, so there is no risk of removing
+        // a user-written `&` here.
         thir.params
             .iter()
             .skip(1)
             .filter_map(to_pattern)
-            .map(|pat| match pat?.kind {
-                PatternKind::Deref(pat) => Ok(*pat),
-                _ => unreachable!(),
+            .map(|pat| {
+                pat.map(|pat| match pat.kind {
+                    PatternKind::Deref(pat) => *pat,
+                    _ => pat,
+                })
             })
             .collect::<CreusotResult<_>>()
     } else {
@@ -872,6 +878,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     kind: TermKind::Constructor { variant: variant_index, fields },
                 })
             }
+            // `*&expr` is identical to `expr` in Pearlite
             ExprKind::Deref { arg }
                 if let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } =
                     self.unscope(arg).kind =>
@@ -984,9 +991,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::ConstParam { param: _, def_id } => {
                 Ok(Term::const_param(self.ctx.tcx, def_id, ty, span))
             }
-            ref ek => {
-                self.ctx.dcx().span_bug(span, format!("Unsupported expression kind {:?}", ek))
-            }
+            ref ek => Err(Error::msg(span, format!("Unsupported expression kind {:?}", ek))),
         };
         Ok(Term { ty, ..res? })
     }
