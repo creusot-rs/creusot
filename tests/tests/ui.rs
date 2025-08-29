@@ -15,7 +15,15 @@ use std::{
 use termcolor::*;
 
 mod diff;
-use diff::{differ, normalize_file_path};
+use diff::differ;
+
+macro_rules! writeln_color {
+    ($out:expr, $color:expr, $($arg:tt)*) => {
+        $out.set_color(ColorSpec::new().set_fg(Some($color))).unwrap();
+        writeln!($out, $($arg)*).unwrap();
+        $out.reset().unwrap();
+    };
+}
 
 /// Used to query the size of the terminal
 #[derive(Default)]
@@ -42,27 +50,31 @@ struct Args {
     filter: Option<String>,
 }
 
+impl Args {
+    fn stream(&self) -> StandardStream {
+        StandardStream::stdout(if self.force_color {
+            ColorChoice::Always
+        } else {
+            ColorChoice::Never
+        })
+    }
+}
+
 fn main() {
     let mut args = Args::parse();
     if env::var("CI").is_ok() {
         args.quiet = true;
         args.force_color = true;
+    } else {
+        args.force_color = args.force_color || std::io::stdout().is_terminal();
     }
+    // Go to the root of the creusot repository.
     std::env::set_current_dir("..").unwrap();
+    build_creusot_rustc(args.force_color);
+    build_cargo_creusot(args.force_color);
 
-    println! {"Building creusot-rustc..."};
-    let creusot_rustc = escargot::CargoBuild::new().bin("creusot-rustc").run().unwrap();
-    let creusot_rustc = creusot_rustc.path();
-
-    let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    base_path.pop();
-
-    let mut temp_file = base_path.clone();
-    temp_file.push("target");
-    temp_file.push("creusot");
-    temp_file.push("debug");
-    temp_file.push("libcreusot_contracts.cmeta");
-    let temp_file = temp_file.to_string_lossy();
+    let base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let paths = CreusotPaths::new(base_path.parent().unwrap());
 
     let mut test_creusot_contracts = true;
     if let Some(ref filter) = args.filter {
@@ -70,36 +82,21 @@ fn main() {
             test_creusot_contracts = false;
         }
     }
-    let contracts_success = translate_creusot_contracts(
-        &args,
-        creusot_rustc,
-        &base_path,
-        &temp_file,
-        test_creusot_contracts,
-    );
+    let contracts_success = translate_creusot_contracts(&args, &paths, test_creusot_contracts);
 
     let (mut failed, mut total) =
         (if contracts_success { 0 } else { 1 }, if test_creusot_contracts { 1 } else { 0 });
 
-    let (fail1, total1) = should_fail("tests/should_fail/**/*.rs", &args, |p| {
-        run_creusot(creusot_rustc, p, &temp_file)
-    });
-    let (fail2, total2) = should_succeed("tests/should_succeed/**/*.rs", &args, |p| {
-        run_creusot(creusot_rustc, p, &temp_file)
-    });
+    let (fail1, total1) =
+        should_fail("tests/should_fail/**/*.rs", &args, |p| run_creusot(p, &paths));
+    let (fail2, total2) =
+        should_succeed("tests/should_succeed/**/*.rs", &args, |p| run_creusot(p, &paths));
 
     total += total1 + total2;
     failed += fail1 + fail2;
     if failed > 0 {
-        let mut out =
-            StandardStream::stdout(if args.force_color || std::io::stdout().is_terminal() {
-                ColorChoice::Always
-            } else {
-                ColorChoice::Never
-            });
-        out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-        writeln!(&mut out, "{failed} failures out of {total} tests").unwrap();
-        out.reset().unwrap();
+        let mut out = args.stream();
+        writeln_color!(out, Color::Red, "{failed} failures out of {total} tests");
         drop(out);
         std::process::exit(1);
     }
@@ -107,59 +104,86 @@ fn main() {
     println!("All tests passed!");
 }
 
+const CARGO_CREUSOT: &str = "target/debug/cargo-creusot";
+const CREUSOT_RUSTC: &str = "target/debug/creusot-rustc";
+
+fn build_creusot_rustc(force_color: bool) {
+    cargo_build("creusot-rustc", force_color)
+}
+
+fn build_cargo_creusot(force_color: bool) {
+    cargo_build("cargo-creusot", force_color)
+}
+
+fn cargo_build(target: &str, force_color: bool) {
+    println! {"Building {target}..."};
+    let mut cargo = Command::new("cargo");
+    cargo.args(["build", "--bin", target]);
+    if force_color {
+        cargo.args(["--color", "always"]);
+    }
+    let output = cargo.output().unwrap();
+    if !output.status.success() {
+        std::io::stdout().write_all(&output.stderr).unwrap();
+        std::process::exit(1)
+    }
+}
+
+struct CreusotPaths {
+    creusot_rustc: PathBuf,
+    deps: PathBuf,
+    rlib: PathBuf,
+    cmeta: PathBuf,
+}
+
+impl CreusotPaths {
+    fn new(base: &Path) -> Self {
+        let creusot = base.join("target/creusot/debug");
+        Self {
+            creusot_rustc: base.join(CREUSOT_RUSTC),
+            deps: creusot.join("deps"),
+            rlib: creusot.join("libcreusot_contracts.rlib"),
+            cmeta: creusot.join("libcreusot_contracts.cmeta"),
+        }
+    }
+}
+
 /// Returns `false` if the translation changed
 ///
 /// This will only check the output of `creusot-contracts` if `test_creusot_contracts` is true.
 fn translate_creusot_contracts(
     args: &Args,
-    creusot_rustc: &Path,
-    base_path: &PathBuf,
-    temp_file: &str,
+    paths: &CreusotPaths,
     test_creusot_contracts: bool,
 ) -> bool {
-    println! {"Building cargo-creusot..."};
-    let cargo_creusot = escargot::CargoBuild::new().bin("cargo-creusot").run().unwrap().command();
-
     if test_creusot_contracts {
         print!("Translating creusot-contracts... ");
         std::io::stdout().flush().unwrap();
         std::process::Command::new("touch")
-            .current_dir(&base_path)
             .args(["creusot-contracts/src/lib.rs"])
             .status()
             .unwrap();
     }
-    let mut creusot_contracts = cargo_creusot;
-    creusot_contracts.current_dir(base_path);
+    let mut creusot_contracts = Command::new(CARGO_CREUSOT);
     creusot_contracts
-        .arg("creusot")
-        .args(&[
+        .args([
+            "creusot",
             "--no-check-version",
-            "--creusot-rustc",
-            creusot_rustc.to_str().unwrap(),
-            "--metadata-path",
-            temp_file,
             "--stdout",
             "--span-mode=relative",
             "--spans-relative-to=tests/creusot-contracts",
-            "--",
-            "--package",
-            "creusot-contracts",
-            "--quiet",
+            "--metadata-path",
         ])
+        .arg(&paths.cmeta)
+        .arg("--creusot-rustc")
+        .arg(&paths.creusot_rustc)
+        .args(["--", "--package", "creusot-contracts", "--quiet"])
         .env("CREUSOT_CONTINUE", "true");
 
-    let is_tty = std::io::stdout().is_terminal();
-    let mut out = StandardStream::stdout(if args.force_color || is_tty {
-        ColorChoice::Always
-    } else {
-        ColorChoice::Never
-    });
+    let mut out = args.stream();
     let output = creusot_contracts.output().expect("could not translate `creusot_contracts`");
     if !output.status.success() {
-        out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-        writeln!(&mut out, "could not translate").unwrap();
-        out.reset().unwrap();
+        writeln_color!(out, Color::Red, "could not translate");
         out.flush().unwrap();
         eprintln!("{}", String::from_utf8(output.stderr).unwrap());
         std::process::exit(1);
@@ -171,14 +195,12 @@ fn translate_creusot_contracts(
 
     let expect = PathBuf::from("tests/creusot-contracts/creusot-contracts.coma");
     let mut succeeded = true;
-    let (success, buf) = differ(output.clone(), &expect, None, true, is_tty).unwrap();
+    let (success, buf) = differ(output.clone(), &expect, None, true, args.force_color).unwrap();
 
     // Warnings in creusot-contracts will be counted as an error at the end,
     // but we still allow --bless so we can experiment without resolving warnings immediately.
     if !output.stderr.is_empty() {
-        out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
-        writeln!(&mut out, "warnings").unwrap();
-        out.reset().unwrap();
+        writeln_color!(out, Color::Yellow, "warnings");
         out.flush().unwrap();
         eprintln!("{}", std::str::from_utf8(&output.stderr).unwrap());
         succeeded = false;
@@ -193,26 +215,18 @@ fn translate_creusot_contracts(
         }
 
         if success {
-            out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
-            writeln!(&mut out, "unchanged").unwrap();
-            out.reset().unwrap();
+            writeln_color!(out, Color::Green, "unchanged");
         } else {
-            out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
-            writeln!(&mut out, "blessed").unwrap();
-            out.reset().unwrap();
+            writeln_color!(out, Color::Blue, "blessed");
             std::fs::write(expect, &output.stdout).unwrap();
         }
     } else {
         if success {
-            out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
-            writeln!(&mut out, "ok").unwrap();
+            writeln_color!(out, Color::Green, "ok");
         } else {
-            out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-            writeln!(&mut out, "failure").unwrap();
-
+            writeln_color!(out, Color::Red, "failure");
             succeeded = false;
         };
-        out.reset().unwrap();
 
         let wrt = BufferWriter::stdout(ColorChoice::Always);
         wrt.print(&buf).unwrap();
@@ -222,28 +236,14 @@ fn translate_creusot_contracts(
     succeeded
 }
 
-fn run_creusot(
-    creusot_rustc: &Path,
-    file: &Path,
-    contracts: &str,
-) -> Option<std::process::Command> {
+fn run_creusot(file: &Path, paths: &CreusotPaths) -> Option<std::process::Command> {
     let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
     if header_line.contains("UISKIP") {
         return None;
     }
 
-    let mut cmd = Command::new(creusot_rustc);
+    let mut cmd = Command::new(&paths.creusot_rustc);
     cmd.current_dir(file.parent().unwrap());
-    let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    base_path.pop();
-    base_path.push("target");
-    base_path.push("creusot");
-    base_path.push("debug");
-
-    let creusot_contract_path = base_path.join("libcreusot_contracts.rlib");
-    let creusot_contract_path =
-        creusot_contract_path.to_str().expect("invalid utf-8 in contract path");
-    let creusot_contract_path = normalize_file_path(creusot_contract_path);
 
     // Magic comment with instructions for creusot
     let header_line = BufReader::new(File::open(file).unwrap()).lines().nth(0).unwrap().unwrap();
@@ -257,11 +257,8 @@ fn run_creusot(
         .collect();
 
     cmd.args(&["-Zno-codegen", "--crate-type=lib"]);
-    cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path)]);
-
-    let mut dep_path = base_path;
-    dep_path.push("deps");
-    cmd.arg(format!("-Ldependency={}/", dep_path.display()));
+    cmd.args(&["--extern", &format!("creusot_contracts={}", paths.rlib.display())]);
+    cmd.arg(format!("-Ldependency={}/", paths.deps.display()));
     cmd.arg(file.file_name().unwrap());
 
     if header_line.contains("SHORT_ERROR") {
@@ -276,10 +273,7 @@ fn run_creusot(
         "--spans-relative-to=.",
     ]);
     cmd.args(args);
-    cmd.args(&[
-        "--creusot-extern",
-        &format!("creusot_contracts={}", normalize_file_path(contracts)),
-    ]);
+    cmd.args(&["--creusot-extern", &format!("creusot_contracts={}", paths.cmeta.display())]);
 
     Some(cmd)
 }
@@ -316,13 +310,7 @@ fn glob_runner<B>(s: &str, args: &Args, command_builder: B, should_succeed: bool
 where
     B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
-    let is_tty = std::io::stdout().is_terminal();
-    let out = StandardStream::stdout(if args.force_color || is_tty {
-        ColorChoice::Always
-    } else {
-        ColorChoice::Never
-    });
-
+    let out = args.stream();
     let test_count = AtomicUsize::new(0);
     let test_failures = AtomicUsize::new(0);
 
@@ -389,7 +377,6 @@ where
                             erase_in_flight(out);
                             write_in_flight(in_flight, out);
                         }
-
                         let mut o = c.output().unwrap();
                         // Replace global paths in stderr with (a simulacrum of) local paths
                         erase_global_paths(&mut o.stderr);
@@ -400,8 +387,14 @@ where
                 let stderr = entry.with_extension("stderr");
                 let stdout = entry.with_extension("coma");
 
-                let (success, buf) =
-                    differ(output.clone(), &stdout, Some(&stderr), should_succeed, is_tty).unwrap();
+                let (success, buf) = differ(
+                    output.clone(),
+                    &stdout,
+                    Some(&stderr),
+                    should_succeed,
+                    args.force_color,
+                )
+                .unwrap();
 
                 let mut out = out.lock().unwrap();
                 let (in_flight, out) = &mut *out;
@@ -430,24 +423,18 @@ where
                         erase_in_flight(out);
                         write!(out, "{}: ", entry.display()).unwrap();
                         if no_warn {
-                            out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
-                            writeln!(out, "blessed").unwrap();
+                            writeln_color!(out, Color::Blue, "blessed");
                         } else {
-                            out.set_color(ColorSpec::new().set_fg(Some(Color::Magenta))).unwrap();
-                            writeln!(out, "blessed (with warnings)").unwrap();
+                            writeln_color!(out, Color::Magenta, "blessed (with warnings)");
                         }
-                        out.reset().unwrap();
                     }
                 } else {
                     if !success {
                         erase_in_flight(out);
                         write!(out, "{}: ", entry.display()).unwrap();
-                        out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-                        writeln!(out, "failure").unwrap();
-
+                        writeln_color!(out, Color::Red, "failure");
                         test_failures.fetch_add(1, atomic::Ordering::SeqCst);
                     };
-                    out.reset().unwrap();
                     out.flush().unwrap();
 
                     let wrt = BufferWriter::stdout(ColorChoice::Always);
