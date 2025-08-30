@@ -34,7 +34,7 @@ use rustc_hir::{
 use rustc_infer::traits::ObligationCause;
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{Promoted, TerminatorKind},
+    mir::Promoted,
     thir,
     ty::{
         Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, ResolverAstLowering, Ty, TyCtxt,
@@ -178,7 +178,6 @@ pub struct TranslationCtx<'tcx> {
     terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
     trait_impl: OnceMap<DefId, Box<Vec<Refinement<'tcx>>>>,
     sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
-    bodies: OnceMap<LocalDefId, Box<BodyWithBorrowckFacts<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
     renamer: RefCell<HashMap<HirId, Ident>>,
     pub corenamer: RefCell<HashMap<Ident, HirId>>,
@@ -198,7 +197,7 @@ fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
     impl<'a> Visitor<'a> for VisitFns<'_, 'a> {
         fn visit_fn(&mut self, fk: FnKind<'a>, _: Span, node: NodeId) {
             let decl = match fk {
-                FnKind::Fn(_, _, _, Fn { sig: FnSig { decl, .. }, .. }) => decl,
+                FnKind::Fn(_, _, Fn { sig: FnSig { decl, .. }, .. }) => decl,
                 FnKind::Closure(_, _, decl, _) => decl,
             };
             let mut open_inv_params = vec![];
@@ -224,8 +223,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, opts: Options) -> Self {
         let params_open_inv = gather_params_open_inv(tcx);
         let creusot_items = tcx
-            .hir()
-            .body_owners()
+            .hir_body_owners()
             .filter_map(|did| {
                 let did = did.to_def_id();
                 Some((get_creusot_item(tcx, did)?, did))
@@ -244,7 +242,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             fmir_body: Default::default(),
             trait_impl: Default::default(),
             sig: Default::default(),
-            bodies: Default::default(),
             opacity: Default::default(),
             params_open_inv,
             renamer: Default::default(),
@@ -260,7 +257,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     /// Clone all THIR bodies before they are stolen by `analysis`
     pub(crate) fn clone_all_thir(&mut self) {
-        for def_id in self.tcx.hir().body_owners() {
+        for def_id in self.tcx.hir_body_owners() {
             // If a body is missing, it means that there was an error, and we know that because `Err` is `ErrorGuaranteed`.
             // Keep going. We will abort later in `translation::after_analysis` after doing more checks that could raise more errors.
             if let Ok((thir, expr0)) = self.tcx.thir_body(def_id) {
@@ -291,7 +288,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         self.terms
             .insert(def_id, |_| {
-                if self.tcx.hir().maybe_body_owned_by(local_id).is_some() {
+                if self.tcx.hir_maybe_body_owned_by(local_id).is_some() {
                     let (bound, term) = match pearlite::pearlite(self, local_id) {
                         Ok(t) => t,
                         Err(err) => err.abort(self.tcx),
@@ -318,7 +315,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     queryish!(sig, DefId, PreSignature<'tcx>, (pre_sig_of));
 
     pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
-        self.bodies.insert(def_id, |_| Box::new(body_with_facts(self.tcx, def_id)))
+        callbacks::get_body(self.tcx, def_id)
     }
 
     /// `span` is used for diagnostics.
@@ -439,7 +436,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn has_body(&self, def_id: DefId) -> bool {
         if let Some(local_id) = def_id.as_local() {
-            self.tcx.hir().maybe_body_owned_by(local_id).is_some()
+            self.tcx.hir_maybe_body_owned_by(local_id).is_some()
         } else {
             match self.item_type(def_id) {
                 ItemType::Logic { .. } => self.term(def_id).is_some(),
@@ -481,13 +478,16 @@ impl<'tcx> TranslationCtx<'tcx> {
             // let additional_predicates = self.arena.alloc_slice(&additional_predicates);
             // let additional_predicates = rustc_middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
 
-            self.extern_specs.insert(def_id, ExternSpec {
-                contract: ContractClauses::new(),
-                subst: erased_identity_for_item(self.tcx, def_id),
-                inputs: Box::new([]),
-                output: Ty::new_bool(self.tcx), // dummy
-                additional_predicates,
-            });
+            self.extern_specs.insert(
+                def_id,
+                ExternSpec {
+                    contract: ContractClauses::new(),
+                    subst: erased_identity_for_item(self.tcx, def_id),
+                    inputs: Box::new([]),
+                    output: Ty::new_bool(self.tcx), // dummy
+                    additional_predicates,
+                },
+            );
         }
     }
 
@@ -516,7 +516,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn rename(&self, ident: HirId) -> Ident {
         *self.renamer.borrow_mut().entry(ident).or_insert_with(|| {
-            let r = Ident::fresh(self.crate_name(), variable_name(self.hir().name(ident).as_str()));
+            let r = Ident::fresh(self.crate_name(), variable_name(self.hir_name(ident).as_str()));
             self.corenamer.borrow_mut().insert(r, ident);
             r
         })
@@ -535,23 +535,4 @@ impl<'tcx> HasTyCtxt<'tcx> for TranslationCtx<'tcx> {
 
 pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
     tcx.crate_name(LOCAL_CRATE).as_str().into()
-}
-
-/// This should only be called at most once per `def_id` (for more info, see `callbacks::get_body`).
-pub(crate) fn body_with_facts(tcx: TyCtxt, def_id: LocalDefId) -> BodyWithBorrowckFacts {
-    let mut body = callbacks::get_body(tcx, def_id)
-        .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
-
-    // We need to remove false edges. They are used in compilation of pattern matchings
-    // in ways that may result in move paths that are marked live and uninitilized at the
-    // same time. We cannot handle this in the generation of resolution.
-    // On the other hand, it is necessary to keep false unwind edges, because they are needed
-    // by liveness analysis.
-    for bbd in body.body.basic_blocks_mut().iter_mut() {
-        let term = bbd.terminator_mut();
-        if let TerminatorKind::FalseEdge { real_target, .. } = term.kind {
-            term.kind = TerminatorKind::Goto { target: real_target };
-        }
-    }
-    body
 }

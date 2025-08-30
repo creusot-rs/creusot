@@ -74,7 +74,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     // Move Self_ to the front of the list like rustc does for real trait impls (not expressible in surface rust).
     // This only matters when we also have lifetime parameters.
     let self_pos = outer_subst.iter().position(|e| {
-        if let GenericArgKind::Type(t) = e.unpack()
+        if let GenericArgKind::Type(t) = e.kind()
             && let TyKind::Param(t) = t.kind()
             && t.name.as_str().starts_with("Self")
         {
@@ -93,7 +93,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     // it always puts lifetimes first.
     inner_subst.sort_by(|a1, a2| {
         use std::cmp::Ordering;
-        match (a1.unpack(), a2.unpack()) {
+        match (a1.kind(), a2.kind()) {
             (GenericArgKind::Lifetime(_), GenericArgKind::Lifetime(_)) => Ordering::Equal,
             (GenericArgKind::Lifetime(_), _) => Ordering::Less,
             (_, GenericArgKind::Lifetime(_)) => Ordering::Greater,
@@ -104,10 +104,12 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let mut subst = Vec::new();
     let mut errors = Vec::new();
     for i in 0..outer_subst.len() {
-        match (inner_subst[i + extra_parameters].unpack(), outer_subst[i].unpack()) {
+        match (inner_subst[i + extra_parameters].kind(), outer_subst[i].kind()) {
             (GenericArgKind::Type(t1), GenericArgKind::Type(t2)) => match (t1.kind(), t2.kind()) {
                 (TyKind::Param(param1), TyKind::Param(param2))
-                    if param1.name == param2.name || param1.name.as_str().starts_with("Self") =>
+                    if true // TODO
+                        || param1.name == param2.name
+                        || param1.name.as_str().starts_with("Self") =>
                 {
                     subst.push(inner_subst[i + extra_parameters]);
                 }
@@ -134,7 +136,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                 }
             }
             (GenericArgKind::Lifetime(l1), GenericArgKind::Lifetime(l2)) => {
-                if l1.get_name() == l2.get_name() {
+                if l1.get_name(ctx.tcx) == l2.get_name(ctx.tcx) {
                     subst.push(inner_subst[i + extra_parameters]);
                 } else {
                     let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");

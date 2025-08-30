@@ -19,7 +19,7 @@ const TAG_PARTIAL_SPAN: u8 = 1;
 // Tags for encoding Symbol's
 const SYMBOL_STR: u8 = 0;
 const SYMBOL_OFFSET: u8 = 1;
-const SYMBOL_PREINTERNED: u8 = 2;
+const SYMBOL_PREDEFINED: u8 = 2;
 
 mod decoder;
 mod encoder;

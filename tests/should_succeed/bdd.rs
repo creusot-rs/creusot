@@ -1,5 +1,6 @@
 extern crate creusot_contracts;
 
+use ::std::cmp::Ordering::*;
 use creusot_contracts::{
     Clone, PartialEq,
     invariant::{Invariant, inv},
@@ -7,7 +8,6 @@ use creusot_contracts::{
     peano::PeanoInt,
     *,
 };
-use std::cmp::Ordering::*;
 
 /* Axiomatization of bumpalo */
 
@@ -98,6 +98,7 @@ enum Node<'arena> {
 }
 use self::Node::*;
 
+#[allow(dead_code)]
 enum NodeLog {
     False,
     True,

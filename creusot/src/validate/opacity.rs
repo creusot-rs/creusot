@@ -1,10 +1,10 @@
+use rustc_abi::VariantIdx;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
-    mir::{ProjectionElem, tcx::PlaceTy},
+    mir::{PlaceTy, ProjectionElem},
     ty::{TyKind, TypingEnv},
 };
 use rustc_span::Span;
-use rustc_target::abi::VariantIdx;
 
 use crate::{
     backend::{is_trusted_item, projections::iter_projections_ty},

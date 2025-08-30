@@ -1,10 +1,9 @@
 // WHY3PROVE
 extern crate creusot_contracts;
-
 use creusot_contracts::*;
 
 mod common;
-use common::Iterator;
+pub use common::Iterator;
 
 pub struct Empty<T>(std::marker::PhantomData<T>);
 

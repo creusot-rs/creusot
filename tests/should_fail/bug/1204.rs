@@ -5,13 +5,13 @@ use creusot_contracts::*;
 #[logic]
 #[requires(false)]
 #[variant(x)]
-fn evil(x: Int) -> Int {
+pub fn evil(x: Int) -> Int {
     evil(-x) + 1
 }
 
 #[logic]
 #[ensures(false)]
-fn wrong() {
+pub fn wrong() {
     proof_assert! {evil(1) == evil(-1) + 1};
     proof_assert! {evil(-1) == evil(1) + 1}
 }

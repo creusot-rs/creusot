@@ -180,10 +180,11 @@ module M_inc_max_3__inc_max_3 [#"inc_max_3.rs" 12 0 12 79]
       (! return' {result}) ]
 end
 module M_inc_max_3__test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57]
-  let%span sinc_max_3 = "inc_max_3.rs" 29 4 29 39
-  let%span sinc_max_3'0 = "inc_max_3.rs" 26 11 26 70
-  let%span sinc_max_3'1 = "inc_max_3.rs" 10 11 10 76
-  let%span sinc_max_3'2 = "inc_max_3.rs" 11 10 11 48
+  let%span sinc_max_3 = "inc_max_3.rs" 29 12 29 38
+  let%span sinc_max_3'0 = "inc_max_3.rs" 29 12 29 38
+  let%span sinc_max_3'1 = "inc_max_3.rs" 26 11 26 70
+  let%span sinc_max_3'2 = "inc_max_3.rs" 10 11 10 76
+  let%span sinc_max_3'3 = "inc_max_3.rs" 11 10 11 48
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
   let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
@@ -252,10 +253,10 @@ module M_inc_max_3__test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57]
   axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord] UInt32.le x y = (cmp_log x y <> C_Greater)
   
   let rec inc_max_3 (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (mc: MutBorrow.t UInt32.t) (return' (x: ())) =
-    {[@expl:inc_max_3 requires] [%#sinc_max_3'1] UInt32.le ma.current (1000000: UInt32.t)
+    {[@expl:inc_max_3 requires] [%#sinc_max_3'2] UInt32.le ma.current (1000000: UInt32.t)
     /\ UInt32.le mb.current (1000000: UInt32.t) /\ UInt32.le mc.current (1000000: UInt32.t)}
     any
-    [ return''0 (result: ()) -> {[%#sinc_max_3'2] ma.final <> mb.final /\ mb.final <> mc.final /\ mc.final <> ma.final}
+    [ return''0 (result: ()) -> {[%#sinc_max_3'3] ma.final <> mb.final /\ mb.final <> mc.final /\ mc.final <> ma.final}
       (! return' {result}) ]
   
   predicate resolve (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
@@ -267,7 +268,7 @@ module M_inc_max_3__test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57]
   meta "select_lsinst" "all"
   
   let rec test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57] (a: UInt32.t) (b: UInt32.t) (c: UInt32.t) (return' (x: ())) =
-    {[@expl:test_inc_max_3 requires] [%#sinc_max_3'0] UInt32.le a (1000000: UInt32.t)
+    {[@expl:test_inc_max_3 requires] [%#sinc_max_3'1] UInt32.le a (1000000: UInt32.t)
     /\ UInt32.le b (1000000: UInt32.t) /\ UInt32.le c (1000000: UInt32.t)}
     (! bb0
     [ bb0 = s0
@@ -289,12 +290,14 @@ module M_inc_max_3__test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57]
       [ s0 = -{resolve'0 _11}- s1
       | s1 = -{resolve'0 _9}- s2
       | s2 = -{resolve'0 _7}- s3
-      | s3 = [ &_13 <- a'0 <> b'0 ] s4
-      | s4 = any [ br0 -> {_13 = false} (! bb8) | br1 -> {_13} (! bb2) ] ]
-    | bb2 = s0 [ s0 = [ &_16 <- b'0 <> c'0 ] s1 | s1 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb3) ] ]
-    | bb3 = s0 [ s0 = [ &_19 <- c'0 <> a'0 ] s1 | s1 = any [ br0 -> {_19 = false} (! bb8) | br1 -> {_19} (! bb4) ] ]
-    | bb4 = return''0 {_0}
-    | bb8 = {[%#sinc_max_3] false} any ]
+      | s3 = [ &_14 <- a'0 <> b'0 ] s4
+      | s4 = any [ br0 -> {_14 = false} (! bb6) | br1 -> {_14} (! bb2) ] ]
+    | bb2 = s0 [ s0 = [ &_17 <- b'0 <> c'0 ] s1 | s1 = any [ br0 -> {_17 = false} (! bb6) | br1 -> {_17} (! bb3) ] ]
+    | bb3 = s0 [ s0 = [ &_13 <- c'0 <> a'0 ] s1 | s1 = bb7 ]
+    | bb6 = s0 [ s0 = [ &_13 <- [%#sinc_max_3] false ] s1 | s1 = bb7 ]
+    | bb7 = any [ br0 -> {_13 = false} (! bb8) | br1 -> {_13} (! bb10) ]
+    | bb10 = return''0 {_0}
+    | bb8 = {[%#sinc_max_3'0] false} any ]
     [ & _0: () = Any.any_l ()
     | & a'0: UInt32.t = a
     | & b'0: UInt32.t = b
@@ -307,6 +310,6 @@ module M_inc_max_3__test_inc_max_3 [#"inc_max_3.rs" 27 0 27 57]
     | & _10: MutBorrow.t UInt32.t = Any.any_l ()
     | & _11: MutBorrow.t UInt32.t = Any.any_l ()
     | & _13: bool = Any.any_l ()
-    | & _16: bool = Any.any_l ()
-    | & _19: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _14: bool = Any.any_l ()
+    | & _17: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end

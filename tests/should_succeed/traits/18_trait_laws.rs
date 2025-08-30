@@ -1,7 +1,8 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-pub trait Symmetric {
+pub trait Symmetric: Sized {
+    // TODO
     #[logic]
     fn op(self, _: Self) -> Self;
 

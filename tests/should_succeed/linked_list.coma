@@ -134,7 +134,7 @@ module M_linked_list__qyi10858349784728989480__new [#"linked_list.rs" 58 4 58 27
       (! return' {result}) ]
 end
 module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4 63 37] (* List<T> *)
-  let%span slinked_list = "linked_list.rs" 72 53 72 57
+  let%span slinked_list = "linked_list.rs" 74 57 74 61
   let%span slinked_list'0 = "linked_list.rs" 63 26 63 30
   let%span slinked_list'1 = "linked_list.rs" 63 32 63 33
   let%span slinked_list'2 = "linked_list.rs" 62 14 62 47
@@ -381,6 +381,14 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4
       {[%#soption'1] C_Some result = self_}
       (! return' {result}) ]
   
+  predicate resolve (self: MutBorrow.t (Seq.seq t_PtrOwn)) = [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0: MutBorrow.t (Seq.seq t_PtrOwn)) = resolve _0
+  
+  predicate resolve'1 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  
+  predicate resolve'2 (_0: MutBorrow.t t_PtrOwn) = resolve'1 _0
+  
   predicate invariant''10 (self: MutBorrow.t t_PtrOwn) = [%#sghost'11] inv'12 self
   
   predicate inv'14 (_0: MutBorrow.t t_PtrOwn)
@@ -409,14 +417,6 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4
       {[%#sptr_own'6] ptr own.final = ptr own.current}
       {[%#sptr_own'7] val' own.final = result.final}
       (! return' {result}) ]
-  
-  predicate resolve (self: MutBorrow.t (Seq.seq t_PtrOwn)) = [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0: MutBorrow.t (Seq.seq t_PtrOwn)) = resolve _0
-  
-  predicate resolve'1 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
-  
-  predicate resolve'2 (_0: MutBorrow.t t_PtrOwn) = resolve'1 _0
   
   predicate resolve'3 (self: MutBorrow.t t_Cell) = [%#sresolve] self.final = self.current
   
@@ -520,35 +520,35 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
             [ &_22 <- _ret ] -{inv'2 _ret.final}-
             [ &_30 <- { _30 with current = _ret.final } ] s1)
-      | s1 = {inv'2 _22.current}
+      | s1 = {[@expl:type invariant] inv'11 _33} s2
+      | s2 = -{resolve'0 _33}- s3
+      | s3 = {[@expl:type invariant] inv'12 _30} s4
+      | s4 = -{resolve'2 _30}- s5
+      | s5 = {inv'2 _22.current}
         MutBorrow.borrow_final <t_PtrOwn> {_22.current} {MutBorrow.get_id _22}
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
             [ &_21 <- _ret ] -{inv'2 _ret.final}-
-            [ &_22 <- { _22 with current = _ret.final } ] s2)
-      | s2 = new'0 {_21} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_20 <- _ret ] s3)
-      | s3 = bb16 ]
+            [ &_22 <- { _22 with current = _ret.final } ] s6)
+      | s6 = new'0 {_21} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_20 <- _ret ] s7)
+      | s7 = bb16 ]
     | bb16 = s0
-      [ s0 = as_mut {(self'0.current).t_List__last} {_20} (fun (_ret: MutBorrow.t t_Cell) -> [ &_18 <- _ret ] s1)
-      | s1 = bb17 ]
+      [ s0 = {[@expl:type invariant] inv'12 _22} s1
+      | s1 = -{resolve'2 _22}- s2
+      | s2 = as_mut {(self'0.current).t_List__last} {_20} (fun (_ret: MutBorrow.t t_Cell) -> [ &_18 <- _ret ] s3)
+      | s3 = bb17 ]
     | bb17 = s0
       [ s0 = {inv'0 _18.current}
         MutBorrow.borrow_final <t_Cell> {_18.current} {MutBorrow.get_id _18}
           (fun (_ret: MutBorrow.t t_Cell) ->
             [ &cell_last <- _ret ] -{inv'0 _ret.final}-
             [ &_18 <- { _18 with current = _ret.final } ] s1)
-      | s1 = {[@expl:type invariant] inv'11 _33} s2
-      | s2 = -{resolve'0 _33}- s3
-      | s3 = {[@expl:type invariant] inv'12 _30} s4
-      | s4 = -{resolve'2 _30}- s5
-      | s5 = {[@expl:type invariant] inv'12 _22} s6
-      | s6 = -{resolve'2 _22}- s7
-      | s7 = {[@expl:type invariant] inv'15 _18} s8
-      | s8 = -{resolve'4 _18}- s9
-      | s9 = [ &cell_last <- { cell_last with current = { cell_last.current with t_Cell__next = cell_ptr } } ] s10
-      | s10 = {[@expl:type invariant] inv'15 cell_last} s11
-      | s11 = -{resolve'4 cell_last}- s12
-      | s12 = [ &self'0 <- { self'0 with current = { self'0.current with t_List__last = cell_ptr } } ] s13
-      | s13 = bb18 ]
+      | s1 = {[@expl:type invariant] inv'15 _18} s2
+      | s2 = -{resolve'4 _18}- s3
+      | s3 = [ &cell_last <- { cell_last with current = { cell_last.current with t_Cell__next = cell_ptr } } ] s4
+      | s4 = {[@expl:type invariant] inv'15 cell_last} s5
+      | s5 = -{resolve'4 cell_last}- s6
+      | s6 = [ &self'0 <- { self'0 with current = { self'0.current with t_List__last = cell_ptr } } ] s7
+      | s7 = bb18 ]
     | bb18 = s0
       [ s0 = {inv'7 (self'0.current).t_List__seq}
         MutBorrow.borrow_final <Seq.seq t_PtrOwn> {(self'0.current).t_List__seq}
@@ -610,10 +610,10 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 63 4
       = Seq.snoc (view self.current) x}
       (! return' {result}) ]
 end
-module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 83 4 83 38] (* List<T> *)
-  let%span slinked_list = "linked_list.rs" 83 27 83 31
-  let%span slinked_list'0 = "linked_list.rs" 83 33 83 34
-  let%span slinked_list'1 = "linked_list.rs" 82 14 82 48
+module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 86 4 86 38] (* List<T> *)
+  let%span slinked_list = "linked_list.rs" 86 27 86 31
+  let%span slinked_list'0 = "linked_list.rs" 86 33 86 34
+  let%span slinked_list'1 = "linked_list.rs" 85 14 85 48
   let%span slinked_list'2 = "linked_list.rs" 46 12 46 74
   let%span slinked_list'3 = "linked_list.rs" 53 4 53 41
   let%span slinked_list'4 = "linked_list.rs" 25 12 35 69
@@ -811,7 +811,7 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 83 
   
   meta "select_lsinst" "all"
   
-  let rec push_front'1 [#"linked_list.rs" 83 4 83 38] (self: MutBorrow.t t_List) (x: t_T) (return' (x'0: ())) =
+  let rec push_front'1 [#"linked_list.rs" 86 4 86 38] (self: MutBorrow.t t_List) (x: t_T) (return' (x'0: ())) =
     {[@expl:push_front 'self' type invariant] [%#slinked_list] inv'11 self}
     {[@expl:push_front 'x' type invariant] [%#slinked_list'0] inv x}
     (! bb0

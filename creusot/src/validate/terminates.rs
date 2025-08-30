@@ -74,7 +74,7 @@ use rustc_trait_selection::traits::{
 /// recursion, because why3 will handle it for us.
 pub(crate) fn validate_terminates(ctx: &TranslationCtx) {
     // Check for ghost loops
-    for local_id in ctx.hir().body_owners() {
+    for local_id in ctx.hir_body_owners() {
         let def_id = local_id.to_def_id();
         if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
             continue;
@@ -280,7 +280,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         // we found, and this method is logic and transparent from this impl and this impl is local, then use a
         // specialized default node
         if let TraitResolved::Instance { def, impl_: ImplSource_::Impl(impl_defid, impl_args)} = res &&
-            ctx.impl_of_method(def.0) != Some(impl_defid) && // The method is defined in an ancestor
+            ctx.impl_of_assoc(def.0) != Some(impl_defid) && // The method is defined in an ancestor
             is_pearlite(ctx.tcx, def.0) && // The method is logic
             let Some(impl_ldid) = impl_defid.as_local() && // The impl is local
             ctx.is_transparent_from(def.0, ctx.parent_module_from_def_id(impl_ldid).to_def_id())
@@ -366,7 +366,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
 
         let trait_id = ctx.trait_id_of_impl(impl_id.into()).unwrap();
 
-        let spec_node_def = if let Some(def_impl) = ctx.impl_of_method(item_id) {
+        let spec_node_def = if let Some(def_impl) = ctx.impl_of_assoc(item_id) {
             specialization_graph::Node::Impl(def_impl)
         } else {
             specialization_graph::Node::Trait(trait_id)
@@ -428,7 +428,7 @@ impl CallGraph {
     fn build(ctx: &TranslationCtx) -> Self {
         let mut build_call_graph = BuildFunctionsGraph::default();
 
-        for local_id in ctx.hir().body_owners() {
+        for local_id in ctx.hir_body_owners() {
             let def_id = local_id.to_def_id();
 
             if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {

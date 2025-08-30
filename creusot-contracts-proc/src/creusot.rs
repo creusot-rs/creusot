@@ -108,5 +108,5 @@ pub(crate) fn eprint_tokens(tokens: &TokenStream) {
 pub(crate) fn pretty_span(span: &Span) -> String {
     let start = span.start();
     let end = span.end();
-    format! {"{:?}:{:?}:{:?}-{:?}:{:?}", span.unwrap().source_file().path(), start.line, start.column, end.line, end.column}
+    format! {"{:?}:{:?}:{:?}-{:?}:{:?}", span.unwrap().file(), start.line, start.column, end.line, end.column}
 }

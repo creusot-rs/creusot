@@ -4,7 +4,7 @@ use creusot_contracts::*;
 
 // Verifies that implementations can refine the contract of their encompassing trait
 
-trait Tr {
+pub trait Tr {
     #[ensures(result@ >= 10)]
     fn my_function(&self) -> usize;
 }
@@ -17,7 +17,7 @@ impl Tr for () {
     }
 }
 
-trait ReqFalse {
+pub trait ReqFalse {
     #[logic]
     #[requires(x@ >= 10)]
     fn need_false(x: u64) -> ();
