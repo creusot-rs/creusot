@@ -240,6 +240,7 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
             let index = encode_term_(index, locals)?;
 
             Ok(quote! {
+                // FIXME: this requires IndexLogic to be loaded
                 (#expr).index_logic(#index)
             })
         }

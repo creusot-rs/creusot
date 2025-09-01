@@ -1,5 +1,6 @@
 use super::BodyTranslator;
 use crate::{
+    backend::projections::projections_term,
     contracts_items::{is_box_new, is_ghost_deref, is_ghost_deref_mut, is_snap_from_fn},
     ctx::{HasTyCtxt as _, TranslationCtx},
     lints::{CONTRACTLESS_EXTERNAL_FUNCTION, Diagnostics},
@@ -66,7 +67,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                     if is_box_new(self.tcx(), fun_def_id) {
                         let [arg] = *func_args.into_array().unwrap();
-                        self.emit_assignment(&destination, RValue::Operand(arg), span);
+                        self.emit_assignment(destination, RValue::Operand(arg), span);
                     } else {
                         let predicates = self
                             .ctx
@@ -123,7 +124,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                             self.emit_statement(Statement {
                                 kind: fmir::StatementKind::Call(
-                                    self.translate_place(destination.as_ref(), span),
+                                    self.translate_place(destination, span),
                                     fun_def_id,
                                     subst,
                                     func_args,
@@ -142,24 +143,21 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
-                let mut cond = match cond {
-                    Operand::Copy(pl) | Operand::Move(pl) => Term {
-                        kind: fmir::place_to_term(
-                            self.tcx(),
-                            *pl,
-                            &self.locals,
-                            &self.body.local_decls,
-                        )
-                        .unwrap_or_else(|_| {
-                            self.ctx.dcx().span_bug(span, "Unsupported place in assert")
-                        }),
-                        ty: cond.ty(self.body, self.tcx()),
-                        span,
-                    },
-                    Operand::Constant(_) => {
-                        self.ctx.dcx().span_bug(span, "assert value is a constant")
-                    }
+                let &(Operand::Copy(pl) | Operand::Move(pl)) = cond else {
+                    self.ctx.dcx().span_bug(span, "unexpected operand in assert")
                 };
+                let pl = self.translate_place(pl, span);
+                let mut cond = projections_term(
+                    self.tcx(),
+                    self.typing_env(),
+                    Term::var(pl.local, self.vars[&pl.local].ty),
+                    &pl.projections,
+                    |e| e,
+                    None,
+                    |id| Term::var(*id, self.tcx().types.usize),
+                    span,
+                );
+                cond = cond.span(span);
                 if !expected {
                     cond = Term {
                         ty: cond.ty,
@@ -194,9 +192,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         let fresh = self.fresh_block_id();
                         retarget.insert(*target, fresh);
                         let mut stmts = Vec::new();
-                        resolves.into_iter().for_each(|place| {
-                            self.emit_resolve_into(place.as_ref(), span, &mut stmts)
-                        });
+                        resolves
+                            .into_iter()
+                            .for_each(|place| self.emit_resolve_into(place, span, &mut stmts));
                         let block = fmir::Block {
                             invariants: vec![],
                             variant: None,

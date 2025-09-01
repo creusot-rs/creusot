@@ -713,7 +713,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                     spec.into_iter().for_each(|term| {
                         let bad_vars = self.resolver.bad_vars_at(loc);
                         let subst = self.analysis_env.inline_pearlite_subst(tcx, si.scope);
-                        term.subst(subst);
+                        term.subst(&subst);
                         self.analysis_env.check_use_in_logic(
                             term,
                             tcx,
@@ -764,7 +764,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                             let subst = self
                                 .analysis_env
                                 .inline_pearlite_subst(tcx, terminator.source_info.scope);
-                            term.subst(subst);
+                            term.subst(&subst);
                             self.analysis_env.check_use_in_logic(
                                 term,
                                 tcx,

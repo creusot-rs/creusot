@@ -25,7 +25,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         self.activate_two_phase(loc, si.span);
         match statement.kind {
             StatementKind::Assign(box (pl, ref rv)) => {
-                self.translate_assign(si, &pl, rv, loc);
+                self.translate_assign(si, pl, rv, loc);
             }
 
             // All these instructions are no-ops in the dynamic semantics, but may trigger resolution
@@ -52,7 +52,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     fn translate_assign(
         &mut self,
         si: SourceInfo,
-        place: &'_ Place<'tcx>,
+        place: Place<'tcx>,
         rvalue: &'_ Rvalue<'tcx>,
         loc: Location,
     ) {
@@ -70,12 +70,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     RValue::Operand(self.translate_operand(op, span))
                 }
             },
-            Rvalue::Ref(_, ss, pl) => match ss {
+            &Rvalue::Ref(_, ss, pl) => match ss {
                 Shared | Fake(..) => {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }
-                    RValue::Operand(Operand::Copy(self.translate_place(pl.as_ref(), span)))
+                    RValue::Operand(Operand::Copy(self.translate_place(pl, span)))
                 }
                 Mut { .. } => {
                     if self.erased_locals.contains(pl.local) || self.is_two_phase(loc) {
@@ -146,8 +146,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     ),
                 }
             }
-            Rvalue::Len(pl) => {
-                let e = Operand::Copy(self.translate_place(pl.as_ref(), span));
+            &Rvalue::Len(pl) => {
+                let e = Operand::Copy(self.translate_place(pl, span));
                 RValue::Len(e)
             }
             Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, cast_ty) => {
@@ -175,7 +175,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     return;
                 }
             }
-            Rvalue::RawPtr(_, pl) => RValue::Ptr(self.translate_place(pl.as_ref(), span)),
+            &Rvalue::RawPtr(_, pl) => RValue::Ptr(self.translate_place(pl, span)),
             Rvalue::Cast(
                 CastKind::PointerCoercion(PointerCoercion::MutToConstPointer, _),
                 op,
@@ -216,7 +216,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     pub(super) fn activate_two_phase(&mut self, loc: Location, span: Span) {
         for (lhs, rhs, is_final) in self.body_data.remove_two_phase_activated_at(loc) {
-            self.emit_borrow(&lhs, &rhs, is_final, span)
+            self.emit_borrow(lhs, rhs, is_final, span)
         }
     }
 

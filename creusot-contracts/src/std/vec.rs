@@ -2,6 +2,7 @@
 use crate::resolve::structural_resolve;
 use crate::{
     invariant::*,
+    logic::ops::IndexLogic,
     std::{
         ops::{Deref, DerefMut, Index, IndexMut},
         slice::SliceIndex,
@@ -36,6 +37,41 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     fn deep_model(self) -> Self::DeepModelTy {
         dead
     }
+}
+
+#[cfg(feature = "nightly")]
+impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
+    type Item = T;
+
+    #[logic]
+    #[open]
+    #[creusot::why3_attr = "inline:trivial"]
+    fn index_logic(self, ix: Int) -> Self::Item {
+        pearlite! { self@[ix] }
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T, A: Allocator> IndexLogic<usize> for Vec<T, A> {
+    type Item = T;
+
+    #[logic]
+    #[open]
+    #[creusot::why3_attr = "inline:trivial"]
+    fn index_logic(self, ix: usize) -> Self::Item {
+        pearlite! { self@[ix@] }
+    }
+}
+
+/// Dummy impls that don't use the unstable trait Allocator
+#[cfg(not(feature = "nightly"))]
+impl<T> IndexLogic<Int> for Vec<T> {
+    type Item = T;
+}
+
+#[cfg(not(feature = "nightly"))]
+impl<T> IndexLogic<usize> for Vec<T> {
+    type Item = T;
 }
 
 #[cfg(feature = "nightly")]

@@ -2,7 +2,7 @@ use crate::{
     backend::{
         Why3Generator,
         program::{PtrCastKind, ptr_cast_kind},
-        projections::{Focus, borrow_generated_id, projections_to_expr},
+        projections::{borrow_generated_id, projections_term},
         ty::{
             constructor, floatty_to_prelude, ity_to_prelude, translate_ty, ty_to_prelude,
             uty_to_prelude,
@@ -20,12 +20,9 @@ use crate::{
 };
 use rustc_ast::Mutability;
 use rustc_hir::def::DefKind;
-use rustc_middle::{
-    mir::tcx::PlaceTy,
-    ty::{Ty, TyKind},
-};
+use rustc_middle::ty::{Ty, TyKind};
 use rustc_span::DUMMY_SP;
-use rustc_type_ir::{IntTy, UintTy};
+use rustc_type_ir::IntTy;
 use why3::{
     Ident, Name,
     declaration::Condition as WCondition,
@@ -70,14 +67,6 @@ pub(crate) fn lower_condition<'tcx, N: Namer<'tcx>>(
     cond: Condition<'tcx>,
 ) -> WCondition {
     WCondition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
-}
-
-pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
-    ctx: &Why3Generator<'tcx>,
-    names: &N,
-    pat: &Pattern<'tcx>,
-) -> WPattern {
-    Lower { ctx, names, weakdep: false }.lower_pat(pat)
 }
 
 pub(crate) fn unsupported_cast<'tcx>(
@@ -174,18 +163,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 _ => unsupported_cast(self.ctx, term.span, arg.ty, term.ty),
             },
             TermKind::Coerce { arg } => self.lower_term(arg),
-            // FIXME: this is a weird dance.
-            TermKind::Item(id, subst) => {
-                debug!("resolved_method={:?}", (*id, *subst));
-                if let TyKind::FnDef(_, _) = self.ctx.type_of(id).skip_binder().kind() {
-                    if !self.weakdep {
-                        self.names.item(*id, subst);
-                    }
-                    Exp::unit()
-                } else {
-                    Exp::Var(self.names.item(*id, subst))
+            TermKind::Item(id, subst)
+                if let TyKind::FnDef(_, _) = self.ctx.type_of(id).skip_binder().kind() =>
+            {
+                if !self.weakdep {
+                    self.names.item(*id, subst);
                 }
+                Exp::unit()
             }
+            TermKind::Item(id, subst) => Exp::Var(self.names.item(*id, subst)),
             TermKind::Var(v) => Exp::var(v.0),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let rhs_ty = rhs.ty.kind();
@@ -327,40 +313,27 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Lam(binders, body.boxed())
             }
             TermKind::Reborrow { inner, projections } => {
-                let ty = self.names.normalize(self.ctx, inner.ty);
-                let inner = self.lower_term(inner);
-                let idx_conv = |ix: &Term<'tcx>| {
-                    if matches!(ix.ty.kind(), TyKind::Uint(UintTy::Usize)) {
-                        let qname =
-                            self.names.in_pre(uty_to_prelude(self.ctx.tcx, UintTy::Usize), "t'int");
-                        Exp::qvar(qname).app([self.lower_term(ix)])
-                    } else {
-                        self.lower_term(ix)
-                    }
-                };
-
                 // TODO: if inner is large, do not clone it, use a "let" instead
                 let borrow_id = borrow_generated_id(
                     self.ctx,
                     self.names,
-                    inner.clone(),
+                    self.lower_term(inner),
                     term.span,
                     projections,
-                    idx_conv,
+                    |ix: &Term<'tcx>| (self.lower_term(ix), ix.ty),
                 );
-                let [cur, fin] = [name::current(), name::final_()].map(|nm| {
-                    let (foc, _) = projections_to_expr(
-                        self.ctx,
-                        self.names,
+                let [cur, fin] = [Term::cur, Term::fin].map(|cf| {
+                    let t = projections_term(
+                        self.ctx.tcx,
+                        self.names.typing_env(),
+                        cf((&**inner).clone()),
+                        &**projections,
+                        |e| e,
                         None,
-                        &mut PlaceTy::from_ty(ty.builtin_deref(false).unwrap()),
-                        Focus::new(|_| inner.clone().field(Name::Global(nm))),
-                        Box::new(|_, _| unreachable!()),
-                        projections,
-                        idx_conv,
+                        Clone::clone,
                         term.span,
                     );
-                    foc.call(None)
+                    self.lower_term(&t)
                 });
 
                 Exp::qvar(self.names.in_pre(PreMod::MutBor, "borrow_logic"))
@@ -404,7 +377,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     for (idx, pat) in flds {
                         pats[idx.as_usize()] = pat
                     }
-                    WPattern::ConsP(Name::local(self.names.constructor(var_did, subst)), pats)
+                    WPattern::ConsP(Name::local(self.names.item_ident(var_did, subst)), pats)
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {

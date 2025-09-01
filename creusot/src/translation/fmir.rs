@@ -34,7 +34,7 @@ pub struct Place<'tcx> {
 }
 
 /// The equivalent of [`mir::PlaceRef`], but for fMIR
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub(crate) struct PlaceRef<'a, 'tcx> {
     pub(crate) local: Ident,
     pub(crate) projection: &'a [ProjectionElem<'tcx>],
@@ -114,7 +114,7 @@ pub enum BorrowKind {
     Final(usize),
 }
 
-#[derive(Clone, Copy, Debug, TypeFoldable, TypeVisitable)]
+#[derive(Clone, Copy, Debug, TypeFoldable, TypeVisitable, PartialEq, Eq)]
 pub enum TrivialInv {
     Trivial,
     NonTrivial,
@@ -414,6 +414,7 @@ impl<'tcx> TypeFoldable<TyCtxt<'tcx>> for Body<'tcx> {
 /// the surrounding MIR block (this is precomputed by `ScopeTree::visible_places`),
 /// (3) get the `Place` from that binder to replace the variable.
 /// This happens in `inline_pearlite_subst`.
+// FIXME : Is this compatible with macro hygiene?
 #[derive(Debug)]
 pub struct ScopeTree<'tcx>(
     HashMap<SourceScope, (Vec<(rustc_span::Ident, TermKind<'tcx>)>, Option<SourceScope>)>,

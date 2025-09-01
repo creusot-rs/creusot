@@ -1,15 +1,25 @@
 use crate::{
-    backend::{Why3Generator, clone_map::Namer, program::IntermediateStmt, ty::translate_ty},
+    backend::{
+        Why3Generator,
+        clone_map::Namer,
+        program::IntermediateStmt,
+        ty::{translate_ty, uty_to_prelude},
+    },
     contracts_items::{get_index_logic, get_int_ty, is_snap_ty},
     ctx::PreMod,
     naming::name,
-    translation::traits::TraitResolved,
+    translation::{
+        pearlite::{PIdent, Pattern, Term},
+        traits::TraitResolved,
+    },
 };
 use rustc_middle::{
     mir::{ProjectionElem, tcx::PlaceTy},
-    ty::{GenericArg, Ty, TyCtxt, TyKind},
+    ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::Span;
+use rustc_target::abi::VariantIdx;
+use rustc_type_ir::UintTy;
 use std::{assert_matches::assert_matches, cell::RefCell, fmt::Debug, rc::Rc};
 use why3::{
     Ident, Name,
@@ -28,16 +38,14 @@ use why3::{
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
 
 #[derive(Clone)]
-pub(crate) struct Focus<'a>(
-    Rc<RefCell<Box<dyn FnOnce(Option<&mut Vec<IntermediateStmt>>) -> Exp + 'a>>>,
-);
+pub(crate) struct Focus<'a>(Rc<RefCell<Box<dyn FnOnce(&mut Vec<IntermediateStmt>) -> Exp + 'a>>>);
 
 impl<'a> Focus<'a> {
-    pub(crate) fn new(f: impl FnOnce(Option<&mut Vec<IntermediateStmt>>) -> Exp + 'a) -> Self {
+    pub(crate) fn new(f: impl FnOnce(&mut Vec<IntermediateStmt>) -> Exp + 'a) -> Self {
         Focus(Rc::new(RefCell::new(Box::new(f))))
     }
 
-    pub(crate) fn call(&self, istmts: Option<&mut Vec<IntermediateStmt>>) -> Exp {
+    pub(crate) fn call(&self, istmts: &mut Vec<IntermediateStmt>) -> Exp {
         let res = self.0.replace(Box::new(|_| unreachable!()))(istmts);
         let res1 = res.clone();
         let _ = self.0.replace(Box::new(|_| res));
@@ -45,7 +53,7 @@ impl<'a> Focus<'a> {
     }
 }
 
-type Constructor<'a> = Box<dyn FnOnce(Option<&mut Vec<IntermediateStmt>>, Exp) -> Exp + 'a>;
+type Constructor<'a> = Box<dyn FnOnce(&mut Vec<IntermediateStmt>, Exp) -> Exp + 'a>;
 
 pub(crate) fn iter_projections_ty<'tcx, 'a, V: Debug>(
     tcx: TyCtxt<'tcx>,
@@ -67,16 +75,15 @@ pub(crate) fn iter_projections_ty<'tcx, 'a, V: Debug>(
     })
 }
 
-pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
+pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,
-    mut istmts: Option<&mut Vec<IntermediateStmt>>,
+    istmts: &mut Vec<IntermediateStmt>,
     place_ty: &mut PlaceTy<'tcx>,
     // The term holding the currently 'focused' portion of the place
     mut focus: Focus<'a>,
     mut constructor: Constructor<'a>,
-    proj: &'a [ProjectionElem<V, Ty<'tcx>>],
-    mut translate_index: impl FnMut(&V) -> Exp,
+    proj: &'a [ProjectionElem<PIdent, Ty<'tcx>>],
     span: Span,
 ) -> (Focus<'a>, Constructor<'a>) {
     for (elem, place_ty) in iter_projections_ty(ctx.tcx, proj, place_ty) {
@@ -88,8 +95,8 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
                     let focus1 = focus.clone();
                     focus =
                         Focus::new(move |is| focus.call(is).field(Name::Global(name::current())));
-                    constructor = Box::new(move |mut is, t| {
-                        let record = Box::new(focus1.call(is.as_deref_mut()));
+                    constructor = Box::new(move |is, t| {
+                        let record = Box::new(focus1.call(is));
                         constructor(is, Exp::RecUp {
                             record,
                             updates: Box::new([(Name::Global(name::current()), t)]),
@@ -113,8 +120,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
                         .collect();
 
                     let acc_name = names.eliminator(variant.def_id, subst);
-                    let istmts = istmts.as_deref_mut().unwrap();
-                    let args = Box::new([Arg::Term(focus.call(Some(istmts)))]);
+                    let args = Box::new([Arg::Term(focus.call(istmts))]);
                     istmts.push(IntermediateStmt::Call(
                         fields.clone(),
                         Name::local(acc_name),
@@ -125,7 +131,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
                     focus = Focus::new(|_| foc);
 
                     constructor = Box::new(move |is, t| {
-                        let constr = Exp::var(names.constructor(variant.def_id, subst));
+                        let constr = Exp::var(names.item_ident(variant.def_id, subst));
                         let mut fields: Box<[_]> =
                             fields.into_iter().map(|f| Exp::var(f.as_term().0)).collect();
                         fields[ix.as_usize()] = t;
@@ -141,13 +147,13 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
                         focus.call(is).field(Name::local(names.field(def.did(), subst, ix)))
                     });
 
-                    constructor = Box::new(move |mut is, t| {
+                    constructor = Box::new(move |is, t| {
                         let updates =
                             Box::new([(Name::local(names.field(def.did(), subst, ix)), t)]);
                         if def.all_fields().count() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {
-                            let record = focus1.call(is.as_deref_mut()).boxed();
+                            let record = focus1.call(is).boxed();
                             constructor(is, Exp::RecUp { record, updates })
                         }
                     })
@@ -160,9 +166,9 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
                         focus.call(is).field(Name::local(names.tuple_field(args, ix)))
                     });
 
-                    constructor = Box::new(move |mut is, t| {
+                    constructor = Box::new(move |is, t| {
                         let updates = Box::new([(Name::local(names.tuple_field(args, ix)), t)]);
-                        let record = focus1.call(is.as_deref_mut()).boxed();
+                        let record = focus1.call(is).boxed();
                         constructor(is, Exp::RecUp { record, updates })
                     });
                 }
@@ -173,12 +179,12 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
                         focus.call(is).field(Name::local(names.field(*id, subst, ix)))
                     });
 
-                    constructor = Box::new(move |mut is, t| {
+                    constructor = Box::new(move |is, t| {
                         let updates = Box::new([(Name::local(names.field(*id, subst, ix)), t)]);
                         if subst.as_closure().upvar_tys().len() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {
-                            let record = focus1.call(is.as_deref_mut()).boxed();
+                            let record = focus1.call(is).boxed();
                             constructor(is, Exp::RecUp { record, updates })
                         }
                     });
@@ -188,57 +194,35 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>, V: Debug>(
                 }
             },
             ProjectionElem::Index(ix) => {
+                let ix = ix.0;
                 let elt_ty = projection_ty(place_ty, names.tcx(), elem);
                 let elt_ty = translate_ty(ctx, names, span, elt_ty.ty);
                 let ty = translate_ty(ctx, names, span, place_ty.ty);
-                // TODO: Use [_] syntax
-                let ix_exp = translate_index(ix);
 
                 let focus1 = focus.clone();
                 let elt_ty1 = elt_ty.clone();
-                let ix_exp1 = ix_exp.clone();
-                focus = Focus::new(move |mut is| {
-                    let foc = focus.call(is.as_deref_mut());
-                    match is {
-                        Some(is) => {
-                            let result = Ident::fresh_local("r");
-                            is.push(IntermediateStmt::Call(
-                                Box::new([Param::Term(result, elt_ty1.clone())]),
-                                Name::Global(names.in_pre(PreMod::Slice, "get")),
-                                Box::new([Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(ix_exp1)]),
-                            ));
-                            Exp::var(result)
-                        }
-                        None => {
-                            let did = get_index_logic(names.tcx());
-                            let int_ty = ctx.type_of(get_int_ty(ctx.tcx)).no_bound_vars().unwrap();
-                            let substs = ctx.mk_args(
-                                &[names.normalize(ctx, place_ty.ty), int_ty].map(GenericArg::from),
-                            );
-                            let (did, substs) = TraitResolved::resolve_item(
-                                ctx.tcx,
-                                names.typing_env(),
-                                did,
-                                substs,
-                            )
-                            .to_opt(did, substs)
-                            .unwrap();
-                            Exp::Var(names.item(did, substs)).app([foc, ix_exp1])
-                        }
-                    }
+                focus = Focus::new(move |is| {
+                    let foc = focus.call(is);
+                    let result = Ident::fresh_local("r");
+                    is.push(IntermediateStmt::Call(
+                        Box::new([Param::Term(result, elt_ty1.clone())]),
+                        Name::Global(names.in_pre(PreMod::Slice, "get")),
+                        Box::new([Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(Exp::var(ix))]),
+                    ));
+                    Exp::var(result)
                 });
 
-                constructor = Box::new(move |mut is, t| {
+                constructor = Box::new(move |is, t| {
                     let out = Ident::fresh_local("r");
                     let rhs = t;
-                    let foc = focus1.call(is.as_deref_mut());
-                    is.as_deref_mut().unwrap().push(IntermediateStmt::Call(
+                    let foc = focus1.call(is);
+                    is.push(IntermediateStmt::Call(
                         Box::new([Param::Term(out, ty)]),
                         Name::Global(names.in_pre(PreMod::Slice, "set")),
                         Box::new([
                             Arg::Ty(elt_ty),
                             Arg::Term(foc),
-                            Arg::Term(ix_exp),
+                            Arg::Term(Exp::var(ix)),
                             Arg::Term(rhs),
                         ]),
                     ));
@@ -274,7 +258,7 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, N: Namer<'tcx>>(
     original_borrow: Exp,
     span: Span,
     projections: &[ProjectionElem<V, Ty<'tcx>>],
-    mut translate_index: impl FnMut(&V) -> Exp,
+    mut translate_index: impl FnMut(&V) -> (Exp, Ty<'tcx>),
 ) -> Exp {
     let mut borrow_id = Exp::qvar(names.in_pre(PreMod::MutBor, "get_id")).app([original_borrow]);
     for proj in projections {
@@ -286,9 +270,17 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, N: Namer<'tcx>>(
                 borrow_id = Exp::qvar(names.in_pre(PreMod::MutBor, "inherit_id"))
                     .app([borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))]);
             }
-            ProjectionElem::Index(x) => {
-                borrow_id = Exp::qvar(names.in_pre(PreMod::MutBor, "inherit_id"))
-                    .app([borrow_id, translate_index(x)]);
+            ProjectionElem::Index(idx) => {
+                let (mut idx, idxty) = translate_index(idx);
+                if idxty == ctx.types.usize {
+                    let qname = names.in_pre(uty_to_prelude(ctx.tcx, UintTy::Usize), "t'int");
+                    idx = Exp::qvar(qname).app([idx])
+                } else {
+                    let int_ty = ctx.type_of(get_int_ty(ctx.tcx)).no_bound_vars().unwrap();
+                    assert_eq!(idxty, int_ty);
+                }
+                borrow_id =
+                    Exp::qvar(names.in_pre(PreMod::MutBor, "inherit_id")).app([borrow_id, idx]);
             }
 
             ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
@@ -302,4 +294,95 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, N: Namer<'tcx>>(
         }
     }
     borrow_id
+}
+
+pub(crate) fn projections_term<'tcx, 'a, V: Debug>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    subject: Term<'tcx>,
+    proj: &[ProjectionElem<V, Ty<'tcx>>],
+    exp: impl FnOnce(Term<'tcx>) -> Term<'tcx> + 'a,
+    default: Option<Term<'tcx>>,
+    mut translate_index: impl FnMut(&V) -> Term<'tcx>,
+    span: Span,
+) -> Term<'tcx> {
+    enum State<'tcx, 'a> {
+        Pat(Pattern<'tcx>, Term<'tcx>),
+        Trm(Box<dyn FnOnce(Term<'tcx>) -> Term<'tcx> + 'a>),
+    }
+    use State::*;
+
+    let mut place_ty = PlaceTy::from_ty(subject.ty);
+    let mut state = Trm(Box::new(exp));
+    for (el, place_ty) in
+        iter_projections_ty(tcx, proj, &mut place_ty).collect::<Vec<_>>().into_iter().rev()
+    {
+        match (el, state) {
+            (ProjectionElem::Deref, Pat(pat, t)) => state = Pat(pat.deref(place_ty.ty), t),
+            (ProjectionElem::Deref, Trm(trm)) => state = Trm(Box::new(|x| trm(x.deref()))),
+            (ProjectionElem::Field(fidx, _), Pat(pat, t))
+                if let TyKind::Tuple(tys) = place_ty.ty.kind() =>
+            {
+                let mut fields: Box<[_]> = tys.iter().map(Pattern::wildcard).collect();
+                fields[fidx.as_usize()] = pat;
+                state = Pat(Pattern::tuple(fields, place_ty.ty), t)
+            }
+            (ProjectionElem::Field(fidx, _), Trm(trm))
+                if let TyKind::Tuple(tys) = place_ty.ty.kind() =>
+            {
+                state = Trm(Box::new(move |x| trm(x.proj(*fidx, tys[fidx.as_usize()]))))
+            }
+            (ProjectionElem::Field(fidx, fty), Trm(trm))
+                if let TyKind::Adt(def, _) = place_ty.ty.kind()
+                    && def.is_struct() =>
+            {
+                state = Trm(Box::new(move |x| trm(x.proj(*fidx, *fty))))
+            }
+            (ProjectionElem::Field(fidx, fty), st) => {
+                let (pat, t) = match st {
+                    Trm(trm) => {
+                        let id = Ident::fresh_local("x");
+                        (Pattern::binder(id, *fty), trm(Term::var(id, *fty)))
+                    }
+                    Pat(pat, t) => (pat, t),
+                };
+                let variant = place_ty.variant_index.unwrap_or(VariantIdx::ZERO);
+                state = Pat(Pattern::constructor(variant, [(*fidx, pat)], place_ty.ty), t)
+            }
+            (ProjectionElem::Downcast(_, _), st) => state = st,
+            (ProjectionElem::Index(idx), st) => {
+                let trm = match st {
+                    Pat(pat, t) => {
+                        let def1 = default.clone().unwrap();
+                        Box::new(|x: Term<'tcx>| {
+                            let wld = Pattern::wildcard(x.ty);
+                            x.match_([(pat, t), (wld, def1)])
+                        })
+                    }
+                    Trm(trm) => trm,
+                };
+                let idx = translate_index(idx);
+                state = Trm(Box::new(move |x| {
+                    let did = get_index_logic(tcx);
+                    let substs = tcx.mk_args(&[place_ty.ty, idx.ty].map(GenericArg::from));
+                    let (did, substs) = TraitResolved::resolve_item(tcx, typing_env, did, substs)
+                        .to_opt(did, substs)
+                        .unwrap();
+                    trm(Term::call(tcx, typing_env, did, substs, [x, idx]))
+                }))
+            }
+            (ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. }, _) => {
+                tcx.dcx().span_bug(span, "Array and slice patterns are currently not supported")
+            }
+            (ProjectionElem::OpaqueCast(_) | ProjectionElem::Subtype(_), _) => {
+                unreachable!("{el:?} unsupported projection.")
+            }
+        }
+    }
+
+    let subjty = subject.ty;
+    match state {
+        Pat(pat, t) => subject.match_([(pat, t), (Pattern::wildcard(subjty), default.unwrap())]),
+        Trm(trm) => trm(subject),
+    }
 }

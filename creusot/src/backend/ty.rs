@@ -165,7 +165,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
             adt.variants()
                 .iter()
                 .map(|var_def| ConstructorDecl {
-                    name: names.constructor(var_def.def_id, subst),
+                    name: names.item_ident(var_def.def_id, subst),
                     fields: var_def
                         .fields
                         .iter()
@@ -229,7 +229,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
     let field_args: Box<[Param]> =
         fields.iter().cloned().map(|(nm, ty)| Param::Term(nm, ty)).collect();
 
-    let constr = names.constructor(variant_id, subst);
+    let constr = names.item_ident(variant_id, subst);
     let cons_test = Exp::var(constr).app(fields.iter().map(|(nm, _)| Exp::var(*nm)));
 
     let ret_ident = Ident::fresh_local("ret");
@@ -281,7 +281,7 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
 ) -> Exp {
     match names.tcx().def_kind(did) {
         DefKind::Variant => {
-            let ctor = Name::local(names.constructor(did, subst));
+            let ctor = Name::local(names.item_ident(did, subst));
             Exp::Constructor { ctor, args: fields }
         }
         DefKind::Closure | DefKind::Struct => {

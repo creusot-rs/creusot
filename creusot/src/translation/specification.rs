@@ -310,7 +310,7 @@ impl<'tcx> PreSignature<'tcx> {
             .iter()
             .copied()
             .flatten()
-            .map(|&i| if ctx.tcx.is_closure_like(def_id) { i + 1 } else { i })
+            .map(|&i| if ctx.is_closure_like(def_id) { i + 1 } else { i })
             .collect();
 
         let new_requires = self.inputs.iter().enumerate().filter_map(|(i, (ident, span, ty))| {
@@ -381,7 +381,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
 
         if kind == ClosureKind::FnMut {
             let args = subst.as_closure().sig().inputs().map_bound(|tys| tys[0]);
-            let args = ctx.tcx.instantiate_bound_regions_with_erased(args);
+            let args = ctx.instantiate_bound_regions_with_erased(args);
             let hist_inv_subst = ctx.mk_args(&[args, env_ty.peel_refs()].map(GenericArg::from));
 
             let hist_inv_id = get_fn_mut_impl_hist_inv(ctx.tcx);
@@ -405,8 +405,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             && !is_fn_mut_impl_hist_inv(ctx.tcx, def_id)
             && !is_fn_once_impl_precond(ctx.tcx, def_id)
         {
-            let span = ctx.tcx.def_span(def_id);
-            ctx.crash_and_error(span, "`result` is not allowed as a parameter name")
+            ctx.crash_and_error(ctx.def_span(def_id), "`result` is not allowed as a parameter name")
         }
     }
 

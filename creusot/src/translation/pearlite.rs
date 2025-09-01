@@ -898,16 +898,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                                            is_ghost_ty(self.ctx.tcx,adt.did()));
                 Ok(self.expr_term(arg)?.coerce(ty).span(span))
             }
-            ExprKind::Deref { arg } => {
-                let arg_trans = self.expr_term(arg)?;
-                let arg_ty = self.thir[arg].ty;
-                if arg_ty.is_box() || self.thir[arg].ty.ref_mutability() == Some(Not) {
-                    Ok(arg_trans.coerce(ty).span(span))
-                } else {
-                    assert_matches!(arg_ty.kind(), TyKind::Ref(_, _, Mutability::Mut));
-                    Ok(arg_trans.cur().span(span))
-                }
-            }
+            ExprKind::Deref { arg } => Ok(self.expr_term(arg)?.deref().span(span)),
             ExprKind::Match { scrutinee, ref arms, .. } => {
                 let scrutinee = self.expr_term(scrutinee)?;
                 if arms.is_empty() {
@@ -1523,6 +1514,16 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
+    pub(crate) fn deref(self) -> Self {
+        if self.ty.is_box() || self.ty.ref_mutability() == Some(Not) {
+            let ty = self.ty.builtin_deref(false).unwrap();
+            self.coerce(ty)
+        } else {
+            assert_matches!(self.ty.kind(), TyKind::Ref(_, _, Mutability::Mut));
+            self.cur()
+        }
+    }
+
     pub(crate) fn conj(self, rhs: Self) -> Self {
         match self.kind {
             // ⟘ ∧ A = ⟘
@@ -1662,33 +1663,27 @@ impl<'tcx> Term<'tcx> {
     /// If `inv_subst` containts `("x", 5)`:
     /// - If `self` is `x == 1`, `self.subst(inv_subst)` is `5 + 1`
     /// - If `self` is `forall<x> x == 1`, `self.subst(inv_subst)` is still `forall<x> x == 1`
-    pub(crate) fn subst(&mut self, subst: impl IntoSubst<'tcx>) {
-        self.subst_with(&HashMap::new(), &mut subst.into_subst())
+    pub(crate) fn subst(&mut self, subst: &impl Subst<'tcx>) {
+        self.subst_(&HashMap::new(), subst)
     }
 
-    fn subst_with<F: FnMut(Ident) -> Option<TermKind<'tcx>>>(
-        &mut self,
-        bound: &HashMap<Ident, Ident>,
-        subst: &mut F,
-    ) {
+    fn subst_(&mut self, bound: &HashMap<Ident, Ident>, subst: &impl Subst<'tcx>) {
         match &mut self.kind {
             TermKind::Var(v) => match bound.get(&v.0) {
                 Some(w) => v.0 = *w,
-                None if let Some(t) = subst(v.0) => self.kind = t,
+                None if let Some(t) = subst.subst(v.0) => self.kind = t,
                 None => {}
             },
             TermKind::Lit(_) => {}
-            TermKind::SeqLiteral(fields) => {
-                fields.iter_mut().for_each(|a| a.subst_with(bound, subst))
-            }
-            TermKind::Cast { arg } => arg.subst_with(bound, subst),
-            TermKind::Coerce { arg } => arg.subst_with(bound, subst),
+            TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| a.subst_(bound, subst)),
+            TermKind::Cast { arg } => arg.subst_(bound, subst),
+            TermKind::Coerce { arg } => arg.subst_(bound, subst),
             TermKind::Item(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
-                lhs.subst_with(bound, subst);
-                rhs.subst_with(bound, subst)
+                lhs.subst_(bound, subst);
+                rhs.subst_(bound, subst)
             }
-            TermKind::Unary { arg, .. } => arg.subst_with(bound, subst),
+            TermKind::Unary { arg, .. } => arg.subst_(bound, subst),
             TermKind::Quant { binder, trigger, body, kind: _ } => {
                 let mut bound = bound.clone();
                 for (ident, _) in binder {
@@ -1696,41 +1691,36 @@ impl<'tcx> Term<'tcx> {
                     bound.insert(ident.0, new_ident);
                     ident.0 = new_ident;
                 }
-                trigger
-                    .iter_mut()
-                    .flat_map(|ts| &mut ts.0)
-                    .for_each(|t| t.subst_with(&bound, subst));
-                body.subst_with(&bound, subst);
+                trigger.iter_mut().flat_map(|ts| &mut ts.0).for_each(|t| t.subst_(&bound, subst));
+                body.subst_(&bound, subst);
             }
-            TermKind::Call { args, .. } => args.iter_mut().for_each(|f| f.subst_with(bound, subst)),
+            TermKind::Call { args, .. } => args.iter_mut().for_each(|f| f.subst_(bound, subst)),
             TermKind::Constructor { fields, .. } => {
-                fields.iter_mut().for_each(|f| f.subst_with(bound, subst))
+                fields.iter_mut().for_each(|f| f.subst_(bound, subst))
             }
-            TermKind::Tuple { fields } => {
-                fields.iter_mut().for_each(|f| f.subst_with(bound, subst))
-            }
-            TermKind::Cur { term } => term.subst_with(bound, subst),
-            TermKind::Fin { term } => term.subst_with(bound, subst),
+            TermKind::Tuple { fields } => fields.iter_mut().for_each(|f| f.subst_(bound, subst)),
+            TermKind::Cur { term } => term.subst_(bound, subst),
+            TermKind::Fin { term } => term.subst_(bound, subst),
             TermKind::Impl { lhs, rhs } => {
-                lhs.subst_with(bound, subst);
-                rhs.subst_with(bound, subst)
+                lhs.subst_(bound, subst);
+                rhs.subst_(bound, subst)
             }
             TermKind::Match { scrutinee, arms } => {
-                scrutinee.subst_with(bound, subst);
+                scrutinee.subst_(bound, subst);
                 arms.iter_mut().for_each(|(pat, arm)| {
                     let mut bound = bound.clone();
                     pat.rename_binds(&mut bound, &mut HashSet::new());
-                    arm.subst_with(&bound, subst);
+                    arm.subst_(&bound, subst);
                 })
             }
             TermKind::Let { pattern, arg, body } => {
-                arg.subst_with(bound, subst);
+                arg.subst_(bound, subst);
                 let mut bound = bound.clone();
                 pattern.rename_binds(&mut bound, &mut HashSet::new());
-                body.subst_with(&bound, subst);
+                body.subst_(&bound, subst);
             }
-            TermKind::Projection { lhs, .. } => lhs.subst_with(bound, subst),
-            TermKind::Old { term } => term.subst_with(bound, subst),
+            TermKind::Projection { lhs, .. } => lhs.subst_(bound, subst),
+            TermKind::Old { term } => term.subst_(bound, subst),
             TermKind::Closure { body, bound: bound_new } => {
                 let mut bound = bound.clone();
                 bound.extend(bound_new.iter_mut().map(|(ident, _)| {
@@ -1738,18 +1728,18 @@ impl<'tcx> Term<'tcx> {
                     ident.0 = rnm.1;
                     rnm
                 }));
-                body.subst_with(&bound, subst);
+                body.subst_(&bound, subst);
             }
             TermKind::Reborrow { inner, projections } => {
-                inner.subst_with(bound, subst);
-                visit_projections_mut(projections, |term| term.subst_with(bound, subst))
+                inner.subst_(bound, subst);
+                visit_projections_mut(projections, |term| term.subst_(bound, subst))
             }
-            TermKind::Assert { cond } => cond.subst_with(bound, subst),
+            TermKind::Assert { cond } => cond.subst_(bound, subst),
             TermKind::Precondition { params, .. } => {
-                params.iter_mut().for_each(|p| p.subst_with(bound, subst))
+                params.iter_mut().for_each(|p| p.subst_(bound, subst))
             }
             TermKind::Postcondition { params, .. } => {
-                params.iter_mut().for_each(|p| p.subst_with(bound, subst))
+                params.iter_mut().for_each(|p| p.subst_(bound, subst))
             }
         }
     }
@@ -1844,38 +1834,31 @@ impl<'tcx> Term<'tcx> {
     }
 }
 
-pub(crate) trait IntoSubst<'tcx> {
-    fn into_subst(self) -> impl Fn(Ident) -> Option<TermKind<'tcx>>;
+pub(crate) trait Subst<'tcx> {
+    fn subst(&self, id: Ident) -> Option<TermKind<'tcx>>;
 }
 
 /// A substitution from a mapping of `Ident` to `TermKind`.
 pub type MapSubstitution<'tcx> = HashMap<Ident, TermKind<'tcx>>;
 
-impl<'tcx> IntoSubst<'tcx> for &MapSubstitution<'tcx> {
-    fn into_subst(self) -> impl Fn(Ident) -> Option<TermKind<'tcx>> {
-        move |k| self.get(&k).cloned()
+impl<'tcx> Subst<'tcx> for MapSubstitution<'tcx> {
+    fn subst(&self, k: Ident) -> Option<TermKind<'tcx>> {
+        self.get(&k).cloned()
     }
 }
 
 /// A renaming from `Ident` to `Ident` in a small array.
 pub struct SmallRenaming<const N: usize>(pub [(Ident, Ident); N]);
 
-impl<'tcx, const N: usize> IntoSubst<'tcx> for &SmallRenaming<N> {
-    fn into_subst(self) -> impl Fn(Ident) -> Option<TermKind<'tcx>> {
-        move |x| {
-            for &(from, to) in &self.0 {
-                if from == x {
-                    return Some(TermKind::Var(to.into()));
-                }
-            }
-            None
-        }
+impl<'tcx, const N: usize> Subst<'tcx> for SmallRenaming<N> {
+    fn subst(&self, x: Ident) -> Option<TermKind<'tcx>> {
+        self.0.iter().find(|&&(from, _)| from == x).map(|&(_, to)| TermKind::Var(to.into()))
     }
 }
 
-impl<'tcx, F: Fn(Ident) -> Option<TermKind<'tcx>>> IntoSubst<'tcx> for F {
-    fn into_subst(self) -> impl Fn(Ident) -> Option<TermKind<'tcx>> {
-        self
+impl<'tcx, F: Fn(Ident) -> Option<TermKind<'tcx>>> Subst<'tcx> for F {
+    fn subst(&self, id: Ident) -> Option<TermKind<'tcx>> {
+        self(id)
     }
 }
 

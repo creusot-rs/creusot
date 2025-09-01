@@ -9,7 +9,7 @@ use crate::{
         clone_map::Namer as _,
         logic::Dependencies,
         program::{PtrCastKind, ptr_cast_kind},
-        projections::{Focus, borrow_generated_id, projections_to_expr},
+        projections::{borrow_generated_id, projections_term},
         signature::lower_contract,
         term::{
             binop_function, binop_right_int, binop_to_binop, lower_literal, lower_pure,
@@ -28,11 +28,10 @@ use crate::{
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
-    mir::{ProjectionElem, tcx::PlaceTy},
+    mir::ProjectionElem,
     ty::{EarlyBinder, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::{DUMMY_SP, Span};
-use rustc_type_ir::UintTy;
 use why3::{
     Exp, Ident, Name,
     exp::{Pattern as WPattern, UnOp as WUnOp},
@@ -506,6 +505,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             }
             // VC(&mut (*A).f, Q) = VC(A, |a| Q(&mut (*a).f))
             TermKind::Reborrow { inner, projections } => {
+                // FIXME: this does not generate VCs for bounds of indices in ProjectionElem::Index
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, inner.ty);
                 self.build_wp(inner, &|inner| {
                     self.build_wp_projections(projections, &|projs| {
@@ -517,20 +517,25 @@ impl<'tcx> VCGen<'_, 'tcx> {
                             &projs,
                             Clone::clone,
                         );
-                        let [cur, fin] = [name::current(), name::final_()].map(|nm| {
-                            let (foc, _) = projections_to_expr(
-                                self.ctx,
-                                self.names,
+
+                        let inner_id = Ident::fresh_local("inner");
+                        let subst = HashMap::from([(inner_id, inner.clone())]);
+                        let [cur, fin] = [Term::cur, Term::fin].map(|cf| {
+                            let t = projections_term(
+                                self.ctx.tcx,
+                                self.names.typing_env(),
+                                cf(Term::var(inner_id, ty)),
+                                &**projections,
+                                |e| e,
                                 None,
-                                &mut PlaceTy::from_ty(ty.builtin_deref(false).unwrap()),
-                                Focus::new(|_| inner.clone().field(Name::Global(nm))),
-                                Box::new(|_, _| unreachable!()),
-                                &projs,
                                 Clone::clone,
                                 t.span,
                             );
-                            foc.call(None)
+                            let mut t = self.lower_pure(&t);
+                            t.subst(&subst);
+                            t
                         });
+
                         k(Exp::qvar(self.names.in_pre(PreMod::MutBor, "borrow_logic"))
                             .app([cur, fin, borrow_id]))
                     })
@@ -580,7 +585,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     for (idx, pat) in flds {
                         pats[idx.as_usize()] = pat
                     }
-                    WPattern::ConsP(Name::local(self.names.constructor(var_did, subst)), pats)
+                    WPattern::ConsP(Name::local(self.names.item_ident(var_did, subst)), pats)
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {
@@ -659,7 +664,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
     fn build_wp_projections(
         &self,
         projs: &[ProjectionElem<Term<'tcx>, Ty<'tcx>>],
-        k: PostCont<'_, 'tcx, Box<[ProjectionElem<Exp, Ty<'tcx>>]>>,
+        k: PostCont<'_, 'tcx, Box<[ProjectionElem<(Exp, Ty<'tcx>), Ty<'tcx>>]>>,
     ) -> Result<Exp, VCError<'tcx>> {
         self.build_wp_projections_inner(0, projs, k)
     }
@@ -668,27 +673,21 @@ impl<'tcx> VCGen<'_, 'tcx> {
         &self,
         i: usize,
         projs: &[ProjectionElem<Term<'tcx>, Ty<'tcx>>],
-        k: PostCont<'_, 'tcx, Box<[ProjectionElem<Exp, Ty<'tcx>>]>>,
+        k: PostCont<'_, 'tcx, Box<[ProjectionElem<(Exp, Ty<'tcx>), Ty<'tcx>>]>>,
     ) -> Result<Exp, VCError<'tcx>> {
         if projs.is_empty() {
             k(repeat_n(/* Dummy */ ProjectionElem::Deref, i).collect())
         } else {
-            let def = |p: ProjectionElem<Exp, Ty<'tcx>>| {
+            let def = |p: ProjectionElem<(Exp, Ty<'tcx>), Ty<'tcx>>| {
                 self.build_wp_projections_inner(i + 1, &projs[1..], &|mut projs| {
                     projs[i] = p.clone();
                     k(projs)
                 })
             };
             match projs[0] {
-                ProjectionElem::Index(ref ix) => self.build_wp(ix, &|mut idx| {
-                    if matches!(ix.ty.kind(), TyKind::Uint(UintTy::Usize)) {
-                        let qname =
-                            self.names.in_pre(uty_to_prelude(self.ctx.tcx, UintTy::Usize), "t'int");
-                        idx = Exp::qvar(qname).app([idx])
-                    }
-
+                ProjectionElem::Index(ref ix) => self.build_wp(ix, &|idx| {
                     self.build_wp_projections_inner(i + 1, &projs[1..], &|mut projs| {
-                        projs[i] = ProjectionElem::Index(idx.clone());
+                        projs[i] = ProjectionElem::Index((idx.clone(), ix.ty));
                         k(projs)
                     })
                 }),
