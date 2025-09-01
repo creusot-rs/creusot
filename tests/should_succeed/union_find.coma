@@ -1023,9 +1023,9 @@ module M_union_find__implementation__qyi1944850640244667852__make [#"union_find.
   
   use creusot.int.UInt64
   use creusot.prelude.Opaque
-  use creusot.prelude.MutBorrow
-  use map.Map
   use set.Fset
+  use map.Map
+  use creusot.prelude.MutBorrow
   use mach.int.Int
   use creusot.prelude.Any
   
@@ -1103,6 +1103,14 @@ module M_union_find__implementation__qyi1944850640244667852__make [#"union_find.
   
   type t_FMap
   
+  type t_UnionFind = {
+    t_UnionFind__domain: Fset.fset t_Element;
+    t_UnionFind__map: t_FMap;
+    t_UnionFind__values: Map.map t_Element t_T;
+    t_UnionFind__distance: Map.map t_Element int;
+    t_UnionFind__root_of: Map.map t_Element t_Element;
+    t_UnionFind__max_depth: int }
+  
   type t_Option = C_None | C_Some t_PtrOwn
   
   function view (self: t_FMap) : Map.map UInt64.t t_Option
@@ -1143,14 +1151,6 @@ module M_union_find__implementation__qyi1944850640244667852__make [#"union_find.
   predicate inv'7 (_0: t_FMap)
   
   axiom inv_axiom'6 [@rewrite]: forall x: t_FMap [inv'7 x]. inv'7 x = invariant''3 x
-  
-  type t_UnionFind = {
-    t_UnionFind__domain: Fset.fset t_Element;
-    t_UnionFind__map: t_FMap;
-    t_UnionFind__values: Map.map t_Element t_T;
-    t_UnionFind__distance: Map.map t_Element int;
-    t_UnionFind__root_of: Map.map t_Element t_Element;
-    t_UnionFind__max_depth: int }
   
   predicate invariant''4 (self: MutBorrow.t t_FMap) = [%#sinvariant] inv'7 self.current /\ inv'7 self.final
   
@@ -1580,8 +1580,8 @@ module M_union_find__implementation__qyi1944850640244667852__find_inner [#"union
   use set.Fset
   use map.Map
   use creusot.int.UInt64
-  use creusot.prelude.MutBorrow
   use mach.int.Int
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_Element = { t_Element__0: Opaque.ptr }
@@ -2021,11 +2021,7 @@ module M_union_find__implementation__qyi1944850640244667852__find_inner [#"union
       | s5 = as_mut {elem'0.t_Element__0} {mut_perm} (fun (_ret: MutBorrow.t t_Content) -> [ &_40 <- _ret ] s6)
       | s6 = bb18 ]
     | bb18 = s0
-      [ s0 = {[@expl:type invariant] match _40 with
-          | {current = x} -> inv'1 x
-          | _ -> true
-          end}
-        s1
+      [ s0 = {[@expl:type invariant] inv'1 _40.current} s1
       | s1 = [ &_40 <- { _40 with current = _38 } ] s2
       | s2 = {[@expl:type invariant] inv'18 _40} s3
       | s3 = -{resolve'4 _40}- s4
@@ -2757,12 +2753,12 @@ module M_union_find__implementation__qyi1944850640244667852__equiv [#"union_find
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 101 20 101 44
   
-  use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
   use set.Fset
   use map.Map
   use creusot.int.UInt64
   use mach.int.Int
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_Element = { t_Element__0: Opaque.ptr }
@@ -3600,11 +3596,7 @@ module M_union_find__implementation__qyi1944850640244667852__link [#"union_find.
       | s5 = as_mut {x'0.t_Element__0} {perm_mut_x} (fun (_ret: MutBorrow.t t_Content) -> [ &_81 <- _ret ] s6)
       | s6 = bb32 ]
     | bb32 = s0
-      [ s0 = {[@expl:type invariant] match _81 with
-          | {current = x'1} -> inv'1 x'1
-          | _ -> true
-          end}
-        s1
+      [ s0 = {[@expl:type invariant] inv'1 _81.current} s1
       | s1 = [ &_81 <- { _81 with current = _79 } ] s2
       | s2 = {[@expl:type invariant] inv'19 _81} s3
       | s3 = -{resolve'6 _81}- s4
@@ -3678,11 +3670,7 @@ module M_union_find__implementation__qyi1944850640244667852__link [#"union_find.
       | s5 = as_mut {y'0.t_Element__0} {perm_mut_y} (fun (_ret: MutBorrow.t t_Content) -> [ &_106 <- _ret ] s6)
       | s6 = bb45 ]
     | bb45 = s0
-      [ s0 = {[@expl:type invariant] match _106 with
-          | {current = x'1} -> inv'1 x'1
-          | _ -> true
-          end}
-        s1
+      [ s0 = {[@expl:type invariant] inv'1 _106.current} s1
       | s1 = [ &_106 <- { _106 with current = _104 } ] s2
       | s2 = {[@expl:type invariant] inv'19 _106} s3
       | s3 = -{resolve'6 _106}- s4
@@ -3926,12 +3914,12 @@ module M_union_find__implementation__qyi1944850640244667852__union_aux [#"union_
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 49 20 49 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 101 20 101 44
   
-  use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
   use set.Fset
   use map.Map
   use creusot.int.UInt64
   use mach.int.Int
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_Element = { t_Element__0: Opaque.ptr }

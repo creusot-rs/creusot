@@ -1,9 +1,8 @@
-#[cfg(feature = "nightly")]
-use crate::logic::ops::IndexLogic;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{
     invariant::*,
+    logic::ops::IndexLogic,
     std::{
         ops::{Deref, DerefMut, Index, IndexMut},
         slice::SliceIndex,

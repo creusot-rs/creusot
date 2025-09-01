@@ -16,10 +16,7 @@ use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
-    mir::{
-        self, BasicBlock, Body, Local, Location, Operand, Place, PlaceRef,
-        traversal::reverse_postorder,
-    },
+    mir::{self, BasicBlock, Body, Local, Location, Operand, Place, traversal::reverse_postorder},
     ty::{Ty, TyCtxt, TyKind, TypeVisitableExt, TypingEnv},
 };
 use rustc_span::Span;
@@ -217,7 +214,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn resolve_at(&mut self, loc: Location, span: Span) {
         for place in self.body_data.remove_resolved_places_at(loc) {
-            self.emit_resolve(place.as_ref(), span);
+            self.emit_resolve(place, span);
         }
     }
 
@@ -238,7 +235,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn emit_resolve_into(
         &self,
-        pl: PlaceRef<'tcx>,
+        pl: Place<'tcx>,
         span: Span,
         dest: &mut Vec<fmir::Statement<'tcx>>,
     ) {
@@ -276,7 +273,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         }
     }
 
-    fn emit_resolve(&mut self, pl: PlaceRef<'tcx>, span: Span) {
+    fn emit_resolve(&mut self, pl: Place<'tcx>, span: Span) {
         let mut dest = std::mem::take(&mut self.current_block.0);
         self.emit_resolve_into(pl, span, &mut dest);
         self.current_block.0 = dest;
@@ -293,12 +290,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     /// `is_final` signals that the emitted borrow should be final: see [`NotFinalPlaces`].
     fn emit_borrow(
         &mut self,
-        lhs: &Place<'tcx>,
-        rhs: &Place<'tcx>,
+        lhs: Place<'tcx>,
+        rhs: Place<'tcx>,
         is_final: fmir::BorrowKind,
         span: Span,
     ) {
-        let p = self.translate_place(rhs.as_ref(), span);
+        let p = self.translate_place(rhs, span);
 
         let rhs_ty = rhs.ty(self.body, self.tcx()).ty;
         let triv_inv = if is_tyinv_trivial(
@@ -316,11 +313,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_snapshot_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {
-        self.emit_assignment(&lhs, fmir::RValue::Snapshot(rhs), span)
+        self.emit_assignment(lhs, fmir::RValue::Snapshot(rhs), span)
     }
 
-    fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>, span: Span) {
-        let p = self.translate_place(lhs.as_ref(), span);
+    fn emit_assignment(&mut self, lhs: Place<'tcx>, rhs: RValue<'tcx>, span: Span) {
+        let p = self.translate_place(lhs, span);
         self.emit_statement(fmir::Statement { kind: fmir::StatementKind::Assignment(p, rhs), span })
     }
 
@@ -337,8 +334,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     /// Will error when trying to dereference a raw pointer.
     fn translate_operand(&self, operand: &Operand<'tcx>, span: Span) -> fmir::Operand<'tcx> {
         match operand {
-            Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(pl.as_ref(), span)),
-            Operand::Move(pl) => fmir::Operand::Move(self.translate_place(pl.as_ref(), span)),
+            &Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(pl, span)),
+            &Operand::Move(pl) => fmir::Operand::Move(self.translate_place(pl, span)),
             Operand::Constant(c) => {
                 mirconst_to_operand(c, self.ctx, self.typing_env(), self.body_id.def_id)
             }
@@ -350,7 +347,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     /// # Errors
     ///
     /// Will error when trying to dereference a raw pointer.
-    fn translate_place(&self, pl: PlaceRef<'tcx>, span: Span) -> fmir::Place<'tcx> {
+    fn translate_place(&self, pl: Place<'tcx>, span: Span) -> fmir::Place<'tcx> {
         let projections = pl
             .iter_projections()
             .map(|(p, elem)| match elem {

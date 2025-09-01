@@ -5,7 +5,7 @@ use crate::{
     backend::{
         Why3Generator, clone_map::elaborator::Expander, dependency::Dependency, ty::ty_to_prelude,
     },
-    contracts_items::{get_builtin, get_inv_function, is_bitwise},
+    contracts_items::{get_builtin, is_bitwise},
     ctx::*,
     options::SpanMode,
     translation::traits::TraitResolved,
@@ -19,7 +19,7 @@ use petgraph::prelude::DiGraphMap;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
+    GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
 };
 use rustc_span::Span;
 use rustc_target::abi::{FieldIdx, VariantIdx};
@@ -82,16 +82,6 @@ pub(crate) trait Namer<'tcx> {
     fn ty(&self, ty: Ty<'tcx>) -> Name {
         assert!(!ty.has_escaping_bound_vars());
         self.dependency(Dependency::Type(ty)).name()
-    }
-
-    fn constructor(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
-        self.dependency(Dependency::Item(def_id, subst)).ident()
-    }
-
-    fn ty_inv(&self, ty: Ty<'tcx>) -> Ident {
-        let def_id = get_inv_function(self.tcx());
-        let subst = self.tcx().mk_args(&[ty::GenericArg::from(ty)]);
-        self.item_ident(def_id, subst)
     }
 
     /// Creates a name for a struct or closure projection ie: x.field1
