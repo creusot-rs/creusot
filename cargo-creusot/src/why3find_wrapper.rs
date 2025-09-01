@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, bail};
 use clap::*;
 use creusot_setup::{Paths, creusot_paths};
 use std::{
@@ -28,8 +28,7 @@ pub struct ProveArgs {
     pub why3session: bool,
     /// Run why3find on files that match one of the patterns.
     /// Examples: `name`, `name::*`, `m/*/f`, or whole paths `verif/a/M_b.coma`.
-    #[clap(value_parser = Pattern::parse)]
-    pub patterns: Vec<Pattern>,
+    pub patterns: Vec<String>,
 }
 
 // Although these two options look similar, they are implemented quite differently.
@@ -102,9 +101,17 @@ fn raw_prove(args: ProveArgs, paths: &Paths, files: &[PathBuf]) -> Result<()> {
 pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
     let paths = creusot_paths()?;
     check_why3find_json_exists(root)?;
-    let files = match_patterns(&args.patterns)?;
+    let patterns = args
+        .patterns
+        .iter()
+        .map(|s| Pattern::parse(root, s))
+        .collect::<Result<Box<[Pattern]>>>()?;
+    let files = match_patterns(&patterns)?;
     if files.is_empty() {
-        return Ok(());
+        // Fail if no files matched the patterns.
+        // Note: if no patterns is supplied, then `files` will be `["verif/"]`
+        // so `why3find` will be successfully called even if there are no coma files under `verif/`.
+        bail!("No files to prove")
     }
     // Validate `--ide-always`: it only works with a single Coma file.
     let coma = if !args.ide.ide_always {
@@ -122,7 +129,37 @@ pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
     prove_result
 }
 
-/// A pattern is a list of segments which match individual path components.
+pub enum Pattern {
+    /// Path relative to the workspace root
+    Path(PathBuf),
+    /// Segment pattern
+    SPattern(SPattern),
+}
+
+impl Pattern {
+    fn parse(root: &Path, s: &str) -> Result<Self> {
+        if s.is_empty() {
+            bail!("Pattern must be non-empty");
+        }
+        if s.starts_with('/') {
+            let path = Path::new(s)
+                .strip_prefix(root)
+                .or_else(|_| bail!("Absolute path must contain prefix {root:?}"))?;
+            Ok(Pattern::Path(path.into()))
+        } else {
+            SPattern::parse(s).map(Pattern::SPattern)
+        }
+    }
+
+    fn matches(&self, path: &Path) -> bool {
+        match self {
+            Pattern::Path(p) => p == path,
+            Pattern::SPattern(pat) => pat.matches(path),
+        }
+    }
+}
+
+/// A "segment pattern" is a list of segments which match individual path components.
 /// A pattern matches a path if a subsequence of components matches the segments.
 /// A pattern must have at least one segment.
 ///
@@ -136,15 +173,14 @@ pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
 /// - a file path like `verif/a/M_b.coma` (where the last segment starts with `M_` and ends with `.coma`)
 ///   can also be used as a pattern which must match a file name exactly (`match_whole` is set to `true`).
 #[derive(Clone, Debug)]
-pub struct Pattern {
+pub struct SPattern {
     segments: Vec<Segment>,
     match_whole: bool,
 }
 
-impl Pattern {
-    /// Argument parser for clap
-    fn parse(s: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> {
-        let mut pattern = Pattern {
+impl SPattern {
+    fn parse(s: &str) -> Result<Self> {
+        let mut pattern = SPattern {
             segments: s
                 .replace("::", "/")
                 .split('/')
@@ -164,15 +200,7 @@ impl Pattern {
         }
         Ok(pattern)
     }
-}
 
-#[derive(Clone, Debug)]
-pub enum Segment {
-    Any,
-    Seg(String),
-}
-
-impl Pattern {
     fn matches(&self, path: &Path) -> bool {
         let components: Box<[_]> = path.components().collect();
         if components.len() < self.segments.len() {
@@ -189,6 +217,12 @@ impl Pattern {
                 })
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub enum Segment {
+    Any,
+    Seg(String),
 }
 
 impl Segment {
