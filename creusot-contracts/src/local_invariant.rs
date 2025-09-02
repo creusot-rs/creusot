@@ -130,6 +130,43 @@ impl Namespaces<'_> {
         Namespaces(::std::marker::PhantomData)
     }
 
+    /// Split the namespace in two, so that it can be used to access independant invariants.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::{*, local_invariant::{declare_namespace, Namespaces}};
+    /// declare_namespace! { FOO }
+    /// declare_namespace! { BAR }
+    ///
+    /// // the lifetime 'locks' the namespace
+    /// #[requires(namespaces.contains(FOO()))]
+    /// fn foo<'a>(namespaces: Ghost<Namespaces<'a>>) -> &'a i32 {
+    /// # todo!()
+    ///     // access some invariant to get the reference
+    /// }
+    /// #[requires(namespaces.contains(BAR()))]
+    /// fn bar(namespaces: Ghost<Namespaces>) {}
+    ///
+    /// #[requires(namespaces.contains(FOO()) && namespaces.contains(BAR()))]
+    /// fn baz(mut namespaces: Ghost<Namespaces>) -> i32 {
+    ///      let (ns_foo, ns_bar) = ghost!(namespaces.split(snapshot!(FOO()))).split();
+    ///      let x = foo(ns_foo);
+    ///      bar(ns_bar);
+    ///      *x
+    /// }
+    /// ```
+    #[trusted]
+    #[requires(self.contains(*ns))]
+    #[ensures((^self) == (*self))]
+    #[ensures(result.0.contains(*ns))]
+    #[ensures(forall<ns2> ns2 != *ns && self.contains(ns2) ==> result.1.contains(ns2))]
+    #[check(ghost)]
+    #[allow(unused_variables)]
+    pub fn split<'a>(&'a mut self, ns: Snapshot<Namespace>) -> (Namespaces<'a>, Namespaces<'a>) {
+        (Namespaces(::std::marker::PhantomData), Namespaces(::std::marker::PhantomData))
+    }
+
     #[logic]
     #[open]
     pub fn contains(self, namespace: Namespace) -> bool {
