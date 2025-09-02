@@ -67,7 +67,7 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
         return None;
     }
 
-    let name = names.item_ident(names.self_id, names.self_subst);
+    let name = names.source_ident();
     let mut defn = to_why(ctx, &names, name, def_id.expect_local());
 
     let namespace_ty =

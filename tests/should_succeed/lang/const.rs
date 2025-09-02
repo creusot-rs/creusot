@@ -33,6 +33,18 @@ pub const fn add_one<const N: usize>() -> usize {
     const { N + 1 }
 }
 
+#[logic]
+pub fn add_one_logic<const P: usize>() -> Int {
+    pearlite! { P@ + 1 }
+}
+
+// Check instantiation of const generics
+#[requires(M < usize::MAX)]
+#[ensures(result@ == add_one_logic::<M>() )]
+pub const fn add_one_2<const M: usize>() -> usize {
+    add_one::<M>()
+}
+
 pub trait Nat {
     const VALUE: usize;
 }

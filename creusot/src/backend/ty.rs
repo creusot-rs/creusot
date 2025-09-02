@@ -26,7 +26,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
     span: Span,
     ty: Ty<'tcx>,
 ) -> MlT {
-    let ty = names.normalize(ctx, ty);
+    let ty = names.normalize(ty);
     match ty.kind() {
         Bool => bool(),
         Char => MlT::qconstructor(names.in_pre(PreMod::Char, "t")),
@@ -220,8 +220,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
             } else {
                 fld.name.as_str()
             };
-            let ty =
-                translate_ty(ctx, names, DUMMY_SP, names.normalize(ctx, fld.ty(ctx.tcx, subst)));
+            let ty = translate_ty(ctx, names, DUMMY_SP, names.normalize(fld.ty(ctx.tcx, subst)));
             (Ident::fresh_local(variable_name(id)), ty)
         })
         .collect();

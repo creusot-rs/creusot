@@ -5,8 +5,8 @@ use crate::{
     },
     ctx::HasTyCtxt as _,
     translation::{
-        constant::tyconst_to_term,
         fmir::{self, Operand, RValue},
+        pearlite::Term,
     },
 };
 use rustc_middle::{
@@ -14,7 +14,7 @@ use rustc_middle::{
         BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
-    ty::{TyKind, adjustment::PointerCoercion},
+    ty::{Ty, TyKind, UintTy, adjustment::PointerCoercion},
 };
 use rustc_span::Span;
 
@@ -156,13 +156,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Repeat(op, len) => RValue::Repeat(
                 self.translate_operand(op, span),
-                Operand::Term(tyconst_to_term(
-                    *len,
-                    self.ctx,
-                    self.typing_env(),
-                    self.body_id.def_id,
-                    si.span,
-                )),
+                Operand::Term(Term::const_(*len, Ty::new_uint(self.tcx(), UintTy::Usize), si.span)),
             ),
             Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize, _), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true)

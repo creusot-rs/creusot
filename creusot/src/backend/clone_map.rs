@@ -57,13 +57,11 @@ pub enum PreMod {
 
 pub(crate) trait Namer<'tcx> {
     fn item(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
-        let node = Dependency::Item(def_id, subst);
-        self.dependency(node).name()
+        self.dependency(Dependency::Item(def_id, subst)).name()
     }
 
     fn item_ident(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
-        let node = Dependency::Item(def_id, subst);
-        self.dependency(node).ident()
+        self.dependency(Dependency::Item(def_id, subst)).ident()
     }
 
     fn def_ty(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
@@ -116,7 +114,10 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::Eliminator(def_id, subst)).ident()
     }
 
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T;
+    // TODO: get rid of this. It feels like it should be unnecessary
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ty: T) -> T {
+        self.tcx().normalize_erasing_regions(self.typing_env(), ty)
+    }
 
     fn import_prelude_module(&self, module: PreMod) {
         self.dependency(Dependency::PreMod(module));
@@ -189,6 +190,21 @@ pub(crate) trait Namer<'tcx> {
 
     fn tcx(&self) -> TyCtxt<'tcx>;
 
+    /// The main item being translated
+    fn source_id(&self) -> DefId;
+
+    fn source_subst(&self) -> GenericArgsRef<'tcx> {
+        erased_identity_for_item(self.tcx(), self.source_id())
+    }
+
+    fn source_item(&self) -> Dependency<'tcx> {
+        Dependency::Item(self.source_id(), self.source_subst())
+    }
+
+    fn source_ident(&self) -> Ident {
+        self.dependency(self.source_item()).ident()
+    }
+
     fn typing_env(&self) -> TypingEnv<'tcx>;
 
     fn span(&self, span: Span) -> Option<Attribute>;
@@ -205,11 +221,6 @@ pub(crate) trait Namer<'tcx> {
 }
 
 impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
-    // TODO: get rid of this. It feels like it should be unnecessary
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, _: &TranslationCtx<'tcx>, ty: T) -> T {
-        self.tcx().normalize_erasing_regions(self.typing_env, ty)
-    }
-
     fn raw_dependency(&self, key: Dependency<'tcx>) -> &Kind {
         self.names.insert(key, |_| {
             if let Some((did, _)) = key.did()
@@ -232,6 +243,10 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
 
     fn tcx(&self) -> TyCtxt<'tcx> {
         self.tcx
+    }
+
+    fn source_id(&self) -> DefId {
+        self.source_id
     }
 
     fn typing_env(&self) -> TypingEnv<'tcx> {
@@ -261,12 +276,12 @@ impl CloneNames<'_> {
 }
 
 impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T {
-        self.tcx().normalize_erasing_regions(ctx.typing_env(self.self_id), ty)
-    }
-
     fn tcx(&self) -> TyCtxt<'tcx> {
         self.tcx
+    }
+
+    fn source_id(&self) -> DefId {
+        self.names.source_id()
     }
 
     fn typing_env(&self) -> TypingEnv<'tcx> {
@@ -297,13 +312,13 @@ pub(crate) struct Dependencies<'tcx> {
 
     // A hacky thing which is used to remember the dependncies we need to seed the expander with
     dep_set: RefCell<IndexSet<Dependency<'tcx>>>,
-
-    pub(crate) self_id: DefId,
-    pub(crate) self_subst: GenericArgsRef<'tcx>,
 }
 
 pub(crate) struct CloneNames<'tcx> {
     tcx: TyCtxt<'tcx>,
+    /// The main item being translated.
+    /// We need this to convert `ConstParam` into `DefId` in `tyconst_to_term_final` in `constant.rs`.
+    source_id: DefId,
     // To normalize during dependency stuff (deprecated)
     typing_env: TypingEnv<'tcx>,
     // Internal state, used to determine whether we should emit spans at all
@@ -321,12 +336,14 @@ pub(crate) struct CloneNames<'tcx> {
 impl<'tcx> CloneNames<'tcx> {
     fn new(
         tcx: TyCtxt<'tcx>,
+        source_id: DefId,
         typing_env: TypingEnv<'tcx>,
         span_mode: SpanMode,
         bitwise_mode: bool,
     ) -> Self {
         CloneNames {
             tcx,
+            source_id,
             typing_env,
             span_mode,
             bitwise_mode,
@@ -370,15 +387,15 @@ impl Kind {
 impl<'tcx> Dependencies<'tcx> {
     pub(crate) fn new(ctx: &TranslationCtx<'tcx>, self_id: DefId) -> Self {
         let bw = is_bitwise(ctx.tcx, self_id);
-        let names =
-            CloneNames::new(ctx.tcx, ctx.typing_env(self_id), ctx.opts.span_mode.clone(), bw);
+        let names = CloneNames::new(
+            ctx.tcx,
+            self_id,
+            ctx.typing_env(self_id),
+            ctx.opts.span_mode.clone(),
+            bw,
+        );
         debug!("cloning self: {:?}", self_id);
-        let self_subst = erased_identity_for_item(ctx.tcx, self_id);
-        let deps =
-            Dependencies { tcx: ctx.tcx, self_id, self_subst, names, dep_set: Default::default() };
-
-        deps.names.dependency(Dependency::Item(self_id, self_subst));
-        deps
+        Dependencies { tcx: ctx.tcx, names, dep_set: Default::default() }
     }
 
     /// Get a name for an type, _without_ adding it to the list of dependencies.
@@ -389,27 +406,23 @@ impl<'tcx> Dependencies<'tcx> {
     }
 
     pub(crate) fn provide_deps(mut self, ctx: &Why3Generator<'tcx>) -> (Vec<Decl>, Setters) {
-        trace!("emitting dependencies for {:?}", self.self_id);
+        trace!("emitting dependencies for {:?}", self.source_id());
         let mut decls = Vec::new();
+        let typing_env = self.typing_env();
+        let source_id = self.source_id();
+        let source_item = self.source_item();
+        let span = self.tcx.def_span(source_id);
 
-        let typing_env = ctx.typing_env(self.self_id);
-
-        let self_node = (self.self_id, self.self_subst);
-        let graph = Expander::new(
-            &mut self.names,
-            self_node,
-            typing_env,
-            self.dep_set.into_inner().into_iter(),
-            self.tcx.def_span(self.self_id),
-        );
+        let graph =
+            Expander::new(&mut self.names, typing_env, self.dep_set.into_inner().into_iter(), span);
 
         // Update the clone graph with any new entries.
         let (graph, mut bodies) = graph.update_graph(ctx);
 
         for scc in petgraph::algo::tarjan_scc(&graph).into_iter() {
-            if scc.iter().any(|node| node == &Dependency::Item(self_node.0, self_node.1)) {
+            if scc.iter().any(|node| node == &source_item) {
                 if scc.len() != 1 {
-                    eprintln!("{:?} {scc:?}", self.self_id);
+                    eprintln!("{:?} {scc:?}", source_id);
                 }
                 assert_eq!(scc.len(), 1);
                 bodies.remove(&scc[0]);
@@ -494,7 +507,7 @@ impl<'tcx> Dependencies<'tcx> {
             bodies.is_empty(),
             "unused bodies: {:?} for def {:?}",
             bodies.keys().collect::<Vec<_>>(),
-            self.self_id
+            source_id
         );
 
         // Remove duplicates in `use` declarations, and move them at the beginning of the module

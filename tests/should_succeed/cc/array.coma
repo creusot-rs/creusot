@@ -5,15 +5,17 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   let%span sarray'2 = "array.rs" 6 31 6 32
   let%span sarray'3 = "array.rs" 9 54 9 55
   let%span sarray'4 = "array.rs" 10 30 10 31
-  let%span sarray'5 = "../../../creusot-contracts/src/std/array.rs" 100 18 100 34
-  let%span sarray'6 = "../../../creusot-contracts/src/std/array.rs" 82 8 82 61
-  let%span sarray'7 = "../../../creusot-contracts/src/std/array.rs" 76 20 76 47
-  let%span sarray'8 = "../../../creusot-contracts/src/std/array.rs" 87 4 87 49
-  let%span sarray'9 = "../../../creusot-contracts/src/std/array.rs" 88 27 88 29
-  let%span sarray'10 = "../../../creusot-contracts/src/std/array.rs" 92 4 92 34
-  let%span sarray'11 = "../../../creusot-contracts/src/std/array.rs" 93 4 93 34
-  let%span sarray'12 = "../../../creusot-contracts/src/std/array.rs" 94 4 94 44
-  let%span sarray'13 = "../../../creusot-contracts/src/std/array.rs" 95 91 95 93
+  let%span sarray'5 = "../../../creusot-contracts/src/std/array.rs" 113 8 113 9
+  let%span sarray'6 = "../../../creusot-contracts/src/std/array.rs" 113 18 113 34
+  let%span sarray'7 = "../../../creusot-contracts/src/std/array.rs" 95 8 95 61
+  let%span sarray'8 = "../../../creusot-contracts/src/std/array.rs" 89 20 89 47
+  let%span sarray'9 = "../../../creusot-contracts/src/std/array.rs" 100 4 100 49
+  let%span sarray'10 = "../../../creusot-contracts/src/std/array.rs" 101 27 101 29
+  let%span sarray'11 = "../../../creusot-contracts/src/std/array.rs" 105 4 105 34
+  let%span sarray'12 = "../../../creusot-contracts/src/std/array.rs" 106 4 106 34
+  let%span sarray'13 = "../../../creusot-contracts/src/std/array.rs" 107 4 107 44
+  let%span sarray'14 = "../../../creusot-contracts/src/std/array.rs" 108 91 108 93
+  let%span sarray'15 = "../../../creusot-contracts/src/std/array.rs" 9 20 9 51
   let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 334 18 334 33
   let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 458 8 458 65
   let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 465 12 465 66
@@ -27,12 +29,14 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   let%span sslice'9 = "../../../creusot-contracts/src/std/slice.rs" 93 14 93 76
   let%span sslice'10 = "../../../creusot-contracts/src/std/slice.rs" 57 8 57 31
   let%span siter = "../../../creusot-contracts/src/std/iter.rs" 92 26 95 17
+  let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 92 16 92 17
   let%span soption = "../../../creusot-contracts/src/std/option.rs" 25 26 25 75
   let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 13 8 16 9
   let%span smodel = "../../../creusot-contracts/src/model.rs" 35 8 35 28
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 62 8 62 22
   let%span smodel'1 = "../../../creusot-contracts/src/model.rs" 44 8 44 22
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
   let%span snum = "../../../creusot-contracts/src/std/num.rs" 24 28 24 33
   
   use creusot.slice.Slice64
@@ -122,35 +126,76 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   
   type t_IntoIter = { t_IntoIter__data: Slice64.array t_MaybeUninit; t_IntoIter__alive: t_IndexRange }
   
+  predicate inv (_0: Seq.seq Int32.t)
+  
+  axiom inv_axiom [@rewrite]: forall x: Seq.seq Int32.t [inv x]. inv x = true
+  
+  predicate invariant' (self: Slice64.array Int32.t) =
+    [%#sarray'15] inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (1: UInt64.t)
+  
+  predicate inv'0 (_0: Slice64.array Int32.t)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Slice64.array Int32.t [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate inv'1 (_0: Seq.seq t_MaybeUninit)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: Seq.seq t_MaybeUninit [inv'1 x]. inv'1 x = true
+  
+  predicate invariant''0 (self: Slice64.array t_MaybeUninit) =
+    [%#sarray'15] inv'1 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (1: UInt64.t)
+  
+  predicate inv'2 (_0: Slice64.array t_MaybeUninit)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: Slice64.array t_MaybeUninit [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate inv'3 (_0: t_IntoIter)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_IntoIter [inv'3 x]. inv'3 x
+      = match x with
+        | {t_IntoIter__data = data; t_IntoIter__alive = alive} -> inv'2 data
+        end
+  
   function view'2 (self: t_IntoIter) : Seq.seq Int32.t
   
-  let rec into_iter (self_: Slice64.array Int32.t) (return' (x: t_IntoIter)) = any
-    [ return''0 (result: t_IntoIter) -> {[%#sarray'5] Slice64.view self_ = view'2 result} (! return' {result}) ]
+  let rec into_iter (self_: Slice64.array Int32.t) (return' (x: t_IntoIter)) =
+    {[@expl:into_iter 'self_' type invariant] [%#sarray'5] inv'0 self_}
+    any
+    [ return''0 (result: t_IntoIter) -> {inv'3 result}
+      {[%#sarray'6] Slice64.view self_ = view'2 result}
+      (! return' {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 Int32.t
   
+  predicate invariant''1 (self: MutBorrow.t t_IntoIter) = [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  
+  predicate inv'4 (_0: MutBorrow.t t_IntoIter)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_IntoIter [inv'4 x]. inv'4 x = invariant''1 x
+  
   predicate produces'0 (self: t_IntoIter) (visited: Seq.seq Int32.t) (o: t_IntoIter) =
-    [%#sarray'7] view'2 self = Seq.(++) visited (view'2 o)
+    [%#sarray'8] view'2 self = Seq.(++) visited (view'2 o)
   
   function produces_trans'0 (a: t_IntoIter) (ab: Seq.seq Int32.t) (b: t_IntoIter) (bc: Seq.seq Int32.t) (c: t_IntoIter) : ()
-   = [%#sarray'13] ()
+   = [%#sarray'14] ()
   
   axiom produces_trans_spec'0:
-    forall a: t_IntoIter, ab: Seq.seq Int32.t, b: t_IntoIter, bc: Seq.seq Int32.t, c: t_IntoIter. ([%#sarray'10] produces'0 a ab b)
-      -> ([%#sarray'11] produces'0 b bc c) -> ([%#sarray'12] produces'0 a (Seq.(++) ab bc) c)
+    forall a: t_IntoIter, ab: Seq.seq Int32.t, b: t_IntoIter, bc: Seq.seq Int32.t, c: t_IntoIter. ([%#sarray'11] produces'0 a ab b)
+      -> ([%#sarray'12] produces'0 b bc c) -> ([%#sarray'13] produces'0 a (Seq.(++) ab bc) c)
   
-  function produces_refl'0 (self: t_IntoIter) : () = [%#sarray'9] ()
+  function produces_refl'0 (self: t_IntoIter) : () = [%#sarray'10] ()
   
-  axiom produces_refl_spec'0: forall self: t_IntoIter. [%#sarray'8] produces'0 self (Seq.empty: Seq.seq Int32.t) self
+  axiom produces_refl_spec'0: forall self: t_IntoIter. [%#sarray'9] produces'0 self (Seq.empty: Seq.seq Int32.t) self
   
   predicate resolve'0 (self: MutBorrow.t t_IntoIter) = [%#sresolve] self.final = self.current
   
   function view'3 (self: MutBorrow.t t_IntoIter) : Seq.seq Int32.t = [%#smodel'0] view'2 self.current
   
   predicate completed'0 (self: MutBorrow.t t_IntoIter) =
-    [%#sarray'6] resolve'0 self /\ view'3 self = (Seq.empty: Seq.seq Int32.t)
+    [%#sarray'7] resolve'0 self /\ view'3 self = (Seq.empty: Seq.seq Int32.t)
   
-  let rec next'0 (self_: MutBorrow.t t_IntoIter) (return' (x: t_Option'1)) = any
+  let rec next'0 (self_: MutBorrow.t t_IntoIter) (return' (x: t_Option'1)) =
+    {[@expl:next 'self_' type invariant] [%#siter'0] inv'4 self_}
+    any
     [ return''0 (result: t_Option'1) -> {[%#siter] match result with
         | C_None'1 -> completed'0 self_
         | C_Some'1 v -> produces'0 self_.current (Seq.singleton v) self_.final
@@ -252,8 +297,9 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
       | s1 = into_iter {_73} (fun (_ret: t_IntoIter) -> [ &b <- _ret ] s2)
       | s2 = bb14 ]
     | bb14 = s0
-      [ s0 = MutBorrow.borrow_mut <t_IntoIter> {b}
-          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_78 <- _ret ] [ &b <- _ret.final ] s1)
+      [ s0 = {inv'3 b}
+        MutBorrow.borrow_mut <t_IntoIter> {b}
+          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_78 <- _ret ] -{inv'3 _ret.final}- [ &b <- _ret.final ] s1)
       | s1 = next'0 {_78} (fun (_ret: t_Option'1) -> [ &_77 <- _ret ] s2)
       | s2 = bb15 ]
     | bb15 = s0
@@ -270,8 +316,9 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
       | s5 = bb16 ]
     | bb16 = any [ br0 -> {_83 = false} (! bb18) | br1 -> {_83} (! bb17) ]
     | bb17 = s0
-      [ s0 = MutBorrow.borrow_mut <t_IntoIter> {b}
-          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_99 <- _ret ] [ &b <- _ret.final ] s1)
+      [ s0 = {inv'3 b}
+        MutBorrow.borrow_mut <t_IntoIter> {b}
+          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_99 <- _ret ] -{inv'3 _ret.final}- [ &b <- _ret.final ] s1)
       | s1 = next'0 {_99} (fun (_ret: t_Option'1) -> [ &_98 <- _ret ] s2)
       | s2 = bb19 ]
     | bb19 = s0

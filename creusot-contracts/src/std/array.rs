@@ -4,10 +4,9 @@ use ::std::array::*;
 impl<T, const N: usize> Invariant for [T; N] {
     #[logic(prophetic)]
     #[open]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
-        pearlite! { inv(self@) }
+        pearlite! { inv(self@) && self@.len() == N@ }
     }
 }
 
@@ -34,6 +33,20 @@ impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
     fn deep_model(self) -> Self::DeepModelTy {
         dead
     }
+}
+
+impl<T, const N: usize> Resolve for [T; N] {
+    #[open]
+    #[logic(prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i: Int> 0 <= i && i < N@ ==> resolve(self@[i]) }
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T, const N: usize> IndexLogic<Int> for [T; N] {

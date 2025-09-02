@@ -13,7 +13,7 @@ use crate::{
         signature::lower_contract,
         term::{
             binop_function, binop_right_int, binop_to_binop, lower_literal, lower_pure,
-            unsupported_cast,
+            tyconst_to_term_final, unsupported_cast,
         },
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
     },
@@ -317,6 +317,12 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     k(Exp::Var(item_name))
                 }
             }
+            TermKind::Const(c) => {
+                self.build_wp(
+                    &tyconst_to_term_final(*c, t.ty, self.names.source_id(), self.ctx, self.typing_env, t.span),
+                    k,
+                )
+            },
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
             TermKind::Assert { cond } => {
                 self.build_wp(cond, &|exp| Ok(exp.lazy_and(k(Exp::unit())?)))
@@ -568,7 +574,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
     fn build_pattern_inner(&self, pat: &Pattern<'tcx>) -> WPattern {
         match &pat.kind {
             PatternKind::Constructor(variant, fields) => {
-                let ty = self.names.normalize(self.ctx, pat.ty);
+                let ty = self.names.normalize(pat.ty);
                 let (var_did, subst) = match *ty.kind() {
                     TyKind::Adt(def, subst) => (def.variant(*variant).def_id, subst),
                     TyKind::Closure(did, subst) => (did, subst),
@@ -602,7 +608,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             PatternKind::Tuple(pats) if pats.is_empty() => WPattern::TupleP(Box::new([])),
             PatternKind::Tuple(pats) if pats.len() == 1 => self.build_pattern_inner(&pats[0]),
             PatternKind::Tuple(pats) => {
-                let ty = self.names.normalize(self.ctx, pat.ty);
+                let ty = self.names.normalize(pat.ty);
                 let TyKind::Tuple(tys) = ty.kind() else { unreachable!() };
                 let flds: Box<[_]> = pats
                     .iter()
@@ -618,7 +624,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 if flds.is_empty() { WPattern::Wildcard } else { WPattern::RecP(flds) }
             }
             PatternKind::Deref(pointee) => {
-                let ty = self.names.normalize(self.ctx, pat.ty);
+                let ty = self.names.normalize(pat.ty);
                 match ty.kind() {
                     TyKind::Adt(def, _) if def.is_box() => self.build_pattern_inner(pointee),
                     TyKind::Ref(_, _, Mutability::Not) => self.build_pattern_inner(pointee),

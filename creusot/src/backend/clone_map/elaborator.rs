@@ -1,6 +1,6 @@
 use crate::{
     backend::{
-        self, TranslationCtx, Why3Generator,
+        self, Why3Generator,
         clone_map::{CloneNames, Dependency, Kind, Namer},
         closures::{closure_hist_inv, closure_post, closure_pre, closure_resolve},
         is_trusted_item,
@@ -35,8 +35,7 @@ use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind,
-    TypeFoldable, TypingEnv,
+    self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypingEnv,
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
@@ -65,7 +64,6 @@ pub(super) struct Expander<'a, 'tcx> {
     graph: DiGraphMap<Dependency<'tcx>, Strength>,
     dep_bodies: HashMap<Dependency<'tcx>, Vec<Decl>>,
     namer: &'a mut CloneNames<'tcx>,
-    self_key: (DefId, GenericArgsRef<'tcx>),
     typing_env: TypingEnv<'tcx>,
     expansion_queue: VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>,
     /// Span for the item we are expanding
@@ -79,10 +77,6 @@ struct ExpansionProxy<'a, 'tcx> {
 }
 
 impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, 'tcx> {
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T {
-        self.namer.normalize(ctx, ty)
-    }
-
     fn raw_dependency(&self, dep: Dependency<'tcx>) -> &Kind {
         self.expansion_queue.borrow_mut().push_back((self.source, Strength::Strong, dep));
         self.namer.raw_dependency(dep)
@@ -94,6 +88,10 @@ impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, 'tcx> {
 
     fn tcx(&self) -> TyCtxt<'tcx> {
         self.namer.tcx()
+    }
+
+    fn source_id(&self) -> DefId {
+        self.namer.source_id()
     }
 
     fn typing_env(&self) -> TypingEnv<'tcx> {
@@ -227,7 +225,7 @@ fn expand_logic<'tcx>(
     // The other case are impossible, because that would mean we are not guaranteed to have an instance
 
     let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
-        || !ctx.is_transparent_from(def_id, elab.self_key.0);
+        || !ctx.is_transparent_from(def_id, elab.namer.source_id());
 
     let names = elab.namer(dep);
     let name = names.dependency(dep).ident();
@@ -316,13 +314,10 @@ fn expand_constant<'tcx>(
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Vec<Decl> {
-    let caller_id = elab.self_key.0;
+    let caller_id = elab.namer.source_id();
     let dep = Dependency::Item(def_id, subst);
 
     let typing_env = elab.typing_env;
-    let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
-        .instantiate(ctx.tcx, subst)
-        .normalize(ctx.tcx, typing_env);
     let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
     assert_matches!(
         trait_resol,
@@ -331,16 +326,20 @@ fn expand_constant<'tcx>(
             | TraitResolved::UnknownFound // Unresolved trait method
     );
     let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
-        || !ctx.is_transparent_from(def_id, elab.self_key.0)
+        || !ctx.is_transparent_from(def_id, caller_id)
         || ctx.def_kind(def_id) == DefKind::ConstParam;
 
     let mut names = elab.namer(dep);
     let name = names.dependency(dep).ident();
+    let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
+        .instantiate(ctx.tcx, subst)
+        .normalize(ctx.tcx, typing_env);
+    pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
     let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
 
     if opaque {
         val(sig, DeclKind::Constant)
-    } else if let Some(term) = try_const_to_term(def_id, subst, ctx, typing_env, caller_id) {
+    } else if let Some(term) = try_const_to_term(def_id, subst, ctx, typing_env) {
         lower_logical_defn(ctx, &names, sig, DeclKind::Constant, term)
     } else {
         let mut decls = val(sig, DeclKind::Constant);
@@ -452,19 +451,16 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     /// `span`: span of the item being expanded
     pub(crate) fn new(
         namer: &'a mut CloneNames<'tcx>,
-        self_key: (DefId, GenericArgsRef<'tcx>),
         typing_env: TypingEnv<'tcx>,
         initial: impl Iterator<Item = Dependency<'tcx>>,
         span: Span,
     ) -> Self {
+        let source_item = namer.source_item();
         Self {
             graph: Default::default(),
             namer,
-            self_key,
             typing_env,
-            expansion_queue: initial
-                .map(|b| (Dependency::Item(self_key.0, self_key.1), Strength::Strong, b))
-                .collect(),
+            expansion_queue: initial.map(|b| (source_item, Strength::Strong, b)).collect(),
             dep_bodies: Default::default(),
             root_span: span,
         }
@@ -515,7 +511,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 ItemType::Program | ItemType::Closure => expand_program(self, ctx, def_id, subst),
                 item_type => {
                     let path = ctx.def_path_str(def_id);
-                    let self_path = ctx.def_path_str(self.self_key.0);
+                    let self_path = ctx.def_path_str(self.namer.source_id());
                     ctx.crash_and_error(self.root_span, format!("expanding {path:?} failed because of unexpected kind {item_type:?} while translating {self_path:?}"))
                 }
             },
@@ -559,7 +555,7 @@ fn expand_laws<'tcx>(
     ctx: &Why3Generator<'tcx>,
     dep: Dependency<'tcx>,
 ) {
-    let (self_did, self_subst) = elab.self_key;
+    let (self_did, self_subst) = (elab.namer.source_id(), elab.namer.source_subst());
     let Some((item_did, item_subst)) = dep.did() else {
         return;
     };

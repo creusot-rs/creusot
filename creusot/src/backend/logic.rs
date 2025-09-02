@@ -50,7 +50,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     let args = pre_sig.inputs.clone();
     let bound: Box<[Ident]> = args.iter().map(|(name, _, _)| name.0).collect();
 
-    let name = names.item_ident(names.self_id, names.self_subst);
+    let name = names.source_ident();
     let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
     let (param_decls, args_names): (Vec<_>, Vec<_>) = args
         .into_iter()
