@@ -5,7 +5,7 @@ use crate::{
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{self, ConstOperand, ConstValue, TerminatorKind, interpret::AllocRange},
-    ty::{self, Const, ConstKind, Ty, TypingEnv},
+    ty::{self, ConstKind, Ty, TypingEnv},
 };
 use rustc_span::Span;
 use rustc_target::abi::Size;
@@ -21,14 +21,14 @@ pub(crate) fn mirconst_to_operand<'tcx>(
 ) -> Operand<'tcx> {
     use mir::Const::*;
     match c.const_ {
-        Ty(_ty, tyconst) => Operand::Term(tyconst_to_term(tyconst, ctx, env, caller_id, c.span)),
+        Ty(ty, tyconst) => Operand::Term(Term::const_(tyconst, ty, c.span)),
         Unevaluated(u, ty) if let Some(promoted) = u.promoted => {
             Operand::promoted(caller_id, promoted, ty)
         }
         Unevaluated(u, ty) if matches!(ctx.def_kind(u.def), DefKind::InlineConst) => {
             Operand::inline_const(u.def, u.args, ty)
         }
-        Unevaluated(u, ty) => Operand::Term(Term::item(u.def, u.args, ty, c.span)),
+        Unevaluated(u, ty) => Operand::Term(Term::item(u.def, u.args, ty).span(c.span)),
         Val(const_value, ty) => Operand::Term(value_to_term(const_value, ty, ctx, env, c.span)),
     }
 }
@@ -124,38 +124,6 @@ fn try_scalar_to_literal<'tcx>(
     })
 }
 
-// This is also used in the translation of `RValue::Repeat`.
-pub(crate) fn tyconst_to_term<'tcx>(
-    c: Const<'tcx>,
-    ctx: &TranslationCtx<'tcx>,
-    env: TypingEnv<'tcx>,
-    caller_id: DefId,
-    span: Span,
-) -> Term<'tcx> {
-    try_tyconst_to_term(c, ctx, env, caller_id, span).unwrap_or_else(|| {
-        ctx.crash_and_error(span, format!("Unsupported constant expression: {c:?}"))
-    })
-}
-
-fn try_tyconst_to_term<'tcx>(
-    c: Const<'tcx>,
-    ctx: &TranslationCtx<'tcx>,
-    env: TypingEnv<'tcx>,
-    caller_id: DefId,
-    span: Span,
-) -> Option<Term<'tcx>> {
-    use rustc_type_ir::ConstKind::*;
-    match c.kind() {
-        Value(ty, value) => valtree_to_term(value, ctx, ty, env, span),
-        Param(p) => {
-            let def_id = ctx.generics_of(caller_id).const_param(p, ctx.tcx).def_id;
-            let ty = ctx.type_of(def_id).instantiate_identity();
-            Some(Term::const_param(ctx.tcx, def_id, ty, span))
-        }
-        _ => None,
-    }
-}
-
 /// Translate constant with a simple body: it can be reduced to a value expressible in
 /// the logical fragment of Why3, or its body is just a variable.
 /// `None` if it does not match these cases.
@@ -164,7 +132,6 @@ pub fn try_const_to_term<'tcx>(
     subst: ty::GenericArgsRef<'tcx>,
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
-    caller_id: DefId,
 ) -> Option<Term<'tcx>> {
     if ctx.def_kind(def_id) == DefKind::ConstParam {
         return None;
@@ -175,11 +142,11 @@ pub fn try_const_to_term<'tcx>(
     let uneval = ty::UnevaluatedConst::new(def_id, subst);
     match ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
         Ok(Ok(val)) => valtree_to_term(val, ctx, ty, typing_env, span),
-        _ => try_const_synonym(def_id, subst, ctx, typing_env, caller_id),
+        _ => try_const_synonym(def_id, subst, ctx, typing_env),
     }
 }
 
-fn valtree_to_term<'tcx>(
+pub(crate) fn valtree_to_term<'tcx>(
     valtree: ty::ValTree<'tcx>,
     ctx: &TranslationCtx<'tcx>,
     ty: Ty<'tcx>,
@@ -218,7 +185,6 @@ fn try_const_synonym<'tcx>(
     subst: ty::GenericArgsRef<'tcx>,
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
-    caller_id: DefId,
 ) -> Option<Term<'tcx>> {
     if !matches!(ctx.def_kind(def_id), rustc_hir::def::DefKind::AssocConst) {
         return None;
@@ -230,13 +196,13 @@ fn try_const_synonym<'tcx>(
     match c {
         ConstKind::Param(p) => {
             let c = args.const_at(p.index as usize);
-            Some(tyconst_to_term(c, ctx, typing_env, caller_id, span))
+            Some(Term::const_(c, ty, span))
         }
         ConstKind::Unevaluated(u)
             if matches!(ctx.def_kind(u.def), DefKind::Const | DefKind::AssocConst) =>
         {
             let (u, ty) = ty::EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args);
-            Some(Term { kind: TermKind::Item(u.def, u.args), ty, span })
+            Some(Term::item(u.def, u.args, ty).span(span))
         }
         _ => None,
     }

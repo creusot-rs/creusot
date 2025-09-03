@@ -12,6 +12,7 @@ use crate::{
     ctx::*,
     naming::name,
     translation::{
+        constant::valtree_to_term,
         pearlite::{
             BinOp, Literal, Pattern, PatternKind, QuantKind, Term, TermKind, Trigger, UnOp,
         },
@@ -19,9 +20,9 @@ use crate::{
     },
 };
 use rustc_ast::Mutability;
-use rustc_hir::def::DefKind;
-use rustc_middle::ty::{Ty, TyKind};
-use rustc_span::DUMMY_SP;
+use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_middle::ty::{self, Ty, TyCtxt, TyKind};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::IntTy;
 use why3::{
     Ident, Name,
@@ -172,6 +173,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::unit()
             }
             TermKind::Item(id, subst) => Exp::Var(self.names.item(*id, subst)),
+            TermKind::Const(c) => self.lower_term(&tyconst_to_term_final(
+                *c,
+                term.ty,
+                self.names.source_id(),
+                self.ctx,
+                self.names.typing_env(),
+                term.span,
+            )),
             TermKind::Var(v) => Exp::var(v.0),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let rhs_ty = rhs.ty.kind();
@@ -305,7 +314,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let binders = bound
                     .iter()
                     .map(|&(ident, ty)| {
-                        let ty = self.names.normalize(self.ctx, ty);
+                        let ty = self.names.normalize(ty);
                         Binder::typed(ident.0, self.lower_ty(ty))
                     })
                     .collect();
@@ -360,7 +369,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_pat(&self, pat: &Pattern<'tcx>) -> WPattern {
         match &pat.kind {
             PatternKind::Constructor(variant, fields) => {
-                let ty = self.names.normalize(self.ctx, pat.ty);
+                let ty = self.names.normalize(pat.ty);
                 let (var_did, subst) = match *ty.kind() {
                     TyKind::Adt(def, subst) => (def.variant(*variant).def_id, subst),
                     TyKind::Closure(did, subst) => (did, subst),
@@ -394,7 +403,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             PatternKind::Tuple(pats) if pats.is_empty() => WPattern::TupleP(Box::new([])),
             PatternKind::Tuple(pats) if pats.len() == 1 => self.lower_pat(&pats[0]),
             PatternKind::Tuple(pats) => {
-                let ty = self.names.normalize(self.ctx, pat.ty);
+                let ty = self.names.normalize(pat.ty);
                 let TyKind::Tuple(tys) = ty.kind() else { unreachable!() };
                 let flds: Box<[_]> = pats
                     .iter()
@@ -407,7 +416,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 if flds.is_empty() { WPattern::Wildcard } else { WPattern::RecP(flds) }
             }
             PatternKind::Deref(pointee) => {
-                let ty = self.names.normalize(self.ctx, pat.ty);
+                let ty = self.names.normalize(pat.ty);
                 match ty.kind() {
                     TyKind::Adt(def, _) if def.is_box() => self.lower_pat(pointee),
                     TyKind::Ref(_, _, Mutability::Not) => self.lower_pat(pointee),
@@ -433,6 +442,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             .iter()
             .map(|x| WTrigger(x.0.iter().map(|x| self.lower_term(x)).collect()))
             .collect()
+    }
+}
+
+impl<'a, 'tcx, N: Namer<'tcx>> HasTyCtxt<'tcx> for Lower<'a, 'tcx, N> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.ctx.tcx()
     }
 }
 
@@ -526,4 +541,29 @@ pub(crate) fn binop_right_int(op: BinOp) -> bool {
         Shl | Shr => true,
         _ => false,
     }
+}
+
+/// Use this when we are about to output Why3 (`lower_term` here and `build_wp` in `vcgen.rs`).
+/// Converts `Const::Param` to `TermKind::Item` which is ignored by `instantiate` so don't use this for terms that will be subject to substitutions
+/// (in that case you probably want `Term::const_()`).
+pub(crate) fn tyconst_to_term_final<'tcx>(
+    c: ty::Const<'tcx>,
+    ty: Ty<'tcx>,
+    caller_id: DefId,
+    ctx: &TranslationCtx<'tcx>,
+    env: ty::TypingEnv<'tcx>,
+    span: Span,
+) -> Term<'tcx> {
+    use rustc_type_ir::ConstKind::*;
+    match c.kind() {
+        Value(ty, value) => valtree_to_term(value, ctx, ty, env, span),
+        Unevaluated(ty::UnevaluatedConst { def, args }) => Some(Term::item(def, args, ty)),
+        Param(p) => {
+            let tcx = ctx.tcx;
+            let def_id = tcx.generics_of(caller_id).const_param(p, tcx).def_id;
+            Some(Term::item(def_id, ty::GenericArgs::empty(), ty))
+        }
+        _ => None,
+    }
+    .unwrap_or_else(|| ctx.crash_and_error(span, format!("Unsupported constant expression: {c:?}")))
 }

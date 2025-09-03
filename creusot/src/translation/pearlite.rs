@@ -27,9 +27,8 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        CanonicalUserType, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable,
-        TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind, adjustment::PointerCoercion,
-        int_ty, uint_ty,
+        Const, GenericArgsRef, ParamConst, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
+        TypingEnv, adjustment::PointerCoercion, int_ty, uint_ty,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -162,6 +161,8 @@ pub enum TermKind<'tcx> {
         arg: Box<Term<'tcx>>,
     },
     Item(DefId, GenericArgsRef<'tcx>),
+    /// Constants. May get substituted using `instantiate` (via `TypeFoldable`).
+    Const(Const<'tcx>),
     Assert {
         cond: Box<Term<'tcx>>,
     },
@@ -244,33 +245,6 @@ pub enum TermKind<'tcx> {
         subst: GenericArgsRef<'tcx>,
         params: Box<[Term<'tcx>]>,
     },
-}
-
-impl<'tcx> TermKind<'tcx> {
-    pub fn item(
-        def_id: DefId,
-        subst: GenericArgsRef<'tcx>,
-        user_ty: &Option<Box<CanonicalUserType<'tcx>>>,
-        tcx: TyCtxt<'tcx>,
-    ) -> Self {
-        let Some(user_ty) = user_ty else { return Self::Item(def_id, subst) };
-        assert!(user_ty.value.bounds.is_empty());
-        match user_ty.value.kind {
-            UserTypeKind::Ty(_) => Self::Item(def_id, subst),
-            UserTypeKind::TypeOf(def_id2, u_subst) => {
-                assert_eq!(def_id, def_id2);
-                if u_subst.args.len() != subst.len() {
-                    return Self::Item(def_id, subst);
-                }
-                let subst = GenericArgs::for_item(tcx, def_id, |x, _| {
-                    let s = subst[x.index as usize];
-                    let us = u_subst.args[x.index as usize];
-                    if us.has_escaping_bound_vars() { s } else { us }
-                });
-                Self::Item(def_id, subst)
-            }
-        }
-    }
 }
 
 impl<I: Interner> TypeFoldable<I> for Literal<'_> {
@@ -937,21 +911,13 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::Use { source } => self.expr_term(source),
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
             ExprKind::Box { value } => self.expr_term(value),
-            ExprKind::NonHirLiteral { ref user_ty, .. } => match ty.kind() {
-                TyKind::FnDef(id, substs) => {
-                    Ok(Term { ty, span, kind: TermKind::item(*id, substs, user_ty, self.ctx.tcx) })
-                }
+            ExprKind::NonHirLiteral { .. } => match ty.kind() {
+                TyKind::FnDef(id, substs) => Ok(Term::item(*id, substs, ty).span(span)),
                 _ => Err(Error::msg(span, "unhandled literal expression")),
             },
-            ExprKind::NamedConst { def_id, args, ref user_ty, .. } => {
-                Ok(Term { ty, span, kind: TermKind::item(def_id, args, user_ty, self.ctx.tcx) })
-            }
-            ExprKind::ZstLiteral { ref user_ty, .. } => match ty.kind() {
-                TyKind::FnDef(def_id, subst) => Ok(Term {
-                    ty,
-                    span,
-                    kind: TermKind::item(*def_id, subst, user_ty, self.ctx.tcx),
-                }),
+            ExprKind::NamedConst { def_id, args, .. } => Ok(Term::item(def_id, args, ty)),
+            ExprKind::ZstLiteral { .. } => match ty.kind() {
+                TyKind::FnDef(def_id, subst) => Ok(Term::item(*def_id, subst, ty)),
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
@@ -979,8 +945,8 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::PointerCoercion {
                 cast: PointerCoercion::MutToConstPointer, source, ..
             } => Ok(self.expr_term(source)?.coerce(ty).span(span)),
-            ExprKind::ConstParam { param: _, def_id } => {
-                Ok(Term::const_param(self.ctx.tcx, def_id, ty, span))
+            ExprKind::ConstParam { param, def_id: _ } => {
+                Ok(Term::const_param(self.ctx.tcx, param, ty, span))
             }
             ref ek => Err(Error::msg(span, format!("Unsupported expression kind {:?}", ek))),
         };
@@ -1297,7 +1263,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::SeqLiteral(fields) => fields.iter().for_each(|a| visitor.visit_term(a)),
         TermKind::Cast { arg } => visitor.visit_term(arg),
         TermKind::Coerce { arg } => visitor.visit_term(arg),
-        TermKind::Item(_, _) => {}
+        TermKind::Item(_, _) | TermKind::Const(_) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_term(lhs);
             visitor.visit_term(rhs);
@@ -1366,7 +1332,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
         TermKind::Cast { arg } => visitor.visit_mut_term(&mut *arg),
         TermKind::Coerce { arg } => visitor.visit_mut_term(arg),
-        TermKind::Item(..) => {}
+        TermKind::Item(..) | TermKind::Const(_) => {}
         TermKind::Binary { lhs, rhs, .. } => {
             visitor.visit_mut_term(&mut *lhs);
             visitor.visit_mut_term(&mut *rhs);
@@ -1637,17 +1603,21 @@ impl<'tcx> Term<'tcx> {
         Term { ty: int_ty, kind: TermKind::Lit(Literal::Integer(int)), span: DUMMY_SP }
     }
 
-    pub(crate) fn item(
-        def_id: DefId,
-        subst: GenericArgsRef<'tcx>,
+    pub(crate) fn item(def_id: DefId, subst: GenericArgsRef<'tcx>, ty: Ty<'tcx>) -> Self {
+        Term { ty, kind: TermKind::Item(def_id, subst), span: DUMMY_SP }
+    }
+
+    pub(crate) fn const_(c: Const<'tcx>, ty: Ty<'tcx>, span: Span) -> Self {
+        Term { ty, span, kind: TermKind::Const(c) }
+    }
+
+    pub(crate) fn const_param(
+        tcx: TyCtxt<'tcx>,
+        param: ParamConst,
         ty: Ty<'tcx>,
         span: Span,
     ) -> Self {
-        Term { ty, span, kind: TermKind::Item(def_id, subst) }
-    }
-
-    pub(crate) fn const_param(tcx: TyCtxt<'tcx>, def_id: DefId, ty: Ty<'tcx>, span: Span) -> Self {
-        Term { ty, span, kind: TermKind::Item(def_id, GenericArgs::identity_for_item(tcx, def_id)) }
+        Term::const_(Const::new_param(tcx, param), ty, span)
     }
 
     pub(crate) fn span(mut self, sp: Span) -> Self {
@@ -1678,7 +1648,7 @@ impl<'tcx> Term<'tcx> {
             TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| a.subst_(bound, subst)),
             TermKind::Cast { arg } => arg.subst_(bound, subst),
             TermKind::Coerce { arg } => arg.subst_(bound, subst),
-            TermKind::Item(_, _) => {}
+            TermKind::Item(_, _) | TermKind::Const(_) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.subst_(bound, subst);
                 rhs.subst_(bound, subst)
@@ -1763,7 +1733,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Cast { arg } => arg.free_vars_inner(bound, free),
             TermKind::Coerce { arg } => arg.free_vars_inner(bound, free),
-            TermKind::Item(_, _) => {}
+            TermKind::Item(_, _) | TermKind::Const(_) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.free_vars_inner(bound, free);
                 rhs.free_vars_inner(bound, free)

@@ -12,7 +12,7 @@ use crate::{
     },
     util::erased_identity_for_item,
 };
-use rustc_hir::{AttrArgs, Safety, def_id::DefId};
+use rustc_hir::{AttrArgs, Safety, def::DefKind, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     thir::{BodyTy, Pat, PatKind, Thir},
@@ -326,14 +326,13 @@ impl<'tcx> PreSignature<'tcx> {
         });
         self.contract.requires.splice(0..0, new_requires);
 
-        let ret_ty_span: Option<Span> =
-            try { ctx.tcx.hir().get_fn_output(def_id.as_local()?)?.span() };
-        if !is_open_inv_result(ctx.tcx, def_id)
+        let ret_ty_span: Option<Span> = try { ctx.hir().get_fn_output(def_id.as_local()?)?.span() };
+        if (ctx.def_kind(def_id) == DefKind::ConstParam || !is_open_inv_result(ctx.tcx, def_id))
             && let Some(term) = type_invariant_term(
                 ctx,
                 typing_env,
                 name::result(),
-                ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
+                ret_ty_span.unwrap_or_else(|| ctx.def_span(def_id)),
                 self.output,
             )
         {
@@ -344,10 +343,26 @@ impl<'tcx> PreSignature<'tcx> {
 }
 
 pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
-    let mut presig = contract_of(ctx, def_id);
-    let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
+    if ctx.def_kind(def_id) == DefKind::ConstParam {
+        let contract = PreContract {
+            variant: None,
+            requires: vec![],
+            ensures: vec![],
+            no_panic: true,
+            terminates: true,
+            extern_no_spec: false,
+            has_user_contract: false,
+        };
+        let output = ctx.type_of(def_id).no_bound_vars().unwrap();
+        return PreSignature { inputs: Box::new([]), output, contract };
+    }
 
-    if let TyKind::Closure(_, subst) = fn_ty.kind() {
+    let mut presig = contract_of(ctx, def_id);
+
+    if ctx.def_kind(def_id) == DefKind::Closure {
+        let fn_ty = ctx.type_of(def_id).instantiate_identity();
+        let TyKind::Closure(_, subst) = fn_ty.kind() else { unreachable!() };
+
         let kind = subst.as_closure().kind();
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
         let self_ = Term::var(name::self_(), env_ty);

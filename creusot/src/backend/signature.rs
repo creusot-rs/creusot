@@ -1,6 +1,6 @@
 use crate::{
     backend::{
-        Why3Generator,
+        DefKind, Why3Generator,
         clone_map::Namer,
         logic::function_call,
         term::{lower_condition, lower_pure},
@@ -80,7 +80,11 @@ pub(crate) fn lower_logic_sig<'tcx, N: Namer<'tcx>>(
         .map(|&(id, span, ty)| (id.0, translate_ty(ctx, names, span, ty)))
         .collect();
 
-    let mut attrs = why3_attrs(ctx.tcx, def_id);
+    let mut attrs = if ctx.def_kind(def_id) == DefKind::ConstParam {
+        vec![]
+    } else {
+        why3_attrs(ctx.tcx, def_id)
+    };
 
     if let Some(attr) =
         def_id.as_local().map(|d| ctx.def_span(d)).and_then(|span| ctx.span_attr(span))
@@ -88,7 +92,7 @@ pub(crate) fn lower_logic_sig<'tcx, N: Namer<'tcx>>(
         attrs.push(attr)
     }
 
-    let retty = if names.normalize(ctx, pre_sig.output).is_bool() {
+    let retty = if names.normalize(pre_sig.output).is_bool() {
         None
     } else {
         Some(translate_ty(ctx, names, span, pre_sig.output))
@@ -96,7 +100,9 @@ pub(crate) fn lower_logic_sig<'tcx, N: Namer<'tcx>>(
     let contract = lower_contract(ctx, names, pre_sig.contract);
 
     let mut sig = Signature { name, trigger: None, attrs, retty, args, contract };
-    if ctx.opts.simple_triggers && should_replace_trigger(ctx.tcx, def_id) {
+    if ctx.opts.simple_triggers
+        && (ctx.def_kind(def_id) == DefKind::ConstParam || should_replace_trigger(ctx.tcx, def_id))
+    {
         sig.trigger = Some(Trigger::single(function_call(&sig)))
     };
     sig

@@ -1,7 +1,7 @@
 //! Defines all the internal creusot attributes.
 
 use rustc_ast::Param;
-use rustc_hir::{AttrArgs, Attribute, def_id::DefId};
+use rustc_hir::{AttrArgs, Attribute, def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 use why3::declaration::Attribute as WAttribute;
@@ -80,6 +80,19 @@ pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
 
 /// Get the string on the right of `creusot::builtins = ...`
 pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
+    if !matches!(
+        tcx.def_kind(def_id),
+        DefKind::Fn
+            | DefKind::AssocFn
+            | DefKind::AssocConst
+            | DefKind::Const
+            | DefKind::Struct
+            | DefKind::Enum
+            | DefKind::Union
+    ) {
+        return None;
+    }
+
     get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).map(|a| {
         a.value_str().unwrap_or_else(|| {
             tcx.dcx().span_fatal(
