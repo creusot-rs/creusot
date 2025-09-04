@@ -1,4 +1,5 @@
 use super::Diagnostics;
+use rustc_hir::Attribute;
 use rustc_lint::{LateLintPass, LintContext};
 use rustc_session::{declare_lint_pass, declare_tool_lint};
 
@@ -15,19 +16,12 @@ declare_tool_lint! {
 
 declare_lint_pass!(TrustedCode => [TRUSTED_CODE]);
 impl<'tcx> LateLintPass<'tcx> for TrustedCode {
-    fn check_attribute(
-        &mut self,
-        cx: &rustc_lint::LateContext<'tcx>,
-        attr: &'tcx rustc_hir::Attribute,
-    ) {
+    fn check_attribute(&mut self, cx: &rustc_lint::LateContext<'tcx>, attr: &'tcx Attribute) {
         let expected = ["creusot", "decl", "trusted"];
-        let is_trusted = match &attr.kind {
-            rustc_hir::AttrKind::Normal(item) => {
-                let s = &item.path.segments;
-                s.len() == expected.len() && s.iter().zip(expected).all(|(a, b)| a.as_str() == b)
-            }
-            rustc_hir::AttrKind::DocComment { .. } => false,
-        };
+        let Attribute::Unparsed(box attr) = attr else { return };
+        let s = &attr.path.segments;
+        let is_trusted =
+            s.len() == expected.len() && s.iter().zip(expected).all(|(a, b)| a.as_str() == b);
         if is_trusted {
             cx.emit_span_lint(TRUSTED_CODE, attr.span, Diagnostics::TrustedAttribute);
         }

@@ -180,11 +180,14 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
         },
     );
 
-    invariants.insert(0, Invariant {
-        tag: Tag::Invariant(ForInvariant),
-        span: for_span,
-        term: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(#it) },
-    });
+    invariants.insert(
+        0,
+        Invariant {
+            tag: Tag::Invariant(ForInvariant),
+            span: for_span,
+            term: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(#it) },
+        },
+    );
 
     invariants.insert(0, Invariant {
         tag: Tag::Invariant(ForInvariant),

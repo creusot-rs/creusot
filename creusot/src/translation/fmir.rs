@@ -6,18 +6,18 @@ use crate::{
     translation::pearlite::{PIdent, Term},
 };
 use indexmap::IndexMap;
+use rustc_abi::VariantIdx;
 use rustc_ast_ir::{try_visit, visit::VisitorResult};
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{
-        self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, Promoted, SourceScope, UnOp,
-        tcx::PlaceTy,
+        self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, PlaceTy, Promoted, SourceScope,
+        UnOp,
     },
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TypeFoldable, TypeVisitable},
 };
 use rustc_span::{Span, Symbol};
-use rustc_target::abi::VariantIdx;
 use why3::Ident;
 
 use super::pearlite::TermKind;
@@ -88,10 +88,22 @@ impl<'tcx> PlaceRef<'_, 'tcx> {
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum StatementKind<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>),
-    Resolve { did: DefId, subst: GenericArgsRef<'tcx>, pl: Place<'tcx> },
-    Assertion { cond: Term<'tcx>, msg: String, trusted: bool },
+    Resolve {
+        did: DefId,
+        subst: GenericArgsRef<'tcx>,
+        pl: Place<'tcx>,
+    },
+    Assertion {
+        cond: Term<'tcx>,
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        msg: String,
+        trusted: bool,
+    },
     // Todo: fold into `Assertion`
-    AssertTyInv { pl: Place<'tcx> },
+    AssertTyInv {
+        pl: Place<'tcx>,
+    },
     Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>),
 }
 
@@ -313,6 +325,8 @@ impl Branches<'_> {
 pub struct Invariant<'tcx> {
     pub(crate) body: Term<'tcx>,
     /// Label ("explanation") for the corresponding Why3 subgoal, including the "expl:" prefix
+    #[type_visitable(ignore)]
+    #[type_foldable(identity)]
     pub(crate) expl: String,
 }
 
@@ -364,6 +378,19 @@ impl<'tcx> TypeVisitable<TyCtxt<'tcx>> for Body<'tcx> {
 }
 
 impl<'tcx> TypeFoldable<TyCtxt<'tcx>> for Body<'tcx> {
+    fn fold_with<F>(self, f: &mut F) -> Self
+    where
+        F: rustc_middle::ty::TypeFolder<TyCtxt<'tcx>>,
+    {
+        Self {
+            arg_count: self.arg_count,
+            fresh: self.fresh,
+            locals: self.locals.into_iter().map(|(k, v)| (k, v.fold_with(f))).collect(),
+            blocks: self.blocks.into_iter().map(|(k, v)| (k, v.fold_with(f))).collect(),
+            block_spans: self.block_spans,
+        }
+    }
+
     fn try_fold_with<F>(self, f: &mut F) -> Result<Self, F::Error>
     where
         F: rustc_middle::ty::FallibleTypeFolder<TyCtxt<'tcx>>,

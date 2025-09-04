@@ -1,10 +1,9 @@
 // TACTIC +inline_goal
 extern crate creusot_contracts;
-
 use creusot_contracts::*;
 
 mod common;
-use common::Iterator;
+pub use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Once<T>(pub Option<T>);

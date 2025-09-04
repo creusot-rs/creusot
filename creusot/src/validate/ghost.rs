@@ -50,7 +50,7 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
         }
         for &(id, base, written) in &places.errors {
             let mut err = tcx.dcx().struct_span_err(
-                tcx.hir().span(id),
+                tcx.hir_span(id),
                 if written {
                     "cannot write to a non-ghost variable in a `ghost!` block"
                 } else {
@@ -59,7 +59,7 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
             );
             if let Some(base) = base {
                 err.span_note(
-                    tcx.hir().span(base),
+                    tcx.hir_span(base),
                     if written {
                         "variable defined here"
                     } else {
@@ -158,7 +158,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
             return;
         }
 
-        let mut enclosing_def_ids = self.tcx.hir().parent_iter(place_with_id.hir_id);
+        let mut enclosing_def_ids = self.tcx.hir_parent_iter(place_with_id.hir_id);
         if enclosing_def_ids.any(|(_, node)| {
             node.associated_body().is_some_and(|(def_id, _)| {
                 crate::contracts_items::is_pearlite(self.tcx, def_id.to_def_id())
@@ -168,6 +168,10 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
             return;
         }
         self.errors.push((diag_expr_id, base_hir_node(place_with_id), false));
+    }
+
+    fn use_cloned(&mut self, place_with_id: &PlaceWithHirId<'tcx>, diag_expr_id: HirId) {
+        self.consume(place_with_id, diag_expr_id)
     }
 
     fn borrow(

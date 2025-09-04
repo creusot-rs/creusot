@@ -76,7 +76,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn std:
 
     let start = Instant::now();
     let mut why3 = Why3Generator::new(ctx);
-    for def_id in why3.hir().body_owners() {
+    for def_id in why3.hir_body_owners() {
         let def_id = def_id.to_def_id();
 
         if !should_translate(why3.tcx, def_id) {

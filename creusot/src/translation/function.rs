@@ -352,7 +352,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             .iter_projections()
             .map(|(p, elem)| match elem {
                 mir::ProjectionElem::Deref => {
-                    if p.ty(self.body, self.tcx()).ty.is_unsafe_ptr() {
+                    if p.ty(self.body, self.tcx()).ty.is_raw_ptr() {
                         TranslationError::PtrDeref.crash(self.ctx, span);
                     }
                     mir::ProjectionElem::Deref
@@ -370,6 +370,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 mir::ProjectionElem::Downcast(s, ix) => mir::ProjectionElem::Downcast(s, ix),
                 mir::ProjectionElem::OpaqueCast(ty) => mir::ProjectionElem::OpaqueCast(ty),
                 mir::ProjectionElem::Subtype(ty) => mir::ProjectionElem::Subtype(ty),
+                mir::ProjectionElem::UnwrapUnsafeBinder(ty) => {
+                    mir::ProjectionElem::UnwrapUnsafeBinder(ty)
+                }
             })
             .collect::<Box<[_]>>();
         fmir::Place { local: self.locals[&pl.local].1, projections }

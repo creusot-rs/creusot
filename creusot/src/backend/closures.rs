@@ -11,6 +11,7 @@ use crate::{
 };
 use indexmap::IndexMap;
 use itertools::Itertools;
+use rustc_abi::FieldIdx;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_hir_typeck::expr_use_visitor::PlaceBase;
 use rustc_middle::{
@@ -20,7 +21,6 @@ use rustc_middle::{
         UpvarCapture,
     },
 };
-use rustc_target::abi::FieldIdx;
 use std::{assert_matches::assert_matches, collections::HashSet, iter::once};
 
 fn closure_captures<'tcx>(
@@ -54,6 +54,7 @@ pub(crate) fn closure_hist_inv<'tcx>(
         return self_.clone().eq(ctx.tcx, future);
     }
 
+    let span = ctx.def_span(def_id);
     let mut hist_inv = Term::true_(ctx.tcx);
     for ((f, capture), ty) in closure_captures(ctx, def_id) {
         match capture.info.capture_kind {
@@ -68,10 +69,11 @@ pub(crate) fn closure_hist_inv<'tcx>(
 
                 hist_inv = hist_inv.conj(hist_inv_one);
             }
+            UpvarCapture::ByUse => ctx.crash_and_error(span, "ByUse capture kind is not supported"),
         }
     }
 
-    normalize(ctx.tcx, ctx.typing_env(def_id.into()), hist_inv).span(ctx.def_span(def_id))
+    normalize(ctx.tcx, ctx.typing_env(def_id.into()), hist_inv).span(span)
 }
 
 pub(crate) fn closure_pre<'tcx>(
@@ -195,10 +197,12 @@ pub(crate) fn closure_post<'tcx>(
                 let hist_inv = {
                     let subst = ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from));
                     let id = get_fn_mut_impl_hist_inv(ctx.tcx);
-                    Term::call_no_normalize(ctx.tcx, id, subst, [
-                        self_.clone(),
-                        result_state.clone(),
-                    ])
+                    Term::call_no_normalize(
+                        ctx.tcx,
+                        id,
+                        subst,
+                        [self_.clone(), result_state.clone()],
+                    )
                 };
 
                 post = Term::true_(ctx.tcx)
@@ -415,6 +419,7 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                         proj.cur()
                     }
                     UpvarCapture::ByRef(BorrowKind::Immutable) => proj.shr_deref(),
+                    UpvarCapture::ByUse => ctx.crash_and_error(span, "ByUse capture kind is not supported"),
                 };
                 let hir_id = match cap.place.base {
                     PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
@@ -449,6 +454,9 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                     }
                     UpvarCapture::ByRef(BorrowKind::Immutable) => {
                         (proj_pre.shr_deref(), proj_post.shr_deref())
+                    }
+                    UpvarCapture::ByUse => {
+                        ctx.crash_and_error(span, "ByUse capture kind is not supported")
                     }
                 };
                 let hir_id = match cap.place.base {
@@ -487,6 +495,9 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                     UpvarCapture::ByRef(BorrowKind::Immutable) => {
                         assert_matches!(post_owned_proj, None);
                         (proj.clone().shr_deref(), Some(proj.shr_deref()))
+                    }
+                    UpvarCapture::ByUse => {
+                        ctx.crash_and_error(span, "ByUse capture kind is not supported")
                     }
                 };
                 let hir_id = match cap.place.base {

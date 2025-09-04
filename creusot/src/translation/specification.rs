@@ -27,6 +27,8 @@ use std::{collections::HashSet, iter::repeat};
 pub struct Condition<'tcx> {
     pub(crate) term: Term<'tcx>,
     /// Label including the "expl:" prefix.
+    #[type_visitable(ignore)]
+    #[type_foldable(identity)]
     pub(crate) expl: String,
 }
 
@@ -326,7 +328,7 @@ impl<'tcx> PreSignature<'tcx> {
         });
         self.contract.requires.splice(0..0, new_requires);
 
-        let ret_ty_span: Option<Span> = try { ctx.hir().get_fn_output(def_id.as_local()?)?.span() };
+        let ret_ty_span: Option<Span> = try { ctx.hir_get_fn_output(def_id.as_local()?)?.span() };
         if (ctx.def_kind(def_id) == DefKind::ConstParam || !is_open_inv_result(ctx.tcx, def_id))
             && let Some(term) = type_invariant_term(
                 ctx,
@@ -401,10 +403,13 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
 
             let hist_inv_id = get_fn_mut_impl_hist_inv(ctx.tcx);
 
-            let term = Term::call(ctx.tcx, ctx.typing_env(def_id), hist_inv_id, hist_inv_subst, [
-                self_.clone().cur(),
-                self_.fin(),
-            ]);
+            let term = Term::call(
+                ctx.tcx,
+                ctx.typing_env(def_id),
+                hist_inv_id,
+                hist_inv_subst,
+                [self_.clone().cur(), self_.fin()],
+            );
             let expl = "expl:closure hist_inv post".to_string();
             presig.contract.ensures.push(Condition { term, expl });
         };
@@ -457,6 +462,9 @@ pub fn inputs_and_output_from_thir<'tcx>(
             );
             (inputs, output)
         }
+        BodyTy::GlobalAsm(_) => {
+            ctx.crash_and_error(ctx.def_span(def_id), "Inline assembly is not supported")
+        }
     }
 }
 
@@ -471,20 +479,22 @@ pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(PIdent, Span, Ty)
             let sig =
                 tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), gen_sig);
             let inputs = tcx
-                .fn_arg_names(def_id)
+                .fn_arg_idents(def_id)
                 .iter()
                 .cloned()
                 .zip(sig.inputs().iter().cloned())
                 .enumerate()
-                .map(|(ix, (ident, ty))| {
-                    let rustc_span::Ident { name, span } = ident;
-                    let name = name.as_str();
-                    let ident = if name.is_empty() {
-                        Ident::fresh_local(format!("_{ix}"))
-                    } else {
-                        Ident::fresh_local(variable_name(name))
-                    };
-                    (ident.into(), span, ty)
+                .map(|(ix, (ident, ty))| match ident {
+                    Some(rustc_span::Ident { name, span }) => {
+                        let name = name.as_str();
+                        let ident = if name.is_empty() || name == "_" {
+                            Ident::fresh_local(format!("_{ix}"))
+                        } else {
+                            Ident::fresh_local(variable_name(name))
+                        };
+                        (ident.into(), span, ty)
+                    }
+                    None => (Ident::fresh_local(format!("_{ix}")).into(), DUMMY_SP, ty),
                 })
                 .collect();
             (inputs, sig.output())
@@ -496,18 +506,20 @@ pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(PIdent, Span, Ty)
             let sig = tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), sig);
             let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
             let closure_env = (name::self_().into(), tcx.def_span(def_id), env_ty);
-            let names = tcx.fn_arg_names(def_id).iter().cloned();
+            let names = tcx.fn_arg_idents(def_id).iter().cloned();
             let inputs = std::iter::once(closure_env)
                 .chain(names.zip(sig.inputs().iter().cloned()).enumerate().map(
-                    |(ix, (ident, ty))| {
-                        let rustc_span::Ident { name, span } = ident;
-                        let name = name.as_str();
-                        let ident = if name.is_empty() {
-                            Ident::fresh_local(format!("_{ix}"))
-                        } else {
-                            Ident::fresh_local(variable_name(name))
-                        };
-                        (ident.into(), span, ty)
+                    |(ix, (ident, ty))| match ident {
+                        Some(rustc_span::Ident { name, span }) => {
+                            let name = name.as_str();
+                            let ident = if name.is_empty() || name == "_" {
+                                Ident::fresh_local(format!("_{ix}"))
+                            } else {
+                                Ident::fresh_local(variable_name(name))
+                            };
+                            (ident.into(), span, ty)
+                        }
+                        None => (Ident::fresh_local(format!("_{ix}")).into(), DUMMY_SP, ty),
                     },
                 ))
                 .collect();

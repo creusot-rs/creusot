@@ -2,8 +2,9 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 pub trait Symmetric {
+    // Hack: return type must be sized for `a.op(b) == b.op(a)` to typecheck
     #[logic]
-    fn op(self, _: Self) -> Self;
+    fn op(self, _: Self) -> &'static Self;
 
     #[law]
     #[ensures(a.op(b) == b.op(a))]
@@ -20,8 +21,8 @@ pub fn uses_op<T: Symmetric>(x: T, y: T) -> bool {
 impl Symmetric for () {
     #[open]
     #[logic]
-    fn op(self, _: Self) -> Self {
-        ()
+    fn op(self, _: Self) -> &'static Self {
+        &()
     }
 
     #[law]

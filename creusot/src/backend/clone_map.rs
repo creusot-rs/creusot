@@ -16,13 +16,13 @@ use indexmap::IndexSet;
 use itertools::{Either, Itertools};
 use once_map::unsync::OnceMap;
 use petgraph::prelude::DiGraphMap;
+use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
     GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
 };
 use rustc_span::Span;
-use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
     Exp, Ident, Name, QName, Symbol,
     coma::{Defn, Expr, Param, Prototype},

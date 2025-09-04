@@ -109,6 +109,10 @@ module M_local_invariant_cellinv__qyi5959203038510030748__read [#"local_invarian
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
+  predicate resolve (self: MutBorrow.t t_PCellLocalInv) = [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0: MutBorrow.t t_PCellLocalInv) = resolve _0
+  
   predicate invariant''4 (self: t_PCellOwn) = [%#sinvariant] inv'1 self
   
   predicate inv'5 (_0: t_PCellOwn)
@@ -173,10 +177,6 @@ module M_local_invariant_cellinv__qyi5959203038510030748__read [#"local_invarian
     any
     [ return''0 (result: t_T) -> {[%#spcell'2] inv'0 result} {[%#spcell'3] result = view'1 perm} (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_PCellLocalInv) = [%#sresolve] self.final = self.current
-  
-  predicate resolve'0 (_0'0: MutBorrow.t t_PCellLocalInv) = resolve _0'0
-  
   function namespace (self: t_LocalInvariant) : t_Namespace
   
   function public (self: t_LocalInvariant) : t_Id
@@ -208,10 +208,12 @@ module M_local_invariant_cellinv__qyi5959203038510030748__read [#"local_invarian
     [ bb0 = s0 [ s0 = into_inner {perm'0} (fun (_ret: MutBorrow.t t_PCellLocalInv) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
       [ s0 = [ &_6 <- (_7.current).t_PCellLocalInv__0 ] s1
-      | s1 = new {_6} (fun (_ret: t_PCellOwn) -> [ &_4 <- _ret ] s2)
-      | s2 = bb2 ]
+      | s1 = {[@expl:type invariant] inv'3 _7} s2
+      | s2 = -{resolve'0 _7}- s3
+      | s3 = new {_6} (fun (_ret: t_PCellOwn) -> [ &_4 <- _ret ] s4)
+      | s4 = bb2 ]
     | bb2 = s0 [ s0 = borrow {(_1._0).t_CellInv__data} {_4} (fun (_ret: t_T) -> [ &_0'0 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'3 _7} s1 | s1 = -{resolve'0 _7}- s2 | s2 = return' {_0'0} ] ]
+    | bb3 = return' {_0'0} ]
     [ & _0'0: t_T = Any.any_l ()
     | & _1: closure0 = self
     | & perm'0: MutBorrow.t t_PCellLocalInv = perm
@@ -463,11 +465,19 @@ module M_local_invariant_cellinv__qyi5959203038510030748__write [#"local_invaria
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
+  predicate resolve (self: MutBorrow.t t_PCellLocalInv) = [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0: MutBorrow.t t_PCellLocalInv) = resolve _0
+  
   predicate invariant''4 (self: MutBorrow.t t_PCellOwn) = [%#sinvariant'0] inv'1 self.current /\ inv'1 self.final
   
   predicate inv'5 (_0: MutBorrow.t t_PCellOwn)
   
   axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_PCellOwn [inv'5 x]. inv'5 x = invariant''4 x
+  
+  predicate resolve'1 (self: MutBorrow.t t_PCellOwn) = [%#sresolve] self.final = self.current
+  
+  predicate resolve'2 (_0: MutBorrow.t t_PCellOwn) = resolve'1 _0
   
   predicate invariant''5 (self: MutBorrow.t t_PCellOwn) = [%#sghost'7] inv'5 self
   
@@ -541,19 +551,11 @@ module M_local_invariant_cellinv__qyi5959203038510030748__write [#"local_invaria
       {[%#spcell'5] result.final = view perm.final}
       (! return' {result}) ]
   
-  predicate resolve (_0'0: t_T)
+  predicate resolve'3 (_0'0: t_T)
   
-  predicate resolve'0 (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
+  predicate resolve'4 (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
   
-  predicate resolve'1 (_0'0: MutBorrow.t t_T) = resolve'0 _0'0
-  
-  predicate resolve'2 (self: MutBorrow.t t_PCellLocalInv) = [%#sresolve] self.final = self.current
-  
-  predicate resolve'3 (_0'0: MutBorrow.t t_PCellLocalInv) = resolve'2 _0'0
-  
-  predicate resolve'4 (self: MutBorrow.t t_PCellOwn) = [%#sresolve] self.final = self.current
-  
-  predicate resolve'5 (_0'0: MutBorrow.t t_PCellOwn) = resolve'4 _0'0
+  predicate resolve'5 (_0'0: MutBorrow.t t_T) = resolve'4 _0'0
   
   function namespace (self: t_LocalInvariant) : t_Namespace
   
@@ -597,29 +599,29 @@ module M_local_invariant_cellinv__qyi5959203038510030748__write [#"local_invaria
           (fun (_ret: MutBorrow.t t_PCellOwn) ->
             [ &_8 <- _ret ] -{inv'1 _ret.final}-
             [ &_9 <- { _9 with current = _ret.final } ] s2)
-      | s2 = {inv'1 _8.current}
+      | s2 = {[@expl:type invariant] inv'3 _10} s3
+      | s3 = -{resolve'0 _10}- s4
+      | s4 = {[@expl:type invariant] inv'5 _9} s5
+      | s5 = -{resolve'2 _9}- s6
+      | s6 = {inv'1 _8.current}
         MutBorrow.borrow_final <t_PCellOwn> {_8.current} {MutBorrow.get_id _8}
           (fun (_ret: MutBorrow.t t_PCellOwn) ->
             [ &_7 <- _ret ] -{inv'1 _ret.final}-
-            [ &_8 <- { _8 with current = _ret.final } ] s3)
-      | s3 = new {_7} (fun (_ret: MutBorrow.t t_PCellOwn) -> [ &_6 <- _ret ] s4)
-      | s4 = bb2 ]
+            [ &_8 <- { _8 with current = _ret.final } ] s7)
+      | s7 = new {_7} (fun (_ret: MutBorrow.t t_PCellOwn) -> [ &_6 <- _ret ] s8)
+      | s8 = bb2 ]
     | bb2 = s0
-      [ s0 = borrow_mut {(_1'0._0).t_CellInv__data} {_6} (fun (_ret: MutBorrow.t t_T) -> [ &_4 <- _ret ] s1)
-      | s1 = bb4 ]
+      [ s0 = {[@expl:type invariant] inv'5 _8} s1
+      | s1 = -{resolve'2 _8}- s2
+      | s2 = borrow_mut {(_1'0._0).t_CellInv__data} {_6} (fun (_ret: MutBorrow.t t_T) -> [ &_4 <- _ret ] s3)
+      | s3 = bb4 ]
     | bb4 = s0
       [ s0 = {[@expl:type invariant] inv _4.current} s1
-      | s1 = -{resolve _4.current}- s2
+      | s1 = -{resolve'3 _4.current}- s2
       | s2 = [ &_4 <- { _4 with current = _1'0._1 } ] s3
       | s3 = {[@expl:type invariant] inv'10 _4} s4
-      | s4 = -{resolve'1 _4}- s5
-      | s5 = {[@expl:type invariant] inv'3 _10} s6
-      | s6 = -{resolve'3 _10}- s7
-      | s7 = {[@expl:type invariant] inv'5 _9} s8
-      | s8 = -{resolve'5 _9}- s9
-      | s9 = {[@expl:type invariant] inv'5 _8} s10
-      | s10 = -{resolve'5 _8}- s11
-      | s11 = bb7 ]
+      | s4 = -{resolve'5 _4}- s5
+      | s5 = bb7 ]
     | bb7 = return' {_0'0} ]
     [ & _0'0: () = Any.any_l ()
     | & _1'0: closure0 = self

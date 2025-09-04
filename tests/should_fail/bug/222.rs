@@ -2,7 +2,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{logic::Int, *};
 
-trait A {
+pub trait A {
     #[logic]
     fn mktrue() -> Int {
         pearlite! { 5 }

@@ -1,10 +1,8 @@
-#![feature(slice_take)]
 extern crate creusot_contracts;
-
 use creusot_contracts::{invariant::Invariant, *};
 
 mod common;
-use common::Iterator;
+pub use common::Iterator;
 
 #[derive(Resolve)]
 pub struct Enumerate<I: Iterator> {

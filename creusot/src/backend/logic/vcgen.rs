@@ -710,6 +710,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 }
                 ProjectionElem::OpaqueCast(ty) => def(ProjectionElem::OpaqueCast(ty)),
                 ProjectionElem::Subtype(ty) => def(ProjectionElem::Subtype(ty)),
+                ProjectionElem::UnwrapUnsafeBinder(ty) => {
+                    def(ProjectionElem::UnwrapUnsafeBinder(ty))
+                }
             }
         }
     }

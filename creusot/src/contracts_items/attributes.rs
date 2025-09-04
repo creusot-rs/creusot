@@ -28,7 +28,7 @@ macro_rules! attribute_functions {
             #[doc = concat!("Detect if `def_id` has the attribute `", stringify!($($p)*), "`")]
             pub(crate) fn $fn_name(tcx: TyCtxt, def_id: DefId) -> bool {
                 let path = &path_to_str!($($p)*);
-                let has_attr = get_attr(tcx, tcx.get_attrs_unchecked(def_id), path).is_some();
+                let has_attr = get_attr(tcx, tcx.get_all_attrs(def_id), path).is_some();
                 attribute_functions!(@negate $($not)? has_attr)
             }
         )+
@@ -66,7 +66,7 @@ attribute_functions! {
 }
 
 pub(crate) fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
-    get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"])
+    get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "spec", "invariant"])
         .map(|a| a.value_str().map_or("expl:loop invariant".to_string(), |s| s.to_string()))
 }
 
@@ -93,10 +93,10 @@ pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
         return None;
     }
 
-    get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).map(|a| {
+    get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "builtins"]).map(|a| {
         a.value_str().unwrap_or_else(|| {
             tcx.dcx().span_fatal(
-                a.span,
+                a.span(),
                 "Attribute `creusot::builtin` should be followed by a string.".to_string(),
             )
         })
@@ -104,12 +104,12 @@ pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "open"])
+    get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "clause", "open"])
         .map(|a| a.value_str().expect("invalid creusot::clause::open"))
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<WAttribute> {
-    get_attrs(tcx.get_attrs_unchecked(def_id), &["creusot", "why3_attr"])
+    get_attrs(tcx.get_all_attrs(def_id), &["creusot", "why3_attr"])
         .into_iter()
         .map(|a| WAttribute::Attr(a.value_str().unwrap().as_str().into()))
         .collect()
@@ -123,7 +123,7 @@ pub(crate) fn creusot_clause_attrs<'tcx>(
     // Attributes are given in reverse order. So we need to rever the list of
     // attributes to make sure requires/ensures clauses appear in the same
     // order in WhyML code as they appear in Rust code.
-    get_attrs(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", clause])
+    get_attrs(tcx.get_all_attrs(def_id), &["creusot", "clause", clause])
         .into_iter()
         .rev()
         .map(|a| &a.get_normal_item().args)
@@ -131,7 +131,7 @@ pub(crate) fn creusot_clause_attrs<'tcx>(
 
 pub(crate) fn get_creusot_item(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     Some(
-        get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "item"])?
+        get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "item"])?
             .value_str()
             .expect("invalid creusot::item attribute"),
     )
@@ -176,7 +176,7 @@ fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
             continue;
         }
 
-        let item = attr.get_normal_item();
+        let Attribute::Unparsed(item) = attr else { continue };
 
         if item.path.segments.len() != path.len() {
             continue;
@@ -196,6 +196,6 @@ fn get_attr<'a>(tcx: TyCtxt, attrs: &'a [Attribute], path: &[&str]) -> Option<&'
     match matched.len() {
         0 => None,
         1 => Some(matched[0]),
-        _ => tcx.dcx().span_fatal(matched[0].span, "Unexpected duplicate attribute.".to_string()),
+        _ => tcx.dcx().span_fatal(matched[0].span(), "Unexpected duplicate attribute.".to_string()),
     }
 }

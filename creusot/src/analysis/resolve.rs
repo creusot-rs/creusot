@@ -203,19 +203,15 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
                 if let TerminatorEdges::AssignOnReturn { return_, place, .. } = term.edges() {
                     self.uninit.seek_after_primary_effect(loc);
                     uninit = self.uninit.get().clone();
-                    self.uninit.mut_analysis().apply_call_return_effect(
-                        &mut uninit,
-                        loc.block,
-                        place,
-                    );
+                    self.uninit.apply_custom_effect(|analysis, _| {
+                        analysis.apply_call_return_effect(&mut uninit, loc.block, place)
+                    });
 
                     self.borrows.seek_before_primary_effect(loc);
                     borrows = self.borrows.get().clone();
-                    self.borrows.mut_analysis().apply_call_return_effect(
-                        &mut borrows,
-                        loc.block,
-                        place,
-                    );
+                    self.borrows.apply_custom_effect(|analysis, _| {
+                        analysis.apply_call_return_effect(&mut borrows, loc.block, place)
+                    });
 
                     if return_.len() == 1 {
                         self.live.seek_after_primary_effect(return_[0].start_location());

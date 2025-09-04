@@ -123,10 +123,7 @@ impl ExternSpecs {
                 ExprPath {
                     attrs: Vec::new(),
                     qself: None,
-                    path: Path {
-                        leading_colon: Some(Default::default()),
-                        segments: Punctuated::new(),
-                    },
+                    path: Path { leading_colon: None, segments: Punctuated::new() },
                 },
                 DocItemName(String::from("extern_spec")),
                 None,
@@ -457,17 +454,22 @@ fn flatten(
 ) -> Result<()> {
     match ex {
         ExternSpec::Mod(modl) => {
+            if prefix.path.leading_colon.is_none() {
+                prefix.path.leading_colon = Some(Default::default());
+            }
             item_name.add_ident(&modl.ident);
             prefix
                 .path
                 .segments
                 .push(PathSegment { ident: modl.ident, arguments: PathArguments::None });
-
             for item in modl.content {
                 flatten(item, prefix.clone(), item_name.clone(), None, flat)?;
             }
         }
         ExternSpec::Trait(trait_) => {
+            if prefix.path.leading_colon.is_none() {
+                prefix.path.leading_colon = Some(Default::default());
+            }
             prefix
                 .path
                 .segments
@@ -490,53 +492,51 @@ fn flatten(
             }
         }
         ExternSpec::Impl(impl_) => {
+            if prefix.path.leading_colon.is_none() {
+                prefix.path.leading_colon = Some(Default::default());
+            }
+            let mut ty = impl_.self_ty;
+            loop {
+                match *ty {
+                    Type::Group(TypeGroup { elem, .. }) | Type::Paren(TypeParen { elem, .. }) => {
+                        ty = elem
+                    }
+                    _ => break,
+                }
+            }
             if prefix.path.segments.is_empty() {
                 prefix.qself = Some(QSelf {
                     lt_token: Default::default(),
-                    ty: impl_.self_ty.clone(),
+                    ty: ty.clone(),
                     position: 0,
                     as_token: None,
                     gt_token: Default::default(),
                 });
-                prefix.path.leading_colon = Some(Default::default());
-            } else {
-                let mut ty = &*impl_.self_ty;
-                loop {
-                    match ty {
-                        Type::Group(TypeGroup { elem, .. })
-                        | Type::Paren(TypeParen { elem, .. }) => ty = &*elem,
-                        _ => break,
-                    }
+            } else if let Type::Path(ty_path) = &*ty
+                && ty_path.path.segments.len() == 1
+            {
+                let mut segment = ty_path.path.segments[0].clone();
+                if let PathArguments::AngleBracketed(arg) = &mut segment.arguments {
+                    arg.colon2_token = Some(Default::default());
                 }
-                if let Type::Path(ty_path) = &*impl_.self_ty
-                    && ty_path.path.segments.len() == 1
-                {
-                    let mut segment = ty_path.path.segments[0].clone();
-                    if let PathArguments::AngleBracketed(arg) = &mut segment.arguments {
-                        arg.colon2_token = Some(Default::default());
-                    }
 
-                    prefix.path.segments.push(segment);
-                } else {
-                    return Err(Error::new(
-                        impl_.brace_token.span.join(),
-                        "unsupported form of impl",
-                    ));
-                }
+                prefix.path.segments.push(segment);
+            } else {
+                return Err(Error::new(impl_.brace_token.span.join(), "unsupported form of impl"));
             }
 
             item_name.add_generics(&impl_.generics);
             if let Some((trait_, _)) = &impl_.trait_ {
                 item_name.add_path(trait_);
             }
-            item_name.add_type(&impl_.self_ty);
+            item_name.add_type(&ty);
             for item in impl_.items {
                 flatten(
                     ExternSpec::Fn(item),
                     prefix.clone(),
                     item_name.clone(),
                     Some(ImplData {
-                        self_ty: TraitOrImpl::Impl(*impl_.self_ty.clone()),
+                        self_ty: TraitOrImpl::Impl(*ty.clone()),
                         params: impl_.generics.params.clone(),
                         where_clause: impl_.generics.where_clause.clone().map(|w| w.predicates),
                     }),

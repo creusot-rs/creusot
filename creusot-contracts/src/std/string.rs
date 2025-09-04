@@ -40,10 +40,6 @@ extern_spec! {
         #[ensures(result@ == self@.to_bytes().len())]
         fn len(&self) -> usize;
 
-        #[check(terminates)] // can OOM (?)
-        #[ensures(result@ == self@)]
-        fn to_string(&self) -> String;
-
         #[check(ghost)]
         #[requires(exists<i0> 0 <= i0 && i0 <= self@.len() && self@.subsequence(0, i0).to_bytes().len() == ix@)]
         #[ensures(result.0@.concat(result.1@) == self@)]
@@ -54,6 +50,12 @@ extern_spec! {
     impl Clone for Box<str> {
         #[ensures((*result)@ == (**self)@)]
         fn clone(&self) -> Box<str>;
+    }
+
+    impl ToOwned for str {
+        #[check(terminates)] // can OOM (?)
+        #[ensures(result@ == self@)]
+        fn to_owned(&self) -> String;
     }
 }
 
