@@ -1,4 +1,4 @@
-use crate::creusot::{doc::DocItemName, generate_unique_ident};
+use crate::creusot::doc::DocItemName;
 use pearlite_syn::term::*;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
@@ -167,7 +167,7 @@ impl FlatSpec {
             .collect();
 
         let block = Block {
-            brace_token: Brace::default(),
+            brace_token: Brace(span), // This sets the span of the function's DefId
             stmts: vec![Stmt::Expr(
                 Expr::Call(ExprCall {
                     attrs: Vec::new(),
@@ -179,7 +179,7 @@ impl FlatSpec {
             )],
         };
 
-        let ident = generate_unique_ident("extern_spec");
+        let ident = crate::creusot::generate_unique_ident("extern_spec", span);
 
         if let Some(mut data) = self.impl_data {
             data.params.extend(self.signature.generics.params);
@@ -247,22 +247,22 @@ impl FlatSpec {
             variadic: None,
             output: self.signature.output,
         };
-        let attrs = self.attrs;
+        let mut attrs = self.attrs;
+        attrs.push(parse_quote! { #[allow(dead_code, non_snake_case)] });
 
         let f_with_body = if let Some(mut b) = self.body {
             escape_self_in_block(&mut b);
             let mut sig = sig.clone();
             sig.ident = Ident::new(&format!("{}_body", self.doc_item_name.0), sig.ident.span());
             let attrs = attrs.clone();
-            let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(b) };
-            Some(quote! { #[allow(dead_code)] #f })
+            Some(ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(b) })
         } else {
             None
         };
 
         let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(block) };
 
-        quote_spanned! {span=> #[creusot::no_translate] #[creusot::extern_spec] #[allow(dead_code)] #f #f_with_body }
+        quote_spanned! {span=> #[creusot::no_translate] #[creusot::extern_spec] #f #f_with_body }
     }
 }
 

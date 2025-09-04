@@ -459,7 +459,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 if self.extern_spec(i).is_some() {
                     self.crash_and_error(
                         self.def_span(def_id),
-                        format!("duplicate extern specification for {i:?}"),
+                        format!("duplicate extern specification for {}", self.def_path_str(i)),
                     );
                 };
 

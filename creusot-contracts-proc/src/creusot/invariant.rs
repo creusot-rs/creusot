@@ -236,12 +236,10 @@ pub(crate) fn desugar_variant(attr: TokenStream, tokens: TokenStream) -> Result<
 }
 
 fn variant_to_tokens(span: Span, p: &pearlite_syn::Term) -> (String, TokenStream) {
-    let var_name = crate::creusot::generate_unique_ident("variant");
     let var_body = pretyping::encode_term(p).unwrap_or_else(|e| {
         return e.into_tokens();
     });
-    let name_tag = format!("{}", var_name);
-
+    let name_tag = crate::creusot::generate_unique_string("variant");
     let variant_tokens = quote_spanned! {span=>
         #[allow(let_underscore_drop)]
         let _ =
