@@ -2020,10 +2020,6 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 234 4 234 86]
   
   axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'18 x]. inv'18 x = invariant''13 x
   
-  predicate resolve'3 (self: MutBorrow.t t_FMap) = [%#sresolve] self.final = self.current
-  
-  predicate resolve'4 (_0: MutBorrow.t t_FMap) = resolve'3 _0
-  
   predicate invariant''14 (self: MutBorrow.t t_FMap) = [%#sghost'10] inv'18 self
   
   predicate inv'19 (_0: MutBorrow.t t_FMap)
@@ -2103,9 +2099,9 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 234 4 234 86]
       {[%#soption'1] C_Some'1 result = self_}
       (! return' {result}) ]
   
-  predicate resolve'5 (self: MutBorrow.t (MutBorrow.t t_FMap)) = [%#sresolve] self.final = self.current
+  predicate resolve'3 (self: MutBorrow.t (MutBorrow.t t_FMap)) = [%#sresolve] self.final = self.current
   
-  predicate resolve'6 (_0: MutBorrow.t (MutBorrow.t t_FMap)) = resolve'5 _0
+  predicate resolve'4 (_0: MutBorrow.t (MutBorrow.t t_FMap)) = resolve'3 _0
   
   predicate invariant''18 (self: MutBorrow.t t_PtrOwn) = [%#sghost'10] inv'22 self
   
@@ -2120,9 +2116,9 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 234 4 234 86]
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
-  predicate resolve'7 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  predicate resolve'5 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
   
-  predicate resolve'8 (_0: MutBorrow.t t_PtrOwn) = resolve'7 _0
+  predicate resolve'6 (_0: MutBorrow.t t_PtrOwn) = resolve'5 _0
   
   predicate invariant''19 (self: MutBorrow.t t_Content) = [%#sinvariant] inv'1 self.current /\ inv'1 self.final
   
@@ -2142,11 +2138,15 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 234 4 234 86]
       {[%#sptr_own'8] val' (fin own) = result.final}
       (! return' {result}) ]
   
-  predicate resolve'9 (self: MutBorrow.t t_Content) = [%#sresolve] self.final = self.current
+  predicate resolve'7 (self: MutBorrow.t t_Content) = [%#sresolve] self.final = self.current
   
-  predicate resolve'10 (_0: MutBorrow.t t_Content) = resolve'9 _0
+  predicate resolve'8 (_0: MutBorrow.t t_Content) = resolve'7 _0
   
-  predicate resolve'11 (self: MutBorrow.t t_FMap) = [%#sghost'9] resolve'4 self
+  predicate resolve'9 (self: MutBorrow.t t_FMap) = [%#sresolve] self.final = self.current
+  
+  predicate resolve'10 (_0: MutBorrow.t t_FMap) = resolve'9 _0
+  
+  predicate resolve'11 (self: MutBorrow.t t_FMap) = [%#sghost'9] resolve'10 self
   
   predicate resolve'12 (_0: MutBorrow.t t_FMap) = resolve'11 _0
   
@@ -2251,70 +2251,63 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 234 4 234 86]
       [ s0 = {inv'8 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) ->
-            [ &_34 <- _ret ] -{inv'8 _ret.final}-
+            [ &_33 <- _ret ] -{inv'8 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
-      | s1 = deref_mut {_34} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_33 <- _ret ] s2)
+      | s1 = deref_mut {_33} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_32 <- _ret ] s2)
       | s2 = bb14 ]
     | bb14 = s0
-      [ s0 = {inv'4 (((_33.current).current).t_UnionFind__0).t_HFInner__map}
-        MutBorrow.borrow_mut <t_FMap> {(((_33.current).current).t_UnionFind__0).t_HFInner__map}
-          (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_32 <- _ret ] -{inv'4 _ret.final}-
-            [ &_33 <- { _33 with current = { _33.current with current = { t_UnionFind__0 = { ((_33.current).current).t_UnionFind__0 with t_HFInner__map = _ret.final } } } } ]
-            s1)
-      | s1 = {inv'4 _32.current}
-        MutBorrow.borrow_final <t_FMap> {_32.current} {MutBorrow.get_id _32}
+      [ s0 = {inv'4 (((_32.current).current).t_UnionFind__0).t_HFInner__map}
+        MutBorrow.borrow_mut <t_FMap> {(((_32.current).current).t_UnionFind__0).t_HFInner__map}
           (fun (_ret: MutBorrow.t t_FMap) ->
             [ &__temp <- _ret ] -{inv'4 _ret.final}-
-            [ &_32 <- { _32 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'18 _32} s3
-      | s3 = -{resolve'4 _32}- s4
-      | s4 = new'1 {__temp} (fun (_ret: MutBorrow.t t_FMap) -> [ &map <- _ret ] s5)
-      | s5 = bb15 ]
+            [ &_32 <- { _32 with current = { _32.current with current = { t_UnionFind__0 = { ((_32.current).current).t_UnionFind__0 with t_HFInner__map = _ret.final } } } } ]
+            s1)
+      | s1 = new'1 {__temp} (fun (_ret: MutBorrow.t t_FMap) -> [ &map <- _ret ] s2)
+      | s2 = bb15 ]
     | bb15 = s0
       [ s0 = {inv'19 map}
         MutBorrow.borrow_mut <MutBorrow.t t_FMap> {map}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_FMap)) ->
-            [ &_43 <- _ret ] -{inv'19 _ret.final}-
+            [ &_42 <- _ret ] -{inv'19 _ret.final}-
             [ &map <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_43} (fun (_ret: MutBorrow.t (MutBorrow.t t_FMap)) -> [ &_42 <- _ret ] s2)
+      | s1 = deref_mut'0 {_42} (fun (_ret: MutBorrow.t (MutBorrow.t t_FMap)) -> [ &_41 <- _ret ] s2)
       | s2 = bb16 ]
-    | bb16 = s0 [ s0 = addr {elem'0} (fun (_ret: UInt64.t) -> [ &_46 <- _ret ] s1) | s1 = bb17 ]
+    | bb16 = s0 [ s0 = addr {elem'0} (fun (_ret: UInt64.t) -> [ &_45 <- _ret ] s1) | s1 = bb17 ]
     | bb17 = s0
-      [ s0 = [ &_45 <- _46 ] s1
-      | s1 = {inv'4 (_42.current).current}
-        MutBorrow.borrow_mut <t_FMap> {(_42.current).current}
+      [ s0 = [ &_44 <- _45 ] s1
+      | s1 = {inv'4 (_41.current).current}
+        MutBorrow.borrow_mut <t_FMap> {(_41.current).current}
           (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_41 <- _ret ] -{inv'4 _ret.final}-
-            [ &_42 <- { _42 with current = { _42.current with current = _ret.final } } ] s2)
-      | s2 = get_mut_ghost {_41} {_45} (fun (_ret: t_Option'1) -> [ &_40 <- _ret ] s3)
+            [ &_40 <- _ret ] -{inv'4 _ret.final}-
+            [ &_41 <- { _41 with current = { _41.current with current = _ret.final } } ] s2)
+      | s2 = get_mut_ghost {_40} {_44} (fun (_ret: t_Option'1) -> [ &_39 <- _ret ] s3)
       | s3 = bb18 ]
-    | bb18 = s0 [ s0 = unwrap'0 {_40} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_39 <- _ret ] s1) | s1 = bb19 ]
+    | bb18 = s0 [ s0 = unwrap'0 {_39} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_38 <- _ret ] s1) | s1 = bb19 ]
     | bb19 = s0
-      [ s0 = {[@expl:type invariant] inv'21 _42} s1
-      | s1 = -{resolve'6 _42}- s2
-      | s2 = {inv'3 _39.current}
-        MutBorrow.borrow_final <t_PtrOwn> {_39.current} {MutBorrow.get_id _39}
+      [ s0 = {[@expl:type invariant] inv'21 _41} s1
+      | s1 = -{resolve'4 _41}- s2
+      | s2 = {inv'3 _38.current}
+        MutBorrow.borrow_final <t_PtrOwn> {_38.current} {MutBorrow.get_id _38}
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
-            [ &_38 <- _ret ] -{inv'3 _ret.final}-
-            [ &_39 <- { _39 with current = _ret.final } ] s3)
-      | s3 = new'2 {_38} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &mut_perm <- _ret ] s4)
+            [ &_37 <- _ret ] -{inv'3 _ret.final}-
+            [ &_38 <- { _38 with current = _ret.final } ] s3)
+      | s3 = new'2 {_37} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &mut_perm <- _ret ] s4)
       | s4 = bb20 ]
     | bb20 = s0
-      [ s0 = {[@expl:type invariant] inv'22 _39} s1
-      | s1 = -{resolve'8 _39}- s2
-      | s2 = [ &_49 <- C_Link root'0 ] s3
-      | s3 = as_mut {elem'0.t_Element__0} {mut_perm} (fun (_ret: MutBorrow.t t_Content) -> [ &_51 <- _ret ] s4)
+      [ s0 = {[@expl:type invariant] inv'22 _38} s1
+      | s1 = -{resolve'6 _38}- s2
+      | s2 = [ &_48 <- C_Link root'0 ] s3
+      | s3 = as_mut {elem'0.t_Element__0} {mut_perm} (fun (_ret: MutBorrow.t t_Content) -> [ &_50 <- _ret ] s4)
       | s4 = bb22 ]
     | bb22 = s0
-      [ s0 = {[@expl:type invariant] inv'1 _51.current} s1
-      | s1 = [ &_51 <- { _51 with current = _49 } ] s2
-      | s2 = {[@expl:type invariant] inv'25 _51} s3
-      | s3 = -{resolve'10 _51}- s4
+      [ s0 = {[@expl:type invariant] inv'1 _50.current} s1
+      | s1 = [ &_50 <- { _50 with current = _48 } ] s2
+      | s2 = {[@expl:type invariant] inv'25 _50} s3
+      | s3 = -{resolve'8 _50}- s4
       | s4 = {[@expl:type invariant] inv'19 map} s5
       | s5 = -{resolve'12 map}- s6
-      | s6 = {[@expl:type invariant] inv'17 _33} s7
-      | s7 = -{resolve'0 _33}- s8
+      | s6 = {[@expl:type invariant] inv'17 _32} s7
+      | s7 = -{resolve'0 _32}- s8
       | s8 = {[@expl:type invariant] inv'8 uf'0} s9
       | s9 = -{resolve'14 uf'0}- s10
       | s10 = bb24 ]
@@ -2344,21 +2337,20 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 234 4 234 86]
     | & _28: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
     | & _29: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
     | & __temp: MutBorrow.t t_FMap = Any.any_l ()
-    | & _32: MutBorrow.t t_FMap = Any.any_l ()
+    | & _32: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
     | & _33: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
-    | & _34: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
     | & map: MutBorrow.t t_FMap = Any.any_l ()
     | & mut_perm: MutBorrow.t t_PtrOwn = Any.any_l ()
+    | & _37: MutBorrow.t t_PtrOwn = Any.any_l ()
     | & _38: MutBorrow.t t_PtrOwn = Any.any_l ()
-    | & _39: MutBorrow.t t_PtrOwn = Any.any_l ()
-    | & _40: t_Option'1 = Any.any_l ()
-    | & _41: MutBorrow.t t_FMap = Any.any_l ()
+    | & _39: t_Option'1 = Any.any_l ()
+    | & _40: MutBorrow.t t_FMap = Any.any_l ()
+    | & _41: MutBorrow.t (MutBorrow.t t_FMap) = Any.any_l ()
     | & _42: MutBorrow.t (MutBorrow.t t_FMap) = Any.any_l ()
-    | & _43: MutBorrow.t (MutBorrow.t t_FMap) = Any.any_l ()
+    | & _44: UInt64.t = Any.any_l ()
     | & _45: UInt64.t = Any.any_l ()
-    | & _46: UInt64.t = Any.any_l ()
-    | & _49: t_Content = Any.any_l ()
-    | & _51: MutBorrow.t t_Content = Any.any_l () ])
+    | & _48: t_Content = Any.any_l ()
+    | & _50: MutBorrow.t t_Content = Any.any_l () ])
     [ return''0 (result: t_Element) -> {[@expl:find_inner ensures #0] [%#sunion_find'1] result = root uf.current elem}
       {[@expl:find_inner ensures #1] [%#sunion_find'2] unchanged uf}
       {[@expl:find_inner ensures #2] [%#sunion_find'3] resolve'16 (MutBorrow.borrow_logic ((uf.current).t_UnionFind__0).t_HFInner__distance ((uf.final).t_UnionFind__0).t_HFInner__distance (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id uf) 1) 4))}
@@ -3837,10 +3829,6 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
   
   axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_HFInner [inv'18 x]. inv'18 x = invariant''13 x
   
-  predicate resolve'3 (self: MutBorrow.t t_HFInner) = [%#sresolve] self.final = self.current
-  
-  predicate resolve'4 (_0: MutBorrow.t t_HFInner) = resolve'3 _0
-  
   predicate invariant''14 (self: MutBorrow.t t_HFInner) = [%#sghost'10] inv'18 self
   
   predicate inv'19 (_0: MutBorrow.t t_HFInner)
@@ -3926,9 +3914,9 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
       {[%#soption'1] C_Some'1 result = self_}
       (! return' {result}) ]
   
-  predicate resolve'5 (self: MutBorrow.t (MutBorrow.t t_HFInner)) = [%#sresolve] self.final = self.current
+  predicate resolve'3 (self: MutBorrow.t (MutBorrow.t t_HFInner)) = [%#sresolve] self.final = self.current
   
-  predicate resolve'6 (_0: MutBorrow.t (MutBorrow.t t_HFInner)) = resolve'5 _0
+  predicate resolve'4 (_0: MutBorrow.t (MutBorrow.t t_HFInner)) = resolve'3 _0
   
   predicate invariant''19 (self: MutBorrow.t t_PtrOwn) = [%#sghost'10] inv'23 self
   
@@ -3943,9 +3931,9 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
-  predicate resolve'7 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  predicate resolve'5 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
   
-  predicate resolve'8 (_0: MutBorrow.t t_PtrOwn) = resolve'7 _0
+  predicate resolve'6 (_0: MutBorrow.t t_PtrOwn) = resolve'5 _0
   
   predicate invariant''20 (self: MutBorrow.t t_Content) = [%#sinvariant] inv'1 self.current /\ inv'1 self.final
   
@@ -3965,11 +3953,15 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
       {[%#sptr_own'8] val' (fin own) = result.final}
       (! return' {result}) ]
   
-  predicate resolve'9 (self: MutBorrow.t t_Content) = [%#sresolve] self.final = self.current
+  predicate resolve'7 (self: MutBorrow.t t_Content) = [%#sresolve] self.final = self.current
   
-  predicate resolve'10 (_0: MutBorrow.t t_Content) = resolve'9 _0
+  predicate resolve'8 (_0: MutBorrow.t t_Content) = resolve'7 _0
   
-  predicate resolve'11 (self: MutBorrow.t t_HFInner) = [%#sghost'9] resolve'4 self
+  predicate resolve'9 (self: MutBorrow.t t_HFInner) = [%#sresolve] self.final = self.current
+  
+  predicate resolve'10 (_0: MutBorrow.t t_HFInner) = resolve'9 _0
+  
+  predicate resolve'11 (self: MutBorrow.t t_HFInner) = [%#sghost'9] resolve'10 self
   
   predicate resolve'12 (_0: MutBorrow.t t_HFInner) = resolve'11 _0
   
@@ -4090,69 +4082,62 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
       [ s0 = {inv'8 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) ->
-            [ &_68 <- _ret ] -{inv'8 _ret.final}-
+            [ &_67 <- _ret ] -{inv'8 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
-      | s1 = deref_mut {_68} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_67 <- _ret ] s2)
+      | s1 = deref_mut {_67} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_66 <- _ret ] s2)
       | s2 = bb26 ]
     | bb26 = s0
-      [ s0 = {inv'5 ((_67.current).current).t_UnionFind__0}
-        MutBorrow.borrow_mut <t_HFInner> {((_67.current).current).t_UnionFind__0}
-          (fun (_ret: MutBorrow.t t_HFInner) ->
-            [ &_66 <- _ret ] -{inv'5 _ret.final}-
-            [ &_67 <- { _67 with current = { _67.current with current = { t_UnionFind__0 = _ret.final } } } ] s1)
-      | s1 = {inv'5 _66.current}
-        MutBorrow.borrow_final <t_HFInner> {_66.current} {MutBorrow.get_id _66}
+      [ s0 = {inv'5 ((_66.current).current).t_UnionFind__0}
+        MutBorrow.borrow_mut <t_HFInner> {((_66.current).current).t_UnionFind__0}
           (fun (_ret: MutBorrow.t t_HFInner) ->
             [ &__temp <- _ret ] -{inv'5 _ret.final}-
-            [ &_66 <- { _66 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'18 _66} s3
-      | s3 = -{resolve'4 _66}- s4
-      | s4 = new'0 {__temp} (fun (_ret: MutBorrow.t t_HFInner) -> [ &uf'1 <- _ret ] s5)
-      | s5 = bb27 ]
+            [ &_66 <- { _66 with current = { _66.current with current = { t_UnionFind__0 = _ret.final } } } ] s1)
+      | s1 = new'0 {__temp} (fun (_ret: MutBorrow.t t_HFInner) -> [ &uf'1 <- _ret ] s2)
+      | s2 = bb27 ]
     | bb27 = s0
       [ s0 = {inv'19 uf'1}
         MutBorrow.borrow_mut <MutBorrow.t t_HFInner> {uf'1}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) ->
-            [ &_77 <- _ret ] -{inv'19 _ret.final}-
+            [ &_76 <- _ret ] -{inv'19 _ret.final}-
             [ &uf'1 <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_77} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_76 <- _ret ] s2)
+      | s1 = deref_mut'0 {_76} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_75 <- _ret ] s2)
       | s2 = bb28 ]
-    | bb28 = s0 [ s0 = addr {x'0} (fun (_ret: UInt64.t) -> [ &_80 <- _ret ] s1) | s1 = bb29 ]
+    | bb28 = s0 [ s0 = addr {x'0} (fun (_ret: UInt64.t) -> [ &_79 <- _ret ] s1) | s1 = bb29 ]
     | bb29 = s0
-      [ s0 = [ &_79 <- _80 ] s1
-      | s1 = {inv'4 ((_76.current).current).t_HFInner__map}
-        MutBorrow.borrow_mut <t_FMap> {((_76.current).current).t_HFInner__map}
+      [ s0 = [ &_78 <- _79 ] s1
+      | s1 = {inv'4 ((_75.current).current).t_HFInner__map}
+        MutBorrow.borrow_mut <t_FMap> {((_75.current).current).t_HFInner__map}
           (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_75 <- _ret ] -{inv'4 _ret.final}-
-            [ &_76 <- { _76 with current = { _76.current with current = { (_76.current).current with t_HFInner__map = _ret.final } } } ]
+            [ &_74 <- _ret ] -{inv'4 _ret.final}-
+            [ &_75 <- { _75 with current = { _75.current with current = { (_75.current).current with t_HFInner__map = _ret.final } } } ]
             s2)
-      | s2 = get_mut_ghost {_75} {_79} (fun (_ret: t_Option'1) -> [ &_74 <- _ret ] s3)
+      | s2 = get_mut_ghost {_74} {_78} (fun (_ret: t_Option'1) -> [ &_73 <- _ret ] s3)
       | s3 = bb30 ]
-    | bb30 = s0 [ s0 = unwrap'0 {_74} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_73 <- _ret ] s1) | s1 = bb31 ]
+    | bb30 = s0 [ s0 = unwrap'0 {_73} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_72 <- _ret ] s1) | s1 = bb31 ]
     | bb31 = s0
-      [ s0 = {[@expl:type invariant] inv'21 _76} s1
-      | s1 = -{resolve'6 _76}- s2
-      | s2 = {inv'3 _73.current}
-        MutBorrow.borrow_final <t_PtrOwn> {_73.current} {MutBorrow.get_id _73}
+      [ s0 = {[@expl:type invariant] inv'21 _75} s1
+      | s1 = -{resolve'4 _75}- s2
+      | s2 = {inv'3 _72.current}
+        MutBorrow.borrow_final <t_PtrOwn> {_72.current} {MutBorrow.get_id _72}
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
-            [ &_72 <- _ret ] -{inv'3 _ret.final}-
-            [ &_73 <- { _73 with current = _ret.final } ] s3)
-      | s3 = new'1 {_72} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &perm_mut_x <- _ret ] s4)
+            [ &_71 <- _ret ] -{inv'3 _ret.final}-
+            [ &_72 <- { _72 with current = _ret.final } ] s3)
+      | s3 = new'1 {_71} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &perm_mut_x <- _ret ] s4)
       | s4 = bb32 ]
     | bb32 = s0
-      [ s0 = {[@expl:type invariant] inv'23 _73} s1
-      | s1 = -{resolve'8 _73}- s2
-      | s2 = [ &_83 <- C_Link y'0 ] s3
-      | s3 = as_mut {x'0.t_Element__0} {perm_mut_x} (fun (_ret: MutBorrow.t t_Content) -> [ &_85 <- _ret ] s4)
+      [ s0 = {[@expl:type invariant] inv'23 _72} s1
+      | s1 = -{resolve'6 _72}- s2
+      | s2 = [ &_82 <- C_Link y'0 ] s3
+      | s3 = as_mut {x'0.t_Element__0} {perm_mut_x} (fun (_ret: MutBorrow.t t_Content) -> [ &_84 <- _ret ] s4)
       | s4 = bb34 ]
     | bb34 = s0
-      [ s0 = {[@expl:type invariant] inv'1 _85.current} s1
-      | s1 = [ &_85 <- { _85 with current = _83 } ] s2
-      | s2 = {[@expl:type invariant] inv'26 _85} s3
-      | s3 = -{resolve'10 _85}- s4
+      [ s0 = {[@expl:type invariant] inv'1 _84.current} s1
+      | s1 = [ &_84 <- { _84 with current = _82 } ] s2
+      | s2 = {[@expl:type invariant] inv'26 _84} s3
+      | s3 = -{resolve'8 _84}- s4
       | s4 = bb36 ]
     | bb36 = s0
-      [ s0 = [ &_90 <- [%#sunion_find] fun (z: t_Element) -> if index_logic'2 (uf'1.current).t_HFInner__roots z
+      [ s0 = [ &_89 <- [%#sunion_find] fun (z: t_Element) -> if index_logic'2 (uf'1.current).t_HFInner__roots z
         = x'0 then
           y'0
         else
@@ -4163,17 +4148,17 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
       [ s0 = {inv'19 uf'1}
         MutBorrow.borrow_mut <MutBorrow.t t_HFInner> {uf'1}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) ->
-            [ &_93 <- _ret ] -{inv'19 _ret.final}-
+            [ &_92 <- _ret ] -{inv'19 _ret.final}-
             [ &uf'1 <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_93} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_92 <- _ret ] s2)
+      | s1 = deref_mut'0 {_92} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_91 <- _ret ] s2)
       | s2 = bb38 ]
     | bb38 = s0
       [ s0 =
-        [ &_92 <- { _92 with current = { _92.current with current = { (_92.current).current with t_HFInner__roots = _90 } } } ]
+        [ &_91 <- { _91 with current = { _91.current with current = { (_91.current).current with t_HFInner__roots = _89 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'21 _92} s2
-      | s2 = -{resolve'6 _92}- s3
-      | s3 = [ &_94 <- [%#sunion_find'0] fun (z: t_Element) -> if index_logic'2 (uf'1.current).t_HFInner__roots z
+      | s1 = {[@expl:type invariant] inv'21 _91} s2
+      | s2 = -{resolve'4 _91}- s3
+      | s3 = [ &_93 <- [%#sunion_find'0] fun (z: t_Element) -> if index_logic'2 (uf'1.current).t_HFInner__roots z
         = y'0 then
           vy
         else
@@ -4184,33 +4169,33 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
       [ s0 = {inv'19 uf'1}
         MutBorrow.borrow_mut <MutBorrow.t t_HFInner> {uf'1}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) ->
-            [ &_97 <- _ret ] -{inv'19 _ret.final}-
+            [ &_96 <- _ret ] -{inv'19 _ret.final}-
             [ &uf'1 <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_97} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_96 <- _ret ] s2)
+      | s1 = deref_mut'0 {_96} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_95 <- _ret ] s2)
       | s2 = bb40 ]
     | bb40 = s0
       [ s0 =
-        [ &_96 <- { _96 with current = { _96.current with current = { (_96.current).current with t_HFInner__payloads = _94 } } } ]
+        [ &_95 <- { _95 with current = { _95.current with current = { (_95.current).current with t_HFInner__payloads = _93 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'21 _96} s2
-      | s2 = -{resolve'6 _96}- s3
-      | s3 = [ &_98 <- [%#sunion_find'1] (uf'1.current).t_HFInner__max_depth + 1 ] s4
+      | s1 = {[@expl:type invariant] inv'21 _95} s2
+      | s2 = -{resolve'4 _95}- s3
+      | s3 = [ &_97 <- [%#sunion_find'1] (uf'1.current).t_HFInner__max_depth + 1 ] s4
       | s4 = bb41 ]
     | bb41 = s0
       [ s0 = {inv'19 uf'1}
         MutBorrow.borrow_mut <MutBorrow.t t_HFInner> {uf'1}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) ->
-            [ &_101 <- _ret ] -{inv'19 _ret.final}-
+            [ &_100 <- _ret ] -{inv'19 _ret.final}-
             [ &uf'1 <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_101} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_100 <- _ret ] s2)
+      | s1 = deref_mut'0 {_100} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_99 <- _ret ] s2)
       | s2 = bb42 ]
     | bb42 = s0
       [ s0 =
-        [ &_100 <- { _100 with current = { _100.current with current = { (_100.current).current with t_HFInner__max_depth = _98 } } } ]
+        [ &_99 <- { _99 with current = { _99.current with current = { (_99.current).current with t_HFInner__max_depth = _97 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'21 _100} s2
-      | s2 = -{resolve'6 _100}- s3
-      | s3 = [ &_102 <- [%#sunion_find'2] Map.set (uf'1.current).t_HFInner__distance y'0 (1
+      | s1 = {[@expl:type invariant] inv'21 _99} s2
+      | s2 = -{resolve'4 _99}- s3
+      | s3 = [ &_101 <- [%#sunion_find'2] Map.set (uf'1.current).t_HFInner__distance y'0 (1
         + MinMax.max (index_logic'3 (uf'1.current).t_HFInner__distance x'0) (index_logic'3 (uf'1.current).t_HFInner__distance y'0)) ]
         s4
       | s4 = bb43 ]
@@ -4218,146 +4203,139 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
       [ s0 = {inv'19 uf'1}
         MutBorrow.borrow_mut <MutBorrow.t t_HFInner> {uf'1}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) ->
-            [ &_105 <- _ret ] -{inv'19 _ret.final}-
+            [ &_104 <- _ret ] -{inv'19 _ret.final}-
             [ &uf'1 <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_105} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_104 <- _ret ] s2)
+      | s1 = deref_mut'0 {_104} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_103 <- _ret ] s2)
       | s2 = bb44 ]
     | bb44 = s0
       [ s0 =
-        [ &_104 <- { _104 with current = { _104.current with current = { (_104.current).current with t_HFInner__distance = _102 } } } ]
+        [ &_103 <- { _103 with current = { _103.current with current = { (_103.current).current with t_HFInner__distance = _101 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'21 _104} s2
-      | s2 = -{resolve'6 _104}- s3
+      | s1 = {[@expl:type invariant] inv'21 _103} s2
+      | s2 = -{resolve'4 _103}- s3
       | s3 = {[@expl:type invariant] inv'19 uf'1} s4
       | s4 = -{resolve'12 uf'1}- s5
-      | s5 = {[@expl:type invariant] inv'17 _67} s6
-      | s6 = -{resolve'14 _67}- s7
+      | s5 = {[@expl:type invariant] inv'17 _66} s6
+      | s6 = -{resolve'14 _66}- s7
       | s7 = {[@expl:type invariant] inv'8 uf'0} s8
       | s8 = -{resolve'2 uf'0}- s9
-      | s9 = new'2 {_89} (fun (_ret: ()) -> [ &_88 <- _ret ] s10)
+      | s9 = new'2 {_88} (fun (_ret: ()) -> [ &_87 <- _ret ] s10)
       | s10 = bb45 ]
     | bb45 = s0 [ s0 = [ &_0 <- y'0 ] s1 | s1 = bb81 ]
     | bb25 = s0
       [ s0 = {inv'8 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) ->
-            [ &_109 <- _ret ] -{inv'8 _ret.final}-
+            [ &_107 <- _ret ] -{inv'8 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
-      | s1 = deref_mut {_109} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_108 <- _ret ] s2)
+      | s1 = deref_mut {_107} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_106 <- _ret ] s2)
       | s2 = bb46 ]
     | bb46 = s0
-      [ s0 = {inv'5 ((_108.current).current).t_UnionFind__0}
-        MutBorrow.borrow_mut <t_HFInner> {((_108.current).current).t_UnionFind__0}
-          (fun (_ret: MutBorrow.t t_HFInner) ->
-            [ &_107 <- _ret ] -{inv'5 _ret.final}-
-            [ &_108 <- { _108 with current = { _108.current with current = { t_UnionFind__0 = _ret.final } } } ] s1)
-      | s1 = {inv'5 _107.current}
-        MutBorrow.borrow_final <t_HFInner> {_107.current} {MutBorrow.get_id _107}
+      [ s0 = {inv'5 ((_106.current).current).t_UnionFind__0}
+        MutBorrow.borrow_mut <t_HFInner> {((_106.current).current).t_UnionFind__0}
           (fun (_ret: MutBorrow.t t_HFInner) ->
             [ &__temp'0 <- _ret ] -{inv'5 _ret.final}-
-            [ &_107 <- { _107 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'18 _107} s3
-      | s3 = -{resolve'4 _107}- s4
-      | s4 = new'0 {__temp'0} (fun (_ret: MutBorrow.t t_HFInner) -> [ &uf'2 <- _ret ] s5)
-      | s5 = bb47 ]
+            [ &_106 <- { _106 with current = { _106.current with current = { t_UnionFind__0 = _ret.final } } } ] s1)
+      | s1 = new'0 {__temp'0} (fun (_ret: MutBorrow.t t_HFInner) -> [ &uf'2 <- _ret ] s2)
+      | s2 = bb47 ]
     | bb47 = s0
       [ s0 = {inv'19 uf'2}
         MutBorrow.borrow_mut <MutBorrow.t t_HFInner> {uf'2}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) ->
-            [ &_118 <- _ret ] -{inv'19 _ret.final}-
+            [ &_116 <- _ret ] -{inv'19 _ret.final}-
             [ &uf'2 <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_118} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_117 <- _ret ] s2)
+      | s1 = deref_mut'0 {_116} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_115 <- _ret ] s2)
       | s2 = bb48 ]
-    | bb48 = s0 [ s0 = addr {y'0} (fun (_ret: UInt64.t) -> [ &_121 <- _ret ] s1) | s1 = bb49 ]
+    | bb48 = s0 [ s0 = addr {y'0} (fun (_ret: UInt64.t) -> [ &_119 <- _ret ] s1) | s1 = bb49 ]
     | bb49 = s0
-      [ s0 = [ &_120 <- _121 ] s1
-      | s1 = {inv'4 ((_117.current).current).t_HFInner__map}
-        MutBorrow.borrow_mut <t_FMap> {((_117.current).current).t_HFInner__map}
+      [ s0 = [ &_118 <- _119 ] s1
+      | s1 = {inv'4 ((_115.current).current).t_HFInner__map}
+        MutBorrow.borrow_mut <t_FMap> {((_115.current).current).t_HFInner__map}
           (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_116 <- _ret ] -{inv'4 _ret.final}-
-            [ &_117 <- { _117 with current = { _117.current with current = { (_117.current).current with t_HFInner__map = _ret.final } } } ]
+            [ &_114 <- _ret ] -{inv'4 _ret.final}-
+            [ &_115 <- { _115 with current = { _115.current with current = { (_115.current).current with t_HFInner__map = _ret.final } } } ]
             s2)
-      | s2 = get_mut_ghost {_116} {_120} (fun (_ret: t_Option'1) -> [ &_115 <- _ret ] s3)
+      | s2 = get_mut_ghost {_114} {_118} (fun (_ret: t_Option'1) -> [ &_113 <- _ret ] s3)
       | s3 = bb50 ]
-    | bb50 = s0 [ s0 = unwrap'0 {_115} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_114 <- _ret ] s1) | s1 = bb51 ]
+    | bb50 = s0 [ s0 = unwrap'0 {_113} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_112 <- _ret ] s1) | s1 = bb51 ]
     | bb51 = s0
-      [ s0 = {[@expl:type invariant] inv'21 _117} s1
-      | s1 = -{resolve'6 _117}- s2
-      | s2 = {inv'3 _114.current}
-        MutBorrow.borrow_final <t_PtrOwn> {_114.current} {MutBorrow.get_id _114}
+      [ s0 = {[@expl:type invariant] inv'21 _115} s1
+      | s1 = -{resolve'4 _115}- s2
+      | s2 = {inv'3 _112.current}
+        MutBorrow.borrow_final <t_PtrOwn> {_112.current} {MutBorrow.get_id _112}
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
-            [ &_113 <- _ret ] -{inv'3 _ret.final}-
-            [ &_114 <- { _114 with current = _ret.final } ] s3)
-      | s3 = new'1 {_113} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &perm_mut_y <- _ret ] s4)
+            [ &_111 <- _ret ] -{inv'3 _ret.final}-
+            [ &_112 <- { _112 with current = _ret.final } ] s3)
+      | s3 = new'1 {_111} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &perm_mut_y <- _ret ] s4)
       | s4 = bb52 ]
     | bb52 = s0
-      [ s0 = {[@expl:type invariant] inv'23 _114} s1
-      | s1 = -{resolve'8 _114}- s2
-      | s2 = [ &_124 <- C_Link x'0 ] s3
-      | s3 = as_mut {y'0.t_Element__0} {perm_mut_y} (fun (_ret: MutBorrow.t t_Content) -> [ &_126 <- _ret ] s4)
+      [ s0 = {[@expl:type invariant] inv'23 _112} s1
+      | s1 = -{resolve'6 _112}- s2
+      | s2 = [ &_122 <- C_Link x'0 ] s3
+      | s3 = as_mut {y'0.t_Element__0} {perm_mut_y} (fun (_ret: MutBorrow.t t_Content) -> [ &_124 <- _ret ] s4)
       | s4 = bb54 ]
     | bb54 = s0
-      [ s0 = {[@expl:type invariant] inv'1 _126.current} s1
-      | s1 = [ &_126 <- { _126 with current = _124 } ] s2
-      | s2 = {[@expl:type invariant] inv'26 _126} s3
-      | s3 = -{resolve'10 _126}- s4
+      [ s0 = {[@expl:type invariant] inv'1 _124.current} s1
+      | s1 = [ &_124 <- { _124 with current = _122 } ] s2
+      | s2 = {[@expl:type invariant] inv'26 _124} s3
+      | s3 = -{resolve'8 _124}- s4
       | s4 = bb56 ]
-    | bb56 = s0 [ s0 = [ &_130 <- rx = ry ] s1 | s1 = any [ br0 -> {_130 = false} (! bb70) | br1 -> {_130} (! bb57) ] ]
+    | bb56 = s0 [ s0 = [ &_128 <- rx = ry ] s1 | s1 = any [ br0 -> {_128 = false} (! bb70) | br1 -> {_128} (! bb57) ] ]
     | bb57 = s0
       [ s0 = {inv'19 uf'2}
         MutBorrow.borrow_mut <MutBorrow.t t_HFInner> {uf'2}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) ->
-            [ &_139 <- _ret ] -{inv'19 _ret.final}-
+            [ &_137 <- _ret ] -{inv'19 _ret.final}-
             [ &uf'2 <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_139} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_138 <- _ret ] s2)
+      | s1 = deref_mut'0 {_137} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_136 <- _ret ] s2)
       | s2 = bb58 ]
-    | bb58 = s0 [ s0 = addr {x'0} (fun (_ret: UInt64.t) -> [ &_142 <- _ret ] s1) | s1 = bb59 ]
+    | bb58 = s0 [ s0 = addr {x'0} (fun (_ret: UInt64.t) -> [ &_140 <- _ret ] s1) | s1 = bb59 ]
     | bb59 = s0
-      [ s0 = [ &_141 <- _142 ] s1
-      | s1 = {inv'4 ((_138.current).current).t_HFInner__map}
-        MutBorrow.borrow_mut <t_FMap> {((_138.current).current).t_HFInner__map}
+      [ s0 = [ &_139 <- _140 ] s1
+      | s1 = {inv'4 ((_136.current).current).t_HFInner__map}
+        MutBorrow.borrow_mut <t_FMap> {((_136.current).current).t_HFInner__map}
           (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_137 <- _ret ] -{inv'4 _ret.final}-
-            [ &_138 <- { _138 with current = { _138.current with current = { (_138.current).current with t_HFInner__map = _ret.final } } } ]
+            [ &_135 <- _ret ] -{inv'4 _ret.final}-
+            [ &_136 <- { _136 with current = { _136.current with current = { (_136.current).current with t_HFInner__map = _ret.final } } } ]
             s2)
-      | s2 = get_mut_ghost {_137} {_141} (fun (_ret: t_Option'1) -> [ &_136 <- _ret ] s3)
+      | s2 = get_mut_ghost {_135} {_139} (fun (_ret: t_Option'1) -> [ &_134 <- _ret ] s3)
       | s3 = bb60 ]
-    | bb60 = s0 [ s0 = unwrap'0 {_136} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_135 <- _ret ] s1) | s1 = bb61 ]
+    | bb60 = s0 [ s0 = unwrap'0 {_134} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_133 <- _ret ] s1) | s1 = bb61 ]
     | bb61 = s0
-      [ s0 = {[@expl:type invariant] inv'21 _138} s1
-      | s1 = -{resolve'6 _138}- s2
-      | s2 = {inv'3 _135.current}
-        MutBorrow.borrow_final <t_PtrOwn> {_135.current} {MutBorrow.get_id _135}
+      [ s0 = {[@expl:type invariant] inv'21 _136} s1
+      | s1 = -{resolve'4 _136}- s2
+      | s2 = {inv'3 _133.current}
+        MutBorrow.borrow_final <t_PtrOwn> {_133.current} {MutBorrow.get_id _133}
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
-            [ &_134 <- _ret ] -{inv'3 _ret.final}-
-            [ &_135 <- { _135 with current = _ret.final } ] s3)
-      | s3 = new'1 {_134} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &perm_mut_x'0 <- _ret ] s4)
+            [ &_132 <- _ret ] -{inv'3 _ret.final}-
+            [ &_133 <- { _133 with current = _ret.final } ] s3)
+      | s3 = new'1 {_132} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &perm_mut_x'0 <- _ret ] s4)
       | s4 = bb62 ]
     | bb62 = s0
-      [ s0 = {[@expl:type invariant] inv'23 _135} s1
-      | s1 = -{resolve'8 _135}- s2
-      | s2 = as_mut {x'0.t_Element__0} {perm_mut_x'0} (fun (_ret: MutBorrow.t t_Content) -> [ &_144 <- _ret ] s3)
+      [ s0 = {[@expl:type invariant] inv'23 _133} s1
+      | s1 = -{resolve'6 _133}- s2
+      | s2 = as_mut {x'0.t_Element__0} {perm_mut_x'0} (fun (_ret: MutBorrow.t t_Content) -> [ &_142 <- _ret ] s3)
       | s3 = bb63 ]
     | bb63 = any
-      [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_144.current = C_Root x0 x1} (! bb66)
-      | br1 (x0: t_Element) -> {_144.current = C_Link x0} (! bb64) ]
-    | bb64 = s0 [ s0 = {[@expl:type invariant] inv'26 _144} s1 | s1 = -{resolve'10 _144}- s2 | s2 = bb70 ]
+      [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_142.current = C_Root x0 x1} (! bb66)
+      | br1 (x0: t_Element) -> {_142.current = C_Link x0} (! bb64) ]
+    | bb64 = s0 [ s0 = {[@expl:type invariant] inv'26 _142} s1 | s1 = -{resolve'8 _142}- s2 | s2 = bb70 ]
     | bb66 = s0
-      [ s0 = v_Root {_144.current}
+      [ s0 = v_Root {_142.current}
           (fun (rrank: t_PeanoInt) (rpayload: t_T) ->
-            MutBorrow.borrow_final <t_PeanoInt> {rrank} {MutBorrow.inherit_id (MutBorrow.get_id _144) 1}
+            MutBorrow.borrow_final <t_PeanoInt> {rrank} {MutBorrow.inherit_id (MutBorrow.get_id _142) 1}
               (fun (_ret: MutBorrow.t t_PeanoInt) ->
-                [ &rank'1 <- _ret ] [ &_144 <- { _144 with current = C_Root _ret.final rpayload } ] s1))
-      | s1 = incr {rank'1.current} (fun (_ret: t_PeanoInt) -> [ &_149 <- _ret ] s2)
+                [ &rank'1 <- _ret ] [ &_142 <- { _142 with current = C_Root _ret.final rpayload } ] s1))
+      | s1 = incr {rank'1.current} (fun (_ret: t_PeanoInt) -> [ &_147 <- _ret ] s2)
       | s2 = bb67 ]
     | bb67 = s0
-      [ s0 = [ &rank'1 <- { rank'1 with current = _149 } ] s1
+      [ s0 = [ &rank'1 <- { rank'1 with current = _147 } ] s1
       | s1 = -{resolve'16 rank'1}- s2
-      | s2 = {[@expl:type invariant] inv'26 _144} s3
-      | s3 = -{resolve'10 _144}- s4
+      | s2 = {[@expl:type invariant] inv'26 _142} s3
+      | s3 = -{resolve'8 _142}- s4
       | s4 = bb70 ]
     | bb70 = s0
-      [ s0 = [ &_153 <- [%#sunion_find'3] fun (z: t_Element) -> if index_logic'2 (uf'2.current).t_HFInner__roots z
+      [ s0 = [ &_151 <- [%#sunion_find'3] fun (z: t_Element) -> if index_logic'2 (uf'2.current).t_HFInner__roots z
         = y'0 then
           x'0
         else
@@ -4368,17 +4346,17 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
       [ s0 = {inv'19 uf'2}
         MutBorrow.borrow_mut <MutBorrow.t t_HFInner> {uf'2}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) ->
-            [ &_156 <- _ret ] -{inv'19 _ret.final}-
+            [ &_154 <- _ret ] -{inv'19 _ret.final}-
             [ &uf'2 <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_156} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_155 <- _ret ] s2)
+      | s1 = deref_mut'0 {_154} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_153 <- _ret ] s2)
       | s2 = bb72 ]
     | bb72 = s0
       [ s0 =
-        [ &_155 <- { _155 with current = { _155.current with current = { (_155.current).current with t_HFInner__roots = _153 } } } ]
+        [ &_153 <- { _153 with current = { _153.current with current = { (_153.current).current with t_HFInner__roots = _151 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'21 _155} s2
-      | s2 = -{resolve'6 _155}- s3
-      | s3 = [ &_157 <- [%#sunion_find'4] fun (z: t_Element) -> if index_logic'2 (uf'2.current).t_HFInner__roots z
+      | s1 = {[@expl:type invariant] inv'21 _153} s2
+      | s2 = -{resolve'4 _153}- s3
+      | s3 = [ &_155 <- [%#sunion_find'4] fun (z: t_Element) -> if index_logic'2 (uf'2.current).t_HFInner__roots z
         = x'0 then
           vx
         else
@@ -4389,33 +4367,33 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
       [ s0 = {inv'19 uf'2}
         MutBorrow.borrow_mut <MutBorrow.t t_HFInner> {uf'2}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) ->
-            [ &_160 <- _ret ] -{inv'19 _ret.final}-
+            [ &_158 <- _ret ] -{inv'19 _ret.final}-
             [ &uf'2 <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_160} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_159 <- _ret ] s2)
+      | s1 = deref_mut'0 {_158} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_157 <- _ret ] s2)
       | s2 = bb74 ]
     | bb74 = s0
       [ s0 =
-        [ &_159 <- { _159 with current = { _159.current with current = { (_159.current).current with t_HFInner__payloads = _157 } } } ]
+        [ &_157 <- { _157 with current = { _157.current with current = { (_157.current).current with t_HFInner__payloads = _155 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'21 _159} s2
-      | s2 = -{resolve'6 _159}- s3
-      | s3 = [ &_161 <- [%#sunion_find'5] (uf'2.current).t_HFInner__max_depth + 1 ] s4
+      | s1 = {[@expl:type invariant] inv'21 _157} s2
+      | s2 = -{resolve'4 _157}- s3
+      | s3 = [ &_159 <- [%#sunion_find'5] (uf'2.current).t_HFInner__max_depth + 1 ] s4
       | s4 = bb75 ]
     | bb75 = s0
       [ s0 = {inv'19 uf'2}
         MutBorrow.borrow_mut <MutBorrow.t t_HFInner> {uf'2}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) ->
-            [ &_164 <- _ret ] -{inv'19 _ret.final}-
+            [ &_162 <- _ret ] -{inv'19 _ret.final}-
             [ &uf'2 <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_164} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_163 <- _ret ] s2)
+      | s1 = deref_mut'0 {_162} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_161 <- _ret ] s2)
       | s2 = bb76 ]
     | bb76 = s0
       [ s0 =
-        [ &_163 <- { _163 with current = { _163.current with current = { (_163.current).current with t_HFInner__max_depth = _161 } } } ]
+        [ &_161 <- { _161 with current = { _161.current with current = { (_161.current).current with t_HFInner__max_depth = _159 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'21 _163} s2
-      | s2 = -{resolve'6 _163}- s3
-      | s3 = [ &_165 <- [%#sunion_find'6] Map.set (uf'2.current).t_HFInner__distance x'0 (1
+      | s1 = {[@expl:type invariant] inv'21 _161} s2
+      | s2 = -{resolve'4 _161}- s3
+      | s3 = [ &_163 <- [%#sunion_find'6] Map.set (uf'2.current).t_HFInner__distance x'0 (1
         + MinMax.max (index_logic'3 (uf'2.current).t_HFInner__distance x'0) (index_logic'3 (uf'2.current).t_HFInner__distance y'0)) ]
         s4
       | s4 = bb77 ]
@@ -4423,23 +4401,23 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
       [ s0 = {inv'19 uf'2}
         MutBorrow.borrow_mut <MutBorrow.t t_HFInner> {uf'2}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) ->
-            [ &_168 <- _ret ] -{inv'19 _ret.final}-
+            [ &_166 <- _ret ] -{inv'19 _ret.final}-
             [ &uf'2 <- _ret.final ] s1)
-      | s1 = deref_mut'0 {_168} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_167 <- _ret ] s2)
+      | s1 = deref_mut'0 {_166} (fun (_ret: MutBorrow.t (MutBorrow.t t_HFInner)) -> [ &_165 <- _ret ] s2)
       | s2 = bb78 ]
     | bb78 = s0
       [ s0 =
-        [ &_167 <- { _167 with current = { _167.current with current = { (_167.current).current with t_HFInner__distance = _165 } } } ]
+        [ &_165 <- { _165 with current = { _165.current with current = { (_165.current).current with t_HFInner__distance = _163 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'21 _167} s2
-      | s2 = -{resolve'6 _167}- s3
+      | s1 = {[@expl:type invariant] inv'21 _165} s2
+      | s2 = -{resolve'4 _165}- s3
       | s3 = {[@expl:type invariant] inv'19 uf'2} s4
       | s4 = -{resolve'12 uf'2}- s5
-      | s5 = {[@expl:type invariant] inv'17 _108} s6
-      | s6 = -{resolve'14 _108}- s7
+      | s5 = {[@expl:type invariant] inv'17 _106} s6
+      | s6 = -{resolve'14 _106}- s7
       | s7 = {[@expl:type invariant] inv'8 uf'0} s8
       | s8 = -{resolve'2 uf'0}- s9
-      | s9 = new'2 {_152} (fun (_ret: ()) -> [ &_151 <- _ret ] s10)
+      | s9 = new'2 {_150} (fun (_ret: ()) -> [ &_149 <- _ret ] s10)
       | s10 = bb79 ]
     | bb79 = s0 [ s0 = [ &_0 <- x'0 ] s1 | s1 = bb81 ]
     | bb81 = return''0 {_0} ]
@@ -4476,78 +4454,76 @@ module M_union_find__implementation__link [#"union_find.rs" 295 4 295 92]
     | & _58: UInt64.t = Any.any_l ()
     | & _62: bool = Any.any_l ()
     | & __temp: MutBorrow.t t_HFInner = Any.any_l ()
-    | & _66: MutBorrow.t t_HFInner = Any.any_l ()
+    | & _66: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
     | & _67: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
-    | & _68: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
     | & uf'1: MutBorrow.t t_HFInner = Any.any_l ()
     | & perm_mut_x: MutBorrow.t t_PtrOwn = Any.any_l ()
+    | & _71: MutBorrow.t t_PtrOwn = Any.any_l ()
     | & _72: MutBorrow.t t_PtrOwn = Any.any_l ()
-    | & _73: MutBorrow.t t_PtrOwn = Any.any_l ()
-    | & _74: t_Option'1 = Any.any_l ()
-    | & _75: MutBorrow.t t_FMap = Any.any_l ()
+    | & _73: t_Option'1 = Any.any_l ()
+    | & _74: MutBorrow.t t_FMap = Any.any_l ()
+    | & _75: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
     | & _76: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _77: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _78: UInt64.t = Any.any_l ()
     | & _79: UInt64.t = Any.any_l ()
-    | & _80: UInt64.t = Any.any_l ()
-    | & _83: t_Content = Any.any_l ()
-    | & _85: MutBorrow.t t_Content = Any.any_l ()
+    | & _82: t_Content = Any.any_l ()
+    | & _84: MutBorrow.t t_Content = Any.any_l ()
+    | & _87: () = Any.any_l ()
     | & _88: () = Any.any_l ()
-    | & _89: () = Any.any_l ()
-    | & _90: Map.map t_Element t_Element = Any.any_l ()
+    | & _89: Map.map t_Element t_Element = Any.any_l ()
+    | & _91: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
     | & _92: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _93: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _94: Map.map t_Element t_T = Any.any_l ()
+    | & _93: Map.map t_Element t_T = Any.any_l ()
+    | & _95: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
     | & _96: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _97: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _98: int = Any.any_l ()
+    | & _97: int = Any.any_l ()
+    | & _99: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
     | & _100: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _101: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _102: Map.map t_Element int = Any.any_l ()
+    | & _101: Map.map t_Element int = Any.any_l ()
+    | & _103: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
     | & _104: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _105: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
     | & __temp'0: MutBorrow.t t_HFInner = Any.any_l ()
-    | & _107: MutBorrow.t t_HFInner = Any.any_l ()
-    | & _108: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
-    | & _109: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
+    | & _106: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
+    | & _107: MutBorrow.t (MutBorrow.t t_UnionFind) = Any.any_l ()
     | & uf'2: MutBorrow.t t_HFInner = Any.any_l ()
     | & perm_mut_y: MutBorrow.t t_PtrOwn = Any.any_l ()
-    | & _113: MutBorrow.t t_PtrOwn = Any.any_l ()
-    | & _114: MutBorrow.t t_PtrOwn = Any.any_l ()
-    | & _115: t_Option'1 = Any.any_l ()
-    | & _116: MutBorrow.t t_FMap = Any.any_l ()
-    | & _117: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _118: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _120: UInt64.t = Any.any_l ()
-    | & _121: UInt64.t = Any.any_l ()
-    | & _124: t_Content = Any.any_l ()
-    | & _126: MutBorrow.t t_Content = Any.any_l ()
-    | & _130: bool = Any.any_l ()
+    | & _111: MutBorrow.t t_PtrOwn = Any.any_l ()
+    | & _112: MutBorrow.t t_PtrOwn = Any.any_l ()
+    | & _113: t_Option'1 = Any.any_l ()
+    | & _114: MutBorrow.t t_FMap = Any.any_l ()
+    | & _115: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _116: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _118: UInt64.t = Any.any_l ()
+    | & _119: UInt64.t = Any.any_l ()
+    | & _122: t_Content = Any.any_l ()
+    | & _124: MutBorrow.t t_Content = Any.any_l ()
+    | & _128: bool = Any.any_l ()
     | & perm_mut_x'0: MutBorrow.t t_PtrOwn = Any.any_l ()
-    | & _134: MutBorrow.t t_PtrOwn = Any.any_l ()
-    | & _135: MutBorrow.t t_PtrOwn = Any.any_l ()
-    | & _136: t_Option'1 = Any.any_l ()
-    | & _137: MutBorrow.t t_FMap = Any.any_l ()
-    | & _138: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _139: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _141: UInt64.t = Any.any_l ()
-    | & _142: UInt64.t = Any.any_l ()
-    | & _144: MutBorrow.t t_Content = Any.any_l ()
+    | & _132: MutBorrow.t t_PtrOwn = Any.any_l ()
+    | & _133: MutBorrow.t t_PtrOwn = Any.any_l ()
+    | & _134: t_Option'1 = Any.any_l ()
+    | & _135: MutBorrow.t t_FMap = Any.any_l ()
+    | & _136: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _137: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _139: UInt64.t = Any.any_l ()
+    | & _140: UInt64.t = Any.any_l ()
+    | & _142: MutBorrow.t t_Content = Any.any_l ()
     | & rank'1: MutBorrow.t t_PeanoInt = Any.any_l ()
-    | & _149: t_PeanoInt = Any.any_l ()
-    | & _151: () = Any.any_l ()
-    | & _152: () = Any.any_l ()
-    | & _153: Map.map t_Element t_Element = Any.any_l ()
-    | & _155: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _156: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _157: Map.map t_Element t_T = Any.any_l ()
-    | & _159: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _160: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _161: int = Any.any_l ()
-    | & _163: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _164: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _165: Map.map t_Element int = Any.any_l ()
-    | & _167: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
-    | & _168: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l () ])
+    | & _147: t_PeanoInt = Any.any_l ()
+    | & _149: () = Any.any_l ()
+    | & _150: () = Any.any_l ()
+    | & _151: Map.map t_Element t_Element = Any.any_l ()
+    | & _153: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _154: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _155: Map.map t_Element t_T = Any.any_l ()
+    | & _157: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _158: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _159: int = Any.any_l ()
+    | & _161: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _162: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _163: Map.map t_Element int = Any.any_l ()
+    | & _165: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l ()
+    | & _166: MutBorrow.t (MutBorrow.t t_HFInner) = Any.any_l () ])
     [ return''0 (result: t_Element) -> {[@expl:link ensures #0] [%#sunion_find'10] domain_unchanged uf}
       {[@expl:link ensures #1] [%#sunion_find'11] result = root uf.current x \/ result = root uf.current y}
       {[@expl:link ensures #2] [%#sunion_find'12] result = root (fin'0 uf) result}

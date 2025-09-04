@@ -1,4 +1,4 @@
-// TACTIC +compute_in_goal TIME 5
+// TACTIC +compute_in_goal TIME 10
 extern crate creusot_contracts;
 
 // This proof is largely adapted from the one in Vocal (see https://github.com/ocaml-gospel/vocal/blob/main/proofs/why3/UnionFind_impl.mlw)

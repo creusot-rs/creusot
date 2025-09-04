@@ -74,8 +74,8 @@ pub fn ghost_let(body: TS1) -> TS1 {
     let GhostLet { mutability, var, body } = parse_macro_input!(body as GhostLet);
     TS1::from(quote! {
         #[creusot::ghost_let]
-        let __temp = { #[creusot::ghost_block] #body };
-        let #mutability #var = { #[creusot::ghost_block] ::creusot_contracts::ghost::Ghost::new(__temp) };
+        let __temp = #[creusot::ghost_block] ( #body );
+        let #mutability #var = #[creusot::ghost_block] ::creusot_contracts::ghost::Ghost::new(__temp);
     })
 }
 
