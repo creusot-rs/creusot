@@ -4,7 +4,7 @@ use rustc_hir::{HirId, intravisit::Visitor as _};
 use rustc_hir_typeck::expr_use_visitor::{Delegate, ExprUseVisitor, PlaceWithHirId};
 use rustc_lint::{LateLintPass, LintPass};
 use rustc_middle::ty::{Ty, TyCtxt};
-use rustc_span::Span;
+use rustc_span::{Span, Symbol};
 use std::collections::HashSet;
 
 use crate::contracts_items::{is_ghost_ty, is_snap_ty};
@@ -150,11 +150,28 @@ fn base_hir_node(place: &PlaceWithHirId) -> Option<HirId> {
     }
 }
 
+fn is_ghost_let(tcx: TyCtxt, id: HirId) -> bool {
+    for id in tcx.hir_parent_id_iter(id) {
+        let attrs = tcx.hir_attrs(id);
+        if attrs
+            .iter()
+            .any(|a| a.path_matches(&[Symbol::intern("creusot"), Symbol::intern("ghost_let")]))
+        {
+            return true;
+        }
+    }
+    false
+}
+
 impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
     fn consume(&mut self, place_with_id: &PlaceWithHirId<'tcx>, diag_expr_id: HirId) {
         let ty = place_with_id.place.ty();
+        let base_id = base_hir_node(place_with_id);
         // No need to check for copy types, they cannot appear here
-        if self.bound_in_block(place_with_id) || self.is_ghost_ty(ty) {
+        if self.bound_in_block(place_with_id)
+            || self.is_ghost_ty(ty)
+            || base_id.is_some_and(|id| is_ghost_let(self.tcx, id))
+        {
             return;
         }
 
@@ -167,7 +184,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
             // Moving into a pearlite closure is ok
             return;
         }
-        self.errors.push((diag_expr_id, base_hir_node(place_with_id), false));
+        self.errors.push((diag_expr_id, base_id, false));
     }
 
     fn use_cloned(&mut self, place_with_id: &PlaceWithHirId<'tcx>, diag_expr_id: HirId) {

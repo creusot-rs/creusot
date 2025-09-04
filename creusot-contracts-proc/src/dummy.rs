@@ -32,6 +32,11 @@ pub fn ghost(body: TS1) -> TS1 {
     .into()
 }
 
+pub fn ghost_let(body: TS1) -> TS1 {
+    let body: TS1 = body.into_iter().skip(2).collect();
+    ghost(body)
+}
+
 // #[proc_macro_attribute]
 
 pub fn requires(_: TS1, tokens: TS1) -> TS1 {
