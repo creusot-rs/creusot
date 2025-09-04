@@ -94,8 +94,8 @@ impl<T: ?Sized> PtrOwn<T> {
     #[allow(unused_variables)]
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
-    #[ensures((^*own).ptr() == own.ptr())]
-    #[ensures(*(^*own).val() == ^result)]
+    #[ensures((^own).ptr() == own.ptr())]
+    #[ensures(*(^own).val() == ^result)]
     pub unsafe fn as_mut(ptr: RawPtr<T>, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
         unsafe { &mut *(ptr as *mut _) }
     }

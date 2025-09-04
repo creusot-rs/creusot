@@ -727,7 +727,6 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         let (binder, trigger, body) = self.quant_term(args[0])?;
                         Ok(body.quant(kind, binder, trigger).span(span))
                     }
-                    Some(Fin) => Ok(self.expr_term(args[0])?.fin().span(span)),
                     Some(Impl) => {
                         let lhs = self.expr_term(args[0])?;
                         let rhs = self.expr_term(args[1])?;
@@ -1224,7 +1223,6 @@ pub(crate) enum Stub {
     Forall,
     Exists,
     Trigger,
-    Fin,
     Impl,
     Equals,
     Neq,
@@ -1241,7 +1239,6 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
             "forall" => Some(Stub::Forall),
             "exists" => Some(Stub::Exists),
             "trigger" => Some(Stub::Trigger),
-            "fin" => Some(Stub::Fin),
             "implication" => Some(Stub::Impl),
             "equal" => Some(Stub::Equals),
             "neq" => Some(Stub::Neq),

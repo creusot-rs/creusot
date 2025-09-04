@@ -343,7 +343,7 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
         RT::Final(TermFinal { term, .. }) => {
             let term = encode_term_(term, locals)?;
             Ok(quote_spanned! {sp=>
-                * ::creusot_contracts::__stubs::fin(#term)
+                * ::creusot_contracts::logic::ops::Fin::fin(#term)
             })
         }
         RT::Model(TermModel { term, .. }) => {

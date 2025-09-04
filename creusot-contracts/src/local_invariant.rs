@@ -231,8 +231,8 @@ impl<'a, T: LocalInvariantSpec> LocalInvariantExt<'a> for Ghost<&'a LocalInvaria
     #[requires(forall<t: Ghost<&mut T>> (**t).invariant_with_data(self.public()) && inv(t) ==>
         f.precondition((t,)) &&
         // f must restore the invariant
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^*t).invariant_with_data(self.public())))]
-    #[ensures(exists<t: Ghost<&mut T>> (**t).invariant_with_data(self.public()) && f.postcondition_once((t,), result))]
+        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).invariant_with_data(self.public())))]
+    #[ensures(exists<t: Ghost<&mut T>> t.invariant_with_data(self.public()) && f.postcondition_once((t,), result))]
     #[check(ghost)]
     fn open<A, F>(self, namespaces: Ghost<Namespaces<'a>>, f: F) -> A
     where
@@ -325,11 +325,11 @@ impl<T: LocalInvariantSpec> LocalInvariant<T> {
     /// contained [`LocalInvariantSpec`] before returning from the closure.
     #[trusted]
     #[requires(namespaces.contains(this.namespace()))]
-    #[requires(forall<t: Ghost<&mut T>> (**t).invariant_with_data(this.public()) && inv(t) ==>
+    #[requires(forall<t: Ghost<&mut T>> t.invariant_with_data(this.public()) && inv(t) ==>
         f.precondition((t,)) &&
         // f must restore the invariant
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^*t).invariant_with_data(this.public())))]
-    #[ensures(exists<t: Ghost<&mut T>> (**t).invariant_with_data(this.public()) && f.postcondition_once((t,), result))]
+        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).invariant_with_data(this.public())))]
+    #[ensures(exists<t: Ghost<&mut T>> t.invariant_with_data(this.public()) && f.postcondition_once((t,), result))]
     #[check(ghost)]
     pub fn open<'a, A>(
         this: Ghost<&'a Self>,

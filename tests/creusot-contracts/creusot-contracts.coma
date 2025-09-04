@@ -21187,17 +21187,18 @@ module M_creusot_contracts__local_invariant__qyi17763416549578214088__open [#"..
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 101 20 101 44
   let%span slocal_invariant = "../../creusot-contracts/src/local_invariant.rs" 237 59 237 60
   let%span slocal_invariant'0 = "../../creusot-contracts/src/local_invariant.rs" 230 4 230 54
-  let%span slocal_invariant'1 = "../../creusot-contracts/src/local_invariant.rs" 231 15 234 101
+  let%span slocal_invariant'1 = "../../creusot-contracts/src/local_invariant.rs" 231 15 234 100
   let%span slocal_invariant'2 = "../../creusot-contracts/src/local_invariant.rs" 237 68 237 69
-  let%span slocal_invariant'3 = "../../creusot-contracts/src/local_invariant.rs" 235 14 235 117
+  let%span slocal_invariant'3 = "../../creusot-contracts/src/local_invariant.rs" 235 14 235 113
   let%span slocal_invariant'4 = "../../creusot-contracts/src/local_invariant.rs" 337 8 337 9
   let%span slocal_invariant'5 = "../../creusot-contracts/src/local_invariant.rs" 327 4 327 54
-  let%span slocal_invariant'6 = "../../creusot-contracts/src/local_invariant.rs" 328 15 331 101
+  let%span slocal_invariant'6 = "../../creusot-contracts/src/local_invariant.rs" 328 15 331 100
   let%span slocal_invariant'7 = "../../creusot-contracts/src/local_invariant.rs" 338 9 338 10
-  let%span slocal_invariant'8 = "../../creusot-contracts/src/local_invariant.rs" 332 14 332 117
+  let%span slocal_invariant'8 = "../../creusot-contracts/src/local_invariant.rs" 332 14 332 113
   let%span slocal_invariant'9 = "../../creusot-contracts/src/local_invariant.rs" 181 4 181 12
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 101 20 101 27
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 111 8 111 18
   let%span sset = "../../creusot-contracts/src/logic/set.rs" 31 8 31 26
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 100 8 100 18
   
   use set.Set
   use creusot.prelude.MutBorrow
@@ -21240,8 +21241,8 @@ module M_creusot_contracts__local_invariant__qyi17763416549578214088__open [#"..
   
   axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'1 x]. inv'1 x = invariant' x
   
-  predicate invariant''0 [#"../../creusot-contracts/src/ghost.rs" 99 4 99 30] (self: MutBorrow.t t_T) =
-    [%#sghost] inv'1 self
+  predicate invariant''0 [#"../../creusot-contracts/src/ghost.rs" 110 4 110 30] (self: MutBorrow.t t_T) =
+    [%#sghost'0] inv'1 self
   
   predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: MutBorrow.t t_T)
   
@@ -21251,6 +21252,9 @@ module M_creusot_contracts__local_invariant__qyi17763416549578214088__open [#"..
   
   predicate postcondition_once [#"../../creusot-contracts/src/std/ops.rs" 106 4 106 73] (self: t_F) (args: MutBorrow.t t_T) (result: t_A)
   
+  function fin [#"../../creusot-contracts/src/ghost.rs" 100 4 100 40] (self: MutBorrow.t t_T) : t_T =
+    [%#sghost] self.final
+  
   predicate inv'3 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_A)
   
   let rec open (this: t_LocalInvariant) (namespaces'0: t_Namespaces) (f: t_F) (return' (x: t_A)) =
@@ -21258,7 +21262,7 @@ module M_creusot_contracts__local_invariant__qyi17763416549578214088__open [#"..
     {[@expl:open requires #0] [%#slocal_invariant'5] contains'0 namespaces'0 (namespace this)}
     {[@expl:open requires #1] [%#slocal_invariant'6] forall t: MutBorrow.t t_T. invariant_with_data t.current (public this)
         /\ inv'2 t
-      -> precondition f t /\ (forall res: t_A. postcondition_once f t res -> invariant_with_data t.final (public this))}
+      -> precondition f t /\ (forall res: t_A. postcondition_once f t res -> invariant_with_data (fin t) (public this))}
     any
     [ return''0 (result: t_A) -> {[%#slocal_invariant'7] inv'3 result}
       {[%#slocal_invariant'8] exists t: MutBorrow.t t_T. invariant_with_data t.current (public this)
@@ -21275,7 +21279,7 @@ module M_creusot_contracts__local_invariant__qyi17763416549578214088__open [#"..
     {[@expl:open requires #0] [%#slocal_invariant'0] contains'0 namespaces'0 (namespace self)}
     {[@expl:open requires #1] [%#slocal_invariant'1] forall t: MutBorrow.t t_T. invariant_with_data t.current (public self)
         /\ inv'2 t
-      -> precondition f t /\ (forall res: t_A. postcondition_once f t res -> invariant_with_data t.final (public self))}
+      -> precondition f t /\ (forall res: t_A. postcondition_once f t res -> invariant_with_data (fin t) (public self))}
     (! bb0
     [ bb0 = s0 [ s0 = open {self'0} {namespaces'1} {f'0} (fun (_ret: t_A) -> [ &_0 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = return''0 {_0} ]
@@ -21312,14 +21316,14 @@ module M_creusot_contracts__local_invariant__qyi11806525195294501830__open [#"..
   let%span slocal_invariant'2 = "../../creusot-contracts/src/local_invariant.rs" 253 15 254 115
   let%span slocal_invariant'3 = "../../creusot-contracts/src/local_invariant.rs" 260 68 260 69
   let%span slocal_invariant'4 = "../../creusot-contracts/src/local_invariant.rs" 256 14 257 124
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 69 14 69 18
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 69 23 69 36
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 68 14 68 43
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 164 15 164 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 164 24 164 28
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 162 14 162 26
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 171 14 171 26
-  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 100 8 100 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 70 14 70 18
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 70 23 70 36
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 69 14 69 31
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 175 15 175 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 175 24 175 28
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 173 14 173 26
+  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 185 14 185 26
+  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 111 8 111 18
   
   use creusot.prelude.Any
   
@@ -21333,7 +21337,7 @@ module M_creusot_contracts__local_invariant__qyi11806525195294501830__open [#"..
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 [#"../../creusot-contracts/src/ghost.rs" 99 4 99 30] (self: t_T) = [%#sghost'6] inv'0 self
+  predicate invariant''0 [#"../../creusot-contracts/src/ghost.rs" 110 4 110 30] (self: t_T) = [%#sghost'6] inv'0 self
   
   predicate inv'1 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_T)
   
@@ -21354,7 +21358,7 @@ module M_creusot_contracts__local_invariant__qyi11806525195294501830__open [#"..
   axiom inv_axiom'2 [@rewrite]: forall x: t_T [inv'3 x]. inv'3 x = invariant''2 x
   
   let rec deref (self: t_T) (return' (x: t_T)) = {[@expl:deref 'self' type invariant] [%#sghost] inv'2 self}
-    any [ return''0 (result: t_T) -> {[%#sghost'0] inv'3 result} {[%#sghost'1] self = result} (! return' {result}) ]
+    any [ return''0 (result: t_T) -> {[%#sghost'0] inv'3 result} {[%#sghost'1] result = self} (! return' {result}) ]
   
   type t_Target
   
@@ -21381,7 +21385,8 @@ module M_creusot_contracts__local_invariant__qyi11806525195294501830__open [#"..
   let rec deref'0 (self_: t_T) (return' (x: t_Target)) = {[@expl:deref requires] precondition () self_}
     any [ return''0 (result: t_Target) -> {postcondition_once () self_ result} (! return' {result}) ]
   
-  predicate invariant''4 [#"../../creusot-contracts/src/ghost.rs" 99 4 99 30] (self: t_Target) = [%#sghost'6] inv'5 self
+  predicate invariant''4 [#"../../creusot-contracts/src/ghost.rs" 110 4 110 30] (self: t_Target) =
+    [%#sghost'6] inv'5 self
   
   predicate inv'6 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_Target)
   
@@ -21471,7 +21476,7 @@ module M_creusot_contracts__local_invariant__qyi11806525195294501830__open [#"..
     forall self: (), args: t_T, res_state: (), res: t_Target. [%#sops] postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  function new_logic [#"../../creusot-contracts/src/ghost.rs" 172 4 172 34] (x: t_Target) : t_Target
+  function new_logic [#"../../creusot-contracts/src/ghost.rs" 186 4 186 34] (x: t_Target) : t_Target
   
   axiom new_logic_spec: forall x: t_Target. [%#sghost'5] new_logic x = x
   
@@ -21577,11 +21582,11 @@ module M_creusot_contracts__local_invariant__qyi14562131538618297666__open [#"..
   let%span slocal_invariant'1 = "../../creusot-contracts/src/local_invariant.rs" 275 15 275 117
   let%span slocal_invariant'2 = "../../creusot-contracts/src/local_invariant.rs" 278 68 278 69
   let%span slocal_invariant'3 = "../../creusot-contracts/src/local_invariant.rs" 276 14 276 125
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 123 19 123 23
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 123 28 123 37
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 122 14 122 32
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 171 14 171 26
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 100 8 100 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 134 19 134 23
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 134 28 134 37
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 133 14 133 32
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 185 14 185 26
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 111 8 111 18
   
   use creusot.prelude.Any
   
@@ -21589,7 +21594,7 @@ module M_creusot_contracts__local_invariant__qyi14562131538618297666__open [#"..
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_L)
   
-  predicate invariant' [#"../../creusot-contracts/src/ghost.rs" 99 4 99 30] (self: t_L) = [%#sghost'3] inv self
+  predicate invariant' [#"../../creusot-contracts/src/ghost.rs" 110 4 110 30] (self: t_L) = [%#sghost'3] inv self
   
   predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_L)
   
@@ -21608,7 +21613,7 @@ module M_creusot_contracts__local_invariant__qyi14562131538618297666__open [#"..
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_L [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 [#"../../creusot-contracts/src/ghost.rs" 99 4 99 30] (self: t_L) = [%#sghost'3] inv'2 self
+  predicate invariant''2 [#"../../creusot-contracts/src/ghost.rs" 110 4 110 30] (self: t_L) = [%#sghost'3] inv'2 self
   
   predicate inv'3 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_L)
   
@@ -21647,7 +21652,7 @@ module M_creusot_contracts__local_invariant__qyi14562131538618297666__open [#"..
   
   predicate inv'5 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_F)
   
-  function new_logic [#"../../creusot-contracts/src/ghost.rs" 172 4 172 34] (x: t_L) : t_L
+  function new_logic [#"../../creusot-contracts/src/ghost.rs" 186 4 186 34] (x: t_L) : t_L
   
   axiom new_logic_spec: forall x: t_L. [%#sghost'2] new_logic x = x
   
@@ -42510,23 +42515,24 @@ module M_creusot_contracts__pcell__qyi14846468513926953542__take [#"../../creuso
   let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 145 4 145 30
   let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 146 4 146 32
   let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 151 14 152 104
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 90 8 90 22
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 100 8 100 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 101 20 101 27
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 91 8 91 22
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 111 8 111 18
   let%span spcell = "../../creusot-contracts/src/pcell.rs" 258 24 258 28
   let%span spcell'0 = "../../creusot-contracts/src/pcell.rs" 258 30 258 34
   let%span spcell'1 = "../../creusot-contracts/src/pcell.rs" 254 15 254 37
   let%span spcell'2 = "../../creusot-contracts/src/pcell.rs" 258 64 258 65
-  let%span spcell'3 = "../../creusot-contracts/src/pcell.rs" 255 14 255 40
+  let%span spcell'3 = "../../creusot-contracts/src/pcell.rs" 255 14 255 39
   let%span spcell'4 = "../../creusot-contracts/src/pcell.rs" 256 14 256 29
-  let%span spcell'5 = "../../creusot-contracts/src/pcell.rs" 257 14 257 53
+  let%span spcell'5 = "../../creusot-contracts/src/pcell.rs" 257 14 257 52
   let%span spcell'6 = "../../creusot-contracts/src/pcell.rs" 137 27 137 31
   let%span spcell'7 = "../../creusot-contracts/src/pcell.rs" 137 33 137 37
   let%span spcell'8 = "../../creusot-contracts/src/pcell.rs" 137 64 137 67
   let%span spcell'9 = "../../creusot-contracts/src/pcell.rs" 133 15 133 37
   let%span spcell'10 = "../../creusot-contracts/src/pcell.rs" 137 75 137 76
-  let%span spcell'11 = "../../creusot-contracts/src/pcell.rs" 134 14 134 30
+  let%span spcell'11 = "../../creusot-contracts/src/pcell.rs" 134 14 134 29
   let%span spcell'12 = "../../creusot-contracts/src/pcell.rs" 135 14 135 29
-  let%span spcell'13 = "../../creusot-contracts/src/pcell.rs" 136 14 136 40
+  let%span spcell'13 = "../../creusot-contracts/src/pcell.rs" 136 14 136 39
   let%span spcell'14 = "../../creusot-contracts/src/pcell.rs" 33 4 33 12
   let%span spcell'15 = "../../creusot-contracts/src/pcell.rs" 61 20 61 46
   
@@ -42600,8 +42606,8 @@ module M_creusot_contracts__pcell__qyi14846468513926953542__take [#"../../creuso
   
   axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_PCellOwn [inv'5 x]. inv'5 x = invariant''2 x
   
-  predicate invariant''3 [#"../../creusot-contracts/src/ghost.rs" 99 4 99 30] (self: MutBorrow.t t_PCellOwn) =
-    [%#sghost'0] inv'5 self
+  predicate invariant''3 [#"../../creusot-contracts/src/ghost.rs" 110 4 110 30] (self: MutBorrow.t t_PCellOwn) =
+    [%#sghost'1] inv'5 self
   
   predicate inv'6 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: MutBorrow.t t_PCellOwn)
   
@@ -42615,11 +42621,14 @@ module M_creusot_contracts__pcell__qyi14846468513926953542__take [#"../../creuso
   
   function view [#"../../creusot-contracts/src/pcell.rs" 35 4 35 33] (self: t_PCellOwn) : t_T = [%#spcell'14] val' self
   
+  function fin [#"../../creusot-contracts/src/ghost.rs" 100 4 100 40] (self: MutBorrow.t t_PCellOwn) : t_PCellOwn =
+    [%#sghost] self.final
+  
   function view'0 [#"../../creusot-contracts/src/model.rs" 61 4 61 33] (self: MutBorrow.t t_PCellOwn) : t_T =
     [%#smodel] view self.current
   
-  function view'1 [#"../../creusot-contracts/src/ghost.rs" 89 4 89 33] (self: MutBorrow.t t_PCellOwn) : t_T =
-    [%#sghost] view'0 self
+  function view'1 [#"../../creusot-contracts/src/ghost.rs" 90 4 90 33] (self: MutBorrow.t t_PCellOwn) : t_T =
+    [%#sghost'0] view'0 self
   
   let rec replace (self: t_PCell) (perm: MutBorrow.t t_PCellOwn) (val''0: t_T) (return' (x: t_T)) =
     {[@expl:replace 'self' type invariant] [%#spcell'6] inv'2 self}
@@ -42628,9 +42637,9 @@ module M_creusot_contracts__pcell__qyi14846468513926953542__take [#"../../creuso
     {[@expl:replace requires] [%#spcell'9] id self = id'0 perm.current}
     any
     [ return''0 (result: t_T) -> {[%#spcell'10] inv result}
-      {[%#spcell'11] val''0 = view perm.final}
+      {[%#spcell'11] val''0 = view (fin perm)}
       {[%#spcell'12] result = view'1 perm}
-      {[%#spcell'13] id self = id'0 perm.final}
+      {[%#spcell'13] id self = id'0 (fin perm)}
       (! return' {result}) ]
   
   predicate resolve [#"../../creusot-contracts/src/resolve.rs" 20 0 20 39] (_0: ()) = true
@@ -42700,9 +42709,9 @@ module M_creusot_contracts__pcell__qyi14846468513926953542__take [#"../../creuso
     | & perm'0: MutBorrow.t t_PCellOwn = perm
     | & _9: t_T = Any.any_l () ])
     [ return''0 (result: t_T) -> {[@expl:take result type invariant] [%#spcell'2] inv result}
-      {[@expl:take ensures #0] [%#spcell'3] id self = id'0 perm.final}
+      {[@expl:take ensures #0] [%#spcell'3] id self = id'0 (fin perm)}
       {[@expl:take ensures #1] [%#spcell'4] result = view'1 perm}
-      {[@expl:take ensures #2] [%#spcell'5] postcondition () () (view perm.final)}
+      {[@expl:take ensures #2] [%#spcell'5] postcondition () () (view (fin perm))}
       (! return' {result}) ]
 end
 module M_creusot_contracts__peano__qyi18263836234684628832__clone [#"../../creusot-contracts/src/peano.rs" 34 9 34 14] (* <peano::PeanoInt as std::clone::Clone> *)
@@ -44366,7 +44375,7 @@ module M_creusot_contracts__ptr_own__qyi13445900742793785996__new [#"../../creus
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 59 14 59 53
   let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 61 8 61 35
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 100 8 100 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 111 8 111 18
   let%span sptr_own = "../../creusot-contracts/src/ptr_own.rs" 55 15 55 16
   let%span sptr_own'0 = "../../creusot-contracts/src/ptr_own.rs" 55 24 55 53
   let%span sptr_own'1 = "../../creusot-contracts/src/ptr_own.rs" 54 14 54 64
@@ -44416,7 +44425,7 @@ module M_creusot_contracts__ptr_own__qyi13445900742793785996__new [#"../../creus
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> inv'0 val'
         end)
   
-  predicate invariant''1 [#"../../creusot-contracts/src/ghost.rs" 99 4 99 30] (self: t_PtrOwn) = [%#sghost] inv'1 self
+  predicate invariant''1 [#"../../creusot-contracts/src/ghost.rs" 110 4 110 30] (self: t_PtrOwn) = [%#sghost] inv'1 self
   
   predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_PtrOwn)
   
@@ -44459,7 +44468,7 @@ module M_creusot_contracts__ptr_own__qyi13445900742793785996__drop [#"../../creu
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 59 14 59 53
   let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 61 8 61 35
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 100 8 100 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 111 8 111 18
   let%span sptr_own = "../../creusot-contracts/src/ptr_own.rs" 128 39 128 42
   let%span sptr_own'0 = "../../creusot-contracts/src/ptr_own.rs" 127 15 127 31
   let%span sptr_own'1 = "../../creusot-contracts/src/ptr_own.rs" 115 41 115 44
@@ -44507,7 +44516,7 @@ module M_creusot_contracts__ptr_own__qyi13445900742793785996__drop [#"../../creu
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> inv'0 val'
         end)
   
-  predicate invariant''1 [#"../../creusot-contracts/src/ghost.rs" 99 4 99 30] (self: t_PtrOwn) = [%#sghost] inv'1 self
+  predicate invariant''1 [#"../../creusot-contracts/src/ghost.rs" 110 4 110 30] (self: t_PtrOwn) = [%#sghost] inv'1 self
   
   predicate inv'2 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_PtrOwn)
   
@@ -44712,12 +44721,12 @@ module M_creusot_contracts__resource__fmap_view__qyi505596245403307893__new [#".
   let%span sutil = "../../creusot-contracts/src/util.rs" 11 11 11 28
   let%span sutil'0 = "../../creusot-contracts/src/util.rs" 12 0 12 21
   let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 12
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 181 14 181 29
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 164 15 164 16
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 164 24 164 28
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 162 14 162 26
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 90 8 90 22
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 100 8 100 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 195 14 195 29
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 175 15 175 16
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 175 24 175 28
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 173 14 173 26
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 91 8 91 22
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 111 8 111 18
   let%span sagree = "../../creusot-contracts/src/logic/ra/agree.rs" 13 8 13 57
   let%span sagree'0 = "../../creusot-contracts/src/logic/ra/agree.rs" 28 14 28 32
   let%span sagree'1 = "../../creusot-contracts/src/logic/ra/agree.rs" 33 14 33 99
@@ -44991,7 +45000,7 @@ module M_creusot_contracts__resource__fmap_view__qyi505596245403307893__new [#".
   function view'0 [#"../../creusot-contracts/src/resource.rs" 48 8 48 26] (self: t_Resource) : t_View =
     [%#sresource'0] val' self
   
-  function view'1 [#"../../creusot-contracts/src/ghost.rs" 89 4 89 33] (self: t_Resource) : t_View =
+  function view'1 [#"../../creusot-contracts/src/ghost.rs" 90 4 90 33] (self: t_Resource) : t_View =
     [%#sghost'3] view'0 self
   
   let rec alloc (r: t_View) (return' (x: t_Resource)) = any
@@ -45013,7 +45022,7 @@ module M_creusot_contracts__resource__fmap_view__qyi505596245403307893__new [#".
         | {t_Authority__0 = a_0} -> true
         end)
   
-  predicate invariant''0 [#"../../creusot-contracts/src/ghost.rs" 99 4 99 30] (self: t_Authority) =
+  predicate invariant''0 [#"../../creusot-contracts/src/ghost.rs" 110 4 110 30] (self: t_Authority) =
     [%#sghost'4] inv self
   
   predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_Authority)
@@ -45067,7 +45076,7 @@ module M_creusot_contracts__resource__fmap_view__qyi505596245403307893__new [#".
   function view'3 [#"../../creusot-contracts/src/resource/fmap_view.rs" 56 4 56 31] (self: t_Authority) : t_FMap'0 =
     [%#sfmap_view'3] map (unwrap_logic (auth (view'0 self.t_Authority__0))) (fun (__0: tuple'0) -> let {_p1'0 = x} = __0 in x.t_Ag__0)
   
-  function view'4 [#"../../creusot-contracts/src/ghost.rs" 89 4 89 33] (self: t_Authority) : t_FMap'0 =
+  function view'4 [#"../../creusot-contracts/src/ghost.rs" 90 4 90 33] (self: t_Authority) : t_FMap'0 =
     [%#sghost'3] view'3 self
   
   function len'0 [#"../../creusot-contracts/src/logic/fmap.rs" 62 4 62 27] (self: t_FMap'0) : int
@@ -47384,12 +47393,12 @@ module M_creusot_contracts__resource__m__qyi10819468878980253437__update [#"../.
       {[@expl:update ensures #1] [%#sresource'8] view self.final = update upd (view'0 self) result}
       (! return' {result}) ]
 end
-module M_creusot_contracts__snapshot__qyi17576604998327728858__clone [#"../../creusot-contracts/src/snapshot.rs" 69 4 69 27] (* <snapshot::Snapshot<T> as std::clone::Clone> *)
+module M_creusot_contracts__snapshot__qyi17576604998327728858__clone [#"../../creusot-contracts/src/snapshot.rs" 79 4 79 27] (* <snapshot::Snapshot<T> as std::clone::Clone> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
   
-  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 68 14 68 29
+  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 78 14 78 29
   
   use creusot.prelude.Any
   
@@ -47399,7 +47408,7 @@ module M_creusot_contracts__snapshot__qyi17576604998327728858__clone [#"../../cr
   
   meta "select_lsinst" "all"
   
-  let rec clone' [#"../../creusot-contracts/src/snapshot.rs" 69 4 69 27] (self: t_T) (return' (x: t_T)) = (! bb0
+  let rec clone' [#"../../creusot-contracts/src/snapshot.rs" 79 4 79 27] (self: t_T) (return' (x: t_T)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_0 <- self'0 ] s1 | s1 = return''0 {_0} ] ]
     [ & _0: t_T = Any.any_l () | & self'0: t_T = self ])
     [ return''0 (result: t_T) -> {[@expl:clone ensures] [%#ssnapshot] result = self} (! return' {result}) ]
@@ -48032,14 +48041,14 @@ module M_creusot_contracts__std__vec__qyi9945000909994515642__resolve_coherence_
   goal refines: [%#svec] forall self: t_IntoIter. structural_resolve self /\ inv'1 self
       -> structural_resolve self /\ (forall result: (). resolve'0 self -> resolve'0 self)
 end
-module M_creusot_contracts__ghost__qyi8064556118965643473__resolve_coherence__refines [#"../../creusot-contracts/src/ghost.rs" 115 4 115 30] (* <ghost::Ghost<T> as resolve::Resolve> *)
+module M_creusot_contracts__ghost__qyi8064556118965643473__resolve_coherence__refines [#"../../creusot-contracts/src/ghost.rs" 126 4 126 30] (* <ghost::Ghost<T> as resolve::Resolve> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
   
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 115 4 115 30
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 108 8 108 22
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 100 8 100 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 126 4 126 30
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 119 8 119 22
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 111 8 111 18
   
   type t_T
   
@@ -48047,7 +48056,7 @@ module M_creusot_contracts__ghost__qyi8064556118965643473__resolve_coherence__re
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_T)
   
-  predicate invariant' [#"../../creusot-contracts/src/ghost.rs" 99 4 99 30] (self: t_T) = [%#sghost'1] inv self
+  predicate invariant' [#"../../creusot-contracts/src/ghost.rs" 110 4 110 30] (self: t_T) = [%#sghost'1] inv self
   
   predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_T)
   
@@ -48055,7 +48064,7 @@ module M_creusot_contracts__ghost__qyi8064556118965643473__resolve_coherence__re
   
   predicate resolve [#"../../creusot-contracts/src/resolve.rs" 20 0 20 39] (_0: t_T)
   
-  predicate resolve'0 [#"../../creusot-contracts/src/ghost.rs" 107 4 107 28] (self: t_T) = [%#sghost'0] resolve self
+  predicate resolve'0 [#"../../creusot-contracts/src/ghost.rs" 118 4 118 28] (self: t_T) = [%#sghost'0] resolve self
   
   meta "compute_max_steps" 1000000
   
@@ -61070,20 +61079,20 @@ module M_creusot_contracts__fn_ghost__qyi4984999370661040133__clone__refines [#"
       /\ (forall result: t_FnGhostWrapper. postcondition () (view'0 self_) (view result) /\ inv'0 result
         -> inv'0 result)
 end
-module M_creusot_contracts__ghost__qyi11517682701084838082__clone__refines [#"../../creusot-contracts/src/ghost.rs" 55 4 55 27] (* <ghost::Ghost<T> as std::clone::Clone> *)
+module M_creusot_contracts__ghost__qyi11517682701084838082__clone__refines [#"../../creusot-contracts/src/ghost.rs" 56 4 56 27] (* <ghost::Ghost<T> as std::clone::Clone> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
   
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 55 4 55 27
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 100 8 100 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 56 4 56 27
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 111 8 111 18
   
   type t_T
   
   predicate inv [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_T)
   
-  predicate invariant' [#"../../creusot-contracts/src/ghost.rs" 99 4 99 30] (self: t_T) = [%#sghost'0] inv self
+  predicate invariant' [#"../../creusot-contracts/src/ghost.rs" 110 4 110 30] (self: t_T) = [%#sghost'0] inv self
   
   predicate inv'0 [#"../../creusot-contracts/src/invariant.rs" 112 0 112 35] (_0: t_T)
   

@@ -12,7 +12,7 @@ pub fn test_bad() {
     let g = snapshot!(m);
     *m = Bad::Some(g);
     proof_assert!(*m == Bad::Some(g));
-    proof_assert!(^*g == ^m);
+    proof_assert!(^g == ^m);
     let _ = m;
-    proof_assert!(^*g == Bad::Some(g));
+    proof_assert!(^g == Bad::Some(g));
 }
