@@ -79,11 +79,13 @@ impl ContractSubject {
     }
 }
 
-fn generate_unique_ident(prefix: &str) -> Ident {
-    let uuid = uuid::Uuid::new_v4();
-    let ident = format!("{}_{}", prefix, uuid).replace('-', "_");
+fn generate_unique_ident(prefix: &str, span: Span) -> Ident {
+    Ident::new(&generate_unique_string(prefix), span)
+}
 
-    Ident::new(&ident, Span::call_site())
+fn generate_unique_string(prefix: &str) -> String {
+    let uuid = uuid::Uuid::new_v4();
+    format!("{}_{}", prefix, uuid).replace('-', "_")
 }
 
 // Utilities for debugging

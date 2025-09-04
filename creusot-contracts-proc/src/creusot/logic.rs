@@ -2,7 +2,7 @@
 
 use super::{
     doc::{self, document_spec},
-    generate_unique_ident, pretyping,
+    pretyping,
 };
 use crate::common::{ContractSubject, FilterAttrs as _};
 use pearlite_syn::TBlock;
@@ -40,9 +40,8 @@ pub fn pearlite(tokens: TS1) -> TS1 {
 
 pub fn open(attr: TS1, body: TS1) -> TS1 {
     let item = parse_macro_input!(body as ContractSubject);
-
-    let open_name = generate_unique_ident(&item.name());
-    let name_tag = format!("{}", quote! { #open_name });
+    let open_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
+    let name_tag = open_name.to_string();
     let vis = if attr.is_empty() {
         Visibility::Public(Default::default())
     } else {

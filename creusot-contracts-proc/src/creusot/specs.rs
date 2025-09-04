@@ -2,7 +2,7 @@
 
 use super::{
     doc::{self, document_spec},
-    generate_unique_ident, pretyping,
+    pretyping,
 };
 use crate::common::ContractSubject;
 use pearlite_syn::{Term, TermPath};
@@ -25,10 +25,8 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     let term = parse_macro_input!(attr as Term);
     item.mark_unused();
 
-    let req_name = generate_unique_ident(&item.name());
-
-    let name_tag = format!("{}", quote! { #req_name });
-
+    let req_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
+    let name_tag = req_name.to_string();
     match item {
         ContractSubject::FnOrMethod(mut fn_or_meth) if fn_or_meth.is_trait_signature() => {
             let attrs = std::mem::take(&mut fn_or_meth.attrs);
@@ -74,9 +72,8 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     let term = parse_macro_input!(attr as Term);
     item.mark_unused();
 
-    let ens_name = generate_unique_ident(&item.name());
-    let name_tag = format!("{}", quote! { #ens_name });
-
+    let ens_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
+    let name_tag = ens_name.to_string();
     match item {
         ContractSubject::FnOrMethod(mut s) if s.is_trait_signature() => {
             let attrs = std::mem::take(&mut s.attrs);
