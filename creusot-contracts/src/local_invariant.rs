@@ -216,7 +216,7 @@ pub trait LocalInvariantExt<'a> {
 impl<'a, T: LocalInvariantSpec> LocalInvariantExt<'a> for Ghost<&'a LocalInvariant<T>> {
     type Inner = T;
 
-    #[requires(namespaces@.contains(self.namespace()))]
+    #[requires(namespaces.contains(self.namespace()))]
     #[requires(forall<t: Ghost<&mut T>> (**t).invariant_with_data(self.public()) && inv(t) ==>
         f.precondition((t,)) &&
         // f must restore the invariant
@@ -313,7 +313,7 @@ impl<T: LocalInvariantSpec> LocalInvariant<T> {
     /// This will call the closure `f` with the inner data. You must restore the
     /// contained [`LocalInvariantSpec`] before returning from the closure.
     #[trusted]
-    #[requires(namespaces@.contains(this.namespace()))]
+    #[requires(namespaces.contains(this.namespace()))]
     #[requires(forall<t: Ghost<&mut T>> (**t).invariant_with_data(this.public()) && inv(t) ==>
         f.precondition((t,)) &&
         // f must restore the invariant
