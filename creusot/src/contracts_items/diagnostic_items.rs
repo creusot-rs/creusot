@@ -104,21 +104,23 @@ contracts_items! {{
         is_fn_once_impl_postcond        get_fn_once_impl_postcond
     fn FnMutExt::postcondition_mut       ["fn_mut_impl_postcond"]
         is_fn_mut_impl_postcond         get_fn_mut_impl_postcond
-    fn FnMutExt::hist_inv                  ["fn_mut_impl_hist_inv"]
+    fn FnMutExt::hist_inv                ["fn_mut_impl_hist_inv"]
         is_fn_mut_impl_hist_inv           get_fn_mut_impl_hist_inv
     fn Fn::postcondition                 ["fn_impl_postcond"]
         is_fn_impl_postcond             get_fn_impl_postcond
+    fn Namespaces::new                   ["namespaces_new"]
+        is_namespaces_new               get_namespaces_new
     type Int                             ["creusot_int"]
         is_int_ty                       get_int_ty
     type Snapshot                        ["snapshot_ty"]
         is_snap_ty                      get_snap_ty
     type Ghost                           ["ghost_ty"]
         is_ghost_ty                     get_ghost_ty
-    type FnGhostWrapper                   ["fn_ghost_ty"]
+    type FnGhostWrapper                  ["fn_ghost_ty"]
         is_fn_ghost_ty                   get_fn_ghost_ty
     type Namespace                       ["namespace_ty"]
         is_namespace_ty                 get_namespace_ty
-    trait FnGhost                         ["fn_ghost_trait"]
+    trait FnGhost                        ["fn_ghost_trait"]
         is_fn_ghost_trait                get_fn_ghost_trait
     fn size_of_logic                     ["size_of_logic"]
         is_size_of_logic                get_size_of_logic
