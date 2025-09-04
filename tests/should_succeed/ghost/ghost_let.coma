@@ -1,0 +1,145 @@
+module M_ghost_let__foo [#"ghost_let.rs" 14 0 14 34]
+  let%span sghost_let = "ghost_let.rs" 14 11 14 12
+  let%span sghost_let'0 = "ghost_let.rs" 13 11 13 15
+  let%span sghost_let'1 = "ghost_let.rs" 21 10 21 24
+  let%span sghost_let'2 = "ghost_let.rs" 9 8 9 22
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 183 22 183 26
+  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 183 4 183 32
+  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 181 14 181 29
+  let%span sghost'2 = "../../../creusot-contracts/src/ghost.rs" 162 14 162 26
+  let%span sghost'3 = "../../../creusot-contracts/src/ghost.rs" 100 8 100 18
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 101 20 101 44
+  
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_WithInv = { t_WithInv__0: Int32.t }
+  
+  predicate invariant' [#"ghost_let.rs" 8 4 8 30] (self: t_WithInv) = [%#sghost_let'2] self.t_WithInv__0 = (1: Int32.t)
+  
+  predicate inv (_0: t_WithInv)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_WithInv [inv x]. inv x
+      = (invariant' x
+      /\ match x with
+        | {t_WithInv__0 = a_0} -> true
+        end)
+  
+  predicate invariant''0 (self: MutBorrow.t t_WithInv) = [%#sinvariant] inv self.current /\ inv self.final
+  
+  predicate inv'0 (_0: MutBorrow.t t_WithInv)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_WithInv [inv'0 x]. inv'0 x = invariant''0 x
+  
+  predicate invariant''1 (self: MutBorrow.t t_WithInv) = [%#sghost'3] inv'0 self
+  
+  predicate inv'1 (_0: MutBorrow.t t_WithInv)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_WithInv [inv'1 x]. inv'1 x = invariant''1 x
+  
+  let rec into_inner (self: MutBorrow.t t_WithInv) (return' (x: MutBorrow.t t_WithInv)) =
+    {[@expl:into_inner 'self' type invariant] [%#sghost] inv'1 self}
+    any
+    [ return''0 (result: MutBorrow.t t_WithInv) -> {[%#sghost'0] inv'0 result}
+      {[%#sghost'1] result = self}
+      (! return' {result}) ]
+  
+  predicate resolve (self: MutBorrow.t Int32.t) = [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0: MutBorrow.t Int32.t) = resolve _0
+  
+  let rec new (x: MutBorrow.t Int32.t) (return' (x'0: MutBorrow.t Int32.t)) = any
+    [ return''0 (result: MutBorrow.t Int32.t) -> {[%#sghost'2] result = x} (! return' {result}) ]
+  
+  let rec bar (g2: MutBorrow.t Int32.t) (return' (x: ())) = any
+    [ return''0 (result: ()) -> {[%#sghost_let'1] g2.final = (1: Int32.t)} (! return' {result}) ]
+  
+  predicate resolve'1 (self: MutBorrow.t t_WithInv) = [%#sresolve] self.final = self.current
+  
+  predicate resolve'2 (_0: MutBorrow.t t_WithInv) = resolve'1 _0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec foo [#"ghost_let.rs" 14 0 14 34] (g: MutBorrow.t t_WithInv) (return' (x: ())) =
+    {[@expl:foo 'g' type invariant] [%#sghost_let] inv'1 g}
+    {[@expl:foo requires] [%#sghost_let'0] true}
+    (! bb0
+    [ bb0 = s0 [ s0 = into_inner {g'0} (fun (_ret: MutBorrow.t t_WithInv) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0
+      [ s0 = MutBorrow.borrow_final <Int32.t> {(_5.current).t_WithInv__0} {MutBorrow.inherit_id (MutBorrow.get_id _5) 1}
+          (fun (_ret: MutBorrow.t Int32.t) ->
+            [ &_4 <- _ret ] [ &_5 <- { _5 with current = { t_WithInv__0 = _ret.final } } ] s1)
+      | s1 = MutBorrow.borrow_final <Int32.t> {_4.current} {MutBorrow.get_id _4}
+          (fun (_ret: MutBorrow.t Int32.t) -> [ &__temp <- _ret ] [ &_4 <- { _4 with current = _ret.final } ] s2)
+      | s2 = -{resolve'0 _4}- s3
+      | s3 = new {__temp} (fun (_ret: MutBorrow.t Int32.t) -> [ &g2 <- _ret ] s4)
+      | s4 = bb2 ]
+    | bb2 = s0 [ s0 = bar {g2} (fun (_ret: ()) -> [ &_9 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'0 _5} s1 | s1 = -{resolve'2 _5}- s2 | s2 = return''0 {_0} ] ]
+    [ & _0: () = Any.any_l ()
+    | & g'0: MutBorrow.t t_WithInv = g
+    | & __temp: MutBorrow.t Int32.t = Any.any_l ()
+    | & _4: MutBorrow.t Int32.t = Any.any_l ()
+    | & _5: MutBorrow.t t_WithInv = Any.any_l ()
+    | & g2: MutBorrow.t Int32.t = Any.any_l ()
+    | & _9: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+end
+module M_ghost_let__bar [#"ghost_let.rs" 22 0 22 31]
+  let%span sghost_let = "ghost_let.rs" 24 15 24 16
+  let%span sghost_let'0 = "ghost_let.rs" 21 10 21 24
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 79 14 79 35
+  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 162 14 162 26
+  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 108 8 108 22
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 49 20 49 34
+  
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  let rec deref_mut (self: MutBorrow.t (MutBorrow.t Int32.t)) (return' (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
+    [ return''0 (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {[%#sghost] result = self} (! return' {result}) ]
+  
+  predicate resolve (self: MutBorrow.t (MutBorrow.t Int32.t)) = [%#sresolve] self.final = self.current
+  
+  predicate resolve'0 (_0: MutBorrow.t (MutBorrow.t Int32.t)) = resolve _0
+  
+  predicate resolve'1 (self: MutBorrow.t Int32.t) = [%#sresolve] self.final = self.current
+  
+  predicate resolve'2 (_0: MutBorrow.t Int32.t) = resolve'1 _0
+  
+  predicate resolve'3 (self: MutBorrow.t Int32.t) = [%#sghost'1] resolve'2 self
+  
+  predicate resolve'4 (_0: MutBorrow.t Int32.t) = resolve'3 _0
+  
+  let rec new (x: ()) (return' (x'0: ())) = any
+    [ return''0 (result: ()) -> {[%#sghost'0] result = x} (! return' {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec bar [#"ghost_let.rs" 22 0 22 31] (g2: MutBorrow.t Int32.t) (return' (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <MutBorrow.t Int32.t> {g2'0}
+          (fun (_ret: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_6 <- _ret ] [ &g2'0 <- _ret.final ] s1)
+      | s1 = deref_mut {_6} (fun (_ret: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_5 <- _ret ] s2)
+      | s2 = bb1 ]
+    | bb1 = s0
+      [ s0 = [ &_5 <- { _5 with current = { _5.current with current = ([%#sghost_let] (1: Int32.t)) } } ] s1
+      | s1 = -{resolve'0 _5}- s2
+      | s2 = -{resolve'4 g2'0}- s3
+      | s3 = new {_4} (fun (_ret: ()) -> [ &_3 <- _ret ] s4)
+      | s4 = bb2 ]
+    | bb2 = return''0 {_0} ]
+    [ & _0: () = Any.any_l ()
+    | & g2'0: MutBorrow.t Int32.t = g2
+    | & _3: () = Any.any_l ()
+    | & _4: () = Any.any_l ()
+    | & _5: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l ()
+    | & _6: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l () ])
+    [ return''0 (result: ()) -> {[@expl:bar ensures] [%#sghost_let'0] g2.final = (1: Int32.t)} (! return' {result}) ]
+end
