@@ -121,15 +121,14 @@ fn invoke_cargo(
     cmd.env("CARGO_ENCODED_RUSTFLAGS", cargo_encoded_rustflags);
 
     if matches!(&args.subcommand, Some(LegacyCreusotSubCommand::Doc { .. })) {
-        let mut rustdocflags = String::new();
+        let mut rustdocflags = std::env::var("RUSTDOCFLAGS").unwrap_or_else(|_| String::new());
         for &arg in CREUSOT_RUSTC_ARGS {
             if arg == "-Znext-solver=globally" {
                 continue;
             }
-            rustdocflags.push_str(arg);
             rustdocflags.push(' ');
+            rustdocflags.push_str(arg);
         }
-        rustdocflags.pop();
         cmd.env("RUSTDOCFLAGS", rustdocflags);
     }
 
