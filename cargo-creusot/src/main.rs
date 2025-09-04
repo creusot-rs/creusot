@@ -123,6 +123,9 @@ fn invoke_cargo(
     if matches!(&args.subcommand, Some(LegacyCreusotSubCommand::Doc { .. })) {
         let mut rustdocflags = String::new();
         for &arg in CREUSOT_RUSTC_ARGS {
+            if arg == "-Znext-solver=globally" {
+                continue;
+            }
             rustdocflags.push_str(arg);
             rustdocflags.push(' ');
         }
