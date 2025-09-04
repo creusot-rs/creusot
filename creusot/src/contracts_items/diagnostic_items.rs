@@ -70,6 +70,8 @@ macro_rules! contracts_items {
 }
 
 contracts_items! {{
+    fn fin                               ["creusot_fin"]
+        is_fin_function                 get_fin_function
     fn inv                               ["creusot_invariant_internal"]
         is_inv_function                 get_inv_function
     fn resolve                           ["creusot_resolve"]

@@ -1,12 +1,5 @@
 use crate::*;
 
-#[logic(prophetic)]
-#[trusted]
-#[rustc_diagnostic_item = "fin"]
-pub fn fin<T: ?Sized>(_: &mut T) -> Box<T> {
-    dead
-}
-
 #[logic]
 #[trusted]
 #[rustc_diagnostic_item = "equal"]

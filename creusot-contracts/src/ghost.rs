@@ -20,6 +20,7 @@ use ::std::marker::PhantomData;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{
+    logic::ops::Fin,
     std::ops::{Deref, DerefMut},
     *,
 };
@@ -44,7 +45,7 @@ use crate::{
 /// ```
 #[trusted]
 #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_ty", creusot::builtins = "")]
-pub struct Ghost<T>(PhantomData<T>);
+pub struct Ghost<T: ?Sized>(PhantomData<T>);
 
 impl<T: Copy> Copy for Ghost<T> {}
 
@@ -57,7 +58,7 @@ impl<T: Clone> Clone for Ghost<T> {
     }
 }
 
-impl<T> Deref for Ghost<T> {
+impl<T: ?Sized> Deref for Ghost<T> {
     type Target = T;
 
     /// This function can only be called in `ghost!` context
@@ -65,12 +66,12 @@ impl<T> Deref for Ghost<T> {
     #[trusted]
     #[check(ghost)]
     #[requires(false)] // If called from generic context, false precondition
-    #[ensures(self.inner_logic() == *result)]
+    #[ensures(result == &**self)]
     fn deref(&self) -> &Self::Target {
         panic!()
     }
 }
-impl<T> DerefMut for Ghost<T> {
+impl<T: ?Sized> DerefMut for Ghost<T> {
     /// This function can only be called in `ghost!` context
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_deref_mut")]
     #[trusted]
@@ -82,7 +83,7 @@ impl<T> DerefMut for Ghost<T> {
     }
 }
 
-impl<T: View> View for Ghost<T> {
+impl<T: ?Sized + View> View for Ghost<T> {
     type ViewTy = T::ViewTy;
     #[logic]
     #[open]
@@ -91,7 +92,17 @@ impl<T: View> View for Ghost<T> {
     }
 }
 
-impl<T> Invariant for Ghost<T> {
+impl<T: ?Sized + Fin> Fin for Ghost<T> {
+    type Target = T::Target;
+
+    #[logic(prophetic)]
+    #[open]
+    fn fin<'a>(self) -> &'a Self::Target {
+        pearlite! { &^*self }
+    }
+}
+
+impl<T: ?Sized> Invariant for Ghost<T> {
     #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
@@ -101,7 +112,7 @@ impl<T> Invariant for Ghost<T> {
     }
 }
 
-impl<T> Resolve for Ghost<T> {
+impl<T: ?Sized> Resolve for Ghost<T> {
     #[open]
     #[logic(prophetic)]
     fn resolve(self) -> bool {
@@ -115,7 +126,7 @@ impl<T> Resolve for Ghost<T> {
     fn resolve_coherence(self) {}
 }
 
-impl<T> Ghost<T> {
+impl<T: ?Sized> Ghost<T> {
     /// Transforms a `&Ghost<T>` into `Ghost<&T>`
     #[trusted]
     #[check(ghost)]
@@ -153,7 +164,7 @@ impl<T> Ghost<T> {
     }
 }
 
-impl<T> Ghost<T> {
+impl<T: ?Sized> Ghost<T> {
     /// Creates a new ghost variable.
     ///
     /// This function can only be called in `ghost!` code.
@@ -161,7 +172,10 @@ impl<T> Ghost<T> {
     #[check(ghost)]
     #[ensures(*result == x)]
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_new")]
-    pub fn new(x: T) -> Self {
+    pub fn new(x: T) -> Self
+    where
+        T: Sized,
+    {
         let _ = x;
         panic!()
     }
@@ -180,7 +194,10 @@ impl<T> Ghost<T> {
     #[check(ghost)]
     #[ensures(result == *self)]
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_into_inner")]
-    pub fn into_inner(self) -> T {
+    pub fn into_inner(self) -> T
+    where
+        T: Sized,
+    {
         panic!()
     }
 
@@ -191,15 +208,19 @@ impl<T> Ghost<T> {
     #[logic]
     #[creusot::builtins = "identity"]
     #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_inner_logic")]
-    pub fn inner_logic(self) -> T {
+    pub fn inner_logic(self) -> T
+    where
+        T: Sized,
+    {
         dead
     }
 }
 
-impl<T, U> Ghost<(T, U)> {
+impl<T, U: ?Sized> Ghost<(T, U)> {
     #[check(ghost)]
     #[trusted]
-    #[ensures(*self == (*result.0, *result.1))]
+    #[ensures((*self).0 == *result.0)]
+    #[ensures((*self).1 == *result.1)]
     pub fn split(self) -> (Ghost<T>, Ghost<U>) {
         (Ghost::conjure(), Ghost::conjure())
     }

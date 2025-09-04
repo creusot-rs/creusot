@@ -81,6 +81,10 @@ fn optimize_builtin<'tcx>(
             let [arg] = *args.into_array::<1>().unwrap();
             return Coerce { arg: Box::new(arg) };
         }
+        Some("fin") => {
+            let [arg] = *args.into_array::<1>().unwrap();
+            return Fin { term: Box::new(arg) };
+        }
         Some("identity") => {
             let [arg] = *args.into_array::<1>().unwrap();
             return Coerce { arg: Box::new(arg) };

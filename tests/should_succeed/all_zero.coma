@@ -1,12 +1,13 @@
 module M_all_zero__all_zero [#"all_zero.rs" 34 0 34 29]
   let%span sall_zero = "all_zero.rs" 36 16 36 31
-  let%span sall_zero'0 = "all_zero.rs" 42 16 42 82
-  let%span sall_zero'1 = "all_zero.rs" 40 8 41 82
+  let%span sall_zero'0 = "all_zero.rs" 42 16 42 81
+  let%span sall_zero'1 = "all_zero.rs" 40 8 41 81
   let%span sall_zero'2 = "all_zero.rs" 44 17 44 18
   let%span sall_zero'3 = "all_zero.rs" 32 10 32 71
   let%span sall_zero'4 = "all_zero.rs" 33 10 33 34
   let%span sall_zero'5 = "all_zero.rs" 14 8 17 9
   let%span sall_zero'6 = "all_zero.rs" 22 8 28 9
+  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 72 20 72 27
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 49 20 49 34
   
   use creusot.int.UInt32
@@ -20,6 +21,8 @@ module M_all_zero__all_zero [#"all_zero.rs" 34 0 34 29]
       | C_Cons _ ls -> 1 + len ls
       | C_Nil -> 0
       end
+  
+  function fin (self: MutBorrow.t t_List) : t_List = [%#ssnapshot] self.final
   
   type t_Option = C_None | C_Some UInt32.t
   
@@ -57,9 +60,9 @@ module M_all_zero__all_zero [#"all_zero.rs" 34 0 34 29]
     | bb2 = bb2'0
       [ bb2'0 = {[@expl:loop invariant #0] [%#sall_zero'1] (forall i: int. 0 <= i /\ i < len loop_l.current
             -> get loop_l.final i = C_Some (0: UInt32.t))
-        -> (forall i: int. 0 <= i /\ i < len old_l.current -> get old_l.final i = C_Some (0: UInt32.t))}
+        -> (forall i: int. 0 <= i /\ i < len old_l.current -> get (fin old_l) i = C_Some (0: UInt32.t))}
         {[@expl:loop invariant #1] [%#sall_zero'0] len loop_l.final = len loop_l.current
-        -> len old_l.final = len old_l.current}
+        -> len (fin old_l) = len old_l.current}
         (! s0)
         [ s0 = bb3 ]
         [ bb3 = any

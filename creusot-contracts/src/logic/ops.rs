@@ -18,3 +18,23 @@ pub trait IndexLogic<I: ?Sized> {
     #[rustc_diagnostic_item = "creusot_index_logic_method"]
     fn index_logic(self, idx: I) -> Self::Item;
 }
+
+pub trait Fin {
+    type Target: ?Sized;
+
+    /// Allows overloading of the `^` operator.
+    #[logic(prophetic)]
+    fn fin<'a>(self) -> &'a Self::Target;
+}
+
+impl<T: ?Sized> Fin for &mut T {
+    type Target = T;
+
+    #[logic(prophetic)]
+    #[trusted]
+    #[rustc_diagnostic_item = "creusot_fin"]
+    #[creusot::builtins = "fin"]
+    fn fin<'a>(self) -> &'a T {
+        dead
+    }
+}

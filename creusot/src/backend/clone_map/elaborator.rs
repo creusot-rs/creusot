@@ -116,6 +116,7 @@ fn expand_program<'tcx>(
     let dep = Dependency::Item(def_id, subst);
     let typing_env = elab.typing_env;
     let names = elab.namer(dep);
+
     let name = names.dependency(dep).ident();
 
     if ctx.def_kind(def_id) == DefKind::Closure {

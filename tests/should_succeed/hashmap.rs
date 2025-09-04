@@ -159,11 +159,11 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
         #[invariant(inv(l))]
         #[invariant(old_self.good_bucket(*l, index@))]
         #[invariant(old_self.good_bucket(^l, index@) ==> old_self.good_bucket(^old_l.inner(), index@))]
-        #[invariant((^l).get(key.deep_model()) == Some(val) ==> (^*old_l).get(key.deep_model()) == Some(val))]
-        #[invariant(forall <i> (^l).get(i) == (*l).get(i) ==> (^*old_l).get(i) == old_l.get(i))]
+        #[invariant((^l).get(key.deep_model()) == Some(val) ==> (^old_l).get(key.deep_model()) == Some(val))]
+        #[invariant(forall <i> (^l).get(i) == (*l).get(i) ==> (^old_l).get(i) == old_l.get(i))]
         #[invariant((*l).no_double_binding())]
         #[invariant((forall <i> (*l).get(i) == (^l).get(i) || i == key.deep_model()) && (^l).no_double_binding() ==>
-                      (^*old_l).no_double_binding())]
+                      (^old_l).no_double_binding())]
         while let Cons((k, v), tl) = l {
             let tl = tl;
             if *k == key {

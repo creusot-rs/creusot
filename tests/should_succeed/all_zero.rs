@@ -38,8 +38,8 @@ pub fn all_zero(l: &mut List) {
 
     #[invariant(
         (forall<i> 0 <= i && i < loop_l.len() ==> (^loop_l).get(i) == Some(0u32)) ==>
-            forall<i> 0 <= i && i < old_l.len() ==> (^*old_l).get(i) == Some(0u32))]
-    #[invariant((^loop_l).len() == loop_l.len() ==> (^*old_l).len() == old_l.len())]
+            forall<i> 0 <= i && i < old_l.len() ==> (^old_l).get(i) == Some(0u32))]
+    #[invariant((^loop_l).len() == loop_l.len() ==> (^old_l).len() == old_l.len())]
     while let Cons(value, next) = loop_l {
         *value = 0;
         loop_l = next;

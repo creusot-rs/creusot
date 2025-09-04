@@ -1,6 +1,6 @@
 //! Definition of [`Snapshot`]
 
-use crate::*;
+use crate::{logic::ops::Fin, *};
 
 #[cfg(creusot)]
 use crate::std::ops::{Deref, DerefMut};
@@ -60,6 +60,16 @@ impl<T: View + ?Sized> View for Snapshot<T> {
     #[open]
     fn view(self) -> Self::ViewTy {
         self.deref().view()
+    }
+}
+
+impl<T: ?Sized + Fin> Fin for Snapshot<T> {
+    type Target = T::Target;
+
+    #[logic(prophetic)]
+    #[open]
+    fn fin<'a>(self) -> &'a Self::Target {
+        pearlite! { &^*self }
     }
 }
 

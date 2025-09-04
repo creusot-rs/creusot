@@ -110,9 +110,9 @@ impl<T> PCell<T> {
     /// [type documentation](PCell).
     #[trusted]
     #[requires(self.id() == perm.id())]
-    #[ensures(val == (^*perm)@)]
-    #[ensures(resolve((**perm)@))]
-    #[ensures(self.id() == (^*perm).id())]
+    #[ensures(val == (^perm)@)]
+    #[ensures(resolve(perm@))]
+    #[ensures(self.id() == (^perm).id())]
     pub unsafe fn set(&self, perm: Ghost<&mut PCellOwn<T>>, val: T) {
         let _ = perm;
         unsafe {
@@ -131,9 +131,9 @@ impl<T> PCell<T> {
     /// [type documentation](PCell).
     #[trusted]
     #[requires(self.id() == perm.id())]
-    #[ensures(val == (^*perm)@)]
+    #[ensures(val == (^perm)@)]
     #[ensures(result == perm@)]
-    #[ensures(self.id() == (^*perm).id())]
+    #[ensures(self.id() == (^perm).id())]
     pub unsafe fn replace(&self, perm: Ghost<&mut PCellOwn<T>>, val: T) -> T {
         let _ = perm;
         unsafe { std::ptr::replace(self.0.get(), val) }
@@ -182,9 +182,9 @@ impl<T> PCell<T> {
     /// [type documentation](PCell).
     #[trusted]
     #[requires(self.id() == perm.id())]
-    #[ensures(self.id() == (^*perm).id())]
+    #[ensures(self.id() == (^perm).id())]
     #[ensures(*result == perm@)]
-    #[ensures(^result == (^*perm)@)]
+    #[ensures(^result == (^perm)@)]
     pub unsafe fn borrow_mut<'a>(&'a self, perm: Ghost<&'a mut PCellOwn<T>>) -> &'a mut T {
         let _ = perm;
         unsafe { &mut *self.0.get() }
@@ -230,7 +230,7 @@ impl<T> PCell<T> {
     /// Returns a `&PCell<T>` from a `&mut T`
     #[trusted]
     #[ensures(result.0.id() == result.1.id())]
-    #[ensures(^t == (^*result.1)@)]
+    #[ensures(^t == (^result.1)@)]
     #[ensures(*t == result.1@)]
     pub fn from_mut(t: &mut T) -> (&PCell<T>, Ghost<&mut PCellOwn<T>>) {
         // SAFETY: `PCell` is layout-compatible with `Cell` and `T` because it is `repr(transparent)`.
@@ -252,9 +252,9 @@ impl<T: Default> PCell<T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PCell).
     #[requires(self.id() == perm.id())]
-    #[ensures(self.id() == (^*perm).id())]
+    #[ensures(self.id() == (^perm).id())]
     #[ensures(result == perm@)]
-    #[ensures(T::default.postcondition((), (^*perm)@))]
+    #[ensures(T::default.postcondition((), (^perm)@))]
     pub unsafe fn take(&self, perm: Ghost<&mut PCellOwn<T>>) -> T {
         unsafe { self.replace(perm, T::default()) }
     }

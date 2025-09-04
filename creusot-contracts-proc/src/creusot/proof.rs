@@ -54,26 +54,28 @@ pub fn ghost(body: TS1) -> TS1 {
 }
 
 struct GhostLet {
+    mutability: Option<syn::Token![mut]>,
     var: syn::Ident,
     body: syn::Expr,
 }
 
 impl syn::parse::Parse for GhostLet {
     fn parse(input: parse::ParseStream) -> syn::Result<Self> {
+        let mutability = input.parse()?;
         let var = input.parse()?;
         let _: syn::Token![=] = input.parse()?;
         let body = input.parse()?;
-        Ok(Self { var, body })
+        Ok(Self { mutability, var, body })
     }
 }
 
 pub fn ghost_let(body: TS1) -> TS1 {
     let body = crate::ghost::ghost_preprocess(body);
-    let GhostLet { var, body } = parse_macro_input!(body as GhostLet);
+    let GhostLet { mutability, var, body } = parse_macro_input!(body as GhostLet);
     TS1::from(quote! {
         #[creusot::ghost_let]
         let __temp = { #[creusot::ghost_block] #body };
-        let #var = { #[creusot::ghost_block] ::creusot_contracts::ghost::Ghost::new(__temp) };
+        let #mutability #var = { #[creusot::ghost_block] ::creusot_contracts::ghost::Ghost::new(__temp) };
     })
 }
 
