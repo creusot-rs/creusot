@@ -117,7 +117,7 @@ pub mod macros {
     /// Note that ghost blocks are subject to some constraints, that ensure the behavior
     /// of the code stays the same with and without ghost blocks:
     /// - They may not contain code that crashes or runs indefinitely. In other words,
-    ///   they can only call [`check(ghost)`][check#ghost] functions.
+    ///   they can only call [`check(ghost)`][check#checkghost] functions.
     /// - All variables that are read in the ghost block must either be [`Copy`], or a
     ///   [`Ghost`].
     /// - All variables that are modified in the ghost block must be [`Ghost`]s.
@@ -158,7 +158,7 @@ pub mod macros {
     /// fn baz() { /* */ }
     /// ```
     ///
-    /// # Terminates
+    /// # `#[check(terminates)]`
     ///
     /// The function is guaranteed to terminate.
     ///
@@ -169,7 +169,7 @@ pub mod macros {
     ///
     /// The first two limitations may be lifted at some point.
     ///
-    /// # Ghost
+    /// # `#[check(ghost)]`
     ///
     /// The function can be called from ghost code. In particular, this means
     /// that the fuction will not panic.

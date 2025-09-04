@@ -5,7 +5,7 @@ mod private {
     pub trait _Sealed {}
 }
 
-/// Marker trait for functions that are [`check(ghost)`][check#ghost].
+/// Marker trait for functions that are [`check(ghost)`][check#checkghost].
 ///
 /// Right now, this is automatically implemented for `#[check(ghost)]` closures,
 /// but not functions or methods.
