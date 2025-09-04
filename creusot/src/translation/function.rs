@@ -2,7 +2,7 @@ mod statement;
 mod terminator;
 
 use crate::{
-    analysis::{self, BodyData, BodySpecs},
+    analysis::{self, BodySpecs, BorrowData},
     backend::ty_inv::is_tyinv_trivial,
     ctx::*,
     gather_spec_closures::LoopSpecKind,
@@ -35,7 +35,7 @@ struct BodyTranslator<'a, 'tcx> {
     body_id: BodyId,
 
     body: &'a Body<'tcx>,
-    body_data: BodyData<'tcx>,
+    borrow_data: Option<BorrowData<'tcx>>,
     typing_env: TypingEnv<'tcx>,
 
     /// Current block being generated
@@ -94,7 +94,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         body_id: BodyId,
         f: F,
     ) -> R {
-        let (body, body_specs, body_data) = match body_id.def_id.as_local() {
+        let (body, body_specs, borrow_data) = match body_id.def_id.as_local() {
             Some(def_id) => {
                 let body_with_facts = ctx.body_with_facts(def_id);
                 let body = match body_id.promoted {
@@ -102,18 +102,18 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     Some(promoted) => body_with_facts.promoted.get(promoted).unwrap(),
                 };
                 let mut body_specs = analysis::BodySpecs::from_body(ctx, body);
-                let body_data = match body_id.promoted {
-                    None => analysis::run_with_specs(ctx, &body_with_facts, &mut body_specs),
-                    Some(_) => BodyData::new(),
+                let borrow_data = match body_id.promoted {
+                    None => Some(analysis::run_with_specs(ctx, &body_with_facts, &mut body_specs)),
+                    Some(_) => None,
                 };
-                (body, body_specs, body_data)
+                (body, body_specs, borrow_data)
             }
             None => {
                 assert!(body_id.promoted.is_none());
                 let body = ctx.tcx.mir_for_ctfe(body_id.def_id);
                 let body_specs = analysis::BodySpecs::from_body(ctx, &body);
-                let body_data = BodyData::new();
-                (body, body_specs, body_data)
+                let borrow_data = None;
+                (body, body_specs, borrow_data)
             }
         };
         let typing_env = ctx.typing_env(body_id.def_id);
@@ -129,7 +129,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         f(BodyTranslator {
             body,
             body_id,
-            body_data,
+            borrow_data,
             typing_env,
             locals,
             vars,
@@ -213,7 +213,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn resolve_at(&mut self, loc: Location, span: Span) {
-        for place in self.body_data.remove_resolved_places_at(loc) {
+        let Some(borrow_data) = &mut self.borrow_data else {
+            return;
+        };
+        for place in borrow_data.remove_resolved_places_at(loc) {
             self.emit_resolve(place, span);
         }
     }

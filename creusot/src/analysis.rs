@@ -54,7 +54,7 @@ type BorrowId = usize;
 
 /// Information computed by this analysis.
 #[derive(TyEncodable, TyDecodable, Clone, Debug)]
-pub struct BodyData<'tcx> {
+pub struct BorrowData<'tcx> {
     /// Resolves before each statement and terminator
     ///
     /// For `Call` terminators, they are split in a `Call` statement and a `Goto` terminator,
@@ -72,9 +72,9 @@ pub struct BodyData<'tcx> {
     two_phase_activated: HashMap<Orphan<Location>, Vec<(Place<'tcx>, Place<'tcx>, BorrowKind)>>,
 }
 
-impl<'tcx> BodyData<'tcx> {
+impl<'tcx> BorrowData<'tcx> {
     pub fn new() -> Self {
-        BodyData {
+        BorrowData {
             resolved_at: HashMap::new(),
             resolved_between_blocks: HashMap::new(),
             two_phase_created: HashSet::new(),
@@ -262,7 +262,7 @@ pub struct Analysis<'a, 'tcx> {
     not_final_places: ResultsCursor<'a, 'tcx, NotFinalPlaces<'tcx>>,
     /// `&mut` because we also rename assertions here
     body_specs: &'a mut BodySpecs<'tcx>,
-    data: BodyData<'tcx>,
+    data: BorrowData<'tcx>,
 }
 
 impl<'a, 'tcx> HasTyCtxt<'tcx> for Analysis<'a, 'tcx> {
@@ -305,7 +305,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             not_final_places: NotFinalPlaces::new(tcx, &body.body)
                 .iterate_to_fixpoint(tcx, &body.body, None)
                 .into_results_cursor(&body.body),
-            data: BodyData::new(),
+            data: BorrowData::new(),
             body_specs,
         }
     }
@@ -852,7 +852,10 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
 /// Analysis to run from crates that don't have access to creusot-contracts.
 // TODO: this will be used very soon
 #[allow(dead_code)]
-pub(crate) fn run_without_specs<'a, 'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) -> BodyData<'tcx> {
+pub(crate) fn run_without_specs<'a, 'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: LocalDefId,
+) -> BorrowData<'tcx> {
     let body = callbacks::get_body(tcx, def_id);
     let mut body_specs = BodySpecs::empty();
     let corenamer = HashMap::new();
@@ -869,7 +872,7 @@ pub(crate) fn run_with_specs<'a, 'tcx>(
     ctx: &TranslationCtx<'tcx>,
     body: &'a BodyWithBorrowckFacts<'tcx>,
     body_specs: &mut BodySpecs<'tcx>,
-) -> BodyData<'tcx> {
+) -> BorrowData<'tcx> {
     let tcx = ctx.tcx;
     let corenamer = &ctx.corenamer.borrow();
     // We take `locals` from `body_specs` and put it back later
