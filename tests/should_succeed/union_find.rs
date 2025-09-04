@@ -84,7 +84,6 @@ mod implementation {
             // this invariant was not in the why3 proof: it ensures that the keys and the payloads of `map` agree
             (forall<e> domain.contains(e) ==> self.0.map.contains(Snapshot::new(e.deep_model()))) &&
             (forall<e> domain.contains(e) ==> e.0 == self.get_perm(e).ptr()) &&
-            (forall<e> domain.contains(e) ==> self.0.payloads[e] == self.0.payloads[self.0.roots[e]]) &&
             (forall<e> domain.contains(e) ==> self.0.roots[self.0.roots[e]] == self.0.roots[e]) &&
             (forall<e> domain.contains(e) ==> domain.contains(self.0.roots[e])) &&
             (forall<e> domain.contains(e) ==> match *self.get_perm(e).val() {
@@ -149,8 +148,6 @@ mod implementation {
 
         /// Returns the payloads associated with each element.
         #[logic]
-        #[requires(inv(self))]
-        #[ensures(forall<e: Element<T>> self.domain().contains(e) ==> result[e] == result[self.root(e)])]
         pub fn payloads_map(self) -> Mapping<Element<T>, T> {
             *self.0.payloads
         }
@@ -181,6 +178,13 @@ mod implementation {
         #[open]
         pub fn domain_unchanged(&mut self) -> bool {
             pearlite! { (*self).domain() == (^self).domain() }
+        }
+
+        /// The payloads have not changed.
+        #[logic(prophetic)]
+        #[open]
+        pub fn payloads_unchanged(&mut self) -> bool {
+            pearlite! { (*self).payloads_map() == (^self).payloads_map() }
         }
     }
 
@@ -233,8 +237,8 @@ mod implementation {
     #[ensures(uf.0.distance[result] >= uf.0.distance[elem])]
     fn find_inner<T>(mut uf: Ghost<&mut UnionFind<T>>, elem: Element<T>) -> Element<T> {
         let perm = ghost!(uf.0.map.get_ghost(&elem.addr()).unwrap());
-        let payload = unsafe { PtrOwn::as_ref(elem.0, perm) };
-        match payload {
+        let value = unsafe { PtrOwn::as_ref(elem.0, perm) };
+        match value {
             Content::Root { .. } => elem,
             &Content::Link(e) => {
                 let root = find_inner(ghost! {&mut **uf}, e);
@@ -283,14 +287,12 @@ mod implementation {
     /// If `x` and `y` are two roots, try to link them together.
     #[requires(uf.in_domain(x) && uf.in_domain(y))]
     #[requires(uf.root(x) == x && uf.root(y) == y)]
-    #[ensures(uf.domain_unchanged())]
+    #[ensures(uf.domain_unchanged() && uf.payloads_unchanged())]
     #[ensures(result == uf.root(x) || result == uf.root(y))]
     #[ensures(result == (^uf).root(result))]
-    #[ensures(forall<z> uf.in_domain(z) && (uf.root(z) == uf.root(x) || uf.root(z) == uf.root(y)) ==>
-        (^uf).root(z) == result && (^uf).payload(z) == (^uf).payload(result)
-    )]
-    #[ensures(forall<z> uf.in_domain(z) && uf.root(z) != uf.root(x) && uf.root(z) != uf.root(y) ==>
-        (^uf).root(z) == uf.root(z) && (^uf).payload(z) == uf.payload(z)
+    #[ensures(forall<z> uf.in_domain(z) ==>
+        (^uf).root(z) ==
+            if uf.root(z) == uf.root(x) || uf.root(z) == uf.root(y) { result } else { uf.root(z) }
     )]
     fn link<T>(mut uf: Ghost<&mut UnionFind<T>>, x: Element<T>, y: Element<T>) -> Element<T> {
         if x == y {
@@ -298,12 +300,12 @@ mod implementation {
         }
         let perm_x = ghost!(uf.0.map.get_ghost(&x.addr()).unwrap());
         let perm_y = ghost!(uf.0.map.get_ghost(&y.addr()).unwrap());
-        let (rx, vx) = match unsafe { PtrOwn::as_ref(x.0, perm_x) } {
-            Content::Root { rank, payload } => (rank.to_u64(), payload),
+        let rx = match unsafe { PtrOwn::as_ref(x.0, perm_x) } {
+            Content::Root { rank, .. } => rank.to_u64(),
             _ => unreachable!(),
         };
-        let (ry, vy) = match unsafe { PtrOwn::as_ref(y.0, perm_y) } {
-            Content::Root { rank, payload } => (rank.to_u64(), payload),
+        let ry = match unsafe { PtrOwn::as_ref(y.0, perm_y) } {
+            Content::Root { rank, .. } => rank.to_u64(),
             _ => unreachable!(),
         };
         if rx < ry {
@@ -312,7 +314,6 @@ mod implementation {
             unsafe { *PtrOwn::as_mut(x.0, perm_mut_x) = Content::Link(y) };
             ghost! {
                 uf.roots = snapshot!(|z| { if uf.roots[z] == x { y } else { uf.roots[z] } });
-                uf.payloads = snapshot!(|z| { if uf.roots[z] == y { *vy } else { uf.payloads[z] } });
                 uf.max_depth = snapshot!(*uf.max_depth + 1);
                 uf.distance = snapshot!(uf.distance.set(y, 1 + uf.distance[x].max(uf.distance[y])));
             };
@@ -330,7 +331,6 @@ mod implementation {
             }
             ghost! {
                 uf.roots = snapshot!(|z| { if uf.roots[z] == y { x } else { uf.roots[z] } });
-                uf.payloads = snapshot!(|z| { if uf.roots[z] == x { *vx } else { uf.payloads[z] } });
                 uf.max_depth = snapshot!(*uf.max_depth + 1);
                 uf.distance = snapshot!(uf.distance.set(x, 1 + uf.distance[x].max(uf.distance[y])));
             };
@@ -338,34 +338,19 @@ mod implementation {
         }
     }
 
-    /// Link `x` and `y` together (put them in the same class).
+    /// Fuse the classes of `x` and `y`.
     #[requires(uf.in_domain(x) && uf.in_domain(y))]
-    #[ensures((^uf).domain() == uf.domain())]
+    #[ensures(uf.domain_unchanged() && uf.payloads_unchanged())]
     #[ensures(result == uf.root(x) || result == uf.root(y))]
-    #[ensures(forall<z> uf.in_domain(z) && (uf.root(z) == uf.root(x) || uf.root(z) == uf.root(y)) ==>
-        (^uf).root(z) == result && (^uf).payload(z) == (^uf).payload(result)
+    #[ensures(forall<z> uf.in_domain(z) ==>
+        (^uf).root(z) ==
+            if uf.root(z) == uf.root(x) || uf.root(z) == uf.root(y) { result }
+            else { uf.root(z) }
     )]
-    #[ensures(forall<z> uf.in_domain(z) && uf.root(z) != uf.root(x) && uf.root(z) != uf.root(y) ==>
-        (^uf).root(z) == uf.root(z) && (^uf).payload(z) == uf.payload(z)
-    )]
-    fn union_aux<T>(mut uf: Ghost<&mut UnionFind<T>>, x: Element<T>, y: Element<T>) -> Element<T> {
+    pub fn union<T>(mut uf: Ghost<&mut UnionFind<T>>, x: Element<T>, y: Element<T>) -> Element<T> {
         let rx = find(ghost! {&mut **uf}, x);
         let ry = find(ghost! {&mut **uf}, y);
         link(uf, rx, ry)
-    }
-
-    /// Fuse the classes of `x` and `y`.
-    #[requires(uf.in_domain(x) && uf.in_domain(y))]
-    #[ensures((^uf).domain() == uf.domain())]
-    #[ensures(result == uf.root(x) || result == uf.root(y))]
-    #[ensures(forall<z> uf.in_domain(z) && (uf.root(z) == uf.root(x) || uf.root(z) == uf.root(y)) ==>
-        (^uf).root(z) == result && (^uf).payload(z) == (^uf).payload(result)
-    )]
-    #[ensures(forall<z> uf.in_domain(z) && uf.root(z) != uf.root(x) && uf.root(z) != uf.root(y) ==>
-        (^uf).root(z) == uf.root(z) && (^uf).payload(z) == uf.payload(z)
-    )]
-    pub fn union<T>(mut uf: Ghost<&mut UnionFind<T>>, x: Element<T>, y: Element<T>) -> Element<T> {
-        union_aux(uf, x, y)
     }
 }
 
