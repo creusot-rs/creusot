@@ -110,6 +110,17 @@ impl Namespaces<'_> {
         dead
     }
 
+    /// Get the set of all namespaces.
+    ///
+    /// This is only callable _once_, in `main`.
+    #[cfg_attr(creusot, rustc_diagnostic_item = "namespaces_new")]
+    #[trusted]
+    #[ensures(forall<ns: Namespace> result.contains(ns))]
+    #[check(ghost)]
+    pub fn new() -> Ghost<Self> {
+        Ghost::conjure()
+    }
+
     /// Reborrow the namespace, allowing it to be reused later.
     ///
     /// # Example
