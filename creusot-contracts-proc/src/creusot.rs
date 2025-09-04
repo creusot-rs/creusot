@@ -11,7 +11,7 @@ pub use self::{
     derive::*,
     extern_spec::extern_spec,
     logic::{law, logic, open, pearlite},
-    proof::{ghost, invariant, proof_assert, snapshot},
+    proof::{ghost, ghost_let, invariant, proof_assert, snapshot},
     specs::{bitwise_proof, check, ensures, maintains, requires, variant},
 };
 

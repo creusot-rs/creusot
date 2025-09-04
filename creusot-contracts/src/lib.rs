@@ -138,6 +138,8 @@ pub mod macros {
     /// [`Ghost`]: crate::ghost::Ghost
     pub use base_macros::ghost;
 
+    pub use base_macros::ghost_let;
+
     /// Specify that the function can be called in additionnal contexts.
     ///
     /// # Syntax

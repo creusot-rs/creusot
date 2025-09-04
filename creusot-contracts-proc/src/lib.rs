@@ -79,6 +79,7 @@ proc_macros! {
     proof_assert
     snapshot
     ghost
+    ghost_let
     pearlite
     extern_spec
     declare_namespace
