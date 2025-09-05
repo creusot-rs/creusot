@@ -5,8 +5,9 @@
    1. git clone https://github.com/highlightjs/highlight.js
    2. cd highlight.js
    3. ln -s /path/to/creusot/guide/highlight.js extra/creusot
-   4. node tools/build.js -t browser rust
-   5. cp build/highlight.min.js /path/to/creusot/guide/theme/highlight.js
+   4. npm install
+   5. node tools/build.js -t browser rust
+   6. cp build/highlight.min.js /path/to/creusot/guide/theme/highlight.js
 */
 
 /** @type LanguageFn */
@@ -181,7 +182,28 @@ export default function(hljs) {
     "Option",
     "Result",
     "String",
-    "Vec"
+    "Vec",
+  ];
+  const CREUSOT_TYPES = [
+    "DeepModel",
+    "FMap",
+    "FSet",
+    "Ghost",
+    "Id",
+    "Int",
+    "Invariant",
+    "Mapping",
+    "PCell",
+    "PCellOwn",
+    "PeanoInt",
+    "PredCell",
+    "PtrOwn",
+    "Real",
+    "Resolve",
+    "Seq",
+    "Set",
+    "Snapshot",
+    "View",
   ];
   const PEARLITE = [
     hljs.C_LINE_COMMENT_MODE,
@@ -205,6 +227,7 @@ export default function(hljs) {
     keywords: {
       $pattern: hljs.IDENT_RE + '!?',
       type: TYPES,
+      'creusot-type': CREUSOT_TYPES,
       keyword: KEYWORDS,
       literal: LITERALS,
       built_in: BUILTINS
@@ -269,7 +292,7 @@ export default function(hljs) {
         begin: '#!?\\[',
         end: '\\]',
         keywords: {
-          'keyword.creusot': ["law", "logic", "mode", "open", "prophetic", "terminates", "trusted"]
+          'keyword.creusot': ["law", "logic", "check", "open", "prophetic", "terminates", "trusted", "ghost"]
         },
         contains: [
           {
@@ -386,7 +409,8 @@ export default function(hljs) {
         keywords: {
           keyword: "Self",
           built_in: BUILTINS,
-          type: TYPES
+          type: TYPES,
+          'creusot-type': CREUSOT_TYPES,
         }
       },
       {
