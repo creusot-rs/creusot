@@ -6,13 +6,152 @@
    2. cd highlight.js
    3. ln -s /path/to/creusot/guide/highlight.js extra/creusot
    4. npm install
-   5. node tools/build.js -t browser rust
+   5. node tools/build.js -t browser rust pearlite
    6. cp build/highlight.min.js /path/to/creusot/guide/theme/highlight.js
 */
+
+export const NUMBER_SUFFIX = '([ui](8|16|32|64|128|size)|f(32|64)|int)\?';
+export const KEYWORDS = [
+  "abstract",
+  "as",
+  "async",
+  "await",
+  "become",
+  "box",
+  "break",
+  "const",
+  "continue",
+  "crate",
+  "do",
+  "dyn",
+  "else",
+  "enum",
+  "extern",
+  "final",
+  "fn",
+  "for",
+  "if",
+  "impl",
+  "in",
+  "let",
+  "loop",
+  "macro",
+  "match",
+  "mod",
+  "move",
+  "mut",
+  "override",
+  "priv",
+  "pub",
+  "ref",
+  "return",
+  "self",
+  "Self",
+  "static",
+  "struct",
+  "super",
+  "trait",
+  "try",
+  "type",
+  "typeof",
+  "union",
+  "unsafe",
+  "unsized",
+  "use",
+  "virtual",
+  "where",
+  "while",
+  "yield"
+];
+export const LITERALS = [
+  "true",
+  "false",
+  "Some",
+  "None",
+  "Ok",
+  "Err"
+];
+export const TYPES = [
+  "i8",
+  "i16",
+  "i32",
+  "i64",
+  "i128",
+  "isize",
+  "u8",
+  "u16",
+  "u32",
+  "u64",
+  "u128",
+  "usize",
+  "f32",
+  "f64",
+  "str",
+  "char",
+  "bool",
+  "Box",
+  "Option",
+  "Result",
+  "String",
+  "Vec",
+];
+export const CREUSOT_TYPES = [
+  "DeepModel",
+  "FMap",
+  "FSet",
+  "Ghost",
+  "Id",
+  "Int",
+  "Invariant",
+  "Mapping",
+  "PCell",
+  "PCellOwn",
+  "PeanoInt",
+  "PredCell",
+  "PtrOwn",
+  "Real",
+  "Resolve",
+  "Seq",
+  "Set",
+  "Snapshot",
+  "View",
+];
+export const PEARLITE_KEYWORDS = ["forall", "exists"].concat(KEYWORDS);
+export function utils(hljs) {
+  const FUNCTION_INVOKE = {
+      className: "title.function.invoke",
+      relevance: 0,
+      begin: hljs.regex.concat(
+        /\b/,
+        /(?!(?:let|for|while|if|else|match)\b)/,
+        hljs.IDENT_RE,
+        hljs.regex.lookahead(/\s*\(/))
+  };
+  const PEARLITE = [
+    hljs.C_LINE_COMMENT_MODE,
+    hljs.COMMENT('/\\*', '\\*/', { contains: [ 'self' ] }),
+    {
+      scope: "number",
+      variants: [
+        { begin: '\\b0b([01_]+)' + NUMBER_SUFFIX },
+        { begin: '\\b0o([0-7_]+)' + NUMBER_SUFFIX },
+        { begin: '\\b0x([A-Fa-f0-9_]+)' + NUMBER_SUFFIX },
+        { begin: '\\b(\\d[\\d_]*(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?)'
+                + NUMBER_SUFFIX }
+      ],
+    },
+    FUNCTION_INVOKE
+  ];
+  return {
+    pearlite: PEARLITE,
+  }
+}
 
 /** @type LanguageFn */
 
 export default function(hljs) {
+  const UTILS = utils(hljs);
+  const PEARLITE = UTILS.pearlite;
   const regex = hljs.regex;
   // ============================================
   // Added to support the r# keyword, which is a raw identifier in Rust.
@@ -29,69 +168,6 @@ export default function(hljs) {
       IDENT_RE,
       regex.lookahead(/\s*\(/))
   };
-  const NUMBER_SUFFIX = '([ui](8|16|32|64|128|size)|f(32|64)|int)\?';
-  const KEYWORDS = [
-    "abstract",
-    "as",
-    "async",
-    "await",
-    "become",
-    "box",
-    "break",
-    "const",
-    "continue",
-    "crate",
-    "do",
-    "dyn",
-    "else",
-    "enum",
-    "extern",
-    "false",
-    "final",
-    "fn",
-    "for",
-    "if",
-    "impl",
-    "in",
-    "let",
-    "loop",
-    "macro",
-    "match",
-    "mod",
-    "move",
-    "mut",
-    "override",
-    "priv",
-    "pub",
-    "ref",
-    "return",
-    "self",
-    "Self",
-    "static",
-    "struct",
-    "super",
-    "trait",
-    "true",
-    "try",
-    "type",
-    "typeof",
-    "union",
-    "unsafe",
-    "unsized",
-    "use",
-    "virtual",
-    "where",
-    "while",
-    "yield"
-  ];
-  const LITERALS = [
-    "true",
-    "false",
-    "Some",
-    "None",
-    "Ok",
-    "Err"
-  ];
   const BUILTINS = [
     // functions
     'drop ',
@@ -160,67 +236,6 @@ export default function(hljs) {
     "assert_ne!",
     "debug_assert_ne!"
   ];
-  const TYPES = [
-    "i8",
-    "i16",
-    "i32",
-    "i64",
-    "i128",
-    "isize",
-    "u8",
-    "u16",
-    "u32",
-    "u64",
-    "u128",
-    "usize",
-    "f32",
-    "f64",
-    "str",
-    "char",
-    "bool",
-    "Box",
-    "Option",
-    "Result",
-    "String",
-    "Vec",
-  ];
-  const CREUSOT_TYPES = [
-    "DeepModel",
-    "FMap",
-    "FSet",
-    "Ghost",
-    "Id",
-    "Int",
-    "Invariant",
-    "Mapping",
-    "PCell",
-    "PCellOwn",
-    "PeanoInt",
-    "PredCell",
-    "PtrOwn",
-    "Real",
-    "Resolve",
-    "Seq",
-    "Set",
-    "Snapshot",
-    "View",
-  ];
-  const PEARLITE = [
-    hljs.C_LINE_COMMENT_MODE,
-    hljs.COMMENT('/\\*', '\\*/', { contains: [ 'self' ] }),
-    {
-      scope: "number",
-      variants: [
-        { begin: '\\b0b([01_]+)' + NUMBER_SUFFIX },
-        { begin: '\\b0o([0-7_]+)' + NUMBER_SUFFIX },
-        { begin: '\\b0x([A-Fa-f0-9_]+)' + NUMBER_SUFFIX },
-        { begin: '\\b(\\d[\\d_]*(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?)'
-                + NUMBER_SUFFIX }
-      ],
-    },
-    FUNCTION_INVOKE
-  ];
-  const PEARLITE_KEYWORDS = ["forall", "exists"].concat(KEYWORDS);
   return {
     name: 'Rust',
     aliases: [ 'rs' ],
@@ -316,6 +331,7 @@ export default function(hljs) {
                 response.ignoreMatch();
               }
             },
+            literals: LITERALS,
             contains: PEARLITE,
             keywords: PEARLITE_KEYWORDS
           },

@@ -75,14 +75,14 @@ pub(crate) fn document_spec(spec_name: &str, spec_body: LogicBody) -> TokenStrea
 
     if spec.len() > 80 - spec_name.len() || spec.contains('\n') {
         spec = spec.replace('\n', "\n> ");
-        spec = format!("> ```\n> {spec}\n> ```");
+        spec = format!("> ```pearlite\n> {spec}\n> ```");
         quote::quote! {
             #[cfg_attr(not(doctest), doc = "")]
             #[cfg_attr(not(doctest), doc = #styled_spec_name)]
             #[cfg_attr(not(doctest), doc = #spec)]
         }
     } else {
-        let spec = format!("```\n{spec}\n```");
+        let spec = format!("```pearlite\n{spec}\n```");
         quote::quote! {
             #[cfg_attr(not(doctest), doc = "<div class=\"container\" style=\"display:flex; align-items:center; gap:5px; clip-path:inset(0.5em 0% 1.1em 0%);\"> <p>")]
             #[cfg_attr(not(doctest), doc = #styled_spec_name)]
