@@ -1,4 +1,4 @@
-use crate::{contracts_items::is_namespaces_new, ctx::TranslationCtx};
+use crate::{contracts_items::is_tokens_new, ctx::TranslationCtx};
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     thir::{self, ExprId, ExprKind, Thir, visit::Visitor},
@@ -6,7 +6,7 @@ use rustc_middle::{
 };
 use rustc_span::Span;
 
-pub(crate) fn validate_namespaces_new<'tcx>(
+pub(crate) fn validate_tokens_new<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: DefId,
     &(ref thir, expr): &(Thir<'tcx>, ExprId),
@@ -15,11 +15,11 @@ pub(crate) fn validate_namespaces_new<'tcx>(
     if let Some((main_did, _)) = ctx.entry_fn(()) {
         in_main = def_id == main_did;
     }
-    NamespacesNewVisitor { tcx: ctx.tcx, thir, in_main, in_loop: false, already_called: None }
+    TokensNewVisitor { tcx: ctx.tcx, thir, in_main, in_loop: false, already_called: None }
         .visit_expr(&thir[expr]);
 }
 
-struct NamespacesNewVisitor<'a, 'tcx> {
+struct TokensNewVisitor<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     thir: &'a Thir<'tcx>,
     in_main: bool,
@@ -27,7 +27,7 @@ struct NamespacesNewVisitor<'a, 'tcx> {
     already_called: Option<Span>,
 }
 
-impl<'a, 'tcx> Visitor<'a, 'tcx> for NamespacesNewVisitor<'a, 'tcx> {
+impl<'a, 'tcx> Visitor<'a, 'tcx> for TokensNewVisitor<'a, 'tcx> {
     fn thir(&self) -> &'a Thir<'tcx> {
         self.thir
     }
@@ -36,7 +36,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for NamespacesNewVisitor<'a, 'tcx> {
         match expr.kind {
             ExprKind::Call { fun, .. } => {
                 if let &TyKind::FnDef(func_did, _) = self.thir[fun].ty.kind()
-                    && is_namespaces_new(self.tcx, func_did)
+                    && is_tokens_new(self.tcx, func_did)
                 {
                     if !self.in_main {
                         self.tcx.dcx().span_err(

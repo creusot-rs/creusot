@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{
     local_invariant::{
-        LocalInvariant, LocalInvariantExt as _, LocalInvariantSpec, Namespaces, declare_namespace,
+        LocalInvariant, LocalInvariantExt as _, LocalInvariantSpec, Tokens, declare_namespace,
     },
     logic::Id,
     pcell::{PCell, PCellOwn},
@@ -33,15 +33,15 @@ impl<T: Invariant> LocalInvariantSpec for PCellLocalInv<T> {
 }
 
 impl<T: Invariant> CellInv<T> {
-    #[requires(namespaces.contains(PCELL()))]
-    pub fn read<'a>(&'a self, namespaces: Ghost<Namespaces<'a>>) -> &'a T {
+    #[requires(tokens.contains(PCELL()))]
+    pub fn read<'a>(&'a self, tokens: Ghost<Tokens<'a>>) -> &'a T {
         self.permission
-            .open(namespaces, move |perm| unsafe { self.data.borrow(ghost!(&perm.into_inner().0)) })
+            .open(tokens, move |perm| unsafe { self.data.borrow(ghost!(&perm.into_inner().0)) })
     }
 
-    #[requires(namespaces.contains(PCELL()))]
-    pub fn write(&self, x: T, namespaces: Ghost<Namespaces>) {
-        self.permission.open(namespaces, move |perm| unsafe {
+    #[requires(tokens.contains(PCELL()))]
+    pub fn write(&self, x: T, tokens: Ghost<Tokens>) {
+        self.permission.open(tokens, move |perm| unsafe {
             *self.data.borrow_mut(ghost!(&mut perm.into_inner().0)) = x
         })
     }

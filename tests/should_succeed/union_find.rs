@@ -131,7 +131,10 @@ mod implementation {
         /// The root element of a root is itself.
         #[logic]
         #[requires(inv(self))]
-        #[ensures(forall<e: Element<T>> self.domain().contains(e) ==> result[e] == result[result[e]])]
+        #[ensures(forall<e: Element<T>> self.in_domain(e) ==>
+            self.in_domain(result[e]) &&
+            result[e] == result[result[e]]
+        )]
         pub fn roots_map(self) -> Mapping<Element<T>, Element<T>> {
             *self.0.roots
         }
