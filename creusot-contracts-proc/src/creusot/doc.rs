@@ -22,7 +22,7 @@ pub(crate) fn document_spec(spec_name: &str, spec_body: LogicBody) -> TokenStrea
         "ensures" => "DodgerBlue",
         "terminates" | "pure" | "logic" | "law" => "Violet",
         _ if spec_name.starts_with("logic(") => "Violet",
-        _ => "LightGray",
+        _ => "Gray",
     };
     let styled_spec_name = format!(
         "<span style=\"color:{spec_color}; white-space:nowrap;\"><samp>{spec_name}</samp></span>"

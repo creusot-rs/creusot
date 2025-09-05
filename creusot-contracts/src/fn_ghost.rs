@@ -1,3 +1,4 @@
+//! Marker trait for [`#[check(ghost)]`][check#checkghost] functions
 use crate::*;
 
 mod private {
@@ -5,7 +6,7 @@ mod private {
     pub trait _Sealed {}
 }
 
-/// Marker trait for functions that are [`check(ghost)`][check#checkghost].
+/// Marker trait for functions that are [`#[check(ghost)]`][check#checkghost].
 ///
 /// Right now, this is automatically implemented for `#[check(ghost)]` closures,
 /// but not functions or methods.

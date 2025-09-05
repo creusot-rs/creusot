@@ -1,3 +1,4 @@
+//! Resolve mutable borrows
 use crate::*;
 pub use crate::{base_macros::Resolve, invariant::*};
 

@@ -46,7 +46,11 @@ jobs:
         mkdir -p ~/.config/creusot
         cp ci/creusot-config-dummy.toml ~/.config/creusot/Config.toml
     - name: Build doc
-      run: cargo creusot doc -- -p creusot-contracts --no-deps --target-dir ci/build-docs/
+      run: |
+        cargo creusot doc -- -p creusot-contracts --no-deps --target-dir ci/build-docs/
+        cp ci/html/highlight.css guide/book/theme/highlight.js ci/build-doc/doc
+      env:
+        RUSTDOCFLAGS: '--html-after-content ci/html/postscript.html --html-in-header ci/html/header.html'
     - name: Upload creusot_contracts artifact
       uses: actions/upload-artifact@v4
       with:

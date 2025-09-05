@@ -1,3 +1,4 @@
+//! Specifications for the `std` crate
 pub use ::std::*;
 
 pub mod array;
