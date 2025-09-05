@@ -169,9 +169,9 @@ impl Tokens<'_> {
     /// ```
     #[trusted]
     #[requires(self.contains(*ns))]
-    #[ensures((^self) == (*self))]
+    #[ensures(^self == *self)]
     #[ensures(result.0.contains(*ns))]
-    #[ensures(forall<ns2> ns2 != *ns && self.contains(ns2) ==> result.1.contains(ns2))]
+    #[ensures(result.1.namespaces() == self.namespaces().remove(*ns))]
     #[check(ghost)]
     #[allow(unused_variables)]
     pub fn split<'a>(&'a mut self, ns: Snapshot<Namespace>) -> (Tokens<'a>, Tokens<'a>) {
