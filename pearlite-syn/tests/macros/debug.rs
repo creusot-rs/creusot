@@ -10,11 +10,12 @@ use syn::punctuated::Punctuated;
 
 #[derive(RefCast)]
 #[repr(transparent)]
+#[allow(unused)]
 pub struct Lite<T: ?Sized> {
     value: T,
 }
 
-#[allow(non_snake_case)]
+#[allow(non_snake_case, unused)]
 pub fn Lite<T: ?Sized>(value: &T) -> &Lite<T> {
     Lite::ref_cast(value)
 }
