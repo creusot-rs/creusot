@@ -2,8 +2,6 @@
 //!
 //! This module provides [PredCell], a wrapper around `std::cell::Cell` that allows predicates to be used to specify the contents of the cell.
 
-// TODO: Rust 1.88: Add `const fn` + `update` method.
-
 use crate::{logic::Mapping, *};
 
 /// Cell over predicates
@@ -28,7 +26,7 @@ impl<T> PredCell<T> {
     #[trusted]
     #[requires(_pred[v])]
     #[ensures(result@ == *_pred)]
-    pub fn new(v: T, _pred: Snapshot<Mapping<T, bool>>) -> Self {
+    pub const fn new(v: T, _pred: Snapshot<Mapping<T, bool>>) -> Self {
         Self(std::cell::Cell::new(v))
     }
 
@@ -50,7 +48,7 @@ impl<T> PredCell<T> {
     #[trusted]
     #[requires(self@[v])]
     #[ensures(self@[result])]
-    pub fn replace(&self, v: T) -> T {
+    pub const fn replace(&self, v: T) -> T {
         self.0.replace(v)
     }
 
@@ -66,7 +64,7 @@ impl<T: Copy> PredCell<T> {
     /// See the method [`Cell::get`](https://doc.rust-lang.org/std/cell/struct.Cell.html#method.get) documentation.
     #[trusted]
     #[ensures(self@[result])]
-    pub fn get(&self) -> T {
+    pub const fn get(&self) -> T {
         self.0.get()
     }
 
@@ -86,7 +84,7 @@ impl<T: ?Sized> PredCell<T> {
     #[requires(_pred[*t])]
     #[ensures(_pred[^t])]
     #[ensures(result@ == *_pred)]
-    pub fn from_mut(t: &mut T, _pred: Snapshot<Mapping<T, bool>>) -> &PredCell<T> {
+    pub const fn from_mut(t: &mut T, _pred: Snapshot<Mapping<T, bool>>) -> &PredCell<T> {
         unsafe { std::mem::transmute(std::cell::Cell::from_mut(t)) }
     }
 
@@ -109,7 +107,10 @@ impl<T> PredCell<[T]> {
     #[requires(forall<s: [T]> self@[s] == (_pred.len() == s@.len() && forall<i: Int> 0 <= i && i < s@.len() ==> _pred[i][s[i]]))]
     #[ensures(forall<i: Int> 0 <= i && i < _pred.len() ==> result[i]@ == _pred[i])]
     #[ensures(result@.len() == _pred.len())]
-    pub fn as_slice_of_cells(&self, _pred: Snapshot<Seq<Mapping<T, bool>>>) -> &[PredCell<T>] {
+    pub const fn as_slice_of_cells(
+        &self,
+        _pred: Snapshot<Seq<Mapping<T, bool>>>,
+    ) -> &[PredCell<T>] {
         unsafe { std::mem::transmute(self.0.as_slice_of_cells()) }
     }
 }
