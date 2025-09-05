@@ -1,3 +1,4 @@
+//! Resource algebras
 pub mod fmap_view;
 
 // We use a nested module that we re-export, to make sure that the definitions

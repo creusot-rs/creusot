@@ -1,3 +1,4 @@
+//! Real numbers
 use crate::*;
 use ::num_rational::BigRational;
 use ::std::{cmp::Ordering, marker::PhantomData};

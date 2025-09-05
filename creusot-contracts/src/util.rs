@@ -14,7 +14,7 @@ pub fn such_that<T>(p: crate::logic::Mapping<T, bool>) -> T {
     dead
 }
 
-/// Indicates unreachable code.
+/// Indicates unreachable code in logic.
 ///
 /// This function indicates a logical branch that should be impossible to reach.
 #[trusted]

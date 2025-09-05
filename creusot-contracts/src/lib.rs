@@ -214,12 +214,11 @@ pub mod macros {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```ignore
     /// # use creusot_contracts::*;
     /// let mut v = Vec::new();
-    /// // For annoying reasons, examples cannot use invariants. Please imagine that they are uncommented :)
-    /// // #[invariant(v@.len() == produced.len())]
-    /// // #[invariant(forall<j> 0 <= j && j < produced.len() ==> v@[j]@ == j)]
+    /// #[invariant(v@.len() == produced.len())]
+    /// #[invariant(forall<j> 0 <= j && j < produced.len() ==> v@[j]@ == j)]
     /// for i in 0..10 {
     ///     v.push(i);
     /// }
@@ -240,7 +239,8 @@ pub mod macros {
     ///
     /// If you wish to use the `^` operator on mutable borrows to get the final value, you need to
     /// specify that the function is _prophetic_, like so:
-    /// ```ignore
+    /// ```
+    /// # use creusot_contracts::*;
     /// #[logic(prophetic)]
     /// fn uses_prophecies(x: &mut Int) -> Int {
     ///     pearlite! { if ^x == 0 { 0 } else { 1 } }
@@ -443,15 +443,18 @@ mod base_prelude {
     #[cfg(creusot)]
     pub use crate::util::such_that;
 }
+/// Re-exports available under the `creusot_contracts` namespace
 pub mod prelude {
     pub use crate::{base_prelude::*, macros::*};
 }
 
 pub use prelude::*;
 
-// The std vec macro uses special magic to construct the array argument
-// to Box::new directly on the heap. Because the generated MIR is hard
-// to translate, we provide a custom vec macro which does not do this.
+/// Creusot-friendly replacement of `vec!`
+///
+/// The std vec macro uses special magic to construct the array argument
+/// to `Box::new` directly on the heap. Because the generated MIR is hard
+/// to translate, we provide a custom `vec!` macro which does not do this.
 #[macro_export]
 macro_rules! vec {
     () => (

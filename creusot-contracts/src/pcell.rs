@@ -11,7 +11,7 @@ use ::std::{cell::UnsafeCell, marker::PhantomData};
 
 /// A "permission" cell allowing interior mutability via a ghost token.
 ///
-/// When writing/reading the cell, you need to explicitely pass a [`PCellOwn`] object.
+/// When writing/reading the cell, you need to explicitly pass a [`PCellOwn`] object.
 ///
 /// # Safety
 ///
@@ -65,7 +65,7 @@ impl<T: Sized> Invariant for PCellOwn<T> {
 impl<T: ?Sized> PCellOwn<T> {
     /// Returns the logical identity of the cell.
     ///
-    /// To use a [`Pcell`], this and [`PCell::id`] must agree.
+    /// To use a [`PCell`], this and [`PCell::id`] must agree.
     #[logic]
     #[trusted]
     pub fn id(self) -> Id {
@@ -107,7 +107,7 @@ impl<T> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell).
+    /// [type documentation](PCell#safety).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(val == (^perm)@)]
@@ -128,7 +128,7 @@ impl<T> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell).
+    /// [type documentation](PCell#safety).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(val == (^perm)@)]
@@ -159,7 +159,7 @@ impl<T> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell).
+    /// [type documentation](PCell#safety).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(*result == perm@)]
@@ -179,7 +179,7 @@ impl<T> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell).
+    /// [type documentation](PCell#safety).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(self.id() == (^perm).id())]
@@ -200,7 +200,7 @@ impl<T: Copy> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell).
+    /// [type documentation](PCell#safety).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(result == (**perm)@)]
@@ -250,7 +250,7 @@ impl<T: Default> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell).
+    /// [type documentation](PCell#safety).
     #[requires(self.id() == perm.id())]
     #[ensures(self.id() == (^perm).id())]
     #[ensures(result == perm@)]

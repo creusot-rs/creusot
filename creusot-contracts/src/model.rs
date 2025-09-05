@@ -1,10 +1,11 @@
+//! Logical models of types: [`View`] and [`DeepModel`]
 use crate::*;
 
 /// The view of a type is its logical model as typically used to specify a data
 /// structure. It is typically "shallow", and does not involve the model of
 /// other types contained by the datastructure.
 /// This kind of model is mostly useful for notation purposes,
-/// because this trait is linked to the @ notation of pearlite.
+/// because this trait is linked to the `@` notation of pearlite.
 #[diagnostic::on_unimplemented(
     message = "Cannot take the view of `{Self}`",
     label = "no implementation for `{Self}@`"

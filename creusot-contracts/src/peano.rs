@@ -7,16 +7,16 @@
 //!
 //! # Usage in data structures
 //!
-//! They are useful when specyfying a data structure, where
-//! - Checking for overflows of the length is hard (and may leak to the users of the library)
-//! - Overflows are impossible, because objects are always created one-by-one.
+//! They are useful when specifying a data structure where
+//! - checking for overflows of the length is hard (and may leak to the users of the library),
+//! - overflows are practically impossible because the length only grows by one at a time.
 //!
 //! In this case, you could use a [`PeanoInt`] to store the length.
 //!
 //! # Why not always use them ?
 //!
 //! Well, simply because you cannot add two peano integers together, at least not
-//! efficiently. if you need to do usual arithmetic operations, you should use a normal
+//! efficiently. If you need to do usual arithmetic operations, you should use a normal
 //! integer.
 //!
 //! # Ghost code
