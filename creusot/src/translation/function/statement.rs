@@ -9,12 +9,13 @@ use crate::{
         pearlite::Term,
     },
 };
+use rustc_ast::Mutability;
 use rustc_middle::{
     mir::{
         BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
-    ty::{Ty, TyKind, UintTy, adjustment::PointerCoercion},
+    ty::{ConstKind, Ty, TyKind, UintTy, adjustment::PointerCoercion},
 };
 use rustc_span::Span;
 
@@ -77,11 +78,18 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     }
                     RValue::Operand(Operand::Copy(self.translate_place(pl, span)))
                 }
+                // Special case to support const-promoted `&mut []`
+                Mut { .. } if self.borrow_data.is_none() && is_mut_ref_empty(&ty) => {
+                    self.emit_borrow(place, pl, fmir::BorrowKind::Mut, span);
+                    // No need to resolve: the length of the final value is set to 0 by the type invariant
+                    return;
+                }
                 Mut { .. } => {
-                    if self.erased_locals.contains(pl.local) || self.is_two_phase(loc) {
+                    let Some(borrow_data) = &self.borrow_data else { self.error_no_borrow_data() };
+                    if self.erased_locals.contains(pl.local) || borrow_data.is_two_phase_at(loc) {
                         return;
                     }
-                    let is_final = self.is_final_at(loc);
+                    let is_final = borrow_data.is_final_at(loc);
                     self.emit_borrow(place, pl, is_final, span);
                     return;
                 }
@@ -205,17 +213,40 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         }
     }
 
-    fn is_two_phase(&self, loc: Location) -> bool {
-        self.body_data.is_two_phase_at(loc)
-    }
-
     pub(super) fn activate_two_phase(&mut self, loc: Location, span: Span) {
-        for (lhs, rhs, is_final) in self.body_data.remove_two_phase_activated_at(loc) {
+        let Some(borrow_data) = &mut self.borrow_data else {
+            return;
+        };
+        for (lhs, rhs, is_final) in borrow_data.remove_two_phase_activated_at(loc) {
             self.emit_borrow(lhs, rhs, is_final, span)
         }
     }
 
-    fn is_final_at(&self, loc: Location) -> fmir::BorrowKind {
-        self.body_data.is_final_at(loc)
+    /// Fail if mutable borrows are used and no borrow data is available.
+    fn error_no_borrow_data(&self) -> ! {
+        self.crash_and_error(
+            self.body.span,
+            format!(
+                "can't translate {}: no data to resolve mutable borrows",
+                self.tcx().def_path_str(self.body_id.def_id)
+            ),
+        );
     }
+}
+
+/// Check whether `ty` is of the form `&mut [T; 0]`
+fn is_mut_ref_empty<'tcx>(ty: &Ty<'tcx>) -> bool {
+    let TyKind::Ref(_, ty, Mutability::Mut) = ty.kind() else {
+        return false;
+    };
+    let TyKind::Array(_, len) = ty.kind() else {
+        return false;
+    };
+    let ConstKind::Value(value) = len.kind() else {
+        return false;
+    };
+    let Some(scalar) = value.valtree.try_to_scalar_int() else {
+        return false;
+    };
+    scalar.is_null()
 }

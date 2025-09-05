@@ -184,7 +184,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             | TailCall { .. } => unreachable!("{:?}", terminator.kind),
         };
         // Insert blocks of resolve statements and retarget the terminator to those blocks.
-        if let Some(mut resolved) = self.body_data.remove_resolved_between_blocks(loc.block) {
+        if let Some(borrow_data) = &mut self.borrow_data
+            && let Some(mut resolved) = borrow_data.remove_resolved_between_blocks(loc.block)
+        {
             let mut retarget = HashMap::new();
             for target in term.targets_mut() {
                 match resolved.remove(target) {
