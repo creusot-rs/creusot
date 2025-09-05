@@ -135,8 +135,7 @@ impl Tokens<'_> {
     /// }
     /// ```
     #[trusted]
-    #[ensures((*self).namespaces() == result.namespaces())]
-    #[ensures((^self).namespaces() == result.namespaces())]
+    #[ensures(result == *self && ^self == *self)]
     #[check(ghost)]
     pub fn reborrow<'a>(&'a mut self) -> Tokens<'a> {
         Tokens(::std::marker::PhantomData)
