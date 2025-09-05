@@ -1,10 +1,10 @@
 //! Creusot-specific validations
 
 mod ghost;
-mod namespaces_new;
 mod opacity;
 mod purity;
 mod terminates;
+mod tokens_new;
 mod traits;
 
 pub(crate) use self::ghost::GhostValidate;
@@ -22,7 +22,7 @@ use rustc_span::Symbol;
 use crate::{
     contracts_items::{get_builtin, is_extern_spec, is_no_translate, is_spec, is_trusted},
     ctx::{HasTyCtxt as _, TranslationCtx},
-    validate::namespaces_new::validate_namespaces_new,
+    validate::tokens_new::validate_tokens_new,
 };
 
 /// Validate that creusot buitins are annotated with `#[trusted]`.
@@ -51,7 +51,7 @@ pub(crate) fn validate(ctx: &TranslationCtx) {
         let def_id = def_id.to_def_id();
         if is_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
             validate_purity(ctx, def_id, thir);
-            validate_namespaces_new(ctx, def_id, thir);
+            validate_tokens_new(ctx, def_id, thir);
         }
         if is_extern_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
             validate_opacity(ctx, def_id);

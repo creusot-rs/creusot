@@ -3,14 +3,14 @@
 //! [Local invariants](LocalInvariant) are not the same as [type invariants](Invariant): they
 //! allow the use of a shared piece of data to be used in the invariant (see
 //! [`LocalInvariantSpec`]), but in return they impose a much more restricted access to
-//! the underlying data, as well as the use of [`Namespaces`].
+//! the underlying data, as well as the use of [`Tokens`].
 //!
 //! # Example
 //!
 //! Building a simplified `Cell`, that only asserts its content's type invariant.
 //! ```
 //! # use creusot_contracts::{
-//! #     local_invariant::{LocalInvariant, LocalInvariantSpec, Namespaces, declare_namespace},
+//! #     local_invariant::{LocalInvariant, LocalInvariantSpec, Tokens, declare_namespace},
 //! #     logic::Id,
 //! #     pcell::{PCell, PCellOwn},
 //! #     *,
@@ -40,18 +40,18 @@
 //! }
 //!
 //! impl<T: Invariant> CellInv<T> {
-//!     #[requires(namespaces.contains(PCELL()))]
-//!     pub fn write(&self, x: T, namespaces: Ghost<Namespaces>) {
-//!         LocalInvariant::open(self.permission.borrow(), namespaces, move |perm| unsafe {
+//!     #[requires(tokens.contains(PCELL()))]
+//!     pub fn write(&self, x: T, tokens: Ghost<Tokens>) {
+//!         LocalInvariant::open(self.permission.borrow(), tokens, move |perm| unsafe {
 //!             *self.data.borrow_mut(ghost!(&mut perm.into_inner().0)) = x
 //!         })
 //!     }
 //! }
 //! ```
 //!
-//! # Explicit namespaces
+//! # Explicit tokens
 //!
-//! For now, [`Namespaces`] must be explicitely passed to [`open`](LocalInvariant::open).
+//! For now, [`Tokens`] must be explicitely passed to [`open`](LocalInvariant::open).
 //! We plan to relax this limitation at some point.
 
 use crate::{logic::Set, *};
@@ -70,7 +70,7 @@ use ::std::cell::UnsafeCell;
 /// ```
 pub use base_macros::declare_namespace;
 
-/// The type of _namespaces_ associated with local invariants.
+/// The type of _namespaces_ of associated with local invariants.
 ///
 /// Can be declared with the [`declare_namespace`] macro, and then attached to a local
 /// invariant when creating it with [`LocalInvariant::new`].
@@ -78,19 +78,20 @@ pub use base_macros::declare_namespace;
 #[trusted] // This type has a very special translation.
 pub struct Namespace(());
 
-/// A collection of namespaces.
+/// Invariant tokens.
 ///
-/// This is given at the start of the program, and must be passed along to [LocalInvariant::open].
+/// This is given at the start of the program, and must be passed along to
+/// [LocalInvariant::open] to prevent opening invariant reentrantly.
 ///
-/// # Namespaces and `open`
+/// # Tokens and `open`
 ///
-/// Namespaces are used to avoid reentrency in [`open`](LocalInvariant::open).
-/// To ensure this, `Namespaces` acts as a special kind of mutable borrow : only
+/// Tokens are used to avoid reentrency in [`open`](LocalInvariant::open).
+/// To ensure this, `Tokens` acts as a special kind of mutable borrow : only
 /// one may exist at a given point in the program, preventing multiple calls to
 /// `open` with the same namespace. This is the reason this type has a lifetime
 /// attached to it.
 ///
-/// Note that after the execution of `open`, the namespace that was used is
+/// Note that after the execution of `open`, the token that was used is
 /// restored. Because of this, we never need to talk about the 'final' value
 /// of this borrow, because it never differs from the current value (in places
 /// where we can use it).
@@ -98,10 +99,10 @@ pub struct Namespace(());
 /// To help passing it into functions, it may be [reborrowed](Self::reborrow),
 /// similarly to a normal borrow.
 #[trusted]
-pub struct Namespaces<'a>(::std::marker::PhantomData<&'a ()>);
+pub struct Tokens<'a>(::std::marker::PhantomData<&'a ()>);
 
-impl Namespaces<'_> {
-    /// Get the underlying set of namespaces.
+impl Tokens<'_> {
+    /// Get the underlying set of namespaces of this token.
     ///
     /// Also accessible via the [`view`](View::view) (`@`) operator.
     #[trusted]
@@ -110,10 +111,10 @@ impl Namespaces<'_> {
         dead
     }
 
-    /// Get the set of all namespaces.
+    /// Get the tokens for all the namespaces.
     ///
     /// This is only callable _once_, in `main`.
-    #[cfg_attr(creusot, rustc_diagnostic_item = "namespaces_new")]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "tokens_new")]
     #[trusted]
     #[ensures(forall<ns: Namespace> result.contains(ns))]
     #[check(ghost)]
@@ -121,47 +122,47 @@ impl Namespaces<'_> {
         Ghost::conjure()
     }
 
-    /// Reborrow the namespace, allowing it to be reused later.
+    /// Reborrow the token, allowing it to be reused later.
     ///
     /// # Example
     /// ```
-    /// # use creusot_contracts::{*, local_invariant::Namespaces};
-    /// fn foo(namespaces: Ghost<Namespaces>) {}
-    /// fn bar(namespaces: Ghost<Namespaces>) {}
-    /// fn baz(mut namespaces: Ghost<Namespaces>) {
-    ///     foo(ghost!(namespaces.reborrow()));
-    ///     bar(namespaces);
+    /// # use creusot_contracts::{*, local_invariant::Tokens};
+    /// fn foo(tokens: Ghost<Tokens>) {}
+    /// fn bar(tokens: Ghost<Tokens>) {}
+    /// fn baz(mut tokens: Ghost<Tokens>) {
+    ///     foo(ghost!(tokens.reborrow()));
+    ///     bar(tokens);
     /// }
     /// ```
     #[trusted]
     #[ensures((*self).namespaces() == result.namespaces())]
     #[ensures((^self).namespaces() == result.namespaces())]
     #[check(ghost)]
-    pub fn reborrow<'a>(&'a mut self) -> Namespaces<'a> {
-        Namespaces(::std::marker::PhantomData)
+    pub fn reborrow<'a>(&'a mut self) -> Tokens<'a> {
+        Tokens(::std::marker::PhantomData)
     }
 
-    /// Split the namespace in two, so that it can be used to access independant invariants.
+    /// Split the tokens in two, so that it can be used to access independant invariants.
     ///
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::{*, local_invariant::{declare_namespace, Namespaces}};
+    /// # use creusot_contracts::{*, local_invariant::{declare_namespace, Tokens}};
     /// declare_namespace! { FOO }
     /// declare_namespace! { BAR }
     ///
     /// // the lifetime 'locks' the namespace
-    /// #[requires(namespaces.contains(FOO()))]
-    /// fn foo<'a>(namespaces: Ghost<Namespaces<'a>>) -> &'a i32 {
+    /// #[requires(tokens.contains(FOO()))]
+    /// fn foo<'a>(tokens: Ghost<Tokens<'a>>) -> &'a i32 {
     /// # todo!()
     ///     // access some invariant to get the reference
     /// }
-    /// #[requires(namespaces.contains(BAR()))]
-    /// fn bar(namespaces: Ghost<Namespaces>) {}
+    /// #[requires(tokens.contains(BAR()))]
+    /// fn bar(tokens: Ghost<Tokens>) {}
     ///
-    /// #[requires(namespaces.contains(FOO()) && namespaces.contains(BAR()))]
-    /// fn baz(mut namespaces: Ghost<Namespaces>) -> i32 {
-    ///      let (ns_foo, ns_bar) = ghost!(namespaces.split(snapshot!(FOO()))).split();
+    /// #[requires(tokens.contains(FOO()) && tokens.contains(BAR()))]
+    /// fn baz(mut tokens: Ghost<Tokens>) -> i32 {
+    ///      let (ns_foo, ns_bar) = ghost!(tokens.split(snapshot!(FOO()))).split();
     ///      let x = foo(ns_foo);
     ///      bar(ns_bar);
     ///      *x
@@ -174,8 +175,8 @@ impl Namespaces<'_> {
     #[ensures(forall<ns2> ns2 != *ns && self.contains(ns2) ==> result.1.contains(ns2))]
     #[check(ghost)]
     #[allow(unused_variables)]
-    pub fn split<'a>(&'a mut self, ns: Snapshot<Namespace>) -> (Namespaces<'a>, Namespaces<'a>) {
-        (Namespaces(::std::marker::PhantomData), Namespaces(::std::marker::PhantomData))
+    pub fn split<'a>(&'a mut self, ns: Snapshot<Namespace>) -> (Tokens<'a>, Tokens<'a>) {
+        (Tokens(::std::marker::PhantomData), Tokens(::std::marker::PhantomData))
     }
 
     #[logic]
@@ -185,7 +186,7 @@ impl Namespaces<'_> {
     }
 }
 
-impl View for Namespaces<'_> {
+impl View for Tokens<'_> {
     type ViewTy = Set<Namespace>;
     #[logic]
     #[open]
@@ -219,7 +220,7 @@ pub trait LocalInvariantExt<'a> {
     #[requires(false)]
     #[ensures(true)]
     #[check(ghost)]
-    fn open<A, F>(self, namespaces: Ghost<Namespaces<'a>>, f: F) -> A
+    fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A;
 }
@@ -227,18 +228,18 @@ pub trait LocalInvariantExt<'a> {
 impl<'a, T: LocalInvariantSpec> LocalInvariantExt<'a> for Ghost<&'a LocalInvariant<T>> {
     type Inner = T;
 
-    #[requires(namespaces.contains(self.namespace()))]
+    #[requires(tokens.contains(self.namespace()))]
     #[requires(forall<t: Ghost<&mut T>> (**t).invariant_with_data(self.public()) && inv(t) ==>
         f.precondition((t,)) &&
         // f must restore the invariant
         (forall<res: A> f.postcondition_once((t,), res) ==> (^t).invariant_with_data(self.public())))]
     #[ensures(exists<t: Ghost<&mut T>> t.invariant_with_data(self.public()) && f.postcondition_once((t,), result))]
     #[check(ghost)]
-    fn open<A, F>(self, namespaces: Ghost<Namespaces<'a>>, f: F) -> A
+    fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
     {
-        LocalInvariant::open(self, namespaces, f)
+        LocalInvariant::open(self, tokens, f)
     }
 }
 
@@ -251,18 +252,18 @@ where
 
     #[requires(T::deref.precondition((*self,)))]
     #[requires(forall<this> T::deref.postcondition((*self,), this) ==>
-        <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::open.precondition((Ghost::new_logic(this), namespaces, f))
+        <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::open.precondition((Ghost::new_logic(this), tokens, f))
     )]
     #[ensures(exists<this> T::deref.postcondition((*self,), this) &&
-        <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::open.postcondition((Ghost::new_logic(this), namespaces, f), result)
+        <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::open.postcondition((Ghost::new_logic(this), tokens, f), result)
     )]
     #[check(ghost)]
-    fn open<A, F>(self, namespaces: Ghost<Namespaces<'a>>, f: F) -> A
+    fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
     {
         let this: Ghost<&T::Target> = ghost!(&self);
-        this.open(namespaces, f)
+        this.open(tokens, f)
     }
 }
 
@@ -272,14 +273,14 @@ where
 {
     type Inner = <Ghost<&'a L> as LocalInvariantExt<'a>>::Inner;
 
-    #[requires(<Ghost<&'a L> as LocalInvariantExt<'a>>::open.precondition((Ghost::new_logic(&**self), namespaces, f)))]
-    #[ensures(<Ghost<&'a L> as LocalInvariantExt<'a>>::open.postcondition((Ghost::new_logic(&**self), namespaces, f), result))]
+    #[requires(<Ghost<&'a L> as LocalInvariantExt<'a>>::open.precondition((Ghost::new_logic(&**self), tokens, f)))]
+    #[ensures(<Ghost<&'a L> as LocalInvariantExt<'a>>::open.postcondition((Ghost::new_logic(&**self), tokens, f), result))]
     #[check(ghost)]
-    fn open<A, F>(self, namespaces: Ghost<Namespaces<'a>>, f: F) -> A
+    fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
     {
-        self.borrow().open(namespaces, f)
+        self.borrow().open(tokens, f)
     }
 }
 
@@ -324,7 +325,7 @@ impl<T: LocalInvariantSpec> LocalInvariant<T> {
     /// This will call the closure `f` with the inner data. You must restore the
     /// contained [`LocalInvariantSpec`] before returning from the closure.
     #[trusted]
-    #[requires(namespaces.contains(this.namespace()))]
+    #[requires(tokens.contains(this.namespace()))]
     #[requires(forall<t: Ghost<&mut T>> t.invariant_with_data(this.public()) && inv(t) ==>
         f.precondition((t,)) &&
         // f must restore the invariant
@@ -333,10 +334,10 @@ impl<T: LocalInvariantSpec> LocalInvariant<T> {
     #[check(ghost)]
     pub fn open<'a, A>(
         this: Ghost<&'a Self>,
-        namespaces: Ghost<Namespaces<'a>>,
+        tokens: Ghost<Tokens<'a>>,
         f: impl FnOnce(Ghost<&'a mut T>) -> A,
     ) -> A {
-        let _ = namespaces;
+        let _ = tokens;
         // SAFETY: this operation happens in a ghost block, meaning it only
         // make sense when compiling with creusot: in this case, Creusot will
         // make sure that this is in fact safe.

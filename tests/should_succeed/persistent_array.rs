@@ -5,8 +5,7 @@ pub mod implementation {
     use creusot_contracts::{
         Clone,
         local_invariant::{
-            LocalInvariant, LocalInvariantExt as _, LocalInvariantSpec, Namespaces,
-            declare_namespace,
+            LocalInvariant, LocalInvariantExt as _, LocalInvariantSpec, Tokens, declare_namespace,
         },
         logic::{FMap, Id, Mapping},
         pcell::{PCell, PCellOwn},
@@ -168,15 +167,15 @@ pub mod implementation {
 
         /// Return a new array, where the value at index `index` has been set to `value`
         #[requires(index@ < self@.len())]
-        #[requires(namespaces.contains(PARRAY()))]
+        #[requires(tokens.contains(PARRAY()))]
         #[ensures(result@ == self@.set(index@, value))]
-        pub fn set(&self, index: usize, value: T, namespaces: Ghost<Namespaces>) -> Self {
+        pub fn set(&self, index: usize, value: T, tokens: Ghost<Tokens>) -> Self {
             let new_logical_value = snapshot!(self@.set(index@, value));
             let (program_value, ownership) =
                 PCell::new(Inner::Link { index, value, next: self.program_value.clone() });
             let new_frac = {
                 let program_value = &program_value;
-                self.map_invariant.borrow().open(namespaces, |mut tokens| {
+                self.map_invariant.borrow().open(tokens, |mut tokens| {
                     let cell_id = snapshot!(program_value.id());
                     let self_id = snapshot!(self.program_value@.id());
                     ghost! {
@@ -220,7 +219,7 @@ pub mod implementation {
         /// # Safety
         ///
         /// See the [safety section](PersistentArray#safety) on the type documentation.
-        #[requires(namespaces.contains(PARRAY()))]
+        #[requires(tokens.contains(PARRAY()))]
         #[ensures(result == if i@ < self@.len() {
             Some(&self@[i@])
         } else {
@@ -229,9 +228,9 @@ pub mod implementation {
         pub unsafe fn get_immut<'a>(
             &'a self,
             i: usize,
-            namespaces: Ghost<Namespaces<'a>>,
+            tokens: Ghost<Tokens<'a>>,
         ) -> Option<&'a T> {
-            self.map_invariant.borrow().open(namespaces, |tokens| {
+            self.map_invariant.borrow().open(tokens, |tokens| {
                 // prove that self is contained in the map by validity
                 ghost! {
                     tokens.values.contains(self.contained_in_token.as_ref());
@@ -279,19 +278,15 @@ pub mod implementation {
         /// # Safety
         ///
         /// See the [safety section](PersistentArray#safety) on the type documentation.
-        #[requires(namespaces.contains(PARRAY()))]
+        #[requires(tokens.contains(PARRAY()))]
         #[ensures(if index.view() < self.view().len() {
             result == Some(&self.view()[index.view()])
         } else {
             result == None
         })]
-        pub unsafe fn get<'a>(
-            &'a self,
-            index: usize,
-            namespaces: Ghost<Namespaces<'a>>,
-        ) -> Option<&'a T> {
+        pub unsafe fn get<'a>(&'a self, index: usize, tokens: Ghost<Tokens<'a>>) -> Option<&'a T> {
             let public = snapshot!(self.map_invariant@.public());
-            self.map_invariant.borrow().open(namespaces, |mut tokens| {
+            self.map_invariant.borrow().open(tokens, |mut tokens| {
                 // prove that self is contained in the map by validity
                 ghost! {
                     tokens.values.contains(self.contained_in_token.as_ref());
@@ -376,15 +371,15 @@ pub mod implementation {
     }
 }
 
-use creusot_contracts::{local_invariant::Namespaces, vec, *};
+use creusot_contracts::{local_invariant::Tokens, vec, *};
 use implementation::PersistentArray;
 
-#[requires(namespaces.contains(implementation::PARRAY()))]
-pub fn testing(mut namespaces: Ghost<Namespaces>) {
+#[requires(tokens.contains(implementation::PARRAY()))]
+pub fn testing(mut tokens: Ghost<Tokens>) {
     let a = PersistentArray::new(vec![1, 2, 3, 4]);
 
-    let a2 = a.set(1, 42, ghost!(namespaces.reborrow()));
-    let a3 = a.set(0, 50, ghost!(namespaces.reborrow()));
+    let a2 = a.set(1, 42, ghost!(tokens.reborrow()));
+    let a3 = a.set(0, 50, ghost!(tokens.reborrow()));
 
     let a4 = a.clone();
 
