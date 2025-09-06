@@ -553,6 +553,14 @@ impl<'tcx> RValue<'tcx> {
                         .collect(),
                 }
             }
+            RValue::Cast(e, source, target)
+                if let Some(source) = source.builtin_deref(false)
+                    && let Some(target) = target.builtin_deref(false)
+                    && let TyKind::Dynamic(_, _, _) = target.kind() =>
+            {
+                let cast = lower.names.dyn_cast(source, target);
+                Exp::var(cast).app(vec![e.into_why(lower, istmts)])
+            }
             RValue::Cast(e, source, target) => {
                 match source.kind() {
                     TyKind::Bool => {

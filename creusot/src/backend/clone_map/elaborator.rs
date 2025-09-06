@@ -52,7 +52,7 @@ use why3::{
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
 /// weak dependencies are used to perform an initial stratification of the dependency graph.
-#[derive(PartialEq, PartialOrd, Copy, Clone)]
+#[derive(PartialEq, PartialOrd, Copy, Clone, Debug)]
 pub enum Strength {
     Weak,
     Strong,
@@ -436,8 +436,57 @@ fn expand_type<'tcx>(
             translate_tydecl(ctx, &names, (def_id, subst), typing_env)
         }
         TyKind::Tuple(_) => translate_tuple_ty(ctx, &names, ty),
+        TyKind::Dynamic(traits, _, _) => {
+            if is_logically_dyn_compatible(ctx.tcx(), traits.iter()) {
+                vec![Decl::TyDecl(TyDecl::Opaque {
+                    ty_name: names.ty(ty).to_ident(),
+                    ty_params: Box::new([]),
+                })]
+            } else {
+                ctx.crash_and_error(DUMMY_SP, format!("forbidden dyn type: {} (dyn support is currently minimal, please open an issue to improve this feature)", ty))
+            }
+        }
         _ => unreachable!("unsupported type: {ty}"),
     }
+}
+
+/// Trait bound for which `dyn` is supported by Creusot
+/// (Rust already has a notion of "dyn-compatibility", this is a refinement of that
+/// which we thus call "logical dyn-compatibility".)
+fn is_logically_dyn_compatible<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    traits: impl IntoIterator<Item = ty::Binder<'tcx, ty::ExistentialPredicate<'tcx>>>,
+) -> bool {
+    traits.into_iter().any(|b| match b.skip_binder() {
+        ty::ExistentialPredicate::Trait(tr) => is_logically_dyn_compatible_trait(tcx, tr.def_id),
+        _ => false,
+    })
+}
+
+/// Base trait for which `dyn` is supported by Creusot
+fn is_logically_dyn_compatible_trait<'tcx>(tcx: ty::TyCtxt<'tcx>, tr: DefId) -> bool {
+    // TODO: support more traits
+    let name = tcx.def_path_str(tr);
+    ["std::fmt::Debug", "std::fmt::Write"].contains(&name.as_ref())
+}
+
+fn expand_dyn_cast<'tcx>(
+    elab: &mut Expander<'_, 'tcx>,
+    ctx: &Why3Generator<'tcx>,
+    source: Ty<'tcx>,
+    target: Ty<'tcx>,
+) -> Vec<Decl> {
+    let dep = Dependency::DynCast(source, target);
+    let names = elab.namer(dep);
+    let sig = Signature {
+        name: names.dependency(dep).ident(),
+        trigger: None,
+        attrs: vec![],
+        retty: Some(translate_ty(ctx, &names, DUMMY_SP, target)),
+        args: [(Ident::fresh_local("x"), translate_ty(ctx, &names, DUMMY_SP, source))].into(),
+        contract: Default::default(),
+    };
+    vec![Decl::LogicDecl(LogicDecl { kind: Some(DeclKind::Function), sig })]
 }
 
 impl<'a, 'tcx> Expander<'a, 'tcx> {
@@ -521,6 +570,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             Dependency::Eliminator(def_id, subst) => {
                 vec![eliminator(ctx, &self.namer(dep), def_id, subst)]
             }
+            Dependency::DynCast(source, target) => expand_dyn_cast(self, ctx, source, target),
         };
 
         self.dep_bodies.insert(dep, decls);
