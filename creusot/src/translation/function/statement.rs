@@ -167,14 +167,21 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 Operand::Term(Term::const_(*len, Ty::new_uint(self.tcx(), UintTy::Usize), si.span)),
             ),
             Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize, _), op, ty) => {
-                if let Some(t) = ty.builtin_deref(true)
-                    && t.is_slice()
-                {
+                let Some(t) = ty.builtin_deref(true) else {
+                    self.crash_and_error(
+                        si.span,
+                        format!("unsupported cast from {} to {}", op.ty(self.body, self.tcx()), ty),
+                    )
+                };
+                if t.is_slice() {
                     // treat &[T; N] to &[T] casts as normal assignments
                     RValue::Operand(self.translate_operand(op, span))
                 } else {
-                    // TODO: Since we don't do anything with casts into `dyn` objects, just ignore them
-                    return;
+                    RValue::Cast(
+                        self.translate_operand(op, span),
+                        op.ty(self.body, self.tcx()),
+                        *ty,
+                    )
                 }
             }
             &Rvalue::RawPtr(_, pl) => RValue::Ptr(self.translate_place(pl, span)),

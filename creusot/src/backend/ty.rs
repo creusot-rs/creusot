@@ -70,13 +70,13 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         }
         FnDef(_, _) => MlT::unit(), /* FnDef types are effectively singleton types, so it is sound to translate to unit. */
         FnPtr(..) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "ptr")),
-        Dynamic(_, _, _) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "dyn")),
         Foreign(_) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "foreign")),
         Error(_) => MlT::unit(),
         Closure(..)
         | Adt(..)
         | Tuple(_)
         | Param(_)
+        | Dynamic(_, _, _)
         | Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
             MlT::TConstructor(names.ty(ty))
         }
