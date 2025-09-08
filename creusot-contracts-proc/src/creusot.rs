@@ -5,13 +5,15 @@ mod invariant;
 mod logic;
 pub(crate) mod pretyping;
 mod proof;
+mod refines;
 mod specs;
 
-pub use self::{
+pub(crate) use self::{
     derive::*,
     extern_spec::extern_spec,
     logic::{law, logic, open, pearlite},
     proof::{ghost, ghost_let, invariant, proof_assert, snapshot},
+    refines::refines,
     specs::{bitwise_proof, check, ensures, maintains, requires, variant},
 };
 
