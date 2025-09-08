@@ -2,7 +2,7 @@ use clap::Parser;
 use libc::{STDOUT_FILENO, TIOCGWINSZ, c_ushort, ioctl};
 use std::{
     env,
-    fs::File,
+    fs::{self, File},
     io::{BufRead, BufReader, IsTerminal, Write},
     path::{Path, PathBuf},
     process::Command,
@@ -46,6 +46,9 @@ struct Args {
     /// Overwrite expected output files with actual output
     #[clap(long)]
     bless: bool,
+    /// Run #[erasure] checks on creusot-contracts (and only that)
+    #[clap(long)]
+    erasure_check: bool,
     /// Only run tests which contain this string
     filter: Option<String>,
 }
@@ -75,6 +78,11 @@ fn main() {
 
     let base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let paths = CreusotPaths::new(base_path.parent().unwrap());
+
+    if args.erasure_check {
+        erasure_check(&paths);
+        return;
+    }
 
     let mut test_creusot_contracts = true;
     if let Some(ref filter) = args.filter {
@@ -164,24 +172,9 @@ fn translate_creusot_contracts(
             .status()
             .unwrap();
     }
-    let mut creusot_contracts = Command::new(CARGO_CREUSOT);
-    creusot_contracts
-        .args([
-            "creusot",
-            "--no-check-version",
-            "--stdout",
-            "--span-mode=relative",
-            "--spans-relative-to=tests/creusot-contracts",
-            "--metadata-path",
-        ])
-        .arg(&paths.cmeta)
-        .arg("--creusot-rustc")
-        .arg(&paths.creusot_rustc)
-        .args(["--", "--package", "creusot-contracts", "--quiet"])
-        .env("CREUSOT_CONTINUE", "true");
-
+    let mut build = build_creusot_contracts(paths, true, ErasureCheck::No);
     let mut out = args.stream();
-    let output = creusot_contracts.output().expect("could not translate `creusot_contracts`");
+    let output = build.output().expect("could not translate `creusot_contracts`");
     if !output.status.success() {
         writeln_color!(out, Color::Red, "could not translate");
         out.flush().unwrap();
@@ -234,6 +227,43 @@ fn translate_creusot_contracts(
     }
 
     succeeded
+}
+
+enum ErasureCheck {
+    No,
+    Warn,
+    Error,
+}
+
+fn build_creusot_contracts(
+    paths: &CreusotPaths,
+    output_cmeta: bool,
+    erasure_check: ErasureCheck,
+) -> Command {
+    let mut build = Command::new(CARGO_CREUSOT);
+    build.arg("creusot"); // cargo creusot
+    build.arg(match erasure_check {
+        ErasureCheck::No => "--erasure-check=no",
+        ErasureCheck::Warn => "--erasure-check=warn",
+        ErasureCheck::Error => "--erasure-check=error",
+    });
+    if output_cmeta {
+        build.args(["--creusot-extern", &format!("creusot_contracts={}", paths.cmeta.display())]);
+    } else {
+        build.arg("--export-metadata=false");
+    }
+    build.args([
+        "--no-check-version",
+        "--stdout",
+        "--span-mode=relative",
+        "--spans-relative-to=tests/creusot-contracts",
+    ]);
+    build.arg("--creusot-rustc").arg(&paths.creusot_rustc);
+    build.args(["--", "--package", "creusot-contracts", "--quiet"]).env("CREUSOT_CONTINUE", "true");
+    if matches!(erasure_check, ErasureCheck::Warn | ErasureCheck::Error) {
+        build.arg("-Zbuild-std=core,std");
+    }
+    build
 }
 
 fn run_creusot(file: &Path, paths: &CreusotPaths) -> Option<std::process::Command> {
@@ -458,4 +488,29 @@ where
     let test_failures = test_failures.load(atomic::Ordering::SeqCst);
 
     (test_failures, test_count)
+}
+
+/// This test runs on its own because it sets `-Zbuild-std`
+/// which slows things down.
+fn erasure_check(paths: &CreusotPaths) {
+    let build_once = |erasure_check, msg: &str| {
+        print!("{msg}");
+        std::io::stdout().flush().unwrap();
+        let mut build = build_creusot_contracts(paths, false, erasure_check);
+        let output = build.output().unwrap();
+        if !output.status.success() {
+            println!("failed");
+            if !output.stderr.is_empty() {
+                println!("{}", std::str::from_utf8(&output.stderr).unwrap());
+            }
+            std::process::exit(1)
+        }
+        println!("ok")
+    };
+    // The first build is in warning mode
+    // (1) in case there is a stale _creusot_erasure/creusot_contracts (it get rewritten at the end)
+    // (2) to check that warning mode doesn't error
+    build_once(ErasureCheck::Warn, "Collect #[erasure] requests... ");
+    fs::remove_dir_all("target/creusot").unwrap();
+    build_once(ErasureCheck::Error, "Check #[erasure]... ");
 }
