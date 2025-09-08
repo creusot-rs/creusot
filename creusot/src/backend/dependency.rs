@@ -27,6 +27,7 @@ pub(crate) enum Dependency<'tcx> {
     TupleField(&'tcx List<Ty<'tcx>>, FieldIdx),
     PreMod(PreMod),
     Eliminator(DefId, GenericArgsRef<'tcx>),
+    DynCast(Ty<'tcx>, Ty<'tcx>),
 }
 
 impl<'tcx> Dependency<'tcx> {
@@ -73,6 +74,9 @@ impl<'tcx> Dependency<'tcx> {
                         .replace(|c: char| !(c.is_ascii_alphanumeric() || c == '\''), "_"),
                 ))),
                 TyKind::Tuple(_) => Some(Symbol::intern("tuple")),
+                TyKind::Dynamic(_, _, _) => {
+                    Some(Symbol::intern(&type_string(tcx, String::new(), ty)))
+                }
                 _ => None,
             },
             Dependency::Item(did, subst) => match tcx.def_kind(did) {
@@ -108,6 +112,11 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::Eliminator(did, _) => {
                 Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
             }
+            Dependency::DynCast(source, target) => Some(Symbol::intern(&type_string(
+                tcx,
+                type_string(tcx, String::new(), target) + "_of",
+                source,
+            ))),
             Dependency::PreMod(_) => None,
         }
     }
@@ -182,6 +191,15 @@ fn type_string_walk(tcx: TyCtxt, prefix: &mut String, ty: Ty) {
             None => push_(prefix, "x"),
             Some(name) => push_(prefix, &to_alphanumeric(name.as_str())),
         },
+        Dynamic(traits, _, _) => {
+            prefix.push_str("dyn");
+            for tr in traits.iter() {
+                let ty::ExistentialPredicate::Trait(tr) = tr.skip_binder() else { continue };
+                let Some(name) = tcx.def_key(tr.def_id).get_opt_name() else { continue };
+                push_(prefix, &to_alphanumeric(name.as_str()));
+                break;
+            }
+        }
         _ => push_(prefix, "x"), // Unhandled types appear as "x"
     };
 }
