@@ -344,7 +344,7 @@ pub mod implementation {
 
                     let (perm_inner, perm_next) = ghost! {
                         let (p_inner, rest) = tokens.own_map.split_mut_ghost(&id);
-                        (p_inner.unwrap(), rest.get_mut_ghost(&next_id).unwrap())
+                        (p_inner, rest.get_mut_ghost(&next_id).unwrap())
                     }
                     .split();
                     let (bor_inner, bor_next) = unsafe {

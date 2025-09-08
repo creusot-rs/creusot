@@ -2,12 +2,9 @@
 
 use crate::*;
 
-/// Raw pointer whose ownership is tracked by a ghost [`PtrOwn`].
-pub type RawPtr<T> = *const T;
-
 /// Token that represents the ownership of a memory cell. A `PtrOwn` value only
 /// exists in the ghost world, but can be used in combination with a
-/// corresponding [`RawPtr`] to access and modify memory.
+/// corresponding `*const` to access and modify memory.
 ///
 /// A warning regarding memory leaks: dropping a `Ghost<PtrOwn<T>>` (we only
 /// ever handle ghost `PtrOwn` values) cannot deallocate the memory
@@ -22,14 +19,14 @@ pub type RawPtr<T> = *const T;
 /// created by [`PtrOwn::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
 #[allow(dead_code)]
 pub struct PtrOwn<T: ?Sized> {
-    ptr: RawPtr<T>,
+    ptr: *const T,
     val: Box<T>,
 }
 
 impl<T: ?Sized> PtrOwn<T> {
     /// The raw pointer whose ownership is tracked by this `PtrOwn`
     #[logic]
-    pub fn ptr(self) -> RawPtr<T> {
+    pub fn ptr(self) -> *const T {
         self.ptr
     }
 
@@ -49,19 +46,19 @@ impl<T: ?Sized> Invariant for PtrOwn<T> {
 }
 
 impl<T> PtrOwn<T> {
-    /// Creates a new `PtrOwn` and associated [`RawPtr`] by allocating a new memory
+    /// Creates a new `PtrOwn` and associated `*const` by allocating a new memory
     /// cell initialized with `v`.
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == v)]
-    pub fn new(v: T) -> (RawPtr<T>, Ghost<PtrOwn<T>>) {
+    pub fn new(v: T) -> (*const T, Ghost<PtrOwn<T>>) {
         Self::from_box(Box::new(v))
     }
 }
 
 impl<T: ?Sized> PtrOwn<T> {
-    /// Creates a ghost `PtrOwn` and associated [`RawPtr`] from an existing [`Box`].
+    /// Creates a ghost `PtrOwn` and associated `*const` from an existing [`Box`].
     #[trusted]
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == *val)]
-    pub fn from_box(val: Box<T>) -> (RawPtr<T>, Ghost<PtrOwn<T>>) {
+    pub fn from_box(val: Box<T>) -> (*const T, Ghost<PtrOwn<T>>) {
         assert!(core::mem::size_of_val::<T>(&*val) > 0, "PtrOwn doesn't support ZSTs");
         (Box::into_raw(val), Ghost::conjure())
     }
@@ -78,7 +75,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
-    pub unsafe fn as_ref(ptr: RawPtr<T>, own: Ghost<&PtrOwn<T>>) -> &T {
+    pub unsafe fn as_ref(ptr: *const T, own: Ghost<&PtrOwn<T>>) -> &T {
         unsafe { &*ptr }
     }
 
@@ -96,7 +93,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[ensures(*result == *own.val())]
     #[ensures((^own).ptr() == own.ptr())]
     #[ensures(*(^own).val() == ^result)]
-    pub unsafe fn as_mut(ptr: RawPtr<T>, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
+    pub unsafe fn as_mut(ptr: *const T, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
         unsafe { &mut *(ptr as *mut _) }
     }
 
@@ -112,7 +109,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
-    pub unsafe fn to_box(ptr: RawPtr<T>, own: Ghost<PtrOwn<T>>) -> Box<T> {
+    pub unsafe fn to_box(ptr: *const T, own: Ghost<PtrOwn<T>>) -> Box<T> {
         unsafe { Box::from_raw(ptr as *mut _) }
     }
 
@@ -125,7 +122,7 @@ impl<T: ?Sized> PtrOwn<T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PtrOwn).
     #[requires(ptr == own.ptr())]
-    pub unsafe fn drop(ptr: RawPtr<T>, own: Ghost<PtrOwn<T>>) {
+    pub unsafe fn drop(ptr: *const T, own: Ghost<PtrOwn<T>>) {
         let _ = Self::to_box(ptr, own);
     }
 

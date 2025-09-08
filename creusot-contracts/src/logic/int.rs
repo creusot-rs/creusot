@@ -1,4 +1,5 @@
 use crate::{
+    ghost::Plain,
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic},
     std::ops::{Add, Div, Mul, Neg, Rem, Sub},
     *,
@@ -35,6 +36,8 @@ impl crate::Clone for Int {
     }
 }
 impl Copy for Int {}
+#[trusted]
+impl Plain for Int {}
 
 impl Int {
     /// Create a new `Int` value

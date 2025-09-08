@@ -1,19 +1,15 @@
 extern crate creusot_contracts;
-use creusot_contracts::{
-    logic::Seq,
-    ptr_own::{PtrOwn, RawPtr},
-    *,
-};
+use creusot_contracts::{logic::Seq, ptr_own::PtrOwn, *};
 
 struct Cell<T> {
     v: T,
-    next: RawPtr<Cell<T>>,
+    next: *const Cell<T>,
 }
 
 pub struct List<T> {
     // actual data
-    first: RawPtr<Cell<T>>,
-    last: RawPtr<Cell<T>>,
+    first: *const Cell<T>,
+    last: *const Cell<T>,
     // ghost
     seq: Ghost<Seq<PtrOwn<Cell<T>>>>,
 }

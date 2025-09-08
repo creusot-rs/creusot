@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{ghost::Plain, *};
 pub use ::std::char::*;
 
 impl View for char {
@@ -26,6 +26,9 @@ extern_spec! {
         fn default() -> char;
     }
 }
+
+#[trusted]
+impl Plain for char {}
 
 /// Extra methods for `char`
 pub trait CharExt {
