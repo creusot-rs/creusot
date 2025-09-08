@@ -173,7 +173,7 @@ pub struct TranslationCtx<'tcx> {
     pub(crate) thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
-    refines: HashMap<DefId, DefId>,
+    pub(crate) refines: HashMap<DefId, Vec<DefId>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
@@ -497,8 +497,8 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn load_refines(&mut self) {
         for (&def_id, thir) in self.thir.iter() {
             if is_refines(self.tcx, def_id.to_def_id()) {
-                let (i, es) = extract_refines_from_item(self, def_id, thir);
-                self.refines.insert(i, es);
+                let (refiner, refined) = extract_refines_from_item(self, def_id, thir);
+                self.refines.entry(refiner).or_insert_with(|| vec![]).push(refined);
             }
         }
     }
@@ -536,6 +536,10 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn crate_name(&self) -> why3::Symbol {
         *self.crate_name.get_or_init(|| crate_name(self.tcx))
+    }
+
+    pub(crate) fn refines(&self, def_id: DefId) -> &[DefId] {
+        self.refines.get(&def_id).map_or(&[], |v| &v)
     }
 }
 

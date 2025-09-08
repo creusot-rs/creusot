@@ -3,6 +3,7 @@
 mod ghost;
 mod opacity;
 mod purity;
+mod refines;
 mod terminates;
 mod tokens_new;
 mod traits;
@@ -22,7 +23,7 @@ use rustc_span::Symbol;
 use crate::{
     contracts_items::{get_builtin, is_extern_spec, is_no_translate, is_spec, is_trusted},
     ctx::{HasTyCtxt as _, TranslationCtx},
-    validate::tokens_new::validate_tokens_new,
+    validate::{refines::validate_refines, tokens_new::validate_tokens_new},
 };
 
 /// Validate that creusot buitins are annotated with `#[trusted]`.
@@ -61,4 +62,5 @@ pub(crate) fn validate(ctx: &TranslationCtx) {
     validate_traits(ctx);
     validate_impls(ctx);
     validate_trusted(ctx);
+    validate_refines(ctx);
 }
