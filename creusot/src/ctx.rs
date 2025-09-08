@@ -3,14 +3,15 @@ use crate::{
     callbacks,
     contracts_items::{
         get_creusot_item, get_inv_function, get_resolve_function, get_resolve_method,
-        is_extern_spec, is_logic, is_open_inv_param, is_prophetic, opacity_witness_name,
+        is_extern_spec, is_logic, is_open_inv_param, is_prophetic, is_refines,
+        opacity_witness_name,
     },
     metadata::{BinaryMetadata, Metadata},
     naming::variable_name,
     options::Options,
     translation::{
         self,
-        external::{ExternSpec, extract_extern_specs_from_item},
+        external::{ExternSpec, extract_extern_specs_from_item, extract_refines_from_item},
         fmir,
         pearlite::{self, ScopedTerm},
         specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
@@ -172,6 +173,7 @@ pub struct TranslationCtx<'tcx> {
     pub(crate) thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
+    refines: HashMap<DefId, DefId>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
@@ -239,6 +241,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             opts,
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
+            refines: Default::default(),
             fmir_body: Default::default(),
             trait_impl: Default::default(),
             sig: Default::default(),
@@ -488,6 +491,15 @@ impl<'tcx> TranslationCtx<'tcx> {
                     additional_predicates,
                 },
             );
+        }
+    }
+
+    pub(crate) fn load_refines(&mut self) {
+        for (&def_id, thir) in self.thir.iter() {
+            if is_refines(self.tcx, def_id.to_def_id()) {
+                let (i, es) = extract_refines_from_item(self, def_id, thir);
+                self.refines.insert(i, es);
+            }
         }
     }
 

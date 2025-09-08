@@ -176,3 +176,41 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
         thir::visit::walk_expr(self, expr);
     }
 }
+
+pub(crate) fn extract_refines_from_item<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    local_def_id: LocalDefId,
+    &(ref thir, expr): &(Thir<'tcx>, thir::ExprId),
+) -> (DefId, DefId) {
+    let def_id = local_def_id.to_def_id();
+    let parent = ctx.tcx.parent(def_id);
+    let span = ctx.def_span(def_id);
+    let mut visit = ExtractExternItems::new(thir);
+    visit.visit_expr(&thir[expr]);
+    let (id, subst) = visit.items.pop().unwrap();
+    let (id, _) =
+        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id, subst).to_opt(id, subst).unwrap_or_else(|| {
+            let mut err = ctx.fatal_error(
+                ctx.def_span(def_id),
+                "could not derive original instance from external specification",
+            );
+            err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
+            err.emit()
+        });
+    // Check that the result types match
+    let result_ty = ctx.tcx.fn_sig(parent).instantiate_identity().skip_binder().output();
+    let this_ty = thir[expr].ty;
+    if result_ty != this_ty {
+        ctx.crash_and_error(
+            span,
+            format!(
+                "result type of refined function doesn't match\n {}(..) -> {}\n {}(..) -> {}",
+                ctx.def_path_str(parent),
+                result_ty,
+                ctx.def_path_str(id),
+                this_ty,
+            ),
+        )
+    }
+    (parent, id)
+}

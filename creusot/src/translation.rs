@@ -70,6 +70,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn std:
     let start = Instant::now();
     ctx.load_metadata();
     ctx.load_extern_specs();
+    ctx.load_refines();
     validate(&ctx);
     ctx.dcx().abort_if_errors();
     debug!("after_analysis_validate: {:?}", start.elapsed());
