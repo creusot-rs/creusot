@@ -47,25 +47,9 @@ impl ToTokens for FnOrMethod {
     }
 }
 
-pub enum ContractSubject {
-    FnOrMethod(FnOrMethod),
-    Closure(ExprClosure),
-}
-
-impl Parse for ContractSubject {
+impl Parse for FnOrMethod {
     fn parse(input: parse::ParseStream) -> Result<Self> {
         let attrs = input.call(Attribute::parse_outer)?;
-        if input.peek(Token![|])
-            || input.peek(Token![async]) && (input.peek2(Token![|]) || input.peek2(Token![move]))
-            || input.peek(Token![static])
-            || input.peek(Token![move])
-        {
-            let mut closure: ExprClosure = input.parse()?;
-            let _: Option<Token![,]> = input.parse()?;
-            closure.attrs.extend(attrs);
-            return Ok(ContractSubject::Closure(closure));
-        }
-
         let defaultness: Option<_> = input.parse()?;
         // Infalliable, no visibility = inherited
         let vis: Visibility = input.parse()?;
@@ -85,14 +69,38 @@ impl Parse for ContractSubject {
             return Err(lookahead.error());
         };
 
-        Ok(ContractSubject::FnOrMethod(FnOrMethod {
+        Ok(FnOrMethod {
             defaultness,
             visibility: vis,
             attrs,
             sig,
             body: brace_token.map(|brace_token| Block { brace_token, stmts }),
             semi_token,
-        }))
+        })
+    }
+}
+
+pub enum ContractSubject {
+    FnOrMethod(FnOrMethod),
+    Closure(ExprClosure),
+}
+
+impl Parse for ContractSubject {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let attrs = input.call(Attribute::parse_outer)?;
+        if input.peek(Token![|])
+            || input.peek(Token![async]) && (input.peek2(Token![|]) || input.peek2(Token![move]))
+            || input.peek(Token![static])
+            || input.peek(Token![move])
+        {
+            let mut closure: ExprClosure = input.parse()?;
+            let _: Option<Token![,]> = input.parse()?;
+            closure.attrs.extend(attrs);
+            return Ok(ContractSubject::Closure(closure));
+        }
+        let mut item = FnOrMethod::parse(input)?;
+        item.attrs = attrs;
+        Ok(ContractSubject::FnOrMethod(item))
     }
 }
 

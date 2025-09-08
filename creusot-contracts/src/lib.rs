@@ -393,6 +393,9 @@ pub mod macros {
     /// This attribute indicates that the function need to be proved in "bitwise" mode, which means that Creusot will use
     /// the bitvector theory of SMT solvers.
     pub use base_macros::bitwise_proof;
+
+    /// This function refines another function.
+    pub use base_macros::refines;
 }
 
 #[doc(hidden)]

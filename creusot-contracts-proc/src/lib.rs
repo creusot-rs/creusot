@@ -63,6 +63,7 @@ proc_macro_attributes! {
     open_inv_result
     bitwise_proof
     maintains
+    refines
 }
 
 macro_rules! proc_macros {
