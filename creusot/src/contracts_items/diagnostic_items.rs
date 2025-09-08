@@ -128,6 +128,10 @@ contracts_items! {{
         is_fn_ghost_trait               get_fn_ghost_trait
     fn size_of_logic                     ["size_of_logic"]
         is_size_of_logic                get_size_of_logic
+    fn PtrOwn::as_ref                    ["ptr_own_as_ref"]
+        is_ptr_own_as_ref               get_ptr_own_as_ref
+    fn PtrOwn::as_mut                    ["ptr_own_as_mut"]
+        is_ptr_own_as_mut               get_ptr_own_as_mut
 }}
 
 contracts_items! { #[std_items] {

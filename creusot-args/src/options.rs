@@ -18,9 +18,6 @@ pub struct CreusotArgs {
     /// Directory with respect to which (relative) spans should be relative to.
     /// Necessary when using --stdout with relative spans, not needed otherwise.
     pub spans_relative_to: Option<PathBuf>,
-    #[clap(long)]
-    /// Location that Creusot metadata for this crate should be emitted to.
-    pub metadata_path: Option<String>,
     /// Tell creusot to disable metadata exports.
     #[arg(long, default_value_t = true, action = clap::ArgAction::Set)]
     pub export_metadata: bool,
@@ -39,11 +36,53 @@ pub struct CreusotArgs {
     #[clap(long, default_value_t = false, action = clap::ArgAction::SetTrue)]
     pub monolithic: bool,
     /// Specify locations of metadata for external crates. The format is the same as rustc's `--extern` flag.
-    #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, String>, required=false)]
-    pub extern_paths: Vec<(String, String)>,
+    #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, PathBuf>, required=false)]
+    pub extern_paths: Vec<(String, PathBuf)>,
     /// Use `result` as the trigger of definition and specification axioms of logic/ghost functions
     #[clap(long, default_value_t = false, action = clap::ArgAction::Set)]
     pub simple_triggers: bool,
+    /// Enable `#[erasure]` checking across crates.
+    #[clap(long, num_args = 0..=1, default_value_t = ErasureCheck::Warn, default_missing_value = "error")]
+    pub erasure_check: ErasureCheck,
+    /// Directory where cross-crate information for `#[erasure]` checks is stored.
+    #[clap(long)]
+    pub erasure_check_dir: Option<PathBuf>,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum, Serialize, Deserialize)]
+pub enum ErasureCheck {
+    /// Disable `#[erasure]` checks.
+    No,
+    /// Output `#[erasure]` check failures as warnings.
+    Warn,
+    /// Output `#[erasure]` check failures as errors.
+    Error,
+}
+
+impl ErasureCheck {
+    pub fn is_no(&self) -> bool {
+        match self {
+            ErasureCheck::No => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_error(&self) -> bool {
+        match self {
+            ErasureCheck::Error => true,
+            _ => false,
+        }
+    }
+}
+
+impl ::std::fmt::Display for ErasureCheck {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ErasureCheck::No => write!(f, "no"),
+            ErasureCheck::Warn => write!(f, "warn"),
+            ErasureCheck::Error => write!(f, "error"),
+        }
+    }
 }
 
 /// Parse a single key-value pair
@@ -83,8 +122,7 @@ pub enum SpanMode {
 
 #[derive(Clone)]
 pub struct Options {
-    pub extern_paths: HashMap<String, String>,
-    pub metadata_path: Option<String>,
+    pub extern_paths: HashMap<String, PathBuf>,
     pub export_metadata: bool,
     pub should_output: bool,
     pub output: Output,
@@ -93,6 +131,8 @@ pub struct Options {
     pub in_cargo: bool,
     pub span_mode: SpanMode,
     pub simple_triggers: bool,
+    pub erasure_check: ErasureCheck,
+    pub erasure_check_dir: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone)]
@@ -105,7 +145,6 @@ pub enum Output {
 
 impl CreusotArgs {
     pub fn to_options(self) -> Result<Options, String> {
-        let metadata_path = self.metadata_path;
         let extern_paths = self.extern_paths.into_iter().collect();
 
         let cargo_creusot = std::env::var("CARGO_CREUSOT").is_ok();
@@ -138,7 +177,6 @@ impl CreusotArgs {
 
         Ok(Options {
             extern_paths,
-            metadata_path,
             export_metadata: self.export_metadata,
             should_output,
             output,
@@ -147,6 +185,8 @@ impl CreusotArgs {
             monolithic: self.monolithic,
             prefix: Vec::new(), // to be set in callbacks::ToWhy::set_output_dir
             simple_triggers: self.simple_triggers,
+            erasure_check: self.erasure_check,
+            erasure_check_dir: self.erasure_check_dir,
         })
     }
 }

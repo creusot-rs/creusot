@@ -42,15 +42,18 @@ fn creusot(subcmd: Option<Doc>, args: CargoCreusotArgs, root: &PathBuf) -> Resul
     if !args.no_check_version {
         check_contracts_version()?;
     }
-
-    invoke_cargo(subcmd, &args.creusot_args, args.creusot_rustc, args.cargo_flags, root);
+    let mut creusot_args = args.creusot_args;
+    if !creusot_args.erasure_check.is_no() && creusot_args.erasure_check_dir.is_none() {
+        creusot_args.erasure_check_dir = Some(root.join("_creusot_erasure"));
+    }
+    invoke_cargo(subcmd, creusot_args, args.creusot_rustc, args.cargo_flags, root);
     warn_if_dangling()?;
     Ok(())
 }
 
 fn invoke_cargo(
     doc: Option<Doc>,
-    args: &CreusotArgs,
+    args: CreusotArgs,
     creusot_rustc: Option<PathBuf>,
     cargo_flags: Vec<String>,
     root: &PathBuf,

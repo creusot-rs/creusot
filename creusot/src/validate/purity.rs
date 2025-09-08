@@ -156,9 +156,9 @@ impl PurityVisitor<'_, '_> {
     /// Validate the body of a spec closure.
     fn validate_spec_purity(&mut self, closure_id: LocalDefId, prophetic: bool) {
         // If this is None there must be a type error that will be reported later so we can skip this silently.
-        let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
+        let Some((thir, expr)) = self.ctx.get_local_thir(closure_id) else { return };
         PurityVisitor { thir, context: Purity::Logic { prophetic }, ..*self }
-            .visit_expr(&thir[expr]);
+            .visit_expr(&thir[*expr]);
     }
 }
 
@@ -263,8 +263,8 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     );
                 }
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
-                let Some((ref thir, expr)) = self.ctx.get_thir(closure_id) else { return };
-                PurityVisitor { thir, ..*self }.visit_expr(&thir[expr]);
+                let Some((thir, expr)) = self.ctx.get_local_thir(closure_id) else { return };
+                PurityVisitor { thir, ..*self }.visit_expr(&thir[*expr]);
             }
             ExprKind::Scope {
                 region_scope: _,

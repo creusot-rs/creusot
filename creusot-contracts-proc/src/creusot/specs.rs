@@ -251,7 +251,7 @@ fn req_body(p: &Term) -> TokenStream {
 }
 
 fn spec_attrs(tag: &Ident) -> TokenStream {
-    let name_tag = format!("{}", quote! { #tag });
+    let name_tag = tag.to_string();
     quote! {
          #[creusot::no_translate]
          #[creusot::item=#name_tag]

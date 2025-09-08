@@ -76,6 +76,9 @@ fn setup_plugin() {
         run_compiler(&args, &mut ToWhy::new(opts))
     } else {
         args.push("--cfg=creusot".to_string());
-        run_compiler(&args, &mut DefaultCallbacks)
+        match opts {
+            None => run_compiler(&args, &mut DefaultCallbacks), // This is probably rustc -vV
+            Some(opts) => run_compiler(&args, &mut WithoutContracts::new(opts)),
+        }
     }
 }

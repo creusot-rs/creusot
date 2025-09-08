@@ -1,5 +1,6 @@
 mod derive;
 pub(crate) mod doc;
+mod erasure;
 mod extern_spec;
 mod invariant;
 mod logic;
@@ -7,8 +8,9 @@ pub(crate) mod pretyping;
 mod proof;
 mod specs;
 
-pub use self::{
+pub(crate) use self::{
     derive::*,
+    erasure::erasure,
     extern_spec::extern_spec,
     logic::{law, logic, open, pearlite},
     proof::{ghost, ghost_let, invariant, proof_assert, snapshot},

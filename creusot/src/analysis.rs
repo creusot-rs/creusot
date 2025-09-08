@@ -29,7 +29,6 @@ use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
     on_all_children_bits,
 };
-use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::Symbol;
 use rustc_type_ir::TyKind;
 use why3::Ident;
@@ -37,7 +36,7 @@ use why3::Ident;
 use crate::{
     analysis::resolve::{HasMoveDataExt as _, Resolver, place_contains_borrow_deref},
     callbacks,
-    contracts_items::{is_snapshot_closure, is_spec},
+    contracts_items::{is_erasure, is_snapshot_closure, is_spec},
     ctx::{HasTyCtxt, TranslationCtx},
     extended_location::ExtendedLocation,
     gather_spec_closures::{
@@ -49,6 +48,7 @@ use crate::{
         function::discriminator_for_switch,
         pearlite::{self, Term},
     },
+    util::Orphan,
 };
 
 type Resolves<'tcx> = Vec<Place<'tcx>>;
@@ -119,25 +119,6 @@ impl<'tcx> BorrowData<'tcx> {
     }
 }
 
-/// A newtype to carry orphan trait impls.
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
-struct Orphan<T>(T);
-
-impl<D: Decoder> Decodable<D> for Orphan<Location> {
-    fn decode(decoder: &mut D) -> Self {
-        let block = Decodable::decode(decoder);
-        let statement_index = Decodable::decode(decoder);
-        Orphan(Location { block, statement_index })
-    }
-}
-
-impl<E: Encoder> Encodable<E> for Orphan<Location> {
-    fn encode(&self, encoder: &mut E) {
-        self.0.block.encode(encoder);
-        self.0.statement_index.encode(encoder);
-    }
-}
-
 /// Pearlite terms that appear in a body and metadata about its variables.
 pub(crate) struct BodySpecs<'tcx> {
     /// Invariants placed at the beginning of their respective loops.
@@ -177,7 +158,10 @@ impl<'tcx> BodySpecs<'tcx> {
         let mut erased_locals = MixedBitSet::new_empty(body.local_decls.len());
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let ty::TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if is_spec(tcx, *def_id) || is_snapshot_closure(tcx, *def_id) {
+                if is_spec(tcx, *def_id)
+                    || is_erasure(tcx, *def_id)
+                    || is_snapshot_closure(tcx, *def_id)
+                {
                     erased_locals.insert(local);
                 }
             }
@@ -873,6 +857,7 @@ pub(crate) fn run_without_specs<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: LocalDefId,
 ) -> BorrowData<'tcx> {
+    debug!("run_without_specs for {}", tcx.def_path_str(def_id.to_def_id()));
     let body = callbacks::get_body(tcx, def_id);
     let mut body_specs = BodySpecs::empty();
     let corenamer = HashMap::new();
@@ -890,13 +875,13 @@ pub(crate) fn run_with_specs<'tcx>(
     body: &BodyWithBorrowckFacts<'tcx>,
     body_specs: &mut BodySpecs<'tcx>,
 ) -> BorrowData<'tcx> {
+    debug!("run_with_specs for {}", ctx.tcx.def_path_str(body.body.source.def_id()));
     let tcx = ctx.tcx;
     let corenamer = &ctx.corenamer.borrow();
     // We take `locals` from `body_specs` and put it back later
     let locals = std::mem::take(&mut body_specs.locals);
     let tree = fmir::ScopeTree::build(&body.body, tcx, &locals);
     let analysis_env = AnalysisEnv::new(tree, corenamer, locals);
-
     let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
     let mut analysis = Analysis::new(tcx, analysis_env, body, body_specs, &move_data);
     analysis.run();

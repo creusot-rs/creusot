@@ -7,6 +7,7 @@ use crate::{
         traits::TraitResolved,
     },
     util::erased_identity_for_item,
+    validate::is_ghost_ty_,
 };
 use indexmap::IndexSet;
 use rustc_hir::def_id::{DefId, LocalDefId};
@@ -174,5 +175,79 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
             }
         }
         thir::visit::walk_expr(self, expr);
+    }
+}
+
+// There's probably a better place for the following.
+// It is here because it is similar logic to `extract_extern_specs_from_item` above.
+
+/// Input: `local_def_id` of a `#[creusot::spec::erasure]` closure.
+/// Output:
+/// - `LocalDefId` of the original `#[erasure]` item (the parent of the input id)
+/// - `Erased<'tcx>` info about the erased function from the point of view of callers
+///   (THIR trait method calls are not resolved)
+/// - `(DefId, GenericArgsRef)` of the actual body of the erased function
+pub(crate) fn extract_erasure_from_item<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    local_def_id: LocalDefId,
+    &(ref thir, expr): &(Thir<'tcx>, thir::ExprId),
+) -> (LocalDefId, Erased<'tcx>, (DefId, GenericArgsRef<'tcx>)) {
+    let def_id = local_def_id.to_def_id();
+    let parent = ctx.tcx.parent(def_id);
+    let span = ctx.def_span(def_id);
+    let mut visit = ExtractExternItems::new(thir);
+    visit.visit_expr(&thir[expr]);
+    let (id_thir, subst_thir) = visit.items.pop().unwrap();
+    let (id_resolved, subst_resolved) =
+        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id_thir, subst_thir).to_opt(id_thir, subst_thir).unwrap_or_else(|| {
+            let mut err = ctx.fatal_error(
+                ctx.def_span(def_id),
+                "could not derive original instance from external specification",
+            );
+            err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
+            err.emit()
+        });
+    let parent_sig = ctx
+        .tcx
+        .instantiate_bound_regions_with_erased(ctx.tcx.fn_sig(parent).instantiate_identity());
+    // Check that the result types match
+    let ty1 = parent_sig.output();
+    let ty2 = thir[expr].ty;
+    if !eq_erased_ty(ctx.tcx, ty1, ty2) {
+        ctx.crash_and_error(
+            span,
+            format!(
+                "result type of target function doesn't match\n {}(..) -> {}\n {}(..) -> {}",
+                ctx.def_path_str(parent),
+                ty1,
+                ctx.def_path_str(id_resolved),
+                ty2,
+            ),
+        )
+    }
+    let erase_args = parent_sig.inputs().iter().map(|arg| is_ghost_ty_(ctx.tcx, *arg)).collect();
+    (
+        parent.expect_local(),
+        Erased { def: (id_thir, subst_thir), erase_args },
+        (id_resolved, subst_resolved),
+    )
+}
+
+/// `ty1` equals `ty2` up to erasure if:
+/// - `ty1 == ty2`
+/// - `ty2 == (ty3, Ghost<_>)` and `ty1` equals `ty2` up to erasure
+/// - `*mut T` and `*const T` are also equal up to erasure
+fn eq_erased_ty<'tcx>(tcx: TyCtxt<'tcx>, ty1: Ty<'tcx>, ty2: Ty<'tcx>) -> bool {
+    if ty1 == ty2 {
+        return true;
+    }
+    match ty1.kind() {
+        TyKind::Tuple(tys)
+            if tys.len() == 2 && eq_erased_ty(tcx, tys[0], ty2) && is_ghost_ty_(tcx, tys[1]) =>
+        {
+            true
+        }
+        TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = ty2.kind() => ty1 == ty2,
+        _ => false,
     }
 }

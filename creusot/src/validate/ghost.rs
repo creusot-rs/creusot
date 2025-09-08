@@ -137,16 +137,15 @@ impl<'tcx> GhostValidatePlaces<'tcx> {
             _ => false,
         }
     }
+}
 
-    /// Determine if the given type `ty` is a `Ghost`.
-    fn is_ghost_ty(&self, ty: Ty<'tcx>) -> bool {
-        match ty.kind() {
-            rustc_type_ir::TyKind::Adt(containing_type, _) => {
-                is_ghost_ty(self.tcx, containing_type.did())
-                    || is_snap_ty(self.tcx, containing_type.did())
-            }
-            _ => false,
+/// Determine if the given type `ty` is a `Ghost`.
+pub(crate) fn is_ghost_ty_<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    match ty.kind() {
+        rustc_type_ir::TyKind::Adt(containing_type, _) => {
+            is_ghost_ty(tcx, containing_type.did()) || is_snap_ty(tcx, containing_type.did())
         }
+        _ => false,
     }
 }
 
@@ -181,7 +180,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
         let base_id = base_hir_node(place_with_id);
         // No need to check for copy types, they cannot appear here
         if self.bound_in_block(place_with_id)
-            || self.is_ghost_ty(ty)
+            || is_ghost_ty_(self.tcx, ty)
             || base_id.is_some_and(|id| is_ghost_let(self.tcx, id))
         {
             return;
@@ -211,7 +210,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
     ) {
         let ty = place_with_id.place.ty();
         if self.bound_in_block(place_with_id)
-            || self.is_ghost_ty(ty)
+            || is_ghost_ty_(self.tcx, ty)
             || bk == rustc_middle::ty::BorrowKind::Immutable
         {
             return;
@@ -221,7 +220,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
 
     fn mutate(&mut self, assignee_place: &PlaceWithHirId<'tcx>, diag_expr_id: HirId) {
         let ty = assignee_place.place.ty();
-        if self.bound_in_block(assignee_place) || self.is_ghost_ty(ty) {
+        if self.bound_in_block(assignee_place) || is_ghost_ty_(self.tcx, ty) {
             return;
         }
         self.errors.push((diag_expr_id, base_hir_node(assignee_place), true));

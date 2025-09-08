@@ -87,9 +87,9 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
         if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
             continue;
         }
-        let (thir, expr) = ctx.get_thir(local_id).unwrap();
+        let (thir, expr) = ctx.get_local_thir(local_id).unwrap();
         let mut visitor = GhostLoops { thir, ctx, is_in_ghost: false };
-        visitor.visit_expr(&thir[expr]);
+        visitor.visit_expr(&thir[*expr]);
     }
 
     let CallGraph { graph: mut call_graph } = CallGraph::build(ctx);
@@ -466,11 +466,11 @@ impl CallGraph {
             let node = build_call_graph.insert_function(GraphNode::Function(def_id));
 
             let typing_env = ctx.typing_env(def_id);
-            let (thir, expr) = ctx.get_thir(local_id).unwrap();
+            let (thir, expr) = ctx.get_local_thir(local_id).unwrap();
 
             // Collect functions called by this function
             let calls = &mut IndexSet::new();
-            FunctionCalls { def_id, thir, ctx, calls }.visit_expr(&thir[expr]);
+            FunctionCalls { def_id, thir, ctx, calls }.visit_expr(&thir[*expr]);
 
             for &(called_id, generic_args, call_span) in calls.iter() {
                 build_call_graph.function_call(
@@ -516,8 +516,8 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
             }
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
-                let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
-                FunctionCalls { thir, calls: self.calls, ..*self }.visit_expr(&thir[expr]);
+                let Some((thir, expr)) = self.ctx.get_local_thir(closure_id) else { return };
+                FunctionCalls { thir, calls: self.calls, ..*self }.visit_expr(&thir[*expr]);
             }
             thir::ExprKind::Loop { body } => {
                 let body = &self.thir.exprs[body];
@@ -576,8 +576,8 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> {
         match expr.kind {
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
-                let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
-                GhostLoops { thir, ..*self }.visit_expr(&thir[expr]);
+                let Some((thir, expr)) = self.ctx.get_local_thir(closure_id) else { return };
+                GhostLoops { thir, ..*self }.visit_expr(&thir[*expr]);
             }
             thir::ExprKind::Loop { body } if self.is_in_ghost => {
                 let body = &self.thir.exprs[body];
