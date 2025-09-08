@@ -1,6 +1,6 @@
 //! Definition of [`Snapshot`]
 
-use crate::{logic::ops::Fin, *};
+use crate::{ghost::Plain, logic::ops::Fin, *};
 
 #[cfg(creusot)]
 use crate::std::ops::{Deref, DerefMut};
@@ -92,7 +92,9 @@ impl<T: ?Sized> Snapshot<T> {
         let _ = value;
         dead
     }
+}
 
+impl<T> Snapshot<T> {
     /// Get the value of the snapshot.
     ///
     /// When possible, you should instead use the dereference operator.
@@ -107,10 +109,7 @@ impl<T: ?Sized> Snapshot<T> {
     #[trusted]
     #[logic]
     #[creusot::builtins = "identity"]
-    pub fn inner(self) -> T
-    where
-        T: Sized, // TODO: don't require T: Sized here. Problem: return type is T.
-    {
+    pub fn inner(self) -> T {
         dead
     }
 
@@ -119,5 +118,16 @@ impl<T: ?Sized> Snapshot<T> {
     #[cfg(not(creusot))]
     pub fn from_fn(_: fn() -> T) -> Self {
         Snapshot(std::marker::PhantomData)
+    }
+
+    /// Extract a plain value from a snapshot in ghost code.
+    #[trusted]
+    #[ensures(*result == *self)]
+    #[check(ghost)]
+    pub fn into_ghost(self) -> Ghost<T>
+    where
+        T: Plain,
+    {
+        Ghost::conjure()
     }
 }

@@ -1,4 +1,5 @@
 use crate::{
+    ghost::Plain,
     logic::ops::{AddLogic, MulLogic, NegLogic, NthBitLogic, SubLogic},
     *,
 };
@@ -24,6 +25,9 @@ macro_rules! mach_int {
                 pearlite! { self@ }
             }
         }
+
+        #[trusted]
+        impl Plain for $t {}
 
         extern_spec! {
             impl Default for $t {

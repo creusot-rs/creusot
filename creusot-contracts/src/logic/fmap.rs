@@ -1,5 +1,5 @@
 use crate::{
-    logic::{Mapping, ops::IndexLogic},
+    logic::{FSet, Mapping, ops::IndexLogic},
     std::option::OptionExt as _,
     *,
 };
@@ -215,6 +215,7 @@ impl<K: ?Sized, V> FMap<K, V> {
         None => None,
         Some(v) => Some(f[(k, v)]),
     })]
+    #[ensures(result.len() == self.len())]
     pub fn map<V2>(self, f: Mapping<(K, V), V2>) -> FMap<K, V2>
     where
         K: Sized,
@@ -251,6 +252,15 @@ impl<K: ?Sized, V> FMap<K, V> {
     where
         K: Sized,
     {
+        dead
+    }
+
+    /// Returns the set of keys in the map.
+    #[logic]
+    #[trusted]
+    #[ensures(forall<k: K> result.contains(k) == self.contains(k))]
+    #[ensures(result.len() == self.len())]
+    pub fn keys(self) -> FSet<K> {
         dead
     }
 }
@@ -390,11 +400,10 @@ impl<K, V> FMap<K, V> {
     /// ghost! {
     ///     map.insert_ghost(1, 21);
     ///     map.insert_ghost(2, 42);
-    ///     if let (Some(x), map2) = map.split_mut_ghost(&1) {
-    ///         *x = 22;
-    ///         map2.insert_ghost(3, 30);
-    ///         map2.insert_ghost(1, 56); // This modification will be ignored on `map`
-    ///     }
+    ///     let (x, map2) = map.split_mut_ghost(&1);
+    ///     *x = 22;
+    ///     map2.insert_ghost(3, 30);
+    ///     map2.insert_ghost(1, 56); // This modification will be ignored on `map`
     ///     proof_assert!(map[1i32] == 22i32);
     ///     proof_assert!(map[2i32] == 42i32);
     ///     proof_assert!(map[3i32] == 30i32);
@@ -402,16 +411,10 @@ impl<K, V> FMap<K, V> {
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(if self.contains(*key) {
-        *result.1 == (*self).remove(*key) &&
-        match result.0 {
-            None => false,
-            Some(r) => self[*key] == *r && ^self == (^result.1).insert(*key, ^r),
-        }
-    } else {
-        result.0 == None && result.1 == self
-    })]
-    pub fn split_mut_ghost(&mut self, key: &K) -> (Option<&mut V>, &mut Self) {
+    #[requires(self.contains(*key))]
+    #[ensures(*result.1 == (*self).remove(*key))]
+    #[ensures(self[*key] == *result.0 && ^self == (^result.1).insert(*key, ^result.0))]
+    pub fn split_mut_ghost(&mut self, key: &K) -> (&mut V, &mut Self) {
         let _ = key;
         panic!()
     }

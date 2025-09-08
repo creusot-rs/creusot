@@ -1,4 +1,5 @@
 use crate::{
+    ghost::Plain,
     invariant::*,
     logic::{Mapping, ops::IndexLogic},
     *,
@@ -672,7 +673,9 @@ impl<T: Clone + Copy> Clone for Seq<T> {
     }
 }
 
-impl<T: Clone + Copy> Copy for Seq<T> {}
+impl<T: Copy> Copy for Seq<T> {}
+#[trusted]
+impl<T: Plain> Plain for Seq<T> {}
 
 impl<T> Invariant for Seq<T> {
     #[logic(prophetic)]

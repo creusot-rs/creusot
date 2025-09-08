@@ -225,3 +225,22 @@ impl<T, U: ?Sized> Ghost<(T, U)> {
         (Ghost::conjure(), Ghost::conjure())
     }
 }
+
+/// A marker trait for types that can be extracted from snapshots in ghost code.
+/// These are type that only contain plain data and whose onership does not convey
+/// any additional information.
+///
+/// For example, Booleans and integers are plain, but references are not, be they
+/// mutable or not. Indeed, the ownership of a shared reference can be used to deduce
+/// facts, for example with `PtrOwn::disjoint_lemma`.
+#[trusted]
+pub trait Plain: Copy {}
+
+#[trusted]
+impl Plain for bool {}
+
+#[trusted]
+impl<T> Plain for *const T {}
+
+#[trusted]
+impl<T> Plain for *mut T {}

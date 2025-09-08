@@ -23,11 +23,11 @@ pub fn ghost_map() {
         proof_assert!(map.lookup(2i32) == 100i32);
         proof_assert!(map.lookup(1i32) == 43i32);
 
-        if let (Some(x), map2) = map.split_mut_ghost(&1) {
-            *x = 42;
-            map2.insert_ghost(2, 200);
-            map2.insert_ghost(1, 56);
-        }
+        let (x, map2) = map.split_mut_ghost(&1);
+        *x = 42;
+        map2.insert_ghost(2, 200);
+        map2.insert_ghost(1, 56);
+
         proof_assert!(map.lookup(1i32) == 42i32);
         proof_assert!(map.lookup(2i32) == 200i32);
 

@@ -1,4 +1,4 @@
-// TACTIC +compute_in_goal TIME 10
+// TACTIC +compute_in_goal
 extern crate creusot_contracts;
 
 // This proof is largely adapted from the one in Vocal (see https://github.com/ocaml-gospel/vocal/blob/main/proofs/why3/UnionFind_impl.mlw)
@@ -11,7 +11,7 @@ mod implementation {
         *,
     };
 
-    pub struct Element<T>(*const Content<T>);
+    pub struct Element<T>(*const Node<T>);
 
     impl<T> PartialEq for Element<T> {
         #[ensures(result == (self.deep_model() == other.deep_model()))]
@@ -27,15 +27,7 @@ mod implementation {
         }
     }
 
-    impl<T> Element<T> {
-        #[check(ghost)]
-        #[ensures(*result == self.deep_model())]
-        fn addr(self) -> Snapshot<usize> {
-            snapshot!(self.deep_model())
-        }
-    }
-
-    enum Content<T> {
+    enum Node<T> {
         Root { rank: PeanoInt, payload: T },
         Link(Element<T>),
     }
@@ -49,8 +41,6 @@ mod implementation {
     }
     impl<T> Copy for Element<T> {}
 
-    type LogicAddr = Snapshot<usize>;
-
     /// Handle to the union-find data structure.
     ///
     /// This is a purely logical construct, that must be used so Creusot knows how to interpret
@@ -62,14 +52,14 @@ mod implementation {
         /// which "pointers" are involved
         domain: Snapshot<FSet<Element<T>>>,
         /// Maps an element to its logical content (represented by the permission to access it).
-        map: FMap<LogicAddr, PtrOwn<Content<T>>>,
+        perms: FMap<Element<T>, PtrOwn<Node<T>>>,
         /// Map each element in [`Self::domain`] to its payload.
         // `img` in the why3 proof
         payloads: Snapshot<Mapping<Element<T>, T>>,
-        /// Maps each element to its distance to its root.
-        distance: Snapshot<Mapping<Element<T>, Int>>,
         // `rep` in the why3 proof
         roots: Snapshot<Mapping<Element<T>, Element<T>>>,
+        /// A value which increases along pointers, for termination purposes.
+        depth: Snapshot<Mapping<Element<T>, Int>>,
         max_depth: Snapshot<Int>,
     }
 
@@ -77,39 +67,29 @@ mod implementation {
         #[logic]
         #[creusot::why3_attr = "inline:trivial"]
         fn invariant(self) -> bool {
-            let domain = self.0.domain;
             pearlite! {
             // this invariant was not in the why3 proof: it is here because of the specifics of `DeepModel` and equality in Creusot
-            (forall<e1, e2> domain.contains(e1) && domain.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2) &&
-            // this invariant was not in the why3 proof: it ensures that the keys and the payloads of `map` agree
-            (forall<e> domain.contains(e) ==> self.0.map.contains(Snapshot::new(e.deep_model()))) &&
-            (forall<e> domain.contains(e) ==> e.0 == self.get_perm(e).ptr()) &&
-            (forall<e> domain.contains(e) ==> self.0.roots[self.0.roots[e]] == self.0.roots[e]) &&
-            (forall<e> domain.contains(e) ==> domain.contains(self.0.roots[e])) &&
-            (forall<e> domain.contains(e) ==> match *self.get_perm(e).val() {
-                Content::Link(e2) => e != e2 && domain.contains(e2) && self.0.roots[e] == self.0.roots[e2],
-                Content::Root { rank: _, payload: v } => self.0.payloads[e] == v && self.0.roots[e] == e,
-            }) &&
-            (forall<e> domain.contains(e) ==> match *self.get_perm(e).val() {
-                Content::Link(e2) => self.0.distance[e] < self.0.distance[e2],
-                Content::Root { .. } => true,
-            }) &&
-            *self.0.max_depth >= 0 &&
-            (forall<e> domain.contains(e) ==> 0 <= self.0.distance[e] && self.0.distance[e] <= *self.0.max_depth) &&
-            (forall<e> domain.contains(e) ==> match *self.get_perm(self.0.roots[e]).val() {
-                Content::Root { .. } => true,
-                Content::Link { .. } => false,
-            })
+            (forall<e1, e2> self.0.domain.contains(e1) && self.0.domain.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2) &&
+            (forall<e> self.0.domain.contains(e) ==>
+                // this invariant was not in the why3 proof: it ensures that the keys and the payloads of `perm` agree
+                self.0.perms.contains(e) &&
+                self.0.perms[e].ptr() == e.0 &&
+                self.0.domain.contains(self.0.roots[e]) &&
+                self.0.roots[self.0.roots[e]] == self.0.roots[e] &&
+                match *self.0.perms[e].val() {
+                    Node::Link(e2) => self.0.roots[e] != e && self.0.domain.contains(e2) && self.0.roots[e] == self.0.roots[e2],
+                    Node::Root { payload, .. } => self.0.roots[e] == e && self.0.payloads[e] == payload,
+                } &&
+                match *self.0.perms[e].val() {
+                    Node::Link(e2) => self.0.depth[e] < self.0.depth[e2],
+                    Node::Root { .. } => true,
+                } &&
+                self.0.depth[e] <= *self.0.max_depth)
             }
         }
     }
 
     impl<T> UnionFind<T> {
-        #[logic]
-        fn get_perm(self, e: Element<T>) -> PtrOwn<Content<T>> {
-            self.0.map[Snapshot::new(e.deep_model())]
-        }
-
         /// Returns all the element that are handled by this union-find structure.
         #[logic]
         #[requires(inv(self))]
@@ -197,9 +177,9 @@ mod implementation {
             UnionFind (
                 HFInner {
                     domain: snapshot!(FSet::empty()),
-                    map: FMap::new().into_inner(),
+                    perms: FMap::new().into_inner(),
                     payloads: snapshot!(such_that(|_| true)),
-                    distance: snapshot!(such_that(|_| true)),
+                    depth: snapshot!(such_that(|_| true)),
                     roots: snapshot!(such_that(|_| true)),
                     max_depth: snapshot!(0),
                 }
@@ -213,42 +193,49 @@ mod implementation {
     #[ensures((^uf).payloads_map() == uf.payloads_map().set(result, payload))]
     pub fn make<T>(mut uf: Ghost<&mut UnionFind<T>>, payload: T) -> Element<T> {
         let payload_snap = snapshot!(payload);
-        let (ptr, perm) = PtrOwn::new(Content::Root { rank: PeanoInt::new(), payload });
-        let element = Element(ptr);
+        let (ptr, perm) = PtrOwn::new(Node::Root { rank: PeanoInt::new(), payload });
+        let elt = Element(ptr);
         ghost! {
-            let uf = &mut uf.0;
-            let perm = perm.into_inner();
-            match uf.map.get_mut_ghost(&element.addr()) {
+            let (mut perm, uf) = (perm.into_inner(), uf.into_inner());
+
+            // In order to prove that the new element does not have the same address as
+            // an existing one, we use an oracle to find a potentially conflicting element,
+            // and then use `PtrOwn::disjoint_lemma` to prove that they are different.
+            let other_elt_ptr_snap = snapshot!(such_that(|e|
+                uf.in_domain(e) && e.deep_model() == elt.deep_model()).0);
+            let other_elt = Element(other_elt_ptr_snap.into_ghost().into_inner());
+            match uf.0.perms.get_ghost(&other_elt) {
                 None => {},
-                Some(other_perm) => PtrOwn::disjoint_lemma(other_perm, &perm),
+                Some(other_perm) => PtrOwn::disjoint_lemma(&mut perm, other_perm),
             }
-            uf.map.insert_ghost(element.addr(), perm);
-            uf.domain = snapshot!(uf.domain.insert(element));
-            uf.payloads = snapshot!(uf.payloads.set(element, *payload_snap));
-            uf.distance = snapshot!(uf.distance.set(element, 0));
-            uf.roots = snapshot!(uf.roots.set(element, element));
+
+            uf.0.perms.insert_ghost(elt, perm);
+            uf.0.domain = snapshot!(uf.0.domain.insert(elt));
+            uf.0.payloads = snapshot!(uf.0.payloads.set(elt, *payload_snap));
+            uf.0.depth = snapshot!(uf.0.depth.set(elt, *uf.0.max_depth));
+            uf.0.roots = snapshot!(uf.0.roots.set(elt, elt));
         };
-        element
+        elt
     }
 
-    /// Inner function, to hide specifications that only concern the distance.
+    /// Inner function, to hide specifications that only concern the depth.
     #[requires(uf.in_domain(elem))]
     #[ensures(result == uf.root(elem))]
     #[ensures(uf.unchanged())]
     // internal
-    #[ensures(resolve(&mut uf.0.distance))]
-    #[ensures(uf.0.distance[result] >= uf.0.distance[elem])]
+    #[ensures((^uf).0.depth == uf.0.depth)]
+    #[ensures(uf.0.depth[result] >= uf.0.depth[elem])]
     fn find_inner<T>(mut uf: Ghost<&mut UnionFind<T>>, elem: Element<T>) -> Element<T> {
-        let perm = ghost!(uf.0.map.get_ghost(&elem.addr()).unwrap());
-        let value = unsafe { PtrOwn::as_ref(elem.0, perm) };
-        match value {
-            Content::Root { .. } => elem,
-            &Content::Link(e) => {
+        let perm = ghost!(uf.0.perms.get_ghost(&elem).unwrap());
+        match unsafe { PtrOwn::as_ref(elem.0, perm) } {
+            &Node::Root { .. } => elem,
+            &Node::Link(e) => {
                 let root = find_inner(ghost! {&mut **uf}, e);
                 // path compression
-                ghost_let!(mut map = &mut uf.0.map);
-                let mut_perm = ghost!(map.get_mut_ghost(&elem.addr()).unwrap());
-                unsafe { *PtrOwn::as_mut(elem.0, mut_perm) = Content::Link(root) };
+                ghost_let!(mut uf = &mut uf.0);
+                proof_assert!(uf.depth[elem] < uf.depth[root]);
+                let mut_perm = ghost!(uf.perms.get_mut_ghost(&elem).unwrap());
+                unsafe { *PtrOwn::as_mut(elem.0, mut_perm) = Node::Link(root) };
                 root
             }
         }
@@ -269,10 +256,10 @@ mod implementation {
     #[requires(uf.root(elem) == elem)]
     #[ensures(*result == uf.payload(elem))]
     pub fn get<T>(uf: Ghost<&UnionFind<T>>, elem: Element<T>) -> &T {
-        let perm = ghost!(uf.0.map.get_ghost(&elem.addr()).unwrap());
+        let perm = ghost!(uf.0.perms.get_ghost(&elem).unwrap());
         match unsafe { PtrOwn::as_ref(elem.0, perm) } {
-            Content::Root { payload, .. } => payload,
-            _ => loop {},
+            Node::Root { payload, .. } => payload,
+            _ => unreachable!(),
         }
     }
 
@@ -284,7 +271,7 @@ mod implementation {
     pub fn equiv<T>(mut uf: Ghost<&mut UnionFind<T>>, e1: Element<T>, e2: Element<T>) -> bool {
         let r1 = find(ghost! {&mut **uf}, e1);
         let r2 = find(uf, e2);
-        std::ptr::addr_eq(r1.0, r2.0)
+        r1 == r2
     }
 
     /// If `x` and `y` are two roots, try to link them together.
@@ -301,41 +288,32 @@ mod implementation {
         if x == y {
             return x;
         }
-        let perm_x = ghost!(uf.0.map.get_ghost(&x.addr()).unwrap());
-        let perm_y = ghost!(uf.0.map.get_ghost(&y.addr()).unwrap());
-        let rx = match unsafe { PtrOwn::as_ref(x.0, perm_x) } {
-            Content::Root { rank, .. } => rank.to_u64(),
-            _ => unreachable!(),
-        };
-        let ry = match unsafe { PtrOwn::as_ref(y.0, perm_y) } {
-            Content::Root { rank, .. } => rank.to_u64(),
-            _ => unreachable!(),
-        };
+
+        ghost_let!(mut uf = &mut uf.0);
+
+        let (perm_x, mut m) = ghost!(uf.perms.split_mut_ghost(&x)).split();
+        let bx = unsafe { PtrOwn::as_mut(x.0, perm_x) };
+        let by = unsafe { PtrOwn::as_mut(y.0, ghost!(m.get_mut_ghost(&y).unwrap())) };
+
+        let Node::Root { rank: rx, .. } = bx else { unreachable!() };
+        let Node::Root { rank: ry, .. } = by else { unreachable!() };
         if rx < ry {
-            ghost_let!(mut uf = &mut uf.0);
-            let perm_mut_x = ghost!(uf.map.get_mut_ghost(&x.addr()).unwrap());
-            unsafe { *PtrOwn::as_mut(x.0, perm_mut_x) = Content::Link(y) };
+            *bx = Node::Link(y);
             ghost! {
                 uf.roots = snapshot!(|z| { if uf.roots[z] == x { y } else { uf.roots[z] } });
                 uf.max_depth = snapshot!(*uf.max_depth + 1);
-                uf.distance = snapshot!(uf.distance.set(y, 1 + uf.distance[x].max(uf.distance[y])));
+                uf.depth = snapshot!(uf.depth.set(y, 1 + uf.depth[x].max(uf.depth[y])));
             };
             y
         } else {
-            ghost_let!(mut uf = &mut uf.0);
-            let perm_mut_y = ghost!(uf.map.get_mut_ghost(&y.addr()).unwrap());
-            unsafe { *PtrOwn::as_mut(y.0, perm_mut_y) = Content::Link(x) };
             if rx == ry {
-                let perm_mut_x = ghost!(uf.map.get_mut_ghost(&x.addr()).unwrap());
-                match unsafe { PtrOwn::as_mut(x.0, perm_mut_x) } {
-                    Content::Root { rank, payload: _ } => *rank = rank.incr(),
-                    _ => {}
-                }
+                rx.incr();
             }
+            *by = Node::Link(x);
             ghost! {
                 uf.roots = snapshot!(|z| { if uf.roots[z] == y { x } else { uf.roots[z] } });
                 uf.max_depth = snapshot!(*uf.max_depth + 1);
-                uf.distance = snapshot!(uf.distance.set(x, 1 + uf.distance[x].max(uf.distance[y])));
+                uf.depth = snapshot!(uf.depth.set(x, 1 + uf.depth[x].max(uf.depth[y])));
             };
             x
         }
