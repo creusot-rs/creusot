@@ -3,9 +3,11 @@ use std::collections::HashMap;
 use either::Either;
 use rustc_ast::{BindingMode, ByRef, Mutability};
 use rustc_hir::{HirId, def_id::DefId};
+use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
+    mir::BinOp,
     thir::{self, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir},
-    ty::{self, TyCtxt},
+    ty::{self, ParamConst, TyCtxt},
 };
 use rustc_span::Span;
 
@@ -17,13 +19,15 @@ use crate::{
 
 pub(crate) fn validate_refines(ctx: &TranslationCtx) {
     for (left, right) in ctx.refines.iter() {
-        for refined in right {
-            check_refines(ctx, *left, *refined);
-        }
+        check_refines(ctx, *left, right.resolved);
     }
 }
 
-fn check_refines(ctx: &TranslationCtx, left: DefId, right: DefId) {
+fn check_refines<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    left: DefId,
+    (right, subst2): (DefId, ty::GenericArgsRef<'tcx>),
+) {
     let left_local = left.as_local().unwrap_or_else(|| {
         ctx.crash_and_error(ctx.def_span(left), "Refining function must be local")
     });
@@ -45,35 +49,73 @@ fn check_refines(ctx: &TranslationCtx, left: DefId, right: DefId) {
             "Refining function must have a body (cannot be extern or abstract)",
         )
     });
-    check_refines_thir(ctx, left_thir, right_thir, ctx.def_span(left))
+    check_refines_thir(ctx, left_thir, right_thir, subst2, ctx.def_span(left))
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
 enum AnfStmt<'tcx> {
     /// LHS <- FUNC(EXPR0, ..., EXPRN)
-    Call(ExprId, DefId, ty::GenericArgsRef<'tcx>, Box<[AnfValue<'tcx>]>, Span),
+    Call(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        ExprId,
+        DefId,
+        ty::GenericArgsRef<'tcx>,
+        Box<[AnfValue<'tcx>]>,
+        Span,
+    ),
+    /// LHS <- EXPR OP EXPR
+    Binop(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        ExprId,
+        AnfValue<'tcx>,
+        BinOp,
+        AnfValue<'tcx>,
+        Span,
+    ),
     /// let mut VAR
     LetMut(HirId),
     /// LHS <- EXPR
     Assign(AnfLhs, AnfValue<'tcx>),
     /// LHS <- if EXPR0 { EXPR1 } else { EXPR2 }
-    If(ExprId, ExprId, Box<AnfValue<'tcx>>, Box<AnfValue<'tcx>>),
+    If(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        ExprId,
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        ExprId,
+        Box<AnfValue<'tcx>>,
+        Box<AnfValue<'tcx>>,
+    ),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
 enum AnfLhs {
     Var(HirId),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
 enum AnfValue<'tcx> {
     Unit,
-    Expr(ExprId),
+    Expr(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        ExprId,
+    ),
     Var(HirId),
     Fn(DefId, ty::GenericArgsRef<'tcx>),
+    Literal(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        rustc_ast::LitKind,
+        bool,
+    ),
+    Const(ty::Const<'tcx>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
 struct Anf<'tcx> {
     stmts: Vec<AnfStmt<'tcx>>,
     ret: AnfValue<'tcx>,
@@ -147,6 +189,14 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 ty::TyKind::FnDef(def_id, subst) => AnfValue::Fn(*def_id, subst),
                 _ => AnfValue::Unit,
             },
+            Binary { op, lhs, rhs } => {
+                let lhs = self.a_normal_form_expr(*lhs, stmts);
+                let rhs = self.a_normal_form_expr(*rhs, stmts);
+                stmts.push(AnfStmt::Binop(expr_id, lhs, *op, rhs, expr.span));
+                AnfValue::Expr(expr_id)
+            }
+            Literal { lit, neg } => AnfValue::Literal(lit.node, *neg),
+            ConstParam { param, .. } => AnfValue::Const(ty::Const::new_param(self.tcx, *param)),
             _ => self.crash_and_error(
                 expr.span,
                 format!("Unsupported expression in refine check:\n{expr:?}"),
@@ -306,7 +356,32 @@ self.ctx.crash_and_error(
                 let v1_ = self.refine_hir_id[v1];
                 v1_ == *v2
             }
+            (AnfValue::Literal(lit1, neg1), AnfValue::Literal(lit2, neg2)) => {
+                lit1 == lit2 && neg1 == neg2
+            }
+            (AnfValue::Const(p1), AnfValue::Const(p2)) => match (p1.kind(), p2.kind()) {
+                (ty::ConstKind::Param(p1), ty::ConstKind::Param(p2)) => p1 == p2,
+                _ => false,
+            },
             _ => false,
+        }
+    }
+
+    fn refine_subst(
+        &self,
+        subst1: ty::GenericArgsRef<'tcx>,
+        subst2: ty::GenericArgsRef<'tcx>,
+        span1: Span,
+        _span2: Span,
+    ) {
+        assert!(subst1.len() == subst2.len());
+        for (i, (arg1, arg2)) in subst1.into_iter().zip(subst2).enumerate() {
+            if arg1 != arg2 {
+                self.ctx.crash_and_error(
+                    span1,
+                    format!("Generic argument mismatch\n{arg1:?} != {arg2:?}"),
+                )
+            }
         }
     }
 
@@ -331,7 +406,6 @@ self.ctx.crash_and_error(
     }
 
     fn refine_result(&mut self, lhs1: &ExprId, lhs2: &ExprId) {
-        eprintln!("Refining expr {:?} to {:?}", lhs1, lhs2);
         self.refine_expr_id.insert(*lhs1, *lhs2);
     }
 
@@ -342,10 +416,38 @@ self.ctx.crash_and_error(
                 AnfStmt::Call(lhs1, fun1, subst1, args1, span1) => match right.next() {
                     Some(AnfStmt::Call(lhs2, fun2, subst2, args2, span2)) => {
                         if fun1 == fun2 {
+                            self.refine_subst(subst1, subst2, *span1, *span2);
+                            self.refine_args(&**args1, args2, *span1, *span2);
+                            self.refine_result(lhs1, lhs2);
+                        } else if let Some(fun2_) = self.ctx.refines(*fun1)
+                            && fun2_.thir.0 == *fun2
+                        {
+                            let subst1 = ty::EarlyBinder::bind(fun2_.thir.1)
+                                .instantiate(self.ctx.tcx, subst1);
+                            self.refine_subst(subst1, subst2, *span1, *span2);
                             self.refine_args(&**args1, args2, *span1, *span2);
                             self.refine_result(lhs1, lhs2);
                         } else {
-                            todo!()
+                            self.ctx.crash_and_error(*span1, format!("TODO {fun1:?} {fun2:?}"))
+                        }
+                    }
+                    Some(_) => self.ctx.crash_and_error(self.span, "mismatch TODO"),
+                    None => self.ctx.crash_and_error(
+                        self.span,
+                        "Refining function has more statements than the refined function",
+                    ),
+                },
+                AnfStmt::Binop(lhs1, v1, op1, w1, span1) => match right.next() {
+                    Some(AnfStmt::Binop(lhs2, v2, op2, w2, span2)) => {
+                        if op1 == op2 && self.refine_value(v1, v2) && self.refine_value(w1, w2) {
+                            self.refine_result(lhs1, lhs2);
+                        } else {
+                            self.ctx.crash_and_error(
+                                *span1,
+                                format!(
+                                    "Refining binary operation does not match refined operation: {v1:?} {op1:?} {w1:?} vs {v2:?} {op2:?} {w2:?}"
+                                ),
+                            )
                         }
                     }
                     Some(_) => self.ctx.crash_and_error(self.span, "mismatch TODO"),
@@ -368,7 +470,6 @@ self.ctx.crash_and_error(
     }
 
     fn refines(&mut self, left: &Anf<'tcx>, right: &Anf<'tcx>) {
-        eprintln!("Refining ANF\nleft: {left:#?}\nright: {right:#?}");
         self.refine_stmts(&left.stmts, &right.stmts);
         self.refine_value(&left.ret, &right.ret);
     }
@@ -378,10 +479,12 @@ fn check_refines_thir<'a, 'tcx>(
     ctx: &TranslationCtx<'tcx>,
     (left_thir, left_expr): &'a (Thir<'tcx>, ExprId),
     (right_thir, right_expr): &'a (Thir<'tcx>, ExprId),
+    subst2: ty::GenericArgsRef<'tcx>,
     span: Span,
 ) {
     let mut checker = RefineChecker::new(ctx, left_thir, right_thir, span);
     let left = a_normal_form(ctx.tcx, left_thir, *left_expr);
     let right = a_normal_form(ctx.tcx, right_thir, *right_expr);
+    let right = ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2);
     checker.refines(&left, &right);
 }
