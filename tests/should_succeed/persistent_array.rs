@@ -26,8 +26,8 @@ pub mod implementation {
     /// All methods marked `unsafe` are actually safe to use, _as long as you check the
     /// program with Creusot_.
     ///
-    /// If you don't, you must ensure that a [`TokensMap`] object is never used with a
-    /// `PersistentArray` that is not derived from it.
+    /// If you don't, you must ensure that the reference returned by
+    /// [`Self::get`] is dropped before doing any other operation on any array.
     pub struct PersistentArray<T> {
         /// Contains a pointer to the actual value
         program_value: Rc<PCell<Inner<T>>>,
@@ -35,7 +35,7 @@ pub mod implementation {
         ///
         /// This contains a fraction of the map, with only `program_value.id()` as key.
         /// The corresponding value is the logical value of the map.
-        contained_in_token: Ghost<Rc<Fragment<Id, Seq<T>>>>,
+        contained_in_inv: Ghost<Rc<Fragment<Id, Seq<T>>>>,
         /// The [`Id`] in the public part is the id of the whole `GMap`, **not** the individual keys !
         map_invariant: Ghost<Rc<LocalInvariant<CompleteMap<T>>>>,
     }
@@ -45,7 +45,7 @@ pub mod implementation {
         fn clone(&self) -> Self {
             Self {
                 program_value: self.program_value.clone(),
-                contained_in_token: self.contained_in_token.clone(),
+                contained_in_inv: self.contained_in_inv.clone(),
                 map_invariant: self.map_invariant.clone(),
             }
         }
@@ -56,8 +56,8 @@ pub mod implementation {
         fn invariant(self) -> bool {
             pearlite! {
                 // We indeed have the corresponding fractional part of the invariant
-                self.contained_in_token@@.0 == self.program_value@.id()
-                && self.contained_in_token@.id() == self.map_invariant@.public()
+                self.contained_in_inv@@.0 == self.program_value@.id()
+                && self.contained_in_inv@.id() == self.map_invariant@.public()
                 && self.map_invariant@.namespace() == PARRAY()
             }
         }
@@ -73,7 +73,7 @@ pub mod implementation {
         #[logic]
         fn view(self) -> Seq<T> {
             pearlite! {
-                self.contained_in_token@@.1
+                self.contained_in_inv@@.1
             }
         }
     }
@@ -81,7 +81,7 @@ pub mod implementation {
     /// Structure describing the invariants respected by the pointers.
     struct CompleteMap<T> {
         /// Holds the permission for each pointer.
-        own_map: FMap<Snapshot<Id>, PCellOwn<Inner<T>>>,
+        own_map: FMap<Id, PCellOwn<Inner<T>>>,
         /// Holds the 'authoritative' version of the map of logical values.
         ///
         /// When we open the invariant, we get (a mutable borrow to) this, and can learn
@@ -100,22 +100,22 @@ pub mod implementation {
         fn invariant_with_data(self, id: Id) -> bool {
             pearlite! {
                 self.values.id() == id &&
-                (forall<id> self.own_map.contains(id) == self.values@.contains(*id)) &&
-                (forall<id> self.own_map.contains(id) ==> self.own_map[id].id() == *id) &&
-                (forall<id> self.own_map.contains(id) ==> self.values@.lookup(*id).len() == *self.length) &&
+                (forall<id> self.own_map.contains(id) == self.values@.contains(id)) &&
+                (forall<id> self.own_map.contains(id) ==> self.own_map[id].id() == id) &&
+                (forall<id> self.own_map.contains(id) ==> self.values@.lookup(id).len() == *self.length) &&
                 // If `Link { next, .. }` is in the map, then `next` is also in the map.
                 (forall<id> self.own_map.contains(id) ==> match *self.own_map[id].val() {
                     Inner::Direct(_) => true,
-                    Inner::Link { next, .. } => self.own_map.contains(Snapshot::new(next@.id())),
+                    Inner::Link { next, .. } => self.own_map.contains(next@.id()),
                 }) &&
                 // The array in `self.values` agrees with the one in `self.own_map`
                 (forall<id> self.own_map.contains(id) ==> match *self.own_map[id].val() {
-                    Inner::Direct(v) => self.values@.lookup(*id) == v@,
+                    Inner::Direct(v) => self.values@.lookup(id) == v@,
                     Inner::Link { index, value, next } => {
                         let next_id = next@.id();
                         index@ < *self.length &&
-                        self.values@.lookup(*id)[index@] == value &&
-                        (forall<j: Int> 0 <= j && j < *self.length && j != index@ ==> self.values@.lookup(*id)[j] == self.values@.lookup(next_id)[j])
+                        self.values@.lookup(id)[index@] == value &&
+                        (forall<j: Int> 0 <= j && j < *self.length && j != index@ ==> self.values@.lookup(id)[j] == self.values@.lookup(next_id)[j])
                     },
                 }) &&
                 // The rank decreases when following the links
@@ -123,7 +123,7 @@ pub mod implementation {
                     Inner::Direct(_) => true,
                     Inner::Link { next, .. } => {
                         let next_id = next@.id();
-                        self.rank[*id] > self.rank[next_id]
+                        self.rank[id] > self.rank[next_id]
                     },
                 })
             }
@@ -144,7 +144,7 @@ pub mod implementation {
 
             let map_invariant = ghost! {
                 let mut own_map = FMap::new();
-                own_map.insert_ghost(id, ownership.into_inner());
+                own_map.insert_ghost(id.into_ghost().into_inner(), ownership.into_inner());
                 let local_inv = LocalInvariant::new(
                     ghost!(CompleteMap {
                         own_map: own_map.into_inner(),
@@ -160,7 +160,7 @@ pub mod implementation {
 
             Self {
                 program_value: Rc::new(program_value),
-                contained_in_token: ghost!(Rc::new(frac_part.into_inner())),
+                contained_in_inv: ghost!(Rc::new(frac_part.into_inner())),
                 map_invariant,
             }
         }
@@ -175,31 +175,31 @@ pub mod implementation {
                 PCell::new(Inner::Link { index, value, next: self.program_value.clone() });
             let new_frac = {
                 let program_value = &program_value;
-                self.map_invariant.borrow().open(tokens, |mut tokens| {
-                    let cell_id = snapshot!(program_value.id());
-                    let self_id = snapshot!(self.program_value@.id());
+                self.map_invariant.borrow().open(tokens, |mut inv| {
                     ghost! {
+                        let cell_id = program_value.id_ghost().into_inner();
+                        let self_id = snapshot!(self.program_value@.id());
                         // prove that self is contained in the map by validity
-                        tokens.values.contains(self.contained_in_token.as_ref());
+                        inv.values.contains(self.contained_in_inv.as_ref());
                         // prove that we are inserting a _new_ value
                         let ownership = ownership.into_inner();
-                        match tokens.own_map.get_mut_ghost(&cell_id) {
+                        match inv.own_map.get_mut_ghost(&cell_id) {
                             None => {},
                             Some(other) => PCellOwn::disjoint_lemma(other, &ownership),
                         }
-                        tokens.own_map.insert_ghost(cell_id, ownership);
-                        tokens.rank = snapshot! {
-                            let new_distance = tokens.rank[*self_id] + 1;
-                            tokens.rank.set(*cell_id, new_distance)
+                        inv.own_map.insert_ghost(cell_id, ownership);
+                        inv.rank = snapshot! {
+                            let new_distance = inv.rank[*self_id] + 1;
+                            inv.rank.set(cell_id, new_distance)
                         };
-                        let frac = tokens.values.insert(cell_id, new_logical_value);
+                        let frac = inv.values.insert(snapshot!(cell_id), new_logical_value);
                         Rc::new(frac)
                     }
                 })
             };
             Self {
                 program_value: Rc::new(program_value),
-                contained_in_token: new_frac,
+                contained_in_inv: new_frac,
                 map_invariant: self.map_invariant.clone(),
             }
         }
@@ -230,31 +230,28 @@ pub mod implementation {
             i: usize,
             tokens: Ghost<Tokens<'a>>,
         ) -> Option<&'a T> {
-            self.map_invariant.borrow().open(tokens, |tokens| {
+            self.map_invariant.borrow().open(tokens, |inv| {
                 // prove that self is contained in the map by validity
                 ghost! {
-                    tokens.values.contains(self.contained_in_token.as_ref());
+                    inv.values.contains(self.contained_in_inv.as_ref());
                 };
-                unsafe {
-                    Self::get_inner_immut(&self.program_value, i, ghost!(tokens.into_inner()))
-                }
+                unsafe { Self::get_inner_immut(&self.program_value, i, ghost!(inv.into_inner())) }
             })
         }
 
-        #[requires(exists<p> tokens.invariant_with_data(p))]
-        #[requires(tokens.own_map.contains(Snapshot::new(inner.view().id())))]
-        #[ensures(if i.view() < *tokens.length {
-            result == Some(&tokens.values@[inner.view().id()][i.view()])
+        #[requires(exists<p> inv.invariant_with_data(p))]
+        #[requires(inv.own_map.contains(inner@.id()))]
+        #[ensures(if i@ < *inv.length {
+            result == Some(&inv.values@[inner@.id()][i@])
         } else {
             result == None
         })]
         unsafe fn get_inner_immut<'a>(
             inner: &'a Rc<PCell<Inner<T>>>,
             i: usize,
-            tokens: Ghost<&'a CompleteMap<T>>,
+            inv: Ghost<&'a CompleteMap<T>>,
         ) -> Option<&'a T> {
-            let id = snapshot!(inner.view().id());
-            let perm = ghost!(tokens.own_map.get_ghost(&id).unwrap());
+            let perm = ghost!(inv.own_map.get_ghost(&*inner.id_ghost()).unwrap());
             let inner = unsafe { inner.as_ref().borrow(perm) };
             match inner {
                 Inner::Direct(v) => match v.get(i) {
@@ -265,7 +262,7 @@ pub mod implementation {
                     if i == *index {
                         Some(value)
                     } else {
-                        Self::get_inner_immut(next, i, tokens)
+                        Self::get_inner_immut(next, i, inv)
                     }
                 }
             }
@@ -279,21 +276,21 @@ pub mod implementation {
         ///
         /// See the [safety section](PersistentArray#safety) on the type documentation.
         #[requires(tokens.contains(PARRAY()))]
-        #[ensures(if index.view() < self.view().len() {
-            result == Some(&self.view()[index.view()])
+        #[ensures(if index@ < self@.len() {
+            result == Some(&self@[index@])
         } else {
             result == None
         })]
         pub unsafe fn get<'a>(&'a self, index: usize, tokens: Ghost<Tokens<'a>>) -> Option<&'a T> {
             let public = snapshot!(self.map_invariant@.public());
-            self.map_invariant.borrow().open(tokens, |mut tokens| {
+            self.map_invariant.borrow().open(tokens, |mut inv| {
                 // prove that self is contained in the map by validity
                 ghost! {
-                    tokens.values.contains(self.contained_in_token.as_ref());
+                    inv.values.contains(self.contained_in_inv.as_ref());
                 };
-                unsafe { Self::reroot(&self.program_value, public, ghost!(&mut *tokens)) };
-                let id = snapshot!(self.program_value.view().id());
-                let perm = ghost!(tokens.into_inner().own_map.get_ghost(&id).unwrap());
+                unsafe { Self::reroot(&self.program_value, public, ghost!(&mut *inv)) };
+                let id = self.program_value.id_ghost();
+                let perm = ghost!(inv.into_inner().own_map.get_ghost(&*id).unwrap());
                 let borrow = unsafe { self.program_value.as_ref().borrow(perm) };
                 match borrow {
                     Inner::Direct(arr) => arr.get(index),
@@ -308,43 +305,43 @@ pub mod implementation {
         /// # Safety
         ///
         /// See the [safety section](PersistentArray#safety) on the type documentation.
-        #[requires(tokens.invariant_with_data(*invariant_id))]
-        #[requires(tokens.own_map.contains(Snapshot::new(inner.view().id())))]
-        #[ensures((^tokens.inner_logic()).invariant_with_data(*invariant_id))]
-        #[ensures(forall<id> (*tokens).own_map.contains(id) == (^tokens.inner_logic()).own_map.contains(id))]
-        #[ensures((*tokens).values == (^tokens.inner_logic()).values)]
-        #[ensures((*tokens).length == (^tokens.inner_logic()).length)]
-        #[ensures(forall<id: Snapshot<_>> (*tokens).rank[*id] > (*tokens).rank[inner.view().id()]
-            ==> (*tokens).rank[*id] == (^tokens.inner_logic()).rank[*id]
-            && (*tokens).own_map.get(id) == (^tokens.inner_logic()).own_map.get(id)
+        #[requires(inv.invariant_with_data(*invariant_id))]
+        #[requires(inv.own_map.contains(inner@.id()))]
+        #[ensures((^inv.inner_logic()).invariant_with_data(*invariant_id))]
+        #[ensures(forall<id> (*inv).own_map.contains(id) == (^inv.inner_logic()).own_map.contains(id))]
+        #[ensures((*inv).values == (^inv.inner_logic()).values)]
+        #[ensures((*inv).length == (^inv.inner_logic()).length)]
+        #[ensures(forall<id> (*inv).rank[id] > (*inv).rank[inner@.id()]
+            ==> (*inv).rank[id] == (^inv.inner_logic()).rank[id]
+            && (*inv).own_map.get(id) == (^inv.inner_logic()).own_map.get(id)
         )]
-        #[ensures(match *(^tokens.inner_logic()).own_map[Snapshot::new(inner.view().id())].val() {
+        #[ensures(match *(^inv.inner_logic()).own_map[inner@.id()].val() {
             Inner::Direct(_) => true,
             Inner::Link { .. } => false,
         })]
-        #[ensures(*result == (^tokens.inner_logic()).rank[inner.view().id()])]
+        #[ensures(*result == (^inv.inner_logic()).rank[inner@.id()])]
         unsafe fn reroot<'a>(
             inner: &'a Rc<PCell<Inner<T>>>,
             invariant_id: Snapshot<Id>,
-            mut tokens: Ghost<&'a mut CompleteMap<T>>,
+            mut inv: Ghost<&'a mut CompleteMap<T>>,
         ) -> Snapshot<Int> {
             let inner_clone = inner.clone();
-            let id = snapshot!(inner.view().id());
-            let rank = snapshot!(tokens.rank.get(*id));
-            let perm = ghost!(tokens.own_map.get_ghost(&id).unwrap());
+            let id = inner.id_ghost();
+            let rank = snapshot!(inv.rank.get(*id));
+            let perm = ghost!(inv.own_map.get_ghost(&*id).unwrap());
             let borrow = unsafe { inner.as_ref().borrow(perm) };
             match borrow {
                 Inner::Direct(_) => {
-                    snapshot!(tokens.rank[*id])
+                    snapshot!(inv.rank[*id])
                 }
                 Inner::Link { next, .. } => {
                     let next = next.clone();
-                    let next_id = snapshot!(next.view().id());
-                    let next_d = Self::reroot(&next, invariant_id, ghost!(&mut *tokens));
+                    let next_id = next.id_ghost();
+                    let next_d = Self::reroot(&next, invariant_id, ghost!(&mut *inv));
 
                     let (perm_inner, perm_next) = ghost! {
-                        let (p_inner, rest) = tokens.own_map.split_mut_ghost(&id);
-                        (p_inner, rest.get_mut_ghost(&next_id).unwrap())
+                        let (p_inner, rest) = inv.own_map.split_mut_ghost(&id);
+                        (p_inner, rest.get_mut_ghost(&*next_id).unwrap())
                     }
                     .split();
                     let (bor_inner, bor_next) = unsafe {
@@ -360,7 +357,7 @@ pub mod implementation {
                             *next = inner_clone;
                             std::mem::swap(&mut arr[*index], value_next);
                             let new_d = snapshot!(Int::min(*rank, *next_d - 1));
-                            ghost! { tokens.rank = snapshot!(tokens.rank.set(*id, *new_d)) };
+                            ghost! { inv.rank = snapshot!(inv.rank.set(*id, *new_d)) };
                             new_d
                         }
                         _ => unreachable!(),

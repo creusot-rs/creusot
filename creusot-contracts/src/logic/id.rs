@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{ghost::Plain, *};
 use ::std::marker::PhantomData;
 
 /// A unique id, usable in logic and ghost code
@@ -22,6 +22,8 @@ impl Clone for Id {
     }
 }
 impl Copy for Id {}
+#[trusted]
+impl Plain for Id {}
 
 impl PartialEq for Id {
     #[trusted]
