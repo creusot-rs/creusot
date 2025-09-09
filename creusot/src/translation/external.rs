@@ -181,15 +181,15 @@ pub(crate) fn extract_refines_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     local_def_id: LocalDefId,
     &(ref thir, expr): &(Thir<'tcx>, thir::ExprId),
-) -> (DefId, DefId) {
+) -> (DefId, Refined<'tcx>) {
     let def_id = local_def_id.to_def_id();
     let parent = ctx.tcx.parent(def_id);
     let span = ctx.def_span(def_id);
     let mut visit = ExtractExternItems::new(thir);
     visit.visit_expr(&thir[expr]);
-    let (id, subst) = visit.items.pop().unwrap();
-    let (id, _) =
-        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id, subst).to_opt(id, subst).unwrap_or_else(|| {
+    let (id_thir, subst_thir) = visit.items.pop().unwrap();
+    let (id_resolved, subst_resolved) =
+        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id_thir, subst_thir).to_opt(id_thir, subst_thir).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
                 ctx.def_span(def_id),
                 "could not derive original instance from external specification",
@@ -207,10 +207,10 @@ pub(crate) fn extract_refines_from_item<'tcx>(
                 "result type of refined function doesn't match\n {}(..) -> {}\n {}(..) -> {}",
                 ctx.def_path_str(parent),
                 result_ty,
-                ctx.def_path_str(id),
+                ctx.def_path_str(id_resolved),
                 this_ty,
             ),
         )
     }
-    (parent, id)
+    (parent, Refined { thir: (id_thir, subst_thir), resolved: (id_resolved, subst_resolved) })
 }

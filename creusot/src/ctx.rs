@@ -173,7 +173,7 @@ pub struct TranslationCtx<'tcx> {
     pub(crate) thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
-    pub(crate) refines: HashMap<DefId, Vec<DefId>>,
+    pub(crate) refines: HashMap<DefId, Refined<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
@@ -498,7 +498,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         for (&def_id, thir) in self.thir.iter() {
             if is_refines(self.tcx, def_id.to_def_id()) {
                 let (refiner, refined) = extract_refines_from_item(self, def_id, thir);
-                self.refines.entry(refiner).or_insert_with(|| vec![]).push(refined);
+                self.refines.insert(refiner, refined);
             }
         }
     }
@@ -538,8 +538,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         *self.crate_name.get_or_init(|| crate_name(self.tcx))
     }
 
-    pub(crate) fn refines(&self, def_id: DefId) -> &[DefId] {
-        self.refines.get(&def_id).map_or(&[], |v| &v)
+    pub(crate) fn refines(&self, def_id: DefId) -> Option<Refined<'tcx>> {
+        self.refines.get(&def_id).copied()
     }
 }
 
@@ -551,4 +551,10 @@ impl<'tcx> HasTyCtxt<'tcx> for TranslationCtx<'tcx> {
 
 pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
     tcx.crate_name(LOCAL_CRATE).as_str().into()
+}
+
+#[derive(Clone, Copy)]
+pub struct Refined<'tcx> {
+    pub thir: (DefId, GenericArgsRef<'tcx>),
+    pub resolved: (DefId, GenericArgsRef<'tcx>),
 }
