@@ -10,9 +10,9 @@
 //! Building a simplified `Cell`, that only asserts its content's type invariant.
 //! ```
 //! # use creusot_contracts::{
-//! #     local_invariant::{LocalInvariant, Protocol, Tokens, declare_namespace},
+//! #     ghost::local_invariant::{LocalInvariant, Protocol, Tokens, declare_namespace},
 //! #     logic::Id,
-//! #     pcell::{PCell, PCellOwn},
+//! #     cell::{PCell, PCellOwn},
 //! #     *,
 //! # };
 //! declare_namespace! { PCELL }
@@ -62,7 +62,7 @@ use ::std::cell::UnsafeCell;
 /// # Example
 ///
 /// ```rust
-/// use creusot_contracts::{*, local_invariant::{declare_namespace, Namespace}, logic::Set};
+/// use creusot_contracts::{*, ghost::local_invariant::{declare_namespace, Namespace}, logic::Set};
 /// declare_namespace! { A }
 ///
 /// #[requires(ns.contains(A()))]
@@ -126,7 +126,7 @@ impl Tokens<'_> {
     ///
     /// # Example
     /// ```
-    /// # use creusot_contracts::{*, local_invariant::Tokens};
+    /// # use creusot_contracts::{*, ghost::local_invariant::Tokens};
     /// fn foo(tokens: Ghost<Tokens>) {}
     /// fn bar(tokens: Ghost<Tokens>) {}
     /// fn baz(mut tokens: Ghost<Tokens>) {
@@ -146,7 +146,7 @@ impl Tokens<'_> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::{*, local_invariant::{declare_namespace, Tokens}};
+    /// # use creusot_contracts::{*, ghost::local_invariant::{declare_namespace, Tokens}};
     /// declare_namespace! { FOO }
     /// declare_namespace! { BAR }
     ///

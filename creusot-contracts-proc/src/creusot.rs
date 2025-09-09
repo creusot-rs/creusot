@@ -45,7 +45,7 @@ pub fn declare_namespace(namespace: TS1) -> TS1 {
         #[trusted]
         #[creusot::decl::new_namespace]
         #[allow(nonstandard_style)]
-        pub fn #ident() -> ::creusot_contracts::local_invariant::Namespace {
+        pub fn #ident() -> ::creusot_contracts::ghost::local_invariant::Namespace {
             dead
         }
     }

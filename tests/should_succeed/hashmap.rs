@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{
-    invariant::{Invariant, inv},
     logic::{Int, Mapping},
+    resolve::structural_resolve,
     vec, *,
 };
 

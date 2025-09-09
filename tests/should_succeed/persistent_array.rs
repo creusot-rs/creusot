@@ -5,12 +5,14 @@ pub mod implementation {
     use ::std::rc::Rc;
     use creusot_contracts::{
         Clone,
-        local_invariant::{
-            LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
+        cell::{PCell, PCellOwn},
+        ghost::{
+            local_invariant::{
+                LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
+            },
+            resource::fmap_view::{Authority, Fragment},
         },
         logic::{FMap, Id, Mapping},
-        pcell::{PCell, PCellOwn},
-        resource::fmap_view::{Authority, Fragment},
         *,
     };
 
@@ -282,7 +284,7 @@ pub mod implementation {
     }
 }
 
-use creusot_contracts::{local_invariant::Tokens, vec, *};
+use creusot_contracts::{ghost::local_invariant::Tokens, vec, *};
 use implementation::PersistentArray;
 
 #[requires(tokens.contains(implementation::PARRAY()))]

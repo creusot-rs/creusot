@@ -2,9 +2,10 @@
 
 use crate::*;
 
-/// Token that represents the ownership of a memory cell. A `PtrOwn` value only
-/// exists in the ghost world, but can be used in combination with a
-/// corresponding `*const` to access and modify memory.
+/// Token that represents the ownership of a memory cell
+///
+/// A `PtrOwn` value only exists in the ghost world, but can be used
+/// in combination with a corresponding `*const` to access and modify memory.
 ///
 /// A warning regarding memory leaks: dropping a `Ghost<PtrOwn<T>>` (we only
 /// ever handle ghost `PtrOwn` values) cannot deallocate the memory

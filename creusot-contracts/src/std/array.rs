@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{invariant::*, logic::ops::IndexLogic, std::iter::Iterator, *};
 use ::std::array::*;
 

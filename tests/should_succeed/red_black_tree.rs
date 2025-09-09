@@ -2,12 +2,9 @@
 #![feature(box_patterns)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{
-    Clone,
-    invariant::{Invariant, inv},
-    logic::Mapping,
-    *,
-};
+#[cfg(creusot)]
+use creusot_contracts::resolve::structural_resolve;
+use creusot_contracts::{Clone, logic::Mapping, *};
 use std::cmp::Ordering::*;
 
 #[derive(Clone, Copy)]

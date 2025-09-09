@@ -24,7 +24,7 @@ pub fn derive_resolve(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 
             #[::creusot_contracts::open(self)]
             #[::creusot_contracts::logic(prophetic)]
-            #[::creusot_contracts::requires(structural_resolve(self))]
+            #[::creusot_contracts::requires(::creusot_contracts::resolve::structural_resolve(self))]
             #[::creusot_contracts::ensures(self.resolve())]
             fn resolve_coherence(self) {}
         }

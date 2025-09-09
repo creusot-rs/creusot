@@ -1,8 +1,8 @@
 // WHY3PROVE
 extern crate creusot_contracts;
 use creusot_contracts::{
-    pcell::{PCell, PCellOwn},
-    ptr_own::PtrOwn,
+    cell::{PCell, PCellOwn},
+    ghost::PtrOwn,
     *,
 };
 

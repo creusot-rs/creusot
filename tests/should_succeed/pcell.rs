@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{pcell::PCell, *};
+use creusot_contracts::{cell::PCell, *};
 
 #[ensures(result@ == 3)]
 pub fn foo() -> i32 {

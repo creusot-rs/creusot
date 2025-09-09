@@ -1,6 +1,6 @@
 //! Resolve mutable borrows
+pub use crate::base_macros::Resolve;
 use crate::*;
-pub use crate::{base_macros::Resolve, invariant::*};
 
 pub trait Resolve {
     #[logic(prophetic)]

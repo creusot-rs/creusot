@@ -3,11 +3,12 @@ extern crate creusot_contracts;
 
 // This proof is largely adapted from the one in Vocal (see https://github.com/ocaml-gospel/vocal/blob/main/proofs/why3/UnionFind_impl.mlw)
 mod implementation {
+    #[cfg(creusot)]
+    use creusot_contracts::logic::such_that;
     use creusot_contracts::{
-        Clone,
+        ghost::PtrOwn,
         logic::{FMap, FSet, Mapping},
         peano::PeanoInt,
-        ptr_own::PtrOwn,
         *,
     };
 

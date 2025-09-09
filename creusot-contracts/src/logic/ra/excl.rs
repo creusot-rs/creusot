@@ -7,7 +7,7 @@ use crate::{
 ///
 /// Combining those resource with [`RA::op`] **never** yields valid elements.
 /// As such, only one version of this resource (when using
-/// [`Resource`](crate::resource::Resource)) will be able to exists at a given moment.
+/// [`Resource`][ghost::resource::Resource]) will be able to exist at a given moment.
 pub struct Excl<T>(pub T);
 
 impl<T> RA for Excl<T> {

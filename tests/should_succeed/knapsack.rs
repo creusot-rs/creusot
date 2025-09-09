@@ -1,9 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{
-    invariant::inv,
-    logic::{Int, Seq},
-    vec, *,
-};
+use creusot_contracts::{vec, *};
 
 pub struct Item<Name> {
     pub name: Name,

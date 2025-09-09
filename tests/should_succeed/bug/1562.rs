@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use ::std::rc::Rc;
 use creusot_contracts::{
-    pcell::{PCell, PCellOwn},
+    cell::{PCell, PCellOwn},
     *,
 };
 

@@ -1,4 +1,4 @@
-//! A resource wrapping a [`FMap`] in a [`View`].
+//! A resource wrapping a [`FMap`] in a [`View`]
 //!
 //! This module defines a specialization of [`Resource`] for the case where you want:
 //! - A single, authoritative version of a [`FMap`]
@@ -7,6 +7,7 @@
 //!
 //! These are the [`Authority`] and [`Fragment`] types respectively.
 
+use super::Resource;
 #[cfg(creusot)]
 use crate::logic::Id;
 use crate::{
@@ -18,7 +19,6 @@ use crate::{
             fmap::FMapInsertLocalUpdate,
         },
     },
-    resource::Resource,
     *,
 };
 
