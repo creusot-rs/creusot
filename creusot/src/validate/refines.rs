@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use either::Either;
+use rustc_ast::{BindingMode, ByRef, Mutability};
 use rustc_hir::{HirId, def_id::DefId};
 use rustc_middle::{
     thir::{self, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir},
@@ -9,7 +11,7 @@ use rustc_span::Span;
 
 use crate::{
     contracts_items::{is_refines, is_spec},
-    ctx::{HasTyCtxt as _, TranslationCtx},
+    ctx::{HasTyCtxt, TranslationCtx},
     validate::ghost::is_ghost_ty_,
 };
 
@@ -46,122 +48,168 @@ fn check_refines(ctx: &TranslationCtx, left: DefId, right: DefId) {
     check_refines_thir(ctx, left_thir, right_thir, ctx.def_span(left))
 }
 
+#[derive(Clone, Debug)]
 enum AnfStmt<'tcx> {
     /// LHS <- FUNC(EXPR0, ..., EXPRN)
-    Call(ExprId, DefId, ty::GenericArgsRef<'tcx>, Box<[AnfRet<'tcx>]>),
+    Call(ExprId, DefId, ty::GenericArgsRef<'tcx>, Box<[AnfValue<'tcx>]>, Span),
+    /// let mut VAR
+    LetMut(HirId),
     /// LHS <- EXPR
-    Assign(AnfLhs, AnfRet<'tcx>),
+    Assign(AnfLhs, AnfValue<'tcx>),
     /// LHS <- if EXPR0 { EXPR1 } else { EXPR2 }
-    If(ExprId, ExprId, Box<AnfRet<'tcx>>, Box<AnfRet<'tcx>>),
+    If(ExprId, ExprId, Box<AnfValue<'tcx>>, Box<AnfValue<'tcx>>),
 }
 
+#[derive(Clone, Debug)]
 enum AnfLhs {
     Var(HirId),
 }
 
-enum AnfRet<'tcx> {
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum AnfValue<'tcx> {
     Unit,
     Expr(ExprId),
     Var(HirId),
     Fn(DefId, ty::GenericArgsRef<'tcx>),
 }
 
+#[derive(Clone, Debug)]
 struct Anf<'tcx> {
     stmts: Vec<AnfStmt<'tcx>>,
-    ret: AnfRet<'tcx>,
+    ret: AnfValue<'tcx>,
 }
 
-fn a_normal_form<'tcx>(ctx: TyCtxt<'tcx>, thir: &Thir<'tcx>, expr: ExprId) -> Anf<'tcx> {
+/// State for computing A-normal form
+struct AnfContext<'a, 'tcx> {
+    tcx: TyCtxt<'tcx>,
+    thir: &'a Thir<'tcx>,
+    /// Mapping from ANF variables to values
+    /// This lets us identify `let x = e; f(x)` with `f(e)`.
+    alias: HashMap<Either<HirId, ExprId>, AnfValue<'tcx>>,
+}
+
+fn a_normal_form<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, expr: ExprId) -> Anf<'tcx> {
+    let mut ctx = AnfContext::new(tcx, thir);
     let mut stmts = Vec::new();
-    let ret = a_normal_form_expr(ctx, thir, expr, &mut stmts);
+    let ret = ctx.a_normal_form_expr(expr, &mut stmts);
     Anf { stmts, ret }
 }
 
-fn a_normal_form_expr<'tcx>(
-    ctx: TyCtxt<'tcx>,
-    thir: &Thir<'tcx>,
-    expr_id: ExprId,
-    stmts: &mut Vec<AnfStmt<'tcx>>,
-) -> AnfRet<'tcx> {
-    let expr = &thir[expr_id];
-    use ExprKind::*;
-    match &expr.kind {
-        Scope { value, .. } => a_normal_form_expr(ctx, thir, *value, stmts),
-        Block { block } => a_normal_form_block(ctx, thir, *block, stmts),
-        VarRef { id } => AnfRet::Var(id.0),
-        Call { fun, args, .. } => {
-            let fun = a_normal_form_expr(ctx, thir, *fun, stmts);
-            let args = args
-                .iter()
-                .map(|arg| a_normal_form_expr(ctx, thir, *arg, stmts))
-                .collect::<::std::boxed::Box<[_]>>();
-            match fun {
-                AnfRet::Fn(fun_id, subst) => {
-                    stmts.push(AnfStmt::Call(expr_id, fun_id, subst, args));
-                    AnfRet::Expr(expr_id)
+impl<'a, 'tcx> HasTyCtxt<'tcx> for AnfContext<'a, 'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.tcx
+    }
+}
+
+impl<'a, 'tcx> AnfContext<'a, 'tcx> {
+    fn new(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> Self {
+        let alias = HashMap::new();
+        AnfContext { tcx, thir, alias }
+    }
+
+    fn hir_id_value(&self, hir_id: HirId) -> AnfValue<'tcx> {
+        self.alias.get(&Either::Left(hir_id)).cloned().unwrap_or(AnfValue::Var(hir_id))
+    }
+
+    fn expr_id_value(&self, expr_id: ExprId) -> AnfValue<'tcx> {
+        self.alias.get(&Either::Right(expr_id)).cloned().unwrap_or(AnfValue::Expr(expr_id))
+    }
+
+    fn a_normal_form_expr(
+        &mut self,
+        expr_id: ExprId,
+        stmts: &mut Vec<AnfStmt<'tcx>>,
+    ) -> AnfValue<'tcx> {
+        let expr = &self.thir[expr_id];
+        use ExprKind::*;
+        let value = match &expr.kind {
+            Scope { value, .. } => self.a_normal_form_expr(*value, stmts),
+            Block { block } => self.a_normal_form_block(*block, stmts),
+            VarRef { id } => self.hir_id_value(id.0),
+            Call { fun, args, fn_span, .. } => {
+                let fun = self.a_normal_form_expr(*fun, stmts);
+                match fun {
+                    AnfValue::Fn(fun_id, subst) => {
+                        let args = args
+                            .iter()
+                            .map(|arg| self.a_normal_form_expr(*arg, stmts))
+                            .collect::<::std::boxed::Box<[_]>>();
+                        stmts.push(AnfStmt::Call(expr_id, fun_id, subst, args, *fn_span));
+                        AnfValue::Expr(expr_id)
+                    }
+                    _ => self.crash_and_error(
+                        expr.span,
+                        "Unsupported function expression in refine check:\n{fun:?}",
+                    ),
                 }
-                _ => ctx.crash_and_error(
-                    expr.span,
-                    "Unsupported function expression in refine check:\n{fun:?}",
-                ),
             }
+            ZstLiteral { .. } => match expr.ty.kind() {
+                ty::TyKind::FnDef(def_id, subst) => AnfValue::Fn(*def_id, subst),
+                _ => AnfValue::Unit,
+            },
+            _ => self.crash_and_error(
+                expr.span,
+                format!("Unsupported expression in refine check:\n{expr:?}"),
+            ),
+        };
+        self.alias.insert(Either::Right(expr_id), value.clone());
+        value
+    }
+
+    fn a_normal_form_block(
+        &mut self,
+        block: BlockId,
+        stmts: &mut Vec<AnfStmt<'tcx>>,
+    ) -> AnfValue<'tcx> {
+        let block = &self.thir[block];
+        for stmt in &block.stmts {
+            self.a_normal_form_stmt(*stmt, stmts);
         }
-        ZstLiteral { .. } => match expr.ty.kind() {
-            ty::TyKind::FnDef(def_id, subst) => AnfRet::Fn(*def_id, subst),
-            _ => AnfRet::Unit,
-        },
-        _ => ctx.crash_and_error(
-            expr.span,
-            format!("Unsupported expression in refine check:\n{expr:?}"),
-        ),
-    }
-}
-
-fn a_normal_form_block<'tcx>(
-    ctx: TyCtxt<'tcx>,
-    thir: &Thir<'tcx>,
-    block: BlockId,
-    stmts: &mut Vec<AnfStmt<'tcx>>,
-) -> AnfRet<'tcx> {
-    let block = &thir[block];
-    for stmt in &block.stmts {
-        a_normal_form_stmt(ctx, thir, *stmt, stmts);
-    }
-    match block.expr {
-        None => AnfRet::Unit,
-        Some(e) => a_normal_form_expr(ctx, thir, e, stmts),
-    }
-}
-
-fn a_normal_form_stmt<'tcx>(
-    ctx: TyCtxt<'tcx>,
-    thir: &Thir<'tcx>,
-    block: StmtId,
-    stmts: &mut Vec<AnfStmt<'tcx>>,
-) {
-    let stmt = &thir[block];
-    use thir::StmtKind::*;
-    match &stmt.kind {
-        Expr { expr, .. } => {
-            let _ = a_normal_form_expr(ctx, thir, *expr, stmts);
+        match block.expr {
+            None => AnfValue::Unit,
+            Some(e) => self.a_normal_form_expr(e, stmts),
         }
-        Let { pattern, initializer, else_block, span, .. } => {
-            if let Some(_) = else_block {
-                ctx.crash_and_error(*span, "Unsupported else block in refine check")
-            }
-            let Some(initializer) = initializer else {
-                ctx.crash_and_error(*span, "Unsupported let without initializer in refine check")
-            };
-            if is_spec_or_refines_expr(ctx, thir, *initializer) {
-                return;
-            }
-            let rhs = a_normal_form_expr(ctx, thir, *initializer, stmts);
+    }
 
-            let lhs = match pattern.kind {
-                PatKind::Binding { var, .. } => AnfLhs::Var(var.0),
-                _ => ctx.crash_and_error(*span, "Unsupported pattern in refine check"),
-            };
-            stmts.push(AnfStmt::Assign(lhs, rhs));
+    fn a_normal_form_stmt(&mut self, stmt: StmtId, stmts: &mut Vec<AnfStmt<'tcx>>) {
+        let stmt = &self.thir[stmt];
+        use thir::StmtKind::*;
+        match &stmt.kind {
+            Expr { expr, .. } => {
+                let _ = self.a_normal_form_expr(*expr, stmts);
+            }
+            Let { pattern, initializer, else_block, span, .. } => {
+                if let Some(_) = else_block {
+                    self.tcx.crash_and_error(*span, "Unsupported let-else in refine check")
+                }
+                let Some(initializer) = initializer else {
+                    self.tcx.crash_and_error(
+                        *span,
+                        "Unsupported let without initializer in refine check",
+                    )
+                };
+                if is_spec_or_refines_expr(self.tcx, self.thir, *initializer) {
+                    return;
+                }
+                let rhs = self.a_normal_form_expr(*initializer, stmts);
+                match pattern.kind {
+                    PatKind::Binding { subpattern: Some(_), .. } => {
+                        self.crash_and_error(*span, "Unsupported @ subpattern in refine check")
+                    }
+                    PatKind::Binding {
+                        var, mode: BindingMode(ByRef::No, Mutability::Not), ..
+                    } => {
+                        self.alias.insert(Either::Left(var.0), rhs.clone());
+                    }
+                    PatKind::Binding {
+                        var, mode: BindingMode(ByRef::No, Mutability::Mut), ..
+                    } => {
+                        stmts.push(AnfStmt::LetMut(var.0));
+                        stmts.push(AnfStmt::Assign(AnfLhs::Var(var.0), rhs));
+                    }
+                    _ => self.crash_and_error(*span, "Unsupported pattern in refine check"),
+                };
+            }
         }
     }
 }
@@ -185,6 +233,7 @@ struct RefineChecker<'a, 'tcx> {
     left: &'a Thir<'tcx>,
     right: &'a Thir<'tcx>,
     refine_hir_id: HashMap<HirId, HirId>,
+    refine_expr_id: HashMap<ExprId, ExprId>,
     span: Span,
 }
 
@@ -196,7 +245,8 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         span: Span,
     ) -> Self {
         let refine_hir_id = HashMap::new();
-        let mut checker = RefineChecker { ctx, left, right, refine_hir_id, span };
+        let refine_expr_id = HashMap::new();
+        let mut checker = RefineChecker { ctx, left, right, refine_hir_id, refine_expr_id, span };
         checker.refine_params();
         checker
     }
@@ -240,50 +290,98 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         }
     }
 
-    fn refines(&self, left: Anf, right: Anf) {
-        if left.stmts.len() != 0 || right.stmts.len() != 0 {
+    fn refine_value(&self, v1: &AnfValue<'tcx>, v2: &AnfValue<'tcx>) -> bool {
+        match (v1, v2) {
+            (AnfValue::Unit, AnfValue::Unit) => true,
+            (AnfValue::Expr(e1), AnfValue::Expr(e2)) => {
+                let e1_ = self.refine_expr_id.get(e1).unwrap_or_else(|| {
+    let _e1 = &self.left[*e1];
+self.ctx.crash_and_error(
+                    _e1.span,
+                   format!( "Expression {e1:?} in refining function not found in refined function: {_e1:?}"),
+                )});
+                e1_ == e2
+            }
+            (AnfValue::Var(v1), AnfValue::Var(v2)) => {
+                let v1_ = self.refine_hir_id[v1];
+                v1_ == *v2
+            }
+            _ => false,
+        }
+    }
+
+    fn refine_args(
+        &self,
+        args1: &[AnfValue<'tcx>],
+        args2: &[AnfValue<'tcx>],
+        span1: Span,
+        _span2: Span,
+    ) {
+        if args1.len() != args2.len() {
             self.ctx.crash_and_error(
-                self.span,
-                "Refining and refined functions must have a single expression body",
+                span1,
+                "Refining and refined functions must have the same number of arguments",
             )
         }
-        match (left.ret, right.ret) {
-            (AnfRet::Unit, AnfRet::Unit) => {}
-            (AnfRet::Expr(l), AnfRet::Expr(r)) => {
-                self.ctx.crash_and_error(self.left[l].span, "TODO")
+        for (i, (arg1, arg2)) in args1.into_iter().zip(args2).enumerate() {
+            if !self.refine_value(arg1, arg2) {
+                self.ctx.crash_and_error(span1, format!("Argument {i} mismatch"))
             }
-            (AnfRet::Var(l), AnfRet::Var(r)) => {
-                let r_ = self.refine_hir_id.get(&l).unwrap_or_else(|| {
-                    eprintln!("{:?}", self.refine_hir_id);
-                    eprintln!("{:#?}", self.left);
-                    self.ctx.crash_and_error(
-                        self.ctx.hir_span(l),
-                        format!("{l:?} does not refine {r:?}"),
-                    )
-                });
-                if *r_ != r {
-                    self.ctx.crash_and_error(
-                        self.ctx.hir_span(l),
-                        format!("{l:?} does not refine {r:?} ({l:?} refines {r_:?})"),
-                    )
-                }
-            }
-            _ => self.ctx.crash_and_error(
-                self.span,
-                "Refining and refined functions must have the same return kind",
-            ),
         }
+    }
+
+    fn refine_result(&mut self, lhs1: &ExprId, lhs2: &ExprId) {
+        eprintln!("Refining expr {:?} to {:?}", lhs1, lhs2);
+        self.refine_expr_id.insert(*lhs1, *lhs2);
+    }
+
+    fn refine_stmts(&mut self, left: &[AnfStmt<'tcx>], right: &[AnfStmt<'tcx>]) {
+        let mut right = right.into_iter();
+        for left in left.into_iter() {
+            match left {
+                AnfStmt::Call(lhs1, fun1, subst1, args1, span1) => match right.next() {
+                    Some(AnfStmt::Call(lhs2, fun2, subst2, args2, span2)) => {
+                        if fun1 == fun2 {
+                            self.refine_args(&**args1, args2, *span1, *span2);
+                            self.refine_result(lhs1, lhs2);
+                        } else {
+                            todo!()
+                        }
+                    }
+                    Some(_) => self.ctx.crash_and_error(self.span, "mismatch TODO"),
+                    None => self.ctx.crash_and_error(
+                        self.span,
+                        "Refining function has more statements than the refined function",
+                    ),
+                },
+                AnfStmt::LetMut(v) => todo!(),
+                AnfStmt::Assign(anf_lhs, anf_ret) => todo!(),
+                AnfStmt::If(expr_id, expr_id1, anf_ret, anf_ret1) => todo!(),
+            }
+        }
+        if let Some(_) = right.next() {
+            self.ctx.crash_and_error(
+                self.span,
+                "Refining function has fewer statements than the refined function",
+            )
+        }
+    }
+
+    fn refines(&mut self, left: &Anf<'tcx>, right: &Anf<'tcx>) {
+        eprintln!("Refining ANF\nleft: {left:#?}\nright: {right:#?}");
+        self.refine_stmts(&left.stmts, &right.stmts);
+        self.refine_value(&left.ret, &right.ret);
     }
 }
 
-fn check_refines_thir<'tcx>(
+fn check_refines_thir<'a, 'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    (left_thir, left_expr): &(Thir<'tcx>, ExprId),
-    (right_thir, right_expr): &(Thir<'tcx>, ExprId),
+    (left_thir, left_expr): &'a (Thir<'tcx>, ExprId),
+    (right_thir, right_expr): &'a (Thir<'tcx>, ExprId),
     span: Span,
 ) {
-    let checker = RefineChecker::new(ctx, left_thir, right_thir, span);
+    let mut checker = RefineChecker::new(ctx, left_thir, right_thir, span);
     let left = a_normal_form(ctx.tcx, left_thir, *left_expr);
     let right = a_normal_form(ctx.tcx, right_thir, *right_expr);
-    checker.refines(left, right);
+    checker.refines(&left, &right);
 }
