@@ -47,6 +47,7 @@ extern_spec! {
     }
 
     impl<T: ?Sized, A: Allocator> Deref for Rc<T, A> {
+        #[check(ghost)]
         #[ensures(*result == *(*self)@)]
         fn deref(&self) -> &T;
     }
