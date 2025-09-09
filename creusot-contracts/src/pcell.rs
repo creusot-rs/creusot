@@ -3,10 +3,7 @@
 //! This allows a form of interior mutability, using [ghost](mod@crate::ghost) code to keep
 //! track of the logical value.
 
-#[cfg(creusot)]
-use crate::logic::Id;
-
-use crate::{Ghost, *};
+use crate::{Ghost, logic::Id, *};
 use ::std::{cell::UnsafeCell, marker::PhantomData};
 
 /// A "permission" cell allowing interior mutability via a ghost token.
@@ -77,6 +74,12 @@ impl<T: ?Sized> PCellOwn<T> {
     #[trusted]
     pub fn val<'a>(self) -> &'a T {
         dead
+    }
+
+    #[check(ghost)]
+    #[ensures(*result == self.id())]
+    pub fn id_ghost(&self) -> Ghost<Id> {
+        snapshot!(self.id()).into_ghost()
     }
 
     /// If one owns two `PCellOwn`s in ghost code, then they have different ids.
@@ -218,6 +221,12 @@ impl<T> PCell<T> {
     #[trusted]
     pub fn id(self) -> Id {
         dead
+    }
+
+    #[check(ghost)]
+    #[ensures(*result == self.id())]
+    pub fn id_ghost(&self) -> Ghost<Id> {
+        snapshot!(self.id()).into_ghost()
     }
 
     /// Returns a raw pointer to the underlying data in this cell.
