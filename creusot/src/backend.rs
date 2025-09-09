@@ -113,11 +113,7 @@ impl<'tcx> Why3Generator<'tcx> {
         self.used_namespaces.set(true);
         *self.namespaces.borrow_mut().entry(namespace_fun).or_insert_with(|| {
             let name = self.ctx.item_name(namespace_fun);
-            why3::Ident::fresh_local(format!(
-                "Namespace_{name}_{}'{}",
-                namespace_fun.krate.index(),
-                namespace_fun.index.index()
-            ))
+            why3::Ident::fresh_local(format!("Namespace_{name}"))
         })
     }
 
