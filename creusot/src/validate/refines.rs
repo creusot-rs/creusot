@@ -1,11 +1,16 @@
 use std::collections::HashMap;
 
 use rustc_hir::{HirId, def_id::DefId};
-use rustc_middle::{thir::{self, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir}, ty::TyCtxt};
+use rustc_middle::{
+    thir::{self, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir},
+    ty::{self, TyCtxt},
+};
 use rustc_span::Span;
 
 use crate::{
-    contracts_items::{is_refines, is_spec}, ctx::{HasTyCtxt as _, TranslationCtx}, validate::ghost::is_ghost_ty_
+    contracts_items::{is_refines, is_spec},
+    ctx::{HasTyCtxt as _, TranslationCtx},
+    validate::ghost::is_ghost_ty_,
 };
 
 pub(crate) fn validate_refines(ctx: &TranslationCtx) {
@@ -41,60 +46,99 @@ fn check_refines(ctx: &TranslationCtx, left: DefId, right: DefId) {
     check_refines_thir(ctx, left_thir, right_thir, ctx.def_span(left))
 }
 
-enum AnfStmt {
+enum AnfStmt<'tcx> {
     /// LHS <- FUNC(EXPR0, ..., EXPRN)
-    Call(ExprId, DefId, Box<[AnfRet]>),
+    Call(ExprId, DefId, ty::GenericArgsRef<'tcx>, Box<[AnfRet<'tcx>]>),
     /// LHS <- EXPR
-    Assign(AnfLhs, AnfRet),
+    Assign(AnfLhs, AnfRet<'tcx>),
     /// LHS <- if EXPR0 { EXPR1 } else { EXPR2 }
-    If(ExprId, ExprId, Box<AnfRet>, Box<AnfRet>),
+    If(ExprId, ExprId, Box<AnfRet<'tcx>>, Box<AnfRet<'tcx>>),
 }
 
 enum AnfLhs {
     Var(HirId),
 }
 
-enum AnfRet {
+enum AnfRet<'tcx> {
     Unit,
     Expr(ExprId),
     Var(HirId),
+    Fn(DefId, ty::GenericArgsRef<'tcx>),
 }
 
-struct Anf {
-    stmts: Vec<AnfStmt>,
-    ret: AnfRet,
+struct Anf<'tcx> {
+    stmts: Vec<AnfStmt<'tcx>>,
+    ret: AnfRet<'tcx>,
 }
 
-fn a_normal_form<'tcx>(ctx: TyCtxt<'tcx>, thir: &Thir<'tcx>, expr: ExprId) -> Anf {
+fn a_normal_form<'tcx>(ctx: TyCtxt<'tcx>, thir: &Thir<'tcx>, expr: ExprId) -> Anf<'tcx> {
     let mut stmts = Vec::new();
     let ret = a_normal_form_expr(ctx, thir, expr, &mut stmts);
     Anf { stmts, ret }
 }
 
-fn a_normal_form_expr<'tcx>(ctx: TyCtxt<'tcx>, thir: &Thir<'tcx>, expr: ExprId, stmts: &mut Vec<AnfStmt>) -> AnfRet {
-    let expr = &thir[expr];
+fn a_normal_form_expr<'tcx>(
+    ctx: TyCtxt<'tcx>,
+    thir: &Thir<'tcx>,
+    expr_id: ExprId,
+    stmts: &mut Vec<AnfStmt<'tcx>>,
+) -> AnfRet<'tcx> {
+    let expr = &thir[expr_id];
     use ExprKind::*;
     match &expr.kind {
         Scope { value, .. } => a_normal_form_expr(ctx, thir, *value, stmts),
         Block { block } => a_normal_form_block(ctx, thir, *block, stmts),
         VarRef { id } => AnfRet::Var(id.0),
-        _ => ctx.crash_and_error(expr.span, format!("Unsupported expression in refine check: {expr:?}")),
+        Call { fun, args, .. } => {
+            let fun = a_normal_form_expr(ctx, thir, *fun, stmts);
+            let args = args
+                .iter()
+                .map(|arg| a_normal_form_expr(ctx, thir, *arg, stmts))
+                .collect::<::std::boxed::Box<[_]>>();
+            match fun {
+                AnfRet::Fn(fun_id, subst) => {
+                    stmts.push(AnfStmt::Call(expr_id, fun_id, subst, args));
+                    AnfRet::Expr(expr_id)
+                }
+                _ => ctx.crash_and_error(
+                    expr.span,
+                    "Unsupported function expression in refine check:\n{fun:?}",
+                ),
+            }
+        }
+        ZstLiteral { .. } => match expr.ty.kind() {
+            ty::TyKind::FnDef(def_id, subst) => AnfRet::Fn(*def_id, subst),
+            _ => AnfRet::Unit,
+        },
+        _ => ctx.crash_and_error(
+            expr.span,
+            format!("Unsupported expression in refine check:\n{expr:?}"),
+        ),
     }
 }
 
-fn a_normal_form_block<'tcx>(ctx: TyCtxt<'tcx>, thir: &Thir<'tcx>, block: BlockId, stmts: &mut Vec<AnfStmt>) -> AnfRet {
+fn a_normal_form_block<'tcx>(
+    ctx: TyCtxt<'tcx>,
+    thir: &Thir<'tcx>,
+    block: BlockId,
+    stmts: &mut Vec<AnfStmt<'tcx>>,
+) -> AnfRet<'tcx> {
     let block = &thir[block];
-    let mut stmts = vec![];
     for stmt in &block.stmts {
-        a_normal_form_stmt(ctx, thir, *stmt, &mut stmts);
+        a_normal_form_stmt(ctx, thir, *stmt, stmts);
     }
     match block.expr {
         None => AnfRet::Unit,
-        Some(e) => a_normal_form_expr(ctx, thir, e, &mut stmts),
+        Some(e) => a_normal_form_expr(ctx, thir, e, stmts),
     }
 }
 
-fn a_normal_form_stmt<'tcx>(ctx: TyCtxt<'tcx>, thir: &Thir<'tcx>, block: StmtId, stmts: &mut Vec<AnfStmt>) {
+fn a_normal_form_stmt<'tcx>(
+    ctx: TyCtxt<'tcx>,
+    thir: &Thir<'tcx>,
+    block: StmtId,
+    stmts: &mut Vec<AnfStmt<'tcx>>,
+) {
     let stmt = &thir[block];
     use thir::StmtKind::*;
     match &stmt.kind {
@@ -109,7 +153,7 @@ fn a_normal_form_stmt<'tcx>(ctx: TyCtxt<'tcx>, thir: &Thir<'tcx>, block: StmtId,
                 ctx.crash_and_error(*span, "Unsupported let without initializer in refine check")
             };
             if is_spec_or_refines_expr(ctx, thir, *initializer) {
-                return
+                return;
             }
             let rhs = a_normal_form_expr(ctx, thir, *initializer, stmts);
 
@@ -129,7 +173,7 @@ fn is_spec_or_refines_expr(tcx: TyCtxt, thir: &Thir, expr: ExprId) -> bool {
             ExprKind::Scope { value, .. } => expr = &thir[value],
             ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
                 let closure_id = closure_id.to_def_id();
-                return is_spec(tcx, closure_id) || is_refines(tcx, closure_id)
+                return is_spec(tcx, closure_id) || is_refines(tcx, closure_id);
             }
             _ => return false,
         }
@@ -171,7 +215,9 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                     "Refining function has more non-ghost parameters than the refined function",
                 )
             };
-            let Some(left_p) = &left_p.pat else { continue; };
+            let Some(left_p) = &left_p.pat else {
+                continue;
+            };
             let Some(right_p) = &right_p.pat else {
                 self.ctx.crash_and_error(
                     self.span,
@@ -204,10 +250,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         match (left.ret, right.ret) {
             (AnfRet::Unit, AnfRet::Unit) => {}
             (AnfRet::Expr(l), AnfRet::Expr(r)) => {
-                self.ctx.crash_and_error(
-                    self.left[l].span,
-                    "TODO",
-                )
+                self.ctx.crash_and_error(self.left[l].span, "TODO")
             }
             (AnfRet::Var(l), AnfRet::Var(r)) => {
                 let r_ = self.refine_hir_id.get(&l).unwrap_or_else(|| {
@@ -225,12 +268,10 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                     )
                 }
             }
-            _ => {
-                self.ctx.crash_and_error(
-                    self.span,
-                    "Refining and refined functions must have the same return kind",
-                )
-            }
+            _ => self.ctx.crash_and_error(
+                self.span,
+                "Refining and refined functions must have the same return kind",
+            ),
         }
     }
 }
