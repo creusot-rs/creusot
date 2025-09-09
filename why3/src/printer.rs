@@ -612,15 +612,12 @@ impl Print for MetaIdent {
     fn pretty<'a, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
-        scope: &mut Why3Scope,
+        _: &mut Why3Scope,
     ) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
-        match self {
-            MetaIdent::Ident(i) => i.pretty(alloc, scope),
-            MetaIdent::String(s) => alloc.text(format!("{s:?}")),
-        }
+        alloc.text(format!("{:?}", self.0.to_string()))
     }
 }
 
@@ -628,7 +625,7 @@ impl Print for MetaArg {
     fn pretty<'a, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
-        _: &mut Why3Scope,
+        scope: &mut Why3Scope,
     ) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
@@ -636,6 +633,8 @@ impl Print for MetaArg {
         match self {
             MetaArg::Integer(i) => alloc.as_string(i),
             MetaArg::String(s) => alloc.text(format!("{s:?}")),
+            MetaArg::Keyword(s) => alloc.text(s),
+            MetaArg::Ident(i) => i.pretty_value_name(alloc, scope),
         }
     }
 }

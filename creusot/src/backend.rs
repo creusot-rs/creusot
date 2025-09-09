@@ -221,11 +221,11 @@ pub fn is_trusted_item(tcx: TyCtxt, mut def_id: DefId) -> bool {
 pub(crate) fn common_meta_decls() -> impl Iterator<Item = Decl> {
     [
         Decl::Meta(Meta {
-            name: MetaIdent::String("compute_max_steps".into()),
+            name: MetaIdent("compute_max_steps".into()),
             args: [MetaArg::Integer(1_000_000)].into(),
         }),
         Decl::Meta(Meta {
-            name: MetaIdent::String("select_lsinst".into()),
+            name: MetaIdent("select_lsinst".into()),
             args: [MetaArg::String("all".into())].into(),
         }),
     ]
