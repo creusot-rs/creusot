@@ -242,9 +242,9 @@ pub mod implementation {
         }
 
         #[requires(exists<p> tokens.invariant_with_data(p))]
-        #[requires(tokens.own_map.contains(inner.view().id()))]
-        #[ensures(if i.view() < *tokens.length {
-            result == Some(&tokens.values@[inner.view().id()][i.view()])
+        #[requires(tokens.own_map.contains(inner@.id()))]
+        #[ensures(if i@ < *tokens.length {
+            result == Some(&tokens.values@[inner@.id()][i@])
         } else {
             result == None
         })]
@@ -278,8 +278,8 @@ pub mod implementation {
         ///
         /// See the [safety section](PersistentArray#safety) on the type documentation.
         #[requires(tokens.contains(PARRAY()))]
-        #[ensures(if index.view() < self.view().len() {
-            result == Some(&self.view()[index.view()])
+        #[ensures(if index@ < self@.len() {
+            result == Some(&self@[index@])
         } else {
             result == None
         })]
@@ -308,20 +308,20 @@ pub mod implementation {
         ///
         /// See the [safety section](PersistentArray#safety) on the type documentation.
         #[requires(tokens.invariant_with_data(*invariant_id))]
-        #[requires(tokens.own_map.contains(inner.view().id()))]
+        #[requires(tokens.own_map.contains(inner@.id()))]
         #[ensures((^tokens.inner_logic()).invariant_with_data(*invariant_id))]
         #[ensures(forall<id> (*tokens).own_map.contains(id) == (^tokens.inner_logic()).own_map.contains(id))]
         #[ensures((*tokens).values == (^tokens.inner_logic()).values)]
         #[ensures((*tokens).length == (^tokens.inner_logic()).length)]
-        #[ensures(forall<id> (*tokens).rank[id] > (*tokens).rank[inner.view().id()]
+        #[ensures(forall<id> (*tokens).rank[id] > (*tokens).rank[inner@.id()]
             ==> (*tokens).rank[id] == (^tokens.inner_logic()).rank[id]
             && (*tokens).own_map.get(id) == (^tokens.inner_logic()).own_map.get(id)
         )]
-        #[ensures(match *(^tokens.inner_logic()).own_map[inner.view().id()].val() {
+        #[ensures(match *(^tokens.inner_logic()).own_map[inner@.id()].val() {
             Inner::Direct(_) => true,
             Inner::Link { .. } => false,
         })]
-        #[ensures(*result == (^tokens.inner_logic()).rank[inner.view().id()])]
+        #[ensures(*result == (^tokens.inner_logic()).rank[inner@.id()])]
         unsafe fn reroot<'a>(
             inner: &'a Rc<PCell<Inner<T>>>,
             invariant_id: Snapshot<Id>,
