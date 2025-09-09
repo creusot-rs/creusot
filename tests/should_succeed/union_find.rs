@@ -44,11 +44,11 @@ mod implementation {
     /// Handle to the union-find data structure.
     ///
     /// This is a purely logical construct, that must be used so Creusot knows how to interpret
-    /// the payloads of [`Element`]s. It is defined as a wrapper of the `HFInner` struct below.
+    /// the payloads of [`Element`]s. It is defined as a wrapper of the `UFInner` struct below.
     /// The difference is that the wrapper has an invariant, while the inner struct does not.
-    pub struct UnionFind<T>(HFInner<T>);
+    pub struct UnionFind<T>(UFInner<T>);
 
-    struct HFInner<T> {
+    struct UFInner<T> {
         /// which "pointers" are involved
         domain: Snapshot<FSet<Element<T>>>,
         /// Maps an element to its logical content (represented by the permission to access it).
@@ -175,7 +175,7 @@ mod implementation {
     pub fn new<T>() -> Ghost<UnionFind<T>> {
         ghost! {
             UnionFind (
-                HFInner {
+                UFInner {
                     domain: snapshot!(FSet::empty()),
                     perms: FMap::new().into_inner(),
                     payloads: snapshot!(such_that(|_| true)),
