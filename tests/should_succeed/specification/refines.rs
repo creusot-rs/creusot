@@ -1,24 +1,40 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-pub fn foo(x: i32) -> i32 {
+fn foo(x: i32) -> i32 {
     x
 }
 
-pub fn baz<const N: i32>() -> i32 {
+#[refines(foo)]
+fn foo2(x: i32, _: Ghost<Int>) -> i32 {
+    x
+}
+
+fn baz<const N: i32>() -> i32 {
     N
+}
+
+trait Quux {
+    fn quux(&self) -> i32;
+}
+
+impl Quux for i32 {
+    fn quux(&self) -> i32 {
+        foo(*self)
+    }
+}
+
+#[refines(<i32 as Quux>::quux)]
+fn quux2(x: &i32, y: Ghost<Int>) -> i32 {
+    foo2(*x, y)
 }
 
 pub fn bar(x: i32) -> i32 {
     let a = foo(x);
     let b = foo(x);
     let c = baz::<42>();
+    let c = c.quux();
     a + b + c + 42
-}
-
-#[refines(foo)]
-pub fn foo2(x: i32, _: Ghost<Int>) -> i32 {
-    x
 }
 
 #[refines(bar)]
@@ -26,6 +42,7 @@ pub fn bar2(x: i32, y: Ghost<Int>) -> i32 {
     let a = foo(x);
     let b = foo2(x, y);
     let c = baz::<42>();
+    let c = quux2(&c, y);
     a + b + c + 42
 }
 

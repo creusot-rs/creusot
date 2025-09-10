@@ -553,7 +553,7 @@ pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
     tcx.crate_name(LOCAL_CRATE).as_str().into()
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Refined<'tcx> {
     pub thir: (DefId, GenericArgsRef<'tcx>),
     pub resolved: (DefId, GenericArgsRef<'tcx>),
