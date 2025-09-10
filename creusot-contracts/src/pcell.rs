@@ -16,6 +16,7 @@ use ::std::{cell::UnsafeCell, marker::PhantomData};
 /// Creusot ensures that every operation on the inner value uses the right [`PCellOwn`] object
 /// created by [`PCell::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
 #[repr(transparent)]
+#[trusted]
 pub struct PCell<T: ?Sized>(UnsafeCell<T>);
 
 /// Token that represents the ownership of a [`PCell`] object.
