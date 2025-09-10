@@ -77,6 +77,7 @@ impl Invariant for ! {
     #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
+    #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn invariant(self) -> bool {
         false
     }
@@ -87,6 +88,7 @@ impl<T: ?Sized> Invariant for &T {
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn invariant(self) -> bool {
         inv(*self)
     }
@@ -97,6 +99,7 @@ impl<T: ?Sized> Invariant for &mut T {
     #[open]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn invariant(self) -> bool {
         pearlite! { inv(*self) && inv(^self) }
     }

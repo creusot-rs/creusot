@@ -31,8 +31,9 @@ pub fn structural_resolve<T: ?Sized>(_: T) -> bool {
 }
 
 impl<T1, T2: ?Sized> Resolve for (T1, T2) {
-    #[logic(prophetic)]
     #[open]
+    #[logic(prophetic)]
+    #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn resolve(self) -> bool {
         resolve(self.0) && resolve(self.1)
     }
@@ -46,6 +47,7 @@ impl<T1, T2: ?Sized> Resolve for (T1, T2) {
 impl<T: ?Sized> Resolve for &mut T {
     #[open]
     #[logic(prophetic)]
+    #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn resolve(self) -> bool {
         pearlite! { ^self == *self }
     }
@@ -59,24 +61,9 @@ impl<T: ?Sized> Resolve for &mut T {
 impl<T: ?Sized> Resolve for Box<T> {
     #[open]
     #[logic(prophetic)]
+    #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn resolve(self) -> bool {
         resolve(*self)
-    }
-
-    #[logic(prophetic)]
-    #[requires(structural_resolve(self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self) {}
-}
-
-impl<T> Resolve for Option<T> {
-    #[open]
-    #[logic(prophetic)]
-    fn resolve(self) -> bool {
-        match self {
-            Some(x) => resolve(x),
-            None => true,
-        }
     }
 
     #[logic(prophetic)]

@@ -117,16 +117,16 @@ pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<WAttribute> {
         .collect()
 }
 
-pub(crate) fn get_metas(
+pub(crate) fn why3_metas(
     tcx: TyCtxt,
     def_id: DefId,
     ident: why3::Ident,
 ) -> impl Iterator<Item = Meta> {
-    get_attrs(tcx.get_all_attrs(def_id), &["creusot", "meta"]).into_iter().map(move |a| {
+    get_attrs(tcx.get_all_attrs(def_id), &["creusot", "why3_meta"]).into_iter().map(move |a| {
         let Some(items) = &a.meta_item_list() else {
             tcx.crash_and_error(
                 a.span(),
-                "Invalid creusot::meta attribute: missing arguments".to_string(),
+                "Invalid creusot::why3_meta attribute: missing arguments".to_string(),
             )
         };
         tokenstream_to_meta(tcx, a.span(), ident, items.iter())
@@ -142,7 +142,7 @@ fn tokenstream_to_meta<'a>(
     let name = {
         let Some(LitKind::Str(name, _)) = ts.next().and_then(|item| item.lit().map(|lit| lit.kind))
         else {
-            tcx.crash_and_error(span, "Invalid creusot::meta attribute, missing name.\nExpected #[creusot::meta(\"name\", ...)]")
+            tcx.crash_and_error(span, "Invalid creusot::why3_meta attribute, missing name.\nExpected #[creusot::why3_meta(\"name\", ...)]")
         };
         MetaIdent(name.as_str().into())
     };
@@ -157,7 +157,7 @@ fn tokenstream_to_meta<'a>(
         } else if let Some(LitKind::Str(string, _)) = token.lit().map(|lit| &lit.kind) {
             args.push(MetaArg::String(string.as_str().into()))
         } else {
-            tcx.crash_and_error(span, format!("Invalid creusot::meta attribute argument: {token:?}\nExpected #[creusot::meta(\"name\", arg1, ...)] where each arg is an identifier, self, or a string literal."));
+            tcx.crash_and_error(span, format!("Invalid creusot::why3_meta attribute argument: {token:?}\nExpected #[creusot::why3_meta(\"name\", arg1, ...)] where each arg is an identifier, self, or a string literal."));
         };
     }
     let args = args.into();
