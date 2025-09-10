@@ -18,18 +18,14 @@ impl<T: DeepModel> DeepModel for Option<T> {
 }
 
 extern_spec! {
-    mod std {
-        mod option {
-            impl<T: PartialEq + DeepModel> PartialEq for Option<T> {
-                #[allow(unstable_name_collisions)]
-                #[ensures(result == (self.deep_model() == rhs.deep_model()))]
-                fn eq(&self, rhs: &Self) -> bool {
-                    match (self, rhs) {
-                        (None, None) => true,
-                        (Some(x), Some(y)) => x == y,
-                        _ => false,
-                    }
-                }
+    impl<T: PartialEq + DeepModel> PartialEq for Option<T> {
+        #[allow(unstable_name_collisions)]
+        #[ensures(result == (self.deep_model() == rhs.deep_model()))]
+        fn eq(&self, rhs: &Self) -> bool {
+            match (self, rhs) {
+                (None, None) => true,
+                (Some(x), Some(y)) => x == y,
+                _ => false,
             }
         }
     }
@@ -48,9 +44,6 @@ extern_spec! {
         }
     }
 
-}
-
-extern_spec! {
     mod std {
         mod option {
             impl<T> Option<T> {
@@ -773,4 +766,20 @@ impl<T> OptionExt<T> for Option<T> {
             Some(x) => Some(f.get(x)),
         }
     }
+}
+
+impl<T> Resolve for Option<T> {
+    #[open]
+    #[logic(prophetic)]
+    fn resolve(self) -> bool {
+        match self {
+            Some(x) => resolve(x),
+            None => true,
+        }
+    }
+
+    #[logic(prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }

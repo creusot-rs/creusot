@@ -42,3 +42,13 @@ pub fn deref_pat<'a>(o: &'a Option<Int>) -> Int {
         None => 0,
     }
 }
+
+#[open]
+#[logic]
+#[creusot::why3_meta("rewrite_def", function, self)]
+pub fn quatorze() -> Int {
+    14
+}
+
+#[ensures(quatorze() == 14)]
+pub fn use_quatorze() {}

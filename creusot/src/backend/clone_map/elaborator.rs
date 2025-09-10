@@ -20,7 +20,7 @@ use crate::{
         is_fn_impl_postcond, is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond,
         is_fn_once_impl_postcond, is_fn_once_impl_precond, is_ghost_deref, is_ghost_deref_mut,
         is_inv_function, is_logic, is_namespace_ty, is_resolve_function, is_size_of_logic,
-        is_structural_resolve,
+        is_structural_resolve, why3_metas,
     },
     ctx::{BodyId, HasTyCtxt as _, ItemType},
     naming::name,
@@ -232,7 +232,7 @@ fn expand_logic<'tcx>(
         Some(_) if sig.args.is_empty() => DeclKind::Constant,
         _ => DeclKind::Function,
     };
-    if !opaque && let Some(term) = term(ctx, typing_env, &bound, def_id, subst) {
+    let mut decls = if !opaque && let Some(term) = term(ctx, typing_env, &bound, def_id, subst) {
         lower_logical_defn(ctx, &names, sig, kind, term)
     } else {
         let mut decls = val(sig, kind);
@@ -290,7 +290,9 @@ fn expand_logic<'tcx>(
         }
 
         decls
-    }
+    };
+    decls.extend(why3_metas(ctx.tcx, def_id, name).map(|m| Decl::Meta(m)));
+    decls
 }
 
 /// Constants require some special handling because they can be defined with arbitrary Rust expressions

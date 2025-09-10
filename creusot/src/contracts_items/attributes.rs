@@ -1,10 +1,12 @@
 //! Defines all the internal creusot attributes.
 
-use rustc_ast::Param;
+use rustc_ast::{LitKind, MetaItemInner, Param};
 use rustc_hir::{AttrArgs, Attribute, def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
-use rustc_span::Symbol;
-use why3::declaration::Attribute as WAttribute;
+use rustc_span::{Span, Symbol};
+use why3::declaration::{Attribute as WAttribute, Meta, MetaArg, MetaIdent};
+
+use crate::ctx::HasTyCtxt as _;
 
 /// Helper macro, converts `creusot::foo::bar` into `["creusot", "foo", "bar"]`.
 macro_rules! path_to_str {
@@ -113,6 +115,53 @@ pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<WAttribute> {
         .into_iter()
         .map(|a| WAttribute::Attr(a.value_str().unwrap().as_str().into()))
         .collect()
+}
+
+pub(crate) fn why3_metas(
+    tcx: TyCtxt,
+    def_id: DefId,
+    ident: why3::Ident,
+) -> impl Iterator<Item = Meta> {
+    get_attrs(tcx.get_all_attrs(def_id), &["creusot", "why3_meta"]).into_iter().map(move |a| {
+        let Some(items) = &a.meta_item_list() else {
+            tcx.crash_and_error(
+                a.span(),
+                "Invalid creusot::why3_meta attribute: missing arguments".to_string(),
+            )
+        };
+        tokenstream_to_meta(tcx, a.span(), ident, items.iter())
+    })
+}
+
+fn tokenstream_to_meta<'a>(
+    tcx: TyCtxt,
+    span: Span,
+    ident: why3::Ident,
+    mut ts: impl Iterator<Item = &'a MetaItemInner>,
+) -> Meta {
+    let name = {
+        let Some(LitKind::Str(name, _)) = ts.next().and_then(|item| item.lit().map(|lit| lit.kind))
+        else {
+            tcx.crash_and_error(span, "Invalid creusot::why3_meta attribute, missing name.\nExpected #[creusot::why3_meta(\"name\", ...)]")
+        };
+        MetaIdent(name.as_str().into())
+    };
+    let mut args = Vec::new();
+    for token in ts {
+        if let Some(name) = token.name() {
+            if name.as_str() == "self" {
+                args.push(MetaArg::Ident(ident))
+            } else {
+                args.push(MetaArg::Keyword(name.as_str().into()));
+            }
+        } else if let Some(LitKind::Str(string, _)) = token.lit().map(|lit| &lit.kind) {
+            args.push(MetaArg::String(string.as_str().into()))
+        } else {
+            tcx.crash_and_error(span, format!("Invalid creusot::why3_meta attribute argument: {token:?}\nExpected #[creusot::why3_meta(\"name\", arg1, ...)] where each arg is an identifier, self, or a string literal."));
+        };
+    }
+    let args = args.into();
+    Meta { name, args }
 }
 
 pub(crate) fn creusot_clause_attrs<'tcx>(

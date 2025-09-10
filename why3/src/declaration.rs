@@ -309,10 +309,7 @@ pub struct Meta {
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub enum MetaIdent {
-    String(String),
-    Ident(Symbol),
-}
+pub struct MetaIdent(pub Symbol);
 
 // meta_arg:
 // | TYPE      ty      { Mty $2 }
@@ -326,9 +323,12 @@ pub enum MetaIdent {
 // | STRING            { Mstr $1 }
 // | INTEGER           { Mint (Number.to_small_integer $1) }
 
+/// Example: in `meta "rewrite_def" function f`, `function` is a `Keyword` and `f` is an `Ident`
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum MetaArg {
     Integer(i128),
     String(String),
+    Keyword(String),
+    Ident(Ident),
 }
