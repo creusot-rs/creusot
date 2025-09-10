@@ -7,6 +7,7 @@ use crate::{
         traits::TraitResolved,
     },
     util::erased_identity_for_item,
+    validate::is_ghost_ty_,
 };
 use indexmap::IndexSet;
 use rustc_hir::def_id::{DefId, LocalDefId};
@@ -177,6 +178,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
     }
 }
 
+// This is similar logic to `extract_extern_specs_from_item` above.
 pub(crate) fn extract_refines_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     local_def_id: LocalDefId,
@@ -197,8 +199,9 @@ pub(crate) fn extract_refines_from_item<'tcx>(
             err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
             err.emit()
         });
+    let parent_sig = ctx.tcx.fn_sig(parent).instantiate_identity().skip_binder();
     // Check that the result types match
-    let result_ty = ctx.tcx.fn_sig(parent).instantiate_identity().skip_binder().output();
+    let result_ty = parent_sig.output();
     let this_ty = thir[expr].ty;
     if result_ty != this_ty {
         ctx.crash_and_error(
@@ -212,5 +215,13 @@ pub(crate) fn extract_refines_from_item<'tcx>(
             ),
         )
     }
-    (parent, Refined { thir: (id_thir, subst_thir), resolved: (id_resolved, subst_resolved) })
+    let refine_args = parent_sig.inputs().iter().map(|arg| is_ghost_ty_(ctx.tcx, *arg)).collect();
+    (
+        parent,
+        Refined {
+            thir: (id_thir, subst_thir),
+            resolved: (id_resolved, subst_resolved),
+            erase_args: refine_args,
+        },
+    )
 }

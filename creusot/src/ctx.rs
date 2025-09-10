@@ -538,8 +538,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         *self.crate_name.get_or_init(|| crate_name(self.tcx))
     }
 
-    pub(crate) fn refines(&self, def_id: DefId) -> Option<Refined<'tcx>> {
-        self.refines.get(&def_id).copied()
+    pub(crate) fn refines(&self, def_id: DefId) -> Option<&Refined<'tcx>> {
+        self.refines.get(&def_id)
     }
 }
 
@@ -553,8 +553,10 @@ pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
     tcx.crate_name(LOCAL_CRATE).as_str().into()
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct Refined<'tcx> {
     pub thir: (DefId, GenericArgsRef<'tcx>),
     pub resolved: (DefId, GenericArgsRef<'tcx>),
+    /// `true` for ghost arguments to erase
+    pub erase_args: Vec<bool>,
 }
