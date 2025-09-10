@@ -7,11 +7,10 @@ use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{self, BinOp},
     thir::{self, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir},
-    ty::{self, ParamConst, TyCtxt},
+    ty::{self, TyCtxt},
 };
 use rustc_session::HashStableContext;
 use rustc_span::{ErrorGuaranteed, Span};
-use rustc_type_ir::TyKind::Error;
 
 use crate::{
     contracts_items::{is_refines, is_spec},
@@ -512,13 +511,16 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         Ok(())
     }
 
-    fn refine_args(
+    fn refine_args<'b>(
         &self,
-        args1: &[AnfValue<'tcx>],
+        args1: impl ExactSizeIterator<Item = &'b AnfValue<'tcx>>,
         args2: &[AnfValue<'tcx>],
         span1: Span,
         _span2: Span,
-    ) -> Result<(), ErrorGuaranteed> {
+    ) -> Result<(), ErrorGuaranteed>
+    where
+        'tcx: 'b,
+    {
         if args1.len() != args2.len() {
             return Err(self
                 .error(
@@ -527,7 +529,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                 )
                 .emit());
         }
-        for (i, (arg1, arg2)) in args1.into_iter().zip(args2).enumerate() {
+        for (i, (arg1, arg2)) in args1.zip(args2).enumerate() {
             if !self.refine_value(arg1, arg2) {
                 return Err(self.ctx.error(span1, format!("Argument {i} mismatch")).emit());
             }
@@ -562,14 +564,19 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                 (AnfAction::Call(fun1, subst1, args1), AnfAction::Call(fun2, subst2, args2)) => {
                     if fun1 == fun2 {
                         self.refine_subst(subst1, subst2, left.span, right.span)?;
-                        self.refine_args(&**args1, args2, left.span, right.span)?;
+                        self.refine_args(args1.into_iter(), args2, left.span, right.span)?;
                     } else if let Some(fun2_) = self.ctx.refines(*fun1)
                         && fun2_.thir.0 == *fun2
                     {
                         let subst1 = ty::EarlyBinder::bind(fun2_.thir.1)
                             .instantiate(self.ctx.tcx, subst1);
+                        let args1: Box<[_]> = args1
+                            .into_iter()
+                            .zip(&fun2_.erase_args)
+                            .filter_map(|(arg, &erase)| if erase { None } else { Some(arg) })
+                            .collect();
                         self.refine_subst(subst1, subst2, left.span, right.span)?;
-                        self.refine_args(&**args1, args2, left.span, right.span)?;
+                        self.refine_args(args1.into_iter(), args2, left.span, right.span)?;
                     } else {
                         return Err(self
                             .error(left.span, "Function call mismatch")

@@ -17,14 +17,14 @@ pub fn bar(x: i32) -> i32 {
 }
 
 #[refines(foo)]
-pub fn foo2(x: i32) -> i32 {
+pub fn foo2(x: i32, _: Ghost<Int>) -> i32 {
     x
 }
 
 #[refines(bar)]
-pub fn bar2(x: i32) -> i32 {
+pub fn bar2(x: i32, y: Ghost<Int>) -> i32 {
     let a = foo(x);
-    let b = foo2(x);
+    let b = foo2(x, y);
     let c = baz::<42>();
     a + b + c + 42
 }

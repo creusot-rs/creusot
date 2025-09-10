@@ -8,7 +8,7 @@ mod terminates;
 mod tokens_new;
 mod traits;
 
-pub(crate) use self::ghost::GhostValidate;
+pub(crate) use self::ghost::{GhostValidate, is_ghost_ty_};
 use self::{
     opacity::validate_opacity,
     purity::validate_purity,

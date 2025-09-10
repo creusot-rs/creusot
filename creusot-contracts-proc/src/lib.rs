@@ -6,6 +6,7 @@
         hash_set_entry,
         if_let_guard,
         proc_macro_def_site,
+        proc_macro_diagnostic,
         proc_macro_span,
     )
 )]
