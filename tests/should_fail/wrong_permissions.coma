@@ -1,0 +1,297 @@
+module M_wrong_permissions__unknown_pcell_permission [#"wrong_permissions.rs" 9 0 9 79]
+  let%span spcell = "../../creusot-contracts/src/pcell.rs" 169 15 169 37
+  let%span spcell'0 = "../../creusot-contracts/src/pcell.rs" 170 14 170 30
+  let%span spcell'1 = "../../creusot-contracts/src/pcell.rs" 32 4 32 12
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 91 8 91 22
+  let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 22
+  
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_PCell
+  
+  type t_PCellOwn
+  
+  type t_Id
+  
+  function id (self: t_PCell) : t_Id
+  
+  function id'0 (self: t_PCellOwn) : t_Id
+  
+  function val' (self: t_PCellOwn) : Int32.t
+  
+  function view (self: t_PCellOwn) : Int32.t = [%#spcell'1] val' self
+  
+  function view'0 (self: t_PCellOwn) : Int32.t = [%#smodel] view self
+  
+  function view'1 (self: t_PCellOwn) : Int32.t = [%#sghost] view'0 self
+  
+  let rec borrow (self: t_PCell) (perm: t_PCellOwn) (return' (x: Int32.t)) = {[@expl:borrow requires] [%#spcell] id self
+    = id'0 perm}
+    any [ return''0 (result: Int32.t) -> {[%#spcell'0] result = view'1 perm} (! return' {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec unknown_pcell_permission [#"wrong_permissions.rs" 9 0 9 79] (cell: t_PCell) (perm: t_PCellOwn)
+    (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = borrow {cell'0} {perm'0} (fun (_ret: Int32.t) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = return''0 {_0} ]
+    [ & _0: () = Any.any_l () | & cell'0: t_PCell = cell | & perm'0: t_PCellOwn = perm | & _3: Int32.t = Any.any_l () ])
+    [ return''0 (result: ()) -> (! return' {result}) ]
+end
+module M_wrong_permissions__wrong_pcell_permission [#"wrong_permissions.rs" 13 0 13 31]
+  let%span spcell = "../../creusot-contracts/src/pcell.rs" 99 14 99 44
+  let%span spcell'0 = "../../creusot-contracts/src/pcell.rs" 100 14 100 35
+  let%span spcell'1 = "../../creusot-contracts/src/pcell.rs" 169 15 169 37
+  let%span spcell'2 = "../../creusot-contracts/src/pcell.rs" 170 14 170 30
+  let%span spcell'3 = "../../creusot-contracts/src/pcell.rs" 32 4 32 12
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 133 14 133 32
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 91 8 91 22
+  let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 22
+  let%span swrong_permissions = "wrong_permissions.rs" 14 31 14 35
+  let%span swrong_permissions'0 = "wrong_permissions.rs" 15 31 15 35
+  
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_PCell
+  
+  type t_PCellOwn
+  
+  type tuple = { _p0: t_PCell; _p1: t_PCellOwn }
+  
+  type t_Id
+  
+  function id (self: t_PCell) : t_Id
+  
+  function id'0 (self: t_PCellOwn) : t_Id
+  
+  function val' (self: t_PCellOwn) : Int32.t
+  
+  function view (self: t_PCellOwn) : Int32.t = [%#spcell'3] val' self
+  
+  let rec new (value: Int32.t) (return' (x: tuple)) = any
+    [ return''0 (result: tuple) -> {[%#spcell] id result._p0 = id'0 result._p1}
+      {[%#spcell'0] view result._p1 = value}
+      (! return' {result}) ]
+  
+  let rec borrow (self: t_PCellOwn) (return' (x: t_PCellOwn)) = any
+    [ return''0 (result: t_PCellOwn) -> {[%#sghost] result = self} (! return' {result}) ]
+  
+  function view'0 (self: t_PCellOwn) : Int32.t = [%#smodel] view self
+  
+  function view'1 (self: t_PCellOwn) : Int32.t = [%#sghost'0] view'0 self
+  
+  let rec borrow'0 (self: t_PCell) (perm: t_PCellOwn) (return' (x: Int32.t)) =
+    {[@expl:borrow requires] [%#spcell'1] id self = id'0 perm}
+    any [ return''0 (result: Int32.t) -> {[%#spcell'2] result = view'1 perm} (! return' {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec wrong_pcell_permission [#"wrong_permissions.rs" 13 0 13 31] (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = new {[%#swrong_permissions] (1: Int32.t)} (fun (_ret: tuple) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0
+      [ s0 = [ &cell <- _2._p0 ] s1
+      | s1 = new {[%#swrong_permissions'0] (1: Int32.t)} (fun (_ret: tuple) -> [ &_4 <- _ret ] s2)
+      | s2 = bb2 ]
+    | bb2 = s0
+      [ s0 = [ &perm <- _4._p1 ] s1 | s1 = borrow {perm} (fun (_ret: t_PCellOwn) -> [ &_7 <- _ret ] s2) | s2 = bb3 ]
+    | bb3 = s0 [ s0 = borrow'0 {cell} {_7} (fun (_ret: Int32.t) -> [ &_5 <- _ret ] s1) | s1 = bb4 ]
+    | bb4 = return''0 {_0} ]
+    [ & _0: () = Any.any_l ()
+    | & cell: t_PCell = Any.any_l ()
+    | & _2: tuple = Any.any_l ()
+    | & perm: t_PCellOwn = Any.any_l ()
+    | & _4: tuple = Any.any_l ()
+    | & _5: Int32.t = Any.any_l ()
+    | & _7: t_PCellOwn = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+end
+module M_wrong_permissions__unknown_ptr_own_permission [#"wrong_permissions.rs" 21 0 21 77]
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 111 8 111 18
+  let%span swrong_permissions = "wrong_permissions.rs" 21 51 21 55
+  let%span sptr_own = "../../creusot-contracts/src/ptr_own.rs" 78 40 78 43
+  let%span sptr_own'0 = "../../creusot-contracts/src/ptr_own.rs" 75 15 75 31
+  let%span sptr_own'1 = "../../creusot-contracts/src/ptr_own.rs" 76 14 76 35
+  let%span sptr_own'2 = "../../creusot-contracts/src/ptr_own.rs" 41 4 41 12
+  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 93 8 93 18
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 59 14 59 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 61 8 61 35
+  
+  use creusot.int.Int32
+  use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: Int32.t }
+  
+  function addr_logic (self: Opaque.ptr) : UInt64.t
+  
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'0] addr_logic self = (0: UInt64.t)
+  
+  axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
+  
+  function ptr (self: t_PtrOwn) : Opaque.ptr
+  
+  predicate invariant' (self: t_PtrOwn) = [%#sptr_own'2] not is_null_logic (ptr self)
+  
+  predicate inv (_0: t_PtrOwn)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn [inv x]. inv x
+      = (invariant' x
+      /\ match x with
+        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> true
+        end)
+  
+  predicate invariant''0 (self: t_PtrOwn) = [%#sinvariant] inv self
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'0 (_0: t_PtrOwn)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) = [%#sghost] inv'0 self
+  
+  predicate inv'1 (_0: t_PtrOwn)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''1 x
+  
+  function val' (self: t_PtrOwn) : Int32.t
+  
+  let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return' (x: Int32.t)) =
+    {[@expl:as_ref 'own' type invariant] [%#sptr_own] inv'1 own}
+    {[@expl:as_ref requires] [%#sptr_own'0] ptr'0 = ptr own}
+    any [ return''0 (result: Int32.t) -> {[%#sptr_own'1] result = val' own} (! return' {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec unknown_ptr_own_permission [#"wrong_permissions.rs" 21 0 21 77] (ptr'0: Opaque.ptr) (perm: t_PtrOwn)
+    (return' (x: ())) = {[@expl:unknown_ptr_own_permission 'perm' type invariant] [%#swrong_permissions] inv'1 perm}
+    (! bb0
+    [ bb0 = s0 [ s0 = as_ref {ptr'1} {perm'0} (fun (_ret: Int32.t) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = return''0 {_0} ]
+    [ & _0: () = Any.any_l ()
+    | & ptr'1: Opaque.ptr = ptr'0
+    | & perm'0: t_PtrOwn = perm
+    | & _3: Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+end
+module M_wrong_permissions__wrong_ptr_own_permission [#"wrong_permissions.rs" 25 0 25 33]
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 134 19 134 23
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 134 4 134 37
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 133 14 133 32
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 111 8 111 18
+  let%span swrong_permissions = "wrong_permissions.rs" 26 31 26 35
+  let%span swrong_permissions'0 = "wrong_permissions.rs" 27 32 27 36
+  let%span sptr_own = "../../creusot-contracts/src/ptr_own.rs" 52 4 52 52
+  let%span sptr_own'0 = "../../creusot-contracts/src/ptr_own.rs" 51 14 51 64
+  let%span sptr_own'1 = "../../creusot-contracts/src/ptr_own.rs" 78 40 78 43
+  let%span sptr_own'2 = "../../creusot-contracts/src/ptr_own.rs" 75 15 75 31
+  let%span sptr_own'3 = "../../creusot-contracts/src/ptr_own.rs" 76 14 76 35
+  let%span sptr_own'4 = "../../creusot-contracts/src/ptr_own.rs" 41 4 41 12
+  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 93 8 93 18
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 59 14 59 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 61 8 61 35
+  
+  use creusot.int.Int32
+  use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: Int32.t }
+  
+  type tuple = { _p0: Opaque.ptr; _p1: t_PtrOwn }
+  
+  function addr_logic (self: Opaque.ptr) : UInt64.t
+  
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'0] addr_logic self = (0: UInt64.t)
+  
+  axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
+  
+  function ptr (self: t_PtrOwn) : Opaque.ptr
+  
+  predicate invariant' (self: t_PtrOwn) = [%#sptr_own'4] not is_null_logic (ptr self)
+  
+  predicate inv (_0: t_PtrOwn)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn [inv x]. inv x
+      = (invariant' x
+      /\ match x with
+        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> true
+        end)
+  
+  predicate invariant''0 (self: t_PtrOwn) = [%#sghost'2] inv self
+  
+  predicate inv'0 (_0: t_PtrOwn)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant''0 x
+  
+  predicate inv'1 (_0: tuple)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {_p0 = x0; _p1 = x1} = x in inv'0 x1)
+  
+  function val' (self: t_PtrOwn) : Int32.t
+  
+  let rec new (v: Int32.t) (return' (x: tuple)) = any
+    [ return''0 (result: tuple) -> {[%#sptr_own] inv'1 result}
+      {[%#sptr_own'0] ptr result._p1 = result._p0 /\ val' result._p1 = v}
+      (! return' {result}) ]
+  
+  predicate invariant''1 (self: t_PtrOwn) = [%#sinvariant] inv'0 self
+  
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'2 (_0: t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
+  
+  predicate invariant''2 (self: t_PtrOwn) = [%#sinvariant] inv self
+  
+  meta "rewrite_def" predicate invariant''2
+  
+  predicate inv'3 (_0: t_PtrOwn)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''2 x
+  
+  predicate invariant''3 (self: t_PtrOwn) = [%#sghost'2] inv'3 self
+  
+  predicate inv'4 (_0: t_PtrOwn)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'4 x]. inv'4 x = invariant''3 x
+  
+  let rec borrow (self: t_PtrOwn) (return' (x: t_PtrOwn)) = {[@expl:borrow 'self' type invariant] [%#sghost] inv'2 self}
+    any
+    [ return''0 (result: t_PtrOwn) -> {[%#sghost'0] inv'4 result} {[%#sghost'1] result = self} (! return' {result}) ]
+  
+  let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return' (x: Int32.t)) =
+    {[@expl:as_ref 'own' type invariant] [%#sptr_own'1] inv'4 own}
+    {[@expl:as_ref requires] [%#sptr_own'2] ptr'0 = ptr own}
+    any [ return''0 (result: Int32.t) -> {[%#sptr_own'3] result = val' own} (! return' {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec wrong_ptr_own_permission [#"wrong_permissions.rs" 25 0 25 33] (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = new {[%#swrong_permissions] (1: Int32.t)} (fun (_ret: tuple) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0
+      [ s0 = [ &ptr'0 <- _2._p0 ] s1
+      | s1 = new {[%#swrong_permissions'0] (1: Int32.t)} (fun (_ret: tuple) -> [ &_4 <- _ret ] s2)
+      | s2 = bb2 ]
+    | bb2 = s0
+      [ s0 = [ &perm <- _4._p1 ] s1 | s1 = borrow {perm} (fun (_ret: t_PtrOwn) -> [ &_7 <- _ret ] s2) | s2 = bb3 ]
+    | bb3 = s0 [ s0 = as_ref {ptr'0} {_7} (fun (_ret: Int32.t) -> [ &_5 <- _ret ] s1) | s1 = bb4 ]
+    | bb4 = return''0 {_0} ]
+    [ & _0: () = Any.any_l ()
+    | & ptr'0: Opaque.ptr = Any.any_l ()
+    | & _2: tuple = Any.any_l ()
+    | & perm: t_PtrOwn = Any.any_l ()
+    | & _4: tuple = Any.any_l ()
+    | & _5: Int32.t = Any.any_l ()
+    | & _7: t_PtrOwn = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+end
