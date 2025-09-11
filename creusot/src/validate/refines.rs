@@ -67,7 +67,8 @@ enum Var {
     ExprId(
         #[type_visitable(ignore)]
         #[type_foldable(identity)]
-ExprId),
+        ExprId,
+    ),
 }
 
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
@@ -93,17 +94,9 @@ struct AnfStmt<'tcx> {
 enum AnfAction<'tcx> {
     Value(AnfValue<'tcx>),
     /// FUNC(EXPR0, ..., EXPRN)
-    Call(
-        DefId,
-        ty::GenericArgsRef<'tcx>,
-        Box<[AnfValue<'tcx>]>,
-    ),
+    Call(DefId, ty::GenericArgsRef<'tcx>, Box<[AnfValue<'tcx>]>),
     /// EXPR OP EXPR
-    Binop(
-        AnfValue<'tcx>,
-        BinOp,
-        AnfValue<'tcx>,
-    ),
+    Binop(AnfValue<'tcx>, BinOp, AnfValue<'tcx>),
     /// Read a mutable variable
     Read(HirId),
     Deref(AnfValue<'tcx>),
@@ -218,12 +211,10 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         match &expr.kind {
             Scope { value, .. } => self.a_normal_form_expr(*value, stmts),
             Block { block } => self.a_normal_form_block(*block, stmts),
-            VarRef { id } => {
-                match &self.alias.get(&id.0) {
-                    None | Some(None) => Ok(AnfValue::Var(Var::HirId(id.0))),
-                    Some(Some(v)) => Ok(v.clone()),
-                }
-            }
+            VarRef { id } => match &self.alias.get(&id.0) {
+                None | Some(None) => Ok(AnfValue::Var(Var::HirId(id.0))),
+                Some(Some(v)) => Ok(v.clone()),
+            },
             Call { fun, args, fn_span, .. } => {
                 let fun = self.a_normal_form_expr(*fun, stmts)?;
                 match fun {
@@ -232,7 +223,11 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                             .iter()
                             .map(|arg| self.a_normal_form_expr(*arg, stmts))
                             .collect::<Result<::std::boxed::Box<[_]>, ErrorGuaranteed>>()?;
-                        stmts.push(AnfStmt { lhs: Var::ExprId(expr_id), rhs: AnfAction::Call(fun_id, subst, args), span: *fn_span });
+                        stmts.push(AnfStmt {
+                            lhs: Var::ExprId(expr_id),
+                            rhs: AnfAction::Call(fun_id, subst, args),
+                            span: *fn_span,
+                        });
                         Ok(AnfValue::Var(Var::ExprId(expr_id)))
                     }
                     _ => self.crash_and_error(
@@ -248,18 +243,28 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             Binary { op, lhs, rhs } => {
                 let lhs = self.a_normal_form_expr(*lhs, stmts)?;
                 let rhs = self.a_normal_form_expr(*rhs, stmts)?;
-                stmts.push(AnfStmt { lhs: Var::ExprId(expr_id), rhs: AnfAction::Binop(lhs, *op, rhs), span: expr.span });
+                stmts.push(AnfStmt {
+                    lhs: Var::ExprId(expr_id),
+                    rhs: AnfAction::Binop(lhs, *op, rhs),
+                    span: expr.span,
+                });
                 Ok(AnfValue::Var(Var::ExprId(expr_id)))
             }
             Literal { lit, neg } => Ok(AnfValue::Literal(lit.node, *neg)),
             ConstParam { param, .. } => Ok(AnfValue::Const(ty::Const::new_param(self.tcx, *param))),
             Deref { arg } => {
                 let arg = self.a_normal_form_expr(*arg, stmts)?;
-                stmts.push(AnfStmt { lhs: Var::ExprId(expr_id), rhs: AnfAction::Deref(arg), span: expr.span });
+                stmts.push(AnfStmt {
+                    lhs: Var::ExprId(expr_id),
+                    rhs: AnfAction::Deref(arg),
+                    span: expr.span,
+                });
                 Ok(AnfValue::Var(Var::ExprId(expr_id)))
             }
             // THIR inserts some &*, we simplify them
-            Borrow { arg, .. } if let Deref { arg } = &self.thir[*arg].kind => self.a_normal_form_expr(*arg, stmts),
+            Borrow { arg, .. } if let Deref { arg } = &self.thir[*arg].kind => {
+                self.a_normal_form_expr(*arg, stmts)
+            }
             Borrow { arg, .. } => {
                 let place = self.a_normal_form_place(*arg, stmts)?;
                 Ok(AnfValue::Borrow(std::boxed::Box::new(place)))
@@ -279,12 +284,10 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         let expr = &self.thir[expr_id];
         use ExprKind::*;
         match &expr.kind {
-            VarRef { id } => {
-                match &self.alias.get(&id.0) {
-                    None | Some(None) => Ok(AnfPlace::mut_var(Var::HirId(id.0))),
-                    Some(Some(v)) => Ok(AnfPlace::immut(v.clone())),
-                }
-            }
+            VarRef { id } => match &self.alias.get(&id.0) {
+                None | Some(None) => Ok(AnfPlace::mut_var(Var::HirId(id.0))),
+                Some(Some(v)) => Ok(AnfPlace::immut(v.clone())),
+            },
             Deref { arg } => {
                 let mut place = self.a_normal_form_place(*arg, stmts)?;
                 place.add_deref();
@@ -293,12 +296,18 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             Scope { value, .. } => self.a_normal_form_place(*value, stmts),
             _ => {
                 let v = self.a_normal_form_expr(expr_id, stmts)?;
-                if let AnfValue::Var(Var::ExprId(expr_id2)) = v && expr_id2 == expr_id {
+                if let AnfValue::Var(Var::ExprId(expr_id2)) = v
+                    && expr_id2 == expr_id
+                {
                     // expr_id was just bound so we can use it as a place
                     Ok(AnfPlace::mut_var(Var::ExprId(expr_id)))
                 } else {
                     // we create a place for expr_id
-                    stmts.push(AnfStmt { lhs: Var::ExprId(expr_id), rhs: AnfAction::Value(v.clone()), span: expr.span });
+                    stmts.push(AnfStmt {
+                        lhs: Var::ExprId(expr_id),
+                        rhs: AnfAction::Value(v.clone()),
+                        span: expr.span,
+                    });
                     Ok(AnfPlace::mut_var(Var::ExprId(expr_id)))
                 }
             }
@@ -359,7 +368,11 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                         var, mode: BindingMode(ByRef::No, Mutability::Mut), ..
                     } => {
                         self.alias.insert(var.0, None);
-                        stmts.push(AnfStmt { lhs: Var::HirId(var.0), rhs: AnfAction::Value(rhs), span: self.thir[*initializer].span });
+                        stmts.push(AnfStmt {
+                            lhs: Var::HirId(var.0),
+                            rhs: AnfAction::Value(rhs),
+                            span: self.thir[*initializer].span,
+                        });
                     }
                     _ => {
                         return Err(self
@@ -568,8 +581,8 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                     } else if let Some(fun2_) = self.ctx.refines(*fun1)
                         && fun2_.thir.0 == *fun2
                     {
-                        let subst1 = ty::EarlyBinder::bind(fun2_.thir.1)
-                            .instantiate(self.ctx.tcx, subst1);
+                        let subst1 =
+                            ty::EarlyBinder::bind(fun2_.thir.1).instantiate(self.ctx.tcx, subst1);
                         let args1: Box<[_]> = args1
                             .into_iter()
                             .zip(&fun2_.erase_args)
@@ -584,25 +597,30 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                             .emit());
                     }
                 }
-                (AnfAction::Binop(v1, op1, w1), AnfAction::Binop(v2, op2, w2)) =>
-                        if !(op1 == op2 && self.refine_value(v1, v2) && self.refine_value(w1, w2)) {
+                (AnfAction::Binop(v1, op1, w1), AnfAction::Binop(v2, op2, w2)) => {
+                    if !(op1 == op2 && self.refine_value(v1, v2) && self.refine_value(w1, w2)) {
                         return Err(self
                             .error(left.span, "Binary op mismatch")
                             .with_span_note(right.span, "refined operator")
                             .emit());
-                        },
-                (AnfAction::Deref(v1), AnfAction::Deref(v2)) => {if !self.refine_value(v1, v2) {
+                    }
+                }
+                (AnfAction::Deref(v1), AnfAction::Deref(v2)) => {
+                    if !self.refine_value(v1, v2) {
                         return Err(self
                             .error(left.span, "deref mismatch")
                             .with_span_note(right.span, "refined deref")
                             .emit());
-                        }}
-                (AnfAction::Value(v1), AnfAction::Value(v2)) => {if !self.refine_value(v1, v2) {
+                    }
+                }
+                (AnfAction::Value(v1), AnfAction::Value(v2)) => {
+                    if !self.refine_value(v1, v2) {
                         return Err(self
                             .error(left.span, "value mismatch")
                             .with_span_note(right.span, "refined value")
                             .emit());
-                        }}
+                    }
+                }
                 (AnfAction::Read(v1), AnfAction::Read(v2)) => {
                     if let Some(v1_) = self.refine_var.get(&Var::HirId(*v1)) {
                         if *v1_ != Var::HirId(*v2) {
@@ -615,7 +633,10 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                 }
                 (l, r) => {
                     return Err(self
-                        .error(left.span, format!("Statement kind mismatch\n {l:?} does not refine {r:?}"))
+                        .error(
+                            left.span,
+                            format!("Statement kind mismatch\n {l:?} does not refine {r:?}"),
+                        )
                         .with_span_note(right.span, "refined statement")
                         .emit());
                 }
@@ -657,6 +678,6 @@ fn check_refines_thir<'a, 'tcx>(
     checker.refine_params()?;
     checker.refines(&left, &right).map_err(|e| {
         eprintln!("{left:#?}\n{right:#?}");
-e
-        })
+        e
+    })
 }

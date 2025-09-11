@@ -3,8 +3,8 @@ use proc_macro::{Diagnostic, Level, TokenStream as TS1};
 use proc_macro2::TokenStream as TS2;
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
-    ExprPath, Pat, Stmt, PathArguments, Type, parse_macro_input, parse_quote, punctuated::Punctuated,
-    spanned::Spanned as _, token::Comma,
+    ExprPath, Pat, PathArguments, Stmt, Type, parse_macro_input, parse_quote,
+    punctuated::Punctuated, spanned::Spanned as _, token::Comma,
 };
 
 pub(crate) fn refines(path: TS1, item: TS1) -> TS1 {

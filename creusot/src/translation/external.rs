@@ -201,17 +201,17 @@ pub(crate) fn extract_refines_from_item<'tcx>(
         });
     let parent_sig = ctx.tcx.fn_sig(parent).instantiate_identity().skip_binder();
     // Check that the result types match
-    let result_ty = parent_sig.output();
-    let this_ty = thir[expr].ty;
-    if result_ty != this_ty {
+    let ty1 = parent_sig.output();
+    let ty2 = thir[expr].ty;
+    if !refines_ty(ctx.tcx, ty1, ty2) {
         ctx.crash_and_error(
             span,
             format!(
                 "result type of refined function doesn't match\n {}(..) -> {}\n {}(..) -> {}",
                 ctx.def_path_str(parent),
-                result_ty,
+                ty1,
                 ctx.def_path_str(id_resolved),
-                this_ty,
+                ty2,
             ),
         )
     }
@@ -224,4 +224,14 @@ pub(crate) fn extract_refines_from_item<'tcx>(
             erase_args: refine_args,
         },
     )
+}
+
+/// `ty1` is equal to either `ty2` or `(ty2, Ghost<_>)`.
+fn refines_ty<'tcx>(tcx: TyCtxt<'tcx>, ty1: Ty<'tcx>, ty2: Ty<'tcx>) -> bool {
+    ty1 == ty2
+        || if let TyKind::Tuple(tys) = ty1.kind() {
+            tys.len() == 2 && tys[0] == ty2 && is_ghost_ty_(tcx, tys[1])
+        } else {
+            false
+        }
 }
