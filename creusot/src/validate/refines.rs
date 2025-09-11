@@ -71,6 +71,13 @@ enum Var {
 ExprId),
 }
 
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
+struct AnfStmt<'tcx> {
+    lhs: Var,
+    rhs: AnfAction<'tcx>,
+    span: Span,
+}
+
 /// We inline values into statements. The alternative is to bind constants to variables,
 /// but that makes later passes more complicated to deal with the fact that these bindings
 /// have no effect and should commute with other assignments.
@@ -84,44 +91,25 @@ ExprId),
 /// let x = g(); f(1, x)
 /// ```
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
-enum AnfStmt<'tcx> {
-    /// LHS <- FUNC(EXPR0, ..., EXPRN)
+enum AnfAction<'tcx> {
+    Value(AnfValue<'tcx>),
+    /// FUNC(EXPR0, ..., EXPRN)
     Call(
-        #[type_visitable(ignore)]
-        #[type_foldable(identity)]
-        ExprId,
         DefId,
         ty::GenericArgsRef<'tcx>,
         Box<[AnfValue<'tcx>]>,
-        Span,
     ),
-    /// LHS <- EXPR OP EXPR
+    /// EXPR OP EXPR
     Binop(
-        #[type_visitable(ignore)]
-        #[type_foldable(identity)]
-        ExprId,
         AnfValue<'tcx>,
         BinOp,
         AnfValue<'tcx>,
-        Span,
     ),
-    /// let VAR = VAL
-    Let(Var, AnfValue<'tcx>),
-    /// LHS <- EXPR
-    Assign(AnfLhs, AnfValue<'tcx>),
-    Read(
-        #[type_visitable(ignore)]
-        #[type_foldable(identity)]
-ExprId, HirId),
-    Deref(
-        #[type_visitable(ignore)]
-        #[type_foldable(identity)]
-        ExprId, AnfValue<'tcx>),
-    /// LHS <- if EXPR0 { EXPR1 } else { EXPR2 }
+    /// Read a mutable variable
+    Read(HirId),
+    Deref(AnfValue<'tcx>),
+    /// if EXPR0 { EXPR1 } else { EXPR2 }
     If(
-        #[type_visitable(ignore)]
-        #[type_foldable(identity)]
-        ExprId,
         #[type_visitable(ignore)]
         #[type_foldable(identity)]
         ExprId,
@@ -147,7 +135,7 @@ enum AnfValue<'tcx> {
         bool,
     ),
     Const(ty::Const<'tcx>),
-    Borrow(mir::BorrowKind, Box<AnfPlace<'tcx>>),
+    Borrow(Box<AnfPlace<'tcx>>),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
@@ -245,7 +233,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                             .iter()
                             .map(|arg| self.a_normal_form_expr(*arg, stmts))
                             .collect::<Result<::std::boxed::Box<[_]>, ErrorGuaranteed>>()?;
-                        stmts.push(AnfStmt::Call(expr_id, fun_id, subst, args, *fn_span));
+                        stmts.push(AnfStmt { lhs: Var::ExprId(expr_id), rhs: AnfAction::Call(fun_id, subst, args), span: *fn_span });
                         Ok(AnfValue::Var(Var::ExprId(expr_id)))
                     }
                     _ => self.crash_and_error(
@@ -261,21 +249,21 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             Binary { op, lhs, rhs } => {
                 let lhs = self.a_normal_form_expr(*lhs, stmts)?;
                 let rhs = self.a_normal_form_expr(*rhs, stmts)?;
-                stmts.push(AnfStmt::Binop(expr_id, lhs, *op, rhs, expr.span));
+                stmts.push(AnfStmt { lhs: Var::ExprId(expr_id), rhs: AnfAction::Binop(lhs, *op, rhs), span: expr.span });
                 Ok(AnfValue::Var(Var::ExprId(expr_id)))
             }
             Literal { lit, neg } => Ok(AnfValue::Literal(lit.node, *neg)),
             ConstParam { param, .. } => Ok(AnfValue::Const(ty::Const::new_param(self.tcx, *param))),
             Deref { arg } => {
                 let arg = self.a_normal_form_expr(*arg, stmts)?;
-                stmts.push(AnfStmt::Deref(expr_id, arg));
+                stmts.push(AnfStmt { lhs: Var::ExprId(expr_id), rhs: AnfAction::Deref(arg), span: expr.span });
                 Ok(AnfValue::Var(Var::ExprId(expr_id)))
             }
             // THIR inserts some &*, we simplify them
             Borrow { arg, .. } if let Deref { arg } = &self.thir[*arg].kind => self.a_normal_form_expr(*arg, stmts),
-            Borrow { borrow_kind, arg } => {
+            Borrow { arg, .. } => {
                 let place = self.a_normal_form_place(*arg, stmts)?;
-                Ok(AnfValue::Borrow(*borrow_kind, std::boxed::Box::new(place)))
+                Ok(AnfValue::Borrow(std::boxed::Box::new(place)))
             }
             _ => self.crash_and_error(
                 expr.span,
@@ -303,6 +291,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 place.add_deref();
                 Ok(place)
             }
+            Scope { value, .. } => self.a_normal_form_place(*value, stmts),
             _ => {
                 let v = self.a_normal_form_expr(expr_id, stmts)?;
                 if let AnfValue::Var(Var::ExprId(expr_id2)) = v && expr_id2 == expr_id {
@@ -310,7 +299,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                     Ok(AnfPlace::mut_var(Var::ExprId(expr_id)))
                 } else {
                     // we create a place for expr_id
-                    stmts.push(AnfStmt::Let(Var::ExprId(expr_id), v.clone()));
+                    stmts.push(AnfStmt { lhs: Var::ExprId(expr_id), rhs: AnfAction::Value(v.clone()), span: expr.span });
                     Ok(AnfPlace::mut_var(Var::ExprId(expr_id)))
                 }
             }
@@ -371,7 +360,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                         var, mode: BindingMode(ByRef::No, Mutability::Mut), ..
                     } => {
                         self.alias.insert(var.0, None);
-                        stmts.push(AnfStmt::Let(Var::HirId(var.0), rhs));
+                        stmts.push(AnfStmt { lhs: Var::HirId(var.0), rhs: AnfAction::Value(rhs), span: self.thir[*initializer].span });
                     }
                     _ => {
                         return Err(self
@@ -485,12 +474,24 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
             (AnfValue::Literal(lit1, neg1), AnfValue::Literal(lit2, neg2)) => {
                 lit1 == lit2 && neg1 == neg2
             }
-            (AnfValue::Const(p1), AnfValue::Const(p2)) => match (p1.kind(), p2.kind()) {
-                (ty::ConstKind::Param(p1), ty::ConstKind::Param(p2)) => p1 == p2,
-                _ => false,
-            },
+            (AnfValue::Const(p1), AnfValue::Const(p2)) => p1 == p2,
+            (AnfValue::Borrow(place1), AnfValue::Borrow(place2)) => {
+                self.refine_place(place1, place2)
+            }
             _ => false,
         }
+    }
+
+    fn refine_place(&self, p1: &AnfPlace<'tcx>, p2: &AnfPlace<'tcx>) -> bool {
+        let refine_base = match (&p1.base, &p2.base) {
+            (AnfPlaceBase::MutVar(v1), AnfPlaceBase::MutVar(v2)) => {
+                let Some(v1_) = self.refine_var.get(v1) else { return false };
+                v1_ == v2
+            }
+            (AnfPlaceBase::ImmutVar(v1), AnfPlaceBase::ImmutVar(v2)) => self.refine_value(v1, v2),
+            _ => false,
+        };
+        refine_base && p1.projections == p2.projections
     }
 
     fn refine_subst(
@@ -549,99 +550,70 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
     ) -> Result<(), ErrorGuaranteed> {
         let mut right = right.into_iter();
         for left in left.into_iter() {
-            match left {
-                AnfStmt::Call(lhs1, fun1, subst1, args1, span1) => {
-                    match right.next() {
-                        Some(AnfStmt::Call(lhs2, fun2, subst2, args2, span2)) => {
-                            if fun1 == fun2 {
-                                self.refine_subst(subst1, subst2, *span1, *span2)?;
-                                self.refine_args(&**args1, args2, *span1, *span2)?;
-                                self.refine_result(lhs1, lhs2);
-                            } else if let Some(fun2_) = self.ctx.refines(*fun1)
-                                && fun2_.thir.0 == *fun2
-                            {
-                                let subst1 = ty::EarlyBinder::bind(fun2_.thir.1)
-                                    .instantiate(self.ctx.tcx, subst1);
-                                self.refine_subst(subst1, subst2, *span1, *span2)?;
-                                self.refine_args(&**args1, args2, *span1, *span2)?;
-                                self.refine_result(lhs1, lhs2);
-                            } else {
-                                return Err(self
-                                    .error(*span1, format!("TODO {fun1:?} {fun2:?}"))
-                                    .emit());
-                            }
-                        }
-                        Some(_) => return Err(self.error(self.span, "mismatch TODO").emit()),
-                        None => return Err(self
-                            .error(
-                                self.span,
-                                "Refining function has more statements than the refined function",
-                            )
-                            .emit()),
+            let Some(right) = right.next() else {
+                return Err(self
+                    .error(
+                        left.span,
+                        "Refining function has more statements than the refined function",
+                    )
+                    .emit());
+            };
+            match (&left.rhs, &right.rhs) {
+                (AnfAction::Call(fun1, subst1, args1), AnfAction::Call(fun2, subst2, args2)) => {
+                    if fun1 == fun2 {
+                        self.refine_subst(subst1, subst2, left.span, right.span)?;
+                        self.refine_args(&**args1, args2, left.span, right.span)?;
+                    } else if let Some(fun2_) = self.ctx.refines(*fun1)
+                        && fun2_.thir.0 == *fun2
+                    {
+                        let subst1 = ty::EarlyBinder::bind(fun2_.thir.1)
+                            .instantiate(self.ctx.tcx, subst1);
+                        self.refine_subst(subst1, subst2, left.span, right.span)?;
+                        self.refine_args(&**args1, args2, left.span, right.span)?;
+                    } else {
+                        return Err(self
+                            .error(left.span, "Function call mismatch")
+                            .with_span_note(right.span, "refined call")
+                            .emit());
                     }
                 }
-                AnfStmt::Binop(lhs1, v1, op1, w1, span1) => match right.next() {
-                    Some(AnfStmt::Binop(lhs2, v2, op2, w2, span2)) => {
-                        if op1 == op2 && self.refine_value(v1, v2) && self.refine_value(w1, w2) {
-                            self.refine_result(lhs1, lhs2);
-                        } else {
-                            return Err(self.error(
-                                *span1,
-                                format!(
-                                    "Refining binary operation does not match refined operation: {v1:?} {op1:?} {w1:?} vs {v2:?} {op2:?} {w2:?}"
-                                ),
-                            ).emit());
-                        }
-                    }
-                    Some(_) => return Err(self.error(self.span, "mismatch TODO").emit()),
-                    None => {
+                (AnfAction::Binop(v1, op1, w1), AnfAction::Binop(v2, op2, w2)) =>
+                        if !(op1 == op2 && self.refine_value(v1, v2) && self.refine_value(w1, w2)) {
                         return Err(self
-                            .error(
-                                self.span,
-                                "Refining function has more statements than the refined function",
-                            )
+                            .error(left.span, "Binary op mismatch")
+                            .with_span_note(right.span, "refined operator")
                             .emit());
-                    }
-                },
-                AnfStmt::Deref(lhs1, v1) => match right.next() {
-                    Some(AnfStmt::Deref(lhs2, v2)) => {
-                        if self.refine_value(v1, v2) {
-                            self.refine_result(lhs1, lhs2);
-                        } else {
-                            return Err(self.error(
-                                self.span,
-                                format!("Refining deref does not match refined deref: {v1:?} vs {v2:?}"),
-                            ).emit());
-                        }
-                    }
-                    Some(_) => return Err(self.error(self.span, "mismatch TODO").emit()),
-                    None => {
+                        },
+                (AnfAction::Deref(v1), AnfAction::Deref(v2)) => {if !self.refine_value(v1, v2) {
                         return Err(self
-                            .error(
-                                self.span,
-                                "Refining function has more statements than the refined function",
-                            )
+                            .error(left.span, "deref mismatch")
+                            .with_span_note(right.span, "refined deref")
                             .emit());
-                    }
-                },
-                AnfStmt::Let(var1, rhs1) => match right.next() {
-                    Some(AnfStmt::Let(var2, rhs2)) => 
-                    {
-                        if self.refine_value(rhs1, rhs2) {
-                            self.new_var(*var1, *var2)
-                        } else {
-                            return Err(self.error(
-                                self.span,
-                                format!("Refining let does not match refined let: {var1:?} vs {var2:?}, {rhs1:?} vs {rhs2:?}"),
-                            ).emit());
+                        }}
+                (AnfAction::Value(v1), AnfAction::Value(v2)) => {if !self.refine_value(v1, v2) {
+                        return Err(self
+                            .error(left.span, "value mismatch")
+                            .with_span_note(right.span, "refined value")
+                            .emit());
+                        }}
+                (AnfAction::Read(v1), AnfAction::Read(v2)) => {
+                    if let Some(v1_) = self.refine_var.get(&Var::HirId(*v1)) {
+                        if *v1_ != Var::HirId(*v2) {
+                            return Err(self
+                                .error(left.span, "read variable mismatch")
+                                .with_span_note(right.span, "refined read")
+                                .emit());
                         }
                     }
-                    _ => return Err(self.error(self.span, "mismatch TODO").emit()),
-}
-                AnfStmt::Read(expr_id1, hir_id) => todo!(),
-                AnfStmt::Assign(anf_lhs, anf_ret) => todo!(),
-                AnfStmt::If(expr_id, expr_id1, anf_ret, anf_ret1) => todo!(),
+                }
+                (l, r) => {
+                    return Err(self
+                        .error(left.span, format!("Statement kind mismatch\n {l:?} does not refine {r:?}"))
+                        .with_span_note(right.span, "refined statement")
+                        .emit());
+                }
             }
+            self.new_var(left.lhs, right.lhs);
         }
         if let Some(_) = right.next() {
             return Err(self
@@ -676,5 +648,8 @@ fn check_refines_thir<'a, 'tcx>(
     let right = ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2);
     let mut checker = RefineChecker::new(ctx, left_thir, right_thir, span);
     checker.refine_params()?;
-    checker.refines(&left, &right)
+    checker.refines(&left, &right).map_err(|e| {
+        eprintln!("{left:#?}\n{right:#?}");
+e
+        })
 }
