@@ -1,15 +1,13 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use either::Either;
-use rustc_ast::{BindingMode, BorrowKind, ByRef, Mutability};
+use rustc_ast::{BindingMode, ByRef, Mutability};
 use rustc_hir::{HirId, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{self, BinOp},
+    mir::BinOp,
     thir::{self, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir},
     ty::{self, TyCtxt},
 };
-use rustc_session::HashStableContext;
 use rustc_span::{ErrorGuaranteed, Span};
 
 use crate::{
@@ -58,7 +56,7 @@ fn check_refines<'tcx>(
             )
             .emit());
     };
-    check_refines_thir(ctx, left_thir, right_thir, subst2, ctx.def_span(left))
+    check_refines_thir(ctx, left_thir, right_thir, subst2, ctx.def_span(left), ctx.def_span(right))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, TypeVisitable, TypeFoldable)]
@@ -73,11 +71,28 @@ enum Var {
 
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
 struct AnfStmt<'tcx> {
-    lhs: AnfPattern,
-    rhs: AnfAction<'tcx>,
+    pattern: AnfPattern,
+    rhs: AnfOp<'tcx>,
     span: Span,
 }
 
+/// Operation
+///
+/// This is a generic representation where all enum tags are factored into the first field
+/// and the other fields contain the subtrees.
+/// This makes the refinement check almost trivial: compare the tags, then compare the fields.
+/// For example an addition would be represented as `GenericOp(Binop(Add), box [lhs, rhs], box [])`.
+///
+/// The second field contains by-value operands (arguments of function calls, binary operators,
+/// `if` and `match` scrutinees, assignment lvalues and rvalues).
+///
+/// The third field contains sub-blocks of control structures (`if`, `match`, `let-else`).
+/// For constructs other than `match`, the arms have their `pattern` field default to `Wild`.
+///
+/// When comparing two ASTs, if the `GenericOp` tag matches, then the second fields
+/// must have the same length. But the third fields may differ in length (e.g., `match`
+/// with different arms, `if` (or `let`) with or without `else`)
+///
 /// We inline values into statements. The alternative is to bind constants to variables,
 /// but that makes later passes more complicated to deal with the fact that these bindings
 /// have no effect and should commute with other assignments.
@@ -91,23 +106,44 @@ struct AnfStmt<'tcx> {
 /// let x = g(); f(1, x)
 /// ```
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
-enum AnfAction<'tcx> {
-    Value(AnfValue<'tcx>),
-    /// FUNC(EXPR0, ..., EXPRN)
-    Call(DefId, ty::GenericArgsRef<'tcx>, Box<[AnfValue<'tcx>]>),
-    /// EXPR OP EXPR
-    Binop(AnfValue<'tcx>, BinOp, AnfValue<'tcx>),
-    /// Read a mutable variable
-    Read(HirId),
-    Deref(AnfValue<'tcx>),
-    /// if EXPR0 { EXPR1 } else { EXPR2 }
-    If(
-        #[type_visitable(ignore)]
-        #[type_foldable(identity)]
-        ExprId,
-        Box<AnfValue<'tcx>>,
-        Box<AnfValue<'tcx>>,
-    ),
+struct AnfOp<'tcx> {
+    tag: OpTag<'tcx>,
+    args: Box<[(AnfValue<'tcx>, Span)]>,
+    arms: Box<[AnfArm<'tcx>]>,
+}
+
+impl<'tcx> AnfOp<'tcx> {
+    fn by_value(tag: OpTag<'tcx>, args: Box<[(AnfValue<'tcx>, Span)]>) -> Self {
+        Self { tag, args, arms: [].into() }
+    }
+
+    fn control(
+        tag: OpTag<'tcx>,
+        args: Box<[(AnfValue<'tcx>, Span)]>,
+        arms: Box<[AnfArm<'tcx>]>,
+    ) -> Self {
+        Self { tag, args, arms }
+    }
+}
+
+/// Tag for `AnfOp`
+#[derive(Clone, Copy, Debug, PartialEq, TypeVisitable, TypeFoldable)]
+enum OpTag<'tcx> {
+    Value,
+    Deref,
+    Read,
+    Binop(BinOp),
+    If,
+    Match,
+    Call(DefId, ty::GenericArgsRef<'tcx>),
+    LetElse,
+}
+
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
+struct AnfArm<'tcx> {
+    pattern: AnfPattern,
+    body: Anf<'tcx>,
+    span: Span,
 }
 
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
@@ -130,7 +166,7 @@ enum AnfValue<'tcx> {
     ),
     Const(ty::Const<'tcx>),
     Borrow(Box<AnfPlace<'tcx>>),
-    Ctor(Ctor, Box<[AnfValue<'tcx>]>),
+    Ctor(Ctor, Box<[(AnfValue<'tcx>, Span)]>),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
@@ -174,132 +210,167 @@ impl<'tcx> AnfPlace<'tcx> {
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
 struct Anf<'tcx> {
     stmts: Vec<AnfStmt<'tcx>>,
-    ret: AnfValue<'tcx>,
+    ret: (AnfValue<'tcx>, Span),
+    span: Span,
 }
 
 /// State for computing A-normal form
 struct AnfContext<'a, 'tcx> {
-    tcx: TyCtxt<'tcx>,
+    ctx: &'a TranslationCtx<'tcx>,
     thir: &'a Thir<'tcx>,
     /// Mapping from ANF variables to values
     /// This lets us identify `let x = e; f(x)` with `f(e)`.
     /// `None` means the variable is mutable
     alias: HashMap<HirId, Option<AnfValue<'tcx>>>,
+    span: Span,
 }
 
 fn a_normal_form<'tcx>(
-    tcx: TyCtxt<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     thir: &Thir<'tcx>,
     expr: ExprId,
+    def_span: Span,
 ) -> Result<Anf<'tcx>, ErrorGuaranteed> {
-    let mut ctx = AnfContext::new(tcx, thir);
+    let mut ctx = AnfContext::new(ctx, thir, def_span);
     let mut stmts = Vec::new();
     let ret = ctx.a_normal_form_expr(expr, &mut stmts)?;
-    Ok(Anf { stmts, ret })
+    let span = ret.1;
+    Ok(Anf { stmts, ret, span })
 }
 
 impl<'a, 'tcx> HasTyCtxt<'tcx> for AnfContext<'a, 'tcx> {
     fn tcx(&self) -> TyCtxt<'tcx> {
-        self.tcx
+        self.ctx.tcx
     }
 }
 
 impl<'a, 'tcx> AnfContext<'a, 'tcx> {
-    fn new(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> Self {
+    fn new(ctx: &'a TranslationCtx<'tcx>, thir: &'a Thir<'tcx>, span: Span) -> Self {
         let alias = HashMap::new();
-        AnfContext { tcx, thir, alias }
+        AnfContext { ctx, thir, alias, span }
     }
 
     fn a_normal_form_expr(
         &mut self,
         expr_id: ExprId,
         stmts: &mut Vec<AnfStmt<'tcx>>,
-    ) -> Result<AnfValue<'tcx>, ErrorGuaranteed> {
+    ) -> Result<(AnfValue<'tcx>, Span), ErrorGuaranteed> {
         let expr = &self.thir[expr_id];
         use ExprKind::*;
-        match &expr.kind {
-            Scope { value, .. } => self.a_normal_form_expr(*value, stmts),
-            Block { block } => self.a_normal_form_block(*block, stmts),
+        let value = match &expr.kind {
+            Scope { value, .. } => self.a_normal_form_expr(*value, stmts)?.0,
+            Block { block } => self.a_normal_form_block(*block, stmts)?,
             VarRef { id } => match &self.alias.get(&id.0) {
-                None | Some(None) => Ok(AnfValue::Var(Var::HirId(id.0))),
-                Some(Some(v)) => Ok(v.clone()),
+                None | Some(None) => {
+                    stmts.push(AnfStmt {
+                        pattern: AnfPattern::Var(Var::ExprId(expr_id)),
+                        rhs: AnfOp::by_value(
+                            OpTag::Read,
+                            [(
+                                AnfValue::Borrow(AnfPlace::mut_var(Var::HirId(id.0)).into()),
+                                expr.span,
+                            )]
+                            .into(),
+                        ),
+                        span: expr.span,
+                    });
+                    AnfValue::Var(Var::ExprId(expr_id))
+                }
+                Some(Some(v)) => v.clone(),
             },
             Call { fun, args, fn_span, .. } => {
                 let fun = self.a_normal_form_expr(*fun, stmts)?;
-                match fun {
+                match fun.0 {
                     AnfValue::Fn(fun_id, subst) => {
                         let args = args
                             .iter()
                             .map(|arg| self.a_normal_form_expr(*arg, stmts))
                             .collect::<Result<::std::boxed::Box<[_]>, ErrorGuaranteed>>()?;
+                        let (fun_id, subst, args) = if let Some(refined) = self.ctx.refines(fun_id)
+                        {
+                            let args = args
+                                .into_iter()
+                                .zip(&refined.erase_args)
+                                .filter_map(|(arg, &erase)| if erase { None } else { Some(arg) })
+                                .collect();
+                            let subst = ty::EarlyBinder::bind(refined.thir.1)
+                                .instantiate(self.tcx(), subst);
+                            (refined.thir.0, subst, args)
+                        } else {
+                            (fun_id, subst, args)
+                        };
                         stmts.push(AnfStmt {
-                            lhs: AnfPattern::Var(Var::ExprId(expr_id)),
-                            rhs: AnfAction::Call(fun_id, subst, args),
+                            pattern: AnfPattern::Var(Var::ExprId(expr_id)),
+                            rhs: AnfOp::by_value(OpTag::Call(fun_id, subst), args),
                             span: *fn_span,
                         });
-                        Ok(AnfValue::Var(Var::ExprId(expr_id)))
+                        AnfValue::Var(Var::ExprId(expr_id))
                     }
-                    _ => self.crash_and_error(
-                        expr.span,
-                        "Unsupported function expression in refine check:\n{fun:?}",
-                    ),
+                    _ => {
+                        return Err(self
+                            .error(self.span, "failed #[refines] check")
+                            .with_span_label(fun.1, "unsupported function expression")
+                            .emit());
+                    }
                 }
             }
             ZstLiteral { .. } => match expr.ty.kind() {
-                ty::TyKind::FnDef(def_id, subst) => Ok(AnfValue::Fn(*def_id, subst)),
-                _ => Ok(AnfValue::Zst),
+                ty::TyKind::FnDef(def_id, subst) => AnfValue::Fn(*def_id, subst),
+                _ => AnfValue::Zst,
             },
             Binary { op, lhs, rhs } => {
                 let lhs = self.a_normal_form_expr(*lhs, stmts)?;
                 let rhs = self.a_normal_form_expr(*rhs, stmts)?;
                 stmts.push(AnfStmt {
-                    lhs: AnfPattern::Var(Var::ExprId(expr_id)),
-                    rhs: AnfAction::Binop(lhs, *op, rhs),
+                    pattern: AnfPattern::Var(Var::ExprId(expr_id)),
+                    rhs: AnfOp::by_value(OpTag::Binop(*op), [lhs, rhs].into()),
                     span: expr.span,
                 });
-                Ok(AnfValue::Var(Var::ExprId(expr_id)))
+                AnfValue::Var(Var::ExprId(expr_id))
             }
-            Literal { lit, neg } => Ok(AnfValue::Literal(lit.node, *neg)),
-            ConstParam { param, .. } => Ok(AnfValue::Const(ty::Const::new_param(self.tcx, *param))),
+            Literal { lit, neg } => AnfValue::Literal(lit.node, *neg),
+            ConstParam { param, .. } => AnfValue::Const(ty::Const::new_param(self.tcx(), *param)),
             Deref { arg } => {
                 let arg = self.a_normal_form_expr(*arg, stmts)?;
                 stmts.push(AnfStmt {
-                    lhs: AnfPattern::Var(Var::ExprId(expr_id)),
-                    rhs: AnfAction::Deref(arg),
+                    pattern: AnfPattern::Var(Var::ExprId(expr_id)),
+                    rhs: AnfOp::by_value(OpTag::Deref, [arg].into()),
                     span: expr.span,
                 });
-                Ok(AnfValue::Var(Var::ExprId(expr_id)))
+                AnfValue::Var(Var::ExprId(expr_id))
             }
             // THIR inserts some &*, we simplify them
             Borrow { arg, .. } if let Deref { arg } = &self.thir[*arg].kind => {
-                self.a_normal_form_expr(*arg, stmts)
+                self.a_normal_form_expr(*arg, stmts)?.0
             }
             Borrow { arg, .. } => {
                 let place = self.a_normal_form_place(*arg, stmts)?;
-                Ok(AnfValue::Borrow(std::boxed::Box::new(place)))
-            }
-            Tuple { fields }
-                if fields.len() >= 1
-                    && fields
-                        .iter()
-                        .skip(1)
-                        .all(|e| is_ghost_ty_(self.tcx(), self.thir[*e].ty)) =>
-            {
-                // Erase ghost fields
-                self.a_normal_form_expr(fields[0], stmts)
+                AnfValue::Borrow(std::boxed::Box::new(place))
             }
             Tuple { fields } => {
-                let fields = fields
+                // Visit all fields even if they have type `Ghost<_>` because they may all have effects
+                // It's just their values we may discard in the end.
+                let values = fields
                     .iter()
                     .map(|f| self.a_normal_form_expr(*f, stmts))
                     .collect::<Result<::std::boxed::Box<[_]>, ErrorGuaranteed>>()?;
-                Ok(AnfValue::Ctor(Ctor::Tuple, fields))
+                if fields.len() >= 1
+                    && fields.iter().skip(1).all(|e| is_ghost_ty_(self.tcx(), self.thir[*e].ty))
+                {
+                    // Erase ghost fields
+                    values.into_iter().next().unwrap().0
+                } else {
+                    AnfValue::Ctor(Ctor::Tuple, values)
+                }
             }
-            _ => self.crash_and_error(
-                expr.span,
-                format!("Unsupported expression in refine check:\n{expr:?}"),
-            ),
-        }
+            _ => {
+                return Err(self
+                    .error(self.span, "failed #[refines] check")
+                    .with_span_label(expr.span, format!("unsupported expression"))
+                    .emit());
+            }
+        };
+        Ok((value, expr.span))
     }
 
     fn a_normal_form_place(
@@ -322,7 +393,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             Scope { value, .. } => self.a_normal_form_place(*value, stmts),
             _ => {
                 let v = self.a_normal_form_expr(expr_id, stmts)?;
-                if let AnfValue::Var(Var::ExprId(expr_id2)) = v
+                if let AnfValue::Var(Var::ExprId(expr_id2)) = v.0
                     && expr_id2 == expr_id
                 {
                     // expr_id was just bound so we can use it as a place
@@ -330,8 +401,8 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 } else {
                     // we create a place for expr_id
                     stmts.push(AnfStmt {
-                        lhs: AnfPattern::Var(Var::ExprId(expr_id)),
-                        rhs: AnfAction::Value(v.clone()),
+                        pattern: AnfPattern::Var(Var::ExprId(expr_id)),
+                        rhs: AnfOp::by_value(OpTag::Value, [v].into()),
                         span: expr.span,
                     });
                     Ok(AnfPlace::mut_var(Var::ExprId(expr_id)))
@@ -351,7 +422,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         }
         match block.expr {
             None => Ok(AnfValue::Zst),
-            Some(e) => self.a_normal_form_expr(e, stmts),
+            Some(e) => Ok(self.a_normal_form_expr(e, stmts)?.0),
         }
     }
 
@@ -368,14 +439,18 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             }
             Let { pattern, initializer, else_block, span, .. } => {
                 if let Some(_) = else_block {
-                    return Err(self.error(*span, "Unsupported let-else in refine check").emit());
+                    return Err(self
+                        .error(self.span, "failed #[refines] check")
+                        .with_span_label(*span, "unsupported let-else")
+                        .emit());
                 }
                 let Some(initializer) = initializer else {
                     return Err(self
-                        .error(*span, "Unsupported let without initializer in refine check")
+                        .error(self.span, "failed #[refines] check")
+                        .with_span_label(*span, "unsupported let without initializer")
                         .emit());
                 };
-                if is_spec_or_refines_expr(self.tcx, self.thir, *initializer) {
+                if is_spec_or_refines_expr(self.tcx(), self.thir, *initializer) {
                     return Ok(());
                 }
                 let rhs = self.a_normal_form_expr(*initializer, stmts)?;
@@ -389,7 +464,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                             ..
                         } => {
                             // Skip generating a binding
-                            self.alias.insert(var.0, Some(rhs.clone()));
+                            self.alias.insert(var.0, Some(rhs.0.clone()));
                             return Ok(());
                         }
                         PatKind::Leaf { subpatterns }
@@ -406,7 +481,11 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                     };
                 }
                 let lhs = self.a_normal_form_pat(&pattern)?;
-                stmts.push(AnfStmt { lhs, rhs: AnfAction::Value(rhs), span: *span });
+                stmts.push(AnfStmt {
+                    pattern: lhs,
+                    rhs: AnfOp::by_value(OpTag::Value, [rhs].into()),
+                    span: *span,
+                });
             }
         }
         Ok(())
@@ -425,7 +504,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 // the actual constructor doesn't matter for a `Leaf` so we just use `Tuple`
                 Ok(AnfPattern::Ctor(Ctor::Tuple, subpatterns, pat.span))
             }
-            _ => Err(self.error(pat.span, "Unsupported pattern in refine check").emit()),
+            _ => Err(self.error(self.span, "failed #[refines] check").with_span_label(pat.span, "unsupported pattern").emit()),
         }
     }
 }
@@ -449,7 +528,8 @@ struct RefineChecker<'a, 'tcx> {
     left: &'a Thir<'tcx>,
     right: &'a Thir<'tcx>,
     refine_var: HashMap<Var, Var>,
-    span: Span,
+    left_span: Span,
+    right_span: Span,
 }
 
 impl<'a, 'tcx> HasTyCtxt<'tcx> for RefineChecker<'a, 'tcx> {
@@ -463,10 +543,11 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         ctx: &'a TranslationCtx<'tcx>,
         left: &'a Thir<'tcx>,
         right: &'a Thir<'tcx>,
-        span: Span,
+        left_span: Span,
+        right_span: Span,
     ) -> Self {
         let refine_var = HashMap::new();
-        RefineChecker { ctx, left, right, refine_var, span }
+        RefineChecker { ctx, left, right, refine_var, left_span, right_span }
     }
 
     fn refine_params(&mut self) -> Result<(), ErrorGuaranteed> {
@@ -479,22 +560,19 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
             }
             let Some(right_p) = right_params.next() else {
                 return Err(self
-                    .error(
-                        self.span,
-                        "Refining function has more non-ghost parameters than the refined function",
+                    .error(self.left_span, "failed #[refines] check")
+                    .with_span_note(
+                        self.left_span,
+                        "function has more non-ghost parameters than the refined function",
                     )
+                    .with_span_note(self.right_span, "refined function")
                     .emit());
             };
             let Some(left_p) = &left_p.pat else {
                 continue;
             };
             let Some(right_p) = &right_p.pat else {
-                return Err(self
-                    .error(
-                        self.span,
-                        "Refining function has more non-ghost parameters than the refined function",
-                    )
-                    .emit());
+                continue;
             };
             self.refine_pats(&left_p, &right_p)?;
         }
@@ -512,10 +590,9 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                 Ok(())
             }
             _ => Err(self
-                .error(
-                    self.span,
-                    "Refining and refined functions must have the same parameter patterns",
-                )
+                .error(left.span, "failed #[refines] check")
+                .with_span_note(left.span, "#[refines] argument")
+                .with_span_note(right.span, "refined argument")
                 .emit()),
         }
     }
@@ -550,54 +627,6 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         refine_base && p1.projections == p2.projections
     }
 
-    fn refine_subst(
-        &self,
-        subst1: ty::GenericArgsRef<'tcx>,
-        subst2: ty::GenericArgsRef<'tcx>,
-        span1: Span,
-        span2: Span,
-    ) -> Result<(), ErrorGuaranteed> {
-        if subst1 == subst2 {
-            Ok(())
-        } else {
-            Err(self
-                .error(span1, "failed refine check")
-                .with_span_label(span1, format!("left call with generic arguments {subst1:?}"))
-                .with_span_label(span2, format!("right call with generic arguments {subst2:?}, expected {subst1:?}"))
-                .emit())
-        }
-    }
-
-    fn refine_args<'b>(
-        &self,
-        args1: impl ExactSizeIterator<Item = &'b AnfValue<'tcx>>,
-        args2: &[AnfValue<'tcx>],
-        span1: Span,
-        _span2: Span,
-    ) -> Result<(), ErrorGuaranteed>
-    where
-        'tcx: 'b,
-    {
-        if args1.len() != args2.len() {
-            return Err(self
-                .error(
-                    span1,
-                    "Refining and refined functions must have the same number of arguments",
-                )
-                .emit());
-        }
-        for (i, (arg1, arg2)) in args1.zip(args2).enumerate() {
-            if !self.refine_value(arg1, arg2) {
-                return Err(self.ctx.error(span1, format!("Argument {i} mismatch")).emit());
-            }
-        }
-        Ok(())
-    }
-
-    fn refine_result(&mut self, lhs1: &ExprId, lhs2: &ExprId) {
-        self.new_var(Var::ExprId(*lhs1), Var::ExprId(*lhs2));
-    }
-
     fn refine_pattern(
         &mut self,
         pat1: &AnfPattern,
@@ -614,7 +643,8 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                     }
                 } else {
                     return Err(self
-                        .error(*span1, "Constructor pattern mismatch")
+                        .error(*span1, "failed #[refines] check")
+                        .with_span_note(*span1, "#[refines] pattern")
                         .with_span_note(*span2, "refined pattern")
                         .emit());
                 }
@@ -629,108 +659,102 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         self.refine_var.insert(v1, v2);
     }
 
-    fn refine_stmts(
-        &mut self,
-        left: &[AnfStmt<'tcx>],
-        right: &[AnfStmt<'tcx>],
-    ) -> Result<(), ErrorGuaranteed> {
-        let mut right = right.into_iter();
-        for left in left.into_iter() {
-            let Some(right) = right.next() else {
+    fn refine_stmts(&mut self, left: &Anf<'tcx>, right: &Anf<'tcx>) -> Result<(), ErrorGuaranteed> {
+        use std::cmp::Ordering::*;
+        // We try to compare the two blocks as far as we can to get more precise errors in case of mismatch,
+        // that's why we compare the lengths at the end.
+        for (left, right) in left.stmts.iter().zip(&right.stmts) {
+            let debug_string = |tag| {
+                use OpTag::*;
+                match tag {
+                    Value => " (value)".into(),
+                    Read => " (read)".into(),
+                    Call(def_id, subst) => {
+                        format!(" ({}{})", self.tcx().def_path_str(def_id), subst.print_as_list())
+                    }
+                    _ => "".into(),
+                }
+            };
+            if left.rhs.tag != right.rhs.tag {
                 return Err(self
-                    .error(
+                    .error(left.span, "failed #[refines] check")
+                    .with_span_label(
                         left.span,
-                        "Refining function has more statements than the refined function",
+                        format!("#[refines] expression{}", debug_string(left.rhs.tag)),
+                    )
+                    .with_span_label(
+                        right.span,
+                        format!("refined expression{}", debug_string(right.rhs.tag)),
                     )
                     .emit());
-            };
-            match (&left.rhs, &right.rhs) {
-                (AnfAction::Call(fun1, subst1, args1), AnfAction::Call(fun2, subst2, args2)) => {
-                    if fun1 == fun2 {
-                        self.refine_subst(subst1, subst2, left.span, right.span)?;
-                        self.refine_args(args1.into_iter(), args2, left.span, right.span)?;
-                    } else if let Some(fun2_) = self.ctx.refines(*fun1)
-                        && fun2_.thir.0 == *fun2
-                    {
-                        let subst1 =
-                            ty::EarlyBinder::bind(fun2_.thir.1).instantiate(self.ctx.tcx, subst1);
-                        let args1: Box<[_]> = args1
-                            .into_iter()
-                            .zip(&fun2_.erase_args)
-                            .filter_map(|(arg, &erase)| if erase { None } else { Some(arg) })
-                            .collect();
-                        self.refine_subst(subst1, subst2, left.span, right.span)?;
-                        self.refine_args(args1.into_iter(), args2, left.span, right.span)?;
-                    } else {
-                        return Err(self
-                            .error(left.span, "Function call mismatch")
-                            .with_span_note(right.span, "refined call")
-                            .emit());
-                    }
-                }
-                (AnfAction::Binop(v1, op1, w1), AnfAction::Binop(v2, op2, w2)) => {
-                    if !(op1 == op2 && self.refine_value(v1, v2) && self.refine_value(w1, w2)) {
-                        return Err(self
-                            .error(left.span, "Binary op mismatch")
-                            .with_span_note(right.span, "refined operator")
-                            .emit());
-                    }
-                }
-                (AnfAction::Deref(v1), AnfAction::Deref(v2)) => {
-                    if !self.refine_value(v1, v2) {
-                        return Err(self
-                            .error(left.span, "deref mismatch")
-                            .with_span_note(right.span, "refined deref")
-                            .emit());
-                    }
-                }
-                (AnfAction::Value(v1), AnfAction::Value(v2)) => {
-                    if !self.refine_value(v1, v2) {
-                        return Err(self
-                            .error(left.span, "value mismatch")
-                            .with_span_note(right.span, "refined value")
-                            .emit());
-                    }
-                }
-                (AnfAction::Read(v1), AnfAction::Read(v2)) => {
-                    if let Some(v1_) = self.refine_var.get(&Var::HirId(*v1)) {
-                        if *v1_ != Var::HirId(*v2) {
-                            return Err(self
-                                .error(left.span, "read variable mismatch")
-                                .with_span_note(right.span, "refined read")
-                                .emit());
-                        }
-                    }
-                }
-                (l, r) => {
+            }
+            assert!(left.rhs.args.len() == right.rhs.args.len());
+            for (left, right) in left.rhs.args.iter().zip(&right.rhs.args) {
+                if !self.refine_value(&left.0, &right.0) {
                     return Err(self
-                        .error(
-                            left.span,
-                            format!("Statement kind mismatch\n {l:?} does not refine {r:?}"),
-                        )
-                        .with_span_note(right.span, "refined statement")
+                        .error(left.1, "failed #[refines] check")
+                        .with_span_label(left.1, "#[refines] expression")
+                        .with_span_label(right.1, "refined expression")
                         .emit());
                 }
             }
-            self.refine_pattern(&left.lhs, &right.lhs)?;
+            for (left, right) in left.rhs.arms.iter().zip(&right.rhs.arms) {
+                self.refine_pattern(&left.pattern, &right.pattern)?;
+                self.refines(&left.body, &right.body)?;
+            }
+            match left.rhs.arms.len().cmp(&right.rhs.arms.len()) {
+                Equal => {}
+                Less => {
+                    let right_span = right.rhs.arms[left.rhs.arms.len()].span;
+                    return Err(self
+                        .error(right_span, "failed #[refines] check")
+                        .with_span_label(right_span, "refined block (mismatched block)")
+                        .with_span_label(left.span, "#[refines] expression (no matching block)")
+                        .emit());
+                }
+                Greater => {
+                    let left_span = left.rhs.arms[right.rhs.arms.len()].span;
+                    return Err(self
+                        .error(left_span, "failed #[refines] check")
+                        .with_span_label(left_span, "#[refines] block (mismatched block)")
+                        .with_span_label(right.span, "refined expression (no matching block)")
+                        .emit());
+                }
+            }
+            self.refine_pattern(&left.pattern, &right.pattern)?;
         }
-        if let Some(_) = right.next() {
-            return Err(self
-                .error(
-                    self.span,
-                    "Refining function has fewer statements than the refined function",
-                )
-                .emit());
+        match left.stmts.len().cmp(&right.stmts.len()) {
+            Equal => {}
+            Less => {
+                let right_span = right.stmts[left.stmts.len()].span;
+                return Err(self
+                    .error(right_span, "failed #[refines] check")
+                    .with_span_label(right_span, "refined block (mismatched statement)")
+                    .with_span_label(left.span, "#[refines] block (no matching statement)")
+                    .emit());
+            }
+            Greater => {
+                let right_span = left.stmts[right.stmts.len()].span;
+                return Err(self
+                    .error(right_span, "failed #[refines] check")
+                    .with_span_label(right_span, "#[refines] block (mismatched statement)")
+                    .with_span_label(right.span, "refined block (no matching statement)")
+                    .emit());
+            }
         }
         Ok(())
     }
 
     fn refines(&mut self, left: &Anf<'tcx>, right: &Anf<'tcx>) -> Result<(), ErrorGuaranteed> {
-        self.refine_stmts(&left.stmts, &right.stmts)?;
-        if self.refine_value(&left.ret, &right.ret) {
+        self.refine_stmts(left, right)?;
+        if self.refine_value(&left.ret.0, &right.ret.0) {
             Ok(())
         } else {
-            Err(self.error(self.span, "Return value mismatch").emit())
+            Err(self
+                .error(left.ret.1, "failed #[refines] check")
+                .with_span_label(left.ret.1, "#[refines] side (mismatched value)")
+                .with_span_label(right.ret.1, "refined side")
+                .emit())
         }
     }
 }
@@ -740,12 +764,15 @@ fn check_refines_thir<'a, 'tcx>(
     (left_thir, left_expr): &'a (Thir<'tcx>, ExprId),
     (right_thir, right_expr): &'a (Thir<'tcx>, ExprId),
     subst2: ty::GenericArgsRef<'tcx>,
-    span: Span,
+    left_span: Span,
+    right_span: Span,
 ) -> Result<(), ErrorGuaranteed> {
-    let left = a_normal_form(ctx.tcx, left_thir, *left_expr)?;
-    let right = a_normal_form(ctx.tcx, right_thir, *right_expr)?;
+    let left = a_normal_form(ctx, left_thir, *left_expr, left_span)?;
+    // Even when processing `right_thir`, error messages should mention `left_span`:
+    // the span of the function carrying the `#[refines]` attribute.
+    let right = a_normal_form(ctx, right_thir, *right_expr, left_span)?;
     let right = ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2);
-    let mut checker = RefineChecker::new(ctx, left_thir, right_thir, span);
+    let mut checker = RefineChecker::new(ctx, left_thir, right_thir, left_span, right_span);
     checker.refine_params()?;
     let r = checker.refines(&left, &right);
     if r.is_err() {

@@ -555,7 +555,11 @@ pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
 
 #[derive(Clone, Debug)]
 pub struct Refined<'tcx> {
+    /// `DefId` of the trait method or standalone `fn` item
+    /// For `#[refines]` checking of calling functions.
     pub thir: (DefId, GenericArgsRef<'tcx>),
+    /// `DefId` of the impl method body or standalone `fn` item
+    /// For `#[refines]` checking of this function.
     pub resolved: (DefId, GenericArgsRef<'tcx>),
     /// `true` for ghost arguments to erase
     pub erase_args: Vec<bool>,
