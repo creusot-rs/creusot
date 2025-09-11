@@ -1,15 +1,15 @@
 use crate::common::FnOrMethod;
 use proc_macro::TokenStream as TS1;
-use proc_macro2::{Span, TokenStream as TS2};
+use proc_macro2::TokenStream as TS2;
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
-    Pat, Path, Stmt, parse_macro_input, parse_quote, punctuated::Punctuated, spanned::Spanned as _,
-    token::Comma,
+    ExprPath, Pat, Stmt, parse_macro_input, parse_quote, punctuated::Punctuated,
+    spanned::Spanned as _, token::Comma,
 };
 
-pub(crate) fn refines(args: TS1, item: TS1) -> TS1 {
+pub(crate) fn refines(path: TS1, item: TS1) -> TS1 {
     // We parse the path to avoid injection attacks
-    let path = parse_macro_input!(args as Path);
+    let path = parse_macro_input!(path as ExprPath);
     let mut item = parse_macro_input!(item as FnOrMethod);
     let args: Punctuated<TS2, Comma> = item.sig.inputs.iter().map(|arg| match arg {
             syn::FnArg::Receiver(r) => {

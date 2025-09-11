@@ -1,14 +1,15 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use either::Either;
-use rustc_ast::{BindingMode, ByRef, Mutability};
+use rustc_ast::{BindingMode, BorrowKind, ByRef, Mutability};
 use rustc_hir::{HirId, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::BinOp,
+    mir::{self, BinOp},
     thir::{self, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir},
     ty::{self, ParamConst, TyCtxt},
 };
+use rustc_session::HashStableContext;
 use rustc_span::{ErrorGuaranteed, Span};
 use rustc_type_ir::TyKind::Error;
 
@@ -61,6 +62,27 @@ fn check_refines<'tcx>(
     check_refines_thir(ctx, left_thir, right_thir, subst2, ctx.def_span(left))
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, TypeVisitable, TypeFoldable)]
+enum Var {
+    HirId(HirId),
+    ExprId(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+ExprId),
+}
+
+/// We inline values into statements. The alternative is to bind constants to variables,
+/// but that makes later passes more complicated to deal with the fact that these bindings
+/// have no effect and should commute with other assignments.
+///
+/// That makes it easier to deal with case like this:
+/// ```
+/// f(1, g())
+/// ```
+/// has the same ANF (in this representation) as
+/// ```
+/// let x = g(); f(1, x)
+/// ```
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
 enum AnfStmt<'tcx> {
     /// LHS <- FUNC(EXPR0, ..., EXPRN)
@@ -83,10 +105,18 @@ enum AnfStmt<'tcx> {
         AnfValue<'tcx>,
         Span,
     ),
-    /// let mut VAR
-    LetMut(HirId),
+    /// let VAR = VAL
+    Let(Var, AnfValue<'tcx>),
     /// LHS <- EXPR
     Assign(AnfLhs, AnfValue<'tcx>),
+    Read(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+ExprId, HirId),
+    Deref(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        ExprId, AnfValue<'tcx>),
     /// LHS <- if EXPR0 { EXPR1 } else { EXPR2 }
     If(
         #[type_visitable(ignore)]
@@ -102,18 +132,13 @@ enum AnfStmt<'tcx> {
 
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
 enum AnfLhs {
-    Var(HirId),
+    Var(Var),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
 enum AnfValue<'tcx> {
     Unit,
-    Expr(
-        #[type_visitable(ignore)]
-        #[type_foldable(identity)]
-        ExprId,
-    ),
-    Var(HirId),
+    Var(Var),
     Fn(DefId, ty::GenericArgsRef<'tcx>),
     Literal(
         #[type_visitable(ignore)]
@@ -122,6 +147,39 @@ enum AnfValue<'tcx> {
         bool,
     ),
     Const(ty::Const<'tcx>),
+    Borrow(mir::BorrowKind, Box<AnfPlace<'tcx>>),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
+struct AnfPlace<'tcx> {
+    base: AnfPlaceBase<'tcx>,
+    projections: Vec<AnfProjection>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
+enum AnfProjection {
+    Deref,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
+enum AnfPlaceBase<'tcx> {
+    MutVar(Var),
+    /// This ANF conversion may skip binding immutable variables, so we record their value here instead.
+    ImmutVar(AnfValue<'tcx>),
+}
+
+impl<'tcx> AnfPlace<'tcx> {
+    fn mut_var(var: Var) -> Self {
+        AnfPlace { base: AnfPlaceBase::MutVar(var), projections: vec![] }
+    }
+
+    fn immut(value: AnfValue<'tcx>) -> Self {
+        AnfPlace { base: AnfPlaceBase::ImmutVar(value), projections: vec![] }
+    }
+
+    fn add_deref(&mut self) {
+        self.projections.push(AnfProjection::Deref);
+    }
 }
 
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
@@ -136,7 +194,8 @@ struct AnfContext<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
     /// Mapping from ANF variables to values
     /// This lets us identify `let x = e; f(x)` with `f(e)`.
-    alias: HashMap<Either<HirId, ExprId>, AnfValue<'tcx>>,
+    /// `None` means the variable is mutable
+    alias: HashMap<HirId, Option<AnfValue<'tcx>>>,
 }
 
 fn a_normal_form<'tcx>(
@@ -162,14 +221,6 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         AnfContext { tcx, thir, alias }
     }
 
-    fn hir_id_value(&self, hir_id: HirId) -> AnfValue<'tcx> {
-        self.alias.get(&Either::Left(hir_id)).cloned().unwrap_or(AnfValue::Var(hir_id))
-    }
-
-    fn expr_id_value(&self, expr_id: ExprId) -> AnfValue<'tcx> {
-        self.alias.get(&Either::Right(expr_id)).cloned().unwrap_or(AnfValue::Expr(expr_id))
-    }
-
     fn a_normal_form_expr(
         &mut self,
         expr_id: ExprId,
@@ -177,10 +228,15 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
     ) -> Result<AnfValue<'tcx>, ErrorGuaranteed> {
         let expr = &self.thir[expr_id];
         use ExprKind::*;
-        let value = match &expr.kind {
-            Scope { value, .. } => self.a_normal_form_expr(*value, stmts)?,
-            Block { block } => self.a_normal_form_block(*block, stmts)?,
-            VarRef { id } => self.hir_id_value(id.0),
+        match &expr.kind {
+            Scope { value, .. } => self.a_normal_form_expr(*value, stmts),
+            Block { block } => self.a_normal_form_block(*block, stmts),
+            VarRef { id } => {
+                match &self.alias.get(&id.0) {
+                    None | Some(None) => Ok(AnfValue::Var(Var::HirId(id.0))),
+                    Some(Some(v)) => Ok(v.clone()),
+                }
+            }
             Call { fun, args, fn_span, .. } => {
                 let fun = self.a_normal_form_expr(*fun, stmts)?;
                 match fun {
@@ -190,7 +246,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                             .map(|arg| self.a_normal_form_expr(*arg, stmts))
                             .collect::<Result<::std::boxed::Box<[_]>, ErrorGuaranteed>>()?;
                         stmts.push(AnfStmt::Call(expr_id, fun_id, subst, args, *fn_span));
-                        AnfValue::Expr(expr_id)
+                        Ok(AnfValue::Var(Var::ExprId(expr_id)))
                     }
                     _ => self.crash_and_error(
                         expr.span,
@@ -199,24 +255,66 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 }
             }
             ZstLiteral { .. } => match expr.ty.kind() {
-                ty::TyKind::FnDef(def_id, subst) => AnfValue::Fn(*def_id, subst),
-                _ => AnfValue::Unit,
+                ty::TyKind::FnDef(def_id, subst) => Ok(AnfValue::Fn(*def_id, subst)),
+                _ => Ok(AnfValue::Unit),
             },
             Binary { op, lhs, rhs } => {
                 let lhs = self.a_normal_form_expr(*lhs, stmts)?;
                 let rhs = self.a_normal_form_expr(*rhs, stmts)?;
                 stmts.push(AnfStmt::Binop(expr_id, lhs, *op, rhs, expr.span));
-                AnfValue::Expr(expr_id)
+                Ok(AnfValue::Var(Var::ExprId(expr_id)))
             }
-            Literal { lit, neg } => AnfValue::Literal(lit.node, *neg),
-            ConstParam { param, .. } => AnfValue::Const(ty::Const::new_param(self.tcx, *param)),
+            Literal { lit, neg } => Ok(AnfValue::Literal(lit.node, *neg)),
+            ConstParam { param, .. } => Ok(AnfValue::Const(ty::Const::new_param(self.tcx, *param))),
+            Deref { arg } => {
+                let arg = self.a_normal_form_expr(*arg, stmts)?;
+                stmts.push(AnfStmt::Deref(expr_id, arg));
+                Ok(AnfValue::Var(Var::ExprId(expr_id)))
+            }
+            // THIR inserts some &*, we simplify them
+            Borrow { arg, .. } if let Deref { arg } = &self.thir[*arg].kind => self.a_normal_form_expr(*arg, stmts),
+            Borrow { borrow_kind, arg } => {
+                let place = self.a_normal_form_place(*arg, stmts)?;
+                Ok(AnfValue::Borrow(*borrow_kind, std::boxed::Box::new(place)))
+            }
             _ => self.crash_and_error(
                 expr.span,
                 format!("Unsupported expression in refine check:\n{expr:?}"),
             ),
-        };
-        self.alias.insert(Either::Right(expr_id), value.clone());
-        Ok(value)
+        }
+    }
+
+    fn a_normal_form_place(
+        &mut self,
+        expr_id: ExprId,
+        stmts: &mut Vec<AnfStmt<'tcx>>,
+    ) -> Result<AnfPlace<'tcx>, ErrorGuaranteed> {
+        let expr = &self.thir[expr_id];
+        use ExprKind::*;
+        match &expr.kind {
+            VarRef { id } => {
+                match &self.alias.get(&id.0) {
+                    None | Some(None) => Ok(AnfPlace::mut_var(Var::HirId(id.0))),
+                    Some(Some(v)) => Ok(AnfPlace::immut(v.clone())),
+                }
+            }
+            Deref { arg } => {
+                let mut place = self.a_normal_form_place(*arg, stmts)?;
+                place.add_deref();
+                Ok(place)
+            }
+            _ => {
+                let v = self.a_normal_form_expr(expr_id, stmts)?;
+                if let AnfValue::Var(Var::ExprId(expr_id2)) = v && expr_id2 == expr_id {
+                    // expr_id was just bound so we can use it as a place
+                    Ok(AnfPlace::mut_var(Var::ExprId(expr_id)))
+                } else {
+                    // we create a place for expr_id
+                    stmts.push(AnfStmt::Let(Var::ExprId(expr_id), v.clone()));
+                    Ok(AnfPlace::mut_var(Var::ExprId(expr_id)))
+                }
+            }
+        }
     }
 
     fn a_normal_form_block(
@@ -267,13 +365,13 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                     PatKind::Binding {
                         var, mode: BindingMode(ByRef::No, Mutability::Not), ..
                     } => {
-                        self.alias.insert(Either::Left(var.0), rhs.clone());
+                        self.alias.insert(var.0, Some(rhs.clone()));
                     }
                     PatKind::Binding {
                         var, mode: BindingMode(ByRef::No, Mutability::Mut), ..
                     } => {
-                        stmts.push(AnfStmt::LetMut(var.0));
-                        stmts.push(AnfStmt::Assign(AnfLhs::Var(var.0), rhs));
+                        self.alias.insert(var.0, None);
+                        stmts.push(AnfStmt::Let(Var::HirId(var.0), rhs));
                     }
                     _ => {
                         return Err(self
@@ -305,8 +403,7 @@ struct RefineChecker<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     left: &'a Thir<'tcx>,
     right: &'a Thir<'tcx>,
-    refine_hir_id: HashMap<HirId, HirId>,
-    refine_expr_id: HashMap<ExprId, ExprId>,
+    refine_var: HashMap<Var, Var>,
     span: Span,
 }
 
@@ -323,9 +420,8 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         right: &'a Thir<'tcx>,
         span: Span,
     ) -> Self {
-        let refine_hir_id = HashMap::new();
-        let refine_expr_id = HashMap::new();
-        RefineChecker { ctx, left, right, refine_hir_id, refine_expr_id, span }
+        let refine_var = HashMap::new();
+        RefineChecker { ctx, left, right, refine_var, span }
     }
 
     fn refine_params(&mut self) -> Result<(), ErrorGuaranteed> {
@@ -367,7 +463,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
     ) -> Result<(), ErrorGuaranteed> {
         match (&left.kind, &right.kind) {
             (PatKind::Binding { var: l, .. }, PatKind::Binding { var: r, .. }) => {
-                self.refine_hir_id.insert(l.0, r.0);
+                self.refine_var.insert(Var::HirId(l.0), Var::HirId(r.0));
                 Ok(())
             }
             _ => Err(self
@@ -382,13 +478,9 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
     fn refine_value(&self, v1: &AnfValue<'tcx>, v2: &AnfValue<'tcx>) -> bool {
         match (v1, v2) {
             (AnfValue::Unit, AnfValue::Unit) => true,
-            (AnfValue::Expr(e1), AnfValue::Expr(e2)) => {
-                let Some(e1_) = self.refine_expr_id.get(e1) else { return false };
-                e1_ == e2
-            }
             (AnfValue::Var(v1), AnfValue::Var(v2)) => {
-                let v1_ = self.refine_hir_id[v1];
-                v1_ == *v2
+                let Some(v1_) = self.refine_var.get(v1) else { return false };
+                v1_ == v2
             }
             (AnfValue::Literal(lit1, neg1), AnfValue::Literal(lit2, neg2)) => {
                 lit1 == lit2 && neg1 == neg2
@@ -443,7 +535,11 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
     }
 
     fn refine_result(&mut self, lhs1: &ExprId, lhs2: &ExprId) {
-        self.refine_expr_id.insert(*lhs1, *lhs2);
+        self.new_var(Var::ExprId(*lhs1), Var::ExprId(*lhs2));
+    }
+
+    fn new_var(&mut self, v1: Var, v2: Var) {
+        self.refine_var.insert(v1, v2);
     }
 
     fn refine_stmts(
@@ -507,7 +603,42 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                             .emit());
                     }
                 },
-                AnfStmt::LetMut(v) => todo!(),
+                AnfStmt::Deref(lhs1, v1) => match right.next() {
+                    Some(AnfStmt::Deref(lhs2, v2)) => {
+                        if self.refine_value(v1, v2) {
+                            self.refine_result(lhs1, lhs2);
+                        } else {
+                            return Err(self.error(
+                                self.span,
+                                format!("Refining deref does not match refined deref: {v1:?} vs {v2:?}"),
+                            ).emit());
+                        }
+                    }
+                    Some(_) => return Err(self.error(self.span, "mismatch TODO").emit()),
+                    None => {
+                        return Err(self
+                            .error(
+                                self.span,
+                                "Refining function has more statements than the refined function",
+                            )
+                            .emit());
+                    }
+                },
+                AnfStmt::Let(var1, rhs1) => match right.next() {
+                    Some(AnfStmt::Let(var2, rhs2)) =>
+                    {
+                        if self.refine_value(rhs1, rhs2) {
+                            self.new_var(*var1, *var2)
+                        } else {
+                            return Err(self.error(
+                                self.span,
+                                format!("Refining let does not match refined let: {var1:?} vs {var2:?}, {rhs1:?} vs {rhs2:?}"),
+                            ).emit());
+                        }
+                    }
+                    _ => return Err(self.error(self.span, "mismatch TODO").emit()),
+}
+                AnfStmt::Read(expr_id1, hir_id) => todo!(),
                 AnfStmt::Assign(anf_lhs, anf_ret) => todo!(),
                 AnfStmt::If(expr_id, expr_id1, anf_ret, anf_ret1) => todo!(),
             }
