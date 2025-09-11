@@ -29,6 +29,7 @@ pub fn bar2(x: i32) -> i32 {
     a + b + c + 42
 }
 
+// Test handling of reference arguments (autoref and reborrows)
 trait Tr {
     fn takes_ref(&self) -> Self;
 }
@@ -45,10 +46,17 @@ fn takes_ref(x: &i32) -> i32 {
 }
 
 pub fn takes_ref_test(x: i32) -> i32 {
+    // Autoref makes this `(&x).takes_ref()`
     x.takes_ref()
 }
 
 #[refines(takes_ref_test)]
 pub fn takes_ref_test2(x: i32) -> i32 {
+    // THIR introduces a reborrow, making this `takes_ref(&*&x)`
     takes_ref(&x)
+}
+
+#[refines(foo)]
+fn foog(x: i32) -> (i32, Ghost<i32>) {
+    (x, ghost!(x))
 }
