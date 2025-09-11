@@ -26,6 +26,7 @@ use rustc_middle::{
 use rustc_span::{ErrorGuaranteed, Span};
 
 use crate::{
+    backend::is_trusted_item,
     contracts_items::{is_refines, is_spec},
     ctx::{HasTyCtxt, TranslationCtx},
     validate::{ghost::is_ghost_ty_, is_ghost_block},
@@ -44,6 +45,9 @@ fn check_refines<'tcx>(
     left: DefId,
     (right, subst2): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Result<(), ErrorGuaranteed> {
+    if is_trusted_item(ctx.tcx, left) {
+        return Ok(());
+    }
     let Some(left_local) = left.as_local() else {
         return Err(ctx.error(ctx.def_span(left), "Refining function must be local").emit());
     };
