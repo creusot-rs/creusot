@@ -73,6 +73,19 @@ fn check_refines<'tcx>(
     check_refines_thir(ctx, left_thir, right_thir, subst2, ctx.def_span(left), ctx.def_span(right))
 }
 
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
+struct AnfBlock<'tcx> {
+    stmts: Vec<AnfStmt<'tcx>>,
+    ret: (AnfValue<'tcx>, Span),
+    span: Span,
+}
+
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
+struct AnfFn<'tcx> {
+    args: Vec<AnfPattern>,
+    body: AnfBlock<'tcx>,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, TypeVisitable, TypeFoldable)]
 enum Var {
     HirId(HirId),
@@ -156,7 +169,7 @@ enum OpTag<'tcx> {
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
 struct AnfArm<'tcx> {
     pattern: AnfPattern,
-    body: Anf<'tcx>,
+    body: AnfBlock<'tcx>,
     span: Span,
 }
 
@@ -221,21 +234,14 @@ impl<'tcx> AnfPlace<'tcx> {
     }
 }
 
-#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
-struct Anf<'tcx> {
-    stmts: Vec<AnfStmt<'tcx>>,
-    ret: (AnfValue<'tcx>, Span),
-    span: Span,
-}
-
 /// State for computing A-normal form
 struct AnfContext<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     thir: &'a Thir<'tcx>,
     /// Mapping from ANF variables to values
     /// This lets us identify `let x = e; f(x)` with `f(e)`.
-    /// `None` means the variable is mutable
-    alias: HashMap<HirId, Option<AnfValue<'tcx>>>,
+    /// Unmapped variables are assumed to be mutable (accessing them triggers a `Read` action)
+    alias: HashMap<HirId, AnfValue<'tcx>>,
     span: Span,
 }
 
@@ -244,12 +250,14 @@ fn a_normal_form<'tcx>(
     thir: &Thir<'tcx>,
     expr: ExprId,
     def_span: Span,
-) -> Result<Anf<'tcx>, ErrorGuaranteed> {
+) -> Result<AnfFn<'tcx>, ErrorGuaranteed> {
     let mut ctx = AnfContext::new(ctx, thir, def_span);
     let mut stmts = Vec::new();
+    let args = ctx.a_normal_form_args()?;
     let ret = ctx.a_normal_form_expr(expr, &mut stmts)?;
     let span = ret.1;
-    Ok(Anf { stmts, ret, span })
+    let body = AnfBlock { stmts, ret, span };
+    Ok(AnfFn { args, body })
 }
 
 impl<'a, 'tcx> HasTyCtxt<'tcx> for AnfContext<'a, 'tcx> {
@@ -264,6 +272,22 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         AnfContext { ctx, thir, alias, span }
     }
 
+    fn a_normal_form_args(&mut self) -> Result<Vec<AnfPattern>, ErrorGuaranteed> {
+        self.thir
+            .params
+            .iter()
+            .filter_map(|param| {
+                let Some(pattern) = &param.pat else { return Some(Ok(AnfPattern::Wild)) };
+                // We visit even ghost variables to record their (im)mutability.
+                let pat = self.a_normal_form_pat(&pattern);
+                if is_ghost_ty_(self.ctx.tcx, param.ty) {
+                    return None;
+                }
+                Some(pat)
+            })
+            .collect()
+    }
+
     fn a_normal_form_expr(
         &mut self,
         expr_id: ExprId,
@@ -274,8 +298,8 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         let value = match &expr.kind {
             Scope { value, .. } => self.a_normal_form_expr(*value, stmts)?.0,
             Block { block } => self.a_normal_form_block(*block, stmts)?,
-            VarRef { id } => match &self.alias.get(&id.0) {
-                None | Some(None) => {
+            VarRef { id } => match self.alias.get(&id.0) {
+                None => {
                     stmts.push(AnfStmt {
                         pattern: AnfPattern::Var(Var::ExprId(expr_id)),
                         rhs: AnfOp::by_value(
@@ -290,7 +314,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                     });
                     AnfValue::Var(Var::ExprId(expr_id))
                 }
-                Some(Some(v)) => v.clone(),
+                Some(v) => v.clone(),
             },
             Call { fun, args, fn_span, .. } => {
                 let fun = self.a_normal_form_expr(*fun, stmts)?;
@@ -395,9 +419,9 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         let expr = &self.thir[expr_id];
         use ExprKind::*;
         match &expr.kind {
-            VarRef { id } => match &self.alias.get(&id.0) {
-                None | Some(None) => Ok(AnfPlace::mut_var(Var::HirId(id.0))),
-                Some(Some(v)) => Ok(AnfPlace::immut(v.clone())),
+            VarRef { id } => match self.alias.get(&id.0) {
+                None => Ok(AnfPlace::mut_var(Var::HirId(id.0))),
+                Some(v) => Ok(AnfPlace::immut(v.clone())),
             },
             Deref { arg } => {
                 let mut place = self.a_normal_form_place(*arg, stmts)?;
@@ -478,7 +502,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                             ..
                         } => {
                             // Skip generating a binding
-                            self.alias.insert(var.0, Some(rhs.0.clone()));
+                            self.alias.insert(var.0, rhs.0.clone());
                             return Ok(());
                         }
                         PatKind::Leaf { subpatterns }
@@ -505,10 +529,15 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         Ok(())
     }
 
-    fn a_normal_form_pat(&self, pat: &thir::Pat<'tcx>) -> Result<AnfPattern, ErrorGuaranteed> {
+    fn a_normal_form_pat(&mut self, pat: &thir::Pat<'tcx>) -> Result<AnfPattern, ErrorGuaranteed> {
         use PatKind::*;
         match &pat.kind {
             Wild => Ok(AnfPattern::Wild),
+            Binding { var, mode: BindingMode(ByRef::No, Mutability::Not), .. } => {
+                let v = Var::HirId(var.0);
+                self.alias.insert(var.0, AnfValue::Var(v));
+                Ok(AnfPattern::Var(v))
+            }
             Binding { var, .. } => Ok(AnfPattern::Var(Var::HirId(var.0))),
             PatKind::Leaf { subpatterns } => {
                 let subpatterns = subpatterns
@@ -542,8 +571,6 @@ fn is_spec_or_refines_expr(tcx: TyCtxt, thir: &Thir, expr: ExprId) -> bool {
 
 struct RefineChecker<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
-    left: &'a Thir<'tcx>,
-    right: &'a Thir<'tcx>,
     refine_var: HashMap<Var, Var>,
     left_span: Span,
     right_span: Span,
@@ -556,65 +583,12 @@ impl<'a, 'tcx> HasTyCtxt<'tcx> for RefineChecker<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
-    fn new(
-        ctx: &'a TranslationCtx<'tcx>,
-        left: &'a Thir<'tcx>,
-        right: &'a Thir<'tcx>,
-        left_span: Span,
-        right_span: Span,
-    ) -> Self {
+    fn new(ctx: &'a TranslationCtx<'tcx>, left_span: Span, right_span: Span) -> Self {
         let refine_var = HashMap::new();
-        RefineChecker { ctx, left, right, refine_var, left_span, right_span }
+        RefineChecker { ctx, refine_var, left_span, right_span }
     }
 
-    fn refine_params(&mut self) -> Result<(), ErrorGuaranteed> {
-        let left = self.left;
-        let right = self.right;
-        let mut right_params = right.params.iter();
-        for left_p in left.params.iter() {
-            if is_ghost_ty_(self.ctx.tcx, left_p.ty) {
-                continue;
-            }
-            let Some(right_p) = right_params.next() else {
-                return Err(self
-                    .error(self.left_span, "failed #[refines] check")
-                    .with_span_note(
-                        self.left_span,
-                        "function has more non-ghost parameters than the refined function",
-                    )
-                    .with_span_note(self.right_span, "refined function")
-                    .emit());
-            };
-            let Some(left_p) = &left_p.pat else {
-                continue;
-            };
-            let Some(right_p) = &right_p.pat else {
-                continue;
-            };
-            self.refine_pats(&left_p, &right_p)?;
-        }
-        Ok(())
-    }
-
-    fn refine_pats(
-        &mut self,
-        left: &thir::Pat<'tcx>,
-        right: &thir::Pat<'tcx>,
-    ) -> Result<(), ErrorGuaranteed> {
-        match (&left.kind, &right.kind) {
-            (PatKind::Binding { var: l, .. }, PatKind::Binding { var: r, .. }) => {
-                self.refine_var.insert(Var::HirId(l.0), Var::HirId(r.0));
-                Ok(())
-            }
-            _ => Err(self
-                .error(left.span, "failed #[refines] check")
-                .with_span_note(left.span, "#[refines] argument")
-                .with_span_note(right.span, "refined argument")
-                .emit()),
-        }
-    }
-
-    fn refine_value(&self, v1: &AnfValue<'tcx>, v2: &AnfValue<'tcx>) -> bool {
+    fn refines_value(&self, v1: &AnfValue<'tcx>, v2: &AnfValue<'tcx>) -> bool {
         match (v1, v2) {
             (AnfValue::Zst, AnfValue::Zst) => true,
             (AnfValue::Var(v1), AnfValue::Var(v2)) => {
@@ -626,25 +600,25 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
             }
             (AnfValue::Const(p1), AnfValue::Const(p2)) => p1 == p2,
             (AnfValue::Borrow(place1), AnfValue::Borrow(place2)) => {
-                self.refine_place(place1, place2)
+                self.refines_place(place1, place2)
             }
             _ => false,
         }
     }
 
-    fn refine_place(&self, p1: &AnfPlace<'tcx>, p2: &AnfPlace<'tcx>) -> bool {
+    fn refines_place(&self, p1: &AnfPlace<'tcx>, p2: &AnfPlace<'tcx>) -> bool {
         let refine_base = match (&p1.base, &p2.base) {
             (AnfPlaceBase::MutVar(v1), AnfPlaceBase::MutVar(v2)) => {
                 let Some(v1_) = self.refine_var.get(v1) else { return false };
                 v1_ == v2
             }
-            (AnfPlaceBase::ImmutVar(v1), AnfPlaceBase::ImmutVar(v2)) => self.refine_value(v1, v2),
+            (AnfPlaceBase::ImmutVar(v1), AnfPlaceBase::ImmutVar(v2)) => self.refines_value(v1, v2),
             _ => false,
         };
         refine_base && p1.projections == p2.projections
     }
 
-    fn refine_pattern(
+    fn refines_pattern(
         &mut self,
         pat1: &AnfPattern,
         pat2: &AnfPattern,
@@ -656,7 +630,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
             (AnfPattern::Ctor(c1, args1, span1), AnfPattern::Ctor(c2, args2, span2)) => {
                 if c1 == c2 {
                     for (a1, a2) in args1.into_iter().zip(args2.into_iter()) {
-                        self.refine_pattern(a1, a2)?;
+                        self.refines_pattern(a1, a2)?;
                     }
                 } else {
                     return Err(self
@@ -676,7 +650,11 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         self.refine_var.insert(v1, v2);
     }
 
-    fn refine_stmts(&mut self, left: &Anf<'tcx>, right: &Anf<'tcx>) -> Result<(), ErrorGuaranteed> {
+    fn refines_stmts(
+        &mut self,
+        left: &AnfBlock<'tcx>,
+        right: &AnfBlock<'tcx>,
+    ) -> Result<(), ErrorGuaranteed> {
         use std::cmp::Ordering::*;
         // We try to compare the two blocks as far as we can to get more precise errors in case of mismatch,
         // that's why we compare the lengths at the end.
@@ -707,7 +685,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
             }
             assert!(left.rhs.args.len() == right.rhs.args.len());
             for (left, right) in left.rhs.args.iter().zip(&right.rhs.args) {
-                if !self.refine_value(&left.0, &right.0) {
+                if !self.refines_value(&left.0, &right.0) {
                     return Err(self
                         .error(left.1, "failed #[refines] check")
                         .with_span_label(left.1, "#[refines] expression")
@@ -716,8 +694,8 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                 }
             }
             for (left, right) in left.rhs.arms.iter().zip(&right.rhs.arms) {
-                self.refine_pattern(&left.pattern, &right.pattern)?;
-                self.refines(&left.body, &right.body)?;
+                self.refines_pattern(&left.pattern, &right.pattern)?;
+                self.refines_body(&left.body, &right.body)?;
             }
             match left.rhs.arms.len().cmp(&right.rhs.arms.len()) {
                 Equal => {}
@@ -738,7 +716,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                         .emit());
                 }
             }
-            self.refine_pattern(&left.pattern, &right.pattern)?;
+            self.refines_pattern(&left.pattern, &right.pattern)?;
         }
         match left.stmts.len().cmp(&right.stmts.len()) {
             Equal => {}
@@ -762,9 +740,13 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         Ok(())
     }
 
-    fn refines(&mut self, left: &Anf<'tcx>, right: &Anf<'tcx>) -> Result<(), ErrorGuaranteed> {
-        self.refine_stmts(left, right)?;
-        if self.refine_value(&left.ret.0, &right.ret.0) {
+    fn refines_body(
+        &mut self,
+        left: &AnfBlock<'tcx>,
+        right: &AnfBlock<'tcx>,
+    ) -> Result<(), ErrorGuaranteed> {
+        self.refines_stmts(left, right)?;
+        if self.refines_value(&left.ret.0, &right.ret.0) {
             Ok(())
         } else {
             Err(self
@@ -773,6 +755,37 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                 .with_span_label(right.ret.1, "refined side")
                 .emit())
         }
+    }
+
+    fn refines(&mut self, left: &AnfFn<'tcx>, right: &AnfFn<'tcx>) -> Result<(), ErrorGuaranteed> {
+        use std::cmp::Ordering::*;
+        match left.args.len().cmp(&right.args.len()) {
+            Less => {
+                return Err(self
+                    .error(self.left_span, "failed #[refines] check")
+                    .with_span_label(
+                        self.left_span,
+                        "#[refines] function has fewer non-ghost arguments than refined function",
+                    )
+                    .with_span_label(self.right_span, "refined function")
+                    .emit());
+            }
+            Greater => {
+                return Err(self
+                    .error(self.left_span, "failed #[refines] check")
+                    .with_span_label(
+                        self.left_span,
+                        "#[refines] function has more non-ghost arguments than refined function",
+                    )
+                    .with_span_label(self.right_span, "refined function")
+                    .emit());
+            }
+            Equal => {}
+        }
+        for (left, right) in left.args.iter().zip(&right.args) {
+            self.refines_pattern(left, right)?;
+        }
+        self.refines_body(&left.body, &right.body)
     }
 }
 
@@ -789,8 +802,7 @@ fn check_refines_thir<'a, 'tcx>(
     // the span of the function carrying the `#[refines]` attribute.
     let right = a_normal_form(ctx, right_thir, *right_expr, left_span)?;
     let right = ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2);
-    let mut checker = RefineChecker::new(ctx, left_thir, right_thir, left_span, right_span);
-    checker.refine_params()?;
+    let mut checker = RefineChecker::new(ctx, left_span, right_span);
     let r = checker.refines(&left, &right);
     if r.is_err() {
         debug!("{left:#?}\n{right:#?}");
