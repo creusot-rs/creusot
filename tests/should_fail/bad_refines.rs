@@ -23,3 +23,12 @@ pub fn bar2() -> i32 {
 pub fn bar3() -> i32 {
     baz2::<0>()
 }
+
+pub fn add(x: usize, y: usize) -> usize {
+    x + y
+}
+
+#[refines(add)]
+pub fn add2(x: usize, y: usize) -> usize {
+    x + x
+}

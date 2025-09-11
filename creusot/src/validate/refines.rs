@@ -278,7 +278,13 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 let place = self.a_normal_form_place(*arg, stmts)?;
                 Ok(AnfValue::Borrow(std::boxed::Box::new(place)))
             }
-            Tuple { fields } if fields.len() >= 1 && fields.iter().skip(1).all(|e| is_ghost_ty_(self.tcx(), self.thir[*e].ty)) => {
+            Tuple { fields }
+                if fields.len() >= 1
+                    && fields
+                        .iter()
+                        .skip(1)
+                        .all(|e| is_ghost_ty_(self.tcx(), self.thir[*e].ty)) =>
+            {
                 // Erase ghost fields
                 self.a_normal_form_expr(fields[0], stmts)
             }
@@ -377,13 +383,22 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 loop {
                     match &pattern.kind {
                         PatKind::Binding {
-                            var, mode: BindingMode(ByRef::No, Mutability::Not), subpattern: None, ..
+                            var,
+                            mode: BindingMode(ByRef::No, Mutability::Not),
+                            subpattern: None,
+                            ..
                         } => {
                             // Skip generating a binding
                             self.alias.insert(var.0, Some(rhs.clone()));
-                            return Ok(())
+                            return Ok(());
                         }
-                        PatKind::Leaf { subpatterns } if subpatterns.len() >= 1 && subpatterns.iter().skip(1).all(|p| is_ghost_ty_(self.tcx(), p.pattern.ty)) => {
+                        PatKind::Leaf { subpatterns }
+                            if subpatterns.len() >= 1
+                                && subpatterns
+                                    .iter()
+                                    .skip(1)
+                                    .all(|p| is_ghost_ty_(self.tcx(), p.pattern.ty)) =>
+                        {
                             // Erase ghost fields
                             pattern = &subpatterns[0].pattern;
                         }
@@ -397,10 +412,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         Ok(())
     }
 
-    fn a_normal_form_pat(
-        &self,
-        pat: &thir::Pat<'tcx>,
-    ) -> Result<AnfPattern, ErrorGuaranteed> {
+    fn a_normal_form_pat(&self, pat: &thir::Pat<'tcx>) -> Result<AnfPattern, ErrorGuaranteed> {
         use PatKind::*;
         match &pat.kind {
             Wild => Ok(AnfPattern::Wild),
@@ -543,17 +555,17 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         subst1: ty::GenericArgsRef<'tcx>,
         subst2: ty::GenericArgsRef<'tcx>,
         span1: Span,
-        _span2: Span,
+        span2: Span,
     ) -> Result<(), ErrorGuaranteed> {
-        assert!(subst1.len() == subst2.len());
-        for (i, (arg1, arg2)) in subst1.into_iter().zip(subst2).enumerate() {
-            if arg1 != arg2 {
-                return Err(self
-                    .error(span1, format!("Generic argument mismatch\n{arg1:?} != {arg2:?}"))
-                    .emit());
-            }
+        if subst1 == subst2 {
+            Ok(())
+        } else {
+            Err(self
+                .error(span1, "failed refine check")
+                .with_span_label(span1, format!("left call with generic arguments {subst1:?}"))
+                .with_span_label(span2, format!("right call with generic arguments {subst2:?}, expected {subst1:?}"))
+                .emit())
         }
-        Ok(())
     }
 
     fn refine_args<'b>(
@@ -586,7 +598,11 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         self.new_var(Var::ExprId(*lhs1), Var::ExprId(*lhs2));
     }
 
-    fn refine_pattern(&mut self, pat1: &AnfPattern, pat2: &AnfPattern) -> Result<(), ErrorGuaranteed> {
+    fn refine_pattern(
+        &mut self,
+        pat1: &AnfPattern,
+        pat2: &AnfPattern,
+    ) -> Result<(), ErrorGuaranteed> {
         match (pat1, pat2) {
             (AnfPattern::Var(v1), AnfPattern::Var(v2)) => {
                 self.new_var(*v1, *v2);
@@ -731,8 +747,9 @@ fn check_refines_thir<'a, 'tcx>(
     let right = ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2);
     let mut checker = RefineChecker::new(ctx, left_thir, right_thir, span);
     checker.refine_params()?;
-    checker.refines(&left, &right).map_err(|e| {
-        eprintln!("{left:#?}\n{right:#?}");
-        e
-    })
+    let r = checker.refines(&left, &right);
+    if r.is_err() {
+        debug!("{left:#?}\n{right:#?}");
+    }
+    r
 }
