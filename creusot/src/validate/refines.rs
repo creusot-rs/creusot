@@ -146,6 +146,7 @@ struct AnfStmt<'tcx> {
 /// ```
 /// let x = g(); f(1, x)
 /// ```
+/// (note that `1` and `g()` swapped relative positions)
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
 struct AnfOp<'tcx> {
     tag: OpTag<'tcx>,
