@@ -396,6 +396,18 @@ pub mod macros {
 
     /// Check that the annotated function refines another function.
     ///
+    /// # Refines check
+    ///
+    /// - Erase [`Ghost`][crate::ghost::Ghost] variables and [`ghost!`] blocks
+    /// - Replace called functions with their `#[refines]`
+    /// - Equate up to A-normal form
+    ///
+    /// `#[trusted]` functions skip the `#[refines]` check.
+    /// This can be used to postulate ghost-carrying primitives to be called in
+    /// other functions with `#[refines]` checks.
+    ///
+    /// # Example
+    ///
     /// For a typical example, say we want to verify some nested function calls:
     ///
     /// ```ignore
