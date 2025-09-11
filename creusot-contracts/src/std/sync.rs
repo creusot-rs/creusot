@@ -39,6 +39,7 @@ extern_spec! {
     }
 
     impl<T: ?Sized, A: Allocator + Clone> Clone for Arc<T, A> {
+        #[check(ghost)]
         #[ensures(result@ == (*self)@)]
         fn clone(&self) -> Arc<T, A>;
     }

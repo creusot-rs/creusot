@@ -49,12 +49,13 @@ pub struct Ghost<T: ?Sized>(PhantomData<T>);
 
 impl<T: Copy> Copy for Ghost<T> {}
 
-impl<T: Clone> Clone for Ghost<T> {
-    #[trusted]
+// FIXME: we would like to have an instance that does not require T: Copy, but it would
+// require the underlying clone instance to be #[check(ghost)], which we cannot require in general
+impl<T: Clone + Copy> Clone for Ghost<T> {
     #[check(ghost)]
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
-        Self::conjure()
+        ghost!(**self)
     }
 }
 

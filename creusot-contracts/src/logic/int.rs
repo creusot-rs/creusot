@@ -28,7 +28,6 @@ use crate::{
 pub struct Int();
 
 impl crate::Clone for Int {
-    #[trusted]
     #[check(ghost)]
     #[ensures(result == *self)]
     fn clone(&self) -> Self {

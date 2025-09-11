@@ -121,6 +121,7 @@ impl<K, V> Fragment<K, V> {
 impl<K, V> Clone for Fragment<K, V> {
     #[check(ghost)]
     #[ensures(result@ == self@)]
+    #[ensures(result.id() == self.id())]
     fn clone(&self) -> Self {
         Self(self.0.core(), self.1, self.2)
     }

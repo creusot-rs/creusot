@@ -114,6 +114,7 @@ extern_spec! {
     }
 
     impl<T> Clone for *mut T {
+        #[check(ghost)]
         #[ensures(result == *self)]
         fn clone(&self) -> *mut T {
             *self
@@ -121,6 +122,7 @@ extern_spec! {
     }
 
     impl<T> Clone for *const T {
+        #[check(ghost)]
         #[ensures(result == *self)]
         fn clone(&self) -> *const T {
             *self
