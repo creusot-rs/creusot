@@ -18,6 +18,7 @@ use rustc_ast::{BindingMode, ByRef, Mutability};
 use rustc_hir::{HirId, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
+    middle::region::ScopeTree,
     mir::BinOp,
     thir::{self, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir},
     ty::{self, TyCtxt},
@@ -27,7 +28,7 @@ use rustc_span::{ErrorGuaranteed, Span};
 use crate::{
     contracts_items::{is_refines, is_spec},
     ctx::{HasTyCtxt, TranslationCtx},
-    validate::ghost::is_ghost_ty_,
+    validate::{ghost::is_ghost_ty_, is_ghost_block},
 };
 
 pub(crate) fn validate_refines(ctx: &TranslationCtx) {
@@ -70,7 +71,16 @@ fn check_refines<'tcx>(
             )
             .emit());
     };
-    check_refines_thir(ctx, left_thir, right_thir, subst2, ctx.def_span(left), ctx.def_span(right))
+    let left_scope = ctx.tcx.region_scope_tree(left);
+    let right_scope = ctx.tcx.region_scope_tree(right);
+    check_refines_thir(
+        ctx,
+        (left_thir, left_scope),
+        (right_thir, right_scope),
+        subst2,
+        ctx.def_span(left),
+        ctx.def_span(right),
+    )
 }
 
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
@@ -238,6 +248,7 @@ impl<'tcx> AnfPlace<'tcx> {
 struct AnfContext<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     thir: &'a Thir<'tcx>,
+    scope_tree: &'a ScopeTree,
     /// Mapping from ANF variables to values
     /// This lets us identify `let x = e; f(x)` with `f(e)`.
     /// Unmapped variables are assumed to be mutable (accessing them triggers a `Read` action)
@@ -247,14 +258,13 @@ struct AnfContext<'a, 'tcx> {
 
 fn a_normal_form<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    thir: &Thir<'tcx>,
-    expr: ExprId,
+    ((thir, expr), scope_tree): (&(Thir<'tcx>, ExprId), &ScopeTree),
     def_span: Span,
 ) -> Result<AnfFn<'tcx>, ErrorGuaranteed> {
-    let mut ctx = AnfContext::new(ctx, thir, def_span);
+    let mut ctx = AnfContext::new(ctx, thir, scope_tree, def_span);
     let mut stmts = Vec::new();
     let args = ctx.a_normal_form_args()?;
-    let ret = ctx.a_normal_form_expr(expr, &mut stmts)?;
+    let ret = ctx.a_normal_form_expr(*expr, &mut stmts)?;
     let span = ret.1;
     let body = AnfBlock { stmts, ret, span };
     Ok(AnfFn { args, body })
@@ -267,9 +277,14 @@ impl<'a, 'tcx> HasTyCtxt<'tcx> for AnfContext<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> AnfContext<'a, 'tcx> {
-    fn new(ctx: &'a TranslationCtx<'tcx>, thir: &'a Thir<'tcx>, span: Span) -> Self {
+    fn new(
+        ctx: &'a TranslationCtx<'tcx>,
+        thir: &'a Thir<'tcx>,
+        scope_tree: &'a ScopeTree,
+        span: Span,
+    ) -> Self {
         let alias = HashMap::new();
-        AnfContext { ctx, thir, alias, span }
+        AnfContext { ctx, thir, scope_tree, alias, span }
     }
 
     fn a_normal_form_args(&mut self) -> Result<Vec<AnfPattern>, ErrorGuaranteed> {
@@ -296,7 +311,16 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         let expr = &self.thir[expr_id];
         use ExprKind::*;
         let value = match &expr.kind {
-            Scope { value, .. } => self.a_normal_form_expr(*value, stmts)?.0,
+            Scope { value, region_scope, .. } => {
+                // Skip ghost blocks
+                if let Some(hir_id) = region_scope.hir_id(self.scope_tree)
+                    && is_ghost_block(self.tcx(), hir_id)
+                {
+                    AnfValue::Zst
+                } else {
+                    self.a_normal_form_expr(*value, stmts)?.0
+                }
+            }
             Block { block } => self.a_normal_form_block(*block, stmts)?,
             VarRef { id } => match self.alias.get(&id.0) {
                 None => {
@@ -791,16 +815,16 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
 
 fn check_refines_thir<'a, 'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    (left_thir, left_expr): &'a (Thir<'tcx>, ExprId),
-    (right_thir, right_expr): &'a (Thir<'tcx>, ExprId),
+    left: (&'a (Thir<'tcx>, ExprId), &'a ScopeTree),
+    right: (&'a (Thir<'tcx>, ExprId), &'a ScopeTree),
     subst2: ty::GenericArgsRef<'tcx>,
     left_span: Span,
     right_span: Span,
 ) -> Result<(), ErrorGuaranteed> {
-    let left = a_normal_form(ctx, left_thir, *left_expr, left_span)?;
+    let left = a_normal_form(ctx, left, left_span)?;
     // Even when processing `right_thir`, error messages should mention `left_span`:
     // the span of the function carrying the `#[refines]` attribute.
-    let right = a_normal_form(ctx, right_thir, *right_expr, left_span)?;
+    let right = a_normal_form(ctx, right, left_span)?;
     let right = ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2);
     let mut checker = RefineChecker::new(ctx, left_span, right_span);
     let r = checker.refines(&left, &right);
