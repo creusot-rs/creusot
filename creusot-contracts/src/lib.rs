@@ -394,7 +394,55 @@ pub mod macros {
     /// the bitvector theory of SMT solvers.
     pub use base_macros::bitwise_proof;
 
-    /// This function refines another function.
+    /// Check that the annotated function refines another function.
+    ///
+    /// For a typical example, say we want to verify some nested function calls:
+    ///
+    /// ```ignore
+    /// fn h(x) {
+    ///   g(f(x))
+    /// }
+    /// ```
+    ///
+    /// we may want to replace them with ghost-carrying functions,
+    /// with some ghost block in between:
+    ///
+    /// ```ignore
+    /// #[refines(h)]
+    /// fn h_ghost(x){
+    ///     let (y, gh) = f_ghost(x);
+    ///     ghost!(...);
+    ///     g_ghost(y, gh)
+    /// }
+    /// ```
+    ///
+    /// The refinement check checks that they correspond.
+    /// First, erase ghost blocks and ghost variables:
+    ///
+    /// ```ignore
+    /// let (y, _) = f_ghost(x);
+    /// g_ghost(y, _)
+    /// ```
+    ///
+    /// Assume that `f_ghost` and `g_ghost` refine `f` and `g`,
+    /// which we would know because they would have been annotated accordingly:
+    ///
+    /// ```ignore
+    /// #[refines(f)]
+    /// fn f_ghost(_) -> (_, Ghost<_>) { .. }
+    ///
+    /// #[refines(g)]
+    /// fn g_ghost(_, _: Ghost<_>) { .. }
+    /// ```
+    ///
+    /// Replace `f_ghost` with `f`, `g_ghost` with `g`, and erase tuples that carry ghost components:
+    ///
+    /// ```ignore
+    /// let y = f(x);
+    /// g(y)
+    /// ```
+    ///
+    /// Finally, we equate that with `g(f(x))` by comparing their A-normal forms.
     pub use base_macros::refines;
 }
 
