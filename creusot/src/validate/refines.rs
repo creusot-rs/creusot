@@ -73,7 +73,7 @@ enum Var {
 
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
 struct AnfStmt<'tcx> {
-    lhs: Var,
+    lhs: AnfPattern,
     rhs: AnfAction<'tcx>,
     span: Span,
 }
@@ -111,13 +111,15 @@ enum AnfAction<'tcx> {
 }
 
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
-enum AnfLhs {
+enum AnfPattern {
+    Wild,
     Var(Var),
+    Ctor(Ctor, Box<[AnfPattern]>, Span),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
 enum AnfValue<'tcx> {
-    Unit,
+    Zst,
     Var(Var),
     Fn(DefId, ty::GenericArgsRef<'tcx>),
     Literal(
@@ -128,6 +130,13 @@ enum AnfValue<'tcx> {
     ),
     Const(ty::Const<'tcx>),
     Borrow(Box<AnfPlace<'tcx>>),
+    Ctor(Ctor, Box<[AnfValue<'tcx>]>),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
+enum Ctor {
+    Adt(DefId),
+    Tuple,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
@@ -224,7 +233,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                             .map(|arg| self.a_normal_form_expr(*arg, stmts))
                             .collect::<Result<::std::boxed::Box<[_]>, ErrorGuaranteed>>()?;
                         stmts.push(AnfStmt {
-                            lhs: Var::ExprId(expr_id),
+                            lhs: AnfPattern::Var(Var::ExprId(expr_id)),
                             rhs: AnfAction::Call(fun_id, subst, args),
                             span: *fn_span,
                         });
@@ -238,13 +247,13 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             }
             ZstLiteral { .. } => match expr.ty.kind() {
                 ty::TyKind::FnDef(def_id, subst) => Ok(AnfValue::Fn(*def_id, subst)),
-                _ => Ok(AnfValue::Unit),
+                _ => Ok(AnfValue::Zst),
             },
             Binary { op, lhs, rhs } => {
                 let lhs = self.a_normal_form_expr(*lhs, stmts)?;
                 let rhs = self.a_normal_form_expr(*rhs, stmts)?;
                 stmts.push(AnfStmt {
-                    lhs: Var::ExprId(expr_id),
+                    lhs: AnfPattern::Var(Var::ExprId(expr_id)),
                     rhs: AnfAction::Binop(lhs, *op, rhs),
                     span: expr.span,
                 });
@@ -255,7 +264,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             Deref { arg } => {
                 let arg = self.a_normal_form_expr(*arg, stmts)?;
                 stmts.push(AnfStmt {
-                    lhs: Var::ExprId(expr_id),
+                    lhs: AnfPattern::Var(Var::ExprId(expr_id)),
                     rhs: AnfAction::Deref(arg),
                     span: expr.span,
                 });
@@ -268,6 +277,17 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             Borrow { arg, .. } => {
                 let place = self.a_normal_form_place(*arg, stmts)?;
                 Ok(AnfValue::Borrow(std::boxed::Box::new(place)))
+            }
+            Tuple { fields } if fields.len() >= 1 && fields.iter().skip(1).all(|e| is_ghost_ty_(self.tcx(), self.thir[*e].ty)) => {
+                // Erase ghost fields
+                self.a_normal_form_expr(fields[0], stmts)
+            }
+            Tuple { fields } => {
+                let fields = fields
+                    .iter()
+                    .map(|f| self.a_normal_form_expr(*f, stmts))
+                    .collect::<Result<::std::boxed::Box<[_]>, ErrorGuaranteed>>()?;
+                Ok(AnfValue::Ctor(Ctor::Tuple, fields))
             }
             _ => self.crash_and_error(
                 expr.span,
@@ -304,7 +324,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 } else {
                     // we create a place for expr_id
                     stmts.push(AnfStmt {
-                        lhs: Var::ExprId(expr_id),
+                        lhs: AnfPattern::Var(Var::ExprId(expr_id)),
                         rhs: AnfAction::Value(v.clone()),
                         span: expr.span,
                     });
@@ -324,7 +344,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             self.a_normal_form_stmt(*stmt, stmts)?;
         }
         match block.expr {
-            None => Ok(AnfValue::Unit),
+            None => Ok(AnfValue::Zst),
             Some(e) => self.a_normal_form_expr(e, stmts),
         }
     }
@@ -353,36 +373,48 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                     return Ok(());
                 }
                 let rhs = self.a_normal_form_expr(*initializer, stmts)?;
-                match pattern.kind {
-                    PatKind::Binding { subpattern: Some(_), .. } => {
-                        return Err(self
-                            .error(*span, "Unsupported @ subpattern in refine check")
-                            .emit());
-                    }
-                    PatKind::Binding {
-                        var, mode: BindingMode(ByRef::No, Mutability::Not), ..
-                    } => {
-                        self.alias.insert(var.0, Some(rhs.clone()));
-                    }
-                    PatKind::Binding {
-                        var, mode: BindingMode(ByRef::No, Mutability::Mut), ..
-                    } => {
-                        self.alias.insert(var.0, None);
-                        stmts.push(AnfStmt {
-                            lhs: Var::HirId(var.0),
-                            rhs: AnfAction::Value(rhs),
-                            span: self.thir[*initializer].span,
-                        });
-                    }
-                    _ => {
-                        return Err(self
-                            .error(*span, "Unsupported pattern in refine check")
-                            .emit());
-                    }
-                };
+                let mut pattern = &**pattern;
+                loop {
+                    match &pattern.kind {
+                        PatKind::Binding {
+                            var, mode: BindingMode(ByRef::No, Mutability::Not), subpattern: None, ..
+                        } => {
+                            // Skip generating a binding
+                            self.alias.insert(var.0, Some(rhs.clone()));
+                            return Ok(())
+                        }
+                        PatKind::Leaf { subpatterns } if subpatterns.len() >= 1 && subpatterns.iter().skip(1).all(|p| is_ghost_ty_(self.tcx(), p.pattern.ty)) => {
+                            // Erase ghost fields
+                            pattern = &subpatterns[0].pattern;
+                        }
+                        _ => break,
+                    };
+                }
+                let lhs = self.a_normal_form_pat(&pattern)?;
+                stmts.push(AnfStmt { lhs, rhs: AnfAction::Value(rhs), span: *span });
             }
         }
         Ok(())
+    }
+
+    fn a_normal_form_pat(
+        &self,
+        pat: &thir::Pat<'tcx>,
+    ) -> Result<AnfPattern, ErrorGuaranteed> {
+        use PatKind::*;
+        match &pat.kind {
+            Wild => Ok(AnfPattern::Wild),
+            Binding { var, .. } => Ok(AnfPattern::Var(Var::HirId(var.0))),
+            PatKind::Leaf { subpatterns } => {
+                let subpatterns = subpatterns
+                    .iter()
+                    .map(|p| self.a_normal_form_pat(&p.pattern))
+                    .collect::<Result<::std::boxed::Box<[_]>, ErrorGuaranteed>>()?;
+                // the actual constructor doesn't matter for a `Leaf` so we just use `Tuple`
+                Ok(AnfPattern::Ctor(Ctor::Tuple, subpatterns, pat.span))
+            }
+            _ => Err(self.error(pat.span, "Unsupported pattern in refine check").emit()),
+        }
     }
 }
 
@@ -478,7 +510,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
 
     fn refine_value(&self, v1: &AnfValue<'tcx>, v2: &AnfValue<'tcx>) -> bool {
         match (v1, v2) {
-            (AnfValue::Unit, AnfValue::Unit) => true,
+            (AnfValue::Zst, AnfValue::Zst) => true,
             (AnfValue::Var(v1), AnfValue::Var(v2)) => {
                 let Some(v1_) = self.refine_var.get(v1) else { return false };
                 v1_ == v2
@@ -552,6 +584,29 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
 
     fn refine_result(&mut self, lhs1: &ExprId, lhs2: &ExprId) {
         self.new_var(Var::ExprId(*lhs1), Var::ExprId(*lhs2));
+    }
+
+    fn refine_pattern(&mut self, pat1: &AnfPattern, pat2: &AnfPattern) -> Result<(), ErrorGuaranteed> {
+        match (pat1, pat2) {
+            (AnfPattern::Var(v1), AnfPattern::Var(v2)) => {
+                self.new_var(*v1, *v2);
+            }
+            (AnfPattern::Ctor(c1, args1, span1), AnfPattern::Ctor(c2, args2, span2)) => {
+                if c1 == c2 {
+                    for (a1, a2) in args1.into_iter().zip(args2.into_iter()) {
+                        self.refine_pattern(a1, a2)?;
+                    }
+                } else {
+                    return Err(self
+                        .error(*span1, "Constructor pattern mismatch")
+                        .with_span_note(*span2, "refined pattern")
+                        .emit());
+                }
+            }
+            (AnfPattern::Wild, _) | (_, AnfPattern::Wild) => {}
+            _ => {}
+        }
+        Ok(())
     }
 
     fn new_var(&mut self, v1: Var, v2: Var) {
@@ -641,7 +696,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                         .emit());
                 }
             }
-            self.new_var(left.lhs, right.lhs);
+            self.refine_pattern(&left.lhs, &right.lhs)?;
         }
         if let Some(_) = right.next() {
             return Err(self

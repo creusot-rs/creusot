@@ -29,7 +29,7 @@ fn quux2(x: &i32, y: Ghost<Int>) -> i32 {
     foo2(*x, y)
 }
 
-pub fn bar(x: i32) -> i32 {
+pub fn test_foo(x: i32) -> i32 {
     let a = foo(x);
     let b = foo(x);
     let c = baz::<42>();
@@ -37,8 +37,8 @@ pub fn bar(x: i32) -> i32 {
     a + b + c + 42
 }
 
-#[refines(bar)]
-pub fn bar2(x: i32, y: Ghost<Int>) -> i32 {
+#[refines(test_foo)]
+pub fn test_foo2(x: i32, y: Ghost<Int>) -> i32 {
     let a = foo(x);
     let b = foo2(x, y);
     let c = baz::<42>();
@@ -78,4 +78,13 @@ fn foog(x: i32) -> (i32, Ghost<i32>) {
     (x, ghost!(x))
 }
 
-// TODO call foog
+pub fn test_ghost_fields(x: i32) -> i32 {
+    let a = foo(x);
+    a
+}
+
+#[refines(test_ghost_fields)]
+pub fn test_ghost_fields2(x: i32) -> i32 {
+    let (a, _) = foog(x);
+    a
+}
