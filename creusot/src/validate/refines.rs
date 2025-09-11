@@ -1,3 +1,17 @@
+//! The `#[refines]` check
+//!
+//! The main challenge is to equate
+//! ```
+//! g(f(x))
+//! ```
+//! and
+//! ```
+//! let y = f(x);
+//! g(y)
+//! ```
+//! (We often expand expressions like that to insert `ghost!` blocks.)
+//!
+//! We solve that by transforming THIR expressions to A-normal form.
 use std::collections::HashMap;
 
 use rustc_ast::{BindingMode, ByRef, Mutability};
@@ -504,7 +518,10 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 // the actual constructor doesn't matter for a `Leaf` so we just use `Tuple`
                 Ok(AnfPattern::Ctor(Ctor::Tuple, subpatterns, pat.span))
             }
-            _ => Err(self.error(self.span, "failed #[refines] check").with_span_label(pat.span, "unsupported pattern").emit()),
+            _ => Err(self
+                .error(self.span, "failed #[refines] check")
+                .with_span_label(pat.span, "unsupported pattern")
+                .emit()),
         }
     }
 }
