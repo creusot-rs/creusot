@@ -1,3 +1,4 @@
+// TACTIC +inline_goal
 extern crate creusot_contracts;
 
 pub mod implementation {
