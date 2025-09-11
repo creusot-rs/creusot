@@ -10,6 +10,12 @@ fn foo2(x: i32, _: Ghost<Int>) -> i32 {
     x
 }
 
+#[trusted]
+#[refines(foo)]
+pub fn foo3(x: i32) -> i32 {
+    foo(x)
+}
+
 fn baz<const N: i32>() -> i32 {
     N
 }
