@@ -77,3 +77,5 @@ pub fn takes_ref_test2(x: i32) -> i32 {
 fn foog(x: i32) -> (i32, Ghost<i32>) {
     (x, ghost!(x))
 }
+
+// TODO call foog
