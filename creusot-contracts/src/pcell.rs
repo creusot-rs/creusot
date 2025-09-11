@@ -23,6 +23,7 @@ pub struct PCell<T: ?Sized>(UnsafeCell<T>);
 ///
 /// A `PCellOwn` only exists in the ghost world, and it must be used in conjunction with
 /// [`PCell`] in order to read or write the value.
+#[trusted]
 pub struct PCellOwn<T: ?Sized>(PhantomData<T>);
 
 impl<T> View for PCellOwn<T> {
