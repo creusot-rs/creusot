@@ -1,6 +1,6 @@
-#[cfg(creusot)]
-use crate::util::such_that;
 use crate::{logic::Mapping, *};
+#[cfg(creusot)]
+use crate::{logic::such_that, resolve::structural_resolve};
 use ::std::cmp::Ordering;
 pub use ::std::option::*;
 

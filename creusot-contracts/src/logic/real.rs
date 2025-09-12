@@ -1,5 +1,6 @@
 //! Real numbers
 use crate::*;
+#[cfg(creusot)]
 use ::num_rational::BigRational;
 use ::std::{cmp::Ordering, marker::PhantomData};
 

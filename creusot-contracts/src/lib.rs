@@ -22,6 +22,25 @@
 //! ```
 //!
 //! For a more detailed explanation, see the [guide](https://creusot-rs.github.io/creusot/guide).
+//!
+//! # Module organization
+//!
+//! 1. Core features of Creusot
+//!
+//!     - [`invariant`][mod@invariant]: Type invariants
+//!     - [`macros`]: `#[requires]`, `#[ensures]`, etc.
+//!     - [`resolve`][mod@resolve]: Resolve mutable borrows
+//!     - [`snapshot`][mod@snapshot]: Snapshots
+//!
+//! 2. [`logic`][mod@logic]: Logical structures used in specifications
+//!
+//! 3. [`ghost`][mod@ghost]: Ghost code
+//!
+//! 4. [`std`][mod@std]: Specifications for the `std` crate
+//!
+//! 5. [`cell`][mod@cell]: Interior mutability
+//!
+//! 6. [`prelude`][mod@prelude]: What you get from `use creusot_contracts::*;`
 #![cfg_attr(
     feature = "nightly",
     allow(incomplete_features, internal_features),
@@ -289,7 +308,7 @@ pub mod macros {
     /// This is primarily used in combination with recursive logical functions.
     ///
     /// The variant must be an expression which returns a type implementing
-    /// [`WellFounded`](crate::WellFounded).
+    /// [`WellFounded`](crate::logic::WellFounded).
     ///
     /// # Example
     ///
@@ -381,36 +400,25 @@ pub mod macros {
 #[path = "stubs.rs"]
 pub mod __stubs;
 
-#[cfg_attr(not(creusot), allow(unused))]
-pub mod std;
-
-#[cfg(creusot)]
-pub mod num_rational;
-
-pub mod fn_ghost;
+pub mod cell;
 pub mod ghost;
 pub mod invariant;
-pub mod local_invariant;
 pub mod logic;
 pub mod model;
-pub mod pcell;
 pub mod peano;
-pub mod predcell;
-pub mod ptr_own;
 pub mod resolve;
-pub mod resource;
 pub mod snapshot;
-pub mod util;
-pub mod well_founded;
+#[cfg_attr(not(creusot), allow(unused))]
+pub mod std;
 
 // We add some common things at the root of the creusot-contracts library
 mod base_prelude {
     pub use crate::{
-        fn_ghost::FnGhost,
         ghost::Ghost,
+        invariant::Invariant,
         logic::{Int, OrdLogic, Seq, ops::IndexLogic as _},
         model::{DeepModel, View},
-        resolve::*,
+        resolve::Resolve,
         snapshot::Snapshot,
         std::{
             // Shadow std::prelude by our version.
@@ -425,7 +433,6 @@ mod base_prelude {
             default::Default,
             iter::{FromIterator, Iterator},
         },
-        well_founded::WellFounded,
     };
 
     // Export extension traits anonymously
@@ -439,9 +446,7 @@ mod base_prelude {
     };
 
     #[cfg(creusot)]
-    pub use crate::std::mem::size_of_logic;
-    #[cfg(creusot)]
-    pub use crate::util::such_that;
+    pub use crate::{invariant::inv, resolve::resolve};
 }
 /// Re-exports available under the `creusot_contracts` namespace
 pub mod prelude {

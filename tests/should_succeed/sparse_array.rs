@@ -12,8 +12,9 @@
 // requires to reason about permutation,
 
 extern crate creusot_contracts;
+#[cfg(creusot)]
+use creusot_contracts::resolve::structural_resolve;
 use creusot_contracts::{
-    invariant::{Invariant, inv},
     logic::{FSet, Int, Seq},
     *,
 };

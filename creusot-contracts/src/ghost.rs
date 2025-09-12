@@ -25,6 +25,13 @@ use crate::{
     *,
 };
 
+mod fn_ghost;
+pub mod local_invariant;
+mod ptr_own;
+pub mod resource;
+pub use fn_ghost::{FnGhost, FnGhostWrapper};
+pub use ptr_own::PtrOwn;
+
 /// A type that can be used in [`ghost!`] context.
 ///
 /// This type may be used to make more complicated proofs possible. In particular, some

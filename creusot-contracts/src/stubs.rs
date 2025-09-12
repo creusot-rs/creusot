@@ -60,7 +60,7 @@ pub fn dead<T: ?Sized>() -> Box<T> {
 #[logic]
 #[trusted]
 #[rustc_diagnostic_item = "variant_check"]
-pub fn variant_check<R: crate::well_founded::WellFounded>(_: R) -> R {
+pub fn variant_check<R: crate::logic::WellFounded>(_: R) -> R {
     dead
 }
 

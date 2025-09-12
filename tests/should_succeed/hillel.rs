@@ -2,11 +2,7 @@
 #![allow(dead_code)]
 
 extern crate creusot_contracts;
-use creusot_contracts::{
-    invariant::inv,
-    logic::{Int, Seq},
-    *,
-};
+use creusot_contracts::*;
 
 #[ensures((^str)@.len() >= len@ && (^str)@.len() >= str@.len())]
 #[ensures((^str)@.len() == len@ || (^str)@.len() == str@.len())]

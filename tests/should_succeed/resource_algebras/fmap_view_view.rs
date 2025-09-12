@@ -3,6 +3,7 @@
 extern crate creusot_contracts;
 use ::std::marker::PhantomData;
 use creusot_contracts::{
+    ghost::resource::Resource,
     logic::{
         FMap, Id,
         ra::{
@@ -11,7 +12,6 @@ use creusot_contracts::{
             view::{View as ViewRA, ViewRel, ViewUpdateInsert},
         },
     },
-    resource::Resource,
     *,
 };
 

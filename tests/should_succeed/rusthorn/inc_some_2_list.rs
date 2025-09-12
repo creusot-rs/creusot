@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Int, *};
+use creusot_contracts::{logic::WellFounded, *};
 
 pub enum List {
     Cons(u32, Box<List>),

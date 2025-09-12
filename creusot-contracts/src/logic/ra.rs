@@ -15,7 +15,7 @@ use crate::{logic::Set, *};
 /// Define a _Resource Algebra_.
 ///
 /// Resource algebras are a concept inspired by [Iris](https://iris-project.org/). Used in
-/// conjunction with [`Resource`](crate::resource::Resource)s, they unlock new reasonings.
+/// conjunction with [`Resource`](crate::ghost::resource::Resource)s, they unlock new reasonings.
 ///
 /// # Notes on the definition of resource algebras
 ///
@@ -26,8 +26,8 @@ use crate::{logic::Set, *};
 pub trait RA: Sized {
     /// The operation of this resource algebra.
     ///
-    /// This is the core of the trait. This operation will be used to [`join`](crate::resource::Resource::join)
-    /// and [`split`](crate::resource::Resource::split) resources.
+    /// This is the core of the trait. This operation will be used to [`join`](crate::Resource::join)
+    /// and [`split`](crate::ghost::Resource::split) resources.
     ///
     /// It must be [associative](Self::associative) and [commutative](Self::commutative)
     /// (among others).

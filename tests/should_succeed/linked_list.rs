@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Seq, ptr_own::PtrOwn, *};
+use creusot_contracts::{ghost::PtrOwn, *};
 
 struct Cell<T> {
     v: T,

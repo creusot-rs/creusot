@@ -1,4 +1,7 @@
+#[cfg(creusot)]
+use crate::logic::such_that;
 use crate::{
+    invariant::{InhabitedInvariant, Subset},
     logic::{
         Mapping,
         ra::{RA, UnitRA, update::Update},

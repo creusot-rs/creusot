@@ -1,6 +1,5 @@
 use crate::{
     ghost::Plain,
-    invariant::*,
     logic::{Mapping, ops::IndexLogic},
     *,
 };

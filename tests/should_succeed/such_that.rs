@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::such_that, *};
 
 pub fn foo() {
     let x = snapshot!(such_that(|x: Int| x + 1 == 42));

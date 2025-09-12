@@ -1,10 +1,10 @@
 extern crate creusot_contracts;
 use creusot_contracts::{
-    local_invariant::{
+    cell::{PCell, PCellOwn},
+    ghost::local_invariant::{
         LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
     },
     logic::Id,
-    pcell::{PCell, PCellOwn},
     *,
 };
 

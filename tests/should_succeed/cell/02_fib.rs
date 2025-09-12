@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{predcell::PredCell, *};
+use creusot_contracts::{cell::PredCell, *};
 
 #[logic]
 #[open]

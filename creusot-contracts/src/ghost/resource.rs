@@ -1,9 +1,15 @@
 //! Resource algebras
+//!
+//! See [`Resource`].
+
 pub mod fmap_view;
 
 // We use a nested module that we re-export, to make sure that the definitions
 // are opaque to the fmap_view module
 mod m {
+    #[cfg(creusot)]
+    use crate::logic::such_that;
+
     /// A ghost wrapper around a [resource algebra](RA).
     ///
     /// This structure is meant to be manipulated in [`ghost`](mod@ghost) code.
@@ -18,7 +24,7 @@ mod m {
     /// # Example
     ///
     /// ```rust
-    /// use creusot_contracts::{*, resource::Resource, logic::ra::agree::Ag};
+    /// use creusot_contracts::{*, ghost::resource::Resource, logic::ra::agree::Ag};
     /// let mut res: Ghost<Resource<Ag<Int>>> = Resource::alloc(snapshot!(Ag(1)));
     ///
     /// ghost! {

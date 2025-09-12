@@ -3,6 +3,8 @@
 //! This allows a form of interior mutability, using [ghost](mod@crate::ghost) code to keep
 //! track of the logical value.
 
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{Ghost, logic::Id, *};
 use ::std::{cell::UnsafeCell, marker::PhantomData};
 

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{std::mem::size_of_logic, *};
 
 pub fn f() {
     proof_assert!(size_of_logic::<bool>() == 1);

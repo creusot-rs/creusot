@@ -213,7 +213,7 @@ pub fn check(args: TS1, tokens: TS1) -> TS1 {
     if is_closure {
         // Implement `FnGhost` on the closure
         result = quote! {
-            ::creusot_contracts::fn_ghost::FnGhostWrapper::__new(#result)
+            ::creusot_contracts::ghost::FnGhostWrapper::__new(#result)
         }
     }
     result.into()

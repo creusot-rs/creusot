@@ -1,4 +1,6 @@
 use crate::logic::ra::{update::Update, *};
+#[cfg(creusot)]
+use crate::logic::such_that;
 
 impl<T: RA> RA for Option<T> {
     #[logic]

@@ -14,4 +14,4 @@ impl<const X: usize> AddLogic for S<X> {
 pub struct BaseCurrency<I, const D: usize>([I; D]);
 
 // Caused an ICE when computing the specialization graph
-impl<I, const D: usize> creusot_contracts::PartialEq for BaseCurrency<I, D> {}
+impl<I, const D: usize> PartialEq for BaseCurrency<I, D> {}
