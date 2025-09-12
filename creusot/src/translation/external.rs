@@ -199,7 +199,9 @@ pub(crate) fn extract_refines_from_item<'tcx>(
             err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
             err.emit()
         });
-    let parent_sig = ctx.tcx.instantiate_bound_regions_with_erased(ctx.tcx.fn_sig(parent).instantiate_identity());
+    let parent_sig = ctx
+        .tcx
+        .instantiate_bound_regions_with_erased(ctx.tcx.fn_sig(parent).instantiate_identity());
     // Check that the result types match
     let ty1 = parent_sig.output();
     let ty2 = thir[expr].ty;

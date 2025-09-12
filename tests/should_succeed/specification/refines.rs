@@ -95,6 +95,7 @@ pub fn test_ghost_fields2(x: i32) -> i32 {
     a
 }
 
+#[trusted]
 pub unsafe fn test_ptr<'a, T>(x: *mut T) -> &'a T {
     unsafe { &*x }
 }
@@ -102,4 +103,14 @@ pub unsafe fn test_ptr<'a, T>(x: *mut T) -> &'a T {
 #[refines(test_ptr)]
 pub unsafe fn test_ptr2<T>(x: *mut T, own: Ghost<&PtrOwn<T>>) -> &T {
     unsafe { PtrOwn::as_ref(x, own) }
+}
+
+#[trusted]
+pub unsafe fn test_ptr_mut<'a, T>(x: *mut T) -> &'a mut T {
+    unsafe { &mut *x }
+}
+
+#[refines(test_ptr_mut)]
+pub unsafe fn test_ptr_mut2<T>(x: *mut T, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
+    unsafe { PtrOwn::as_mut(x, own) }
 }
