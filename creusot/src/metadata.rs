@@ -1,13 +1,14 @@
 use crate::{
-    ctx::*,
+    ctx::{self, *},
     translation::{external::ExternSpec, pearlite::ScopedTerm},
+    util::Orphan,
 };
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
 use once_map::unsync::OnceMap;
 use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
 use rustc_macros::{TyDecodable, TyEncodable};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::{thir, ty::TyCtxt};
 use rustc_session::config::OutputType;
 use rustc_span::Symbol;
 use std::{
@@ -24,6 +25,7 @@ type ExternSpecs<'tcx> = HashMap<DefId, ExternSpec<'tcx>>;
 pub struct Metadata<'tcx> {
     crates: HashMap<CrateNum, CrateMetadata<'tcx>>,
     extern_specs: ExternSpecs<'tcx>,
+    thir: HashMap<DefId, (thir::Thir<'tcx>, thir::ExprId)>,
 }
 
 impl<'tcx> Metadata<'tcx> {
@@ -52,6 +54,10 @@ impl<'tcx> Metadata<'tcx> {
 
     pub(crate) fn extern_spec(&self, id: DefId) -> Option<&ExternSpec<'tcx>> {
         self.extern_specs.get(&id)
+    }
+
+    pub(crate) fn thir(&self, id: DefId) -> Option<&(thir::Thir<'tcx>, thir::ExprId)> {
+        self.thir.get(&id)
     }
 
     pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, String>) {
@@ -103,7 +109,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         tcx: TyCtxt<'tcx>,
         overrides: &HashMap<String, String>,
         cnum: CrateNum,
-    ) -> Option<(Self, ExternSpecs<'tcx>)> {
+    ) -> Option<(Self, ExternSpecs<'tcx>, Vec<(DefId, ctx::Thir<'tcx>)>)> {
         let base_path = creusot_metadata_base_path(tcx, overrides, cnum);
 
         let binary_path = creusot_metadata_binary_path(base_path.clone());
@@ -119,7 +125,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         meta.creusot_items = metadata.creusot_items;
         meta.params_open_inv = metadata.params_open_inv;
 
-        Some((meta, metadata.extern_specs))
+        Some((meta, metadata.extern_specs, metadata.thir))
     }
 }
 
@@ -133,26 +139,28 @@ pub(crate) struct BinaryMetadata<'tcx> {
     creusot_items: HashMap<Symbol, DefId>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
+    thir: Vec<(DefId, Orphan<ctx::Thir<'tcx>>)>,
 }
 
 impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
         terms: &mut OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
-        items: &HashMap<Symbol, DefId>,
-        extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
-        params_open_inv: &HashMap<DefId, Vec<usize>>,
+        creusot_items: HashMap<Symbol, DefId>,
+        extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
+        params_open_inv: HashMap<DefId, Vec<usize>>,
+        thir: Vec<(DefId, Orphan<ctx::Thir<'tcx>>)>,
     ) -> Self {
         let terms = terms
             .iter_mut()
             .filter(|(def_id, t)| def_id.is_local() && t.is_some())
             .map(|(id, t)| (*id, t.clone().unwrap()))
             .collect();
-
         BinaryMetadata {
             terms,
-            creusot_items: items.clone(),
-            extern_specs: extern_specs.clone(),
-            params_open_inv: params_open_inv.clone(),
+            creusot_items,
+            extern_specs,
+            params_open_inv,
+            thir,
         }
     }
 }

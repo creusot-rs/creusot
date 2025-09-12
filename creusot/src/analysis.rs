@@ -29,7 +29,6 @@ use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
     on_all_children_bits,
 };
-use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::Symbol;
 use rustc_type_ir::TyKind;
 use why3::Ident;
@@ -47,6 +46,7 @@ use crate::{
         function::discriminator_for_switch,
         pearlite::{self, Term},
     },
+    util::Orphan,
 };
 
 type Resolves<'tcx> = Vec<Place<'tcx>>;
@@ -114,25 +114,6 @@ impl<'tcx> BorrowData<'tcx> {
         loc: Location,
     ) -> Vec<(Place<'tcx>, Place<'tcx>, BorrowKind)> {
         self.two_phase_activated.remove(&Orphan(loc)).unwrap_or(vec![])
-    }
-}
-
-/// A newtype to carry orphan trait impls.
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
-struct Orphan<T>(T);
-
-impl<D: Decoder> Decodable<D> for Orphan<Location> {
-    fn decode(decoder: &mut D) -> Self {
-        let block = Decodable::decode(decoder);
-        let statement_index = Decodable::decode(decoder);
-        Orphan(Location { block, statement_index })
-    }
-}
-
-impl<E: Encoder> Encodable<E> for Orphan<Location> {
-    fn encode(&self, encoder: &mut E) {
-        self.0.block.encode(encoder);
-        self.0.statement_index.encode(encoder);
     }
 }
 
