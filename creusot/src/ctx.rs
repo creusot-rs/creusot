@@ -19,6 +19,7 @@ use crate::{
     },
     util::{erased_identity_for_item, parent_module},
 };
+use creusot_metadata::decode_metadata;
 use indexmap::{IndexMap, IndexSet};
 use once_map::unsync::OnceMap;
 use rustc_ast::{
@@ -47,7 +48,8 @@ use rustc_trait_selection::traits::normalize_param_env_or_error;
 use rustc_type_ir::inherent::Ty as _;
 use std::{
     cell::{OnceCell, RefCell},
-    collections::HashMap,
+    collections::{HashMap, HashSet},
+    io::{Read as _, Seek as _},
     ops::Deref,
 };
 use why3::Ident;
@@ -163,6 +165,8 @@ impl<'tcx> HasTyCtxt<'tcx> for TyCtxt<'tcx> {
     }
 }
 
+pub type Thir<'tcx> = (thir::Thir<'tcx>, thir::ExprId);
+
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
@@ -170,8 +174,7 @@ pub struct TranslationCtx<'tcx> {
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
     creusot_items: HashMap<Symbol, DefId>,
-    local_thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
-    extern_thir: HashMap<DefId, (thir::Thir<'tcx>, thir::ExprId)>,
+    local_thir: IndexMap<LocalDefId, Thir<'tcx>>,
     thir_required: RefCell<IndexSet<DefId>>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
@@ -244,7 +247,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             creusot_items,
             opts,
             local_thir: Default::default(),
-            extern_thir: Default::default(),
             thir_required: Default::default(),
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
@@ -290,7 +292,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         match def_id.as_local() {
             None => {
                 self.thir_required.borrow_mut().insert(def_id);
-                self.extern_thir.get(&def_id)
+                self.externs.thir(def_id)
             }
             Some(local) => self.get_local_thir(local),
         }
@@ -424,11 +426,13 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn metadata(&mut self) -> BinaryMetadata<'tcx> {
+        let thir = (),
         BinaryMetadata::from_parts(
             &mut self.terms,
-            &self.creusot_items,
-            &self.extern_specs,
-            &self.params_open_inv,
+            std::mem::take(&mut self.creusot_items),
+            std::mem::take(&mut self.extern_specs),
+            std::mem::take(&mut self.params_open_inv),
+            thir,
         )
     }
 
@@ -535,6 +539,21 @@ impl<'tcx> TranslationCtx<'tcx> {
         &self,
     ) -> impl Iterator<Item = &(LocalDefId, (DefId, GenericArgsRef<'tcx>))> {
         self.refines_to_check.iter()
+    }
+
+    pub(crate) fn dump_thir_required(&self) -> Result<(), Box<dyn std::error::Error>> {
+        if !self.opts.should_output {
+            return Ok(());
+        }
+        // Only run this for primary packages
+        let name = format!(".creusot-refines.{}", self.tcx.crate_name(LOCAL_CRATE));
+        let name = std::path::Path::new(&name);
+        creusot_metadata::encode_metadata(
+            self.tcx,
+            name,
+            self.thir_required.borrow().iter().collect::<Vec<_>>(),
+        )
+        .map_err(|(_, e)| e.into())
     }
 
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
