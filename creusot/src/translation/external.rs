@@ -199,7 +199,7 @@ pub(crate) fn extract_refines_from_item<'tcx>(
             err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
             err.emit()
         });
-    let parent_sig = ctx.tcx.fn_sig(parent).instantiate_identity().skip_binder();
+    let parent_sig = ctx.tcx.instantiate_bound_regions_with_erased(ctx.tcx.fn_sig(parent).instantiate_identity());
     // Check that the result types match
     let ty1 = parent_sig.output();
     let ty2 = thir[expr].ty;
@@ -229,13 +229,16 @@ pub(crate) fn extract_refines_from_item<'tcx>(
 /// `ty1` is equal to either `ty2` or `(ty2, Ghost<_>)`.
 /// We also equate `*mut T` and `*const T`.
 fn refines_ty<'tcx>(tcx: TyCtxt<'tcx>, ty1: Ty<'tcx>, ty2: Ty<'tcx>) -> bool {
-    if ty1 == ty2 { return true }
+    if ty1 == ty2 {
+        return true;
+    }
     match ty1.kind() {
-        TyKind::Tuple(tys) if
-            tys.len() == 2 && refines_ty(tcx, tys[0], ty2) && is_ghost_ty_(tcx, tys[1]) => true,
-        TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = ty2.kind() => {
-            ty1 == ty2
+        TyKind::Tuple(tys)
+            if tys.len() == 2 && refines_ty(tcx, tys[0], ty2) && is_ghost_ty_(tcx, tys[1]) =>
+        {
+            true
         }
+        TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = ty2.kind() => ty1 == ty2,
         _ => false,
     }
 }

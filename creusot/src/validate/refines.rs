@@ -209,10 +209,7 @@ impl<'tcx> AnfOp<'tcx> {
         Self::by_value(OpTag::Call(fun_id, subst), args)
     }
 
-    fn const_(
-        const_id: DefId,
-        subst: ty::GenericArgsRef<'tcx>
-    ) -> Self {
+    fn const_(const_id: DefId, subst: ty::GenericArgsRef<'tcx>) -> Self {
         Self::by_value(OpTag::Const(const_id, subst), [].into())
     }
 
@@ -562,18 +559,20 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 bind_var(stmts, AnfOp::match_(scrutinee, arms))
             }
             Array { fields } => {
-                let fields = fields.iter().map(|field_id|
-                    self.a_normal_form_expr(*field_id, stmts)).collect::<Result<_,_>>()?;
+                let fields = fields
+                    .iter()
+                    .map(|field_id| self.a_normal_form_expr(*field_id, stmts))
+                    .collect::<Result<_, _>>()?;
                 AnfValue::Ctor(Ctor::Array, fields)
             }
             Adt(box AdtExpr { adt_def, variant_index, fields, .. }) => {
-                let fields = fields.iter().map(|field|
-                    self.a_normal_form_expr(field.expr, stmts)).collect::<Result<_,_>>()?;
+                let fields = fields
+                    .iter()
+                    .map(|field| self.a_normal_form_expr(field.expr, stmts))
+                    .collect::<Result<_, _>>()?;
                 AnfValue::Ctor(Ctor::Adt(adt_def.did(), *variant_index), fields)
             }
-            NamedConst { def_id, args, .. } => {
-                bind_var(stmts, AnfOp::const_(*def_id, args))
-            }
+            NamedConst { def_id, args, .. } => bind_var(stmts, AnfOp::const_(*def_id, args)),
             _ => {
                 return Err(self
                     .error(self.span, "failed #[refines] check")
@@ -733,7 +732,10 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                         let mut stmts = Vec::new();
                         let val = self.a_normal_form_block(*else_, &mut stmts)?;
                         let span = self.thir[*else_].span;
-                        AnfOp::letelse(rhs, AnfBlock { pattern: AnfPattern::Wild, stmts, ret: (val, span), span })
+                        AnfOp::letelse(
+                            rhs,
+                            AnfBlock { pattern: AnfPattern::Wild, stmts, ret: (val, span), span },
+                        )
                     }
                 };
                 let lhs = self.a_normal_form_pat(&pattern)?;
@@ -978,10 +980,12 @@ fn check_refines_thir<'a, 'tcx>(
     subst2: ty::GenericArgsRef<'tcx>,
     refines_span: Span,
 ) -> Result<(), ErrorGuaranteed> {
-    let left = a_normal_form(ctx, left, refines_span)?;
+    let left = a_normal_form(ctx, left, refines_span).map_err(|e| {
+        debug!("{:#?}", left.0); e})?;
     // Even when processing `right_thir`, error messages should mention `refines_span`:
     // the span of the function carrying the `#[refines]` attribute.
-    let right = a_normal_form(ctx, right, refines_span)?;
+    let right = a_normal_form(ctx, right, refines_span).map_err(|e| {
+        debug!("{:#?}", right.0); e})?;
     let right = ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2);
     let mut checker = RefineChecker::new(ctx);
     let r = checker.refines(&left, &right);
