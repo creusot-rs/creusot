@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{ghost::PtrOwn, *};
 
 fn foo(x: i32) -> i32 {
     x
@@ -93,4 +93,13 @@ pub fn test_ghost_fields(x: i32) -> i32 {
 pub fn test_ghost_fields2(x: i32) -> i32 {
     let (a, _) = foog(x);
     a
+}
+
+pub unsafe fn test_ptr<'a, T>(x: *mut T) -> &'a T {
+    unsafe { &*x }
+}
+
+#[refines(test_ptr)]
+pub unsafe fn test_ptr2<T>(x: *mut T, own: Ghost<&PtrOwn<T>>) -> &T {
+    unsafe { PtrOwn::as_ref(x, own) }
 }
