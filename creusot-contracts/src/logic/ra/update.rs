@@ -5,8 +5,8 @@ use crate::{
     *,
 };
 
-pub trait Update<R: RA>: Sized {
-    type Choice: Sized;
+pub trait Update<R: RA> {
+    type Choice;
 
     #[logic]
     fn premise(self, from: R) -> bool;
