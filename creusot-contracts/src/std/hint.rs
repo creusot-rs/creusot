@@ -20,9 +20,7 @@ extern_spec! {
 
             #[check(ghost)]
             #[requires(false)]
-            unsafe fn unreachable_unchecked() -> ! {
-                unreachable!()
-            }
+            unsafe fn unreachable_unchecked() -> !;
 
             #[cfg(feature = "nightly")]
             #[check(ghost)]

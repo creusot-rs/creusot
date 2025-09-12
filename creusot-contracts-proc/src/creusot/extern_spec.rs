@@ -166,19 +166,6 @@ impl FlatSpec {
             })
             .collect();
 
-        let block = Block {
-            brace_token: Brace(span), // This sets the span of the function's DefId
-            stmts: vec![Stmt::Expr(
-                Expr::Call(ExprCall {
-                    attrs: Vec::new(),
-                    func: Box::new(Expr::Path(self.path.clone())),
-                    paren_token: Paren::default(),
-                    args,
-                }),
-                None,
-            )],
-        };
-
         let ident = crate::creusot::generate_unique_ident("extern_spec", span);
 
         if let Some(mut data) = self.impl_data {
@@ -250,7 +237,20 @@ impl FlatSpec {
         let mut attrs = self.attrs;
         attrs.push(parse_quote! { #[allow(dead_code, non_snake_case)] });
 
+        let call = Expr::Call(ExprCall {
+            attrs: Vec::new(),
+            func: Box::new(Expr::Path(self.path.clone())),
+            paren_token: Paren::default(),
+            args,
+        });
         let f_with_body = if let Some(mut b) = self.body {
+            let refines_stmt = parse_quote! {
+                let _ =
+                    #[creusot::no_translate]
+                    #[creusot::spec::refines]
+                    || #call;
+            };
+            b.stmts.insert(0, refines_stmt);
             escape_self_in_block(&mut b);
             let mut sig = sig.clone();
             sig.ident = Ident::new(&format!("{}_body", self.doc_item_name.0), sig.ident.span());
@@ -260,6 +260,10 @@ impl FlatSpec {
             None
         };
 
+        let block = Block {
+            brace_token: Brace(span), // This sets the span of the function's DefId
+            stmts: vec![Stmt::Expr(call, None)],
+        };
         let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(block) };
 
         quote_spanned! {span=> #[creusot::no_translate] #[creusot::extern_spec] #f #f_with_body }
