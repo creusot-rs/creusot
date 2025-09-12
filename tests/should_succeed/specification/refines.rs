@@ -21,35 +21,35 @@ fn baz<const N: i32>() -> i32 {
 }
 
 trait Quux {
-    fn quux(&self) -> i32;
+    fn quux(&self);
 }
 
 impl Quux for i32 {
-    fn quux(&self) -> i32 {
-        foo(*self)
+    fn quux(&self) {
+        let _ = foo(*self);
     }
 }
 
 #[refines(<i32 as Quux>::quux)]
-fn quux2(x: &i32, y: Ghost<Int>) -> i32 {
-    foo2(*x, y)
+fn quux2(x: &i32, y: Ghost<Int>) {
+    let _ = foo2(*x, y);
 }
 
 pub fn test_foo(x: i32) -> i32 {
     let a = foo(x);
-    let b = foo(x);
+    let b = foo(a);
     let c = baz::<42>();
-    let c = c.quux();
-    a + b + c + 42
+    c.quux();
+    if -10 < a && a < 10 && -10 < b && b < 10 { a + b } else { c }
 }
 
 #[refines(test_foo)]
 pub fn test_foo2(x: i32, y: Ghost<Int>) -> i32 {
     let a = foo(x);
-    let b = foo2(x, y);
+    let b = foo2(a, y);
     let c = baz::<42>();
-    let c = quux2(&c, y);
-    a + b + c + 42
+    quux2(&c, y);
+    if -10 < a && a < 10 && -10 < b && b < 10 { a + b } else { c }
 }
 
 // Test handling of reference arguments (autoref and reborrows)
