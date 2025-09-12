@@ -20,19 +20,21 @@ use rustc_hir::{
     HirId,
     def_id::{DefId, LocalDefId},
 };
-use rustc_macros::{TypeFoldable, TypeVisitable};
+use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     middle::region::ScopeTree,
     mir,
     thir::{self, AdtExpr, ArmId, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir},
     ty::{self, TyCtxt, adjustment::PointerCoercion::MutToConstPointer},
 };
-use rustc_span::{ErrorGuaranteed, Span};
+use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
+use rustc_span::{ErrorGuaranteed, Span, SpanDecoder, SpanEncoder};
 
 use crate::{
     backend::is_trusted_item,
     contracts_items::{is_ptr_own_as_mut, is_ptr_own_as_ref, is_refines, is_spec},
     ctx::{HasTyCtxt, TranslationCtx},
+    util::{ODecodable, OEncodable},
     validate::{ghost::is_ghost_ty_, is_ghost_block},
 };
 
@@ -57,25 +59,44 @@ fn check_refines<'tcx>(
     if is_trusted_item(ctx.tcx, left.to_def_id()) {
         return Ok(());
     }
+    let left_span = ctx.def_span(left);
     let Some(left_thir) = ctx.get_local_thir(left) else {
-        return Err(ctx.error(ctx.def_span(left), "#[refines] function must have a body").emit());
+        return Err(ctx.error(left_span, "#[refines] function must have a body").emit());
     };
-    let Some(right_thir) = ctx.get_thir(right) else {
-        return Err(ctx.error(ctx.def_span(right), "Refined function must have a body").emit());
+    let right = match right.as_local() {
+        None => match ctx.anf_thir(right) {
+            None => {
+                ctx.warn(left_span, "Missing body for #[refines] check");
+                return Ok(());
+            }
+            Some(anf) => anf,
+        },
+        Some(right) => {
+            let Some(right_thir) = ctx.get_local_thir(right) else {
+                return Err(ctx
+                    .error(ctx.def_span(right), "Refined function must have a body")
+                    .emit());
+            };
+            let right_scope = ctx.tcx.region_scope_tree(right);
+            // Even when processing `right_thir`, error messages should mention `refines_span`:
+            // the span of the function carrying the `#[refines]` attribute.
+            let right = a_normal_form(ctx, (right_thir, right_scope), left_span).map_err(|e| {
+                debug!("{:#?}", right_thir);
+                e
+            })?;
+            &ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2)
+        }
     };
     let left_scope = ctx.tcx.region_scope_tree(left);
-    let right_scope = ctx.tcx.region_scope_tree(right);
-    check_refines_thir(
-        ctx,
-        (left_thir, left_scope),
-        (right_thir, right_scope),
-        subst2,
-        ctx.def_span(left),
-    )
+    let left = a_normal_form(ctx, (left_thir, left_scope), left_span).map_err(|e| {
+        debug!("{:#?}", left_thir);
+        e
+    })?;
+    check_refines_thir(ctx, &left, right, left_span)
 }
 
-#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
-struct AnfBlock<'tcx> {
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable, TyEncodable, TyDecodable)]
+pub(crate) struct AnfBlock<'tcx> {
     /// For `fn` arguments (as a `Ctor(Ctor::Tuple, _, _)`) and `match` patterns
     /// Otherwise `Wild`.
     pattern: AnfPattern,
@@ -94,7 +115,32 @@ enum Var {
     ),
 }
 
-#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
+impl<D: SpanDecoder> Decodable<D> for Var {
+    fn decode(d: &mut D) -> Self {
+        if d.read_bool() {
+            Var::HirId(Decodable::decode(d))
+        } else {
+            Var::ExprId(ODecodable::odecode(d))
+        }
+    }
+}
+
+impl<E: SpanEncoder> Encodable<E> for Var {
+    fn encode(&self, e: &mut E) {
+        match self {
+            Var::HirId(v) => {
+                e.emit_bool(true);
+                v.encode(e)
+            }
+            Var::ExprId(v) => {
+                e.emit_bool(false);
+                v.oencode(e)
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable, TyEncodable, TyDecodable)]
 struct AnfStmt<'tcx> {
     pattern: AnfPattern,
     rhs: AnfOp<'tcx>,
@@ -135,7 +181,7 @@ struct AnfStmt<'tcx> {
 /// let w = 1
 /// f(w, x)
 /// ```
-#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable, TyEncodable, TyDecodable)]
 struct AnfOp<'tcx> {
     tag: OpTag<'tcx>,
     args: Box<[(AnfValue<'tcx>, Span)]>,
@@ -143,7 +189,7 @@ struct AnfOp<'tcx> {
 }
 
 /// Tag for `AnfOp`
-#[derive(Clone, Copy, Debug, PartialEq, TypeVisitable, TypeFoldable)]
+#[derive(Clone, Copy, Debug, PartialEq, TypeVisitable, TypeFoldable, TyEncodable, TyDecodable)]
 enum OpTag<'tcx> {
     Value,
     Deref,
@@ -255,14 +301,14 @@ impl<'tcx> AnfOp<'tcx> {
     }
 }
 
-#[derive(Clone, Debug, TypeVisitable, TypeFoldable)]
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 enum AnfPattern {
     Wild,
     Var(Var),
     Ctor(Ctor, Box<[AnfPattern]>, Span),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 enum AnfValue<'tcx> {
     Unit,
     Var(Var),
@@ -278,14 +324,14 @@ enum AnfValue<'tcx> {
     Ctor(Ctor, Box<[(AnfValue<'tcx>, Span)]>),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 enum Ctor {
     Adt(DefId, VariantIdx),
     Tuple,
     Array,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 struct AnfPlace<'tcx> {
     base: AnfPlaceBase<'tcx>,
     projections: Vec<AnfProjection>,
@@ -308,7 +354,7 @@ impl<'tcx> AnfPlace<'tcx> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 enum AnfProjection {
     Deref { unsafe_: bool },
 }
@@ -322,7 +368,7 @@ impl AnfProjection {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 enum AnfPlaceBase<'tcx> {
     MutVar(Var),
     /// This ANF conversion may skip binding immutable variables, so we record their value here instead.
@@ -343,19 +389,19 @@ impl<'tcx> AnfPlace<'tcx> {
     }
 }
 
-// `thir::LogicalOp` does not implement `Eq` and `TypeVisitable`...
-#[derive(Clone, Copy, Debug, TypeVisitable, TypeFoldable)]
-struct LogicalOp(
-    #[type_visitable(ignore)]
-    #[type_foldable(identity)]
-    thir::LogicalOp,
-);
-
 impl<'tcx> From<thir::LogicalOp> for OpTag<'tcx> {
     fn from(op: thir::LogicalOp) -> Self {
         OpTag::LogicalOp(LogicalOp(op))
     }
 }
+
+/// `thir::LogicalOp` does not implement `PartialEq`...
+#[derive(Debug, Clone, Copy, TypeVisitable, TypeFoldable)]
+struct LogicalOp(
+    #[type_visitable(ignore)]
+    #[type_foldable(identity)]
+    thir::LogicalOp,
+);
 
 impl PartialEq<LogicalOp> for LogicalOp {
     fn eq(&self, rhs: &Self) -> bool {
@@ -368,6 +414,23 @@ impl PartialEq<LogicalOp> for LogicalOp {
 }
 
 impl Eq for LogicalOp {}
+
+impl<E: Encoder> Encodable<E> for LogicalOp {
+    fn encode(&self, e: &mut E) {
+        use thir::LogicalOp::*;
+        e.emit_bool(match self.0 {
+            And => true,
+            Or => false,
+        })
+    }
+}
+
+impl<D: Decoder> Decodable<D> for LogicalOp {
+    fn decode(d: &mut D) -> Self {
+        use thir::LogicalOp::*;
+        Self(if d.read_bool() { And } else { Or })
+    }
+}
 
 /// State for computing A-normal form
 struct AnfContext<'a, 'tcx> {
@@ -1015,24 +1078,12 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
     }
 }
 
-fn check_refines_thir<'a, 'tcx>(
+fn check_refines_thir<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    left: (&'a (Thir<'tcx>, ExprId), &'a ScopeTree),
-    right: (&'a (Thir<'tcx>, ExprId), &'a ScopeTree),
-    subst2: ty::GenericArgsRef<'tcx>,
+    left: &AnfBlock<'tcx>,
+    right: &AnfBlock<'tcx>,
     refines_span: Span,
 ) -> Result<(), ErrorGuaranteed> {
-    let left = a_normal_form(ctx, left, refines_span).map_err(|e| {
-        debug!("{:#?}", left.0);
-        e
-    })?;
-    // Even when processing `right_thir`, error messages should mention `refines_span`:
-    // the span of the function carrying the `#[refines]` attribute.
-    let right = a_normal_form(ctx, right, refines_span).map_err(|e| {
-        debug!("{:#?}", right.0);
-        e
-    })?;
-    let right = ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2);
     let mut checker = RefineChecker::new(ctx);
     let r = checker.refines(&left, &right);
     if r.is_err() {
