@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{
     local_invariant::{
-        LocalInvariant, LocalInvariantExt as _, LocalInvariantSpec, Tokens, declare_namespace,
+        LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
     },
     logic::Id,
     pcell::{PCell, PCellOwn},
@@ -23,11 +23,11 @@ impl<T: Invariant> Invariant for CellInv<T> {
 }
 
 struct PCellLocalInv<T>(PCellOwn<T>);
-impl<T: Invariant> LocalInvariantSpec for PCellLocalInv<T> {
+impl<T: Invariant> Protocol for PCellLocalInv<T> {
     type Public = Id;
 
     #[logic]
-    fn invariant_with_data(self, id: Id) -> bool {
+    fn protocol(self, id: Id) -> bool {
         self.0.id() == id
     }
 }

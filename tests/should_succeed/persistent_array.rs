@@ -6,7 +6,7 @@ pub mod implementation {
     use creusot_contracts::{
         Clone,
         local_invariant::{
-            LocalInvariant, LocalInvariantExt as _, LocalInvariantSpec, Tokens, declare_namespace,
+            LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
         },
         logic::{FMap, Id, Mapping},
         pcell::{PCell, PCellOwn},
@@ -90,11 +90,11 @@ pub mod implementation {
         depth: Snapshot<Mapping<Id, Int>>,
     }
 
-    impl<T> LocalInvariantSpec for PA<T> {
+    impl<T> Protocol for PA<T> {
         type Public = Id;
 
         #[logic]
-        fn invariant_with_data(self, resource_id: Id) -> bool {
+        fn protocol(self, resource_id: Id) -> bool {
             pearlite! {
                 self.auth.id() == resource_id &&
                 forall<id> self.auth@.contains(id) ==>
@@ -192,7 +192,7 @@ pub mod implementation {
             })
         }
 
-        #[requires(exists<p> inv.invariant_with_data(p))]
+        #[requires(exists<p> inv.protocol(p))]
         #[requires(inv.auth@.contains(inner@.id()))]
         #[requires(i@ < inv.auth@[inner@.id()].len())]
         #[ensures(*result == inv.auth@[inner@.id()][i@])]
@@ -239,9 +239,9 @@ pub mod implementation {
         /// # Safety
         ///
         /// See the [safety section](PersistentArray#safety) on the type documentation.
-        #[requires(pa.invariant_with_data(*auth_id))]
+        #[requires(pa.protocol(*auth_id))]
         #[requires(pa.auth@.contains(inner@.id()))]
-        #[ensures((^pa).invariant_with_data(*auth_id))]
+        #[ensures((^pa).protocol(*auth_id))]
         #[ensures((^pa).auth == pa.auth)]
         #[ensures(forall<id> pa.depth[id] > pa.depth[inner@.id()]
             ==> pa.perms.get(id) == (^pa).perms.get(id)
