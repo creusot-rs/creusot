@@ -19,7 +19,7 @@ use crate::{
     },
     util::{erased_identity_for_item, parent_module},
 };
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use once_map::unsync::OnceMap;
 use rustc_ast::{
     Fn, FnSig, NodeId,
@@ -174,6 +174,8 @@ pub struct TranslationCtx<'tcx> {
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
     pub(crate) refines: HashMap<DefId, Refined<'tcx>>,
+    thir_required: RefCell<IndexSet<DefId>>,
+    extern_thir: HashMap<DefId, (thir::Thir<'tcx>, thir::ExprId)>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
@@ -242,6 +244,8 @@ impl<'tcx> TranslationCtx<'tcx> {
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
             refines: Default::default(),
+            thir_required: Default::default(),
+            extern_thir: Default::default(),
             fmir_body: Default::default(),
             trait_impl: Default::default(),
             sig: Default::default(),
@@ -271,8 +275,21 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     /// If this returns `None`, there must have been a type error in the body.
     /// Callers can then skip whatever they were doing silently because Creusot will abort in the end (in `after_analysis`).
-    pub(crate) fn get_thir(&self, def_id: LocalDefId) -> Option<(&thir::Thir<'tcx>, thir::ExprId)> {
-        self.thir.get(&def_id).map(|&(ref thir, expr)| (thir, expr))
+    pub(crate) fn get_local_thir(
+        &self,
+        def_id: LocalDefId,
+    ) -> Option<&(thir::Thir<'tcx>, thir::ExprId)> {
+        self.thir.get(&def_id)
+    }
+
+    pub(crate) fn get_thir(&self, def_id: DefId) -> Option<&(thir::Thir<'tcx>, thir::ExprId)> {
+        match def_id.as_local() {
+            None => {
+                self.thir_required.borrow_mut().insert(def_id);
+                self.extern_thir.get(&def_id)
+            }
+            Some(local) => self.get_local_thir(local),
+        }
     }
 
     queryish!(trait_impl, DefId, Vec<Refinement<'tcx>>, translate_impl);

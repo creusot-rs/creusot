@@ -34,6 +34,10 @@ use crate::{
 };
 
 pub(crate) fn validate_refines(ctx: &TranslationCtx) {
+    // Only do the refines check for the primary package
+    if !ctx.opts.should_output {
+        return;
+    }
     let mut err = Ok(());
     for (left, right) in ctx.refines.iter() {
         err = check_refines(ctx, *left, right.resolved).and(err);
@@ -60,14 +64,7 @@ fn check_refines<'tcx>(
             )
             .emit());
     };
-    let Some(right_local) = right.as_local() else {
-        ctx.warn(
-            ctx.def_span(right),
-            "Refined function must be local (refining extern functions is not implemented)",
-        );
-        return Ok(());
-    };
-    let Some(right_thir) = ctx.thir.get(&right_local) else {
+    let Some(right_thir) = ctx.get_thir(right) else {
         return Err(ctx
             .error(
                 ctx.def_span(right),
