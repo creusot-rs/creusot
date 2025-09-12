@@ -178,12 +178,19 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
     }
 }
 
-// This is similar logic to `extract_extern_specs_from_item` above.
+// There's probably a better place for the following.
+// It is here because it is similar logic to `extract_extern_specs_from_item` above.
+
+/// Input: `local_def_id` of a `#[creusot::spec::refines]` closure.
+/// Output:
+/// - `LocalDefId` of the original `#[refines]` item (the parent of the input id)
+/// - `Refined<'tcx>` info about the refined function for callers
+/// - `(DefId, GenericArgsRef)` of the actual body of the refined function
 pub(crate) fn extract_refines_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     local_def_id: LocalDefId,
     &(ref thir, expr): &(Thir<'tcx>, thir::ExprId),
-) -> (DefId, Refined<'tcx>) {
+) -> (LocalDefId, Refined<'tcx>, (DefId, GenericArgsRef<'tcx>)) {
     let def_id = local_def_id.to_def_id();
     let parent = ctx.tcx.parent(def_id);
     let span = ctx.def_span(def_id);
@@ -219,12 +226,9 @@ pub(crate) fn extract_refines_from_item<'tcx>(
     }
     let refine_args = parent_sig.inputs().iter().map(|arg| is_ghost_ty_(ctx.tcx, *arg)).collect();
     (
-        parent,
-        Refined {
-            thir: (id_thir, subst_thir),
-            resolved: (id_resolved, subst_resolved),
-            erase_args: refine_args,
-        },
+        parent.expect_local(),
+        Refined { def: (id_thir, subst_thir), erase_args: refine_args },
+        (id_resolved, subst_resolved),
     )
 }
 

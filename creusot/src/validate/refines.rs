@@ -16,7 +16,10 @@ use std::collections::HashMap;
 
 use rustc_abi::VariantIdx;
 use rustc_ast::{BindingMode, ByRef, Mutability};
-use rustc_hir::{HirId, def_id::DefId};
+use rustc_hir::{
+    HirId,
+    def_id::{DefId, LocalDefId},
+};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     middle::region::ScopeTree,
@@ -35,42 +38,30 @@ use crate::{
 
 pub(crate) fn validate_refines(ctx: &TranslationCtx) {
     // Only do the refines check for the primary package
+    // to minimize the number of THIR bodies stored by dependencies
     if !ctx.opts.should_output {
         return;
     }
     let mut err = Ok(());
-    for (left, right) in ctx.refines.iter() {
-        err = check_refines(ctx, *left, right.resolved).and(err);
+    for (left, right) in ctx.iter_refines_to_check() {
+        err = check_refines(ctx, *left, *right).and(err);
     }
     err.unwrap_or_else(|e| e.raise_fatal())
 }
 
 fn check_refines<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    left: DefId,
+    left: LocalDefId,
     (right, subst2): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Result<(), ErrorGuaranteed> {
-    if is_trusted_item(ctx.tcx, left) {
+    if is_trusted_item(ctx.tcx, left.to_def_id()) {
         return Ok(());
     }
-    let Some(left_local) = left.as_local() else {
-        return Err(ctx.error(ctx.def_span(left), "Refining function must be local").emit());
-    };
-    let Some(left_thir) = ctx.get_local_thir(left_local) else {
-        return Err(ctx
-            .error(
-                ctx.def_span(left),
-                "#[refines] function must have a body",
-            )
-            .emit());
+    let Some(left_thir) = ctx.get_local_thir(left) else {
+        return Err(ctx.error(ctx.def_span(left), "#[refines] function must have a body").emit());
     };
     let Some(right_thir) = ctx.get_thir(right) else {
-        return Err(ctx
-            .error(
-                ctx.def_span(right),
-                "Refined function must have a body",
-            )
-            .emit());
+        return Err(ctx.error(ctx.def_span(right), "Refined function must have a body").emit());
     };
     let left_scope = ctx.tcx.region_scope_tree(left);
     let right_scope = ctx.tcx.region_scope_tree(right);
@@ -487,9 +478,9 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                                 .zip(&refined.erase_args)
                                 .filter_map(|(arg, &erase)| if erase { None } else { Some(arg) })
                                 .collect();
-                            let subst = ty::EarlyBinder::bind(refined.thir.1)
-                                .instantiate(self.tcx(), subst);
-                            (refined.thir.0, subst, args)
+                            let subst =
+                                ty::EarlyBinder::bind(refined.def.1).instantiate(self.tcx(), subst);
+                            (refined.def.0, subst, args)
                         } else if is_ptr_own_as_ref(self.tcx(), fun_id)
                             || is_ptr_own_as_mut(self.tcx(), fun_id)
                         {
