@@ -170,7 +170,7 @@ pub struct TranslationCtx<'tcx> {
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
     creusot_items: HashMap<Symbol, DefId>,
-    pub(crate) thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
+    local_thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
     pub(crate) refines: HashMap<DefId, Refined<'tcx>>,
@@ -254,7 +254,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             renamer: Default::default(),
             corenamer: Default::default(),
             crate_name: Default::default(),
-            thir: Default::default(),
+            local_thir: Default::default(),
         }
     }
 
@@ -268,7 +268,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             // If a body is missing, it means that there was an error, and we know that because `Err` is `ErrorGuaranteed`.
             // Keep going. We will abort later in `translation::after_analysis` after doing more checks that could raise more errors.
             if let Ok((thir, expr0)) = self.tcx.thir_body(def_id) {
-                self.thir.insert(def_id, (thir.borrow().clone(), expr0));
+                self.local_thir.insert(def_id, (thir.borrow().clone(), expr0));
             }
         }
     }
@@ -279,7 +279,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         &self,
         def_id: LocalDefId,
     ) -> Option<&(thir::Thir<'tcx>, thir::ExprId)> {
-        self.thir.get(&def_id)
+        self.local_thir.get(&def_id)
     }
 
     pub(crate) fn get_thir(&self, def_id: DefId) -> Option<&(thir::Thir<'tcx>, thir::ExprId)> {
@@ -290,6 +290,10 @@ impl<'tcx> TranslationCtx<'tcx> {
             }
             Some(local) => self.get_local_thir(local),
         }
+    }
+
+    pub(crate) fn iter_local_thir(&self) -> impl Iterator<Item = (&LocalDefId, &(thir::Thir<'tcx>, thir::ExprId))> {
+        self.local_thir.iter()
     }
 
     queryish!(trait_impl, DefId, Vec<Refinement<'tcx>>, translate_impl);
@@ -468,7 +472,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn load_extern_specs(&mut self) {
         let mut traits_or_impls = Vec::new();
 
-        for (&def_id, thir) in self.thir.iter() {
+        for (&def_id, thir) in self.local_thir.iter() {
             if is_extern_spec(self.tcx, def_id.to_def_id()) {
                 if let Some(container) = self.opt_associated_item(def_id.to_def_id()) {
                     traits_or_impls.push(container.def_id)
@@ -512,7 +516,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn load_refines(&mut self) {
-        for (&def_id, thir) in self.thir.iter() {
+        for (&def_id, thir) in self.local_thir.iter() {
             if is_refines(self.tcx, def_id.to_def_id()) {
                 let (refiner, refined) = extract_refines_from_item(self, def_id, thir);
                 self.refines.insert(refiner, refined);
