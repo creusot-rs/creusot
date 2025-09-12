@@ -14,13 +14,14 @@
 //! We solve that by transforming THIR expressions to A-normal form.
 use std::collections::HashMap;
 
+use rustc_abi::VariantIdx;
 use rustc_ast::{BindingMode, ByRef, Mutability};
 use rustc_hir::{HirId, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     middle::region::ScopeTree,
-    mir::BinOp,
-    thir::{self, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir},
+    mir,
+    thir::{self, AdtExpr, ArmId, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir},
     ty::{self, TyCtxt},
 };
 use rustc_span::{ErrorGuaranteed, Span};
@@ -126,10 +127,6 @@ struct AnfStmt<'tcx> {
 /// The third field contains sub-blocks of control structures (`if`, `match`, `let-else`).
 /// For constructs other than `match`, the arms have their `pattern` field default to `Wild`.
 ///
-/// When comparing two ASTs, if the `GenericOp` tag matches, then the second fields
-/// must have the same length. But the third fields may differ in length (e.g., `match`
-/// with different arms, `if` (or `let`) with or without `else`)
-///
 /// We inline values into statements. That makes it easier to deal with case like this:
 /// ```
 /// f(1, g())
@@ -164,13 +161,19 @@ enum OpTag<'tcx> {
     Value,
     Deref,
     Read,
-    BinOp(BinOp),
+    BinOp(mir::BinOp),
+    UnOp(mir::UnOp),
     LogicalOp(LogicalOp),
     Call(DefId, ty::GenericArgsRef<'tcx>),
+    Const(DefId, ty::GenericArgsRef<'tcx>),
     Return,
+    IfLet,
     If,
     Match,
     LetElse,
+    Loop,
+    /// `match` guards are represented by a `Guard` statement at the start of a block
+    Guard,
 }
 
 impl<'tcx> AnfOp<'tcx> {
@@ -190,8 +193,12 @@ impl<'tcx> AnfOp<'tcx> {
         Self::by_value(OpTag::Read, [arg].into())
     }
 
-    fn binop(op: BinOp, arg1: (AnfValue<'tcx>, Span), arg2: (AnfValue<'tcx>, Span)) -> Self {
+    fn binary(op: mir::BinOp, arg1: (AnfValue<'tcx>, Span), arg2: (AnfValue<'tcx>, Span)) -> Self {
         Self::by_value(OpTag::BinOp(op), [arg1, arg2].into())
+    }
+
+    fn unary(op: mir::UnOp, arg: (AnfValue<'tcx>, Span)) -> Self {
+        Self::by_value(OpTag::UnOp(op), [arg].into())
     }
 
     fn call(
@@ -202,9 +209,21 @@ impl<'tcx> AnfOp<'tcx> {
         Self::by_value(OpTag::Call(fun_id, subst), args)
     }
 
-    /// We expand `return;` to `return ();`
-    fn return_(res: (AnfValue<'tcx>, Span)) -> Self {
-        Self::by_value(OpTag::Return, [res].into())
+    fn const_(
+        const_id: DefId,
+        subst: ty::GenericArgsRef<'tcx>
+    ) -> Self {
+        Self::by_value(OpTag::Const(const_id, subst), [].into())
+    }
+
+    fn return_(res: Option<(AnfValue<'tcx>, Span)>) -> Self {
+        Self::by_value(OpTag::Return, res.into_iter().collect())
+    }
+
+    /// The body of the `if let` is ANF-ed into preceding statements:
+    /// `if let pat = f(x)` -> `if let y = f(x) && let pat = y`
+    fn iflet(val: (AnfValue<'tcx>, Span)) -> Self {
+        Self::by_value(OpTag::IfLet, [val].into())
     }
 
     fn control(
@@ -215,20 +234,34 @@ impl<'tcx> AnfOp<'tcx> {
         Self { tag, args, arms }
     }
 
-    fn if_(
-        cond: (AnfValue<'tcx>, Span),
-        then: AnfBlock<'tcx>,
-        else_: Option<AnfBlock<'tcx>>,
-    ) -> Self {
+    /// `cond` is a block instead of a ANF value because it may contain `if let`
+    /// which has special semantics
+    fn if_(cond: AnfBlock<'tcx>, then: AnfBlock<'tcx>, else_: Option<AnfBlock<'tcx>>) -> Self {
         let arms = match else_ {
-            None => [then].into(),
-            Some(else_) => [then, else_].into(),
+            None => [cond, then].into(),
+            Some(else_) => [cond, then, else_].into(),
         };
-        Self::control(OpTag::If, [cond].into(), arms)
+        Self::control(OpTag::If, [].into(), arms)
     }
 
     fn logicalop(op: thir::LogicalOp, lhs: AnfBlock<'tcx>, rhs: AnfBlock<'tcx>) -> Self {
         Self::control(op.into(), [].into(), [lhs, rhs].into())
+    }
+
+    fn loop_(body: AnfBlock<'tcx>) -> Self {
+        Self::control(OpTag::Loop, [].into(), [body].into())
+    }
+
+    fn match_(scrutinee: (AnfValue<'tcx>, Span), arms: Box<[AnfBlock<'tcx>]>) -> Self {
+        Self::control(OpTag::Match, [scrutinee].into(), arms)
+    }
+
+    fn guard(cond: AnfBlock<'tcx>) -> Self {
+        Self::control(OpTag::Guard, [].into(), [cond].into())
+    }
+
+    fn letelse(val: (AnfValue<'tcx>, Span), else_: AnfBlock<'tcx>) -> Self {
+        Self::control(OpTag::LetElse, [val].into(), [else_].into())
     }
 }
 
@@ -241,7 +274,7 @@ enum AnfPattern {
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
 enum AnfValue<'tcx> {
-    Zst,
+    Unit,
     Var(Var),
     Fn(DefId, ty::GenericArgsRef<'tcx>),
     Literal(
@@ -257,8 +290,9 @@ enum AnfValue<'tcx> {
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
 enum Ctor {
-    Adt(DefId),
+    Adt(DefId, VariantIdx),
     Tuple,
+    Array,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
@@ -338,7 +372,7 @@ fn a_normal_form<'tcx>(
 ) -> Result<AnfBlock<'tcx>, ErrorGuaranteed> {
     let mut ctx = AnfContext::new(ctx, thir, scope_tree, def_span);
     let pattern = ctx.a_normal_form_args()?;
-    ctx.a_normal_form_expr_block_(*expr, pattern, None)
+    ctx.a_normal_form_expr_block_(*expr, pattern, Vec::new(), None)
 }
 
 impl<'a, 'tcx> HasTyCtxt<'tcx> for AnfContext<'a, 'tcx> {
@@ -397,7 +431,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 if let Some(hir_id) = region_scope.hir_id(self.scope_tree)
                     && is_ghost_block(self.tcx(), hir_id)
                 {
-                    AnfValue::Zst
+                    AnfValue::Unit
                 } else {
                     self.a_normal_form_expr(*value, stmts)?.0
                 }
@@ -446,12 +480,16 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             }
             ZstLiteral { .. } => match expr.ty.kind() {
                 ty::TyKind::FnDef(def_id, subst) => AnfValue::Fn(*def_id, subst),
-                _ => AnfValue::Zst,
+                _ => AnfValue::Unit,
             },
             Binary { op, lhs, rhs } => {
                 let lhs = self.a_normal_form_expr(*lhs, stmts)?;
                 let rhs = self.a_normal_form_expr(*rhs, stmts)?;
-                bind_var(stmts, AnfOp::binop(*op, lhs, rhs))
+                bind_var(stmts, AnfOp::binary(*op, lhs, rhs))
+            }
+            Unary { op, arg } => {
+                let arg = self.a_normal_form_expr(*arg, stmts)?;
+                bind_var(stmts, AnfOp::unary(*op, arg))
             }
             LogicalOp { op, lhs, rhs } => {
                 let lhs = self.a_normal_form_expr_block(*lhs)?;
@@ -489,23 +527,52 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 }
             }
             If { cond, then, else_opt, .. } => {
-                let cond = self.a_normal_form_expr(*cond, stmts)?;
+                let cond = self.a_normal_form_expr_block(*cond)?;
                 let then = self.a_normal_form_expr_block(*then)?;
                 let else_ =
                     else_opt.map(|else_| self.a_normal_form_expr_block(else_)).transpose()?;
                 bind_var(stmts, AnfOp::if_(cond, then, else_))
             }
             Return { value } => {
-                let value = match value {
-                    None => (AnfValue::Ctor(Ctor::Tuple, [].into()), expr.span),
-                    Some(value) => self.a_normal_form_expr(*value, stmts)?,
-                };
+                let value = value.map(|value| self.a_normal_form_expr(value, stmts)).transpose()?;
                 stmts.push(AnfStmt {
                     pattern: AnfPattern::Wild,
                     rhs: AnfOp::return_(value),
                     span: expr.span,
                 });
-                AnfValue::Zst
+                AnfValue::Unit
+            }
+            NeverToAny { source } => return self.a_normal_form_expr(*source, stmts),
+            Loop { body } => {
+                let body = self.a_normal_form_expr_block(*body)?;
+                bind_var(stmts, AnfOp::loop_(body))
+            }
+            Let { pat, expr: body } => {
+                let val = self.a_normal_form_expr(*body, stmts)?;
+                let pattern = self.a_normal_form_pat(&pat)?;
+                stmts.push(AnfStmt { pattern, rhs: AnfOp::iflet(val), span: expr.span });
+                AnfValue::Unit
+            }
+            Match { scrutinee, arms, .. } => {
+                let scrutinee = self.a_normal_form_expr(*scrutinee, stmts)?;
+                let arms = arms
+                    .iter()
+                    .map(|arm| self.a_normal_form_arm(*arm))
+                    .collect::<Result<_, _>>()?;
+                bind_var(stmts, AnfOp::match_(scrutinee, arms))
+            }
+            Array { fields } => {
+                let fields = fields.iter().map(|field_id|
+                    self.a_normal_form_expr(*field_id, stmts)).collect::<Result<_,_>>()?;
+                AnfValue::Ctor(Ctor::Array, fields)
+            }
+            Adt(box AdtExpr { adt_def, variant_index, fields, .. }) => {
+                let fields = fields.iter().map(|field|
+                    self.a_normal_form_expr(field.expr, stmts)).collect::<Result<_,_>>()?;
+                AnfValue::Ctor(Ctor::Adt(adt_def.did(), *variant_index), fields)
+            }
+            NamedConst { def_id, args, .. } => {
+                bind_var(stmts, AnfOp::const_(*def_id, args))
             }
             _ => {
                 return Err(self
@@ -565,7 +632,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             self.a_normal_form_stmt(*stmt, stmts)?;
         }
         match block.expr {
-            None => Ok(AnfValue::Zst),
+            None => Ok(AnfValue::Unit),
             Some(e) => Ok(self.a_normal_form_expr(e, stmts)?.0),
         }
     }
@@ -574,19 +641,36 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         &mut self,
         expr_id: ExprId,
     ) -> Result<AnfBlock<'tcx>, ErrorGuaranteed> {
-        self.a_normal_form_expr_block_(expr_id, AnfPattern::Wild, None)
+        self.a_normal_form_expr_block_(expr_id, AnfPattern::Wild, Vec::new(), None)
     }
 
     fn a_normal_form_expr_block_(
         &mut self,
         expr_id: ExprId,
         pattern: AnfPattern,
+        mut stmts: Vec<AnfStmt<'tcx>>,
         span: Option<Span>,
     ) -> Result<AnfBlock<'tcx>, ErrorGuaranteed> {
-        let mut stmts = Vec::new();
         let ret = self.a_normal_form_expr(expr_id, &mut stmts)?;
         let span = span.unwrap_or(ret.1);
         Ok(AnfBlock { pattern, stmts, ret, span })
+    }
+
+    fn a_normal_form_arm(&mut self, arm_id: ArmId) -> Result<AnfBlock<'tcx>, ErrorGuaranteed> {
+        let arm = &self.thir[arm_id];
+        let pattern = self.a_normal_form_pat(&arm.pattern)?;
+        let stmts = match &arm.guard {
+            Some(guard) => {
+                let guard = self.a_normal_form_expr_block(*guard)?;
+                vec![AnfStmt {
+                    pattern: AnfPattern::Wild,
+                    rhs: AnfOp::guard(guard),
+                    span: arm.span,
+                }]
+            }
+            None => Vec::new(),
+        };
+        self.a_normal_form_expr_block_(arm.body, pattern, stmts, Some(arm.span))
     }
 
     fn a_normal_form_stmt(
@@ -643,8 +727,17 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                         _ => break,
                     };
                 }
+                let rhs = match else_block {
+                    None => AnfOp::value(rhs),
+                    Some(else_) => {
+                        let mut stmts = Vec::new();
+                        let val = self.a_normal_form_block(*else_, &mut stmts)?;
+                        let span = self.thir[*else_].span;
+                        AnfOp::letelse(rhs, AnfBlock { pattern: AnfPattern::Wild, stmts, ret: (val, span), span })
+                    }
+                };
                 let lhs = self.a_normal_form_pat(&pattern)?;
-                stmts.push(AnfStmt { pattern: lhs, rhs: AnfOp::value(rhs), span: *span });
+                stmts.push(AnfStmt { pattern: lhs, rhs, span: *span });
             }
         }
         Ok(())
@@ -709,7 +802,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
 
     fn refines_value(&self, v1: &AnfValue<'tcx>, v2: &AnfValue<'tcx>) -> bool {
         match (v1, v2) {
-            (AnfValue::Zst, AnfValue::Zst) => true,
+            (AnfValue::Unit, AnfValue::Unit) => true,
             (AnfValue::Var(v1), AnfValue::Var(v2)) => {
                 let Some(v1_) = self.refine_var.get(v1) else { return false };
                 v1_ == v2
@@ -791,7 +884,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                     _ => "".into(),
                 }
             };
-            if left.rhs.tag != right.rhs.tag {
+            if left.rhs.tag != right.rhs.tag || left.rhs.args.len() != right.rhs.args.len() {
                 return Err(self
                     .error(left.span, "failed #[refines] check")
                     .with_span_label(
@@ -804,7 +897,6 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                     )
                     .emit());
             }
-            assert!(left.rhs.args.len() == right.rhs.args.len());
             for (left, right) in left.rhs.args.iter().zip(&right.rhs.args) {
                 if !self.refines_value(&left.0, &right.0) {
                     return Err(self
