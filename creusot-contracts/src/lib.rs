@@ -406,6 +406,11 @@ pub mod macros {
     /// This can be used to postulate ghost-carrying primitives to be called in
     /// other functions with `#[refines]` checks.
     ///
+    /// Additional rules for pointers:
+    ///
+    /// - `PtrOwn::as_ref` refines shared reborrowing of raw pointers (`&*p` where `p: *[const|mut] T`)
+    /// - `PtrOwn::as_mut` refines mutable reborrowing of raw pointers (`&mut *p` where `p: *[const|mut] T`)
+    ///
     /// # Example
     ///
     /// For a typical example, say we want to verify some nested function calls:

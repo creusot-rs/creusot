@@ -22,13 +22,13 @@ use rustc_middle::{
     middle::region::ScopeTree,
     mir,
     thir::{self, AdtExpr, ArmId, BlockId, ExprId, ExprKind, PatKind, StmtId, Thir},
-    ty::{self, TyCtxt},
+    ty::{self, TyCtxt, adjustment::PointerCoercion::MutToConstPointer},
 };
 use rustc_span::{ErrorGuaranteed, Span};
 
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{is_refines, is_spec},
+    contracts_items::{is_ptr_own_as_mut, is_ptr_own_as_ref, is_refines, is_spec},
     ctx::{HasTyCtxt, TranslationCtx},
     validate::{ghost::is_ghost_ty_, is_ghost_block},
 };
@@ -166,6 +166,8 @@ enum OpTag<'tcx> {
     LogicalOp(LogicalOp),
     Call(DefId, ty::GenericArgsRef<'tcx>),
     Const(DefId, ty::GenericArgsRef<'tcx>),
+    /// Statement emitted when reborrowing a raw pointer
+    UnsafeBorrow,
     Return,
     IfLet,
     If,
@@ -215,6 +217,10 @@ impl<'tcx> AnfOp<'tcx> {
 
     fn return_(res: Option<(AnfValue<'tcx>, Span)>) -> Self {
         Self::by_value(OpTag::Return, res.into_iter().collect())
+    }
+
+    fn unsafe_borrow(bor: (AnfValue<'tcx>, Span)) -> Self {
+        Self::by_value(OpTag::UnsafeBorrow, [bor].into())
     }
 
     /// The body of the `if let` is ANF-ed into preceding statements:
@@ -298,9 +304,35 @@ struct AnfPlace<'tcx> {
     projections: Vec<AnfProjection>,
 }
 
+impl<'tcx> AnfPlace<'tcx> {
+    fn is_unsafe(&self) -> bool {
+        self.projections.iter().any(|proj| proj.is_unsafe())
+    }
+
+    /// If this is a reborrow of a borrow, simplify it to the original borrow
+    fn borrow(self) -> AnfValue<'tcx> {
+        if matches!(&self.projections[..], [AnfProjection::Deref { unsafe_: false }])
+            && let AnfPlaceBase::ImmutVar(v) = self.base
+        {
+            v
+        } else {
+            AnfValue::Borrow(Box::new(self))
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
 enum AnfProjection {
-    Deref,
+    Deref { unsafe_: bool },
+}
+
+impl AnfProjection {
+    fn is_unsafe(&self) -> bool {
+        use AnfProjection::*;
+        match self {
+            Deref { unsafe_ } => *unsafe_,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable)]
@@ -319,8 +351,8 @@ impl<'tcx> AnfPlace<'tcx> {
         AnfPlace { base: AnfPlaceBase::ImmutVar(value), projections: vec![] }
     }
 
-    fn add_deref(&mut self) {
-        self.projections.push(AnfProjection::Deref);
+    fn add_deref(&mut self, unsafe_: bool) {
+        self.projections.push(AnfProjection::Deref { unsafe_ });
     }
 }
 
@@ -447,7 +479,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             Call { fun, args, .. } => {
                 let fun = self.a_normal_form_expr(*fun, stmts)?;
                 match fun.0 {
-                    AnfValue::Fn(fun_id, subst) => {
+                    AnfValue::Fn(fun_id, subst) => 'fun: {
                         let args = args
                             .iter()
                             .map(|arg| self.a_normal_form_expr(*arg, stmts))
@@ -462,6 +494,16 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                             let subst = ty::EarlyBinder::bind(refined.thir.1)
                                 .instantiate(self.tcx(), subst);
                             (refined.thir.0, subst, args)
+                        } else if is_ptr_own_as_ref(self.tcx(), fun_id)
+                            || is_ptr_own_as_mut(self.tcx(), fun_id)
+                        {
+                            let arg0 = args.into_iter().next().unwrap();
+                            let mut place = std::boxed::Box::new(AnfPlace::immut(arg0.0));
+                            place.add_deref(true); // Add unsafe deref
+                            break 'fun bind_var(
+                                stmts,
+                                AnfOp::unsafe_borrow((AnfValue::Borrow(place), arg0.1)),
+                            );
                         } else {
                             (fun_id, subst, args)
                         };
@@ -505,7 +547,12 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             }
             Borrow { arg, .. } => {
                 let place = self.a_normal_form_place(*arg, stmts)?;
-                AnfValue::Borrow(std::boxed::Box::new(place))
+                if place.is_unsafe() {
+                    let bor = AnfValue::Borrow(std::boxed::Box::new(place));
+                    bind_var(stmts, AnfOp::unsafe_borrow((bor, self.thir[*arg].span)))
+                } else {
+                    place.borrow()
+                }
             }
             Tuple { fields } => {
                 // Visit all fields even if they have type `Ghost<_>` because they may all have effects
@@ -573,10 +620,14 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 AnfValue::Ctor(Ctor::Adt(adt_def.did(), *variant_index), fields)
             }
             NamedConst { def_id, args, .. } => bind_var(stmts, AnfOp::const_(*def_id, args)),
-            _ => {
+            PointerCoercion { cast: MutToConstPointer, source, .. } => {
+                self.a_normal_form_expr(*source, stmts)?.0
+            }
+            kind => {
                 return Err(self
                     .error(self.span, "failed #[refines] check")
                     .with_span_label(expr.span, format!("unsupported expression"))
+                    .with_note(format!("unsupported: {kind:?}"))
                     .emit());
             }
         };
@@ -596,8 +647,12 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 Some(v) => Ok(AnfPlace::immut(v.clone())),
             },
             Deref { arg } => {
+                let unsafe_ = match self.thir[*arg].ty.kind() {
+                    ty::TyKind::Ref(_, _, _) => false,
+                    _ => true, // RawPtr
+                };
                 let mut place = self.a_normal_form_place(*arg, stmts)?;
-                place.add_deref();
+                place.add_deref(unsafe_);
                 Ok(place)
             }
             Scope { value, .. } => self.a_normal_form_place(*value, stmts),
@@ -981,11 +1036,15 @@ fn check_refines_thir<'a, 'tcx>(
     refines_span: Span,
 ) -> Result<(), ErrorGuaranteed> {
     let left = a_normal_form(ctx, left, refines_span).map_err(|e| {
-        debug!("{:#?}", left.0); e})?;
+        debug!("{:#?}", left.0);
+        e
+    })?;
     // Even when processing `right_thir`, error messages should mention `refines_span`:
     // the span of the function carrying the `#[refines]` attribute.
     let right = a_normal_form(ctx, right, refines_span).map_err(|e| {
-        debug!("{:#?}", right.0); e})?;
+        debug!("{:#?}", right.0);
+        e
+    })?;
     let right = ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2);
     let mut checker = RefineChecker::new(ctx);
     let r = checker.refines(&left, &right);
