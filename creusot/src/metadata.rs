@@ -2,6 +2,7 @@ use crate::{
     ctx::{self, *},
     translation::{external::ExternSpec, pearlite::ScopedTerm},
     util::Orphan,
+    validate::AnfBlock,
 };
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
@@ -25,7 +26,7 @@ type ExternSpecs<'tcx> = HashMap<DefId, ExternSpec<'tcx>>;
 pub struct Metadata<'tcx> {
     crates: HashMap<CrateNum, CrateMetadata<'tcx>>,
     extern_specs: ExternSpecs<'tcx>,
-    thir: HashMap<DefId, (thir::Thir<'tcx>, thir::ExprId)>,
+    anf_thir: HashMap<DefId, AnfBlock<'tcx>>,
 }
 
 impl<'tcx> Metadata<'tcx> {
@@ -56,21 +57,24 @@ impl<'tcx> Metadata<'tcx> {
         self.extern_specs.get(&id)
     }
 
-    pub(crate) fn thir(&self, id: DefId) -> Option<&(thir::Thir<'tcx>, thir::ExprId)> {
-        self.thir.get(&id)
+    pub(crate) fn anf_thir(&self, id: DefId) -> Option<&AnfBlock<'tcx>> {
+        self.anf_thir.get(&id)
     }
 
     pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, String>) {
         for cnum in external_crates(tcx) {
-            let Some((cmeta, mut ext_specs)) = CrateMetadata::load(tcx, overrides, cnum) else {
+            let Some((cmeta, ext_specs, anf_thir)) = CrateMetadata::load(tcx, overrides, cnum)
+            else {
                 continue;
             };
             self.crates.insert(cnum, cmeta);
-
-            for (id, spec) in ext_specs.drain() {
+            for (id, spec) in ext_specs.into_iter() {
                 if self.extern_specs.insert(id, spec).is_some() {
                     panic!("duplicate external spec found for {:?} while loading {:?}", id, cnum);
                 }
+            }
+            for (id, anf) in anf_thir.into_iter() {
+                self.anf_thir.insert(id, anf);
             }
         }
     }
@@ -109,7 +113,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         tcx: TyCtxt<'tcx>,
         overrides: &HashMap<String, String>,
         cnum: CrateNum,
-    ) -> Option<(Self, ExternSpecs<'tcx>, Vec<(DefId, ctx::Thir<'tcx>)>)> {
+    ) -> Option<(Self, ExternSpecs<'tcx>, Vec<(DefId, AnfBlock<'tcx>)>)> {
         let base_path = creusot_metadata_base_path(tcx, overrides, cnum);
 
         let binary_path = creusot_metadata_binary_path(base_path.clone());
@@ -125,7 +129,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         meta.creusot_items = metadata.creusot_items;
         meta.params_open_inv = metadata.params_open_inv;
 
-        Some((meta, metadata.extern_specs, metadata.thir))
+        Some((meta, metadata.extern_specs, metadata.anf_thir))
     }
 }
 
@@ -139,7 +143,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
     creusot_items: HashMap<Symbol, DefId>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
-    thir: Vec<(DefId, Orphan<ctx::Thir<'tcx>>)>,
+    anf_thir: Vec<(DefId, AnfBlock<'tcx>)>,
 }
 
 impl<'tcx> BinaryMetadata<'tcx> {
@@ -148,20 +152,14 @@ impl<'tcx> BinaryMetadata<'tcx> {
         creusot_items: HashMap<Symbol, DefId>,
         extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
         params_open_inv: HashMap<DefId, Vec<usize>>,
-        thir: Vec<(DefId, Orphan<ctx::Thir<'tcx>>)>,
+        anf_thir: Vec<(DefId, AnfBlock<'tcx>)>,
     ) -> Self {
         let terms = terms
             .iter_mut()
             .filter(|(def_id, t)| def_id.is_local() && t.is_some())
             .map(|(id, t)| (*id, t.clone().unwrap()))
             .collect();
-        BinaryMetadata {
-            terms,
-            creusot_items,
-            extern_specs,
-            params_open_inv,
-            thir,
-        }
+        BinaryMetadata { terms, creusot_items, extern_specs, params_open_inv, anf_thir }
     }
 }
 

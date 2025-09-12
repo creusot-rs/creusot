@@ -8,7 +8,10 @@ mod terminates;
 mod tokens_new;
 mod traits;
 
-pub(crate) use self::ghost::{GhostValidate, is_ghost_ty_};
+pub(crate) use self::{
+    ghost::{GhostValidate, is_ghost_ty_},
+    refines::AnfBlock,
+};
 use self::{
     opacity::validate_opacity,
     purity::validate_purity,

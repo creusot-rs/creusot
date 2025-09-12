@@ -18,8 +18,8 @@ use crate::{
         traits::{Refinement, TraitResolved},
     },
     util::{erased_identity_for_item, parent_module},
+    validate::AnfBlock,
 };
-use creusot_metadata::decode_metadata;
 use indexmap::{IndexMap, IndexSet};
 use once_map::unsync::OnceMap;
 use rustc_ast::{
@@ -48,8 +48,7 @@ use rustc_trait_selection::traits::normalize_param_env_or_error;
 use rustc_type_ir::inherent::Ty as _;
 use std::{
     cell::{OnceCell, RefCell},
-    collections::{HashMap, HashSet},
-    io::{Read as _, Seek as _},
+    collections::HashMap,
     ops::Deref,
 };
 use why3::Ident;
@@ -288,14 +287,9 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.local_thir.get(&def_id)
     }
 
-    pub(crate) fn get_thir(&self, def_id: DefId) -> Option<&(thir::Thir<'tcx>, thir::ExprId)> {
-        match def_id.as_local() {
-            None => {
-                self.thir_required.borrow_mut().insert(def_id);
-                self.externs.thir(def_id)
-            }
-            Some(local) => self.get_local_thir(local),
-        }
+    pub(crate) fn anf_thir(&self, def_id: DefId) -> Option<&AnfBlock<'tcx>> {
+        self.thir_required.borrow_mut().insert(def_id);
+        self.externs.anf_thir(def_id)
     }
 
     pub(crate) fn iter_local_thir(
@@ -426,13 +420,13 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn metadata(&mut self) -> BinaryMetadata<'tcx> {
-        let thir = (),
+        let anf_thir = Vec::new(); // TODO
         BinaryMetadata::from_parts(
             &mut self.terms,
             std::mem::take(&mut self.creusot_items),
             std::mem::take(&mut self.extern_specs),
             std::mem::take(&mut self.params_open_inv),
-            thir,
+            anf_thir,
         )
     }
 
