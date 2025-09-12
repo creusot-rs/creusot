@@ -15,6 +15,7 @@ extern_spec! {
     }
 
     impl Clone for bool {
+        #[check(ghost)]
         #[ensures(result == *self)]
         fn clone(&self) -> bool {
             *self
@@ -22,6 +23,7 @@ extern_spec! {
     }
 
     impl Clone for f32 {
+        #[check(ghost)]
         #[ensures(result == *self)]
         fn clone(&self) -> f32 {
             *self
@@ -29,6 +31,7 @@ extern_spec! {
     }
 
     impl Clone for f64 {
+        #[check(ghost)]
         #[ensures(result == *self)]
         fn clone(&self) -> f64 {
             *self
@@ -36,6 +39,7 @@ extern_spec! {
     }
 
     impl<'a, T: ?Sized> Clone for &'a T {
+        #[check(ghost)]
         #[ensures(result == *self)]
         fn clone(&self) -> &'a T {
             *self

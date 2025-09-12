@@ -36,6 +36,7 @@ macro_rules! mach_int {
             }
 
             impl Clone for $t {
+                #[check(ghost)]
                 #[ensures(result == *self)]
                 fn clone(&self) -> $t {
                     *self
