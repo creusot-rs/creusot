@@ -48,7 +48,7 @@ fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
 }
 
 pub(crate) fn validate(ctx: &TranslationCtx) {
-    for (&def_id, thir) in ctx.thir.iter() {
+    for (&def_id, thir) in ctx.iter_local_thir() {
         let def_id = def_id.to_def_id();
         if is_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
             validate_purity(ctx, def_id, thir);

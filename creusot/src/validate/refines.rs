@@ -56,11 +56,11 @@ fn check_refines<'tcx>(
     let Some(left_local) = left.as_local() else {
         return Err(ctx.error(ctx.def_span(left), "Refining function must be local").emit());
     };
-    let Some(left_thir) = ctx.thir.get(&left_local) else {
+    let Some(left_thir) = ctx.get_local_thir(left_local) else {
         return Err(ctx
             .error(
                 ctx.def_span(left),
-                "Refining function must have a body (cannot be extern or abstract)",
+                "#[refines] function must have a body",
             )
             .emit());
     };
@@ -68,7 +68,7 @@ fn check_refines<'tcx>(
         return Err(ctx
             .error(
                 ctx.def_span(right),
-                "Refined function must have a body (cannot be extern or abstract)",
+                "Refined function must have a body",
             )
             .emit());
     };
