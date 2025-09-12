@@ -37,7 +37,7 @@ use why3::Ident;
 use crate::{
     analysis::resolve::{HasMoveDataExt as _, Resolver, place_contains_borrow_deref},
     callbacks,
-    contracts_items::{is_snapshot_closure, is_spec},
+    contracts_items::{is_refines, is_snapshot_closure, is_spec},
     ctx::{HasTyCtxt, TranslationCtx},
     extended_location::ExtendedLocation,
     gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
@@ -169,7 +169,10 @@ impl<'tcx> BodySpecs<'tcx> {
         let mut erased_locals = MixedBitSet::new_empty(body.local_decls.len());
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let ty::TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if is_spec(tcx, *def_id) || is_snapshot_closure(tcx, *def_id) {
+                if is_spec(tcx, *def_id)
+                    || is_refines(tcx, *def_id)
+                    || is_snapshot_closure(tcx, *def_id)
+                {
                     erased_locals.insert(local);
                 }
             }
