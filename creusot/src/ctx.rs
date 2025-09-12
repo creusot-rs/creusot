@@ -171,11 +171,13 @@ pub struct TranslationCtx<'tcx> {
     pub(crate) opts: Options,
     creusot_items: HashMap<Symbol, DefId>,
     local_thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
+    extern_thir: HashMap<DefId, (thir::Thir<'tcx>, thir::ExprId)>,
+    thir_required: RefCell<IndexSet<DefId>>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
-    pub(crate) refines: HashMap<DefId, Refined<'tcx>>,
-    thir_required: RefCell<IndexSet<DefId>>,
-    extern_thir: HashMap<DefId, (thir::Thir<'tcx>, thir::ExprId)>,
+    local_refines: HashMap<LocalDefId, Refined<'tcx>>,
+    extern_refines: HashMap<DefId, Refined<'tcx>>,
+    refines_to_check: Vec<(LocalDefId, (DefId, GenericArgsRef<'tcx>))>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
@@ -241,11 +243,14 @@ impl<'tcx> TranslationCtx<'tcx> {
             terms: Default::default(),
             creusot_items,
             opts,
+            local_thir: Default::default(),
+            extern_thir: Default::default(),
+            thir_required: Default::default(),
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
-            refines: Default::default(),
-            thir_required: Default::default(),
-            extern_thir: Default::default(),
+            local_refines: Default::default(),
+            extern_refines: Default::default(),
+            refines_to_check: Default::default(),
             fmir_body: Default::default(),
             trait_impl: Default::default(),
             sig: Default::default(),
@@ -254,7 +259,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             renamer: Default::default(),
             corenamer: Default::default(),
             crate_name: Default::default(),
-            local_thir: Default::default(),
         }
     }
 
@@ -292,7 +296,9 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
     }
 
-    pub(crate) fn iter_local_thir(&self) -> impl Iterator<Item = (&LocalDefId, &(thir::Thir<'tcx>, thir::ExprId))> {
+    pub(crate) fn iter_local_thir(
+        &self,
+    ) -> impl Iterator<Item = (&LocalDefId, &(thir::Thir<'tcx>, thir::ExprId))> {
         self.local_thir.iter()
     }
 
@@ -518,10 +524,17 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn load_refines(&mut self) {
         for (&def_id, thir) in self.local_thir.iter() {
             if is_refines(self.tcx, def_id.to_def_id()) {
-                let (refiner, refined) = extract_refines_from_item(self, def_id, thir);
-                self.refines.insert(refiner, refined);
+                let (refiner, refined, to_check) = extract_refines_from_item(self, def_id, thir);
+                self.local_refines.insert(refiner, refined);
+                self.refines_to_check.push((refiner, to_check));
             }
         }
+    }
+
+    pub(crate) fn iter_refines_to_check(
+        &self,
+    ) -> impl Iterator<Item = &(LocalDefId, (DefId, GenericArgsRef<'tcx>))> {
+        self.refines_to_check.iter()
     }
 
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
@@ -560,7 +573,10 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn refines(&self, def_id: DefId) -> Option<&Refined<'tcx>> {
-        self.refines.get(&def_id)
+        match def_id.as_local() {
+            Some(local) => self.local_refines.get(&local),
+            None => self.extern_refines.get(&def_id),
+        }
     }
 }
 
@@ -578,10 +594,7 @@ pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
 pub struct Refined<'tcx> {
     /// `DefId` of the trait method or standalone `fn` item
     /// For `#[refines]` checking of calling functions.
-    pub thir: (DefId, GenericArgsRef<'tcx>),
-    /// `DefId` of the impl method body or standalone `fn` item
-    /// For `#[refines]` checking of this function.
-    pub resolved: (DefId, GenericArgsRef<'tcx>),
+    pub def: (DefId, GenericArgsRef<'tcx>),
     /// `true` for ghost arguments to erase
     pub erase_args: Vec<bool>,
 }
