@@ -2,7 +2,7 @@
 //!
 //! [Local invariants](LocalInvariant) are not the same as [type invariants](Invariant): they
 //! allow the use of a shared piece of data to be used in the invariant (see
-//! [`LocalInvariantSpec`]), but in return they impose a much more restricted access to
+//! [`Protocol`]), but in return they impose a much more restricted access to
 //! the underlying data, as well as the use of [`Tokens`].
 //!
 //! # Example
@@ -10,7 +10,7 @@
 //! Building a simplified `Cell`, that only asserts its content's type invariant.
 //! ```
 //! # use creusot_contracts::{
-//! #     local_invariant::{LocalInvariant, LocalInvariantSpec, Tokens, declare_namespace},
+//! #     local_invariant::{LocalInvariant, Protocol, Tokens, declare_namespace},
 //! #     logic::Id,
 //! #     pcell::{PCell, PCellOwn},
 //! #     *,
@@ -30,11 +30,11 @@
 //! }
 //!
 //! struct PCellLocalInv<T>(PCellOwn<T>);
-//! impl<T: Invariant> LocalInvariantSpec for PCellLocalInv<T> {
+//! impl<T: Invariant> Protocol for PCellLocalInv<T> {
 //!     type Public = Id;
 //!
 //!     #[logic]
-//!     fn invariant_with_data(self, id: Id) -> bool {
+//!     fn protocol(self, id: Id) -> bool {
 //!         self.0.id() == id
 //!     }
 //! }
@@ -195,20 +195,20 @@ impl View for Tokens<'_> {
 }
 
 /// A ghost structure, that holds a piece of data (`T`) together with an
-/// [invariant](LocalInvariantSpec).
+/// [protocol](Protocol).
 #[trusted]
-pub struct LocalInvariant<T: LocalInvariantSpec> {
+pub struct LocalInvariant<T: Protocol> {
     value: UnsafeCell<T>,
 }
 
 /// A variant of [`Invariant`] for use in [`LocalInvariant`]s.
 ///
 /// This allows to specify an invariant that depends on some [public data](LocalInvariant::public).
-pub trait LocalInvariantSpec {
+pub trait Protocol {
     type Public;
 
     #[logic(prophetic)]
-    fn invariant_with_data(self, data: Self::Public) -> bool;
+    fn protocol(self, data: Self::Public) -> bool;
 }
 
 /// Define method call syntax for [`LocalInvariant::open`].
@@ -224,15 +224,15 @@ pub trait LocalInvariantExt<'a> {
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A;
 }
 
-impl<'a, T: LocalInvariantSpec> LocalInvariantExt<'a> for Ghost<&'a LocalInvariant<T>> {
+impl<'a, T: Protocol> LocalInvariantExt<'a> for Ghost<&'a LocalInvariant<T>> {
     type Inner = T;
 
     #[requires(tokens.contains(self.namespace()))]
-    #[requires(forall<t: Ghost<&mut T>> (**t).invariant_with_data(self.public()) && inv(t) ==>
+    #[requires(forall<t: Ghost<&mut T>> (**t).protocol(self.public()) && inv(t) ==>
         f.precondition((t,)) &&
         // f must restore the invariant
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).invariant_with_data(self.public())))]
-    #[ensures(exists<t: Ghost<&mut T>> t.invariant_with_data(self.public()) && f.postcondition_once((t,), result))]
+        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol(self.public())))]
+    #[ensures(exists<t: Ghost<&mut T>> t.protocol(self.public()) && f.postcondition_once((t,), result))]
     #[check(ghost)]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
@@ -283,7 +283,7 @@ where
     }
 }
 
-impl<T: LocalInvariantSpec> LocalInvariant<T> {
+impl<T: Protocol> LocalInvariant<T> {
     /// Construct a `LocalInvariant`
     ///
     /// # Parameters
@@ -293,7 +293,7 @@ impl<T: LocalInvariantSpec> LocalInvariant<T> {
     /// - `namespace`: the namespace of the invariant.
     ///   This is required to avoid [open](Self::open)ing the same invariant twice.
     #[trusted]
-    #[requires(value.invariant_with_data(*public))]
+    #[requires(value.protocol(*public))]
     #[ensures(result.public() == *public)]
     #[ensures(result.namespace() == *namespace)]
     #[check(ghost)]
@@ -322,14 +322,14 @@ impl<T: LocalInvariantSpec> LocalInvariant<T> {
     /// Open the invariant to get the data stored inside.
     ///
     /// This will call the closure `f` with the inner data. You must restore the
-    /// contained [`LocalInvariantSpec`] before returning from the closure.
+    /// contained [`Protocol`] before returning from the closure.
     #[trusted]
     #[requires(tokens.contains(this.namespace()))]
-    #[requires(forall<t: Ghost<&mut T>> t.invariant_with_data(this.public()) && inv(t) ==>
+    #[requires(forall<t: Ghost<&mut T>> t.protocol(this.public()) && inv(t) ==>
         f.precondition((t,)) &&
         // f must restore the invariant
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).invariant_with_data(this.public())))]
-    #[ensures(exists<t: Ghost<&mut T>> t.invariant_with_data(this.public()) && f.postcondition_once((t,), result))]
+        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol(this.public())))]
+    #[ensures(exists<t: Ghost<&mut T>> t.protocol(this.public()) && f.postcondition_once((t,), result))]
     #[check(ghost)]
     pub fn open<'a, A>(
         this: Ghost<&'a Self>,

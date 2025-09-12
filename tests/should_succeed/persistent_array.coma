@@ -269,7 +269,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   let%span sfmap'17 = "../../creusot-contracts/src/logic/fmap.rs" 271 4 271 12
   let%span sfmap'18 = "../../creusot-contracts/src/logic/fmap.rs" 104 4 104 12
   let%span slocal_invariant = "../../creusot-contracts/src/local_invariant.rs" 301 8 301 13
-  let%span slocal_invariant'0 = "../../creusot-contracts/src/local_invariant.rs" 296 4 296 51
+  let%span slocal_invariant'0 = "../../creusot-contracts/src/local_invariant.rs" 296 4 296 40
   let%span slocal_invariant'1 = "../../creusot-contracts/src/local_invariant.rs" 297 14 297 40
   let%span slocal_invariant'2 = "../../creusot-contracts/src/local_invariant.rs" 298 14 298 46
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 52 20 52 34
@@ -744,7 +744,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   
   function view'10 (self: UInt64.t) : int = [%#smodel'0] UInt64.t'int self
   
-  predicate invariant_with_data [#"persistent_array.rs" 97 8 97 61] (self: t_PA) (resource_id: t_Id) =
+  predicate protocol [#"persistent_array.rs" 97 8 97 50] (self: t_PA) (resource_id: t_Id) =
     [%#spersistent_array'8] id'1 self.t_PA__auth = resource_id
     /\ (forall id'3: t_Id. contains (view'1 self.t_PA__auth) id'3
       -> contains'0 self.t_PA__perms id'3
@@ -764,7 +764,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   
   let rec new'4 (value: t_PA) (public'0: t_Id) (namespace'0: t_Namespace) (return' (x: t_LocalInvariant)) =
     {[@expl:new 'value' type invariant] [%#slocal_invariant] inv'23 value}
-    {[@expl:new requires] [%#slocal_invariant'0] invariant_with_data value public'0}
+    {[@expl:new requires] [%#slocal_invariant'0] protocol value public'0}
     any
     [ return''0 (result: t_LocalInvariant) -> {[%#slocal_invariant'1] public result = public'0}
       {[%#slocal_invariant'2] namespace result = namespace'0}
@@ -1028,8 +1028,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   let%span slocal_invariant'9 = "../../creusot-contracts/src/local_invariant.rs" 237 4 239 51
   let%span slocal_invariant'10 = "../../creusot-contracts/src/local_invariant.rs" 237 51 237 52
   let%span slocal_invariant'11 = "../../creusot-contracts/src/local_invariant.rs" 230 4 230 50
-  let%span slocal_invariant'12 = "../../creusot-contracts/src/local_invariant.rs" 231 15 234 100
-  let%span slocal_invariant'13 = "../../creusot-contracts/src/local_invariant.rs" 235 14 235 113
+  let%span slocal_invariant'12 = "../../creusot-contracts/src/local_invariant.rs" 231 15 234 89
+  let%span slocal_invariant'13 = "../../creusot-contracts/src/local_invariant.rs" 235 14 235 102
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 52 20 52 34
   let%span soption = "../../creusot-contracts/src/std/option.rs" 775 8 778 9
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 744 15 744 27
@@ -1863,7 +1863,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   
   function view'16 (self: UInt64.t) : int = [%#smodel] UInt64.t'int self
   
-  predicate invariant_with_data [#"persistent_array.rs" 97 8 97 61] (self: t_PA) (resource_id: t_Id) =
+  predicate protocol [#"persistent_array.rs" 97 8 97 50] (self: t_PA) (resource_id: t_Id) =
     [%#spersistent_array'12] id'1 self.t_PA__auth = resource_id
     /\ (forall id'3: t_Id. contains'1 (view'8 self.t_PA__auth) id'3
       -> contains self.t_PA__perms id'3
@@ -1893,10 +1893,10 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
     [%#slocal_invariant'3] contains'2 (namespaces self) namespace'0
   
   predicate precondition'0 (self: ()) (args: tuple'2) =
-    [%#slocal_invariant'9] let {_p0'2 = self'0; _p1'2 = tokens; _p2'0 = f} = args in (forall t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'2 = self'0; _p1'2 = tokens; _p2'0 = f} = args in (forall t: MutBorrow.t t_PA. protocol t.current (public self'0)
           /\ inv'13 t
         -> precondition f t
-        /\ (forall res: t_Fragment. postcondition_once'0 f t res -> invariant_with_data (fin t) (public self'0)))
+        /\ (forall res: t_Fragment. postcondition_once'0 f t res -> protocol (fin t) (public self'0)))
     /\ contains'3 tokens (namespace self'0) /\ inv'33 f
   
   function new_logic (x: t_LocalInvariant) : t_LocalInvariant
@@ -1916,25 +1916,24 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   let rec open (self: t_LocalInvariant) (tokens: t_Tokens) (f: closure0) (return' (x: t_Fragment)) =
     {[@expl:open 'f' type invariant] [%#slocal_invariant'10] inv'33 f}
     {[@expl:open requires #0] [%#slocal_invariant'11] contains'3 tokens (namespace self)}
-    {[@expl:open requires #1] [%#slocal_invariant'12] forall t: MutBorrow.t t_PA. invariant_with_data t.current (public self)
+    {[@expl:open requires #1] [%#slocal_invariant'12] forall t: MutBorrow.t t_PA. protocol t.current (public self)
         /\ inv'13 t
-      -> precondition f t
-      /\ (forall res: t_Fragment. postcondition_once'0 f t res -> invariant_with_data (fin t) (public self))}
+      -> precondition f t /\ (forall res: t_Fragment. postcondition_once'0 f t res -> protocol (fin t) (public self))}
     any
     [ return''0 (result: t_Fragment) -> {[%#slocal_invariant'9] inv'17 result}
-      {[%#slocal_invariant'13] exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self)
+      {[%#slocal_invariant'13] exists t: MutBorrow.t t_PA. protocol t.current (public self)
         /\ postcondition_once'0 f t result}
       (! return' {result}) ]
   
   predicate postcondition_once'1 (self: ()) (args: tuple'2) (result: t_Fragment) =
-    [%#slocal_invariant'9] let {_p0'2 = self'0; _p1'2 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'2 = self'0; _p1'2 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. protocol t.current (public self'0)
         /\ postcondition_once'0 f t result)
     /\ inv'17 result
   
   predicate resolve'13 (_0'0: ()) = true
   
   predicate postcondition_mut'0 (self: ()) (args: tuple'2) (result_state: ()) (result: t_Fragment) =
-    [%#slocal_invariant'9] let {_p0'2 = self'0; _p1'2 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'2 = self'0; _p1'2 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. protocol t.current (public self'0)
         /\ postcondition_once'0 f t result)
     /\ inv'17 result
   
@@ -1966,7 +1965,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   axiom fn_hist_inv_spec'0: forall self: (), res_state: (). [%#sops'1] hist_inv'0 self res_state = (self = res_state)
   
   predicate postcondition'0 (self: ()) (args: tuple'2) (result: t_Fragment) =
-    [%#slocal_invariant'9] let {_p0'2 = self'0; _p1'2 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'2 = self'0; _p1'2 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. protocol t.current (public self'0)
         /\ postcondition_once'0 f t result)
     /\ inv'17 result
   
@@ -2140,7 +2139,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   let%span spersistent_array'4 = "persistent_array.rs" 188 34 188 38
   let%span spersistent_array'5 = "persistent_array.rs" 188 35 188 37
   let%span spersistent_array'6 = "persistent_array.rs" 202 12 202 15
-  let%span spersistent_array'7 = "persistent_array.rs" 195 19 195 55
+  let%span spersistent_array'7 = "persistent_array.rs" 195 19 195 44
   let%span spersistent_array'8 = "persistent_array.rs" 196 19 196 50
   let%span spersistent_array'9 = "persistent_array.rs" 197 19 197 52
   let%span spersistent_array'10 = "persistent_array.rs" 203 13 203 18
@@ -2189,8 +2188,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   let%span slocal_invariant'9 = "../../creusot-contracts/src/local_invariant.rs" 237 4 239 51
   let%span slocal_invariant'10 = "../../creusot-contracts/src/local_invariant.rs" 237 51 237 52
   let%span slocal_invariant'11 = "../../creusot-contracts/src/local_invariant.rs" 230 4 230 50
-  let%span slocal_invariant'12 = "../../creusot-contracts/src/local_invariant.rs" 231 15 234 100
-  let%span slocal_invariant'13 = "../../creusot-contracts/src/local_invariant.rs" 235 14 235 113
+  let%span slocal_invariant'12 = "../../creusot-contracts/src/local_invariant.rs" 231 15 234 89
+  let%span slocal_invariant'13 = "../../creusot-contracts/src/local_invariant.rs" 235 14 235 102
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 52 20 52 34
   let%span soption = "../../creusot-contracts/src/std/option.rs" 744 15 744 27
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 746 8 749 9
@@ -2548,7 +2547,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   function view'9 (self: UInt64.t) : int = [%#smodel] UInt64.t'int self
   
-  predicate invariant_with_data [#"persistent_array.rs" 97 8 97 61] (self: t_PA) (resource_id: t_Id) =
+  predicate protocol [#"persistent_array.rs" 97 8 97 50] (self: t_PA) (resource_id: t_Id) =
     [%#spersistent_array'13] id self.t_PA__auth = resource_id
     /\ (forall id'3: t_Id. contains'1 (view'2 self.t_PA__auth) id'3
       -> contains self.t_PA__perms id'3
@@ -2572,7 +2571,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   let rec get_inner_immut (inner: t_Rc) (i: UInt64.t) (inv'22: t_PA) (return' (x: t_T)) =
     {[@expl:get_inner_immut 'inv' type invariant] [%#spersistent_array'6] inv'20 inv'22}
-    {[@expl:get_inner_immut requires #0] [%#spersistent_array'7] exists p: t_Id. invariant_with_data inv'22 p}
+    {[@expl:get_inner_immut requires #0] [%#spersistent_array'7] exists p: t_Id. protocol inv'22 p}
     {[@expl:get_inner_immut requires #1] [%#spersistent_array'8] contains'1 (view'2 inv'22.t_PA__auth) (id'2 (view'8 inner))}
     {[@expl:get_inner_immut requires #2] [%#spersistent_array'9] UInt64.t'int i
     < Seq.length (index_logic'2 (view'2 inv'22.t_PA__auth) (id'2 (view'8 inner)))}
@@ -2730,10 +2729,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
     [%#slocal_invariant'3] contains'2 (namespaces self) namespace'0
   
   predicate precondition'0 (self: ()) (args: tuple'1) =
-    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (forall t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (forall t: MutBorrow.t t_PA. protocol t.current (public self'0)
           /\ inv'11 t
-        -> precondition f t
-        /\ (forall res: t_T. postcondition_once'0 f t res -> invariant_with_data (fin t) (public self'0)))
+        -> precondition f t /\ (forall res: t_T. postcondition_once'0 f t res -> protocol (fin t) (public self'0)))
     /\ contains'3 tokens (namespace self'0) /\ inv'25 f
   
   function new_logic (x: t_LocalInvariant) : t_LocalInvariant
@@ -2753,25 +2751,24 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   let rec open (self: t_LocalInvariant) (tokens: t_Tokens) (f: closure0) (return' (x: t_T)) =
     {[@expl:open 'f' type invariant] [%#slocal_invariant'10] inv'25 f}
     {[@expl:open requires #0] [%#slocal_invariant'11] contains'3 tokens (namespace self)}
-    {[@expl:open requires #1] [%#slocal_invariant'12] forall t: MutBorrow.t t_PA. invariant_with_data t.current (public self)
+    {[@expl:open requires #1] [%#slocal_invariant'12] forall t: MutBorrow.t t_PA. protocol t.current (public self)
         /\ inv'11 t
-      -> precondition f t
-      /\ (forall res: t_T. postcondition_once'0 f t res -> invariant_with_data (fin t) (public self))}
+      -> precondition f t /\ (forall res: t_T. postcondition_once'0 f t res -> protocol (fin t) (public self))}
     any
     [ return''0 (result: t_T) -> {[%#slocal_invariant'9] inv'21 result}
-      {[%#slocal_invariant'13] exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self)
+      {[%#slocal_invariant'13] exists t: MutBorrow.t t_PA. protocol t.current (public self)
         /\ postcondition_once'0 f t result}
       (! return' {result}) ]
   
   predicate postcondition_once'1 (self: ()) (args: tuple'1) (result: t_T) =
-    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. protocol t.current (public self'0)
         /\ postcondition_once'0 f t result)
     /\ inv'21 result
   
   predicate resolve'2 (_0'0: ()) = true
   
   predicate postcondition_mut'0 (self: ()) (args: tuple'1) (result_state: ()) (result: t_T) =
-    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. protocol t.current (public self'0)
         /\ postcondition_once'0 f t result)
     /\ inv'21 result
   
@@ -2802,7 +2799,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   axiom fn_hist_inv_spec'0: forall self: (), res_state: (). [%#sops'1] hist_inv'0 self res_state = (self = res_state)
   
   predicate postcondition'0 (self: ()) (args: tuple'1) (result: t_T) =
-    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. protocol t.current (public self'0)
         /\ postcondition_once'0 f t result)
     /\ inv'21 result
   
@@ -2932,7 +2929,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   let%span src = "../../creusot-contracts/src/std/rc.rs" 51 18 51 38
   let%span spersistent_array = "persistent_array.rs" 202 12 202 15
-  let%span spersistent_array'0 = "persistent_array.rs" 195 19 195 55
+  let%span spersistent_array'0 = "persistent_array.rs" 195 19 195 44
   let%span spersistent_array'1 = "persistent_array.rs" 196 19 196 50
   let%span spersistent_array'2 = "persistent_array.rs" 197 19 197 52
   let%span spersistent_array'3 = "persistent_array.rs" 203 13 203 18
@@ -3321,7 +3318,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   function view'9 (self: UInt64.t) : int = [%#smodel] UInt64.t'int self
   
-  predicate invariant_with_data [#"persistent_array.rs" 97 8 97 61] (self: t_PA) (resource_id: t_Id) =
+  predicate protocol [#"persistent_array.rs" 97 8 97 50] (self: t_PA) (resource_id: t_Id) =
     [%#spersistent_array'5] id'1 self.t_PA__auth = resource_id
     /\ (forall id'2: t_Id. contains'0 (view'7 self.t_PA__auth) id'2
       -> contains self.t_PA__perms id'2
@@ -3341,7 +3338,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   let rec get_inner_immut [#"persistent_array.rs" 199 8 203 18] (inner: t_Rc) (i: UInt64.t) (inv'20: t_PA)
     (return' (x: t_T)) = {[@expl:get_inner_immut 'inv' type invariant] [%#spersistent_array] inv'11 inv'20}
-    {[@expl:get_inner_immut requires #0] [%#spersistent_array'0] exists p: t_Id. invariant_with_data inv'20 p}
+    {[@expl:get_inner_immut requires #0] [%#spersistent_array'0] exists p: t_Id. protocol inv'20 p}
     {[@expl:get_inner_immut requires #1] [%#spersistent_array'1] contains'0 (view'7 inv'20.t_PA__auth) (id (view'8 inner))}
     {[@expl:get_inner_immut requires #2] [%#spersistent_array'2] UInt64.t'int i
     < Seq.length (index_logic'2 (view'7 inv'20.t_PA__auth) (id (view'8 inner)))}
@@ -3425,9 +3422,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   let%span spersistent_array'5 = "persistent_array.rs" 224 34 224 42
   let%span spersistent_array'6 = "persistent_array.rs" 224 39 224 41
   let%span spersistent_array'7 = "persistent_array.rs" 253 74 253 76
-  let%span spersistent_array'8 = "persistent_array.rs" 242 8 242 53
+  let%span spersistent_array'8 = "persistent_array.rs" 242 8 242 42
   let%span spersistent_array'9 = "persistent_array.rs" 243 19 243 49
-  let%span spersistent_array'10 = "persistent_array.rs" 244 18 244 53
+  let%span spersistent_array'10 = "persistent_array.rs" 244 18 244 42
   let%span spersistent_array'11 = "persistent_array.rs" 245 18 245 39
   let%span spersistent_array'12 = "persistent_array.rs" 246 18 247 55
   let%span spersistent_array'13 = "persistent_array.rs" 249 18 252 9
@@ -3489,8 +3486,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   let%span slocal_invariant'9 = "../../creusot-contracts/src/local_invariant.rs" 237 4 239 51
   let%span slocal_invariant'10 = "../../creusot-contracts/src/local_invariant.rs" 237 51 237 52
   let%span slocal_invariant'11 = "../../creusot-contracts/src/local_invariant.rs" 230 4 230 50
-  let%span slocal_invariant'12 = "../../creusot-contracts/src/local_invariant.rs" 231 15 234 100
-  let%span slocal_invariant'13 = "../../creusot-contracts/src/local_invariant.rs" 235 14 235 113
+  let%span slocal_invariant'12 = "../../creusot-contracts/src/local_invariant.rs" 231 15 234 89
+  let%span slocal_invariant'13 = "../../creusot-contracts/src/local_invariant.rs" 235 14 235 102
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 52 20 52 34
   let%span soption = "../../creusot-contracts/src/std/option.rs" 145 16 145 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 146 27 146 39
@@ -3881,7 +3878,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   
   function view'11 (self: UInt64.t) : int = [%#smodel] UInt64.t'int self
   
-  predicate invariant_with_data [#"persistent_array.rs" 97 8 97 61] (self: t_PA) (resource_id: t_Id) =
+  predicate protocol [#"persistent_array.rs" 97 8 97 50] (self: t_PA) (resource_id: t_Id) =
     [%#spersistent_array'15] id self.t_PA__auth = resource_id
     /\ (forall id'3: t_Id. contains'1 (view'4 self.t_PA__auth) id'3
       -> contains self.t_PA__perms id'3
@@ -3899,10 +3896,10 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   
   let rec reroot (inner: t_Rc'0) (auth_id: t_Id) (pa: MutBorrow.t t_PA) (return' (x: ())) =
     {[@expl:reroot 'pa' type invariant] [%#spersistent_array'7] inv'11 pa}
-    {[@expl:reroot requires #0] [%#spersistent_array'8] invariant_with_data pa.current auth_id}
+    {[@expl:reroot requires #0] [%#spersistent_array'8] protocol pa.current auth_id}
     {[@expl:reroot requires #1] [%#spersistent_array'9] contains'1 (view'4 (pa.current).t_PA__auth) (id'2 (view'10 inner))}
     any
-    [ return''0 (result: ()) -> {[%#spersistent_array'10] invariant_with_data (fin pa) auth_id}
+    [ return''0 (result: ()) -> {[%#spersistent_array'10] protocol (fin pa) auth_id}
       {[%#spersistent_array'11] (fin pa).t_PA__auth = (pa.current).t_PA__auth}
       {[%#spersistent_array'12] forall id'3: t_Id. index_logic'3 (pa.current).t_PA__depth id'3
           > index_logic'3 (pa.current).t_PA__depth (id'2 (view'10 inner))
@@ -4260,10 +4257,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
     [%#slocal_invariant'3] contains'2 (namespaces self) namespace'0
   
   predicate precondition'0 (self: ()) (args: tuple'1) =
-    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (forall t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (forall t: MutBorrow.t t_PA. protocol t.current (public self'0)
           /\ inv'11 t
-        -> precondition f t
-        /\ (forall res: t_T. postcondition_once'0 f t res -> invariant_with_data (fin t) (public self'0)))
+        -> precondition f t /\ (forall res: t_T. postcondition_once'0 f t res -> protocol (fin t) (public self'0)))
     /\ contains'3 tokens (namespace self'0) /\ inv'32 f
   
   function new_logic (x: t_LocalInvariant) : t_LocalInvariant
@@ -4283,25 +4279,24 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   let rec open (self: t_LocalInvariant) (tokens: t_Tokens) (f: closure0) (return' (x: t_T)) =
     {[@expl:open 'f' type invariant] [%#slocal_invariant'10] inv'32 f}
     {[@expl:open requires #0] [%#slocal_invariant'11] contains'3 tokens (namespace self)}
-    {[@expl:open requires #1] [%#slocal_invariant'12] forall t: MutBorrow.t t_PA. invariant_with_data t.current (public self)
+    {[@expl:open requires #1] [%#slocal_invariant'12] forall t: MutBorrow.t t_PA. protocol t.current (public self)
         /\ inv'11 t
-      -> precondition f t
-      /\ (forall res: t_T. postcondition_once'0 f t res -> invariant_with_data (fin t) (public self))}
+      -> precondition f t /\ (forall res: t_T. postcondition_once'0 f t res -> protocol (fin t) (public self))}
     any
     [ return''0 (result: t_T) -> {[%#slocal_invariant'9] inv'28 result}
-      {[%#slocal_invariant'13] exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self)
+      {[%#slocal_invariant'13] exists t: MutBorrow.t t_PA. protocol t.current (public self)
         /\ postcondition_once'0 f t result}
       (! return' {result}) ]
   
   predicate postcondition_once'1 (self: ()) (args: tuple'1) (result: t_T) =
-    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. protocol t.current (public self'0)
         /\ postcondition_once'0 f t result)
     /\ inv'28 result
   
   predicate resolve'4 (_0'0: ()) = true
   
   predicate postcondition_mut'0 (self: ()) (args: tuple'1) (result_state: ()) (result: t_T) =
-    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. protocol t.current (public self'0)
         /\ postcondition_once'0 f t result)
     /\ inv'28 result
   
@@ -4332,7 +4327,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   axiom fn_hist_inv_spec'0: forall self: (), res_state: (). [%#sops'1] hist_inv'0 self res_state = (self = res_state)
   
   predicate postcondition'0 (self: ()) (args: tuple'1) (result: t_T) =
-    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. invariant_with_data t.current (public self'0)
+    [%#slocal_invariant'9] let {_p0'1 = self'0; _p1'1 = tokens; _p2'0 = f} = args in (exists t: MutBorrow.t t_PA. protocol t.current (public self'0)
         /\ postcondition_once'0 f t result)
     /\ inv'28 result
   
@@ -4469,9 +4464,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   let%span spersistent_array'0 = "persistent_array.rs" 279 24 279 75
   let%span spersistent_array'1 = "persistent_array.rs" 280 32 280 68
   let%span spersistent_array'2 = "persistent_array.rs" 253 74 253 76
-  let%span spersistent_array'3 = "persistent_array.rs" 242 8 242 53
+  let%span spersistent_array'3 = "persistent_array.rs" 242 8 242 42
   let%span spersistent_array'4 = "persistent_array.rs" 243 19 243 49
-  let%span spersistent_array'5 = "persistent_array.rs" 244 18 244 53
+  let%span spersistent_array'5 = "persistent_array.rs" 244 18 244 42
   let%span spersistent_array'6 = "persistent_array.rs" 245 18 245 39
   let%span spersistent_array'7 = "persistent_array.rs" 246 18 247 55
   let%span spersistent_array'8 = "persistent_array.rs" 249 18 252 9
@@ -5228,7 +5223,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   
   function view'12 (self: UInt64.t) : int = [%#smodel] UInt64.t'int self
   
-  predicate invariant_with_data [#"persistent_array.rs" 97 8 97 61] (self: t_PA) (resource_id: t_Id) =
+  predicate protocol [#"persistent_array.rs" 97 8 97 50] (self: t_PA) (resource_id: t_Id) =
     [%#spersistent_array'9] id'1 self.t_PA__auth = resource_id
     /\ (forall id'2: t_Id. contains'0 (view'9 self.t_PA__auth) id'2
       -> contains self.t_PA__perms id'2
@@ -5250,7 +5245,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   
   let rec reroot [#"persistent_array.rs" 253 8 253 96] (inner: t_Rc) (auth_id: t_Id) (pa: MutBorrow.t t_PA)
     (return' (x: ())) = {[@expl:reroot 'pa' type invariant] [%#spersistent_array'2] inv'11 pa}
-    {[@expl:reroot requires #0] [%#spersistent_array'3] invariant_with_data pa.current auth_id}
+    {[@expl:reroot requires #0] [%#spersistent_array'3] protocol pa.current auth_id}
     {[@expl:reroot requires #1] [%#spersistent_array'4] contains'0 (view'9 (pa.current).t_PA__auth) (id (view'11 inner))}
     (! bb0
     [ bb0 = s0 [ s0 = deref {inner'0} (fun (_ret: t_PCell) -> [ &_12 <- _ret ] s1) | s1 = bb1 ]
@@ -5591,8 +5586,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
     | & _111: Map.map t_Id int = Any.any_l ()
     | & _113: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
     | & _114: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l () ])
-    [ return''0 (result: ()) ->
-    {[@expl:reroot ensures #0] [%#spersistent_array'5] invariant_with_data (fin'0 pa) auth_id}
+    [ return''0 (result: ()) -> {[@expl:reroot ensures #0] [%#spersistent_array'5] protocol (fin'0 pa) auth_id}
       {[@expl:reroot ensures #1] [%#spersistent_array'6] (fin'0 pa).t_PA__auth = (pa.current).t_PA__auth}
       {[@expl:reroot ensures #2] [%#spersistent_array'7] forall id'2: t_Id. index_logic'3 (pa.current).t_PA__depth id'2
           > index_logic'3 (pa.current).t_PA__depth (id (view'11 inner))
