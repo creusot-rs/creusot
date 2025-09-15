@@ -535,20 +535,29 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.refines_to_check.iter()
     }
 
-    pub(crate) fn dump_thir_required(&self) -> Result<(), ErrorGuaranteed> {
+    pub(crate) fn dump_thir_required(&self) {
         if !self.opts.should_output {
             // Skip if this is not a primary package
-            return Ok(());
+            return;
         }
         let thir_required = self.thir_required.borrow();
         if thir_required.is_empty() {
-            return Ok(());
+            return;
         }
         let name = format!("{}/{}", REFINES_CHECK_DIR, self.tcx.crate_name(LOCAL_CRATE));
         let name = std::path::Path::new(&name);
+        std::fs::create_dir_all(name.parent().unwrap()).unwrap_or_else(|e| {
+            self.crash_and_error(
+                DUMMY_SP,
+                format!("error creating directory {}: {}", name.parent().unwrap().display(), e),
+            )
+        });
         creusot_metadata::encode_metadata(self.tcx, &name, thir_required.iter().collect::<Vec<_>>())
-            .map_err(|(_, e)| {
-                self.error(DUMMY_SP, format!("error when writing {}: {}", name.display(), e)).emit()
+            .unwrap_or_else(|(_, e)| {
+                self.crash_and_error(
+                    DUMMY_SP,
+                    format!("error when writing {}: {}", name.display(), e),
+                )
             })
     }
 

@@ -57,7 +57,7 @@ pub(crate) fn validate_refines(ctx: &TranslationCtx) {
         Err(Ok(e)) => e.raise_fatal(),
         Err(Err(MissingBody)) => {
             ctx.warn(DUMMY_SP, "Some cross-crate `#[refines]` checks were skipped\nUse `cargo creusot --refines-check` to perform those checks. This will force a rebuild of all your dependencies.");
-            ctx.dump_thir_required().unwrap_or_else(|e| e.raise_fatal());
+            ctx.dump_thir_required();
         }
     }
 }
