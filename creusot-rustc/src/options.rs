@@ -55,6 +55,7 @@ impl CreusotArgsExt for CreusotArgs {
             monolithic: self.options.monolithic,
             prefix: Vec::new(), // to be set in callbacks::ToWhy::set_output_dir
             simple_triggers: self.options.simple_triggers,
+            refines_check: self.options.refines_check,
         })
     }
 }

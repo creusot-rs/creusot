@@ -43,6 +43,9 @@ pub struct CommonOptions {
     /// Use `result` as the trigger of definition and specification axioms of logic/ghost functions
     #[clap(long, default_value_t = false, action = clap::ArgAction::Set)]
     pub simple_triggers: bool,
+    /// Enable #[refines] checking across crates.
+    #[clap(long)]
+    pub refines_check: bool,
 }
 
 #[derive(Debug, Parser, Serialize, Deserialize)]

@@ -36,6 +36,7 @@ pub struct Options {
     pub in_cargo: bool,
     pub span_mode: SpanMode,
     pub simple_triggers: bool,
+    pub refines_check: bool,
 }
 
 #[derive(Debug, Clone)]

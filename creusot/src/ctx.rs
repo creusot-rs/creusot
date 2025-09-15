@@ -43,7 +43,7 @@ use rustc_middle::{
         TypingEnv, TypingMode, Visibility,
     },
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::{DUMMY_SP, ErrorGuaranteed, Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
 use rustc_type_ir::inherent::Ty as _;
 use std::{
@@ -535,7 +535,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.refines_to_check.iter()
     }
 
-    pub(crate) fn dump_thir_required(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub(crate) fn dump_thir_required(&self) -> Result<(), ErrorGuaranteed> {
         if !self.opts.should_output {
             // Skip if this is not a primary package
             return Ok(());
@@ -546,12 +546,10 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
         let name = format!("{}/{}", REFINES_CHECK_DIR, self.tcx.crate_name(LOCAL_CRATE));
         let name = std::path::Path::new(&name);
-        creusot_metadata::encode_metadata(
-            self.tcx,
-            &name,
-            thir_required.iter().collect::<Vec<_>>(),
-        )
-        .map_err(|(_, e)| e.into())
+        creusot_metadata::encode_metadata(self.tcx, &name, thir_required.iter().collect::<Vec<_>>())
+            .map_err(|(_, e)| {
+                self.error(DUMMY_SP, format!("error when writing {}: {}", name.display(), e)).emit()
+            })
     }
 
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {

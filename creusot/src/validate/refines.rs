@@ -46,9 +46,10 @@ pub(crate) fn validate_refines(ctx: &TranslationCtx) {
     }
     let mut err = Ok(());
     for (left, right) in ctx.iter_refines_to_check() {
-        err = check_refines(ctx, *left, *right).and(err);
+        err = err.and(check_refines(ctx, *left, *right));
     }
-    err.unwrap_or_else(|e| e.raise_fatal())
+    // Write out the required THIR bodies before bailing out
+    err.and(ctx.dump_thir_required()).unwrap_or_else(|e| e.raise_fatal())
 }
 
 fn check_refines<'tcx>(
@@ -65,10 +66,15 @@ fn check_refines<'tcx>(
     };
     let right = match right.as_local() {
         None => match ctx.anf_thir(right) {
-            None => {
-                ctx.warn(left_span, "Missing body for #[refines] check");
-                return Ok(());
+            None if ctx.opts.refines_check => {
+                return Err(ctx
+                    .error(
+                        left_span,
+                        format!("Missing body of {} for #[refines] check", ctx.def_path_str(right)),
+                    )
+                    .emit());
             }
+            None => return Ok(()),
             Some(anf) => anf,
         },
         Some(right) => {
