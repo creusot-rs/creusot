@@ -537,15 +537,19 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn dump_thir_required(&self) -> Result<(), Box<dyn std::error::Error>> {
         if !self.opts.should_output {
+            // Skip if this is not a primary package
             return Ok(());
         }
-        // Only run this for primary packages
-        let name = format!(".creusot-refines.{}", self.tcx.crate_name(LOCAL_CRATE));
+        let thir_required = self.thir_required.borrow();
+        if thir_required.is_empty() {
+            return Ok(());
+        }
+        let name = format!("{}/{}", REFINES_CHECK_DIR, self.tcx.crate_name(LOCAL_CRATE));
         let name = std::path::Path::new(&name);
         creusot_metadata::encode_metadata(
             self.tcx,
-            name,
-            self.thir_required.borrow().iter().collect::<Vec<_>>(),
+            &name,
+            thir_required.iter().collect::<Vec<_>>(),
         )
         .map_err(|(_, e)| e.into())
     }
@@ -611,3 +615,5 @@ pub struct Refined<'tcx> {
     /// `true` for ghost arguments to erase
     pub erase_args: Vec<bool>,
 }
+
+pub const REFINES_CHECK_DIR: &'static str = "_creusot-refines";

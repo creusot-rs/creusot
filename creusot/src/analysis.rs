@@ -840,6 +840,7 @@ pub(crate) fn run_without_specs<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: LocalDefId,
 ) -> BorrowData<'tcx> {
+    debug!("run_without_specs for {}", tcx.def_path_str(def_id.to_def_id()));
     let body = callbacks::get_body(tcx, def_id);
     let mut body_specs = BodySpecs::empty();
     let corenamer = HashMap::new();
@@ -857,13 +858,13 @@ pub(crate) fn run_with_specs<'a, 'tcx>(
     body: &'a BodyWithBorrowckFacts<'tcx>,
     body_specs: &mut BodySpecs<'tcx>,
 ) -> BorrowData<'tcx> {
+    debug!("run_with_specs for {}", ctx.tcx.def_path_str(body.body.source.def_id()));
     let tcx = ctx.tcx;
     let corenamer = &ctx.corenamer.borrow();
     // We take `locals` from `body_specs` and put it back later
     let locals = std::mem::take(&mut body_specs.locals);
     let tree = fmir::ScopeTree::build(&body.body, tcx, &locals);
     let analysis_env = AnalysisEnv::new(tree, corenamer, locals);
-
     let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
     let mut analysis = Analysis::new(tcx, analysis_env, &body, body_specs, &move_data);
     analysis.run();
