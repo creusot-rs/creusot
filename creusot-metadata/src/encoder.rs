@@ -234,7 +234,7 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
 
     let mut encoder = MetadataEncoder {
         tcx,
-        opaque: FileEncoder::new(path).unwrap(),
+        opaque: FileEncoder::new(path).map_err(|e| (path.to_path_buf(), e))?,
         type_shorthands: Default::default(),
         predicate_shorthands: Default::default(),
         hygiene_context: &hygiene_context,

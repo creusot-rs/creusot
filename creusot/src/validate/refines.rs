@@ -28,7 +28,7 @@ use rustc_middle::{
     ty::{self, TyCtxt, adjustment::PointerCoercion::MutToConstPointer},
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-use rustc_span::{ErrorGuaranteed, Span, SpanDecoder, SpanEncoder};
+use rustc_span::{DUMMY_SP, ErrorGuaranteed, Span, SpanDecoder, SpanEncoder};
 
 use crate::{
     backend::is_trusted_item,
@@ -46,49 +46,63 @@ pub(crate) fn validate_refines(ctx: &TranslationCtx) {
     }
     let mut err = Ok(());
     for (left, right) in ctx.iter_refines_to_check() {
-        err = err.and(check_refines(ctx, *left, *right));
+        err = match (err, check_refines(ctx, *left, *right)) {
+            (_, Ok(())) => err,
+            (Ok(()), Err(e)) => Err(e),
+            (Err(e1), Err(e2)) => Err(e1.and(e2)),
+        }
     }
-    // Write out the required THIR bodies before bailing out
-    err.and(ctx.dump_thir_required()).unwrap_or_else(|e| e.raise_fatal())
+    match err {
+        Ok(()) => {}
+        Err(Ok(e)) => e.raise_fatal(),
+        Err(Err(MissingBody)) => {
+            ctx.warn(DUMMY_SP, "Some cross-crate `#[refines]` checks were skipped\nUse `cargo creusot --refines-check` to perform those checks. This will force a rebuild of all your dependencies.");
+            ctx.dump_thir_required().unwrap_or_else(|e| e.raise_fatal());
+        }
+    }
 }
+
+/// Error when #[refines] is missing an ANF THIR body from a dependency
+#[derive(Copy, Clone, Debug)]
+struct MissingBody;
 
 fn check_refines<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     left: LocalDefId,
     (right, subst2): (DefId, ty::GenericArgsRef<'tcx>),
-) -> Result<(), ErrorGuaranteed> {
+) -> Result<(), Result<ErrorGuaranteed, MissingBody>> {
     if is_trusted_item(ctx.tcx, left.to_def_id()) {
         return Ok(());
     }
     let left_span = ctx.def_span(left);
     let Some(left_thir) = ctx.get_local_thir(left) else {
-        return Err(ctx.error(left_span, "#[refines] function must have a body").emit());
+        return Err(Ok(ctx.error(left_span, "#[refines] function must have a body").emit()));
     };
     let right = match right.as_local() {
         None => match ctx.anf_thir(right) {
             None if ctx.opts.refines_check => {
-                return Err(ctx
+                return Err(Ok(ctx
                     .error(
                         left_span,
                         format!("Missing body of {} for #[refines] check", ctx.def_path_str(right)),
                     )
-                    .emit());
+                    .emit()));
             }
-            None => return Ok(()),
+            None => return Err(Err(MissingBody)),
             Some(anf) => anf,
         },
         Some(right) => {
             let Some(right_thir) = ctx.get_local_thir(right) else {
-                return Err(ctx
+                return Err(Ok(ctx
                     .error(ctx.def_span(right), "Refined function must have a body")
-                    .emit());
+                    .emit()));
             };
             let right_scope = ctx.tcx.region_scope_tree(right);
             // Even when processing `right_thir`, error messages should mention `refines_span`:
             // the span of the function carrying the `#[refines]` attribute.
             let right = a_normal_form(ctx, (right_thir, right_scope), left_span).map_err(|e| {
                 debug!("{:#?}", right_thir);
-                e
+                Ok(e)
             })?;
             &ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2)
         }
@@ -96,9 +110,9 @@ fn check_refines<'tcx>(
     let left_scope = ctx.tcx.region_scope_tree(left);
     let left = a_normal_form(ctx, (left_thir, left_scope), left_span).map_err(|e| {
         debug!("{:#?}", left_thir);
-        e
+        Ok(e)
     })?;
-    check_refines_thir(ctx, &left, right, left_span)
+    check_refines_thir(ctx, &left, right, left_span).map_err(Ok)
 }
 
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable, TyEncodable, TyDecodable)]
