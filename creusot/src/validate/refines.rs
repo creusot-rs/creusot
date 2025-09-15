@@ -62,7 +62,7 @@ pub(crate) fn validate_refines(ctx: &TranslationCtx) {
     }
 }
 
-/// Error when #[refines] is missing an ANF THIR body from a dependency
+/// Error when #[refines] is missing an ANF THIR body from another crate
 #[derive(Copy, Clone, Debug)]
 struct MissingBody;
 
