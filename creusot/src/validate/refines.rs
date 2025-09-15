@@ -112,7 +112,7 @@ fn check_refines<'tcx>(
         debug!("{:#?}", left_thir);
         Ok(e)
     })?;
-    check_refines_thir(ctx, &left, right, left_span).map_err(Ok)
+    check_refines_thir(ctx, &left, right).map_err(Ok)
 }
 
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable, TyEncodable, TyDecodable)]
@@ -1102,7 +1102,6 @@ fn check_refines_thir<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     left: &AnfBlock<'tcx>,
     right: &AnfBlock<'tcx>,
-    refines_span: Span,
 ) -> Result<(), ErrorGuaranteed> {
     let mut checker = RefineChecker::new(ctx);
     let r = checker.refines(&left, &right);

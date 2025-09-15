@@ -43,7 +43,7 @@ use rustc_middle::{
         TypingEnv, TypingMode, Visibility,
     },
 };
-use rustc_span::{DUMMY_SP, ErrorGuaranteed, Span, Symbol};
+use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
 use rustc_type_ir::inherent::Ty as _;
 use std::{

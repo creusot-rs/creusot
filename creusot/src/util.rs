@@ -1,17 +1,16 @@
 use std::path::Path;
 
-use rustc_hir::{HirId, def::DefKind, def_id::DefId};
+use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_index::IndexVec;
 use rustc_middle::{
-    mir::{self, FakeReadCause, Location},
-    thir::{self, LoopMatchMatchData},
+    mir::Location,
+    thir,
     ty::{
-        self, GenericArgs, GenericArgsRef, TyCtxt,
-        codec::{TyDecoder, TyEncoder},
+        GenericArgs, GenericArgsRef, TyCtxt,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-use rustc_span::{Span, SpanDecoder};
+use rustc_span::Span;
 
 use crate::options::SpanMode;
 
@@ -50,10 +49,6 @@ pub(crate) fn path_of_span(tcx: TyCtxt, span: Span, span_mode: &SpanMode) -> Opt
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct Orphan<T>(pub T);
-
-pub fn unorphan<T>(t: Orphan<T>) -> T {
-    t.0
-}
 
 pub trait ODecodable<D: Decoder> {
     fn odecode(d: &mut D) -> Self;
