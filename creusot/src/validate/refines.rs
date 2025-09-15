@@ -68,14 +68,15 @@ struct MissingBody;
 
 fn check_refines<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    left: LocalDefId,
+    left_local: LocalDefId,
     (right, subst2): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Result<(), Result<ErrorGuaranteed, MissingBody>> {
-    if is_trusted_item(ctx.tcx, left.to_def_id()) {
+    let left = left_local.to_def_id();
+    if is_trusted_item(ctx.tcx, left) {
         return Ok(());
     }
-    let left_span = ctx.def_span(left);
-    let Some(left_thir) = ctx.get_local_thir(left) else {
+    let left_span = ctx.def_span(left_local);
+    let Some(left_thir) = ctx.get_local_thir(left_local) else {
         return Err(Ok(ctx.error(left_span, "#[refines] function must have a body").emit()));
     };
     let right = match right.as_local() {
@@ -91,24 +92,22 @@ fn check_refines<'tcx>(
             None => return Err(Err(MissingBody)),
             Some(anf) => anf,
         },
-        Some(right) => {
-            let Some(right_thir) = ctx.get_local_thir(right) else {
+        Some(right_local) => {
+            let Some(right_thir) = ctx.get_local_thir(right_local) else {
                 return Err(Ok(ctx
-                    .error(ctx.def_span(right), "Refined function must have a body")
+                    .error(ctx.def_span(right_local), "Refined function must have a body")
                     .emit()));
             };
-            let right_scope = ctx.tcx.region_scope_tree(right);
             // Even when processing `right_thir`, error messages should mention `refines_span`:
             // the span of the function carrying the `#[refines]` attribute.
-            let right = a_normal_form(ctx, (right_thir, right_scope), left_span).map_err(|e| {
+            let right = a_normal_form(ctx, right, right_thir, left_span).map_err(|e| {
                 debug!("{:#?}", right_thir);
                 Ok(e)
             })?;
             &ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2)
         }
     };
-    let left_scope = ctx.tcx.region_scope_tree(left);
-    let left = a_normal_form(ctx, (left_thir, left_scope), left_span).map_err(|e| {
+    let left = a_normal_form(ctx, left, left_thir, left_span).map_err(|e| {
         debug!("{:#?}", left_thir);
         Ok(e)
     })?;
@@ -464,11 +463,13 @@ struct AnfContext<'a, 'tcx> {
     span: Span,
 }
 
-fn a_normal_form<'tcx>(
+pub fn a_normal_form<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    ((thir, expr), scope_tree): (&(Thir<'tcx>, ExprId), &ScopeTree),
+    def_id: DefId,
+    (thir, expr): &(Thir<'tcx>, ExprId),
     def_span: Span,
 ) -> Result<AnfBlock<'tcx>, ErrorGuaranteed> {
+    let scope_tree = ctx.tcx.region_scope_tree(def_id);
     let mut ctx = AnfContext::new(ctx, thir, scope_tree, def_span);
     let pattern = ctx.a_normal_form_args()?;
     ctx.a_normal_form_expr_block_(*expr, pattern, Vec::new(), None)

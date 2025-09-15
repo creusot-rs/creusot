@@ -20,6 +20,7 @@ use crate::{
     util::{erased_identity_for_item, parent_module},
     validate::AnfBlock,
 };
+use creusot_metadata::decode_metadata;
 use indexmap::{IndexMap, IndexSet};
 use once_map::unsync::OnceMap;
 use rustc_ast::{
@@ -47,9 +48,7 @@ use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
 use rustc_type_ir::inherent::Ty as _;
 use std::{
-    cell::{OnceCell, RefCell},
-    collections::HashMap,
-    ops::Deref,
+    cell::{OnceCell, RefCell}, collections::{HashMap, HashSet}, io::Read as _, ops::Deref
 };
 use why3::Ident;
 
@@ -419,8 +418,41 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.opacity(item).0.is_accessible_from(modl, self.tcx)
     }
 
+    fn get_thir_required(&self) -> HashSet<DefId> {
+        let mut required = HashSet::new();
+        let Ok(dir) = std::fs::read_dir(REFINES_CHECK_DIR) else { return required; };
+        for entry in dir {
+            let Ok(entry) = entry else { continue; };
+            let path = entry.path();
+            let mut blob = Vec::new();
+            match std::fs::File::open(&path).and_then(|mut file| file.read_to_end(&mut blob)) {
+                Ok(_) => (),
+                Err(e) => {
+                    warn!("could not read {}: {:?}", path.display(), e);
+                    continue;
+                }
+            }
+            let more_required: Vec<DefId> = decode_metadata(self.tcx, &blob);
+            required.extend(more_required);
+        }
+        required
+    }
+
+    pub(crate) fn exported_anf_thir(&mut self) -> Vec<(DefId, AnfBlock<'tcx>)> {
+        let required = self.get_thir_required();
+        self.local_thir.iter().filter_map(|(local_id, thir)| {
+            let def_id = local_id.to_def_id();
+            if required.contains(&def_id) {
+                let anf = crate::validate::a_normal_form(self, def_id, thir, self.def_span(def_id)).ok()?;
+                Some((def_id, anf))
+            } else {
+                None
+            }
+        }).collect()
+    }
+
     pub(crate) fn metadata(&mut self) -> BinaryMetadata<'tcx> {
-        let anf_thir = Vec::new(); // TODO
+        let anf_thir = self.exported_anf_thir();
         BinaryMetadata::from_parts(
             &mut self.terms,
             std::mem::take(&mut self.creusot_items),
