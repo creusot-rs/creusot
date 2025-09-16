@@ -45,13 +45,13 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone [#"per
   type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'0; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
   
   type t_PersistentArray = {
-    t_PersistentArray__pcell: t_Rc;
+    t_PersistentArray__permcell: t_Rc;
     t_PersistentArray__frag: t_Fragment;
     t_PersistentArray__inv: t_Rc'0 }
   
-  type t_PCell
+  type t_PermCell
   
-  function view (self: t_Rc) : t_PCell
+  function view (self: t_Rc) : t_PermCell
   
   let rec clone' (self_: t_Rc) (return' (x: t_Rc)) = any
     [ return''0 (result: t_Rc) -> {[%#src] view result = view self_} (! return' {result}) ]
@@ -127,7 +127,7 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone [#"per
   
   function view'3 (self: t_Fragment) : tuple = [%#sghost'5] view'0 self
   
-  function id'0 (self: t_PCell) : t_Id
+  function id'0 (self: t_PermCell) : t_Id
   
   function public (self: t_LocalInvariant) : t_Id
   
@@ -136,7 +136,7 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone [#"per
   function namespace (self: t_LocalInvariant) : t_Namespace
   
   predicate invariant''3 [#"persistent_array.rs" 59 8 59 34] (self: t_PersistentArray) =
-    [%#spersistent_array'3] (view'3 self.t_PersistentArray__frag)._p0 = id'0 (view self.t_PersistentArray__pcell)
+    [%#spersistent_array'3] (view'3 self.t_PersistentArray__frag)._p0 = id'0 (view self.t_PersistentArray__permcell)
     /\ id self.t_PersistentArray__frag = public (view'4 self.t_PersistentArray__inv)
     /\ namespace (view'4 self.t_PersistentArray__inv) = Namespace_PARRAY 0
   
@@ -145,7 +145,7 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone [#"per
   axiom inv_axiom'3 [@rewrite]: forall x: t_PersistentArray [inv'3 x]. inv'3 x
       = (invariant''3 x
       /\ match x with
-        | {t_PersistentArray__pcell = pcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'4} -> inv'0 frag
+        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'4} -> inv'0 frag
         end)
   
   predicate invariant''4 (self: t_PersistentArray) = [%#sinvariant] inv'3 self
@@ -168,7 +168,7 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone [#"per
   let rec clone''2 [#"persistent_array.rs" 48 8 48 31] (self: t_PersistentArray) (return' (x: t_PersistentArray)) =
     {[@expl:clone 'self' type invariant] [%#spersistent_array] inv'4 self}
     (! bb0
-    [ bb0 = s0 [ s0 = clone' {self'0.t_PersistentArray__pcell} (fun (_ret: t_Rc) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = clone' {self'0.t_PersistentArray__permcell} (fun (_ret: t_Rc) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = deref {self'0.t_PersistentArray__frag} (fun (_ret: t_Fragment) -> [ &_8 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = clone''0 {_8} (fun (_ret: t_Fragment) -> [ &_6 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0 [ s0 = new {_6} (fun (_ret: t_Fragment) -> [ &_5 <- _ret ] s1) | s1 = bb4 ]
@@ -176,7 +176,8 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone [#"per
     | bb5 = s0 [ s0 = clone''1 {_13} (fun (_ret: t_Rc'0) -> [ &_11 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0 [ s0 = new'0 {_11} (fun (_ret: t_Rc'0) -> [ &_10 <- _ret ] s1) | s1 = bb7 ]
     | bb7 = s0
-      [ s0 = [ &_0 <- { t_PersistentArray__pcell = _3; t_PersistentArray__frag = _5; t_PersistentArray__inv = _10 } ] s1
+      [ s0 = [ &_0 <- { t_PersistentArray__permcell = _3; t_PersistentArray__frag = _5; t_PersistentArray__inv = _10 } ]
+        s1
       | s1 = bb8 ]
     | bb8 = return''0 {_0} ]
     [ & _0: t_PersistentArray = Any.any_l ()
@@ -200,7 +201,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   
   let%span src = "../../creusot-contracts/src/std/rc.rs" 31 26 31 43
   let%span spersistent_array = "persistent_array.rs" 123 22 123 35
-  let%span spersistent_array'0 = "persistent_array.rs" 126 42 126 66
+  let%span spersistent_array'0 = "persistent_array.rs" 126 42 126 69
   let%span spersistent_array'1 = "persistent_array.rs" 135 31 135 47
   let%span spersistent_array'2 = "persistent_array.rs" 137 20 137 40
   let%span spersistent_array'3 = "persistent_array.rs" 138 20 138 39
@@ -239,15 +240,15 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 95 8 95 18
   let%span svec = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
   let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 99 20 99 41
-  let%span spcell = "../../creusot-contracts/src/cell/pcell.rs" 103 15 103 20
-  let%span spcell'0 = "../../creusot-contracts/src/cell/pcell.rs" 103 4 103 54
-  let%span spcell'1 = "../../creusot-contracts/src/cell/pcell.rs" 101 14 101 44
-  let%span spcell'2 = "../../creusot-contracts/src/cell/pcell.rs" 102 14 102 35
-  let%span spcell'3 = "../../creusot-contracts/src/cell/pcell.rs" 85 21 85 25
-  let%span spcell'4 = "../../creusot-contracts/src/cell/pcell.rs" 84 14 84 34
-  let%span spcell'5 = "../../creusot-contracts/src/cell/pcell.rs" 34 4 34 12
-  let%span spcell'6 = "../../creusot-contracts/src/cell/pcell.rs" 62 20 62 46
-  let%span spcell'7 = "../../creusot-contracts/src/cell/pcell.rs" 45 8 45 27
+  let%span spermcell = "../../creusot-contracts/src/cell/permcell.rs" 103 15 103 20
+  let%span spermcell'0 = "../../creusot-contracts/src/cell/permcell.rs" 103 4 103 57
+  let%span spermcell'1 = "../../creusot-contracts/src/cell/permcell.rs" 101 14 101 44
+  let%span spermcell'2 = "../../creusot-contracts/src/cell/permcell.rs" 102 14 102 35
+  let%span spermcell'3 = "../../creusot-contracts/src/cell/permcell.rs" 85 21 85 25
+  let%span spermcell'4 = "../../creusot-contracts/src/cell/permcell.rs" 84 14 84 34
+  let%span spermcell'5 = "../../creusot-contracts/src/cell/permcell.rs" 34 4 34 12
+  let%span spermcell'6 = "../../creusot-contracts/src/cell/permcell.rs" 62 20 62 46
+  let%span spermcell'7 = "../../creusot-contracts/src/cell/permcell.rs" 45 8 45 27
   let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 286 4 286 31
   let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 284 4 284 33
   let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 445 29 445 33
@@ -317,11 +318,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   
   type t_Inner = C_Direct t_Vec | C_Link UInt64.t t_T t_Rc
   
-  type t_PCell
+  type t_PermCell
   
-  type t_PCellOwn
+  type t_PermCellOwn
   
-  type tuple = { _p0: t_PCell; _p1: t_PCellOwn }
+  type tuple = { _p0: t_PermCell; _p1: t_PermCellOwn }
   
   predicate inv (_0: t_T)
   
@@ -360,19 +361,19 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x = invariant''2 x
   
-  function val' (self: t_PCellOwn) : t_Inner
+  function val' (self: t_PermCellOwn) : t_Inner
   
-  predicate invariant''3 (self: t_PCellOwn) = [%#spcell'6] inv'4 (val' self)
+  predicate invariant''3 (self: t_PermCellOwn) = [%#spermcell'6] inv'4 (val' self)
   
-  predicate inv'5 (_0: t_PCellOwn)
+  predicate inv'5 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_PCellOwn [inv'5 x]. inv'5 x = invariant''3 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PermCellOwn [inv'5 x]. inv'5 x = invariant''3 x
   
-  predicate invariant''4 (self: t_PCellOwn) = [%#sghost'12] inv'5 self
+  predicate invariant''4 (self: t_PermCellOwn) = [%#sghost'12] inv'5 self
   
-  predicate inv'6 (_0: t_PCellOwn)
+  predicate inv'6 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PCellOwn [inv'6 x]. inv'6 x = invariant''4 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''4 x
   
   predicate inv'7 (_0: tuple)
   
@@ -380,17 +381,17 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   
   type t_Id
   
-  function id (self: t_PCell) : t_Id
+  function id (self: t_PermCell) : t_Id
   
-  function id'0 (self: t_PCellOwn) : t_Id
+  function id'0 (self: t_PermCellOwn) : t_Id
   
-  function view'0 (self: t_PCellOwn) : t_Inner = [%#spcell'5] val' self
+  function view'0 (self: t_PermCellOwn) : t_Inner = [%#spermcell'5] val' self
   
-  let rec new (value: t_Inner) (return' (x: tuple)) = {[@expl:new 'value' type invariant] [%#spcell] inv'3 value}
+  let rec new (value: t_Inner) (return' (x: tuple)) = {[@expl:new 'value' type invariant] [%#spermcell] inv'3 value}
     any
-    [ return''0 (result: tuple) -> {[%#spcell'0] inv'7 result}
-      {[%#spcell'1] id result._p0 = id'0 result._p1}
-      {[%#spcell'2] view'0 result._p1 = value}
+    [ return''0 (result: tuple) -> {[%#spermcell'0] inv'7 result}
+      {[%#spermcell'1] id result._p0 = id'0 result._p1}
+      {[%#spermcell'2] view'0 result._p1 = value}
       (! return' {result}) ]
   
   type t_Resource
@@ -524,7 +525,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   
   type t_FMap'0
   
-  type t_Option'0 = C_None'0 | C_Some'0 t_PCellOwn
+  type t_Option'0 = C_None'0 | C_Some'0 t_PermCellOwn
   
   function view'6 (self: t_FMap'0) : Map.map t_Id t_Option'0
   
@@ -536,21 +537,22 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   
   axiom inv_axiom'13 [@rewrite]: forall x: t_Id [inv'14 x]. inv'14 x = true
   
-  predicate index_logic (self: Map.map t_PCellOwn bool) (a: t_PCellOwn) = [%#smapping] Map.get self a
+  predicate index_logic (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = [%#smapping] Map.get self a
   
-  function such_that (p: Map.map t_PCellOwn bool) : t_PCellOwn
+  function such_that (p: Map.map t_PermCellOwn bool) : t_PermCellOwn
   
-  axiom such_that_spec: forall p: Map.map t_PCellOwn bool. ([%#slogic] exists x: t_PCellOwn. index_logic p x)
+  axiom such_that_spec: forall p: Map.map t_PermCellOwn bool. ([%#slogic] exists x: t_PermCellOwn. index_logic p x)
       -> ([%#slogic'0] index_logic p (such_that p))
   
-  function unwrap_logic (self: t_Option'0) : t_PCellOwn = [%#soption'1] match self with
+  function unwrap_logic (self: t_Option'0) : t_PermCellOwn = [%#soption'1] match self with
       | C_Some'0 x -> x
-      | C_None'0 -> such_that (fun (__0: t_PCellOwn) -> true)
+      | C_None'0 -> such_that (fun (__0: t_PermCellOwn) -> true)
       end
   
-  function lookup [@inline:trivial] (self: t_FMap'0) (k: t_Id) : t_PCellOwn = [%#sfmap'18] unwrap_logic (get'0 self k)
+  function lookup [@inline:trivial] (self: t_FMap'0) (k: t_Id) : t_PermCellOwn =
+    [%#sfmap'18] unwrap_logic (get'0 self k)
   
-  function index_logic'0 [@inline:trivial] (self: t_FMap'0) (key: t_Id) : t_PCellOwn = [%#sfmap'17] lookup self key
+  function index_logic'0 [@inline:trivial] (self: t_FMap'0) (key: t_Id) : t_PermCellOwn = [%#sfmap'17] lookup self key
   
   predicate invariant''11 (self: t_FMap'0) =
     [%#sfmap'16] forall k: t_Id. contains'0 self k -> inv'14 k /\ inv'5 (index_logic'0 self k)
@@ -608,38 +610,42 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
-  predicate invariant''15 (self: t_PCellOwn) = [%#sinvariant'0] inv'6 self
+  predicate invariant''15 (self: t_PermCellOwn) = [%#sinvariant'0] inv'6 self
   
   meta "rewrite_def" predicate invariant''15
   
-  predicate inv'19 (_0: t_PCellOwn)
+  predicate inv'19 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'18 [@rewrite]: forall x: t_PCellOwn [inv'19 x]. inv'19 x = invariant''15 x
+  axiom inv_axiom'18 [@rewrite]: forall x: t_PermCellOwn [inv'19 x]. inv'19 x = invariant''15 x
   
-  predicate invariant''16 (self: t_PCellOwn) = [%#sinvariant'0] inv'5 self
+  predicate invariant''16 (self: t_PermCellOwn) = [%#sinvariant'0] inv'5 self
   
   meta "rewrite_def" predicate invariant''16
   
-  predicate inv'20 (_0: t_PCellOwn)
+  predicate inv'20 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'19 [@rewrite]: forall x: t_PCellOwn [inv'20 x]. inv'20 x = invariant''16 x
+  axiom inv_axiom'19 [@rewrite]: forall x: t_PermCellOwn [inv'20 x]. inv'20 x = invariant''16 x
   
-  let rec deref (self: t_PCellOwn) (return' (x: t_PCellOwn)) =
+  let rec deref (self: t_PermCellOwn) (return' (x: t_PermCellOwn)) =
     {[@expl:deref 'self' type invariant] [%#sghost'5] inv'19 self}
     any
-    [ return''0 (result: t_PCellOwn) -> {[%#sghost'6] inv'20 result} {[%#sghost'7] result = self} (! return' {result}) ]
+    [ return''0 (result: t_PermCellOwn) -> {[%#sghost'6] inv'20 result}
+      {[%#sghost'7] result = self}
+      (! return' {result}) ]
   
-  let rec id_ghost (self: t_PCellOwn) (return' (x: t_Id)) =
-    {[@expl:id_ghost 'self' type invariant] [%#spcell'3] inv'20 self}
-    any [ return''0 (result: t_Id) -> {[%#spcell'4] result = id'0 self} (! return' {result}) ]
+  let rec id_ghost (self: t_PermCellOwn) (return' (x: t_Id)) =
+    {[@expl:id_ghost 'self' type invariant] [%#spermcell'3] inv'20 self}
+    any [ return''0 (result: t_Id) -> {[%#spermcell'4] result = id'0 self} (! return' {result}) ]
   
   let rec deref'0 (self: t_Id) (return' (x: t_Id)) = any
     [ return''0 (result: t_Id) -> {[%#sghost'7] result = self} (! return' {result}) ]
   
-  let rec into_inner (self: t_PCellOwn) (return' (x: t_PCellOwn)) =
+  let rec into_inner (self: t_PermCellOwn) (return' (x: t_PermCellOwn)) =
     {[@expl:into_inner 'self' type invariant] [%#sghost'8] inv'6 self}
     any
-    [ return''0 (result: t_PCellOwn) -> {[%#sghost'9] inv'5 result} {[%#sghost'10] result = self} (! return' {result}) ]
+    [ return''0 (result: t_PermCellOwn) -> {[%#sghost'9] inv'5 result}
+      {[%#sghost'10] result = self}
+      (! return' {result}) ]
   
   predicate inv'21 (_0: t_Option'0)
   
@@ -649,15 +655,15 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
         | C_Some'0 a_0 -> inv'5 a_0
         end
   
-  function insert'1 (self: t_FMap'0) (k: t_Id) (v: t_PCellOwn) : t_FMap'0
+  function insert'1 (self: t_FMap'0) (k: t_Id) (v: t_PermCellOwn) : t_FMap'0
   
-  axiom insert_spec'1: forall self: t_FMap'0, k: t_Id, v: t_PCellOwn. [%#sfmap'9] view'6 (insert'1 self k v)
+  axiom insert_spec'1: forall self: t_FMap'0, k: t_Id, v: t_PermCellOwn. [%#sfmap'9] view'6 (insert'1 self k v)
       = Map.set (view'6 self) k (C_Some'0 v)
   
-  axiom insert_spec'2: forall self: t_FMap'0, k: t_Id, v: t_PCellOwn. [%#sfmap'10] len'0 (insert'1 self k v)
+  axiom insert_spec'2: forall self: t_FMap'0, k: t_Id, v: t_PermCellOwn. [%#sfmap'10] len'0 (insert'1 self k v)
       = (if contains'0 self k then len'0 self else len'0 self + 1)
   
-  let rec insert_ghost (self: MutBorrow.t t_FMap'0) (key: t_Id) (value: t_PCellOwn) (return' (x: t_Option'0)) =
+  let rec insert_ghost (self: MutBorrow.t t_FMap'0) (key: t_Id) (value: t_PermCellOwn) (return' (x: t_Option'0)) =
     {[@expl:insert_ghost 'self' type invariant] [%#sfmap'1] inv'18 self}
     {[@expl:insert_ghost 'value' type invariant] [%#sfmap'2] inv'5 value}
     any
@@ -668,9 +674,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   
   predicate resolve'1 (_0: t_Inner) = true
   
-  predicate resolve'2 (self: t_PCellOwn) = [%#spcell'7] resolve'1 (val' self)
+  predicate resolve'2 (self: t_PermCellOwn) = [%#spermcell'7] resolve'1 (val' self)
   
-  predicate resolve'3 (_0: t_PCellOwn) = resolve'2 _0
+  predicate resolve'3 (_0: t_PermCellOwn) = resolve'2 _0
   
   predicate resolve'4 (self: t_Option'0) =
     [%#soption] match self with
@@ -736,9 +742,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   
   function view'7 (self: t_Vec) : Seq.seq t_T = [%#smodel'0] view self
   
-  function view'8 (self: t_Rc) : t_PCell
+  function view'8 (self: t_Rc) : t_PermCell
   
-  function view'9 (self: t_Rc) : t_PCell = [%#smodel'0] view'8 self
+  function view'9 (self: t_Rc) : t_PermCell = [%#smodel'0] view'8 self
   
   function index_logic'3 (self: Map.map t_Id int) (a: t_Id) : int = [%#smapping] Map.get self a
   
@@ -785,11 +791,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   let rec new'6 (x: t_Rc'0) (return' (x'0: t_Rc'0)) = any
     [ return''0 (result: t_Rc'0) -> {[%#sghost'4] result = x} (! return' {result}) ]
   
-  let rec new'7 (value: t_PCell) (return' (x: t_Rc)) = any
+  let rec new'7 (value: t_PermCell) (return' (x: t_Rc)) = any
     [ return''0 (result: t_Rc) -> {[%#src] view'8 result = value} (! return' {result}) ]
   
   type t_PersistentArray = {
-    t_PersistentArray__pcell: t_Rc;
+    t_PersistentArray__permcell: t_Rc;
     t_PersistentArray__frag: t_Fragment;
     t_PersistentArray__inv: t_Rc'0 }
   
@@ -798,7 +804,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   function view'13 (self: t_Rc'0) : t_LocalInvariant = [%#sghost'11] view'11 self
   
   predicate invariant''18 [#"persistent_array.rs" 59 8 59 34] (self: t_PersistentArray) =
-    [%#spersistent_array'9] (view'12 self.t_PersistentArray__frag)._p0'0 = id (view'8 self.t_PersistentArray__pcell)
+    [%#spersistent_array'9] (view'12 self.t_PersistentArray__frag)._p0'0 = id (view'8 self.t_PersistentArray__permcell)
     /\ id'2 self.t_PersistentArray__frag = public (view'13 self.t_PersistentArray__inv)
     /\ namespace (view'13 self.t_PersistentArray__inv) = Namespace_PARRAY 0
   
@@ -807,7 +813,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
   axiom inv_axiom'23 [@rewrite]: forall x: t_PersistentArray [inv'24 x]. inv'24 x
       = (invariant''18 x
       /\ match x with
-        | {t_PersistentArray__pcell = pcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'25} -> inv'13 frag
+        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'25} -> inv'13 frag
         end)
   
   function view'14 [#"persistent_array.rs" 77 8 77 31] (self: t_PersistentArray) : Seq.seq t_T =
@@ -823,7 +829,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
     [ bb0 = s0 [ s0 = [ &seq <- [%#spersistent_array] view v'0 ] s1 | s1 = bb1 ]
     | bb1 = s0 [ s0 = [ &_8 <- C_Direct v'0 ] s1 | s1 = bb2 ]
     | bb2 = s0 [ s0 = new {_8} (fun (_ret: tuple) -> [ &_7 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &pcell <- _7._p0 ] s1 | s1 = [ &pcellown <- _7._p1 ] s2 | s2 = bb4 ]
+    | bb3 = s0 [ s0 = [ &permcell <- _7._p0 ] s1 | s1 = [ &permcellown <- _7._p1 ] s2 | s2 = bb4 ]
     | bb4 = s0 [ s0 = new'0 (fun (_ret: t_Authority) -> [ &auth <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
       [ s0 = {inv'9 auth}
@@ -831,7 +837,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
           (fun (_ret: MutBorrow.t t_Authority) -> [ &_15 <- _ret ] -{inv'9 _ret.final}- [ &auth <- _ret.final ] s1)
       | s1 = deref_mut {_15} (fun (_ret: MutBorrow.t t_Authority) -> [ &_14 <- _ret ] s2)
       | s2 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_16 <- [%#spersistent_array'0] id'0 pcellown ] s1 | s1 = bb7 ]
+    | bb6 = s0 [ s0 = [ &_16 <- [%#spersistent_array'0] id'0 permcellown ] s1 | s1 = bb7 ]
     | bb7 = s0
       [ s0 = {inv'8 _14.current}
         MutBorrow.borrow_final <t_Authority> {_14.current} {MutBorrow.get_id _14}
@@ -852,10 +858,10 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
           (fun (_ret: MutBorrow.t t_FMap'0) -> [ &_25 <- _ret ] -{inv'16 _ret.final}- [ &perms <- _ret.final ] s1)
       | s1 = deref_mut'0 {_25} (fun (_ret: MutBorrow.t t_FMap'0) -> [ &_24 <- _ret ] s2)
       | s2 = bb11 ]
-    | bb11 = s0 [ s0 = deref {pcellown} (fun (_ret: t_PCellOwn) -> [ &_31 <- _ret ] s1) | s1 = bb12 ]
+    | bb11 = s0 [ s0 = deref {permcellown} (fun (_ret: t_PermCellOwn) -> [ &_31 <- _ret ] s1) | s1 = bb12 ]
     | bb12 = s0 [ s0 = id_ghost {_31} (fun (_ret: t_Id) -> [ &_29 <- _ret ] s1) | s1 = bb13 ]
     | bb13 = s0 [ s0 = deref'0 {_29} (fun (_ret: t_Id) -> [ &_27 <- _ret ] s1) | s1 = bb14 ]
-    | bb14 = s0 [ s0 = into_inner {pcellown} (fun (_ret: t_PCellOwn) -> [ &_33 <- _ret ] s1) | s1 = bb15 ]
+    | bb14 = s0 [ s0 = into_inner {permcellown} (fun (_ret: t_PermCellOwn) -> [ &_33 <- _ret ] s1) | s1 = bb15 ]
     | bb15 = s0
       [ s0 = {inv'15 _24.current}
         MutBorrow.borrow_final <t_FMap'0> {_24.current} {MutBorrow.get_id _24}
@@ -883,9 +889,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
     | bb23 = s0 [ s0 = into_inner'2 {local_inv} (fun (_ret: t_LocalInvariant) -> [ &_48 <- _ret ] s1) | s1 = bb24 ]
     | bb24 = s0 [ s0 = new'5 {_48} (fun (_ret: t_Rc'0) -> [ &_20 <- _ret ] s1) | s1 = bb25 ]
     | bb25 = s0 [ s0 = new'6 {_20} (fun (_ret: t_Rc'0) -> [ &inv'25 <- _ret ] s1) | s1 = bb26 ]
-    | bb26 = s0 [ s0 = new'7 {pcell} (fun (_ret: t_Rc) -> [ &_50 <- _ret ] s1) | s1 = bb27 ]
+    | bb26 = s0 [ s0 = new'7 {permcell} (fun (_ret: t_Rc) -> [ &_50 <- _ret ] s1) | s1 = bb27 ]
     | bb27 = s0
-      [ s0 = [ &_0 <- { t_PersistentArray__pcell = _50;
+      [ s0 = [ &_0 <- { t_PersistentArray__permcell = _50;
                         t_PersistentArray__frag = frag;
                         t_PersistentArray__inv = inv'25 } ] s1
       | s1 = bb30 ]
@@ -893,8 +899,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
     [ & _0: t_PersistentArray = Any.any_l ()
     | & v'0: t_Vec = v
     | & seq: Seq.seq t_T = Any.any_l ()
-    | & pcell: t_PCell = Any.any_l ()
-    | & pcellown: t_PCellOwn = Any.any_l ()
+    | & permcell: t_PermCell = Any.any_l ()
+    | & permcellown: t_PermCellOwn = Any.any_l ()
     | & _7: tuple = Any.any_l ()
     | & _8: t_Inner = Any.any_l ()
     | & auth: t_Authority = Any.any_l ()
@@ -913,8 +919,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__new [#"persis
     | & _25: MutBorrow.t t_FMap'0 = Any.any_l ()
     | & _27: t_Id = Any.any_l ()
     | & _29: t_Id = Any.any_l ()
-    | & _31: t_PCellOwn = Any.any_l ()
-    | & _33: t_PCellOwn = Any.any_l ()
+    | & _31: t_PermCellOwn = Any.any_l ()
+    | & _33: t_PermCellOwn = Any.any_l ()
     | & local_inv: t_LocalInvariant = Any.any_l ()
     | & _36: t_PA = Any.any_l ()
     | & _37: t_PA = Any.any_l ()
@@ -944,7 +950,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   let%span spersistent_array'3 = "persistent_array.rs" 148 8 148 46
   let%span spersistent_array'4 = "persistent_array.rs" 150 76 150 80
   let%span spersistent_array'5 = "persistent_array.rs" 149 18 149 53
-  let%span spersistent_array'6 = "persistent_array.rs" 164 31 164 95
+  let%span spersistent_array'6 = "persistent_array.rs" 164 31 164 98
   let%span spersistent_array'7 = "persistent_array.rs" 165 35 165 53
   let%span spersistent_array'8 = "persistent_array.rs" 154 45 154 53
   let%span spersistent_array'9 = "persistent_array.rs" 154 50 154 52
@@ -985,18 +991,18 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 106 20 106 44
   let%span svec = "../../creusot-contracts/src/std/vec.rs" 99 20 99 41
   let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span spcell = "../../creusot-contracts/src/cell/pcell.rs" 103 15 103 20
-  let%span spcell'0 = "../../creusot-contracts/src/cell/pcell.rs" 103 4 103 54
-  let%span spcell'1 = "../../creusot-contracts/src/cell/pcell.rs" 101 14 101 44
-  let%span spcell'2 = "../../creusot-contracts/src/cell/pcell.rs" 102 14 102 35
-  let%span spcell'3 = "../../creusot-contracts/src/cell/pcell.rs" 34 4 34 12
-  let%span spcell'4 = "../../creusot-contracts/src/cell/pcell.rs" 231 14 231 34
-  let%span spcell'5 = "../../creusot-contracts/src/cell/pcell.rs" 95 26 95 30
-  let%span spcell'6 = "../../creusot-contracts/src/cell/pcell.rs" 95 50 95 54
-  let%span spcell'7 = "../../creusot-contracts/src/cell/pcell.rs" 92 14 92 36
-  let%span spcell'8 = "../../creusot-contracts/src/cell/pcell.rs" 93 14 93 28
-  let%span spcell'9 = "../../creusot-contracts/src/cell/pcell.rs" 62 20 62 46
-  let%span spcell'10 = "../../creusot-contracts/src/cell/pcell.rs" 45 8 45 27
+  let%span spermcell = "../../creusot-contracts/src/cell/permcell.rs" 103 15 103 20
+  let%span spermcell'0 = "../../creusot-contracts/src/cell/permcell.rs" 103 4 103 57
+  let%span spermcell'1 = "../../creusot-contracts/src/cell/permcell.rs" 101 14 101 44
+  let%span spermcell'2 = "../../creusot-contracts/src/cell/permcell.rs" 102 14 102 35
+  let%span spermcell'3 = "../../creusot-contracts/src/cell/permcell.rs" 34 4 34 12
+  let%span spermcell'4 = "../../creusot-contracts/src/cell/permcell.rs" 231 14 231 34
+  let%span spermcell'5 = "../../creusot-contracts/src/cell/permcell.rs" 95 26 95 30
+  let%span spermcell'6 = "../../creusot-contracts/src/cell/permcell.rs" 95 53 95 57
+  let%span spermcell'7 = "../../creusot-contracts/src/cell/permcell.rs" 92 14 92 36
+  let%span spermcell'8 = "../../creusot-contracts/src/cell/permcell.rs" 93 14 93 28
+  let%span spermcell'9 = "../../creusot-contracts/src/cell/permcell.rs" 62 20 62 46
+  let%span spermcell'10 = "../../creusot-contracts/src/cell/permcell.rs" 45 8 45 27
   let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 387 30 387 34
   let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 387 4 387 62
   let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 376 14 384 9
@@ -1077,7 +1083,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'0; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
   
   type t_PersistentArray = {
-    t_PersistentArray__pcell: t_Rc;
+    t_PersistentArray__permcell: t_Rc;
     t_PersistentArray__frag: t_Fragment;
     t_PersistentArray__inv: t_Rc'0 }
   
@@ -1092,9 +1098,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   
   function view'2 (self: t_PersistentArray) : Seq.seq t_T = [%#smodel] view'1 self
   
-  type t_PCell
+  type t_PermCell
   
-  function view'3 (self: t_Rc) : t_PCell
+  function view'3 (self: t_Rc) : t_PermCell
   
   let rec clone' (self_: t_Rc) (return' (x: t_Rc)) = any
     [ return''0 (result: t_Rc) -> {[%#src] view'3 result = view'3 self_} (! return' {result}) ]
@@ -1113,9 +1119,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   
   type t_Inner = C_Direct t_Vec | C_Link UInt64.t t_T t_Rc
   
-  type t_PCellOwn
+  type t_PermCellOwn
   
-  type tuple'0 = { _p0'0: t_PCell; _p1'0: t_PCellOwn }
+  type tuple'0 = { _p0'0: t_PermCell; _p1'0: t_PermCellOwn }
   
   predicate inv (_0: t_T)
   
@@ -1160,35 +1166,35 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x = invariant''2 x
   
-  function val' (self: t_PCellOwn) : t_Inner
+  function val' (self: t_PermCellOwn) : t_Inner
   
-  predicate invariant''3 (self: t_PCellOwn) = [%#spcell'9] inv'4 (val' self)
+  predicate invariant''3 (self: t_PermCellOwn) = [%#spermcell'9] inv'4 (val' self)
   
-  predicate inv'5 (_0: t_PCellOwn)
+  predicate inv'5 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_PCellOwn [inv'5 x]. inv'5 x = invariant''3 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PermCellOwn [inv'5 x]. inv'5 x = invariant''3 x
   
-  predicate invariant''4 (self: t_PCellOwn) = [%#sghost'14] inv'5 self
+  predicate invariant''4 (self: t_PermCellOwn) = [%#sghost'14] inv'5 self
   
-  predicate inv'6 (_0: t_PCellOwn)
+  predicate inv'6 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PCellOwn [inv'6 x]. inv'6 x = invariant''4 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''4 x
   
   predicate inv'7 (_0: tuple'0)
   
   axiom inv_axiom'6 [@rewrite]: forall x: tuple'0 [inv'7 x]. inv'7 x = (let {_p0'0 = x0; _p1'0 = x1} = x in inv'6 x1)
   
-  function id (self: t_PCell) : t_Id
+  function id (self: t_PermCell) : t_Id
   
-  function id'0 (self: t_PCellOwn) : t_Id
+  function id'0 (self: t_PermCellOwn) : t_Id
   
-  function view'5 (self: t_PCellOwn) : t_Inner = [%#spcell'3] val' self
+  function view'5 (self: t_PermCellOwn) : t_Inner = [%#spermcell'3] val' self
   
-  let rec new (value: t_Inner) (return' (x: tuple'0)) = {[@expl:new 'value' type invariant] [%#spcell] inv'3 value}
+  let rec new (value: t_Inner) (return' (x: tuple'0)) = {[@expl:new 'value' type invariant] [%#spermcell] inv'3 value}
     any
-    [ return''0 (result: tuple'0) -> {[%#spcell'0] inv'7 result}
-      {[%#spcell'1] id result._p0'0 = id'0 result._p1'0}
-      {[%#spcell'2] view'5 result._p1'0 = value}
+    [ return''0 (result: tuple'0) -> {[%#spermcell'0] inv'7 result}
+      {[%#spermcell'1] id result._p0'0 = id'0 result._p1'0}
+      {[%#spermcell'2] view'5 result._p1'0 = value}
       (! return' {result}) ]
   
   type t_FMap
@@ -1197,7 +1203,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   
   type t_PA = { t_PA__perms: t_FMap; t_PA__auth: t_Authority; t_PA__depth: Map.map t_Id int }
   
-  type t_Option = C_None | C_Some t_PCellOwn
+  type t_Option = C_None | C_Some t_PermCellOwn
   
   function view'6 (self: t_FMap) : Map.map t_Id t_Option
   
@@ -1209,21 +1215,21 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   
   axiom inv_axiom'7 [@rewrite]: forall x: t_Id [inv'8 x]. inv'8 x = true
   
-  predicate index_logic (self: Map.map t_PCellOwn bool) (a: t_PCellOwn) = [%#smapping] Map.get self a
+  predicate index_logic (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = [%#smapping] Map.get self a
   
-  function such_that (p: Map.map t_PCellOwn bool) : t_PCellOwn
+  function such_that (p: Map.map t_PermCellOwn bool) : t_PermCellOwn
   
-  axiom such_that_spec: forall p: Map.map t_PCellOwn bool. ([%#slogic] exists x: t_PCellOwn. index_logic p x)
+  axiom such_that_spec: forall p: Map.map t_PermCellOwn bool. ([%#slogic] exists x: t_PermCellOwn. index_logic p x)
       -> ([%#slogic'0] index_logic p (such_that p))
   
-  function unwrap_logic (self: t_Option) : t_PCellOwn = [%#soption'1] match self with
+  function unwrap_logic (self: t_Option) : t_PermCellOwn = [%#soption'1] match self with
       | C_Some x -> x
-      | C_None -> such_that (fun (__0: t_PCellOwn) -> true)
+      | C_None -> such_that (fun (__0: t_PermCellOwn) -> true)
       end
   
-  function lookup [@inline:trivial] (self: t_FMap) (k: t_Id) : t_PCellOwn = [%#sfmap'16] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Id) : t_PermCellOwn = [%#sfmap'16] unwrap_logic (get self k)
   
-  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Id) : t_PCellOwn = [%#sfmap'11] lookup self key
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Id) : t_PermCellOwn = [%#sfmap'11] lookup self key
   
   predicate invariant''5 (self: t_FMap) =
     [%#sfmap'15] forall k: t_Id. contains self k -> inv'8 k /\ inv'5 (index_logic'0 self k)
@@ -1286,7 +1292,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
       {[%#sghost] result = self}
       (! return' {result}) ]
   
-  type closure0 = { _0: t_PersistentArray; _1: t_PCell; _2: t_PCellOwn; _3: Seq.seq t_T }
+  type closure0 = { _0: t_PersistentArray; _1: t_PermCell; _2: t_PermCellOwn; _3: Seq.seq t_T }
   
   predicate invariant''11 (self: t_Fragment)
   
@@ -1360,8 +1366,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
       = C_Some'0 ((view'10 frag)._p1)}
       (! return' {result}) ]
   
-  let rec id_ghost (self: t_PCell) (return' (x: t_Id)) = any
-    [ return''0 (result: t_Id) -> {[%#spcell'4] result = id self} (! return' {result}) ]
+  let rec id_ghost (self: t_PermCell) (return' (x: t_Id)) = any
+    [ return''0 (result: t_Id) -> {[%#spermcell'4] result = id self} (! return' {result}) ]
   
   let rec into_inner (self: t_Id) (return' (x: t_Id)) = any
     [ return''0 (result: t_Id) -> {[%#sghost'3] result = self} (! return' {result}) ]
@@ -1391,7 +1397,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
       {[%#sghost'6] result = self}
       (! return' {result}) ]
   
-  type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_PCellOwn)
+  type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_PermCellOwn)
   
   predicate invariant''18 (self: MutBorrow.t t_FMap) = [%#sinvariant'0] inv'9 self.current /\ inv'9 self.final
   
@@ -1401,13 +1407,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   
   axiom inv_axiom'22 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'23 x]. inv'23 x = invariant''18 x
   
-  predicate invariant''19 (self: MutBorrow.t t_PCellOwn) = [%#sinvariant'0] inv'5 self.current /\ inv'5 self.final
+  predicate invariant''19 (self: MutBorrow.t t_PermCellOwn) = [%#sinvariant'0] inv'5 self.current /\ inv'5 self.final
   
   meta "rewrite_def" predicate invariant''19
   
-  predicate inv'24 (_0'0: MutBorrow.t t_PCellOwn)
+  predicate inv'24 (_0'0: MutBorrow.t t_PermCellOwn)
   
-  axiom inv_axiom'23 [@rewrite]: forall x: MutBorrow.t t_PCellOwn [inv'24 x]. inv'24 x = invariant''19 x
+  axiom inv_axiom'23 [@rewrite]: forall x: MutBorrow.t t_PermCellOwn [inv'24 x]. inv'24 x = invariant''19 x
   
   predicate inv'25 (_0'0: t_Option'1)
   
@@ -1438,11 +1444,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
       {[%#sfmap'3] len self.current = len self.final}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_PCellOwn) = [%#sresolve] self.final = self.current
+  predicate resolve (self: MutBorrow.t t_PermCellOwn) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 (_0'0: MutBorrow.t t_PCellOwn) = resolve _0'0
+  predicate resolve'0 (_0'0: MutBorrow.t t_PermCellOwn) = resolve _0'0
   
   predicate resolve'1 (self: MutBorrow.t (MutBorrow.t t_PA)) = [%#sresolve] self.final = self.current
   
@@ -1450,45 +1456,49 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   
   predicate resolve'2 (_0'0: MutBorrow.t (MutBorrow.t t_PA)) = resolve'1 _0'0
   
-  let rec v_Some (input: t_Option'1) (ret (field_0: MutBorrow.t t_PCellOwn)) = any
-    [ good (field_0: MutBorrow.t t_PCellOwn) -> {C_Some'1 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: MutBorrow.t t_PCellOwn [C_Some'1 field_0: t_Option'1]. C_Some'1 field_0 <> input}
+  let rec v_Some (input: t_Option'1) (ret (field_0: MutBorrow.t t_PermCellOwn)) = any
+    [ good (field_0: MutBorrow.t t_PermCellOwn) -> {C_Some'1 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: MutBorrow.t t_PermCellOwn [C_Some'1 field_0: t_Option'1]. C_Some'1 field_0 <> input}
       (! {false}
       any) ]
   
-  predicate invariant''20 (self: t_PCellOwn) = [%#sinvariant] inv'6 self
+  predicate invariant''20 (self: t_PermCellOwn) = [%#sinvariant] inv'6 self
   
   meta "rewrite_def" predicate invariant''20
   
-  predicate inv'26 (_0'0: t_PCellOwn)
+  predicate inv'26 (_0'0: t_PermCellOwn)
   
-  axiom inv_axiom'25 [@rewrite]: forall x: t_PCellOwn [inv'26 x]. inv'26 x = invariant''20 x
+  axiom inv_axiom'25 [@rewrite]: forall x: t_PermCellOwn [inv'26 x]. inv'26 x = invariant''20 x
   
-  predicate invariant''21 (self: t_PCellOwn) = [%#sinvariant] inv'5 self
+  predicate invariant''21 (self: t_PermCellOwn) = [%#sinvariant] inv'5 self
   
   meta "rewrite_def" predicate invariant''21
   
-  predicate inv'27 (_0'0: t_PCellOwn)
+  predicate inv'27 (_0'0: t_PermCellOwn)
   
-  axiom inv_axiom'26 [@rewrite]: forall x: t_PCellOwn [inv'27 x]. inv'27 x = invariant''21 x
+  axiom inv_axiom'26 [@rewrite]: forall x: t_PermCellOwn [inv'27 x]. inv'27 x = invariant''21 x
   
-  let rec deref'1 (self: t_PCellOwn) (return' (x: t_PCellOwn)) =
+  let rec deref'1 (self: t_PermCellOwn) (return' (x: t_PermCellOwn)) =
     {[@expl:deref 'self' type invariant] [%#sghost'1] inv'26 self}
     any
-    [ return''0 (result: t_PCellOwn) -> {[%#sghost'2] inv'27 result} {[%#sghost] result = self} (! return' {result}) ]
-  
-  let rec disjoint_lemma (own1: MutBorrow.t t_PCellOwn) (own2: t_PCellOwn) (return' (x: ())) =
-    {[@expl:disjoint_lemma 'own1' type invariant] [%#spcell'5] inv'24 own1}
-    {[@expl:disjoint_lemma 'own2' type invariant] [%#spcell'6] inv'27 own2}
-    any
-    [ return''0 (result: ()) -> {[%#spcell'7] id'0 own1.current <> id'0 own2}
-      {[%#spcell'8] own1.current = own1.final}
+    [ return''0 (result: t_PermCellOwn) -> {[%#sghost'2] inv'27 result}
+      {[%#sghost] result = self}
       (! return' {result}) ]
   
-  let rec into_inner'0 (self: t_PCellOwn) (return' (x: t_PCellOwn)) =
+  let rec disjoint_lemma (own1: MutBorrow.t t_PermCellOwn) (own2: t_PermCellOwn) (return' (x: ())) =
+    {[@expl:disjoint_lemma 'own1' type invariant] [%#spermcell'5] inv'24 own1}
+    {[@expl:disjoint_lemma 'own2' type invariant] [%#spermcell'6] inv'27 own2}
+    any
+    [ return''0 (result: ()) -> {[%#spermcell'7] id'0 own1.current <> id'0 own2}
+      {[%#spermcell'8] own1.current = own1.final}
+      (! return' {result}) ]
+  
+  let rec into_inner'0 (self: t_PermCellOwn) (return' (x: t_PermCellOwn)) =
     {[@expl:into_inner 'self' type invariant] [%#sghost'7] inv'6 self}
     any
-    [ return''0 (result: t_PCellOwn) -> {[%#sghost'8] inv'5 result} {[%#sghost'3] result = self} (! return' {result}) ]
+    [ return''0 (result: t_PermCellOwn) -> {[%#sghost'8] inv'5 result}
+      {[%#sghost'3] result = self}
+      (! return' {result}) ]
   
   predicate inv'28 (_0'0: t_Option)
   
@@ -1498,15 +1508,15 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
         | C_Some a_0 -> inv'5 a_0
         end
   
-  function insert (self: t_FMap) (k: t_Id) (v: t_PCellOwn) : t_FMap
+  function insert (self: t_FMap) (k: t_Id) (v: t_PermCellOwn) : t_FMap
   
-  axiom insert_spec: forall self: t_FMap, k: t_Id, v: t_PCellOwn. [%#sfmap'13] view'6 (insert self k v)
+  axiom insert_spec: forall self: t_FMap, k: t_Id, v: t_PermCellOwn. [%#sfmap'13] view'6 (insert self k v)
       = Map.set (view'6 self) k (C_Some v)
   
-  axiom insert_spec'0: forall self: t_FMap, k: t_Id, v: t_PCellOwn. [%#sfmap'14] len (insert self k v)
+  axiom insert_spec'0: forall self: t_FMap, k: t_Id, v: t_PermCellOwn. [%#sfmap'14] len (insert self k v)
       = (if contains self k then len self else len self + 1)
   
-  let rec insert_ghost (self: MutBorrow.t t_FMap) (key: t_Id) (value: t_PCellOwn) (return' (x: t_Option)) =
+  let rec insert_ghost (self: MutBorrow.t t_FMap) (key: t_Id) (value: t_PermCellOwn) (return' (x: t_Option)) =
     {[@expl:insert_ghost 'self' type invariant] [%#sfmap'4] inv'23 self}
     {[@expl:insert_ghost 'value' type invariant] [%#sfmap'5] inv'5 value}
     any
@@ -1517,9 +1527,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   
   predicate resolve'3 (_0'0: t_Inner) = true
   
-  predicate resolve'4 (self: t_PCellOwn) = [%#spcell'10] resolve'3 (val' self)
+  predicate resolve'4 (self: t_PermCellOwn) = [%#spermcell'10] resolve'3 (val' self)
   
-  predicate resolve'5 (_0'0: t_PCellOwn) = resolve'4 _0'0
+  predicate resolve'5 (_0'0: t_PermCellOwn) = resolve'4 _0'0
   
   predicate resolve'6 (self: t_Option) =
     [%#soption] match self with
@@ -1591,7 +1601,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   function namespace (self: t_LocalInvariant) : t_Namespace
   
   predicate invariant''23 [#"persistent_array.rs" 59 8 59 34] (self: t_PersistentArray) =
-    [%#spersistent_array'11] (view'0 self.t_PersistentArray__frag)._p0 = id (view'3 self.t_PersistentArray__pcell)
+    [%#spersistent_array'11] (view'0 self.t_PersistentArray__frag)._p0 = id (view'3 self.t_PersistentArray__permcell)
     /\ id'2 self.t_PersistentArray__frag = public (view'13 self.t_PersistentArray__inv)
     /\ namespace (view'13 self.t_PersistentArray__inv) = Namespace_PARRAY 0
   
@@ -1600,7 +1610,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   axiom inv_axiom'29 [@rewrite]: forall x: t_PersistentArray [inv'30 x]. inv'30 x
       = (invariant''23 x
       /\ match x with
-        | {t_PersistentArray__pcell = pcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'31} -> inv'17 frag
+        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'31} -> inv'17 frag
         end)
   
   predicate invariant''24 (self: t_PersistentArray) = [%#sinvariant] inv'30 self
@@ -1652,7 +1662,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
             s2)
       | s2 = get_mut_ghost {_17} {_21} (fun (_ret: t_Option'1) -> [ &_16 <- _ret ] s3)
       | s3 = bb7 ]
-    | bb7 = any [ br0 -> {_16 = C_None'1} (! bb12) | br1 (x0: MutBorrow.t t_PCellOwn) -> {_16 = C_Some'1 x0} (! bb9) ]
+    | bb7 = any
+      [ br0 -> {_16 = C_None'1} (! bb12) | br1 (x0: MutBorrow.t t_PermCellOwn) -> {_16 = C_Some'1 x0} (! bb9) ]
     | bb12 = s0
       [ s0 = {[@expl:type invariant] match _16 with
           | C_Some'1 x -> inv'24 x
@@ -1668,14 +1679,14 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
       | s3 = -{resolve'2 _18}- s4
       | s4 = bb13 ]
     | bb9 = s0
-      [ s0 = v_Some {_16} (fun (r0: MutBorrow.t t_PCellOwn) -> [ &other <- r0 ] s1)
+      [ s0 = v_Some {_16} (fun (r0: MutBorrow.t t_PermCellOwn) -> [ &other <- r0 ] s1)
       | s1 = [ &_29 <- _1'0._2 ] s2
-      | s2 = deref'1 {_29} (fun (_ret: t_PCellOwn) -> [ &_27 <- _ret ] s3)
+      | s2 = deref'1 {_29} (fun (_ret: t_PermCellOwn) -> [ &_27 <- _ret ] s3)
       | s3 = bb10 ]
     | bb10 = s0
       [ s0 = {inv'5 other.current}
-        MutBorrow.borrow_final <t_PCellOwn> {other.current} {MutBorrow.get_id other}
-          (fun (_ret: MutBorrow.t t_PCellOwn) ->
+        MutBorrow.borrow_final <t_PermCellOwn> {other.current} {MutBorrow.get_id other}
+          (fun (_ret: MutBorrow.t t_PermCellOwn) ->
             [ &_25 <- _ret ] -{inv'5 _ret.final}-
             [ &other <- { other with current = _ret.final } ] s1)
       | s1 = disjoint_lemma {_25} {_27} (fun (_ret: ()) -> [ &_24 <- _ret ] s2)
@@ -1694,7 +1705,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
             [ &pa'0 <- _ret.final ] s1)
       | s1 = deref_mut {_33} (fun (_ret: MutBorrow.t (MutBorrow.t t_PA)) -> [ &_32 <- _ret ] s2)
       | s2 = bb14 ]
-    | bb14 = s0 [ s0 = into_inner'0 {_1'0._2} (fun (_ret: t_PCellOwn) -> [ &_35 <- _ret ] s1) | s1 = bb15 ]
+    | bb14 = s0 [ s0 = into_inner'0 {_1'0._2} (fun (_ret: t_PermCellOwn) -> [ &_35 <- _ret ] s1) | s1 = bb15 ]
     | bb15 = s0
       [ s0 = {inv'9 ((_32.current).current).t_PA__perms}
         MutBorrow.borrow_mut <t_FMap> {((_32.current).current).t_PA__perms}
@@ -1710,7 +1721,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
       [ s0 = {[@expl:type invariant] inv'22 _32} s1
       | s1 = -{resolve'2 _32}- s2
       | s2 =
-        [ &_37 <- [%#spersistent_array'6] Map.set (pa'0.current).t_PA__depth cell_id (index_logic'1 (pa'0.current).t_PA__depth (id (view'3 (_1'0._0).t_PersistentArray__pcell))
+        [ &_37 <- [%#spersistent_array'6] Map.set (pa'0.current).t_PA__depth cell_id (index_logic'1 (pa'0.current).t_PA__depth (id (view'3 (_1'0._0).t_PersistentArray__permcell))
         + 1) ] s3
       | s3 = bb17 ]
     | bb17 = s0
@@ -1767,16 +1778,16 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
     | & _18: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
     | & _19: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
     | & _21: t_Id = Any.any_l ()
-    | & other: MutBorrow.t t_PCellOwn = Any.any_l ()
+    | & other: MutBorrow.t t_PermCellOwn = Any.any_l ()
     | & _24: () = Any.any_l ()
-    | & _25: MutBorrow.t t_PCellOwn = Any.any_l ()
-    | & _27: t_PCellOwn = Any.any_l ()
-    | & _29: t_PCellOwn = Any.any_l ()
+    | & _25: MutBorrow.t t_PermCellOwn = Any.any_l ()
+    | & _27: t_PermCellOwn = Any.any_l ()
+    | & _29: t_PermCellOwn = Any.any_l ()
     | & _30: t_Option = Any.any_l ()
     | & _31: MutBorrow.t t_FMap = Any.any_l ()
     | & _32: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
     | & _33: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
-    | & _35: t_PCellOwn = Any.any_l ()
+    | & _35: t_PermCellOwn = Any.any_l ()
     | & _37: Map.map t_Id int = Any.any_l ()
     | & _39: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
     | & _40: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
@@ -1859,7 +1870,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
   
   function view'14 (self: t_Vec) : Seq.seq t_T = [%#smodel] view'4 self
   
-  function view'15 (self: t_Rc) : t_PCell = [%#smodel] view'3 self
+  function view'15 (self: t_Rc) : t_PermCell = [%#smodel] view'3 self
   
   function view'16 (self: UInt64.t) : int = [%#smodel] UInt64.t'int self
   
@@ -2060,7 +2071,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
       {[%#slocal_invariant'2] postcondition'1 () { _p0'1 = new_logic'0 self; _p1'1 = tokens; _p2 = f } result}
       (! return' {result}) ]
   
-  let rec new'1 (value: t_PCell) (return' (x: t_Rc)) = any
+  let rec new'1 (value: t_PermCell) (return' (x: t_Rc)) = any
     [ return''0 (result: t_Rc) -> {[%#src'0] view'3 result = value} (! return' {result}) ]
   
   let rec deref'3 (self: t_Rc'0) (return' (x: t_Rc'0)) = any
@@ -2086,20 +2097,20 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
     [ bb0 = s0
       [ s0 = [ &new_seq <- [%#spersistent_array] Seq.set (view'2 self'0) (UInt64.t'int index'0) value'0 ] s1
       | s1 = bb1 ]
-    | bb1 = s0 [ s0 = clone' {self'0.t_PersistentArray__pcell} (fun (_ret: t_Rc) -> [ &_16 <- _ret ] s1) | s1 = bb2 ]
+    | bb1 = s0 [ s0 = clone' {self'0.t_PersistentArray__permcell} (fun (_ret: t_Rc) -> [ &_16 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = [ &_13 <- C_Link index'0 value'0 _16 ] s1 | s1 = bb4 ]
     | bb4 = s0 [ s0 = new {_13} (fun (_ret: tuple'0) -> [ &_12 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = [ &pcell <- _12._p0'0 ] s1 | s1 = [ &pcellown <- _12._p1'0 ] s2 | s2 = bb6 ]
+    | bb5 = s0 [ s0 = [ &permcell <- _12._p0'0 ] s1 | s1 = [ &permcellown <- _12._p1'0 ] s2 | s2 = bb6 ]
     | bb6 = s0
-      [ s0 = [ &_21 <- { _0 = self'0; _1 = pcell; _2 = pcellown; _3 = new_seq } ] s1
+      [ s0 = [ &_21 <- { _0 = self'0; _1 = permcell; _2 = permcellown; _3 = new_seq } ] s1
       | s1 = open'1 {self'0.t_PersistentArray__inv} {tokens'0} {_21} (fun (_ret: t_Fragment) -> [ &frag <- _ret ] s2)
       | s2 = bb7 ]
-    | bb7 = s0 [ s0 = new'1 {pcell} (fun (_ret: t_Rc) -> [ &_25 <- _ret ] s1) | s1 = bb8 ]
+    | bb7 = s0 [ s0 = new'1 {permcell} (fun (_ret: t_Rc) -> [ &_25 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0 [ s0 = deref'3 {self'0.t_PersistentArray__inv} (fun (_ret: t_Rc'0) -> [ &_31 <- _ret ] s1) | s1 = bb9 ]
     | bb9 = s0 [ s0 = clone''0 {_31} (fun (_ret: t_Rc'0) -> [ &_29 <- _ret ] s1) | s1 = bb10 ]
     | bb10 = s0 [ s0 = new'2 {_29} (fun (_ret: t_Rc'0) -> [ &_28 <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0
-      [ s0 = [ &_0'0 <- { t_PersistentArray__pcell = _25;
+      [ s0 = [ &_0'0 <- { t_PersistentArray__permcell = _25;
                           t_PersistentArray__frag = frag;
                           t_PersistentArray__inv = _28 } ] s1
       | s1 = bb14 ]
@@ -2110,8 +2121,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__set [#"persis
     | & value'0: t_T = value
     | & tokens'0: t_Tokens = tokens
     | & new_seq: Seq.seq t_T = Any.any_l ()
-    | & pcell: t_PCell = Any.any_l ()
-    | & pcellown: t_PCellOwn = Any.any_l ()
+    | & permcell: t_PermCell = Any.any_l ()
+    | & permcellown: t_PermCellOwn = Any.any_l ()
     | & _12: tuple'0 = Any.any_l ()
     | & _13: t_Inner = Any.any_l ()
     | & _16: t_Rc = Any.any_l ()
@@ -2169,7 +2180,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 106 20 106 44
   let%span svec = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
   let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 99 20 99 41
-  let%span spcell = "../../creusot-contracts/src/cell/pcell.rs" 62 20 62 46
+  let%span spermcell = "../../creusot-contracts/src/cell/permcell.rs" 62 20 62 46
   let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 94 4 94 12
   let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 116 8 116 27
   let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 271 4 271 12
@@ -2229,9 +2240,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   type t_PA = { t_PA__perms: t_FMap; t_PA__auth: t_Authority; t_PA__depth: Map.map t_Id int }
   
-  type t_PCellOwn
+  type t_PermCellOwn
   
-  type t_Option = C_None | C_Some t_PCellOwn
+  type t_Option = C_None | C_Some t_PermCellOwn
   
   function view (self: t_FMap) : Map.map t_Id t_Option
   
@@ -2306,29 +2317,29 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Inner [inv'5 x]. inv'5 x = invariant''2 x
   
-  function val' (self: t_PCellOwn) : t_Inner
+  function val' (self: t_PermCellOwn) : t_Inner
   
-  predicate invariant''3 (self: t_PCellOwn) = [%#spcell] inv'5 (val' self)
+  predicate invariant''3 (self: t_PermCellOwn) = [%#spermcell] inv'5 (val' self)
   
-  predicate inv'6 (_0: t_PCellOwn)
+  predicate inv'6 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PCellOwn [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate index_logic (self: Map.map t_PCellOwn bool) (a: t_PCellOwn) = [%#smapping] Map.get self a
+  predicate index_logic (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = [%#smapping] Map.get self a
   
-  function such_that (p: Map.map t_PCellOwn bool) : t_PCellOwn
+  function such_that (p: Map.map t_PermCellOwn bool) : t_PermCellOwn
   
-  axiom such_that_spec: forall p: Map.map t_PCellOwn bool. ([%#slogic] exists x: t_PCellOwn. index_logic p x)
+  axiom such_that_spec: forall p: Map.map t_PermCellOwn bool. ([%#slogic] exists x: t_PermCellOwn. index_logic p x)
       -> ([%#slogic'0] index_logic p (such_that p))
   
-  function unwrap_logic (self: t_Option) : t_PCellOwn = [%#soption'0] match self with
+  function unwrap_logic (self: t_Option) : t_PermCellOwn = [%#soption'0] match self with
       | C_Some x -> x
-      | C_None -> such_that (fun (__0: t_PCellOwn) -> true)
+      | C_None -> such_that (fun (__0: t_PermCellOwn) -> true)
       end
   
-  function lookup [@inline:trivial] (self: t_FMap) (k: t_Id) : t_PCellOwn = [%#sfmap'2] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Id) : t_PermCellOwn = [%#sfmap'2] unwrap_logic (get self k)
   
-  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Id) : t_PCellOwn = [%#sfmap'1] lookup self key
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Id) : t_PermCellOwn = [%#sfmap'1] lookup self key
   
   predicate invariant''4 (self: t_FMap) =
     [%#sfmap'3] forall k: t_Id. contains self k -> inv k /\ inv'6 (index_logic'0 self k)
@@ -2398,7 +2409,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'1; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
   
   type t_PersistentArray = {
-    t_PersistentArray__pcell: t_Rc;
+    t_PersistentArray__permcell: t_Rc;
     t_PersistentArray__frag: t_Fragment;
     t_PersistentArray__inv: t_Rc'0 }
   
@@ -2514,7 +2525,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   predicate contains'1 [@inline:trivial] (self: t_FMap'0) (k: t_Id) = [%#sfmap'0] get'0 self k <> C_None'0
   
-  function id'1 (self: t_PCellOwn) : t_Id
+  function id'1 (self: t_PermCellOwn) : t_Id
   
   predicate index_logic'1 (self: Map.map (Seq.seq t_T) bool) (a: Seq.seq t_T) = [%#smapping] Map.get self a
   
@@ -2535,13 +2546,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   function view'6 (self: t_Vec) : Seq.seq t_T = [%#smodel] view'0 self
   
-  type t_PCell
+  type t_PermCell
   
-  function id'2 (self: t_PCell) : t_Id
+  function id'2 (self: t_PermCell) : t_Id
   
-  function view'7 (self: t_Rc) : t_PCell
+  function view'7 (self: t_Rc) : t_PermCell
   
-  function view'8 (self: t_Rc) : t_PCell = [%#smodel] view'7 self
+  function view'8 (self: t_Rc) : t_PermCell = [%#smodel] view'7 self
   
   function index_logic'3 (self: Map.map t_Id int) (a: t_Id) : int = [%#smapping] Map.get self a
   
@@ -2594,7 +2605,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   function namespace (self: t_LocalInvariant) : t_Namespace
   
   predicate invariant''18 [#"persistent_array.rs" 59 8 59 34] (self: t_PersistentArray) =
-    [%#spersistent_array'14] (view'10 self.t_PersistentArray__frag)._p0 = id'2 (view'7 self.t_PersistentArray__pcell)
+    [%#spersistent_array'14] (view'10 self.t_PersistentArray__frag)._p0 = id'2 (view'7 self.t_PersistentArray__permcell)
     /\ id'0 self.t_PersistentArray__frag = public (view'12 self.t_PersistentArray__inv)
     /\ namespace (view'12 self.t_PersistentArray__inv) = Namespace_PARRAY 0
   
@@ -2603,7 +2614,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   axiom inv_axiom'21 [@rewrite]: forall x: t_PersistentArray [inv'22 x]. inv'22 x
       = (invariant''18 x
       /\ match x with
-        | {t_PersistentArray__pcell = pcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'23} -> inv'15 frag
+        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'23} -> inv'15 frag
         end)
   
   predicate invariant''19 (self: t_PersistentArray) = [%#sinvariant] inv'22 self
@@ -2636,7 +2647,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
     | bb2 = s0 [ s0 = contains'0 {(_6.current).t_PA__auth} {_9} (fun (_ret: ()) -> [ &_4 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0 [ s0 = new {_4} (fun (_ret: ()) -> [ &_3 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0
-      [ s0 = [ &_13 <- (_1'0._0).t_PersistentArray__pcell ] s1
+      [ s0 = [ &_13 <- (_1'0._0).t_PersistentArray__permcell ] s1
       | s1 = into_inner {pa'0} (fun (_ret: MutBorrow.t t_PA) -> [ &_17 <- _ret ] s2)
       | s2 = bb5 ]
     | bb5 = s0
@@ -2950,13 +2961,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 197 16 197 56
   let%span svec'2 = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
   let%span svec'3 = "../../creusot-contracts/src/std/vec.rs" 99 20 99 41
-  let%span spcell = "../../creusot-contracts/src/cell/pcell.rs" 231 14 231 34
-  let%span spcell'0 = "../../creusot-contracts/src/cell/pcell.rs" 173 39 173 43
-  let%span spcell'1 = "../../creusot-contracts/src/cell/pcell.rs" 171 15 171 37
-  let%span spcell'2 = "../../creusot-contracts/src/cell/pcell.rs" 173 4 173 77
-  let%span spcell'3 = "../../creusot-contracts/src/cell/pcell.rs" 172 14 172 30
-  let%span spcell'4 = "../../creusot-contracts/src/cell/pcell.rs" 34 4 34 12
-  let%span spcell'5 = "../../creusot-contracts/src/cell/pcell.rs" 62 20 62 46
+  let%span spermcell = "../../creusot-contracts/src/cell/permcell.rs" 231 14 231 34
+  let%span spermcell'0 = "../../creusot-contracts/src/cell/permcell.rs" 173 39 173 43
+  let%span spermcell'1 = "../../creusot-contracts/src/cell/permcell.rs" 171 15 171 37
+  let%span spermcell'2 = "../../creusot-contracts/src/cell/permcell.rs" 173 4 173 80
+  let%span spermcell'3 = "../../creusot-contracts/src/cell/permcell.rs" 172 14 172 30
+  let%span spermcell'4 = "../../creusot-contracts/src/cell/permcell.rs" 34 4 34 12
+  let%span spermcell'5 = "../../creusot-contracts/src/cell/permcell.rs" 62 20 62 46
   let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 354 22 354 26
   let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 354 4 354 50
   let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 353 14 353 55
@@ -2996,9 +3007,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   type t_PA = { t_PA__perms: t_FMap; t_PA__auth: t_Authority; t_PA__depth: Map.map t_Id int }
   
-  type t_PCellOwn
+  type t_PermCellOwn
   
-  type t_Option = C_None | C_Some t_PCellOwn
+  type t_Option = C_None | C_Some t_PermCellOwn
   
   function view (self: t_FMap) : Map.map t_Id t_Option
   
@@ -3073,29 +3084,29 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Inner [inv'5 x]. inv'5 x = invariant''2 x
   
-  function val' (self: t_PCellOwn) : t_Inner
+  function val' (self: t_PermCellOwn) : t_Inner
   
-  predicate invariant''3 (self: t_PCellOwn) = [%#spcell'5] inv'5 (val' self)
+  predicate invariant''3 (self: t_PermCellOwn) = [%#spermcell'5] inv'5 (val' self)
   
-  predicate inv'6 (_0: t_PCellOwn)
+  predicate inv'6 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PCellOwn [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate index_logic (self: Map.map t_PCellOwn bool) (a: t_PCellOwn) = [%#smapping] Map.get self a
+  predicate index_logic (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = [%#smapping] Map.get self a
   
-  function such_that (p: Map.map t_PCellOwn bool) : t_PCellOwn
+  function such_that (p: Map.map t_PermCellOwn bool) : t_PermCellOwn
   
-  axiom such_that_spec: forall p: Map.map t_PCellOwn bool. ([%#slogic] exists x: t_PCellOwn. index_logic p x)
+  axiom such_that_spec: forall p: Map.map t_PermCellOwn bool. ([%#slogic] exists x: t_PermCellOwn. index_logic p x)
       -> ([%#slogic'0] index_logic p (such_that p))
   
-  function unwrap_logic (self: t_Option) : t_PCellOwn = [%#soption'4] match self with
+  function unwrap_logic (self: t_Option) : t_PermCellOwn = [%#soption'4] match self with
       | C_Some x -> x
-      | C_None -> such_that (fun (__0: t_PCellOwn) -> true)
+      | C_None -> such_that (fun (__0: t_PermCellOwn) -> true)
       end
   
-  function lookup [@inline:trivial] (self: t_FMap) (k: t_Id) : t_PCellOwn = [%#sfmap'5] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Id) : t_PermCellOwn = [%#sfmap'5] unwrap_logic (get self k)
   
-  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Id) : t_PCellOwn = [%#sfmap'3] lookup self key
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Id) : t_PermCellOwn = [%#sfmap'3] lookup self key
   
   predicate invariant''4 (self: t_FMap) =
     [%#sfmap'6] forall k: t_Id. contains self k -> inv k /\ inv'6 (index_logic'0 self k)
@@ -3154,22 +3165,22 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   let rec deref (self: t_PA) (return' (x: t_PA)) = {[@expl:deref 'self' type invariant] [%#sghost] inv'12 self}
     any [ return''0 (result: t_PA) -> {[%#sghost'0] inv'13 result} {[%#sghost'1] result = self} (! return' {result}) ]
   
-  type t_PCell
+  type t_PermCell
   
-  function view'1 (self: t_Rc) : t_PCell
+  function view'1 (self: t_Rc) : t_PermCell
   
-  let rec deref'0 (self_: t_Rc) (return' (x: t_PCell)) = any
-    [ return''0 (result: t_PCell) -> {[%#src] result = view'1 self_} (! return' {result}) ]
+  let rec deref'0 (self_: t_Rc) (return' (x: t_PermCell)) = any
+    [ return''0 (result: t_PermCell) -> {[%#src] result = view'1 self_} (! return' {result}) ]
   
-  function id (self: t_PCell) : t_Id
+  function id (self: t_PermCell) : t_Id
   
-  let rec id_ghost (self: t_PCell) (return' (x: t_Id)) = any
-    [ return''0 (result: t_Id) -> {[%#spcell] result = id self} (! return' {result}) ]
+  let rec id_ghost (self: t_PermCell) (return' (x: t_Id)) = any
+    [ return''0 (result: t_Id) -> {[%#spermcell] result = id self} (! return' {result}) ]
   
   let rec deref'1 (self: t_Id) (return' (x: t_Id)) = any
     [ return''0 (result: t_Id) -> {[%#sghost'1] result = self} (! return' {result}) ]
   
-  type t_Option'0 = C_None'0 | C_Some'0 t_PCellOwn
+  type t_Option'0 = C_None'0 | C_Some'0 t_PermCellOwn
   
   predicate invariant''10 (self: t_FMap) = [%#sinvariant] inv'7 self
   
@@ -3179,13 +3190,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   axiom inv_axiom'13 [@rewrite]: forall x: t_FMap [inv'14 x]. inv'14 x = invariant''10 x
   
-  predicate invariant''11 (self: t_PCellOwn) = [%#sinvariant] inv'6 self
+  predicate invariant''11 (self: t_PermCellOwn) = [%#sinvariant] inv'6 self
   
   meta "rewrite_def" predicate invariant''11
   
-  predicate inv'15 (_0: t_PCellOwn)
+  predicate inv'15 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: t_PCellOwn [inv'15 x]. inv'15 x = invariant''11 x
+  axiom inv_axiom'14 [@rewrite]: forall x: t_PermCellOwn [inv'15 x]. inv'15 x = invariant''11 x
   
   predicate inv'16 (_0: t_Option'0)
   
@@ -3195,7 +3206,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
         | C_Some'0 a_0 -> inv'15 a_0
         end
   
-  function map_logic (self: t_Option) (f: Map.map t_PCellOwn t_PCellOwn) : t_Option'0 = [%#soption'2] match self with
+  function map_logic (self: t_Option) (f: Map.map t_PermCellOwn t_PermCellOwn) : t_Option'0 =
+    [%#soption'2] match self with
       | C_None -> C_None'0
       | C_Some x -> C_Some'0 (Map.get f x)
       end
@@ -3204,39 +3216,41 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
     {[@expl:get_ghost 'self' type invariant] [%#sfmap] inv'14 self}
     any
     [ return''0 (result: t_Option'0) -> {[%#sfmap'0] inv'16 result}
-      {[%#sfmap'1] result = map_logic (get self key) (fun (v: t_PCellOwn) -> v)}
+      {[%#sfmap'1] result = map_logic (get self key) (fun (v: t_PermCellOwn) -> v)}
       (! return' {result}) ]
   
-  let rec unwrap (self_: t_Option'0) (return' (x: t_PCellOwn)) =
+  let rec unwrap (self_: t_Option'0) (return' (x: t_PermCellOwn)) =
     {[@expl:unwrap 'self_' type invariant] [%#soption] inv'16 self_}
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None'0}
     any
-    [ return''0 (result: t_PCellOwn) -> {inv'15 result} {[%#soption'1] C_Some'0 result = self_} (! return' {result}) ]
+    [ return''0 (result: t_PermCellOwn) -> {inv'15 result}
+      {[%#soption'1] C_Some'0 result = self_}
+      (! return' {result}) ]
   
-  predicate invariant''12 (self: t_PCellOwn) = [%#sghost'6] inv'15 self
+  predicate invariant''12 (self: t_PermCellOwn) = [%#sghost'6] inv'15 self
   
-  predicate inv'17 (_0: t_PCellOwn)
+  predicate inv'17 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'16 [@rewrite]: forall x: t_PCellOwn [inv'17 x]. inv'17 x = invariant''12 x
+  axiom inv_axiom'16 [@rewrite]: forall x: t_PermCellOwn [inv'17 x]. inv'17 x = invariant''12 x
   
-  let rec new (x: t_PCellOwn) (return' (x'0: t_PCellOwn)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'15 x}
+  let rec new (x: t_PermCellOwn) (return' (x'0: t_PermCellOwn)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'15 x}
     any
-    [ return''0 (result: t_PCellOwn) -> {[%#sghost'3] inv'17 result} {[%#sghost'4] result = x} (! return' {result}) ]
+    [ return''0 (result: t_PermCellOwn) -> {[%#sghost'3] inv'17 result} {[%#sghost'4] result = x} (! return' {result}) ]
   
-  function id'0 (self: t_PCellOwn) : t_Id
+  function id'0 (self: t_PermCellOwn) : t_Id
   
-  function view'2 (self: t_PCellOwn) : t_Inner = [%#spcell'4] val' self
+  function view'2 (self: t_PermCellOwn) : t_Inner = [%#spermcell'4] val' self
   
-  function view'3 (self: t_PCellOwn) : t_Inner = [%#smodel] view'2 self
+  function view'3 (self: t_PermCellOwn) : t_Inner = [%#smodel] view'2 self
   
-  function view'4 (self: t_PCellOwn) : t_Inner = [%#sghost'5] view'3 self
+  function view'4 (self: t_PermCellOwn) : t_Inner = [%#sghost'5] view'3 self
   
-  let rec borrow (self: t_PCell) (perm: t_PCellOwn) (return' (x: t_Inner)) =
-    {[@expl:borrow 'perm' type invariant] [%#spcell'0] inv'17 perm}
-    {[@expl:borrow requires] [%#spcell'1] id self = id'0 perm}
+  let rec borrow (self: t_PermCell) (perm: t_PermCellOwn) (return' (x: t_Inner)) =
+    {[@expl:borrow 'perm' type invariant] [%#spermcell'0] inv'17 perm}
+    {[@expl:borrow requires] [%#spermcell'1] id self = id'0 perm}
     any
-    [ return''0 (result: t_Inner) -> {[%#spcell'2] inv'5 result}
-      {[%#spcell'3] result = view'4 perm}
+    [ return''0 (result: t_Inner) -> {[%#spermcell'2] inv'5 result}
+      {[%#spermcell'3] result = view'4 perm}
       (! return' {result}) ]
   
   let rec v_Link (input: t_Inner) (ret (index: UInt64.t) (value: t_T) (next: t_Rc)) = any
@@ -3312,7 +3326,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   function index_logic'2 [@inline:trivial] (self: t_FMap'0) (key: t_Id) : Seq.seq t_T = [%#sfmap'3] lookup'0 self key
   
-  function view'8 (self: t_Rc) : t_PCell = [%#smodel] view'1 self
+  function view'8 (self: t_Rc) : t_PermCell = [%#smodel] view'1 self
   
   function index_logic'3 (self: Map.map t_Id int) (a: t_Id) : int = [%#smapping] Map.get self a
   
@@ -3344,16 +3358,16 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
     < Seq.length (index_logic'2 (view'7 inv'20.t_PA__auth) (id (view'8 inner)))}
     (! bb0
     [ bb0 = s0 [ s0 = deref {inv'21} (fun (_ret: t_PA) -> [ &_12 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = deref'0 {inner'0} (fun (_ret: t_PCell) -> [ &_20 <- _ret ] s1) | s1 = bb2 ]
+    | bb1 = s0 [ s0 = deref'0 {inner'0} (fun (_ret: t_PermCell) -> [ &_20 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = id_ghost {_20} (fun (_ret: t_Id) -> [ &_18 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0 [ s0 = deref'1 {_18} (fun (_ret: t_Id) -> [ &_16 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0
       [ s0 = [ &_15 <- _16 ] s1
       | s1 = get_ghost {_12.t_PA__perms} {_15} (fun (_ret: t_Option'0) -> [ &_10 <- _ret ] s2)
       | s2 = bb5 ]
-    | bb5 = s0 [ s0 = unwrap {_10} (fun (_ret: t_PCellOwn) -> [ &_9 <- _ret ] s1) | s1 = bb6 ]
-    | bb6 = s0 [ s0 = new {_9} (fun (_ret: t_PCellOwn) -> [ &perm <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = deref'0 {inner'0} (fun (_ret: t_PCell) -> [ &_25 <- _ret ] s1) | s1 = bb8 ]
+    | bb5 = s0 [ s0 = unwrap {_10} (fun (_ret: t_PermCellOwn) -> [ &_9 <- _ret ] s1) | s1 = bb6 ]
+    | bb6 = s0 [ s0 = new {_9} (fun (_ret: t_PermCellOwn) -> [ &perm <- _ret ] s1) | s1 = bb7 ]
+    | bb7 = s0 [ s0 = deref'0 {inner'0} (fun (_ret: t_PermCell) -> [ &_25 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0 [ s0 = borrow {_25} {perm} (fun (_ret: t_Inner) -> [ &_23 <- _ret ] s1) | s1 = bb9 ]
     | bb9 = any
       [ br0 (x0: t_Vec) -> {_23 = C_Direct x0} (! bb15)
@@ -3381,17 +3395,17 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
     | & inner'0: t_Rc = inner
     | & i'0: UInt64.t = i
     | & inv'21: t_PA = inv'20
-    | & perm: t_PCellOwn = Any.any_l ()
-    | & _9: t_PCellOwn = Any.any_l ()
+    | & perm: t_PermCellOwn = Any.any_l ()
+    | & _9: t_PermCellOwn = Any.any_l ()
     | & _10: t_Option'0 = Any.any_l ()
     | & _12: t_PA = Any.any_l ()
     | & _15: t_Id = Any.any_l ()
     | & _16: t_Id = Any.any_l ()
     | & _18: t_Id = Any.any_l ()
-    | & _20: t_PCell = Any.any_l ()
+    | & _20: t_PermCell = Any.any_l ()
     | & _22: t_T = Any.any_l ()
     | & _23: t_Inner = Any.any_l ()
-    | & _25: t_PCell = Any.any_l ()
+    | & _25: t_PermCell = Any.any_l ()
     | & v: t_Vec = Any.any_l ()
     | & _32: t_T = Any.any_l ()
     | & _33: t_T = Any.any_l ()
@@ -3421,13 +3435,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   let%span spersistent_array'4 = "persistent_array.rs" 223 18 223 42
   let%span spersistent_array'5 = "persistent_array.rs" 226 34 226 42
   let%span spersistent_array'6 = "persistent_array.rs" 226 39 226 41
-  let%span spersistent_array'7 = "persistent_array.rs" 255 74 255 76
-  let%span spersistent_array'8 = "persistent_array.rs" 244 8 244 42
-  let%span spersistent_array'9 = "persistent_array.rs" 245 19 245 49
-  let%span spersistent_array'10 = "persistent_array.rs" 246 18 246 42
-  let%span spersistent_array'11 = "persistent_array.rs" 247 18 247 39
-  let%span spersistent_array'12 = "persistent_array.rs" 248 18 249 55
-  let%span spersistent_array'13 = "persistent_array.rs" 251 18 254 9
+  let%span spersistent_array'7 = "persistent_array.rs" 259 16 259 18
+  let%span spersistent_array'8 = "persistent_array.rs" 245 8 245 42
+  let%span spersistent_array'9 = "persistent_array.rs" 246 19 246 49
+  let%span spersistent_array'10 = "persistent_array.rs" 247 18 247 42
+  let%span spersistent_array'11 = "persistent_array.rs" 248 18 248 39
+  let%span spersistent_array'12 = "persistent_array.rs" 249 18 250 55
+  let%span spersistent_array'13 = "persistent_array.rs" 252 18 255 9
   let%span spersistent_array'14 = "persistent_array.rs" 78 24 78 36
   let%span spersistent_array'15 = "persistent_array.rs" 101 16 114 21
   let%span spersistent_array'16 = "persistent_array.rs" 62 16 64 52
@@ -3458,13 +3472,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 203 26 203 42
   let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
   let%span svec'2 = "../../creusot-contracts/src/std/vec.rs" 99 20 99 41
-  let%span spcell = "../../creusot-contracts/src/cell/pcell.rs" 231 14 231 34
-  let%span spcell'0 = "../../creusot-contracts/src/cell/pcell.rs" 173 39 173 43
-  let%span spcell'1 = "../../creusot-contracts/src/cell/pcell.rs" 171 15 171 37
-  let%span spcell'2 = "../../creusot-contracts/src/cell/pcell.rs" 173 4 173 77
-  let%span spcell'3 = "../../creusot-contracts/src/cell/pcell.rs" 172 14 172 30
-  let%span spcell'4 = "../../creusot-contracts/src/cell/pcell.rs" 34 4 34 12
-  let%span spcell'5 = "../../creusot-contracts/src/cell/pcell.rs" 62 20 62 46
+  let%span spermcell = "../../creusot-contracts/src/cell/permcell.rs" 231 14 231 34
+  let%span spermcell'0 = "../../creusot-contracts/src/cell/permcell.rs" 173 39 173 43
+  let%span spermcell'1 = "../../creusot-contracts/src/cell/permcell.rs" 171 15 171 37
+  let%span spermcell'2 = "../../creusot-contracts/src/cell/permcell.rs" 173 4 173 80
+  let%span spermcell'3 = "../../creusot-contracts/src/cell/permcell.rs" 172 14 172 30
+  let%span spermcell'4 = "../../creusot-contracts/src/cell/permcell.rs" 34 4 34 12
+  let%span spermcell'5 = "../../creusot-contracts/src/cell/permcell.rs" 62 20 62 46
   let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 354 22 354 26
   let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 354 4 354 50
   let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 353 14 353 55
@@ -3553,7 +3567,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   type t_Fragment = { t_Fragment__0: t_Resource; t_Fragment__1: t_Id; t_Fragment__2: Seq.seq t_T }
   
   type t_PersistentArray = {
-    t_PersistentArray__pcell: t_Rc'0;
+    t_PersistentArray__permcell: t_Rc'0;
     t_PersistentArray__frag: t_Fragment;
     t_PersistentArray__inv: t_Rc }
   
@@ -3563,9 +3577,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   
   type t_PA = { t_PA__perms: t_FMap; t_PA__auth: t_Authority; t_PA__depth: Map.map t_Id int }
   
-  type t_PCellOwn
+  type t_PermCellOwn
   
-  type t_Option = C_None | C_Some t_PCellOwn
+  type t_Option = C_None | C_Some t_PermCellOwn
   
   function view'1 (self: t_FMap) : Map.map t_Id t_Option
   
@@ -3634,29 +3648,29 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Inner [inv'5 x]. inv'5 x = invariant''2 x
   
-  function val' (self: t_PCellOwn) : t_Inner
+  function val' (self: t_PermCellOwn) : t_Inner
   
-  predicate invariant''3 (self: t_PCellOwn) = [%#spcell'5] inv'5 (val' self)
+  predicate invariant''3 (self: t_PermCellOwn) = [%#spermcell'5] inv'5 (val' self)
   
-  predicate inv'6 (_0: t_PCellOwn)
+  predicate inv'6 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PCellOwn [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate index_logic (self: Map.map t_PCellOwn bool) (a: t_PCellOwn) = [%#smapping] Map.get self a
+  predicate index_logic (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = [%#smapping] Map.get self a
   
-  function such_that (p: Map.map t_PCellOwn bool) : t_PCellOwn
+  function such_that (p: Map.map t_PermCellOwn bool) : t_PermCellOwn
   
-  axiom such_that_spec: forall p: Map.map t_PCellOwn bool. ([%#slogic] exists x: t_PCellOwn. index_logic p x)
+  axiom such_that_spec: forall p: Map.map t_PermCellOwn bool. ([%#slogic] exists x: t_PermCellOwn. index_logic p x)
       -> ([%#slogic'0] index_logic p (such_that p))
   
-  function unwrap_logic (self: t_Option) : t_PCellOwn = [%#soption'4] match self with
+  function unwrap_logic (self: t_Option) : t_PermCellOwn = [%#soption'4] match self with
       | C_Some x -> x
-      | C_None -> such_that (fun (__0: t_PCellOwn) -> true)
+      | C_None -> such_that (fun (__0: t_PermCellOwn) -> true)
       end
   
-  function lookup [@inline:trivial] (self: t_FMap) (k: t_Id) : t_PCellOwn = [%#sfmap'5] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Id) : t_PermCellOwn = [%#sfmap'5] unwrap_logic (get self k)
   
-  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Id) : t_PCellOwn = [%#sfmap'4] lookup self key
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Id) : t_PermCellOwn = [%#sfmap'4] lookup self key
   
   predicate invariant''4 (self: t_FMap) =
     [%#sfmap'6] forall k: t_Id. contains self k -> inv k /\ inv'6 (index_logic'0 self k)
@@ -3845,7 +3859,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   
   predicate contains'1 [@inline:trivial] (self: t_FMap'0) (k: t_Id) = [%#sfmap'3] get'0 self k <> C_None'0
   
-  function id'1 (self: t_PCellOwn) : t_Id
+  function id'1 (self: t_PermCellOwn) : t_Id
   
   predicate index_logic'1 (self: Map.map (Seq.seq t_T) bool) (a: Seq.seq t_T) = [%#smapping] Map.get self a
   
@@ -3866,13 +3880,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   
   function view'8 (self: t_Vec) : Seq.seq t_T = [%#smodel] view'2 self
   
-  type t_PCell
+  type t_PermCell
   
-  function id'2 (self: t_PCell) : t_Id
+  function id'2 (self: t_PermCell) : t_Id
   
-  function view'9 (self: t_Rc'0) : t_PCell
+  function view'9 (self: t_Rc'0) : t_PermCell
   
-  function view'10 (self: t_Rc'0) : t_PCell = [%#smodel] view'9 self
+  function view'10 (self: t_Rc'0) : t_PermCell = [%#smodel] view'9 self
   
   function index_logic'3 (self: Map.map t_Id int) (a: t_Id) : int = [%#smapping] Map.get self a
   
@@ -3917,16 +3931,16 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
       {[%#sghost'11] result = self}
       (! return' {result}) ]
   
-  let rec deref'1 (self_: t_Rc'0) (return' (x: t_PCell)) = any
-    [ return''0 (result: t_PCell) -> {[%#src] result = view'9 self_} (! return' {result}) ]
+  let rec deref'1 (self_: t_Rc'0) (return' (x: t_PermCell)) = any
+    [ return''0 (result: t_PermCell) -> {[%#src] result = view'9 self_} (! return' {result}) ]
   
-  let rec id_ghost (self: t_PCell) (return' (x: t_Id)) = any
-    [ return''0 (result: t_Id) -> {[%#spcell] result = id'2 self} (! return' {result}) ]
+  let rec id_ghost (self: t_PermCell) (return' (x: t_Id)) = any
+    [ return''0 (result: t_Id) -> {[%#spermcell] result = id'2 self} (! return' {result}) ]
   
   let rec deref'2 (self: t_Id) (return' (x: t_Id)) = any
     [ return''0 (result: t_Id) -> {[%#sghost'2] result = self} (! return' {result}) ]
   
-  type t_Option'1 = C_None'1 | C_Some'1 t_PCellOwn
+  type t_Option'1 = C_None'1 | C_Some'1 t_PermCellOwn
   
   predicate invariant''17 (self: t_FMap) = [%#sinvariant] inv'7 self
   
@@ -3936,13 +3950,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   
   axiom inv_axiom'20 [@rewrite]: forall x: t_FMap [inv'21 x]. inv'21 x = invariant''17 x
   
-  predicate invariant''18 (self: t_PCellOwn) = [%#sinvariant] inv'6 self
+  predicate invariant''18 (self: t_PermCellOwn) = [%#sinvariant] inv'6 self
   
   meta "rewrite_def" predicate invariant''18
   
-  predicate inv'22 (_0'0: t_PCellOwn)
+  predicate inv'22 (_0'0: t_PermCellOwn)
   
-  axiom inv_axiom'21 [@rewrite]: forall x: t_PCellOwn [inv'22 x]. inv'22 x = invariant''18 x
+  axiom inv_axiom'21 [@rewrite]: forall x: t_PermCellOwn [inv'22 x]. inv'22 x = invariant''18 x
   
   predicate inv'23 (_0'0: t_Option'1)
   
@@ -3952,7 +3966,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
         | C_Some'1 a_0 -> inv'22 a_0
         end
   
-  function map_logic (self: t_Option) (f: Map.map t_PCellOwn t_PCellOwn) : t_Option'1 = [%#soption'2] match self with
+  function map_logic (self: t_Option) (f: Map.map t_PermCellOwn t_PermCellOwn) : t_Option'1 =
+    [%#soption'2] match self with
       | C_None -> C_None'1
       | C_Some x -> C_Some'1 (Map.get f x)
       end
@@ -3961,37 +3976,40 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
     {[@expl:get_ghost 'self' type invariant] [%#sfmap] inv'21 self}
     any
     [ return''0 (result: t_Option'1) -> {[%#sfmap'0] inv'23 result}
-      {[%#sfmap'1] result = map_logic (get self key) (fun (v: t_PCellOwn) -> v)}
+      {[%#sfmap'1] result = map_logic (get self key) (fun (v: t_PermCellOwn) -> v)}
       (! return' {result}) ]
   
-  let rec unwrap (self_: t_Option'1) (return' (x: t_PCellOwn)) =
+  let rec unwrap (self_: t_Option'1) (return' (x: t_PermCellOwn)) =
     {[@expl:unwrap 'self_' type invariant] [%#soption] inv'23 self_}
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None'1}
     any
-    [ return''0 (result: t_PCellOwn) -> {inv'22 result} {[%#soption'1] C_Some'1 result = self_} (! return' {result}) ]
+    [ return''0 (result: t_PermCellOwn) -> {inv'22 result}
+      {[%#soption'1] C_Some'1 result = self_}
+      (! return' {result}) ]
   
-  predicate invariant''19 (self: t_PCellOwn) = [%#sghost'14] inv'22 self
+  predicate invariant''19 (self: t_PermCellOwn) = [%#sghost'14] inv'22 self
   
-  predicate inv'24 (_0'0: t_PCellOwn)
+  predicate inv'24 (_0'0: t_PermCellOwn)
   
-  axiom inv_axiom'23 [@rewrite]: forall x: t_PCellOwn [inv'24 x]. inv'24 x = invariant''19 x
+  axiom inv_axiom'23 [@rewrite]: forall x: t_PermCellOwn [inv'24 x]. inv'24 x = invariant''19 x
   
-  let rec new'1 (x: t_PCellOwn) (return' (x'0: t_PCellOwn)) = {[@expl:new 'x' type invariant] [%#sghost'7] inv'22 x}
+  let rec new'1 (x: t_PermCellOwn) (return' (x'0: t_PermCellOwn)) =
+    {[@expl:new 'x' type invariant] [%#sghost'7] inv'22 x}
     any
-    [ return''0 (result: t_PCellOwn) -> {[%#sghost'8] inv'24 result} {[%#sghost'3] result = x} (! return' {result}) ]
+    [ return''0 (result: t_PermCellOwn) -> {[%#sghost'8] inv'24 result} {[%#sghost'3] result = x} (! return' {result}) ]
   
-  function view'12 (self: t_PCellOwn) : t_Inner = [%#spcell'4] val' self
+  function view'12 (self: t_PermCellOwn) : t_Inner = [%#spermcell'4] val' self
   
-  function view'13 (self: t_PCellOwn) : t_Inner = [%#smodel] view'12 self
+  function view'13 (self: t_PermCellOwn) : t_Inner = [%#smodel] view'12 self
   
-  function view'14 (self: t_PCellOwn) : t_Inner = [%#sghost] view'13 self
+  function view'14 (self: t_PermCellOwn) : t_Inner = [%#sghost] view'13 self
   
-  let rec borrow (self: t_PCell) (perm: t_PCellOwn) (return' (x: t_Inner)) =
-    {[@expl:borrow 'perm' type invariant] [%#spcell'0] inv'24 perm}
-    {[@expl:borrow requires] [%#spcell'1] id'2 self = id'1 perm}
+  let rec borrow (self: t_PermCell) (perm: t_PermCellOwn) (return' (x: t_Inner)) =
+    {[@expl:borrow 'perm' type invariant] [%#spermcell'0] inv'24 perm}
+    {[@expl:borrow requires] [%#spermcell'1] id'2 self = id'1 perm}
     any
-    [ return''0 (result: t_Inner) -> {[%#spcell'2] inv'5 result}
-      {[%#spcell'3] result = view'14 perm}
+    [ return''0 (result: t_Inner) -> {[%#spermcell'2] inv'5 result}
+      {[%#spermcell'3] result = view'14 perm}
       (! return' {result}) ]
   
   let rec v_Direct (input: t_Inner) (ret (field_0: t_Vec)) = any
@@ -4056,7 +4074,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   function namespace (self: t_LocalInvariant) : t_Namespace
   
   predicate invariant''24 [#"persistent_array.rs" 59 8 59 34] (self: t_PersistentArray) =
-    [%#spersistent_array'16] (view'16 self.t_PersistentArray__frag)._p0 = id'2 (view'9 self.t_PersistentArray__pcell)
+    [%#spersistent_array'16] (view'16 self.t_PersistentArray__frag)._p0 = id'2 (view'9 self.t_PersistentArray__permcell)
     /\ id'0 self.t_PersistentArray__frag = public (view'0 self.t_PersistentArray__inv)
     /\ namespace (view'0 self.t_PersistentArray__inv) = Namespace_PARRAY 0
   
@@ -4065,7 +4083,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
   axiom inv_axiom'28 [@rewrite]: forall x: t_PersistentArray [inv'29 x]. inv'29 x
       = (invariant''24 x
       /\ match x with
-        | {t_PersistentArray__pcell = pcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'30} -> inv'15 frag
+        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'30} -> inv'15 frag
         end)
   
   predicate invariant''25 (self: t_PersistentArray) = [%#sinvariant] inv'29 self
@@ -4099,7 +4117,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
     | bb2 = s0 [ s0 = contains'0 {(_6.current).t_PA__auth} {_9} (fun (_ret: ()) -> [ &_4 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0 [ s0 = new {_4} (fun (_ret: ()) -> [ &_3 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0
-      [ s0 = [ &_14 <- (_1'0._0).t_PersistentArray__pcell ] s1
+      [ s0 = [ &_14 <- (_1'0._0).t_PersistentArray__permcell ] s1
       | s1 = {inv'11 pa'0}
         MutBorrow.borrow_mut <MutBorrow.t t_PA> {pa'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_PA)) ->
@@ -4136,19 +4154,21 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
       | s3 = bb7 ]
     | bb7 = s0 [ s0 = into_inner {pa'0} (fun (_ret: MutBorrow.t t_PA) -> [ &_26 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
-      [ s0 = deref'1 {(_1'0._0).t_PersistentArray__pcell} (fun (_ret: t_PCell) -> [ &_34 <- _ret ] s1) | s1 = bb9 ]
+      [ s0 = deref'1 {(_1'0._0).t_PersistentArray__permcell} (fun (_ret: t_PermCell) -> [ &_34 <- _ret ] s1)
+      | s1 = bb9 ]
     | bb9 = s0 [ s0 = id_ghost {_34} (fun (_ret: t_Id) -> [ &_32 <- _ret ] s1) | s1 = bb10 ]
     | bb10 = s0 [ s0 = [ &_31 <- _32 ] s1 | s1 = deref'2 {_31} (fun (_ret: t_Id) -> [ &_29 <- _ret ] s2) | s2 = bb11 ]
     | bb11 = s0
       [ s0 = get_ghost {(_26.current).t_PA__perms} {_29} (fun (_ret: t_Option'1) -> [ &_24 <- _ret ] s1) | s1 = bb12 ]
-    | bb12 = s0 [ s0 = unwrap {_24} (fun (_ret: t_PCellOwn) -> [ &_23 <- _ret ] s1) | s1 = bb13 ]
+    | bb12 = s0 [ s0 = unwrap {_24} (fun (_ret: t_PermCellOwn) -> [ &_23 <- _ret ] s1) | s1 = bb13 ]
     | bb13 = s0
       [ s0 = {[@expl:type invariant] inv'10 _26} s1
       | s1 = -{resolve'2 _26}- s2
-      | s2 = new'1 {_23} (fun (_ret: t_PCellOwn) -> [ &perm <- _ret ] s3)
+      | s2 = new'1 {_23} (fun (_ret: t_PermCellOwn) -> [ &perm <- _ret ] s3)
       | s3 = bb14 ]
     | bb14 = s0
-      [ s0 = deref'1 {(_1'0._0).t_PersistentArray__pcell} (fun (_ret: t_PCell) -> [ &_40 <- _ret ] s1) | s1 = bb15 ]
+      [ s0 = deref'1 {(_1'0._0).t_PersistentArray__permcell} (fun (_ret: t_PermCell) -> [ &_40 <- _ret ] s1)
+      | s1 = bb15 ]
     | bb15 = s0 [ s0 = borrow {_40} {perm} (fun (_ret: t_Inner) -> [ &_38 <- _ret ] s1) | s1 = bb16 ]
     | bb16 = any
       [ br0 (x0: t_Vec) -> {_38 = C_Direct x0} (! bb18)
@@ -4176,17 +4196,17 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
     | & _19: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
     | & _20: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
     | & _21: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
-    | & perm: t_PCellOwn = Any.any_l ()
-    | & _23: t_PCellOwn = Any.any_l ()
+    | & perm: t_PermCellOwn = Any.any_l ()
+    | & _23: t_PermCellOwn = Any.any_l ()
     | & _24: t_Option'1 = Any.any_l ()
     | & _26: MutBorrow.t t_PA = Any.any_l ()
     | & _29: t_Id = Any.any_l ()
     | & _31: t_Id = Any.any_l ()
     | & _32: t_Id = Any.any_l ()
-    | & _34: t_PCell = Any.any_l ()
+    | & _34: t_PermCell = Any.any_l ()
     | & arr: t_Vec = Any.any_l ()
     | & _38: t_Inner = Any.any_l ()
-    | & _40: t_PCell = Any.any_l ()
+    | & _40: t_PermCell = Any.any_l ()
     | & _45: Slice64.slice t_T = Any.any_l () ]
   
   type t_Tokens
@@ -4453,23 +4473,23 @@ module M_persistent_array__implementation__qyi7256199225841846155__get [#"persis
       {[@expl:get ensures] [%#spersistent_array'4] result = Seq.get (view'18 self) (UInt64.t'int index)}
       (! return' {result}) ]
 end
-module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"persistent_array.rs" 255 8 255 96] (* implementation::PersistentArray<T> *)
+module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"persistent_array.rs" 256 8 260 9] (* implementation::PersistentArray<T> *)
   type namespace_other
   
   type t_Namespace = Namespace_PARRAY int | Other namespace_other
   
   let%span src = "../../creusot-contracts/src/std/rc.rs" 51 18 51 38
   let%span src'0 = "../../creusot-contracts/src/std/rc.rs" 45 18 45 37
-  let%span spersistent_array = "persistent_array.rs" 280 25 280 60
-  let%span spersistent_array'0 = "persistent_array.rs" 281 24 281 75
-  let%span spersistent_array'1 = "persistent_array.rs" 282 32 282 68
-  let%span spersistent_array'2 = "persistent_array.rs" 255 74 255 76
-  let%span spersistent_array'3 = "persistent_array.rs" 244 8 244 42
-  let%span spersistent_array'4 = "persistent_array.rs" 245 19 245 49
-  let%span spersistent_array'5 = "persistent_array.rs" 246 18 246 42
-  let%span spersistent_array'6 = "persistent_array.rs" 247 18 247 39
-  let%span spersistent_array'7 = "persistent_array.rs" 248 18 249 55
-  let%span spersistent_array'8 = "persistent_array.rs" 251 18 254 9
+  let%span spersistent_array = "persistent_array.rs" 285 25 285 60
+  let%span spersistent_array'0 = "persistent_array.rs" 286 24 286 75
+  let%span spersistent_array'1 = "persistent_array.rs" 287 32 287 68
+  let%span spersistent_array'2 = "persistent_array.rs" 259 16 259 18
+  let%span spersistent_array'3 = "persistent_array.rs" 245 8 245 42
+  let%span spersistent_array'4 = "persistent_array.rs" 246 19 246 49
+  let%span spersistent_array'5 = "persistent_array.rs" 247 18 247 42
+  let%span spersistent_array'6 = "persistent_array.rs" 248 18 248 39
+  let%span spersistent_array'7 = "persistent_array.rs" 249 18 250 55
+  let%span spersistent_array'8 = "persistent_array.rs" 252 18 255 9
   let%span spersistent_array'9 = "persistent_array.rs" 101 16 114 21
   let%span sghost = "../../creusot-contracts/src/ghost.rs" 78 14 78 18
   let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 78 4 78 36
@@ -4500,19 +4520,19 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   let%span svec'4 = "../../creusot-contracts/src/std/vec.rs" 190 26 190 55
   let%span svec'5 = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
   let%span svec'6 = "../../creusot-contracts/src/std/vec.rs" 99 20 99 41
-  let%span spcell = "../../creusot-contracts/src/cell/pcell.rs" 231 14 231 34
-  let%span spcell'0 = "../../creusot-contracts/src/cell/pcell.rs" 173 39 173 43
-  let%span spcell'1 = "../../creusot-contracts/src/cell/pcell.rs" 171 15 171 37
-  let%span spcell'2 = "../../creusot-contracts/src/cell/pcell.rs" 173 4 173 77
-  let%span spcell'3 = "../../creusot-contracts/src/cell/pcell.rs" 172 14 172 30
-  let%span spcell'4 = "../../creusot-contracts/src/cell/pcell.rs" 195 43 195 47
-  let%span spcell'5 = "../../creusot-contracts/src/cell/pcell.rs" 191 15 191 37
-  let%span spcell'6 = "../../creusot-contracts/src/cell/pcell.rs" 195 4 195 89
-  let%span spcell'7 = "../../creusot-contracts/src/cell/pcell.rs" 192 14 192 39
-  let%span spcell'8 = "../../creusot-contracts/src/cell/pcell.rs" 193 14 193 30
-  let%span spcell'9 = "../../creusot-contracts/src/cell/pcell.rs" 194 14 194 33
-  let%span spcell'10 = "../../creusot-contracts/src/cell/pcell.rs" 34 4 34 12
-  let%span spcell'11 = "../../creusot-contracts/src/cell/pcell.rs" 62 20 62 46
+  let%span spermcell = "../../creusot-contracts/src/cell/permcell.rs" 231 14 231 34
+  let%span spermcell'0 = "../../creusot-contracts/src/cell/permcell.rs" 173 39 173 43
+  let%span spermcell'1 = "../../creusot-contracts/src/cell/permcell.rs" 171 15 171 37
+  let%span spermcell'2 = "../../creusot-contracts/src/cell/permcell.rs" 173 4 173 80
+  let%span spermcell'3 = "../../creusot-contracts/src/cell/permcell.rs" 172 14 172 30
+  let%span spermcell'4 = "../../creusot-contracts/src/cell/permcell.rs" 195 43 195 47
+  let%span spermcell'5 = "../../creusot-contracts/src/cell/permcell.rs" 191 15 191 37
+  let%span spermcell'6 = "../../creusot-contracts/src/cell/permcell.rs" 195 4 195 92
+  let%span spermcell'7 = "../../creusot-contracts/src/cell/permcell.rs" 192 14 192 39
+  let%span spermcell'8 = "../../creusot-contracts/src/cell/permcell.rs" 193 14 193 30
+  let%span spermcell'9 = "../../creusot-contracts/src/cell/permcell.rs" 194 14 194 33
+  let%span spermcell'10 = "../../creusot-contracts/src/cell/permcell.rs" 34 4 34 12
+  let%span spermcell'11 = "../../creusot-contracts/src/cell/permcell.rs" 62 20 62 46
   let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 354 22 354 26
   let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 354 4 354 50
   let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 353 14 353 55
@@ -4566,23 +4586,23 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   use int.MinMax
   use creusot.prelude.Any
   
-  type t_PCell
+  type t_PermCell
   
   type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
   type t_Rc = { t_Rc__ptr: t_NonNull; t_Rc__phantom: (); t_Rc__alloc: () }
   
-  function view (self: t_Rc) : t_PCell
+  function view (self: t_Rc) : t_PermCell
   
-  let rec deref (self_: t_Rc) (return' (x: t_PCell)) = any
-    [ return''0 (result: t_PCell) -> {[%#src] result = view self_} (! return' {result}) ]
+  let rec deref (self_: t_Rc) (return' (x: t_PermCell)) = any
+    [ return''0 (result: t_PermCell) -> {[%#src] result = view self_} (! return' {result}) ]
   
   type t_Id
   
-  function id (self: t_PCell) : t_Id
+  function id (self: t_PermCell) : t_Id
   
-  let rec id_ghost (self: t_PCell) (return' (x: t_Id)) = any
-    [ return''0 (result: t_Id) -> {[%#spcell] result = id self} (! return' {result}) ]
+  let rec id_ghost (self: t_PermCell) (return' (x: t_Id)) = any
+    [ return''0 (result: t_Id) -> {[%#spermcell] result = id self} (! return' {result}) ]
   
   type t_FMap
   
@@ -4592,9 +4612,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   
   type t_PA = { t_PA__perms: t_FMap; t_PA__auth: t_Authority; t_PA__depth: Map.map t_Id int }
   
-  type t_PCellOwn
+  type t_PermCellOwn
   
-  type t_Option = C_None | C_Some t_PCellOwn
+  type t_Option = C_None | C_Some t_PermCellOwn
   
   function view'0 (self: t_FMap) : Map.map t_Id t_Option
   
@@ -4665,29 +4685,29 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Inner [inv'5 x]. inv'5 x = invariant''2 x
   
-  function val' (self: t_PCellOwn) : t_Inner
+  function val' (self: t_PermCellOwn) : t_Inner
   
-  predicate invariant''3 (self: t_PCellOwn) = [%#spcell'11] inv'5 (val' self)
+  predicate invariant''3 (self: t_PermCellOwn) = [%#spermcell'11] inv'5 (val' self)
   
-  predicate inv'6 (_0: t_PCellOwn)
+  predicate inv'6 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PCellOwn [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate index_logic (self: Map.map t_PCellOwn bool) (a: t_PCellOwn) = [%#smapping] Map.get self a
+  predicate index_logic (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = [%#smapping] Map.get self a
   
-  function such_that (p: Map.map t_PCellOwn bool) : t_PCellOwn
+  function such_that (p: Map.map t_PermCellOwn bool) : t_PermCellOwn
   
-  axiom such_that_spec: forall p: Map.map t_PCellOwn bool. ([%#slogic] exists x: t_PCellOwn. index_logic p x)
+  axiom such_that_spec: forall p: Map.map t_PermCellOwn bool. ([%#slogic] exists x: t_PermCellOwn. index_logic p x)
       -> ([%#slogic'0] index_logic p (such_that p))
   
-  function unwrap_logic (self: t_Option) : t_PCellOwn = [%#soption'4] match self with
+  function unwrap_logic (self: t_Option) : t_PermCellOwn = [%#soption'4] match self with
       | C_Some x -> x
-      | C_None -> such_that (fun (__0: t_PCellOwn) -> true)
+      | C_None -> such_that (fun (__0: t_PermCellOwn) -> true)
       end
   
-  function lookup [@inline:trivial] (self: t_FMap) (k: t_Id) : t_PCellOwn = [%#sfmap'20] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Id) : t_PermCellOwn = [%#sfmap'20] unwrap_logic (get self k)
   
-  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Id) : t_PCellOwn = [%#sfmap'14] lookup self key
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Id) : t_PermCellOwn = [%#sfmap'14] lookup self key
   
   predicate invariant''4 (self: t_FMap) =
     [%#sfmap'21] forall k: t_Id. contains self k -> inv k /\ inv'6 (index_logic'0 self k)
@@ -4753,7 +4773,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   let rec deref'1 (self: t_Id) (return' (x: t_Id)) = any
     [ return''0 (result: t_Id) -> {[%#sghost'1] result = self} (! return' {result}) ]
   
-  type t_Option'0 = C_None'0 | C_Some'0 t_PCellOwn
+  type t_Option'0 = C_None'0 | C_Some'0 t_PermCellOwn
   
   predicate invariant''10 (self: t_FMap) = [%#sinvariant'0] inv'7 self
   
@@ -4763,13 +4783,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   
   axiom inv_axiom'13 [@rewrite]: forall x: t_FMap [inv'14 x]. inv'14 x = invariant''10 x
   
-  predicate invariant''11 (self: t_PCellOwn) = [%#sinvariant'0] inv'6 self
+  predicate invariant''11 (self: t_PermCellOwn) = [%#sinvariant'0] inv'6 self
   
   meta "rewrite_def" predicate invariant''11
   
-  predicate inv'15 (_0: t_PCellOwn)
+  predicate inv'15 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: t_PCellOwn [inv'15 x]. inv'15 x = invariant''11 x
+  axiom inv_axiom'14 [@rewrite]: forall x: t_PermCellOwn [inv'15 x]. inv'15 x = invariant''11 x
   
   predicate inv'16 (_0: t_Option'0)
   
@@ -4779,7 +4799,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
         | C_Some'0 a_0 -> inv'15 a_0
         end
   
-  function map_logic (self: t_Option) (f: Map.map t_PCellOwn t_PCellOwn) : t_Option'0 = [%#soption'2] match self with
+  function map_logic (self: t_Option) (f: Map.map t_PermCellOwn t_PermCellOwn) : t_Option'0 =
+    [%#soption'2] match self with
       | C_None -> C_None'0
       | C_Some x -> C_Some'0 (Map.get f x)
       end
@@ -4788,39 +4809,41 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
     {[@expl:get_ghost 'self' type invariant] [%#sfmap] inv'14 self}
     any
     [ return''0 (result: t_Option'0) -> {[%#sfmap'0] inv'16 result}
-      {[%#sfmap'1] result = map_logic (get self key) (fun (v: t_PCellOwn) -> v)}
+      {[%#sfmap'1] result = map_logic (get self key) (fun (v: t_PermCellOwn) -> v)}
       (! return' {result}) ]
   
-  let rec unwrap (self_: t_Option'0) (return' (x: t_PCellOwn)) =
+  let rec unwrap (self_: t_Option'0) (return' (x: t_PermCellOwn)) =
     {[@expl:unwrap 'self_' type invariant] [%#soption] inv'16 self_}
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None'0}
     any
-    [ return''0 (result: t_PCellOwn) -> {inv'15 result} {[%#soption'1] C_Some'0 result = self_} (! return' {result}) ]
+    [ return''0 (result: t_PermCellOwn) -> {inv'15 result}
+      {[%#soption'1] C_Some'0 result = self_}
+      (! return' {result}) ]
   
-  predicate invariant''12 (self: t_PCellOwn) = [%#sghost'15] inv'15 self
+  predicate invariant''12 (self: t_PermCellOwn) = [%#sghost'15] inv'15 self
   
-  predicate inv'17 (_0: t_PCellOwn)
+  predicate inv'17 (_0: t_PermCellOwn)
   
-  axiom inv_axiom'16 [@rewrite]: forall x: t_PCellOwn [inv'17 x]. inv'17 x = invariant''12 x
+  axiom inv_axiom'16 [@rewrite]: forall x: t_PermCellOwn [inv'17 x]. inv'17 x = invariant''12 x
   
-  let rec new (x: t_PCellOwn) (return' (x'0: t_PCellOwn)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'15 x}
+  let rec new (x: t_PermCellOwn) (return' (x'0: t_PermCellOwn)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'15 x}
     any
-    [ return''0 (result: t_PCellOwn) -> {[%#sghost'3] inv'17 result} {[%#sghost'4] result = x} (! return' {result}) ]
+    [ return''0 (result: t_PermCellOwn) -> {[%#sghost'3] inv'17 result} {[%#sghost'4] result = x} (! return' {result}) ]
   
-  function id'0 (self: t_PCellOwn) : t_Id
+  function id'0 (self: t_PermCellOwn) : t_Id
   
-  function view'2 (self: t_PCellOwn) : t_Inner = [%#spcell'10] val' self
+  function view'2 (self: t_PermCellOwn) : t_Inner = [%#spermcell'10] val' self
   
-  function view'3 (self: t_PCellOwn) : t_Inner = [%#smodel] view'2 self
+  function view'3 (self: t_PermCellOwn) : t_Inner = [%#smodel] view'2 self
   
-  function view'4 (self: t_PCellOwn) : t_Inner = [%#sghost'13] view'3 self
+  function view'4 (self: t_PermCellOwn) : t_Inner = [%#sghost'13] view'3 self
   
-  let rec borrow (self: t_PCell) (perm: t_PCellOwn) (return' (x: t_Inner)) =
-    {[@expl:borrow 'perm' type invariant] [%#spcell'0] inv'17 perm}
-    {[@expl:borrow requires] [%#spcell'1] id self = id'0 perm}
+  let rec borrow (self: t_PermCell) (perm: t_PermCellOwn) (return' (x: t_Inner)) =
+    {[@expl:borrow 'perm' type invariant] [%#spermcell'0] inv'17 perm}
+    {[@expl:borrow requires] [%#spermcell'1] id self = id'0 perm}
     any
-    [ return''0 (result: t_Inner) -> {[%#spcell'2] inv'5 result}
-      {[%#spcell'3] result = view'4 perm}
+    [ return''0 (result: t_Inner) -> {[%#spermcell'2] inv'5 result}
+      {[%#spermcell'3] result = view'4 perm}
       (! return' {result}) ]
   
   predicate resolve (self: MutBorrow.t t_PA) = [%#sresolve] self.final = self.current
@@ -4882,7 +4905,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
-  type tuple = { _p0: MutBorrow.t t_PCellOwn; _p1: MutBorrow.t t_FMap }
+  type tuple = { _p0: MutBorrow.t t_PermCellOwn; _p1: MutBorrow.t t_FMap }
   
   predicate invariant''15 (self: MutBorrow.t t_FMap) = [%#sinvariant] inv'7 self.current /\ inv'7 self.final
   
@@ -4892,13 +4915,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   
   axiom inv_axiom'19 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'20 x]. inv'20 x = invariant''15 x
   
-  predicate invariant''16 (self: MutBorrow.t t_PCellOwn) = [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''16 (self: MutBorrow.t t_PermCellOwn) = [%#sinvariant] inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''16
   
-  predicate inv'21 (_0: MutBorrow.t t_PCellOwn)
+  predicate inv'21 (_0: MutBorrow.t t_PermCellOwn)
   
-  axiom inv_axiom'20 [@rewrite]: forall x: MutBorrow.t t_PCellOwn [inv'21 x]. inv'21 x = invariant''16 x
+  axiom inv_axiom'20 [@rewrite]: forall x: MutBorrow.t t_PermCellOwn [inv'21 x]. inv'21 x = invariant''16 x
   
   predicate inv'22 (_0: tuple)
   
@@ -4917,12 +4940,12 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   axiom remove_spec'0: forall self: t_FMap, k: t_Id. [%#sfmap'16] len (remove self k)
       = (if contains self k then len self - 1 else len self)
   
-  function insert (self: t_FMap) (k: t_Id) (v: t_PCellOwn) : t_FMap
+  function insert (self: t_FMap) (k: t_Id) (v: t_PermCellOwn) : t_FMap
   
-  axiom insert_spec: forall self: t_FMap, k: t_Id, v: t_PCellOwn. [%#sfmap'17] view'0 (insert self k v)
+  axiom insert_spec: forall self: t_FMap, k: t_Id, v: t_PermCellOwn. [%#sfmap'17] view'0 (insert self k v)
       = Map.set (view'0 self) k (C_Some v)
   
-  axiom insert_spec'0: forall self: t_FMap, k: t_Id, v: t_PCellOwn. [%#sfmap'18] len (insert self k v)
+  axiom insert_spec'0: forall self: t_FMap, k: t_Id, v: t_PermCellOwn. [%#sfmap'18] len (insert self k v)
       = (if contains self k then len self else len self + 1)
   
   let rec split_mut_ghost (self: MutBorrow.t t_FMap) (key: t_Id) (return' (x: tuple)) =
@@ -4944,13 +4967,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   let rec new'1 (x: tuple) (return' (x'0: tuple)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'22 x}
     any [ return''0 (result: tuple) -> {[%#sghost'3] inv'23 result} {[%#sghost'4] result = x} (! return' {result}) ]
   
-  type tuple'0 = { _p0'0: MutBorrow.t t_PCellOwn; _p1'0: MutBorrow.t t_FMap }
+  type tuple'0 = { _p0'0: MutBorrow.t t_PermCellOwn; _p1'0: MutBorrow.t t_FMap }
   
-  predicate invariant''18 (self: MutBorrow.t t_PCellOwn) = [%#sghost'15] inv'21 self
+  predicate invariant''18 (self: MutBorrow.t t_PermCellOwn) = [%#sghost'15] inv'21 self
   
-  predicate inv'24 (_0: MutBorrow.t t_PCellOwn)
+  predicate inv'24 (_0: MutBorrow.t t_PermCellOwn)
   
-  axiom inv_axiom'23 [@rewrite]: forall x: MutBorrow.t t_PCellOwn [inv'24 x]. inv'24 x = invariant''18 x
+  axiom inv_axiom'23 [@rewrite]: forall x: MutBorrow.t t_PermCellOwn [inv'24 x]. inv'24 x = invariant''18 x
   
   predicate invariant''19 (self: MutBorrow.t t_FMap) = [%#sghost'15] inv'20 self
   
@@ -4995,7 +5018,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
       {[%#sghost'7] result = self}
       (! return' {result}) ]
   
-  type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_PCellOwn)
+  type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_PermCellOwn)
   
   predicate inv'29 (_0: t_Option'1)
   
@@ -5022,11 +5045,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
       {[%#sfmap'11] len self.current = len self.final}
       (! return' {result}) ]
   
-  let rec unwrap'0 (self_: t_Option'1) (return' (x: MutBorrow.t t_PCellOwn)) =
+  let rec unwrap'0 (self_: t_Option'1) (return' (x: MutBorrow.t t_PermCellOwn)) =
     {[@expl:unwrap 'self_' type invariant] [%#soption] inv'29 self_}
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None'1}
     any
-    [ return''0 (result: MutBorrow.t t_PCellOwn) -> {inv'21 result}
+    [ return''0 (result: MutBorrow.t t_PermCellOwn) -> {inv'21 result}
       {[%#soption'1] C_Some'1 result = self_}
       (! return' {result}) ]
   
@@ -5036,18 +5059,18 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   
   predicate resolve'6 (_0: MutBorrow.t (MutBorrow.t t_FMap)) = resolve'5 _0
   
-  let rec new'2 (x: MutBorrow.t t_PCellOwn) (return' (x'0: MutBorrow.t t_PCellOwn)) =
+  let rec new'2 (x: MutBorrow.t t_PermCellOwn) (return' (x'0: MutBorrow.t t_PermCellOwn)) =
     {[@expl:new 'x' type invariant] [%#sghost'2] inv'21 x}
     any
-    [ return''0 (result: MutBorrow.t t_PCellOwn) -> {[%#sghost'3] inv'24 result}
+    [ return''0 (result: MutBorrow.t t_PermCellOwn) -> {[%#sghost'3] inv'24 result}
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
-  predicate resolve'7 (self: MutBorrow.t t_PCellOwn) = [%#sresolve] self.final = self.current
+  predicate resolve'7 (self: MutBorrow.t t_PermCellOwn) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve'7
   
-  predicate resolve'8 (_0: MutBorrow.t t_PCellOwn) = resolve'7 _0
+  predicate resolve'8 (_0: MutBorrow.t t_PermCellOwn) = resolve'7 _0
   
   predicate invariant''22 (self: MutBorrow.t t_Inner) = [%#sinvariant] inv'4 self.current /\ inv'4 self.final
   
@@ -5057,20 +5080,20 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   
   axiom inv_axiom'29 [@rewrite]: forall x: MutBorrow.t t_Inner [inv'30 x]. inv'30 x = invariant''22 x
   
-  function fin (self: MutBorrow.t t_PCellOwn) : t_PCellOwn = [%#sghost'12] self.final
+  function fin (self: MutBorrow.t t_PermCellOwn) : t_PermCellOwn = [%#sghost'12] self.final
   
-  function view'5 (self: MutBorrow.t t_PCellOwn) : t_Inner = [%#smodel'0] view'2 self.current
+  function view'5 (self: MutBorrow.t t_PermCellOwn) : t_Inner = [%#smodel'0] view'2 self.current
   
-  function view'6 (self: MutBorrow.t t_PCellOwn) : t_Inner = [%#sghost'13] view'5 self
+  function view'6 (self: MutBorrow.t t_PermCellOwn) : t_Inner = [%#sghost'13] view'5 self
   
-  let rec borrow_mut (self: t_PCell) (perm: MutBorrow.t t_PCellOwn) (return' (x: MutBorrow.t t_Inner)) =
-    {[@expl:borrow_mut 'perm' type invariant] [%#spcell'4] inv'24 perm}
-    {[@expl:borrow_mut requires] [%#spcell'5] id self = id'0 perm.current}
+  let rec borrow_mut (self: t_PermCell) (perm: MutBorrow.t t_PermCellOwn) (return' (x: MutBorrow.t t_Inner)) =
+    {[@expl:borrow_mut 'perm' type invariant] [%#spermcell'4] inv'24 perm}
+    {[@expl:borrow_mut requires] [%#spermcell'5] id self = id'0 perm.current}
     any
-    [ return''0 (result: MutBorrow.t t_Inner) -> {[%#spcell'6] inv'30 result}
-      {[%#spcell'7] id self = id'0 (fin perm)}
-      {[%#spcell'8] result.current = view'6 perm}
-      {[%#spcell'9] result.final = view'2 (fin perm)}
+    [ return''0 (result: MutBorrow.t t_Inner) -> {[%#spermcell'6] inv'30 result}
+      {[%#spermcell'7] id self = id'0 (fin perm)}
+      {[%#spermcell'8] result.current = view'6 perm}
+      {[%#spermcell'9] result.final = view'2 (fin perm)}
       (! return' {result}) ]
   
   predicate resolve'9 (self: MutBorrow.t t_Inner) = [%#sresolve] self.final = self.current
@@ -5217,7 +5240,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   
   function view'10 (self: t_Vec) : Seq.seq t_T = [%#smodel] view'1 self
   
-  function view'11 (self: t_Rc) : t_PCell = [%#smodel] view self
+  function view'11 (self: t_Rc) : t_PermCell = [%#smodel] view self
   
   function index_logic'3 (self: Map.map t_Id int) (a: t_Id) : int = [%#smapping] Map.get self a
   
@@ -5243,12 +5266,12 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
   
   meta "select_lsinst" "all"
   
-  let rec reroot [#"persistent_array.rs" 255 8 255 96] (inner: t_Rc) (auth_id: t_Id) (pa: MutBorrow.t t_PA)
+  let rec reroot [#"persistent_array.rs" 256 8 260 9] (inner: t_Rc) (auth_id: t_Id) (pa: MutBorrow.t t_PA)
     (return' (x: ())) = {[@expl:reroot 'pa' type invariant] [%#spersistent_array'2] inv'11 pa}
     {[@expl:reroot requires #0] [%#spersistent_array'3] protocol pa.current auth_id}
     {[@expl:reroot requires #1] [%#spersistent_array'4] contains'0 (view'9 (pa.current).t_PA__auth) (id (view'11 inner))}
     (! bb0
-    [ bb0 = s0 [ s0 = deref {inner'0} (fun (_ret: t_PCell) -> [ &_12 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = deref {inner'0} (fun (_ret: t_PermCell) -> [ &_12 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = id_ghost {_12} (fun (_ret: t_Id) -> [ &id'2 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = deref'0 {pa'0} (fun (_ret: MutBorrow.t t_PA) -> [ &_18 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0 [ s0 = deref'1 {id'2} (fun (_ret: t_Id) -> [ &_22 <- _ret ] s1) | s1 = bb4 ]
@@ -5256,9 +5279,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
       [ s0 = [ &_21 <- _22 ] s1
       | s1 = get_ghost {(_18.current).t_PA__perms} {_21} (fun (_ret: t_Option'0) -> [ &_16 <- _ret ] s2)
       | s2 = bb5 ]
-    | bb5 = s0 [ s0 = unwrap {_16} (fun (_ret: t_PCellOwn) -> [ &_15 <- _ret ] s1) | s1 = bb6 ]
-    | bb6 = s0 [ s0 = new {_15} (fun (_ret: t_PCellOwn) -> [ &perm <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = deref {inner'0} (fun (_ret: t_PCell) -> [ &_28 <- _ret ] s1) | s1 = bb8 ]
+    | bb5 = s0 [ s0 = unwrap {_16} (fun (_ret: t_PermCellOwn) -> [ &_15 <- _ret ] s1) | s1 = bb6 ]
+    | bb6 = s0 [ s0 = new {_15} (fun (_ret: t_PermCellOwn) -> [ &perm <- _ret ] s1) | s1 = bb7 ]
+    | bb7 = s0 [ s0 = deref {inner'0} (fun (_ret: t_PermCell) -> [ &_28 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0 [ s0 = borrow {_28} {perm} (fun (_ret: t_Inner) -> [ &_26 <- _ret ] s1) | s1 = bb9 ]
     | bb9 = any
       [ br0 (x0: t_Vec) -> {_26 = C_Direct x0} (! bb12)
@@ -5338,7 +5361,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
             [ &rest <- _ret.final ] s3)
       | s3 = deref_mut'0 {_62} (fun (_ret: MutBorrow.t (MutBorrow.t t_FMap)) -> [ &_61 <- _ret ] s4)
       | s4 = bb22 ]
-    | bb22 = s0 [ s0 = deref {next'0} (fun (_ret: t_PCell) -> [ &_69 <- _ret ] s1) | s1 = bb23 ]
+    | bb22 = s0 [ s0 = deref {next'0} (fun (_ret: t_PermCell) -> [ &_69 <- _ret ] s1) | s1 = bb23 ]
     | bb23 = s0 [ s0 = id_ghost {_69} (fun (_ret: t_Id) -> [ &_67 <- _ret ] s1) | s1 = bb24 ]
     | bb24 = s0 [ s0 = deref'1 {_67} (fun (_ret: t_Id) -> [ &_65 <- _ret ] s1) | s1 = bb25 ]
     | bb25 = s0
@@ -5350,21 +5373,21 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
             [ &_61 <- { _61 with current = { _61.current with current = _ret.final } } ] s2)
       | s2 = get_mut_ghost {_60} {_64} (fun (_ret: t_Option'1) -> [ &_59 <- _ret ] s3)
       | s3 = bb26 ]
-    | bb26 = s0 [ s0 = unwrap'0 {_59} (fun (_ret: MutBorrow.t t_PCellOwn) -> [ &_58 <- _ret ] s1) | s1 = bb27 ]
+    | bb26 = s0 [ s0 = unwrap'0 {_59} (fun (_ret: MutBorrow.t t_PermCellOwn) -> [ &_58 <- _ret ] s1) | s1 = bb27 ]
     | bb27 = s0
       [ s0 = {[@expl:type invariant] inv'28 _61} s1
       | s1 = -{resolve'6 _61}- s2
       | s2 = {inv'6 _58.current}
-        MutBorrow.borrow_final <t_PCellOwn> {_58.current} {MutBorrow.get_id _58}
-          (fun (_ret: MutBorrow.t t_PCellOwn) ->
+        MutBorrow.borrow_final <t_PermCellOwn> {_58.current} {MutBorrow.get_id _58}
+          (fun (_ret: MutBorrow.t t_PermCellOwn) ->
             [ &_57 <- _ret ] -{inv'6 _ret.final}-
             [ &_58 <- { _58 with current = _ret.final } ] s3)
-      | s3 = new'2 {_57} (fun (_ret: MutBorrow.t t_PCellOwn) -> [ &perm_next <- _ret ] s4)
+      | s3 = new'2 {_57} (fun (_ret: MutBorrow.t t_PermCellOwn) -> [ &perm_next <- _ret ] s4)
       | s4 = bb28 ]
     | bb28 = s0
       [ s0 = {[@expl:type invariant] inv'21 _58} s1
       | s1 = -{resolve'8 _58}- s2
-      | s2 = deref {inner'0} (fun (_ret: t_PCell) -> [ &_74 <- _ret ] s3)
+      | s2 = deref {inner'0} (fun (_ret: t_PermCell) -> [ &_74 <- _ret ] s3)
       | s3 = bb29 ]
     | bb29 = s0
       [ s0 = borrow_mut {_74} {perm_inner} (fun (_ret: MutBorrow.t t_Inner) -> [ &_72 <- _ret ] s1) | s1 = bb30 ]
@@ -5376,7 +5399,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
             [ &_72 <- { _72 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'30 _72} s2
       | s2 = -{resolve'10 _72}- s3
-      | s3 = deref {next'0} (fun (_ret: t_PCell) -> [ &_80 <- _ret ] s4)
+      | s3 = deref {next'0} (fun (_ret: t_PermCell) -> [ &_80 <- _ret ] s4)
       | s4 = bb31 ]
     | bb31 = s0
       [ s0 = borrow_mut {_80} {perm_next} (fun (_ret: MutBorrow.t t_Inner) -> [ &_78 <- _ret ] s1) | s1 = bb32 ]
@@ -5518,16 +5541,16 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
     | & auth_id'0: t_Id = auth_id
     | & pa'0: MutBorrow.t t_PA = pa
     | & id'2: t_Id = Any.any_l ()
-    | & _12: t_PCell = Any.any_l ()
-    | & perm: t_PCellOwn = Any.any_l ()
-    | & _15: t_PCellOwn = Any.any_l ()
+    | & _12: t_PermCell = Any.any_l ()
+    | & perm: t_PermCellOwn = Any.any_l ()
+    | & _15: t_PermCellOwn = Any.any_l ()
     | & _16: t_Option'0 = Any.any_l ()
     | & _18: MutBorrow.t t_PA = Any.any_l ()
     | & _21: t_Id = Any.any_l ()
     | & _22: t_Id = Any.any_l ()
     | & next: t_Rc = Any.any_l ()
     | & _26: t_Inner = Any.any_l ()
-    | & _28: t_PCell = Any.any_l ()
+    | & _28: t_PermCell = Any.any_l ()
     | & next'0: t_Rc = Any.any_l ()
     | & _34: () = Any.any_l ()
     | & _36: t_Rc = Any.any_l ()
@@ -5537,7 +5560,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
     | & _41: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
     | & _42: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
     | & _43: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
-    | & perm_inner: MutBorrow.t t_PCellOwn = Any.any_l ()
+    | & perm_inner: MutBorrow.t t_PermCellOwn = Any.any_l ()
     | & rest: MutBorrow.t t_FMap = Any.any_l ()
     | & _46: tuple'0 = Any.any_l ()
     | & _47: tuple = Any.any_l ()
@@ -5547,9 +5570,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
     | & _51: MutBorrow.t (MutBorrow.t t_PA) = Any.any_l ()
     | & _53: t_Id = Any.any_l ()
     | & _55: t_Id = Any.any_l ()
-    | & perm_next: MutBorrow.t t_PCellOwn = Any.any_l ()
-    | & _57: MutBorrow.t t_PCellOwn = Any.any_l ()
-    | & _58: MutBorrow.t t_PCellOwn = Any.any_l ()
+    | & perm_next: MutBorrow.t t_PermCellOwn = Any.any_l ()
+    | & _57: MutBorrow.t t_PermCellOwn = Any.any_l ()
+    | & _58: MutBorrow.t t_PermCellOwn = Any.any_l ()
     | & _59: t_Option'1 = Any.any_l ()
     | & _60: MutBorrow.t t_FMap = Any.any_l ()
     | & _61: MutBorrow.t (MutBorrow.t t_FMap) = Any.any_l ()
@@ -5557,13 +5580,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
     | & _64: t_Id = Any.any_l ()
     | & _65: t_Id = Any.any_l ()
     | & _67: t_Id = Any.any_l ()
-    | & _69: t_PCell = Any.any_l ()
+    | & _69: t_PermCell = Any.any_l ()
     | & bor_inner: MutBorrow.t t_Inner = Any.any_l ()
     | & _72: MutBorrow.t t_Inner = Any.any_l ()
-    | & _74: t_PCell = Any.any_l ()
+    | & _74: t_PermCell = Any.any_l ()
     | & bor_next: MutBorrow.t t_Inner = Any.any_l ()
     | & _78: MutBorrow.t t_Inner = Any.any_l ()
-    | & _80: t_PCell = Any.any_l ()
+    | & _80: t_PermCell = Any.any_l ()
     | & _83: () = Any.any_l ()
     | & _84: MutBorrow.t t_Inner = Any.any_l ()
     | & _85: MutBorrow.t t_Inner = Any.any_l ()
@@ -5597,27 +5620,27 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot [#"per
         end}
       (! return' {result}) ]
 end
-module M_persistent_array__testing [#"persistent_array.rs" 291 0 291 41]
+module M_persistent_array__testing [#"persistent_array.rs" 296 0 296 41]
   type namespace_other
   
   type t_Namespace = Namespace_PARRAY int | Other namespace_other
   
-  let%span spersistent_array = "persistent_array.rs" 292 38 292 39
-  let%span spersistent_array'0 = "persistent_array.rs" 292 41 292 42
-  let%span spersistent_array'1 = "persistent_array.rs" 292 44 292 45
-  let%span spersistent_array'2 = "persistent_array.rs" 292 47 292 48
-  let%span spersistent_array'3 = "persistent_array.rs" 294 19 294 20
-  let%span spersistent_array'4 = "persistent_array.rs" 294 22 294 24
-  let%span spersistent_array'5 = "persistent_array.rs" 295 19 295 20
-  let%span spersistent_array'6 = "persistent_array.rs" 295 22 295 24
-  let%span spersistent_array'7 = "persistent_array.rs" 299 18 299 57
-  let%span spersistent_array'8 = "persistent_array.rs" 300 19 300 59
-  let%span spersistent_array'9 = "persistent_array.rs" 301 19 301 59
-  let%span spersistent_array'10 = "persistent_array.rs" 302 18 302 32
-  let%span spersistent_array'11 = "persistent_array.rs" 303 18 303 34
-  let%span spersistent_array'12 = "persistent_array.rs" 304 18 304 34
-  let%span spersistent_array'13 = "persistent_array.rs" 305 18 305 33
-  let%span spersistent_array'14 = "persistent_array.rs" 290 0 290 54
+  let%span spersistent_array = "persistent_array.rs" 297 38 297 39
+  let%span spersistent_array'0 = "persistent_array.rs" 297 41 297 42
+  let%span spersistent_array'1 = "persistent_array.rs" 297 44 297 45
+  let%span spersistent_array'2 = "persistent_array.rs" 297 47 297 48
+  let%span spersistent_array'3 = "persistent_array.rs" 299 19 299 20
+  let%span spersistent_array'4 = "persistent_array.rs" 299 22 299 24
+  let%span spersistent_array'5 = "persistent_array.rs" 300 19 300 20
+  let%span spersistent_array'6 = "persistent_array.rs" 300 22 300 24
+  let%span spersistent_array'7 = "persistent_array.rs" 304 18 304 57
+  let%span spersistent_array'8 = "persistent_array.rs" 305 19 305 59
+  let%span spersistent_array'9 = "persistent_array.rs" 306 19 306 59
+  let%span spersistent_array'10 = "persistent_array.rs" 307 18 307 32
+  let%span spersistent_array'11 = "persistent_array.rs" 308 18 308 34
+  let%span spersistent_array'12 = "persistent_array.rs" 309 18 309 34
+  let%span spersistent_array'13 = "persistent_array.rs" 310 18 310 33
+  let%span spersistent_array'14 = "persistent_array.rs" 295 0 295 54
   let%span spersistent_array'15 = "persistent_array.rs" 122 33 122 37
   let%span spersistent_array'16 = "persistent_array.rs" 121 18 121 31
   let%span spersistent_array'17 = "persistent_array.rs" 150 20 150 24
@@ -5690,7 +5713,7 @@ module M_persistent_array__testing [#"persistent_array.rs" 291 0 291 41]
   type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'1; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
   
   type t_PersistentArray = {
-    t_PersistentArray__pcell: t_Rc;
+    t_PersistentArray__permcell: t_Rc;
     t_PersistentArray__frag: t_Fragment;
     t_PersistentArray__inv: t_Rc'0 }
   
@@ -5717,7 +5740,7 @@ module M_persistent_array__testing [#"persistent_array.rs" 291 0 291 41]
   axiom inv_axiom'1 [@rewrite]: forall x: t_PersistentArray [inv'1 x]. inv'1 x
       = (invariant' x
       /\ match x with
-        | {t_PersistentArray__pcell = pcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'2} -> inv'0 frag
+        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'2} -> inv'0 frag
         end)
   
   function view'1 [#"persistent_array.rs" 77 8 77 31] (self: t_PersistentArray) : Seq.seq Int32.t
@@ -5788,7 +5811,7 @@ module M_persistent_array__testing [#"persistent_array.rs" 291 0 291 41]
   
   meta "select_lsinst" "all"
   
-  let rec testing [#"persistent_array.rs" 291 0 291 41] (tokens: t_Tokens) (return' (x: ())) =
+  let rec testing [#"persistent_array.rs" 296 0 296 41] (tokens: t_Tokens) (return' (x: ())) =
     {[@expl:testing requires] [%#spersistent_array'14] contains'0 tokens (Namespace_PARRAY 0)}
     (! bb0
     [ bb0 = s0
@@ -5914,7 +5937,7 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone__refin
   type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'0; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
   
   type t_PersistentArray = {
-    t_PersistentArray__pcell: t_Rc;
+    t_PersistentArray__permcell: t_Rc;
     t_PersistentArray__frag: t_Fragment;
     t_PersistentArray__inv: t_Rc'0 }
   
@@ -5924,11 +5947,11 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone__refin
   
   function view'0 (self: t_Fragment) : tuple = [%#sghost] view self
   
-  type t_PCell
+  type t_PermCell
   
-  function id (self: t_PCell) : t_Id
+  function id (self: t_PermCell) : t_Id
   
-  function view'1 (self: t_Rc) : t_PCell
+  function view'1 (self: t_Rc) : t_PermCell
   
   function id'0 (self: t_Fragment) : t_Id
   
@@ -5943,7 +5966,7 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone__refin
   function namespace (self: t_LocalInvariant) : t_Namespace
   
   predicate invariant' [#"persistent_array.rs" 59 8 59 34] (self: t_PersistentArray) =
-    [%#spersistent_array'1] (view'0 self.t_PersistentArray__frag)._p0 = id (view'1 self.t_PersistentArray__pcell)
+    [%#spersistent_array'1] (view'0 self.t_PersistentArray__frag)._p0 = id (view'1 self.t_PersistentArray__permcell)
     /\ id'0 self.t_PersistentArray__frag = public (view'3 self.t_PersistentArray__inv)
     /\ namespace (view'3 self.t_PersistentArray__inv) = Namespace_PARRAY 0
   
@@ -5968,7 +5991,7 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone__refin
   axiom inv_axiom'1 [@rewrite]: forall x: t_PersistentArray [inv'1 x]. inv'1 x
       = (invariant' x
       /\ match x with
-        | {t_PersistentArray__pcell = pcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'2} -> inv'0 frag
+        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'2} -> inv'0 frag
         end)
   
   predicate invariant''2 (self: t_PersistentArray) = [%#sinvariant] inv'1 self

@@ -1,7 +1,7 @@
 //! Interior mutability
 
-mod pcell;
+mod permcell;
 mod predcell;
 
-pub use pcell::{PCell, PCellOwn};
+pub use permcell::{PermCell, PermCellOwn};
 pub use predcell::PredCell;

@@ -12,25 +12,25 @@
 //! # use creusot_contracts::{
 //! #     ghost::local_invariant::{LocalInvariant, Protocol, Tokens, declare_namespace},
 //! #     logic::Id,
-//! #     cell::{PCell, PCellOwn},
+//! #     cell::{PermCell, PermCellOwn},
 //! #     *,
 //! # };
-//! declare_namespace! { PCELL }
+//! declare_namespace! { PERMCELL }
 //!
 //! /// A cell that simply asserts its content's type invariant.
 //! pub struct CellInv<T: Invariant> {
-//!     data: PCell<T>,
-//!     permission: Ghost<LocalInvariant<PCellLocalInv<T>>>,
+//!     data: PermCell<T>,
+//!     permission: Ghost<LocalInvariant<PermCellLocalInv<T>>>,
 //! }
 //! impl<T: Invariant> Invariant for CellInv<T> {
 //!     #[logic]
 //!     fn invariant(self) -> bool {
-//!         self.permission.namespace() == PCELL() && self.permission.public() == self.data.id()
+//!         self.permission.namespace() == PERMCELL() && self.permission.public() == self.data.id()
 //!     }
 //! }
 //!
-//! struct PCellLocalInv<T>(PCellOwn<T>);
-//! impl<T: Invariant> Protocol for PCellLocalInv<T> {
+//! struct PermCellLocalInv<T>(PermCellOwn<T>);
+//! impl<T: Invariant> Protocol for PermCellLocalInv<T> {
 //!     type Public = Id;
 //!
 //!     #[logic]
@@ -40,7 +40,7 @@
 //! }
 //!
 //! impl<T: Invariant> CellInv<T> {
-//!     #[requires(tokens.contains(PCELL()))]
+//!     #[requires(tokens.contains(PERMCELL()))]
 //!     pub fn write(&self, x: T, tokens: Ghost<Tokens>) {
 //!         LocalInvariant::open(self.permission.borrow(), tokens, move |perm| unsafe {
 //!             *self.data.borrow_mut(ghost!(&mut perm.into_inner().0)) = x

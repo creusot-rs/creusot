@@ -5,7 +5,7 @@ pub mod implementation {
     use ::std::rc::Rc;
     use creusot_contracts::{
         Clone,
-        cell::{PCell, PCellOwn},
+        cell::{PermCell, PermCellOwn},
         ghost::{
             local_invariant::{
                 LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
@@ -33,10 +33,10 @@ pub mod implementation {
     /// [`Self::get`] is dropped before doing any other operation on any array.
     pub struct PersistentArray<T> {
         /// Contains a pointer to the actual value
-        pcell: Rc<PCell<Inner<T>>>,
+        permcell: Rc<PermCell<Inner<T>>>,
         /// Fragment of the GMap resource.
         ///
-        /// This contains a fragment of the map, with only `pcell.id()` as key.
+        /// This contains a fragment of the map, with only `permcell.id()` as key.
         /// The corresponding value is the logical value of the map.
         frag: Ghost<Fragment<Id, Seq<T>>>,
         /// The [`Id`] in the public part is the id of the whole `GMap`, **not** the individual keys !
@@ -47,7 +47,7 @@ pub mod implementation {
         #[ensures(result@ == self@)]
         fn clone(&self) -> Self {
             Self {
-                pcell: self.pcell.clone(),
+                permcell: self.permcell.clone(),
                 frag: ghost!(self.frag.clone()),
                 inv: ghost!(self.inv.clone()),
             }
@@ -59,7 +59,7 @@ pub mod implementation {
         fn invariant(self) -> bool {
             pearlite! {
                 // We indeed have the corresponding fragment of the invariant
-                self.frag@.0 == self.pcell@.id()
+                self.frag@.0 == self.permcell@.id()
                 && self.frag.id() == self.inv@.public()
                 && self.inv@.namespace() == PARRAY()
             }
@@ -68,7 +68,7 @@ pub mod implementation {
 
     enum Inner<T> {
         Direct(Vec<T>),
-        Link { index: usize, value: T, next: Rc<PCell<Inner<T>>> },
+        Link { index: usize, value: T, next: Rc<PermCell<Inner<T>>> },
     }
 
     impl<T> View for PersistentArray<T> {
@@ -82,7 +82,7 @@ pub mod implementation {
     /// Structure describing the invariants respected by the pointers.
     struct PA<T> {
         /// Holds the permission for each pointer.
-        perms: FMap<Id, PCellOwn<Inner<T>>>,
+        perms: FMap<Id, PermCellOwn<Inner<T>>>,
         /// Holds the 'authoritative' version of the map of logical values.
         ///
         /// When we open the invariant, we get (a mutable borrow to) this, and can learn
@@ -121,13 +121,13 @@ pub mod implementation {
         #[ensures(result@ == v@)]
         pub fn new(v: Vec<T>) -> Self {
             let seq = snapshot!(v@);
-            let (pcell, pcellown) = PCell::new(Inner::Direct(v));
+            let (permcell, permcellown) = PermCell::new(Inner::Direct(v));
             let mut auth = Authority::new();
-            let frag = ghost!(auth.insert(snapshot!(pcellown.id()), seq));
+            let frag = ghost!(auth.insert(snapshot!(permcellown.id()), seq));
 
             let inv = ghost! {
                 let mut perms = FMap::new();
-                perms.insert_ghost(*pcellown.id_ghost(), pcellown.into_inner());
+                perms.insert_ghost(*permcellown.id_ghost(), permcellown.into_inner());
                 let local_inv = LocalInvariant::new(
                     ghost!(PA {
                         perms: perms.into_inner(),
@@ -140,7 +140,7 @@ pub mod implementation {
                 Rc::new(local_inv.into_inner())
             };
 
-            Self { pcell: Rc::new(pcell), frag, inv }
+            Self { permcell: Rc::new(permcell), frag, inv }
         }
 
         /// Return a new array, where the value at index `index` has been set to `value`
@@ -149,23 +149,23 @@ pub mod implementation {
         #[ensures(result@ == self@.set(index@, value))]
         pub fn set(&self, index: usize, value: T, tokens: Ghost<Tokens>) -> Self {
             let new_seq = snapshot!(self@.set(index@, value));
-            let (pcell, pcellown) =
-                PCell::new(Inner::Link { index, value, next: self.pcell.clone() });
+            let (permcell, permcellown) =
+                PermCell::new(Inner::Link { index, value, next: self.permcell.clone() });
             let frag = self.inv.open(tokens, |mut pa| {
                 ghost! {
                     // prove that self is contained in the map by validity
                     pa.auth.contains(&self.frag);
                     // prove that we are inserting a _new_ value
-                    let cell_id = pcell.id_ghost().into_inner();
+                    let cell_id = permcell.id_ghost().into_inner();
                     if let Some(other) = pa.perms.get_mut_ghost(&cell_id) {
-                        PCellOwn::disjoint_lemma(other, &pcellown);
+                        PermCellOwn::disjoint_lemma(other, &permcellown);
                     }
-                    pa.perms.insert_ghost(cell_id, pcellown.into_inner());
-                    pa.depth = snapshot!(pa.depth.set(cell_id, pa.depth[self.pcell@.id()] + 1));
+                    pa.perms.insert_ghost(cell_id, permcellown.into_inner());
+                    pa.depth = snapshot!(pa.depth.set(cell_id, pa.depth[self.permcell@.id()] + 1));
                     pa.auth.insert(snapshot!(cell_id), new_seq)
                 }
             });
-            Self { pcell: Rc::new(pcell), frag, inv: ghost!(self.inv.clone()) }
+            Self { permcell: Rc::new(permcell), frag, inv: ghost!(self.inv.clone()) }
         }
 
         /// Get the value of the array at index `i`.
@@ -190,7 +190,7 @@ pub mod implementation {
             self.inv.open(tokens, |pa| {
                 // prove that self is contained in the map by validity
                 ghost! { pa.auth.contains(&self.frag) };
-                unsafe { Self::get_inner_immut(&self.pcell, index, ghost!(pa.into_inner())) }
+                unsafe { Self::get_inner_immut(&self.permcell, index, ghost!(pa.into_inner())) }
             })
         }
 
@@ -199,7 +199,7 @@ pub mod implementation {
         #[requires(i@ < inv.auth@[inner@.id()].len())]
         #[ensures(*result == inv.auth@[inner@.id()][i@])]
         unsafe fn get_inner_immut<'a>(
-            inner: &'a Rc<PCell<Inner<T>>>,
+            inner: &'a Rc<PermCell<Inner<T>>>,
             i: usize,
             inv: Ghost<&'a PA<T>>,
         ) -> &'a T {
@@ -226,9 +226,10 @@ pub mod implementation {
             self.inv.open(tokens, |mut pa| {
                 // prove that self is contained in the map by validity
                 ghost! { pa.auth.contains(&self.frag) };
-                Self::reroot(&self.pcell, auth_id, ghost!(&mut *pa));
-                let perm = ghost!(pa.into_inner().perms.get_ghost(&self.pcell.id_ghost()).unwrap());
-                let Inner::Direct(arr) = (unsafe { self.pcell.borrow(perm) }) else {
+                Self::reroot(&self.permcell, auth_id, ghost!(&mut *pa));
+                let perm =
+                    ghost!(pa.into_inner().perms.get_ghost(&self.permcell.id_ghost()).unwrap());
+                let Inner::Direct(arr) = (unsafe { self.permcell.borrow(perm) }) else {
                     unreachable!()
                 };
                 arr.get_unchecked(index)
@@ -252,7 +253,11 @@ pub mod implementation {
             Inner::Direct(_) => true,
             Inner::Link { .. } => false,
         })]
-        fn reroot(inner: &Rc<PCell<Inner<T>>>, auth_id: Snapshot<Id>, mut pa: Ghost<&mut PA<T>>) {
+        fn reroot(
+            inner: &Rc<PermCell<Inner<T>>>,
+            auth_id: Snapshot<Id>,
+            mut pa: Ghost<&mut PA<T>>,
+        ) {
             let id = inner.id_ghost();
             let perm = ghost!(pa.perms.get_ghost(&*id).unwrap());
             let Inner::Link { next, .. } = (unsafe { inner.borrow(perm) }) else { return };

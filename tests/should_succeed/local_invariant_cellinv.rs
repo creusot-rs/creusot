@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 use creusot_contracts::{
-    cell::{PCell, PCellOwn},
+    cell::{PermCell, PermCellOwn},
     ghost::local_invariant::{
         LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
     },
@@ -8,22 +8,22 @@ use creusot_contracts::{
     *,
 };
 
-declare_namespace! { PCELL }
+declare_namespace! { PERMCELL }
 
 /// A cell that simply asserts its content's invariant.
 pub struct CellInv<T: Invariant> {
-    data: PCell<T>,
-    permission: Ghost<LocalInvariant<PCellLocalInv<T>>>,
+    data: PermCell<T>,
+    permission: Ghost<LocalInvariant<PermCellLocalInv<T>>>,
 }
 impl<T: Invariant> Invariant for CellInv<T> {
     #[logic]
     fn invariant(self) -> bool {
-        self.permission.namespace() == PCELL() && self.permission.public() == self.data.id()
+        self.permission.namespace() == PERMCELL() && self.permission.public() == self.data.id()
     }
 }
 
-struct PCellLocalInv<T>(PCellOwn<T>);
-impl<T: Invariant> Protocol for PCellLocalInv<T> {
+struct PermCellLocalInv<T>(PermCellOwn<T>);
+impl<T: Invariant> Protocol for PermCellLocalInv<T> {
     type Public = Id;
 
     #[logic]
@@ -33,13 +33,13 @@ impl<T: Invariant> Protocol for PCellLocalInv<T> {
 }
 
 impl<T: Invariant> CellInv<T> {
-    #[requires(tokens.contains(PCELL()))]
+    #[requires(tokens.contains(PERMCELL()))]
     pub fn read<'a>(&'a self, tokens: Ghost<Tokens<'a>>) -> &'a T {
         self.permission
             .open(tokens, move |perm| unsafe { self.data.borrow(ghost!(&perm.into_inner().0)) })
     }
 
-    #[requires(tokens.contains(PCELL()))]
+    #[requires(tokens.contains(PERMCELL()))]
     pub fn write(&self, x: T, tokens: Ghost<Tokens>) {
         self.permission.open(tokens, move |perm| unsafe {
             *self.data.borrow_mut(ghost!(&mut perm.into_inner().0)) = x
