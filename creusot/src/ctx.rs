@@ -8,7 +8,6 @@ use crate::{
     },
     metadata::{BinaryMetadata, Metadata, get_anf_required},
     naming::variable_name,
-    options::Options,
     translation::{
         self,
         external::{ExternSpec, extract_extern_specs_from_item, extract_refines_from_item},
@@ -20,6 +19,7 @@ use crate::{
     util::{erased_identity_for_item, parent_module},
     validate::AnfBlock,
 };
+use creusot_args::options::Options;
 use indexmap::{IndexMap, IndexSet};
 use once_map::unsync::OnceMap;
 use rustc_ast::{

@@ -1,10 +1,7 @@
 use anyhow::{Context as _, Result, bail};
 use cargo_metadata::semver::Version;
 use clap::*;
-use creusot_args::{
-    CREUSOT_RUSTC_ARGS,
-    options::{CommonOptions, CreusotArgs, LegacyCreusotSubCommand, Why3SubCommand},
-};
+use creusot_args::{CREUSOT_RUSTC_ARGS, options::CreusotArgs};
 use creusot_setup as setup;
 use std::{
     env,
@@ -41,36 +38,26 @@ fn main() -> Result<()> {
     }
 }
 
-fn creusot(
-    subcmd: Option<CreusotSubCommand>,
-    args: CargoCreusotArgs,
-    root: &PathBuf,
-) -> Result<()> {
+fn creusot(subcmd: Option<Doc>, args: CargoCreusotArgs, root: &PathBuf) -> Result<()> {
     if !args.no_check_version {
         check_contracts_version()?;
     }
-    let creusot_args = CreusotArgs {
-        options: args.options,
-        subcommand: match subcmd {
-            Some(CreusotSubCommand::Doc) => Some(LegacyCreusotSubCommand::Doc),
-            None => None,
-        },
-    };
 
-    invoke_cargo(&creusot_args, args.creusot_rustc, args.cargo_flags, root);
+    invoke_cargo(subcmd, &args.creusot_args, args.creusot_rustc, args.cargo_flags, root);
     warn_if_dangling()?;
     Ok(())
 }
 
 fn invoke_cargo(
+    doc: Option<Doc>,
     args: &CreusotArgs,
     creusot_rustc: Option<PathBuf>,
     cargo_flags: Vec<String>,
     root: &PathBuf,
 ) {
     let cargo_path = env::var("CARGO_PATH").unwrap_or_else(|_| "cargo".to_string());
-    let cargo_cmd = match &args.subcommand {
-        Some(LegacyCreusotSubCommand::Doc { .. }) => "doc",
+    let cargo_cmd = match &doc {
+        Some(Doc::Doc) => "doc",
         _ => {
             if std::env::var_os("CREUSOT_CONTINUE").is_some() {
                 "build"
@@ -120,7 +107,7 @@ fn invoke_cargo(
     cargo_encoded_rustflags.push_str(&serde_json::to_string(&args).unwrap());
     cmd.env("CARGO_ENCODED_RUSTFLAGS", cargo_encoded_rustflags);
 
-    if matches!(&args.subcommand, Some(LegacyCreusotSubCommand::Doc { .. })) {
+    if matches!(doc, Some(Doc::Doc)) {
         let mut rustdocflags = std::env::var("RUSTDOCFLAGS").unwrap_or_else(|_| String::new());
         for &arg in CREUSOT_RUSTC_ARGS {
             if arg == "-Znext-solver=globally" {
@@ -161,7 +148,7 @@ pub struct CargoCreusotCmds {
 pub struct CargoCreusotArgs {
     /// Options for creusot-rustc
     #[clap(flatten)]
-    pub options: CommonOptions,
+    pub creusot_args: CreusotArgs,
     /// Allow mismatching creusot-contracts versions (use at your own risk!)
     #[clap(long)]
     pub no_check_version: bool,
@@ -182,7 +169,7 @@ pub enum CargoCreusotSubCommand {
         command: SetupSubCommand,
     },
     #[command(flatten)]
-    Creusot(CreusotSubCommand),
+    Creusot(Doc),
     /// Run prover on translated files
     Prove(ProveArgs),
     /// Create new project in a sub-directory
@@ -197,7 +184,7 @@ pub enum CargoCreusotSubCommand {
 use CargoCreusotSubCommand::*;
 
 #[derive(Debug, Subcommand)]
-pub enum CreusotSubCommand {
+pub enum Doc {
     /// Generates the documentation, including specs, logical functions, etc.
     Doc,
 }
@@ -403,6 +390,13 @@ pub struct Why3Args {
     /// Extra arguments to pass to why3
     #[clap(default_value_t = String::default())]
     args: String,
+}
+
+#[derive(Debug, ValueEnum, Clone)]
+pub enum Why3SubCommand {
+    Prove,
+    Ide,
+    Replay,
 }
 
 fn why3(args: Why3Args) -> Result<()> {

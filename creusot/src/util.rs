@@ -10,7 +10,7 @@ use rustc_middle::{
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::Span;
 
-use crate::options::SpanMode;
+use creusot_args::options::SpanMode;
 
 pub(crate) fn erased_identity_for_item(tcx: TyCtxt, did: DefId) -> GenericArgsRef {
     tcx.erase_regions(GenericArgs::identity_for_item(tcx, did))

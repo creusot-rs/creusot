@@ -81,15 +81,24 @@ fn check_refines<'tcx>(
     };
     let right = match right.as_local() {
         None => match ctx.anf_thir(right) {
-            None if ctx.opts.refines_check => {
-                return Err(Ok(ctx
-                    .error(
-                        left_span,
-                        format!("Missing body of {} for #[refines] check", ctx.def_path_str(right)),
-                    )
-                    .emit()));
+            None => {
+                use creusot_args::options::RefinesCheck::*;
+                match ctx.opts.refines_check {
+                    Warn => {
+                        return Err(Ok(ctx
+                            .error(
+                                left_span,
+                                format!(
+                                    "Missing body of {} for #[refines] check",
+                                    ctx.def_path_str(right)
+                                ),
+                            )
+                            .emit()));
+                    }
+                    NoWarn => return Ok(()),
+                    Require => return Err(Err(MissingBody)),
+                }
             }
-            None => return Err(Err(MissingBody)),
             Some(anf) => anf,
         },
         Some(right_local) => {

@@ -172,6 +172,7 @@ fn translate_creusot_contracts(
             "--stdout",
             "--span-mode=relative",
             "--spans-relative-to=tests/creusot-contracts",
+            "--refines-check=no-warn",
             "--metadata-path",
         ])
         .arg(&paths.cmeta)

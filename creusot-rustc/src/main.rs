@@ -5,18 +5,14 @@ extern crate rustc_errors;
 extern crate rustc_interface;
 extern crate rustc_session;
 
-mod options;
-use options::CreusotArgsExt as _;
-
 #[macro_use]
 extern crate log;
 
 use creusot::callbacks::*;
-use creusot_args::CREUSOT_RUSTC_ARGS;
-use options::CreusotArgs;
+use creusot_args::{CREUSOT_RUSTC_ARGS, options::CreusotArgs};
 use rustc_driver::run_compiler;
 use rustc_session::{EarlyDiagCtxt, config::ErrorOutputType};
-use std::{env, panic};
+use std::env;
 
 const BUG_REPORT_URL: &str = "https://github.com/creusot-rs/creusot/issues/new";
 
@@ -58,26 +54,31 @@ fn setup_plugin() {
             CreusotArgs::parse_from(creusot_args)
         }),
     };
+    let opts = creusot.map(|creusot| {
+        creusot.to_options().unwrap_or_else(|msg| {
+            eprintln!("Invalid options: {msg}");
+            std::process::exit(1)
+        })
+    });
 
     let has_contracts =
         args.iter().any(|arg| arg == "creusot_contracts" || arg.contains("creusot_contracts="));
 
-    match creusot {
-        Some(creusot) if has_contracts => {
-            for &arg in CREUSOT_RUSTC_ARGS {
-                args.push(arg.to_owned());
-            }
-            debug!("creusot args={:?}", args);
-
-            let opts = match CreusotArgs::to_options(creusot) {
-                Ok(opts) => opts,
-                Err(msg) => panic!("Error: {msg}"),
-            };
-            run_compiler(&args, &mut ToWhy::new(opts))
+    if has_contracts {
+        let Some(opts) = opts else {
+            eprintln!("Missing Creusot options");
+            std::process::exit(1);
+        };
+        for &arg in CREUSOT_RUSTC_ARGS {
+            args.push(arg.to_owned());
         }
-        _ => {
-            args.push("--cfg=creusot".to_string());
-            run_compiler(&args, &mut DefaultCallbacks)
+        debug!("creusot args={:?}", args);
+        run_compiler(&args, &mut ToWhy::new(opts))
+    } else {
+        args.push("--cfg=creusot".to_string());
+        match opts {
+            None => run_compiler(&args, &mut DefaultCallbacks), // This is probably rustc -vV
+            Some(opts) => run_compiler(&args, &mut WithoutContracts::new(opts)),
         }
     }
 }
