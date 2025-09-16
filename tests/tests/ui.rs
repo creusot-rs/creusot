@@ -172,13 +172,13 @@ fn translate_creusot_contracts(
             "--stdout",
             "--span-mode=relative",
             "--spans-relative-to=tests/creusot-contracts",
-            "--refines-check=no-warn",
+            // "--refines-check=no-warn",
             "--metadata-path",
         ])
         .arg(&paths.cmeta)
         .arg("--creusot-rustc")
         .arg(&paths.creusot_rustc)
-        .args(["--", "--package", "creusot-contracts", "--quiet"])
+        .args(["--", "--package", "creusot-contracts", "--quiet", "-Zbuild-std=core,std"])
         .env("CREUSOT_CONTINUE", "true");
 
     let mut out = args.stream();
