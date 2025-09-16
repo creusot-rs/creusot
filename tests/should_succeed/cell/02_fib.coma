@@ -1,8 +1,11 @@
 module M_02_fib__fib [#"02_fib.rs" 8 0 8 25]
   let%span s02_fib = "02_fib.rs" 7 10 7 11
   let%span s02_fib'0 = "02_fib.rs" 9 4 15 5
+  let%span swell_founded = "../../../creusot-contracts/src/logic/well_founded.rs" 45 8 45 33
   
   use mach.int.Int
+  
+  predicate well_founded_relation (self: int) (other: int) = [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -18,18 +21,19 @@ module M_02_fib__fib [#"02_fib.rs" 8 0 8 25]
       if i = 1 then
         true
       else
-        (0 <= ([%#s02_fib] i) /\ ([%#s02_fib] i - 1) < ([%#s02_fib] i))
-        /\ 0 <= ([%#s02_fib] i) /\ ([%#s02_fib] i - 2) < ([%#s02_fib] i)
+        well_founded_relation ([%#s02_fib] i) ([%#s02_fib] i - 1)
+        /\ well_founded_relation ([%#s02_fib] i) ([%#s02_fib] i - 2)
     
 
 end
 module M_02_fib__lemma_fib_bound [#"02_fib.rs" 23 0 23 30]
-  let%span s02_fib = "02_fib.rs" 20 11 20 17
-  let%span s02_fib'0 = "02_fib.rs" 21 10 21 28
-  let%span s02_fib'1 = "02_fib.rs" 22 10 22 11
+  let%span s02_fib = "02_fib.rs" 22 10 22 11
+  let%span s02_fib'0 = "02_fib.rs" 20 11 20 17
+  let%span s02_fib'1 = "02_fib.rs" 21 10 21 28
   let%span s02_fib'2 = "02_fib.rs" 24 4 31 5
   let%span s02_fib'3 = "02_fib.rs" 7 10 7 11
   let%span s02_fib'4 = "02_fib.rs" 9 4 15 5
+  let%span swell_founded = "../../../creusot-contracts/src/logic/well_founded.rs" 45 8 45 33
   
   use mach.int.Int
   use bv.Pow2int
@@ -39,6 +43,8 @@ module M_02_fib__lemma_fib_bound [#"02_fib.rs" 23 0 23 30]
   axiom fib_def: forall i: int. fib i
       = ([%#s02_fib'4] if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2))
   
+  predicate well_founded_relation (self: int) (other: int) = [%#swell_founded] self >= 0 /\ self > other
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -47,20 +53,20 @@ module M_02_fib__lemma_fib_bound [#"02_fib.rs" 23 0 23 30]
   
   function lemma_fib_bound [#"02_fib.rs" 23 0 23 30] (i'0: int) : ()
   
-  goal vc_lemma_fib_bound: ([%#s02_fib] 0 <= i)
+  goal vc_lemma_fib_bound: ([%#s02_fib'0] 0 <= i)
     -> (if i = 0 then
-      [@expl:lemma_fib_bound ensures] [%#s02_fib'0] fib i <= Pow2int.pow2 i
+      [@expl:lemma_fib_bound ensures] [%#s02_fib'1] fib i <= Pow2int.pow2 i
     else
       if i = 1 then
-        [@expl:lemma_fib_bound ensures] [%#s02_fib'0] fib i <= Pow2int.pow2 i
+        [@expl:lemma_fib_bound ensures] [%#s02_fib'1] fib i <= Pow2int.pow2 i
       else
-        (([@expl:lemma_fib_bound requires] [%#s02_fib] 0 <= i - 2)
-          /\ 0 <= ([%#s02_fib'1] i) /\ ([%#s02_fib'1] i - 2) < ([%#s02_fib'1] i))
-        /\ (([%#s02_fib'0] fib (i - 2) <= Pow2int.pow2 (i - 2))
-        -> (let _ = lemma_fib_bound (i - 2) in (([@expl:lemma_fib_bound requires] [%#s02_fib] 0 <= i - 1)
-          /\ 0 <= ([%#s02_fib'1] i) /\ ([%#s02_fib'1] i - 1) < ([%#s02_fib'1] i))
-        /\ (([%#s02_fib'0] fib (i - 1) <= Pow2int.pow2 (i - 1))
-        -> ([@expl:lemma_fib_bound ensures] [%#s02_fib'0] fib i <= Pow2int.pow2 i))))
+        (([@expl:lemma_fib_bound requires] [%#s02_fib'0] 0 <= i - 2)
+          /\ well_founded_relation ([%#s02_fib] i) ([%#s02_fib] i - 2))
+        /\ (([%#s02_fib'1] fib (i - 2) <= Pow2int.pow2 (i - 2))
+        -> (let _ = lemma_fib_bound (i - 2) in (([@expl:lemma_fib_bound requires] [%#s02_fib'0] 0 <= i - 1)
+          /\ well_founded_relation ([%#s02_fib] i) ([%#s02_fib] i - 1))
+        /\ (([%#s02_fib'1] fib (i - 1) <= Pow2int.pow2 (i - 1))
+        -> ([@expl:lemma_fib_bound ensures] [%#s02_fib'1] fib i <= Pow2int.pow2 i))))
     
     )
 end
@@ -77,9 +83,9 @@ module M_02_fib__fib_memo [#"02_fib.rs" 54 0 54 50]
   let%span s02_fib'8 = "02_fib.rs" 51 11 51 28
   let%span s02_fib'9 = "02_fib.rs" 53 11 53 19
   let%span s02_fib'10 = "02_fib.rs" 52 10 52 28
-  let%span s02_fib'11 = "02_fib.rs" 20 11 20 17
-  let%span s02_fib'12 = "02_fib.rs" 21 10 21 28
-  let%span s02_fib'13 = "02_fib.rs" 22 10 22 11
+  let%span s02_fib'11 = "02_fib.rs" 22 10 22 11
+  let%span s02_fib'12 = "02_fib.rs" 20 11 20 17
+  let%span s02_fib'13 = "02_fib.rs" 21 10 21 28
   let%span s02_fib'14 = "02_fib.rs" 24 4 31 5
   let%span s02_fib'15 = "02_fib.rs" 7 10 7 11
   let%span s02_fib'16 = "02_fib.rs" 9 4 15 5
@@ -159,7 +165,7 @@ module M_02_fib__fib_memo [#"02_fib.rs" 54 0 54 50]
   
   function lemma_fib_bound [#"02_fib.rs" 23 0 23 30] (i: int) : ()
   
-  axiom lemma_fib_bound_def: forall i: int. ([%#s02_fib'11] 0 <= i)
+  axiom lemma_fib_bound_def: forall i: int. ([%#s02_fib'12] 0 <= i)
       -> lemma_fib_bound i
       = ([%#s02_fib'14] if i = 0 then
         ()
@@ -167,7 +173,7 @@ module M_02_fib__fib_memo [#"02_fib.rs" 54 0 54 50]
         if i = 1 then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
       )
   
-  axiom lemma_fib_bound_spec: forall i: int. ([%#s02_fib'11] 0 <= i) -> ([%#s02_fib'12] fib i <= Pow2int.pow2 i)
+  axiom lemma_fib_bound_spec: forall i: int. ([%#s02_fib'12] 0 <= i) -> ([%#s02_fib'13] fib i <= Pow2int.pow2 i)
   
   let rec set (self: t_PredCell) (v: t_Option) (return' (x: ())) =
     {[@expl:set requires] [%#spredcell'0] index_logic (view'2 self) v}

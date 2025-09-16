@@ -1,9 +1,7 @@
-// WHY3PROVE
-
 // Ensures that variants are correctly checked when recursing while substituing some types.
 
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::WellFounded, *};
 
 pub trait MyTrait {
     #[logic]
