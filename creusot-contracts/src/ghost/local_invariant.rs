@@ -343,4 +343,15 @@ impl<T: Protocol> LocalInvariant<T> {
         let borrow = ghost!(unsafe { &mut *this.value.get() });
         f(borrow)
     }
+
+    /// Open the invariant to get the data stored inside, immutably.
+    /// This allows reentrant access to the invariant.
+    #[trusted]
+    #[requires(tokens.contains(self.namespace()))]
+    #[ensures(result.protocol(self.public()))]
+    #[check(ghost)]
+    pub fn open_const<'a>(&'a self, tokens: &'a Tokens) -> &'a T {
+        let _ = tokens;
+        unsafe { &*self.value.get() }
+    }
 }

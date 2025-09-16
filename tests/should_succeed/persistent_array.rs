@@ -195,28 +195,26 @@ pub mod implementation {
         #[requires(tokens.contains(PARRAY()))]
         #[requires(index@ < self@.len())]
         #[ensures(*result == self@[index@])]
-        pub unsafe fn get_immut<'a>(&'a self, index: usize, tokens: Ghost<Tokens<'a>>) -> &'a T {
-            self.inv.open(tokens, |pa| {
-                // prove that self is contained in the map by validity
-                ghost! { pa.auth.contains(&self.frag) };
-                unsafe { Self::get_inner_immut(&self.permcell, index, ghost!(pa.into_inner())) }
-            })
+        pub unsafe fn get_immut<'a>(&'a self, index: usize, tokens: Ghost<&'a Tokens>) -> &'a T {
+            let pa = ghost!(self.inv.open_const(*tokens));
+            // prove that self is contained in the map by validity
+            ghost! { pa.auth.contains(&self.frag) };
+            unsafe { Self::get_inner_immut(&self.permcell, index, pa) }
         }
 
-        #[requires(exists<p> inv.protocol(p))]
-        #[requires(inv.auth@.contains(inner@.id()))]
-        #[requires(i@ < inv.auth@[inner@.id()].len())]
-        #[ensures(*result == inv.auth@[inner@.id()][i@])]
+        #[requires(exists<p> pa.protocol(p))]
+        #[requires(pa.auth@.contains(inner@.id()))]
+        #[requires(i@ < pa.auth@[inner@.id()].len())]
+        #[ensures(*result == pa.auth@[inner@.id()][i@])]
         unsafe fn get_inner_immut<'a>(
             inner: &'a Rc<PermCell<Inner<T>>>,
             i: usize,
-            inv: Ghost<&'a PA<T>>,
+            pa: Ghost<&'a PA<T>>,
         ) -> &'a T {
-            let perm = ghost!(inv.perms.get_ghost(&*inner.id_ghost()).unwrap());
-            match unsafe { inner.borrow(perm) } {
+            match unsafe { inner.borrow(ghost!(pa.perms.get_ghost(&*inner.id_ghost()).unwrap())) } {
                 Inner::Direct(v) => &v[i],
                 Inner::Link { index, value, .. } if i == *index => value,
-                Inner::Link { next, .. } => Self::get_inner_immut(next, i, inv),
+                Inner::Link { next, .. } => Self::get_inner_immut(next, i, pa),
             }
         }
 
