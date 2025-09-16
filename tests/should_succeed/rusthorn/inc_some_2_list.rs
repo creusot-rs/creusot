@@ -1,15 +1,11 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::WellFounded, *};
+use creusot_contracts::*;
 
 pub enum List {
     Cons(u32, Box<List>),
     Nil,
 }
 use List::*;
-
-// FIXME: this should go away, we have not defined any order relation on List
-#[trusted]
-impl WellFounded for List {}
 
 #[trusted]
 fn random() -> bool {
