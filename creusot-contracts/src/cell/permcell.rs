@@ -8,27 +8,27 @@ use crate::resolve::structural_resolve;
 use crate::{Ghost, logic::Id, *};
 use ::std::{cell::UnsafeCell, marker::PhantomData};
 
-/// A "permission" cell allowing interior mutability via a ghost token.
+/// Cell with ghost permissions
 ///
-/// When writing/reading the cell, you need to explicitly pass a [`PCellOwn`] object.
+/// When writing/reading the cell, you need to explicitly pass a [`PermCellOwn`] object.
 ///
 /// # Safety
 ///
 /// When using Creusot to verify the code, all methods should be safe to call. Indeed,
-/// Creusot ensures that every operation on the inner value uses the right [`PCellOwn`] object
-/// created by [`PCell::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
+/// Creusot ensures that every operation on the inner value uses the right [`PermCellOwn`] object
+/// created by [`PermCell::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
 #[repr(transparent)]
 #[trusted]
-pub struct PCell<T: ?Sized>(UnsafeCell<T>);
+pub struct PermCell<T: ?Sized>(UnsafeCell<T>);
 
-/// Token that represents the ownership of a [`PCell`] object.
+/// Token that represents the ownership of a [`PermCell`] object.
 ///
-/// A `PCellOwn` only exists in the ghost world, and it must be used in conjunction with
-/// [`PCell`] in order to read or write the value.
+/// A `PermCellOwn` only exists in the ghost world, and it must be used in conjunction with
+/// [`PermCell`] in order to read or write the value.
 #[trusted]
-pub struct PCellOwn<T: ?Sized>(PhantomData<T>);
+pub struct PermCellOwn<T: ?Sized>(PhantomData<T>);
 
-impl<T> View for PCellOwn<T> {
+impl<T> View for PermCellOwn<T> {
     type ViewTy = T;
 
     #[logic]
@@ -38,7 +38,7 @@ impl<T> View for PCellOwn<T> {
     }
 }
 
-impl<T: ?Sized> Resolve for PCellOwn<T> {
+impl<T: ?Sized> Resolve for PermCellOwn<T> {
     #[open]
     #[logic(prophetic)]
     fn resolve(self) -> bool {
@@ -53,7 +53,7 @@ impl<T: ?Sized> Resolve for PCellOwn<T> {
     fn resolve_coherence(self) {}
 }
 
-impl<T: Sized> Invariant for PCellOwn<T> {
+impl<T: Sized> Invariant for PermCellOwn<T> {
     #[logic(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
@@ -63,10 +63,10 @@ impl<T: Sized> Invariant for PCellOwn<T> {
     }
 }
 
-impl<T: ?Sized> PCellOwn<T> {
+impl<T: ?Sized> PermCellOwn<T> {
     /// Returns the logical identity of the cell.
     ///
-    /// To use a [`PCell`], this and [`PCell::id`] must agree.
+    /// To use a [`PermCell`], this and [`PermCell::id`] must agree.
     #[logic]
     #[trusted]
     pub fn id(self) -> Id {
@@ -86,21 +86,21 @@ impl<T: ?Sized> PCellOwn<T> {
         snapshot!(self.id()).into_ghost()
     }
 
-    /// If one owns two `PCellOwn`s in ghost code, then they have different ids.
+    /// If one owns two `PermCellOwn`s in ghost code, then they have different ids.
     #[trusted]
     #[check(ghost)]
     #[ensures(own1.id() != own2.id())]
     #[ensures(*own1 == ^own1)]
     #[allow(unused_variables)]
-    pub fn disjoint_lemma(own1: &mut PCellOwn<T>, own2: &PCellOwn<T>) {}
+    pub fn disjoint_lemma(own1: &mut PermCellOwn<T>, own2: &PermCellOwn<T>) {}
 }
 
-impl<T> PCell<T> {
-    /// Creates a new `PCell` containing the given value.
+impl<T> PermCell<T> {
+    /// Creates a new `PermCell` containing the given value.
     #[trusted]
     #[ensures(result.0.id() == result.1.id())]
     #[ensures((*result.1)@ == value)]
-    pub fn new(value: T) -> (Self, Ghost<PCellOwn<T>>) {
+    pub fn new(value: T) -> (Self, Ghost<PermCellOwn<T>>) {
         let this = Self(UnsafeCell::new(value));
         let perm = Ghost::conjure();
         (this, perm)
@@ -114,13 +114,13 @@ impl<T> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell#safety).
+    /// [type documentation](PermCell#safety).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(val == (^perm)@)]
     #[ensures(resolve(perm@))]
     #[ensures(self.id() == (^perm).id())]
-    pub unsafe fn set(&self, perm: Ghost<&mut PCellOwn<T>>, val: T) {
+    pub unsafe fn set(&self, perm: Ghost<&mut PermCellOwn<T>>, val: T) {
         let _ = perm;
         unsafe {
             *self.0.get() = val;
@@ -135,13 +135,13 @@ impl<T> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell#safety).
+    /// [type documentation](PermCell#safety).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(val == (^perm)@)]
     #[ensures(result == perm@)]
     #[ensures(self.id() == (^perm).id())]
-    pub unsafe fn replace(&self, perm: Ghost<&mut PCellOwn<T>>, val: T) -> T {
+    pub unsafe fn replace(&self, perm: Ghost<&mut PermCellOwn<T>>, val: T) -> T {
         let _ = perm;
         unsafe { std::ptr::replace(self.0.get(), val) }
     }
@@ -150,7 +150,7 @@ impl<T> PCell<T> {
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(result == perm@)]
-    pub fn into_inner(self, perm: Ghost<PCellOwn<T>>) -> T {
+    pub fn into_inner(self, perm: Ghost<PermCellOwn<T>>) -> T {
         let _ = perm;
         self.0.into_inner()
     }
@@ -166,11 +166,11 @@ impl<T> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell#safety).
+    /// [type documentation](PermCell#safety).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(*result == perm@)]
-    pub unsafe fn borrow<'a>(&'a self, perm: Ghost<&'a PCellOwn<T>>) -> &'a T {
+    pub unsafe fn borrow<'a>(&'a self, perm: Ghost<&'a PermCellOwn<T>>) -> &'a T {
         let _ = perm;
         unsafe { &*self.0.get() }
     }
@@ -186,19 +186,19 @@ impl<T> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell#safety).
+    /// [type documentation](PermCell#safety).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(self.id() == (^perm).id())]
     #[ensures(*result == perm@)]
     #[ensures(^result == (^perm)@)]
-    pub unsafe fn borrow_mut<'a>(&'a self, perm: Ghost<&'a mut PCellOwn<T>>) -> &'a mut T {
+    pub unsafe fn borrow_mut<'a>(&'a self, perm: Ghost<&'a mut PermCellOwn<T>>) -> &'a mut T {
         let _ = perm;
         unsafe { &mut *self.0.get() }
     }
 }
 
-impl<T: Copy> PCell<T> {
+impl<T: Copy> PermCell<T> {
     /// Returns a copy of the contained value.
     ///
     /// # Safety
@@ -207,20 +207,20 @@ impl<T: Copy> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell#safety).
+    /// [type documentation](PermCell#safety).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(result == (**perm)@)]
-    pub unsafe fn get(&self, perm: Ghost<&PCellOwn<T>>) -> T {
+    pub unsafe fn get(&self, perm: Ghost<&PermCellOwn<T>>) -> T {
         let _ = perm;
         unsafe { *self.0.get() }
     }
 }
 
-impl<T> PCell<T> {
+impl<T> PermCell<T> {
     /// Returns the logical identity of the cell.
     ///
-    /// This is used to guarantee that a [`PCellOwn`] is always used with the right [`PCell`].
+    /// This is used to guarantee that a [`PermCellOwn`] is always used with the right [`PermCell`].
     #[logic]
     #[trusted]
     pub fn id(self) -> Id {
@@ -240,21 +240,21 @@ impl<T> PCell<T> {
         self.0.get()
     }
 
-    /// Returns a `&PCell<T>` from a `&mut T`
+    /// Returns a `&PermCell<T>` from a `&mut T`
     #[trusted]
     #[ensures(result.0.id() == result.1.id())]
     #[ensures(^t == (^result.1)@)]
     #[ensures(*t == result.1@)]
-    pub fn from_mut(t: &mut T) -> (&PCell<T>, Ghost<&mut PCellOwn<T>>) {
-        // SAFETY: `PCell` is layout-compatible with `Cell` and `T` because it is `repr(transparent)`.
+    pub fn from_mut(t: &mut T) -> (&PermCell<T>, Ghost<&mut PermCellOwn<T>>) {
+        // SAFETY: `PermCell` is layout-compatible with `Cell` and `T` because it is `repr(transparent)`.
         // SAFETY: `&mut` ensures unique access
-        let cell: &PCell<T> = unsafe { &*(t as *mut T as *const Self) };
+        let cell: &PermCell<T> = unsafe { &*(t as *mut T as *const Self) };
         let perm = Ghost::conjure();
         (cell, perm)
     }
 }
 
-impl<T: Default> PCell<T> {
+impl<T: Default> PermCell<T> {
     /// Takes the value of the cell, leaving `Default::default()` in its place.
     ///
     /// # Safety
@@ -263,12 +263,12 @@ impl<T: Default> PCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PCell#safety).
+    /// [type documentation](PermCell#safety).
     #[requires(self.id() == perm.id())]
     #[ensures(self.id() == (^perm).id())]
     #[ensures(result == perm@)]
     #[ensures(T::default.postcondition((), (^perm)@))]
-    pub unsafe fn take(&self, perm: Ghost<&mut PCellOwn<T>>) -> T {
+    pub unsafe fn take(&self, perm: Ghost<&mut PermCellOwn<T>>) -> T {
         unsafe { self.replace(perm, T::default()) }
     }
 }

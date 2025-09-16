@@ -9,7 +9,7 @@ use ::std::marker::PhantomData;
 ///
 /// # Usage
 ///
-/// Ids are used in [`cell::PCell`] and [resource algebras](crate::ghost::resource::Resource).
+/// Ids are used in [`cell::PermCell`] and [resource algebras](crate::ghost::resource::Resource).
 #[trusted]
 #[allow(dead_code)]
 pub struct Id(PhantomData<()>);
