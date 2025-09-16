@@ -84,7 +84,9 @@ fn check_refines<'tcx>(
             None => {
                 use creusot_args::options::RefinesCheck::*;
                 match ctx.opts.refines_check {
-                    Warn => {
+                    Warn => return Err(Err(MissingBody)),
+                    NoWarn => return Ok(()),
+                    Require => {
                         return Err(Ok(ctx
                             .error(
                                 left_span,
@@ -95,8 +97,6 @@ fn check_refines<'tcx>(
                             )
                             .emit()));
                     }
-                    NoWarn => return Ok(()),
-                    Require => return Err(Err(MissingBody)),
                 }
             }
             Some(anf) => anf,
