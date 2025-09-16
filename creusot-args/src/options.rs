@@ -1,9 +1,10 @@
 use clap::*;
 use serde::{Deserialize, Serialize};
-use std::{error::Error, ffi::OsString, path::PathBuf};
+use std::{collections::HashMap, error::Error, ffi::OsString, path::PathBuf};
 
 #[derive(Debug, Parser, Serialize, Deserialize)]
-pub struct CommonOptions {
+#[clap(override_usage = "creusot-rustc [RUSTC_OPTIONS] -- [OPTIONS]")]
+pub struct CreusotArgs {
     /// Determines how to format the spans in generated code to loading in Why3.
     ///
     /// [Relative] is better if the generated code is meant to be checked into VCS.
@@ -11,8 +12,8 @@ pub struct CommonOptions {
     /// [None] provides the clearest diffs.
     /// NB: spans pointing to the Rust standard library are thrown away in [Relative] mode,
     /// while they are kept in [Absolute] mode.
-    #[clap(long, value_enum, default_value_t=SpanMode::Absolute, verbatim_doc_comment)]
-    pub span_mode: SpanMode,
+    #[clap(long, value_enum, default_value_t=SpanMode_::Absolute, verbatim_doc_comment)]
+    pub span_mode: SpanMode_,
     #[clap(long)]
     /// Directory with respect to which (relative) spans should be relative to.
     /// Necessary when using --stdout with relative spans, not needed otherwise.
@@ -45,37 +46,6 @@ pub struct CommonOptions {
     pub simple_triggers: bool,
 }
 
-#[derive(Debug, Parser, Serialize, Deserialize)]
-#[clap(override_usage = "creusot-rustc [RUSTC_OPTIONS] -- [OPTIONS]")]
-pub struct CreusotArgs {
-    #[clap(flatten)]
-    pub options: CommonOptions,
-    #[command(subcommand)]
-    pub subcommand: Option<LegacyCreusotSubCommand>,
-}
-
-#[derive(Debug, Subcommand, Serialize, Deserialize, Clone)]
-pub enum LegacyCreusotSubCommand {
-    /// Unmaintained command to run Why3 on the generated code. Use `cargo creusot prove` instead.
-    Why3 {
-        /// Why3 subcommand to run
-        #[clap(value_enum)]
-        command: Why3SubCommand,
-        /// Extra arguments to pass to why3
-        #[clap(default_value_t = String::default())]
-        args: String,
-    },
-    /// Generates the documentation, including specs, logical functions, etc.
-    Doc,
-}
-
-#[derive(Debug, ValueEnum, Serialize, Deserialize, Clone)]
-pub enum Why3SubCommand {
-    Prove,
-    Ide,
-    Replay,
-}
-
 /// Parse a single key-value pair
 fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Send + Sync + 'static>>
 where
@@ -95,8 +65,88 @@ impl CreusotArgs {
 }
 
 #[derive(Debug, clap::ValueEnum, Clone, Deserialize, Serialize)]
-pub enum SpanMode {
+pub enum SpanMode_ {
     Relative,
     Absolute,
     Off,
+}
+
+// TODO: can we merge Options and CreusotArgs?
+// Idk how to parse `SpanMode` directly.
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum SpanMode {
+    Relative(PathBuf),
+    Absolute,
+    Off,
+}
+
+#[derive(Clone)]
+pub struct Options {
+    pub extern_paths: HashMap<String, String>,
+    pub metadata_path: Option<String>,
+    pub export_metadata: bool,
+    pub should_output: bool,
+    pub output: Output,
+    pub monolithic: bool,
+    pub prefix: Vec<String>,
+    pub in_cargo: bool,
+    pub span_mode: SpanMode,
+    pub simple_triggers: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum Output {
+    Directory(PathBuf), // One file per Coma module
+    File(PathBuf),      // Monolithic output
+    Stdout,
+    None,
+}
+
+impl CreusotArgs {
+    pub fn to_options(self) -> Result<Options, String> {
+        let metadata_path = self.metadata_path;
+        let extern_paths = self.extern_paths.into_iter().collect();
+
+        let cargo_creusot = std::env::var("CARGO_CREUSOT").is_ok();
+        let should_output = !cargo_creusot || std::env::var("CARGO_PRIMARY_PACKAGE").is_ok();
+
+        let output = match (self.stdout, self.output_file, self.output_dir, self.check) {
+            (true, None, None, false) => Ok(Output::Stdout),
+            (false, Some(f), None, false) => Ok(Output::File(f)),
+            (false, None, Some(d), false) => Ok(Output::Directory(d)),
+            (false, None, None, true) => Ok(Output::None),
+            (false, None, None, false) => Ok(Output::Directory(PathBuf::from("."))), // default --output-dir=.
+            _ => Err("--stdout, --output-file, --output-dir, and --check are mutually exclusive"), // This should already be enforced by clap
+        }?;
+
+        let span_mode = match (&self.span_mode, &output, &self.spans_relative_to) {
+            (SpanMode_::Absolute, _, _) => Ok(SpanMode::Absolute),
+            (SpanMode_::Off, _, _) => Ok(SpanMode::Off),
+            (SpanMode_::Relative, _, Some(p)) => Ok(SpanMode::Relative(p.to_owned())),
+            (SpanMode_::Relative, Output::File(p), None) => {
+                Ok(SpanMode::Relative(p.parent().unwrap().to_owned()))
+            }
+            (SpanMode_::Relative, Output::Directory(p), None) => {
+                Ok(SpanMode::Relative(p.to_owned()))
+            }
+            (SpanMode_::Relative, Output::None, None) => Ok(SpanMode::Off),
+            (SpanMode_::Relative, Output::Stdout, None) => {
+                Err("--spans-relative-to is required when using --stdout and relative spans")
+            }
+        }?;
+
+        Ok(Options {
+            extern_paths,
+            metadata_path,
+            export_metadata: self.export_metadata,
+            should_output,
+            output,
+            in_cargo: cargo_creusot,
+            span_mode,
+            monolithic: self.monolithic,
+            prefix: Vec::new(), // to be set in callbacks::ToWhy::set_output_dir
+            simple_triggers: self.simple_triggers,
+        })
+    }
 }

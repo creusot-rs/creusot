@@ -38,7 +38,6 @@ extern crate rustc_trait_selection;
 extern crate rustc_type_ir;
 
 pub mod callbacks;
-pub mod options;
 
 mod analysis;
 mod backend;

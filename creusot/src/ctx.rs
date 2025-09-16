@@ -7,7 +7,6 @@ use crate::{
     },
     metadata::{BinaryMetadata, Metadata},
     naming::variable_name,
-    options::Options,
     translation::{
         self,
         external::{ExternSpec, extract_extern_specs_from_item},
@@ -18,6 +17,7 @@ use crate::{
     },
     util::{erased_identity_for_item, parent_module},
 };
+use creusot_args::options::Options;
 use indexmap::IndexMap;
 use once_map::unsync::OnceMap;
 use rustc_ast::{

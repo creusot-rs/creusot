@@ -2,9 +2,9 @@ use crate::{
     contracts_items::{is_resolve_function, is_spec, is_trusted},
     ctx::{HasTyCtxt, ItemType, TranslatedItem, TranslationCtx},
     naming::ModulePath,
-    options::SpanMode,
     util::path_of_span,
 };
+use creusot_args::options::SpanMode;
 use indexmap::IndexMap;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;

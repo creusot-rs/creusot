@@ -12,10 +12,10 @@ use crate::{
     contracts_items::{AreContractsLoaded, are_contracts_loaded, is_no_translate},
     ctx::{HasTyCtxt as _, TranslationCtx},
     metadata,
-    options::Output,
     translated_item::FileModule,
     validate::validate,
 };
+use creusot_args::options::Output;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::DUMMY_SP;
@@ -108,7 +108,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn std:
 
     if why3.should_compile() {
         let output_target = why3.opts.output.clone();
-        let prefix = why3.opts.prefix.clone();
+        let prefix = why3.opts.prefix.iter().map(|s| Symbol::intern(s)).collect();
         let modules = why3.modules();
         let modules = modules.flat_map(|item| item.modules());
         print_crate(output_target, prefix, modules)?;
