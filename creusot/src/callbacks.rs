@@ -1,7 +1,7 @@
 use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
 use rustc_data_structures::fx::FxHashMap;
 use rustc_driver::{Callbacks, Compilation};
-use rustc_hir::def_id::LocalDefId;
+use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_interface::{Config, interface::Compiler};
 use rustc_middle::{mir, ty::TyCtxt};
 use rustc_span::ErrorGuaranteed;
@@ -11,9 +11,9 @@ use std::{cell::RefCell, collections::HashMap, thread_local};
 use crate::{
     cleanup_spec_closures::*,
     ctx, lints,
-    metadata::{BinaryMetadata, get_thir_required},
+    metadata::BinaryMetadata,
     options::{Options, Output},
-    validate::a_normal_form,
+    validate::{AnfBlock, a_normal_form_without_specs},
 };
 
 pub struct ToWhy {
@@ -188,19 +188,34 @@ impl WithoutContracts {
     }
 }
 
-// impl Callbacks for WithoutContracts {
-//     fn after_expansion<'tcx>(&mut self, c: &Compiler, tcx: TyCtxt<'tcx>) {
-//         let thir_required = get_thir_required(tcx);
-//         let anf_thir = tcx
-//             .hir_body_owners()
-//             .filter_map(|def_id| {
-//                 if thir_required.contains(&def_id) {
-//                     let thir = tcx.thir_body(def_id).ok()?;
-//                     let anf = a_normal_form(tcx, def_id, ());
-//                 } else { None }
-//             })
-//             .collect();
-//         let metadata = BinaryMetadata::from_basic_parts(anf_thir);
-//         {}
-//     }
-// }
+impl Callbacks for WithoutContracts {
+    fn after_expansion<'tcx>(&mut self, c: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        let anf_required = crate::metadata::get_anf_required(tcx);
+        if anf_required.is_empty() {
+            return Compilation::Continue;
+        }
+        let anf_thir: Vec<(DefId, AnfBlock<'tcx>)> = tcx
+            .hir_body_owners()
+            .filter_map(|local_id| {
+                let def_id = local_id.to_def_id();
+                if anf_required.contains(&def_id) {
+                    let thir = tcx.thir_body(local_id).ok()?;
+                    let anf = a_normal_form_without_specs(
+                        tcx,
+                        def_id,
+                        (&*thir.0.borrow(), thir.1),
+                        tcx.def_span(def_id),
+                    )
+                    .ok()?;
+                    Some((def_id, anf))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let metadata = BinaryMetadata::from_basic_parts(anf_thir);
+        crate::metadata::dump_exports(tcx, &self.opts.metadata_path, metadata);
+        c.sess.dcx().abort_if_errors();
+        Compilation::Continue
+    }
+}

@@ -6,7 +6,7 @@ use crate::{
         is_extern_spec, is_logic, is_open_inv_param, is_prophetic, is_refines,
         opacity_witness_name,
     },
-    metadata::{BinaryMetadata, Metadata, get_thir_required},
+    metadata::{BinaryMetadata, Metadata, get_anf_required},
     naming::variable_name,
     options::Options,
     translation::{
@@ -20,7 +20,6 @@ use crate::{
     util::{erased_identity_for_item, parent_module},
     validate::AnfBlock,
 };
-use creusot_metadata::decode_metadata;
 use indexmap::{IndexMap, IndexSet};
 use once_map::unsync::OnceMap;
 use rustc_ast::{
@@ -49,8 +48,7 @@ use rustc_trait_selection::traits::normalize_param_env_or_error;
 use rustc_type_ir::inherent::Ty as _;
 use std::{
     cell::{OnceCell, RefCell},
-    collections::{HashMap, HashSet},
-    io::Read as _,
+    collections::HashMap,
     ops::Deref,
 };
 use why3::Ident;
@@ -422,12 +420,15 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn exported_anf_thir(&mut self) -> Vec<(DefId, AnfBlock<'tcx>)> {
-        let required = get_thir_required(self.tcx);
+        let anf_required = get_anf_required(self.tcx);
+        if anf_required.is_empty() {
+            return vec![];
+        }
         self.local_thir
             .iter()
             .filter_map(|(local_id, thir)| {
                 let def_id = local_id.to_def_id();
-                if required.contains(&def_id) {
+                if anf_required.contains(&def_id) {
                     let anf =
                         crate::validate::a_normal_form(self, def_id, thir, self.def_span(def_id))
                             .ok()?;
@@ -439,6 +440,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             .collect()
     }
 
+    /// This must only be called at the end because it will `take` stuff out of `self`.
     pub(crate) fn metadata(&mut self) -> BinaryMetadata<'tcx> {
         let anf_thir = self.exported_anf_thir();
         BinaryMetadata::from_parts(

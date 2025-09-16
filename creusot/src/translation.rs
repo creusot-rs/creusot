@@ -104,7 +104,8 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn std:
     let start = Instant::now();
 
     if why3.should_export() {
-        metadata::dump_exports(&mut why3);
+        let metadata = why3.metadata();
+        metadata::dump_exports(why3.tcx, &why3.opts.metadata_path, metadata);
     }
 
     if why3.should_compile() {

@@ -172,30 +172,25 @@ impl<'tcx> BinaryMetadata<'tcx> {
     }
 }
 
-fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
+fn export_file(tcx: TyCtxt, out: &Option<String>) -> PathBuf {
     out.as_ref().map(|s| s.clone().into()).unwrap_or_else(|| {
-        let outputs = ctx.output_filenames(());
+        let outputs = tcx.output_filenames(());
         let out = outputs.path(OutputType::Metadata);
         out.as_path().to_owned().with_extension("cmeta")
     })
 }
 
 /// This must only be called at the end because it will `take` stuff out of `ctx`.
-pub(crate) fn dump_exports(ctx: &mut TranslationCtx) {
-    let out_filename = export_file(ctx, &ctx.opts.metadata_path);
+pub(crate) fn dump_exports<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    metadata_path: &Option<String>,
+    metadata: BinaryMetadata<'tcx>,
+) {
+    let out_filename = export_file(tcx, metadata_path);
     debug!("dump_exports={:?}", out_filename);
-
-    dump_binary_metadata(ctx.tcx, &out_filename, ctx.metadata()).unwrap_or_else(|err| {
+    encode_metadata(tcx, &out_filename, metadata).unwrap_or_else(|err| {
         panic!("could not save metadata path=`{:?}` error={}", out_filename, err.1)
     });
-}
-
-fn dump_binary_metadata<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    path: &Path,
-    dep_info: BinaryMetadata<'tcx>,
-) -> Result<(), (PathBuf, std::io::Error)> {
-    encode_metadata(tcx, path, dep_info)
 }
 
 fn load_binary_metadata<'tcx>(
@@ -245,7 +240,7 @@ fn external_crates(tcx: TyCtxt<'_>) -> Vec<CrateNum> {
     deps
 }
 
-pub fn get_thir_required(tcx: TyCtxt) -> HashSet<DefId> {
+pub fn get_anf_required(tcx: TyCtxt) -> HashSet<DefId> {
     let mut required = HashSet::new();
     let Ok(dir) = std::fs::read_dir(REFINES_CHECK_DIR) else {
         return required;
@@ -264,7 +259,7 @@ pub fn get_thir_required(tcx: TyCtxt) -> HashSet<DefId> {
             }
         }
         let more_required: Vec<DefId> = decode_metadata(tcx, &blob);
-        required.extend(more_required);
+        required.extend(more_required.iter().filter(|id| id.is_local()));
     }
     required
 }

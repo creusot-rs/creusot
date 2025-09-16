@@ -453,7 +453,8 @@ impl<D: Decoder> Decodable<D> for LogicalOp {
 
 /// State for computing A-normal form
 struct AnfContext<'a, 'tcx> {
-    ctx: &'a TranslationCtx<'tcx>,
+    tcx: TyCtxt<'tcx>,
+    ctx: Option<&'a TranslationCtx<'tcx>>,
     thir: &'a Thir<'tcx>,
     scope_tree: &'a ScopeTree,
     /// Mapping from ANF variables to values
@@ -475,9 +476,21 @@ pub fn a_normal_form<'tcx>(
     ctx.a_normal_form_expr_block_(*expr, pattern, Vec::new(), None)
 }
 
+pub fn a_normal_form_without_specs<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    (thir, expr): (&Thir<'tcx>, ExprId),
+    def_span: Span,
+) -> Result<AnfBlock<'tcx>, ErrorGuaranteed> {
+    let scope_tree = tcx.region_scope_tree(def_id);
+    let mut ctx = AnfContext::new_without_specs(tcx, thir, scope_tree, def_span);
+    let pattern = ctx.a_normal_form_args()?;
+    ctx.a_normal_form_expr_block_(expr, pattern, Vec::new(), None)
+}
+
 impl<'a, 'tcx> HasTyCtxt<'tcx> for AnfContext<'a, 'tcx> {
     fn tcx(&self) -> TyCtxt<'tcx> {
-        self.ctx.tcx
+        self.tcx
     }
 }
 
@@ -489,7 +502,17 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
         span: Span,
     ) -> Self {
         let alias = HashMap::new();
-        AnfContext { ctx, thir, scope_tree, alias, span }
+        AnfContext { tcx: ctx.tcx, ctx: Some(ctx), thir, scope_tree, alias, span }
+    }
+
+    fn new_without_specs(
+        tcx: TyCtxt<'tcx>,
+        thir: &'a Thir<'tcx>,
+        scope_tree: &'a ScopeTree,
+        span: Span,
+    ) -> Self {
+        let alias = HashMap::new();
+        AnfContext { tcx, ctx: None, thir, scope_tree, alias, span }
     }
 
     fn a_normal_form_args(&mut self) -> Result<AnfPattern, ErrorGuaranteed> {
@@ -501,7 +524,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 let Some(pattern) = &param.pat else { return Some(Ok(AnfPattern::Wild)) };
                 // We visit even ghost variables to record their (im)mutability.
                 let pat = self.a_normal_form_pat(&pattern);
-                if is_ghost_ty_(self.ctx.tcx, param.ty) {
+                if is_ghost_ty_(self.tcx, param.ty) {
                     return None;
                 }
                 Some(pat)
@@ -555,7 +578,8 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                             .iter()
                             .map(|arg| self.a_normal_form_expr(*arg, stmts))
                             .collect::<Result<::std::boxed::Box<[_]>, ErrorGuaranteed>>()?;
-                        let (fun_id, subst, args) = if let Some(refined) = self.ctx.refines(fun_id)
+                        let (fun_id, subst, args) = if let Some(refined) =
+                            self.ctx.and_then(|ctx| ctx.refines(fun_id))
                         {
                             let args = args
                                 .into_iter()

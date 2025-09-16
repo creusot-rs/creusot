@@ -10,7 +10,7 @@ mod traits;
 
 pub(crate) use self::{
     ghost::{GhostValidate, is_ghost_ty_},
-    refines::{AnfBlock, a_normal_form},
+    refines::{AnfBlock, a_normal_form, a_normal_form_without_specs},
 };
 use self::{
     opacity::validate_opacity,
