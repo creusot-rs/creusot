@@ -914,7 +914,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 Ok(AnfPattern::Var(v))
             }
             Binding { var, .. } => Ok(AnfPattern::Var(Var::HirId(var.0))),
-            PatKind::Leaf { subpatterns } => {
+            Leaf { subpatterns } => {
                 let subpatterns = subpatterns
                     .iter()
                     .map(|p| self.a_normal_form_pat(&p.pattern))
@@ -922,10 +922,24 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 // the actual constructor doesn't matter for a `Leaf` so we just use `Tuple`
                 Ok(AnfPattern::Ctor(Ctor::Tuple, subpatterns, pat.span))
             }
-            _ => Err(self
-                .error(self.span, "failed #[refines] check")
-                .with_span_label(pat.span, "unsupported pattern")
-                .emit()),
+            Variant { adt_def, args: _, variant_index, subpatterns } => {
+                let subpatterns = subpatterns
+                    .iter()
+                    .map(|p| self.a_normal_form_pat(&p.pattern))
+                    .collect::<Result<Box<[_]>, _>>()?;
+                Ok(AnfPattern::Ctor(
+                    Ctor::Adt(adt_def.did(), *variant_index),
+                    subpatterns,
+                    pat.span,
+                ))
+            }
+            kind => {
+                warn!("unsupported pattern kind: {kind:?}");
+                Err(self
+                    .error(self.span, "failed #[refines] check")
+                    .with_span_label(pat.span, format!("unsupported pattern"))
+                    .emit())
+            }
         }
     }
 }
