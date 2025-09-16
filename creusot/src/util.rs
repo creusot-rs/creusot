@@ -5,9 +5,7 @@ use rustc_index::IndexVec;
 use rustc_middle::{
     mir::Location,
     thir,
-    ty::{
-        GenericArgs, GenericArgsRef, TyCtxt,
-    },
+    ty::{GenericArgs, GenericArgsRef, TyCtxt},
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::Span;

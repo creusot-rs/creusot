@@ -12,7 +12,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_session::config::OutputType;
 use rustc_span::Symbol;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs::File,
     io::Read,
     path::{Path, PathBuf},
@@ -147,7 +147,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
 
 impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
-        terms: &mut OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
+        mut terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
         creusot_items: HashMap<Symbol, DefId>,
         extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
         params_open_inv: HashMap<DefId, Vec<usize>>,
@@ -160,6 +160,16 @@ impl<'tcx> BinaryMetadata<'tcx> {
             .collect();
         BinaryMetadata { terms, creusot_items, extern_specs, params_open_inv, anf_thir }
     }
+
+    pub(crate) fn from_basic_parts(anf_thir: Vec<(DefId, AnfBlock<'tcx>)>) -> Self {
+        BinaryMetadata {
+            terms: Vec::new(),
+            creusot_items: HashMap::new(),
+            extern_specs: HashMap::new(),
+            params_open_inv: HashMap::new(),
+            anf_thir,
+        }
+    }
 }
 
 fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
@@ -170,6 +180,7 @@ fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
     })
 }
 
+/// This must only be called at the end because it will `take` stuff out of `ctx`.
 pub(crate) fn dump_exports(ctx: &mut TranslationCtx) {
     let out_filename = export_file(ctx, &ctx.opts.metadata_path);
     debug!("dump_exports={:?}", out_filename);
@@ -232,4 +243,28 @@ fn external_crates(tcx: TyCtxt<'_>) -> Vec<CrateNum> {
         }
     }
     deps
+}
+
+pub fn get_thir_required(tcx: TyCtxt) -> HashSet<DefId> {
+    let mut required = HashSet::new();
+    let Ok(dir) = std::fs::read_dir(REFINES_CHECK_DIR) else {
+        return required;
+    };
+    for entry in dir {
+        let Ok(entry) = entry else {
+            continue;
+        };
+        let path = entry.path();
+        let mut blob = Vec::new();
+        match std::fs::File::open(&path).and_then(|mut file| file.read_to_end(&mut blob)) {
+            Ok(_) => (),
+            Err(e) => {
+                warn!("could not read {}: {:?}", path.display(), e);
+                continue;
+            }
+        }
+        let more_required: Vec<DefId> = decode_metadata(tcx, &blob);
+        required.extend(more_required);
+    }
+    required
 }

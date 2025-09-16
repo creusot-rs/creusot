@@ -11,7 +11,9 @@ use std::{cell::RefCell, collections::HashMap, thread_local};
 use crate::{
     cleanup_spec_closures::*,
     ctx, lints,
+    metadata::{BinaryMetadata, get_thir_required},
     options::{Options, Output},
+    validate::a_normal_form,
 };
 
 pub struct ToWhy {
@@ -174,3 +176,31 @@ fn try_get_body<'tcx, 'a>(def_id: LocalDefId) -> Option<&'a BodyWithBorrowckFact
         map.get(&def_id).map(|body| unsafe { std::mem::transmute(body) })
     })
 }
+
+/// Callback for libraries that don't depend on creusot-contracts, to store metadata needed in later passes
+pub struct WithoutContracts {
+    opts: Options,
+}
+
+impl WithoutContracts {
+    pub fn new(opts: Options) -> Self {
+        WithoutContracts { opts }
+    }
+}
+
+// impl Callbacks for WithoutContracts {
+//     fn after_expansion<'tcx>(&mut self, c: &Compiler, tcx: TyCtxt<'tcx>) {
+//         let thir_required = get_thir_required(tcx);
+//         let anf_thir = tcx
+//             .hir_body_owners()
+//             .filter_map(|def_id| {
+//                 if thir_required.contains(&def_id) {
+//                     let thir = tcx.thir_body(def_id).ok()?;
+//                     let anf = a_normal_form(tcx, def_id, ());
+//                 } else { None }
+//             })
+//             .collect();
+//         let metadata = BinaryMetadata::from_basic_parts(anf_thir);
+//         {}
+//     }
+// }
