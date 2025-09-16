@@ -6,7 +6,7 @@ use crate::{
         is_extern_spec, is_logic, is_open_inv_param, is_prophetic, is_refines,
         opacity_witness_name,
     },
-    metadata::{BinaryMetadata, Metadata, get_anf_required},
+    metadata::{BinaryMetadata, Metadata, encode_def_ids, get_anf_required},
     naming::variable_name,
     translation::{
         self,
@@ -420,15 +420,16 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn exported_anf_thir(&mut self) -> Vec<(DefId, AnfBlock<'tcx>)> {
-        let anf_required = get_anf_required(self.tcx);
+        let Some(refines_check_dir) = &self.opts.refines_check_dir else { return vec![] };
+        let anf_required = get_anf_required(self.tcx, refines_check_dir);
         if anf_required.is_empty() {
             return vec![];
         }
         self.local_thir
             .iter()
             .filter_map(|(local_id, thir)| {
-                let def_id = local_id.to_def_id();
-                if anf_required.contains(&def_id) {
+                if anf_required.contains(&local_id) {
+                    let def_id = local_id.to_def_id();
                     let anf =
                         crate::validate::a_normal_form(self, def_id, thir, self.def_span(def_id))
                             .ok()?;
@@ -562,25 +563,19 @@ impl<'tcx> TranslationCtx<'tcx> {
             // Skip if this is not a primary package
             return;
         }
+        let Some(refines_check_dir) = &self.opts.refines_check_dir else {
+            return;
+        };
         let thir_required = self.thir_required.borrow();
         if thir_required.is_empty() {
             return;
         }
-        let name = format!("{}/{}", REFINES_CHECK_DIR, self.tcx.crate_name(LOCAL_CRATE));
-        let name = std::path::Path::new(&name);
-        std::fs::create_dir_all(name.parent().unwrap()).unwrap_or_else(|e| {
-            self.crash_and_error(
-                DUMMY_SP,
-                format!("error creating directory {}: {}", name.parent().unwrap().display(), e),
-            )
-        });
-        creusot_metadata::encode_metadata(self.tcx, &name, thir_required.iter().collect::<Vec<_>>())
-            .unwrap_or_else(|(_, e)| {
-                self.crash_and_error(
-                    DUMMY_SP,
-                    format!("error when writing {}: {}", name.display(), e),
-                )
-            })
+        let path = refines_check_dir.join(self.tcx.crate_name(LOCAL_CRATE).as_str());
+        std::fs::create_dir_all(refines_check_dir)
+            .and_then(|_| encode_def_ids(self.tcx, &path, thir_required.iter()))
+            .unwrap_or_else(|e| {
+                self.crash_and_error(DUMMY_SP, format!("could not write {}: {}", path.display(), e))
+            });
     }
 
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
@@ -644,5 +639,3 @@ pub struct Refined<'tcx> {
     /// `true` for ghost arguments to erase
     pub erase_args: Vec<bool>,
 }
-
-pub const REFINES_CHECK_DIR: &'static str = "_creusot-refines";

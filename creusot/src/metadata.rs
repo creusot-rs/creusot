@@ -1,12 +1,11 @@
 use crate::{
-    ctx::*,
     translation::{external::ExternSpec, pearlite::ScopedTerm},
     validate::AnfBlock,
 };
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
 use once_map::unsync::OnceMap;
-use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
+use rustc_hir::def_id::{CrateNum, DefId, DefPathHash, LOCAL_CRATE, LocalDefId};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::ty::TyCtxt;
 use rustc_session::config::OutputType;
@@ -189,7 +188,7 @@ pub(crate) fn dump_exports<'tcx>(
     let out_filename = export_file(tcx, metadata_path);
     debug!("dump_exports={:?}", out_filename);
     encode_metadata(tcx, &out_filename, metadata).unwrap_or_else(|err| {
-        panic!("could not save metadata path=`{:?}` error={}", out_filename, err.1)
+        panic!("could not save metadata path=`{:?}` error={}", out_filename, err)
     });
 }
 
@@ -240,26 +239,49 @@ fn external_crates(tcx: TyCtxt<'_>) -> Vec<CrateNum> {
     deps
 }
 
-pub fn get_anf_required(tcx: TyCtxt) -> HashSet<DefId> {
+pub fn get_anf_required(tcx: TyCtxt, refines_check_dir: &Path) -> HashSet<LocalDefId> {
     let mut required = HashSet::new();
-    let Ok(dir) = std::fs::read_dir(REFINES_CHECK_DIR) else {
+    let Ok(dir) = std::fs::read_dir(refines_check_dir) else {
         return required;
     };
     for entry in dir {
         let Ok(entry) = entry else {
             continue;
         };
-        let path = entry.path();
-        let mut blob = Vec::new();
-        match std::fs::File::open(&path).and_then(|mut file| file.read_to_end(&mut blob)) {
-            Ok(_) => (),
-            Err(e) => {
-                warn!("could not read {}: {:?}", path.display(), e);
-                continue;
-            }
-        }
-        let more_required: Vec<DefId> = decode_metadata(tcx, &blob);
-        required.extend(more_required.iter().filter(|id| id.is_local()));
+        let Ok(more_required) = decode_local_def_ids(tcx, &entry.path()) else { continue };
+        required.extend(more_required);
     }
     required
+}
+
+/// We don't want to go through the `Encodable`/`Decodable` for `DefId` because
+/// decoding only works if the `DefId`'s `CrateNum` is in a dependency of the current crate,
+/// whereas we are planning to read these `DefId`s in a fresh compilation session.
+///
+/// Instead, we explicitly convert `DefId` to `DefPathHash` and serialize that.
+/// When deserializing, we only care about IDs from the current crate (`LocalDefId`).
+pub fn encode_def_ids<'a>(
+    tcx: TyCtxt,
+    path: &Path,
+    def_ids: impl IntoIterator<Item = &'a DefId>,
+) -> Result<(), std::io::Error> {
+    let hashes: Vec<DefPathHash> =
+        def_ids.into_iter().map(|def_id| tcx.def_path_hash(*def_id)).collect();
+    encode_metadata(tcx, path, hashes)
+}
+
+/// Skip `DefId`s from other crates
+fn decode_local_def_ids(tcx: TyCtxt, file: &Path) -> Result<Vec<LocalDefId>, std::io::Error> {
+    let contents = std::fs::read(file)?;
+    let hashes: Vec<DefPathHash> = decode_metadata(tcx, &contents);
+    Ok(hashes.into_iter().filter_map(|hash| def_path_hash_to_local_id(tcx, hash)).collect())
+}
+
+/// Only try to decode `LocalDefId`s
+fn def_path_hash_to_local_id(tcx: TyCtxt, hash: DefPathHash) -> Option<LocalDefId> {
+    if hash.stable_crate_id() == tcx.stable_crate_id(LOCAL_CRATE) {
+        tcx.definitions_untracked().local_def_path_hash_to_def_id(hash)
+    } else {
+        None
+    }
 }

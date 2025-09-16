@@ -189,15 +189,18 @@ impl WithoutContracts {
 
 impl Callbacks for WithoutContracts {
     fn after_expansion<'tcx>(&mut self, c: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-        let anf_required = crate::metadata::get_anf_required(tcx);
+        let Some(refines_check_dir) = &self.opts.refines_check_dir else {
+            return Compilation::Continue;
+        };
+        let anf_required = crate::metadata::get_anf_required(tcx, refines_check_dir);
         if anf_required.is_empty() {
             return Compilation::Continue;
         }
         let anf_thir: Vec<(DefId, AnfBlock<'tcx>)> = tcx
             .hir_body_owners()
             .filter_map(|local_id| {
-                let def_id = local_id.to_def_id();
-                if anf_required.contains(&def_id) {
+                if anf_required.contains(&local_id) {
+                    let def_id = local_id.to_def_id();
                     let thir = tcx.thir_body(local_id).ok()?;
                     let anf = a_normal_form_without_specs(
                         tcx,

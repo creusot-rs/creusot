@@ -47,6 +47,8 @@ pub struct CreusotArgs {
     /// Enable #[refines] checking across crates.
     #[clap(long, num_args = 0..=1, default_value_t = RefinesCheck::Warn, default_missing_value = "require")]
     pub refines_check: RefinesCheck,
+    #[clap(long)]
+    pub refines_check_dir: Option<PathBuf>,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum, Serialize, Deserialize)]
@@ -114,6 +116,7 @@ pub struct Options {
     pub span_mode: SpanMode,
     pub simple_triggers: bool,
     pub refines_check: RefinesCheck,
+    pub refines_check_dir: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone)]
@@ -169,6 +172,7 @@ impl CreusotArgs {
             prefix: Vec::new(), // to be set in callbacks::ToWhy::set_output_dir
             simple_triggers: self.simple_triggers,
             refines_check: self.refines_check,
+            refines_check_dir: self.refines_check_dir,
         })
     }
 }
