@@ -336,6 +336,7 @@ enum AnfPattern {
     Wild,
     Var(Var),
     Ctor(Ctor, Box<[AnfPattern]>, Span),
+    Deref(Box<AnfPattern>),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
@@ -357,6 +358,7 @@ enum AnfValue<'tcx> {
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 enum Ctor {
     Adt(DefId, VariantIdx),
+    Bool(bool),
     Tuple,
     Array,
 }
@@ -733,6 +735,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             PointerCoercion { cast: MutToConstPointer, source, .. } => {
                 self.a_normal_form_expr(*source, stmts)?.0
             }
+            Use { source } => self.a_normal_form_expr(*source, stmts)?.0,
             kind => {
                 return Err(self
                     .unsupported_syntax(expr.span, "unsupported expression")
@@ -934,6 +937,14 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                     pat.span,
                 ))
             }
+            Deref { subpattern } => {
+                let subpattern = self.a_normal_form_pat(&**subpattern)?;
+                Ok(AnfPattern::Deref(subpattern.into()))
+            }
+            Constant { value } if value.ty.is_bool() => {
+                let b = value.try_to_bool().unwrap();
+                Ok(AnfPattern::Ctor(Ctor::Bool(b), [].into(), pat.span))
+            }
             kind => Err(self
                 .unsupported_syntax(pat.span, "unsupported pattern")
                 .with_note(format!("unsupported: {kind:?}"))
@@ -1024,6 +1035,9 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                         .with_span_note(*span2, "refined pattern")
                         .emit());
                 }
+            }
+            (AnfPattern::Deref(pat1), AnfPattern::Deref(pat2)) => {
+                self.refines_pattern(pat1, pat2)?;
             }
             (AnfPattern::Wild, _) | (_, AnfPattern::Wild) => {}
             _ => {}
