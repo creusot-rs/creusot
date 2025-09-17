@@ -9,8 +9,7 @@ use crate::{
 };
 
 impl<K, V: RA> RA for FMap<K, V> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn op(self, other: Self) -> Option<Self> {
         pearlite! {
             if (forall<k: K> self.get(k).op(other.get(k)) != None) {
@@ -21,8 +20,7 @@ impl<K, V: RA> RA for FMap<K, V> {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(match result {
         Some(c) => factor.op(c) == Some(self),
         None => forall<c: Self> factor.op(c) != Some(self),
@@ -70,8 +68,7 @@ impl<K, V: RA> RA for FMap<K, V> {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(match result {
         Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
         None => true
@@ -93,16 +90,14 @@ impl<K, V: RA> RA for FMap<K, V> {
 }
 
 impl<K, V: RA> UnitRA for FMap<K, V> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self {
         proof_assert!(forall<x: Self> x.op(Self::empty()).unwrap_logic().ext_eq(x));
         Self::empty()
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(result.op(result) == Some(result))]
     #[ensures(result.op(self) == Some(self))]
     fn core_total(self) -> Self {
@@ -132,14 +127,12 @@ impl<K, V: RA> FMap<K, V> {
 pub struct FMapInsertLocalUpdate<K, V>(pub Snapshot<K>, pub Snapshot<V>);
 
 impl<K, V: RA> LocalUpdate<FMap<K, V>> for FMapInsertLocalUpdate<K, V> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn premise(self, from_auth: FMap<K, V>, _: FMap<K, V>) -> bool {
         from_auth.get(*self.0) == None
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn update(self, from_auth: FMap<K, V>, from_frag: FMap<K, V>) -> (FMap<K, V>, FMap<K, V>) {
         (from_auth.insert(*self.0, *self.1), from_frag.insert(*self.0, *self.1))
     }

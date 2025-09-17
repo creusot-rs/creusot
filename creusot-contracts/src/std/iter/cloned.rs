@@ -17,8 +17,7 @@ impl<I> ClonedExt<I> for Cloned<I> {
 }
 
 impl<I> Resolve for Cloned<I> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         resolve(self.iter())
     }
@@ -35,16 +34,14 @@ where
     I: Iterator<Item = &'a T>,
     T: Clone,
 {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             exists<inner: &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed()
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<T>, o: Self) -> bool {
         pearlite! {
             exists<s: Seq<&'a T>>

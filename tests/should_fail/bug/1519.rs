@@ -28,8 +28,7 @@ where
     T: RA,
     U: RA,
 {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn op(self, other: Self) -> Option<Self> {
         pearlite! {
             self.0.op(other.0).and_then_logic(|x:T| {
@@ -40,8 +39,7 @@ where
         }
     }
 
-    #[logic]
-    #[open(self)]
+    #[logic(open(self))]
     #[ensures(
         (forall<b: Self> ! (b.le(a) && b.idemp())) ||
         (exists<b: Self> b.le(a) && b.idemp() &&

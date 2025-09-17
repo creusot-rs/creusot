@@ -10,8 +10,7 @@ pub struct Formula {
 impl View for Formula {
     type ViewTy = (Seq<usize>, bool);
 
-    #[logic]
-    #[open(crate)]
+    #[logic(open(crate))]
     fn view(self) -> Self::ViewTy {
         (self.vec.view(), self.b)
     }

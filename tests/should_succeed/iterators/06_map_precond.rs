@@ -16,8 +16,7 @@ pub struct Map<I: Iterator, F> {
 impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator for Map<I, F> {
     type Item = B;
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             *(^self).produced == Seq::empty() &&
@@ -25,20 +24,17 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
         }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     #[creusot::why3_attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
@@ -81,8 +77,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
 }
 
 impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     pub fn next_precondition(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<e: I::Item, i: I>
@@ -106,8 +101,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
         }
     }
 
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
@@ -119,8 +113,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
         }
     }
 
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     pub fn reinitialize() -> bool {
         pearlite! {
             forall<iter: &mut I, func: F>
@@ -145,8 +138,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
         }
     }
 
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     pub fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {

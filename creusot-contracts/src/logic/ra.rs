@@ -76,8 +76,7 @@ pub trait RA: Sized {
     /// reflexive definition of `incl` on paper, but not in its accompanying
     /// Iris formalization, where it uses the non-reflexive definition (as
     /// we do here).
-    #[logic(sealed)]
-    #[open]
+    #[logic(open, sealed)]
     fn incl(self, other: Self) -> bool {
         other.factor(self) != None
     }
@@ -87,14 +86,12 @@ pub trait RA: Sized {
     #[ensures(self.incl(comb))]
     fn incl_op(self, other: Self, comb: Self) {}
 
-    #[logic(sealed)]
-    #[open]
+    #[logic(open, sealed)]
     fn incl_eq(self, other: Self) -> bool {
         self == other || self.incl(other)
     }
 
-    #[logic(sealed)]
-    #[open]
+    #[logic(open, sealed)]
     fn incl_eq_op(a: Self, b: Self, x: Self) -> bool {
         match a.op(b) {
             None => false,
@@ -105,8 +102,7 @@ pub trait RA: Sized {
     /// Ensures that we can go from `self` to `x` without making composition with the frame invalid.
     ///
     /// This is used in [`Resource::update`](crate::resource::Resource::update).
-    #[logic(sealed)]
-    #[open]
+    #[logic(open, sealed)]
     fn update(self, x: Self) -> bool {
         pearlite! {
             forall<y: Self> self.op(y) != None ==> x.op(y) != None
@@ -114,8 +110,7 @@ pub trait RA: Sized {
     }
 
     /// This is used in [`Resource::update_nondet`](crate::resource::Resource::update_nondet).
-    #[logic(sealed)]
-    #[open]
+    #[logic(open, sealed)]
     fn update_nondet(self, s: Set<Self>) -> bool {
         pearlite! {
             forall<y: Self> self.op(y) != None ==>
@@ -136,8 +131,7 @@ pub trait RA: Sized {
     fn associative(a: Self, b: Self, c: Self);
 
     /// [`RA::incl`] is transitive.
-    #[logic(law, sealed)]
-    #[open(self)]
+    #[logic(open(self), law, sealed)]
     #[requires(a.incl(b))]
     #[requires(b.incl(c))]
     #[ensures(a.incl(c))]
@@ -181,8 +175,7 @@ pub trait UnitRA: RA {
     #[ensures(Self::unit().core_total() == Self::unit())]
     fn unit_core() {}
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(result.op(result) == Some(result))]
     #[ensures(result.op(self) == Some(self))]
     fn core_total(self) -> Self {

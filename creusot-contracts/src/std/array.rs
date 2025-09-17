@@ -4,8 +4,7 @@ use crate::{invariant::*, logic::ops::IndexLogic, std::iter::Iterator, *};
 use ::std::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
         pearlite! { inv(self@) && self@.len() == N@ }
@@ -38,8 +37,7 @@ impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
 }
 
 impl<T, const N: usize> Resolve for [T; N] {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<i: Int> 0 <= i && i < N@ ==> resolve(self@[i]) }
     }
@@ -54,8 +52,7 @@ impl<T, const N: usize> Resolve for [T; N] {
 impl<T, const N: usize> IndexLogic<Int> for [T; N] {
     type Item = T;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
@@ -65,8 +62,7 @@ impl<T, const N: usize> IndexLogic<Int> for [T; N] {
 impl<T, const N: usize> IndexLogic<usize> for [T; N] {
     type Item = T;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
@@ -76,34 +72,29 @@ impl<T, const N: usize> IndexLogic<usize> for [T; N] {
 impl<T, const N: usize> View for IntoIter<T, N> {
     type ViewTy = Seq<T>;
 
-    #[logic]
+    #[logic(open)]
     #[trusted]
-    #[open]
     fn view(self) -> Self::ViewTy {
         dead
     }
 }
 
 impl<T, const N: usize> Iterator for IntoIter<T, N> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { self@ == visited.concat(o@) }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@ == Seq::empty() }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

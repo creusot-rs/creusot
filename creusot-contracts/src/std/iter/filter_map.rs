@@ -41,23 +41,20 @@ impl<B, I: Iterator, F: FnMut(I::Item) -> Option<B>> Invariant for FilterMap<I, 
 
 /// Asserts that `f` has no precondition: any closure state can be called with any input value
 /// In a future release this restriction may be lifted or weakened
-#[open]
-#[logic(prophetic)]
+#[logic(open, prophetic)]
 pub fn no_precondition<A, B, F: FnMut(A) -> Option<B>>(f: F) -> bool {
     pearlite! { forall<i: A> f.precondition((i,)) }
 }
 
 /// Asserts that the captures of `f` are used immutably
 /// In a future release this restriction may be lifted or weakened
-#[open]
-#[logic(prophetic)]
+#[logic(open, prophetic)]
 pub fn immutable<A, B, F: FnMut(A) -> Option<B>>(f: F) -> bool {
     pearlite! { forall<g: F> f.hist_inv(g) ==> f == g }
 }
 
 /// Asserts that the postcondition of `f` is *precise*: that there are never two possible values matching the postcondition
-#[open]
-#[logic(prophetic)]
+#[logic(open, prophetic)]
 pub fn precise<A, B, F: FnMut(A) -> Option<B>>(f1: F) -> bool {
     pearlite! { forall<f2: F, i> !((exists<b: B> f1.postcondition_mut((i,), f2, Some(b))) && f1.postcondition_mut((i,), f2, None)) }
 }
@@ -67,8 +64,7 @@ where
     I: Iterator,
     F: FnMut(I::Item) -> Option<B>,
 {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (exists<s: Seq<_>, e: &mut I > self.iter().produces(s, *e) && e.completed() &&
@@ -77,8 +73,7 @@ where
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.invariant() ==>

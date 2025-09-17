@@ -43,8 +43,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
 impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
     type Item = T;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
@@ -55,8 +54,7 @@ impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
 impl<T, A: Allocator> IndexLogic<usize> for Vec<T, A> {
     type Item = T;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
@@ -76,8 +74,7 @@ impl<T> IndexLogic<usize> for Vec<T> {
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Resolve for Vec<T, A> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self[i]) }
     }
@@ -91,8 +88,7 @@ impl<T, A: Allocator> Resolve for Vec<T, A> {
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Invariant for Vec<T, A> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
@@ -257,8 +253,7 @@ impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self@[i]) }
     }
@@ -272,27 +267,23 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@ == Seq::empty() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
         pearlite! {
             self@ == visited.concat(rhs@)
         }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -300,8 +291,7 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
 }
 
 impl<T> FromIterator<T> for Vec<T> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
         pearlite! { prod == res@ }
     }

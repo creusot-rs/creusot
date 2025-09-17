@@ -13,8 +13,7 @@ impl View for char {
 
 impl DeepModel for char {
     type DeepModelTy = Int;
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { self@ }
     }
@@ -46,7 +45,6 @@ impl CharExt for char {
 }
 
 #[trusted]
-#[logic]
-#[open]
+#[logic(open)]
 #[ensures(forall<c1: char, c2: char> c1.to_utf8() == c2.to_utf8() ==> c1 == c2)]
 pub fn injective_to_utf8() {}

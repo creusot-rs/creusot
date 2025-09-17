@@ -93,8 +93,7 @@ impl<T: ?Sized> DerefMut for Ghost<T> {
 
 impl<T: ?Sized + View> View for Ghost<T> {
     type ViewTy = T::ViewTy;
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn view(self) -> Self::ViewTy {
         (*self).view()
     }
@@ -103,16 +102,14 @@ impl<T: ?Sized + View> View for Ghost<T> {
 impl<T: ?Sized + Fin> Fin for Ghost<T> {
     type Target = T::Target;
 
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     fn fin<'a>(self) -> &'a Self::Target {
         pearlite! { &^*self }
     }
 }
 
 impl<T: ?Sized> Invariant for Ghost<T> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
@@ -121,8 +118,7 @@ impl<T: ?Sized> Invariant for Ghost<T> {
 }
 
 impl<T: ?Sized> Resolve for Ghost<T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         resolve(*self)
     }

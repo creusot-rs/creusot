@@ -44,8 +44,7 @@ impl<K: Clone, V: Clone> Clone for BTreeMap<K, V> {
 impl<K: DeepModel, V> View for BTreeMap<K, V> {
     type ViewTy = creusot_contracts::logic::Mapping<K::DeepModelTy, Option<V>>;
 
-    #[logic]
-    #[open(self)]
+    #[logic(open(self))]
     #[trusted]
     fn view(self) -> Self::ViewTy {
         dead
@@ -117,8 +116,7 @@ impl Expr {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn is_normalized(self) -> bool {
         match self {
             Expr::IfThenElse { c, t, e } => {
@@ -149,8 +147,7 @@ impl Expr {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn is_simplified(self) -> bool {
         match self {
             Expr::IfThenElse { c, t, e } => match *c {
@@ -161,8 +158,7 @@ impl Expr {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn does_not_contain(self, vp: usize) -> bool {
         match self {
             Expr::IfThenElse { c, t, e } => {

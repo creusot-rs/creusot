@@ -11,14 +11,12 @@ impl<T> View for Once<T> {
 }
 
 impl<T> Iterator for Once<T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||

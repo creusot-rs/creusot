@@ -73,8 +73,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     }
 
     /// Returns the map where containing the only key-value pair `(k, v)`.
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn singleton(k: K, v: V) -> Self {
         Self::empty().insert(k, v)
     }
@@ -91,8 +90,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     /// Get the value associated with key `k` in the map.
     ///
     /// If no value is present, returns [`None`].
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn get(self, k: K) -> Option<V> {
         self.view().get(k)
@@ -101,38 +99,33 @@ impl<K: ?Sized, V> FMap<K, V> {
     /// Get the value associated with key `k` in the map.
     ///
     /// If no value is present, the returned value is meaningless.
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn lookup(self, k: K) -> V {
         self.get(k).unwrap_logic()
     }
 
     /// Returns `true` if the map contains a value for the specified key.
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, k: K) -> bool {
         self.get(k) != None
     }
 
     /// Returns `true` if the map contains no elements.
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn is_empty(self) -> bool {
         self.ext_eq(FMap::empty())
     }
 
     /// Returns `true` if the two maps have no key in common.
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn disjoint(self, other: Self) -> bool {
         pearlite! {forall<k: K> !self.contains(k) || !other.contains(k)}
     }
 
     /// Returns `true` if all key-value pairs in `self` are also in `other`.
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn subset(self, other: Self) -> bool {
         pearlite! {
             forall<k: K> self.contains(k) ==> other.get(k) == self.get(k)
@@ -181,8 +174,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     /// Returns `true` if `self` and `other` contain exactly the same key-value pairs.
     ///
     /// This is in fact equivalent with normal equality.
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
@@ -268,8 +260,7 @@ impl<K: ?Sized, V> FMap<K, V> {
 impl<K: ?Sized, V> IndexLogic<K> for FMap<K, V> {
     type Item = V;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, key: K) -> Self::Item {
         self.lookup(key)
@@ -506,8 +497,7 @@ impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
 impl<K: Clone + Copy, V: Clone + Copy> Copy for FMap<K, V> {}
 
 impl<K: ?Sized, V> Invariant for FMap<K, V> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {

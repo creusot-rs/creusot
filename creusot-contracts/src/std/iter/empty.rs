@@ -1,14 +1,12 @@
 use crate::{std::iter::Empty, *};
 
 impl<T> Iterator for Empty<T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() }
     }
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { visited == Seq::empty() && self == o }
     }

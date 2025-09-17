@@ -15,8 +15,7 @@ struct Zip<A: Iterator, B: Iterator> {
 impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     type Item = (A::Item, B::Item);
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
              (self.a.completed() && (*self).b == (^self).b)
@@ -25,8 +24,7 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             // Using an `unzip` definition doesn't work well because of issues related to datatypes and `match`
@@ -37,13 +35,11 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
         }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

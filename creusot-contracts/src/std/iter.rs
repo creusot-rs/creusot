@@ -215,25 +215,21 @@ extern_spec! {
 }
 
 impl<I: Iterator + ?Sized> Iterator for &mut I {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { (*self).produces(visited, *o) && ^self == ^o }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self).completed() && ^*self == ^^self }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

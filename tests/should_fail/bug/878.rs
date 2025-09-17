@@ -10,8 +10,7 @@ pub fn test() {
 
 struct S(u32);
 impl Invariant for S {
-    #[logic(prophetic)]
-    #[open(self)]
+    #[logic(open(self), prophetic)]
     fn invariant(self) -> bool {
         self.0 == 0u32
     }

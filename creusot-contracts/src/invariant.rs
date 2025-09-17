@@ -76,8 +76,7 @@ pub trait Invariant {
 
 #[cfg(feature = "nightly")]
 impl Invariant for ! {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn invariant(self) -> bool {
@@ -86,8 +85,7 @@ impl Invariant for ! {
 }
 
 impl<T: ?Sized> Invariant for &T {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     #[creusot::why3_meta("rewrite_def", predicate, self)]
@@ -97,8 +95,7 @@ impl<T: ?Sized> Invariant for &T {
 }
 
 impl<T: ?Sized> Invariant for &mut T {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     #[creusot::why3_meta("rewrite_def", predicate, self)]
@@ -297,8 +294,7 @@ impl<T: InhabitedInvariant + Clone> Clone for Subset<T> {
 impl<T: InhabitedInvariant + Copy> Copy for Subset<T> {}
 
 impl<T: InhabitedInvariant> Resolve for Subset<T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         pearlite! { resolve(self@) }
     }

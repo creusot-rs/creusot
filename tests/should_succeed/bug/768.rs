@@ -7,8 +7,7 @@ pub struct A {
 }
 
 impl A {
-    #[open]
-    #[logic]
+    #[logic(open)]
     pub fn with_l(self, l: usize) -> Self {
         A { l, ..self }
     }

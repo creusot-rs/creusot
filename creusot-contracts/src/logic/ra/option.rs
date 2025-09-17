@@ -3,8 +3,7 @@ use crate::logic::ra::{update::Update, *};
 use crate::logic::such_that;
 
 impl<T: RA> RA for Option<T> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn op(self, other: Self) -> Option<Self> {
         match (self, other) {
             (None, _) => Some(other),
@@ -13,8 +12,7 @@ impl<T: RA> RA for Option<T> {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(match result {
         Some(c) => factor.op(c) == Some(self),
         None => forall<c: Self> factor.op(c) != Some(self),
@@ -36,15 +34,13 @@ impl<T: RA> RA for Option<T> {
         }
     }
 
-    #[logic(law)]
-    #[open(self)]
+    #[logic(open(self), law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {
         let _ = <T as RA>::commutative;
     }
 
-    #[logic(law)]
-    #[open(self)]
+    #[logic(open(self), law)]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {
         pearlite! {
@@ -59,8 +55,7 @@ impl<T: RA> RA for Option<T> {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(match result {
         Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
         None => true
@@ -85,15 +80,13 @@ impl<T: RA> RA for Option<T> {
 }
 
 impl<T: RA> UnitRA for Option<T> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self {
         None
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(result.op(result) == Some(result))]
     #[ensures(result.op(self) == Some(self))]
     fn core_total(self) -> Self {
@@ -113,8 +106,7 @@ pub struct OptionUpdate<U>(pub U);
 impl<R: RA, U: Update<R>> Update<Option<R>> for OptionUpdate<U> {
     type Choice = U::Choice;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn premise(self, from: Option<R>) -> bool {
         match from {
             Some(from) => self.0.premise(from),
@@ -122,8 +114,7 @@ impl<R: RA, U: Update<R>> Update<Option<R>> for OptionUpdate<U> {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[requires(self.premise(from))]
     fn update(self, from: Option<R>, ch: U::Choice) -> Option<R> {
         match from {

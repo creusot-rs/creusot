@@ -11,14 +11,12 @@ impl<T> View for Repeat<T> {
 }
 
 impl<T: Clone> Iterator for Repeat<T> {
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn completed(&mut self) -> bool {
         pearlite! { false }
     }
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&

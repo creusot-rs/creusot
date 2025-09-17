@@ -11,25 +11,21 @@ pub trait Foo {
     fn g();
 }
 default impl<T> Foo for T {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn f() {
         h();
     }
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn g() {}
 }
 impl Foo for i32 {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn g() {
         Self::f();
     }
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 pub fn h() {
     <i32 as Foo>::g();
 }

@@ -10,25 +10,21 @@ pub struct Empty<T>(std::marker::PhantomData<T>);
 impl<T> Iterator for Empty<T> {
     type Item = T;
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() }
     }
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { visited == Seq::empty() && self == o }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

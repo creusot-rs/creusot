@@ -8,8 +8,7 @@ pub struct A(Vec<usize>);
 #[ensures(a.0@ == a.0@)]
 fn u2(a: A) {}
 
-#[logic]
-#[open(self)]
+#[logic(open(self))]
 pub fn u(a: A) {
     pearlite! {
         u2(a)

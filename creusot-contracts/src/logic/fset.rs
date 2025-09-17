@@ -36,8 +36,7 @@ impl<T: ?Sized> FSet<T> {
     }
 
     /// Returns `true` if `e` is in the set.
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, e: T) -> bool {
         Self::mem(e, self)
@@ -55,8 +54,7 @@ impl<T: ?Sized> FSet<T> {
     }
 
     /// Returns a new set, where `e` has been added if it was not present.
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn insert(self, e: T) -> Self {
         Self::add(e, self)
@@ -82,8 +80,7 @@ impl<T: ?Sized> FSet<T> {
     }
 
     /// Returns a new set, where `e` is no longer present.
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn remove(self, e: T) -> Self {
         Self::rem(e, self)
@@ -143,8 +140,7 @@ impl<T: ?Sized> FSet<T> {
     }
 
     /// Returns `true` if every element of `other` is in `self`.
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn is_superset(self, other: Self) -> bool {
         Self::is_subset(other, self)
@@ -188,8 +184,7 @@ impl<T: ?Sized> FSet<T> {
     /// Returns `true` if `self` and `other` contain exactly the same elements.
     ///
     /// This is in fact equivalent with normal equality.
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[ensures(result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
@@ -200,16 +195,14 @@ impl<T: ?Sized> FSet<T> {
 
 impl<T> FSet<T> {
     /// Returns the set containing only `x`.
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(forall<y: T> result.contains(y) == (x == y))]
     pub fn singleton(x: T) -> Self {
         FSet::empty().insert(x)
     }
 
     /// Returns the union of sets `f(t)` over all `t: T`.
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(forall<y: U> result.contains(y) == exists<x: T> self.contains(x) && f.get(x).contains(y))]
     #[variant(self.len())]
     pub fn unions<U>(self, f: Mapping<T, FSet<U>>) -> FSet<U> {
@@ -230,8 +223,7 @@ impl<T> FSet<T> {
     }
 
     /// Returns the image of a set by a function.
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn map<U>(self, f: Mapping<T, U>) -> FSet<U> {
         FSet::fmap(f, self)
     }
@@ -246,26 +238,23 @@ impl<T> FSet<T> {
     }
 
     /// Returns the set of sequences whose head is in `s` and whose tail is in `ss`.
-    #[logic]
+    #[logic(open)]
     #[trusted] // TODO: remove. Needs support for closures in logic functions with constraints
-    #[open]
     #[ensures(forall<xs: Seq<T>> result.contains(xs) == (0 < xs.len() && s.contains(xs[0]) && ss.contains(xs.tail())))]
     pub fn cons(s: FSet<T>, ss: FSet<Seq<T>>) -> FSet<Seq<T>> {
         s.unions(|x| ss.map(|xs: Seq<_>| xs.push_front(x)))
     }
 
     /// Returns the set of concatenations of a sequence in `s` and a sequence in `t`.
-    #[logic]
+    #[logic(open)]
     #[trusted] // TODO: remove. Needs support for closures in logic functions with constraints
-    #[open]
     #[ensures(forall<xs: Seq<T>> result.contains(xs) == (exists<ys: Seq<T>, zs: Seq<T>> s.contains(ys) && t.contains(zs) && xs == ys.concat(zs)))]
     pub fn concat(s: FSet<Seq<T>>, t: FSet<Seq<T>>) -> FSet<Seq<T>> {
         s.unions(|ys: Seq<_>| t.map(|zs| ys.concat(zs)))
     }
 
     /// Returns the set of sequences of length `n` whose elements are in `self`.
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[requires(n >= 0)]
     #[ensures(forall<xs: Seq<T>> result.contains(xs) == (xs.len() == n && forall<x: T> xs.contains(x) ==> self.contains(x)))]
     #[variant(n)]
@@ -282,8 +271,7 @@ impl<T> FSet<T> {
     }
 
     /// Returns the set of sequences of length at most `n` whose elements are in `self`.
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[requires(n >= 0)]
     #[ensures(forall<xs: Seq<T>> result.contains(xs) == (xs.len() <= n && forall<x: T> xs.contains(x) ==> self.contains(x)))]
     #[variant(n)]
@@ -301,8 +289,7 @@ impl<T> FSet<T> {
 
 impl FSet<Int> {
     /// Return the interval of integers in `[i, j)`.
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[trusted]
     #[creusot::builtins = "set.FsetInt.interval"]
     pub fn interval(i: Int, j: Int) -> FSet<Int> {
@@ -474,8 +461,7 @@ impl<T: Clone + Copy> Clone for FSet<T> {
 impl<T: Clone + Copy> Copy for FSet<T> {}
 
 impl<T> Invariant for FSet<T> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
@@ -486,22 +472,19 @@ impl<T> Invariant for FSet<T> {
 // Properties
 
 /// Distributivity of `unions` over `union`.
-#[logic]
-#[open]
+#[logic(open)]
 #[ensures(forall<s1: FSet<T>, s2: FSet<T>, f: Mapping<T, FSet<U>>> s1.union(s2).unions(f) == s1.unions(f).union(s2.unions(f)))]
 #[ensures(forall<s: FSet<T>, f: Mapping<T, FSet<U>>, g: Mapping<T, FSet<U>>>
     s.unions(|x| f.get(x).union(g.get(x))) == s.unions(f).union(s.unions(g)))]
 pub fn unions_union<T, U>() {}
 
 /// Distributivity of `map` over `union`.
-#[logic]
-#[open]
+#[logic(open)]
 #[ensures(forall<s: FSet<T>, t: FSet<T>, f: Mapping<T, U>> s.union(t).map(f) == s.map(f).union(t.map(f)))]
 pub fn map_union<T, U>() {}
 
 /// Distributivity of `concat` over `union`.
-#[logic]
-#[open]
+#[logic(open)]
 #[ensures(forall<s1: FSet<Seq<T>>, s2: FSet<Seq<T>>, t: FSet<Seq<T>>>
     FSet::concat(s1.union(s2), t) == FSet::concat(s1, t).union(FSet::concat(s2, t)))]
 #[ensures(forall<s: FSet<Seq<T>>, t1: FSet<Seq<T>>, t2: FSet<Seq<T>>>
@@ -509,8 +492,7 @@ pub fn map_union<T, U>() {}
 pub fn concat_union<T>() {}
 
 /// Distributivity of `cons` over `union`.
-#[logic]
-#[open]
+#[logic(open)]
 #[ensures(forall<s: FSet<T>, t: FSet<Seq<T>>, u: FSet<Seq<T>>> FSet::concat(FSet::cons(s, t), u) == FSet::cons(s, FSet::concat(t, u)))]
 pub fn cons_concat<T>() {
     proof_assert! { forall<x: T, xs: Seq<T>, ys: Seq<T>> xs.push_front(x).concat(ys) == xs.concat(ys).push_front(x) };
@@ -519,8 +501,7 @@ pub fn cons_concat<T>() {
 }
 
 /// Distributivity of `replicate` over `union`.
-#[logic]
-#[open]
+#[logic(open)]
 #[requires(0 <= n && 0 <= m)]
 #[ensures(s.replicate(n + m) == FSet::concat(s.replicate(n), s.replicate(m)))]
 #[variant(n)]
@@ -536,8 +517,7 @@ pub fn concat_replicate<T>(n: Int, m: Int, s: FSet<T>) {
 }
 
 /// The neutral element of `FSet::concat` is `FSet::singleton(Seq::empty())`.
-#[logic]
-#[open]
+#[logic(open)]
 #[ensures(FSet::concat(FSet::singleton(Seq::empty()), s) == s)]
 #[ensures(FSet::concat(s, FSet::singleton(Seq::empty())) == s)]
 pub fn concat_empty<T>(s: FSet<Seq<T>>) {
@@ -546,8 +526,7 @@ pub fn concat_empty<T>(s: FSet<Seq<T>>) {
 }
 
 /// An equation relating `s.replicate_up_to(m)` and `s.replicate_up_to(n)`.
-#[logic]
-#[open]
+#[logic(open)]
 #[requires(0 <= n && n < m)]
 #[ensures(s.replicate_up_to(m) == s.replicate_up_to(n).union(
     FSet::concat(s.replicate(n + 1), s.replicate_up_to(m - n - 1))))]

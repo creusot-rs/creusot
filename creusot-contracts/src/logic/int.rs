@@ -168,8 +168,7 @@ impl Int {
     /// proof_assert!(3.abs_diff(10) == 7);
     /// proof_assert!((-5).abs_diff(5) == 10);
     /// ```
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn abs_diff(self, other: Int) -> Int {
         if self < other { other - self } else { self - other }
     }

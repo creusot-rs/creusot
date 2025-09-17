@@ -7,8 +7,7 @@ pub use ::std::option::*;
 impl<T: DeepModel> DeepModel for Option<T> {
     type DeepModelTy = Option<T::DeepModelTy>;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         match self {
             Some(t) => Some(t.deep_model()),
@@ -598,8 +597,7 @@ extern_spec! {
 }
 
 impl<T: OrdLogic> OrdLogic for Option<T> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn cmp_log(self, o: Self) -> Ordering {
         match (self, o) {
             (None, None) => Ordering::Equal,
@@ -623,14 +621,12 @@ impl<T> View for IntoIter<T> {
 }
 
 impl<T> Iterator for IntoIter<T> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
@@ -660,14 +656,12 @@ impl<'a, T> View for Iter<'a, T> {
 }
 
 impl<T> Iterator for Iter<'_, T> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
@@ -697,14 +691,12 @@ impl<'a, T> View for IterMut<'a, T> {
 }
 
 impl<T> Iterator for IterMut<'_, T> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
@@ -739,8 +731,7 @@ pub trait OptionExt<T> {
 }
 
 impl<T> OptionExt<T> for Option<T> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[requires(self != None)]
     fn unwrap_logic(self) -> T {
         match self {
@@ -749,8 +740,7 @@ impl<T> OptionExt<T> for Option<T> {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U> {
         match self {
             None => None,
@@ -758,8 +748,7 @@ impl<T> OptionExt<T> for Option<T> {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn map_logic<U>(self, f: Mapping<T, U>) -> Option<U> {
         match self {
             None => None,
@@ -769,8 +758,7 @@ impl<T> OptionExt<T> for Option<T> {
 }
 
 impl<T> Resolve for Option<T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         match self {
             Some(x) => resolve(x),

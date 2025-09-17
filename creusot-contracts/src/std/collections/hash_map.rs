@@ -12,9 +12,8 @@ use ::std::{
 impl<K: DeepModel, V, S> View for HashMap<K, V, S> {
     type ViewTy = FMap<K::DeepModelTy, V>;
 
-    #[logic]
+    #[logic(open)]
     #[trusted]
-    #[open]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -58,17 +57,15 @@ extern_spec! {
 impl<K: DeepModel, V> View for IntoIter<K, V> {
     type ViewTy = FMap<K::DeepModelTy, V>;
 
-    #[logic]
+    #[logic(open)]
     #[trusted]
-    #[open]
     fn view(self) -> Self::ViewTy {
         dead
     }
 }
 
 impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // self@ equals the union of visited (viewed as a fmap) and o@
         pearlite! {
@@ -86,19 +83,16 @@ impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@.is_empty() }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -110,17 +104,15 @@ impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
 impl<'a, K: DeepModel, V> View for Iter<'a, K, V> {
     type ViewTy = FMap<K::DeepModelTy, V>;
 
-    #[logic]
+    #[logic(open)]
     #[trusted]
-    #[open]
     fn view(self) -> Self::ViewTy {
         dead
     }
 }
 
 impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // `self@` equals the union of `visited` (viewed as a finite map) and `o@`
         pearlite! {
@@ -138,19 +130,16 @@ impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@.is_empty() }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -162,17 +151,15 @@ impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
 impl<'a, K: DeepModel, V> View for IterMut<'a, K, V> {
     type ViewTy = FMap<K::DeepModelTy, &'a mut V>;
 
-    #[logic]
+    #[logic(open)]
     #[trusted]
-    #[open]
     fn view(self) -> Self::ViewTy {
         dead
     }
 }
 
 impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // self@ equals the union of visited (viewed as a fmap) and o@
         pearlite! {
@@ -190,19 +177,16 @@ impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@.is_empty() }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -214,8 +198,7 @@ impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
 impl<K: Eq + Hash + DeepModel, V, S: Default + BuildHasher> FromIterator<(K, V)>
     for HashMap<K, V, S>
 {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn from_iter_post(prod: Seq<(K, V)>, res: Self) -> bool {
         pearlite! { forall<k: K::DeepModelTy, v: V> (res@.get(k) == Some(v))
         == (exists<i, k1: K> 0 <= i && i < prod.len() && k1.deep_model() == k && prod[i] == (k1, v)

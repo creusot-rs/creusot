@@ -21,21 +21,18 @@ pub fn use_logic_pearlite() {}
 pub mod nested {
     use creusot_contracts::*;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn nested() -> bool {
         true
     }
 }
 
-#[open]
-#[logic]
+#[logic(open)]
 pub fn arith(n: Int, b: bool) -> Int {
     if !b { -n + n - n * n } else { n }
 }
 
-#[open]
-#[logic]
+#[logic(open)]
 pub fn deref_pat<'a>(o: &'a Option<Int>) -> Int {
     match o {
         Some(a) => *a,
@@ -43,8 +40,7 @@ pub fn deref_pat<'a>(o: &'a Option<Int>) -> Int {
     }
 }
 
-#[open]
-#[logic]
+#[logic(open)]
 #[creusot::why3_meta("rewrite_def", function, self)]
 pub fn quatorze() -> Int {
     14

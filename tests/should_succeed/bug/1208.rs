@@ -8,16 +8,14 @@ pub enum Q {
 use Q::*;
 
 impl Invariant for Q {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn invariant(self) -> bool {
         true
     }
 }
 
 impl Q {
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(result.invariant())]
     pub fn mul(self, y: Q) -> Q {
         match (self, y) {

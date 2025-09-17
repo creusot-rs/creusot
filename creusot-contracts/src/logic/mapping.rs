@@ -64,8 +64,7 @@ impl<A: ?Sized, B> Mapping<A, B> {
 impl<A: ?Sized, B> IndexLogic<A> for Mapping<A, B> {
     type Item = B;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn index_logic(self, a: A) -> B {
         self.get(a)
     }

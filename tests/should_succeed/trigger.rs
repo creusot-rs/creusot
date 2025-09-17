@@ -5,14 +5,12 @@ use creusot_contracts::*;
 mod inner {
     use creusot_contracts::*;
 
-    #[logic]
-    #[open(self)]
+    #[logic(open(self))]
     pub fn id(i: Int) -> Int {
         i
     }
 
-    #[logic(law)]
-    #[open(self)]
+    #[logic(open(self), law)]
     #[ensures(forall<i, j> #[trigger(id(i), id(j))] i <= j ==> id(i) <= id(j))]
     pub fn id_mono() {}
 }

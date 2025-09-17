@@ -39,8 +39,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
 impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
     type Item = T;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
@@ -51,8 +50,7 @@ impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
 impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
     type Item = T;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
@@ -60,8 +58,7 @@ impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
 }
 
 impl<T> Resolve for VecDeque<T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self[i]) }
     }
@@ -157,27 +154,23 @@ impl<'a, T> View for Iter<'a, T> {
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@.to_ref_seq() == visited.concat(tl@.to_ref_seq())
         }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

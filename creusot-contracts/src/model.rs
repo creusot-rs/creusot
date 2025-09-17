@@ -30,8 +30,7 @@ pub trait DeepModel {
 
 impl<T: DeepModel + ?Sized> DeepModel for &T {
     type DeepModelTy = T::DeepModelTy;
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         (*self).deep_model()
     }
@@ -39,8 +38,7 @@ impl<T: DeepModel + ?Sized> DeepModel for &T {
 
 impl<T: View + ?Sized> View for &T {
     type ViewTy = T::ViewTy;
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn view(self) -> Self::ViewTy {
         (*self).view()
     }
@@ -48,8 +46,7 @@ impl<T: View + ?Sized> View for &T {
 
 impl<T: DeepModel + ?Sized> DeepModel for &mut T {
     type DeepModelTy = T::DeepModelTy;
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         (*self).deep_model()
     }
@@ -57,8 +54,7 @@ impl<T: DeepModel + ?Sized> DeepModel for &mut T {
 
 impl<T: View + ?Sized> View for &mut T {
     type ViewTy = T::ViewTy;
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn view(self) -> Self::ViewTy {
         (*self).view()
     }
@@ -67,8 +63,7 @@ impl<T: View + ?Sized> View for &mut T {
 impl DeepModel for bool {
     type DeepModelTy = bool;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         self
     }
@@ -77,8 +72,7 @@ impl DeepModel for bool {
 impl DeepModel for Int {
     type DeepModelTy = Int;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         self
     }
@@ -97,8 +91,7 @@ impl View for String {
 impl DeepModel for std::cmp::Ordering {
     type DeepModelTy = std::cmp::Ordering;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         self
     }

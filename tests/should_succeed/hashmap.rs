@@ -23,8 +23,7 @@ impl<T: Clone> Clone for List<T> {
 }
 
 impl<K: DeepModel, V> List<(K, V)> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn get(self, index: K::DeepModelTy) -> Option<V> {
         pearlite! {
             match self {

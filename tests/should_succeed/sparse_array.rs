@@ -33,8 +33,7 @@ pub struct Sparse<T, const SIZE: usize> {
 impl<T, const SIZE: usize> View for Sparse<T, SIZE> {
     type ViewTy = Seq<Option<T>>;
 
-    #[logic]
-    #[open(self)]
+    #[logic(open(self))]
     #[ensures(result.len() == SIZE@)]
     fn view(self) -> Self::ViewTy {
         pearlite! {
@@ -45,16 +44,14 @@ impl<T, const SIZE: usize> View for Sparse<T, SIZE> {
 }
 
 impl<T, const SIZE: usize> Resolve for Sparse<T, SIZE> {
-    #[open(self)]
-    #[logic(prophetic)]
+    #[logic(open(self), prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
             forall<i> 0 <= i && i < SIZE@ ==> resolve(self@[i])
         }
     }
 
-    #[open(self)]
-    #[logic(prophetic)]
+    #[logic(open(self), prophetic)]
     #[requires(inv(self))]
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
@@ -62,8 +59,7 @@ impl<T, const SIZE: usize> Resolve for Sparse<T, SIZE> {
 }
 
 impl<T, const SIZE: usize> Invariant for Sparse<T, SIZE> {
-    #[open(self)]
-    #[logic]
+    #[logic(open(self))]
     fn invariant(self) -> bool {
         pearlite! {
             self.n@ <= SIZE@

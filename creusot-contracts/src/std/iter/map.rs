@@ -28,8 +28,7 @@ impl<I, F> MapExt<I, F> for Map<I, F> {
 }
 
 impl<I, F> Resolve for Map<I, F> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         resolve(self.iter()) && resolve(self.func())
     }
@@ -42,8 +41,7 @@ impl<I, F> Resolve for Map<I, F> {
 }
 
 impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (exists<inner: &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed())
@@ -51,8 +49,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     #[creusot::why3_attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
@@ -82,8 +79,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-#[open]
-#[logic(prophetic)]
+#[logic(open, prophetic)]
 pub fn next_precondition<I, B, F>(iter: I, func: F) -> bool
 where
     I: Iterator,
@@ -97,8 +93,7 @@ where
     }
 }
 
-#[open]
-#[logic(prophetic)]
+#[logic(open, prophetic)]
 pub fn preservation<I, B, F>(iter: I, func: F) -> bool
 where
     I: Iterator,
@@ -115,8 +110,7 @@ where
     }
 }
 
-#[open]
-#[logic(prophetic)]
+#[logic(open, prophetic)]
 pub fn reinitialize<I, B, F>() -> bool
 where
     I: Iterator,

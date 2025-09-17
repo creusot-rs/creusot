@@ -4,16 +4,14 @@ use creusot_contracts::{
     *,
 };
 
-#[logic]
-#[open]
+#[logic(open)]
 pub fn sorted_range(s: Seq<u32>, l: Int, u: Int) -> bool {
     pearlite! {
         forall<i, j> l <= i && i < j && j < u ==> s[i] <= s[j]
     }
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 pub fn sorted(s: Seq<u32>) -> bool {
     sorted_range(s, 0, s.len())
 }

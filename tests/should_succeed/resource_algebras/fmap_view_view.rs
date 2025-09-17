@@ -22,8 +22,7 @@ impl<K, V> ViewRel for MapRelation<K, V> {
     type Auth = FMap<K, V>;
     type Frag = FMap<K, Ag<V>>;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn rel(a: Option<Self::Auth>, f: Self::Frag) -> bool {
         pearlite! {
             match a {

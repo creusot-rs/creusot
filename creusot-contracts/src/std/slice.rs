@@ -13,8 +13,7 @@ use ::std::alloc::Allocator;
 pub use ::std::slice::*;
 
 impl<T> Invariant for [T] {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
@@ -50,8 +49,7 @@ impl<T: DeepModel> DeepModel for [T] {
 impl<T> IndexLogic<Int> for [T] {
     type Item = T;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
@@ -61,8 +59,7 @@ impl<T> IndexLogic<Int> for [T] {
 impl<T> IndexLogic<usize> for [T] {
     type Item = T;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
@@ -111,22 +108,19 @@ where
 }
 
 impl<T> SliceIndex<[T]> for usize {
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self@ < seq.len() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn has_value(self, seq: Seq<T>, out: T) -> bool {
         pearlite! { seq[self@] == out }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! { forall<i> 0 <= i && i != self@ && i < old.len() ==> old[i] == fin[i] }
@@ -134,20 +128,17 @@ impl<T> SliceIndex<[T]> for usize {
 }
 
 impl<T> SliceIndex<[T]> for Range<usize> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self.start@ <= self.end@ && self.end@ <= seq.len() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
         pearlite! { seq.subsequence(self.start@, self.end@) == out@ }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! {
             forall<i> 0 <= i && (i < self.start@ || self.end@ <= i) && i < old.len()
@@ -165,8 +156,7 @@ impl<T> SliceIndex<[T]> for RangeInclusive<usize> {
         dead
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
         pearlite! {
             if self.is_empty_log() { out@ == Seq::empty() }
@@ -174,8 +164,7 @@ impl<T> SliceIndex<[T]> for RangeInclusive<usize> {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! {
             forall<i> 0 <= i
@@ -187,40 +176,34 @@ impl<T> SliceIndex<[T]> for RangeInclusive<usize> {
 }
 
 impl<T> SliceIndex<[T]> for RangeTo<usize> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self.end@ <= seq.len() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
         pearlite! { seq.subsequence(0, self.end@) == out@ }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! { forall<i> self.end@ <= i && i < old.len() ==> old[i] == fin[i] }
     }
 }
 
 impl<T> SliceIndex<[T]> for RangeFrom<usize> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self.start@ <= seq.len() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
         pearlite! { seq.subsequence(self.start@, seq.len()) == out@ }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! {
             forall<i> 0 <= i && i < self.start@ && i < old.len() ==> old[i] == fin[i]
@@ -229,40 +212,34 @@ impl<T> SliceIndex<[T]> for RangeFrom<usize> {
 }
 
 impl<T> SliceIndex<[T]> for RangeFull {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn in_bounds(self, _seq: Seq<T>) -> bool {
         pearlite! { true }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
         pearlite! { seq == out@ }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn resolve_elswhere(self, _old: Seq<T>, _fin: Seq<T>) -> bool {
         pearlite! { true }
     }
 }
 
 impl<T> SliceIndex<[T]> for RangeToInclusive<usize> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self.end@ < seq.len() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
         pearlite! { seq.subsequence(0, self.end@ + 1) == out@ }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! { forall<i> self.end@ < i && i < old.len() ==> old[i] == fin[i] }
     }
@@ -452,27 +429,23 @@ impl<'a, T> View for Iter<'a, T> {
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@.to_ref_seq() == visited.concat(tl@.to_ref_seq())
         }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -491,8 +464,7 @@ impl<'a, T> View for IterMut<'a, T> {
 }
 
 impl<'a, T> Resolve for IterMut<'a, T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         pearlite! { *self@ == ^self@ }
     }
@@ -505,27 +477,23 @@ impl<'a, T> Resolve for IterMut<'a, T> {
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@.to_mut_seq() == visited.concat(tl@.to_mut_seq())
         }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

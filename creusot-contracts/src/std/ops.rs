@@ -90,8 +90,7 @@ impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
     #[trusted]
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_once_impl_precond"]
     fn precondition(self, args: Args) -> bool {
@@ -99,8 +98,7 @@ impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
     }
 
     #[trusted]
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_once_impl_postcond"]
     fn postcondition_once(self, args: Args, result: Self::Output) -> bool {
@@ -111,8 +109,7 @@ impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
     #[trusted]
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
     fn postcondition_mut(self, args: Args, result_state: Self, result: Self::Output) -> bool {
@@ -120,8 +117,7 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
     }
 
     #[trusted]
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_mut_impl_hist_inv"]
     fn hist_inv(self, result_state: Self) -> bool {
@@ -156,8 +152,7 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
     #[trusted]
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_impl_postcond"]
     fn postcondition(self, args: Args, result: Self::Output) -> bool {

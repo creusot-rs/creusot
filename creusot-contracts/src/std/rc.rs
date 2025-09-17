@@ -6,8 +6,7 @@ use ::std::{ops::Deref, rc::Rc};
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Rc<T, A> {
     type DeepModelTy = T::DeepModelTy;
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { *self.view().deep_model() }
     }

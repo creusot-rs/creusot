@@ -27,8 +27,7 @@ impl<I> SkipExt<I> for Skip<I> {
 }
 
 impl<I> Resolve for Skip<I> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
             resolve(self.iter())
@@ -43,8 +42,7 @@ impl<I> Resolve for Skip<I> {
 }
 
 impl<I: Iterator> Iterator for Skip<I> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (^self).n() == 0 &&
@@ -57,8 +55,7 @@ impl<I: Iterator> Iterator for Skip<I> {
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||

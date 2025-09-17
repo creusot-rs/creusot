@@ -14,8 +14,7 @@ struct IterMut<'a, T> {
 }
 
 impl<'a, T> Invariant for IterMut<'a, T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn invariant(self) -> bool {
         // Property that is always true but we must carry around..
         pearlite! { (^self.inner)@.len() == (*self.inner)@.len() }
@@ -25,14 +24,12 @@ impl<'a, T> Invariant for IterMut<'a, T> {
 impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.inner.resolve() && self.inner@.ext_eq(Seq::empty()) }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self.inner@.len() == visited.len() + tl.inner@.len() &&
@@ -43,13 +40,11 @@ impl<'a, T> Iterator for IterMut<'a, T> {
         }
     }
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(law)]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
