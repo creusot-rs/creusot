@@ -42,7 +42,7 @@ extern_spec! {
 
     impl<T: ?Sized, A: Allocator + Clone> Clone for Rc<T, A> {
         #[check(ghost)]
-        #[ensures(result@ == (*self)@)]
+        #[ensures(result == *self)]
         fn clone(&self) -> Rc<T, A>;
     }
 
