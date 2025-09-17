@@ -1014,7 +1014,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         refine_base && p1.projections == p2.projections
     }
 
-    fn refines_pattern(
+    fn refines_pat(
         &mut self,
         pat1: &AnfPattern,
         pat2: &AnfPattern,
@@ -1026,7 +1026,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
             (AnfPattern::Ctor(c1, args1, span1), AnfPattern::Ctor(c2, args2, span2)) => {
                 if c1 == c2 {
                     for (a1, a2) in args1.into_iter().zip(args2.into_iter()) {
-                        self.refines_pattern(a1, a2)?;
+                        self.refines_pat(a1, a2)?;
                     }
                 } else {
                     return Err(self
@@ -1037,7 +1037,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                 }
             }
             (AnfPattern::Deref(pat1), AnfPattern::Deref(pat2)) => {
-                self.refines_pattern(pat1, pat2)?;
+                self.refines_pat(pat1, pat2)?;
             }
             (AnfPattern::Wild, _) | (_, AnfPattern::Wild) => {}
             _ => {}
@@ -1115,7 +1115,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
                         .emit());
                 }
             }
-            self.refines_pattern(&left.pattern, &right.pattern)?;
+            self.refines_pat(&left.pattern, &right.pattern)?;
         }
         match left.len().cmp(&right.len()) {
             Equal => {}
@@ -1144,7 +1144,7 @@ impl<'a, 'tcx> RefineChecker<'a, 'tcx> {
         left: &AnfBlock<'tcx>,
         right: &AnfBlock<'tcx>,
     ) -> Result<(), ErrorGuaranteed> {
-        self.refines_pattern(&left.pattern, &right.pattern)?;
+        self.refines_pat(&left.pattern, &right.pattern)?;
         self.refines_stmts(&left.stmts, &right.stmts, left.span, right.span)?;
         if self.refines_value(&left.ret.0, &right.ret.0) {
             Ok(())
