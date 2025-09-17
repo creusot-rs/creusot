@@ -37,7 +37,7 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
     self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypingEnv,
 };
-use rustc_span::{DUMMY_SP, Span};
+use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
 use std::{
     assert_matches::assert_matches,
@@ -468,8 +468,23 @@ fn is_logically_dyn_compatible<'tcx>(
 /// Base trait for which `dyn` is supported by Creusot
 fn is_logically_dyn_compatible_trait<'tcx>(tcx: ty::TyCtxt<'tcx>, tr: DefId) -> bool {
     // TODO: support more traits
-    let name = tcx.def_path_str(tr);
-    ["std::fmt::Debug", "std::fmt::Write"].contains(&name.as_ref())
+    let Some(path) = def_path(tcx, tr) else { return false };
+    [["core", "fmt", "Debug"], ["core", "fmt", "Write"]].iter().any(|p| equal_path(&*path, &*p))
+}
+
+fn equal_path(a: &[Symbol], b: &[&str]) -> bool {
+    a.len() == b.len() && a.iter().zip(b).all(|(a, b)| a.as_str() == *b)
+}
+
+fn def_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Vec<Symbol>> {
+    let mut path = vec![tcx.crate_name(def_id.krate)];
+    for seg in tcx.def_path(def_id).data {
+        match seg.data {
+            rustc_hir::definitions::DefPathData::TypeNs(name) => path.push(name),
+            _ => return None,
+        }
+    }
+    Some(path)
 }
 
 fn expand_dyn_cast<'tcx>(
