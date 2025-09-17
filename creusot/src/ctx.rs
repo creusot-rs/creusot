@@ -430,9 +430,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             .filter_map(|(local_id, thir)| {
                 if anf_required.contains(&local_id) {
                     let def_id = local_id.to_def_id();
-                    let anf =
-                        crate::validate::a_normal_form(self, def_id, thir, self.def_span(def_id))
-                            .ok()?;
+                    let anf = crate::validate::a_normal_form(self, def_id, thir, None).ok()?;
                     Some((def_id, anf))
                 } else {
                     None

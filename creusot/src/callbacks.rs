@@ -202,13 +202,8 @@ impl Callbacks for WithoutContracts {
                 if anf_required.contains(&local_id) {
                     let def_id = local_id.to_def_id();
                     let thir = tcx.thir_body(local_id).ok()?;
-                    let anf = a_normal_form_without_specs(
-                        tcx,
-                        def_id,
-                        (&*thir.0.borrow(), thir.1),
-                        tcx.def_span(def_id),
-                    )
-                    .ok()?;
+                    let anf = a_normal_form_without_specs(tcx, def_id, (&*thir.0.borrow(), thir.1))
+                        .ok()?;
                     Some((def_id, anf))
                 } else {
                     None

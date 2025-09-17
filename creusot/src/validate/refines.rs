@@ -16,6 +16,7 @@ use std::collections::HashMap;
 
 use rustc_abi::VariantIdx;
 use rustc_ast::{BindingMode, ByRef, Mutability};
+use rustc_errors::{Diag, SubdiagMessage};
 use rustc_hir::{
     HirId,
     def_id::{DefId, LocalDefId},
@@ -109,14 +110,15 @@ fn check_refines<'tcx>(
             };
             // Even when processing `right_thir`, error messages should mention `refines_span`:
             // the span of the function carrying the `#[refines]` attribute.
-            let right = a_normal_form(ctx, right, right_thir, left_span).map_err(|e| {
+            let right = a_normal_form(ctx, right, right_thir, Some(left_span)).map_err(|e| {
                 debug!("{:#?}", right_thir);
                 Ok(e)
             })?;
             &ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2)
         }
     };
-    let left = a_normal_form(ctx, left, left_thir, left_span).map_err(|e| {
+    // The `refines_span` argument is `None` because any error message will already point inside the body of `left`.
+    let left = a_normal_form(ctx, left, left_thir, None).map_err(|e| {
         debug!("{:#?}", left_thir);
         Ok(e)
     })?;
@@ -464,23 +466,24 @@ impl<D: Decoder> Decodable<D> for LogicalOp {
 struct AnfContext<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     ctx: Option<&'a TranslationCtx<'tcx>>,
+    def_id: DefId,
     thir: &'a Thir<'tcx>,
     scope_tree: &'a ScopeTree,
     /// Mapping from ANF variables to values
     /// This lets us identify `let x = e; f(x)` with `f(e)`.
     /// Unmapped variables are assumed to be mutable (accessing them triggers a `Read` action)
     alias: HashMap<HirId, AnfValue<'tcx>>,
-    span: Span,
+    /// The span of the function carrying the `#[refines]` attribute which needs this ANF translation, if we know it.
+    refines_span: Option<Span>,
 }
 
 pub fn a_normal_form<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: DefId,
     (thir, expr): &(Thir<'tcx>, ExprId),
-    def_span: Span,
+    refines_span: Option<Span>,
 ) -> Result<AnfBlock<'tcx>, ErrorGuaranteed> {
-    let scope_tree = ctx.tcx.region_scope_tree(def_id);
-    let mut ctx = AnfContext::new(ctx, thir, scope_tree, def_span);
+    let mut ctx = AnfContext::new(ctx.tcx, Some(ctx), def_id, thir, refines_span);
     let pattern = ctx.a_normal_form_args()?;
     ctx.a_normal_form_expr_block_(*expr, pattern, Vec::new(), None)
 }
@@ -489,10 +492,8 @@ pub fn a_normal_form_without_specs<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
     (thir, expr): (&Thir<'tcx>, ExprId),
-    def_span: Span,
 ) -> Result<AnfBlock<'tcx>, ErrorGuaranteed> {
-    let scope_tree = tcx.region_scope_tree(def_id);
-    let mut ctx = AnfContext::new_without_specs(tcx, thir, scope_tree, def_span);
+    let mut ctx = AnfContext::new(tcx, None, def_id, thir, None);
     let pattern = ctx.a_normal_form_args()?;
     ctx.a_normal_form_expr_block_(expr, pattern, Vec::new(), None)
 }
@@ -505,23 +506,29 @@ impl<'a, 'tcx> HasTyCtxt<'tcx> for AnfContext<'a, 'tcx> {
 
 impl<'a, 'tcx> AnfContext<'a, 'tcx> {
     fn new(
-        ctx: &'a TranslationCtx<'tcx>,
+        tcx: TyCtxt<'tcx>,
+        ctx: Option<&'a TranslationCtx<'tcx>>,
+        def_id: DefId,
         thir: &'a Thir<'tcx>,
-        scope_tree: &'a ScopeTree,
-        span: Span,
+        refines_span: Option<Span>,
     ) -> Self {
         let alias = HashMap::new();
-        AnfContext { tcx: ctx.tcx, ctx: Some(ctx), thir, scope_tree, alias, span }
+        let scope_tree = tcx.region_scope_tree(def_id);
+        AnfContext { tcx, ctx, def_id, thir, scope_tree, alias, refines_span }
     }
 
-    fn new_without_specs(
-        tcx: TyCtxt<'tcx>,
-        thir: &'a Thir<'tcx>,
-        scope_tree: &'a ScopeTree,
-        span: Span,
-    ) -> Self {
-        let alias = HashMap::new();
-        AnfContext { tcx, ctx: None, thir, scope_tree, alias, span }
+    fn span(&self) -> Span {
+        self.tcx.def_span(self.def_id)
+    }
+
+    fn unsupported_syntax<'b>(&'b self, span: Span, msg: impl Into<SubdiagMessage>) -> Diag<'b> {
+        let diag =
+            self.error(span, "unsupported syntax for #[refines] check").with_span_label(span, msg);
+        if let Some(refines_span) = self.refines_span {
+            diag.with_span_note(refines_span, "in #[refines] check for this function")
+        } else {
+            diag
+        }
     }
 
     fn a_normal_form_args(&mut self) -> Result<AnfPattern, ErrorGuaranteed> {
@@ -539,7 +546,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                 Some(pat)
             })
             .collect::<Result<Box<[_]>, _>>()?;
-        Ok(AnfPattern::Ctor(Ctor::Tuple, args, self.span))
+        Ok(AnfPattern::Ctor(Ctor::Tuple, args, self.span()))
     }
 
     fn a_normal_form_expr(
@@ -615,8 +622,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                     }
                     _ => {
                         return Err(self
-                            .error(self.span, "failed #[refines] check")
-                            .with_span_label(fun.1, "unsupported function expression")
+                            .unsupported_syntax(fun.1, "unsupported function expression")
                             .emit());
                     }
                 }
@@ -729,8 +735,7 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             }
             kind => {
                 return Err(self
-                    .error(self.span, "failed #[refines] check")
-                    .with_span_label(expr.span, format!("unsupported expression"))
+                    .unsupported_syntax(expr.span, "unsupported expression")
                     .with_note(format!("unsupported: {kind:?}"))
                     .emit());
             }
@@ -844,15 +849,11 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
             }
             Let { pattern, initializer, else_block, span, .. } => {
                 if let Some(_) = else_block {
-                    return Err(self
-                        .error(self.span, "failed #[refines] check")
-                        .with_span_label(*span, "unsupported let-else")
-                        .emit());
+                    return Err(self.unsupported_syntax(*span, "unsupported let-else").emit());
                 }
                 let Some(initializer) = initializer else {
                     return Err(self
-                        .error(self.span, "failed #[refines] check")
-                        .with_span_label(*span, "unsupported let without initializer")
+                        .unsupported_syntax(*span, "unsupported let without initializer")
                         .emit());
                 };
                 if is_spec_or_refines_expr(self.tcx(), self.thir, *initializer) {
@@ -933,13 +934,10 @@ impl<'a, 'tcx> AnfContext<'a, 'tcx> {
                     pat.span,
                 ))
             }
-            kind => {
-                warn!("unsupported pattern kind: {kind:?}");
-                Err(self
-                    .error(self.span, "failed #[refines] check")
-                    .with_span_label(pat.span, format!("unsupported pattern"))
-                    .emit())
-            }
+            kind => Err(self
+                .unsupported_syntax(pat.span, "unsupported pattern")
+                .with_note(format!("unsupported: {kind:?}"))
+                .emit()),
         }
     }
 }
