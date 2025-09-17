@@ -469,7 +469,8 @@ fn is_logically_dyn_compatible<'tcx>(
 fn is_logically_dyn_compatible_trait<'tcx>(tcx: ty::TyCtxt<'tcx>, tr: DefId) -> bool {
     // TODO: support more traits
     let name = tcx.def_path_str(tr);
-    ["std::fmt::Debug", "std::fmt::Write"].contains(&name.as_ref())
+    ["std::fmt::Debug", "std::fmt::Write", "core::fmt::Debug", "core::fmt::Write"]
+        .contains(&name.as_ref())
 }
 
 fn expand_dyn_cast<'tcx>(
