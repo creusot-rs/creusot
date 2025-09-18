@@ -7,10 +7,10 @@ use crate::{
     },
     contracts_items::{get_builtin, is_bitwise},
     ctx::*,
-    options::SpanMode,
     translation::traits::TraitResolved,
     util::{erased_identity_for_item, path_of_span},
 };
+use creusot_args::options::SpanMode;
 use elaborator::Strength;
 use indexmap::IndexSet;
 use itertools::{Either, Itertools};

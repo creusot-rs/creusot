@@ -8,11 +8,8 @@ use rustc_span::ErrorGuaranteed;
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
-use crate::{
-    cleanup_spec_closures::*,
-    ctx, lints,
-    options::{Options, Output},
-};
+use crate::{cleanup_spec_closures::*, ctx, lints};
+use creusot_args::options::{Options, Output};
 
 pub struct ToWhy {
     opts: Options,
@@ -54,8 +51,7 @@ impl ToWhy {
             self.opts.output = Output::File(dir.clone());
         } else {
             // prefix: "verif/{krate}/"
-            self.opts.prefix =
-                vec![why3::Symbol::intern(OUTPUT_PREFIX), why3::Symbol::intern(&krate)];
+            self.opts.prefix = vec![OUTPUT_PREFIX.into(), krate];
         }
     }
 }
