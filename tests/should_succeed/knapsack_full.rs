@@ -12,8 +12,7 @@ fn max(a: usize, b: usize) -> usize {
     if a < b { b } else { a }
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 #[variant(s.len()-i)]
 #[requires(0 <= i && i <= s.len())]
 #[ensures(result >= 0)]
@@ -24,8 +23,7 @@ pub fn sum_weights<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
     }
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 #[variant(s.len()-i)]
 #[requires(i >= 0 && i <= s.len())]
 pub fn sum_values<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
@@ -35,8 +33,7 @@ pub fn sum_values<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
     }
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 #[variant(i2)]
 #[requires(0 <= i1 && i1 <= s1.len())]
 #[requires(0 <= i2 && i2 <= s2.len())]

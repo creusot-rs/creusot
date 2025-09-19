@@ -5,8 +5,7 @@ use creusot_contracts::{invariant::Invariant, *};
 pub struct IsZero(i32);
 
 impl Invariant for IsZero {
-    #[logic(prophetic)]
-    #[open(self)]
+    #[logic(open(self), prophetic)]
     fn invariant(self) -> bool {
         pearlite! { self.0 == 0i32 }
     }

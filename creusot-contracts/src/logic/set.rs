@@ -24,8 +24,7 @@ impl<T: ?Sized> Set<T> {
     }
 
     /// Returns `true` if `e` is in the set.
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, e: T) -> bool {
         Self::mem(e, self)
@@ -43,8 +42,7 @@ impl<T: ?Sized> Set<T> {
     }
 
     /// Returns a new set, where `e` has been added if it was not present.
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn insert(self, e: T) -> Self {
         Self::add(e, self)
@@ -70,8 +68,7 @@ impl<T: ?Sized> Set<T> {
     }
 
     /// Returns a new set, where `e` is no longer present.
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn remove(self, a: T) -> Self {
         Self::rem(a, self)

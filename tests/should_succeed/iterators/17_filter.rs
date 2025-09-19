@@ -36,8 +36,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
 impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
     type Item = I::Item;
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (exists<s: Seq<_>, e: &mut I > self.iter.produces(s, *e) && e.completed() &&
@@ -46,20 +45,17 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
         }
     }
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.invariant() ==>
@@ -126,20 +122,17 @@ pub fn less_than(v: Vec<u32>, n: u32) -> Vec<u32> {
         .collect()
 }
 
-#[open]
-#[logic(prophetic)]
+#[logic(open, prophetic)]
 pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f: F, i: A> f.precondition((i,)) }
 }
 
-#[open]
-#[logic(prophetic)]
+#[logic(open, prophetic)]
 pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f: F, g: F> f.hist_inv(g) ==> f == g }
 }
 
-#[open]
-#[logic(prophetic)]
+#[logic(open, prophetic)]
 pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f1: F, f2: F, i> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)) }
 }

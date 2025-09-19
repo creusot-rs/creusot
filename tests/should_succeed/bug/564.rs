@@ -1,8 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[logic]
-#[open]
+#[logic(open)]
 #[requires(invariants())]
 pub fn emits_pure_eq() -> bool {
     pearlite! {
@@ -10,8 +9,7 @@ pub fn emits_pure_eq() -> bool {
     }
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 #[requires(invariants())]
 #[allow(unused_parens)]
 pub fn emits_pure_implies() -> bool {

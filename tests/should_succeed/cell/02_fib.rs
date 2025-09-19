@@ -2,8 +2,7 @@ extern crate creusot_contracts;
 
 use creusot_contracts::{cell::PredCell, *};
 
-#[logic]
-#[open]
+#[logic(open)]
 #[variant(i)]
 pub fn fib(i: Int) -> Int {
     if i <= 0 {
@@ -15,8 +14,7 @@ pub fn fib(i: Int) -> Int {
     }
 }
 
-#[open]
-#[logic]
+#[logic(open)]
 #[requires(0 <= i)]
 #[ensures(fib(i) <= i.pow2())]
 #[variant(i)]

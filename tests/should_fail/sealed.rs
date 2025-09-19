@@ -5,8 +5,7 @@ pub trait Tr {
     #[logic]
     fn f(self, x: Int) -> Int;
 
-    #[logic(sealed)]
-    #[open]
+    #[logic(open, sealed)]
     fn g(self, x: Int) -> Int {
         self.f(x) + 1
     }

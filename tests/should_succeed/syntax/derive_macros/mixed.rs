@@ -18,8 +18,7 @@ where
 {
     type DeepModelTy = Product<A::DeepModelTy, B::DeepModelTy>;
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         Product { a: self.a.deep_model(), b: self.b.deep_model() }
     }
@@ -34,8 +33,7 @@ pub enum Sum<A, B> {
 impl<A: DeepModel, B: DeepModel> DeepModel for Sum<A, B> {
     type DeepModelTy = Sum<A::DeepModelTy, B::DeepModelTy>;
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         match self {
             Sum::A(a) => Sum::A(a.deep_model()),
@@ -72,8 +70,7 @@ pub struct ListDeepModel<T: DeepModel> {
 impl<T: DeepModel> DeepModel for List<T> {
     type DeepModelTy = ListDeepModel<T>;
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         ListDeepModel {
             elem: self.elem.deep_model(),
@@ -98,8 +95,7 @@ pub enum ExprDeepModel<V: DeepModel> {
 impl<V: DeepModel> DeepModel for Expr<V> {
     type DeepModelTy = ExprDeepModel<V>;
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         match self {
             Expr::Var(v) => ExprDeepModel::Var(v.deep_model()),

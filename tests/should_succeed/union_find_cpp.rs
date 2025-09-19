@@ -93,8 +93,7 @@ mod implementation {
         }
 
         /// Returns all the element that are handled by this union-find structure.
-        #[logic]
-        #[open]
+        #[logic(open)]
         pub fn in_domain(self, e: Elem<T>) -> bool {
             self.domain().contains(e)
         }
@@ -117,8 +116,7 @@ mod implementation {
         ///
         /// For each element, this describes the unique root element of the associated set.
         /// The root element of a root is itself.
-        #[logic]
-        #[open]
+        #[logic(open)]
         pub fn root(self, e: Elem<T>) -> Elem<T> {
             self.roots_map()[e]
         }
@@ -133,15 +131,13 @@ mod implementation {
         ///
         /// For each element, this describes the unique root element of the associated set.
         /// The root element of a root is itself.
-        #[logic]
-        #[open]
+        #[logic(open)]
         pub fn payload(self, e: Elem<T>) -> T {
             self.payloads_map()[e]
         }
 
         /// The internals of the union-find may have changed, but the visible state has not.
-        #[logic(prophetic)]
-        #[open]
+        #[logic(open, prophetic)]
         pub fn unchanged(&mut self) -> bool {
             pearlite! {
                 (*self).domain() == (^self).domain() &&
@@ -151,15 +147,13 @@ mod implementation {
         }
 
         /// The set of elements have not changed.
-        #[logic(prophetic)]
-        #[open]
+        #[logic(open, prophetic)]
         pub fn domain_unchanged(&mut self) -> bool {
             pearlite! { (*self).domain() == (^self).domain() }
         }
 
         /// The payloads have not changed.
-        #[logic(prophetic)]
-        #[open]
+        #[logic(open, prophetic)]
         pub fn payloads_unchanged(&mut self) -> bool {
             pearlite! { (*self).payloads_map() == (^self).payloads_map() }
         }

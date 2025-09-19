@@ -7,8 +7,7 @@ fn f() -> Int {
     1
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 #[ensures(result == 2)]
 pub fn g() -> Int {
     proof_assert!(f() == 1);

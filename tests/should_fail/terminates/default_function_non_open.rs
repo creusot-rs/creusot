@@ -4,8 +4,7 @@ use creusot_contracts::*;
 pub mod inner {
     use super::*;
     pub trait Foo {
-        #[open(self)]
-        #[logic]
+        #[logic(open(self))]
         fn f() {}
         #[logic]
         fn g();
@@ -13,8 +12,7 @@ pub mod inner {
 }
 
 impl inner::Foo for i32 {
-    #[open(self)]
-    #[logic]
+    #[logic(open(self))]
     fn g() {
         Self::f(); // this assumes f could call g
     }

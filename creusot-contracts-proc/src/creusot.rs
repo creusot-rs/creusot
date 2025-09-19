@@ -10,7 +10,7 @@ mod specs;
 pub use self::{
     derive::*,
     extern_spec::extern_spec,
-    logic::{law, logic, open, pearlite},
+    logic::{logic, pearlite},
     proof::{ghost, ghost_let, invariant, proof_assert, snapshot},
     specs::{bitwise_proof, check, ensures, maintains, requires, variant},
 };

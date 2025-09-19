@@ -15,24 +15,21 @@ pub trait Resolve {
 }
 
 #[trusted]
-#[logic(prophetic)]
-#[open]
+#[logic(open, prophetic)]
 #[rustc_diagnostic_item = "creusot_resolve"]
 pub fn resolve<T: ?Sized>(_: T) -> bool {
     dead
 }
 
 #[trusted]
-#[logic(prophetic)]
-#[open]
+#[logic(open, prophetic)]
 #[rustc_diagnostic_item = "creusot_structural_resolve"]
 pub fn structural_resolve<T: ?Sized>(_: T) -> bool {
     dead
 }
 
 impl<T1, T2: ?Sized> Resolve for (T1, T2) {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn resolve(self) -> bool {
         resolve(self.0) && resolve(self.1)
@@ -45,8 +42,7 @@ impl<T1, T2: ?Sized> Resolve for (T1, T2) {
 }
 
 impl<T: ?Sized> Resolve for &mut T {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn resolve(self) -> bool {
         pearlite! { ^self == *self }
@@ -59,8 +55,7 @@ impl<T: ?Sized> Resolve for &mut T {
 }
 
 impl<T: ?Sized> Resolve for Box<T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn resolve(self) -> bool {
         resolve(*self)

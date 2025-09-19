@@ -1,14 +1,12 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[logic]
-#[open]
+#[logic(open)]
 pub fn f() {
     g(true);
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 pub fn g(x: bool) {
     if x {
         f();

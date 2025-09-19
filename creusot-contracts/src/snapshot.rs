@@ -56,8 +56,7 @@ impl<T: ?Sized> DerefMut for Snapshot<T> {
 impl<T: View + ?Sized> View for Snapshot<T> {
     type ViewTy = T::ViewTy;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn view(self) -> Self::ViewTy {
         self.deref().view()
     }
@@ -66,8 +65,7 @@ impl<T: View + ?Sized> View for Snapshot<T> {
 impl<T: ?Sized + Fin> Fin for Snapshot<T> {
     type Target = T::Target;
 
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     fn fin<'a>(self) -> &'a Self::Target {
         pearlite! { &^*self }
     }

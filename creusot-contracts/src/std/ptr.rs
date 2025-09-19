@@ -54,8 +54,7 @@ impl<T: ?Sized> PointerExt<T> for *const T {
         dead
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(result == (self.addr_logic() == 0usize))]
     fn is_null_logic(self) -> bool {
         self.addr_logic() == 0usize
@@ -69,8 +68,7 @@ impl<T: ?Sized> PointerExt<T> for *mut T {
         dead
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(result == (self.addr_logic() == 0usize))]
     fn is_null_logic(self) -> bool {
         self.addr_logic() == 0usize

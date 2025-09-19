@@ -6,8 +6,7 @@ use creusot_contracts::{invariant::Invariant, *};
 struct S<T>(i32, *const T);
 
 impl Invariant for S<i32> {
-    #[logic]
-    #[open(self)]
+    #[logic(open(self))]
     fn invariant(self) -> bool {
         pearlite! { self.0@ == 0 }
     }

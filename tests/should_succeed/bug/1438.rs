@@ -5,8 +5,7 @@ pub trait Tr: Sized {
     #[logic]
     fn foo(self);
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn bar(self) {}
 }
 
@@ -15,8 +14,7 @@ where
     T: Tr,
     U: Tr,
 {
-    #[logic]
-    #[open(self)]
+    #[logic(open(self))]
     fn foo(self) {
         self.bar()
     }

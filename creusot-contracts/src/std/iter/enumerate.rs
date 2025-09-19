@@ -26,8 +26,7 @@ impl<I> EnumerateExt<I> for Enumerate<I> {
 }
 
 impl<I> Resolve for Enumerate<I> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         resolve(self.iter())
     }
@@ -56,8 +55,7 @@ impl<I> Iterator for Enumerate<I>
 where
     I: Iterator,
 {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             exists<inner: &mut _> *inner == self.iter() && ^inner == (^self).iter()
@@ -66,8 +64,7 @@ where
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == o.n() - self.n()
@@ -78,11 +75,11 @@ where
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

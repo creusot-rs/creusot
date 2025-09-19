@@ -4,8 +4,7 @@ use creusot_contracts::{invariant::Invariant, *};
 pub struct WithInvariant;
 
 impl Invariant for WithInvariant {
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn invariant(self) -> bool {
         true
     }

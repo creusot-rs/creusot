@@ -5,16 +5,14 @@ use creusot_contracts::{
 };
 use std::cmp::Ordering;
 
-#[logic]
-#[open]
+#[logic(open)]
 pub fn sorted_range<T: OrdLogic>(s: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
         forall<i, j> l <= i && i <= j && j < u ==> s[i] <= s[j]
     }
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 pub fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
     sorted_range(s, 0, s.len())
 }

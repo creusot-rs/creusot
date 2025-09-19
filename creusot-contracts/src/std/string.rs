@@ -60,15 +60,13 @@ extern_spec! {
 }
 
 impl Seq<char> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn to_bytes(self) -> Seq<u8> {
         pearlite! { self.flat_map(|c: char| c.to_utf8()) }
     }
 }
 
 #[trusted]
-#[logic]
-#[open]
+#[logic(open)]
 #[ensures(forall<s1: Seq<char>, s2: Seq<char>> s1.to_bytes() == s2.to_bytes() ==> s1 == s2)]
 pub fn injective_to_bytes() {}

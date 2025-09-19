@@ -31,16 +31,14 @@ pub struct PermCellOwn<T: ?Sized>(PhantomData<T>);
 impl<T> View for PermCellOwn<T> {
     type ViewTy = T;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn view(self) -> Self::ViewTy {
         *self.val()
     }
 }
 
 impl<T: ?Sized> Resolve for PermCellOwn<T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         resolve(self.val())
     }
@@ -54,8 +52,7 @@ impl<T: ?Sized> Resolve for PermCellOwn<T> {
 }
 
 impl<T: Sized> Invariant for PermCellOwn<T> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {

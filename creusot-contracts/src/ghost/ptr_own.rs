@@ -39,8 +39,7 @@ impl<T: ?Sized> PtrOwn<T> {
 }
 
 impl<T: ?Sized> Invariant for PtrOwn<T> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn invariant(self) -> bool {
         !self.ptr().is_null_logic()
     }

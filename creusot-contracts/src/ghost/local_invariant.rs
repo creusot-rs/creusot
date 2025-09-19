@@ -178,8 +178,7 @@ impl Tokens<'_> {
         (Tokens(::std::marker::PhantomData), Tokens(::std::marker::PhantomData))
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn contains(self, namespace: Namespace) -> bool {
         self.namespaces().contains(namespace)
     }
@@ -187,8 +186,7 @@ impl Tokens<'_> {
 
 impl View for Tokens<'_> {
     type ViewTy = Set<Namespace>;
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn view(self) -> Set<Namespace> {
         self.namespaces()
     }

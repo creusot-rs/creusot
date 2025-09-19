@@ -10,8 +10,7 @@ pub fn ghost_vec() {
     let mut _s: Snapshot<Vec<_>> = snapshot! { x };
 }
 
-#[open]
-#[logic]
+#[logic(open)]
 pub fn omg() {}
 
 pub fn ghost_copy() {

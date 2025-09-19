@@ -23,15 +23,13 @@ pub trait Bar {
 }
 
 impl Bar for i32 {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn g() -> Int {
         1
     }
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 pub fn calls_g() -> Int {
     <i32 as Bar>::g()
 }

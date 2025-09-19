@@ -5,8 +5,7 @@ use creusot_contracts::{logic::Mapping, *};
 
 // Test postfix model operator
 
-#[open]
-#[logic]
+#[logic(open)]
 #[requires(v@.len() == 3)]
 pub fn has_len_3(v: &[u32]) -> bool {
     pearlite! { v@.len() == 3 }
@@ -33,8 +32,7 @@ pub struct B {
 #[ensures(x == B { field2: 0u32, field1: false })]
 pub fn struct_order(x: B) {}
 
-#[open]
-#[logic]
+#[logic(open)]
 #[allow(unreachable_patterns)]
 pub fn field1_is_true(x: B) -> bool {
     pearlite! {
@@ -62,59 +60,50 @@ pub fn caller() {
 pub struct S {}
 
 impl S {
-    #[open]
-    #[logic]
+    #[logic(open)]
     pub fn x(&mut self) -> bool {
         true
     }
 }
 
-#[open]
-#[logic]
+#[logic(open)]
 pub fn proj(x: &mut (S, S)) -> bool {
     x.0.x()
 }
 
-#[open]
-#[logic]
+#[logic(open)]
 pub fn proj2(x: &mut &mut (S, S)) -> bool {
     x.0.x()
 }
 
 // Unnesting through an index projection
 
-#[open(self)]
-#[logic]
+#[logic(open(self))]
 pub fn reborrow_index_projection<'a, 'b, T>(a: &'a mut &'b mut [T]) -> &'a mut T {
     &mut a[0]
 }
 
-#[open(self)]
-#[logic]
+#[logic(open(self))]
 pub fn reborrow_index_projection2<'a, 'b, T>(a: &'a &'b [T]) -> &'a T {
     &a[0]
 }
 
-#[open(self)]
-#[logic]
+#[logic(open(self))]
 pub fn test3<'a, T>(a: Snapshot<&'a mut [T]>) -> &'a mut T {
     &mut a[0]
 }
 
-#[open(self)]
-#[logic]
+#[logic(open(self))]
 pub fn test4<'a, T>(a: &'a mut Snapshot<[T]>) -> &'a mut T {
     &mut a[0]
 }
 
-#[open(self)]
-#[logic]
+#[logic(open(self))]
 pub fn test5<'a, T>(a: &'a mut &mut &mut [T]) -> &'a mut T {
     &mut a[0]
 }
 
-#[open(self)]
-#[logic]
+#[logic(open(self))]
 pub fn test6<'a>(a: &'a mut &&mut u32) -> &'a mut u32 {
     &mut ***a
 }

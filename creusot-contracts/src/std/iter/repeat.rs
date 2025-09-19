@@ -11,14 +11,12 @@ impl<T> View for Repeat<T> {
 }
 
 impl<T: Clone> Iterator for Repeat<T> {
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn completed(&mut self) -> bool {
         pearlite! { false }
     }
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&
@@ -26,11 +24,11 @@ impl<T: Clone> Iterator for Repeat<T> {
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

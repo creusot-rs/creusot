@@ -11,8 +11,7 @@ pub trait Foo {
 pub mod inner {
     use super::*;
     pub trait Bar {
-        #[logic]
-        #[open(super)]
+        #[logic(open(super))]
         fn f() {}
         #[logic]
         fn g();

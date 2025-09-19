@@ -8,8 +8,7 @@ pub enum A {
 
 impl DeepModel for A {
     type DeepModelTy = Int;
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         match self {
             A::Cons(a) => *a.deep_model() + 1,

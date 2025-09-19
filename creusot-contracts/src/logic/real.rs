@@ -28,8 +28,7 @@ impl Real {
 }
 
 impl OrdLogic for Real {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn cmp_log(self, o: Self) -> Ordering {
         if self < o {
             Ordering::Less
@@ -41,32 +40,28 @@ impl OrdLogic for Real {
     }
 
     #[trusted]
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[creusot::builtins = "real.Real.(<=)"]
     fn le_log(self, _: Self) -> bool {
         true
     }
 
     #[trusted]
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[creusot::builtins = "real.Real.(<)"]
     fn lt_log(self, _: Self) -> bool {
         true
     }
 
     #[trusted]
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[creusot::builtins = "real.Real.(>=)"]
     fn ge_log(self, _: Self) -> bool {
         true
     }
 
     #[trusted]
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[creusot::builtins = "real.Real.(>)"]
     fn gt_log(self, _: Self) -> bool {
         true

@@ -4,27 +4,99 @@ use super::{
     doc::{self, document_spec},
     pretyping,
 };
-use crate::common::{ContractSubject, FilterAttrs as _};
+use crate::common::FilterAttrs as _;
 use pearlite_syn::TBlock;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, TokenStreamExt as _, quote, quote_spanned};
-use std::iter::{once, repeat};
 use syn::{
-    Attribute, Error, Ident, Item, Result, Signature, Stmt, Token, VisRestricted, Visibility,
-    braced,
+    Attribute, Error, Ident, Item, Result, Signature, Token, VisRestricted, Visibility, braced,
+    parenthesized,
     parse::{self, Parse},
-    parse_macro_input,
+    parse_macro_input, parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
 };
 
 pub fn logic(tags: TS1, tokens: TS1) -> TS1 {
-    logic_gen(tags, tokens, LogicKind::Logic)
-}
+    let tags_span = TokenStream::from(tags.clone()).span();
+    let tags_idents =
+        parse_macro_input!(tags with Punctuated<LogicTag, Token![,]>::parse_terminated);
+    let mut tags = LogicTags::default();
+    for tag in tags_idents {
+        match tag {
+            LogicTag::Mode(logic_mode) => {
+                if !tags.modes.add(logic_mode) {
+                    return syn::Error::new(
+                        tags_span,
+                        format!("`{}` can only be specified once.", logic_mode.doc_str()),
+                    )
+                    .into_compile_error()
+                    .into();
+                }
+            }
+            LogicTag::Open(visibility) => {
+                if tags.open.is_some() {
+                    return syn::Error::new(tags_span, "`open` can only be specified once.")
+                        .into_compile_error()
+                        .into();
+                }
+                tags.open = Some(visibility);
+            }
+        }
+    }
+    let mut log = parse_macro_input!(tokens as LogicInput);
 
-pub fn law(tags: TS1, tokens: TS1) -> TS1 {
-    logic_gen(tags, tokens, LogicKind::Law)
+    if let Some(vis) = &tags.open {
+        let open_name =
+            crate::creusot::generate_unique_ident(&log.name().to_string(), Span::call_site());
+        let name_tag = open_name.to_string();
+        let open_tokens = quote! {
+            #[creusot::no_translate]
+            #[creusot::item=#name_tag]
+            #vis fn #open_name() {}
+        };
+        match &mut log {
+            LogicInput::Item(logic_item) => {
+                logic_item
+                    .body
+                    .stmts
+                    .insert(0, pearlite_syn::TermStmt::Item(Item::Verbatim(open_tokens)));
+                logic_item.attrs.push(parse_quote!(#[creusot::clause::open=#name_tag]))
+            }
+            LogicInput::Sig(_) => {
+                return Error::new(Span::call_site(), "Cannot mark trait item signature as open")
+                    .to_compile_error()
+                    .into();
+            }
+        }
+    }
+
+    let mut doc_str = "logic".to_string();
+    if !tags.modes.is_empty() {
+        doc_str.push('(');
+        let mut comma = false;
+        for tag in [LogicMode::LAW, LogicMode::PROPHETIC, LogicMode::SEALED] {
+            if tags.modes.has(tag) {
+                if comma {
+                    doc_str.push_str(", ");
+                }
+                comma = true;
+                doc_str.push_str(tag.doc_str());
+            }
+        }
+        doc_str.push(')')
+    }
+
+    let documentation = document_spec(
+        &doc_str,
+        if tags.open.is_some() { log.logic_body() } else { doc::LogicBody::None },
+    );
+
+    match log {
+        LogicInput::Item(log) => logic_item(log, tags.modes, documentation),
+        LogicInput::Sig(sig) => logic_sig(sig, tags.modes, documentation),
+    }
 }
 
 pub fn pearlite(tokens: TS1) -> TS1 {
@@ -36,47 +108,6 @@ pub fn pearlite(tokens: TS1) -> TS1 {
             .collect::<std::result::Result<TokenStream, _>>()
             .unwrap_or_else(|e| e.into_tokens()),
     )
-}
-
-pub fn open(attr: TS1, body: TS1) -> TS1 {
-    let item = parse_macro_input!(body as ContractSubject);
-    let open_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
-    let name_tag = open_name.to_string();
-    let vis = if attr.is_empty() {
-        Visibility::Public(Default::default())
-    } else {
-        Visibility::Restricted(VisRestricted {
-            pub_token: Default::default(),
-            paren_token: Default::default(),
-            in_token: Default::default(),
-            path: parse_macro_input!(attr),
-        })
-    };
-
-    let open_tokens = quote! {
-        #[creusot::no_translate]
-        #[creusot::item=#name_tag]
-        #vis fn #open_name() {}
-    };
-
-    match item {
-        ContractSubject::FnOrMethod(fn_or_meth) if fn_or_meth.is_trait_signature() => TS1::from(
-            Error::new(Span::call_site(), "Cannot mark trait item signature as open")
-                .to_compile_error(),
-        ),
-        ContractSubject::FnOrMethod(mut f) => {
-            if let Some(b) = f.body.as_mut() {
-                b.stmts.insert(0, Stmt::Item(Item::Verbatim(open_tokens)))
-            }
-            TS1::from(quote! {
-              #[creusot::clause::open=#name_tag]
-              #f
-            })
-        }
-        ContractSubject::Closure(_) => TS1::from(
-            Error::new(Span::call_site(), "Cannot mark closure as open").to_compile_error(),
-        ),
-    }
 }
 
 pub struct TraitItemSignature {
@@ -154,99 +185,115 @@ impl LogicInput {
             LogicInput::Sig(_) => doc::LogicBody::None,
         }
     }
-}
 
-enum LogicKind {
-    Logic,
-    Law,
-}
-
-enum LogicTag {
-    Law,
-    Logic,
-    Prophetic,
-    Sealed,
-}
-
-impl ToTokens for LogicTag {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
+    fn name(&self) -> &Ident {
         match self {
-            Self::Logic => tokens.extend(quote!(#[creusot::decl::logic])),
-            Self::Prophetic => tokens.extend(quote!(#[creusot::decl::logic::prophetic])),
-            Self::Sealed => tokens.extend(quote!(#[creusot::decl::logic::sealed])),
-            Self::Law => tokens.extend(
-                quote!(#[creusot::decl::logic] #[creusot::decl::law] #[creusot::decl::no_trigger]),
-            ),
+            LogicInput::Item(logic_item) => &logic_item.sig.ident,
+            LogicInput::Sig(trait_item_signature) => &trait_item_signature.sig.ident,
         }
     }
 }
 
-fn logic_gen(tags: TS1, tokens: TS1, kind: LogicKind) -> TS1 {
-    let tags = parse_macro_input!(tags with Punctuated<Ident, Token![,]>::parse_terminated);
-    let tags: Result<Vec<LogicTag>> = tags
-        .into_pairs()
-        .map(|p| {
-            let t = p.into_value();
-            if t == "prophetic" {
-                Ok(LogicTag::Prophetic)
-            } else if t == "sealed" {
-                Ok(LogicTag::Sealed)
-            } else {
-                Err(syn::Error::new(
-                    t.span(),
-                    "unsupported modifier. The only supported modifiers are `prophetic` and `sealed`",
-                ))
-            }
-        })
-        .collect();
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+struct LogicTags {
+    modes: LogicMode,
+    open: Option<Visibility>,
+}
 
-    let Ok(mut tags) = tags else { return tags.err().unwrap().into_compile_error().into() };
-    let log = parse_macro_input!(tokens as LogicInput);
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum LogicTag {
+    Mode(LogicMode),
+    Open(Visibility),
+}
 
-    let mut doc_str: String = match kind {
-        LogicKind::Logic => "logic".into(),
-        LogicKind::Law => "law".into(),
-    };
-    if !tags.is_empty() {
-        doc_str.push('(');
-        for (t, sep) in tags.iter().zip(once("").chain(repeat(", "))) {
-            doc_str.push_str(sep);
-            match t {
-                LogicTag::Prophetic => doc_str.push_str("prophetic"),
-                LogicTag::Sealed => doc_str.push_str("sealed"),
-                LogicTag::Law | LogicTag::Logic => unreachable!(),
+impl Parse for LogicTag {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let ident: Ident = input.parse()?;
+        if ident == "law" {
+            Ok(Self::Mode(LogicMode::LAW))
+        } else if ident == "prophetic" {
+            Ok(Self::Mode(LogicMode::PROPHETIC))
+        } else if ident == "sealed" {
+            Ok(Self::Mode(LogicMode::SEALED))
+        } else if ident == "open" {
+            if input.is_empty() || input.peek(Token![,]) {
+                return Ok(Self::Open(Visibility::Public(Default::default())));
             }
+            let vis;
+            Ok(Self::Open(Visibility::Restricted(VisRestricted {
+                pub_token: Default::default(),
+                paren_token: parenthesized!(vis in input),
+                in_token: None,
+                path: vis.parse()?,
+            })))
+        } else {
+            Err(syn::Error::new(
+                ident.span(),
+                "unsupported modifier. The only supported modifiers are `open`, `prophetic`, `law` and `sealed`",
+            ))
         }
-        doc_str.push(')')
-    }
-    let documentation = document_spec(
-        &doc_str,
-        if matches!(kind, LogicKind::Law) { doc::LogicBody::None } else { log.logic_body() },
-    );
-
-    match kind {
-        LogicKind::Law => tags.push(LogicTag::Law),
-        LogicKind::Logic => tags.push(LogicTag::Logic),
-    }
-    match log {
-        LogicInput::Item(log) => logic_item(log, tags, documentation),
-        LogicInput::Sig(sig) => logic_sig(sig, tags, documentation),
     }
 }
 
-fn logic_sig(mut sig: TraitItemSignature, tags: Vec<LogicTag>, documentation: TokenStream) -> TS1 {
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct LogicMode(u8);
+
+impl LogicMode {
+    const LAW: Self = Self(1);
+    const PROPHETIC: Self = Self(2);
+    const SEALED: Self = Self(4);
+
+    fn has(self, tag: Self) -> bool {
+        self.0 & tag.0 > 0
+    }
+    fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+    /// Returns `true` if `self` did _not_ already contain `tag`.
+    fn add(&mut self, tag: Self) -> bool {
+        let had = self.0 & tag.0 > 0;
+        self.0 |= tag.0;
+        !had
+    }
+    fn doc_str(self) -> &'static str {
+        if self == Self::LAW {
+            "law"
+        } else if self == Self::PROPHETIC {
+            "prophetic"
+        } else {
+            "sealed"
+        }
+    }
+}
+
+impl ToTokens for LogicMode {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        tokens.extend(quote!(#[creusot::decl::logic]));
+        if self.has(Self::PROPHETIC) {
+            tokens.extend(quote!(#[creusot::decl::logic::prophetic]));
+        }
+        if self.has(Self::SEALED) {
+            tokens.extend(quote!(#[creusot::decl::logic::sealed]));
+        }
+        if self.has(Self::LAW) {
+            tokens.extend(quote!(#[creusot::decl::law] #[creusot::decl::no_trigger]));
+        }
+    }
+}
+
+fn logic_sig(mut sig: TraitItemSignature, tags: LogicMode, documentation: TokenStream) -> TS1 {
     let span = sig.span();
     let attrs = std::mem::take(&mut sig.attrs);
 
     TS1::from(quote_spanned! {span =>
-        #(#tags)*
+        #tags
         #(#attrs)*
         #documentation
         #sig
     })
 }
 
-fn logic_item(log: LogicItem, tags: Vec<LogicTag>, documentation: TokenStream) -> TS1 {
+fn logic_item(log: LogicItem, tags: LogicMode, documentation: TokenStream) -> TS1 {
     let span = log.sig.span();
 
     let term = log.body;
@@ -257,7 +304,7 @@ fn logic_item(log: LogicItem, tags: Vec<LogicTag>, documentation: TokenStream) -
     let req_body = pretyping::encode_block(&term);
 
     TS1::from(quote_spanned! {span =>
-        #(#tags)*
+        #tags
         #(#attrs)*
         #documentation
         #vis #def #sig #req_body

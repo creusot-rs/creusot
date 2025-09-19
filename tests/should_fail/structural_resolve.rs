@@ -5,8 +5,7 @@ use creusot_contracts::{resolve::structural_resolve, *};
 pub struct False;
 
 impl Resolve for False {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     #[ensures(structural_resolve(self) ==> result)]
     fn resolve(self) -> bool {
         false
@@ -16,8 +15,7 @@ impl Resolve for False {
 pub struct P<T>(T);
 
 impl<T> Resolve for P<T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     #[ensures(structural_resolve(self) ==> result)]
     fn resolve(self) -> bool {
         false

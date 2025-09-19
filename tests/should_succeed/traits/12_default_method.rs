@@ -7,8 +7,7 @@ pub trait T {
         0
     }
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn logic_default(self) -> bool {
         true
     }

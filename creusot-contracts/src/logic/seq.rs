@@ -73,8 +73,7 @@ impl<T> Seq<T> {
     /// Returns the value at index `ix`.
     ///
     /// If `ix` is out of bounds, return `None`.
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn get(self, ix: Int) -> Option<T> {
         if 0 <= ix && ix < self.len() { Some(self.index_logic(ix)) } else { None }
     }
@@ -156,8 +155,7 @@ impl<T> Seq<T> {
     /// proof_assert!(s.tail().tail() == Seq::singleton(15));
     /// proof_assert!(s.tail().tail().tail() == Seq::empty());
     /// ```
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn tail(self) -> Self {
         self.subsequence(1, self.len())
     }
@@ -233,8 +231,7 @@ impl<T> Seq<T> {
     /// proof_assert!(s2[0] == 2);
     /// proof_assert!(s2[1] == 1);
     /// ```
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[creusot::why3_attr = "inline:trivial"]
     pub fn push_front(self, x: T) -> Self {
         Self::cons(x, self)
@@ -279,8 +276,7 @@ impl<T> Seq<T> {
         dead
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[variant(self.len())]
     pub fn flat_map<U>(self, other: Mapping<T, Seq<U>>) -> Seq<U> {
         if self.len() == 0 {
@@ -310,8 +306,7 @@ impl<T> Seq<T> {
     }
 
     /// Returns `true` if `other` is a permutation of `self`.
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn permutation_of(self, other: Self) -> bool {
         self.permut(other, 0, self.len())
     }
@@ -346,15 +341,13 @@ impl<T> Seq<T> {
     }
 
     /// Returns `true` if there is an index `i` such that `self[i] == x`.
-    #[open]
-    #[logic]
+    #[logic(open)]
     pub fn contains(self, x: T) -> bool {
         pearlite! { exists<i> 0 <= i &&  i < self.len() && self[i] == x }
     }
 
     /// Returns `true` if `self` is sorted between `start` and `end`.
-    #[open]
-    #[logic]
+    #[logic(open)]
     pub fn sorted_range(self, start: Int, end: Int) -> bool
     where
         T: OrdLogic,
@@ -365,8 +358,7 @@ impl<T> Seq<T> {
     }
 
     /// Returns `true` if `self` is sorted.
-    #[open]
-    #[logic]
+    #[logic(open)]
     pub fn sorted(self) -> bool
     where
         T: OrdLogic,
@@ -374,16 +366,14 @@ impl<T> Seq<T> {
         self.sorted_range(0, self.len())
     }
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[ensures(forall<a: Seq<T>, b: Seq<T>, x>
         a.concat(b).contains(x) == a.contains(x) || b.contains(x))]
     pub fn concat_contains() {}
 }
 
 impl<T> Seq<Seq<T>> {
-    #[open]
-    #[logic]
+    #[logic(open)]
     #[variant(self.len())]
     pub fn flatten(self) -> Seq<T> {
         if self.len() == 0 {
@@ -677,8 +667,7 @@ impl<T: Copy> Copy for Seq<T> {}
 impl<T: Plain> Plain for Seq<T> {}
 
 impl<T> Invariant for Seq<T> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
@@ -686,13 +675,11 @@ impl<T> Invariant for Seq<T> {
     }
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 #[ensures(forall<x: A, f: Mapping<A, Seq<B>>> Seq::singleton(x).flat_map(f) == f.get(x))]
 pub fn flat_map_singleton<A, B>() {}
 
-#[logic]
-#[open]
+#[logic(open)]
 #[ensures(forall<x: A, f: Mapping<A, Seq<B>>> xs.push_back(x).flat_map(f) == xs.flat_map(f).concat(f.get(x)))]
 #[variant(xs.len())]
 pub fn flat_map_push_back<A, B>(xs: Seq<A>) {

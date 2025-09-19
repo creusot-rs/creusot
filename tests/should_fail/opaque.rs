@@ -11,8 +11,7 @@ pub mod x {
         true
     }
 
-    #[open(crate)]
-    #[logic]
+    #[logic(open(crate))]
     pub fn bad() -> bool {
         priv_symbol()
     }

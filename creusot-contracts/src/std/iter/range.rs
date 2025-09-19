@@ -10,16 +10,14 @@ use ::std::iter::Step;
 
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             self.resolve() && self.start.deep_model() >= self.end.deep_model()
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.end == o.end && self.start.deep_model() <= o.start.deep_model()
@@ -30,11 +28,11 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -43,8 +41,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
 
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for Range<Idx> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.start == o.start && self.end.deep_model() >= o.end.deep_model()
@@ -55,19 +52,18 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for Range<Idx
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[requires(a.produces_back(ab, b))]
     #[requires(b.produces_back(bc, c))]
     #[ensures(a.produces_back(ab.concat(bc), c))]
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 #[ensures(r.is_empty_log() == (result == 0))]
 pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<Idx>) -> Int {
     pearlite! {
@@ -78,16 +74,14 @@ pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<
 
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             self.is_empty_log() && (^self).is_empty_log()
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
@@ -98,13 +92,11 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
         }
     }
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -113,8 +105,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
 
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for RangeInclusive<Idx> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
@@ -125,13 +116,11 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for RangeIncl
         }
     }
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self) {}
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces_back(ab, b))]
     #[requires(b.produces_back(bc, c))]
     #[ensures(a.produces_back(ab.concat(bc), c))]

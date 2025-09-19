@@ -19,8 +19,7 @@ macro_rules! mach_int {
 
         impl DeepModel for $t {
             type DeepModelTy = Int;
-            #[logic]
-            #[open]
+            #[logic(open)]
             fn deep_model(self) -> Self::DeepModelTy {
                 pearlite! { self@ }
             }

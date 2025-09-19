@@ -4,14 +4,12 @@ use creusot_contracts::*;
 mod x {
     use creusot_contracts::*;
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     pub fn transparent() -> bool {
         true
     }
 
-    #[open(crate)]
-    #[logic]
+    #[logic(open(crate))]
     pub fn transparent_crate() -> bool {
         true
     }
