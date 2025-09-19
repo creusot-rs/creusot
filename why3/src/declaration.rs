@@ -90,12 +90,12 @@ impl Condition {
 pub struct Contract {
     pub requires: Box<[Condition]>,
     pub ensures: Box<[Condition]>,
-    pub variant: Option<(Exp, Type)>,
+    // Note that we never generate why3 variants
 }
 
 impl Contract {
     pub fn is_empty(&self) -> bool {
-        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
+        self.requires.is_empty() && self.ensures.is_empty()
     }
 
     pub fn ensures_conj(&self) -> Exp {
@@ -143,10 +143,6 @@ impl Contract {
         for ens in self.ensures.iter_mut() {
             ens.exp.subst(subst);
         }
-
-        if let Some((ref mut var, _)) = self.variant {
-            var.subst(subst);
-        }
     }
 
     pub fn qfvs(&self) -> IndexSet<QName> {
@@ -158,10 +154,6 @@ impl Contract {
 
         for ens in &self.ensures {
             qfvs.extend(ens.exp.qfvs());
-        }
-
-        if let Some((ref var, _)) = self.variant {
-            qfvs.extend(var.qfvs());
         }
 
         qfvs

@@ -167,7 +167,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     let body_id = BodyId::local(body_id);
     let mut recursive_calls = RecursiveCalls::new();
     let mut body = why_body(ctx, names, body_id, None, &args, inner_return, &mut recursive_calls);
-    let ((mut sig, contract, return_ty), variant) = {
+    let (mut sig, variant) = {
         let typing_env = names.typing_env();
         let mut pre_sig = sig.clone().normalize(ctx.tcx, typing_env);
         let variant = pre_sig.contract.variant.clone();
@@ -216,7 +216,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
             );
             let params: Box<[_]> = params
                 .into_iter()
-                .zip(&sig.params)
+                .zip(&sig.prototype.params)
                 .map(|(ty, param)| Param::Term(param.as_term().0, ty))
                 .chain(std::iter::once(Param::Cont(
                     Ident::fresh_local("_ret"),
@@ -256,12 +256,12 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         ctx.dcx().span_bug(ctx.def_span(body_id.def_id), "missing variant for function");
     }
 
-    if let Some((exp, ty)) = contract.variant {
+    if let Some((exp, ty)) = sig.variant {
         body = body.let_(std::iter::once(Var(variant_name.0, ty, exp, IsRef::NotRef)))
     }
 
     if !open_body {
-        let ensures = contract.ensures.into_iter().map(Condition::labelled_exp);
+        let ensures = sig.contract.ensures.into_iter().map(Condition::labelled_exp);
         let return_ = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
         let postcond = ensures.rfold(return_.black_box(), |acc, cond| Expr::assert(cond, acc));
         body = Expr::Defn(
@@ -271,18 +271,18 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
                 prototype: Prototype {
                     name: inner_return,
                     attrs: vec![],
-                    params: [Param::Term(name::result(), return_ty)].into(),
+                    params: [Param::Term(name::result(), sig.return_ty)].into(),
                 },
                 body: postcond,
             }]
             .into(),
         );
-        let requires = contract.requires.into_iter().map(Condition::labelled_exp);
+        let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
         body = requires.rfold(body, |acc, req| Expr::assert(req, acc));
     } else {
-        sig.attrs.push(Attribute::Attr("coma:extspec".into()));
+        sig.prototype.attrs.push(Attribute::Attr("coma:extspec".into()));
     }
-    Defn { prototype: sig, body }
+    Defn { prototype: sig.prototype, body }
 }
 
 /// # Parameters

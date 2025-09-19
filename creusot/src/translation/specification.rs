@@ -282,8 +282,9 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     }
 }
 
+/// A function signature, that can be either program or logic.
 #[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
-pub struct PreSignature<'tcx> {
+pub(crate) struct PreSignature<'tcx> {
     pub(crate) inputs: Box<[(PIdent, Span, Ty<'tcx>)]>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,

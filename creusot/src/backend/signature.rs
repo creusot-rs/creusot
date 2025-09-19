@@ -17,25 +17,30 @@ use why3::{
     exp::Trigger,
 };
 
+/// The signature of a program function
+#[derive(Debug, Clone)]
+pub(crate) struct ProgramSignature {
+    /// Signature of the corresponding coma handler
+    pub(crate) prototype: Prototype,
+    pub(crate) contract: Contract,
+    /// Return type of the function
+    pub(crate) return_ty: why3::ty::Type,
+    pub(crate) variant: Option<(why3::Exp, why3::ty::Type)>,
+}
+
 /// Translates a Rust (program) function signature to a coma signature.
 ///
 /// Note that `pre_sig` should be normalized!
-///
-/// # Return
-///
-/// - The signature of the corresponding coma handler
-/// - The contract of the function
-/// - The return type of the function
 pub(crate) fn lower_program_sig<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     name: Ident,
-    pre_sig: PreSignature<'tcx>,
+    mut pre_sig: PreSignature<'tcx>,
     // FIXME: Get rid of this def id
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
     return_ident: Ident,
-) -> (Prototype, Contract, why3::ty::Type) {
+) -> ProgramSignature {
     let span = ctx.tcx.def_span(def_id);
     let return_ty = translate_ty(ctx, names, span, pre_sig.output);
     let params: Box<[Param]> = pre_sig
@@ -56,9 +61,20 @@ pub(crate) fn lower_program_sig<'tcx, N: Namer<'tcx>>(
         attrs.push(attr)
     }
 
+    let variant =
+        pre_sig.contract.variant.take().map(|term| {
+            (lower_pure(ctx, names, &term), translate_ty(ctx, names, term.span, term.ty))
+        });
     let contract = lower_contract(ctx, names, pre_sig.contract);
 
-    (Prototype { name, attrs, params }, contract, return_ty)
+    ProgramSignature { prototype: Prototype { name, attrs, params }, contract, return_ty, variant }
+}
+
+/// The signature of a logical function
+#[derive(Debug, Clone)]
+pub(crate) struct LogicSignature {
+    pub(crate) why_sig: Signature,
+    pub(crate) variant: Option<why3::Exp>,
 }
 
 /// Translates a Pearlite (logical) function signature to a whyml signature.
@@ -68,11 +84,11 @@ pub(crate) fn lower_logic_sig<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     name: Ident,
-    pre_sig: PreSignature<'tcx>,
+    mut pre_sig: PreSignature<'tcx>,
     // FIXME: Get rid of this def id
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
-) -> Signature {
+) -> LogicSignature {
     let span = ctx.tcx.def_span(def_id);
     let args: Box<[(Ident, _)]> = pre_sig
         .inputs
@@ -97,6 +113,7 @@ pub(crate) fn lower_logic_sig<'tcx, N: Namer<'tcx>>(
     } else {
         Some(translate_ty(ctx, names, span, pre_sig.output))
     };
+    let variant = pre_sig.contract.variant.take().map(|term| lower_pure(ctx, names, &term));
     let contract = lower_contract(ctx, names, pre_sig.contract);
 
     let mut sig = Signature { name, trigger: None, attrs, retty, args, contract };
@@ -105,7 +122,7 @@ pub(crate) fn lower_logic_sig<'tcx, N: Namer<'tcx>>(
     {
         sig.trigger = Some(Trigger::single(function_call(&sig)))
     };
-    sig
+    LogicSignature { why_sig: sig, variant }
 }
 
 pub(crate) fn lower_contract<'tcx, N: Namer<'tcx>>(
@@ -117,8 +134,5 @@ pub(crate) fn lower_contract<'tcx, N: Namer<'tcx>>(
         contract.requires.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
     let ensures =
         contract.ensures.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
-    let variant = contract
-        .variant
-        .map(|term| (lower_pure(ctx, names, &term), translate_ty(ctx, names, term.span, term.ty)));
-    Contract { requires, ensures, variant }
+    Contract { requires, ensures }
 }

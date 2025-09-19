@@ -696,15 +696,6 @@ impl Print for Contract {
             )
         }
 
-        if let Some((ref var, _)) = self.variant {
-            doc = doc.append(
-                alloc
-                    .text("variant ")
-                    .append(var.pretty(alloc, scope).braces())
-                    .append(alloc.hardline()),
-            )
-        }
-
         doc
     }
 }

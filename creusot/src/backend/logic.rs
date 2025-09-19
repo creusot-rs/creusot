@@ -2,7 +2,7 @@ use crate::{
     backend::{
         Why3Generator, common_meta_decls, is_trusted_item,
         logic::vcgen::wp,
-        signature::lower_logic_sig,
+        signature::{LogicSignature, lower_logic_sig},
         term::lower_pure_weakdep,
         ty::{self, translate_ty},
     },
@@ -73,7 +73,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     body_decls.extend(param_decls);
 
     let val_decl = {
-        let mut sig = sig.clone();
+        let mut sig = sig.why_sig.clone();
         sig.contract = Default::default();
         match ctx.item_type(def_id) {
             ItemType::Logic { .. } => {
@@ -91,7 +91,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     };
     body_decls.push(Decl::LogicDecl(val_decl));
 
-    let postcondition = sig.contract.ensures_conj_labelled();
+    let postcondition = sig.why_sig.contract.ensures_conj_labelled();
 
     let term = ctx.ctx.term(def_id).unwrap().rename(&bound);
     let wp = wp(
@@ -99,15 +99,15 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
         &names,
         def_id,
         args_names,
-        sig.contract.variant.clone().map(|(exp, _)| exp),
+        sig.variant.clone(),
         term,
         name::result(),
         postcondition.clone(),
     )
     .unwrap_or_else(|e| ctx.fatal_error(e.span(), format!("translate_logic: {e:?}")).emit());
 
-    let goal = sig.contract.requires_implies(wp);
-    let vc_ident = sig.name.refresh_with(|s| format!("vc_{s}"));
+    let goal = sig.why_sig.contract.requires_implies(wp);
+    let vc_ident = sig.why_sig.name.refresh_with(|s| format!("vc_{s}"));
 
     let (mut decls, setters) = names.provide_deps(ctx);
     decls.extend(common_meta_decls());
@@ -129,7 +129,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
 pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    sig: Signature,
+    sig: LogicSignature,
     kind: DeclKind,
     body: Term<'tcx>,
 ) -> Vec<Decl> {
@@ -138,14 +138,14 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     // We don't pull dependencies for FnDef items, because it may be more private than
     // the definition is transparent
     let body = lower_pure_weakdep(ctx, names, &body);
-    let lim_name = if sig.uses_simple_triggers() {
-        Some(sig.name.refresh_with(|s| format!("{s}_lim")))
+    let lim_name = if sig.why_sig.uses_simple_triggers() {
+        Some(sig.why_sig.name.refresh_with(|s| format!("{s}_lim")))
     } else {
         None
     };
 
-    if sig.contract.variant.is_none() {
-        let mut sig = sig.clone();
+    if sig.variant.is_none() {
+        let mut sig = sig.why_sig.clone();
         sig.contract = Default::default();
 
         let decl = match kind {
@@ -160,30 +160,30 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
         decls.push(decl)
     } else {
-        let mut decl_sig = sig.clone();
+        let mut decl_sig = sig.why_sig.clone();
         decl_sig.contract = Default::default();
 
         decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: decl_sig }));
 
         if let Some(lim_name) = lim_name {
-            limited_function_encode(&mut decls, &sig, lim_name, body, kind)
+            limited_function_encode(&mut decls, &sig.why_sig, lim_name, body, kind)
         } else {
-            decls.push(Decl::Axiom(definition_axiom(&sig, body, "def")));
+            decls.push(Decl::Axiom(definition_axiom(&sig.why_sig, body, "def")));
         }
     }
 
-    if !sig.contract.ensures.is_empty() {
+    if !sig.why_sig.contract.ensures.is_empty() {
         if let Some(lim_name) = lim_name
-            && sig.contract.variant.is_some()
+            && sig.variant.is_some()
         {
-            let mut lim_sig = sig;
+            let mut lim_sig = sig.why_sig;
             lim_sig.name = lim_name;
             lim_sig.trigger = Some(Trigger::single(function_call(&lim_sig)));
             lim_sig.attrs = vec![];
 
             decls.extend(spec_axioms(&lim_sig))
         } else {
-            decls.extend(spec_axioms(&sig));
+            decls.extend(spec_axioms(&sig.why_sig));
         }
     }
 
