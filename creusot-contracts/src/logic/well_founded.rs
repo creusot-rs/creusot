@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::logic::Mapping;
+use crate::logic::{Mapping, such_that, unreachable};
 use crate::*;
 
 /// Instances of this trait are types which are allowed as variants of recursive definitions.
@@ -109,4 +109,123 @@ impl<T: WellFounded> WellFounded for Box<T> {
     fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
         T::no_infinite_decreasing_sequence(|i| *s[i])
     }
+}
+
+// === Implementation of `WellFounded` for tuples up to size 8.
+
+macro_rules! impl_tuple_to_pair {
+    ( $t1:ident = $idx1:tt , $($ts:ident = $idxs:tt),+ ) => {
+        #[cfg(creusot)]
+        #[allow(unused_parens)]
+        impl<$t1, $($ts),+> TupleToPair for ($t1, $($ts),+) {
+            type Target = ($t1, ($($ts),+));
+            #[logic]
+            fn tuple_to_pair(self) -> Self::Target {
+                (self.0, ($( self . $idxs ),+))
+            }
+        }
+    };
+}
+
+macro_rules! wf_tuples {
+    ( $t:ident = $idx:tt ) => {};
+    ( $($ts:ident = $idxs:tt),+ ) => {
+        impl_tuple_to_pair!($($ts=$idxs),+);
+        wf_tuples!( @impl $($ts=$idxs),+ );
+        wf_tuples!( @pop_last [$($ts=$idxs),+] [] );
+    };
+    // its a bit hard to remove the _last_ element of a sequence in macros: we need this little helper.
+    (@pop_last [$t:ident=$idx:tt , $($ts:ident=$idxs:tt),+] [$($ts2:ident=$idxs2:tt),*]) => {
+        wf_tuples!( @pop_last [$($ts=$idxs),+] [$($ts2=$idxs2,)* $t=$idx] );
+    };
+    (@pop_last [$t:ident=$idx:tt]                           [$($ts2:ident=$idxs2:tt),*]) => {
+        wf_tuples!( $($ts2 = $idxs2),* );
+    };
+    ( @impl $($ts:ident = $idxs:tt),+ ) => {
+        impl<$($ts),+> WellFounded for ($($ts),+)
+        where $($ts : WellFounded),+
+        {
+            wf_tuples!( @wf_relation self other {} [] $($ts=$idxs)+ );
+
+            #[logic]
+            #[ensures(result >= 0)]
+            #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
+            fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
+                pearlite! {
+                    if exists<r> r >= 0 && !Self::well_founded_relation(s[r], s[r + 1]) {
+                        such_that(|r| r >= 0 && !Self::well_founded_relation(s[r], s[r + 1]))
+                    } else {
+                        let _ = T0::no_infinite_decreasing_sequence(first_component_decr(|i| s[i].tuple_to_pair()));
+                        unreachable()
+                    }
+                }
+            }
+        }
+    };
+    ( @wf_relation $name1:ident $name2:ident {$($res:expr)?} [$($to_eq:tt)*] $t:ident = $idx:tt $($ts:ident = $idxs:tt)* ) => {
+        wf_tuples!{ @wf_relation $name1 $name2
+            {$($res ||)? ($(($name1 . $to_eq == $name2 . $to_eq ) &&)* $t::well_founded_relation($name1 . $idx, $name2 . $idx))}
+            [$($to_eq)* $idx]
+            $($ts=$idxs)*
+        }
+    };
+    ( @wf_relation $name1:ident $name2:ident {$res:expr} [$($to_eq:tt)*] ) => {
+        #[logic]
+        #[open]
+        fn well_founded_relation($name1, $name2: Self) -> bool {
+            $res
+        }
+    };
+}
+
+wf_tuples!(T0 = 0, T1 = 1, T2 = 2, T3 = 3, T4 = 4, T5 = 5, T6 = 6, T7 = 7);
+
+/// Convert a tuple to a pair, because the lemmas below act on pairs.
+#[cfg(creusot)]
+trait TupleToPair {
+    type Target;
+    #[logic]
+    fn tuple_to_pair(self) -> Self::Target;
+}
+
+/// Get an index > i, such that `s[index] < s[i]`.
+#[logic]
+#[requires(forall<i> 0 <= i ==> <(T1, T2)>::well_founded_relation(s[i], s[i + 1]))]
+#[requires(0 <= i)]
+#[ensures(i < result)]
+#[ensures(T1::well_founded_relation(s[i].0, s[result].0))]
+#[variant(s[i].1)]
+fn extract_next_decr<T1: WellFounded, T2: WellFounded>(s: Mapping<Int, (T1, T2)>, i: Int) -> Int {
+    if T1::well_founded_relation(s[i].0, s[i + 1].0) { i + 1 } else { extract_next_decr(s, i + 1) }
+}
+
+/// Used to construct [`first_component_decr`] below.
+#[logic]
+#[requires(forall<i> 0 <= i ==> <(T1, T2)>::well_founded_relation(s[i], s[i + 1]))]
+#[requires(0 <= i)]
+#[ensures(0 <= result)]
+#[ensures(0 < i ==> {
+    let prev = extract_nth(s, i - 1);
+    prev < result &&
+    T1::well_founded_relation(s[prev].0, s[result].0)
+})]
+#[variant(i)]
+fn extract_nth<T1: WellFounded, T2: WellFounded>(s: Mapping<Int, (T1, T2)>, i: Int) -> Int {
+    if i == 0 {
+        0
+    } else {
+        let prev = extract_nth(s, i - 1);
+        extract_next_decr(s, prev)
+    }
+}
+
+/// Prove that `s` being infinitely decreasing is contradictory, by extracting
+/// a sequence such that the first component decreases.
+#[logic]
+#[requires(forall<i> 0 <= i ==> <(T1, T2)>::well_founded_relation(s[i], s[i + 1]))]
+#[ensures(forall<i> 0 <= i ==> T1::well_founded_relation(result[i], result[i + 1]))]
+pub fn first_component_decr<T1: WellFounded, T2: WellFounded>(
+    s: Mapping<Int, (T1, T2)>,
+) -> Mapping<Int, T1> {
+    |i| if 0 <= i { s[extract_nth(s, i)].0 } else { s[i].0 }
 }
