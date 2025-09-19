@@ -3,6 +3,8 @@ use crate::{
     logic::{Mapping, ops::IndexLogic},
     *,
 };
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 
 /// A type of sequence usable in pearlite and `ghost!` blocks.
 ///
@@ -700,6 +702,21 @@ pub fn flat_map_push_back<A, B>(xs: Seq<A>) {
         flat_map_push_back::<A, B>(xs.tail());
         proof_assert! { forall<x: A> xs.tail().push_back(x) == xs.push_back(x).tail() }
     }
+}
+
+impl<T> Resolve for Seq<T> {
+    #[logic(prophetic)]
+    #[open]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i : Int> resolve(&self.get(i)) }
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 /// A sequence literal `seq![a, b, c]`.

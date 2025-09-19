@@ -1,14 +1,19 @@
 use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
 use rustc_data_structures::fx::FxHashMap;
 use rustc_driver::{Callbacks, Compilation};
-use rustc_hir::def_id::LocalDefId;
+use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_interface::{Config, interface::Compiler};
 use rustc_middle::{mir, ty::TyCtxt};
 use rustc_span::ErrorGuaranteed;
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
-use crate::{cleanup_spec_closures::*, ctx, lints};
+use crate::{
+    cleanup_spec_closures::*,
+    ctx, lints,
+    metadata::BinaryMetadata,
+    validate::{AnfBlock, a_normal_form_without_specs},
+};
 use creusot_args::options::{Options, Output};
 
 pub struct ToWhy {
@@ -169,4 +174,51 @@ fn try_get_body<'tcx, 'a>(def_id: LocalDefId) -> Option<&'a BodyWithBorrowckFact
         let map = state.borrow();
         map.get(&def_id).map(|body| unsafe { std::mem::transmute(body) })
     })
+}
+
+/// Callback for libraries that don't depend on creusot-contracts, to store metadata needed in later passes
+pub struct WithoutContracts {
+    opts: Options,
+}
+
+impl WithoutContracts {
+    pub fn new(opts: Options) -> Self {
+        WithoutContracts { opts }
+    }
+}
+
+impl Callbacks for WithoutContracts {
+    fn after_expansion<'tcx>(&mut self, c: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        if self.opts.erasure_check.is_no() {
+            return Compilation::Continue;
+        }
+        let Some(erasure_check_dir) = &self.opts.erasure_check_dir else {
+            return Compilation::Continue;
+        };
+        let erasure_required = crate::metadata::get_erasure_required(tcx, erasure_check_dir);
+        if erasure_required.is_empty() {
+            return Compilation::Continue;
+        }
+        let erased_thir: Vec<(DefId, AnfBlock<'tcx>)> = tcx
+            .hir_body_owners()
+            .filter_map(|local_id| {
+                if erasure_required.contains(&local_id) {
+                    let thir = tcx.thir_body(local_id).ok()?;
+                    let erased = a_normal_form_without_specs(
+                        tcx,
+                        local_id,
+                        (&*thir.0.borrow(), thir.1),
+                        self.opts.erasure_check,
+                    )?;
+                    Some((local_id.to_def_id(), erased))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let metadata = BinaryMetadata::without_specs(erased_thir);
+        crate::metadata::dump_exports(tcx, &Default::default(), metadata);
+        c.sess.dcx().abort_if_errors();
+        Compilation::Continue
+    }
 }
