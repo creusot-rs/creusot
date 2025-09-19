@@ -327,6 +327,13 @@ impl Exp {
         Exp::Tuple(Box::new([]))
     }
 
+    pub fn is_unit(&self) -> bool {
+        match self {
+            Exp::Tuple(fields) => fields.is_empty(),
+            _ => false,
+        }
+    }
+
     pub fn var(ident: Ident) -> Self {
         Exp::Var(Name::local(ident))
     }
@@ -827,6 +834,13 @@ impl Pattern {
 
     pub fn mk_false() -> Self {
         Self::ConsP(Name::Global(QName { module: Box::new([]), name: *name::FALSE }), Box::new([]))
+    }
+
+    pub fn is_wildcard(&self) -> bool {
+        match self {
+            Pattern::Wildcard => true,
+            _ => false,
+        }
     }
 
     pub fn binders(&self) -> IndexSet<Ident> {

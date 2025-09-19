@@ -492,8 +492,12 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(let P = A in B, Q) = VC(A, |a| let P = a in VC(B, Q))
             TermKind::Let { pattern, arg, body } => self.build_wp(arg, &|arg| {
                 self.build_pattern(pattern, &|pattern| {
-                    let body = self.build_wp(body, k)?.boxed();
-                    Ok(Exp::Let { pattern, arg: arg.clone().boxed(), body })
+                    if pattern.is_wildcard() && arg.is_unit() {
+                        self.build_wp(body, k)
+                    } else {
+                        let body = self.build_wp(body, k)?.boxed();
+                        Ok(Exp::Let { pattern, arg: arg.clone().boxed(), body })
+                    }
                 })
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))

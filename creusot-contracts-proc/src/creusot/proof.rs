@@ -16,13 +16,12 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
     TS1::from(quote! {
         {
             #[allow(let_underscore_drop)]
-            let _ = {
+            let _ =
                 #[creusot::no_translate]
                 #[creusot::spec]
                 #[creusot::spec::assert]
                 #[allow(unused_braces)]
-                || -> bool #assert_body
-            };
+                || -> bool #assert_body;
         }
     })
 }

@@ -596,6 +596,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
         PIdent(self.ctx.rename(id))
     }
 
+    /// Filter out `ensures`/`requires`, but keep `proof_assert`!
     fn not_spec(&self, id: StmtId) -> bool {
         match self.thir[id].kind {
             StmtKind::Expr { expr, .. } => self.not_spec_expr(expr),
@@ -612,7 +613,8 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     fn not_spec_expr(&self, id: ExprId) -> bool {
         match self.unscope(id).kind {
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                !is_spec(self.ctx.tcx, closure_id.to_def_id())
+                let closure_id = closure_id.to_def_id();
+                !is_spec(self.ctx.tcx, closure_id) || is_assertion(self.ctx.tcx, closure_id)
             }
             _ => true,
         }
@@ -628,7 +630,6 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Some(e) => self.expr_term(e)?,
                     None => Term::unit(self.ctx.tcx).span(span),
                 };
-
                 for stmt in stmts.iter().rev().filter(|id| self.not_spec(**id)) {
                     inner = self.stmt_term(*stmt, inner)?;
                 }
