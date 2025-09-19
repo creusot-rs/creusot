@@ -154,7 +154,7 @@ fn desugar_loop(invariants: Vec<Invariant>, mut l: ExprLoop) -> TokenStream {
     l.body.stmts.insert(0, Stmt::Expr(Expr::Verbatim(quote! { #(#invariants)* }), None));
     quote_spanned! {span=> {
       #[allow(let_underscore_drop)]
-      let _ = { #[creusot::no_translate] #[creusot::before_loop] || {} };
+      let _ = #[creusot::no_translate] #[creusot::before_loop] || {};
       #l
     }}
 }

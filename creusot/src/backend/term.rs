@@ -271,11 +271,16 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     )
                 }
             }
-            TermKind::Let { pattern, box arg, box body } => Exp::Let {
-                pattern: self.lower_pat(pattern),
-                arg: self.lower_term(arg).boxed(),
-                body: self.lower_term(body).boxed(),
-            },
+            TermKind::Let { pattern, box arg, box body } => {
+                let pattern = self.lower_pat(pattern);
+                let arg = self.lower_term(arg).boxed();
+                let body = self.lower_term(body);
+                if pattern.is_wildcard() && arg.is_unit() {
+                    body
+                } else {
+                    Exp::Let { pattern, arg, body: body.boxed() }
+                }
+            }
             TermKind::Tuple { fields } if fields.is_empty() => Exp::Tuple(Box::new([])),
             TermKind::Tuple { fields } if fields.len() == 1 => self.lower_term(&fields[0]),
             TermKind::Tuple { fields } => {
