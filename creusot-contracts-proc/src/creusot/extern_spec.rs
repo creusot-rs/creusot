@@ -1,6 +1,6 @@
 use crate::creusot::doc::DocItemName;
 use pearlite_syn::term::*;
-use proc_macro::TokenStream as TS1;
+use proc_macro::{Diagnostic, Level, TokenStream as TS1};
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
@@ -166,19 +166,6 @@ impl FlatSpec {
             })
             .collect();
 
-        let block = Block {
-            brace_token: Brace(span), // This sets the span of the function's DefId
-            stmts: vec![Stmt::Expr(
-                Expr::Call(ExprCall {
-                    attrs: Vec::new(),
-                    func: Box::new(Expr::Path(self.path.clone())),
-                    paren_token: Paren::default(),
-                    args,
-                }),
-                None,
-            )],
-        };
-
         let ident = crate::creusot::generate_unique_ident("extern_spec", span);
 
         if let Some(mut data) = self.impl_data {
@@ -247,23 +234,62 @@ impl FlatSpec {
             variadic: None,
             output: self.signature.output,
         };
-        let mut attrs = self.attrs;
+        let mut attrs = filter_erasure(&self.attrs);
+        let has_erasure = attrs.len() < self.attrs.len();
         attrs.push(parse_quote! { #[allow(dead_code, non_snake_case)] });
 
+        let call = Expr::Call(ExprCall {
+            attrs: Vec::new(),
+            func: Box::new(Expr::Path(self.path.clone())),
+            paren_token: Paren::default(),
+            args,
+        });
         let f_with_body = if let Some(mut b) = self.body {
+            let attrs = attrs.clone();
+            if has_erasure {
+                let erasure_stmt = parse_quote! {
+                    let _ =
+                        #[creusot::no_translate]
+                        #[creusot::spec::erasure]
+                        || #call;
+                };
+                b.stmts.insert(0, erasure_stmt);
+            }
             escape_self_in_block(&mut b);
             let mut sig = sig.clone();
             sig.ident = Ident::new(&format!("{}_body", self.doc_item_name.0), sig.ident.span());
-            let attrs = attrs.clone();
             Some(ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(b) })
         } else {
             None
         };
 
+        let block = Block {
+            brace_token: Brace(span), // This sets the span of the function's DefId
+            stmts: vec![Stmt::Expr(call, None)],
+        };
         let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(block) };
 
         quote_spanned! {span=> #[creusot::no_translate] #[creusot::extern_spec] #f #f_with_body }
     }
+}
+
+fn filter_erasure(attrs: &[Attribute]) -> Vec<Attribute> {
+    attrs
+        .iter()
+        .filter(|attr| {
+            let is_erasure = attr.path().is_ident("erasure");
+            if is_erasure && attr.meta.require_path_only().is_err() {
+                Diagnostic::spanned(
+                    attr.span().unwrap(),
+                    Level::Error,
+                    "#[erasure] inside `extern_spec!` must not have arguments",
+                )
+                .emit();
+            }
+            !is_erasure
+        })
+        .cloned()
+        .collect::<Vec<_>>()
 }
 
 struct SelfEscape {

@@ -15,16 +15,26 @@
 ### `creusot`
 
 ```
-cargo creusot [-- [-p <CRATE>]]
+cargo creusot [--erasure-check] [-- [-p <CRATE>]]
 ```
 
 Run the Creusot compiler.
 
 Output Coma code in the `verif/` directory.
 
-#### Options
+#### Creusot options
+
+- `--erasure-check`: Report `#[erasure]` check failures as errors; see [Erasure check](erasure.html).
+
+    + `--erasure-check=no`: Disable `#[erasure]` checks.
+    + `--erasure-check=warn` (default): Report `#[erasure]` check failures as warnings.
+
+#### Cargo options
+
+All options after `--` are forwarded to `cargo`. Here is a selection of useful ones for Creusot users:
 
 - `-p <CRATE>`: Compile a specific crate `<CRATE>` in a multi-crate project.
+- `-Zbuild-std`: Recompile crates `core`, `std`, `alloc`, `proc-macro`. (Useful for `--erasure-check`.)
 
 ### `prove`
 

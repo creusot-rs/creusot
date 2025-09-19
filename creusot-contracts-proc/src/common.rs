@@ -28,9 +28,9 @@ impl<'a> FilterAttrs<'a> for &'a [Attribute] {
 }
 
 pub struct FnOrMethod {
+    pub attrs: Vec<Attribute>,
     pub defaultness: Option<Token![default]>,
     pub visibility: Visibility,
-    pub attrs: Vec<Attribute>,
     pub sig: Signature,
     pub body: Option<Block>,
     pub semi_token: Option<Token![;]>,
@@ -44,6 +44,39 @@ impl ToTokens for FnOrMethod {
         self.sig.to_tokens(tokens);
         self.body.to_tokens(tokens);
         self.semi_token.to_tokens(tokens);
+    }
+}
+
+impl Parse for FnOrMethod {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let attrs = input.call(Attribute::parse_outer)?;
+        let defaultness: Option<_> = input.parse()?;
+        // Infalliable, no visibility = inherited
+        let vis: Visibility = input.parse()?;
+        let sig: Signature = input.parse()?;
+        let lookahead = input.lookahead1();
+
+        let (brace_token, stmts, semi_token) = if lookahead.peek(token::Brace) {
+            let content;
+            let brace_token = braced!(content in input);
+
+            let stmts = content.call(Block::parse_within)?;
+            (Some(brace_token), stmts, None)
+        } else if lookahead.peek(Token![;]) {
+            let semi_token: Token![;] = input.parse()?;
+            (None, Vec::new(), Some(semi_token))
+        } else {
+            return Err(lookahead.error());
+        };
+
+        Ok(FnOrMethod {
+            attrs,
+            defaultness,
+            visibility: vis,
+            sig,
+            body: brace_token.map(|brace_token| Block { brace_token, stmts }),
+            semi_token,
+        })
     }
 }
 
@@ -65,34 +98,9 @@ impl Parse for ContractSubject {
             closure.attrs.extend(attrs);
             return Ok(ContractSubject::Closure(closure));
         }
-
-        let defaultness: Option<_> = input.parse()?;
-        // Infalliable, no visibility = inherited
-        let vis: Visibility = input.parse()?;
-        let sig: Signature = input.parse()?;
-        let lookahead = input.lookahead1();
-
-        let (brace_token, stmts, semi_token) = if lookahead.peek(token::Brace) {
-            let content;
-            let brace_token = braced!(content in input);
-
-            let stmts = content.call(Block::parse_within)?;
-            (Some(brace_token), stmts, None)
-        } else if lookahead.peek(Token![;]) {
-            let semi_token: Token![;] = input.parse()?;
-            (None, Vec::new(), Some(semi_token))
-        } else {
-            return Err(lookahead.error());
-        };
-
-        Ok(ContractSubject::FnOrMethod(FnOrMethod {
-            defaultness,
-            visibility: vis,
-            attrs,
-            sig,
-            body: brace_token.map(|brace_token| Block { brace_token, stmts }),
-            semi_token,
-        }))
+        let mut item = FnOrMethod::parse(input)?;
+        item.attrs = attrs;
+        Ok(ContractSubject::FnOrMethod(item))
     }
 }
 

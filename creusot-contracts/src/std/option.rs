@@ -2,6 +2,8 @@ use crate::{logic::Mapping, *};
 #[cfg(creusot)]
 use crate::{logic::such_that, resolve::structural_resolve};
 use ::std::cmp::Ordering;
+#[cfg(creusot)]
+use ::std::marker::Destruct;
 pub use ::std::option::*;
 
 impl<T: DeepModel> DeepModel for Option<T> {
@@ -48,14 +50,16 @@ extern_spec! {
         mod option {
             impl<T> Option<T> {
                 #[check(ghost)]
+                #[erasure]
                 #[ensures(result == (*self != None))]
                 fn is_some(&self) -> bool {
-                    match self {
-                        None => false,
+                    match *self {
                         Some(_) => true,
+                        None => false,
                     }
                 }
 
+                #[erasure]
                 #[requires(match self {
                     None => true,
                     Some(t) => f.precondition((t,)),
@@ -64,7 +68,7 @@ extern_spec! {
                     None => result == false,
                     Some(t) => f.postcondition_once((t,), result),
                 })]
-                fn is_some_and(self, f: impl FnOnce(T) -> bool) -> bool {
+                fn is_some_and(self, f: impl FnOnce(T) -> bool + Destruct) -> bool {
                     match self {
                         None => false,
                         Some(t) => f(t),
@@ -72,27 +76,27 @@ extern_spec! {
                 }
 
                 #[check(ghost)]
+                #[erasure]
                 #[ensures(result == (*self == None))]
                 fn is_none(&self) -> bool {
-                    match self {
-                        None => true,
-                        Some(_) => false,
-                    }
+                    !self.is_some()
                 }
 
                 #[check(ghost)]
+                #[erasure]
                 #[ensures(*self == None ==> result == None)]
                 #[ensures(
                     *self == None || exists<r: &T> result == Some(r) && *self == Some(*r)
                 )]
                 fn as_ref(&self) -> Option<&T> {
                     match *self {
-                        None => None,
                         Some(ref t) => Some(t),
+                        None => None,
                     }
                 }
 
                 #[check(ghost)]
+                #[erasure]
                 #[ensures(*self == None ==> result == None && ^self == None)]
                 #[ensures(
                     *self == None
@@ -100,8 +104,8 @@ extern_spec! {
                 )]
                 fn as_mut(&mut self) -> Option<&mut T> {
                     match *self {
-                        None => None,
                         Some(ref mut t) => Some(t),
+                        None => None,
                     }
                 }
 
@@ -153,15 +157,17 @@ extern_spec! {
                 }
 
                 #[check(ghost)]
+                #[erasure]
                 #[ensures(self == None ==> result == default)]
                 #[ensures(self == None || (self == Some(result) && resolve(default)))]
                 fn unwrap_or(self, default: T) -> T {
                     match self {
-                        None => default,
                         Some(t) => t,
+                        None => default,
                     }
                 }
 
+                #[erasure]
                 #[requires(self == None ==> f.precondition(()))]
                 #[ensures(match self {
                     None => f.postcondition_once((), result),
@@ -171,19 +177,20 @@ extern_spec! {
                 where
                     F: FnOnce() -> T {
                     match self {
-                        None => f(),
                         Some(t) => t,
+                        None => f(),
                     }
                 }
 
+                #[erasure]
                 #[ensures(self == None ==> T::default.postcondition((), result))]
                 #[ensures(self == None || self == Some(result))]
                 fn unwrap_or_default(self) -> T
                 where
                     T: Default {
                     match self {
-                        None => T::default(),
                         Some(t) => t,
+                        None => T::default(),
                     }
                 }
 
@@ -197,6 +204,7 @@ extern_spec! {
                     }
                 }
 
+                #[erasure]
                 #[requires(match self {
                     None => true,
                     Some(t) => f.precondition((t,)),
@@ -209,8 +217,8 @@ extern_spec! {
                 where
                     F: FnOnce(T) -> U {
                     match self {
-                        None => None,
                         Some(t) => Some(f(t)),
+                        None => None,
                     }
                 }
 

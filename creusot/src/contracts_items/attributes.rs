@@ -42,6 +42,7 @@ macro_rules! attribute_functions {
 attribute_functions! {
     [creusot::no_translate]                  => is_no_translate
     [creusot::spec]                          => is_spec
+    [creusot::spec::erasure]                 => is_erasure
     [creusot::spec::invariant]               => is_invariant
     [creusot::spec::variant]                 => is_variant
     [creusot::spec::variant::loop_]          => is_loop_variant

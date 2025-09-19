@@ -71,6 +71,24 @@ jobs:
     - name: Run tests
       run: cargo test
     - run: cargo test --test why3 dummy-dummy-dummy # make sure its deps are in the cargo cache
+  erasure-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Cache Cargo build
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'prelude-generator/**') }}
+    - name: Get rust-src
+      run: rustup component add rust-src
+    - name: Build
+      run: cargo build
+    - name: Run tests
+      run: cargo test --test ui -- --erasure-check
   why3:
     runs-on: ubuntu-latest
     steps:
