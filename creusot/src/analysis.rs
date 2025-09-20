@@ -40,7 +40,9 @@ use crate::{
     contracts_items::{is_snapshot_closure, is_spec},
     ctx::{HasTyCtxt, TranslationCtx},
     extended_location::ExtendedLocation,
-    gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
+    gather_spec_closures::{
+        InvariantsAndVariants, SpecClosures, corrected_invariant_names_and_locations,
+    },
     naming::variable_name,
     translation::{
         fmir::{self, BorrowKind},
@@ -137,24 +139,30 @@ impl<E: Encoder> Encodable<E> for Orphan<Location> {
 }
 
 /// Pearlite terms that appear in a body and metadata about its variables.
-pub struct BodySpecs<'tcx> {
-    pub invariants: HashMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
+pub(crate) struct BodySpecs<'tcx> {
+    /// Invariants placed at the beginning of their respective loops.
+    ///
+    /// The string is a description for Why3.
+    pub(crate) invariants: HashMap<BasicBlock, Vec<(String, Term<'tcx>)>>,
+    /// Variants placed at the beginning of their respective loops.
+    pub(crate) variants: HashMap<BasicBlock, Term<'tcx>>,
     /// Invariants to translate as assertions.
-    pub invariant_assertions: HashMap<DefId, (Term<'tcx>, String)>,
+    pub(crate) invariant_assertions: HashMap<DefId, (Term<'tcx>, String)>,
     /// Map of the `proof_assert!` blocks to their translated version.
-    pub assertions: HashMap<DefId, Term<'tcx>>,
+    pub(crate) assertions: HashMap<DefId, Term<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
-    pub snapshots: HashMap<DefId, Term<'tcx>>,
+    pub(crate) snapshots: HashMap<DefId, Term<'tcx>>,
     /// This is empty during analysis (moved into `PreAnalysisCtx`).
-    pub locals: HashMap<Local, (Symbol, Ident)>,
-    pub vars: fmir::LocalDecls<'tcx>,
-    pub erased_locals: MixedBitSet<Local>,
+    pub(crate) locals: HashMap<Local, (Symbol, Ident)>,
+    pub(crate) vars: fmir::LocalDecls<'tcx>,
+    pub(crate) erased_locals: MixedBitSet<Local>,
 }
 
 impl<'tcx> BodySpecs<'tcx> {
     fn empty() -> Self {
         BodySpecs {
             invariants: HashMap::new(),
+            variants: HashMap::new(),
             invariant_assertions: HashMap::new(),
             assertions: HashMap::new(),
             snapshots: HashMap::new(),
@@ -175,11 +183,13 @@ impl<'tcx> BodySpecs<'tcx> {
             }
         });
         let (vars, locals) = translate_vars(ctx.crate_name(), body, &erased_locals);
-        let invariants = corrected_invariant_names_and_locations(ctx, body);
+        let InvariantsAndVariants { invariants, variants, assertions: invariant_assertions } =
+            corrected_invariant_names_and_locations(ctx, body);
         let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, body);
         BodySpecs {
-            invariants: invariants.loop_headers,
-            invariant_assertions: invariants.assertions,
+            invariants,
+            variants,
+            invariant_assertions,
             assertions,
             snapshots,
             locals,
@@ -620,18 +630,25 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 continue;
             }
             let tcx = self.tcx();
-            if let Some(invariants) = self.body_specs.invariants.get_mut(&bb)
-                && !invariants.is_empty()
-            {
+            let mut variants_and_invariants = self
+                .body_specs
+                .invariants
+                .get_mut(&bb)
+                .into_iter()
+                .flatten()
+                .map(|(_, term)| term)
+                .chain(self.body_specs.variants.get_mut(&bb))
+                .peekable();
+            if variants_and_invariants.peek().is_some() {
                 let bad_vars = self.resolver.bad_vars_at(bb.start_location());
                 let scope = self.resolver.body.source_info(bb.start_location()).scope;
                 let subst = self.analysis_env.inline_pearlite_subst(tcx, scope);
-                for (_, term) in invariants.into_iter() {
+                for term in variants_and_invariants {
                     term.subst(&subst);
                     self.analysis_env.check_use_in_logic(
                         term,
                         tcx,
-                        &self.resolver.move_data(),
+                        self.resolver.move_data(),
                         &bad_vars,
                     );
                 }
@@ -868,9 +885,9 @@ pub(crate) fn run_without_specs<'a, 'tcx>(
 }
 
 /// Analysis to run from crates that use creusot-contracts.
-pub(crate) fn run_with_specs<'a, 'tcx>(
+pub(crate) fn run_with_specs<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    body: &'a BodyWithBorrowckFacts<'tcx>,
+    body: &BodyWithBorrowckFacts<'tcx>,
     body_specs: &mut BodySpecs<'tcx>,
 ) -> BorrowData<'tcx> {
     let tcx = ctx.tcx;
@@ -881,7 +898,7 @@ pub(crate) fn run_with_specs<'a, 'tcx>(
     let analysis_env = AnalysisEnv::new(tree, corenamer, locals);
 
     let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
-    let mut analysis = Analysis::new(tcx, analysis_env, &body, body_specs, &move_data);
+    let mut analysis = Analysis::new(tcx, analysis_env, body, body_specs, &move_data);
     analysis.run();
 
     let data = analysis.data;

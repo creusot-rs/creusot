@@ -303,15 +303,16 @@ pub mod macros {
     /// In practice you should strive to use this as little as possible.
     pub use base_macros::trusted;
 
-    /// Declares a variant for a function
+    /// Declares a variant for a function or a loop.
     ///
     /// This is primarily used in combination with recursive logical functions.
     ///
-    /// The variant must be an expression which returns a type implementing
+    /// The variant must be an expression whose type implements
     /// [`WellFounded`](crate::logic::WellFounded).
     ///
     /// # Example
     ///
+    /// - Recursive logical function:
     /// ```
     /// # use creusot_contracts::*;
     /// #[logic]
@@ -323,6 +324,24 @@ pub mod macros {
     ///     } else {
     ///         recursive_add(x - 1, y + 1)
     ///     }
+    /// }
+    /// ```
+    /// - Loop variant:
+    /// ```
+    /// # use creusot_contracts::*;
+    /// #[check(terminates)]
+    /// #[ensures(result == x)]
+    /// fn inneficient_identity(mut x: i32) -> i32 {
+    ///     let mut res = 0;
+    ///     let total = snapshot!(x);
+    ///     // Attribute on loop are experimental in Rust, just pretend the next 2 lines are uncommented :)
+    ///     // #[variant(x)]
+    ///     // #[invariant(x@ + res@ == total@)]
+    ///     while x > 0 {
+    ///         x -= 1;
+    ///         res += 1;
+    ///     }
+    ///     res
     /// }
     /// ```
     pub use base_macros::variant;

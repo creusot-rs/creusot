@@ -18,6 +18,7 @@ mod bumpalo {
     pub struct Bump();
 
     impl Bump {
+        #[check(terminates)]
         #[trusted]
         #[ensures(*result == val)]
         pub fn alloc<T>(&self, val: T) -> &mut T {
@@ -53,12 +54,14 @@ mod hashmap {
     }
 
     impl<K: Hash + Eq + DeepModel, V> MyHashMap<K, V> {
+        #[check(terminates)]
         #[ensures(forall<i: K::DeepModelTy> (^self)@.get(i) == (if i == key.deep_model() { Some(val) } else { self@.get(i) } ))]
         #[trusted]
         pub fn add(&mut self, key: K, val: V) {
             panic!()
         }
 
+        #[check(terminates)]
         #[ensures(match result {
             Some(v) => self@.get(key.deep_model()) == Some(*v),
             None => self@.get(key.deep_model()) == None,
@@ -68,6 +71,7 @@ mod hashmap {
             panic!()
         }
 
+        #[check(terminates)]
         #[ensures(result@ == Mapping::cst(None))]
         #[trusted]
         pub fn new() -> Self {
@@ -196,6 +200,7 @@ impl<'arena> View for Bdd<'arena> {
 }
 
 impl<'arena> PartialEq for Bdd<'arena> {
+    #[check(terminates)]
     #[ensures(result == (self@ == o@))]
     fn eq(&self, o: &Self) -> bool {
         self.1 == o.1
@@ -416,6 +421,7 @@ impl<'arena> Context<'arena> {
 }
 
 impl<'arena> Context<'arena> {
+    #[check(terminates)]
     pub fn new(alloc: &'arena bumpalo::Bump) -> Self {
         let t = &True; // FIXME: make it possible to write this is pearlite
         Context {
@@ -428,6 +434,7 @@ impl<'arena> Context<'arena> {
         }
     }
 
+    #[check(terminates)]
     #[requires(self.is_valid_node(n))]
     #[ensures(*result.0 == n)]
     #[ensures(self.grows())]
@@ -444,6 +451,7 @@ impl<'arena> Context<'arena> {
         r
     }
 
+    #[check(terminates)]
     #[requires(self.is_valid_bdd(childt))]
     #[requires(self.is_valid_bdd(childf))]
     #[requires(x@ < childt.leastvar() && x@ < childf.leastvar())]
@@ -458,6 +466,7 @@ impl<'arena> Context<'arena> {
         self.hashcons(If { v: x, childt, childf })
     }
 
+    #[check(terminates)]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
     #[ensures(forall<v> result.interp(v))]
@@ -466,6 +475,7 @@ impl<'arena> Context<'arena> {
         self.hashcons(True)
     }
 
+    #[check(terminates)]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
     #[ensures(forall<v> !result.interp(v))]
@@ -474,6 +484,7 @@ impl<'arena> Context<'arena> {
         self.hashcons(False)
     }
 
+    #[check(terminates)]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
     #[ensures(forall<v> result.interp(v) == v.get(x))]
@@ -483,6 +494,7 @@ impl<'arena> Context<'arena> {
         self.node(x, t, f)
     }
 
+    #[check(terminates)]
     #[requires(self.is_valid_bdd(x))]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
@@ -506,6 +518,7 @@ impl<'arena> Context<'arena> {
         r
     }
 
+    #[check(terminates)]
     #[requires(self.is_valid_bdd(a))]
     #[requires(self.is_valid_bdd(b))]
     #[ensures(self.grows())]

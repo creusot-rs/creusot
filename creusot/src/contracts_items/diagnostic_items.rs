@@ -112,6 +112,8 @@ contracts_items! {{
         is_fn_impl_postcond             get_fn_impl_postcond
     fn Tokens::new                       ["tokens_new"]
         is_tokens_new                   get_tokens_new
+    fn WellFounded::relation             ["creusot_wf_relation"]
+        is_wf_relation                  get_wf_relation
     type Int                             ["creusot_int"]
         is_int_ty                       get_int_ty
     type Snapshot                        ["snapshot_ty"]
@@ -123,7 +125,7 @@ contracts_items! {{
     type Namespace                       ["namespace_ty"]
         is_namespace_ty                 get_namespace_ty
     trait FnGhost                        ["fn_ghost_trait"]
-        is_fn_ghost_trait                get_fn_ghost_trait
+        is_fn_ghost_trait               get_fn_ghost_trait
     fn size_of_logic                     ["size_of_logic"]
         is_size_of_logic                get_size_of_logic
 }}

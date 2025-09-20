@@ -8,13 +8,13 @@ mod tokens_new;
 mod traits;
 
 pub(crate) use self::ghost::GhostValidate;
+
 use self::{
     opacity::validate_opacity,
     purity::validate_purity,
     terminates::validate_terminates,
     traits::{validate_impls, validate_traits},
 };
-
 use rustc_hir::HirId;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
@@ -57,7 +57,8 @@ pub(crate) fn validate(ctx: &TranslationCtx) {
             validate_opacity(ctx, def_id);
         }
     }
-    validate_terminates(ctx);
+    let variant_calls = validate_terminates(ctx);
+    *ctx.variant_calls.borrow_mut() = variant_calls;
     validate_traits(ctx);
     validate_impls(ctx);
     validate_trusted(ctx);

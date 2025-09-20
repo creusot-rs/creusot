@@ -426,9 +426,11 @@ impl<'tcx> Dependencies<'tcx> {
         for scc in petgraph::algo::tarjan_scc(&graph).into_iter() {
             if scc.iter().any(|node| node == &source_item) {
                 if scc.len() != 1 {
-                    eprintln!("{:?} {scc:?}", source_id);
+                    ctx.dcx().span_bug(
+                        ctx.def_span(source_id),
+                        format!("{} {scc:?}", ctx.def_path_str(source_id)),
+                    )
                 }
-                assert_eq!(scc.len(), 1);
                 bodies.remove(&scc[0]);
                 continue;
             }

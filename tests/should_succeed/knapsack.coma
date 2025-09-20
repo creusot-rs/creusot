@@ -23,11 +23,12 @@ module M_knapsack__max [#"knapsack.rs" 12 0 12 35]
       (! return' {result}) ]
 end
 module M_knapsack__m [#"knapsack.rs" 27 0 27 57]
-  let%span sknapsack = "knapsack.rs" 24 11 24 37
-  let%span sknapsack'0 = "knapsack.rs" 25 11 25 17
-  let%span sknapsack'1 = "knapsack.rs" 26 10 26 21
-  let%span sknapsack'2 = "knapsack.rs" 23 10 23 11
+  let%span sknapsack = "knapsack.rs" 23 10 23 11
+  let%span sknapsack'0 = "knapsack.rs" 24 11 24 37
+  let%span sknapsack'1 = "knapsack.rs" 25 11 25 17
+  let%span sknapsack'2 = "knapsack.rs" 26 10 26 21
   let%span sknapsack'3 = "knapsack.rs" 29 8 34 9
+  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 45 8 45 33
   
   use creusot.int.UInt64
   use seq.Seq
@@ -37,6 +38,8 @@ module M_knapsack__m [#"knapsack.rs" 27 0 27 57]
   type t_Name
   
   type t_Item = { t_Item__name: t_Name; t_Item__weight: UInt64.t; t_Item__value: UInt64.t }
+  
+  predicate well_founded_relation (self: int) (other: int) = [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -50,26 +53,26 @@ module M_knapsack__m [#"knapsack.rs" 27 0 27 57]
   
   function m [#"knapsack.rs" 27 0 27 57] (items'0: Seq.seq t_Item) (i'0: int) (w'0: int) : int
   
-  goal vc_m: ([%#sknapsack] 0 <= i /\ i <= Seq.length items)
-    -> ([%#sknapsack'0] 0 <= w)
+  goal vc_m: ([%#sknapsack'0] 0 <= i /\ i <= Seq.length items)
+    -> ([%#sknapsack'1] 0 <= w)
     -> (if i = 0 then
-      [@expl:m ensures] [%#sknapsack'1] 0 >= 0
+      [@expl:m ensures] [%#sknapsack'2] 0 >= 0
     else
       if UInt64.t'int (Seq.get items (i - 1)).t_Item__weight > w then
-        ((([@expl:m requires #0] [%#sknapsack] 0 <= i - 1 /\ i - 1 <= Seq.length items)
-            && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w))
-          /\ 0 <= ([%#sknapsack'2] i) /\ ([%#sknapsack'2] i - 1) < ([%#sknapsack'2] i))
-        /\ (([%#sknapsack'1] m items (i - 1) w >= 0) -> ([@expl:m ensures] [%#sknapsack'1] m items (i - 1) w >= 0))
+        ((([@expl:m requires #0] [%#sknapsack'0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
+            && ([@expl:m requires #1] [%#sknapsack'1] 0 <= w))
+          /\ well_founded_relation ([%#sknapsack] i) ([%#sknapsack] i - 1))
+        /\ (([%#sknapsack'2] m items (i - 1) w >= 0) -> ([@expl:m ensures] [%#sknapsack'2] m items (i - 1) w >= 0))
       else
-        ((([@expl:m requires #0] [%#sknapsack] 0 <= i - 1 /\ i - 1 <= Seq.length items)
-            && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w))
-          /\ 0 <= ([%#sknapsack'2] i) /\ ([%#sknapsack'2] i - 1) < ([%#sknapsack'2] i))
-        /\ (([%#sknapsack'1] m items (i - 1) w >= 0)
-        -> ((([@expl:m requires #0] [%#sknapsack] 0 <= i - 1 /\ i - 1 <= Seq.length items)
-            && ([@expl:m requires #1] [%#sknapsack'0] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight))
-          /\ 0 <= ([%#sknapsack'2] i) /\ ([%#sknapsack'2] i - 1) < ([%#sknapsack'2] i))
-        /\ (([%#sknapsack'1] m items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight) >= 0)
-        -> ([@expl:m ensures] [%#sknapsack'1] MinMax.max (m items (i - 1) w) (m items (i - 1) (w
+        ((([@expl:m requires #0] [%#sknapsack'0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
+            && ([@expl:m requires #1] [%#sknapsack'1] 0 <= w))
+          /\ well_founded_relation ([%#sknapsack] i) ([%#sknapsack] i - 1))
+        /\ (([%#sknapsack'2] m items (i - 1) w >= 0)
+        -> ((([@expl:m requires #0] [%#sknapsack'0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
+            && ([@expl:m requires #1] [%#sknapsack'1] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight))
+          /\ well_founded_relation ([%#sknapsack] i) ([%#sknapsack] i - 1))
+        /\ (([%#sknapsack'2] m items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight) >= 0)
+        -> ([@expl:m ensures] [%#sknapsack'2] MinMax.max (m items (i - 1) w) (m items (i - 1) (w
             - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight)
           + UInt64.t'int (Seq.get items (i - 1)).t_Item__value)
         >= 0)))
@@ -105,10 +108,10 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 41 0 41 91]
   let%span sknapsack'24 = "knapsack.rs" 39 11 39 33
   let%span sknapsack'25 = "knapsack.rs" 40 11 40 79
   let%span sknapsack'26 = "knapsack.rs" 41 75 41 91
-  let%span sknapsack'27 = "knapsack.rs" 24 11 24 37
-  let%span sknapsack'28 = "knapsack.rs" 25 11 25 17
-  let%span sknapsack'29 = "knapsack.rs" 26 10 26 21
-  let%span sknapsack'30 = "knapsack.rs" 23 10 23 11
+  let%span sknapsack'27 = "knapsack.rs" 23 10 23 11
+  let%span sknapsack'28 = "knapsack.rs" 24 11 24 37
+  let%span sknapsack'29 = "knapsack.rs" 25 11 25 17
+  let%span sknapsack'30 = "knapsack.rs" 26 10 26 21
   let%span sknapsack'31 = "knapsack.rs" 29 8 34 9
   let%span sknapsack'32 = "knapsack.rs" 10 11 10 15
   let%span sknapsack'33 = "knapsack.rs" 11 10 11 31
@@ -247,8 +250,8 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 41 0 41 91]
   
   function m [#"knapsack.rs" 27 0 27 57] (items: Seq.seq t_Item) (i: int) (w: int) : int
   
-  axiom m_def: forall items: Seq.seq t_Item, i: int, w: int. ([%#sknapsack'27] 0 <= i /\ i <= Seq.length items)
-      -> ([%#sknapsack'28] 0 <= w)
+  axiom m_def: forall items: Seq.seq t_Item, i: int, w: int. ([%#sknapsack'28] 0 <= i /\ i <= Seq.length items)
+      -> ([%#sknapsack'29] 0 <= w)
       -> m items i w
       = ([%#sknapsack'31] if i = 0 then
         0
@@ -261,8 +264,8 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 41 0 41 91]
       
       )
   
-  axiom m_spec: forall items: Seq.seq t_Item, i: int, w: int. ([%#sknapsack'27] 0 <= i /\ i <= Seq.length items)
-      -> ([%#sknapsack'28] 0 <= w) -> ([%#sknapsack'29] m items i w >= 0)
+  axiom m_spec: forall items: Seq.seq t_Item, i: int, w: int. ([%#sknapsack'28] 0 <= i /\ i <= Seq.length items)
+      -> ([%#sknapsack'29] 0 <= w) -> ([%#sknapsack'30] m items i w >= 0)
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Item) =
     [%#sslice] UInt64.t'int self < Seq.length seq
