@@ -22,6 +22,7 @@ impl DeepModel for char {
 
 extern_spec! {
     impl Default for char {
+        #[check(ghost)]
         #[ensures(result@ == 0)]
         fn default() -> char;
     }

@@ -48,6 +48,7 @@ extern_spec! {
     }
 
     impl Clone for Box<str> {
+        #[check(ghost)]
         #[ensures((*result)@ == (**self)@)]
         fn clone(&self) -> Box<str>;
     }

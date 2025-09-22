@@ -130,17 +130,20 @@ extern_spec! {
     }
 
     impl<T, A: Allocator> Index<usize> for VecDeque<T, A> {
+        #[check(ghost)]
         #[ensures(*result == self@[i@])]
         fn index(&self, i: usize) -> &T;
     }
 
     impl<T, A: Allocator> IndexMut<usize> for VecDeque<T, A> {
+        #[check(ghost)]
         #[ensures(*result == (*self)@[i@])]
         #[ensures(^result == (^self)@[i@])]
         fn index_mut(&mut self, i: usize) -> &mut T;
     }
 
     impl<'a, T, A: Allocator> IntoIterator for &'a VecDeque<T, A> {
+        #[check(ghost)]
         #[ensures(self@ == result@@)]
         fn into_iter(self) -> Iter<'a, T>;
     }

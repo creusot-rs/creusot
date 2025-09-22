@@ -398,22 +398,26 @@ extern_spec! {
     }
 
     impl<'a, T> IntoIterator for &'a [T] {
+        #[check(ghost)]
         #[ensures(self == result@)]
         fn into_iter(self) -> Iter<'a, T>;
     }
 
     impl<'a, T> IntoIterator for &'a mut [T] {
+        #[check(ghost)]
         #[ensures(self == result@)]
         fn into_iter(self) -> IterMut<'a, T>;
     }
 
     impl<'a, T> Default for &'a mut [T] {
+        #[check(ghost)]
         #[ensures((*result)@ == Seq::empty())]
         #[ensures((^result)@ == Seq::empty())]
         fn default() -> &'a mut [T];
     }
 
     impl<'a, T> Default for &'a [T] {
+        #[check(ghost)]
         #[ensures(result@ == Seq::empty())]
         fn default() -> &'a [T];
     }
