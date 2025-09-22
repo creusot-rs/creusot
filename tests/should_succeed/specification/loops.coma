@@ -1,13 +1,26 @@
-module M_loops__while_loop_variant [#"loops.rs" 4 0 4 34]
+module M_loops__while_loop_variant [#"loops.rs" 5 0 5 34]
+  let%span sloops = "loops.rs" 6 14 6 15
+  let%span sloops'0 = "loops.rs" 4 0 4 15
+  let%span swell_founded = "../../../creusot-contracts/src/logic/well_founded.rs" 45 8 45 33
+  
+  use mach.int.Int
   use creusot.prelude.Any
+  
+  predicate well_founded_relation (self: int) (other: int) = [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec while_loop_variant [#"loops.rs" 4 0 4 34] (x: bool) (return' (x'0: ())) = (! bb0
+  let rec while_loop_variant [#"loops.rs" 5 0 5 34] (x: bool) (return' (x'0: ())) =
+    {[@expl:while_loop_variant requires] [%#sloops'0] not x}
+    (! bb0
     [ bb0 = bb1
-    | bb1 = bb1'0 [ bb1'0 = (! bb2) [ bb2 = any [ br0 -> {x'0 = false} (! bb4) | br1 -> {x'0} (! bb1'0) ] ] ]
-    | bb4 = return''0 {_0} ] [ & _0: () = Any.any_l () | & x'0: bool = x ])
+    | bb1 = bb1invariant
+      [ bb1'0 = {[@expl:loop variant] well_founded_relation variant_old_bb1 0} bb1invariant
+      | bb1invariant = (! [ &variant_old_bb1 <- [%#sloops] 0 ] s0
+        [ s0 = bb2 ])
+        [ bb2 = any [ br0 -> {x'0 = false} (! bb4) | br1 -> {x'0} (! bb1'0) ] ] ]
+    | bb4 = return''0 {_0} ] [ & _0: () = Any.any_l () | & x'0: bool = x | & variant_old_bb1: int = Any.any_l () ])
     [ return''0 (result: ()) -> (! return' {result}) ]
 end

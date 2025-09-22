@@ -2210,6 +2210,10 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   type t_Rc = { t_Rc__ptr: t_NonNull; t_Rc__phantom: (); t_Rc__alloc: () }
   
+  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
+  
+  type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'0; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
+  
   type t_Resource
   
   type t_Id
@@ -2218,23 +2222,19 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   type t_Fragment = { t_Fragment__0: t_Resource; t_Fragment__1: t_Id; t_Fragment__2: Seq.seq t_T }
   
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'0; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
-  
   type t_PersistentArray = {
-    t_PersistentArray__permcell: t_Rc;
+    t_PersistentArray__permcell: t_Rc'0;
     t_PersistentArray__frag: t_Fragment;
-    t_PersistentArray__inv: t_Rc'0 }
+    t_PersistentArray__inv: t_Rc }
   
-  let rec deref (self: t_Rc'0) (return' (x: t_Rc'0)) = any
-    [ return''0 (result: t_Rc'0) -> {[%#sghost] result = self} (! return' {result}) ]
+  let rec deref (self: t_Rc) (return' (x: t_Rc)) = any
+    [ return''0 (result: t_Rc) -> {[%#sghost] result = self} (! return' {result}) ]
   
   type t_LocalInvariant
   
-  function view (self: t_Rc'0) : t_LocalInvariant
+  function view (self: t_Rc) : t_LocalInvariant
   
-  let rec deref'0 (self_: t_Rc'0) (return' (x: t_LocalInvariant)) = any
+  let rec deref'0 (self_: t_Rc) (return' (x: t_LocalInvariant)) = any
     [ return''0 (result: t_LocalInvariant) -> {[%#src] result = view self_} (! return' {result}) ]
   
   type t_Tokens
@@ -2283,7 +2283,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  type t_Inner = C_Direct t_Vec | C_Link UInt64.t t_T t_Rc
+  type t_Inner = C_Direct t_Vec | C_Link UInt64.t t_T t_Rc'0
   
   predicate inv'0 (_0: t_T)
   
@@ -2423,9 +2423,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   function id'1 (self: t_PermCell) : t_Id
   
-  function view'5 (self: t_Rc) : t_PermCell
+  function view'5 (self: t_Rc'0) : t_PermCell
   
-  function view'6 (self: t_Rc) : t_PermCell = [%#smodel] view'5 self
+  function view'6 (self: t_Rc'0) : t_PermCell = [%#smodel] view'5 self
   
   function index_logic'3 (self: Map.map t_Id int) (a: t_Id) : int = [%#smapping] Map.get self a
   
@@ -2560,7 +2560,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   axiom inv_axiom'18 [@rewrite]: forall x: t_T [inv'19 x]. inv'19 x = invariant''15 x
   
-  let rec get_inner_immut (inner: t_Rc) (i: UInt64.t) (pa: t_PA) (return' (x: t_T)) =
+  let rec get_inner_immut (inner: t_Rc'0) (i: UInt64.t) (pa: t_PA) (return' (x: t_T)) =
     {[@expl:get_inner_immut 'pa' type invariant] [%#spersistent_array'4] inv'11 pa}
     {[@expl:get_inner_immut requires #0] [%#spersistent_array'5] exists p: t_Id. protocol pa p}
     {[@expl:get_inner_immut requires #1] [%#spersistent_array'6] contains'2 (view'3 pa.t_PA__auth) (id'1 (view'6 inner))}
@@ -2574,7 +2574,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
   
   function view'11 (self: t_Fragment) : tuple = [%#sghost'5] view'9 self
   
-  function view'12 (self: t_Rc'0) : t_LocalInvariant = [%#sghost'5] view self
+  function view'12 (self: t_Rc) : t_LocalInvariant = [%#sghost'5] view self
   
   predicate invariant''16 [#"persistent_array.rs" 59 8 59 34] (self: t_PersistentArray) =
     [%#spersistent_array'13] (view'11 self.t_PersistentArray__frag)._p0 = id'1 (view'5 self.t_PersistentArray__permcell)
@@ -2611,7 +2611,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
     {[@expl:get_immut requires #0] [%#spersistent_array'0] contains'0 tokens (Namespace_PARRAY 0)}
     {[@expl:get_immut requires #1] [%#spersistent_array'1] UInt64.t'int index < Seq.length (view'14 self)}
     (! bb0
-    [ bb0 = s0 [ s0 = deref {self'0.t_PersistentArray__inv} (fun (_ret: t_Rc'0) -> [ &_12 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = deref {self'0.t_PersistentArray__inv} (fun (_ret: t_Rc) -> [ &_12 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = deref'0 {_12} (fun (_ret: t_LocalInvariant) -> [ &_10 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = deref'1 {tokens'0} (fun (_ret: t_Tokens) -> [ &_15 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0 [ s0 = open_const {_10} {_15} (fun (_ret: t_PA) -> [ &_8 <- _ret ] s1) | s1 = bb4 ]
@@ -2635,7 +2635,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
     | & pa: t_PA = Any.any_l ()
     | & _8: t_PA = Any.any_l ()
     | & _10: t_LocalInvariant = Any.any_l ()
-    | & _12: t_Rc'0 = Any.any_l ()
+    | & _12: t_Rc = Any.any_l ()
     | & _15: t_Tokens = Any.any_l ()
     | & _17: () = Any.any_l ()
     | & _18: () = Any.any_l ()
@@ -2643,7 +2643,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut [#"
     | & _23: t_Fragment = Any.any_l ()
     | & _25: t_Fragment = Any.any_l ()
     | & _26: t_T = Any.any_l ()
-    | & _28: t_Rc = Any.any_l () ])
+    | & _28: t_Rc'0 = Any.any_l () ])
     [ return''0 (result: t_T) -> {[@expl:get_immut result type invariant] [%#spersistent_array'2] inv'19 result}
       {[@expl:get_immut ensures] [%#spersistent_array'3] result = Seq.get (view'14 self) (UInt64.t'int index)}
       (! return' {result}) ]
@@ -2713,11 +2713,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_PermCell
-  
   type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
   
   type t_Rc = { t_Rc__ptr: t_NonNull; t_Rc__phantom: (); t_Rc__alloc: () }
+  
+  type t_PermCell
   
   function view (self: t_Rc) : t_PermCell
   

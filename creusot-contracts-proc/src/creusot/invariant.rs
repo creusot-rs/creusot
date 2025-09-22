@@ -13,16 +13,26 @@ enum InvariantKind {
 }
 use InvariantKind::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Tag {
     Invariant(InvariantKind),
     Variant,
 }
 
-// Represents both invariants and variants
+/// Represents a loop invariant
 #[derive(Debug)]
 struct Invariant {
-    tag: Tag,
+    /// Used to generate the label of the invariant
+    kind: InvariantKind,
+    /// Span of the attribute
+    span: Span,
+    term: pearlite_syn::Term,
+}
+
+/// Represents a loop variant
+#[derive(Debug)]
+struct Variant {
+    /// Span of the attribute
     span: Span,
     term: pearlite_syn::Term,
 }
@@ -31,22 +41,16 @@ impl ToTokens for Invariant {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let span = self.span;
         let term = pretyping::encode_term(&self.term).unwrap_or_else(|e| e.into_tokens());
-        let spec_closure = match self.tag {
-            Tag::Invariant(kind) => {
-                let expl = match kind {
-                    LoopInvariant(Some(n)) => format!("expl:loop invariant #{}", n),
-                    LoopInvariant(None) => "expl:loop invariant".to_string(),
-                    ForInvariant => "expl:for invariant".to_string(),
-                };
-                quote_spanned! {span=>
-                  #[creusot::spec::invariant = #expl]
-                  ||{ #term }
-                }
+        let spec_closure = {
+            let expl = match self.kind {
+                LoopInvariant(Some(n)) => format!("expl:loop invariant #{}", n),
+                LoopInvariant(None) => "expl:loop invariant".to_string(),
+                ForInvariant => "expl:for invariant".to_string(),
+            };
+            quote_spanned! {span=>
+              #[creusot::spec::invariant = #expl]
+              || { #term }
             }
-            Tag::Variant => quote_spanned! {span=>
-              #[creusot::spec::variant::loop_]
-              ||{ ::creusot_contracts::__stubs::variant_check(#term) }
-            },
         };
         tokens.extend(quote_spanned! {span=>
             #[allow(let_underscore_drop)]
@@ -58,10 +62,30 @@ impl ToTokens for Invariant {
     }
 }
 
+impl ToTokens for Variant {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let span = self.span;
+        let term = pretyping::encode_term(&self.term).unwrap_or_else(|e| e.into_tokens());
+        let spec_closure = quote_spanned! {span=>
+          #[creusot::spec::variant::loop_]
+          || { ::creusot_contracts::__stubs::variant_check(#term) }
+        };
+        tokens.extend(quote_spanned! {span=>
+            #[allow(let_underscore_drop)]
+            let _ =
+                #[creusot::no_translate]
+                #[creusot::spec]
+                #spec_closure;
+        })
+    }
+}
+
+/// Desugars a loop invariant
 pub fn desugar_invariant(invariant0: TokenStream, expr: TokenStream) -> Result<TokenStream> {
     desugar(Tag::Invariant(LoopInvariant(Some(0))), invariant0, expr)
 }
 
+/// Desugars a loop (in)variant
 fn desugar(tag: Tag, invariant0: TokenStream, expr: TokenStream) -> Result<TokenStream> {
     let expr: Expr = syn::parse2(expr)?;
     let invariants = |attrs| filter_invariants(tag, invariant0, attrs);
@@ -69,63 +93,86 @@ fn desugar(tag: Tag, invariant0: TokenStream, expr: TokenStream) -> Result<Token
         Expr::ForLoop(mut expr) => Ok(desugar_for(invariants(&mut expr.attrs)?, expr)),
         Expr::While(mut expr) => Ok(desugar_while(invariants(&mut expr.attrs)?, expr)),
         Expr::Loop(mut expr) => Ok(desugar_loop(invariants(&mut expr.attrs)?, expr)),
-        _ => {
-            return Err(Error::new_spanned(
-                expr,
-                "invariants must be attached to either a `for`, `loop` or `while`",
-            ));
-        }
+        _ => Err(Error::new_spanned(
+            expr,
+            format!(
+                "{} must be attached to either a `for`, `loop` or `while`",
+                match tag {
+                    Tag::Invariant(_) => "invariant",
+                    Tag::Variant => "variant",
+                }
+            ),
+        )),
     }
 }
 
-// Set the expl before pushing the invariant into the vector
-fn parse_push_invariant(
-    invariants: &mut Vec<Invariant>,
-    tag: Tag,
-    term: TokenStream,
-) -> Result<()> {
-    let span = term.span();
-    let term = syn::parse2(term)?;
-    invariants.push(Invariant { tag, span, term });
-    Ok(())
-}
-
+/// Extract all the variant/invariants in `attrs`.
+///
+/// # Returns
+///
+/// Returns the list of invariants in `attrs`, prefixed by `invariant`.
+/// Each invariant is given a number, corresponding to the order of appearance.
+/// This number will be visible in why3's IDE.
 fn filter_invariants(
     tag: Tag,
     invariant: TokenStream,
     attrs: &mut Vec<Attribute>,
-) -> Result<Vec<Invariant>> {
+) -> Result<(Vec<Invariant>, Option<Variant>)> {
     let mut n_invariants = if let Tag::Variant = &tag { 0 } else { 1 };
     let mut invariants = Vec::new();
-    parse_push_invariant(&mut invariants, tag, invariant)?;
+    let mut variant = None;
+
+    match tag {
+        Tag::Invariant(kind) => invariants.push(Invariant {
+            kind,
+            span: invariant.span(),
+            term: syn::parse2(invariant)?,
+        }),
+        Tag::Variant => {
+            variant = Some(Variant { span: invariant.span(), term: syn::parse2(invariant)? })
+        }
+    }
 
     let attrs = attrs.extract_if(0.., |attr| {
         attr.path().get_ident().is_some_and(|i| i == "invariant" || i == "variant")
     });
     for attr in attrs {
-        let i = if attr.path().get_ident().map(|i| i == "invariant").unwrap_or(false) {
+        if attr.path().get_ident().map(|i| i == "invariant").unwrap_or(false) {
             n_invariants += 1;
-            Tag::Invariant(LoopInvariant(Some(n_invariants - 1)))
+            let kind = LoopInvariant(Some(n_invariants - 1));
+            if let Meta::List(l) = attr.meta {
+                invariants.push(Invariant {
+                    kind,
+                    span: l.tokens.span(),
+                    term: syn::parse2(l.tokens)?,
+                });
+            } else {
+                return Err(Error::new_spanned(attr, "expected #[invariant(...)]"));
+            }
         } else {
-            Tag::Variant
+            let attr_span = attr.span();
+            if let Meta::List(l) = attr.meta {
+                if variant.is_some() {
+                    return Err(Error::new(attr_span, "Only one variant can be defined on a loop"));
+                }
+                variant = Some(Variant { span: l.tokens.span(), term: syn::parse2(l.tokens)? });
+            } else {
+                return Err(Error::new_spanned(attr, "expected #[variant(...)]"));
+            }
         };
-        if let Meta::List(l) = attr.meta {
-            parse_push_invariant(&mut invariants, i, l.tokens)?;
-        } else {
-            return Err(Error::new_spanned(attr, "expected #[invariant(...)]"));
-        }
     }
     // If there is only one invariant, remove its loop number
     if n_invariants == 1 {
-        invariants.iter_mut().for_each(|i| {
-            if let Tag::Invariant(LoopInvariant(ref mut kind)) = i.tag {
-                *kind = None;
-            }
-        });
+        for i in &mut invariants {
+            i.kind = LoopInvariant(None);
+        }
     }
-    Ok(invariants)
+    Ok((invariants, variant))
 }
 
+/// Desugar a `while` loop into a `loop`, by hand.
+///
+/// This is easier to insert invariants like this.
 fn while_to_loop(w: ExprWhile) -> ExprLoop {
     let sp = w.span();
     let body = w.body;
@@ -137,30 +184,36 @@ fn while_to_loop(w: ExprWhile) -> ExprLoop {
     };
     let body =
         Block { brace_token: Brace(sp), stmts: vec![Stmt::Expr(Expr::Verbatim(body), None)] };
-    ExprLoop {
-        attrs: w.attrs,
-        label: w.label,
-        loop_token: Token![loop](w.while_token.span),
-        body: body,
-    }
+    ExprLoop { attrs: w.attrs, label: w.label, loop_token: Token![loop](w.while_token.span), body }
 }
 
-fn desugar_while(invariants: Vec<Invariant>, w: ExprWhile) -> TokenStream {
-    desugar_loop(invariants, while_to_loop(w))
+fn desugar_while(
+    (invariants, variant): (Vec<Invariant>, Option<Variant>),
+    w: ExprWhile,
+) -> TokenStream {
+    desugar_loop((invariants, variant), while_to_loop(w))
 }
 
-fn desugar_loop(invariants: Vec<Invariant>, mut l: ExprLoop) -> TokenStream {
-    let span = l.loop_token.span;
-    l.body.stmts.insert(0, Stmt::Expr(Expr::Verbatim(quote! { #(#invariants)* }), None));
+fn desugar_loop(
+    (invariants, variant): (Vec<Invariant>, Option<Variant>),
+    mut l: ExprLoop,
+) -> TokenStream {
+    let span = l.span();
+    let variant = if let Some(variant) = variant { quote!(#variant) } else { TokenStream::new() };
+
+    l.body.stmts.insert(0, Stmt::Expr(Expr::Verbatim(quote! { #variant #(#invariants)* }), None));
     quote_spanned! {span=> {
-      #[allow(let_underscore_drop)]
-      let _ = #[creusot::no_translate] #[creusot::before_loop] || {};
-      #l
+        #[allow(let_underscore_drop)]
+        let _ = #[creusot::no_translate] #[creusot::before_loop] || {};
+        #l
     }}
 }
 
-// Lowers for loops to `loop` and inserts the structural invariant that we get 'for free'
-fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
+/// Lowers for loops to `loop` and inserts the structural invariant that we get 'for free'
+fn desugar_for(
+    (mut invariants, variant): (Vec<Invariant>, Option<Variant>),
+    f: ExprForLoop,
+) -> TokenStream {
     let lbl = f.label;
     let for_span = f.for_token.span;
     let pat = f.pat;
@@ -174,7 +227,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
 
     invariants.insert(0,
         Invariant {
-            tag: Tag::Invariant(ForInvariant),
+            kind: ForInvariant,
             span: for_span,
             term: parse_quote_spanned! {for_span=> ::creusot_contracts::std::iter::Iterator::produces(#iter_old.inner(), #produced.inner(), #it) },
         },
@@ -183,19 +236,21 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
     invariants.insert(
         0,
         Invariant {
-            tag: Tag::Invariant(ForInvariant),
+            kind: ForInvariant,
             span: for_span,
             term: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(#it) },
         },
     );
 
     invariants.insert(0, Invariant {
-        tag: Tag::Invariant(ForInvariant),
+        kind: ForInvariant,
         span: for_span,
         term: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(*#produced) },
     });
 
     let elem = Ident::new("__creusot_proc_iter_elem", proc_macro::Span::def_site().into());
+
+    let variant = if let Some(variant) = variant { quote!(#variant) } else { TokenStream::new() };
 
     // Note: the type of `produced` is not determined from its definition alone.
     // We expect:
@@ -214,6 +269,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
         #lbl
         loop {
             #(#inner)*
+            #variant
             #(#invariants)*
             match ::std::iter::Iterator::next(&mut #it) {
                 Some(#elem) => {
@@ -228,6 +284,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
     } }
 }
 
+/// Desugar a variant. This can be attached to either a function or a loop.
 pub(crate) fn desugar_variant(attr: TokenStream, tokens: TokenStream) -> Result<TokenStream> {
     match syn::parse2(tokens.clone()) {
         Ok(f) => desugar_variant_fn(attr, f),
@@ -235,11 +292,11 @@ pub(crate) fn desugar_variant(attr: TokenStream, tokens: TokenStream) -> Result<
     }
 }
 
+/// Generate the specification item corresponding to a function variant
 fn variant_to_tokens(span: Span, p: &pearlite_syn::Term) -> (String, TokenStream) {
-    let var_body = pretyping::encode_term(p).unwrap_or_else(|e| {
-        return e.into_tokens();
-    });
+    let var_body = pretyping::encode_term(p).unwrap_or_else(|e| e.into_tokens());
     let name_tag = crate::creusot::generate_unique_string("variant");
+
     let variant_tokens = quote_spanned! {span=>
         #[allow(let_underscore_drop)]
         let _ =
@@ -253,6 +310,7 @@ fn variant_to_tokens(span: Span, p: &pearlite_syn::Term) -> (String, TokenStream
     (name_tag, variant_tokens)
 }
 
+/// Desugars a function variant
 fn desugar_variant_fn(attr: TokenStream, mut f: ItemFn) -> Result<TokenStream> {
     let span = attr.span();
     let p = syn::parse2(attr)?;

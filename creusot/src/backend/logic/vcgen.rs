@@ -1,8 +1,3 @@
-use std::{
-    collections::{HashMap, HashSet},
-    iter::repeat_n,
-};
-
 use crate::{
     backend::{
         Why3Generator,
@@ -17,11 +12,15 @@ use crate::{
         },
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
     },
-    contracts_items::is_builtins_ascription,
+    contracts_items::{get_wf_relation, is_builtins_ascription},
     ctx::{HasTyCtxt, PreMod},
     naming::name,
-    translation::pearlite::{
-        BinOp, Literal, Pattern, PatternKind, Term, TermKind, TermVisitor, UnOp, super_visit_term,
+    translation::{
+        pearlite::{
+            BinOp, Literal, Pattern, PatternKind, Term, TermKind, TermVisitor, UnOp,
+            super_visit_term,
+        },
+        traits::TraitResolved,
     },
     util::erased_identity_for_item,
 };
@@ -31,7 +30,11 @@ use rustc_middle::{
     mir::ProjectionElem,
     ty::{EarlyBinder, Ty, TyCtxt, TyKind, TypingEnv},
 };
-use rustc_span::{DUMMY_SP, Span};
+use rustc_span::Span;
+use std::{
+    collections::{HashMap, HashSet},
+    iter::repeat_n,
+};
 use why3::{
     Exp, Ident, Name,
     exp::{Pattern as WPattern, UnOp as WUnOp},
@@ -40,13 +43,14 @@ use why3::{
 
 /// Verification conditions for lemma functions.
 ///
-/// As the `let functions` of Why3 leave a lot to be desired and generally cause an impedence
-/// mismatch with the rest of Creusot, we have instead implemented a custom VCGen for logic
-/// functions.
+/// As the `let functions` of Why3 leave a lot to be desired and generally cause
+/// an impedence mismatch with the rest of Creusot, we have instead implemented
+/// a custom VCGen for logic functions.
 ///
-/// This VCGen is a sort of cross between WP and an evaluator, we impose a certain 'evaluation
-/// order' on the logical formula so that we can validate the preconditions of function calls and
-/// leverage the structure of the lemma function as the proof skeleton.
+/// This VCGen is a sort of cross between WP and an evaluator, we impose a
+/// certain 'evaluation order' on the logical formula so that we can validate
+/// the preconditions of function calls and leverage the structure of the lemma
+/// function as the proof skeleton.
 ///
 /// There are several intersting / atypical rules here:
 ///
@@ -63,9 +67,10 @@ struct VCGen<'a, 'tcx> {
     typing_env: TypingEnv<'tcx>,
 }
 
+/// Compute weakest precondition for the function `self_id`
 pub(super) fn wp<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &mut Dependencies<'tcx>,
+    names: &Dependencies<'tcx>,
     self_id: DefId,
     args_names: Vec<Ident>,
     variant: Option<Exp>,
@@ -83,17 +88,17 @@ pub(super) fn wp<'tcx>(
         args_names,
         variant,
     };
-    vcgen.build_wp(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
+    vcgen.build_wp(&t, &|exp| Ok(Exp::let_(dest, exp, post.clone())))
 }
 
-/// Verifies whether a given term is structurally recursive: that is, each recursive call is made to
-/// a component of an argument to the prior call.
+/// Verifies whether a given term is structurally recursive: that is, each
+/// recursive call is made to a component of an argument to the prior call.
 ///
-/// The check must also ensure that we are always recursing on the *same* argument since otherwise
-/// we could 'ping pong' infinitely.
+/// The check must also ensure that we are always recursing on the *same*
+/// argument since otherwise we could 'ping pong' infinitely.
 ///
-/// Currently, the check is *very* naive: we only consider variables and only check `match`. This
-/// means that something like the following would fail:
+/// Currently, the check is *very* naive: we only consider variables and only
+/// check `match`. This means that something like the following would fail:
 ///
 /// ``` match x { Cons(_, tl) => recursive((tl, 0).0) } ```
 ///
@@ -159,7 +164,7 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
                     let mut binds = Default::default();
                     pattern.binds(&mut binds);
                     let old_smaller = self.smaller_than.clone();
-                    self.smaller_than.retain(|nm, _| !binds.contains(&nm));
+                    self.smaller_than.retain(|nm, _| !binds.contains(nm));
                     binds.into_iter().for_each(|b| self.smaller_than(b, arg));
                     self.visit_term(body);
                     self.smaller_than = old_smaller;
@@ -335,16 +340,30 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     .instantiate(self.ctx.tcx, subst)
                     .normalize(self.ctx.tcx, self.typing_env);
 
-                let variant = pre_sig.contract.variant.clone();
-                let variant = if *id == self.self_id {
+                let variant = if self.ctx.should_check_variant_decreases(self.self_id, *id) {
                     let subst = self.ctx.normalize_erasing_regions(self.typing_env, *subst);
                     let subst_id = erased_identity_for_item(self.ctx.tcx, *id);
                     if subst != subst_id {
                         self.ctx.crash_and_error(t.span, "polymorphic recursion is not supported.")
                     }
+                    if self.self_id != *id {
+                        self.ctx
+                            .dcx()
+                            .struct_span_fatal(
+                                t.span,
+                                "mutual recursive calls in logic are not supported",
+                            )
+                            .with_note(format!(
+                                "calling {} from {}",
+                                self.ctx.def_path_str(*id),
+                                self.ctx.def_path_str(self.self_id)
+                            ))
+                            .emit();
+                    }
 
+                    let variant = pre_sig.contract.variant.clone();
                     if let Some(variant) = variant {
-                        self.build_variant(&args, variant.ty, variant.span)?
+                        self.build_variant(&args, variant)?
                     } else if self.structurally_recursive {
                         Exp::mk_true()
                     } else {
@@ -359,7 +378,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
 
                 let mut call = Exp::Var(self.names.item(*id, subst)).app(args.clone());
                 if is_builtins_ascription(self.ctx.tcx, *id) {
-                    call = call.ascribe(self.ty(t.ty))
+                    call = call.ascribe(self.ty(t.ty, t.span))
                 }
                 let call_subst = pre_sig
                     .inputs
@@ -421,7 +440,8 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(exists<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(exists<x>P(x))
             TermKind::Quant { binder, body, .. } => {
                 let body = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
-                let body_wp = Exp::forall(binder.iter().map(|(s, t)| (s.0, self.ty(*t))), body);
+                let body_wp =
+                    Exp::forall(binder.iter().map(|(s, ty)| (s.0, self.ty(*ty, t.span))), body);
                 Ok(body_wp.log_and(k(self.lower_pure(t))?))
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
@@ -554,7 +574,8 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(|x| A(x), Q) = (forall<x>, VC(A(x), true)) /\ Q(|x| A(x))
             TermKind::Closure { bound, body } => {
                 let body = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
-                let wp_pre = Exp::forall(bound.iter().map(|(s, t)| (s.0, self.ty(*t))), body);
+                let wp_pre =
+                    Exp::forall(bound.iter().map(|(s, ty)| (s.0, self.ty(*ty, t.span))), body);
                 Ok(wp_pre.log_and(k(self.lower_pure(t))?))
             }
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
@@ -721,35 +742,35 @@ impl<'tcx> VCGen<'_, 'tcx> {
         }
     }
 
-    fn ty(&self, ty: Ty<'tcx>) -> Type {
-        translate_ty(self.ctx, self.names, DUMMY_SP, ty)
+    /// Translate a Rust type to Why3
+    fn ty(&self, ty: Ty<'tcx>, span: Span) -> Type {
+        translate_ty(self.ctx, self.names, span, ty)
     }
 
-    // Generates the expression to test the validity of the variant for a recursive call.
-    // Currently restricted to `Int` until we sort out `WellFounded` (soon?)
-    //
-    // If V is the variant expression at entry and V' is the variant expression of the recursive call it generates
-    //  0 <= V && V' < V
-    //  Weirdly this doesn't check `0 <= V'` but this is actually the same behavior as Why3
+    /// Generates the expression to test the validity of the variant for
+    /// a recursive call.
+    ///
+    /// Note that this only generates a variant for a simply recursive,
+    /// non-polymorphic call.
     fn build_variant(
         &self,
         call_args: &[Exp],
-        variant_ty: Ty<'tcx>,
-        span: Span,
+        variant_after: Term<'tcx>,
     ) -> Result<Exp, VCError<'tcx>> {
+        let wf_relation = get_wf_relation(self.ctx.tcx);
+        let variant_subst = self.ctx.tcx.mk_args(&[variant_after.ty.into()]);
+        let (wf_relation, variant_subst) =
+            TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, wf_relation, variant_subst)
+                .to_opt(wf_relation, variant_subst)
+                .expect("The `WellFounded` trait should be implemented in this context");
+        let wf_relation = Exp::Var(self.names.item(wf_relation, variant_subst));
         let subst: HashMap<Ident, Exp> =
             self.args_names.iter().cloned().zip(call_args.iter().cloned()).collect();
-        let orig_variant = self.variant.clone().unwrap();
-        let mut rec_var_exp = orig_variant.clone();
-        rec_var_exp.subst(&subst);
-        if is_int(self.ctx.tcx, variant_ty) {
-            self.names.import_prelude_module(PreMod::Int);
-            let orig_variant = orig_variant.boxed();
-            Ok(Exp::BinaryOp(why3::exp::BinOp::Le, Exp::int(0).boxed(), orig_variant.clone())
-                .log_and(Exp::BinaryOp(why3::exp::BinOp::Lt, rec_var_exp.boxed(), orig_variant)))
-        } else {
-            Err(VCError::UnsupportedVariant(variant_ty, span))
-        }
+        let mut variant_after = self.lower_pure(&variant_after);
+        variant_after.subst(&subst);
+        let variant_before = self.variant.clone().unwrap();
+        let variant_decreases = wf_relation.app([variant_before, variant_after]);
+        Ok(variant_decreases)
     }
 }
 
