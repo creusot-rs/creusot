@@ -418,15 +418,20 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         assert!(presig.contract.variant.is_none());
     }
 
-    for (input, _, _) in &presig.inputs {
-        if input.0.name() == why3::Symbol::intern("result")
-            && !is_fn_impl_postcond(ctx.tcx, def_id)
-            && !is_fn_mut_impl_postcond(ctx.tcx, def_id)
-            && !is_fn_once_impl_postcond(ctx.tcx, def_id)
-            && !is_fn_mut_impl_hist_inv(ctx.tcx, def_id)
-            && !is_fn_once_impl_precond(ctx.tcx, def_id)
-        {
-            ctx.crash_and_error(ctx.def_span(def_id), "`result` is not allowed as a parameter name")
+    if !presig.contract.extern_no_spec {
+        for (input, _, _) in &presig.inputs {
+            if input.0.name() == why3::Symbol::intern("result")
+                && !is_fn_impl_postcond(ctx.tcx, def_id)
+                && !is_fn_mut_impl_postcond(ctx.tcx, def_id)
+                && !is_fn_once_impl_postcond(ctx.tcx, def_id)
+                && !is_fn_mut_impl_hist_inv(ctx.tcx, def_id)
+                && !is_fn_once_impl_precond(ctx.tcx, def_id)
+            {
+                ctx.crash_and_error(
+                    ctx.def_span(def_id),
+                    "`result` is not allowed as a parameter name",
+                )
+            }
         }
     }
 
