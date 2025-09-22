@@ -201,10 +201,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 | CastKind::Transmute,
                 _,
                 _,
-            ) => self.ctx.crash_and_error(
-                si.span,
-                format!("Pointer casts are currently unsupported {rvalue:?}"),
-            ),
+            ) => self.ctx.crash_and_error(si.span, format!("Unsupported pointer cast: {rvalue:?}")),
             Rvalue::CopyForDeref(_)
             | Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)
