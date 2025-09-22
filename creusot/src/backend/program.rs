@@ -1304,13 +1304,12 @@ impl<'tcx> Statement<'tcx> {
                 let ty = dest.ty(lower.ctx.tcx, lower.locals);
                 let ty = lower.ty(ty);
                 if lower.ctx.should_check_variant_decreases(lower.def_id, fun_id) {
-                    if subst.iter().any(|p| {
-                        matches!(
-                            p.kind(),
-                            rustc_type_ir::GenericArgKind::Type(_)
-                                | rustc_type_ir::GenericArgKind::Const(_)
-                        )
-                    }) {
+                    if !subst.types().eq(GenericArgs::identity_for_item(
+                        lower.ctx.tcx,
+                        lower.def_id,
+                    )
+                    .types())
+                    {
                         lower.ctx.dcx().span_err(self.span, "Polymorphic recursion is not supported: recursive calls should have the same type parameters.");
                     } else {
                         recursive_calls.insert(fun_id, (fun_qname.clone(), params, ty.clone()));
@@ -1325,7 +1324,7 @@ impl<'tcx> Statement<'tcx> {
                     lower.ctx.tcx,
                     lower.names.typing_env(),
                     Term::var(pl.local, lower.locals[&pl.local].ty),
-                    &*pl.projections,
+                    &pl.projections,
                     |e| Term::call(lower.ctx.tcx, lower.names.typing_env(), did, subst, [e]),
                     Some(Term::true_(lower.ctx.tcx)),
                     |id| Term::var(*id, lower.ctx.types.usize),
