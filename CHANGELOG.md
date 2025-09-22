@@ -12,6 +12,95 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [Unreleased] - ReleaseDate
 
+### Highlights
+
+- [Variants](https://github.com/creusot-rs/creusot/pull/1622) allow proving the termination of recursive functions and loops, which can then be used in ghost code. [Documentation.](https://creusot-rs.github.io/creusot/doc/creusot_contracts/macros/attr.variant.html)
+  - `#[variant(...)]` annotations can be put on loops and recursive functions (either `#[logic]`, or program functions with `#[check(terminates)]` or `#[check(ghost)]`) with a quantity that must decrease at each iteration.
+  - The type of a variant must implement the `logic::WellFounded` trait.
+- [Erasure](https://github.com/creusot-rs/creusot/pull/1725) (+ [#1732](https://github.com/creusot-rs/creusot/pull/1732), [#1737](https://github.com/creusot-rs/creusot/pull/1737)) bridges the gap between code that is verified with Creusot (with specifications and ghost code made visible) and the code that is compiled (where specifications and ghost code are erased). [Documentation.](https://creusot-rs.github.io/creusot/guide/erasure.html)
+
+#### Ghost code
+
+- [Resource algebras](https://github.com/creusot-rs/creusot/pull/1542)
+- [Local invariants](https://github.com/creusot-rs/creusot/pull/1599)
+- [Ghost let](https://github.com/creusot-rs/creusot/pull/1682)
+- [Add axiomatization of `Cell` with predicates (`PredCell`)](https://github.com/creusot-rs/creusot/pull/1673)
+
+#### Support for Rust features
+
+- Add support for const generics ([#1665](https://github.com/creusot-rs/creusot/pull/1665), [#1680](https://github.com/creusot-rs/creusot/pull/1680), [#1664](https://github.com/creusot-rs/creusot/pull/1664), [#1690](https://github.com/creusot-rs/creusot/pull/1690))
+- Add support for pointer-to-pointer casts ([#1560](https://github.com/creusot-rs/creusot/pull/1560), [#1564](https://github.com/creusot-rs/creusot/pull/1564), [#1569](https://github.com/creusot-rs/creusot/pull/1569), [#1579](https://github.com/creusot-rs/creusot/pull/1579))
+- Add minimal support for `dyn` to avoid crashing when encountering `#[derive(Debug)]` ([#1704](https://github.com/creusot-rs/creusot/pull/1704), [#1705](https://github.com/creusot-rs/creusot/pull/1705))
+- [Translate `size_of`](https://github.com/creusot-rs/creusot/pull/1558)
+- [Handle two-phase borrows](https://github.com/creusot-rs/creusot/pull/1529)
+- [Support `?` operator](https://github.com/creusot-rs/creusot/pull/1491)
+- [Generate `false` invariant for empty enums](https://github.com/creusot-rs/creusot/pull/1489)
+
+#### `creusot prove`
+
+New option `--ide-always` to open the Why3 IDE. And you can now select files to prove with short patterns like just the name of a module,
+instead of full paths.
+
+- [Improve `prove` options to open `why3 ide`](https://github.com/creusot-rs/creusot/pull/1521)
+- [prove: Select Why3find targets by patterns](https://github.com/creusot-rs/creusot/pull/1625)
+- [prove: Allow absolute paths to coma files](https://github.com/creusot-rs/creusot/pull/1678)
+- [prove: Add `--no-cache` option](https://github.com/creusot-rs/creusot/pull/1615)
+
+### Changes
+
+- [Merge syntax into `#[logic]`](https://github.com/creusot-rs/creusot/pull/1655).
+    + New `#[logic]` attribute arguments: `#[logic(law)]` (replaces `#[law]`), `#[logic(open)]` (replaces `#[open]`),
+      `#[logic(opaque)]`, `#[logic(inline)]`.
+    + `#[opaque]`
+    + `#[creusot::item]`, `#[builtin]`, `#[intrinsic]`, for Creusot primitives
+- `#[terminates]`, `#[pure]` are replaced by `#[check(terminates)]` and `#[check(ghost)]` ([#1652](https://github.com/creusot-rs/creusot/pull/1652))
+- `#[predicates]` is subsumed by `#[logic]` ([#1594](https://github.com/creusot-rs/creusot/pull/1594))
+- [Reorganize `creusot_contracts`](https://github.com/creusot-rs/creusot/pull/1714)
+- [Rename `PCell` to `PermCell`](https://github.com/creusot-rs/creusot/pull/1720)
+
+### Other features
+
+#### Pearlite
+
+- [Add support for "or patterns" in Pearlite](https://github.com/creusot-rs/creusot/pull/1628)
+- [Add `seq!` macro in Pearlite](https://github.com/creusot-rs/creusot/pull/1541)
+- [pearlite: Parse char literals](https://github.com/creusot-rs/creusot/pull/1483)
+- [Forbid empty matches and casts from `!` in logic](https://github.com/creusot-rs/creusot/pull/1490)
+- [Rework handling of unsized variables in Pearlite](https://github.com/creusot-rs/creusot/pull/1675)
+- [Quantifiers and logic closures can have unsized params](https://github.com/creusot-rs/creusot/pull/1634)
+
+#### Bitwise operations
+
+- [Improve handling of shifts in logic](https://github.com/creusot-rs/creusot/pull/1626)
+- [Shifts in logic](https://github.com/creusot-rs/creusot/pull/1577)
+- [Add `nth_bit`](https://github.com/creusot-rs/creusot/pull/1613)
+
+#### Misc
+
+- [Lint for usage of `#[trusted]`](https://github.com/creusot-rs/creusot/pull/1639)
+- [Add `creusot::why3_meta` attribute](https://github.com/creusot-rs/creusot/pull/1711)
+- [Allow any calls to `FnDef` types, even if they are not constant (these are singleton types anyway)](https://github.com/creusot-rs/creusot/pull/1633)
+- [Refactor generation `Fn`/`FnMut`/`FnOnce` specifications of closures and closure-like objects](https://github.com/creusot-rs/creusot/pull/1531)
+- [Access pointer metadata in logic](https://github.com/creusot-rs/creusot/pull/1731)
+
+#### `creusot-contracts`
+
+- [Add specs for unchecked arithmetic](https://github.com/creusot-rs/creusot/pull/1568)
+- [Add `PartialOrd` for `Int`](https://github.com/creusot-rs/creusot/pull/1557)
+- [Fix and add some extern specs for strings](https://github.com/creusot-rs/creusot/pull/1484)
+- [Access pointer metadata in logic](https://github.com/creusot-rs/creusot/pull/1731)
+
+#### `creusot doc`
+
+- [Prettier creusot-contracts API docs](https://github.com/creusot-rs/creusot/pull/1693)
+- [Improve highlighting of contracts in documentation](https://github.com/creusot-rs/creusot/pull/1703)
+
+### Toolchain
+
+- [Update toolchain to nightly-2025-09-04](https://github.com/creusot-rs/creusot/pull/1659)
+- [Update why3find to 1.2.0](https://github.com/creusot-rs/creusot/pull/1702)
+- [Update to the latest Why3 version](https://github.com/creusot-rs/creusot/pull/1640)
+
 ## [0.5.0] - 2025-04-23
 
 ### Tooling
