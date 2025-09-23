@@ -112,6 +112,7 @@ impl<T, const N: usize> Iterator for IntoIter<T, N> {
 
 extern_spec! {
     impl<T, const N: usize> IntoIterator for [T; N] {
+        #[check(ghost)]
         #[ensures(self@ == result@)]
         fn into_iter(self) -> std::array::IntoIter<T, N>;
     }

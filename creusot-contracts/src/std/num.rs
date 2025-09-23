@@ -31,8 +31,9 @@ macro_rules! mach_int {
 
         extern_spec! {
             impl Default for $t {
+                #[check(ghost)]
                 #[ensures(result == $zero)]
-                fn default() -> $t;
+                fn default() -> $t { 0 }
             }
 
             impl Clone for $t {

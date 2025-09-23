@@ -453,7 +453,7 @@ impl CallGraph {
                 continue;
             }
 
-            if !(is_pearlite(ctx.tcx, def_id) || ctx.sig(def_id).contract.terminates) {
+            if !(is_pearlite(ctx.tcx, def_id) || ctx.sig(def_id).contract.check_terminates) {
                 // Only consider functions marked with `terminates`: we already ensured
                 // that a `terminates` functions only calls other `terminates` functions.
                 if let Some(variant) = &ctx.sig(def_id).contract.variant {

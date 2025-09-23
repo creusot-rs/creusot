@@ -576,22 +576,26 @@ extern_spec! {
     }
 
     impl<T> IntoIterator for Option<T>{
+        #[check(ghost)]
         #[ensures(self == result@)]
         fn into_iter(self) -> IntoIter<T>;
     }
 
     impl<'a, T> IntoIterator for &'a Option<T>{
+        #[check(ghost)]
         #[ensures(*self == match result@ { None => None, Some(r) => Some(*r) })]
         fn into_iter(self) -> Iter<'a, T>;
     }
 
     impl<'a, T> IntoIterator for &'a mut Option<T>{
+        #[check(ghost)]
         #[ensures(*self == match result@ { None => None, Some(r) => Some(*r) })]
         #[ensures(^self == match result@ { None => None, Some(r) => Some(^r) })]
         fn into_iter(self) -> IterMut<'a, T>;
     }
 
     impl<T> Default for Option<T> {
+        #[check(ghost)]
         #[ensures(result == None)]
         fn default() -> Option<T>;
     }

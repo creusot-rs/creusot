@@ -61,8 +61,8 @@ attribute_functions! {
     [creusot::trusted_ignore_structural_inv] => is_ignore_structural_inv
     [creusot::trusted_is_tyinv_trivial_if_param_trivial] => is_tyinv_trivial_if_param_trivial
     [creusot::clause::variant]               => has_variant_clause
-    [creusot::clause::terminates]            => is_terminates
-    [creusot::clause::no_panic]              => is_no_panic
+    [creusot::clause::check_terminates]      => is_check_terminates
+    [creusot::clause::check_ghost]           => is_check_ghost
     [creusot::bitwise]                       => is_bitwise
     [creusot::builtins_ascription]           => is_builtins_ascription
 }

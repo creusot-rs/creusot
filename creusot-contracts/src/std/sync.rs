@@ -27,11 +27,13 @@ extern_spec! {
     mod std {
         mod sync {
             impl<T> Arc<T> {
+                #[check(ghost)]
                 #[ensures(*result@ == value)]
                 fn new(value: T) -> Self;
             }
 
             impl<T, A: Allocator> AsRef for Arc<T, A> {
+                #[check(ghost)]
                 #[ensures(*result == *(*self)@)]
                 fn as_ref(&self) -> &T;
             }

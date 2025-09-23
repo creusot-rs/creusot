@@ -79,33 +79,40 @@ impl<T: ?Sized> PointerExt<T> for *mut T {
 
 extern_spec! {
     impl<T> *const T {
+        #[check(ghost)]
         #[ensures(result == self.addr_logic())]
         fn addr(self) -> usize;
 
+        #[check(ghost)]
         #[ensures(result == self.is_null_logic())]
         fn is_null(self) -> bool;
     }
 
     impl<T> *mut T {
+        #[check(ghost)]
         #[ensures(result == self.addr_logic())]
         fn addr(self) -> usize;
 
+        #[check(ghost)]
         #[ensures(result == self.is_null_logic())]
         fn is_null(self) -> bool;
     }
 
     mod std {
         mod ptr {
+            #[check(ghost)]
             #[ensures(result.is_null_logic())]
             fn null<T>() -> *const T
             where
                 T: std::ptr::Thin + ?Sized;
 
+            #[check(ghost)]
             #[ensures(result.is_null_logic())]
             fn null_mut<T>() -> *mut T
             where
                 T: std::ptr::Thin + ?Sized;
 
+            #[check(ghost)]
             #[ensures(result == (p.addr_logic() == q.addr_logic()))]
             fn addr_eq<T, U>(p: *const T, q: *const U) -> bool
             where

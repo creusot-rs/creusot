@@ -17,12 +17,12 @@ use rustc_trait_selection::infer::InferCtxtExt;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Purity {
-    /// Same as `Program { terminates: true, no_panic: true }`, but can also call the few
+    /// Same as `Program { terminates: true, ghost: true }`, but can also call the few
     /// ghost-only functions (e.g. `Ghost::new`).
     Ghost,
     Program {
         terminates: bool,
-        no_panic: bool,
+        ghost: bool,
     },
     Logic {
         prophetic: bool,
@@ -37,7 +37,7 @@ impl Purity {
             Purity::Logic { prophetic: !is_snapshot_closure(ctx.tcx, def_id) }
         } else {
             let contract = &ctx.sig(def_id).contract;
-            Purity::Program { terminates: contract.terminates, no_panic: contract.no_panic }
+            Purity::Program { terminates: contract.check_terminates, ghost: contract.check_ghost }
         }
     }
 
@@ -47,13 +47,12 @@ impl Purity {
                 prophetic || !prophetic2
             }
             (
-                Purity::Program { no_panic, terminates },
-                Purity::Program { no_panic: no_panic2, terminates: terminates2 },
-            ) => no_panic <= no_panic2 && terminates <= terminates2,
-            (
-                Purity::Ghost,
-                Purity::Ghost | Purity::Program { no_panic: true, terminates: true },
-            ) => true,
+                Purity::Program { ghost, terminates },
+                Purity::Program { ghost: ghost2, terminates: terminates2 },
+            ) => ghost <= ghost2 && terminates <= terminates2,
+            (Purity::Ghost, Purity::Ghost | Purity::Program { ghost: true, terminates: true }) => {
+                true
+            }
             (_, _) => false,
         }
     }
@@ -61,10 +60,9 @@ impl Purity {
     fn as_str(&self) -> &'static str {
         match self {
             Purity::Ghost => "ghost",
-            Purity::Program { terminates, no_panic } => match (*terminates, *no_panic) {
-                (true, true) => "program (pure)",
+            Purity::Program { terminates, ghost } => match (*terminates, *ghost) {
+                (_, true) => "program (ghost)",
                 (true, false) => "program (terminates)",
-                (false, true) => "program (no panic)",
                 (false, false) => "program",
             },
             Purity::Logic { prophetic: false } => "logic",
@@ -110,9 +108,9 @@ impl PurityVisitor<'_, '_> {
         } else {
             let contract = &self.ctx.sig(func_did).contract;
             let is_ghost = self.implements_fn_ghost(func_did, args);
-            let terminates = contract.terminates || is_ghost;
-            let no_panic = contract.no_panic || is_ghost;
-            Purity::Program { terminates, no_panic }
+            let terminates = contract.check_terminates || is_ghost;
+            let ghost = contract.check_ghost || is_ghost;
+            Purity::Program { terminates, ghost }
         }
     }
 

@@ -49,6 +49,7 @@ impl<T: ?Sized> Invariant for PtrOwn<T> {
 impl<T> PtrOwn<T> {
     /// Creates a new `PtrOwn` and associated `*const` by allocating a new memory
     /// cell initialized with `v`.
+    #[check(ghost)]
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == v)]
     pub fn new(v: T) -> (*const T, Ghost<PtrOwn<T>>) {
         Self::from_box(Box::new(v))
@@ -58,6 +59,7 @@ impl<T> PtrOwn<T> {
 impl<T: ?Sized> PtrOwn<T> {
     /// Creates a ghost `PtrOwn` and associated `*const` from an existing [`Box`].
     #[trusted]
+    #[check(ghost)]
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == *val)]
     pub fn from_box(val: Box<T>) -> (*const T, Ghost<PtrOwn<T>>) {
         assert!(core::mem::size_of_val::<T>(&*val) > 0, "PtrOwn doesn't support ZSTs");
@@ -73,6 +75,7 @@ impl<T: ?Sized> PtrOwn<T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PtrOwn).
     #[trusted]
+    #[check(terminates)]
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
@@ -89,6 +92,7 @@ impl<T: ?Sized> PtrOwn<T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PtrOwn).
     #[trusted]
+    #[check(terminates)]
     #[allow(unused_variables)]
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
@@ -107,6 +111,7 @@ impl<T: ?Sized> PtrOwn<T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PtrOwn).
     #[trusted]
+    #[check(terminates)]
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
@@ -122,6 +127,7 @@ impl<T: ?Sized> PtrOwn<T> {
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PtrOwn).
+    #[check(terminates)]
     #[requires(ptr == own.ptr())]
     pub unsafe fn drop(ptr: *const T, own: Ghost<PtrOwn<T>>) {
         let _ = Self::to_box(ptr, own);
