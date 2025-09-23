@@ -1,5 +1,7 @@
 //! Raw pointers with ghost code
 
+#[cfg(creusot)]
+use crate::std::ptr::{metadata_logic, metadata_matches};
 use crate::*;
 
 /// Token that represents the ownership of a memory cell
@@ -42,7 +44,7 @@ impl<T: ?Sized> Invariant for PtrOwn<T> {
     #[logic]
     #[open]
     fn invariant(self) -> bool {
-        !self.ptr().is_null_logic()
+        !self.ptr().is_null_logic() && metadata_matches(*self.val(), metadata_logic(self.ptr()))
     }
 }
 
