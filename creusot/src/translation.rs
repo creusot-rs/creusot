@@ -70,6 +70,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn std:
     let start = Instant::now();
     ctx.load_metadata();
     ctx.load_extern_specs();
+    ctx.load_erasures();
     validate(&ctx);
     ctx.dcx().abort_if_errors();
     debug!("after_analysis_validate: {:?}", start.elapsed());
@@ -103,7 +104,8 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn std:
     let start = Instant::now();
 
     if why3.should_export() {
-        metadata::dump_exports(&mut why3);
+        let metadata = why3.metadata();
+        metadata::dump_exports(why3.tcx, &why3.opts.extern_paths, metadata);
     }
 
     if why3.should_compile() {

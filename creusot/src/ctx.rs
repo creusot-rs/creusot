@@ -2,20 +2,21 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     callbacks,
     contracts_items::{
-        get_creusot_item, get_inv_function, get_resolve_function, get_resolve_method,
+        get_creusot_item, get_inv_function, get_resolve_function, get_resolve_method, is_erasure,
         is_extern_spec, is_logic, is_open_inv_param, is_prophetic, opacity_witness_name,
     },
-    metadata::{BinaryMetadata, Metadata},
+    metadata::{BinaryMetadata, Metadata, encode_def_ids, get_erasure_required},
     naming::variable_name,
     translation::{
         self,
-        external::{ExternSpec, extract_extern_specs_from_item},
+        external::{ExternSpec, extract_erasure_from_item, extract_extern_specs_from_item},
         fmir,
         pearlite::{self, ScopedTerm},
         specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
         traits::{Refinement, TraitResolved},
     },
     util::{erased_identity_for_item, parent_module},
+    validate::AnfBlock,
 };
 use creusot_args::options::Options;
 use indexmap::{IndexMap, IndexSet};
@@ -32,7 +33,7 @@ use rustc_hir::{
     def_id::{DefId, LOCAL_CRATE, LocalDefId},
 };
 use rustc_infer::traits::ObligationCause;
-use rustc_macros::{TypeFoldable, TypeVisitable};
+use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::Promoted,
     thir,
@@ -41,7 +42,7 @@ use rustc_middle::{
         TypingEnv, TypingMode, Visibility,
     },
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
 use rustc_type_ir::inherent::Ty as _;
 use std::{
@@ -162,6 +163,8 @@ impl<'tcx> HasTyCtxt<'tcx> for TyCtxt<'tcx> {
     }
 }
 
+pub type Thir<'tcx> = (thir::Thir<'tcx>, thir::ExprId);
+
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
@@ -169,12 +172,15 @@ pub struct TranslationCtx<'tcx> {
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
     creusot_items: HashMap<Symbol, DefId>,
-    pub(crate) thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
+    local_thir: IndexMap<LocalDefId, Thir<'tcx>>,
     /// This field tracks recursive calls, where we should check that a variant
     /// decreases.
     pub(crate) variant_calls: RefCell<IndexMap<DefId, IndexSet<DefId>>>,
+    erasure_required: RefCell<IndexSet<DefId>>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
+    erased_local_defid: HashMap<LocalDefId, Erased<'tcx>>,
+    erasures_to_check: Vec<(LocalDefId, (DefId, GenericArgsRef<'tcx>))>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
@@ -241,8 +247,12 @@ impl<'tcx> TranslationCtx<'tcx> {
             creusot_items,
             variant_calls: RefCell::new(IndexMap::new()),
             opts,
+            local_thir: Default::default(),
+            erasure_required: Default::default(),
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
+            erased_local_defid: Default::default(),
+            erasures_to_check: Default::default(),
             fmir_body: Default::default(),
             trait_impl: Default::default(),
             sig: Default::default(),
@@ -251,7 +261,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             renamer: Default::default(),
             corenamer: Default::default(),
             crate_name: Default::default(),
-            thir: Default::default(),
         }
     }
 
@@ -265,21 +274,35 @@ impl<'tcx> TranslationCtx<'tcx> {
             // If a body is missing, it means that there was an error, and we know that because `Err` is `ErrorGuaranteed`.
             // Keep going. We will abort later in `translation::after_analysis` after doing more checks that could raise more errors.
             if let Ok((thir, expr0)) = self.tcx.thir_body(def_id) {
-                self.thir.insert(def_id, (thir.borrow().clone(), expr0));
+                self.local_thir.insert(def_id, (thir.borrow().clone(), expr0));
             }
         }
-    }
-
-    /// If this returns `None`, there must have been a type error in the body.
-    /// Callers can then skip whatever they were doing silently because Creusot will abort in the end (in `after_analysis`).
-    pub(crate) fn get_thir(&self, def_id: LocalDefId) -> Option<(&thir::Thir<'tcx>, thir::ExprId)> {
-        self.thir.get(&def_id).map(|&(ref thir, expr)| (thir, expr))
     }
 
     /// Returns `true` if a call from `caller` to `callee` should be checked to
     /// have decreased a variant.
     pub(crate) fn should_check_variant_decreases(&self, caller: DefId, callee: DefId) -> bool {
         self.variant_calls.borrow().get(&caller).is_some_and(|calls| calls.contains(&callee))
+    }
+
+    /// If this returns `None`, there must have been a type error in the body.
+    /// Callers can then skip whatever they were doing silently because Creusot will abort in the end (in `after_analysis`).
+    pub(crate) fn get_local_thir(
+        &self,
+        def_id: LocalDefId,
+    ) -> Option<&(thir::Thir<'tcx>, thir::ExprId)> {
+        self.local_thir.get(&def_id)
+    }
+
+    pub(crate) fn erased_thir(&self, def_id: DefId) -> Option<&AnfBlock<'tcx>> {
+        self.erasure_required.borrow_mut().insert(def_id);
+        self.externs.erased_thir(def_id)
+    }
+
+    pub(crate) fn iter_local_thir(
+        &self,
+    ) -> impl Iterator<Item = (&LocalDefId, &(thir::Thir<'tcx>, thir::ExprId))> {
+        self.local_thir.iter()
     }
 
     queryish!(trait_impl, DefId, Vec<Refinement<'tcx>>, translate_impl);
@@ -403,12 +426,41 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.opacity(item).0.is_accessible_from(modl, self.tcx)
     }
 
+    fn exported_erased_thir(&mut self) -> Vec<(DefId, AnfBlock<'tcx>)> {
+        if self.opts.erasure_check.is_no() {
+            return vec![];
+        }
+        let Some(erasure_check_dir) = &self.opts.erasure_check_dir else { return vec![] };
+        let erasure_required = get_erasure_required(self.tcx, erasure_check_dir);
+        if erasure_required.is_empty() {
+            return vec![];
+        }
+        self.local_thir
+            .iter()
+            .filter_map(|(local_id, thir)| {
+                if erasure_required.contains(local_id) {
+                    let erasure = crate::validate::a_normal_form(self, *local_id, thir)?;
+                    Some((local_id.to_def_id(), erasure))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    /// This must only be called at the end because it will `take` stuff out of `self`.
     pub(crate) fn metadata(&mut self) -> BinaryMetadata<'tcx> {
+        let erased_thir = self.exported_erased_thir();
         BinaryMetadata::from_parts(
-            &mut self.terms,
-            &self.creusot_items,
-            &self.extern_specs,
-            &self.params_open_inv,
+            std::mem::take(&mut self.terms),
+            std::mem::take(&mut self.creusot_items),
+            std::mem::take(&mut self.extern_specs),
+            std::mem::take(&mut self.params_open_inv),
+            erased_thir,
+            std::mem::take(&mut self.erased_local_defid)
+                .into_iter()
+                .map(|(id, erased)| (id.to_def_id(), erased))
+                .collect(),
         )
     }
 
@@ -458,7 +510,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn load_extern_specs(&mut self) {
         let mut traits_or_impls = Vec::new();
 
-        for (&def_id, thir) in self.thir.iter() {
+        for (&def_id, thir) in self.local_thir.iter() {
             if is_extern_spec(self.tcx, def_id.to_def_id()) {
                 if let Some(container) = self.opt_associated_item(def_id.to_def_id()) {
                     traits_or_impls.push(container.def_id)
@@ -501,6 +553,43 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
     }
 
+    pub(crate) fn load_erasures(&mut self) {
+        for (&def_id, thir) in self.local_thir.iter() {
+            if is_erasure(self.tcx, def_id.to_def_id()) {
+                let (eraser, erasure, to_check) = extract_erasure_from_item(self, def_id, thir);
+                self.erased_local_defid.insert(eraser, erasure);
+                self.erasures_to_check.push((eraser, to_check));
+            }
+        }
+    }
+
+    pub(crate) fn iter_erasures_to_check(
+        &self,
+    ) -> impl Iterator<Item = &(LocalDefId, (DefId, GenericArgsRef<'tcx>))> {
+        self.erasures_to_check.iter()
+    }
+
+    pub(crate) fn write_erasure_required(&self) {
+        if !self.opts.should_output {
+            // Skip if this is not a primary package
+            return;
+        }
+        let Some(erasure_check_dir) = &self.opts.erasure_check_dir else {
+            return;
+        };
+        let path = erasure_check_dir.join(self.tcx.crate_name(LOCAL_CRATE).as_str());
+        let erasure_required = self.erasure_required.borrow();
+        if erasure_required.is_empty() {
+            let _ = std::fs::remove_file(path);
+            return;
+        }
+        std::fs::create_dir_all(erasure_check_dir)
+            .and_then(|_| encode_def_ids(self.tcx, &path, erasure_required.iter()))
+            .unwrap_or_else(|e| {
+                self.crash_and_error(DUMMY_SP, format!("could not write {}: {}", path.display(), e))
+            });
+    }
+
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
         match self.tcx.def_kind(def_id) {
             DefKind::Trait => ItemType::Trait,
@@ -535,6 +624,13 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn crate_name(&self) -> why3::Symbol {
         *self.crate_name.get_or_init(|| crate_name(self.tcx))
     }
+
+    pub(crate) fn erasure(&self, def_id: DefId) -> Option<&Erased<'tcx>> {
+        match def_id.as_local() {
+            Some(local) => self.erased_local_defid.get(&local),
+            None => self.externs.erasure(def_id),
+        }
+    }
 }
 
 impl<'tcx> HasTyCtxt<'tcx> for TranslationCtx<'tcx> {
@@ -545,4 +641,13 @@ impl<'tcx> HasTyCtxt<'tcx> for TranslationCtx<'tcx> {
 
 pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
     tcx.crate_name(LOCAL_CRATE).as_str().into()
+}
+
+#[derive(Clone, Debug, TyDecodable, TyEncodable)]
+pub struct Erased<'tcx> {
+    /// `DefId` of the trait method or standalone `fn` item
+    /// For `#[erasure]` checking of calling functions.
+    pub def: (DefId, GenericArgsRef<'tcx>),
+    /// `true` for ghost arguments to erase
+    pub erase_args: Vec<bool>,
 }

@@ -1,5 +1,6 @@
 //! Creusot-specific validations
 
+mod erasure;
 mod ghost;
 mod opacity;
 mod purity;
@@ -7,7 +8,10 @@ mod terminates;
 mod tokens_new;
 mod traits;
 
-pub(crate) use self::ghost::GhostValidate;
+pub(crate) use self::{
+    erasure::{AnfBlock, a_normal_form, a_normal_form_without_specs},
+    ghost::{GhostValidate, is_ghost_ty_},
+};
 
 use self::{
     opacity::validate_opacity,
@@ -22,7 +26,7 @@ use rustc_span::Symbol;
 use crate::{
     contracts_items::{get_builtin, is_extern_spec, is_no_translate, is_spec, is_trusted},
     ctx::{HasTyCtxt as _, TranslationCtx},
-    validate::tokens_new::validate_tokens_new,
+    validate::{erasure::validate_erasures, tokens_new::validate_tokens_new},
 };
 
 /// Validate that creusot buitins are annotated with `#[trusted]`.
@@ -47,7 +51,7 @@ fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
 }
 
 pub(crate) fn validate(ctx: &TranslationCtx) {
-    for (&def_id, thir) in ctx.thir.iter() {
+    for (&def_id, thir) in ctx.iter_local_thir() {
         let def_id = def_id.to_def_id();
         if is_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
             validate_purity(ctx, def_id, thir);
@@ -62,4 +66,5 @@ pub(crate) fn validate(ctx: &TranslationCtx) {
     validate_traits(ctx);
     validate_impls(ctx);
     validate_trusted(ctx);
+    validate_erasures(ctx);
 }

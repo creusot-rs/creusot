@@ -61,6 +61,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[trusted]
     #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == *val)]
+    #[erasure(Box::into_raw)]
     pub fn from_box(val: Box<T>) -> (*const T, Ghost<PtrOwn<T>>) {
         assert!(core::mem::size_of_val::<T>(&*val) > 0, "PtrOwn doesn't support ZSTs");
         (Box::into_raw(val), Ghost::conjure())
@@ -79,6 +80,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ptr_own_as_ref")]
     pub unsafe fn as_ref(ptr: *const T, own: Ghost<&PtrOwn<T>>) -> &T {
         unsafe { &*ptr }
     }
@@ -98,6 +100,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[ensures(*result == *own.val())]
     #[ensures((^own).ptr() == own.ptr())]
     #[ensures(*(^own).val() == ^result)]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ptr_own_as_mut")]
     pub unsafe fn as_mut(ptr: *const T, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
         unsafe { &mut *(ptr as *mut _) }
     }
@@ -115,6 +118,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
+    // #[erasure(Box::from_raw)]
     pub unsafe fn to_box(ptr: *const T, own: Ghost<PtrOwn<T>>) -> Box<T> {
         unsafe { Box::from_raw(ptr as *mut _) }
     }

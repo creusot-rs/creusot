@@ -460,10 +460,10 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
 ) -> CreusotResult<(Box<[(PIdent, Ty<'tcx>)]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
-    let Some((thir, expr)) = ctx.get_thir(id) else { return Err(Error::ErrorGuaranteed) };
+    let Some((thir, expr)) = ctx.get_local_thir(id) else { return Err(Error::ErrorGuaranteed) };
     let lower = ThirTerm { ctx, item_id: id, thir };
 
-    let (triggers, body) = lower.body_term(expr)?;
+    let (triggers, body) = lower.body_term(*expr)?;
 
     // All that remains is to translate patterns in the parameter list.
     // Postconditions make this annoying. They are closures with a `result` parameter,
@@ -478,7 +478,7 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
         // Preconditions and variants have all of their variables bound in the parent function.
         // Postconditions also bind a `result` variable.
         let parent = ctx.tcx.parent(did).expect_local();
-        let Some((parent_thir, _)) = ctx.get_thir(parent) else {
+        let Some((parent_thir, _)) = ctx.get_local_thir(parent) else {
             return Err(Error::ErrorGuaranteed);
         };
         // Parameters of the parent function plus maybe the `result` parameter from the current closure

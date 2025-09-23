@@ -45,6 +45,7 @@
     feature = "nightly",
     allow(incomplete_features, internal_features),
     feature(
+        const_destruct,
         fn_traits,
         print_internals,
         fmt_internals,
@@ -412,6 +413,32 @@ pub mod macros {
     /// This attribute indicates that the function need to be proved in "bitwise" mode, which means that Creusot will use
     /// the bitvector theory of SMT solvers.
     pub use base_macros::bitwise_proof;
+
+    /// Check that the annotated function erases to another function.
+    ///
+    /// See the [guide: Erasure check](https://creusot-rs.github.io/creusot/guide/erasure.html).
+    ///
+    /// # Usage
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// #[erasure(f)]
+    /// fn g(x: usize, i: Ghost<Int>) { /* ... */ }
+    /// ```
+    ///
+    /// # Inside `extern_spec!`
+    ///
+    /// The shorter `#[erasure]` (without argument) can be used in `extern_spec!` to check
+    /// that the annotated function body matches the original one.
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// extern_spec! {
+    ///   #[erasure]
+    ///   fn some_external_function() { /* ... */ }
+    /// }
+    /// ```
+    pub use base_macros::erasure;
 }
 
 #[doc(hidden)]
