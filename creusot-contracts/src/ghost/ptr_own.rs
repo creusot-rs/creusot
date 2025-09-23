@@ -49,7 +49,7 @@ impl<T: ?Sized> Invariant for PtrOwn<T> {
 impl<T> PtrOwn<T> {
     /// Creates a new `PtrOwn` and associated `*const` by allocating a new memory
     /// cell initialized with `v`.
-    #[check(ghost)]
+    #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == v)]
     pub fn new(v: T) -> (*const T, Ghost<PtrOwn<T>>) {
         Self::from_box(Box::new(v))
@@ -59,7 +59,7 @@ impl<T> PtrOwn<T> {
 impl<T: ?Sized> PtrOwn<T> {
     /// Creates a ghost `PtrOwn` and associated `*const` from an existing [`Box`].
     #[trusted]
-    #[check(ghost)]
+    #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == *val)]
     pub fn from_box(val: Box<T>) -> (*const T, Ghost<PtrOwn<T>>) {
         assert!(core::mem::size_of_val::<T>(&*val) > 0, "PtrOwn doesn't support ZSTs");
