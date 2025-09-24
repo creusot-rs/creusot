@@ -36,7 +36,8 @@ use rustc_type_ir::{Interner, VisitorResult as _};
 use crate::{
     backend::is_trusted_item,
     contracts_items::{
-        is_before_loop, is_erasure, is_ptr_own_as_mut, is_ptr_own_as_ref, is_snap_from_fn, is_spec,
+        is_before_loop, is_erasure, is_ptr_own_as_mut, is_ptr_own_as_ref, is_ptr_own_from_mut,
+        is_ptr_own_from_ref, is_snap_from_fn, is_spec,
     },
     ctx::{HasTyCtxt, TranslationCtx},
     util::{ODecodable, OEncodable},
@@ -597,10 +598,16 @@ struct AnfBuilder<'a, 'tcx> {
     scope_tree: &'a ScopeTree,
     /// Mapping from ANF variables to values
     /// This lets us identify `let x = e; f(x)` with `f(e)`.
-    /// Unmapped variables are assumed to be mutable (accessing them triggers a `Read` action)
-    alias: HashMap<ItemLocalId, AnfValue<'tcx>>,
+    /// Variables can also be `Mutable`, and accessing them triggers a `Read` action.
+    /// Unmapped variables are ghost variables, which erase to ().
+    alias: HashMap<ItemLocalId, VarValue<'tcx>>,
     /// Warning or Error
     level: rustc_errors::Level,
+}
+
+enum VarValue<'tcx> {
+    Value(AnfValue<'tcx>),
+    Mutable,
 }
 
 // Note: most methods return `Result<_, ()>` instead of `Option<_>`
@@ -713,11 +720,12 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             }
             Block { block } => self.a_normal_form_block(*block, stmts)?,
             VarRef { id } => match self.alias.get(&id.0.local_id) {
-                None => {
+                Some(VarValue::Mutable) => {
                     let borrow = AnfValue::Borrow(AnfPlace::mut_var(self.var(*id)).into());
                     bind_var(stmts, AnfOp::read((borrow, expr.span)))
                 }
-                Some(v) => v.clone(),
+                Some(VarValue::Value(v)) => v.clone(),
+                None => AnfValue::Unit,
             },
             Call { fun, args, .. } => {
                 let fun = self.a_normal_form_expr(*fun, stmts)?;
@@ -749,6 +757,13 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                                 stmts,
                                 AnfOp::unsafe_borrow((AnfValue::Borrow(place), arg0.1)),
                             );
+                        } else if is_ptr_own_from_ref(self.tcx, fun_id)
+                            || is_ptr_own_from_mut(self.tcx, fun_id)
+                        {
+                            let arg0 = args.into_iter().next().unwrap();
+                            let mut place = AnfPlace::immut(arg0.0);
+                            place.add_deref(false);
+                            break 'fun place.raw_borrow();
                         } else {
                             (fun_id, subst, args)
                         };
@@ -915,8 +930,9 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
         use ExprKind::*;
         match &expr.kind {
             VarRef { id } => match self.alias.get(&id.0.local_id) {
-                None => Ok(AnfPlace::mut_var(self.var(*id))),
-                Some(v) => Ok(AnfPlace::immut(v.clone())),
+                Some(VarValue::Mutable) => Ok(AnfPlace::mut_var(self.var(*id))),
+                Some(VarValue::Value(v)) => Ok(AnfPlace::immut(v.clone())),
+                None => Ok(AnfPlace::immut(AnfValue::Unit)), // Ghost place
             },
             Deref { arg } => {
                 let unsafe_ = match self.thir[*arg].ty.kind() {
@@ -1033,7 +1049,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                             ..
                         } => {
                             // Skip generating a binding
-                            self.alias.insert(var.0.local_id, rhs.0.clone());
+                            self.alias.insert(var.0.local_id, VarValue::Value(rhs.0.clone()));
                             return Ok(());
                         }
                         PatKind::Leaf { subpatterns }
@@ -1080,9 +1096,15 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
         use PatKind::*;
         match &pat.kind {
             Wild => Ok(AnfPattern::Wild),
-            Binding { var, mode: BindingMode(ByRef::No, Mutability::Not), .. } => {
+            Binding { var, mode: BindingMode(ByRef::No, mutability), .. } => {
                 let v = self.var(*var);
-                self.alias.insert(var.0.local_id, AnfValue::Var(v));
+                self.alias.insert(
+                    var.0.local_id,
+                    match mutability {
+                        Mutability::Not => VarValue::Value(AnfValue::Var(v)),
+                        Mutability::Mut => VarValue::Mutable,
+                    },
+                );
                 Ok(AnfPattern::Var(v))
             }
             Binding { var, .. } => Ok(AnfPattern::Var(self.var(*var))),
