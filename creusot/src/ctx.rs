@@ -439,7 +439,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             .iter()
             .filter_map(|(local_id, thir)| {
                 if erasure_required.contains(local_id) {
-                    let erasure = crate::validate::a_normal_form(self, *local_id, thir)?;
+                    let erasure = crate::validate::a_normal_form_for_export(self, *local_id, thir)?;
                     Some((local_id.to_def_id(), erasure))
                 } else {
                     None

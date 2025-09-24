@@ -9,7 +9,7 @@ mod tokens_new;
 mod traits;
 
 pub(crate) use self::{
-    erasure::{AnfBlock, a_normal_form, a_normal_form_without_specs},
+    erasure::{AnfBlock, a_normal_form_for_export, a_normal_form_without_specs},
     ghost::{GhostValidate, is_ghost_ty_},
 };
 

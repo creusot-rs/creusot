@@ -92,7 +92,7 @@ fn check_erasure<'tcx>(
         ctx.error(left_span, "#[erasure] function must have a body").emit();
         return Err(None);
     };
-    let left = a_normal_form(ctx, left_local, left_thir).ok_or_else(|| {
+    let left = a_normal_form_or_error(ctx, left_local, left_thir).ok_or_else(|| {
         debug!("{:#?}", left_thir);
         None
     })?;
@@ -121,7 +121,7 @@ fn check_erasure<'tcx>(
                 ctx.error(ctx.def_span(right_local), "#[erasure] target must have a body").emit();
                 return Err(None);
             };
-            let right = a_normal_form(ctx, right_local, right_thir).ok_or_else(|| {
+            let right = a_normal_form_or_error(ctx, right_local, right_thir).ok_or_else(|| {
                 debug!("{:#?}", right_thir);
                 None
             })?;
@@ -535,31 +535,48 @@ impl<D: Decoder> Decodable<D> for LogicalOp {
 // * ANF conversion
 ////////////////////////////////////////////////////////////////
 
-/// Convert a THIR expression to ANF.
-pub fn a_normal_form<'tcx>(
+/// Convert a THIR expression to ANF, erroring if the conversion fails.
+/// This is used for intra-crate erasure checks, where we always have access to bodies.
+fn a_normal_form_or_error<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: LocalDefId,
     (thir, expr): &(Thir<'tcx>, ExprId),
 ) -> Option<AnfBlock<'tcx>> {
-    let mut ctx = AnfBuilder::new(
-        ctx.tcx,
-        Some(ctx),
-        def_id,
-        thir,
-        erasure_check_level(ctx.opts.erasure_check),
-    );
-    let pattern = ctx.a_normal_form_args().ok()?;
-    ctx.a_normal_form_expr_block_(*expr, pattern, Vec::new(), None).ok()
+    a_normal_form_(ctx.tcx, Some(ctx), def_id, (thir, *expr), rustc_errors::Level::Error)
+}
+
+/// Convert a THIR expression to ANF, using the `--erasure-check` option to set the error or warning level.
+/// This is used for ANF to be exported to another crate, so that by default (warn level) you don't get errors
+/// depending on whether the user recompiled their project.
+pub fn a_normal_form_for_export<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    def_id: LocalDefId,
+    (thir, expr): &(Thir<'tcx>, ExprId),
+) -> Option<AnfBlock<'tcx>> {
+    let level = erasure_check_level(ctx.opts.erasure_check);
+    a_normal_form_(ctx.tcx, Some(ctx), def_id, (thir, *expr), level)
 }
 
 /// Convert a THIR expression to ANF, without access to `TranslationCtx`.
+/// This is used in crates that don't depend on `creusot-contracts`.
 pub fn a_normal_form_without_specs<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: LocalDefId,
-    (thir, expr): (&Thir<'tcx>, ExprId),
+    thir: (&Thir<'tcx>, ExprId),
     erasure_check: ErasureCheck,
 ) -> Option<AnfBlock<'tcx>> {
-    let mut ctx = AnfBuilder::new(tcx, None, def_id, thir, erasure_check_level(erasure_check));
+    a_normal_form_(tcx, None, def_id, thir, erasure_check_level(erasure_check))
+}
+
+/// This is the implementation shared by the variants above.
+fn a_normal_form_<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    ctx: Option<&TranslationCtx<'tcx>>,
+    def_id: LocalDefId,
+    (thir, expr): (&Thir<'tcx>, ExprId),
+    level: rustc_errors::Level,
+) -> Option<AnfBlock<'tcx>> {
+    let mut ctx = AnfBuilder::new(tcx, ctx, def_id, thir, level);
     let pattern = ctx.a_normal_form_args().ok()?;
     ctx.a_normal_form_expr_block_(expr, pattern, Vec::new(), None).ok()
 }
