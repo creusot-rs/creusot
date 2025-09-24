@@ -132,6 +132,12 @@ contracts_items! {{
         is_ptr_own_as_ref               get_ptr_own_as_ref
     fn PtrOwn::as_mut                    ["ptr_own_as_mut"]
         is_ptr_own_as_mut               get_ptr_own_as_mut
+    fn std::ptr::metadata_matches        ["metadata_matches"]
+        is_metadata_matches             get_metadata_matches
+    fn std::ptr::metadata_matches_slice  ["metadata_matches_slice"]
+        is_metadata_matches_slice       get_metadata_matches_slice
+    fn std::ptr::metadata_matches_str    ["metadata_matches_str"]
+        is_metadata_matches_str         get_metadata_matches_str
 }}
 
 contracts_items! { #[std_items] {

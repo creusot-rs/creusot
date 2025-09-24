@@ -287,14 +287,14 @@ module M_erasure__test_ptr2 [#"erasure.rs" 105 0 105 67]
   let%span serasure'0 = "erasure.rs" 104 11 104 16
   let%span serasure'1 = "erasure.rs" 105 65 105 67
   let%span sghost = "../../../creusot-contracts/src/ghost.rs" 119 8 119 18
-  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 84 40 84 43
-  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 80 15 80 31
-  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 84 4 84 69
-  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 81 14 81 35
-  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 12
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 86 40 86 43
+  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 82 15 82 31
+  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 86 4 86 69
+  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 83 14 83 35
+  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 12
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 95 8 95 18
-  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 59 14 59 53
-  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 61 8 61 35
+  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 103 14 103 53
+  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 105 8 105 35
   let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   
   use creusot.prelude.Opaque
@@ -313,7 +313,14 @@ module M_erasure__test_ptr2 [#"erasure.rs" 105 0 105 67]
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant' (self: t_PtrOwn) = [%#sptr_own'3] not is_null_logic (ptr self)
+  predicate metadata_matches (_value: t_T) (_metadata: ()) = true
+  
+  function val' (self: t_PtrOwn) : t_T
+  
+  function metadata_logic (_0: Opaque.ptr) : ()
+  
+  predicate invariant' (self: t_PtrOwn) =
+    [%#sptr_own'3] not is_null_logic (ptr self) /\ metadata_matches (val' self) (metadata_logic (ptr self))
   
   predicate inv (_0: t_T)
   
@@ -328,7 +335,7 @@ module M_erasure__test_ptr2 [#"erasure.rs" 105 0 105 67]
   axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x
       = (invariant' x
       /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> inv'0 val'
+        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'0 val''0
         end)
   
   predicate invariant''1 (self: t_PtrOwn) = [%#sinvariant] inv'1 self
@@ -352,8 +359,6 @@ module M_erasure__test_ptr2 [#"erasure.rs" 105 0 105 67]
   predicate inv'4 (_0: t_T)
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_T [inv'4 x]. inv'4 x = invariant''3 x
-  
-  function val' (self: t_PtrOwn) : t_T
   
   let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return' (x: t_T)) =
     {[@expl:as_ref 'own' type invariant] [%#sptr_own] inv'3 own}
@@ -381,16 +386,16 @@ module M_erasure__test_ptr_mut2 [#"erasure.rs" 116 0 116 79]
   let%span serasure'1 = "erasure.rs" 116 73 116 79
   let%span sghost = "../../../creusot-contracts/src/ghost.rs" 109 20 109 27
   let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 119 8 119 18
-  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 104 40 104 43
-  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 99 15 99 31
-  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 104 4 104 77
-  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 100 14 100 35
-  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 101 14 101 39
-  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 102 14 102 38
-  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 12
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 106 40 106 43
+  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 101 15 101 31
+  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 106 4 106 77
+  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 102 14 102 35
+  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 103 14 103 39
+  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 104 14 104 38
+  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 12
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 106 20 106 44
-  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 59 14 59 53
-  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 61 8 61 35
+  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 103 14 103 53
+  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 105 8 105 35
   let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 52 20 52 34
   
@@ -411,7 +416,14 @@ module M_erasure__test_ptr_mut2 [#"erasure.rs" 116 0 116 79]
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant' (self: t_PtrOwn) = [%#sptr_own'5] not is_null_logic (ptr self)
+  predicate metadata_matches (_value: t_T) (_metadata: ()) = true
+  
+  function val' (self: t_PtrOwn) : t_T
+  
+  function metadata_logic (_0: Opaque.ptr) : ()
+  
+  predicate invariant' (self: t_PtrOwn) =
+    [%#sptr_own'5] not is_null_logic (ptr self) /\ metadata_matches (val' self) (metadata_logic (ptr self))
   
   predicate inv (_0: t_T)
   
@@ -426,7 +438,7 @@ module M_erasure__test_ptr_mut2 [#"erasure.rs" 116 0 116 79]
   axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x
       = (invariant' x
       /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> inv'0 val'
+        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'0 val''0
         end)
   
   predicate invariant''1 (self: MutBorrow.t t_PtrOwn) = [%#sinvariant] inv'1 self.current /\ inv'1 self.final
@@ -450,8 +462,6 @@ module M_erasure__test_ptr_mut2 [#"erasure.rs" 116 0 116 79]
   predicate inv'4 (_0: MutBorrow.t t_T)
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_T [inv'4 x]. inv'4 x = invariant''3 x
-  
-  function val' (self: t_PtrOwn) : t_T
   
   function fin (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = [%#sghost] self.final
   

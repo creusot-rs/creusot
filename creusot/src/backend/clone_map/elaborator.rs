@@ -16,10 +16,11 @@ use crate::{
     },
     contracts_items::{
         get_builtin, get_fn_impl_postcond, get_fn_mut_impl_hist_inv, get_fn_mut_impl_postcond,
-        get_fn_once_impl_postcond, get_fn_once_impl_precond, get_resolve_method, is_fn_ghost_ty,
-        is_fn_impl_postcond, is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond,
-        is_fn_once_impl_postcond, is_fn_once_impl_precond, is_ghost_deref, is_ghost_deref_mut,
-        is_inv_function, is_logic, is_namespace_ty, is_resolve_function, is_size_of_logic,
+        get_fn_once_impl_postcond, get_fn_once_impl_precond, get_metadata_matches_slice,
+        get_metadata_matches_str, get_resolve_method, is_fn_ghost_ty, is_fn_impl_postcond,
+        is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond, is_fn_once_impl_postcond,
+        is_fn_once_impl_precond, is_ghost_deref, is_ghost_deref_mut, is_inv_function, is_logic,
+        is_metadata_matches, is_namespace_ty, is_resolve_function, is_size_of_logic,
         is_structural_resolve, why3_metas,
     },
     ctx::{BodyId, HasTyCtxt as _, ItemType},
@@ -1109,6 +1110,41 @@ fn size_of_logic_term<'tcx>(
     }
 }
 
+fn metadata_matches_term<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    //// The type arguments of `metadata_matches`
+    subst: GenericArgsRef<'tcx>,
+    args: &[Ident],
+) -> Option<Term<'tcx>> {
+    let param = subst.type_at(0);
+    if param.is_sized(ctx.tcx, typing_env) {
+        Some(Term::true_(ctx.tcx))
+    } else if let TyKind::Slice(ty) = param.kind() {
+        let metadata_matches_slice = get_metadata_matches_slice(ctx.tcx);
+        let subst = ctx.tcx.mk_args(&[(*ty).into()]);
+        Some(Term::call(
+            ctx.tcx,
+            typing_env,
+            metadata_matches_slice,
+            subst,
+            args.iter().map(|&id| Term::var(id, param)),
+        ))
+    } else if let TyKind::Str = param.kind() {
+        let metadata_matches_str = get_metadata_matches_str(ctx.tcx);
+        let subst = ctx.tcx.mk_args(&[]);
+        Some(Term::call(
+            ctx.tcx,
+            typing_env,
+            metadata_matches_str,
+            subst,
+            args.iter().map(|&id| Term::var(id, param)),
+        ))
+    } else {
+        None
+    }
+}
+
 fn size_of_array<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -1158,6 +1194,8 @@ fn term<'tcx>(
             fn_mut_hist_inv_term(ctx, typing_env, subst, bound)
         } else if is_size_of_logic(ctx.tcx, def_id) {
             size_of_logic_term(ctx, typing_env, def_id, subst)
+        } else if is_metadata_matches(ctx.tcx, def_id) {
+            metadata_matches_term(ctx, typing_env, subst, bound)
         } else {
             None
         }
