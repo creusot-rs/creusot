@@ -13,7 +13,7 @@ pub(crate) fn erasure(path: TS1, item: TS1) -> TS1 {
     let mut item = parse_macro_input!(item as FnOrMethod);
     let args: Punctuated<TS2, Comma> = item.sig.inputs.iter().filter_map(|arg| match arg {
             syn::FnArg::Receiver(r) => {
-                Some(quote_spanned! { r.self_token.span => compile_error!("#[erasure] does not yet support self argument") })
+                Some(r.self_token.to_token_stream())
             }
             syn::FnArg::Typed(p) => {
                 if is_ghost_ty(&p.ty) { return None }
