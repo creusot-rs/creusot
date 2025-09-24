@@ -413,7 +413,10 @@ enum AnfValue<'tcx> {
     ),
     Const(ty::Const<'tcx>),
     Borrow(Box<AnfPlace<'tcx>>),
+    RawBorrow(Box<AnfPlace<'tcx>>),
     Ctor(Ctor, Box<[(AnfValue<'tcx>, Span)]>),
+    /// Cast from *[T] to *T
+    Thin(Box<AnfValue<'tcx>>),
     /// Labels for `break` are represented as values too
     Label(
         #[type_visitable(ignore)]
@@ -450,6 +453,10 @@ impl<'tcx> AnfPlace<'tcx> {
         } else {
             AnfValue::Borrow(Box::new(self))
         }
+    }
+
+    fn raw_borrow(self) -> AnfValue<'tcx> {
+        AnfValue::RawBorrow(Box::new(self))
     }
 }
 
@@ -791,6 +798,15 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                     place.borrow()
                 }
             }
+            RawBorrow { arg, mutability: _ } => {
+                let place = self.a_normal_form_place(*arg, stmts)?;
+                if place.is_unsafe() {
+                    let bor = AnfValue::Borrow(std::boxed::Box::new(place));
+                    bind_var(stmts, AnfOp::unsafe_borrow((bor, self.thir[*arg].span)))
+                } else {
+                    place.raw_borrow()
+                }
+            }
             Tuple { fields } => {
                 // Visit all fields even if they have type `Ghost<_>` because they may all have effects
                 // It's just their values we may discard in the end.
@@ -857,6 +873,28 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 self.a_normal_form_expr(*source, stmts)?.0
             }
             Use { source } => self.a_normal_form_expr(*source, stmts)?.0,
+            Cast { source } => {
+                use rustc_type_ir::TyKind::{RawPtr, Slice};
+                let source_ty = self.thir[*source].ty;
+                // {source_ty} == *const [T] and {expr.ty} == *const T
+                let is_ptr_slice_ty = match (source_ty.kind(), expr.ty.kind()) {
+                    (RawPtr(pointee, _), RawPtr(elem_ty2, _)) => match pointee.kind() {
+                        Slice(elem_ty) => elem_ty == elem_ty2,
+                        _ => false,
+                    },
+                    _ => false,
+                };
+                if is_ptr_slice_ty {
+                    let expr = self.a_normal_form_expr(*source, stmts)?.0;
+                    AnfValue::Thin(expr.into())
+                } else {
+                    return Err(self.unsupported_syntax_with_note(
+                        expr.span,
+                        "unsupported cast",
+                        format!("unsupported cast from {:?} to {:?}", source_ty, expr.ty),
+                    ));
+                }
+            }
             kind => {
                 return Err(self.unsupported_syntax_with_note(
                     expr.span,
@@ -1125,26 +1163,25 @@ impl<'tcx> EqualityChecker<'tcx> {
     }
 
     fn equate_value(&self, v1: &AnfValue<'tcx>, v2: &AnfValue<'tcx>) -> bool {
+        use AnfValue::*;
         match (v1, v2) {
-            (AnfValue::Unit, AnfValue::Unit) => true,
-            (AnfValue::Var(v1), AnfValue::Var(v2)) => {
+            (Unit, Unit) => true,
+            (Var(v1), Var(v2)) => {
                 let Some(v1_) = self.equate_var.get(v1) else { return false };
                 v1_ == v2
             }
-            (AnfValue::Literal(lit1, neg1), AnfValue::Literal(lit2, neg2)) => {
-                lit1 == lit2 && neg1 == neg2
-            }
-            (AnfValue::Const(p1), AnfValue::Const(p2)) => p1 == p2,
-            (AnfValue::Borrow(place1), AnfValue::Borrow(place2)) => {
-                self.equate_place(place1, place2)
-            }
-            (AnfValue::Ctor(c1, args1), AnfValue::Ctor(c2, args2)) => {
+            (Literal(lit1, neg1), Literal(lit2, neg2)) => lit1 == lit2 && neg1 == neg2,
+            (Const(p1), Const(p2)) => p1 == p2,
+            (Borrow(place1), Borrow(place2)) => self.equate_place(place1, place2),
+            (RawBorrow(place1), RawBorrow(place2)) => self.equate_place(place1, place2),
+            (Ctor(c1, args1), Ctor(c2, args2)) => {
                 c1 == c2
                     && args1.len() == args2.len()
                     && args1.iter().zip(args2).all(|(a1, a2)| self.equate_value(&a1.0, &a2.0))
             }
-            (AnfValue::Fn(f1, s1), AnfValue::Fn(f2, s2)) => f1 == f2 && s1 == s2,
-            (AnfValue::Label(l1), AnfValue::Label(l2)) => {
+            (Fn(f1, s1), Fn(f2, s2)) => f1 == f2 && s1 == s2,
+            (Thin(v1), Thin(v2)) => self.equate_value(v1, v2),
+            (Label(l1), Label(l2)) => {
                 let Some(l1_) = self.equate_label.get(l1) else { return false };
                 l1_ == l2
             }
