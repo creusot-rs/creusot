@@ -12,7 +12,7 @@
 //! (We often expand expressions like that to insert `ghost!` blocks.)
 //!
 //! We solve that by transforming THIR expressions to A-normal form.
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Formatter};
 
 use creusot_args::options::ErasureCheck;
 use rustc_abi::VariantIdx;
@@ -129,12 +129,13 @@ fn check_erasure<'tcx>(
             &ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2)
         }
     };
-    Ok(equate_anf(ctx, &left, right, level).map_err(|_| None)?)
+    Ok(equate_anf(ctx, left_local, &left, right, level).map_err(|_| None)?)
 }
 
 /// Equate two ANF bodies.
 fn equate_anf<'tcx>(
     ctx: &TranslationCtx<'tcx>,
+    left_id: LocalDefId,
     left: &AnfBlock<'tcx>,
     right: &AnfBlock<'tcx>,
     level: rustc_errors::Level,
@@ -142,7 +143,9 @@ fn equate_anf<'tcx>(
     let mut checker = EqualityChecker::new(ctx.tcx, level);
     let r = checker.equate(&left, &right);
     if r.is_err() {
-        debug!("{left:#?}\n{right:#?}");
+        let tcx = ctx.tcx;
+        debug!("Left:\n{:#?}", Pretty { tcx, owner: Some(left_id), body: left });
+        debug!("Right:\n{:#?}", Pretty { tcx, owner: None, body: right });
     }
     r
 }
@@ -1440,5 +1443,271 @@ fn equal_const_kinds<'tcx>(c1: ty::ConstKind<'tcx>, c2: ty::ConstKind<'tcx>) -> 
     match (c1, c2) {
         (Param(p1), Param(p2)) => p1.index == p2.index,
         _ => c1 == c2,
+    }
+}
+
+// * Pretty-printing
+
+struct Pretty<'a, 'tcx> {
+    tcx: TyCtxt<'tcx>,
+    owner: Option<LocalDefId>,
+    body: &'a AnfBlock<'tcx>,
+}
+
+impl<'a, 'tcx> std::fmt::Debug for Pretty<'a, 'tcx> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        let printer = PrintAnf::new(self.tcx, self.owner);
+        printer.print_body(&self.body, f)
+    }
+}
+
+/// Pretty printer of ANF terms.
+struct PrintAnf<'tcx> {
+    tcx: TyCtxt<'tcx>,
+    owner: Option<LocalDefId>,
+    indent: usize,
+}
+
+impl<'tcx> PrintAnf<'tcx> {
+    fn new(tcx: TyCtxt<'tcx>, owner: Option<LocalDefId>) -> Self {
+        PrintAnf { tcx, owner, indent: 0 }
+    }
+
+    fn indent(&self) -> Self {
+        PrintAnf { indent: self.indent + 1, ..*self }
+    }
+
+    fn print_indent(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        for _ in 0..self.indent {
+            write!(f, "  ")?;
+        }
+        Ok(())
+    }
+
+    fn print_body(&self, body: &AnfBlock<'tcx>, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        self.print_indent(f)?;
+        if let Some(label) = body.label {
+            write!(f, "'")?;
+            self.print_hir_id(label.local_id, f)?;
+            write!(f, ": ")?;
+        }
+        self.print_pattern(&body.pattern, f)?;
+        writeln!(f, " => {{")?;
+        let indented = self.indent();
+        for stmt in &body.stmts {
+            indented.print_stmt(stmt, f)?
+        }
+        indented.print_indent(f)?;
+        indented.print_value(&body.ret.0, f)?;
+        writeln!(f, "\n}}")?;
+        Ok(())
+    }
+
+    fn print_pattern(&self, pat: &AnfPattern, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        use AnfPattern::*;
+        match pat {
+            Wild => write!(f, "_"),
+            Var(var) => self.print_var(*var, f),
+            Ctor(self::Ctor::Tuple, anf_patterns, _) => {
+                write!(f, "(")?;
+                for (i, p) in anf_patterns.iter().enumerate() {
+                    if i != 0 {
+                        write!(f, ", ")?;
+                    }
+                    self.print_pattern(p, f)?;
+                }
+                write!(f, ")")
+            }
+            Ctor(ctor, anf_patterns, _) => {
+                self.print_ctor(ctor, f)?;
+                if anf_patterns.len() != 0 {
+                    write!(f, "(")?;
+                    for (i, p) in anf_patterns.iter().enumerate() {
+                        if i != 0 {
+                            write!(f, ", ")?;
+                        }
+                        self.print_pattern(p, f)?;
+                    }
+                    write!(f, ")")?;
+                }
+                Ok(())
+            }
+            Deref(anf_pattern) => {
+                write!(f, "*")?;
+                self.print_pattern(anf_pattern, f)
+            }
+        }
+    }
+
+    fn print_ctor(&self, ctor: &Ctor, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        match ctor {
+            Ctor::Tuple => write!(f, "Tuple"),
+            Ctor::Array => write!(f, "Array"),
+            Ctor::Adt(def_id, variant_index) => {
+                let adt_def = self.tcx.adt_def(*def_id);
+                let variant = &adt_def.variants()[*variant_index];
+                write!(f, "{}", self.tcx.def_path_str(variant.def_id))
+            }
+            Ctor::Bool(b) => write!(f, "{}", b),
+        }
+    }
+
+    fn print_var(&self, var: Var, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        match var {
+            Var::HirId(hir_id) => self.print_hir_id(hir_id, f),
+            Var::ExprId(expr_id) => write!(f, "#e{}", expr_id.as_u32()),
+        }
+    }
+
+    fn print_stmt(&self, stmt: &AnfStmt<'tcx>, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        self.print_indent(f)?;
+        self.print_pattern(&stmt.pattern, f)?;
+        write!(f, " = ")?;
+        self.print_op(&stmt.rhs, f)
+    }
+
+    fn print_op(&self, op: &AnfOp<'tcx>, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        self.print_op_tag(&op.tag, f)?;
+        if op.args.len() != 0 {
+            write!(f, "(")?;
+            for (i, arg) in op.args.iter().enumerate() {
+                if i != 0 {
+                    write!(f, ", ")?;
+                }
+                self.print_value(&arg.0, f)?;
+            }
+            write!(f, ")")?;
+        }
+        if op.arms.len() != 0 {
+            writeln!(f, " {{")?;
+            let indented = self.indent();
+            for arm in &op.arms {
+                writeln!(f)?;
+                indented.print_body(arm, f)?;
+            }
+            write!(f, "}}")?;
+        }
+        writeln!(f, "")?;
+        Ok(())
+    }
+
+    fn print_op_tag(&self, tag: &OpTag<'tcx>, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        use OpTag::*;
+        match tag {
+            Value => write!(f, "value"),
+            Read => write!(f, "read"),
+            Call(def_id, subst) => {
+                write!(
+                    f,
+                    "call {}{}",
+                    self.tcx.def_path_str(def_id),
+                    if subst.0.len() == 0 { String::new() } else { subst.0.print_as_list() }
+                )
+            }
+            BinOp(op) => write!(f, "{:?}", op),
+            UnOp(op) => write!(f, "{:?}", op),
+            LogicalOp(op) => write!(f, "{:?}", op),
+            If => write!(f, "if"),
+            IfLet => write!(f, "iflet"),
+            Match => write!(f, "match"),
+            LetElse => write!(f, "letelse"),
+            Return => write!(f, "return"),
+            Deref => write!(f, "deref"),
+            UnsafeBorrow => write!(f, "unsafe_borrow"),
+            Const(def_id, _) => write!(f, "const {}", self.tcx.def_path_str(def_id)),
+            Guard => write!(f, "guard"),
+            Break => write!(f, "break"),
+            Loop => write!(f, "loop"),
+        }
+    }
+
+    fn print_place(
+        &self,
+        place: &AnfPlace<'tcx>,
+        f: &mut Formatter,
+    ) -> Result<(), std::fmt::Error> {
+        match &place.base {
+            AnfPlaceBase::MutVar(v) => self.print_var(*v, f)?,
+            AnfPlaceBase::ImmutVar(v) => self.print_value(v, f)?,
+        }
+        for proj in &place.projections {
+            use AnfProjection::*;
+            match proj {
+                Deref { unsafe_: _ } => {
+                    write!(f, ".deref")?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn print_value(
+        &self,
+        value: &AnfValue<'tcx>,
+        f: &mut Formatter,
+    ) -> Result<(), std::fmt::Error> {
+        use AnfValue::*;
+        match value {
+            Unit => write!(f, "()"),
+            Var(v) => self.print_var(*v, f),
+            Literal(lit, neg) => {
+                if *neg {
+                    write!(f, "-")?;
+                }
+                write!(f, "{:?}", lit)
+            }
+            Const(c) => write!(f, "{:?}", c),
+            Borrow(place) => {
+                write!(f, "&")?;
+                self.print_place(place, f)
+            }
+            RawBorrow(place) => {
+                write!(f, "&raw ")?;
+                self.print_place(place, f)
+            }
+            Ctor(ctor, args) => {
+                self.print_ctor(ctor, f)?;
+                if args.len() != 0 {
+                    write!(f, "(")?;
+                    for (i, arg) in args.iter().enumerate() {
+                        if i != 0 {
+                            write!(f, ", ")?;
+                        }
+                        self.print_value(&arg.0, f)?;
+                    }
+                    write!(f, ")")?;
+                }
+                Ok(())
+            }
+            Fn(def_id, subst) => write!(
+                f,
+                "fn {}{}",
+                self.tcx.def_path_str(def_id),
+                if subst.0.len() == 0 { String::new() } else { subst.0.print_as_list() }
+            ),
+            Thin(v) => {
+                write!(f, "Thin(")?;
+                self.print_value(v, f)?;
+                write!(f, ")")
+            }
+            Label(label) => {
+                write!(f, "'")?;
+                self.print_hir_id(label.local_id, f)
+            }
+        }
+    }
+
+    fn print_hir_id(
+        &self,
+        local_id: ItemLocalId,
+        f: &mut Formatter,
+    ) -> Result<(), std::fmt::Error> {
+        match self.owner {
+            Some(def_id) => {
+                let hir_id = rustc_hir::HirId { owner: rustc_hir::OwnerId { def_id }, local_id };
+                write!(f, "{}", self.tcx.hir_name(hir_id))
+            }
+            None => write!(f, "#h{}", local_id.as_u32()),
+        }
     }
 }
