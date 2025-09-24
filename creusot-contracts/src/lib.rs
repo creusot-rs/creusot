@@ -424,6 +424,9 @@ pub mod macros {
     /// # use creusot_contracts::*;
     /// #[erasure(f)]
     /// fn g(x: usize, i: Ghost<Int>) { /* ... */ }
+    ///
+    /// #[erasure(private crate_name::full::path::to::f2)]
+    /// fn g2(y: bool) { /* ... */ }
     /// ```
     ///
     /// # Inside `extern_spec!`

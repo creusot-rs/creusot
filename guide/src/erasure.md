@@ -159,3 +159,32 @@ When `#[erasure(f)]` mentions a function `f` from `core` or `std`, you must use
 ```
 rustup component add rust-src --toolchain $MY_TOOLCHAIN
 ```
+
+### Private functions
+
+It is also possible to name a private function using the `private` keyword
+followed by the full path to the private function:
+
+```rust
+#[erasure(private crate_name::path::to::f)]
+```
+
+### Nested functions
+
+`#[erasure]` automatically takes nested functions into account.
+
+```rust
+fn f() {
+  fn inside_f() {}
+  inside_f()
+}
+
+#[erasure(f)]
+fn g() {
+  fn inside_f() {}
+  inside_f()
+}
+```
+
+The inner function of `g` does not need an `#[erasure]` attribute,
+but it must have the same name as its counterpart in `f`.

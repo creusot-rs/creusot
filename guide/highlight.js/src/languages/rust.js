@@ -307,7 +307,7 @@ export default function(hljs) {
         begin: '#!?\\[',
         end: '\\]',
         keywords: {
-          'keyword.creusot': ["law", "logic", "check", "open", "prophetic", "terminates", "trusted", "ghost", "erasure"]
+          'keyword.creusot': ["law", "logic", "check", "open", "prophetic", "terminates", "trusted", "ghost", "erasure", "private"]
         },
         contains: [
           {

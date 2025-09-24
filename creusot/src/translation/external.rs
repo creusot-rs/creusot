@@ -1,16 +1,19 @@
 use super::specification::inputs_and_output_from_thir;
 use crate::{
+    contracts_items::{get_erasure, is_trusted},
     ctx::*,
     translation::{
         pearlite::PIdent,
         specification::{ContractClauses, contract_clauses_of},
         traits::TraitResolved,
     },
-    util::erased_identity_for_item,
+    util::{eq_nameless_generic_args, erased_identity_for_item, forge_def_id, forge_def_id_from},
     validate::is_ghost_ty_,
 };
-use indexmap::IndexSet;
-use rustc_hir::def_id::{DefId, LocalDefId};
+use rustc_hir::{
+    def::DefKind,
+    def_id::{DefId, LocalDefId},
+};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     thir::{self, Expr, ExprKind, Thir, visit::Visitor},
@@ -69,10 +72,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let def_id = local_def_id.to_def_id();
     let span = ctx.def_span(def_id);
     let contract = contract_clauses_of(ctx, def_id).unwrap();
-    let mut visit = ExtractExternItems::new(thir);
-    visit.visit_expr(&thir[expr]);
-    let (id, subst) = visit.items.pop().unwrap();
-
+    let (id, subst) = extract_extern_item(thir, expr).unwrap();
     let (id, inner_subst) =
         TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
@@ -151,19 +151,29 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     (id, ExternSpec { contract, additional_predicates, subst, inputs, output })
 }
 
-// We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.
-struct ExtractExternItems<'a, 'tcx> {
-    thir: &'a Thir<'tcx>,
-    pub items: IndexSet<(DefId, GenericArgsRef<'tcx>)>,
+/// Extract a target item for `extern_spec!` or `#[erasure]`.
+/// The visited body should be just a function call.
+fn extract_extern_item<'tcx>(
+    thir: &Thir<'tcx>,
+    expr_id: thir::ExprId,
+) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+    let mut visitor = ExtractExternItem::new(thir);
+    visitor.visit_expr(&thir[expr_id]);
+    visitor.item
 }
 
-impl<'a, 'tcx> ExtractExternItems<'a, 'tcx> {
-    pub(crate) fn new(thir: &'a Thir<'tcx>) -> Self {
-        ExtractExternItems { thir, items: IndexSet::new() }
+struct ExtractExternItem<'a, 'tcx> {
+    thir: &'a Thir<'tcx>,
+    item: Option<(DefId, GenericArgsRef<'tcx>)>,
+}
+
+impl<'a, 'tcx> ExtractExternItem<'a, 'tcx> {
+    pub fn new(thir: &'a Thir<'tcx>) -> Self {
+        ExtractExternItem { thir, item: None }
     }
 }
 
-impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
+impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItem<'a, 'tcx> {
     fn thir(&self) -> &'a Thir<'tcx> {
         self.thir
     }
@@ -171,10 +181,11 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
     fn visit_expr(&mut self, expr: &'a Expr<'tcx>) {
         if let ExprKind::Call { ty, .. } = expr.kind {
             if let TyKind::FnDef(id, subst) = ty.kind() {
-                self.items.insert((*id, subst));
+                self.item = Some((*id, subst));
             }
+        } else {
+            thir::visit::walk_expr(self, expr);
         }
-        thir::visit::walk_expr(self, expr);
     }
 }
 
@@ -184,53 +195,166 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
 /// Input: `local_def_id` of a `#[creusot::spec::erasure]` closure.
 /// Output:
 /// - `LocalDefId` of the original `#[erasure]` item (the parent of the input id)
-/// - `Erased<'tcx>` info about the erased function from the point of view of callers
+/// - `Erasure<'tcx>` info about the erased function from the point of view of callers
 ///   (THIR trait method calls are not resolved)
-/// - `(DefId, GenericArgsRef)` of the actual body of the erased function
+/// - `Option<Erasure<'tcx>>` of the actual body of the erased function, if
+///   the `#[erasure]`-carrying function is not also `#[trusted]`.
 pub(crate) fn extract_erasure_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     local_def_id: LocalDefId,
     &(ref thir, expr): &(Thir<'tcx>, thir::ExprId),
-) -> (LocalDefId, Erased<'tcx>, (DefId, GenericArgsRef<'tcx>)) {
+) -> Option<(LocalDefId, Erasure<'tcx>, Option<Erasure<'tcx>>)> {
     let def_id = local_def_id.to_def_id();
-    let parent = ctx.tcx.parent(def_id);
-    let span = ctx.def_span(def_id);
-    let mut visit = ExtractExternItems::new(thir);
-    visit.visit_expr(&thir[expr]);
-    let (id_thir, subst_thir) = visit.items.pop().unwrap();
-    let (id_resolved, subst_resolved) =
-        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id_thir, subst_thir).to_opt(id_thir, subst_thir).unwrap_or_else(|| {
-            let mut err = ctx.fatal_error(
-                ctx.def_span(def_id),
-                "could not derive original instance from external specification",
-            );
-            err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
-            err.emit()
-        });
-    let parent_sig = ctx
-        .tcx
-        .instantiate_bound_regions_with_erased(ctx.tcx.fn_sig(parent).instantiate_identity());
-    // Check that the result types match
-    let ty1 = parent_sig.output();
-    let ty2 = thir[expr].ty;
-    if !eq_erased_ty(ctx.tcx, ty1, ty2) {
+    let (id_this, (id_erased, subst_erased), (id_resolved, subst_resolved)) = match get_erasure(
+        ctx.tcx, def_id,
+    ) {
+        None => return None,
+        Some(None) => {
+            let parent = ctx.tcx.parent(def_id);
+            let (id_erased, subst_erased) = extract_extern_item(thir, expr).unwrap();
+            debug!("extract_erasure_from_item: {parent:?} erases to {id_erased:?}");
+            let (id_resolved, subst_resolved) =
+                TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id_erased, subst_erased).to_opt(id_erased, subst_erased).unwrap_or_else(|| {
+                    let mut err = ctx.fatal_error(
+                        ctx.def_span(def_id),
+                        "could not derive original instance from external specification",
+                    );
+                    err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
+                    err.emit()
+                });
+            (parent, (id_erased, subst_erased), (id_resolved, subst_resolved))
+        }
+        Some(Some(path)) => {
+            debug!("extract_erasure_from_item: {def_id:?} erases to private {path:?}");
+            let id_erased = forge_def_id(ctx.tcx, &path)
+                .unwrap_or_else(|e| ctx.crash_and_error(ctx.def_span(def_id), e));
+            let subst_erased = erased_identity_for_item(ctx.tcx, id_erased);
+            let subst_this = erased_identity_for_item(ctx.tcx, def_id);
+            if !eq_nameless_generic_args(subst_erased, subst_this) {
+                ctx.crash_and_error(
+                    ctx.def_span(def_id),
+                    format!(
+                        "#[erasure] generics don't match\n {} {:?}\n {} {:?}",
+                        ctx.def_path_str(def_id),
+                        subst_this,
+                        ctx.def_path_str(id_erased),
+                        subst_erased,
+                    ),
+                )
+            }
+            (def_id, (id_erased, subst_erased), (id_erased, subst_erased))
+        }
+    };
+    let erased = build_erased(ctx.tcx, id_this, id_erased, subst_erased);
+    let to_check = if is_trusted(ctx.tcx, id_this) {
+        None
+    } else {
+        Some(Erasure { def: (id_resolved, subst_resolved), erase_args: erased.erase_args.clone() })
+    };
+    Some((id_this.expect_local(), erased, to_check))
+}
+
+/// Extract erasure for nested items
+pub(crate) fn extract_erasure_from_child<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    local_def_id: LocalDefId,
+) -> Option<Erasure<'tcx>> {
+    let def_id = local_def_id.to_def_id();
+    if !matches!(ctx.tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
+        || ctx.erasure(def_id).is_some()
+    {
+        return None;
+    }
+    let mut parent = def_id;
+    let mut rev_path = Vec::new();
+    let erased_parent = loop {
+        let def_key = ctx.tcx.def_key(parent);
+        let Some(parent_id) = def_key.parent else { return None };
+        rev_path.push(def_key.disambiguated_data);
+        parent.index = parent_id;
+        if is_trusted(ctx.tcx, parent) {
+            return None;
+        };
+        match ctx.erasure(parent) {
+            Some(erased) => break erased,
+            None => {
+                continue;
+            }
+        }
+    };
+    debug!("extract_erasure_from_child: child: {local_def_id:?} parent: {:?}", erased_parent.def.0);
+    let hash = ctx.def_path_hash(erased_parent.def.0);
+    let path = rev_path.into_iter().rev();
+    let Some(erased) = forge_def_id_from(ctx.tcx, hash, path) else {
+        ctx.tcx
+            .error(ctx.def_span(def_id), "erasure not found")
+            .with_span_label(ctx.def_span(parent), "required by #[erasure] on this function")
+            .emit();
+        return None;
+    };
+    let subst = erased_identity_for_item(ctx.tcx, def_id);
+    let erased_subst = erased_identity_for_item(ctx.tcx, erased);
+    if !eq_nameless_generic_args(subst, erased_subst) {
         ctx.crash_and_error(
-            span,
+            ctx.def_span(def_id),
             format!(
-                "result type of target function doesn't match\n {}(..) -> {}\n {}(..) -> {}",
-                ctx.def_path_str(parent),
+                "#[erasure] generics don't match\n {} {:?}\n {} {:?}",
+                ctx.def_path_str(def_id),
+                subst,
+                ctx.def_path_str(erased),
+                erased_subst
+            ),
+        )
+    }
+    build_erased(ctx.tcx, def_id, erased, erased_subst).into()
+}
+
+fn build_erased<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id1: DefId,
+    def_id2: DefId,
+    subst2: GenericArgsRef<'tcx>,
+) -> Erasure<'tcx> {
+    let sig1 =
+        tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(def_id1).instantiate_identity());
+    let sig2 =
+        tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(def_id2).instantiate(tcx, subst2));
+    let ty1 = sig1.output();
+    let ty2 = sig2.output();
+    if !eq_erased_ty(tcx, ty1, ty2) {
+        tcx.crash_and_error(
+            tcx.def_span(def_id1),
+            format!(
+                "#[erasure] check failed: result types don't match\n {}(..) -> {:?}\n {}(..) -> {:?}",
+                tcx.def_path_str(def_id1),
                 ty1,
-                ctx.def_path_str(id_resolved),
+                tcx.def_path_str(def_id2),
                 ty2,
             ),
         )
     }
-    let erase_args = parent_sig.inputs().iter().map(|arg| is_ghost_ty_(ctx.tcx, *arg)).collect();
-    (
-        parent.expect_local(),
-        Erased { def: (id_thir, subst_thir), erase_args },
-        (id_resolved, subst_resolved),
-    )
+    let erase_args = sig1.inputs().iter().map(|arg| is_ghost_ty_(tcx, *arg)).collect::<Vec<bool>>();
+    let len_unerased_args = erase_args.iter().filter(|&&erase| !erase).count();
+    let unerased_args1 = sig1
+        .inputs()
+        .iter()
+        .zip(erase_args.iter())
+        .filter_map(|(ty, &erase)| if erase { None } else { Some(ty) });
+    if len_unerased_args != sig2.inputs().len()
+        || !unerased_args1.zip(sig2.inputs()).all(|(ty1, ty2)| eq_erased_ty(tcx, *ty1, *ty2))
+    {
+        tcx.crash_and_error(
+            tcx.def_span(def_id1),
+            format!(
+                "#[erasure] check failed: argument types don't match\n {}({:?}) -> ...\n {}({:?}) -> ...",
+                tcx.def_path_str(def_id1),
+                sig1.inputs(),
+                tcx.def_path_str(def_id2),
+                sig2.inputs()
+            ),
+        )
+    }
+    Erasure { def: (def_id2, subst2), erase_args }
 }
 
 /// `ty1` equals `ty2` up to erasure if:
