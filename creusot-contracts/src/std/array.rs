@@ -53,7 +53,6 @@ impl<T, const N: usize> IndexLogic<Int> for [T; N] {
     type Item = T;
 
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }
@@ -63,7 +62,6 @@ impl<T, const N: usize> IndexLogic<usize> for [T; N] {
     type Item = T;
 
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
     }

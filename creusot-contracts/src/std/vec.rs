@@ -44,7 +44,6 @@ impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
     type Item = T;
 
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }
@@ -55,7 +54,6 @@ impl<T, A: Allocator> IndexLogic<usize> for Vec<T, A> {
     type Item = T;
 
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
     }

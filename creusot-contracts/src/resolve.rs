@@ -30,7 +30,6 @@ pub fn structural_resolve<T: ?Sized>(_: T) -> bool {
 
 impl<T1, T2: ?Sized> Resolve for (T1, T2) {
     #[logic(open, prophetic)]
-    #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn resolve(self) -> bool {
         resolve(self.0) && resolve(self.1)
     }
@@ -43,7 +42,6 @@ impl<T1, T2: ?Sized> Resolve for (T1, T2) {
 
 impl<T: ?Sized> Resolve for &mut T {
     #[logic(open, prophetic)]
-    #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn resolve(self) -> bool {
         pearlite! { ^self == *self }
     }
@@ -56,7 +54,6 @@ impl<T: ?Sized> Resolve for &mut T {
 
 impl<T: ?Sized> Resolve for Box<T> {
     #[logic(open, prophetic)]
-    #[creusot::why3_meta("rewrite_def", predicate, self)]
     fn resolve(self) -> bool {
         resolve(*self)
     }

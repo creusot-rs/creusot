@@ -232,7 +232,6 @@ impl<T> Seq<T> {
     /// proof_assert!(s2[1] == 1);
     /// ```
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     pub fn push_front(self, x: T) -> Self {
         Self::cons(x, self)
     }

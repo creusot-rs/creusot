@@ -91,7 +91,6 @@ impl<K: ?Sized, V> FMap<K, V> {
     ///
     /// If no value is present, returns [`None`].
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     pub fn get(self, k: K) -> Option<V> {
         self.view().get(k)
     }
@@ -100,14 +99,12 @@ impl<K: ?Sized, V> FMap<K, V> {
     ///
     /// If no value is present, the returned value is meaningless.
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     pub fn lookup(self, k: K) -> V {
         self.get(k).unwrap_logic()
     }
 
     /// Returns `true` if the map contains a value for the specified key.
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, k: K) -> bool {
         self.get(k) != None
     }
@@ -261,7 +258,6 @@ impl<K: ?Sized, V> IndexLogic<K> for FMap<K, V> {
     type Item = V;
 
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, key: K) -> Self::Item {
         self.lookup(key)
     }

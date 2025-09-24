@@ -66,7 +66,6 @@ mod implementation {
 
     impl<T> Invariant for UnionFind<T> {
         #[logic]
-        #[creusot::why3_attr = "inline:trivial"]
         fn invariant(self) -> bool {
             pearlite! {
             // this invariant was not in the why3 proof: it is here because of the specifics of `DeepModel` and equality in Creusot

@@ -50,7 +50,6 @@ impl<T> IndexLogic<Int> for [T] {
     type Item = T;
 
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }
@@ -60,7 +59,6 @@ impl<T> IndexLogic<usize> for [T] {
     type Item = T;
 
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
     }
@@ -109,19 +107,16 @@ where
 
 impl<T> SliceIndex<[T]> for usize {
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self@ < seq.len() }
     }
 
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     fn has_value(self, seq: Seq<T>, out: T) -> bool {
         pearlite! { seq[self@] == out }
     }
 
     #[logic(open)]
-    #[creusot::why3_attr = "inline:trivial"]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! { forall<i> 0 <= i && i != self@ && i < old.len() ==> old[i] == fin[i] }
     }

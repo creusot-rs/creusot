@@ -16,10 +16,10 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   let%span s08_haystack'13 = "08_haystack.rs" 17 10 19 101
   let%span s08_haystack'14 = "08_haystack.rs" 20 10 20 132
   let%span s08_haystack'15 = "08_haystack.rs" 8 16 11 62
-  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 113 26 113 48
-  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 192 16 192 48
-  let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 193 16 193 56
-  let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 49 8 49 31
+  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 111 26 111 48
+  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 190 16 190 48
+  let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 191 16 191 56
+  let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 48 8 48 31
   let%span svec'3 = "../../../creusot-contracts/src/std/vec.rs" 22 14 22 41
   let%span sops = "../../../creusot-contracts/src/std/ops.rs" 257 26 257 53
   let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 258 26 258 49
@@ -45,9 +45,9 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   let%span srange'13 = "../../../creusot-contracts/src/std/iter/range.rs" 38 4 38 44
   let%span srange'14 = "../../../creusot-contracts/src/std/iter/range.rs" 15 8 17 9
   let%span snum = "../../../creusot-contracts/src/std/num.rs" 24 28 24 33
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 48 20 48 34
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 114 20 114 37
-  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 120 20 120 37
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 111 20 111 37
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 116 20 116 37
   
   use creusot.int.UInt64
   use creusot.prelude.Opaque
@@ -105,7 +105,7 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   let rec into_iter (self_: t_RangeInclusive) (return' (x: t_RangeInclusive)) = any
     [ return''0 (result: t_RangeInclusive) -> {[%#siter] result = self_} (! return' {result}) ]
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt8.t = [%#svec'2] Seq.get (view self) ix
+  function index_logic (self: t_Vec) (ix: int) : UInt8.t = [%#svec'2] Seq.get (view self) ix
   
   predicate match_at [#"08_haystack.rs" 7 0 7 81] (needle: t_Vec) (haystack: t_Vec) (pos: int) (len'0: int) =
     [%#s08_haystack'15] len'0 <= Seq.length (view'0 needle)
@@ -160,8 +160,6 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   
   predicate resolve (self: MutBorrow.t t_RangeInclusive) = [%#sresolve] self.final = self.current
   
-  meta "rewrite_def" predicate resolve
-  
   predicate resolve'0 (_0: MutBorrow.t t_RangeInclusive) = resolve _0
   
   let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
@@ -197,8 +195,6 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   
   predicate resolve'1 (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
   
-  meta "rewrite_def" predicate resolve'1
-  
   predicate completed'0 (self: MutBorrow.t t_Range) =
     [%#srange'14] resolve'1 self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
   
@@ -211,10 +207,9 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   
   predicate resolve'2 (_0: MutBorrow.t t_Range) = resolve'1 _0
   
-  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt8.t) =
-    [%#sslice] UInt64.t'int self < Seq.length seq
+  predicate in_bounds (self: UInt64.t) (seq: Seq.seq UInt8.t) = [%#sslice] UInt64.t'int self < Seq.length seq
   
-  predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt8.t) (out: UInt8.t) =
+  predicate has_value (self: UInt64.t) (seq: Seq.seq UInt8.t) (out: UInt8.t) =
     [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: UInt8.t)) =

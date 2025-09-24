@@ -5,17 +5,17 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   let%span smem = "../../creusot-contracts/src/std/mem.rs" 23 32 23 36
   let%span smem'0 = "../../creusot-contracts/src/std/mem.rs" 21 22 21 37
   let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 22 22 22 57
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 286 8 286 9
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 287 18 295 9
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 55 8 55 31
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 388 18 388 44
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 389 18 389 44
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 281 8 281 9
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 282 18 290 9
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 54 8 54 31
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 383 18 383 44
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 384 18 384 44
   let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 20 20 20 30
   let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 158 4 158 18
-  let%span sseq'0 = "../../creusot-contracts/src/logic/seq.rs" 674 20 674 91
+  let%span sseq'0 = "../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
   let%span smodel = "../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 48 20 48 34
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 103 20 103 44
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
   let%span sops = "../../creusot-contracts/src/std/ops.rs" 164 14 164 114
   let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 169 14 169 100
   let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 174 14 174 61
@@ -59,16 +59,12 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   predicate invariant''2 (self: MutBorrow.t (Slice64.slice t_T)) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
-  meta "rewrite_def" predicate invariant''2
-  
   predicate inv'3 (_0: MutBorrow.t (Slice64.slice t_T))
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'3 x]. inv'3 x = invariant''2 x
   
   predicate invariant''3 (self: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) =
     [%#sinvariant] inv'3 self.current /\ inv'3 self.final
-  
-  meta "rewrite_def" predicate invariant''3
   
   predicate inv'4 (_0: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)))
   
@@ -148,8 +144,6 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   predicate invariant''4 (self: MutBorrow.t t_T) = [%#sinvariant] inv self.current /\ inv self.final
   
-  meta "rewrite_def" predicate invariant''4
-  
   predicate inv'5 (_0: MutBorrow.t t_T)
   
   axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_T [inv'5 x]. inv'5 x = invariant''4 x
@@ -167,8 +161,7 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
         | C_Some a_0 -> inv'6 a_0
         end
   
-  function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T =
-    [%#sslice'1] Seq.get (Slice64.view self) ix
+  function index_logic (self: Slice64.slice t_T) (ix: int) : t_T = [%#sslice'1] Seq.get (Slice64.view self) ix
   
   function tail (self: Seq.seq t_T) : Seq.seq t_T = [%#sseq] Seq.([..]) self 1 (Seq.length self)
   
@@ -195,21 +188,15 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   predicate resolve'0 (self: MutBorrow.t (Slice64.slice t_T)) = [%#sresolve] self.final = self.current
   
-  meta "rewrite_def" predicate resolve'0
-  
   predicate resolve'1 (_0: MutBorrow.t (Slice64.slice t_T)) = resolve'0 _0
   
   predicate resolve'2 (self: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) = [%#sresolve] self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'2
   
   predicate resolve'3 (_0: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) = resolve'2 _0
   
   type t_Option'0 = C_None'0 | C_Some'0 (MutBorrow.t t_T)
   
   predicate resolve'4 (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'4
   
   predicate resolve'5 (_0: MutBorrow.t t_T) = resolve'4 _0
   

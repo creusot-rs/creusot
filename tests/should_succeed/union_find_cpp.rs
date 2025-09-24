@@ -62,7 +62,6 @@ mod implementation {
 
     impl<T> Invariant for UF<T> {
         #[logic]
-        #[creusot::why3_attr = "inline:trivial"]
         fn invariant(self) -> bool {
             pearlite! {
             forall<e> self.0.domain.contains(e) ==>
