@@ -286,6 +286,18 @@ impl<T> Seq<T> {
         dead
     }
 
+    #[logic]
+    #[ensures(result.len() == self.len())]
+    #[ensures(forall<i> 0 <= i && i < self.len() ==> result[i] == m[self[i]])]
+    #[variant(self.len())]
+    pub fn map<U>(self, m: Mapping<T, U>) -> Seq<U> {
+        if self.len() == 0 {
+            Seq::empty()
+        } else {
+            self.tail().map(m).push_front(m.get(*self.index_logic_unsized(0)))
+        }
+    }
+
     #[logic(open)]
     #[variant(self.len())]
     pub fn flat_map<U>(self, other: Mapping<T, Seq<U>>) -> Seq<U> {
