@@ -1,6 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{
+    ghost::PtrOwn,
     invariant::*,
     logic::ops::IndexLogic,
     std::ops::{
@@ -75,6 +76,9 @@ pub trait SliceExt<T> {
 
     #[logic]
     fn to_ref_seq(&self) -> Seq<&T>;
+
+    #[check(ghost)]
+    fn as_ptr_own(&self) -> (*const T, Ghost<&PtrOwn<[T]>>);
 }
 
 impl<T> SliceExt<T> for [T] {
@@ -93,6 +97,16 @@ impl<T> SliceExt<T> for [T] {
     #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == &self[i])]
     fn to_ref_seq(&self) -> Seq<&T> {
         dead
+    }
+
+    /// Convert `&[T]` to `*const T` and a shared ownership token.
+    #[check(ghost)]
+    #[ensures(result.0 == result.1.ptr() as *const T)]
+    #[ensures(self@ == result.1.val()@)]
+    #[erasure(Self::as_ptr)]
+    fn as_ptr_own(&self) -> (*const T, Ghost<&PtrOwn<[T]>>) {
+        let (ptr, own) = PtrOwn::from_ref(self);
+        (ptr as *const T, own)
     }
 }
 
