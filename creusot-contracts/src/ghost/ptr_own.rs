@@ -69,6 +69,47 @@ impl<T: ?Sized> PtrOwn<T> {
         (Box::into_raw(val), Ghost::conjure())
     }
 
+    /// Decompose a shared reference into a raw pointer and a ghost `PtrOwn`.
+    ///
+    /// # Erasure
+    ///
+    /// This function erases to a raw reborrow of a reference.
+    ///
+    /// ```ignore
+    /// PtrOwn::from_ref(r)
+    /// // erases to
+    /// r as *const T  // or *mut T (both are allowed)
+    /// ```
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.1.ptr() == result.0)]
+    #[ensures(*result.1.val() == *r)]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ptr_own_from_ref")]
+    pub fn from_ref(r: &T) -> (*const T, Ghost<&PtrOwn<T>>) {
+        (r, Ghost::conjure())
+    }
+
+    /// Decompose a mutable reference into a raw pointer and a ghost `PtrOwn`.
+    ///
+    /// # Erasure
+    ///
+    /// This function erases to a raw reborrow of a reference.
+    ///
+    /// ```ignore
+    /// PtrOwn::from_mut(r)
+    /// // erases to
+    /// r as *const T  // or *mut T (both are allowed)
+    /// ```
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.1.ptr() == result.0)]
+    #[ensures(*result.1.val() == *r)]
+    #[ensures(*(^result.1.inner_logic()).val() == ^r)]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ptr_own_from_mut")]
+    pub fn from_mut(r: &mut T) -> (*const T, Ghost<&mut PtrOwn<T>>) {
+        (r, Ghost::conjure())
+    }
+
     /// Immutably borrows the underlying `T`.
     ///
     /// # Safety
@@ -77,6 +118,16 @@ impl<T: ?Sized> PtrOwn<T> {
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PtrOwn).
+    ///
+    /// # Erasure
+    ///
+    /// This function erases to a cast from raw pointer to shared reference.
+    ///
+    /// ```ignore
+    /// PtrOwn::as_ref(ptr, own)
+    /// // erases to
+    /// & *ptr
+    /// ```
     #[trusted]
     #[check(terminates)]
     #[requires(ptr == own.ptr())]
@@ -95,6 +146,16 @@ impl<T: ?Sized> PtrOwn<T> {
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PtrOwn).
+    ///
+    /// # Erasure
+    ///
+    /// This function erases to a cast from raw pointer to mutable reference.
+    ///
+    /// ```ignore
+    /// PtrOwn::as_mut(ptr, own)
+    /// // erases to
+    /// &mut *ptr
+    /// ```
     #[trusted]
     #[check(terminates)]
     #[allow(unused_variables)]
