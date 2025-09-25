@@ -15,9 +15,9 @@ use crate::{
             binop_function, binop_right_int, binop_to_binop, lower_literal, lower_pure,
             tyconst_to_term_final, unsupported_cast,
         },
-        ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
+        ty::{constructor, ity_to_prelude, translate_ty, uty_to_prelude},
     },
-    contracts_items::is_builtins_ascription,
+    contracts_items::is_builtin_ascription,
     ctx::{HasTyCtxt, PreMod},
     naming::name,
     translation::pearlite::{
@@ -55,7 +55,7 @@ use why3::{
 /// TODO: Finish doc
 struct VCGen<'a, 'tcx> {
     ctx: &'a Why3Generator<'tcx>,
-    names: &'a Dependencies<'tcx>,
+    names: &'a Dependencies<'a, 'tcx>,
     self_id: DefId,
     structurally_recursive: bool,
     args_names: Vec<Ident>,
@@ -65,7 +65,7 @@ struct VCGen<'a, 'tcx> {
 
 pub(super) fn wp<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &mut Dependencies<'tcx>,
+    names: &mut Dependencies<'_, 'tcx>,
     self_id: DefId,
     args_names: Vec<Ident>,
     variant: Option<Exp>,
@@ -98,7 +98,11 @@ pub(super) fn wp<'tcx>(
 /// ``` match x { Cons(_, tl) => recursive((tl, 0).0) } ```
 ///
 /// This check can be extended in the future
-fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'_>) -> bool {
+fn is_structurally_recursive<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    self_id: DefId,
+    t: &Term<'tcx>,
+) -> bool {
     struct StructuralRecursion {
         smaller_than: HashMap<Ident, Ident>,
         self_id: DefId,
@@ -246,7 +250,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     let (fct_name, prelude_kind) = match t.ty.kind() {
                         TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
                         TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
-                        _ if is_int(self.ctx.tcx, t.ty) => ("to_int", PreMod::Bool),
+                        _ if self.ctx.int_ty() == t.ty => ("to_int", PreMod::Bool),
                         _ => self.crash_and_error(
                             t.span,
                             "bool cast to non integral casts are currently unsupported",
@@ -333,7 +337,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Call { id, subst, args } => self.build_wp_slice(args, &|args| {
                 let pre_sig = EarlyBinder::bind(self.ctx.sig(*id).clone())
                     .instantiate(self.ctx.tcx, subst)
-                    .normalize(self.ctx.tcx, self.typing_env);
+                    .normalize(self.ctx, self.typing_env);
 
                 let variant = pre_sig.contract.variant.clone();
                 let variant = if *id == self.self_id {
@@ -358,7 +362,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 };
 
                 let mut call = Exp::Var(self.names.item(*id, subst)).app(args.clone());
-                if is_builtins_ascription(self.ctx.tcx, *id) {
+                if is_builtin_ascription(self.ctx.tcx, *id) {
                     call = call.ascribe(self.ty(t.ty))
                 }
                 let call_subst = pre_sig
@@ -528,7 +532,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         let subst = HashMap::from([(inner_id, inner.clone())]);
                         let [cur, fin] = [Term::cur, Term::fin].map(|cf| {
                             let t = projections_term(
-                                self.ctx.tcx,
+                                self.ctx,
                                 self.names.typing_env(),
                                 cf(Term::var(inner_id, ty)),
                                 &**projections,
@@ -738,7 +742,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
         let orig_variant = self.variant.clone().unwrap();
         let mut rec_var_exp = orig_variant.clone();
         rec_var_exp.subst(&subst);
-        if is_int(self.ctx.tcx, variant_ty) {
+        if self.ctx.int_ty() == variant_ty {
             self.names.import_prelude_module(PreMod::Int);
             let orig_variant = orig_variant.boxed();
             Ok(Exp::BinaryOp(why3::exp::BinOp::Le, Exp::int(0).boxed(), orig_variant.clone())

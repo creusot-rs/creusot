@@ -1,14 +1,18 @@
 module M_immut__f [#"immut.rs" 3 0 3 10]
   let%span simmut = "immut.rs" 4 16 4 18
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t UInt32.t) = resolve _0
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t UInt32.t) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   

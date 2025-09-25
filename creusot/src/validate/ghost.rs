@@ -7,11 +7,14 @@ use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::{Span, Symbol};
 use std::collections::HashSet;
 
-use crate::contracts_items::{is_ghost_ty, is_snap_ty};
+use crate::{
+    contracts_items::{get_intrinsic, is_pearlite},
+    validate::is_ghost_block,
+};
 
-pub struct GhostValidate {}
+pub struct GhostValidate;
 
-impl LintPass for GhostValidate {
+impl<'tcx> LintPass for GhostValidate {
     fn name(&self) -> &'static str {
         ""
     }
@@ -26,7 +29,7 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
         cx: &rustc_lint::LateContext<'tcx>,
         expr: &'tcx rustc_hir::Expr<'tcx>,
     ) {
-        if !super::is_ghost_block(cx.tcx, expr.hir_id) {
+        if !is_ghost_block(cx.tcx, expr.hir_id) {
             return;
         }
 
@@ -127,11 +130,11 @@ impl<'tcx> GhostValidatePlaces<'tcx> {
     }
 
     /// Determine if the given type `ty` is a `Ghost`.
-    fn is_ghost_ty(&self, ty: Ty<'tcx>) -> bool {
+    fn is_ghost(&self, ty: Ty<'tcx>) -> bool {
         match ty.kind() {
             rustc_type_ir::TyKind::Adt(containing_type, _) => {
-                is_ghost_ty(self.tcx, containing_type.did())
-                    || is_snap_ty(self.tcx, containing_type.did())
+                let intr = get_intrinsic(self.tcx, containing_type.did());
+                intr == Some(Symbol::intern("ghost")) || intr == Some(Symbol::intern("snapshot"))
             }
             _ => false,
         }
@@ -169,7 +172,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
         let base_id = base_hir_node(place_with_id);
         // No need to check for copy types, they cannot appear here
         if self.bound_in_block(place_with_id)
-            || self.is_ghost_ty(ty)
+            || self.is_ghost(ty)
             || base_id.is_some_and(|id| is_ghost_let(self.tcx, id))
         {
             return;
@@ -177,9 +180,8 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
 
         let mut enclosing_def_ids = self.tcx.hir_parent_iter(place_with_id.hir_id);
         if enclosing_def_ids.any(|(_, node)| {
-            node.associated_body().is_some_and(|(def_id, _)| {
-                crate::contracts_items::is_pearlite(self.tcx, def_id.to_def_id())
-            })
+            node.associated_body()
+                .is_some_and(|(def_id, _)| is_pearlite(self.tcx, def_id.to_def_id()))
         }) {
             // Moving into a pearlite closure is ok
             return;
@@ -199,7 +201,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
     ) {
         let ty = place_with_id.place.ty();
         if self.bound_in_block(place_with_id)
-            || self.is_ghost_ty(ty)
+            || self.is_ghost(ty)
             || bk == rustc_middle::ty::BorrowKind::Immutable
         {
             return;
@@ -209,7 +211,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
 
     fn mutate(&mut self, assignee_place: &PlaceWithHirId<'tcx>, diag_expr_id: HirId) {
         let ty = assignee_place.place.ty();
-        if self.bound_in_block(assignee_place) || self.is_ghost_ty(ty) {
+        if self.bound_in_block(assignee_place) || self.is_ghost(ty) {
             return;
         }
         self.errors.push((diag_expr_id, base_hir_node(assignee_place), true));

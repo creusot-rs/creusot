@@ -25,18 +25,17 @@ use crate::std::ops::{Deref, DerefMut};
 /// let x: Snapshot<Int> = snapshot!(1);
 /// let m: Snapshot<Mapping<Int, Int>> = snapshot!(|x| x + 1);
 /// ```
-#[trusted]
-#[cfg_attr(creusot, rustc_diagnostic_item = "snapshot_ty", creusot::builtins = "")]
+#[builtin("")]
+#[intrinsic("snapshot")]
 pub struct Snapshot<T: ?Sized>(std::marker::PhantomData<T>);
 
 #[cfg(creusot)]
 impl<T: ?Sized> Deref for Snapshot<T> {
     type Target = T;
 
-    #[trusted]
     #[logic]
-    #[rustc_diagnostic_item = "snapshot_deref"]
-    #[creusot::builtins = "identity"]
+    #[builtin("identity")]
+    #[intrinsic("snapshot_deref")]
     fn deref(&self) -> &Self::Target {
         dead
     }
@@ -44,10 +43,9 @@ impl<T: ?Sized> Deref for Snapshot<T> {
 
 #[cfg(creusot)]
 impl<T: ?Sized> DerefMut for Snapshot<T> {
-    #[trusted]
     #[logic]
-    #[rustc_diagnostic_item = "snapshot_deref_mut"]
-    #[creusot::builtins = "identity"]
+    #[builtin("identity")]
+    #[intrinsic("snapshot_deref_mut")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         dead
     }
@@ -83,9 +81,8 @@ impl<T: ?Sized> Copy for Snapshot<T> {}
 
 impl<T: ?Sized> Snapshot<T> {
     /// Create a new snapshot in logic code.
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "identity"]
+    #[builtin("identity")]
     pub fn new(value: T) -> Snapshot<T> {
         let _ = value;
         dead
@@ -104,9 +101,8 @@ impl<T> Snapshot<T> {
     /// proof_assert!(x.inner() == 1);
     /// proof_assert!(*x == 1); // prefer this
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "identity"]
+    #[builtin("identity")]
     pub fn inner(self) -> T {
         dead
     }

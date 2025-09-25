@@ -8,8 +8,8 @@ pub trait CopiedExt<I> {
 }
 
 impl<I> CopiedExt<I> for Copied<I> {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
@@ -17,7 +17,7 @@ impl<I> CopiedExt<I> for Copied<I> {
 }
 
 impl<I> Resolve for Copied<I> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         resolve(self.iter())
     }

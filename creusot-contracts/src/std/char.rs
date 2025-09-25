@@ -4,8 +4,7 @@ pub use ::std::char::*;
 impl View for char {
     type ViewTy = Int;
     #[logic]
-    #[trusted]
-    #[creusot::builtins = "creusot.prelude.Char.to_int"]
+    #[builtin("creusot.prelude.Char.to_int")]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -36,8 +35,8 @@ pub trait CharExt {
 }
 
 impl CharExt for char {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(1 <= result.len() && result.len() <= 4)]
     fn to_utf8(self) -> Seq<u8> {
         dead

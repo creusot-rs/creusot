@@ -12,21 +12,20 @@ pub trait EnumerateExt<I> {
 
 impl<I> EnumerateExt<I> for Enumerate<I> {
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
-    #[trusted]
-    #[logic]
+    #[logic(opaque)]
     fn n(self) -> Int {
         dead
     }
 }
 
 impl<I> Resolve for Enumerate<I> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         resolve(self.iter())
     }

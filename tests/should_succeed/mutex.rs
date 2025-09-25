@@ -7,7 +7,7 @@ pub trait Inv<T> {
     fn inv(&self, x: T) -> bool;
 }
 
-#[trusted]
+#[opaque]
 struct MutexInner<T>(std::sync::Mutex<T>);
 
 pub struct Mutex<T, I>(MutexInner<T>, pub I);
@@ -39,7 +39,7 @@ impl<T, I: Inv<T>> Mutex<T, I> {
     }
 }
 
-#[trusted]
+#[opaque]
 struct GuardInner<'a, T: ?Sized + 'a>(std::sync::MutexGuard<'a, T>);
 
 pub struct MutexGuard<'a, T: ?Sized + 'a, I>(GuardInner<'a, T>, pub Snapshot<I>);
@@ -107,7 +107,7 @@ impl<'a> FakeFnOnce for AddsTwo<'a> {
     }
 }
 
-#[trusted]
+#[opaque]
 struct JoinHandleInner<T>(std::thread::JoinHandle<T>);
 struct JoinHandle<T, I>(JoinHandleInner<T>, Snapshot<I>);
 

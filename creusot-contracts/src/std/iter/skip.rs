@@ -11,15 +11,15 @@ pub trait SkipExt<I> {
 }
 
 impl<I> SkipExt<I> for Skip<I> {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result >= 0 && result <= usize::MAX@)]
     fn n(self) -> Int {
         dead
@@ -27,11 +27,9 @@ impl<I> SkipExt<I> for Skip<I> {
 }
 
 impl<I> Resolve for Skip<I> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
-        pearlite! {
-            resolve(self.iter())
-        }
+        resolve(self.iter())
     }
 
     #[trusted]

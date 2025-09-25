@@ -1,5 +1,5 @@
 use crate::{
-    contracts_items::get_fn_mut_impl_hist_inv,
+    contracts_items::Intrinsic,
     ctx::*,
     naming::name,
     translation::{
@@ -73,7 +73,7 @@ pub(crate) fn closure_hist_inv<'tcx>(
         }
     }
 
-    normalize(ctx.tcx, ctx.typing_env(def_id.into()), hist_inv).span(span)
+    normalize(ctx, ctx.typing_env(def_id.into()), hist_inv).span(span)
 }
 
 pub(crate) fn closure_pre<'tcx>(
@@ -130,7 +130,7 @@ pub(crate) fn closure_pre<'tcx>(
         args.ty,
     );
     pre = Term::let_(pattern, args, pre).span(ctx.def_span(def_id));
-    normalize(ctx.tcx, ctx.typing_env(def_id.into()), pre)
+    normalize(ctx, ctx.typing_env(def_id.into()), pre)
 }
 
 pub(crate) fn closure_post<'tcx>(
@@ -194,16 +194,12 @@ pub(crate) fn closure_post<'tcx>(
                 };
 
                 // Thanks to that, `postcondition_mut_hist_inv` and `fn_mut` are satisfied
-                let hist_inv = {
-                    let subst = ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from));
-                    let id = get_fn_mut_impl_hist_inv(ctx.tcx);
-                    Term::call_no_normalize(
-                        ctx.tcx,
-                        id,
-                        subst,
-                        [self_.clone(), result_state.clone()],
-                    )
-                };
+                let hist_inv = Term::call_no_normalize(
+                    ctx.tcx,
+                    Intrinsic::HistInv.get(ctx),
+                    ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from)),
+                    [self_.clone(), result_state.clone()],
+                );
 
                 post = Term::true_(ctx.tcx)
                     .conj(bor_self.clone().cur().eq(ctx.tcx, self_))
@@ -235,11 +231,12 @@ pub(crate) fn closure_post<'tcx>(
                 let result_state = result_state.unwrap();
                 ClosSubst::post_ref(ctx, def_id, self_.clone(), result_state.clone())
                     .visit_mut_term(&mut post);
-                let hist_inv = {
-                    let subst = ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from));
-                    let id = get_fn_mut_impl_hist_inv(ctx.tcx);
-                    Term::call_no_normalize(ctx.tcx, id, subst, [self_, result_state])
-                };
+                let hist_inv = Term::call_no_normalize(
+                    ctx.tcx,
+                    Intrinsic::HistInv.get(ctx),
+                    ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from)),
+                    [self_, result_state],
+                );
                 // Thanks to that, `postcondition_mut_hist_inv` and `fn_mut` are satisfied
                 // Note that we do not include it in the `target_kind == FnOnce` case, because hist_inv
                 // is actually already included and combined with resolution when `ClosSubst::post_owned`
@@ -303,7 +300,7 @@ pub(crate) fn closure_post<'tcx>(
         args.ty,
     );
     post = Term::let_(pattern, args, post).span(ctx.def_span(def_id));
-    normalize(ctx.tcx, typing_env, post)
+    normalize(ctx, typing_env, post)
 }
 
 pub(crate) fn closure_resolve<'tcx>(

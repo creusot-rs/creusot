@@ -50,8 +50,10 @@ pub use ptr_own::PtrOwn;
 /// }
 /// let value: i32 = b.into_inner(); // compile error !
 /// ```
-#[trusted]
-#[cfg_attr(creusot, rustc_diagnostic_item = "ghost_ty", creusot::builtins = "")]
+#[opaque]
+#[builtin("")]
+#[intrinsic("ghost")]
+
 pub struct Ghost<T: ?Sized>(PhantomData<T>);
 
 impl<T: Copy> Copy for Ghost<T> {}
@@ -70,22 +72,22 @@ impl<T: ?Sized> Deref for Ghost<T> {
     type Target = T;
 
     /// This function can only be called in `ghost!` context
-    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_deref")]
     #[trusted]
     #[check(ghost)]
     #[requires(false)] // If called from generic context, false precondition
     #[ensures(result == &**self)]
+    #[intrinsic("ghost_deref")]
     fn deref(&self) -> &Self::Target {
         panic!()
     }
 }
 impl<T: ?Sized> DerefMut for Ghost<T> {
     /// This function can only be called in `ghost!` context
-    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_deref_mut")]
     #[trusted]
     #[check(ghost)]
     #[requires(false)] // If called from generic context, false precondition
     #[ensures(result == &mut **self)]
+    #[intrinsic("ghost_deref_mut")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         panic!()
     }
@@ -93,7 +95,7 @@ impl<T: ?Sized> DerefMut for Ghost<T> {
 
 impl<T: ?Sized + View> View for Ghost<T> {
     type ViewTy = T::ViewTy;
-    #[logic(open)]
+    #[logic(open, inline)]
     fn view(self) -> Self::ViewTy {
         (*self).view()
     }
@@ -102,14 +104,14 @@ impl<T: ?Sized + View> View for Ghost<T> {
 impl<T: ?Sized + Fin> Fin for Ghost<T> {
     type Target = T::Target;
 
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn fin<'a>(self) -> &'a Self::Target {
         pearlite! { &^*self }
     }
 }
 
 impl<T: ?Sized> Invariant for Ghost<T> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
@@ -118,7 +120,7 @@ impl<T: ?Sized> Invariant for Ghost<T> {
 }
 
 impl<T: ?Sized> Resolve for Ghost<T> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         resolve(*self)
     }
@@ -175,7 +177,7 @@ impl<T: ?Sized> Ghost<T> {
     #[trusted]
     #[check(ghost)]
     #[ensures(*result == x)]
-    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_new")]
+    #[intrinsic("ghost_new")]
     pub fn new(x: T) -> Self
     where
         T: Sized,
@@ -185,7 +187,7 @@ impl<T: ?Sized> Ghost<T> {
     }
 
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(*result == x)]
     pub fn new_logic(x: T) -> Self {
         dead
@@ -197,7 +199,7 @@ impl<T: ?Sized> Ghost<T> {
     #[trusted]
     #[check(ghost)]
     #[ensures(result == *self)]
-    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_into_inner")]
+    #[intrinsic("ghost_into_inner")]
     pub fn into_inner(self) -> T
     where
         T: Sized,
@@ -208,10 +210,8 @@ impl<T: ?Sized> Ghost<T> {
     /// Returns the inner value of the `Ghost`.
     ///
     /// You should prefer the dereference operator `*` instead.
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "identity"]
-    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_inner_logic")]
+    #[builtin("identity")]
     pub fn inner_logic(self) -> T
     where
         T: Sized,

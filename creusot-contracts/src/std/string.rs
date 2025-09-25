@@ -4,8 +4,7 @@ use ::std::ops::Deref;
 impl View for str {
     type ViewTy = Seq<char>;
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }

@@ -4,7 +4,7 @@ module M_trigger2__resolve_seq [#"trigger2.rs" 6 0 6 43]
   let%span svec = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
   let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 77 20 77 76
   let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -32,16 +32,26 @@ module M_trigger2__resolve_seq [#"trigger2.rs" 6 0 6 43]
   
   axiom view_spec: forall self: t_Vec. [%#svec] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate resolve (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_T) = resolve _0
+  meta "rewrite_def" predicate resolve
   
-  function index_logic (self: t_Vec) (ix: int) : MutBorrow.t t_T = [%#svec'1] Seq.get (view self) ix
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_T) = resolve _0
   
-  predicate resolve'1 (self: t_Vec) =
+  meta "rewrite_def" predicate resolve'0
+  
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : MutBorrow.t t_T = [%#svec'1] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
+  
+  predicate resolve'1 [@inline:trivial] (self: t_Vec) =
     [%#svec'0] forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'0 (index_logic self i)
   
-  predicate resolve'2 (_0: t_Vec) = resolve'1 _0
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_0: t_Vec) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
   
   meta "compute_max_steps" 1000000
   
@@ -63,7 +73,7 @@ module M_trigger2__resolve_seq2 [#"trigger2.rs" 15 0 15 48]
   let%span svec = "../../creusot-contracts/src/std/vec.rs" 77 20 77 76
   let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
   let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -91,16 +101,26 @@ module M_trigger2__resolve_seq2 [#"trigger2.rs" 15 0 15 48]
   
   axiom view_spec: forall self: t_Vec. [%#svec'0] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate resolve (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_T) = resolve _0
+  meta "rewrite_def" predicate resolve
   
-  function index_logic (self: t_Vec) (ix: int) : MutBorrow.t t_T = [%#svec'1] Seq.get (view self) ix
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_T) = resolve _0
   
-  predicate resolve'1 (self: t_Vec) =
+  meta "rewrite_def" predicate resolve'0
+  
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : MutBorrow.t t_T = [%#svec'1] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
+  
+  predicate resolve'1 [@inline:trivial] (self: t_Vec) =
     [%#svec] forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'0 (index_logic self i)
   
-  predicate resolve'2 (_0: t_Vec) = resolve'1 _0
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_0: t_Vec) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
   
   predicate resolve_seq [#"trigger2.rs" 6 0 6 43] (seq: t_Vec) =
     [%#strigger2'2] forall i: int [Seq.get (view seq) i]. 0 <= i /\ i < Seq.length (view seq)

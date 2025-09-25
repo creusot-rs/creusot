@@ -42,12 +42,17 @@ impl<'tcx> Metadata<'tcx> {
     }
 
     pub(crate) fn creusot_item(&self, sym: Symbol) -> Option<DefId> {
-        for cmeta in &self.crates {
-            if cmeta.1.creusot_item(sym).is_some() {
-                return cmeta.1.creusot_item(sym);
-            }
-        }
-        None
+        let mut it = self.crates.iter().filter_map(|cmeta| cmeta.1.creusot_item(sym));
+        let r = it.next()?;
+        assert!(it.next().is_none());
+        return Some(r);
+    }
+
+    pub(crate) fn intrinsic(&self, sym: Symbol) -> Option<DefId> {
+        let mut it = self.crates.iter().filter_map(|cmeta| cmeta.1.intrinsic(sym));
+        let r = it.next()?;
+        assert!(it.next().is_none());
+        return Some(r);
     }
 
     pub(crate) fn extern_spec(&self, id: DefId) -> Option<&ExternSpec<'tcx>> {
@@ -55,7 +60,10 @@ impl<'tcx> Metadata<'tcx> {
     }
 
     pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, String>) {
-        for cnum in external_crates(tcx) {
+        for &cnum in tcx.crates(()) {
+            if cnum == LOCAL_CRATE {
+                continue;
+            }
             let Some((cmeta, mut ext_specs)) = CrateMetadata::load(tcx, overrides, cnum) else {
                 continue;
             };
@@ -73,6 +81,7 @@ impl<'tcx> Metadata<'tcx> {
 pub struct CrateMetadata<'tcx> {
     terms: IndexMap<DefId, ScopedTerm<'tcx>>,
     creusot_items: HashMap<Symbol, DefId>,
+    intrinsics: HashMap<Symbol, DefId>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
 }
 
@@ -81,6 +90,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         Self {
             terms: Default::default(),
             creusot_items: Default::default(),
+            intrinsics: Default::default(),
             params_open_inv: Default::default(),
         }
     }
@@ -97,6 +107,10 @@ impl<'tcx> CrateMetadata<'tcx> {
 
     pub(crate) fn creusot_item(&self, sym: Symbol) -> Option<DefId> {
         self.creusot_items.get(&sym).cloned()
+    }
+
+    pub(crate) fn intrinsic(&self, sym: Symbol) -> Option<DefId> {
+        self.intrinsics.get(&sym).cloned()
     }
 
     fn load(
@@ -116,6 +130,7 @@ impl<'tcx> CrateMetadata<'tcx> {
             meta.terms.insert(def_id, summary);
         }
 
+        meta.intrinsics = metadata.intrinsics;
         meta.creusot_items = metadata.creusot_items;
         meta.params_open_inv = metadata.params_open_inv;
 
@@ -131,6 +146,7 @@ impl<'tcx> CrateMetadata<'tcx> {
 pub(crate) struct BinaryMetadata<'tcx> {
     terms: Vec<(DefId, ScopedTerm<'tcx>)>,
     creusot_items: HashMap<Symbol, DefId>,
+    intrinsics: HashMap<Symbol, DefId>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
 }
@@ -138,7 +154,8 @@ pub(crate) struct BinaryMetadata<'tcx> {
 impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
         terms: &mut OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
-        items: &HashMap<Symbol, DefId>,
+        creusot_items: &HashMap<Symbol, DefId>,
+        intrinsics: &HashMap<Symbol, DefId>,
         extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
         params_open_inv: &HashMap<DefId, Vec<usize>>,
     ) -> Self {
@@ -150,7 +167,8 @@ impl<'tcx> BinaryMetadata<'tcx> {
 
         BinaryMetadata {
             terms,
-            creusot_items: items.clone(),
+            creusot_items: creusot_items.clone(),
+            intrinsics: intrinsics.clone(),
             extern_specs: extern_specs.clone(),
             params_open_inv: params_open_inv.clone(),
         }
@@ -217,14 +235,4 @@ fn creusot_metadata_base_path(
 fn creusot_metadata_binary_path(mut path: PathBuf) -> PathBuf {
     path.set_extension("cmeta");
     path
-}
-
-fn external_crates(tcx: TyCtxt<'_>) -> Vec<CrateNum> {
-    let mut deps = Vec::new();
-    for cr in tcx.crates(()) {
-        if *cr != LOCAL_CRATE {
-            deps.push(*cr);
-        }
-    }
-    deps
 }

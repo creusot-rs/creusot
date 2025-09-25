@@ -613,8 +613,7 @@ impl<T: OrdLogic> OrdLogic for Option<T> {
 impl<T> View for IntoIter<T> {
     type ViewTy = Option<T>;
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Option<T> {
         dead
     }
@@ -648,8 +647,7 @@ impl<T> Iterator for IntoIter<T> {
 impl<'a, T> View for Iter<'a, T> {
     type ViewTy = Option<&'a T>;
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Option<&'a T> {
         dead
     }
@@ -683,8 +681,7 @@ impl<T> Iterator for Iter<'_, T> {
 impl<'a, T> View for IterMut<'a, T> {
     type ViewTy = Option<&'a mut T>;
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Option<&'a mut T> {
         dead
     }
@@ -758,7 +755,7 @@ impl<T> OptionExt<T> for Option<T> {
 }
 
 impl<T> Resolve for Option<T> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         match self {
             Some(x) => resolve(x),

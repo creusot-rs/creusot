@@ -330,7 +330,25 @@ pub mod macros {
     /// ```
     pub use base_macros::proof_assert;
 
-    /// Instructs Creusot to ignore the body of a declaration, assuming any contract the declaration has is
+    /// Makes a logical definition or a type declaration opaque, meaning that users of this declaration will not see
+    /// its definition.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// #[opaque]
+    /// struct Opaque(()); // This will is an abstract type
+    ///
+    /// #[logic]
+    /// #[opaque] // Synonym: #[logic(opaque)]
+    /// fn foo() -> i32 { // This is an uninterpreted logic function
+    ///     dead
+    /// }
+    /// ```
+    pub use base_macros::opaque;
+
+    /// Instructs Creusot to not emit any VC for a declaration, assuming any contract the declaration has is
     /// valid.
     ///
     /// # Example
@@ -345,7 +363,8 @@ pub mod macros {
     /// }
     /// ```
     ///
-    /// In practice you should strive to use this as little as possible.
+    /// These declarations are part of the trusted computing base (TCB). You should strive to use
+    /// this as little as possible.
     pub use base_macros::trusted;
 
     /// Declares a variant for a function
@@ -411,6 +430,11 @@ pub mod macros {
     /// This attribute indicates that the function need to be proved in "bitwise" mode, which means that Creusot will use
     /// the bitvector theory of SMT solvers.
     pub use base_macros::bitwise_proof;
+
+    /// This attribute indicates that a logic function or a type should be translated to a specific type in Why3.
+    pub use base_macros::builtin;
+
+    pub(crate) use base_macros::intrinsic;
 }
 
 #[doc(hidden)]

@@ -1,10 +1,8 @@
-use std::iter::once;
+use std::{assert_matches::assert_matches, iter::once};
 
 use crate::{
     backend::Why3Generator,
-    contracts_items::{
-        get_builtin, get_int_ty, is_ghost_ty, is_int_ty, is_logic, is_snap_ty, is_trusted,
-    },
+    contracts_items::{Intrinsic, get_builtin, is_logic, is_opaque},
     ctx::*,
     naming::{name, variable_name},
 };
@@ -36,7 +34,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Uint(uty) => MlT::qconstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t")),
         Float(flty) => MlT::qconstructor(names.in_pre(floatty_to_prelude(*flty), "t")),
         Adt(def, s) if def.is_box() => translate_ty(ctx, names, span, s[0].expect_ty()),
-        Adt(def, s) if is_snap_ty(ctx.tcx, def.did()) || is_ghost_ty(ctx.tcx, def.did()) => {
+        Adt(def, s) if let Intrinsic::Snapshot | Intrinsic::Ghost = ctx.intrinsic(def.did()) => {
             // Make sure we create a cycle of dependency if we create a type which is recursive through Snapshot
             // See test should_fail/bug/436_2.rs, and #436
             names.ty(ty);
@@ -151,8 +149,8 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
     (did, subst): (DefId, GenericArgsRef<'tcx>),
     typing_env: TypingEnv<'tcx>,
 ) -> Vec<Decl> {
-    // Trusted types (opaque)
-    if is_trusted(ctx.tcx, did) {
+    assert_matches!(get_builtin(ctx.tcx, did), None);
+    if is_opaque(ctx.tcx, did) {
         let ty_name = names.def_ty(did, subst).to_ident();
         return vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })];
     }
@@ -299,13 +297,8 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
     }
 }
 
-pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
-    if let TyKind::Adt(def, _) = ty.kind() { is_int_ty(tcx, def.did()) } else { false }
-}
-
 pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N) -> MlT {
-    let ty = ctx.type_of(get_int_ty(ctx.tcx)).no_bound_vars().unwrap();
-    translate_ty(ctx, names, DUMMY_SP, ty)
+    translate_ty(ctx, names, DUMMY_SP, ctx.int_ty())
 }
 
 pub(crate) fn ity_to_prelude(tcx: TyCtxt, ity: IntTy) -> PreMod {

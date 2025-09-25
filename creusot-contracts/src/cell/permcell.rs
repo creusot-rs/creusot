@@ -18,14 +18,14 @@ use ::std::{cell::UnsafeCell, marker::PhantomData};
 /// Creusot ensures that every operation on the inner value uses the right [`PermCellOwn`] object
 /// created by [`PermCell::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
 #[repr(transparent)]
-#[trusted]
+#[opaque]
 pub struct PermCell<T: ?Sized>(UnsafeCell<T>);
 
 /// Token that represents the ownership of a [`PermCell`] object.
 ///
 /// A `PermCellOwn` only exists in the ghost world, and it must be used in conjunction with
 /// [`PermCell`] in order to read or write the value.
-#[trusted]
+#[opaque]
 pub struct PermCellOwn<T: ?Sized>(PhantomData<T>);
 
 impl<T> View for PermCellOwn<T> {
@@ -38,7 +38,7 @@ impl<T> View for PermCellOwn<T> {
 }
 
 impl<T: ?Sized> Resolve for PermCellOwn<T> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         resolve(self.val())
     }
@@ -52,7 +52,7 @@ impl<T: ?Sized> Resolve for PermCellOwn<T> {
 }
 
 impl<T: Sized> Invariant for PermCellOwn<T> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
@@ -64,15 +64,13 @@ impl<T: ?Sized> PermCellOwn<T> {
     /// Returns the logical identity of the cell.
     ///
     /// To use a [`PermCell`], this and [`PermCell::id`] must agree.
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     pub fn id(self) -> Id {
         dead
     }
 
     /// Get the logical value.
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     pub fn val<'a>(self) -> &'a T {
         dead
     }
@@ -218,8 +216,7 @@ impl<T> PermCell<T> {
     /// Returns the logical identity of the cell.
     ///
     /// This is used to guarantee that a [`PermCellOwn`] is always used with the right [`PermCell`].
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     pub fn id(self) -> Id {
         dead
     }

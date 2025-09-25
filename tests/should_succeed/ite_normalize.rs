@@ -4,7 +4,7 @@ extern crate creusot_contracts;
 
 use creusot_contracts::{std::clone::Clone, *};
 
-#[trusted]
+#[opaque]
 struct BTreeMap<K, V>(std::collections::BTreeMap<K, V>);
 
 impl<K: DeepModel, V> BTreeMap<K, V> {
@@ -44,8 +44,8 @@ impl<K: Clone, V: Clone> Clone for BTreeMap<K, V> {
 impl<K: DeepModel, V> View for BTreeMap<K, V> {
     type ViewTy = creusot_contracts::logic::Mapping<K::DeepModelTy, Option<V>>;
 
-    #[logic(open(self))]
     #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }

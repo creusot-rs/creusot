@@ -9,20 +9,20 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 135 48 135 52
   let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 132 14 132 64
   let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 133 14 133 28
-  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
-  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 89 22 89 26
-  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 89 4 89 48
-  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 88 14 88 35
-  let%span sghost'2 = "../../../creusot-contracts/src/ghost.rs" 78 14 78 18
-  let%span sghost'3 = "../../../creusot-contracts/src/ghost.rs" 78 4 78 36
-  let%span sghost'4 = "../../../creusot-contracts/src/ghost.rs" 77 14 77 31
-  let%span sghost'5 = "../../../creusot-contracts/src/ghost.rs" 177 14 177 26
-  let%span sghost'6 = "../../../creusot-contracts/src/ghost.rs" 116 8 116 18
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 91 22 91 26
+  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 91 4 91 48
+  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 89 14 89 35
+  let%span sghost'2 = "../../../creusot-contracts/src/ghost.rs" 80 14 80 18
+  let%span sghost'3 = "../../../creusot-contracts/src/ghost.rs" 80 4 80 36
+  let%span sghost'4 = "../../../creusot-contracts/src/ghost.rs" 78 14 78 31
+  let%span sghost'5 = "../../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sghost'6 = "../../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
   let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
-  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
+  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
   
   use creusot.int.Int32
   use creusot.prelude.Opaque
@@ -42,7 +42,9 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant' (self: t_PtrOwn) = [%#sptr_own'5] not is_null_logic (ptr self)
+  predicate invariant' [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own'5] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant'
   
   predicate inv (_0: t_PtrOwn)
   
@@ -52,7 +54,9 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> true
         end)
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sghost'6] inv self
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'6] inv self
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_PtrOwn)
   
@@ -69,13 +73,19 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
       {[%#sptr_own'0] ptr result._p1 = result._p0 /\ val' result._p1 = v}
       (! return' {result}) ]
   
-  predicate invariant''1 (self: MutBorrow.t t_PtrOwn) = [%#sinvariant] inv'0 self.current /\ inv'0 self.final
+  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
+  
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'2 (_0: MutBorrow.t t_PtrOwn)
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 (self: MutBorrow.t t_PtrOwn) = [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'3 (_0: MutBorrow.t t_PtrOwn)
   
@@ -88,13 +98,17 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
-  predicate invariant''3 (self: t_PtrOwn) = [%#sinvariant'0] inv'0 self
+  predicate invariant''3 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'0 self
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'4 (_0: t_PtrOwn)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'4 x]. inv'4 x = invariant''3 x
   
-  predicate invariant''4 (self: t_PtrOwn) = [%#sinvariant'0] inv self
+  predicate invariant''4 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv self
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'5 (_0: t_PtrOwn)
   
@@ -112,13 +126,21 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
       {[%#sptr_own'4] own1.current = own1.final}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_PtrOwn) = resolve _0
+  meta "rewrite_def" predicate resolve
   
-  predicate resolve'1 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_PtrOwn) = resolve _0
   
-  predicate resolve'2 (_0: MutBorrow.t t_PtrOwn) = resolve'1 _0
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_PtrOwn) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
   
   let rec new'0 (x: ()) (return' (x'0: ())) = any
     [ return''0 (result: ()) -> {[%#sghost'5] result = x} (! return' {result}) ]

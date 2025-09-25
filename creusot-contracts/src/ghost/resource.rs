@@ -35,7 +35,7 @@ mod m {
     ///     proof_assert!(part@ == Ag(1));
     /// };
     /// ```
-    #[trusted]
+    #[opaque]
     pub struct Resource<R>(PhantomData<R>);
 
     use crate::{
@@ -61,8 +61,7 @@ mod m {
         /// Get the id for this resource.
         ///
         /// This prevents mixing resources of different origins.
-        #[logic]
-        #[trusted]
+        #[logic(opaque)]
         pub fn id(self) -> Id {
             dead
         }
@@ -78,8 +77,7 @@ mod m {
         }
 
         /// Get the RA element contained in this resource.
-        #[logic]
-        #[trusted]
+        #[logic(opaque)]
         pub fn val(self) -> R {
             dead
         }

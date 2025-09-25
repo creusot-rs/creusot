@@ -34,17 +34,14 @@ use crate::{
 /// ```
 ///
 /// This type is designed for this use-case, with no restriction on the capacity.
-#[trusted]
-#[cfg_attr(creusot, creusot::builtins = "seq.Seq.seq")]
+#[builtin("seq.Seq.seq")]
 pub struct Seq<T>(std::marker::PhantomData<T>);
 
 /// Logical definitions
 impl<T> Seq<T> {
     /// Returns the empty sequence.
     #[logic]
-    #[trusted]
-    #[creusot::builtins = "seq.Seq.empty"]
-    #[creusot::builtins_ascription]
+    #[builtin("seq.Seq.empty", ascription)]
     pub fn empty() -> Self {
         dead
     }
@@ -61,9 +58,8 @@ impl<T> Seq<T> {
     /// proof_assert!(s.len() == 5);
     /// proof_assert!(forall<i> 0 <= i && i < 5 ==> s[i] == i + 1);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Seq.create"]
+    #[builtin("seq.Seq.create")]
     pub fn create(n: Int, mapping: Mapping<Int, T>) -> Self {
         let _ = n;
         let _ = mapping;
@@ -92,9 +88,8 @@ impl<T> Seq<T> {
     /// proof_assert!(s.index_logic_unsized(0) == 2);
     /// proof_assert!(s[0] == 2); // prefer this
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Seq.get"]
+    #[builtin("seq.Seq.get")]
     pub fn index_logic_unsized(self, ix: Int) -> Box<T> {
         let _ = ix;
         dead
@@ -115,9 +110,8 @@ impl<T> Seq<T> {
     /// proof_assert!(subs.len() == 3);
     /// proof_assert!(subs[0] == 2 && subs[1] == 3 && subs[2] == 4);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Seq.([..])"]
+    #[builtin("seq.Seq.([..])")]
     pub fn subsequence(self, start: Int, end: Int) -> Self {
         let _ = start;
         let _ = end;
@@ -134,9 +128,8 @@ impl<T> Seq<T> {
     /// proof_assert!(s.len() == 1);
     /// proof_assert!(s[0] == 42);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Seq.singleton"]
+    #[builtin("seq.Seq.singleton")]
     pub fn singleton(value: T) -> Self {
         let _ = value;
         dead
@@ -169,9 +162,8 @@ impl<T> Seq<T> {
     /// #[requires(v@.len() > 0)]
     /// fn f<T>(v: Vec<T>) { /* ... */ }
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Seq.length"]
+    #[builtin("seq.Seq.length")]
     pub fn len(self) -> Int {
         dead
     }
@@ -189,9 +181,8 @@ impl<T> Seq<T> {
     /// proof_assert!(s2[0] == 0);
     /// proof_assert!(s2[1] == 3);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Seq.set"]
+    #[builtin("seq.Seq.set")]
     pub fn set(self, ix: Int, x: T) -> Self {
         let _ = ix;
         let _ = x;
@@ -204,9 +195,8 @@ impl<T> Seq<T> {
     /// elements at the same indices.
     ///
     /// This is in fact equivalent with normal equality.
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Seq.(==)"]
+    #[builtin("seq.Seq.(==)")]
     pub fn ext_eq(self, other: Self) -> bool {
         let _ = other;
         dead
@@ -214,9 +204,8 @@ impl<T> Seq<T> {
 
     // internal wrapper to match the order of arguments of Seq.cons
     #[doc(hidden)]
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Seq.cons"]
+    #[builtin("seq.Seq.cons")]
     pub fn cons(_: T, _: Self) -> Self {
         dead
     }
@@ -231,7 +220,7 @@ impl<T> Seq<T> {
     /// proof_assert!(s2[0] == 2);
     /// proof_assert!(s2[1] == 1);
     /// ```
-    #[logic(open)]
+    #[logic(open, inline)]
     pub fn push_front(self, x: T) -> Self {
         Self::cons(x, self)
     }
@@ -246,9 +235,8 @@ impl<T> Seq<T> {
     /// proof_assert!(s2[0] == 1);
     /// proof_assert!(s2[1] == 2);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Seq.snoc"]
+    #[builtin("seq.Seq.snoc")]
     pub fn push_back(self, x: T) -> Self {
         let _ = x;
         dead
@@ -267,9 +255,8 @@ impl<T> Seq<T> {
     /// proof_assert!(s[1] == 0);
     /// proof_assert!(s[2] == 1);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Seq.(++)"]
+    #[builtin("seq.Seq.(++)")]
     pub fn concat(self, other: Self) -> Self {
         let _ = other;
         dead
@@ -297,9 +284,8 @@ impl<T> Seq<T> {
     /// proof_assert!(s2[1] == 1);
     /// proof_assert!(s2[2] == 0);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Reverse.reverse"]
+    #[builtin("seq.Reverse.reverse")]
     pub fn reverse(self) -> Self {
         dead
     }
@@ -315,9 +301,8 @@ impl<T> Seq<T> {
     /// - `start` and `end` are in bounds (between `0` and `self.len()` included)
     /// - Every element of `self` between `start` (included) and `end` (excluded) can
     ///   also be found in `other` between `start` and `end`, and vice-versa
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Permut.permut"]
+    #[builtin("seq.Permut.permut")]
     pub fn permut(self, other: Self, start: Int, end: Int) -> bool {
         let _ = other;
         let _ = start;
@@ -329,9 +314,8 @@ impl<T> Seq<T> {
     /// - `self` and `other` have the same length
     /// - `i` and `j` are in bounds (between `0` and `self.len()` excluded)
     /// - `other` is equal to `self` where the elements at `i` and `j` are swapped
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "seq.Permut.exchange"]
+    #[builtin("seq.Permut.exchange")]
     pub fn exchange(self, other: Self, i: Int, j: Int) -> bool {
         let _ = other;
         let _ = i;
@@ -388,8 +372,7 @@ impl<T> Seq<&T> {
     ///
     /// This is simply a utility method, because `&T` is equivalent to `T` in pearlite.
     #[logic]
-    #[trusted]
-    #[creusot::builtins = "identity"]
+    #[builtin("identity")]
     pub fn to_owned_seq(self) -> Seq<T> {
         dead
     }
@@ -399,8 +382,7 @@ impl<T> IndexLogic<Int> for Seq<T> {
     type Item = T;
 
     #[logic]
-    #[trusted]
-    #[creusot::builtins = "seq.Seq.get"]
+    #[builtin("seq.Seq.get")]
     fn index_logic(self, _: Int) -> Self::Item {
         dead
     }
@@ -653,9 +635,9 @@ impl<T> Seq<T> {
 
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
 impl<T: Clone + Copy> Clone for Seq<T> {
+    #[trusted]
     #[check(ghost)]
     #[ensures(result == *self)]
-    #[trusted]
     fn clone(&self) -> Self {
         *self
     }
@@ -666,7 +648,7 @@ impl<T: Copy> Copy for Seq<T> {}
 impl<T: Plain> Plain for Seq<T> {}
 
 impl<T> Invariant for Seq<T> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {

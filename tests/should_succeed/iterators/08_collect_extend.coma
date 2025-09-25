@@ -18,15 +18,15 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 20 0 20 66]
   let%span siter'4 = "../../../creusot-contracts/src/std/iter.rs" 48 4 48 44
   let%span smodel = "../../../creusot-contracts/src/model.rs" 59 8 59 22
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 59 4 59 18
+  let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 57 4 57 18
   let%span svec = "../../../creusot-contracts/src/std/vec.rs" 114 16 114 17
   let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 116 35 116 36
   let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 115 26 115 56
   let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 22 14 22 41
   let%span svec'3 = "../../../creusot-contracts/src/std/vec.rs" 93 20 93 41
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
-  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
+  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use seq.Seq
@@ -77,8 +77,10 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 20 0 20 66]
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'1 x]. inv'1 x = invariant' x
   
-  predicate invariant''0 (self: Seq.seq t_T) =
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'2 (_0: Seq.seq t_T)
   
@@ -90,7 +92,10 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 20 0 20 66]
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''1 x
   
-  predicate invariant''2 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Vec) =
+    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: MutBorrow.t t_Vec)
   
@@ -110,7 +115,9 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 20 0 20 66]
   
   type t_Option = C_None | C_Some t_T
   
-  predicate invariant''3 (self: MutBorrow.t t_I) = [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_I) = [%#sinvariant] inv self.current /\ inv self.final
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'5 (_0: MutBorrow.t t_I)
   
@@ -145,9 +152,13 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 20 0 20 66]
   let rec next (self_: MutBorrow.t t_I) (return' (x: t_Option)) = {[@expl:next requires] precondition () self_}
     any [ return''0 (result: t_Option) -> {postcondition_once () self_ result} (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_I) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_I) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_I) = resolve _0
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_I) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: t_T)) = any
     [ good (field_0: t_T) -> {C_Some field_0 = input} (! ret {field_0})
@@ -160,9 +171,13 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 20 0 20 66]
   
   predicate resolve'1 (_0: t_I)
   
-  predicate resolve'2 (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  predicate resolve'2 [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
-  predicate resolve'3 (_0: MutBorrow.t t_Vec) = resolve'2 _0
+  meta "rewrite_def" predicate resolve'2
+  
+  predicate resolve'3 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'2 _0
+  
+  meta "rewrite_def" predicate resolve'3
   
   meta "compute_max_steps" 1000000
   
@@ -267,9 +282,9 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 38 0 38 52]
   let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 116 35 116 36
   let%span svec'3 = "../../../creusot-contracts/src/std/vec.rs" 115 26 115 56
   let%span svec'4 = "../../../creusot-contracts/src/std/vec.rs" 93 20 93 41
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
-  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
+  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use creusot.prelude.Opaque
@@ -301,8 +316,10 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 38 0 38 52]
   
   axiom inv_axiom [@rewrite]: forall x: t_Item [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: Seq.seq t_Item) =
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_Item) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'1 (_0: Seq.seq t_Item)
   
@@ -344,7 +361,10 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 38 0 38 52]
   
   type t_Option = C_None | C_Some t_Item
   
-  predicate invariant''2 (self: MutBorrow.t t_I) = [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_I) =
+    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: MutBorrow.t t_I)
   
@@ -379,15 +399,22 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 38 0 38 52]
   let rec next (self_: MutBorrow.t t_I) (return' (x: t_Option)) = {[@expl:next requires] precondition () self_}
     any [ return''0 (result: t_Option) -> {postcondition_once () self_ result} (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_I) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_I) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_I) = resolve _0
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_I) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: t_Item)) = any
     [ good (field_0: t_Item) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_Item [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  predicate invariant''3 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Vec) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'6 (_0: MutBorrow.t t_Vec)
   
@@ -477,18 +504,18 @@ module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 49 0 49 51]
   let%span s08_collect_extend'2 = "08_collect_extend.rs" 17 2 18 82
   let%span smodel = "../../../creusot-contracts/src/model.rs" 59 8 59 22
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 59 4 59 18
+  let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 57 4 57 18
   let%span svec = "../../../creusot-contracts/src/std/vec.rs" 215 18 215 34
   let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 270 8 270 61
-  let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 276 12 276 41
-  let%span svec'3 = "../../../creusot-contracts/src/std/vec.rs" 281 4 281 49
-  let%span svec'4 = "../../../creusot-contracts/src/std/vec.rs" 282 27 282 29
-  let%span svec'5 = "../../../creusot-contracts/src/std/vec.rs" 285 4 285 34
-  let%span svec'6 = "../../../creusot-contracts/src/std/vec.rs" 286 4 286 34
-  let%span svec'7 = "../../../creusot-contracts/src/std/vec.rs" 287 4 287 44
-  let%span svec'8 = "../../../creusot-contracts/src/std/vec.rs" 288 73 288 75
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 269 8 269 61
+  let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 275 12 275 41
+  let%span svec'3 = "../../../creusot-contracts/src/std/vec.rs" 280 4 280 49
+  let%span svec'4 = "../../../creusot-contracts/src/std/vec.rs" 281 27 281 29
+  let%span svec'5 = "../../../creusot-contracts/src/std/vec.rs" 284 4 284 34
+  let%span svec'6 = "../../../creusot-contracts/src/std/vec.rs" 285 4 285 34
+  let%span svec'7 = "../../../creusot-contracts/src/std/vec.rs" 286 4 286 44
+  let%span svec'8 = "../../../creusot-contracts/src/std/vec.rs" 287 73 287 75
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
@@ -547,7 +574,9 @@ module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 49 0 49 51]
   
   axiom produces_refl_spec: forall self: t_IntoIter. [%#svec'3] produces self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate resolve (self: MutBorrow.t t_IntoIter) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_IntoIter) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve
   
   function view'1 (self: MutBorrow.t t_IntoIter) : Seq.seq UInt32.t = [%#smodel] view'0 self.current
   
@@ -562,9 +591,13 @@ module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 49 0 49 51]
         /\ produces iter prod done'.current /\ view vec.final = Seq.(++) (view'2 vec) prod}
       (! return' {result}) ]
   
-  predicate resolve'0 (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
-  predicate resolve'1 (_0: MutBorrow.t t_Vec) = resolve'0 _0
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'0 _0
+  
+  meta "rewrite_def" predicate resolve'1
   
   function view'3 (self: t_Vec) : Seq.seq UInt32.t = [%#smodel'0] view self
   
@@ -670,7 +703,9 @@ module M_08_collect_extend__collect_example [#"08_collect_extend.rs" 59 0 59 56]
         /\ completed done' /\ produces iter prod done'.current /\ view result = prod}
       (! return' {result}) ]
   
-  function index_logic (self: t_Vec) (ix: int) : UInt32.t = [%#svec'0] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt32.t = [%#svec'0] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   meta "compute_max_steps" 1000000
   

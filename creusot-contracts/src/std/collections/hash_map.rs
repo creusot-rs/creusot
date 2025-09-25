@@ -12,8 +12,7 @@ use ::std::{
 impl<K: DeepModel, V, S> View for HashMap<K, V, S> {
     type ViewTy = FMap<K::DeepModelTy, V>;
 
-    #[logic(open)]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -57,8 +56,7 @@ extern_spec! {
 impl<K: DeepModel, V> View for IntoIter<K, V> {
     type ViewTy = FMap<K::DeepModelTy, V>;
 
-    #[logic(open)]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -104,8 +102,7 @@ impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
 impl<'a, K: DeepModel, V> View for Iter<'a, K, V> {
     type ViewTy = FMap<K::DeepModelTy, V>;
 
-    #[logic(open)]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -151,8 +148,7 @@ impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
 impl<'a, K: DeepModel, V> View for IterMut<'a, K, V> {
     type ViewTy = FMap<K::DeepModelTy, &'a mut V>;
 
-    #[logic(open)]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }

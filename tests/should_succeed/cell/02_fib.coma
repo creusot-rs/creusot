@@ -87,12 +87,12 @@ module M_02_fib__fib_memo [#"02_fib.rs" 52 0 52 50]
   let%span svec = "../../../creusot-contracts/src/std/vec.rs" 190 16 190 48
   let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 191 16 191 56
   let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span spredcell = "../../../creusot-contracts/src/cell/predcell.rs" 66 4 66 29
-  let%span spredcell'0 = "../../../creusot-contracts/src/cell/predcell.rs" 35 4 35 25
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 111 20 111 37
-  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 116 20 116 37
+  let%span spredcell = "../../../creusot-contracts/src/cell/predcell.rs" 65 4 65 29
+  let%span spredcell'0 = "../../../creusot-contracts/src/cell/predcell.rs" 34 4 34 25
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 115 20 115 37
   let%span smodel = "../../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span smapping = "../../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
+  let%span smapping = "../../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
   use creusot.prelude.Opaque
@@ -119,7 +119,10 @@ module M_02_fib__fib_memo [#"02_fib.rs" 52 0 52 50]
   
   type t_PredCell
   
-  predicate in_bounds (self: UInt64.t) (seq: Seq.seq t_PredCell) = [%#sslice] UInt64.t'int self < Seq.length seq
+  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_PredCell) =
+    [%#sslice] UInt64.t'int self < Seq.length seq
+  
+  meta "rewrite_def" predicate in_bounds
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -129,8 +132,10 @@ module M_02_fib__fib_memo [#"02_fib.rs" 52 0 52 50]
   
   function view'0 (self: t_Vec) : Seq.seq t_PredCell = [%#smodel] view self
   
-  predicate has_value (self: UInt64.t) (seq: Seq.seq t_PredCell) (out: t_PredCell) =
+  predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_PredCell) (out: t_PredCell) =
     [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: t_PredCell)) =
     {[@expl:index requires] [%#svec] in_bounds ix (view'0 self_)}
@@ -138,7 +143,9 @@ module M_02_fib__fib_memo [#"02_fib.rs" 52 0 52 50]
   
   type t_Option = C_None | C_Some UInt64.t
   
-  predicate index_logic (self: Map.map t_Option bool) (a: t_Option) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_Option bool) (a: t_Option) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function view'1 (self: t_PredCell) : Map.map t_Option bool
   
@@ -188,7 +195,9 @@ module M_02_fib__fib_memo [#"02_fib.rs" 52 0 52 50]
         | {t_FibCache__0 = a_0} -> true
         end)
   
-  predicate invariant''0 (self: t_FibCache) = [%#sinvariant] inv self
+  predicate invariant''0 [@inline:trivial] (self: t_FibCache) = [%#sinvariant] inv self
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_FibCache)
   

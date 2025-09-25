@@ -10,7 +10,7 @@ use std::{cell::RefCell, collections::HashMap, thread_local};
 
 use crate::{
     cleanup_spec_closures::*,
-    ctx, lints,
+    lints,
     options::{Options, Output},
 };
 
@@ -104,10 +104,9 @@ impl Callbacks for ToWhy {
     }
 
     fn after_expansion<'tcx>(&mut self, c: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-        let mut ctx = ctx::TranslationCtx::new(tcx, self.opts.clone());
-        let _ = crate::translation::before_analysis(&mut ctx);
+        let (thir, params_open_inv) = crate::translation::before_analysis(tcx);
         let _ = tcx.analysis(());
-        let _ = crate::translation::after_analysis(ctx);
+        let _ = crate::translation::after_analysis(tcx, self.opts.clone(), thir, params_open_inv);
 
         c.sess.dcx().abort_if_errors();
 

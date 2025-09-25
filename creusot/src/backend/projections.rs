@@ -5,8 +5,8 @@ use crate::{
         program::IntermediateStmt,
         ty::{translate_ty, uty_to_prelude},
     },
-    contracts_items::{get_index_logic, get_int_ty, is_snap_ty},
-    ctx::PreMod,
+    contracts_items::Intrinsic,
+    ctx::{PreMod, TranslationCtx},
     naming::name,
     translation::{
         pearlite::{PIdent, Pattern, Term},
@@ -56,7 +56,7 @@ impl<'a> Focus<'a> {
 type Constructor<'a> = Box<dyn FnOnce(&mut Vec<IntermediateStmt>, Exp) -> Exp + 'a>;
 
 pub(crate) fn iter_projections_ty<'tcx, 'a, V: Debug>(
-    tcx: TyCtxt<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     proj: &'a [ProjectionElem<V, Ty<'tcx>>],
     place_ty: &'a mut PlaceTy<'tcx>,
 ) -> impl Iterator<Item = (&'a ProjectionElem<V, Ty<'tcx>>, PlaceTy<'tcx>)> {
@@ -64,13 +64,13 @@ pub(crate) fn iter_projections_ty<'tcx, 'a, V: Debug>(
         // Code in pearlite.rs does not insert a projection when seeing
         // a deref of a snapshot. Thus we remove this from the type if a snapshot appears.
         while let TyKind::Adt(d, subst) = place_ty.ty.kind()
-            && is_snap_ty(tcx, d.did())
+            && Intrinsic::Snapshot.is(ctx, d.did())
         {
             assert_matches!(place_ty.variant_index, None);
             place_ty.ty = subst.type_at(0);
         }
         let r = (elem, *place_ty);
-        *place_ty = projection_ty(*place_ty, tcx, elem);
+        *place_ty = projection_ty(*place_ty, ctx.tcx, elem);
         r
     })
 }
@@ -86,7 +86,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
     proj: &'a [ProjectionElem<PIdent, Ty<'tcx>>],
     span: Span,
 ) -> (Focus<'a>, Constructor<'a>) {
-    for (elem, place_ty) in iter_projections_ty(ctx.tcx, proj, place_ty) {
+    for (elem, place_ty) in iter_projections_ty(ctx, proj, place_ty) {
         // TODO: name hygiene
         match elem {
             ProjectionElem::Deref => {
@@ -280,8 +280,7 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, N: Namer<'tcx>>(
                     let qname = names.in_pre(uty_to_prelude(ctx.tcx, UintTy::Usize), "t'int");
                     idx = Exp::qvar(qname).app([idx])
                 } else {
-                    let int_ty = ctx.type_of(get_int_ty(ctx.tcx)).no_bound_vars().unwrap();
-                    assert_eq!(idxty, int_ty);
+                    assert_eq!(idxty, ctx.int_ty());
                 }
                 borrow_id =
                     Exp::qvar(names.in_pre(PreMod::MutBor, "inherit_id")).app([borrow_id, idx]);
@@ -302,7 +301,7 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, N: Namer<'tcx>>(
 }
 
 pub(crate) fn projections_term<'tcx, 'a, V: Debug>(
-    tcx: TyCtxt<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
     subject: Term<'tcx>,
     proj: &[ProjectionElem<V, Ty<'tcx>>],
@@ -320,7 +319,7 @@ pub(crate) fn projections_term<'tcx, 'a, V: Debug>(
     let mut place_ty = PlaceTy::from_ty(subject.ty);
     let mut state = Trm(Box::new(exp));
     for (el, place_ty) in
-        iter_projections_ty(tcx, proj, &mut place_ty).collect::<Vec<_>>().into_iter().rev()
+        iter_projections_ty(ctx, proj, &mut place_ty).collect::<Vec<_>>().into_iter().rev()
     {
         match (el, state) {
             (ProjectionElem::Deref, Pat(pat, t)) => state = Pat(pat.deref(place_ty.ty), t),
@@ -368,16 +367,17 @@ pub(crate) fn projections_term<'tcx, 'a, V: Debug>(
                 };
                 let idx = translate_index(idx);
                 state = Trm(Box::new(move |x| {
-                    let did = get_index_logic(tcx);
-                    let substs = tcx.mk_args(&[place_ty.ty, idx.ty].map(GenericArg::from));
-                    let (did, substs) = TraitResolved::resolve_item(tcx, typing_env, did, substs)
-                        .to_opt(did, substs)
-                        .unwrap();
-                    trm(Term::call(tcx, typing_env, did, substs, [x, idx]))
+                    let did = Intrinsic::IndexLogic.get(ctx);
+                    let substs = ctx.mk_args(&[place_ty.ty, idx.ty].map(GenericArg::from));
+                    let (did, substs) =
+                        TraitResolved::resolve_item(ctx.tcx, typing_env, did, substs)
+                            .to_opt(did, substs)
+                            .unwrap();
+                    trm(Term::call(ctx.tcx, typing_env, did, substs, [x, idx]))
                 }))
             }
             (ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. }, _) => {
-                tcx.dcx().span_bug(span, "Array and slice patterns are currently not supported")
+                ctx.dcx().span_bug(span, "Array and slice patterns are currently not supported")
             }
             (
                 ProjectionElem::OpaqueCast(_)

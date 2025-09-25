@@ -17,20 +17,20 @@ module M_ghost_set__ghost_map [#"ghost_set.rs" 4 0 4 18]
   let%span sghost_set'14 = "ghost_set.rs" 31 22 31 31
   let%span sghost_set'15 = "ghost_set.rs" 32 8 32 33
   let%span sghost_set'16 = "ghost_set.rs" 33 8 33 33
-  let%span sfset = "../../../creusot-contracts/src/logic/fset.rs" 302 4 302 33
-  let%span sfset'0 = "../../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfset'1 = "../../../creusot-contracts/src/logic/fset.rs" 383 14 383 44
-  let%span sfset'2 = "../../../creusot-contracts/src/logic/fset.rs" 384 14 384 48
-  let%span sfset'3 = "../../../creusot-contracts/src/logic/fset.rs" 329 14 329 34
-  let%span sfset'4 = "../../../creusot-contracts/src/logic/fset.rs" 419 14 419 45
-  let%span sfset'5 = "../../../creusot-contracts/src/logic/fset.rs" 420 14 420 48
-  let%span sfset'6 = "../../../creusot-contracts/src/logic/fset.rs" 350 14 350 45
-  let%span sfset'7 = "../../../creusot-contracts/src/logic/fset.rs" 58 8 58 26
-  let%span sfset'8 = "../../../creusot-contracts/src/logic/fset.rs" 83 8 83 26
-  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 88 14 88 35
-  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 77 14 77 31
-  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 177 14 177 26
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sfset = "../../../creusot-contracts/src/logic/fset.rs" 286 4 286 33
+  let%span sfset'0 = "../../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfset'1 = "../../../creusot-contracts/src/logic/fset.rs" 367 14 367 44
+  let%span sfset'2 = "../../../creusot-contracts/src/logic/fset.rs" 368 14 368 48
+  let%span sfset'3 = "../../../creusot-contracts/src/logic/fset.rs" 313 14 313 34
+  let%span sfset'4 = "../../../creusot-contracts/src/logic/fset.rs" 403 14 403 45
+  let%span sfset'5 = "../../../creusot-contracts/src/logic/fset.rs" 404 14 404 48
+  let%span sfset'6 = "../../../creusot-contracts/src/logic/fset.rs" 334 14 334 45
+  let%span sfset'7 = "../../../creusot-contracts/src/logic/fset.rs" 55 8 55 26
+  let%span sfset'8 = "../../../creusot-contracts/src/logic/fset.rs" 78 8 78 26
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 89 14 89 35
+  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 78 14 78 31
+  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.int.Int32
   use set.Fset
@@ -40,21 +40,30 @@ module M_ghost_set__ghost_map [#"ghost_set.rs" 4 0 4 18]
   let rec new (return' (x: Fset.fset Int32.t)) = any
     [ return''0 (result: Fset.fset Int32.t) -> {[%#sfset] Fset.is_empty result} (! return' {result}) ]
   
-  predicate contains (self: Fset.fset Int32.t) (e: Int32.t) = [%#sfset'0] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset Int32.t) (e: Int32.t) = [%#sfset'0] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains
   
   let rec deref_mut (self: MutBorrow.t (Fset.fset Int32.t)) (return' (x: MutBorrow.t (Fset.fset Int32.t))) = any
     [ return''0 (result: MutBorrow.t (Fset.fset Int32.t)) -> {[%#sghost] result = self} (! return' {result}) ]
   
-  function insert (self: Fset.fset Int32.t) (e: Int32.t) : Fset.fset Int32.t = [%#sfset'7] Fset.add e self
+  function insert [@inline:trivial] (self: Fset.fset Int32.t) (e: Int32.t) : Fset.fset Int32.t =
+    [%#sfset'7] Fset.add e self
+  
+  meta "rewrite_def" function insert
   
   let rec insert_ghost (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return' (x: bool)) = any
     [ return''0 (result: bool) -> {[%#sfset'1] self.final = insert self.current value}
       {[%#sfset'2] result = (not contains self.current value)}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t (Fset.fset Int32.t)) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (Fset.fset Int32.t)) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t (Fset.fset Int32.t)) = resolve _0
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (Fset.fset Int32.t)) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec deref (self: Fset.fset Int32.t) (return' (x: Fset.fset Int32.t)) = any
     [ return''0 (result: Fset.fset Int32.t) -> {[%#sghost'0] result = self} (! return' {result}) ]
@@ -64,7 +73,10 @@ module M_ghost_set__ghost_map [#"ghost_set.rs" 4 0 4 18]
   
   type tuple = { _p0: Int32.t; _p1: Int32.t; _p2: Int32.t }
   
-  function remove (self: Fset.fset Int32.t) (e: Int32.t) : Fset.fset Int32.t = [%#sfset'8] Fset.remove e self
+  function remove [@inline:trivial] (self: Fset.fset Int32.t) (e: Int32.t) : Fset.fset Int32.t =
+    [%#sfset'8] Fset.remove e self
+  
+  meta "rewrite_def" function remove
   
   let rec remove_ghost (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return' (x: bool)) = any
     [ return''0 (result: bool) -> {[%#sfset'4] self.final = remove self.current value}

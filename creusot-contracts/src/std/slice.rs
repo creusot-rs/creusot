@@ -25,10 +25,9 @@ impl<T> View for [T] {
     type ViewTy = Seq<T>;
 
     #[logic]
-    #[trusted]
-    #[cfg_attr(target_pointer_width = "16", creusot::builtins = "creusot.slice.Slice16.view")]
-    #[cfg_attr(target_pointer_width = "32", creusot::builtins = "creusot.slice.Slice32.view")]
-    #[cfg_attr(target_pointer_width = "64", creusot::builtins = "creusot.slice.Slice64.view")]
+    #[cfg_attr(target_pointer_width = "16", builtin("creusot.slice.Slice16.view"))]
+    #[cfg_attr(target_pointer_width = "32", builtin("creusot.slice.Slice32.view"))]
+    #[cfg_attr(target_pointer_width = "64", builtin("creusot.slice.Slice64.view"))]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -37,8 +36,8 @@ impl<T> View for [T] {
 impl<T: DeepModel> DeepModel for [T] {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures((&self)@.len() == result.len())]
     #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == (&self)[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
@@ -49,7 +48,7 @@ impl<T: DeepModel> DeepModel for [T] {
 impl<T> IndexLogic<Int> for [T] {
     type Item = T;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }
@@ -58,7 +57,7 @@ impl<T> IndexLogic<Int> for [T] {
 impl<T> IndexLogic<usize> for [T] {
     type Item = T;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
     }
@@ -73,8 +72,8 @@ pub trait SliceExt<T> {
 }
 
 impl<T> SliceExt<T> for [T] {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result.len() == self@.len())]
     #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == &mut self[i])]
     // TODO: replace with a map function applied on a sequence
@@ -82,8 +81,8 @@ impl<T> SliceExt<T> for [T] {
         dead
     }
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result.len() == self@.len())]
     #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == &self[i])]
     fn to_ref_seq(&self) -> Seq<&T> {
@@ -106,17 +105,17 @@ where
 }
 
 impl<T> SliceIndex<[T]> for usize {
-    #[logic(open)]
+    #[logic(open, inline)]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self@ < seq.len() }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn has_value(self, seq: Seq<T>, out: T) -> bool {
         pearlite! { seq[self@] == out }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! { forall<i> 0 <= i && i != self@ && i < old.len() ==> old[i] == fin[i] }
     }
@@ -143,8 +142,8 @@ impl<T> SliceIndex<[T]> for Range<usize> {
 }
 
 impl<T> SliceIndex<[T]> for RangeInclusive<usize> {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(self.end_log()@ < seq.len() && self.start_log()@ <= self.end_log()@+1 ==> result)]
     #[ensures(self.end_log()@ >= seq.len() ==> !result)]
     fn in_bounds(self, seq: Seq<T>) -> bool {
@@ -416,8 +415,7 @@ extern_spec! {
 impl<'a, T> View for Iter<'a, T> {
     type ViewTy = &'a [T];
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -450,8 +448,8 @@ impl<'a, T> Iterator for Iter<'a, T> {
 impl<'a, T> View for IterMut<'a, T> {
     type ViewTy = &'a mut [T];
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures((^result)@.len() == (*result)@.len())]
     fn view(self) -> Self::ViewTy {
         dead
@@ -459,7 +457,7 @@ impl<'a, T> View for IterMut<'a, T> {
 }
 
 impl<'a, T> Resolve for IterMut<'a, T> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         pearlite! { *self@ == ^self@ }
     }

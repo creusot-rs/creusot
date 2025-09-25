@@ -13,8 +13,8 @@ struct T {
 impl View for T {
     type ViewTy = Mapping<Int, Int>;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(
         forall<i>
             result.get(i) == (if 0 <= i && i < self.a@ { 1 } else { 0 }))]

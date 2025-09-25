@@ -3,14 +3,12 @@ use crate::{
         Why3Generator, clone_map::Dependencies, common_meta_decls, is_trusted_item,
         term::lower_pure,
     },
-    contracts_items::get_namespace_ty,
     ctx::FileModule,
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::GenericArgsRef;
 use why3::{Ident, declaration::Module};
 
-pub(crate) fn lower_impl(ctx: &Why3Generator<'_>, def_id: DefId) -> Vec<FileModule> {
+pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<FileModule> {
     if is_trusted_item(ctx.tcx, def_id) {
         return vec![];
     }
@@ -21,8 +19,7 @@ pub(crate) fn lower_impl(ctx: &Why3Generator<'_>, def_id: DefId) -> Vec<FileModu
         let impl_did = refn.impl_item;
 
         let names = Dependencies::new(ctx, impl_did);
-        let namespace_ty =
-            names.def_ty_no_dependency(get_namespace_ty(ctx.ctx.tcx), GenericArgsRef::default());
+        let namespace_ty = names.namespace_ty();
         let goal = lower_pure(ctx, &names, &refn.refn);
         if goal.is_true() {
             continue;

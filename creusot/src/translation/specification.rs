@@ -1,9 +1,7 @@
 use crate::{
     backend::closures::ClosSubst,
     contracts_items::{
-        creusot_clause_attrs, get_fn_mut_impl_hist_inv, is_fn_impl_postcond,
-        is_fn_mut_impl_hist_inv, is_fn_mut_impl_postcond, is_fn_once_impl_postcond,
-        is_fn_once_impl_precond, is_no_panic, is_open_inv_result, is_terminates,
+        Intrinsic, creusot_clause_attrs, is_no_panic, is_open_inv_result, is_terminates,
     },
     ctx::*,
     naming::{name, variable_name},
@@ -45,7 +43,11 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
-    pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> Self {
+    pub(crate) fn normalize(
+        mut self,
+        ctx: &TranslationCtx<'tcx>,
+        typing_env: TypingEnv<'tcx>,
+    ) -> Self {
         for term in self
             .requires
             .iter_mut()
@@ -53,7 +55,8 @@ impl<'tcx> PreContract<'tcx> {
             .map(|cond| &mut cond.term)
             .chain(self.variant.iter_mut())
         {
-            *term = normalize(tcx, typing_env, std::mem::replace(term, /*Dummy*/ Term::true_(tcx)));
+            *term =
+                normalize(ctx, typing_env, std::mem::replace(term, /*Dummy*/ Term::true_(ctx.tcx)));
         }
         self
     }
@@ -277,7 +280,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
                 expl: format!("expl:{} requires false", fn_name),
             });
         }
-        let contract = contract.normalize(ctx.tcx, ctx.typing_env(def_id));
+        let contract = contract.normalize(ctx, ctx.typing_env(def_id));
         PreSignature { inputs, output, contract }
     }
 }
@@ -290,8 +293,12 @@ pub struct PreSignature<'tcx> {
 }
 
 impl<'tcx> PreSignature<'tcx> {
-    pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> Self {
-        self.contract = self.contract.normalize(tcx, typing_env);
+    pub(crate) fn normalize(
+        mut self,
+        ctx: &TranslationCtx<'tcx>,
+        typing_env: TypingEnv<'tcx>,
+    ) -> Self {
+        self.contract = self.contract.normalize(ctx, typing_env);
         self
     }
 
@@ -399,15 +406,12 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         if kind == ClosureKind::FnMut {
             let args = subst.as_closure().sig().inputs().map_bound(|tys| tys[0]);
             let args = ctx.instantiate_bound_regions_with_erased(args);
-            let hist_inv_subst = ctx.mk_args(&[args, env_ty.peel_refs()].map(GenericArg::from));
-
-            let hist_inv_id = get_fn_mut_impl_hist_inv(ctx.tcx);
 
             let term = Term::call(
                 ctx.tcx,
                 ctx.typing_env(def_id),
-                hist_inv_id,
-                hist_inv_subst,
+                Intrinsic::HistInv.get(ctx),
+                ctx.mk_args(&[args, env_ty.peel_refs()].map(GenericArg::from)),
                 [self_.clone().cur(), self_.fin()],
             );
             let expl = "expl:closure hist_inv post".to_string();
@@ -419,11 +423,14 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
 
     for (input, _, _) in &presig.inputs {
         if input.0.name() == why3::Symbol::intern("result")
-            && !is_fn_impl_postcond(ctx.tcx, def_id)
-            && !is_fn_mut_impl_postcond(ctx.tcx, def_id)
-            && !is_fn_once_impl_postcond(ctx.tcx, def_id)
-            && !is_fn_mut_impl_hist_inv(ctx.tcx, def_id)
-            && !is_fn_once_impl_precond(ctx.tcx, def_id)
+            && !matches!(
+                ctx.intrinsic(def_id),
+                Intrinsic::Postcondition
+                    | Intrinsic::PostconditionMut
+                    | Intrinsic::PostconditionOnce
+                    | Intrinsic::HistInv
+                    | Intrinsic::Precondition
+            )
         {
             ctx.crash_and_error(ctx.def_span(def_id), "`result` is not allowed as a parameter name")
         }

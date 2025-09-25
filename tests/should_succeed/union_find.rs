@@ -65,12 +65,12 @@ mod implementation {
     }
 
     impl<T> Invariant for UnionFind<T> {
-        #[logic]
+        #[logic(inline)]
         fn invariant(self) -> bool {
             pearlite! {
             // this invariant was not in the why3 proof: it is here because of the specifics of `DeepModel` and equality in Creusot
             (forall<e1, e2> self.0.domain.contains(e1) && self.0.domain.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2) &&
-            (forall<e> #[trigger(self.0.domain.contains(e))] self.0.domain.contains(e) ==>
+            (forall<e> /*#[trigger(self.0.domain.contains(e))]*/ self.0.domain.contains(e) ==>
                 // this invariant was not in the why3 proof: it ensures that the keys and the payloads of `perm` agree
                 self.0.perms.contains(e) &&
                 self.0.perms[e].ptr() == e.0 &&

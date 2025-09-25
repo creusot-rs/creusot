@@ -61,7 +61,7 @@ extern_spec! {
 /// [RRTL]: https://doc.rust-lang.org/stable/reference/type-layout.html
 #[trusted]
 #[logic(open)]
-#[rustc_diagnostic_item = "size_of_logic"]
+#[intrinsic("size_of_logic")]
 #[ensures(0 <= result)]
 pub fn size_of_logic<T>() -> Int {
     dead

@@ -1,9 +1,6 @@
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{
-        get_fn_ghost_trait, is_box_new, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner,
-        is_ghost_new, is_logic, is_prophetic, is_snap_from_fn, is_snapshot_closure, is_spec,
-    },
+    contracts_items::{Intrinsic, is_logic, is_prophetic, is_snapshot_closure, is_spec},
     ctx::{HasTyCtxt, TranslationCtx},
     translation::traits::TraitResolved,
 };
@@ -13,6 +10,7 @@ use rustc_middle::{
     thir::{self, ClosureExpr, ExprId, ExprKind, Thir, visit::Visitor},
     ty::{FnDef, TyCtxt, TypingEnv},
 };
+use rustc_span::sym;
 use rustc_trait_selection::infer::InferCtxtExt;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -30,7 +28,7 @@ pub(crate) enum Purity {
 }
 
 impl Purity {
-    pub(crate) fn of_def_id(ctx: &TranslationCtx, def_id: DefId) -> Self {
+    pub(crate) fn of_def_id<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Self {
         if is_logic(ctx.tcx, def_id) {
             Purity::Logic { prophetic: is_prophetic(ctx.tcx, def_id) }
         } else if is_spec(ctx.tcx, def_id) {
@@ -80,7 +78,11 @@ pub(crate) fn validate_purity<'tcx>(
 ) {
     // Only start traversing from top-level definitions. Closures will be visited during the traversal
     // of their parents so that they can inherit the context from their parent.
-    if ctx.tcx.is_closure_like(def_id) || is_trusted_item(ctx.tcx, def_id) {
+    if ctx.tcx.is_closure_like(def_id) {
+        return;
+    }
+
+    if !is_logic(ctx.tcx, def_id) && is_trusted_item(ctx.tcx, def_id) {
         return;
     }
 
@@ -101,10 +103,10 @@ impl PurityVisitor<'_, '_> {
     fn purity(&self, func_did: DefId, args: &[ExprId]) -> Purity {
         if is_logic(self.ctx.tcx, func_did) {
             Purity::Logic { prophetic: is_prophetic(self.ctx.tcx, func_did) }
-        } else if is_ghost_into_inner(self.ctx.tcx, func_did)
-            || is_ghost_new(self.ctx.tcx, func_did)
-            || is_ghost_deref(self.ctx.tcx, func_did)
-            || is_ghost_deref_mut(self.ctx.tcx, func_did)
+        } else if let Intrinsic::GhostIntoInner
+        | Intrinsic::GhostNew
+        | Intrinsic::GhostDeref
+        | Intrinsic::GhostDerefMut = self.ctx.intrinsic(func_did)
         {
             Purity::Ghost
         } else {
@@ -119,15 +121,15 @@ impl PurityVisitor<'_, '_> {
     /// Returns `true` if `func_did` is one of `call`, `call_mut` or `call_once`, and
     /// the closure being called implements `FnGhost`.
     fn implements_fn_ghost(&self, func_did: DefId, args: &[ExprId]) -> bool {
-        let tcx = self.ctx.tcx;
-        let Some(trait_did) = tcx.trait_of_assoc(func_did) else { return false };
-        if !tcx.is_fn_trait(trait_did) {
+        let Some(trait_did) = self.ctx.trait_of_assoc(func_did) else { return false };
+        if !self.ctx.is_fn_trait(trait_did) {
             return false;
         };
         let ty = self.thir[args[0]].ty.peel_refs();
-        let (infcx, param_env) = tcx.infer_ctxt().build_with_typing_env(self.typing_env);
-        let res = infcx.type_implements_trait(get_fn_ghost_trait(tcx), [ty], param_env);
-        res.must_apply_considering_regions()
+        let (infcx, param_env) = self.ctx.infer_ctxt().build_with_typing_env(self.typing_env);
+        infcx
+            .type_implements_trait(Intrinsic::FnGhost.get(self.ctx), [ty], param_env)
+            .must_apply_considering_regions()
     }
 
     /// If the expression is a closure with attribute `creusot::spec`, return `Some` of its `LocalDefId`, otherwise `None`.
@@ -184,9 +186,11 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     if matches!(self.context, Purity::Logic { .. })
                         && (
                             // These methods are allowed to cheat the purity restrictions
-                            is_box_new(self.ctx.tcx, func_did)
-                                || is_ghost_deref(self.ctx.tcx, func_did)
-                                || is_ghost_deref_mut(self.ctx.tcx, func_did)
+                            self.ctx.is_diagnostic_item(sym::box_new, func_did)
+                                || matches!(
+                                    self.ctx.intrinsic(func_did),
+                                    Intrinsic::GhostDeref | Intrinsic::GhostDerefMut
+                                )
                         )
                     {
                     } else if !self.context.can_call(fn_purity) {
@@ -194,34 +198,32 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                         if fn_purity == Purity::Ghost
                             && matches!(self.context, Purity::Program { .. })
                         {
-                            let tcx = self.ctx.tcx;
-                            let msg = if is_ghost_into_inner(tcx, func_did) {
-                                "trying to access the contents of a ghost variable in program context"
-                            } else if is_ghost_deref(tcx, func_did)
-                                || is_ghost_deref_mut(tcx, func_did)
-                            {
-                                "dereference of a ghost variable in program context"
-                            } else {
-                                "cannot create a ghost variable in program context"
+                            match self.ctx.intrinsic(func_did) {
+                                Intrinsic::GhostIntoInner => self
+                                    .error(expr.span, "trying to access the contents of a ghost variable in program context").emit(),
+                                Intrinsic::GhostDeref | Intrinsic::GhostDerefMut => self
+                                    .error(expr.span, "dereference of a ghost variable in program context").emit(),
+                                Intrinsic::GhostNew => self
+                                    .error(
+                                        expr.span,
+                                        "cannot create a ghost variable in program context",
+                                    )
+                                    .with_span_suggestion(
+                                        expr.span,
+                                        "try wrapping this expression in `ghost!` instead",
+                                        format!(
+                                            "ghost!({})",
+                                            self.ctx
+                                                .sess
+                                                .source_map()
+                                                .span_to_snippet(self.thir.exprs[args[0]].span)
+                                                .unwrap()
+                                        ),
+                                        rustc_errors::Applicability::MachineApplicable,
+                                    )
+                                    .emit(),
+                                _ => unreachable!(),
                             };
-
-                            let mut err = self.error(expr.span, msg);
-                            if is_ghost_new(tcx, func_did) {
-                                err = err.with_span_suggestion(
-                                    expr.span,
-                                    "try wrapping this expression in `ghost!` instead",
-                                    format!(
-                                        "ghost!({})",
-                                        self.ctx
-                                            .sess
-                                            .source_map()
-                                            .span_to_snippet(self.thir.exprs[args[0]].span)
-                                            .unwrap()
-                                    ),
-                                    rustc_errors::Applicability::MachineApplicable,
-                                );
-                            }
-                            err.emit();
                         } else {
                             let (caller, callee) = match (self.context, fn_purity) {
                                 (Purity::Program { .. } | Purity::Ghost, Purity::Logic { .. }) => {
@@ -241,7 +243,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             self.ctx.dcx().span_err(self.thir[fun].span, msg);
                         }
                     }
-                    if is_snap_from_fn(self.ctx.tcx, func_did) {
+                    if Intrinsic::SnapFromFn.is(self.ctx, func_did) {
                         assert!(args.len() == 1);
                         let Some(closure_id) = self.get_spec_closure(args[0]) else {
                             self.ctx.dcx().span_fatal(

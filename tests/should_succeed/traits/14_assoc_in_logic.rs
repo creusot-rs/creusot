@@ -6,14 +6,12 @@ pub trait Assoc {
     type Ty;
 }
 
-#[logic]
-#[trusted]
+#[logic(opaque)]
 pub fn from_ty<T: Assoc>(_x: T::Ty) -> T {
     dead
 }
 
-#[logic]
-#[trusted]
+#[logic(opaque)]
 pub fn to_ty<T: Assoc>(_x: T) -> T::Ty {
     dead
 }

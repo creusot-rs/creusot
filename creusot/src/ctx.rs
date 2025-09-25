@@ -2,8 +2,8 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     callbacks,
     contracts_items::{
-        get_creusot_item, get_inv_function, get_resolve_function, get_resolve_method,
-        is_extern_spec, is_logic, is_open_inv_param, is_prophetic, opacity_witness_name,
+        Intrinsic, gather_intrinsics, get_creusot_item, is_extern_spec, is_logic, is_opaque,
+        is_open_inv_param, is_prophetic, opacity_witness_name,
     },
     metadata::{BinaryMetadata, Metadata},
     naming::variable_name,
@@ -83,7 +83,10 @@ impl BodyId {
 }
 
 #[derive(Copy, Clone)]
-pub(crate) struct Opacity(pub Visibility<DefId>);
+pub(crate) enum Opacity {
+    Opaque,
+    Transparent(Visibility<DefId>),
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ItemType {
@@ -162,14 +165,18 @@ impl<'tcx> HasTyCtxt<'tcx> for TyCtxt<'tcx> {
     }
 }
 
+pub(crate) type ClonedThir<'tcx> = IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>;
+
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
-
+    raw_intrinsics: HashMap<Symbol, DefId>,
+    pub intrinsic2did: HashMap<Intrinsic, DefId>,
+    did2intrinsic: HashMap<DefId, Intrinsic>,
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
     creusot_items: HashMap<Symbol, DefId>,
-    pub(crate) thir: IndexMap<LocalDefId, (thir::Thir<'tcx>, thir::ExprId)>,
+    pub(crate) thir: ClonedThir<'tcx>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
@@ -192,7 +199,7 @@ impl<'tcx> Deref for TranslationCtx<'tcx> {
     }
 }
 
-fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
+pub(crate) fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
     struct VisitFns<'tcx, 'a>(TyCtxt<'tcx>, HashMap<DefId, Vec<usize>>, &'a ResolverAstLowering);
     impl<'a> Visitor<'a> for VisitFns<'_, 'a> {
         fn visit_fn(&mut self, fk: FnKind<'a>, _: Span, node: NodeId) {
@@ -220,8 +227,12 @@ fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
 }
 
 impl<'tcx> TranslationCtx<'tcx> {
-    pub(crate) fn new(tcx: TyCtxt<'tcx>, opts: Options) -> Self {
-        let params_open_inv = gather_params_open_inv(tcx);
+    pub(crate) fn new(
+        tcx: TyCtxt<'tcx>,
+        opts: Options,
+        thir: ClonedThir<'tcx>,
+        params_open_inv: HashMap<DefId, Vec<usize>>,
+    ) -> Self {
         let creusot_items = tcx
             .hir_body_owners()
             .filter_map(|did| {
@@ -230,10 +241,18 @@ impl<'tcx> TranslationCtx<'tcx> {
             })
             .collect();
 
+        let mut externs = Metadata::default();
+        externs.load(tcx, &opts.extern_paths);
+
+        let (raw_intrinsics, intrinsic2did, did2intrinsic) = gather_intrinsics(tcx, &externs);
+
         Self {
             tcx,
+            raw_intrinsics,
+            intrinsic2did,
+            did2intrinsic,
             laws: Default::default(),
-            externs: Default::default(),
+            externs,
             terms: Default::default(),
             creusot_items,
             opts,
@@ -247,23 +266,16 @@ impl<'tcx> TranslationCtx<'tcx> {
             renamer: Default::default(),
             corenamer: Default::default(),
             crate_name: Default::default(),
-            thir: Default::default(),
+            thir,
         }
     }
 
-    pub(crate) fn load_metadata(&mut self) {
-        self.externs.load(self.tcx, &self.opts.extern_paths);
+    pub(crate) fn intrinsic(&self, did: DefId) -> Intrinsic {
+        self.did2intrinsic.get(&did).copied().unwrap_or(Intrinsic::None)
     }
 
-    /// Clone all THIR bodies before they are stolen by `analysis`
-    pub(crate) fn clone_all_thir(&mut self) {
-        for def_id in self.tcx.hir_body_owners() {
-            // If a body is missing, it means that there was an error, and we know that because `Err` is `ErrorGuaranteed`.
-            // Keep going. We will abort later in `translation::after_analysis` after doing more checks that could raise more errors.
-            if let Ok((thir, expr0)) = self.tcx.thir_body(def_id) {
-                self.thir.insert(def_id, (thir.borrow().clone(), expr0));
-            }
-        }
+    pub(crate) fn int_ty(&self) -> Ty<'tcx> {
+        self.type_of(Intrinsic::Int.get(self)).no_bound_vars().unwrap()
     }
 
     /// If this returns `None`, there must have been a type error in the body.
@@ -296,7 +308,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                     let bound = bound.iter().map(|b| b.0).collect();
                     Box::new(Some(ScopedTerm(
                         bound,
-                        pearlite::normalize(self.tcx, self.typing_env(def_id), term),
+                        pearlite::normalize(self, self.typing_env(def_id), term),
                     )))
                 } else {
                     Box::new(None)
@@ -326,12 +338,11 @@ impl<'tcx> TranslationCtx<'tcx> {
         span: Span,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         let ty = self.normalize_erasing_regions(typing_env, ty);
-        if is_tyinv_trivial(self.tcx, typing_env, ty, span) {
+        if is_tyinv_trivial(self, typing_env, ty, span) {
             None
         } else {
-            let inv_did = get_inv_function(self.tcx);
             let substs = self.mk_args(&[GenericArg::from(ty)]);
-            Some((inv_did, substs))
+            Some((Intrinsic::Inv.get(self), substs))
         }
     }
 
@@ -340,7 +351,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         typing_env: TypingEnv<'tcx>,
         ty: Ty<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        let trait_meth_id = get_resolve_method(self.tcx);
+        let trait_meth_id = Intrinsic::ResolveMethod.get(self);
         let substs = self.mk_args(&[GenericArg::from(ty)]);
 
         // Optimization: if we know there is no Resolve instance for this type, then we do not emit
@@ -354,7 +365,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             return None;
         }
 
-        Some((get_resolve_function(self.tcx), substs))
+        Some((Intrinsic::Resolve.get(self), substs))
     }
 
     queryish!(laws, DefId, [DefId], laws_inner);
@@ -378,25 +389,42 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// set as their *visibility*.
     fn mk_opacity(&self, item: DefId) -> Opacity {
         match self.item_type(item) {
-            ItemType::Constant => Opacity(Visibility::Public),
-            ItemType::Logic { .. } => Opacity(opacity_witness_name(self.tcx, item).map_or_else(
-                || Visibility::Restricted(parent_module(self.tcx, item)),
-                |nm| self.visibility(self.creusot_item(nm).unwrap()),
-            )),
+            ItemType::Constant => Opacity::Transparent(Visibility::Public),
+            ItemType::Logic { .. } if is_opaque(self.tcx, item) => Opacity::Opaque,
+            ItemType::Logic { .. } => {
+                let vis = opacity_witness_name(self.tcx, item).map_or_else(
+                    || Visibility::Restricted(parent_module(self.tcx, item)),
+                    |nm| self.visibility(self.creusot_item(nm).unwrap()),
+                );
+                Opacity::Transparent(vis)
+            }
             _ => unreachable!(),
         }
     }
 
-    /// Checks if `item` is transparent in the scope of `modl`.
+    /// Checks if `item` is transparent in the scope of `scope`.
     /// This will determine whether the solvers are allowed to unfold the body's definition.
-    pub(crate) fn is_transparent_from(&self, item: DefId, modl: DefId) -> bool {
-        self.opacity(item).0.is_accessible_from(modl, self.tcx)
+    pub(crate) fn is_transparent_from(&self, item: DefId, mut scope: DefId) -> bool {
+        match self.opacity(item) {
+            Opacity::Transparent(vis) => vis.is_accessible_from(scope, self.tcx),
+            Opacity::Opaque => loop {
+                if item == scope {
+                    return true;
+                }
+                if let Some(s) = self.tcx.opt_parent(scope) {
+                    scope = s;
+                } else {
+                    return false;
+                }
+            },
+        }
     }
 
     pub(crate) fn metadata(&mut self) -> BinaryMetadata<'tcx> {
         BinaryMetadata::from_parts(
             &mut self.terms,
             &self.creusot_items,
+            &self.raw_intrinsics,
             &self.extern_specs,
             &self.params_open_inv,
         )

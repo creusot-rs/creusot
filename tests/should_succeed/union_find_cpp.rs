@@ -61,7 +61,7 @@ mod implementation {
     }
 
     impl<T> Invariant for UF<T> {
-        #[logic]
+        #[logic(inline)]
         fn invariant(self) -> bool {
             pearlite! {
             forall<e> self.0.domain.contains(e) ==>

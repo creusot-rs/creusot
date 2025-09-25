@@ -15,8 +15,7 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Rc<T, A> {
 #[cfg(feature = "nightly")]
 impl<T: ?Sized, A: Allocator> View for Rc<T, A> {
     type ViewTy = Box<T>;
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }

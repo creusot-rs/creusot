@@ -2,7 +2,7 @@ module M_unsized_quant__l [#"unsized_quant.rs" 16 0 16 10]
   let%span sunsized_quant = "unsized_quant.rs" 15 10 15 13
   let%span sunsized_quant'0 = "unsized_quant.rs" 16 11 16 13
   let%span sunsized_quant'1 = "unsized_quant.rs" 7 8 7 38
-  let%span smapping = "../../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
+  let%span smapping = "../../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
   
   use creusot.slice.Slice64
   use creusot.int.Int32
@@ -10,8 +10,10 @@ module M_unsized_quant__l [#"unsized_quant.rs" 16 0 16 10]
   use map.Map
   use mach.int.Int
   
-  function index_logic (self: Map.map (Slice64.slice Int32.t) int) (a: Slice64.slice Int32.t) : int =
+  function index_logic [@inline:trivial] (self: Map.map (Slice64.slice Int32.t) int) (a: Slice64.slice Int32.t) : int =
     [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic
   
   predicate f [#"unsized_quant.rs" 5 0 5 18] =
     [%#sunsized_quant'1] let len = fun (x: Slice64.slice Int32.t) -> Seq.length (Slice64.view x) in forall x: Slice64.slice Int32.t, y: Slice64.slice Int32.t. index_logic len x

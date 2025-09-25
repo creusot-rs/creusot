@@ -81,8 +81,7 @@ impl DeepModel for Int {
 impl View for String {
     type ViewTy = Seq<char>;
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }

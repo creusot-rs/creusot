@@ -7,8 +7,8 @@ module M_vec_inv__vec [#"vec_inv.rs" 17 0 17 32]
   let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 22 14 22 41
   let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 77 20 77 76
   let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 93 20 93 41
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 46 20 46 34
-  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
   
@@ -45,7 +45,10 @@ module M_vec_inv__vec [#"vec_inv.rs" 17 0 17 32]
         | {t_SumTo10__a = a; t_SumTo10__b = b} -> true
         end)
   
-  predicate invariant''0 (self: MutBorrow.t t_SumTo10) = [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_SumTo10) =
+    [%#sinvariant] inv self.current /\ inv self.final
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: MutBorrow.t t_SumTo10)
   
@@ -57,8 +60,10 @@ module M_vec_inv__vec [#"vec_inv.rs" 17 0 17 32]
   
   axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_SumTo10 [inv'1 x]. inv'1 x = invariant''1 x
   
-  predicate invariant''2 (self: Seq.seq (MutBorrow.t t_SumTo10)) =
+  predicate invariant''2 [@inline:trivial] (self: Seq.seq (MutBorrow.t t_SumTo10)) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'2 (_0: Seq.seq (MutBorrow.t t_SumTo10))
   
@@ -76,16 +81,27 @@ module M_vec_inv__vec [#"vec_inv.rs" 17 0 17 32]
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''3 x
   
-  predicate resolve (self: MutBorrow.t t_SumTo10) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_SumTo10) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_SumTo10) = resolve _0
+  meta "rewrite_def" predicate resolve
   
-  function index_logic (self: t_Vec) (ix: int) : MutBorrow.t t_SumTo10 = [%#svec] Seq.get (view self) ix
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_SumTo10) = resolve _0
   
-  predicate resolve'1 (self: t_Vec) =
+  meta "rewrite_def" predicate resolve'0
+  
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : MutBorrow.t t_SumTo10 =
+    [%#svec] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
+  
+  predicate resolve'1 [@inline:trivial] (self: t_Vec) =
     [%#svec'1] forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'0 (index_logic self i)
   
-  predicate resolve'2 (_0: t_Vec) = resolve'1 _0
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_0: t_Vec) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
   
   meta "compute_max_steps" 1000000
   

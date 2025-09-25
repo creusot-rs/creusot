@@ -8,8 +8,7 @@ use ::std::{borrow::Borrow, collections::hash_set::*, hash::*};
 impl<T: DeepModel, S> View for HashSet<T, S> {
     type ViewTy = FSet<T::DeepModelTy>;
 
-    #[logic(open)]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -58,8 +57,7 @@ extern_spec! {
 impl<T: DeepModel> View for IntoIter<T> {
     type ViewTy = FSet<T::DeepModelTy>;
 
-    #[logic(open)]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -125,8 +123,7 @@ impl<T: DeepModel> Iterator for IntoIter<T> {
 impl<'a, T: DeepModel> View for Iter<'a, T> {
     type ViewTy = FSet<T::DeepModelTy>;
 
-    #[logic(open)]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -166,8 +163,7 @@ impl<T: Eq + Hash + DeepModel, S: Default + BuildHasher> FromIterator<T> for Has
 impl<'a, T: DeepModel, S> View for Intersection<'a, T, S> {
     type ViewTy = FSet<T::DeepModelTy>;
 
-    #[logic(open)]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -176,8 +172,7 @@ impl<'a, T: DeepModel, S> View for Intersection<'a, T, S> {
 impl<'a, T: DeepModel, S> View for Difference<'a, T, S> {
     type ViewTy = FSet<T::DeepModelTy>;
 
-    #[logic(open)]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }

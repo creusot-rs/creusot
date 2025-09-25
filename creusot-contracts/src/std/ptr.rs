@@ -19,21 +19,21 @@ pub struct PtrDeepModel {
 
 impl<T: ?Sized> DeepModel for *mut T {
     type DeepModelTy = PtrDeepModel;
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result.addr == self.addr_logic())]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { dead }
+        dead
     }
 }
 
 impl<T: ?Sized> DeepModel for *const T {
     type DeepModelTy = PtrDeepModel;
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result.addr == self.addr_logic())]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { dead }
+        dead
     }
 }
 
@@ -48,8 +48,7 @@ pub trait PointerExt<T: ?Sized>: Sized {
 }
 
 impl<T: ?Sized> PointerExt<T> for *const T {
-    #[trusted]
-    #[logic]
+    #[logic(opaque)]
     fn addr_logic(self) -> usize {
         dead
     }
@@ -62,8 +61,7 @@ impl<T: ?Sized> PointerExt<T> for *const T {
 }
 
 impl<T: ?Sized> PointerExt<T> for *mut T {
-    #[trusted]
-    #[logic]
+    #[logic(opaque)]
     fn addr_logic(self) -> usize {
         dead
     }

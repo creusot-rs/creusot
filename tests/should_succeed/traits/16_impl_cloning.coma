@@ -1,12 +1,12 @@
-module M_16_impl_cloning__test [#"16_impl_cloning.rs" 16 0 16 30]
-  let%span s16_impl_cloning = "16_impl_cloning.rs" 16 15 16 16
-  let%span s16_impl_cloning'0 = "16_impl_cloning.rs" 15 10 15 21
+module M_16_impl_cloning__test [#"16_impl_cloning.rs" 15 0 15 30]
+  let%span s16_impl_cloning = "16_impl_cloning.rs" 15 15 15 16
+  let%span s16_impl_cloning'0 = "16_impl_cloning.rs" 14 10 14 21
   let%span smodel = "../../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
   let%span svec = "../../../creusot-contracts/src/std/vec.rs" 93 20 93 41
   let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
+  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use creusot.prelude.MutBorrow
@@ -40,8 +40,10 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 16 0 16 30]
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: Seq.seq t_T) =
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -66,17 +68,24 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 16 0 16 30]
         | {t_Vec__0 = a_0} -> inv'2 a_0
         end
   
-  predicate invariant''2 (self: MutBorrow.t t_Vec'0) = [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Vec'0) =
+    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: MutBorrow.t t_Vec'0)
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Vec'0 [inv'4 x]. inv'4 x = invariant''2 x
   
-  predicate resolve (self: MutBorrow.t t_Vec'0) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec'0) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_Vec'0) = resolve _0
+  meta "rewrite_def" predicate resolve
   
-  function view'0 [#"16_impl_cloning.rs" 10 4 10 33] (self: t_Vec'0) : Seq.seq t_T
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Vec'0) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  function view'0 [#"16_impl_cloning.rs" 9 4 9 33] (self: t_Vec'0) : Seq.seq t_T
   
   function view'1 (self: MutBorrow.t t_Vec'0) : Seq.seq t_T = [%#smodel] view'0 self.current
   
@@ -84,7 +93,7 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 16 0 16 30]
   
   meta "select_lsinst" "all"
   
-  let rec test [#"16_impl_cloning.rs" 16 0 16 30] (x: MutBorrow.t t_Vec'0) (return' (x'0: ())) =
+  let rec test [#"16_impl_cloning.rs" 15 0 15 30] (x: MutBorrow.t t_Vec'0) (return' (x'0: ())) =
     {[@expl:test 'x' type invariant] [%#s16_impl_cloning] inv'4 x}
     (! bb0
     [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'4 x'0} s1 | s1 = -{resolve'0 x'0}- s2 | s2 = return''0 {_0} ] ]

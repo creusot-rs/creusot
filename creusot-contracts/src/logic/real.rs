@@ -4,24 +4,21 @@ use crate::*;
 use ::num_rational::BigRational;
 use ::std::{cmp::Ordering, marker::PhantomData};
 
-#[cfg_attr(creusot, creusot::builtins = "real.Real.real")]
-#[trusted]
+#[builtin("real.Real.real")]
 pub struct Real(PhantomData<*mut ()>);
 
 #[cfg(creusot)]
 impl DeepModel for BigRational {
     type DeepModelTy = Real;
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn deep_model(self) -> Self::DeepModelTy {
         dead
     }
 }
 
 impl Real {
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     pub fn from_int(_: Int) -> Self {
         dead
     }
@@ -39,30 +36,26 @@ impl OrdLogic for Real {
         }
     }
 
-    #[trusted]
-    #[logic(open)]
-    #[creusot::builtins = "real.Real.(<=)"]
+    #[logic]
+    #[builtin("real.Real.(<=)")]
     fn le_log(self, _: Self) -> bool {
         true
     }
 
-    #[trusted]
-    #[logic(open)]
-    #[creusot::builtins = "real.Real.(<)"]
+    #[logic]
+    #[builtin("real.Real.(<)")]
     fn lt_log(self, _: Self) -> bool {
         true
     }
 
-    #[trusted]
-    #[logic(open)]
-    #[creusot::builtins = "real.Real.(>=)"]
+    #[logic]
+    #[builtin("real.Real.(>=)")]
     fn ge_log(self, _: Self) -> bool {
         true
     }
 
-    #[trusted]
-    #[logic(open)]
-    #[creusot::builtins = "real.Real.(>)"]
+    #[logic]
+    #[builtin("real.Real.(>)")]
     fn gt_log(self, _: Self) -> bool {
         true
     }

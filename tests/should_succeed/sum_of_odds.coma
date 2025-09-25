@@ -82,8 +82,8 @@ module M_sum_of_odds__compute_sum_of_odd [#"sum_of_odds.rs" 32 0 32 36]
   let%span srange'2 = "../../creusot-contracts/src/std/iter/range.rs" 37 4 37 34
   let%span srange'3 = "../../creusot-contracts/src/std/iter/range.rs" 38 4 38 44
   let%span srange'4 = "../../creusot-contracts/src/std/iter/range.rs" 15 8 17 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 23 28 23 33
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.int.UInt32
   use seq.Seq
@@ -131,7 +131,9 @@ module M_sum_of_odds__compute_sum_of_odd [#"sum_of_odds.rs" 32 0 32 36]
   
   type t_Option = C_None | C_Some UInt32.t
   
-  predicate resolve (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve
   
   predicate completed (self: MutBorrow.t t_Range) =
     [%#srange'4] resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
@@ -143,7 +145,9 @@ module M_sum_of_odds__compute_sum_of_odd [#"sum_of_odds.rs" 32 0 32 36]
         end}
       (! return' {result}) ]
   
-  predicate resolve'0 (_0: MutBorrow.t t_Range) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Range) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: UInt32.t)) = any
     [ good (field_0: UInt32.t) -> {C_Some field_0 = input} (! ret {field_0})

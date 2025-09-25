@@ -32,8 +32,8 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
   let%span smodel = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 59 8 59 22
   let%span smodel'1 = "../../creusot-contracts/src/model.rs" 35 8 35 28
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 236 8 236 27
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 225 8 225 27
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 23 28 23 33
   
   use creusot.int.UInt64
   use creusot.prelude.Opaque
@@ -80,7 +80,10 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
   
   function view'1 (self: MutBorrow.t t_VecDeque) : Seq.seq UInt32.t = [%#smodel'0] view self.current
   
-  function push_front (self: Seq.seq UInt32.t) (x: UInt32.t) : Seq.seq UInt32.t = [%#sseq] Seq.cons x self
+  function push_front [@inline:trivial] (self: Seq.seq UInt32.t) (x: UInt32.t) : Seq.seq UInt32.t =
+    [%#sseq] Seq.cons x self
+  
+  meta "rewrite_def" function push_front
   
   let rec pop_front (self_: MutBorrow.t t_VecDeque) (return' (x: t_Option)) = any
     [ return''0 (result: t_Option) -> {[%#sdeque'3] match result with

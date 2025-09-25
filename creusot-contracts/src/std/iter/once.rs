@@ -3,8 +3,7 @@ use crate::{std::iter::Once, *};
 impl<T> View for Once<T> {
     type ViewTy = Option<T>;
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Option<T> {
         dead
     }

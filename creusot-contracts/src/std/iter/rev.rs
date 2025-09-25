@@ -12,15 +12,15 @@ pub trait RevExt<I> {
 }
 
 impl<I> RevExt<I> for Rev<I> {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures((*self).iter() == *result && (^self).iter() == ^result)]
     fn iter_mut(&mut self) -> &mut I {
         dead

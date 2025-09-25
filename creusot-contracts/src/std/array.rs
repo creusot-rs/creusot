@@ -15,10 +15,9 @@ impl<T, const N: usize> View for [T; N] {
     type ViewTy = Seq<T>;
 
     #[logic]
-    #[trusted]
-    #[cfg_attr(target_pointer_width = "16", creusot::builtins = "creusot.slice.Slice16.view")]
-    #[cfg_attr(target_pointer_width = "32", creusot::builtins = "creusot.slice.Slice32.view")]
-    #[cfg_attr(target_pointer_width = "64", creusot::builtins = "creusot.slice.Slice64.view")]
+    #[cfg_attr(target_pointer_width = "16", builtin("creusot.slice.Slice16.view"))]
+    #[cfg_attr(target_pointer_width = "32", builtin("creusot.slice.Slice32.view"))]
+    #[cfg_attr(target_pointer_width = "64", builtin("creusot.slice.Slice64.view"))]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -27,8 +26,8 @@ impl<T, const N: usize> View for [T; N] {
 impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(self.view().len() == result.len())]
     #[ensures(forall<i> 0 <= i && i < result.len() ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
@@ -37,7 +36,7 @@ impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
 }
 
 impl<T, const N: usize> Resolve for [T; N] {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         pearlite! { forall<i: Int> 0 <= i && i < N@ ==> resolve(self@[i]) }
     }
@@ -52,7 +51,7 @@ impl<T, const N: usize> Resolve for [T; N] {
 impl<T, const N: usize> IndexLogic<Int> for [T; N] {
     type Item = T;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }
@@ -61,7 +60,7 @@ impl<T, const N: usize> IndexLogic<Int> for [T; N] {
 impl<T, const N: usize> IndexLogic<usize> for [T; N] {
     type Item = T;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
     }
@@ -70,8 +69,7 @@ impl<T, const N: usize> IndexLogic<usize> for [T; N] {
 impl<T, const N: usize> View for IntoIter<T, N> {
     type ViewTy = Seq<T>;
 
-    #[logic(open)]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }

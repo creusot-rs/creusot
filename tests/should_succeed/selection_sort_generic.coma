@@ -42,24 +42,24 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 59 8 59 22
   let%span smodel'1 = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span smodel'2 = "../../creusot-contracts/src/model.rs" 35 8 35 28
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 308 4 308 18
-  let%span sseq'0 = "../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
-  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 59 4 59 18
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 294 4 294 18
+  let%span sseq'0 = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
+  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 18
   let%span srange = "../../creusot-contracts/src/std/iter/range.rs" 23 12 27 70
   let%span srange'0 = "../../creusot-contracts/src/std/iter/range.rs" 32 4 32 49
   let%span srange'1 = "../../creusot-contracts/src/std/iter/range.rs" 36 4 36 34
   let%span srange'2 = "../../creusot-contracts/src/std/iter/range.rs" 37 4 37 34
   let%span srange'3 = "../../creusot-contracts/src/std/iter/range.rs" 38 4 38 44
   let%span srange'4 = "../../creusot-contracts/src/std/iter/range.rs" 15 8 17 9
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 254 8 254 9
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 255 19 255 35
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 256 19 256 35
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 257 18 257 50
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 111 20 111 37
-  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 116 20 116 37
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 253 8 253 9
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 254 19 254 35
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 255 19 255 35
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 256 18 256 50
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 115 20 115 37
   let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 20 20 20 30
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 24 28 24 33
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 23 28 23 33
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 28 14 28 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 38 14 38 61
   let%span sord'1 = "../../creusot-contracts/src/logic/ord.rs" 48 14 48 61
@@ -108,8 +108,10 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: Seq.seq t_T) =
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq'0] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -127,7 +129,9 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) = [%#sinvariant'0] inv'2 self
+  predicate invariant''2 [@inline:trivial] (self: t_Vec) = [%#sinvariant'0] inv'2 self
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'3 (_0: t_Vec)
   
@@ -204,7 +208,9 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   
   function deep_model (self: t_T) : t_DeepModelTy
   
-  function index_logic (self: t_Vec) (ix: int) : t_T = [%#svec'10] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#svec'10] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   function deep_model'0 (self: t_Vec) : Seq.seq t_DeepModelTy
   
@@ -257,7 +263,9 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   
   type t_Option = C_None | C_Some UInt64.t
   
-  predicate resolve (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve
   
   predicate completed (self: MutBorrow.t t_Range) =
     [%#srange'4] resolve self /\ deep_model'2 (self.current).t_Range__start >= deep_model'2 (self.current).t_Range__end
@@ -269,22 +277,31 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
         end}
       (! return' {result}) ]
   
-  predicate resolve'0 (_0: MutBorrow.t t_Range) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Range) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
     [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt64.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  predicate in_bounds (self: UInt64.t) (seq: Seq.seq t_T) = [%#sslice'3] UInt64.t'int self < Seq.length seq
+  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) =
+    [%#sslice'3] UInt64.t'int self < Seq.length seq
   
-  predicate invariant''3 (self: t_T) = [%#sinvariant'0] inv self
+  meta "rewrite_def" predicate in_bounds
+  
+  predicate invariant''3 [@inline:trivial] (self: t_T) = [%#sinvariant'0] inv self
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'6 (_0: t_T)
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_T [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate has_value (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
+  predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
     [%#sslice'4] Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: t_T)) =
     {[@expl:index 'self_' type invariant] [%#svec'1] inv'3 self_}
@@ -312,7 +329,10 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
                                                                                                     _p1 = other }}
     any [ return''0 (result: bool) -> {postcondition_once () { _p0 = self_; _p1 = other } result} (! return' {result}) ]
   
-  predicate invariant''4 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Vec) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'7 (_0: MutBorrow.t t_Vec)
   
@@ -324,7 +344,10 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   
   axiom inv_axiom'7 [@rewrite]: forall x: Slice64.slice t_T [inv'8 x]. inv'8 x = invariant''5 x
   
-  predicate invariant''6 (self: MutBorrow.t (Slice64.slice t_T)) = [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+    [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+  
+  meta "rewrite_def" predicate invariant''6
   
   predicate inv'9 (_0: MutBorrow.t (Slice64.slice t_T))
   
@@ -349,13 +372,21 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
     {[%#sslice'2] Permut.exchange (Slice64.view self_.final) (view'4 self_) (UInt64.t'int i) (UInt64.t'int j)}
       (! return' {result}) ]
   
-  predicate resolve'1 (self: MutBorrow.t (Slice64.slice t_T)) = [%#sresolve] self.final = self.current
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) = [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0: MutBorrow.t (Slice64.slice t_T)) = resolve'1 _0
+  meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'3 (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t (Slice64.slice t_T)) = resolve'1 _0
   
-  predicate resolve'4 (_0: MutBorrow.t t_Vec) = resolve'3 _0
+  meta "rewrite_def" predicate resolve'2
+  
+  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'3
+  
+  predicate resolve'4 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'3 _0
+  
+  meta "rewrite_def" predicate resolve'4
   
   predicate sorted [#"selection_sort_generic.rs" 16 0 16 45] (s: Seq.seq t_DeepModelTy) =
     [%#sselection_sort_generic'21] sorted_range s 0 (Seq.length s)

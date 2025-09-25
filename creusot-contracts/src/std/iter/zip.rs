@@ -9,15 +9,15 @@ pub trait ZipExt<A: Iterator, B: Iterator> {
 }
 
 impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn itera(self) -> A {
         dead
     }
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iterb(self) -> B {
         dead

@@ -8,7 +8,7 @@ use crate::{
             uty_to_prelude,
         },
     },
-    contracts_items::{is_builtins_ascription, is_new_namespace},
+    contracts_items::{is_builtin_ascription, is_new_namespace},
     ctx::*,
     naming::name,
     translation::{
@@ -219,7 +219,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
                 let e = Exp::Var(self.names.item(*id, subst))
                     .app(args.into_iter().map(|arg| self.lower_term(arg)));
-                if is_builtins_ascription(self.ctx.tcx, *id) {
+                if is_builtin_ascription(self.ctx.tcx, *id) {
                     e.ascribe(self.lower_ty(term.ty))
                 } else {
                     e
@@ -333,7 +333,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 );
                 let [cur, fin] = [Term::cur, Term::fin].map(|cf| {
                     let t = projections_term(
-                        self.ctx.tcx,
+                        self.ctx,
                         self.names.typing_env(),
                         cf((&**inner).clone()),
                         &**projections,

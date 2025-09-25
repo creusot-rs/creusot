@@ -89,18 +89,16 @@ pub trait FnExt<Args>: FnMutExt<Args> {}
 impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
-    #[trusted]
     #[logic(open, prophetic)]
     #[allow(unused_variables)]
-    #[rustc_diagnostic_item = "fn_once_impl_precond"]
+    #[intrinsic("precondition")]
     fn precondition(self, args: Args) -> bool {
         dead
     }
 
-    #[trusted]
     #[logic(open, prophetic)]
     #[allow(unused_variables)]
-    #[rustc_diagnostic_item = "fn_once_impl_postcond"]
+    #[intrinsic("postcondition_once")]
     fn postcondition_once(self, args: Args, result: Self::Output) -> bool {
         dead
     }
@@ -108,18 +106,16 @@ impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
 
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
-    #[trusted]
     #[logic(open, prophetic)]
     #[allow(unused_variables)]
-    #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
+    #[intrinsic("postcondition_mut")]
     fn postcondition_mut(self, args: Args, result_state: Self, result: Self::Output) -> bool {
         dead
     }
 
-    #[trusted]
     #[logic(open, prophetic)]
     #[allow(unused_variables)]
-    #[rustc_diagnostic_item = "fn_mut_impl_hist_inv"]
+    #[intrinsic("hist_inv")]
     fn hist_inv(self, result_state: Self) -> bool {
         dead
     }
@@ -151,10 +147,9 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
 
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
-    #[trusted]
     #[logic(open)]
     #[allow(unused_variables)]
-    #[rustc_diagnostic_item = "fn_impl_postcond"]
+    #[intrinsic("postcondition")]
     fn postcondition(self, args: Args, result: Self::Output) -> bool {
         dead
     }
@@ -226,19 +221,17 @@ pub trait RangeInclusiveExt<Idx> {
 }
 
 impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn start_log(self) -> Idx {
         dead
     }
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn end_log(self) -> Idx {
         dead
     }
 
-    #[logic]
+    #[logic(opaque)]
     #[trusted]
     #[ensures(!result ==> self.start_log().deep_model() <= self.end_log().deep_model())]
     fn is_empty_log(self) -> bool

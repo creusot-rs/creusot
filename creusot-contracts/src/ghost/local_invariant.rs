@@ -74,8 +74,8 @@ pub use base_macros::declare_namespace;
 ///
 /// Can be declared with the [`declare_namespace`] macro, and then attached to a local
 /// invariant when creating it with [`LocalInvariant::new`].
-#[cfg_attr(creusot, rustc_diagnostic_item = "namespace_ty")]
-#[trusted] // This type has a very special translation.
+#[opaque] // This type has a very special translation.
+#[intrinsic("namespace")]
 pub struct Namespace(());
 
 /// Invariant tokens.
@@ -98,15 +98,14 @@ pub struct Namespace(());
 ///
 /// To help passing it into functions, it may be [reborrowed](Self::reborrow),
 /// similarly to a normal borrow.
-#[trusted]
+#[opaque]
 pub struct Tokens<'a>(::std::marker::PhantomData<&'a ()>);
 
 impl Tokens<'_> {
     /// Get the underlying set of namespaces of this token.
     ///
     /// Also accessible via the [`view`](View::view) (`@`) operator.
-    #[trusted]
-    #[logic]
+    #[logic(opaque)]
     pub fn namespaces(self) -> Set<Namespace> {
         dead
     }
@@ -114,9 +113,9 @@ impl Tokens<'_> {
     /// Get the tokens for all the namespaces.
     ///
     /// This is only callable _once_, in `main`.
-    #[cfg_attr(creusot, rustc_diagnostic_item = "tokens_new")]
     #[trusted]
     #[ensures(forall<ns: Namespace> result.contains(ns))]
+    #[intrinsic("tokens_new")]
     #[check(ghost)]
     pub fn new() -> Ghost<Self> {
         Ghost::conjure()
@@ -194,7 +193,7 @@ impl View for Tokens<'_> {
 
 /// A ghost structure, that holds a piece of data (`T`) together with an
 /// [protocol](Protocol).
-#[trusted]
+#[opaque]
 pub struct LocalInvariant<T: Protocol> {
     value: UnsafeCell<T>,
 }
@@ -304,15 +303,13 @@ impl<T: Protocol> LocalInvariant<T> {
     }
 
     /// Get the namespace associated with this invariant.
-    #[trusted]
-    #[logic]
+    #[logic(opaque)]
     pub fn namespace(self) -> Namespace {
         dead
     }
 
     /// Get the 'public' part of this invariant.
-    #[trusted]
-    #[logic]
+    #[logic(opaque)]
     pub fn public(self) -> T::Public {
         dead
     }

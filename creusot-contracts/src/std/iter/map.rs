@@ -13,14 +13,14 @@ pub trait MapExt<I, F> {
 
 impl<I, F> MapExt<I, F> for Map<I, F> {
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn func(self) -> F {
         dead
@@ -28,7 +28,7 @@ impl<I, F> MapExt<I, F> for Map<I, F> {
 }
 
 impl<I, F> Resolve for Map<I, F> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         resolve(self.iter()) && resolve(self.func())
     }
@@ -49,7 +49,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
         }
     }
 
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.func().hist_inv(succ.func())

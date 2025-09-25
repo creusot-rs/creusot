@@ -13,8 +13,8 @@ use ::std::{
 impl<T, A: Allocator> View for VecDeque<T, A> {
     type ViewTy = Seq<T>;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result.len() <= usize::MAX@)]
     fn view(self) -> Seq<T> {
         dead
@@ -25,8 +25,8 @@ impl<T, A: Allocator> View for VecDeque<T, A> {
 impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(self.view().len() == result.len())]
     #[ensures(forall<i> 0 <= i && i < self.view().len()
               ==> result[i] == self[i].deep_model())]
@@ -39,7 +39,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
 impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
     type Item = T;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }
@@ -49,14 +49,14 @@ impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
 impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
     type Item = T;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
     }
 }
 
 impl<T> Resolve for VecDeque<T> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self[i]) }
     }
@@ -144,8 +144,7 @@ extern_spec! {
 impl<'a, T> View for Iter<'a, T> {
     type ViewTy = &'a [T];
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }

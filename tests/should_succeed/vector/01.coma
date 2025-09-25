@@ -22,18 +22,18 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
   let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 92 26 95 17
   let%span smodel = "../../../creusot-contracts/src/model.rs" 59 8 59 22
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 59 4 59 18
+  let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 57 4 57 18
   let%span srange = "../../../creusot-contracts/src/std/iter/range.rs" 23 12 27 70
   let%span srange'0 = "../../../creusot-contracts/src/std/iter/range.rs" 32 4 32 49
   let%span srange'1 = "../../../creusot-contracts/src/std/iter/range.rs" 36 4 36 34
   let%span srange'2 = "../../../creusot-contracts/src/std/iter/range.rs" 37 4 37 34
   let%span srange'3 = "../../../creusot-contracts/src/std/iter/range.rs" 38 4 38 44
   let%span srange'4 = "../../../creusot-contracts/src/std/iter/range.rs" 15 8 17 9
-  let%span snum = "../../../creusot-contracts/src/std/num.rs" 24 28 24 33
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 46 20 46 34
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 111 20 111 37
-  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 116 20 116 37
-  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 121 20 121 88
+  let%span snum = "../../../creusot-contracts/src/std/num.rs" 23 28 23 33
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 115 20 115 37
+  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 120 20 120 88
   
   use creusot.int.UInt64
   use creusot.prelude.Opaque
@@ -71,7 +71,9 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
   let rec into_iter (self_: t_Range) (return' (x: t_Range)) = any
     [ return''0 (result: t_Range) -> {[%#siter] result = self_} (! return' {result}) ]
   
-  function index_logic (self: t_Vec) (ix: int) : UInt32.t = [%#svec'0] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt32.t = [%#svec'0] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   function view'1 (self: MutBorrow.t t_Vec) : Seq.seq UInt32.t = [%#smodel] view self.current
   
@@ -109,7 +111,9 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
   
   type t_Option = C_None | C_Some UInt64.t
   
-  predicate resolve (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve
   
   predicate completed (self: MutBorrow.t t_Range) =
     [%#srange'4] resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
@@ -121,20 +125,29 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
         end}
       (! return' {result}) ]
   
-  predicate resolve'0 (_0: MutBorrow.t t_Range) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Range) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
     [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt64.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  predicate in_bounds (self: UInt64.t) (seq: Seq.seq UInt32.t) = [%#sslice] UInt64.t'int self < Seq.length seq
+  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt32.t) =
+    [%#sslice] UInt64.t'int self < Seq.length seq
   
-  predicate has_value (self: UInt64.t) (seq: Seq.seq UInt32.t) (out: UInt32.t) =
+  meta "rewrite_def" predicate in_bounds
+  
+  predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt32.t) (out: UInt32.t) =
     [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
   
-  predicate resolve_elswhere (self: UInt64.t) (old': Seq.seq UInt32.t) (fin: Seq.seq UInt32.t) =
+  meta "rewrite_def" predicate has_value
+  
+  predicate resolve_elswhere [@inline:trivial] (self: UInt64.t) (old': Seq.seq UInt32.t) (fin: Seq.seq UInt32.t) =
     [%#sslice'1] forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
       -> Seq.get old' i = Seq.get fin i
+  
+  meta "rewrite_def" predicate resolve_elswhere
   
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t UInt32.t)) =
     {[@expl:index_mut requires] [%#svec'1] in_bounds ix (view'1 self_)}
@@ -145,13 +158,21 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
       {[%#svec'5] Seq.length (view self_.final) = Seq.length (view'1 self_)}
       (! return' {result}) ]
   
-  predicate resolve'1 (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
   
-  predicate resolve'2 (_0: MutBorrow.t UInt32.t) = resolve'1 _0
+  meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'3 (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t UInt32.t) = resolve'1 _0
   
-  predicate resolve'4 (_0: MutBorrow.t t_Vec) = resolve'3 _0
+  meta "rewrite_def" predicate resolve'2
+  
+  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'3
+  
+  predicate resolve'4 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'3 _0
+  
+  meta "rewrite_def" predicate resolve'4
   
   meta "compute_max_steps" 1000000
   

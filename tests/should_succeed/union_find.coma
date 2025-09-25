@@ -1,7 +1,7 @@
 module M_union_find__implementation__qyi17232405883558456141__eq [#"union_find.rs" 19 8 19 42] (* <implementation::Element<T> as creusot_contracts::PartialEq> *)
   let%span sunion_find = "union_find.rs" 18 18 18 69
   let%span sunion_find'0 = "union_find.rs" 25 8 25 16
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 107 22 107 66
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 105 22 105 66
   let%span smodel = "../../creusot-contracts/src/model.rs" 35 8 35 28
   
   use creusot.prelude.Opaque
@@ -54,20 +54,20 @@ module M_union_find__implementation__qyi1944850640244667852__domain [#"union_fin
   let%span sunion_find'1 = "union_find.rs" 94 8 94 16
   let%span sunion_find'2 = "union_find.rs" 25 8 25 16
   let%span sunion_find'3 = "union_find.rs" 72 12 87 53
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use creusot.prelude.Opaque
@@ -92,7 +92,9 @@ module M_union_find__implementation__qyi1944850640244667852__domain [#"union_fin
   
   type t_UnionFind = { t_UnionFind__0: t_UFInner }
   
-  predicate contains (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
@@ -109,13 +111,19 @@ module M_union_find__implementation__qyi1944850640244667852__domain [#"union_fin
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'1] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'1] Map.get (view self) k
   
-  predicate contains'0 (self: t_FMap) (k: t_Element) = [%#sfmap] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains'0 [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains'0
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -127,22 +135,35 @@ module M_union_find__implementation__qyi1944850640244667852__domain [#"union_fin
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'2] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'2] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'0] lookup self key
+  meta "rewrite_def" function lookup
   
-  function index_logic'1 (self: Map.map t_Element t_Element) (a: t_Element) : t_Element = [%#smapping] Map.get self a
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'0] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
+  
+  function index_logic'1 [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'1
   
   function val' (self: t_PtrOwn) : t_Node
   
-  function index_logic'2 (self: Map.map t_Element t_T) (a: t_Element) : t_T = [%#smapping] Map.get self a
+  function index_logic'2 [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T =
+    [%#smapping] Map.get self a
   
-  function index_logic'3 (self: Map.map t_Element int) (a: t_Element) : int = [%#smapping] Map.get self a
+  meta "rewrite_def" function index_logic'2
   
-  predicate invariant' [#"union_find.rs" 69 8 69 34] (self: t_UnionFind) =
+  function index_logic'3 [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'3
+  
+  predicate invariant' [#"union_find.rs" 69 8 69 34] [@inline:trivial] (self: t_UnionFind) =
     [%#sunion_find'3] (forall e1: t_Element, e2: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e1
           /\ contains (self.t_UnionFind__0).t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
-    /\ (forall e: t_Element [contains (self.t_UnionFind__0).t_UFInner__domain e]. contains (self.t_UnionFind__0).t_UFInner__domain e
+    /\ (forall e: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e
       -> contains'0 (self.t_UnionFind__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UnionFind__0).t_UFInner__perms e) = e.t_Element__0
       /\ contains (self.t_UnionFind__0).t_UFInner__domain (index_logic'1 (self.t_UnionFind__0).t_UFInner__roots e)
@@ -163,6 +184,8 @@ module M_union_find__implementation__qyi1944850640244667852__domain [#"union_fin
           end
       /\ index_logic'3 (self.t_UnionFind__0).t_UFInner__depth e <= (self.t_UnionFind__0).t_UFInner__max_depth)
   
+  meta "rewrite_def" predicate invariant'
+  
   predicate inv (_0: t_Element)
   
   axiom inv_axiom [@rewrite]: forall x: t_Element [inv x]. inv x = true
@@ -171,7 +194,9 @@ module M_union_find__implementation__qyi1944850640244667852__domain [#"union_fin
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_T)
   
@@ -197,8 +222,10 @@ module M_union_find__implementation__qyi1944850640244667852__domain [#"union_fin
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
         end)
   
-  predicate invariant''2 (self: t_FMap) =
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
     [%#sfmap'3] forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: t_FMap)
   
@@ -241,20 +268,20 @@ module M_union_find__implementation__qyi1944850640244667852__roots_map [#"union_
   let%span sunion_find'5 = "union_find.rs" 94 8 94 16
   let%span sunion_find'6 = "union_find.rs" 72 12 87 53
   let%span sunion_find'7 = "union_find.rs" 25 8 25 16
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use creusot.prelude.Opaque
@@ -279,7 +306,9 @@ module M_union_find__implementation__qyi1944850640244667852__roots_map [#"union_
   
   type t_UnionFind = { t_UnionFind__0: t_UFInner }
   
-  predicate contains (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
@@ -296,13 +325,19 @@ module M_union_find__implementation__qyi1944850640244667852__roots_map [#"union_
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'1] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'1] Map.get (view self) k
   
-  predicate contains'0 (self: t_FMap) (k: t_Element) = [%#sfmap] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains'0 [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains'0
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -314,22 +349,35 @@ module M_union_find__implementation__qyi1944850640244667852__roots_map [#"union_
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'2] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'2] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'0] lookup self key
+  meta "rewrite_def" function lookup
   
-  function index_logic'1 (self: Map.map t_Element t_Element) (a: t_Element) : t_Element = [%#smapping] Map.get self a
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'0] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
+  
+  function index_logic'1 [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'1
   
   function val' (self: t_PtrOwn) : t_Node
   
-  function index_logic'2 (self: Map.map t_Element t_T) (a: t_Element) : t_T = [%#smapping] Map.get self a
+  function index_logic'2 [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T =
+    [%#smapping] Map.get self a
   
-  function index_logic'3 (self: Map.map t_Element int) (a: t_Element) : int = [%#smapping] Map.get self a
+  meta "rewrite_def" function index_logic'2
   
-  predicate invariant' [#"union_find.rs" 69 8 69 34] (self: t_UnionFind) =
+  function index_logic'3 [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'3
+  
+  predicate invariant' [#"union_find.rs" 69 8 69 34] [@inline:trivial] (self: t_UnionFind) =
     [%#sunion_find'6] (forall e1: t_Element, e2: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e1
           /\ contains (self.t_UnionFind__0).t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
-    /\ (forall e: t_Element [contains (self.t_UnionFind__0).t_UFInner__domain e]. contains (self.t_UnionFind__0).t_UFInner__domain e
+    /\ (forall e: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e
       -> contains'0 (self.t_UnionFind__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UnionFind__0).t_UFInner__perms e) = e.t_Element__0
       /\ contains (self.t_UnionFind__0).t_UFInner__domain (index_logic'1 (self.t_UnionFind__0).t_UFInner__roots e)
@@ -350,6 +398,8 @@ module M_union_find__implementation__qyi1944850640244667852__roots_map [#"union_
           end
       /\ index_logic'3 (self.t_UnionFind__0).t_UFInner__depth e <= (self.t_UnionFind__0).t_UFInner__max_depth)
   
+  meta "rewrite_def" predicate invariant'
+  
   predicate inv (_0: t_Element)
   
   axiom inv_axiom [@rewrite]: forall x: t_Element [inv x]. inv x = true
@@ -358,7 +408,9 @@ module M_union_find__implementation__qyi1944850640244667852__roots_map [#"union_
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_T)
   
@@ -384,8 +436,10 @@ module M_union_find__implementation__qyi1944850640244667852__roots_map [#"union_
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
         end)
   
-  predicate invariant''2 (self: t_FMap) =
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
     [%#sfmap'3] forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: t_FMap)
   
@@ -442,36 +496,36 @@ module M_union_find__implementation__new [#"union_find.rs" 169 4 169 42]
   let%span sunion_find'8 = "union_find.rs" 94 8 94 16
   let%span sunion_find'9 = "union_find.rs" 25 8 25 16
   let%span sunion_find'10 = "union_find.rs" 72 12 87 53
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 273 4 273 31
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 271 4 271 33
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 113 4 113 18
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 175 14 175 39
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 178 12 178 35
-  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 52 14 52 31
-  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 53 14 53 43
-  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 61 14 61 25
-  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 271 4 271 31
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 269 4 269 33
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 112 4 112 18
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 174 14 174 39
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 177 12 177 35
+  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 51 14 51 31
+  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 52 14 52 43
+  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
+  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 201 22 201 26
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 201 4 203 17
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 199 14 199 29
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 179 15 179 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 179 4 181 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 177 14 177 26
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 116 8 116 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 203 22 203 26
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 203 4 205 17
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 201 14 201 29
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 181 15 181 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 181 4 183 17
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
   
   use set.Fset
   use creusot.prelude.Opaque
@@ -497,9 +551,13 @@ module M_union_find__implementation__new [#"union_find.rs" 169 4 169 42]
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'6] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'6] Map.get (view self) k
   
-  predicate contains (self: t_FMap) (k: t_Element) = [%#sfmap'9] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap'9] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains
   
   predicate inv (_0: t_Element)
   
@@ -513,7 +571,9 @@ module M_union_find__implementation__new [#"union_find.rs" 169 4 169 42]
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant' (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  predicate invariant' [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant'
   
   predicate inv'0 (_0: t_T)
   
@@ -539,7 +599,9 @@ module M_union_find__implementation__new [#"union_find.rs" 169 4 169 42]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> inv'2 val'
         end)
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -551,18 +613,26 @@ module M_union_find__implementation__new [#"union_find.rs" 169 4 169 42]
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'11] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'11] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'10] lookup self key
+  meta "rewrite_def" function lookup
   
-  predicate invariant''1 (self: t_FMap) =
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'10] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
+  
+  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
     [%#sfmap'8] forall k: t_Element. contains self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'4 (_0: t_FMap)
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''1 x
   
-  predicate invariant''2 (self: t_FMap) = [%#sghost'5] inv'4 self
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) = [%#sghost'5] inv'4 self
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'5 (_0: t_FMap)
   
@@ -592,8 +662,10 @@ module M_union_find__implementation__new [#"union_find.rs" 169 4 169 42]
     {[@expl:into_inner 'self' type invariant] [%#sghost] inv'5 self}
     any [ return''0 (result: t_FMap) -> {[%#sghost'0] inv'4 result} {[%#sghost'1] result = self} (! return' {result}) ]
   
-  predicate index_logic'1 (self: Map.map (Map.map t_Element t_T) bool) (a: Map.map t_Element t_T) =
+  predicate index_logic'1 [@inline:trivial] (self: Map.map (Map.map t_Element t_T) bool) (a: Map.map t_Element t_T) =
     [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic'1
   
   function such_that'0 (p: Map.map (Map.map t_Element t_T) bool) : Map.map t_Element t_T
   
@@ -601,8 +673,10 @@ module M_union_find__implementation__new [#"union_find.rs" 169 4 169 42]
     forall p: Map.map (Map.map t_Element t_T) bool. ([%#slogic] exists x: Map.map t_Element t_T. index_logic'1 p x)
       -> ([%#slogic'0] index_logic'1 p (such_that'0 p))
   
-  predicate index_logic'2 (self: Map.map (Map.map t_Element int) bool) (a: Map.map t_Element int) =
+  predicate index_logic'2 [@inline:trivial] (self: Map.map (Map.map t_Element int) bool) (a: Map.map t_Element int) =
     [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic'2
   
   function such_that'1 (p: Map.map (Map.map t_Element int) bool) : Map.map t_Element int
   
@@ -610,8 +684,10 @@ module M_union_find__implementation__new [#"union_find.rs" 169 4 169 42]
     forall p: Map.map (Map.map t_Element int) bool. ([%#slogic] exists x: Map.map t_Element int. index_logic'2 p x)
       -> ([%#slogic'0] index_logic'2 p (such_that'1 p))
   
-  predicate index_logic'3 (self: Map.map (Map.map t_Element t_Element) bool) (a: Map.map t_Element t_Element) =
+  predicate index_logic'3 [@inline:trivial] (self: Map.map (Map.map t_Element t_Element) bool) (a: Map.map t_Element t_Element) =
     [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic'3
   
   function such_that'2 (p: Map.map (Map.map t_Element t_Element) bool) : Map.map t_Element t_Element
   
@@ -629,23 +705,34 @@ module M_union_find__implementation__new [#"union_find.rs" 169 4 169 42]
   
   type t_UnionFind = { t_UnionFind__0: t_UFInner }
   
-  predicate contains'0 (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  predicate contains'0 [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains'0
   
   function deep_model [#"union_find.rs" 26 8 26 36] (self: t_Element) : UInt64.t =
     [%#sunion_find'9] addr_logic self.t_Element__0
   
-  function index_logic'4 (self: Map.map t_Element t_Element) (a: t_Element) : t_Element = [%#smapping] Map.get self a
+  function index_logic'4 [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'4
   
   function val' (self: t_PtrOwn) : t_Node
   
-  function index_logic'5 (self: Map.map t_Element t_T) (a: t_Element) : t_T = [%#smapping] Map.get self a
+  function index_logic'5 [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T =
+    [%#smapping] Map.get self a
   
-  function index_logic'6 (self: Map.map t_Element int) (a: t_Element) : int = [%#smapping] Map.get self a
+  meta "rewrite_def" function index_logic'5
   
-  predicate invariant''3 [#"union_find.rs" 69 8 69 34] (self: t_UnionFind) =
+  function index_logic'6 [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'6
+  
+  predicate invariant''3 [#"union_find.rs" 69 8 69 34] [@inline:trivial] (self: t_UnionFind) =
     [%#sunion_find'10] (forall e1: t_Element, e2: t_Element. contains'0 (self.t_UnionFind__0).t_UFInner__domain e1
           /\ contains'0 (self.t_UnionFind__0).t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
-    /\ (forall e: t_Element [contains'0 (self.t_UnionFind__0).t_UFInner__domain e]. contains'0 (self.t_UnionFind__0).t_UFInner__domain e
+    /\ (forall e: t_Element. contains'0 (self.t_UnionFind__0).t_UFInner__domain e
       -> contains (self.t_UnionFind__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UnionFind__0).t_UFInner__perms e) = e.t_Element__0
       /\ contains'0 (self.t_UnionFind__0).t_UFInner__domain (index_logic'4 (self.t_UnionFind__0).t_UFInner__roots e)
@@ -666,6 +753,8 @@ module M_union_find__implementation__new [#"union_find.rs" 169 4 169 42]
           end
       /\ index_logic'6 (self.t_UnionFind__0).t_UFInner__depth e <= (self.t_UnionFind__0).t_UFInner__max_depth)
   
+  meta "rewrite_def" predicate invariant''3
+  
   predicate inv'6 (_0: t_UFInner)
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_UFInner [inv'6 x]. inv'6 x
@@ -681,7 +770,9 @@ module M_union_find__implementation__new [#"union_find.rs" 169 4 169 42]
         | {t_UnionFind__0 = a_0} -> inv'6 a_0
         end)
   
-  predicate invariant''4 (self: t_UnionFind) = [%#sghost'5] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: t_UnionFind) = [%#sghost'5] inv'7 self
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'8 (_0: t_UnionFind)
   
@@ -761,31 +852,31 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
   let%span sunion_find'18 = "union_find.rs" 111 8 111 16
   let%span sunion_find'19 = "union_find.rs" 131 8 131 16
   let%span sunion_find'20 = "union_find.rs" 72 12 87 53
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 58 8 58 26
-  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 341 22 341 26
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 341 4 341 50
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 340 14 340 55
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 432 29 432 33
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 432 43 432 48
-  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 432 4 432 65
-  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 430 14 430 49
-  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 431 14 431 40
-  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 69 14 69 46
-  let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 70 14 70 88
-  let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 61 14 61 25
-  let%span sfmap'12 = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'13 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'14 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 753 8 756 9
-  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 763 8 766 9
-  let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 55 8 55 26
+  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 339 22 339 26
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 339 4 339 50
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 338 14 338 55
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 430 29 430 33
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 430 43 430 48
+  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 430 4 430 65
+  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 428 14 428 49
+  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 429 14 429 40
+  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 68 14 68 46
+  let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 69 14 69 88
+  let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
+  let%span sfmap'12 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'13 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'14 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 750 8 753 9
+  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 760 8 763 9
+  let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
   let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 52 15 52 16
@@ -795,17 +886,17 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
   let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 135 48 135 52
   let%span sptr_own'4 = "../../creusot-contracts/src/ghost/ptr_own.rs" 132 14 132 64
   let%span sptr_own'5 = "../../creusot-contracts/src/ghost/ptr_own.rs" 133 14 133 28
-  let%span sptr_own'6 = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
+  let%span sptr_own'6 = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 201 22 201 26
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 201 4 203 17
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 199 14 199 29
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 177 14 177 26
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 107 20 107 27
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 116 8 116 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 203 22 203 26
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 203 4 205 17
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 201 14 201 29
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
   let%span speano = "../../creusot-contracts/src/peano.rs" 104 14 104 30
-  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 123 14 123 30
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 119 14 119 30
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
@@ -850,7 +941,9 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant' (self: t_PtrOwn) = [%#sptr_own'6] not is_null_logic (ptr self)
+  predicate invariant' [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own'6] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant'
   
   predicate invariant''0 (self: t_Node) = [%#sboxed] inv'0 self
   
@@ -866,7 +959,9 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> inv'1 val'
         end)
   
-  predicate invariant''1 (self: t_PtrOwn) = [%#sghost'4] inv'2 self
+  predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'4] inv'2 self
+  
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'3 (_0: t_PtrOwn)
   
@@ -901,7 +996,9 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
   
   type t_UnionFind = { t_UnionFind__0: t_UFInner }
   
-  predicate contains (self: Fset.fset t_Element) (e: t_Element) = [%#sfset'0] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset'0] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains
   
   function deep_model [#"union_find.rs" 26 8 26 36] (self: t_Element) : UInt64.t =
     [%#sunion_find'12] addr_logic self.t_Element__0
@@ -910,11 +1007,17 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'7] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'7] Map.get (view self) k
   
-  predicate contains'0 (self: t_FMap) (k: t_Element) = [%#sfmap'12] get self k <> C_None
+  meta "rewrite_def" function get
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate contains'0 [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap'12] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains'0
+  
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -926,20 +1029,33 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'14] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'14] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'13] lookup self key
+  meta "rewrite_def" function lookup
   
-  function index_logic'1 (self: Map.map t_Element t_Element) (a: t_Element) : t_Element = [%#smapping] Map.get self a
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'13] lookup self key
   
-  function index_logic'2 (self: Map.map t_Element t_T) (a: t_Element) : t_T = [%#smapping] Map.get self a
+  meta "rewrite_def" function index_logic'0
   
-  function index_logic'3 (self: Map.map t_Element int) (a: t_Element) : int = [%#smapping] Map.get self a
+  function index_logic'1 [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element =
+    [%#smapping] Map.get self a
   
-  predicate invariant''2 [#"union_find.rs" 69 8 69 34] (self: t_UnionFind) =
+  meta "rewrite_def" function index_logic'1
+  
+  function index_logic'2 [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'2
+  
+  function index_logic'3 [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'3
+  
+  predicate invariant''2 [#"union_find.rs" 69 8 69 34] [@inline:trivial] (self: t_UnionFind) =
     [%#sunion_find'20] (forall e1: t_Element, e2: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e1
           /\ contains (self.t_UnionFind__0).t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
-    /\ (forall e: t_Element [contains (self.t_UnionFind__0).t_UFInner__domain e]. contains (self.t_UnionFind__0).t_UFInner__domain e
+    /\ (forall e: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e
       -> contains'0 (self.t_UnionFind__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UnionFind__0).t_UFInner__perms e) = e.t_Element__0
       /\ contains (self.t_UnionFind__0).t_UFInner__domain (index_logic'1 (self.t_UnionFind__0).t_UFInner__roots e)
@@ -960,12 +1076,16 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
           end
       /\ index_logic'3 (self.t_UnionFind__0).t_UFInner__depth e <= (self.t_UnionFind__0).t_UFInner__max_depth)
   
+  meta "rewrite_def" predicate invariant''2
+  
   predicate inv'5 (_0: t_Element)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Element [inv'5 x]. inv'5 x = true
   
-  predicate invariant''3 (self: t_FMap) =
+  predicate invariant''3 [@inline:trivial] (self: t_FMap) =
     [%#sfmap'10] forall k: t_Element. contains'0 self k -> inv'5 k /\ inv'2 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'6 (_0: t_FMap)
   
@@ -986,13 +1106,18 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
         | {t_UnionFind__0 = a_0} -> inv'7 a_0
         end)
   
-  predicate invariant''4 (self: MutBorrow.t t_UnionFind) = [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) =
+    [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'9 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'9 x]. inv'9 x = invariant''4 x
   
-  predicate invariant''5 (self: MutBorrow.t t_UnionFind) = [%#sghost'4] inv'9 self
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sghost'4] inv'9 self
+  
+  meta "rewrite_def" predicate invariant''5
   
   predicate inv'10 (_0: MutBorrow.t t_UnionFind)
   
@@ -1007,7 +1132,9 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
   
   type tuple'0 = { _p0'0: t_PtrOwn; _p1'0: MutBorrow.t t_UnionFind }
   
-  predicate index_logic'4 (self: Map.map t_Element bool) (a: t_Element) = [%#smapping] Map.get self a
+  predicate index_logic'4 [@inline:trivial] (self: Map.map t_Element bool) (a: t_Element) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic'4
   
   function such_that'0 (p: Map.map t_Element bool) : t_Element
   
@@ -1032,13 +1159,17 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
   
   type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
   
-  predicate invariant''6 (self: t_FMap) = [%#sinvariant'0] inv'6 self
+  predicate invariant''6 [@inline:trivial] (self: t_FMap) = [%#sinvariant'0] inv'6 self
+  
+  meta "rewrite_def" predicate invariant''6
   
   predicate inv'11 (_0: t_FMap)
   
   axiom inv_axiom'10 [@rewrite]: forall x: t_FMap [inv'11 x]. inv'11 x = invariant''6 x
   
-  predicate invariant''7 (self: t_PtrOwn) = [%#sinvariant'0] inv'2 self
+  predicate invariant''7 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'2 self
+  
+  meta "rewrite_def" predicate invariant''7
   
   predicate inv'12 (_0: t_PtrOwn)
   
@@ -1068,7 +1199,10 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
     [ good (field_0: t_PtrOwn) -> {C_Some'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_PtrOwn [C_Some'0 field_0: t_Option'0]. C_Some'0 field_0 <> input} (! {false} any) ]
   
-  predicate invariant''8 (self: MutBorrow.t t_PtrOwn) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  
+  meta "rewrite_def" predicate invariant''8
   
   predicate inv'14 (_0: MutBorrow.t t_PtrOwn)
   
@@ -1082,11 +1216,18 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
       {[%#sptr_own'5] own1.current = own1.final}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_PtrOwn) = resolve _0
+  meta "rewrite_def" predicate resolve
   
-  predicate invariant''9 (self: MutBorrow.t t_FMap) = [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_PtrOwn) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate invariant''9 [@inline:trivial] (self: MutBorrow.t t_FMap) =
+    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  
+  meta "rewrite_def" predicate invariant''9
   
   predicate inv'15 (_0: MutBorrow.t t_FMap)
   
@@ -1121,26 +1262,41 @@ module M_union_find__implementation__make [#"union_find.rs" 188 4 188 78]
       {[%#sfmap'6] result = get self.current key}
       (! return' {result}) ]
   
-  predicate resolve'1 (_0: t_PtrOwn) = true
+  predicate resolve'1 [@inline:trivial] (_0: t_PtrOwn) = true
   
-  predicate resolve'2 (self: t_Option) =
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (self: t_Option) =
     [%#soption'0] match self with
       | C_Some x -> resolve'1 x
       | C_None -> true
       end
   
-  predicate resolve'3 (_0: t_Option) = resolve'2 _0
+  meta "rewrite_def" predicate resolve'2
   
-  function insert'0 (self: Fset.fset t_Element) (e: t_Element) : Fset.fset t_Element = [%#sfset] Fset.add e self
+  predicate resolve'3 [@inline:trivial] (_0: t_Option) = resolve'2 _0
   
-  predicate resolve'4 (self: MutBorrow.t t_UnionFind) = [%#sresolve] self.final = self.current
+  meta "rewrite_def" predicate resolve'3
   
-  predicate resolve'5 (_0: MutBorrow.t t_UnionFind) = resolve'4 _0
+  function insert'0 [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) : Fset.fset t_Element =
+    [%#sfset] Fset.add e self
+  
+  meta "rewrite_def" function insert'0
+  
+  predicate resolve'4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'4
+  
+  predicate resolve'5 [@inline:trivial] (_0: MutBorrow.t t_UnionFind) = resolve'4 _0
+  
+  meta "rewrite_def" predicate resolve'5
   
   let rec new'1 (x: ()) (return' (x'0: ())) = any
     [ return''0 (result: ()) -> {[%#sghost'2] result = x} (! return' {result}) ]
   
-  function fin (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost'3] self.final
+  function fin [@inline:trivial] (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost'3] self.final
+  
+  meta "rewrite_def" function fin
   
   function roots_map [#"union_find.rs" 117 8 117 65] (self: t_UnionFind) : Map.map t_Element t_Element =
     [%#sunion_find'18] (self.t_UnionFind__0).t_UFInner__roots
@@ -1306,30 +1462,30 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
   let%span sunion_find'15 = "union_find.rs" 131 8 131 16
   let%span sunion_find'16 = "union_find.rs" 72 12 87 53
   let%span sunion_find'17 = "union_find.rs" 25 8 25 16
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 341 22 341 26
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 341 4 341 50
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 340 14 340 55
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 374 30 374 34
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 374 4 374 62
-  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 363 14 371 9
-  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 372 14 372 73
-  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 373 14 373 44
-  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 61 14 61 25
-  let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span sfmap'12 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 339 22 339 26
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 339 4 339 50
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 338 14 338 55
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 372 30 372 34
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 372 4 372 62
+  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 361 14 369 9
+  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 370 14 370 73
+  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 371 14 371 44
+  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
+  let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span sfmap'12 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
   let%span soption = "../../creusot-contracts/src/std/option.rs" 144 16 144 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 145 27 145 39
   let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 146 26 146 46
-  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 753 8 756 9
-  let%span soption'3 = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'4 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 750 8 753 9
+  let%span soption'3 = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'4 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
   let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 78 40 78 43
@@ -1342,21 +1498,21 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
   let%span sptr_own'6 = "../../creusot-contracts/src/ghost/ptr_own.rs" 93 14 93 35
   let%span sptr_own'7 = "../../creusot-contracts/src/ghost/ptr_own.rs" 94 14 94 39
   let%span sptr_own'8 = "../../creusot-contracts/src/ghost/ptr_own.rs" 95 14 95 38
-  let%span sptr_own'9 = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
+  let%span sptr_own'9 = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 78 14 78 18
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 78 4 78 36
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 77 14 77 31
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 179 15 179 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 179 4 181 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 177 14 177 26
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 89 22 89 26
-  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 89 4 89 48
-  let%span sghost'7 = "../../creusot-contracts/src/ghost.rs" 88 14 88 35
-  let%span sghost'8 = "../../creusot-contracts/src/ghost.rs" 107 20 107 27
-  let%span sghost'9 = "../../creusot-contracts/src/ghost.rs" 123 8 123 22
-  let%span sghost'10 = "../../creusot-contracts/src/ghost.rs" 116 8 116 18
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 80 14 80 18
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 80 4 80 36
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 78 14 78 31
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 181 15 181 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 181 4 183 17
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 91 22 91 26
+  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 91 4 91 48
+  let%span sghost'7 = "../../creusot-contracts/src/ghost.rs" 89 14 89 35
+  let%span sghost'8 = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
+  let%span sghost'9 = "../../creusot-contracts/src/ghost.rs" 125 8 125 22
+  let%span sghost'10 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
@@ -1384,7 +1540,9 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
   
   type t_UnionFind = { t_UnionFind__0: t_UFInner }
   
-  predicate contains (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
@@ -1401,13 +1559,19 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'7] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'7] Map.get (view self) k
   
-  predicate contains'0 (self: t_FMap) (k: t_Element) = [%#sfmap'8] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains'0 [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap'8] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains'0
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -1419,22 +1583,35 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'12] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'12] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'9] lookup self key
+  meta "rewrite_def" function lookup
   
-  function index_logic'1 (self: Map.map t_Element t_Element) (a: t_Element) : t_Element = [%#smapping] Map.get self a
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'9] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
+  
+  function index_logic'1 [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'1
   
   function val' (self: t_PtrOwn) : t_Node
   
-  function index_logic'2 (self: Map.map t_Element t_T) (a: t_Element) : t_T = [%#smapping] Map.get self a
+  function index_logic'2 [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T =
+    [%#smapping] Map.get self a
   
-  function index_logic'3 (self: Map.map t_Element int) (a: t_Element) : int = [%#smapping] Map.get self a
+  meta "rewrite_def" function index_logic'2
   
-  predicate invariant' [#"union_find.rs" 69 8 69 34] (self: t_UnionFind) =
+  function index_logic'3 [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'3
+  
+  predicate invariant' [#"union_find.rs" 69 8 69 34] [@inline:trivial] (self: t_UnionFind) =
     [%#sunion_find'16] (forall e1: t_Element, e2: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e1
           /\ contains (self.t_UnionFind__0).t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
-    /\ (forall e: t_Element [contains (self.t_UnionFind__0).t_UFInner__domain e]. contains (self.t_UnionFind__0).t_UFInner__domain e
+    /\ (forall e: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e
       -> contains'0 (self.t_UnionFind__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UnionFind__0).t_UFInner__perms e) = e.t_Element__0
       /\ contains (self.t_UnionFind__0).t_UFInner__domain (index_logic'1 (self.t_UnionFind__0).t_UFInner__roots e)
@@ -1455,6 +1632,8 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
           end
       /\ index_logic'3 (self.t_UnionFind__0).t_UFInner__depth e <= (self.t_UnionFind__0).t_UFInner__max_depth)
   
+  meta "rewrite_def" predicate invariant'
+  
   predicate inv (_0: t_Element)
   
   axiom inv_axiom [@rewrite]: forall x: t_Element [inv x]. inv x = true
@@ -1463,7 +1642,9 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sptr_own'9] not is_null_logic (ptr self)
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own'9] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_T)
   
@@ -1489,8 +1670,10 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
         end)
   
-  predicate invariant''2 (self: t_FMap) =
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
     [%#sfmap'11] forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: t_FMap)
   
@@ -1511,25 +1694,34 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
         | {t_UnionFind__0 = a_0} -> inv'5 a_0
         end)
   
-  predicate invariant''3 (self: MutBorrow.t t_UnionFind) = [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) =
+    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'7 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate invariant''4 (self: MutBorrow.t t_UnionFind) = [%#sghost'10] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sghost'10] inv'7 self
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'8 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
   
-  predicate invariant''5 (self: MutBorrow.t t_UnionFind) = [%#sinvariant'0] inv'8 self
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sinvariant'0] inv'8 self
+  
+  meta "rewrite_def" predicate invariant''5
   
   predicate inv'9 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'9 x]. inv'9 x = invariant''5 x
   
-  predicate invariant''6 (self: MutBorrow.t t_UnionFind) = [%#sinvariant'0] inv'7 self
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sinvariant'0] inv'7 self
+  
+  meta "rewrite_def" predicate invariant''6
   
   predicate inv'10 (_0: MutBorrow.t t_UnionFind)
   
@@ -1544,13 +1736,17 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
   
   type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
   
-  predicate invariant''7 (self: t_FMap) = [%#sinvariant'0] inv'4 self
+  predicate invariant''7 [@inline:trivial] (self: t_FMap) = [%#sinvariant'0] inv'4 self
+  
+  meta "rewrite_def" predicate invariant''7
   
   predicate inv'11 (_0: t_FMap)
   
   axiom inv_axiom'10 [@rewrite]: forall x: t_FMap [inv'11 x]. inv'11 x = invariant''7 x
   
-  predicate invariant''8 (self: t_PtrOwn) = [%#sinvariant'0] inv'3 self
+  predicate invariant''8 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'3 self
+  
+  meta "rewrite_def" predicate invariant''8
   
   predicate inv'12 (_0: t_PtrOwn)
   
@@ -1581,7 +1777,9 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None'0}
     any [ return''0 (result: t_PtrOwn) -> {inv'12 result} {[%#soption'1] C_Some'0 result = self_} (! return' {result}) ]
   
-  predicate invariant''9 (self: t_PtrOwn) = [%#sghost'10] inv'12 self
+  predicate invariant''9 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'10] inv'12 self
+  
+  meta "rewrite_def" predicate invariant''9
   
   predicate inv'14 (_0: t_PtrOwn)
   
@@ -1590,7 +1788,9 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
   let rec new (x: t_PtrOwn) (return' (x'0: t_PtrOwn)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'12 x}
     any [ return''0 (result: t_PtrOwn) -> {[%#sghost'3] inv'14 result} {[%#sghost'4] result = x} (! return' {result}) ]
   
-  predicate invariant''10 (self: t_Node) = [%#sinvariant'0] inv'1 self
+  predicate invariant''10 [@inline:trivial] (self: t_Node) = [%#sinvariant'0] inv'1 self
+  
+  meta "rewrite_def" predicate invariant''10
   
   predicate inv'15 (_0: t_Node)
   
@@ -1608,15 +1808,19 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
     [ good (field_0: t_Element) -> {C_Link field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_Element [C_Link field_0: t_Node]. C_Link field_0 <> input} (! {false} any) ]
   
-  predicate invariant''11 (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
     [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+  
+  meta "rewrite_def" predicate invariant''11
   
   predicate inv'16 (_0: MutBorrow.t (MutBorrow.t t_UnionFind))
   
   axiom inv_axiom'15 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'16 x]. inv'16 x = invariant''11 x
   
-  predicate invariant''12 (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+  predicate invariant''12 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
     [%#sinvariant] inv'7 self.current /\ inv'7 self.final
+  
+  meta "rewrite_def" predicate invariant''12
   
   predicate inv'17 (_0: MutBorrow.t (MutBorrow.t t_UnionFind))
   
@@ -1629,13 +1833,22 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
       {[%#sghost'7] result = self}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t (MutBorrow.t t_UnionFind)) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+    [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t (MutBorrow.t t_UnionFind)) = resolve _0
+  meta "rewrite_def" predicate resolve
   
-  predicate resolve'1 (self: MutBorrow.t t_UnionFind) = [%#sresolve] self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (MutBorrow.t t_UnionFind)) = resolve _0
   
-  predicate resolve'2 (_0: MutBorrow.t t_UnionFind) = resolve'1 _0
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_UnionFind) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
   
   let rec new'0 (x: MutBorrow.t t_UnionFind) (return' (x'0: MutBorrow.t t_UnionFind)) =
     {[@expl:new 'x' type invariant] [%#sghost'2] inv'7 x}
@@ -1644,13 +1857,18 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
-  predicate invariant''13 (self: MutBorrow.t t_UFInner) = [%#sinvariant] inv'5 self.current /\ inv'5 self.final
+  predicate invariant''13 [@inline:trivial] (self: MutBorrow.t t_UFInner) =
+    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
+  
+  meta "rewrite_def" predicate invariant''13
   
   predicate inv'18 (_0: MutBorrow.t t_UFInner)
   
   axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'18 x]. inv'18 x = invariant''13 x
   
-  predicate invariant''14 (self: MutBorrow.t t_UFInner) = [%#sghost'10] inv'18 self
+  predicate invariant''14 [@inline:trivial] (self: MutBorrow.t t_UFInner) = [%#sghost'10] inv'18 self
+  
+  meta "rewrite_def" predicate invariant''14
   
   predicate inv'19 (_0: MutBorrow.t t_UFInner)
   
@@ -1663,15 +1881,19 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
-  predicate invariant''15 (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
+  predicate invariant''15 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
     [%#sinvariant] inv'19 self.current /\ inv'19 self.final
+  
+  meta "rewrite_def" predicate invariant''15
   
   predicate inv'20 (_0: MutBorrow.t (MutBorrow.t t_UFInner))
   
   axiom inv_axiom'19 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'20 x]. inv'20 x = invariant''15 x
   
-  predicate invariant''16 (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
+  predicate invariant''16 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
     [%#sinvariant] inv'18 self.current /\ inv'18 self.final
+  
+  meta "rewrite_def" predicate invariant''16
   
   predicate inv'21 (_0: MutBorrow.t (MutBorrow.t t_UFInner))
   
@@ -1686,13 +1908,19 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
   
   type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_PtrOwn)
   
-  predicate invariant''17 (self: MutBorrow.t t_FMap) = [%#sinvariant] inv'4 self.current /\ inv'4 self.final
+  predicate invariant''17 [@inline:trivial] (self: MutBorrow.t t_FMap) =
+    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
+  
+  meta "rewrite_def" predicate invariant''17
   
   predicate inv'22 (_0: MutBorrow.t t_FMap)
   
   axiom inv_axiom'21 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'22 x]. inv'22 x = invariant''17 x
   
-  predicate invariant''18 (self: MutBorrow.t t_PtrOwn) = [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  predicate invariant''18 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  
+  meta "rewrite_def" predicate invariant''18
   
   predicate inv'23 (_0: MutBorrow.t t_PtrOwn)
   
@@ -1735,11 +1963,18 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
       {[%#soption'1] C_Some'1 result = self_}
       (! return' {result}) ]
   
-  predicate resolve'3 (self: MutBorrow.t (MutBorrow.t t_UFInner)) = [%#sresolve] self.final = self.current
+  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
+    [%#sresolve] self.final = self.current
   
-  predicate resolve'4 (_0: MutBorrow.t (MutBorrow.t t_UFInner)) = resolve'3 _0
+  meta "rewrite_def" predicate resolve'3
   
-  predicate invariant''19 (self: MutBorrow.t t_PtrOwn) = [%#sghost'10] inv'23 self
+  predicate resolve'4 [@inline:trivial] (_0: MutBorrow.t (MutBorrow.t t_UFInner)) = resolve'3 _0
+  
+  meta "rewrite_def" predicate resolve'4
+  
+  predicate invariant''19 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sghost'10] inv'23 self
+  
+  meta "rewrite_def" predicate invariant''19
   
   predicate inv'25 (_0: MutBorrow.t t_PtrOwn)
   
@@ -1752,17 +1987,26 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
-  predicate resolve'5 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
   
-  predicate resolve'6 (_0: MutBorrow.t t_PtrOwn) = resolve'5 _0
+  meta "rewrite_def" predicate resolve'5
   
-  predicate invariant''20 (self: MutBorrow.t t_Node) = [%#sinvariant] inv'1 self.current /\ inv'1 self.final
+  predicate resolve'6 [@inline:trivial] (_0: MutBorrow.t t_PtrOwn) = resolve'5 _0
+  
+  meta "rewrite_def" predicate resolve'6
+  
+  predicate invariant''20 [@inline:trivial] (self: MutBorrow.t t_Node) =
+    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
+  
+  meta "rewrite_def" predicate invariant''20
   
   predicate inv'26 (_0: MutBorrow.t t_Node)
   
   axiom inv_axiom'25 [@rewrite]: forall x: MutBorrow.t t_Node [inv'26 x]. inv'26 x = invariant''20 x
   
-  function fin (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = [%#sghost'8] self.final
+  function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = [%#sghost'8] self.final
+  
+  meta "rewrite_def" function fin
   
   let rec as_mut (ptr'0: Opaque.ptr) (own: MutBorrow.t t_PtrOwn) (return' (x: MutBorrow.t t_Node)) =
     {[@expl:as_mut 'own' type invariant] [%#sptr_own'3] inv'25 own}
@@ -1774,21 +2018,37 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
       {[%#sptr_own'8] val' (fin own) = result.final}
       (! return' {result}) ]
   
-  predicate resolve'7 (self: MutBorrow.t t_Node) = [%#sresolve] self.final = self.current
+  predicate resolve'7 [@inline:trivial] (self: MutBorrow.t t_Node) = [%#sresolve] self.final = self.current
   
-  predicate resolve'8 (_0: MutBorrow.t t_Node) = resolve'7 _0
+  meta "rewrite_def" predicate resolve'7
   
-  predicate resolve'9 (self: MutBorrow.t t_UFInner) = [%#sresolve] self.final = self.current
+  predicate resolve'8 [@inline:trivial] (_0: MutBorrow.t t_Node) = resolve'7 _0
   
-  predicate resolve'10 (_0: MutBorrow.t t_UFInner) = resolve'9 _0
+  meta "rewrite_def" predicate resolve'8
   
-  predicate resolve'11 (self: MutBorrow.t t_UFInner) = [%#sghost'9] resolve'10 self
+  predicate resolve'9 [@inline:trivial] (self: MutBorrow.t t_UFInner) = [%#sresolve] self.final = self.current
   
-  predicate resolve'12 (_0: MutBorrow.t t_UFInner) = resolve'11 _0
+  meta "rewrite_def" predicate resolve'9
   
-  predicate resolve'13 (self: MutBorrow.t t_UnionFind) = [%#sghost'9] resolve'2 self
+  predicate resolve'10 [@inline:trivial] (_0: MutBorrow.t t_UFInner) = resolve'9 _0
   
-  predicate resolve'14 (_0: MutBorrow.t t_UnionFind) = resolve'13 _0
+  meta "rewrite_def" predicate resolve'10
+  
+  predicate resolve'11 [@inline:trivial] (self: MutBorrow.t t_UFInner) = [%#sghost'9] resolve'10 self
+  
+  meta "rewrite_def" predicate resolve'11
+  
+  predicate resolve'12 [@inline:trivial] (_0: MutBorrow.t t_UFInner) = resolve'11 _0
+  
+  meta "rewrite_def" predicate resolve'12
+  
+  predicate resolve'13 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sghost'9] resolve'2 self
+  
+  meta "rewrite_def" predicate resolve'13
+  
+  predicate resolve'14 [@inline:trivial] (_0: MutBorrow.t t_UnionFind) = resolve'13 _0
+  
+  meta "rewrite_def" predicate resolve'14
   
   function domain [#"union_find.rs" 97 8 97 47] (self: t_UnionFind) : Fset.fset t_Element =
     [%#sunion_find'11] (self.t_UnionFind__0).t_UFInner__domain
@@ -1818,7 +2078,9 @@ module M_union_find__implementation__find_inner [#"union_find.rs" 222 4 222 86]
     [%#sunion_find'8] domain self.current = domain self.final
     /\ roots_map self.current = roots_map self.final /\ payloads_map self.current = payloads_map self.final
   
-  function fin'0 (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost'8] self.final
+  function fin'0 [@inline:trivial] (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost'8] self.final
+  
+  meta "rewrite_def" function fin'0
   
   meta "compute_max_steps" 1000000
   
@@ -2011,23 +2273,23 @@ module M_union_find__implementation__find [#"union_find.rs" 242 4 242 80]
   let%span sunion_find'18 = "union_find.rs" 131 8 131 16
   let%span sunion_find'19 = "union_find.rs" 25 8 25 16
   let%span sunion_find'20 = "union_find.rs" 72 12 87 53
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 107 20 107 27
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 116 8 116 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
   
   use creusot.prelude.Opaque
@@ -2054,7 +2316,9 @@ module M_union_find__implementation__find [#"union_find.rs" 242 4 242 80]
   
   type t_UnionFind = { t_UnionFind__0: t_UFInner }
   
-  predicate contains (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
@@ -2071,13 +2335,19 @@ module M_union_find__implementation__find [#"union_find.rs" 242 4 242 80]
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'1] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'1] Map.get (view self) k
   
-  predicate contains'0 (self: t_FMap) (k: t_Element) = [%#sfmap] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains'0 [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains'0
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -2089,22 +2359,35 @@ module M_union_find__implementation__find [#"union_find.rs" 242 4 242 80]
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'2] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'2] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'0] lookup self key
+  meta "rewrite_def" function lookup
   
-  function index_logic'1 (self: Map.map t_Element t_Element) (a: t_Element) : t_Element = [%#smapping] Map.get self a
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'0] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
+  
+  function index_logic'1 [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'1
   
   function val' (self: t_PtrOwn) : t_Node
   
-  function index_logic'2 (self: Map.map t_Element t_T) (a: t_Element) : t_T = [%#smapping] Map.get self a
+  function index_logic'2 [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T =
+    [%#smapping] Map.get self a
   
-  function index_logic'3 (self: Map.map t_Element int) (a: t_Element) : int = [%#smapping] Map.get self a
+  meta "rewrite_def" function index_logic'2
   
-  predicate invariant' [#"union_find.rs" 69 8 69 34] (self: t_UnionFind) =
+  function index_logic'3 [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'3
+  
+  predicate invariant' [#"union_find.rs" 69 8 69 34] [@inline:trivial] (self: t_UnionFind) =
     [%#sunion_find'20] (forall e1: t_Element, e2: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e1
           /\ contains (self.t_UnionFind__0).t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
-    /\ (forall e: t_Element [contains (self.t_UnionFind__0).t_UFInner__domain e]. contains (self.t_UnionFind__0).t_UFInner__domain e
+    /\ (forall e: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e
       -> contains'0 (self.t_UnionFind__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UnionFind__0).t_UFInner__perms e) = e.t_Element__0
       /\ contains (self.t_UnionFind__0).t_UFInner__domain (index_logic'1 (self.t_UnionFind__0).t_UFInner__roots e)
@@ -2125,6 +2408,8 @@ module M_union_find__implementation__find [#"union_find.rs" 242 4 242 80]
           end
       /\ index_logic'3 (self.t_UnionFind__0).t_UFInner__depth e <= (self.t_UnionFind__0).t_UFInner__max_depth)
   
+  meta "rewrite_def" predicate invariant'
+  
   predicate inv (_0: t_Element)
   
   axiom inv_axiom [@rewrite]: forall x: t_Element [inv x]. inv x = true
@@ -2133,7 +2418,9 @@ module M_union_find__implementation__find [#"union_find.rs" 242 4 242 80]
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_T)
   
@@ -2159,8 +2446,10 @@ module M_union_find__implementation__find [#"union_find.rs" 242 4 242 80]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
         end)
   
-  predicate invariant''2 (self: t_FMap) =
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
     [%#sfmap'3] forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: t_FMap)
   
@@ -2181,13 +2470,18 @@ module M_union_find__implementation__find [#"union_find.rs" 242 4 242 80]
         | {t_UnionFind__0 = a_0} -> inv'5 a_0
         end)
   
-  predicate invariant''3 (self: MutBorrow.t t_UnionFind) = [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) =
+    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'7 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate invariant''4 (self: MutBorrow.t t_UnionFind) = [%#sghost'0] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sghost'0] inv'7 self
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'8 (_0: MutBorrow.t t_UnionFind)
   
@@ -2221,7 +2515,9 @@ module M_union_find__implementation__find [#"union_find.rs" 242 4 242 80]
     [%#sunion_find'11] domain self.current = domain self.final
     /\ roots_map self.current = roots_map self.final /\ payloads_map self.current = payloads_map self.final
   
-  function fin (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost] self.final
+  function fin [@inline:trivial] (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost] self.final
+  
+  meta "rewrite_def" function fin
   
   let rec find_inner (uf: MutBorrow.t t_UnionFind) (elem: t_Element) (return' (x: t_Element)) =
     {[@expl:find_inner 'uf' type invariant] [%#sunion_find'3] inv'8 uf}
@@ -2267,39 +2563,39 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
   let%span sunion_find'13 = "union_find.rs" 131 8 131 16
   let%span sunion_find'14 = "union_find.rs" 25 8 25 16
   let%span sunion_find'15 = "union_find.rs" 72 12 87 53
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 341 22 341 26
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 341 4 341 50
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 340 14 340 55
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 339 22 339 26
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 339 4 339 50
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 338 14 338 55
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
   let%span soption = "../../creusot-contracts/src/std/option.rs" 144 16 144 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 145 27 145 39
   let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 146 26 146 46
-  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 753 8 756 9
-  let%span soption'3 = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'4 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 750 8 753 9
+  let%span soption'3 = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'4 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
   let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 78 40 78 43
   let%span sptr_own'0 = "../../creusot-contracts/src/ghost/ptr_own.rs" 75 15 75 31
   let%span sptr_own'1 = "../../creusot-contracts/src/ghost/ptr_own.rs" 78 4 78 69
   let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 76 14 76 35
-  let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
+  let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 78 14 78 18
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 78 4 78 36
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 77 14 77 31
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 179 15 179 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 179 4 181 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 177 14 177 26
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 116 8 116 18
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 80 14 80 18
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 80 4 80 36
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 78 14 78 31
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 181 15 181 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 181 4 183 17
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
   use creusot.prelude.Opaque
@@ -2325,7 +2621,9 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
   
   type t_UnionFind = { t_UnionFind__0: t_UFInner }
   
-  predicate contains (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
@@ -2342,13 +2640,19 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'2] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'2] Map.get (view self) k
   
-  predicate contains'0 (self: t_FMap) (k: t_Element) = [%#sfmap'3] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains'0 [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap'3] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains'0
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -2360,22 +2664,35 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'6] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'6] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'4] lookup self key
+  meta "rewrite_def" function lookup
   
-  function index_logic'1 (self: Map.map t_Element t_Element) (a: t_Element) : t_Element = [%#smapping] Map.get self a
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'4] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
+  
+  function index_logic'1 [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'1
   
   function val' (self: t_PtrOwn) : t_Node
   
-  function index_logic'2 (self: Map.map t_Element t_T) (a: t_Element) : t_T = [%#smapping] Map.get self a
+  function index_logic'2 [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T =
+    [%#smapping] Map.get self a
   
-  function index_logic'3 (self: Map.map t_Element int) (a: t_Element) : int = [%#smapping] Map.get self a
+  meta "rewrite_def" function index_logic'2
   
-  predicate invariant' [#"union_find.rs" 69 8 69 34] (self: t_UnionFind) =
+  function index_logic'3 [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'3
+  
+  predicate invariant' [#"union_find.rs" 69 8 69 34] [@inline:trivial] (self: t_UnionFind) =
     [%#sunion_find'15] (forall e1: t_Element, e2: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e1
           /\ contains (self.t_UnionFind__0).t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
-    /\ (forall e: t_Element [contains (self.t_UnionFind__0).t_UFInner__domain e]. contains (self.t_UnionFind__0).t_UFInner__domain e
+    /\ (forall e: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e
       -> contains'0 (self.t_UnionFind__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UnionFind__0).t_UFInner__perms e) = e.t_Element__0
       /\ contains (self.t_UnionFind__0).t_UFInner__domain (index_logic'1 (self.t_UnionFind__0).t_UFInner__roots e)
@@ -2396,6 +2713,8 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
           end
       /\ index_logic'3 (self.t_UnionFind__0).t_UFInner__depth e <= (self.t_UnionFind__0).t_UFInner__max_depth)
   
+  meta "rewrite_def" predicate invariant'
+  
   predicate inv (_0: t_Element)
   
   axiom inv_axiom [@rewrite]: forall x: t_Element [inv x]. inv x = true
@@ -2404,7 +2723,9 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sptr_own'3] not is_null_logic (ptr self)
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own'3] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_T)
   
@@ -2430,8 +2751,10 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
         end)
   
-  predicate invariant''2 (self: t_FMap) =
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
     [%#sfmap'5] forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: t_FMap)
   
@@ -2452,25 +2775,33 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
         | {t_UnionFind__0 = a_0} -> inv'5 a_0
         end)
   
-  predicate invariant''3 (self: t_UnionFind) = [%#sinvariant] inv'6 self
+  predicate invariant''3 [@inline:trivial] (self: t_UnionFind) = [%#sinvariant] inv'6 self
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'7 (_0: t_UnionFind)
   
   axiom inv_axiom'6 [@rewrite]: forall x: t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate invariant''4 (self: t_UnionFind) = [%#sghost'5] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: t_UnionFind) = [%#sghost'5] inv'7 self
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'8 (_0: t_UnionFind)
   
   axiom inv_axiom'7 [@rewrite]: forall x: t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
   
-  predicate invariant''5 (self: t_UnionFind) = [%#sinvariant] inv'8 self
+  predicate invariant''5 [@inline:trivial] (self: t_UnionFind) = [%#sinvariant] inv'8 self
+  
+  meta "rewrite_def" predicate invariant''5
   
   predicate inv'9 (_0: t_UnionFind)
   
   axiom inv_axiom'8 [@rewrite]: forall x: t_UnionFind [inv'9 x]. inv'9 x = invariant''5 x
   
-  predicate invariant''6 (self: t_UnionFind) = [%#sinvariant] inv'7 self
+  predicate invariant''6 [@inline:trivial] (self: t_UnionFind) = [%#sinvariant] inv'7 self
+  
+  meta "rewrite_def" predicate invariant''6
   
   predicate inv'10 (_0: t_UnionFind)
   
@@ -2485,13 +2816,17 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
   
   type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
   
-  predicate invariant''7 (self: t_FMap) = [%#sinvariant] inv'4 self
+  predicate invariant''7 [@inline:trivial] (self: t_FMap) = [%#sinvariant] inv'4 self
+  
+  meta "rewrite_def" predicate invariant''7
   
   predicate inv'11 (_0: t_FMap)
   
   axiom inv_axiom'10 [@rewrite]: forall x: t_FMap [inv'11 x]. inv'11 x = invariant''7 x
   
-  predicate invariant''8 (self: t_PtrOwn) = [%#sinvariant] inv'3 self
+  predicate invariant''8 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant] inv'3 self
+  
+  meta "rewrite_def" predicate invariant''8
   
   predicate inv'12 (_0: t_PtrOwn)
   
@@ -2522,7 +2857,9 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None'0}
     any [ return''0 (result: t_PtrOwn) -> {inv'12 result} {[%#soption'1] C_Some'0 result = self_} (! return' {result}) ]
   
-  predicate invariant''9 (self: t_PtrOwn) = [%#sghost'5] inv'12 self
+  predicate invariant''9 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'5] inv'12 self
+  
+  meta "rewrite_def" predicate invariant''9
   
   predicate inv'14 (_0: t_PtrOwn)
   
@@ -2531,7 +2868,9 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
   let rec new (x: t_PtrOwn) (return' (x'0: t_PtrOwn)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'12 x}
     any [ return''0 (result: t_PtrOwn) -> {[%#sghost'3] inv'14 result} {[%#sghost'4] result = x} (! return' {result}) ]
   
-  predicate invariant''10 (self: t_Node) = [%#sinvariant] inv'1 self
+  predicate invariant''10 [@inline:trivial] (self: t_Node) = [%#sinvariant] inv'1 self
+  
+  meta "rewrite_def" predicate invariant''10
   
   predicate inv'15 (_0: t_Node)
   
@@ -2572,7 +2911,9 @@ module M_union_find__implementation__get [#"union_find.rs" 252 4 252 67]
   function root [#"union_find.rs" 126 8 126 54] (self: t_UnionFind) (e: t_Element) : t_Element =
     [%#sunion_find'5] index_logic'1 (roots_map self) e
   
-  predicate invariant''11 (self: t_T) = [%#sinvariant] inv'0 self
+  predicate invariant''11 [@inline:trivial] (self: t_T) = [%#sinvariant] inv'0 self
+  
+  meta "rewrite_def" predicate invariant''11
   
   predicate inv'16 (_0: t_T)
   
@@ -2646,30 +2987,30 @@ module M_union_find__implementation__equiv [#"union_find.rs" 265 4 265 93]
   let%span sunion_find'18 = "union_find.rs" 131 8 131 16
   let%span sunion_find'19 = "union_find.rs" 72 12 87 53
   let%span sunion_find'20 = "union_find.rs" 25 8 25 16
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
   let%span smodel = "../../creusot-contracts/src/model.rs" 35 8 35 28
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 89 22 89 26
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 89 4 89 48
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 88 14 88 35
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 179 15 179 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 179 4 181 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 177 14 177 26
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 116 8 116 18
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 91 22 91 26
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 91 4 91 48
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 89 14 89 35
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 181 15 181 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 181 4 183 17
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
   
   use creusot.prelude.MutBorrow
@@ -2696,7 +3037,9 @@ module M_union_find__implementation__equiv [#"union_find.rs" 265 4 265 93]
   
   type t_UnionFind = { t_UnionFind__0: t_UFInner }
   
-  predicate contains (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
@@ -2713,13 +3056,19 @@ module M_union_find__implementation__equiv [#"union_find.rs" 265 4 265 93]
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'1] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'1] Map.get (view self) k
   
-  predicate contains'0 (self: t_FMap) (k: t_Element) = [%#sfmap] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains'0 [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains'0
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -2731,22 +3080,35 @@ module M_union_find__implementation__equiv [#"union_find.rs" 265 4 265 93]
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'2] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'2] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'0] lookup self key
+  meta "rewrite_def" function lookup
   
-  function index_logic'1 (self: Map.map t_Element t_Element) (a: t_Element) : t_Element = [%#smapping] Map.get self a
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'0] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
+  
+  function index_logic'1 [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'1
   
   function val' (self: t_PtrOwn) : t_Node
   
-  function index_logic'2 (self: Map.map t_Element t_T) (a: t_Element) : t_T = [%#smapping] Map.get self a
+  function index_logic'2 [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T =
+    [%#smapping] Map.get self a
   
-  function index_logic'3 (self: Map.map t_Element int) (a: t_Element) : int = [%#smapping] Map.get self a
+  meta "rewrite_def" function index_logic'2
   
-  predicate invariant' [#"union_find.rs" 69 8 69 34] (self: t_UnionFind) =
+  function index_logic'3 [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'3
+  
+  predicate invariant' [#"union_find.rs" 69 8 69 34] [@inline:trivial] (self: t_UnionFind) =
     [%#sunion_find'19] (forall e1: t_Element, e2: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e1
           /\ contains (self.t_UnionFind__0).t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
-    /\ (forall e: t_Element [contains (self.t_UnionFind__0).t_UFInner__domain e]. contains (self.t_UnionFind__0).t_UFInner__domain e
+    /\ (forall e: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e
       -> contains'0 (self.t_UnionFind__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UnionFind__0).t_UFInner__perms e) = e.t_Element__0
       /\ contains (self.t_UnionFind__0).t_UFInner__domain (index_logic'1 (self.t_UnionFind__0).t_UFInner__roots e)
@@ -2767,6 +3129,8 @@ module M_union_find__implementation__equiv [#"union_find.rs" 265 4 265 93]
           end
       /\ index_logic'3 (self.t_UnionFind__0).t_UFInner__depth e <= (self.t_UnionFind__0).t_UFInner__max_depth)
   
+  meta "rewrite_def" predicate invariant'
+  
   predicate inv (_0: t_Element)
   
   axiom inv_axiom [@rewrite]: forall x: t_Element [inv x]. inv x = true
@@ -2775,7 +3139,9 @@ module M_union_find__implementation__equiv [#"union_find.rs" 265 4 265 93]
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_T)
   
@@ -2801,8 +3167,10 @@ module M_union_find__implementation__equiv [#"union_find.rs" 265 4 265 93]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
         end)
   
-  predicate invariant''2 (self: t_FMap) =
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
     [%#sfmap'3] forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: t_FMap)
   
@@ -2823,27 +3191,36 @@ module M_union_find__implementation__equiv [#"union_find.rs" 265 4 265 93]
         | {t_UnionFind__0 = a_0} -> inv'5 a_0
         end)
   
-  predicate invariant''3 (self: MutBorrow.t t_UnionFind) = [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) =
+    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'7 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate invariant''4 (self: MutBorrow.t t_UnionFind) = [%#sghost'5] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sghost'5] inv'7 self
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'8 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
   
-  predicate invariant''5 (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
     [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+  
+  meta "rewrite_def" predicate invariant''5
   
   predicate inv'9 (_0: MutBorrow.t (MutBorrow.t t_UnionFind))
   
   axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'9 x]. inv'9 x = invariant''5 x
   
-  predicate invariant''6 (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
     [%#sinvariant] inv'7 self.current /\ inv'7 self.final
+  
+  meta "rewrite_def" predicate invariant''6
   
   predicate inv'10 (_0: MutBorrow.t (MutBorrow.t t_UnionFind))
   
@@ -2856,13 +3233,22 @@ module M_union_find__implementation__equiv [#"union_find.rs" 265 4 265 93]
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t (MutBorrow.t t_UnionFind)) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+    [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t (MutBorrow.t t_UnionFind)) = resolve _0
+  meta "rewrite_def" predicate resolve
   
-  predicate resolve'1 (self: MutBorrow.t t_UnionFind) = [%#sresolve] self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (MutBorrow.t t_UnionFind)) = resolve _0
   
-  predicate resolve'2 (_0: MutBorrow.t t_UnionFind) = resolve'1 _0
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_UnionFind) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
   
   let rec new (x: MutBorrow.t t_UnionFind) (return' (x'0: MutBorrow.t t_UnionFind)) =
     {[@expl:new 'x' type invariant] [%#sghost'2] inv'7 x}
@@ -3005,37 +3391,37 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
   let%span sunion_find'23 = "union_find.rs" 131 8 131 16
   let%span sunion_find'24 = "union_find.rs" 25 8 25 16
   let%span sunion_find'25 = "union_find.rs" 72 12 87 53
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
   let%span smodel = "../../creusot-contracts/src/model.rs" 35 8 35 28
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 51 8 51 28
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 404 32 404 36
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 401 4 401 36
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 404 4 404 69
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 402 14 402 47
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 403 14 403 85
-  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 374 30 374 34
-  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 374 4 374 62
-  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 363 14 371 9
-  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 372 14 372 73
-  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 373 14 373 44
-  let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 84 14 84 43
-  let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 85 14 85 84
-  let%span sfmap'12 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'13 = "../../creusot-contracts/src/logic/fmap.rs" 69 14 69 46
-  let%span sfmap'14 = "../../creusot-contracts/src/logic/fmap.rs" 70 14 70 88
-  let%span sfmap'15 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'16 = "../../creusot-contracts/src/logic/fmap.rs" 61 14 61 25
-  let%span sfmap'17 = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span sfmap'18 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 402 32 402 36
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 399 4 399 36
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 402 4 402 69
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 400 14 400 47
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 401 14 401 85
+  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 372 30 372 34
+  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 372 4 372 62
+  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 361 14 369 9
+  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 370 14 370 73
+  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 371 14 371 44
+  let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 83 14 83 43
+  let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 84 14 84 84
+  let%span sfmap'12 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'13 = "../../creusot-contracts/src/logic/fmap.rs" 68 14 68 46
+  let%span sfmap'14 = "../../creusot-contracts/src/logic/fmap.rs" 69 14 69 88
+  let%span sfmap'15 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'16 = "../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
+  let%span sfmap'17 = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span sfmap'18 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
   let%span soption = "../../creusot-contracts/src/std/option.rs" 144 16 144 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 145 27 145 39
   let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 146 26 146 46
-  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'3 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'3 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
   let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 96 40 96 43
@@ -3044,24 +3430,24 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
   let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 93 14 93 35
   let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 94 14 94 39
   let%span sptr_own'4 = "../../creusot-contracts/src/ghost/ptr_own.rs" 95 14 95 38
-  let%span sptr_own'5 = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
+  let%span sptr_own'5 = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 89 22 89 26
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 89 4 89 48
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 88 14 88 35
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 179 15 179 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 179 4 181 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 177 14 177 26
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 91 22 91 26
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 91 4 91 48
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 89 14 89 35
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 181 15 181 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 181 4 183 17
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
   let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 228 17 228 21
   let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 228 4 228 46
   let%span sghost'7 = "../../creusot-contracts/src/ghost.rs" 226 14 226 36
   let%span sghost'8 = "../../creusot-contracts/src/ghost.rs" 227 14 227 36
-  let%span sghost'9 = "../../creusot-contracts/src/ghost.rs" 107 20 107 27
-  let%span sghost'10 = "../../creusot-contracts/src/ghost.rs" 123 8 123 22
-  let%span sghost'11 = "../../creusot-contracts/src/ghost.rs" 116 8 116 18
+  let%span sghost'9 = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
+  let%span sghost'10 = "../../creusot-contracts/src/ghost.rs" 125 8 125 22
+  let%span sghost'11 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
   let%span speano = "../../creusot-contracts/src/peano.rs" 125 14 125 38
   let%span speano'0 = "../../creusot-contracts/src/peano.rs" 41 4 41 18
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
   let%span scmp = "../../creusot-contracts/src/std/cmp.rs" 35 26 35 76
   let%span scmp'0 = "../../creusot-contracts/src/std/cmp.rs" 11 26 11 75
@@ -3078,7 +3464,7 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
   let%span sord'9 = "../../creusot-contracts/src/logic/ord.rs" 155 40 155 73
   let%span sord'10 = "../../creusot-contracts/src/logic/ord.rs" 156 39 156 69
   let%span sord'11 = "../../creusot-contracts/src/logic/ord.rs" 160 39 160 84
-  let%span sord'12 = "../../creusot-contracts/src/logic/ord.rs" 215 16 221 17
+  let%span sord'12 = "../../creusot-contracts/src/logic/ord.rs" 211 16 217 17
   
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -3116,7 +3502,9 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
   
   type t_UnionFind = { t_UnionFind__0: t_UFInner }
   
-  predicate contains (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains
   
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
@@ -3128,13 +3516,19 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'15] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'15] Map.get (view self) k
   
-  predicate contains'0 (self: t_FMap) (k: t_Element) = [%#sfmap'9] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains'0 [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap'9] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains'0
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -3146,22 +3540,35 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'18] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'18] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'12] lookup self key
+  meta "rewrite_def" function lookup
   
-  function index_logic'1 (self: Map.map t_Element t_Element) (a: t_Element) : t_Element = [%#smapping] Map.get self a
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'12] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
+  
+  function index_logic'1 [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'1
   
   function val' (self: t_PtrOwn) : t_Node
   
-  function index_logic'2 (self: Map.map t_Element t_T) (a: t_Element) : t_T = [%#smapping] Map.get self a
+  function index_logic'2 [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T =
+    [%#smapping] Map.get self a
   
-  function index_logic'3 (self: Map.map t_Element int) (a: t_Element) : int = [%#smapping] Map.get self a
+  meta "rewrite_def" function index_logic'2
   
-  predicate invariant' [#"union_find.rs" 69 8 69 34] (self: t_UnionFind) =
+  function index_logic'3 [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'3
+  
+  predicate invariant' [#"union_find.rs" 69 8 69 34] [@inline:trivial] (self: t_UnionFind) =
     [%#sunion_find'25] (forall e1: t_Element, e2: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e1
           /\ contains (self.t_UnionFind__0).t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
-    /\ (forall e: t_Element [contains (self.t_UnionFind__0).t_UFInner__domain e]. contains (self.t_UnionFind__0).t_UFInner__domain e
+    /\ (forall e: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e
       -> contains'0 (self.t_UnionFind__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UnionFind__0).t_UFInner__perms e) = e.t_Element__0
       /\ contains (self.t_UnionFind__0).t_UFInner__domain (index_logic'1 (self.t_UnionFind__0).t_UFInner__roots e)
@@ -3182,6 +3589,8 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
           end
       /\ index_logic'3 (self.t_UnionFind__0).t_UFInner__depth e <= (self.t_UnionFind__0).t_UFInner__max_depth)
   
+  meta "rewrite_def" predicate invariant'
+  
   predicate inv (_0: t_Element)
   
   axiom inv_axiom [@rewrite]: forall x: t_Element [inv x]. inv x = true
@@ -3190,7 +3599,9 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sptr_own'5] not is_null_logic (ptr self)
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own'5] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_T)
   
@@ -3216,8 +3627,10 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
         end)
   
-  predicate invariant''2 (self: t_FMap) =
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
     [%#sfmap'17] forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: t_FMap)
   
@@ -3238,35 +3651,52 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
         | {t_UnionFind__0 = a_0} -> inv'5 a_0
         end)
   
-  predicate invariant''3 (self: MutBorrow.t t_UnionFind) = [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) =
+    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'7 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate invariant''4 (self: MutBorrow.t t_UnionFind) = [%#sghost'11] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sghost'11] inv'7 self
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'8 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
   
-  predicate resolve (self: MutBorrow.t t_UnionFind) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t t_UnionFind) = resolve _0
+  meta "rewrite_def" predicate resolve
   
-  predicate resolve'1 (self: MutBorrow.t t_UnionFind) = [%#sghost'10] resolve'0 self
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_UnionFind) = resolve _0
   
-  predicate resolve'2 (_0: MutBorrow.t t_UnionFind) = resolve'1 _0
+  meta "rewrite_def" predicate resolve'0
   
-  predicate invariant''5 (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sghost'10] resolve'0 self
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_UnionFind) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
+  
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
     [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+  
+  meta "rewrite_def" predicate invariant''5
   
   predicate inv'9 (_0: MutBorrow.t (MutBorrow.t t_UnionFind))
   
   axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'9 x]. inv'9 x = invariant''5 x
   
-  predicate invariant''6 (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
     [%#sinvariant] inv'7 self.current /\ inv'7 self.final
+  
+  meta "rewrite_def" predicate invariant''6
   
   predicate inv'10 (_0: MutBorrow.t (MutBorrow.t t_UnionFind))
   
@@ -3279,13 +3709,18 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
-  predicate invariant''7 (self: MutBorrow.t t_UFInner) = [%#sinvariant] inv'5 self.current /\ inv'5 self.final
+  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_UFInner) =
+    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
+  
+  meta "rewrite_def" predicate invariant''7
   
   predicate inv'11 (_0: MutBorrow.t t_UFInner)
   
   axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'11 x]. inv'11 x = invariant''7 x
   
-  predicate invariant''8 (self: MutBorrow.t t_UFInner) = [%#sghost'11] inv'11 self
+  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_UFInner) = [%#sghost'11] inv'11 self
+  
+  meta "rewrite_def" predicate invariant''8
   
   predicate inv'12 (_0: MutBorrow.t t_UFInner)
   
@@ -3298,15 +3733,19 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
-  predicate invariant''9 (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
+  predicate invariant''9 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
     [%#sinvariant] inv'12 self.current /\ inv'12 self.final
+  
+  meta "rewrite_def" predicate invariant''9
   
   predicate inv'13 (_0: MutBorrow.t (MutBorrow.t t_UFInner))
   
   axiom inv_axiom'12 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'13 x]. inv'13 x = invariant''9 x
   
-  predicate invariant''10 (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
+  predicate invariant''10 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
     [%#sinvariant] inv'11 self.current /\ inv'11 self.final
+  
+  meta "rewrite_def" predicate invariant''10
   
   predicate inv'14 (_0: MutBorrow.t (MutBorrow.t t_UFInner))
   
@@ -3321,13 +3760,19 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
   
   type tuple = { _p0: MutBorrow.t t_PtrOwn; _p1: MutBorrow.t t_FMap }
   
-  predicate invariant''11 (self: MutBorrow.t t_FMap) = [%#sinvariant] inv'4 self.current /\ inv'4 self.final
+  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t t_FMap) =
+    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
+  
+  meta "rewrite_def" predicate invariant''11
   
   predicate inv'15 (_0: MutBorrow.t t_FMap)
   
   axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'15 x]. inv'15 x = invariant''11 x
   
-  predicate invariant''12 (self: MutBorrow.t t_PtrOwn) = [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  predicate invariant''12 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  
+  meta "rewrite_def" predicate invariant''12
   
   predicate inv'16 (_0: MutBorrow.t t_PtrOwn)
   
@@ -3368,11 +3813,18 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
       /\ self.final = insert (result._p1).final key (result._p0).final}
       (! return' {result}) ]
   
-  predicate resolve'3 (self: MutBorrow.t (MutBorrow.t t_UFInner)) = [%#sresolve] self.final = self.current
+  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
+    [%#sresolve] self.final = self.current
   
-  predicate resolve'4 (_0: MutBorrow.t (MutBorrow.t t_UFInner)) = resolve'3 _0
+  meta "rewrite_def" predicate resolve'3
   
-  predicate invariant''13 (self: tuple) = [%#sghost'11] inv'17 self
+  predicate resolve'4 [@inline:trivial] (_0: MutBorrow.t (MutBorrow.t t_UFInner)) = resolve'3 _0
+  
+  meta "rewrite_def" predicate resolve'4
+  
+  predicate invariant''13 [@inline:trivial] (self: tuple) = [%#sghost'11] inv'17 self
+  
+  meta "rewrite_def" predicate invariant''13
   
   predicate inv'18 (_0: tuple)
   
@@ -3383,13 +3835,17 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
   
   type tuple'0 = { _p0'0: MutBorrow.t t_PtrOwn; _p1'0: MutBorrow.t t_FMap }
   
-  predicate invariant''14 (self: MutBorrow.t t_PtrOwn) = [%#sghost'11] inv'16 self
+  predicate invariant''14 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sghost'11] inv'16 self
+  
+  meta "rewrite_def" predicate invariant''14
   
   predicate inv'19 (_0: MutBorrow.t t_PtrOwn)
   
   axiom inv_axiom'18 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'19 x]. inv'19 x = invariant''14 x
   
-  predicate invariant''15 (self: MutBorrow.t t_FMap) = [%#sghost'11] inv'15 self
+  predicate invariant''15 [@inline:trivial] (self: MutBorrow.t t_FMap) = [%#sghost'11] inv'15 self
+  
+  meta "rewrite_def" predicate invariant''15
   
   predicate inv'20 (_0: MutBorrow.t t_FMap)
   
@@ -3407,13 +3863,18 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
       {[%#sghost'8] self._p1 = result._p1'0}
       (! return' {result}) ]
   
-  predicate invariant''16 (self: MutBorrow.t t_Node) = [%#sinvariant] inv'1 self.current /\ inv'1 self.final
+  predicate invariant''16 [@inline:trivial] (self: MutBorrow.t t_Node) =
+    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
+  
+  meta "rewrite_def" predicate invariant''16
   
   predicate inv'22 (_0: MutBorrow.t t_Node)
   
   axiom inv_axiom'21 [@rewrite]: forall x: MutBorrow.t t_Node [inv'22 x]. inv'22 x = invariant''16 x
   
-  function fin (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = [%#sghost'9] self.final
+  function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = [%#sghost'9] self.final
+  
+  meta "rewrite_def" function fin
   
   let rec as_mut (ptr'0: Opaque.ptr) (own: MutBorrow.t t_PtrOwn) (return' (x: MutBorrow.t t_Node)) =
     {[@expl:as_mut 'own' type invariant] [%#sptr_own] inv'19 own}
@@ -3425,19 +3886,27 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
       {[%#sptr_own'4] val' (fin own) = result.final}
       (! return' {result}) ]
   
-  predicate resolve'5 (self: MutBorrow.t t_Node) = [%#sresolve] self.final = self.current
+  predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_Node) = [%#sresolve] self.final = self.current
   
-  predicate resolve'6 (_0: MutBorrow.t t_Node) = resolve'5 _0
+  meta "rewrite_def" predicate resolve'5
   
-  predicate invariant''17 (self: MutBorrow.t (MutBorrow.t t_FMap)) =
+  predicate resolve'6 [@inline:trivial] (_0: MutBorrow.t t_Node) = resolve'5 _0
+  
+  meta "rewrite_def" predicate resolve'6
+  
+  predicate invariant''17 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap)) =
     [%#sinvariant] inv'20 self.current /\ inv'20 self.final
+  
+  meta "rewrite_def" predicate invariant''17
   
   predicate inv'23 (_0: MutBorrow.t (MutBorrow.t t_FMap))
   
   axiom inv_axiom'22 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_FMap) [inv'23 x]. inv'23 x = invariant''17 x
   
-  predicate invariant''18 (self: MutBorrow.t (MutBorrow.t t_FMap)) =
+  predicate invariant''18 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap)) =
     [%#sinvariant] inv'15 self.current /\ inv'15 self.final
+  
+  meta "rewrite_def" predicate invariant''18
   
   predicate inv'24 (_0: MutBorrow.t (MutBorrow.t t_FMap))
   
@@ -3485,13 +3954,22 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
       {[%#soption'1] C_Some'0 result = self_}
       (! return' {result}) ]
   
-  predicate resolve'7 (self: MutBorrow.t (MutBorrow.t t_FMap)) = [%#sresolve] self.final = self.current
+  predicate resolve'7 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap)) =
+    [%#sresolve] self.final = self.current
   
-  predicate resolve'8 (_0: MutBorrow.t (MutBorrow.t t_FMap)) = resolve'7 _0
+  meta "rewrite_def" predicate resolve'7
   
-  predicate resolve'9 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  predicate resolve'8 [@inline:trivial] (_0: MutBorrow.t (MutBorrow.t t_FMap)) = resolve'7 _0
   
-  predicate resolve'10 (_0: MutBorrow.t t_PtrOwn) = resolve'9 _0
+  meta "rewrite_def" predicate resolve'8
+  
+  predicate resolve'9 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'9
+  
+  predicate resolve'10 [@inline:trivial] (_0: MutBorrow.t t_PtrOwn) = resolve'9 _0
+  
+  meta "rewrite_def" predicate resolve'10
   
   let rec new'1 (x: MutBorrow.t t_PtrOwn) (return' (x'0: MutBorrow.t t_PtrOwn)) =
     {[@expl:new 'x' type invariant] [%#sghost'2] inv'16 x}
@@ -3506,9 +3984,13 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
       (! {false}
       any) ]
   
-  predicate resolve'11 (self: MutBorrow.t t_PeanoInt) = [%#sresolve] self.final = self.current
+  predicate resolve'11 [@inline:trivial] (self: MutBorrow.t t_PeanoInt) = [%#sresolve] self.final = self.current
   
-  predicate resolve'12 (_0: MutBorrow.t t_PeanoInt) = resolve'11 _0
+  meta "rewrite_def" predicate resolve'11
+  
+  predicate resolve'12 [@inline:trivial] (_0: MutBorrow.t t_PeanoInt) = resolve'11 _0
+  
+  meta "rewrite_def" predicate resolve'12
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -3567,25 +4049,46 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
     [ return''0 (result: bool) -> {[%#scmp] result = UInt64.lt (deep_model'3 self_) (deep_model'3 other)}
       (! return' {result}) ]
   
-  predicate resolve'13 (self: MutBorrow.t t_FMap) = [%#sresolve] self.final = self.current
+  predicate resolve'13 [@inline:trivial] (self: MutBorrow.t t_FMap) = [%#sresolve] self.final = self.current
   
-  predicate resolve'14 (_0: MutBorrow.t t_FMap) = resolve'13 _0
+  meta "rewrite_def" predicate resolve'13
   
-  predicate resolve'15 (self: MutBorrow.t t_FMap) = [%#sghost'10] resolve'14 self
+  predicate resolve'14 [@inline:trivial] (_0: MutBorrow.t t_FMap) = resolve'13 _0
   
-  predicate resolve'16 (_0: MutBorrow.t t_FMap) = resolve'15 _0
+  meta "rewrite_def" predicate resolve'14
   
-  predicate resolve'17 (self: MutBorrow.t t_UFInner) = [%#sresolve] self.final = self.current
+  predicate resolve'15 [@inline:trivial] (self: MutBorrow.t t_FMap) = [%#sghost'10] resolve'14 self
   
-  predicate resolve'18 (_0: MutBorrow.t t_UFInner) = resolve'17 _0
+  meta "rewrite_def" predicate resolve'15
   
-  predicate resolve'19 (self: MutBorrow.t t_UFInner) = [%#sghost'10] resolve'18 self
+  predicate resolve'16 [@inline:trivial] (_0: MutBorrow.t t_FMap) = resolve'15 _0
   
-  predicate resolve'20 (_0: MutBorrow.t t_UFInner) = resolve'19 _0
+  meta "rewrite_def" predicate resolve'16
   
-  predicate resolve'21 (self: MutBorrow.t (MutBorrow.t t_UnionFind)) = [%#sresolve] self.final = self.current
+  predicate resolve'17 [@inline:trivial] (self: MutBorrow.t t_UFInner) = [%#sresolve] self.final = self.current
   
-  predicate resolve'22 (_0: MutBorrow.t (MutBorrow.t t_UnionFind)) = resolve'21 _0
+  meta "rewrite_def" predicate resolve'17
+  
+  predicate resolve'18 [@inline:trivial] (_0: MutBorrow.t t_UFInner) = resolve'17 _0
+  
+  meta "rewrite_def" predicate resolve'18
+  
+  predicate resolve'19 [@inline:trivial] (self: MutBorrow.t t_UFInner) = [%#sghost'10] resolve'18 self
+  
+  meta "rewrite_def" predicate resolve'19
+  
+  predicate resolve'20 [@inline:trivial] (_0: MutBorrow.t t_UFInner) = resolve'19 _0
+  
+  meta "rewrite_def" predicate resolve'20
+  
+  predicate resolve'21 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+    [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'21
+  
+  predicate resolve'22 [@inline:trivial] (_0: MutBorrow.t (MutBorrow.t t_UnionFind)) = resolve'21 _0
+  
+  meta "rewrite_def" predicate resolve'22
   
   let rec new'2 (x: ()) (return' (x'0: ())) = any
     [ return''0 (result: ()) -> {[%#sghost'4] result = x} (! return' {result}) ]
@@ -3628,7 +4131,9 @@ module M_union_find__implementation__link [#"union_find.rs" 281 4 281 92]
   predicate payloads_unchanged [#"union_find.rs" 163 8 163 52] (self: MutBorrow.t t_UnionFind) =
     [%#sunion_find'16] payloads_map self.current = payloads_map self.final
   
-  function fin'0 (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost'9] self.final
+  function fin'0 [@inline:trivial] (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost'9] self.final
+  
+  meta "rewrite_def" function fin'0
   
   meta "compute_max_steps" 1000000
   
@@ -4044,30 +4549,30 @@ module M_union_find__implementation__union [#"union_find.rs" 325 4 325 97]
   let%span sunion_find'26 = "union_find.rs" 111 8 111 16
   let%span sunion_find'27 = "union_find.rs" 72 12 87 53
   let%span sunion_find'28 = "union_find.rs" 25 8 25 16
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 89 22 89 26
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 89 4 89 48
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 88 14 88 35
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 179 15 179 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 179 4 181 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 177 14 177 26
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 107 20 107 27
-  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 116 8 116 18
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 91 22 91 26
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 91 4 91 48
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 89 14 89 35
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 181 15 181 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 181 4 183 17
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
+  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
   
   use creusot.prelude.MutBorrow
@@ -4094,7 +4599,9 @@ module M_union_find__implementation__union [#"union_find.rs" 325 4 325 97]
   
   type t_UnionFind = { t_UnionFind__0: t_UFInner }
   
-  predicate contains (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains
   
   function addr_logic (self: Opaque.ptr) : UInt64.t
   
@@ -4111,13 +4618,19 @@ module M_union_find__implementation__union [#"union_find.rs" 325 4 325 97]
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'1] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'1] Map.get (view self) k
   
-  predicate contains'0 (self: t_FMap) (k: t_Element) = [%#sfmap] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains'0 [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains'0
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -4129,22 +4642,35 @@ module M_union_find__implementation__union [#"union_find.rs" 325 4 325 97]
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'2] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'2] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'0] lookup self key
+  meta "rewrite_def" function lookup
   
-  function index_logic'1 (self: Map.map t_Element t_Element) (a: t_Element) : t_Element = [%#smapping] Map.get self a
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'0] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
+  
+  function index_logic'1 [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'1
   
   function val' (self: t_PtrOwn) : t_Node
   
-  function index_logic'2 (self: Map.map t_Element t_T) (a: t_Element) : t_T = [%#smapping] Map.get self a
+  function index_logic'2 [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T =
+    [%#smapping] Map.get self a
   
-  function index_logic'3 (self: Map.map t_Element int) (a: t_Element) : int = [%#smapping] Map.get self a
+  meta "rewrite_def" function index_logic'2
   
-  predicate invariant' [#"union_find.rs" 69 8 69 34] (self: t_UnionFind) =
+  function index_logic'3 [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'3
+  
+  predicate invariant' [#"union_find.rs" 69 8 69 34] [@inline:trivial] (self: t_UnionFind) =
     [%#sunion_find'27] (forall e1: t_Element, e2: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e1
           /\ contains (self.t_UnionFind__0).t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
-    /\ (forall e: t_Element [contains (self.t_UnionFind__0).t_UFInner__domain e]. contains (self.t_UnionFind__0).t_UFInner__domain e
+    /\ (forall e: t_Element. contains (self.t_UnionFind__0).t_UFInner__domain e
       -> contains'0 (self.t_UnionFind__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UnionFind__0).t_UFInner__perms e) = e.t_Element__0
       /\ contains (self.t_UnionFind__0).t_UFInner__domain (index_logic'1 (self.t_UnionFind__0).t_UFInner__roots e)
@@ -4165,6 +4691,8 @@ module M_union_find__implementation__union [#"union_find.rs" 325 4 325 97]
           end
       /\ index_logic'3 (self.t_UnionFind__0).t_UFInner__depth e <= (self.t_UnionFind__0).t_UFInner__max_depth)
   
+  meta "rewrite_def" predicate invariant'
+  
   predicate inv (_0: t_Element)
   
   axiom inv_axiom [@rewrite]: forall x: t_Element [inv x]. inv x = true
@@ -4173,7 +4701,9 @@ module M_union_find__implementation__union [#"union_find.rs" 325 4 325 97]
   
   axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_T)
   
@@ -4199,8 +4729,10 @@ module M_union_find__implementation__union [#"union_find.rs" 325 4 325 97]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
         end)
   
-  predicate invariant''2 (self: t_FMap) =
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
     [%#sfmap'3] forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: t_FMap)
   
@@ -4221,27 +4753,36 @@ module M_union_find__implementation__union [#"union_find.rs" 325 4 325 97]
         | {t_UnionFind__0 = a_0} -> inv'5 a_0
         end)
   
-  predicate invariant''3 (self: MutBorrow.t t_UnionFind) = [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) =
+    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'7 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate invariant''4 (self: MutBorrow.t t_UnionFind) = [%#sghost'6] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sghost'6] inv'7 self
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'8 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
   
-  predicate invariant''5 (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
     [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+  
+  meta "rewrite_def" predicate invariant''5
   
   predicate inv'9 (_0: MutBorrow.t (MutBorrow.t t_UnionFind))
   
   axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'9 x]. inv'9 x = invariant''5 x
   
-  predicate invariant''6 (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
     [%#sinvariant] inv'7 self.current /\ inv'7 self.final
+  
+  meta "rewrite_def" predicate invariant''6
   
   predicate inv'10 (_0: MutBorrow.t (MutBorrow.t t_UnionFind))
   
@@ -4254,13 +4795,22 @@ module M_union_find__implementation__union [#"union_find.rs" 325 4 325 97]
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t (MutBorrow.t t_UnionFind)) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+    [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t (MutBorrow.t t_UnionFind)) = resolve _0
+  meta "rewrite_def" predicate resolve
   
-  predicate resolve'1 (self: MutBorrow.t t_UnionFind) = [%#sresolve] self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (MutBorrow.t t_UnionFind)) = resolve _0
   
-  predicate resolve'2 (_0: MutBorrow.t t_UnionFind) = resolve'1 _0
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_UnionFind) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
   
   let rec new (x: MutBorrow.t t_UnionFind) (return' (x'0: MutBorrow.t t_UnionFind)) =
     {[@expl:new 'x' type invariant] [%#sghost'2] inv'7 x}
@@ -4311,7 +4861,9 @@ module M_union_find__implementation__union [#"union_find.rs" 325 4 325 97]
   predicate payloads_unchanged [#"union_find.rs" 163 8 163 52] (self: MutBorrow.t t_UnionFind) =
     [%#sunion_find'17] payloads_map self.current = payloads_map self.final
   
-  function fin (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost'5] self.final
+  function fin [@inline:trivial] (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost'5] self.final
+  
+  meta "rewrite_def" function fin
   
   let rec link (uf: MutBorrow.t t_UnionFind) (x: t_Element) (y: t_Element) (return' (x'0: t_Element)) =
     {[@expl:link 'uf' type invariant] [%#sunion_find'8] inv'8 uf}
@@ -4489,29 +5041,29 @@ module M_union_find__example [#"union_find.rs" 335 0 335 16]
   let%span sunion_find'44 = "union_find.rs" 158 24 158 60
   let%span sunion_find'45 = "union_find.rs" 164 24 164 72
   let%span sunion_find'46 = "union_find.rs" 149 16 151 64
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 58 8 58 26
-  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 55 8 55 26
+  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 146 27 146 31
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 146 4 146 49
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 145 14 145 36
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 138 19 138 23
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 138 4 138 37
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 137 14 137 32
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 107 20 107 27
-  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 116 8 116 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 148 27 148 31
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 148 4 148 49
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 147 14 147 36
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 140 19 140 23
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 140 4 140 37
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 139 14 139 32
+  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
+  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
@@ -4549,9 +5101,13 @@ module M_union_find__example [#"union_find.rs" 335 0 335 16]
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'2] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'2] Map.get (view self) k
   
-  predicate contains (self: t_FMap) (k: t_Element) = [%#sfmap'0] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap'0] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains
   
   predicate inv (_0: t_Element)
   
@@ -4565,7 +5121,9 @@ module M_union_find__example [#"union_find.rs" 335 0 335 16]
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_PtrOwn)
   
@@ -4575,7 +5133,9 @@ module M_union_find__example [#"union_find.rs" 335 0 335 16]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> true
         end)
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -4587,12 +5147,18 @@ module M_union_find__example [#"union_find.rs" 335 0 335 16]
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'3] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'3] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'1] lookup self key
+  meta "rewrite_def" function lookup
   
-  predicate invariant''1 (self: t_FMap) =
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'1] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
+  
+  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
     [%#sfmap] forall k: t_Element. contains self k -> inv k /\ inv'0 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'1 (_0: t_FMap)
   
@@ -4613,13 +5179,17 @@ module M_union_find__example [#"union_find.rs" 335 0 335 16]
         | {t_UnionFind__0 = a_0} -> inv'2 a_0
         end)
   
-  predicate invariant''2 (self: t_UnionFind) = [%#sghost'6] inv'3 self
+  predicate invariant''2 [@inline:trivial] (self: t_UnionFind) = [%#sghost'6] inv'3 self
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: t_UnionFind)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_UnionFind [inv'4 x]. inv'4 x = invariant''2 x
   
-  predicate contains'0 (self: Fset.fset t_Element) (e: t_Element) = [%#sfset'0] Fset.mem e self
+  predicate contains'0 [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset'0] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains'0
   
   function deep_model [#"union_find.rs" 26 8 26 36] (self: t_Element) : UInt64.t
   
@@ -4634,19 +5204,27 @@ module M_union_find__example [#"union_find.rs" 335 0 335 16]
       {[%#sunion_find'13] Fset.is_empty (domain result)}
       (! return' {result}) ]
   
-  predicate invariant''3 (self: MutBorrow.t t_UnionFind) = [%#sinvariant] inv'4 self.current /\ inv'4 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) =
+    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'5 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'5 x]. inv'5 x = invariant''3 x
   
-  predicate invariant''4 (self: MutBorrow.t t_UnionFind) = [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) =
+    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'6 (_0: MutBorrow.t t_UnionFind)
   
   axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'6 x]. inv'6 x = invariant''4 x
   
-  predicate invariant''5 (self: MutBorrow.t t_UnionFind) = [%#sghost'6] inv'6 self
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = [%#sghost'6] inv'6 self
+  
+  meta "rewrite_def" predicate invariant''5
   
   predicate inv'7 (_0: MutBorrow.t t_UnionFind)
   
@@ -4662,11 +5240,19 @@ module M_union_find__example [#"union_find.rs" 335 0 335 16]
   predicate in_domain [#"union_find.rs" 103 8 103 53] (self: t_UnionFind) (e: t_Element) =
     [%#sunion_find'39] contains'0 (domain self) e
   
-  function fin (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost'5] self.final
+  function fin [@inline:trivial] (self: MutBorrow.t t_UnionFind) : t_UnionFind = [%#sghost'5] self.final
   
-  function insert (self: Fset.fset t_Element) (e: t_Element) : Fset.fset t_Element = [%#sfset] Fset.add e self
+  meta "rewrite_def" function fin
   
-  function index_logic'1 (self: Map.map t_Element t_Element) (a: t_Element) : t_Element = [%#smapping] Map.get self a
+  function insert [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) : Fset.fset t_Element =
+    [%#sfset] Fset.add e self
+  
+  meta "rewrite_def" function insert
+  
+  function index_logic'1 [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'1
   
   function roots_map [#"union_find.rs" 117 8 117 65] (self: t_UnionFind) : Map.map t_Element t_Element
   
@@ -4686,19 +5272,25 @@ module M_union_find__example [#"union_find.rs" 335 0 335 16]
       {[%#sunion_find'18] payloads_map (fin uf) = Map.set (payloads_map uf.current) result payload}
       (! return' {result}) ]
   
-  predicate invariant''6 (self: t_UnionFind) = [%#sinvariant'0] inv'4 self
+  predicate invariant''6 [@inline:trivial] (self: t_UnionFind) = [%#sinvariant'0] inv'4 self
+  
+  meta "rewrite_def" predicate invariant''6
   
   predicate inv'8 (_0: t_UnionFind)
   
   axiom inv_axiom'8 [@rewrite]: forall x: t_UnionFind [inv'8 x]. inv'8 x = invariant''6 x
   
-  predicate invariant''7 (self: t_UnionFind) = [%#sinvariant'0] inv'3 self
+  predicate invariant''7 [@inline:trivial] (self: t_UnionFind) = [%#sinvariant'0] inv'3 self
+  
+  meta "rewrite_def" predicate invariant''7
   
   predicate inv'9 (_0: t_UnionFind)
   
   axiom inv_axiom'9 [@rewrite]: forall x: t_UnionFind [inv'9 x]. inv'9 x = invariant''7 x
   
-  predicate invariant''8 (self: t_UnionFind) = [%#sghost'6] inv'9 self
+  predicate invariant''8 [@inline:trivial] (self: t_UnionFind) = [%#sghost'6] inv'9 self
+  
+  meta "rewrite_def" predicate invariant''8
   
   predicate inv'10 (_0: t_UnionFind)
   
@@ -4714,7 +5306,10 @@ module M_union_find__example [#"union_find.rs" 335 0 335 16]
   function root [#"union_find.rs" 126 8 126 54] (self: t_UnionFind) (e: t_Element) : t_Element =
     [%#sunion_find'42] index_logic'1 (roots_map self) e
   
-  function index_logic'2 (self: Map.map t_Element Int32.t) (a: t_Element) : Int32.t = [%#smapping] Map.get self a
+  function index_logic'2 [@inline:trivial] (self: Map.map t_Element Int32.t) (a: t_Element) : Int32.t =
+    [%#smapping] Map.get self a
+  
+  meta "rewrite_def" function index_logic'2
   
   function payload [#"union_find.rs" 141 8 141 48] (self: t_UnionFind) (e: t_Element) : Int32.t =
     [%#sunion_find'43] index_logic'2 (payloads_map self) e
@@ -4906,21 +5501,21 @@ module M_union_find__example_addrs_eq [#"union_find.rs" 357 0 357 77]
   let%span sunion_find'3 = "union_find.rs" 102 8 102 22
   let%span sunion_find'4 = "union_find.rs" 95 19 95 28
   let%span sunion_find'5 = "union_find.rs" 96 18 96 150
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 58 14 58 53
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 60 8 60 35
+  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
+  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
   let%span smodel = "../../creusot-contracts/src/model.rs" 35 8 35 28
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 500 20 500 76
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 498 20 498 76
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
   
@@ -4966,9 +5561,13 @@ module M_union_find__example_addrs_eq [#"union_find.rs" 357 0 357 77]
   
   function view (self: t_FMap) : Map.map t_Element t_Option
   
-  function get (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'2] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_Element) : t_Option = [%#sfmap'2] Map.get (view self) k
   
-  predicate contains (self: t_FMap) (k: t_Element) = [%#sfmap'0] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains [@inline:trivial] (self: t_FMap) (k: t_Element) = [%#sfmap'0] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains
   
   predicate inv (_0: t_Element)
   
@@ -4982,7 +5581,9 @@ module M_union_find__example_addrs_eq [#"union_find.rs" 357 0 357 77]
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own] not is_null_logic (ptr self)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_T)
   
@@ -5008,7 +5609,9 @@ module M_union_find__example_addrs_eq [#"union_find.rs" 357 0 357 77]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> inv'2 val'
         end)
   
-  predicate index_logic (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map t_PtrOwn bool) : t_PtrOwn
   
@@ -5020,12 +5623,18 @@ module M_union_find__example_addrs_eq [#"union_find.rs" 357 0 357 77]
       | C_None -> such_that (fun (__0: t_PtrOwn) -> true)
       end
   
-  function lookup (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'3] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: t_Element) : t_PtrOwn = [%#sfmap'3] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'1] lookup self key
+  meta "rewrite_def" function lookup
   
-  predicate invariant''2 (self: t_FMap) =
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_Element) : t_PtrOwn = [%#sfmap'1] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
+  
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
     [%#sfmap] forall k: t_Element. contains self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: t_FMap)
   
@@ -5046,13 +5655,17 @@ module M_union_find__example_addrs_eq [#"union_find.rs" 357 0 357 77]
         | {t_UnionFind__0 = a_0} -> inv'5 a_0
         end)
   
-  predicate invariant''3 (self: t_UnionFind) = [%#sinvariant] inv'6 self
+  predicate invariant''3 [@inline:trivial] (self: t_UnionFind) = [%#sinvariant] inv'6 self
+  
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'7 (_0: t_UnionFind)
   
   axiom inv_axiom'6 [@rewrite]: forall x: t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate contains'0 (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  predicate contains'0 [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = [%#sfset] Fset.mem e self
+  
+  meta "rewrite_def" predicate contains'0
   
   function domain [#"union_find.rs" 97 8 97 47] (self: t_UnionFind) : Fset.fset t_Element
   

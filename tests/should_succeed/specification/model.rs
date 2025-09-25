@@ -6,8 +6,7 @@ pub struct Seven();
 impl View for Seven {
     type ViewTy = Int;
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -24,8 +23,7 @@ pub struct Pair<T, U>(T, U);
 impl<T, U> View for Pair<T, U> {
     type ViewTy = (T, U);
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }

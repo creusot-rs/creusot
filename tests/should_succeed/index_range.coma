@@ -45,7 +45,9 @@ module M_index_range__create_arr [#"index_range.rs" 14 0 14 27]
   let rec push (self_: MutBorrow.t t_Vec) (v: Int32.t) (return' (x: ())) = any
     [ return''0 (result: ()) -> {[%#svec'0] view self_.final = Seq.snoc (view'0 self_) v} (! return' {result}) ]
   
-  function index_logic (self: t_Vec) (ix: int) : Int32.t = [%#svec'2] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = [%#svec'2] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   meta "compute_max_steps" 1000000
   
@@ -187,16 +189,16 @@ module M_index_range__test_range [#"index_range.rs" 27 0 27 19]
   let%span svec'9 = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
   let%span smodel = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 251 18 251 40
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 260 18 260 96
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 261 8 261 57
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 128 20 128 70
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 133 20 133 67
-  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 139 12 140 32
-  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 111 20 111 37
-  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 116 20 116 37
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 250 18 250 40
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 259 18 259 96
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 260 8 260 57
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 127 20 127 70
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 132 20 132 67
+  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 138 12 139 32
+  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 115 20 115 37
   let%span soption = "../../creusot-contracts/src/std/option.rs" 74 26 74 51
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -225,7 +227,9 @@ module M_index_range__test_range [#"index_range.rs" 27 0 27 19]
   
   axiom view_spec: forall self: t_Vec. [%#svec'8] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function index_logic (self: t_Vec) (ix: int) : Int32.t = [%#svec'9] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = [%#svec'9] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   let rec create_arr (return' (x: t_Vec)) = any
     [ return''0 (result: t_Vec) -> {[%#sindex_range'72] Seq.length (view result) = 5
@@ -288,18 +292,28 @@ module M_index_range__test_range [#"index_range.rs" 27 0 27 19]
       {[%#svec'6] Seq.length (view self_.final) = Seq.length (view'2 self_)}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t (Slice64.slice Int32.t)) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) =
+    [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t (Slice64.slice Int32.t)) = resolve _0
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (Slice64.slice Int32.t)) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec len'0 (self_: t_Vec) (return' (x: UInt64.t)) = any
     [ return''0 (result: UInt64.t) -> {[%#svec'7] UInt64.t'int result = Seq.length (view'0 self_)}
       (! return' {result}) ]
   
-  predicate in_bounds'0 (self: UInt64.t) (seq: Seq.seq Int32.t) = [%#sslice'5] UInt64.t'int self < Seq.length seq
+  predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
+    [%#sslice'5] UInt64.t'int self < Seq.length seq
   
-  predicate has_value'0 (self: UInt64.t) (seq: Seq.seq Int32.t) (out: Int32.t) =
+  meta "rewrite_def" predicate in_bounds'0
+  
+  predicate has_value'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) (out: Int32.t) =
     [%#sslice'6] Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value'0
   
   let rec index'0 (self_: t_Vec) (ix: UInt64.t) (return' (x: Int32.t)) =
     {[@expl:index requires] [%#svec] in_bounds'0 ix (view'0 self_)}
@@ -666,16 +680,16 @@ module M_index_range__test_range_to [#"index_range.rs" 78 0 78 22]
   let%span svec'9 = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
   let%span smodel = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 251 18 251 40
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 260 18 260 96
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 261 8 261 57
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 176 20 176 42
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 181 20 181 57
-  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 186 20 186 82
-  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 111 20 111 37
-  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 116 20 116 37
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 250 18 250 40
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 259 18 259 96
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 260 8 260 57
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 175 20 175 42
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 180 20 180 57
+  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 185 20 185 82
+  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 115 20 115 37
   let%span soption = "../../creusot-contracts/src/std/option.rs" 74 26 74 51
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -704,7 +718,9 @@ module M_index_range__test_range_to [#"index_range.rs" 78 0 78 22]
   
   axiom view_spec: forall self: t_Vec. [%#svec'8] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function index_logic (self: t_Vec) (ix: int) : Int32.t = [%#svec'9] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = [%#svec'9] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   let rec create_arr (return' (x: t_Vec)) = any
     [ return''0 (result: t_Vec) -> {[%#sindex_range'44] Seq.length (view result) = 5
@@ -765,18 +781,28 @@ module M_index_range__test_range_to [#"index_range.rs" 78 0 78 22]
       {[%#svec'6] Seq.length (view self_.final) = Seq.length (view'2 self_)}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t (Slice64.slice Int32.t)) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) =
+    [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t (Slice64.slice Int32.t)) = resolve _0
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (Slice64.slice Int32.t)) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec len'0 (self_: t_Vec) (return' (x: UInt64.t)) = any
     [ return''0 (result: UInt64.t) -> {[%#svec'7] UInt64.t'int result = Seq.length (view'0 self_)}
       (! return' {result}) ]
   
-  predicate in_bounds'0 (self: UInt64.t) (seq: Seq.seq Int32.t) = [%#sslice'5] UInt64.t'int self < Seq.length seq
+  predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
+    [%#sslice'5] UInt64.t'int self < Seq.length seq
   
-  predicate has_value'0 (self: UInt64.t) (seq: Seq.seq Int32.t) (out: Int32.t) =
+  meta "rewrite_def" predicate in_bounds'0
+  
+  predicate has_value'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) (out: Int32.t) =
     [%#sslice'6] Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value'0
   
   let rec index'0 (self_: t_Vec) (ix: UInt64.t) (return' (x: Int32.t)) =
     {[@expl:index requires] [%#svec] in_bounds'0 ix (view'0 self_)}
@@ -1043,16 +1069,16 @@ module M_index_range__test_range_from [#"index_range.rs" 115 0 115 24]
   let%span svec'9 = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
   let%span smodel = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 251 18 251 40
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 260 18 260 96
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 261 8 261 57
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 193 20 193 44
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 198 20 198 67
-  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 204 12 204 85
-  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 111 20 111 37
-  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 116 20 116 37
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 250 18 250 40
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 259 18 259 96
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 260 8 260 57
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 192 20 192 44
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 197 20 197 67
+  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 203 12 203 85
+  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 115 20 115 37
   let%span soption = "../../creusot-contracts/src/std/option.rs" 74 26 74 51
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -1081,7 +1107,9 @@ module M_index_range__test_range_from [#"index_range.rs" 115 0 115 24]
   
   axiom view_spec: forall self: t_Vec. [%#svec'8] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function index_logic (self: t_Vec) (ix: int) : Int32.t = [%#svec'9] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = [%#svec'9] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   let rec create_arr (return' (x: t_Vec)) = any
     [ return''0 (result: t_Vec) -> {[%#sindex_range'46] Seq.length (view result) = 5
@@ -1142,18 +1170,28 @@ module M_index_range__test_range_from [#"index_range.rs" 115 0 115 24]
       {[%#svec'6] Seq.length (view self_.final) = Seq.length (view'2 self_)}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t (Slice64.slice Int32.t)) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) =
+    [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t (Slice64.slice Int32.t)) = resolve _0
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (Slice64.slice Int32.t)) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec len'0 (self_: t_Vec) (return' (x: UInt64.t)) = any
     [ return''0 (result: UInt64.t) -> {[%#svec'7] UInt64.t'int result = Seq.length (view'0 self_)}
       (! return' {result}) ]
   
-  predicate in_bounds'0 (self: UInt64.t) (seq: Seq.seq Int32.t) = [%#sslice'5] UInt64.t'int self < Seq.length seq
+  predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
+    [%#sslice'5] UInt64.t'int self < Seq.length seq
   
-  predicate has_value'0 (self: UInt64.t) (seq: Seq.seq Int32.t) (out: Int32.t) =
+  meta "rewrite_def" predicate in_bounds'0
+  
+  predicate has_value'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) (out: Int32.t) =
     [%#sslice'6] Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value'0
   
   let rec index'0 (self_: t_Vec) (ix: UInt64.t) (return' (x: Int32.t)) =
     {[@expl:index requires] [%#svec] in_bounds'0 ix (view'0 self_)}
@@ -1427,13 +1465,13 @@ module M_index_range__test_range_full [#"index_range.rs" 154 0 154 24]
   let%span svec'8 = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
   let%span smodel = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 251 18 251 40
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 212 20 212 24
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 217 20 217 31
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 222 20 222 24
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 111 20 111 37
-  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 116 20 116 37
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 250 18 250 40
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 211 20 211 24
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 216 20 216 31
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 221 20 221 24
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 115 20 115 37
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -1462,7 +1500,9 @@ module M_index_range__test_range_full [#"index_range.rs" 154 0 154 24]
   
   axiom view_spec: forall self: t_Vec. [%#svec'7] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function index_logic (self: t_Vec) (ix: int) : Int32.t = [%#svec'8] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = [%#svec'8] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   let rec create_arr (return' (x: t_Vec)) = any
     [ return''0 (result: t_Vec) -> {[%#sindex_range'42] Seq.length (view result) = 5
@@ -1504,18 +1544,28 @@ module M_index_range__test_range_full [#"index_range.rs" 154 0 154 24]
       {[%#svec'5] Seq.length (view self_.final) = Seq.length (view'2 self_)}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t (Slice64.slice Int32.t)) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) =
+    [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t (Slice64.slice Int32.t)) = resolve _0
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (Slice64.slice Int32.t)) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec len'0 (self_: t_Vec) (return' (x: UInt64.t)) = any
     [ return''0 (result: UInt64.t) -> {[%#svec'6] UInt64.t'int result = Seq.length (view'0 self_)}
       (! return' {result}) ]
   
-  predicate in_bounds'0 (self: UInt64.t) (seq: Seq.seq Int32.t) = [%#sslice'3] UInt64.t'int self < Seq.length seq
+  predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
+    [%#sslice'3] UInt64.t'int self < Seq.length seq
   
-  predicate has_value'0 (self: UInt64.t) (seq: Seq.seq Int32.t) (out: Int32.t) =
+  meta "rewrite_def" predicate in_bounds'0
+  
+  predicate has_value'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) (out: Int32.t) =
     [%#sslice'4] Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value'0
   
   let rec index'0 (self_: t_Vec) (ix: UInt64.t) (return' (x: Int32.t)) =
     {[@expl:index requires] [%#svec] in_bounds'0 ix (view'0 self_)}
@@ -1775,16 +1825,16 @@ module M_index_range__test_range_to_inclusive [#"index_range.rs" 179 0 179 32]
   let%span svec'9 = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
   let%span smodel = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 251 18 251 40
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 260 18 260 96
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 261 8 261 57
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 229 20 229 41
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 234 20 234 61
-  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 239 20 239 81
-  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 111 20 111 37
-  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 116 20 116 37
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 250 18 250 40
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 259 18 259 96
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 260 8 260 57
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 228 20 228 41
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 233 20 233 61
+  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 238 20 238 81
+  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 110 20 110 37
+  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 115 20 115 37
   let%span soption = "../../creusot-contracts/src/std/option.rs" 74 26 74 51
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -1813,7 +1863,9 @@ module M_index_range__test_range_to_inclusive [#"index_range.rs" 179 0 179 32]
   
   axiom view_spec: forall self: t_Vec. [%#svec'8] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function index_logic (self: t_Vec) (ix: int) : Int32.t = [%#svec'9] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = [%#svec'9] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   let rec create_arr (return' (x: t_Vec)) = any
     [ return''0 (result: t_Vec) -> {[%#sindex_range'41] Seq.length (view result) = 5
@@ -1875,18 +1927,28 @@ module M_index_range__test_range_to_inclusive [#"index_range.rs" 179 0 179 32]
       {[%#svec'6] Seq.length (view self_.final) = Seq.length (view'2 self_)}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t (Slice64.slice Int32.t)) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) =
+    [%#sresolve] self.final = self.current
   
-  predicate resolve'0 (_0: MutBorrow.t (Slice64.slice Int32.t)) = resolve _0
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (Slice64.slice Int32.t)) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec len'0 (self_: t_Vec) (return' (x: UInt64.t)) = any
     [ return''0 (result: UInt64.t) -> {[%#svec'7] UInt64.t'int result = Seq.length (view'0 self_)}
       (! return' {result}) ]
   
-  predicate in_bounds'0 (self: UInt64.t) (seq: Seq.seq Int32.t) = [%#sslice'5] UInt64.t'int self < Seq.length seq
+  predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
+    [%#sslice'5] UInt64.t'int self < Seq.length seq
   
-  predicate has_value'0 (self: UInt64.t) (seq: Seq.seq Int32.t) (out: Int32.t) =
+  meta "rewrite_def" predicate in_bounds'0
+  
+  predicate has_value'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) (out: Int32.t) =
     [%#sslice'6] Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value'0
   
   let rec index'0 (self_: t_Vec) (ix: UInt64.t) (return' (x: Int32.t)) =
     {[@expl:index requires] [%#svec] in_bounds'0 ix (view'0 self_)}

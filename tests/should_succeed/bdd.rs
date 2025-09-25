@@ -14,7 +14,7 @@ use creusot_contracts::{
 mod bumpalo {
     use creusot_contracts::*;
 
-    #[trusted]
+    #[opaque]
     pub struct Bump();
 
     impl Bump {
@@ -39,37 +39,36 @@ mod hashmap {
         fn hash_log(_: Self::DeepModelTy) -> Int;
     }
 
-    #[trusted]
+    #[opaque]
     pub struct MyHashMap<K, V>(std::marker::PhantomData<(K, V)>);
 
     impl<K: Hash, V> View for MyHashMap<K, V> {
         type ViewTy = Mapping<K::DeepModelTy, Option<V>>;
 
-        #[logic]
-        #[trusted]
+        #[logic(opaque)]
         fn view(self) -> Self::ViewTy {
             dead
         }
     }
 
     impl<K: Hash + Eq + DeepModel, V> MyHashMap<K, V> {
-        #[ensures(forall<i: K::DeepModelTy> (^self)@.get(i) == (if i == key.deep_model() { Some(val) } else { self@.get(i) } ))]
         #[trusted]
+        #[ensures(forall<i: K::DeepModelTy> (^self)@.get(i) == (if i == key.deep_model() { Some(val) } else { self@.get(i) } ))]
         pub fn add(&mut self, key: K, val: V) {
             panic!()
         }
 
+        #[trusted]
         #[ensures(match result {
             Some(v) => self@.get(key.deep_model()) == Some(*v),
             None => self@.get(key.deep_model()) == None,
         })]
-        #[trusted]
         pub fn get<'a, 'b>(&'a self, key: &'b K) -> Option<&'a V> {
             panic!()
         }
 
-        #[ensures(result@ == Mapping::cst(None))]
         #[trusted]
+        #[ensures(result@ == Mapping::cst(None))]
         pub fn new() -> Self {
             panic!()
         }

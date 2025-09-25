@@ -3,8 +3,7 @@ use crate::{std::iter::Repeat, *};
 impl<T> View for Repeat<T> {
     type ViewTy = T;
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> T {
         dead
     }

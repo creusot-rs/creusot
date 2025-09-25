@@ -7,8 +7,8 @@ pub use ::std::{
 impl View for Duration {
     type ViewTy = Int;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
     fn view(self) -> Self::ViewTy {
         dead
@@ -46,8 +46,8 @@ pub fn secs_to_nanos(secs: Int) -> Int {
 impl View for Instant {
     type ViewTy = Int;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result >= 0)]
     fn view(self) -> Self::ViewTy {
         dead

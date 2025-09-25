@@ -25,7 +25,7 @@ use crate::{
         },
         wto::{Component, weak_topological_order},
     },
-    contracts_items::{get_inv_function, get_namespace_ty},
+    contracts_items::Intrinsic,
     ctx::{BodyId, Dependencies, HasTyCtxt as _, ItemType},
     naming::name,
     translated_item::FileModule,
@@ -60,7 +60,10 @@ use why3::{
     ty::Type,
 };
 
-pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<FileModule> {
+pub(crate) fn translate_function<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    def_id: DefId,
+) -> Option<FileModule> {
     let names = Dependencies::new(ctx, def_id);
 
     if !def_id.is_local() || !ctx.has_body(def_id) || is_trusted_item(ctx.tcx, def_id) {
@@ -70,8 +73,7 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     let name = names.source_ident();
     let mut defn = to_why(ctx, &names, name, def_id.expect_local());
 
-    let namespace_ty =
-        names.def_ty_no_dependency(get_namespace_ty(ctx.ctx.tcx), GenericArgsRef::default());
+    let namespace_ty = names.namespace_ty();
 
     let (mut decls, setters) = names.provide_deps(ctx);
     defn.body = setters.call_setters(defn.body);
@@ -167,7 +169,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     let mut body = why_body(ctx, names, body_id, None, &args, inner_return);
     let (mut sig, contract, return_ty) = {
         let typing_env = names.typing_env();
-        let mut pre_sig = sig.clone().normalize(ctx.tcx, typing_env);
+        let mut pre_sig = sig.clone().normalize(ctx, typing_env);
         pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
         lower_program_sig(ctx, names, name, pre_sig, def_id, outer_return)
     };
@@ -1071,7 +1073,7 @@ impl<'tcx> Statement<'tcx> {
 
                 let inv_assume;
                 if triv_inv == TrivialInv::NonTrivial {
-                    let inv_did = get_inv_function(lower.ctx.tcx);
+                    let inv_did = Intrinsic::Inv.get(lower.ctx);
                     let subst = lower.ctx.tcx.mk_args(&[ty::GenericArg::from(rhs_ty)]);
                     let inv = Exp::var(lower.names.item_ident(inv_did, subst));
                     istmts.push(IntermediateStmt::Assert(inv.clone().app([rhs_rplace.clone()])));
@@ -1114,7 +1116,7 @@ impl<'tcx> Statement<'tcx> {
             }
             StatementKind::Resolve { did, subst, pl } => {
                 let t = projections_term(
-                    lower.ctx.tcx,
+                    lower.ctx,
                     lower.names.typing_env(),
                     Term::var(pl.local, lower.locals[&pl.local].ty),
                     &*pl.projections,
@@ -1135,12 +1137,12 @@ impl<'tcx> Statement<'tcx> {
             }
             StatementKind::AssertTyInv { pl } => {
                 let t = projections_term(
-                    lower.ctx.tcx,
+                    lower.ctx,
                     lower.names.typing_env(),
                     Term::var(pl.local, lower.locals[&pl.local].ty),
                     &*pl.projections,
                     |e| {
-                        let inv_did = get_inv_function(lower.ctx.tcx);
+                        let inv_did = Intrinsic::Inv.get(lower.ctx);
                         let subst = lower.ctx.tcx.mk_args(&[ty::GenericArg::from(e.ty)]);
                         Term::call(lower.ctx.tcx, lower.names.typing_env(), inv_did, subst, [e])
                     },

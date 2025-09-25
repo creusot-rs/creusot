@@ -14,22 +14,22 @@ pub trait TakeExt<I> {
 }
 
 impl<I> TakeExt<I> for Take<I> {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures((*self).iter() == *result && (^self).iter() == ^result)]
     fn iter_mut(&mut self) -> &mut I {
         dead
     }
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result >= 0 && result <= usize::MAX@)]
     fn n(self) -> Int {
         dead
@@ -37,7 +37,7 @@ impl<I> TakeExt<I> for Take<I> {
 }
 
 impl<I> Resolve for Take<I> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         resolve(self.iter())
     }

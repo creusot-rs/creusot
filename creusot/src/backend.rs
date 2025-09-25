@@ -1,5 +1,5 @@
 use crate::{
-    contracts_items::{is_resolve_function, is_spec, is_trusted},
+    contracts_items::{is_spec, is_trusted},
     ctx::{HasTyCtxt, ItemType, TranslatedItem, TranslationCtx},
     naming::ModulePath,
     options::SpanMode,
@@ -76,9 +76,6 @@ impl<'tcx> Why3Generator<'tcx> {
             ItemType::Impl if self.tcx.impl_trait_ref(def_id).is_some() => {
                 let modls = traits::lower_impl(self, def_id);
                 TranslatedItem::Impl { modls }
-            }
-            ItemType::Logic { .. } if is_resolve_function(self.tcx, def_id) => {
-                TranslatedItem::Logic { proof_modl: None }
             }
             ItemType::Logic { .. } => {
                 let proof_modl = logic::translate_logic(self, def_id);

@@ -3,8 +3,8 @@ use crate::{std::iter::Fuse, *};
 impl<I: Iterator> View for Fuse<I> {
     type ViewTy = Option<I>;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     #[ensures(forall<other: Fuse<I>> result == other@ ==> self == other)]
     fn view(self) -> Option<I> {

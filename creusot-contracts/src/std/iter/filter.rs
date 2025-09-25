@@ -11,14 +11,14 @@ pub trait FilterExt<I, F> {
 
 impl<I, F> FilterExt<I, F> for Filter<I, F> {
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn func(self) -> F {
         dead

@@ -3,7 +3,7 @@ module M_sparse_array__qyi1714485913065586857__view [#"sparse_array.rs" 38 4 38 
   let%span ssparse_array'0 = "sparse_array.rs" 41 21 41 81
   let%span ssparse_array'1 = "sparse_array.rs" 40 12 41 82
   let%span ssparse_array'2 = "sparse_array.rs" 81 20 81 75
-  let%span sarray = "../../creusot-contracts/src/std/array.rs" 57 8 57 31
+  let%span sarray = "../../creusot-contracts/src/std/array.rs" 56 8 56 31
   
   use creusot.int.UInt64
   use creusot.slice.Slice64
@@ -22,13 +22,19 @@ module M_sparse_array__qyi1714485913065586857__view [#"sparse_array.rs" 38 4 38 
   
   constant const_SIZE [#"sparse_array.rs" 33 8 33 25] : UInt64.t
   
-  function index_logic (self: Slice64.array UInt64.t) (ix: int) : UInt64.t = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   predicate is_elt [#"sparse_array.rs" 80 4 80 36] (self: t_Sparse) (i: int) =
     [%#ssparse_array'2] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic self.t_Sparse__back (UInt64.t'int (index_logic self.t_Sparse__idx i))) = i
   
-  function index_logic'0 (self: Slice64.array t_T) (ix: int) : t_T = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic'0 [@inline:trivial] (self: Slice64.array t_T) (ix: int) : t_T =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic'0
   
   meta "compute_max_steps" 1000000
   
@@ -56,11 +62,11 @@ module M_sparse_array__qyi15600151499664207324__resolve_coherence [#"sparse_arra
   let%span ssparse_array'5 = "sparse_array.rs" 40 12 41 82
   let%span ssparse_array'6 = "sparse_array.rs" 65 12 68 63
   let%span ssparse_array'7 = "sparse_array.rs" 81 20 81 75
-  let%span sarray = "../../creusot-contracts/src/std/array.rs" 42 20 42 73
-  let%span sarray'0 = "../../creusot-contracts/src/std/array.rs" 57 8 57 31
+  let%span sarray = "../../creusot-contracts/src/std/array.rs" 41 20 41 73
+  let%span sarray'0 = "../../creusot-contracts/src/std/array.rs" 56 8 56 31
   let%span sarray'1 = "../../creusot-contracts/src/std/array.rs" 10 20 10 51
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 763 8 766 9
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 760 8 763 9
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use creusot.int.UInt64
@@ -78,7 +84,10 @@ module M_sparse_array__qyi15600151499664207324__resolve_coherence [#"sparse_arra
   
   constant const_SIZE [#"sparse_array.rs" 46 8 46 25] : UInt64.t
   
-  function index_logic (self: Slice64.array UInt64.t) (ix: int) : UInt64.t = [%#sarray'0] Seq.get (Slice64.view self) ix
+  function index_logic [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
+    [%#sarray'0] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   predicate invariant' [#"sparse_array.rs" 63 4 63 30] (self: t_Sparse) =
     [%#ssparse_array'6] UInt64.t'int self.t_Sparse__n <= UInt64.t'int const_SIZE
@@ -95,8 +104,10 @@ module M_sparse_array__qyi15600151499664207324__resolve_coherence [#"sparse_arra
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
-  predicate invariant''1 (self: Seq.seq t_T) =
+  predicate invariant''1 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -129,19 +140,29 @@ module M_sparse_array__qyi15600151499664207324__resolve_coherence [#"sparse_arra
         /\ inv'4 idx /\ inv'4 back
         end)
   
-  predicate resolve (_0: UInt64.t) = true
+  predicate resolve [@inline:trivial] (_0: UInt64.t) = true
   
-  predicate resolve'0 (self: Slice64.array UInt64.t) =
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (self: Slice64.array UInt64.t) =
     [%#sarray] forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve (Seq.get (Slice64.view self) i)
   
-  predicate resolve'1 (_0: Slice64.array UInt64.t) = resolve'0 _0
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (_0: Slice64.array UInt64.t) = resolve'0 _0
+  
+  meta "rewrite_def" predicate resolve'1
   
   predicate resolve'2 (_0: t_T)
   
-  predicate resolve'3 (self: Slice64.array t_T) =
+  predicate resolve'3 [@inline:trivial] (self: Slice64.array t_T) =
     [%#sarray] forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve'2 (Seq.get (Slice64.view self) i)
   
-  predicate resolve'4 (_0: Slice64.array t_T) = resolve'3 _0
+  meta "rewrite_def" predicate resolve'3
+  
+  predicate resolve'4 [@inline:trivial] (_0: Slice64.array t_T) = resolve'3 _0
+  
+  meta "rewrite_def" predicate resolve'4
   
   predicate structural_resolve (_0: t_Sparse) =
     match _0 with
@@ -151,19 +172,26 @@ module M_sparse_array__qyi15600151499664207324__resolve_coherence [#"sparse_arra
   
   type t_Option = C_None | C_Some t_T
   
-  predicate resolve'5 (self: t_Option) =
+  predicate resolve'5 [@inline:trivial] (self: t_Option) =
     [%#soption] match self with
       | C_Some x -> resolve'2 x
       | C_None -> true
       end
   
-  predicate resolve'6 (_0: t_Option) = resolve'5 _0
+  meta "rewrite_def" predicate resolve'5
+  
+  predicate resolve'6 [@inline:trivial] (_0: t_Option) = resolve'5 _0
+  
+  meta "rewrite_def" predicate resolve'6
   
   predicate is_elt [#"sparse_array.rs" 80 4 80 36] (self: t_Sparse) (i: int) =
     [%#ssparse_array'7] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic self.t_Sparse__back (UInt64.t'int (index_logic self.t_Sparse__idx i))) = i
   
-  function index_logic'0 (self: Slice64.array t_T) (ix: int) : t_T = [%#sarray'0] Seq.get (Slice64.view self) ix
+  function index_logic'0 [@inline:trivial] (self: Slice64.array t_T) (ix: int) : t_T =
+    [%#sarray'0] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic'0
   
   function view [#"sparse_array.rs" 38 4 38 33] (self: t_Sparse) : Seq.seq t_Option =
     [%#ssparse_array'5] Seq.create (UInt64.t'int const_SIZE) (fun (i: int) -> if is_elt self i then
@@ -202,9 +230,9 @@ module M_sparse_array__qyi495551203689118095__get [#"sparse_array.rs" 95 4 95 45
   let%span ssparse_array'8 = "sparse_array.rs" 40 12 41 82
   let%span ssparse_array'9 = "sparse_array.rs" 81 20 81 75
   let%span ssparse_array'10 = "sparse_array.rs" 65 12 68 63
-  let%span sarray = "../../creusot-contracts/src/std/array.rs" 57 8 57 31
+  let%span sarray = "../../creusot-contracts/src/std/array.rs" 56 8 56 31
   let%span sarray'0 = "../../creusot-contracts/src/std/array.rs" 10 20 10 51
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   let%span smodel = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
@@ -227,7 +255,10 @@ module M_sparse_array__qyi495551203689118095__get [#"sparse_array.rs" 95 4 95 45
   
   type t_Option = C_None | C_Some t_T
   
-  function index_logic (self: Slice64.array UInt64.t) (ix: int) : UInt64.t = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   predicate invariant' [#"sparse_array.rs" 63 4 63 30] (self: t_Sparse) =
     [%#ssparse_array'10] UInt64.t'int self.t_Sparse__n <= UInt64.t'int const_SIZE
@@ -244,8 +275,10 @@ module M_sparse_array__qyi495551203689118095__get [#"sparse_array.rs" 95 4 95 45
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
-  predicate invariant''1 (self: Seq.seq t_T) =
+  predicate invariant''1 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -278,13 +311,17 @@ module M_sparse_array__qyi495551203689118095__get [#"sparse_array.rs" 95 4 95 45
         /\ inv'4 idx /\ inv'4 back
         end)
   
-  predicate invariant''4 (self: t_Sparse) = [%#sinvariant] inv'5 self
+  predicate invariant''4 [@inline:trivial] (self: t_Sparse) = [%#sinvariant] inv'5 self
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'6 (_0: t_Sparse)
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_Sparse [inv'6 x]. inv'6 x = invariant''4 x
   
-  predicate invariant''5 (self: t_T) = [%#sinvariant] inv self
+  predicate invariant''5 [@inline:trivial] (self: t_T) = [%#sinvariant] inv self
+  
+  meta "rewrite_def" predicate invariant''5
   
   predicate inv'7 (_0: t_T)
   
@@ -304,7 +341,10 @@ module M_sparse_array__qyi495551203689118095__get [#"sparse_array.rs" 95 4 95 45
     [%#ssparse_array'9] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic self.t_Sparse__back (UInt64.t'int (index_logic self.t_Sparse__idx i))) = i
   
-  function index_logic'0 (self: Slice64.array t_T) (ix: int) : t_T = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic'0 [@inline:trivial] (self: Slice64.array t_T) (ix: int) : t_T =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic'0
   
   function view [#"sparse_array.rs" 38 4 38 33] (self: t_Sparse) : Seq.seq t_Option'0 =
     [%#ssparse_array'8] Seq.create (UInt64.t'int const_SIZE) (fun (i: int) -> if is_elt self i then
@@ -400,13 +440,13 @@ module M_sparse_array__qyi495551203689118095__lemma_permutation [#"sparse_array.
   let%span ssparse_array'18 = "sparse_array.rs" 135 14 135 17
   let%span ssparse_array'19 = "sparse_array.rs" 140 8 142 9
   let%span ssparse_array'20 = "sparse_array.rs" 65 12 68 63
-  let%span sarray = "../../creusot-contracts/src/std/array.rs" 57 8 57 31
+  let%span sarray = "../../creusot-contracts/src/std/array.rs" 56 8 56 31
   let%span sarray'0 = "../../creusot-contracts/src/std/array.rs" 10 20 10 51
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 58 8 58 26
-  let%span sfset'1 = "../../creusot-contracts/src/logic/fset.rs" 83 8 83 26
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 55 8 55 26
+  let%span sfset'1 = "../../creusot-contracts/src/logic/fset.rs" 78 8 78 26
   
   use creusot.int.UInt64
   use creusot.slice.Slice64
@@ -424,7 +464,10 @@ module M_sparse_array__qyi495551203689118095__lemma_permutation [#"sparse_array.
   
   constant const_SIZE [#"sparse_array.rs" 73 8 73 25] : UInt64.t
   
-  function index_logic (self: Slice64.array UInt64.t) (ix: int) : UInt64.t = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   predicate invariant' [#"sparse_array.rs" 63 4 63 30] (self: t_Sparse) =
     [%#ssparse_array'20] UInt64.t'int self.t_Sparse__n <= UInt64.t'int const_SIZE
@@ -441,8 +484,10 @@ module M_sparse_array__qyi495551203689118095__lemma_permutation [#"sparse_array.
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
-  predicate invariant''1 (self: Seq.seq t_T) =
+  predicate invariant''1 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -479,9 +524,13 @@ module M_sparse_array__qyi495551203689118095__lemma_permutation [#"sparse_array.
     [%#ssparse_array'13] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic self.t_Sparse__back (UInt64.t'int (index_logic self.t_Sparse__idx i))) = i
   
-  predicate contains (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
   
-  function remove (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'1] Fset.remove e self
+  meta "rewrite_def" predicate contains
+  
+  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'1] Fset.remove e self
+  
+  meta "rewrite_def" function remove
   
   function bounded_fset_len [#"sparse_array.rs" 139 4 139 47] (s: Fset.fset int) (bnd: int) : ()
   
@@ -494,7 +543,9 @@ module M_sparse_array__qyi495551203689118095__lemma_permutation [#"sparse_array.
   axiom bounded_fset_len_spec: forall s: Fset.fset int, bnd: int. ([%#ssparse_array'15] forall x: int. contains s x
           -> 0 <= x /\ x < bnd) -> ([%#ssparse_array'16] bnd >= 0) -> ([%#ssparse_array'17] Fset.cardinal s <= bnd)
   
-  function insert (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.add e self
+  function insert [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.add e self
+  
+  meta "rewrite_def" function insert
   
   function lemma_permutation_aux [#"sparse_array.rs" 123 4 123 76] (self: t_Sparse) (seen: Fset.fset int) (i: int) (cur: int) : int
   
@@ -588,13 +639,13 @@ module M_sparse_array__qyi495551203689118095__lemma_permutation_aux [#"sparse_ar
   let%span ssparse_array'12 = "sparse_array.rs" 125 12 130 13
   let%span ssparse_array'13 = "sparse_array.rs" 140 8 142 9
   let%span ssparse_array'14 = "sparse_array.rs" 65 12 68 63
-  let%span sarray = "../../creusot-contracts/src/std/array.rs" 57 8 57 31
+  let%span sarray = "../../creusot-contracts/src/std/array.rs" 56 8 56 31
   let%span sarray'0 = "../../creusot-contracts/src/std/array.rs" 10 20 10 51
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 58 8 58 26
-  let%span sfset'1 = "../../creusot-contracts/src/logic/fset.rs" 83 8 83 26
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 55 8 55 26
+  let%span sfset'1 = "../../creusot-contracts/src/logic/fset.rs" 78 8 78 26
   
   use creusot.int.UInt64
   use creusot.slice.Slice64
@@ -612,7 +663,10 @@ module M_sparse_array__qyi495551203689118095__lemma_permutation_aux [#"sparse_ar
   
   constant const_SIZE [#"sparse_array.rs" 73 8 73 25] : UInt64.t
   
-  function index_logic (self: Slice64.array UInt64.t) (ix: int) : UInt64.t = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   predicate invariant' [#"sparse_array.rs" 63 4 63 30] (self: t_Sparse) =
     [%#ssparse_array'14] UInt64.t'int self.t_Sparse__n <= UInt64.t'int const_SIZE
@@ -629,8 +683,10 @@ module M_sparse_array__qyi495551203689118095__lemma_permutation_aux [#"sparse_ar
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
-  predicate invariant''1 (self: Seq.seq t_T) =
+  predicate invariant''1 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -663,9 +719,13 @@ module M_sparse_array__qyi495551203689118095__lemma_permutation_aux [#"sparse_ar
         /\ inv'4 idx /\ inv'4 back
         end)
   
-  predicate contains (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
   
-  function remove (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'1] Fset.remove e self
+  meta "rewrite_def" predicate contains
+  
+  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'1] Fset.remove e self
+  
+  meta "rewrite_def" function remove
   
   function bounded_fset_len [#"sparse_array.rs" 139 4 139 47] (s: Fset.fset int) (bnd: int) : ()
   
@@ -678,7 +738,9 @@ module M_sparse_array__qyi495551203689118095__lemma_permutation_aux [#"sparse_ar
   axiom bounded_fset_len_spec: forall s: Fset.fset int, bnd: int. ([%#ssparse_array'8] forall x: int. contains s x
           -> 0 <= x /\ x < bnd) -> ([%#ssparse_array'9] bnd >= 0) -> ([%#ssparse_array'10] Fset.cardinal s <= bnd)
   
-  function insert (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.add e self
+  function insert [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.add e self
+  
+  meta "rewrite_def" function insert
   
   meta "compute_max_steps" 1000000
   
@@ -749,15 +811,19 @@ module M_sparse_array__qyi495551203689118095__bounded_fset_len [#"sparse_array.r
   let%span ssparse_array'1 = "sparse_array.rs" 138 14 138 28
   let%span ssparse_array'2 = "sparse_array.rs" 135 14 135 17
   let%span ssparse_array'3 = "sparse_array.rs" 140 8 142 9
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 83 8 83 26
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 78 8 78 26
   
   use set.Fset
   use mach.int.Int
   
-  predicate contains (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
   
-  function remove (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.remove e self
+  meta "rewrite_def" predicate contains
+  
+  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.remove e self
+  
+  meta "rewrite_def" function remove
   
   meta "compute_max_steps" 1000000
   
@@ -820,17 +886,17 @@ module M_sparse_array__qyi495551203689118095__set [#"sparse_array.rs" 150 4 150 
   let%span ssparse_array'33 = "sparse_array.rs" 135 14 135 17
   let%span ssparse_array'34 = "sparse_array.rs" 140 8 142 9
   let%span ssparse_array'35 = "sparse_array.rs" 65 12 68 63
-  let%span sarray = "../../creusot-contracts/src/std/array.rs" 66 8 66 32
-  let%span sarray'0 = "../../creusot-contracts/src/std/array.rs" 57 8 57 31
+  let%span sarray = "../../creusot-contracts/src/std/array.rs" 65 8 65 32
+  let%span sarray'0 = "../../creusot-contracts/src/std/array.rs" 56 8 56 31
   let%span sarray'1 = "../../creusot-contracts/src/std/array.rs" 10 20 10 51
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   let%span smodel = "../../creusot-contracts/src/model.rs" 59 8 59 22
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
-  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 41 8 41 26
-  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 58 8 58 26
-  let%span sfset'1 = "../../creusot-contracts/src/logic/fset.rs" 83 8 83 26
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 46 20 46 34
+  let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
+  let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 55 8 55 26
+  let%span sfset'1 = "../../creusot-contracts/src/logic/fset.rs" 78 8 78 26
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.int.UInt64
   use creusot.slice.Slice64
@@ -846,8 +912,10 @@ module M_sparse_array__qyi495551203689118095__set [#"sparse_array.rs" 150 4 150 
   
   predicate inv (_0: t_T)
   
-  function index_logic (self: Slice64.array t_T) (ix: UInt64.t) : t_T =
+  function index_logic [@inline:trivial] (self: Slice64.array t_T) (ix: UInt64.t) : t_T =
     [%#sarray] Seq.get (Slice64.view self) (UInt64.t'int ix)
+  
+  meta "rewrite_def" function index_logic
   
   type t_Sparse = {
     t_Sparse__n: UInt64.t;
@@ -857,8 +925,10 @@ module M_sparse_array__qyi495551203689118095__set [#"sparse_array.rs" 150 4 150 
   
   predicate resolve (_0: t_T)
   
-  function index_logic'0 (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
+  function index_logic'0 [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
     [%#sarray'0] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic'0
   
   predicate invariant' [#"sparse_array.rs" 63 4 63 30] (self: t_Sparse) =
     [%#ssparse_array'35] UInt64.t'int self.t_Sparse__n <= UInt64.t'int const_SIZE
@@ -873,8 +943,10 @@ module M_sparse_array__qyi495551203689118095__set [#"sparse_array.rs" 150 4 150 
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
-  predicate invariant''1 (self: Seq.seq t_T) =
+  predicate invariant''1 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -907,23 +979,34 @@ module M_sparse_array__qyi495551203689118095__set [#"sparse_array.rs" 150 4 150 
         /\ inv'4 idx /\ inv'4 back
         end)
   
-  predicate invariant''4 (self: MutBorrow.t t_Sparse) = [%#sinvariant] inv'5 self.current /\ inv'5 self.final
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Sparse) =
+    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
+  
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'6 (_0: MutBorrow.t t_Sparse)
   
   axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_Sparse [inv'6 x]. inv'6 x = invariant''4 x
   
-  predicate resolve'0 (self: MutBorrow.t t_Sparse) = [%#sresolve] self.final = self.current
+  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_Sparse) = [%#sresolve] self.final = self.current
   
-  predicate resolve'1 (_0: MutBorrow.t t_Sparse) = resolve'0 _0
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (_0: MutBorrow.t t_Sparse) = resolve'0 _0
+  
+  meta "rewrite_def" predicate resolve'1
   
   predicate is_elt [#"sparse_array.rs" 80 4 80 36] (self: t_Sparse) (i: int) =
     [%#ssparse_array'19] UInt64.t'int (index_logic'0 self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic'0 self.t_Sparse__back (UInt64.t'int (index_logic'0 self.t_Sparse__idx i))) = i
   
-  predicate contains (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
+  predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) = [%#sfset] Fset.mem e self
   
-  function remove (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'1] Fset.remove e self
+  meta "rewrite_def" predicate contains
+  
+  function remove [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'1] Fset.remove e self
+  
+  meta "rewrite_def" function remove
   
   function bounded_fset_len [#"sparse_array.rs" 139 4 139 47] (s: Fset.fset int) (bnd: int) : ()
   
@@ -936,7 +1019,9 @@ module M_sparse_array__qyi495551203689118095__set [#"sparse_array.rs" 150 4 150 
   axiom bounded_fset_len_spec: forall s: Fset.fset int, bnd: int. ([%#ssparse_array'30] forall x: int. contains s x
           -> 0 <= x /\ x < bnd) -> ([%#ssparse_array'31] bnd >= 0) -> ([%#ssparse_array'32] Fset.cardinal s <= bnd)
   
-  function insert (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.add e self
+  function insert [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = [%#sfset'0] Fset.add e self
+  
+  meta "rewrite_def" function insert
   
   function lemma_permutation_aux [#"sparse_array.rs" 123 4 123 76] (self: t_Sparse) (seen: Fset.fset int) (i: int) (cur: int) : int
   
@@ -995,7 +1080,10 @@ module M_sparse_array__qyi495551203689118095__set [#"sparse_array.rs" 150 4 150 
   
   type t_Option = C_None | C_Some t_T
   
-  function index_logic'1 (self: Slice64.array t_T) (ix: int) : t_T = [%#sarray'0] Seq.get (Slice64.view self) ix
+  function index_logic'1 [@inline:trivial] (self: Slice64.array t_T) (ix: int) : t_T =
+    [%#sarray'0] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic'1
   
   function view [#"sparse_array.rs" 38 4 38 33] (self: t_Sparse) : Seq.seq t_Option =
     [%#ssparse_array'18] Seq.create (UInt64.t'int const_SIZE) (fun (i: int) -> if is_elt self i then
@@ -1113,9 +1201,9 @@ module M_sparse_array__create [#"sparse_array.rs" 171 0 171 70]
   let%span ssparse_array'9 = "sparse_array.rs" 40 12 41 82
   let%span ssparse_array'10 = "sparse_array.rs" 81 20 81 75
   let%span ssparse_array'11 = "sparse_array.rs" 65 12 68 63
-  let%span sarray = "../../creusot-contracts/src/std/array.rs" 57 8 57 31
+  let%span sarray = "../../creusot-contracts/src/std/array.rs" 56 8 56 31
   let%span sarray'0 = "../../creusot-contracts/src/std/array.rs" 10 20 10 51
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use creusot.int.UInt64
@@ -1136,7 +1224,10 @@ module M_sparse_array__create [#"sparse_array.rs" 171 0 171 70]
   
   predicate inv (_0: t_T)
   
-  function index_logic (self: Slice64.array UInt64.t) (ix: int) : UInt64.t = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   predicate invariant' [#"sparse_array.rs" 63 4 63 30] (self: t_Sparse) =
     [%#ssparse_array'11] UInt64.t'int self.t_Sparse__n <= UInt64.t'int const_SIZE
@@ -1151,8 +1242,10 @@ module M_sparse_array__create [#"sparse_array.rs" 171 0 171 70]
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
-  predicate invariant''1 (self: Seq.seq t_T) =
+  predicate invariant''1 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -1191,7 +1284,10 @@ module M_sparse_array__create [#"sparse_array.rs" 171 0 171 70]
     [%#ssparse_array'10] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic self.t_Sparse__back (UInt64.t'int (index_logic self.t_Sparse__idx i))) = i
   
-  function index_logic'0 (self: Slice64.array t_T) (ix: int) : t_T = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic'0 [@inline:trivial] (self: Slice64.array t_T) (ix: int) : t_T =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic'0
   
   function view [#"sparse_array.rs" 38 4 38 33] (self: t_Sparse) : Seq.seq t_Option =
     [%#ssparse_array'9] Seq.create (UInt64.t'int const_SIZE) (fun (i: int) -> if is_elt self i then
@@ -1267,7 +1363,7 @@ module M_sparse_array__f [#"sparse_array.rs" 177 0 177 10]
   let%span ssparse_array'31 = "sparse_array.rs" 40 12 41 82
   let%span ssparse_array'32 = "sparse_array.rs" 81 20 81 75
   let%span ssparse_array'33 = "sparse_array.rs" 65 12 68 63
-  let%span sarray = "../../creusot-contracts/src/std/array.rs" 57 8 57 31
+  let%span sarray = "../../creusot-contracts/src/std/array.rs" 56 8 56 31
   let%span sarray'0 = "../../creusot-contracts/src/std/array.rs" 10 20 10 51
   let%span smodel = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 59 8 59 22
@@ -1288,7 +1384,10 @@ module M_sparse_array__f [#"sparse_array.rs" 177 0 177 10]
     t_Sparse__idx: Slice64.array UInt64.t;
     t_Sparse__back: Slice64.array UInt64.t }
   
-  function index_logic (self: Slice64.array UInt64.t) (ix: int) : UInt64.t = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   predicate invariant' [#"sparse_array.rs" 63 4 63 30] (self: t_Sparse) =
     [%#ssparse_array'33] UInt64.t'int self.t_Sparse__n <= UInt64.t'int (10: UInt64.t)
@@ -1334,7 +1433,10 @@ module M_sparse_array__f [#"sparse_array.rs" 177 0 177 10]
     [%#ssparse_array'32] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic self.t_Sparse__back (UInt64.t'int (index_logic self.t_Sparse__idx i))) = i
   
-  function index_logic'0 (self: Slice64.array Int32.t) (ix: int) : Int32.t = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic'0 [@inline:trivial] (self: Slice64.array Int32.t) (ix: int) : Int32.t =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic'0
   
   function view [#"sparse_array.rs" 38 4 38 33] (self: t_Sparse) : Seq.seq t_Option =
     [%#ssparse_array'31] Seq.create (UInt64.t'int (10: UInt64.t)) (fun (i: int) -> if is_elt self i then
@@ -1357,7 +1459,10 @@ module M_sparse_array__f [#"sparse_array.rs" 177 0 177 10]
     t_Sparse__idx'0: Slice64.array UInt64.t;
     t_Sparse__back'0: Slice64.array UInt64.t }
   
-  function index_logic'1 (self: Slice64.array UInt64.t) (ix: int) : UInt64.t = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic'1 [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic'1
   
   predicate invariant''2 [#"sparse_array.rs" 63 4 63 30] (self: t_Sparse'0) =
     [%#ssparse_array'33] UInt64.t'int self.t_Sparse__n'0 <= UInt64.t'int (20: UInt64.t)
@@ -1393,7 +1498,10 @@ module M_sparse_array__f [#"sparse_array.rs" 177 0 177 10]
     [%#ssparse_array'32] UInt64.t'int (index_logic'1 self.t_Sparse__idx'0 i) < UInt64.t'int self.t_Sparse__n'0
     /\ UInt64.t'int (index_logic'1 self.t_Sparse__back'0 (UInt64.t'int (index_logic'1 self.t_Sparse__idx'0 i))) = i
   
-  function index_logic'2 (self: Slice64.array Int32.t) (ix: int) : Int32.t = [%#sarray] Seq.get (Slice64.view self) ix
+  function index_logic'2 [@inline:trivial] (self: Slice64.array Int32.t) (ix: int) : Int32.t =
+    [%#sarray] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic'2
   
   function view'0 [#"sparse_array.rs" 38 4 38 33] (self: t_Sparse'0) : Seq.seq t_Option =
     [%#ssparse_array'31] Seq.create (UInt64.t'int (20: UInt64.t)) (fun (i: int) -> if is_elt'0 self i then
@@ -1413,7 +1521,9 @@ module M_sparse_array__f [#"sparse_array.rs" 177 0 177 10]
   
   type t_Option'0 = C_None'0 | C_Some'0 Int32.t
   
-  predicate invariant''5 (self: t_Sparse) = [%#sinvariant] inv'3 self
+  predicate invariant''5 [@inline:trivial] (self: t_Sparse) = [%#sinvariant] inv'3 self
+  
+  meta "rewrite_def" predicate invariant''5
   
   predicate inv'7 (_0: t_Sparse)
   
@@ -1435,7 +1545,9 @@ module M_sparse_array__f [#"sparse_array.rs" 177 0 177 10]
         end}
       (! return' {result}) ]
   
-  predicate invariant''6 (self: t_Sparse'0) = [%#sinvariant] inv'6 self
+  predicate invariant''6 [@inline:trivial] (self: t_Sparse'0) = [%#sinvariant] inv'6 self
+  
+  meta "rewrite_def" predicate invariant''6
   
   predicate inv'8 (_0: t_Sparse'0)
   
@@ -1457,7 +1569,10 @@ module M_sparse_array__f [#"sparse_array.rs" 177 0 177 10]
         end}
       (! return' {result}) ]
   
-  predicate invariant''7 (self: MutBorrow.t t_Sparse) = [%#sinvariant'0] inv'3 self.current /\ inv'3 self.final
+  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_Sparse) =
+    [%#sinvariant'0] inv'3 self.current /\ inv'3 self.final
+  
+  meta "rewrite_def" predicate invariant''7
   
   predicate inv'9 (_0: MutBorrow.t t_Sparse)
   
@@ -1475,7 +1590,10 @@ module M_sparse_array__f [#"sparse_array.rs" 177 0 177 10]
       {[%#ssparse_array'29] Seq.get (view self.final) (UInt64.t'int i) = C_Some v}
       (! return' {result}) ]
   
-  predicate invariant''8 (self: MutBorrow.t t_Sparse'0) = [%#sinvariant'0] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_Sparse'0) =
+    [%#sinvariant'0] inv'6 self.current /\ inv'6 self.final
+  
+  meta "rewrite_def" predicate invariant''8
   
   predicate inv'10 (_0: MutBorrow.t t_Sparse'0)
   
@@ -1596,11 +1714,11 @@ module M_sparse_array__qyi15600151499664207324__resolve_coherence__refines [#"sp
   let%span ssparse_array'2 = "sparse_array.rs" 40 12 41 82
   let%span ssparse_array'3 = "sparse_array.rs" 65 12 68 63
   let%span ssparse_array'4 = "sparse_array.rs" 81 20 81 75
-  let%span sarray = "../../creusot-contracts/src/std/array.rs" 42 20 42 73
-  let%span sarray'0 = "../../creusot-contracts/src/std/array.rs" 57 8 57 31
+  let%span sarray = "../../creusot-contracts/src/std/array.rs" 41 20 41 73
+  let%span sarray'0 = "../../creusot-contracts/src/std/array.rs" 56 8 56 31
   let%span sarray'1 = "../../creusot-contracts/src/std/array.rs" 10 20 10 51
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 763 8 766 9
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 673 20 673 91
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 760 8 763 9
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use creusot.int.UInt64
@@ -1618,19 +1736,29 @@ module M_sparse_array__qyi15600151499664207324__resolve_coherence__refines [#"sp
   
   constant const_SIZE [#"sparse_array.rs" 46 8 46 25] : UInt64.t
   
-  predicate resolve (_0: UInt64.t) = true
+  predicate resolve [@inline:trivial] (_0: UInt64.t) = true
   
-  predicate resolve'0 (self: Slice64.array UInt64.t) =
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (self: Slice64.array UInt64.t) =
     [%#sarray] forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve (Seq.get (Slice64.view self) i)
   
-  predicate resolve'1 (_0: Slice64.array UInt64.t) = resolve'0 _0
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (_0: Slice64.array UInt64.t) = resolve'0 _0
+  
+  meta "rewrite_def" predicate resolve'1
   
   predicate resolve'2 (_0: t_T)
   
-  predicate resolve'3 (self: Slice64.array t_T) =
+  predicate resolve'3 [@inline:trivial] (self: Slice64.array t_T) =
     [%#sarray] forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve'2 (Seq.get (Slice64.view self) i)
   
-  predicate resolve'4 (_0: Slice64.array t_T) = resolve'3 _0
+  meta "rewrite_def" predicate resolve'3
+  
+  predicate resolve'4 [@inline:trivial] (_0: Slice64.array t_T) = resolve'3 _0
+  
+  meta "rewrite_def" predicate resolve'4
   
   predicate structural_resolve (_0: t_Sparse) =
     match _0 with
@@ -1638,7 +1766,10 @@ module M_sparse_array__qyi15600151499664207324__resolve_coherence__refines [#"sp
       /\ resolve'1 x2 /\ resolve'4 x1
       end
   
-  function index_logic (self: Slice64.array UInt64.t) (ix: int) : UInt64.t = [%#sarray'0] Seq.get (Slice64.view self) ix
+  function index_logic [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
+    [%#sarray'0] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   predicate invariant' [#"sparse_array.rs" 63 4 63 30] (self: t_Sparse) =
     [%#ssparse_array'3] UInt64.t'int self.t_Sparse__n <= UInt64.t'int const_SIZE
@@ -1655,8 +1786,10 @@ module M_sparse_array__qyi15600151499664207324__resolve_coherence__refines [#"sp
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
-  predicate invariant''1 (self: Seq.seq t_T) =
+  predicate invariant''1 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -1691,19 +1824,26 @@ module M_sparse_array__qyi15600151499664207324__resolve_coherence__refines [#"sp
   
   type t_Option = C_None | C_Some t_T
   
-  predicate resolve'5 (self: t_Option) =
+  predicate resolve'5 [@inline:trivial] (self: t_Option) =
     [%#soption] match self with
       | C_Some x -> resolve'2 x
       | C_None -> true
       end
   
-  predicate resolve'6 (_0: t_Option) = resolve'5 _0
+  meta "rewrite_def" predicate resolve'5
+  
+  predicate resolve'6 [@inline:trivial] (_0: t_Option) = resolve'5 _0
+  
+  meta "rewrite_def" predicate resolve'6
   
   predicate is_elt [#"sparse_array.rs" 80 4 80 36] (self: t_Sparse) (i: int) =
     [%#ssparse_array'4] UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
     /\ UInt64.t'int (index_logic self.t_Sparse__back (UInt64.t'int (index_logic self.t_Sparse__idx i))) = i
   
-  function index_logic'0 (self: Slice64.array t_T) (ix: int) : t_T = [%#sarray'0] Seq.get (Slice64.view self) ix
+  function index_logic'0 [@inline:trivial] (self: Slice64.array t_T) (ix: int) : t_T =
+    [%#sarray'0] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic'0
   
   function view [#"sparse_array.rs" 38 4 38 33] (self: t_Sparse) : Seq.seq t_Option =
     [%#ssparse_array'2] Seq.create (UInt64.t'int const_SIZE) (fun (i: int) -> if is_elt self i then

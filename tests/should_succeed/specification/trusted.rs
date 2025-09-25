@@ -18,9 +18,8 @@ pub fn victim_of_lie() -> u32 {
     lie()
 }
 
-#[logic(open)]
-#[trusted]
-pub fn trusted_pred(_x: u32) -> bool {
+#[logic(opaque)]
+pub fn opaque_pred(_x: u32) -> bool {
     true
 }
 

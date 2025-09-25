@@ -70,13 +70,13 @@ use ::std::ops::{Deref, DerefMut};
 /// ```
 pub trait Invariant {
     #[logic(prophetic)]
-    #[rustc_diagnostic_item = "creusot_invariant_user"]
+    #[intrinsic("invariant")]
     fn invariant(self) -> bool;
 }
 
 #[cfg(feature = "nightly")]
 impl Invariant for ! {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
         false
@@ -84,7 +84,7 @@ impl Invariant for ! {
 }
 
 impl<T: ?Sized> Invariant for &T {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
@@ -93,7 +93,7 @@ impl<T: ?Sized> Invariant for &T {
 }
 
 impl<T: ?Sized> Invariant for &mut T {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
@@ -105,11 +105,10 @@ impl<T: ?Sized> Invariant for &mut T {
 ///
 /// This function is functionnaly equivalent to [`Invariant::invariant`], except that it
 /// can be called on any type (even if it does not implement [`Invariant`]).
-#[logic(prophetic)]
-#[trusted]
-#[rustc_diagnostic_item = "creusot_invariant_internal"]
+#[logic(prophetic, opaque)]
+#[intrinsic("inv")]
 pub fn inv<T: ?Sized>(_: T) -> bool {
-    true
+    dead
 }
 
 #[cfg(not(creusot))]
@@ -150,14 +149,14 @@ pub trait InhabitedInvariant: Invariant {
 /// }
 /// ```
 #[repr(transparent)]
-#[trusted]
+#[opaque]
 pub struct Subset<T: InhabitedInvariant>(T);
 
 impl<T: InhabitedInvariant> View for Subset<T> {
     type ViewTy = T;
 
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(result.invariant())]
     fn view(self) -> T {
         dead
@@ -179,7 +178,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// As per the [documentation of Subset](Subset), the returned value will
     /// satisfy `T`'s type invariant.
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[requires(x.invariant())]
     #[ensures(result@ == x)]
     pub fn new_logic(x: T) -> Self {
@@ -201,7 +200,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// }
     /// ```
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[requires(self@ == other@)]
     #[ensures(self == other)]
     pub fn view_inj(self, other: Self) {}
@@ -291,7 +290,7 @@ impl<T: InhabitedInvariant + Clone> Clone for Subset<T> {
 impl<T: InhabitedInvariant + Copy> Copy for Subset<T> {}
 
 impl<T: InhabitedInvariant> Resolve for Subset<T> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         pearlite! { resolve(self@) }
     }

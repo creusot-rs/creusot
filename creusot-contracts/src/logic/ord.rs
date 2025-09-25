@@ -176,30 +176,26 @@ impl OrdLogic for Int {
         }
     }
 
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "mach.int.Int.(<=)"]
+    #[builtin("mach.int.Int.(<=)")]
     fn le_log(self, _: Self) -> bool {
         dead
     }
 
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "mach.int.Int.(<)"]
+    #[builtin("mach.int.Int.(<)")]
     fn lt_log(self, _: Self) -> bool {
         dead
     }
 
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "mach.int.Int.(>=)"]
+    #[builtin("mach.int.Int.(>=)")]
     fn ge_log(self, _: Self) -> bool {
         dead
     }
 
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "mach.int.Int.(>)"]
+    #[builtin("mach.int.Int.(>)")]
     fn gt_log(self, _: Self) -> bool {
         dead
     }
@@ -221,30 +217,26 @@ macro_rules! ord_logic_impl {
                 }
             }
 
-            #[trusted]
-            #[logic(open)]
-            #[creusot::builtins = concat!($module, ".le")]
+            #[logic]
+            #[builtin(concat!($module, ".le"))]
             fn le_log(self, _: Self) -> bool {
                 true
             }
 
-            #[trusted]
-            #[logic(open)]
-            #[creusot::builtins = concat!($module, ".lt")]
+            #[logic]
+            #[builtin(concat!($module, ".lt"))]
             fn lt_log(self, _: Self) -> bool {
                 true
             }
 
-            #[trusted]
-            #[logic(open)]
-            #[creusot::builtins = concat!($module, ".ge")]
+            #[logic]
+            #[builtin(concat!($module, ".ge"))]
             fn ge_log(self, _: Self) -> bool {
                 true
             }
 
-            #[trusted]
-            #[logic(open)]
-            #[creusot::builtins = concat!($module, ".gt")]
+            #[logic]
+            #[builtin(concat!($module, ".gt"))]
             fn gt_log(self, _: Self) -> bool {
                 true
             }

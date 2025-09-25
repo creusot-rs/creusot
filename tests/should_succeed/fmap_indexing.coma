@@ -6,20 +6,20 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
   let%span sfmap_indexing'3 = "fmap_indexing.rs" 9 18 9 45
   let%span sfmap_indexing'4 = "fmap_indexing.rs" 10 10 10 37
   let%span sfmap_indexing'5 = "fmap_indexing.rs" 11 18 11 45
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 52 14 52 31
-  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 53 14 53 43
-  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 69 14 69 46
-  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 70 14 70 88
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 260 4 260 18
-  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 61 14 61 25
-  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 109 8 109 27
-  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 101 4 101 18
-  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 93 4 93 18
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 735 15 735 27
-  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 737 8 740 9
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 51 14 51 31
+  let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 52 14 52 43
+  let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 68 14 68 46
+  let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 69 14 69 88
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
+  let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
+  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
+  let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
+  let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
+  let%span soption = "../../creusot-contracts/src/std/option.rs" 732 15 732 27
+  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 734 8 737 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 67 4 67 18
+  let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
   
   use mach.int.Int
   use map.Map
@@ -42,9 +42,13 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
   
   axiom empty_spec'0: [%#sfmap'0] view empty = Const.const (C_None)
   
-  function get (self: t_FMap) (k: int) : t_Option = [%#sfmap'7] Map.get (view self) k
+  function get [@inline:trivial] (self: t_FMap) (k: int) : t_Option = [%#sfmap'7] Map.get (view self) k
   
-  predicate contains (self: t_FMap) (k: int) = [%#sfmap'5] get self k <> C_None
+  meta "rewrite_def" function get
+  
+  predicate contains [@inline:trivial] (self: t_FMap) (k: int) = [%#sfmap'5] get self k <> C_None
+  
+  meta "rewrite_def" predicate contains
   
   function insert (self: t_FMap) (k: int) (v: int) : t_FMap
   
@@ -54,7 +58,9 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
   axiom insert_spec'0: forall self: t_FMap, k: int, v: int. [%#sfmap'2] len (insert self k v)
       = (if contains self k then len self else len self + 1)
   
-  predicate index_logic (self: Map.map int bool) (a: int) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map int bool) (a: int) = [%#smapping] Map.get self a
+  
+  meta "rewrite_def" predicate index_logic
   
   function such_that (p: Map.map int bool) : int
   
@@ -66,9 +72,13 @@ module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
       | C_None -> such_that (fun (__0: int) -> true)
       end
   
-  function lookup (self: t_FMap) (k: int) : int = [%#sfmap'6] unwrap_logic (get self k)
+  function lookup [@inline:trivial] (self: t_FMap) (k: int) : int = [%#sfmap'6] unwrap_logic (get self k)
   
-  function index_logic'0 (self: t_FMap) (key: int) : int = [%#sfmap'3] lookup self key
+  meta "rewrite_def" function lookup
+  
+  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: int) : int = [%#sfmap'3] lookup self key
+  
+  meta "rewrite_def" function index_logic'0
   
   meta "compute_max_steps" 1000000
   

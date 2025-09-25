@@ -17,8 +17,8 @@ pub use ::std::vec::*;
 impl<T, A: Allocator> View for Vec<T, A> {
     type ViewTy = Seq<T>;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result.len() <= usize::MAX@)]
     fn view(self) -> Seq<T> {
         dead
@@ -29,8 +29,8 @@ impl<T, A: Allocator> View for Vec<T, A> {
 impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(self.view().len() == result.len())]
     #[ensures(forall<i> 0 <= i && i < self.view().len()
               ==> result[i] == self[i].deep_model())]
@@ -43,7 +43,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
 impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
     type Item = T;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }
@@ -53,7 +53,7 @@ impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
 impl<T, A: Allocator> IndexLogic<usize> for Vec<T, A> {
     type Item = T;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
     }
@@ -72,7 +72,7 @@ impl<T> IndexLogic<usize> for Vec<T> {
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Resolve for Vec<T, A> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self[i]) }
     }
@@ -242,8 +242,7 @@ extern_spec! {
 impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
     type ViewTy = Seq<T>;
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -251,7 +250,7 @@ impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self@[i]) }
     }
