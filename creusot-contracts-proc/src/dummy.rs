@@ -91,6 +91,10 @@ pub fn maintains(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
 
+pub fn erasure(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
 pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }

@@ -1,11 +1,12 @@
 module M_heapsort_generic__heap_frag_max [#"heapsort_generic.rs" 22 0 22 58]
-  let%span sheapsort_generic = "heapsort_generic.rs" 18 11 18 31
-  let%span sheapsort_generic'0 = "heapsort_generic.rs" 19 11 19 28
-  let%span sheapsort_generic'1 = "heapsort_generic.rs" 20 10 20 22
-  let%span sheapsort_generic'2 = "heapsort_generic.rs" 21 10 21 11
+  let%span sheapsort_generic = "heapsort_generic.rs" 21 10 21 11
+  let%span sheapsort_generic'0 = "heapsort_generic.rs" 18 11 18 31
+  let%span sheapsort_generic'1 = "heapsort_generic.rs" 19 11 19 28
+  let%span sheapsort_generic'2 = "heapsort_generic.rs" 20 10 20 22
   let%span sheapsort_generic'3 = "heapsort_generic.rs" 23 4 25 5
   let%span sheapsort_generic'4 = "heapsort_generic.rs" 13 16 14 24
   let%span sheapsort_generic'5 = "heapsort_generic.rs" 8 4 8 19
+  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
   let%span sord = "../../creusot-contracts/src/logic/ord.rs" 28 14 28 64
   let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 38 14 38 61
   let%span sord'1 = "../../creusot-contracts/src/logic/ord.rs" 48 14 48 61
@@ -79,6 +80,8 @@ module M_heapsort_generic__heap_frag_max [#"heapsort_generic.rs" 22 0 22 58]
   predicate heap_frag [#"heapsort_generic.rs" 12 0 12 66] (s: Seq.seq t_T) (start: int) (end': int) =
     [%#sheapsort_generic'4] forall i: int. start <= parent i /\ i < end' -> le_log (Seq.get s i) (Seq.get s (parent i))
   
+  predicate well_founded_relation (self: int) (other: int) = [%#swell_founded] self >= 0 /\ self > other
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -91,16 +94,16 @@ module M_heapsort_generic__heap_frag_max [#"heapsort_generic.rs" 22 0 22 58]
   
   function heap_frag_max [#"heapsort_generic.rs" 22 0 22 58] (s'0: Seq.seq t_T) (i'0: int) (end''0: int) : ()
   
-  goal vc_heap_frag_max: ([%#sheapsort_generic] heap_frag s 0 end')
-    -> ([%#sheapsort_generic'0] 0 <= i /\ i < end')
+  goal vc_heap_frag_max: ([%#sheapsort_generic'0] heap_frag s 0 end')
+    -> ([%#sheapsort_generic'1] 0 <= i /\ i < end')
     -> (if i > 0 then
-      ((([@expl:heap_frag_max requires #0] [%#sheapsort_generic] heap_frag s 0 end')
-          && ([@expl:heap_frag_max requires #1] [%#sheapsort_generic'0] 0 <= parent i /\ parent i < end'))
-        /\ 0 <= ([%#sheapsort_generic'2] i) /\ ([%#sheapsort_generic'2] parent i) < ([%#sheapsort_generic'2] i))
-      /\ (([%#sheapsort_generic'1] le_log (Seq.get s (parent i)) (Seq.get s 0))
-      -> ([@expl:heap_frag_max ensures] [%#sheapsort_generic'1] le_log (Seq.get s i) (Seq.get s 0)))
+      ((([@expl:heap_frag_max requires #0] [%#sheapsort_generic'0] heap_frag s 0 end')
+          && ([@expl:heap_frag_max requires #1] [%#sheapsort_generic'1] 0 <= parent i /\ parent i < end'))
+        /\ well_founded_relation ([%#sheapsort_generic] i) ([%#sheapsort_generic] parent i))
+      /\ (([%#sheapsort_generic'2] le_log (Seq.get s (parent i)) (Seq.get s 0))
+      -> ([@expl:heap_frag_max ensures] [%#sheapsort_generic'2] le_log (Seq.get s i) (Seq.get s 0)))
     else
-      [@expl:heap_frag_max ensures] [%#sheapsort_generic'1] le_log (Seq.get s i) (Seq.get s 0)
+      [@expl:heap_frag_max ensures] [%#sheapsort_generic'2] le_log (Seq.get s i) (Seq.get s 0)
     )
 end
 module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 38 0 40 29]
@@ -163,16 +166,16 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 38 0 40 29]
   let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 294 4 294 18
   let%span sseq'0 = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 18
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 253 8 253 9
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 254 19 254 35
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 255 19 255 35
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 256 18 256 50
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 110 20 110 37
-  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 115 20 115 37
-  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 20 20 20 30
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 267 8 267 9
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 268 19 268 35
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 269 19 269 35
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 270 18 270 50
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 124 20 124 37
+  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 129 20 129 37
+  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 21 20 21 30
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
-  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
+  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
+  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use creusot.int.UInt64
@@ -603,10 +606,10 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 90 0 92 29]
   let%span sheapsort_generic'27 = "heapsort_generic.rs" 33 10 34 41
   let%span sheapsort_generic'28 = "heapsort_generic.rs" 35 10 37 73
   let%span sheapsort_generic'29 = "heapsort_generic.rs" 77 8 77 62
-  let%span sheapsort_generic'30 = "heapsort_generic.rs" 18 11 18 31
-  let%span sheapsort_generic'31 = "heapsort_generic.rs" 19 11 19 28
-  let%span sheapsort_generic'32 = "heapsort_generic.rs" 20 10 20 22
-  let%span sheapsort_generic'33 = "heapsort_generic.rs" 21 10 21 11
+  let%span sheapsort_generic'30 = "heapsort_generic.rs" 21 10 21 11
+  let%span sheapsort_generic'31 = "heapsort_generic.rs" 18 11 18 31
+  let%span sheapsort_generic'32 = "heapsort_generic.rs" 19 11 19 28
+  let%span sheapsort_generic'33 = "heapsort_generic.rs" 20 10 20 22
   let%span sheapsort_generic'34 = "heapsort_generic.rs" 23 4 25 5
   let%span sheapsort_generic'35 = "heapsort_generic.rs" 84 8 84 35
   let%span sheapsort_generic'36 = "heapsort_generic.rs" 8 4 8 19
@@ -639,18 +642,18 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 90 0 92 29]
   let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 294 4 294 18
   let%span sseq'0 = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 18
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 253 8 253 9
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 254 19 254 35
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 255 19 255 35
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 256 18 256 50
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 20 20 20 30
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 267 8 267 9
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 268 19 268 35
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 269 19 269 35
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 270 18 270 50
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 21 20 21 30
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 100 20 100 44
-  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 91 8 91 18
+  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
+  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
-  use creusot.int.UInt64
   use creusot.prelude.Opaque
+  use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.MutBorrow
@@ -873,13 +876,13 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 90 0 92 29]
   function heap_frag_max [#"heapsort_generic.rs" 22 0 22 58] (s: Seq.seq t_DeepModelTy) (i: int) (end': int) : ()
   
   axiom heap_frag_max_def:
-    forall s: Seq.seq t_DeepModelTy, i: int, end': int. ([%#sheapsort_generic'30] heap_frag s 0 end')
-      -> ([%#sheapsort_generic'31] 0 <= i /\ i < end')
+    forall s: Seq.seq t_DeepModelTy, i: int, end': int. ([%#sheapsort_generic'31] heap_frag s 0 end')
+      -> ([%#sheapsort_generic'32] 0 <= i /\ i < end')
       -> heap_frag_max s i end' = ([%#sheapsort_generic'34] if i > 0 then heap_frag_max s (parent i) end' else ())
   
   axiom heap_frag_max_spec:
-    forall s: Seq.seq t_DeepModelTy, i: int, end': int. ([%#sheapsort_generic'30] heap_frag s 0 end')
-      -> ([%#sheapsort_generic'31] 0 <= i /\ i < end') -> ([%#sheapsort_generic'32] le_log (Seq.get s i) (Seq.get s 0))
+    forall s: Seq.seq t_DeepModelTy, i: int, end': int. ([%#sheapsort_generic'31] heap_frag s 0 end')
+      -> ([%#sheapsort_generic'32] 0 <= i /\ i < end') -> ([%#sheapsort_generic'33] le_log (Seq.get s i) (Seq.get s 0))
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   

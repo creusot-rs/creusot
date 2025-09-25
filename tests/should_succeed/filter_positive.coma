@@ -1,10 +1,13 @@
 module M_filter_positive__num_of_pos [#"filter_positive.rs" 34 0 34 49]
   let%span sfilter_positive = "filter_positive.rs" 33 10 33 13
   let%span sfilter_positive'0 = "filter_positive.rs" 36 8 42 9
+  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
   
   use creusot.int.Int32
   use seq.Seq
   use mach.int.Int
+  
+  predicate well_founded_relation (self: int) (other: int) = [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -22,19 +25,20 @@ module M_filter_positive__num_of_pos [#"filter_positive.rs" 34 0 34 49]
       true
     else
       if Int32.to_int (Seq.get t (j - 1)) > 0 then
-        0 <= ([%#sfilter_positive] j - i) /\ ([%#sfilter_positive] j - 1 - i) < ([%#sfilter_positive] j - i)
+        well_founded_relation ([%#sfilter_positive] j - i) ([%#sfilter_positive] j - 1 - i)
       else
-        0 <= ([%#sfilter_positive] j - i) /\ ([%#sfilter_positive] j - 1 - i) < ([%#sfilter_positive] j - i)
+        well_founded_relation ([%#sfilter_positive] j - i) ([%#sfilter_positive] j - 1 - i)
     
 
 end
 module M_filter_positive__lemma_num_of_pos_increasing [#"filter_positive.rs" 62 0 62 67]
-  let%span sfilter_positive = "filter_positive.rs" 59 11 59 17
-  let%span sfilter_positive'0 = "filter_positive.rs" 60 10 60 48
-  let%span sfilter_positive'1 = "filter_positive.rs" 61 10 61 13
+  let%span sfilter_positive = "filter_positive.rs" 61 10 61 13
+  let%span sfilter_positive'0 = "filter_positive.rs" 59 11 59 17
+  let%span sfilter_positive'1 = "filter_positive.rs" 60 10 60 48
   let%span sfilter_positive'2 = "filter_positive.rs" 64 8 66 9
   let%span sfilter_positive'3 = "filter_positive.rs" 33 10 33 13
   let%span sfilter_positive'4 = "filter_positive.rs" 36 8 42 9
+  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
   
   use creusot.int.Int32
   use seq.Seq
@@ -48,6 +52,8 @@ module M_filter_positive__lemma_num_of_pos_increasing [#"filter_positive.rs" 62 
       else
         if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
       )
+  
+  predicate well_founded_relation (self: int) (other: int) = [%#swell_founded] self >= 0 /\ self > other
   
   meta "compute_max_steps" 1000000
   
@@ -63,14 +69,14 @@ module M_filter_positive__lemma_num_of_pos_increasing [#"filter_positive.rs" 62 
   
   function lemma_num_of_pos_increasing [#"filter_positive.rs" 62 0 62 67] (i'0: int) (j'0: int) (k'0: int) (t'0: Seq.seq Int32.t) : ()
   
-  goal vc_lemma_num_of_pos_increasing: ([%#sfilter_positive] j <= k)
+  goal vc_lemma_num_of_pos_increasing: ([%#sfilter_positive'0] j <= k)
     -> (if j < k then
-      (([@expl:lemma_num_of_pos_increasing requires] [%#sfilter_positive] j + 1 <= k)
-        /\ 0 <= ([%#sfilter_positive'1] k - j) /\ ([%#sfilter_positive'1] k - (j + 1)) < ([%#sfilter_positive'1] k - j))
-      /\ (([%#sfilter_positive'0] num_of_pos i (j + 1) t <= num_of_pos i k t)
-      -> ([@expl:lemma_num_of_pos_increasing ensures] [%#sfilter_positive'0] num_of_pos i j t <= num_of_pos i k t))
+      (([@expl:lemma_num_of_pos_increasing requires] [%#sfilter_positive'0] j + 1 <= k)
+        /\ well_founded_relation ([%#sfilter_positive] k - j) ([%#sfilter_positive] k - (j + 1)))
+      /\ (([%#sfilter_positive'1] num_of_pos i (j + 1) t <= num_of_pos i k t)
+      -> ([@expl:lemma_num_of_pos_increasing ensures] [%#sfilter_positive'1] num_of_pos i j t <= num_of_pos i k t))
     else
-      [@expl:lemma_num_of_pos_increasing ensures] [%#sfilter_positive'0] num_of_pos i j t <= num_of_pos i k t
+      [@expl:lemma_num_of_pos_increasing ensures] [%#sfilter_positive'1] num_of_pos i j t <= num_of_pos i k t
     )
 end
 module M_filter_positive__lemma_num_of_pos_strictly_increasing [#"filter_positive.rs" 76 0 76 60]
@@ -134,9 +140,9 @@ module M_filter_positive__m [#"filter_positive.rs" 79 0 79 33]
   let%span sfilter_positive'20 = "filter_positive.rs" 74 11 74 20
   let%span sfilter_positive'21 = "filter_positive.rs" 75 10 75 49
   let%span sfilter_positive'22 = "filter_positive.rs" 76 61 76 63
-  let%span sfilter_positive'23 = "filter_positive.rs" 59 11 59 17
-  let%span sfilter_positive'24 = "filter_positive.rs" 60 10 60 48
-  let%span sfilter_positive'25 = "filter_positive.rs" 61 10 61 13
+  let%span sfilter_positive'23 = "filter_positive.rs" 61 10 61 13
+  let%span sfilter_positive'24 = "filter_positive.rs" 59 11 59 17
+  let%span sfilter_positive'25 = "filter_positive.rs" 60 10 60 48
   let%span sfilter_positive'26 = "filter_positive.rs" 64 8 66 9
   let%span svec = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
   let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 111 26 111 48
@@ -152,9 +158,9 @@ module M_filter_positive__m [#"filter_positive.rs" 79 0 79 33]
   let%span svec'10 = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
   let%span smodel = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 110 20 110 37
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 115 20 115 37
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 120 20 120 88
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 124 20 124 37
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 129 20 129 37
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 134 20 134 88
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.int.UInt64
@@ -231,13 +237,13 @@ module M_filter_positive__m [#"filter_positive.rs" 79 0 79 33]
   
   function lemma_num_of_pos_increasing [#"filter_positive.rs" 62 0 62 67] (i: int) (j: int) (k: int) (t: Seq.seq Int32.t) : ()
   
-  axiom lemma_num_of_pos_increasing_def: forall i: int, j: int, k: int, t: Seq.seq Int32.t. ([%#sfilter_positive'23] j
+  axiom lemma_num_of_pos_increasing_def: forall i: int, j: int, k: int, t: Seq.seq Int32.t. ([%#sfilter_positive'24] j
         <= k)
       -> lemma_num_of_pos_increasing i j k t
       = ([%#sfilter_positive'26] if j < k then lemma_num_of_pos_increasing i (j + 1) k t else ())
   
-  axiom lemma_num_of_pos_increasing_spec: forall i: int, j: int, k: int, t: Seq.seq Int32.t. ([%#sfilter_positive'23] j
-        <= k) -> ([%#sfilter_positive'24] num_of_pos i j t <= num_of_pos i k t)
+  axiom lemma_num_of_pos_increasing_spec: forall i: int, j: int, k: int, t: Seq.seq Int32.t. ([%#sfilter_positive'24] j
+        <= k) -> ([%#sfilter_positive'25] num_of_pos i j t <= num_of_pos i k t)
   
   function view'1 (self: MutBorrow.t t_Vec) : Seq.seq Int32.t = [%#smodel'0] view self.current
   

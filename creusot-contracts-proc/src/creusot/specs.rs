@@ -174,11 +174,11 @@ pub fn check(args: TS1, tokens: TS1) -> TS1 {
     let mut clauses = TokenStream::new();
     if terminates {
         documentation.extend(document_spec("terminates", doc::LogicBody::None));
-        clauses.extend(quote!(#[creusot::clause::terminates]));
+        clauses.extend(quote!(#[creusot::clause::check_terminates]));
     }
     if ghost {
         documentation.extend(document_spec("ghost", doc::LogicBody::None));
-        clauses.extend(quote!(#[creusot::clause::no_panic]));
+        clauses.extend(quote!(#[creusot::clause::check_ghost]));
     }
 
     let item = tokens.clone();
@@ -251,7 +251,7 @@ fn req_body(p: &Term) -> TokenStream {
 }
 
 fn spec_attrs(tag: &Ident) -> TokenStream {
-    let name_tag = format!("{}", quote! { #tag });
+    let name_tag = tag.to_string();
     quote! {
          #[creusot::no_translate]
          #[creusot::item=#name_tag]

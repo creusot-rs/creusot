@@ -3,13 +3,13 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   let%span sdisjoint_raw_ptr'0 = "disjoint_raw_ptr.rs" 6 33 6 37
   let%span sdisjoint_raw_ptr'1 = "disjoint_raw_ptr.rs" 11 18 11 30
   let%span sdisjoint_raw_ptr'2 = "disjoint_raw_ptr.rs" 12 18 12 26
-  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 52 4 52 52
-  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 51 14 51 64
-  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 135 26 135 30
-  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 135 48 135 52
-  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 132 14 132 64
-  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 133 14 133 28
-  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 42 4 42 26
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 55 4 55 52
+  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 54 14 54 64
+  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 208 26 208 30
+  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 208 48 208 52
+  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 205 14 205 64
+  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 206 14 206 28
+  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
   let%span sghost = "../../../creusot-contracts/src/ghost.rs" 91 22 91 26
   let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 91 4 91 48
   let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 89 14 89 35
@@ -19,10 +19,10 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   let%span sghost'5 = "../../../creusot-contracts/src/ghost.rs" 179 14 179 26
   let%span sghost'6 = "../../../creusot-contracts/src/ghost.rs" 118 8 118 18
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 100 20 100 44
-  let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 91 8 91 18
-  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 57 14 57 53
-  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 59 8 59 35
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
+  let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
+  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 96 14 96 53
+  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 98 8 98 35
   
   use creusot.int.Int32
   use creusot.prelude.Opaque
@@ -42,7 +42,14 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate invariant' [@inline:trivial] (self: t_PtrOwn) = [%#sptr_own'5] not is_null_logic (ptr self)
+  predicate metadata_matches (_value: Int32.t) (_metadata: ())
+  
+  function val' (self: t_PtrOwn) : Int32.t
+  
+  function metadata_logic (_0: Opaque.ptr) : ()
+  
+  predicate invariant' [@inline:trivial] (self: t_PtrOwn) =
+    [%#sptr_own'5] not is_null_logic (ptr self) /\ metadata_matches (val' self) (metadata_logic (ptr self))
   
   meta "rewrite_def" predicate invariant'
   
@@ -51,7 +58,7 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   axiom inv_axiom [@rewrite]: forall x: t_PtrOwn [inv x]. inv x
       = (invariant' x
       /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val'} -> true
+        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> true
         end)
   
   predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'6] inv self
@@ -65,8 +72,6 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   predicate inv'1 (_0: tuple)
   
   axiom inv_axiom'1 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {_p0 = x0; _p1 = x1} = x in inv'0 x1)
-  
-  function val' (self: t_PtrOwn) : Int32.t
   
   let rec new (v: Int32.t) (return' (x: tuple)) = any
     [ return''0 (result: tuple) -> {[%#sptr_own] inv'1 result}

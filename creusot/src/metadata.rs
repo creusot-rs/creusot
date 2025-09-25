@@ -1,17 +1,18 @@
 use crate::{
-    ctx::*,
+    ctx::Erased,
     translation::{external::ExternSpec, pearlite::ScopedTerm},
+    validate::AnfBlock,
 };
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
 use once_map::unsync::OnceMap;
-use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
+use rustc_hir::def_id::{CrateNum, DefId, DefPathHash, LOCAL_CRATE, LocalDefId};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::ty::TyCtxt;
 use rustc_session::config::OutputType;
 use rustc_span::Symbol;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs::File,
     io::Read,
     path::{Path, PathBuf},
@@ -24,6 +25,8 @@ type ExternSpecs<'tcx> = HashMap<DefId, ExternSpec<'tcx>>;
 pub struct Metadata<'tcx> {
     crates: HashMap<CrateNum, CrateMetadata<'tcx>>,
     extern_specs: ExternSpecs<'tcx>,
+    erased_thir: HashMap<DefId, AnfBlock<'tcx>>,
+    erased_defid: HashMap<DefId, Erased<'tcx>>,
 }
 
 impl<'tcx> Metadata<'tcx> {
@@ -59,20 +62,35 @@ impl<'tcx> Metadata<'tcx> {
         self.extern_specs.get(&id)
     }
 
-    pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, String>) {
+    pub(crate) fn erased_thir(&self, id: DefId) -> Option<&AnfBlock<'tcx>> {
+        self.erased_thir.get(&id)
+    }
+
+    pub(crate) fn erasure(&self, id: DefId) -> Option<&Erased<'tcx>> {
+        self.erased_defid.get(&id)
+    }
+
+    pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, PathBuf>) {
         for &cnum in tcx.crates(()) {
             if cnum == LOCAL_CRATE {
                 continue;
             }
-            let Some((cmeta, mut ext_specs)) = CrateMetadata::load(tcx, overrides, cnum) else {
+            let Some((cmeta, ext_specs, erased_thir, erased_defid)) =
+                CrateMetadata::load(tcx, overrides, cnum)
+            else {
                 continue;
             };
             self.crates.insert(cnum, cmeta);
-
-            for (id, spec) in ext_specs.drain() {
+            for (id, spec) in ext_specs.into_iter() {
                 if self.extern_specs.insert(id, spec).is_some() {
                     panic!("duplicate external spec found for {:?} while loading {:?}", id, cnum);
                 }
+            }
+            for (id, erased) in erased_thir {
+                self.erased_thir.insert(id, erased);
+            }
+            for (id, erased) in erased_defid {
+                self.erased_defid.insert(id, erased);
             }
         }
     }
@@ -115,13 +133,11 @@ impl<'tcx> CrateMetadata<'tcx> {
 
     fn load(
         tcx: TyCtxt<'tcx>,
-        overrides: &HashMap<String, String>,
+        overrides: &HashMap<String, PathBuf>,
         cnum: CrateNum,
-    ) -> Option<(Self, ExternSpecs<'tcx>)> {
-        let base_path = creusot_metadata_base_path(tcx, overrides, cnum);
-
-        let binary_path = creusot_metadata_binary_path(base_path.clone());
-
+    ) -> Option<(Self, ExternSpecs<'tcx>, Vec<(DefId, AnfBlock<'tcx>)>, Vec<(DefId, Erased<'tcx>)>)>
+    {
+        let binary_path = creusot_metadata_path(tcx, overrides, cnum);
         let metadata = load_binary_metadata(tcx, cnum, &binary_path)?;
 
         let mut meta = CrateMetadata::new();
@@ -134,7 +150,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         meta.creusot_items = metadata.creusot_items;
         meta.params_open_inv = metadata.params_open_inv;
 
-        Some((meta, metadata.extern_specs))
+        Some((meta, metadata.extern_specs, metadata.erased_thir, metadata.erased_defid))
     }
 }
 
@@ -149,55 +165,61 @@ pub(crate) struct BinaryMetadata<'tcx> {
     intrinsics: HashMap<Symbol, DefId>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
+    erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
+    erased_defid: Vec<(DefId, Erased<'tcx>)>,
 }
 
 impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
-        terms: &mut OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
-        creusot_items: &HashMap<Symbol, DefId>,
-        intrinsics: &HashMap<Symbol, DefId>,
-        extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
-        params_open_inv: &HashMap<DefId, Vec<usize>>,
+        mut terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
+        creusot_items: HashMap<Symbol, DefId>,
+        intrinsics: HashMap<Symbol, DefId>,
+        extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
+        params_open_inv: HashMap<DefId, Vec<usize>>,
+        erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
+        erased_local_defid: HashMap<LocalDefId, Erased<'tcx>>,
     ) -> Self {
         let terms = terms
             .iter_mut()
             .filter(|(def_id, t)| def_id.is_local() && t.is_some())
             .map(|(id, t)| (*id, t.clone().unwrap()))
             .collect();
-
+        let erased_defid =
+            erased_local_defid.into_iter().map(|(id, erased)| (id.to_def_id(), erased)).collect();
         BinaryMetadata {
             terms,
-            creusot_items: creusot_items.clone(),
-            intrinsics: intrinsics.clone(),
-            extern_specs: extern_specs.clone(),
-            params_open_inv: params_open_inv.clone(),
+            creusot_items,
+            intrinsics,
+            extern_specs,
+            params_open_inv,
+            erased_thir,
+            erased_defid,
+        }
+    }
+
+    pub(crate) fn without_specs(erased_thir: Vec<(DefId, AnfBlock<'tcx>)>) -> Self {
+        BinaryMetadata {
+            terms: Vec::new(),
+            creusot_items: HashMap::new(),
+            intrinsics: HashMap::new(),
+            extern_specs: HashMap::new(),
+            params_open_inv: HashMap::new(),
+            erased_thir,
+            erased_defid: Vec::new(),
         }
     }
 }
 
-fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
-    out.as_ref().map(|s| s.clone().into()).unwrap_or_else(|| {
-        let outputs = ctx.output_filenames(());
-        let out = outputs.path(OutputType::Metadata);
-        out.as_path().to_owned().with_extension("cmeta")
-    })
-}
-
-pub(crate) fn dump_exports(ctx: &mut TranslationCtx) {
-    let out_filename = export_file(ctx, &ctx.opts.metadata_path);
-    debug!("dump_exports={:?}", out_filename);
-
-    dump_binary_metadata(ctx.tcx, &out_filename, ctx.metadata()).unwrap_or_else(|err| {
-        panic!("could not save metadata path=`{:?}` error={}", out_filename, err.1)
-    });
-}
-
-fn dump_binary_metadata<'tcx>(
+pub(crate) fn dump_exports<'tcx>(
     tcx: TyCtxt<'tcx>,
-    path: &Path,
-    dep_info: BinaryMetadata<'tcx>,
-) -> Result<(), (PathBuf, std::io::Error)> {
-    encode_metadata(tcx, path, dep_info)
+    overrides: &HashMap<String, PathBuf>,
+    metadata: BinaryMetadata<'tcx>,
+) {
+    let out_filename = creusot_metadata_path(tcx, overrides, LOCAL_CRATE);
+    debug!("dump_exports={:?}", out_filename);
+    encode_metadata(tcx, &out_filename, metadata).unwrap_or_else(|err| {
+        panic!("could not save metadata path=`{:?}` error={}", out_filename, err)
+    });
 }
 
 fn load_binary_metadata<'tcx>(
@@ -217,22 +239,67 @@ fn load_binary_metadata<'tcx>(
     Some(decode_metadata(tcx, &blob))
 }
 
-fn creusot_metadata_base_path(
+fn creusot_metadata_path(
     tcx: TyCtxt,
-    overrides: &HashMap<String, String>,
+    overrides: &HashMap<String, PathBuf>,
     cnum: CrateNum,
 ) -> PathBuf {
     if let Some(path) = overrides.get(&tcx.crate_name(cnum).to_string()) {
         debug!("loading crate {:?} from override path", cnum);
-        path.into()
+        path.clone()
+    } else if cnum == LOCAL_CRATE {
+        let outputs = tcx.output_filenames(());
+        let out = outputs.path(OutputType::Metadata);
+        out.as_path().to_owned().with_extension("cmeta")
     } else {
         let cs = tcx.used_crate_source(cnum);
-        let x = cs.paths().next().unwrap().clone();
-        x
+        cs.paths().next().unwrap().with_extension("cmeta")
     }
 }
 
-fn creusot_metadata_binary_path(mut path: PathBuf) -> PathBuf {
-    path.set_extension("cmeta");
-    path
+pub fn get_erasure_required(tcx: TyCtxt, erasure_check_dir: &Path) -> HashSet<LocalDefId> {
+    let mut required = HashSet::new();
+    let Ok(dir) = std::fs::read_dir(erasure_check_dir) else {
+        return required;
+    };
+    for entry in dir {
+        let Ok(entry) = entry else {
+            continue;
+        };
+        let Ok(more_required) = decode_local_def_ids(tcx, &entry.path()) else { continue };
+        required.extend(more_required);
+    }
+    required
+}
+
+/// We don't want to go through the `Encodable`/`Decodable` for `DefId` because
+/// decoding only works if the `DefId`'s `CrateNum` is in a dependency of the current crate,
+/// whereas we are planning to read these `DefId`s in a fresh compilation session.
+///
+/// Instead, we explicitly convert `DefId` to `DefPathHash` and serialize that.
+/// When deserializing, we only care about IDs from the current crate (`LocalDefId`).
+pub fn encode_def_ids<'a>(
+    tcx: TyCtxt,
+    path: &Path,
+    def_ids: impl IntoIterator<Item = &'a DefId>,
+) -> Result<(), std::io::Error> {
+    let hashes: Vec<DefPathHash> =
+        def_ids.into_iter().map(|def_id| tcx.def_path_hash(*def_id)).collect();
+    encode_metadata(tcx, path, hashes)
+}
+
+/// Skip `DefId`s from other crates
+fn decode_local_def_ids(tcx: TyCtxt, file: &Path) -> Result<Vec<LocalDefId>, std::io::Error> {
+    let contents = std::fs::read(file)?;
+    let hashes: Vec<DefPathHash> = decode_metadata(tcx, &contents);
+    Ok(hashes.into_iter().filter_map(|hash| def_path_hash_to_local_id(tcx, hash)).collect())
+}
+
+/// Only try to decode `LocalDefId`s
+fn def_path_hash_to_local_id(tcx: TyCtxt, hash: DefPathHash) -> Option<LocalDefId> {
+    if hash.stable_crate_id() == tcx.stable_crate_id(LOCAL_CRATE) {
+        tcx.definitions_untracked().local_def_path_hash_to_def_id(hash)
+    } else {
+        None
+    }
 }

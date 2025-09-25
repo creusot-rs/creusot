@@ -20,7 +20,7 @@ pub(crate) fn document_spec(spec_name: &str, spec_body: LogicBody) -> TokenStrea
     let spec_color = match spec_name {
         "requires" => "Tomato",
         "ensures" => "DodgerBlue",
-        "terminates" | "pure" | "logic" | "law" => "Violet",
+        "terminates" | "ghost" | "logic" | "law" => "Violet",
         _ if spec_name.starts_with("logic(") => "Violet",
         _ => "Gray",
     };

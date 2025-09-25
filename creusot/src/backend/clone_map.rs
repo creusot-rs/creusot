@@ -7,10 +7,10 @@ use crate::{
     },
     contracts_items::{Intrinsic, get_builtin, is_bitwise},
     ctx::*,
-    options::SpanMode,
     translation::traits::TraitResolved,
     util::{erased_identity_for_item, path_of_span},
 };
+use creusot_args::options::SpanMode;
 use elaborator::Strength;
 use indexmap::IndexSet;
 use itertools::{Either, Itertools};
@@ -419,9 +419,11 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
         for scc in petgraph::algo::tarjan_scc(&graph).into_iter() {
             if scc.iter().any(|node| node == &source_item) {
                 if scc.len() != 1 {
-                    eprintln!("{:?} {scc:?}", source_id);
+                    ctx.dcx().span_bug(
+                        ctx.def_span(source_id),
+                        format!("{} {scc:?}", ctx.def_path_str(source_id)),
+                    )
                 }
-                assert_eq!(scc.len(), 1);
                 bodies.remove(&scc[0]);
                 continue;
             }

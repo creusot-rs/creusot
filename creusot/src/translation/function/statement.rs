@@ -1,7 +1,8 @@
 use super::BodyTranslator;
 use crate::{
     contracts_items::{
-        is_assertion, is_before_loop, is_invariant, is_snapshot_closure, is_spec, is_variant,
+        is_assertion, is_before_loop, is_erasure, is_invariant, is_snapshot_closure, is_spec,
+        is_variant,
     },
     ctx::HasTyCtxt as _,
     translation::{
@@ -141,7 +142,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 span,
                             });
                             return;
-                        } else if is_spec(self.tcx(), *def_id) {
+                        } else if is_spec(self.tcx(), *def_id) || is_erasure(self.tcx(), *def_id) {
                             return;
                         } else {
                             RValue::Constructor(*def_id, subst, fields)
@@ -201,10 +202,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 | CastKind::Transmute,
                 _,
                 _,
-            ) => self.ctx.crash_and_error(
-                si.span,
-                format!("Pointer casts are currently unsupported {rvalue:?}"),
-            ),
+            ) => self.ctx.crash_and_error(si.span, format!("Unsupported pointer cast: {rvalue:?}")),
             Rvalue::CopyForDeref(_)
             | Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)

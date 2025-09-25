@@ -20,8 +20,7 @@ use ::std::ops::{Deref, DerefMut};
 /// // The type invariant constrains the set of valid `SumTo10`s to
 /// // only allow values where the sum of both fields is equal to 10.
 /// impl Invariant for SumTo10 {
-///     #[logic]
-///     #[open]
+///     #[logic(open)]
 ///     fn invariant(self) -> bool {
 ///         pearlite! {
 ///             self.a@ + self.b@ == 10
@@ -62,7 +61,7 @@ use ::std::ops::{Deref, DerefMut};
 /// # use creusot_contracts::*;
 /// # struct SumTo10 { a: i32, b: i32 }
 /// # impl Invariant for SumTo10 {
-/// # #[logic] #[open] fn invariant(self) -> bool { pearlite!{self.a@ + self.b@ == 10} }
+/// # #[logic(open)] fn invariant(self) -> bool { pearlite!{self.a@ + self.b@ == 10} }
 /// # }
 /// #[logic]
 /// #[ensures(x.a@ + x.b@ == 10)]

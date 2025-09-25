@@ -6,6 +6,7 @@
         hash_set_entry,
         if_let_guard,
         proc_macro_def_site,
+        proc_macro_diagnostic,
         proc_macro_span,
     )
 )]
@@ -64,6 +65,7 @@ proc_macro_attributes! {
     open_inv_result
     bitwise_proof
     maintains
+    erasure
 }
 
 macro_rules! proc_macros {

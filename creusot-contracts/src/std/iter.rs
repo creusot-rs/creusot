@@ -48,6 +48,7 @@ pub trait Iterator: ::std::iter::Iterator {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
+    #[check(ghost)]
     #[requires(forall<e, i2>
                     self.produces(Seq::singleton(e), i2) ==>
                     func.precondition((e, Snapshot::new(Seq::empty()))))]
@@ -151,6 +152,7 @@ extern_spec! {
                 fn enumerate(self) -> Enumerate<Self>
                     where Self: Sized;
 
+                #[check(ghost)]
                 #[ensures(result@ == Some(self))]
                 fn fuse(self) -> Fuse<Self>
                     where Self: Sized;
@@ -209,6 +211,7 @@ extern_spec! {
     }
 
     impl<I: Iterator> IntoIterator for I {
+        #[check(ghost)]
         #[ensures(result == self)]
         fn into_iter(self) -> I;
     }

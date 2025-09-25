@@ -74,7 +74,6 @@ extern_spec! {
                 #[ensures((exists<e: E> self == Err(e)) ==> result == default)]
                 fn unwrap_or(self, default: T) -> T;
 
-                #[check(ghost)]
                 #[ensures(forall<t: T> self == Ok(t) ==> result == t)]
                 #[ensures((exists<e: E> self == Err(e)) ==> T::default.postcondition((), result))]
                 fn unwrap_or_default(self) -> T

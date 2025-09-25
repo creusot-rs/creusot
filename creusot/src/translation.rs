@@ -10,14 +10,17 @@ pub(crate) mod traits;
 use crate::{
     backend::Why3Generator,
     contracts_items::is_no_translate,
-    ctx::{ClonedThir, TranslationCtx, gather_params_open_inv},
+    ctx::{Thir, TranslationCtx, gather_params_open_inv},
     metadata,
-    options::{Options, Output},
     translated_item::FileModule,
     validate::validate,
 };
+use creusot_args::options::{Options, Output};
 use indexmap::IndexMap;
-use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_hir::{
+    def::DefKind,
+    def_id::{DefId, LocalDefId},
+};
 use rustc_middle::ty::TyCtxt;
 use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
@@ -28,7 +31,7 @@ use why3::{
 
 pub(crate) fn before_analysis<'tcx>(
     tcx: TyCtxt<'tcx>,
-) -> (ClonedThir<'tcx>, HashMap<DefId, Vec<usize>>) {
+) -> (IndexMap<LocalDefId, Thir<'tcx>>, HashMap<DefId, Vec<usize>>) {
     let start = Instant::now();
 
     let params_open_inv = gather_params_open_inv(tcx);
@@ -65,12 +68,13 @@ fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
 pub(crate) fn after_analysis<'tcx>(
     tcx: TyCtxt<'tcx>,
     opts: Options,
-    thir: ClonedThir<'tcx>,
+    thir: IndexMap<LocalDefId, Thir<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
-    let mut ctx = TranslationCtx::new(tcx, opts, thir, params_open_inv);
+    let mut ctx = TranslationCtx::new(tcx, opts.clone(), thir, params_open_inv);
     ctx.load_extern_specs();
+    ctx.load_erasures();
     validate(&ctx);
     ctx.dcx().abort_if_errors();
     debug!("after_analysis_validate: {:?}", start.elapsed());
@@ -103,15 +107,15 @@ pub(crate) fn after_analysis<'tcx>(
     debug!("after_analysis_translate: {:?}", start.elapsed());
     let start = Instant::now();
 
-    if why3.should_export() {
-        metadata::dump_exports(&mut why3);
+    if opts.export_metadata {
+        let metadata = why3.ctx.metadata();
+        metadata::dump_exports(tcx, &opts.extern_paths, metadata);
     }
 
-    if why3.should_compile() {
-        let output_target = why3.opts.output.clone();
-        let prefix = why3.opts.prefix.clone();
-        let modules = why3.modules();
-        let modules = modules.flat_map(|item| item.modules());
+    if opts.should_output {
+        let output_target = opts.output.clone();
+        let prefix = opts.prefix.iter().map(|s| Symbol::intern(s)).collect();
+        let modules = why3.functions.into_iter().flat_map(|item| item.modules());
         print_crate(output_target, prefix, modules)?;
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());

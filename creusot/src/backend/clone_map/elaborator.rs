@@ -160,9 +160,8 @@ fn expand_program<'tcx>(
     }
 
     let return_ident = Ident::fresh_local("return");
-    let (sig, contract, return_ty) =
-        lower_program_sig(ctx, &names, name, pre_sig, def_id, return_ident);
-    vec![program::val(sig, contract, return_ident, return_ty)]
+    let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id, return_ident);
+    vec![program::val(sig.prototype, sig.contract, return_ident, sig.return_ty)]
 }
 
 /// Expand a logical item
@@ -220,15 +219,15 @@ fn expand_logic<'tcx>(
     let names = elab.namer(dep);
     let name = names.dependency(dep).ident();
     let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
-    let kind = match sig.retty {
+    let kind = match sig.why_sig.retty {
         None => DeclKind::Predicate,
-        Some(_) if sig.args.is_empty() => DeclKind::Constant,
+        Some(_) if sig.why_sig.args.is_empty() => DeclKind::Constant,
         _ => DeclKind::Function,
     };
     let mut decls = if !opaque && let Some(term) = term(ctx, typing_env, &bound, def_id, subst) {
         lower_logical_defn(ctx, &names, sig, kind, term, is_inline(ctx.tcx, def_id))
     } else {
-        let mut decls = val(sig, kind);
+        let mut decls = val(sig.why_sig, kind);
 
         if Intrinsic::Precondition.is(ctx, def_id) {
             if let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind() {
@@ -328,11 +327,11 @@ fn expand_constant<'tcx>(
     let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
 
     if opaque {
-        val(sig, DeclKind::Constant)
+        val(sig.why_sig, DeclKind::Constant)
     } else if let Some(term) = try_const_to_term(def_id, subst, ctx, typing_env) {
         lower_logical_defn(ctx, &names, sig, DeclKind::Constant, term, is_inline(ctx.tcx, def_id))
     } else {
-        let mut decls = val(sig, DeclKind::Constant);
+        let mut decls = val(sig.why_sig, DeclKind::Constant);
         decls.push(const_setter(ctx, &mut names, name, def_id, subst));
         decls
     }
@@ -355,7 +354,15 @@ fn const_setter<'tcx, N: Namer<'tcx>>(
         "set_{}",
         crate::naming::translate_name(ctx.ctx.item_name(def_id).as_str())
     ));
-    let body = program::why_body(ctx, names, body_id, Some(subst), &[], inner_return);
+    let body = program::why_body(
+        ctx,
+        names,
+        body_id,
+        Some(subst),
+        &[],
+        inner_return,
+        &mut Default::default(),
+    );
     let ty = translate_ty(ctx, names, span, ctx.sig(def_id).output);
     let inner_def = Defn {
         prototype: Prototype::new(inner_return, [Param::Term(value_name, ty)]),
@@ -1100,6 +1107,37 @@ fn size_of_logic_term<'tcx>(
     }
 }
 
+fn metadata_matches_term<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    //// The type arguments of `metadata_matches`
+    subst: GenericArgsRef<'tcx>,
+    args: &[Ident],
+) -> Option<Term<'tcx>> {
+    let param = subst.type_at(0);
+    if param.is_sized(ctx.tcx, typing_env) {
+        Some(Term::true_(ctx.tcx))
+    } else if let TyKind::Slice(ty) = param.kind() {
+        Some(Term::call(
+            ctx.tcx,
+            typing_env,
+            Intrinsic::MetadataMatchesSlice.get(ctx),
+            ctx.tcx.mk_args(&[(*ty).into()]),
+            args.iter().map(|&id| Term::var(id, param)),
+        ))
+    } else if let TyKind::Str = param.kind() {
+        Some(Term::call(
+            ctx.tcx,
+            typing_env,
+            Intrinsic::MetadataMatchesStr.get(ctx),
+            ctx.tcx.mk_args(&[]),
+            args.iter().map(|&id| Term::var(id, param)),
+        ))
+    } else {
+        None
+    }
+}
+
 fn size_of_array<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -1141,6 +1179,7 @@ fn term<'tcx>(
         Intrinsic::Precondition => precondition_term(ctx, typing_env, subst, bound),
         Intrinsic::HistInv => fn_mut_hist_inv_term(ctx, typing_env, subst, bound),
         Intrinsic::SizeOfLogic => size_of_logic_term(ctx, typing_env, subst.type_at(0)),
+        Intrinsic::MetadataMatches => metadata_matches_term(ctx, typing_env, subst, bound),
         _ => {
             let term = EarlyBinder::bind(ctx.term(def_id).unwrap().rename(bound));
             Some(normalize(ctx, typing_env, term.instantiate(ctx.tcx, subst)))

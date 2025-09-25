@@ -178,7 +178,7 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
     tcx: TyCtxt<'tcx>,
     path: &Path,
     x: T,
-) -> Result<(), (PathBuf, Error)> {
+) -> Result<(), Error> {
     let (file_to_file_index, file_index_to_stable_id) = {
         let files = tcx.sess.source_map().files();
         let mut file_to_file_index =
@@ -234,7 +234,7 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
 
     let mut encoder = MetadataEncoder {
         tcx,
-        opaque: FileEncoder::new(path).unwrap(),
+        opaque: FileEncoder::new(path)?,
         type_shorthands: Default::default(),
         predicate_shorthands: Default::default(),
         hygiene_context: &hygiene_context,
@@ -276,6 +276,6 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
     // DO NOT WRITE ANYTHING TO THE ENCODER AFTER THIS POINT! The address
     // of the footer must be the last thing in the data stream.
 
-    encoder.finish()?;
+    encoder.finish().map_err(|(_, e)| e)?;
     Ok(())
 }

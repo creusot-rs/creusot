@@ -15,6 +15,7 @@ mod implementation {
     pub struct Element<T>(*const Node<T>);
 
     impl<T> PartialEq for Element<T> {
+        #[check(ghost)]
         #[ensures(result == (self.deep_model() == other.deep_model()))]
         fn eq(&self, other: &Self) -> bool {
             std::ptr::addr_eq(self.0, other.0)
@@ -34,8 +35,8 @@ mod implementation {
     }
 
     impl<T> Clone for Element<T> {
-        #[ensures(*self == result)]
         #[check(ghost)]
+        #[ensures(*self == result)]
         fn clone(&self) -> Self {
             Self(self.0)
         }
@@ -165,6 +166,7 @@ mod implementation {
         }
     }
 
+    #[check(ghost)]
     #[ensures(result.domain().is_empty())]
     pub fn new<T>() -> Ghost<UnionFind<T>> {
         ghost! {
@@ -181,6 +183,7 @@ mod implementation {
         }
     }
 
+    #[check(terminates)]
     #[ensures(!uf.in_domain(result))]
     #[ensures((^uf).domain() == uf.domain().insert(result))]
     #[ensures((^uf).roots_map() == uf.roots_map().set(result, result))]
@@ -213,12 +216,14 @@ mod implementation {
     }
 
     /// Inner function, to hide specifications that only concern the depth.
+    #[check(terminates)]
     #[requires(uf.in_domain(elem))]
     #[ensures(result == uf.root(elem))]
     #[ensures(uf.unchanged())]
     // internal
     #[ensures((^uf).0.depth == uf.0.depth)]
     #[ensures(uf.0.depth[result] >= uf.0.depth[elem])]
+    #[variant(*uf.0.max_depth - uf.0.depth[elem])]
     fn find_inner<T>(mut uf: Ghost<&mut UnionFind<T>>, elem: Element<T>) -> Element<T> {
         let perm = ghost!(uf.0.perms.get_ghost(&elem).unwrap());
         match unsafe { PtrOwn::as_ref(elem.0, perm) } {
@@ -236,6 +241,7 @@ mod implementation {
     }
 
     /// Find the representative element of `elem`.
+    #[check(terminates)]
     #[requires(uf.in_domain(elem))]
     #[ensures(result == uf.root(elem))]
     #[ensures(uf.unchanged())]
@@ -246,6 +252,7 @@ mod implementation {
     /// Get the payload of `elem`, provided it is a root.
     ///
     /// To guarantee that `elem` is a root, call [`Self::find`] before.
+    #[check(terminates)]
     #[requires(uf.in_domain(elem))]
     #[requires(uf.root(elem) == elem)]
     #[ensures(*result == uf.payload(elem))]
@@ -258,6 +265,7 @@ mod implementation {
     }
 
     /// Returns `true` if `x` and `y` are in the same class.
+    #[check(terminates)]
     #[requires(uf.in_domain(e1))]
     #[requires(uf.in_domain(e2))]
     #[ensures(result == (uf.root(e1) == uf.root(e2)))]
@@ -269,6 +277,7 @@ mod implementation {
     }
 
     /// If `x` and `y` are two roots, try to link them together.
+    #[check(terminates)]
     #[requires(uf.in_domain(x) && uf.in_domain(y))]
     #[requires(uf.root(x) == x && uf.root(y) == y)]
     #[ensures(uf.domain_unchanged() && uf.payloads_unchanged())]
@@ -291,7 +300,7 @@ mod implementation {
 
         let Node::Root { rank: rx, .. } = bx else { unreachable!() };
         let Node::Root { rank: ry, .. } = by else { unreachable!() };
-        if rx < ry {
+        if *rx < *ry {
             *bx = Node::Link(y);
             ghost! {
                 uf.roots = snapshot!(|z| { if uf.roots[z] == x { y } else { uf.roots[z] } });
@@ -300,7 +309,7 @@ mod implementation {
             };
             y
         } else {
-            if rx == ry {
+            if *rx == *ry {
                 rx.incr();
             }
             *by = Node::Link(x);
@@ -314,6 +323,7 @@ mod implementation {
     }
 
     /// Fuse the classes of `x` and `y`.
+    #[check(terminates)]
     #[requires(uf.in_domain(x) && uf.in_domain(y))]
     #[ensures(uf.domain_unchanged() && uf.payloads_unchanged())]
     #[ensures(result == uf.root(x) || result == uf.root(y))]

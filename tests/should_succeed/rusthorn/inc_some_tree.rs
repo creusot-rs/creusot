@@ -1,15 +1,11 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::WellFounded, *};
+use creusot_contracts::*;
 
 pub enum Tree {
     Node(Box<Tree>, u32, Box<Tree>),
     Leaf,
 }
 use Tree::*;
-
-// FIXME: this should go away, we have not defined any order relation on Tree
-#[trusted]
-impl WellFounded for Tree {}
 
 #[trusted]
 fn random() -> bool {

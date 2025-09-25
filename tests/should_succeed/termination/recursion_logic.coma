@@ -1,0 +1,29 @@
+module M_recursion_logic__variant_int [#"recursion_logic.rs" 8 0 8 33]
+  let%span srecursion_logic = "recursion_logic.rs" 5 10 5 11
+  let%span srecursion_logic'0 = "recursion_logic.rs" 6 11 6 17
+  let%span srecursion_logic'1 = "recursion_logic.rs" 7 10 7 21
+  let%span srecursion_logic'2 = "recursion_logic.rs" 9 4 9 51
+  let%span swell_founded = "../../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
+  
+  use mach.int.Int
+  
+  predicate well_founded_relation (self: int) (other: int) = [%#swell_founded] self >= 0 /\ self > other
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : int
+  
+  function variant_int [#"recursion_logic.rs" 8 0 8 33] (x'0: int) : int
+  
+  goal vc_variant_int: ([%#srecursion_logic'0] x >= 0)
+    -> (if x = 0 then
+      [@expl:variant_int ensures] [%#srecursion_logic'1] 0 = x
+    else
+      (([@expl:variant_int requires] [%#srecursion_logic'0] x - 1 >= 0)
+        /\ well_founded_relation ([%#srecursion_logic] x) ([%#srecursion_logic] x - 1))
+      /\ (([%#srecursion_logic'1] variant_int (x - 1) = x - 1)
+      -> ([@expl:variant_int ensures] [%#srecursion_logic'1] 1 + variant_int (x - 1) = x))
+    )
+end

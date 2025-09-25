@@ -1,15 +1,18 @@
 //! Validate that `ghost!` does not modify program variables
 
-use rustc_hir::{HirId, intravisit::Visitor as _};
-use rustc_hir_typeck::expr_use_visitor::{Delegate, ExprUseVisitor, PlaceWithHirId};
-use rustc_lint::{LateLintPass, LintPass};
-use rustc_middle::ty::{Ty, TyCtxt};
+use rustc_hir::{
+    Expr, ExprKind, HirId,
+    intravisit::{Visitor, walk_expr},
+};
+use rustc_hir_typeck::expr_use_visitor::{Delegate, ExprUseVisitor, PlaceBase, PlaceWithHirId};
+use rustc_lint::{LateContext, LateLintPass, LintPass, LintVec};
+use rustc_middle::ty::{BorrowKind, TyCtxt, UpvarId, UpvarPath};
 use rustc_span::{Span, Symbol};
 use std::collections::HashSet;
 
 use crate::{
-    contracts_items::{get_intrinsic, is_pearlite},
-    validate::is_ghost_block,
+    contracts_items::is_pearlite,
+    validate::{is_ghost_block, is_ghost_or_snap},
 };
 
 pub struct GhostValidate;
@@ -18,22 +21,18 @@ impl<'tcx> LintPass for GhostValidate {
     fn name(&self) -> &'static str {
         ""
     }
-    fn get_lints(&self) -> rustc_lint::LintVec {
+    fn get_lints(&self) -> LintVec {
         Vec::new()
     }
 }
 
 impl<'tcx> LateLintPass<'tcx> for GhostValidate {
-    fn check_expr(
-        &mut self,
-        cx: &rustc_lint::LateContext<'tcx>,
-        expr: &'tcx rustc_hir::Expr<'tcx>,
-    ) {
+    fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
         if !is_ghost_block(cx.tcx, expr.hir_id) {
             return;
         }
 
-        let mut control_flow = GhostControlFlow { errors: Vec::new() };
+        let mut control_flow = GhostControlFlow { loop_labels: Vec::new(), errors: Vec::new() };
         control_flow.visit_expr(expr);
 
         let tcx = cx.tcx;
@@ -77,30 +76,42 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
 
 /// Check that we do not escape the ghost block with e.g. `return`.
 struct GhostControlFlow {
+    loop_labels: Vec<Option<rustc_ast::Label>>,
     errors: Vec<(Span, &'static str)>,
 }
 
-impl<'tcx> rustc_hir::intravisit::Visitor<'tcx> for GhostControlFlow {
-    fn visit_expr(&mut self, expr: &'tcx rustc_hir::Expr<'tcx>) -> Self::Result {
+impl<'tcx> Visitor<'tcx> for GhostControlFlow {
+    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) -> Self::Result {
         match expr.kind {
-            rustc_hir::ExprKind::Break { .. } => {
-                self.errors.push((expr.span, "cannot use `break` in ghost code"))
+            ExprKind::Break(dest, _) => {
+                if !self.loop_labels.contains(&dest.label) {
+                    self.errors.push((expr.span, "cannot `break` to an outer loop in ghost code"))
+                }
             }
-            rustc_hir::ExprKind::Continue { .. } => {
-                self.errors.push((expr.span, "cannot use `continue` in ghost code"))
+            ExprKind::Continue(dest) => {
+                if !self.loop_labels.contains(&dest.label) {
+                    self.errors
+                        .push((expr.span, "cannot `continue` to an outer loop in ghost code"))
+                }
             }
-            rustc_hir::ExprKind::Ret { .. } => {
+            ExprKind::Ret { .. } => {
                 self.errors.push((expr.span, "cannot use `return` in ghost code"))
             }
-            rustc_hir::ExprKind::Become { .. } => {
+            ExprKind::Become { .. } => {
                 self.errors.push((expr.span, "cannot use `become` in ghost code"))
             }
-            rustc_hir::ExprKind::Yield { .. } => {
+            ExprKind::Yield { .. } => {
                 self.errors.push((expr.span, "cannot use `yield` in ghost code"))
+            }
+            ExprKind::Loop(_, label, _, _) => {
+                self.loop_labels.push(label);
+                walk_expr(self, expr);
+                self.loop_labels.pop();
+                return;
             }
             _ => {}
         }
-        rustc_hir::intravisit::walk_expr(self, expr)
+        walk_expr(self, expr)
     }
 }
 
@@ -118,24 +129,9 @@ struct GhostValidatePlaces<'tcx> {
 impl<'tcx> GhostValidatePlaces<'tcx> {
     fn bound_in_block(&self, place_with_id: &PlaceWithHirId) -> bool {
         match place_with_id.place.base {
-            rustc_hir_typeck::expr_use_visitor::PlaceBase::Rvalue => true,
-            rustc_hir_typeck::expr_use_visitor::PlaceBase::Local(hir_id) => {
-                self.bound_variables.contains(&hir_id)
-            }
-            rustc_hir_typeck::expr_use_visitor::PlaceBase::Upvar(upvar_id) => {
-                self.bound_variables.contains(&upvar_id.var_path.hir_id)
-            }
-            _ => false,
-        }
-    }
-
-    /// Determine if the given type `ty` is a `Ghost`.
-    fn is_ghost(&self, ty: Ty<'tcx>) -> bool {
-        match ty.kind() {
-            rustc_type_ir::TyKind::Adt(containing_type, _) => {
-                let intr = get_intrinsic(self.tcx, containing_type.did());
-                intr == Some(Symbol::intern("ghost")) || intr == Some(Symbol::intern("snapshot"))
-            }
+            PlaceBase::Rvalue => true,
+            PlaceBase::Local(hir_id) => self.bound_variables.contains(&hir_id),
+            PlaceBase::Upvar(upvar_id) => self.bound_variables.contains(&upvar_id.var_path.hir_id),
             _ => false,
         }
     }
@@ -143,13 +139,11 @@ impl<'tcx> GhostValidatePlaces<'tcx> {
 
 fn base_hir_node(place: &PlaceWithHirId) -> Option<HirId> {
     match place.place.base {
-        rustc_hir_typeck::expr_use_visitor::PlaceBase::Rvalue
-        | rustc_hir_typeck::expr_use_visitor::PlaceBase::StaticItem => None,
-        rustc_hir_typeck::expr_use_visitor::PlaceBase::Local(hir_id)
-        | rustc_hir_typeck::expr_use_visitor::PlaceBase::Upvar(rustc_middle::ty::UpvarId {
-            var_path: rustc_middle::ty::UpvarPath { hir_id },
-            closure_expr_id: _,
-        }) => Some(hir_id),
+        PlaceBase::Rvalue | PlaceBase::StaticItem => None,
+        PlaceBase::Local(hir_id)
+        | PlaceBase::Upvar(UpvarId { var_path: UpvarPath { hir_id }, closure_expr_id: _ }) => {
+            Some(hir_id)
+        }
     }
 }
 
@@ -172,7 +166,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
         let base_id = base_hir_node(place_with_id);
         // No need to check for copy types, they cannot appear here
         if self.bound_in_block(place_with_id)
-            || self.is_ghost(ty)
+            || is_ghost_or_snap(self.tcx, ty)
             || base_id.is_some_and(|id| is_ghost_let(self.tcx, id))
         {
             return;
@@ -197,12 +191,12 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
         &mut self,
         place_with_id: &PlaceWithHirId<'tcx>,
         diag_expr_id: HirId,
-        bk: rustc_middle::ty::BorrowKind,
+        bk: BorrowKind,
     ) {
         let ty = place_with_id.place.ty();
         if self.bound_in_block(place_with_id)
-            || self.is_ghost(ty)
-            || bk == rustc_middle::ty::BorrowKind::Immutable
+            || is_ghost_or_snap(self.tcx, ty)
+            || bk == BorrowKind::Immutable
         {
             return;
         }
@@ -211,7 +205,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
 
     fn mutate(&mut self, assignee_place: &PlaceWithHirId<'tcx>, diag_expr_id: HirId) {
         let ty = assignee_place.place.ty();
-        if self.bound_in_block(assignee_place) || self.is_ghost(ty) {
+        if self.bound_in_block(assignee_place) || is_ghost_or_snap(self.tcx, ty) {
             return;
         }
         self.errors.push((diag_expr_id, base_hir_node(assignee_place), true));
@@ -232,7 +226,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
 
     fn bind(&mut self, binding_place: &PlaceWithHirId<'tcx>, _: HirId) {
         let var = match binding_place.place.base {
-            rustc_hir_typeck::expr_use_visitor::PlaceBase::Local(hir_id) => hir_id,
+            PlaceBase::Local(hir_id) => hir_id,
             _ => unreachable!(),
         };
         self.bound_variables.insert(var);

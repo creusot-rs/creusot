@@ -82,6 +82,30 @@ impl PartialOrd for PeanoInt {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
+
+    // FIXME: those implementations are only here to specify that they are `ghost`.
+    // We should have a mechanism to say 'These functions are ghost if `partial_cpm` is ghost'.
+
+    #[check(ghost)]
+    #[ensures(result == (self@ < other@))]
+    fn lt(&self, other: &Self) -> bool {
+        matches!(self.partial_cmp(other), Some(Ordering::Less))
+    }
+    #[check(ghost)]
+    #[ensures(result == (self@ <= other@))]
+    fn le(&self, other: &Self) -> bool {
+        matches!(self.partial_cmp(other), Some(Ordering::Less | Ordering::Equal))
+    }
+    #[check(ghost)]
+    #[ensures(result == (self@ > other@))]
+    fn gt(&self, other: &Self) -> bool {
+        matches!(self.partial_cmp(other), Some(Ordering::Greater))
+    }
+    #[check(ghost)]
+    #[ensures(result == (self@ >= other@))]
+    fn ge(&self, other: &Self) -> bool {
+        matches!(self.partial_cmp(other), Some(Ordering::Greater | Ordering::Equal))
+    }
 }
 impl Ord for PeanoInt {
     #[check(ghost)]

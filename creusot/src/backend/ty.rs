@@ -297,10 +297,6 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
     }
 }
 
-pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N) -> MlT {
-    translate_ty(ctx, names, DUMMY_SP, ctx.int_ty())
-}
-
 pub(crate) fn ity_to_prelude(tcx: TyCtxt, ity: IntTy) -> PreMod {
     match ity.normalize(tcx.sess.target.pointer_width) {
         IntTy::Isize => unreachable!(),
@@ -344,4 +340,8 @@ pub fn ty_to_prelude(tcx: TyCtxt<'_>, ty: &TyKind) -> PreMod {
 
 pub fn bool() -> MlT {
     MlT::qconstructor(name::bool())
+}
+
+pub fn int<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N) -> MlT {
+    translate_ty(ctx, names, DUMMY_SP, ctx.int_ty())
 }

@@ -1,6 +1,45 @@
 use crate::*;
 pub use ::std::ptr::*;
 
+/// Metadata of a pointer in logic.
+///
+/// [`std::ptr::metadata`] in logic.
+#[logic(opaque)]
+pub fn metadata_logic<T: ?Sized>(_: *const T) -> <T as Pointee>::Metadata {
+    dead
+}
+
+/// Check that a value is compatible with some metadata.
+///
+/// Intrinsic. Specializes to [`metadata_matches_slice`] for `T = [U]` and [`metadata_matches_str`] for `T = str`.
+///
+/// Why did we not make this a function `fn metadata_of(value: T) -> <T as Pointee>::Metadata`?
+/// Because this way is shorter: this corresponds to a single predicate in Why3 per type `T`.
+/// Defining a logic function that returns `usize` for slices is not so
+/// straightforward because almost every number wants to be `Int`.
+/// We would need to generate one abstract Why3 function `metadata_of : T -> Metadata`
+/// and an axiom `view_usize (metadata_of value) = len (Slice.view value)`,
+/// so two Why3 declarations instead of one.
+#[logic(opaque)]
+#[intrinsic("metadata_matches")]
+pub fn metadata_matches<T: ?Sized>(_value: T, _metadata: <T as Pointee>::Metadata) -> bool {
+    dead
+}
+
+/// Definition of [`metadata_matches`] for slices.
+#[logic(open)]
+#[intrinsic("metadata_matches_slice")]
+pub fn metadata_matches_slice<T>(value: [T], len: usize) -> bool {
+    pearlite! { value@.len() == len@ }
+}
+
+/// Definition of [`metadata_matches`] for string slices.
+#[logic(open)]
+#[intrinsic("metadata_matches_str")]
+pub fn metadata_matches_str(value: str, len: usize) -> bool {
+    pearlite! { value@.to_bytes().len() == len@ }
+}
+
 /// We conservatively model raw pointers as having an address *plus some hidden
 /// metadata*.
 ///
@@ -75,37 +114,48 @@ impl<T: ?Sized> PointerExt<T> for *mut T {
 
 extern_spec! {
     impl<T> *const T {
+        #[check(ghost)]
         #[ensures(result == self.addr_logic())]
         fn addr(self) -> usize;
 
+        #[check(ghost)]
         #[ensures(result == self.is_null_logic())]
         fn is_null(self) -> bool;
     }
 
     impl<T> *mut T {
+        #[check(ghost)]
         #[ensures(result == self.addr_logic())]
         fn addr(self) -> usize;
 
+        #[check(ghost)]
         #[ensures(result == self.is_null_logic())]
         fn is_null(self) -> bool;
     }
 
     mod std {
         mod ptr {
+            #[check(ghost)]
             #[ensures(result.is_null_logic())]
             fn null<T>() -> *const T
             where
                 T: std::ptr::Thin + ?Sized;
 
+            #[check(ghost)]
             #[ensures(result.is_null_logic())]
             fn null_mut<T>() -> *mut T
             where
                 T: std::ptr::Thin + ?Sized;
 
+            #[check(ghost)]
             #[ensures(result == (p.addr_logic() == q.addr_logic()))]
             fn addr_eq<T, U>(p: *const T, q: *const U) -> bool
             where
                 T: ?Sized, U: ?Sized;
+
+            #[check(ghost)]
+            #[ensures(result == metadata_logic(ptr))]
+            fn metadata<T: ?Sized>(ptr: *const T) -> <T as Pointee>::Metadata;
         }
     }
 

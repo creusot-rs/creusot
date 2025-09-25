@@ -1,11 +1,12 @@
 module M_vcgen__set_max [#"vcgen.rs" 9 0 9 35]
-  let%span svcgen = "vcgen.rs" 5 0 5 26
-  let%span svcgen'0 = "vcgen.rs" 7 0 7 30
-  let%span svcgen'1 = "vcgen.rs" 8 10 8 49
-  let%span svcgen'2 = "vcgen.rs" 6 0 6 19
+  let%span svcgen = "vcgen.rs" 6 0 6 19
+  let%span svcgen'0 = "vcgen.rs" 5 0 5 26
+  let%span svcgen'1 = "vcgen.rs" 7 0 7 30
+  let%span svcgen'2 = "vcgen.rs" 8 10 8 49
   let%span svcgen'3 = "vcgen.rs" 10 4 10 21
   let%span sfset = "../../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
   let%span sfset'0 = "../../../creusot-contracts/src/logic/fset.rs" 78 8 78 26
+  let%span swell_founded = "../../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
   
   use set.Fset
   use mach.int.Int
@@ -18,6 +19,8 @@ module M_vcgen__set_max [#"vcgen.rs" 9 0 9 35]
   
   meta "rewrite_def" function remove
   
+  predicate well_founded_relation (self: int) (other: int) = [%#swell_founded] self >= 0 /\ self > other
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -26,20 +29,20 @@ module M_vcgen__set_max [#"vcgen.rs" 9 0 9 35]
   
   function set_max [#"vcgen.rs" 9 0 9 35] (s'0: Fset.fset int) : int
   
-  goal vc_set_max: ([%#svcgen] not Fset.is_empty s)
+  goal vc_set_max: ([%#svcgen'0] not Fset.is_empty s)
     -> (let x = Fset.pick s in let s'0 = remove s x in if Fset.is_empty s'0 then
-      let result = x in ([@expl:set_max ensures #0] [%#svcgen'0] contains s result)
-      && ([@expl:set_max ensures #1] [%#svcgen'1] forall o: int. contains s o -> o <= result)
+      let result = x in ([@expl:set_max ensures #0] [%#svcgen'1] contains s result)
+      && ([@expl:set_max ensures #1] [%#svcgen'2] forall o: int. contains s o -> o <= result)
     else
-      (([@expl:set_max requires] [%#svcgen] not Fset.is_empty s'0)
-        /\ 0 <= ([%#svcgen'2] Fset.cardinal s) /\ ([%#svcgen'2] Fset.cardinal s'0) < ([%#svcgen'2] Fset.cardinal s))
-      /\ (([%#svcgen'0] contains s'0 (set_max s'0)) && ([%#svcgen'1] forall o: int. contains s'0 o -> o <= set_max s'0)
+      (([@expl:set_max requires] [%#svcgen'0] not Fset.is_empty s'0)
+        /\ well_founded_relation ([%#svcgen] Fset.cardinal s) ([%#svcgen] Fset.cardinal s'0))
+      /\ (([%#svcgen'1] contains s'0 (set_max s'0)) && ([%#svcgen'2] forall o: int. contains s'0 o -> o <= set_max s'0)
       -> (let rec' = set_max s'0 in if x >= rec' then
-        let result = x in ([@expl:set_max ensures #0] [%#svcgen'0] contains s result)
-        && ([@expl:set_max ensures #1] [%#svcgen'1] forall o: int. contains s o -> o <= result)
+        let result = x in ([@expl:set_max ensures #0] [%#svcgen'1] contains s result)
+        && ([@expl:set_max ensures #1] [%#svcgen'2] forall o: int. contains s o -> o <= result)
       else
-        let result = rec' in ([@expl:set_max ensures #0] [%#svcgen'0] contains s result)
-        && ([@expl:set_max ensures #1] [%#svcgen'1] forall o: int. contains s o -> o <= result)
+        let result = rec' in ([@expl:set_max ensures #0] [%#svcgen'1] contains s result)
+        && ([@expl:set_max ensures #1] [%#svcgen'2] forall o: int. contains s o -> o <= result)
       ))
     )
 end

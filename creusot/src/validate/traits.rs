@@ -124,7 +124,7 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
             } else {
                 let item_contract = &ctx.sig(impl_item).contract;
                 let trait_contract = &ctx.sig(trait_item).contract;
-                if trait_contract.no_panic && !item_contract.no_panic {
+                if trait_contract.check_ghost && !item_contract.check_ghost {
                     ctx.error(
                         ctx.def_span(impl_item),
                         format!(
@@ -133,7 +133,7 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
                         ),
                     )
                     .emit();
-                } else if trait_contract.terminates && !item_contract.terminates {
+                } else if trait_contract.check_terminates && !item_contract.check_terminates {
                     ctx.error(
                         ctx.def_span(impl_item),
                         format!(

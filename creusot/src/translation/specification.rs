@@ -1,7 +1,7 @@
 use crate::{
     backend::closures::ClosSubst,
     contracts_items::{
-        Intrinsic, creusot_clause_attrs, is_no_panic, is_open_inv_result, is_terminates,
+        Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_open_inv_result,
     },
     ctx::*,
     naming::{name, variable_name},
@@ -35,8 +35,8 @@ pub struct PreContract<'tcx> {
     pub(crate) variant: Option<Term<'tcx>>,
     pub(crate) requires: Vec<Condition<'tcx>>,
     pub(crate) ensures: Vec<Condition<'tcx>>,
-    pub(crate) no_panic: bool,
-    pub(crate) terminates: bool,
+    pub(crate) check_ghost: bool,
+    pub(crate) check_terminates: bool,
     pub(crate) extern_no_spec: bool,
     /// Are any of the contract clauses here user provided? or merely Creusot inferred / provided?
     pub(crate) has_user_contract: bool,
@@ -92,8 +92,8 @@ pub struct ContractClauses {
     variant: Option<DefId>,
     requires: Vec<DefId>,
     ensures: Vec<DefId>,
-    pub(crate) no_panic: bool,
-    pub(crate) terminates: bool,
+    pub(crate) check_ghost: bool,
+    pub(crate) check_terminates: bool,
 }
 
 impl ContractClauses {
@@ -102,8 +102,8 @@ impl ContractClauses {
             variant: None,
             requires: Vec::new(),
             ensures: Vec::new(),
-            no_panic: false,
-            terminates: false,
+            check_ghost: false,
+            check_terminates: false,
         }
     }
 
@@ -152,14 +152,14 @@ impl ContractClauses {
             log::trace!("variant clause {:?}", var_id);
             ctx.term(var_id).unwrap().rename(bound)
         });
-        log::trace!("no_panic: {}", self.no_panic);
-        log::trace!("terminates: {}", self.terminates);
+        log::trace!("ghost: {}", self.check_ghost);
+        log::trace!("terminates: {}", self.check_terminates);
         EarlyBinder::bind(PreContract {
             variant,
             requires,
             ensures,
-            no_panic: self.no_panic,
-            terminates: self.terminates,
+            check_ghost: self.check_ghost,
+            check_terminates: self.check_terminates,
             extern_no_spec: false,
             has_user_contract,
         })
@@ -199,10 +199,10 @@ pub(crate) fn contract_clauses_of(
     if it_variant.next().transpose()?.is_some() {
         return Err(MultipleVariant { id: def_id });
     }
-    let terminates = is_terminates(ctx.tcx, def_id);
-    let no_panic = is_no_panic(ctx.tcx, def_id);
+    let check_terminates = is_check_terminates(ctx.tcx, def_id);
+    let check_ghost = is_check_ghost(ctx.tcx, def_id);
 
-    Ok(ContractClauses { requires, ensures, variant, terminates, no_panic })
+    Ok(ContractClauses { requires, ensures, variant, check_terminates, check_ghost })
 }
 
 pub(crate) fn inherited_extern_spec<'tcx>(
@@ -285,8 +285,9 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     }
 }
 
+/// A function signature, that can be either program or logic.
 #[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
-pub struct PreSignature<'tcx> {
+pub(crate) struct PreSignature<'tcx> {
     pub(crate) inputs: Box<[(PIdent, Span, Ty<'tcx>)]>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,
@@ -357,8 +358,8 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             variant: None,
             requires: vec![],
             ensures: vec![],
-            no_panic: true,
-            terminates: true,
+            check_ghost: true,
+            check_terminates: true,
             extern_no_spec: false,
             has_user_contract: false,
         };
@@ -421,18 +422,23 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         assert!(presig.contract.variant.is_none());
     }
 
-    for (input, _, _) in &presig.inputs {
-        if input.0.name() == why3::Symbol::intern("result")
-            && !matches!(
-                ctx.intrinsic(def_id),
-                Intrinsic::Postcondition
-                    | Intrinsic::PostconditionMut
-                    | Intrinsic::PostconditionOnce
-                    | Intrinsic::HistInv
-                    | Intrinsic::Precondition
-            )
-        {
-            ctx.crash_and_error(ctx.def_span(def_id), "`result` is not allowed as a parameter name")
+    if !presig.contract.extern_no_spec {
+        for (input, _, _) in &presig.inputs {
+            if input.0.name() == why3::Symbol::intern("result")
+                && !matches!(
+                    ctx.intrinsic(def_id),
+                    Intrinsic::Postcondition
+                        | Intrinsic::PostconditionMut
+                        | Intrinsic::PostconditionOnce
+                        | Intrinsic::HistInv
+                        | Intrinsic::Precondition
+                )
+            {
+                ctx.crash_and_error(
+                    ctx.def_span(def_id),
+                    "`result` is not allowed as a parameter name",
+                )
+            }
         }
     }
 

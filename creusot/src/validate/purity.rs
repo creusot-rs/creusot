@@ -1,6 +1,8 @@
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{Intrinsic, is_logic, is_prophetic, is_snapshot_closure, is_spec},
+    contracts_items::{
+        Intrinsic, is_erasure, is_logic, is_prophetic, is_snapshot_closure, is_spec,
+    },
     ctx::{HasTyCtxt, TranslationCtx},
     translation::traits::TraitResolved,
 };
@@ -15,12 +17,12 @@ use rustc_trait_selection::infer::InferCtxtExt;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Purity {
-    /// Same as `Program { terminates: true, no_panic: true }`, but can also call the few
+    /// Same as `Program { terminates: true, ghost: true }`, but can also call the few
     /// ghost-only functions (e.g. `Ghost::new`).
     Ghost,
     Program {
         terminates: bool,
-        no_panic: bool,
+        ghost: bool,
     },
     Logic {
         prophetic: bool,
@@ -35,7 +37,7 @@ impl Purity {
             Purity::Logic { prophetic: !is_snapshot_closure(ctx.tcx, def_id) }
         } else {
             let contract = &ctx.sig(def_id).contract;
-            Purity::Program { terminates: contract.terminates, no_panic: contract.no_panic }
+            Purity::Program { terminates: contract.check_terminates, ghost: contract.check_ghost }
         }
     }
 
@@ -45,13 +47,12 @@ impl Purity {
                 prophetic || !prophetic2
             }
             (
-                Purity::Program { no_panic, terminates },
-                Purity::Program { no_panic: no_panic2, terminates: terminates2 },
-            ) => no_panic <= no_panic2 && terminates <= terminates2,
-            (
-                Purity::Ghost,
-                Purity::Ghost | Purity::Program { no_panic: true, terminates: true },
-            ) => true,
+                Purity::Program { ghost, terminates },
+                Purity::Program { ghost: ghost2, terminates: terminates2 },
+            ) => ghost <= ghost2 && terminates <= terminates2,
+            (Purity::Ghost, Purity::Ghost | Purity::Program { ghost: true, terminates: true }) => {
+                true
+            }
             (_, _) => false,
         }
     }
@@ -59,10 +60,9 @@ impl Purity {
     fn as_str(&self) -> &'static str {
         match self {
             Purity::Ghost => "ghost",
-            Purity::Program { terminates, no_panic } => match (*terminates, *no_panic) {
-                (true, true) => "program (pure)",
+            Purity::Program { terminates, ghost } => match (*terminates, *ghost) {
+                (_, true) => "program (ghost)",
                 (true, false) => "program (terminates)",
-                (false, true) => "program (no panic)",
                 (false, false) => "program",
             },
             Purity::Logic { prophetic: false } => "logic",
@@ -99,6 +99,11 @@ struct PurityVisitor<'a, 'tcx> {
     typing_env: TypingEnv<'tcx>,
 }
 
+enum ClosureKind {
+    Spec(LocalDefId),
+    Erasure,
+}
+
 impl PurityVisitor<'_, '_> {
     fn purity(&self, func_did: DefId, args: &[ExprId]) -> Purity {
         if is_logic(self.ctx.tcx, func_did) {
@@ -112,9 +117,9 @@ impl PurityVisitor<'_, '_> {
         } else {
             let contract = &self.ctx.sig(func_did).contract;
             let is_ghost = self.implements_fn_ghost(func_did, args);
-            let terminates = contract.terminates || is_ghost;
-            let no_panic = contract.no_panic || is_ghost;
-            Purity::Program { terminates, no_panic }
+            let terminates = contract.check_terminates || is_ghost;
+            let ghost = contract.check_ghost || is_ghost;
+            Purity::Program { terminates, ghost }
         }
     }
 
@@ -133,7 +138,7 @@ impl PurityVisitor<'_, '_> {
     }
 
     /// If the expression is a closure with attribute `creusot::spec`, return `Some` of its `LocalDefId`, otherwise `None`.
-    fn get_spec_closure(&self, mut expr: ExprId) -> Option<LocalDefId> {
+    fn get_spec_closure(&self, mut expr: ExprId) -> Option<ClosureKind> {
         loop {
             match self.thir[expr].kind {
                 ExprKind::Scope { value, .. } => expr = value,
@@ -147,10 +152,11 @@ impl PurityVisitor<'_, '_> {
                 }
                 ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                     if is_spec(self.ctx.tcx, closure_id.to_def_id()) {
-                        return Some(closure_id);
-                    } else {
-                        return None;
+                        return Some(ClosureKind::Spec(closure_id));
+                    } else if is_erasure(self.ctx.tcx, closure_id.to_def_id()) {
+                        return Some(ClosureKind::Erasure);
                     }
+                    return None;
                 }
                 _ => return None,
             }
@@ -160,9 +166,35 @@ impl PurityVisitor<'_, '_> {
     /// Validate the body of a spec closure.
     fn validate_spec_purity(&mut self, closure_id: LocalDefId, prophetic: bool) {
         // If this is None there must be a type error that will be reported later so we can skip this silently.
-        let Some((thir, expr)) = self.ctx.get_thir(closure_id) else { return };
+        let Some((thir, expr)) = self.ctx.get_local_thir(closure_id) else { return };
         PurityVisitor { thir, context: Purity::Logic { prophetic }, ..*self }
-            .visit_expr(&thir[expr]);
+            .visit_expr(&thir[*expr]);
+    }
+
+    /// Return `false` if this is not a `creusot::spec` or `creusot::erasure` closure.
+    fn try_visit_spec_stmt(&mut self, stmt: &thir::Stmt) -> bool {
+        let thir::StmtKind::Let { ref pattern, initializer: Some(init), else_block, span, .. } =
+            stmt.kind
+        else {
+            return false;
+        };
+        match self.get_spec_closure(init) {
+            Some(ClosureKind::Spec(closure_id)) => {
+                // If the statement is a spec statement, visit it.
+                let thir::PatKind::Wild = pattern.kind else {
+                    self.ctx
+                        .dcx()
+                        .span_fatal(pattern.span, "expected a wildcard pattern in spec statement")
+                };
+                if else_block.is_some() {
+                    self.ctx.dcx().span_fatal(span, "expected no else block in spec statement")
+                };
+                self.validate_spec_purity(closure_id, true);
+                true
+            }
+            Some(ClosureKind::Erasure) => true,
+            None => false,
+        }
     }
 }
 
@@ -245,7 +277,8 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     }
                     if Intrinsic::SnapFromFn.is(self.ctx, func_did) {
                         assert!(args.len() == 1);
-                        let Some(closure_id) = self.get_spec_closure(args[0]) else {
+                        let Some(ClosureKind::Spec(closure_id)) = self.get_spec_closure(args[0])
+                        else {
                             self.ctx.dcx().span_fatal(
                                 expr.span,
                                 "expected a spec closure as argument to `snapshot_from_fn`",
@@ -267,8 +300,8 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     );
                 }
                 // If this is None there must be a type error that will be reported later so we can skip this silently.
-                let Some((ref thir, expr)) = self.ctx.get_thir(closure_id) else { return };
-                PurityVisitor { thir, ..*self }.visit_expr(&thir[expr]);
+                let Some((thir, expr)) = self.ctx.get_local_thir(closure_id) else { return };
+                PurityVisitor { thir, ..*self }.visit_expr(&thir[*expr]);
             }
             ExprKind::Scope {
                 region_scope: _,
@@ -288,22 +321,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
     }
 
     fn visit_stmt(&mut self, stmt: &'a thir::Stmt<'tcx>) {
-        if let thir::StmtKind::Let {
-            ref pattern, initializer: Some(init), else_block, span, ..
-        } = stmt.kind
-            && let Some(closure_id) = self.get_spec_closure(init)
-        {
-            // If the statement is a spec statement, visit it.
-            let thir::PatKind::Wild = pattern.kind else {
-                self.ctx
-                    .dcx()
-                    .span_fatal(pattern.span, "expected a wildcard pattern in spec statement")
-            };
-            if else_block.is_some() {
-                self.ctx.dcx().span_fatal(span, "expected no else block in spec statement")
-            };
-            self.validate_spec_purity(closure_id, true)
-        } else {
+        if !self.try_visit_spec_stmt(stmt) {
             thir::visit::walk_stmt(self, stmt)
         }
     }

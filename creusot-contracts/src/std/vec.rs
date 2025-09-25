@@ -212,21 +212,25 @@ extern_spec! {
     }
 
     impl<T, A: Allocator> IntoIterator for Vec<T, A> {
+        #[check(ghost)]
         #[ensures(self@ == result@)]
         fn into_iter(self) -> IntoIter<T, A>;
     }
 
     impl<'a, T, A: Allocator> IntoIterator for &'a Vec<T, A> {
+        #[check(ghost)]
         #[ensures(self@ == result@@)]
         fn into_iter(self) -> std::slice::Iter<'a, T>;
     }
 
     impl<'a, T, A: Allocator> IntoIterator for &'a mut Vec<T, A> {
+        #[check(ghost)]
         #[ensures(self@ == result@@)]
         fn into_iter(self) -> std::slice::IterMut<'a, T>;
     }
 
     impl<T> Default for Vec<T> {
+        #[check(ghost)]
         #[ensures(result@ == Seq::empty())]
         fn default() -> Vec<T>;
     }

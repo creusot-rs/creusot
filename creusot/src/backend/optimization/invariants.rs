@@ -33,8 +33,7 @@ pub(crate) fn infer_proph_invariants<'tcx>(
     let graph = node_graph(body);
 
     let wto = weak_topological_order(&graph, START_BLOCK);
-    let mut backs = IndexMap::new();
-    descendants(&mut backs, &wto);
+    let backs = descendants(&wto);
 
     let res = borrow_prophecy_analysis(ctx, body, &wto);
 
@@ -135,29 +134,31 @@ fn place_to_term<'tcx>(
     Some(t)
 }
 
-fn descendants(
-    e: &mut IndexMap<BasicBlock, IndexSet<BasicBlock>>,
-    comps: &[Component<BasicBlock>],
-) {
-    for comp in comps {
-        match comp {
-            Component::Vertex(_) => (),
-            Component::Component(l, members) => {
-                descendants(e, members);
-                for mem in members {
-                    match mem {
-                        Component::Vertex(b) => {
-                            e.entry(*l).or_default().insert(*b);
-                        }
-                        Component::Component(b, _) => {
-                            let s = e[b].clone();
-                            e.entry(*l).or_default().union(&s);
+fn descendants(comps: &[Component<BasicBlock>]) -> IndexMap<BasicBlock, IndexSet<BasicBlock>> {
+    fn inner(e: &mut IndexMap<BasicBlock, IndexSet<BasicBlock>>, comps: &[Component<BasicBlock>]) {
+        for comp in comps {
+            match comp {
+                Component::Vertex(_) => (),
+                Component::Component(l, members) => {
+                    inner(e, members);
+                    for mem in members {
+                        match mem {
+                            Component::Vertex(b) => {
+                                e.entry(*l).or_default().insert(*b);
+                            }
+                            Component::Component(b, _) => {
+                                let s = e[b].clone();
+                                e.entry(*l).or_default().union(&s);
+                            }
                         }
                     }
                 }
             }
         }
     }
+    let mut result = IndexMap::new();
+    inner(&mut result, comps);
+    result
 }
 
 fn borrow_prophecy_analysis<'tcx>(

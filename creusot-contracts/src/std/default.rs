@@ -15,6 +15,7 @@ extern_spec! {
     }
 
     impl Default for bool {
+        #[check(ghost)]
         #[ensures(result == false)]
         fn default() -> bool;
     }

@@ -135,4 +135,12 @@ contracts_items! {
     "dead"                      Dead
     "closure_result"            ClosureResult
     "seq_literal"               SeqLiteral
+    "metadata_matches"          MetadataMatches
+    "metadata_matches_slice"    MetadataMatchesSlice
+    "metadata_matches_str"      MetadataMatchesStr
+    "well_founded_relation"     WellFoundedRelation
+    "ptr_own_as_ref"            PtrOwnAsRef
+    "ptr_own_as_mut"            PtrOwnAsMut
+    "ptr_own_from_ref"          PtrOwnFromRef
+    "ptr_own_from_mut"          PtrOwnFromMut
 }
