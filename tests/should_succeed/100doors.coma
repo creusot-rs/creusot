@@ -79,7 +79,9 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   let rec into_iter (self_: t_Range) (return' (x: t_Range)) = any
     [ return''0 (result: t_Range) -> {[%#siter] result = self_} (! return' {result}) ]
   
-  function deep_model (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  function deep_model [@inline:trivial] (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model
   
   predicate produces (self: t_Range) (visited: Seq.seq UInt64.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end
@@ -136,7 +138,9 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   
   meta "rewrite_def" predicate in_bounds
   
-  function view'0 (self: t_Vec) : Seq.seq bool = [%#smodel] view self
+  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq bool = [%#smodel] view self
+  
+  meta "rewrite_def" function view'0
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq bool) (out: bool) =
     [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
@@ -147,7 +151,9 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
     {[@expl:index requires] [%#svec'2] in_bounds ix (view'0 self_)}
     any [ return''0 (result: bool) -> {[%#svec'3] has_value ix (view'0 self_) result} (! return' {result}) ]
   
-  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq bool = [%#smodel'0] view self.current
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq bool = [%#smodel'0] view self.current
+  
+  meta "rewrite_def" function view'1
   
   predicate resolve_elswhere [@inline:trivial] (self: UInt64.t) (old': Seq.seq bool) (fin: Seq.seq bool) =
     [%#sslice'1] forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'

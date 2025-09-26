@@ -167,12 +167,16 @@ module M_12_ghost_code__ghost_check [#"12_ghost_code.rs" 34 0 34 20]
   
   function logi_drop [#"12_ghost_code.rs" 32 0 32 21] (_0: t_Vec) : () = [%#s12_ghost_code'3] ()
   
-  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq Int32.t = [%#smodel] view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq Int32.t = [%#smodel] view self.current
+  
+  meta "rewrite_def" function view'0
   
   let rec push (self_: MutBorrow.t t_Vec) (v: Int32.t) (return' (x: ())) = any
     [ return''0 (result: ()) -> {[%#svec'0] view self_.final = Seq.snoc (view'0 self_) v} (! return' {result}) ]
   
-  function view'1 (self: t_Vec) : Seq.seq Int32.t = [%#smodel'0] view self
+  function view'1 [@inline:trivial] (self: t_Vec) : Seq.seq Int32.t = [%#smodel'0] view self
+  
+  meta "rewrite_def" function view'1
   
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
     [ return''0 (result: UInt64.t) -> {[%#svec'1] UInt64.t'int result = Seq.length (view'1 self_)}
@@ -207,16 +211,20 @@ module M_12_ghost_code__takes_struct [#"12_ghost_code.rs" 51 0 51 36]
   let%span s12_ghost_code = "12_ghost_code.rs" 52 10 52 27
   let%span s12_ghost_code'0 = "12_ghost_code.rs" 50 11 50 20
   let%span smodel = "../../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 57 4 57 18
+  let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 57 4 57 26
   
   use creusot.int.UInt32
   use creusot.prelude.Any
   
   type t_MyStruct = { t_MyStruct__f: UInt32.t; t_MyStruct__g: UInt32.t }
   
-  function view (self: UInt32.t) : int = [%#smodel] UInt32.t'int self
+  function view [@inline:trivial] (self: UInt32.t) : int = [%#smodel] UInt32.t'int self
   
-  function view'0 (self: UInt32.t) : int = [%#ssnapshot] view self
+  meta "rewrite_def" function view
+  
+  function view'0 [@inline:trivial] (self: UInt32.t) : int = [%#ssnapshot] view self
+  
+  meta "rewrite_def" function view'0
   
   meta "compute_max_steps" 1000000
   

@@ -12,7 +12,7 @@ impl View for char {
 
 impl DeepModel for char {
     type DeepModelTy = Int;
-    #[logic(open)]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { self@ }
     }

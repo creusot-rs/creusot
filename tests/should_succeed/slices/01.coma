@@ -11,7 +11,9 @@ module M_01__index_slice [#"01.rs" 6 0 6 36]
   use seq.Seq
   use mach.int.Int
   
-  function view (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = [%#smodel] Slice64.view self
+  function view [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = [%#smodel] Slice64.view self
+  
+  meta "rewrite_def" function view
   
   meta "compute_max_steps" 1000000
   
@@ -60,7 +62,10 @@ module M_01__index_mut_slice [#"01.rs" 12 0 12 37]
   
   meta "rewrite_def" predicate resolve'0
   
-  function view (self: MutBorrow.t (Slice64.slice UInt32.t)) : Seq.seq UInt32.t = [%#smodel] Slice64.view self.current
+  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice UInt32.t)) : Seq.seq UInt32.t =
+    [%#smodel] Slice64.view self.current
+  
+  meta "rewrite_def" function view
   
   function index_logic [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
     [%#sslice] Seq.get (Slice64.view self) ix
@@ -151,7 +156,9 @@ module M_01__slice_first [#"01.rs" 20 0 20 44]
   
   axiom inv_axiom'2 [@rewrite]: forall x: Slice64.slice t_T [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel] Slice64.view self
+  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel] Slice64.view self
+  
+  meta "rewrite_def" function view
   
   let rec len (self_: Slice64.slice t_T) (return' (x: UInt64.t)) =
     {[@expl:len 'self_' type invariant] [%#sslice] inv'3 self_}

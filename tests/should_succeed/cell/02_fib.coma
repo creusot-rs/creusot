@@ -136,7 +136,9 @@ module M_02_fib__fib_memo [#"02_fib.rs" 52 0 52 50]
   
   axiom view_spec: forall self: t_Vec. [%#svec'1] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 (self: t_Vec) : Seq.seq t_PredCell = [%#smodel] view self
+  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq t_PredCell = [%#smodel] view self
+  
+  meta "rewrite_def" function view'0
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_PredCell) (out: t_PredCell) =
     [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
@@ -155,7 +157,9 @@ module M_02_fib__fib_memo [#"02_fib.rs" 52 0 52 50]
   
   function view'1 (self: t_PredCell) : Map.map t_Option bool
   
-  function view'2 (self: t_PredCell) : Map.map t_Option bool = [%#smodel] view'1 self
+  function view'2 [@inline:trivial] (self: t_PredCell) : Map.map t_Option bool = [%#smodel] view'1 self
+  
+  meta "rewrite_def" function view'2
   
   let rec get (self: t_PredCell) (return' (x: t_Option)) = any
     [ return''0 (result: t_Option) -> {[%#spredcell] index_logic (view'2 self) result} (! return' {result}) ]

@@ -81,7 +81,7 @@ impl<F> FnGhostWrapper<F> {
 impl<F> View for FnGhostWrapper<F> {
     type ViewTy = F;
 
-    #[logic]
+    #[logic(inline)]
     fn view(self) -> Self::ViewTy {
         self.0
     }

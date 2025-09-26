@@ -77,7 +77,7 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
   let%span stime'32 = "../../creusot-contracts/src/std/time.rs" 43 4 43 24
   let%span stime'33 = "../../creusot-contracts/src/std/time.rs" 33 4 33 21
   let%span stime'34 = "../../creusot-contracts/src/std/time.rs" 29 4 29 17
-  let%span stime'35 = "../../creusot-contracts/src/std/time.rs" 21 4 21 18
+  let%span stime'35 = "../../creusot-contracts/src/std/time.rs" 21 4 21 26
   let%span soption = "../../creusot-contracts/src/std/option.rs" 79 26 79 51
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 53 26 53 51
   let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 14 8 17 9
@@ -125,7 +125,9 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
       = secs_to_nanos (UInt64.t'int secs) + UInt32.t'int nanos}
       (! return' {result}) ]
   
-  function view'0 (self: t_Duration) : int = [%#smodel] view self
+  function view'0 [@inline:trivial] (self: t_Duration) : int = [%#smodel] view self
+  
+  meta "rewrite_def" function view'0
   
   let rec as_nanos (self_: t_Duration) (return' (x: UInt128.t)) = any
     [ return''0 (result: UInt128.t) -> {[%#stime'2] UInt128.t'int result = view'0 self_}
@@ -233,12 +235,16 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
-  function deep_model (self: t_Duration) : int = [%#stime'35] view self
+  function deep_model [@inline:trivial] (self: t_Duration) : int = [%#stime'35] view self
   
-  function deep_model'0 (self: t_Option) : t_Option'0 = [%#soption'1] match self with
+  meta "rewrite_def" function deep_model
+  
+  function deep_model'0 [@inline:trivial] (self: t_Option) : t_Option'0 = [%#soption'1] match self with
       | C_Some t -> C_Some'0 (deep_model t)
       | C_None -> C_None'0
       end
+  
+  meta "rewrite_def" function deep_model'0
   
   let rec checked_add (self_: t_Duration) (rhs: t_Duration) (return' (x: t_Option)) = any
     [ return''0 (result: t_Option) -> {[%#stime'19] nanos_to_secs (view self_ + view rhs) > UInt64.t'int const_MAX

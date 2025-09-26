@@ -10,7 +10,7 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
   let%span sresource'0 = "../../../creusot-contracts/src/ghost/resource.rs" 217 19 217 42
   let%span sresource'1 = "../../../creusot-contracts/src/ghost/resource.rs" 218 18 218 32
   let%span sresource'2 = "../../../creusot-contracts/src/ghost/resource.rs" 219 18 219 42
-  let%span sresource'3 = "../../../creusot-contracts/src/ghost/resource.rs" 53 8 53 22
+  let%span sresource'3 = "../../../creusot-contracts/src/ghost/resource.rs" 53 8 53 30
   let%span sid = "../../../creusot-contracts/src/logic/id.rs" 31 14 31 41
   let%span smodel = "../../../creusot-contracts/src/model.rs" 59 8 59 22
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 43 8 43 22
@@ -57,11 +57,17 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
   
   function val' (self: t_Resource) : t_Excl
   
-  function view (self: t_Resource) : t_Excl = [%#sresource'3] val' self
+  function view [@inline:trivial] (self: t_Resource) : t_Excl = [%#sresource'3] val' self
   
-  function view'0 (self: MutBorrow.t t_Resource) : t_Excl = [%#smodel] view self.current
+  meta "rewrite_def" function view
   
-  function view'1 (self: t_Resource) : t_Excl = [%#smodel'0] view self
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Resource) : t_Excl = [%#smodel] view self.current
+  
+  meta "rewrite_def" function view'0
+  
+  function view'1 [@inline:trivial] (self: t_Resource) : t_Excl = [%#smodel'0] view self
+  
+  meta "rewrite_def" function view'1
   
   let rec valid_shared (self: MutBorrow.t t_Resource) (other: t_Resource) (return' (x: ())) =
     {[@expl:valid_shared requires] [%#sresource'0] id self.current = id other}

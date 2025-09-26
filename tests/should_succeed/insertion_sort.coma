@@ -33,7 +33,7 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
   let%span siter = "../../creusot-contracts/src/std/iter.rs" 215 18 215 32
   let%span siter'0 = "../../creusot-contracts/src/std/iter.rs" 93 26 96 17
   let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 294 4 294 18
-  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 18
+  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 26
   let%span smodel = "../../creusot-contracts/src/model.rs" 59 8 59 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span srange = "../../creusot-contracts/src/std/iter/range.rs" 23 12 27 70
@@ -83,7 +83,9 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
   use creusot.prelude.Opaque
   use creusot.prelude.Any
   
-  function view (self: Slice64.slice Int32.t) : Seq.seq Int32.t = [%#smodel'0] Slice64.view self
+  function view [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t = [%#smodel'0] Slice64.view self
+  
+  meta "rewrite_def" function view
   
   let rec len (self_: Slice64.slice Int32.t) (return' (x: UInt64.t)) = any
     [ return''0 (result: UInt64.t) -> {[%#sslice] Seq.length (view self_) = UInt64.t'int result} (! return' {result}) ]
@@ -96,11 +98,20 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
   predicate permutation_of (self: Seq.seq Int32.t) (other: Seq.seq Int32.t) =
     [%#sseq] Permut.permut self other 0 (Seq.length self)
   
-  function view'0 (self: MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t = [%#smodel] Slice64.view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t =
+    [%#smodel] Slice64.view self.current
   
-  function view'1 (self: MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t = [%#smodel'0] view'0 self
+  meta "rewrite_def" function view'0
   
-  function view'2 (self: MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t = [%#ssnapshot] view'1 self
+  function view'1 [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t =
+    [%#smodel'0] view'0 self
+  
+  meta "rewrite_def" function view'1
+  
+  function view'2 [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t =
+    [%#ssnapshot] view'1 self
+  
+  meta "rewrite_def" function view'2
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -152,7 +163,9 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
   predicate sorted_range [#"insertion_sort.rs" 6 0 6 67] (s: Seq.seq Int32.t) (l: int) (u: int) =
     [%#sinsertion_sort'22] forall i: int, j: int. l <= i /\ i < j /\ j < u -> Int32.le (Seq.get s i) (Seq.get s j)
   
-  function deep_model (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  function deep_model [@inline:trivial] (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model
   
   predicate produces (self: t_Range) (visited: Seq.seq UInt64.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end

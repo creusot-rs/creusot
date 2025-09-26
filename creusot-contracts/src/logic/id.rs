@@ -44,7 +44,7 @@ impl Eq for Id {}
 
 impl DeepModel for Id {
     type DeepModelTy = Id;
-    #[logic(open)]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         self
     }

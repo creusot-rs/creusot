@@ -149,12 +149,18 @@ module M_constrained_types__uses_concrete_instance [#"constrained_types.rs" 14 0
   
   axiom cmp_le_log_spec'0: forall x: tuple'0, y: tuple'0. [%#sord'0] le_log x y = (cmp_log'0 x y <> C_Greater)
   
-  function deep_model (self: UInt32.t) : int = [%#snum] UInt32.t'int self
+  function deep_model [@inline:trivial] (self: UInt32.t) : int = [%#snum] UInt32.t'int self
   
-  function deep_model'0 (self: tuple) : tuple'0 = [%#stuples] { _p0'0 = deep_model self._p0;
-                                                                _p1'0 = deep_model self._p1 }
+  meta "rewrite_def" function deep_model
   
-  function deep_model'1 (self: tuple) : tuple'0 = [%#smodel] deep_model'0 self
+  function deep_model'0 [@inline:trivial] (self: tuple) : tuple'0 = [%#stuples] { _p0'0 = deep_model self._p0;
+                                                                                  _p1'0 = deep_model self._p1 }
+  
+  meta "rewrite_def" function deep_model'0
+  
+  function deep_model'1 [@inline:trivial] (self: tuple) : tuple'0 = [%#smodel] deep_model'0 self
+  
+  meta "rewrite_def" function deep_model'1
   
   let rec lt (self_: tuple) (o: tuple) (return' (x: bool)) = any
     [ return''0 (result: bool) -> {[%#sconstrained_types] result = lt_log (deep_model'1 self_) (deep_model'1 o)}

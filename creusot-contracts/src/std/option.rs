@@ -9,7 +9,7 @@ pub use ::std::option::*;
 impl<T: DeepModel> DeepModel for Option<T> {
     type DeepModelTy = Option<T::DeepModelTy>;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         match self {
             Some(t) => Some(t.deep_model()),

@@ -59,7 +59,9 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   
   type t_Option = C_None | C_Some Int32.t
   
-  function view'0 (self: Slice64.slice Int32.t) : Seq.seq Int32.t = [%#smodel'1] Slice64.view self
+  function view'0 [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t = [%#smodel'1] Slice64.view self
+  
+  meta "rewrite_def" function view'0
   
   function index_logic [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
     [%#sslice'10] Seq.get (Slice64.view self) ix
@@ -92,7 +94,9 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   
   meta "rewrite_def" predicate resolve
   
-  function view'1 (self: MutBorrow.t t_Iter) : Slice64.slice Int32.t = [%#smodel'0] view self.current
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice Int32.t = [%#smodel'0] view self.current
+  
+  meta "rewrite_def" function view'1
   
   predicate completed (self: MutBorrow.t t_Iter) =
     [%#sslice'0] resolve self /\ Slice64.view (view'1 self) = (Seq.empty: Seq.seq Int32.t)
@@ -108,16 +112,24 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
-  function deep_model (self: Int32.t) : int = [%#snum] Int32.to_int self
+  function deep_model [@inline:trivial] (self: Int32.t) : int = [%#snum] Int32.to_int self
   
-  function deep_model'0 (self: Int32.t) : int = [%#smodel] deep_model self
+  meta "rewrite_def" function deep_model
   
-  function deep_model'1 (self: t_Option) : t_Option'0 = [%#soption'0] match self with
+  function deep_model'0 [@inline:trivial] (self: Int32.t) : int = [%#smodel] deep_model self
+  
+  meta "rewrite_def" function deep_model'0
+  
+  function deep_model'1 [@inline:trivial] (self: t_Option) : t_Option'0 = [%#soption'0] match self with
       | C_Some t -> C_Some'0 (deep_model'0 t)
       | C_None -> C_None'0
       end
   
-  function deep_model'2 (self: t_Option) : t_Option'0 = [%#smodel] deep_model'1 self
+  meta "rewrite_def" function deep_model'1
+  
+  function deep_model'2 [@inline:trivial] (self: t_Option) : t_Option'0 = [%#smodel] deep_model'1 self
+  
+  meta "rewrite_def" function deep_model'2
   
   let rec eq (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
     [ return''0 (result: bool) -> {[%#soption] result = (deep_model'2 self_ = deep_model'2 rhs)} (! return' {result}) ]
@@ -208,7 +220,9 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   
   meta "rewrite_def" predicate resolve'0
   
-  function view'3 (self: MutBorrow.t t_IntoIter) : Seq.seq Int32.t = [%#smodel'0] view'2 self.current
+  function view'3 [@inline:trivial] (self: MutBorrow.t t_IntoIter) : Seq.seq Int32.t = [%#smodel'0] view'2 self.current
+  
+  meta "rewrite_def" function view'3
   
   predicate completed'0 (self: MutBorrow.t t_IntoIter) =
     [%#sarray'7] resolve'0 self /\ view'3 self = (Seq.empty: Seq.seq Int32.t)
@@ -224,12 +238,16 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   
   type tuple'0 = { _p0'0: t_Option'1; _p1'0: t_Option'1 }
   
-  function deep_model'3 (self: t_Option'1) : t_Option'0 = [%#soption'0] match self with
+  function deep_model'3 [@inline:trivial] (self: t_Option'1) : t_Option'0 = [%#soption'0] match self with
       | C_Some'1 t -> C_Some'0 (deep_model t)
       | C_None'1 -> C_None'0
       end
   
-  function deep_model'4 (self: t_Option'1) : t_Option'0 = [%#smodel] deep_model'3 self
+  meta "rewrite_def" function deep_model'3
+  
+  function deep_model'4 [@inline:trivial] (self: t_Option'1) : t_Option'0 = [%#smodel] deep_model'3 self
+  
+  meta "rewrite_def" function deep_model'4
   
   let rec eq'0 (self_: t_Option'1) (rhs: t_Option'1) (return' (x: bool)) = any
     [ return''0 (result: bool) -> {[%#soption] result = (deep_model'4 self_ = deep_model'4 rhs)} (! return' {result}) ]

@@ -165,7 +165,7 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 38 0 40 29]
   let%span svec'9 = "../../creusot-contracts/src/std/vec.rs" 93 20 93 41
   let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 294 4 294 18
   let%span sseq'0 = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
-  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 18
+  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 26
   let%span sslice = "../../creusot-contracts/src/std/slice.rs" 267 8 267 9
   let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 268 19 268 35
   let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 269 19 269 35
@@ -275,16 +275,25 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 38 0 40 29]
   axiom deep_model_spec'0: forall self: t_Vec. [%#svec'7] forall i: int. 0 <= i /\ i < Seq.length (view self)
         -> Seq.get (deep_model'0 self) i = deep_model (index_logic self i)
   
-  function deep_model'1 (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy = [%#smodel] deep_model'0 self.current
+  function deep_model'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy =
+    [%#smodel] deep_model'0 self.current
   
-  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'0] view self.current
+  meta "rewrite_def" function deep_model'1
+  
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'0] view self.current
+  
+  meta "rewrite_def" function view'0
   
   predicate permutation_of (self: Seq.seq t_T) (other: Seq.seq t_T) =
     [%#sseq] Permut.permut self other 0 (Seq.length self)
   
-  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'1] view'0 self
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'1] view'0 self
   
-  function view'2 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'1 self
+  meta "rewrite_def" function view'1
+  
+  function view'2 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'1 self
+  
+  meta "rewrite_def" function view'2
   
   predicate inv (_0: t_T)
   
@@ -331,7 +340,9 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 38 0 40 29]
   
   meta "rewrite_def" predicate in_bounds
   
-  function view'3 (self: t_Vec) : Seq.seq t_T = [%#smodel'1] view self
+  function view'3 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = [%#smodel'1] view self
+  
+  meta "rewrite_def" function view'3
   
   predicate invariant''4 [@inline:trivial] (self: t_T) = [%#sinvariant'0] inv self
   
@@ -360,7 +371,9 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 38 0 40 29]
     [%#sheapsort_generic'25] forall args: tuple [precondition () args]. (let {_p0 = self_; _p1 = other} = args in inv'5 other
         /\ inv'5 self_) -> precondition () args
   
-  function deep_model'2 (self: t_T) : t_DeepModelTy = [%#smodel'2] deep_model self
+  function deep_model'2 [@inline:trivial] (self: t_T) : t_DeepModelTy = [%#smodel'2] deep_model self
+  
+  meta "rewrite_def" function deep_model'2
   
   predicate postcondition_once (self: ()) (args: tuple) (result: bool)
   
@@ -404,7 +417,10 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 38 0 40 29]
   
   axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'7 x]. inv'7 x = invariant''6 x
   
-  function view'4 (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = [%#smodel'0] Slice64.view self.current
+  function view'4 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T =
+    [%#smodel'0] Slice64.view self.current
+  
+  meta "rewrite_def" function view'4
   
   let rec deref_mut (self_: MutBorrow.t t_Vec) (return' (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:deref_mut 'self_' type invariant] [%#svec'3] inv'3 self_}
@@ -641,7 +657,7 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 90 0 92 29]
   let%span svec'8 = "../../creusot-contracts/src/std/vec.rs" 93 20 93 41
   let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 294 4 294 18
   let%span sseq'0 = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
-  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 18
+  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 26
   let%span sslice = "../../creusot-contracts/src/std/slice.rs" 267 8 267 9
   let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 268 19 268 35
   let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 269 19 269 35
@@ -712,14 +728,18 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 90 0 92 29]
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'0 (self: t_Vec) : Seq.seq t_T = [%#smodel'1] view self
+  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = [%#smodel'1] view self
+  
+  meta "rewrite_def" function view'0
   
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] [%#svec] inv'3 self_}
     any
     [ return''0 (result: UInt64.t) -> {[%#svec'0] UInt64.t'int result = Seq.length (view'0 self_)}
       (! return' {result}) ]
   
-  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
+  
+  meta "rewrite_def" function view'1
   
   type t_DeepModelTy
   
@@ -792,14 +812,21 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 90 0 92 29]
   axiom deep_model_spec'0: forall self: t_Vec. [%#svec'5] forall i: int. 0 <= i /\ i < Seq.length (view self)
         -> Seq.get (deep_model'0 self) i = deep_model (index_logic self i)
   
-  function deep_model'1 (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy = [%#smodel'0] deep_model'0 self.current
+  function deep_model'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy =
+    [%#smodel'0] deep_model'0 self.current
+  
+  meta "rewrite_def" function deep_model'1
   
   predicate permutation_of (self: Seq.seq t_T) (other: Seq.seq t_T) =
     [%#sseq] Permut.permut self other 0 (Seq.length self)
   
-  function view'2 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'1] view'1 self
+  function view'2 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'1] view'1 self
   
-  function view'3 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'2 self
+  meta "rewrite_def" function view'2
+  
+  function view'3 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'2 self
+  
+  meta "rewrite_def" function view'3
   
   predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Vec) =
     [%#sinvariant] inv'2 self.current /\ inv'2 self.final
@@ -846,7 +873,10 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 90 0 92 29]
   
   axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'6 x]. inv'6 x = invariant''5 x
   
-  function view'4 (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = [%#smodel] Slice64.view self.current
+  function view'4 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T =
+    [%#smodel] Slice64.view self.current
+  
+  meta "rewrite_def" function view'4
   
   let rec deref_mut (self_: MutBorrow.t t_Vec) (return' (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:deref_mut 'self_' type invariant] [%#svec'1] inv'4 self_}

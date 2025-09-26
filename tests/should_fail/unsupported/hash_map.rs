@@ -8,7 +8,7 @@ pub struct Foo(HashMap<u64, u8>);
 impl View for Foo {
     type ViewTy = <HashMap<u64, u8> as View>::ViewTy; //FMap<Int, u8>;
 
-    #[logic(open(crate))]
+    #[logic(open(crate), inline)]
     fn view(self) -> Self::ViewTy {
         self.0.view()
     }

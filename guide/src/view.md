@@ -1,6 +1,6 @@
 # Views as models of types
 
-It is generally convenient to map a Rust type to its logical model. 
+It is generally convenient to map a Rust type to its logical model.
 This logical model is the type that specifications and clients then use to describe values of this type in the logic.
 
 In Creusot, this is provide using the `creusot_contracts::View` trait, providing a `view` method mapping the type to a `ViewTy` associated type for the model.
@@ -11,15 +11,14 @@ For example, the following gives a spooky data type `MyPair<T, U>` a nice pair m
 
 ```rust
 struct MyPair<T, U> {
-  fst: T, 
+  fst: T,
   snd: U,
 }
 
 impl<T, U> View for MyPair<T, U> {
     type ViewTy = (T, U);
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn view(self) -> Self::ViewTy {
         (self.fst, self.snd)
     }

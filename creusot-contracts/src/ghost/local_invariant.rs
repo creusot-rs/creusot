@@ -185,7 +185,7 @@ impl Tokens<'_> {
 
 impl View for Tokens<'_> {
     type ViewTy = Set<Namespace>;
-    #[logic(open)]
+    #[logic(open, inline)]
     fn view(self) -> Set<Namespace> {
         self.namespaces()
     }

@@ -33,12 +33,16 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   
   axiom view_spec: forall self: t_Vec. [%#svec'2] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 (self: t_Vec) : Seq.seq UInt64.t = [%#smodel'0] view self
+  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq UInt64.t = [%#smodel'0] view self
+  
+  meta "rewrite_def" function view'0
   
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
     [ return''0 (result: UInt64.t) -> {[%#svec] UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
   
-  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq UInt64.t = [%#smodel] view self.current
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq UInt64.t = [%#smodel] view self.current
+  
+  meta "rewrite_def" function view'1
   
   let rec push (self_: MutBorrow.t t_Vec) (v: UInt64.t) (return' (x: ())) = any
     [ return''0 (result: ()) -> {[%#svec'0] view self_.final = Seq.snoc (view'1 self_) v} (! return' {result}) ]
@@ -182,7 +186,9 @@ module M_two_phase__qyi14099956410468907124__insert [#"two_phase.rs" 21 4 21 28]
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'4 x]. inv'4 x = invariant''3 x
   
-  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq t_K = [%#smodel] view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_K = [%#smodel] view self.current
+  
+  meta "rewrite_def" function view'0
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_K = [%#svec'6] Seq.get (view self) ix
   

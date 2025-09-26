@@ -86,7 +86,9 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
   let rec into_iter (self_: t_Iter) (return' (x: t_Iter)) = any
     [ return''0 (result: t_Iter) -> {[%#siter] result = self_} (! return' {result}) ]
   
-  function view'0 (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel] Slice64.view self
+  function view'0 [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel] Slice64.view self
+  
+  meta "rewrite_def" function view'0
   
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T =
     [%#sslice'11] Seq.get (Slice64.view self) ix
@@ -155,7 +157,9 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
   
   meta "rewrite_def" predicate resolve
   
-  function view'1 (self: MutBorrow.t t_Iter) : Slice64.slice t_T = [%#smodel'0] view self.current
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice t_T = [%#smodel'0] view self.current
+  
+  meta "rewrite_def" function view'1
   
   predicate completed (self: MutBorrow.t t_Iter) =
     [%#sslice'10] resolve self /\ Slice64.view (view'1 self) = (Seq.empty: Seq.seq t_T)
@@ -330,9 +334,13 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'0 (self: t_Vec) : Seq.seq t_T = [%#smodel] view self
+  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = [%#smodel] view self
   
-  function view'1 (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel] Slice64.view self
+  meta "rewrite_def" function view'0
+  
+  function view'1 [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel] Slice64.view self
+  
+  meta "rewrite_def" function view'1
   
   function view'2 (self: t_Iter) : Slice64.slice t_T
   
@@ -407,7 +415,9 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
   
   meta "rewrite_def" predicate resolve
   
-  function view'3 (self: MutBorrow.t t_Iter) : Slice64.slice t_T = [%#smodel'0] view'2 self.current
+  function view'3 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice t_T = [%#smodel'0] view'2 self.current
+  
+  meta "rewrite_def" function view'3
   
   predicate completed (self: MutBorrow.t t_Iter) =
     [%#sslice'8] resolve self /\ Slice64.view (view'3 self) = (Seq.empty: Seq.seq t_T)
@@ -535,7 +545,10 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   
   type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  function view (self: MutBorrow.t (Slice64.slice UInt64.t)) : Seq.seq UInt64.t = [%#smodel] Slice64.view self.current
+  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice UInt64.t)) : Seq.seq UInt64.t =
+    [%#smodel] Slice64.view self.current
+  
+  meta "rewrite_def" function view
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -543,7 +556,9 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   
   axiom view_spec: forall self: t_Vec. [%#svec'1] Seq.length (view'0 self) <= UInt64.t'int const_MAX
   
-  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq UInt64.t = [%#smodel] view'0 self.current
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq UInt64.t = [%#smodel] view'0 self.current
+  
+  meta "rewrite_def" function view'1
   
   let rec deref_mut (self_: MutBorrow.t t_Vec) (return' (x: MutBorrow.t (Slice64.slice UInt64.t))) = any
     [ return''0 (result: MutBorrow.t (Slice64.slice UInt64.t)) -> {[%#svec] view result = view'1 self_}
@@ -618,7 +633,10 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   
   meta "rewrite_def" predicate resolve'1
   
-  function view'3 (self: MutBorrow.t t_IterMut) : MutBorrow.t (Slice64.slice UInt64.t) = [%#smodel] view'2 self.current
+  function view'3 [@inline:trivial] (self: MutBorrow.t t_IterMut) : MutBorrow.t (Slice64.slice UInt64.t) =
+    [%#smodel] view'2 self.current
+  
+  meta "rewrite_def" function view'3
   
   predicate completed (self: MutBorrow.t t_IterMut) =
     [%#sslice'10] resolve'1 self /\ Slice64.view (view'3 self).current = (Seq.empty: Seq.seq UInt64.t)
@@ -1082,7 +1100,9 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   
   type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  function view (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = [%#smodel] Slice64.view self
+  function view [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = [%#smodel] Slice64.view self
+  
+  meta "rewrite_def" function view
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -1090,7 +1110,9 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   
   axiom view_spec: forall self: t_Vec. [%#svec'0] Seq.length (view'0 self) <= UInt64.t'int const_MAX
   
-  function view'1 (self: t_Vec) : Seq.seq UInt32.t = [%#smodel] view'0 self
+  function view'1 [@inline:trivial] (self: t_Vec) : Seq.seq UInt32.t = [%#smodel] view'0 self
+  
+  meta "rewrite_def" function view'1
   
   let rec deref (self_: t_Vec) (return' (x: Slice64.slice UInt32.t)) = any
     [ return''0 (result: Slice64.slice UInt32.t) -> {[%#svec] view result = view'1 self_} (! return' {result}) ]
@@ -1236,7 +1258,10 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   
   meta "rewrite_def" predicate resolve'4
   
-  function view'3 (self: MutBorrow.t t_Iter) : Slice64.slice UInt32.t = [%#smodel'0] view'2 self.current
+  function view'3 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice UInt32.t =
+    [%#smodel'0] view'2 self.current
+  
+  meta "rewrite_def" function view'3
   
   predicate completed (self: MutBorrow.t t_Iter) =
     [%#sslice'9] resolve'4 self /\ Slice64.view (view'3 self) = (Seq.empty: Seq.seq UInt32.t)
@@ -1473,7 +1498,9 @@ module M_03_std_iterators__sum_range [#"03_std_iterators.rs" 61 0 61 35]
   
   axiom cmp_le_log_spec: forall x: Int64.t, y: Int64.t. [%#sord] Int64.le x y = (cmp_log x y <> C_Greater)
   
-  function deep_model (self: Int64.t) : int = [%#snum] Int64.to_int self
+  function deep_model [@inline:trivial] (self: Int64.t) : int = [%#snum] Int64.to_int self
+  
+  meta "rewrite_def" function deep_model
   
   predicate produces (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end
@@ -1622,7 +1649,9 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
   
   type t_Enumerate = { t_Enumerate__iter: t_Range; t_Enumerate__count: UInt64.t }
   
-  function deep_model (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  function deep_model [@inline:trivial] (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model
   
   predicate produces (self: t_Range) (visited: Seq.seq UInt64.t) (o: t_Range) =
     [%#srange'0] self.t_Range__end = o.t_Range__end
@@ -1915,7 +1944,9 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   
   axiom inv_axiom'2 [@rewrite]: forall x: Slice64.slice t_T [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel'0] Slice64.view self
+  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel'0] Slice64.view self
+  
+  meta "rewrite_def" function view
   
   let rec len (self_: Slice64.slice t_T) (return' (x: UInt64.t)) =
     {[@expl:len 'self_' type invariant] [%#sslice] inv'3 self_}
@@ -1923,7 +1954,10 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
     [ return''0 (result: UInt64.t) -> {[%#sslice'0] Seq.length (view self_) = UInt64.t'int result}
       (! return' {result}) ]
   
-  function view'0 (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = [%#smodel] Slice64.view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T =
+    [%#smodel] Slice64.view self.current
+  
+  meta "rewrite_def" function view'0
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
@@ -2028,7 +2062,9 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   predicate equiv_range [#"03_std_iterators.rs" 78 0 78 65] (s1: Seq.seq t_T) (s2: Seq.seq t_T) (l: int) (u: int) =
     [%#s03_std_iterators'21] forall i: int. l <= i /\ i < u -> Seq.get s1 i = Seq.get s2 i
   
-  function deep_model (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  function deep_model [@inline:trivial] (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model
   
   predicate produces (self: t_Range) (visited: Seq.seq UInt64.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end

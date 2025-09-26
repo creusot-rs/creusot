@@ -45,7 +45,9 @@ module M_range__slice_range_inclusive [#"range.rs" 6 0 6 43]
   
   function end_log (self: t_RangeInclusive) : UInt64.t
   
-  function deep_model (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  function deep_model [@inline:trivial] (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model
   
   predicate is_empty_log (self: t_RangeInclusive)
   
@@ -67,7 +69,10 @@ module M_range__slice_range_inclusive [#"range.rs" 6 0 6 43]
   axiom in_bounds_spec'0: forall self: t_RangeInclusive, seq: Seq.seq UInt32.t. [%#sslice'5] UInt64.t'int (end_log self)
         >= Seq.length seq -> not in_bounds self seq
   
-  function view (self: MutBorrow.t (Slice64.slice UInt32.t)) : Seq.seq UInt32.t = [%#smodel] Slice64.view self.current
+  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice UInt32.t)) : Seq.seq UInt32.t =
+    [%#smodel] Slice64.view self.current
+  
+  meta "rewrite_def" function view
   
   predicate has_value (self: t_RangeInclusive) (seq: Seq.seq UInt32.t) (out: Slice64.slice UInt32.t) =
     [%#sslice'6] if is_empty_log self then
@@ -76,7 +81,9 @@ module M_range__slice_range_inclusive [#"range.rs" 6 0 6 43]
       Seq.([..]) seq (UInt64.t'int (start_log self)) (UInt64.t'int (end_log self) + 1) = Slice64.view out
   
   
-  function view'0 (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = [%#smodel'0] Slice64.view self
+  function view'0 [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = [%#smodel'0] Slice64.view self
+  
+  meta "rewrite_def" function view'0
   
   predicate resolve_elswhere (self: t_RangeInclusive) (old': Seq.seq UInt32.t) (fin: Seq.seq UInt32.t) =
     [%#sslice'7] forall i: int. 0 <= i

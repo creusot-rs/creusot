@@ -238,7 +238,7 @@ impl_cmp_int!(i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize);
 impl<T: DeepModel> DeepModel for Reverse<T> {
     type DeepModelTy = Reverse<T::DeepModelTy>;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { Reverse(self.0.deep_model()) }
     }

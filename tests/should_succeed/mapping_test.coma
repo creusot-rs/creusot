@@ -6,7 +6,7 @@ module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
   let%span smapping_test'3 = "mapping_test.rs" 27 12 27 26
   let%span smapping_test'4 = "mapping_test.rs" 28 11 28 37
   let%span smapping_test'5 = "mapping_test.rs" 19 8 20 72
-  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 18
+  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 26
   let%span smodel = "../../creusot-contracts/src/model.rs" 59 8 59 22
   let%span smodel'0 = "../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
@@ -32,11 +32,17 @@ module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
   axiom view_spec: forall self: t_T. [%#smapping_test'5] forall i: int. Map.get (view self) i
         = (if 0 <= i /\ i < Int32.to_int self.t_T__a then 1 else 0)
   
-  function view'0 (self: MutBorrow.t t_T) : Map.map int int = [%#smodel] view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = [%#smodel] view self.current
   
-  function view'1 (self: MutBorrow.t t_T) : Map.map int int = [%#smodel'0] view'0 self
+  meta "rewrite_def" function view'0
   
-  function view'2 (self: MutBorrow.t t_T) : Map.map int int = [%#ssnapshot] view'1 self
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = [%#smodel'0] view'0 self
+  
+  meta "rewrite_def" function view'1
+  
+  function view'2 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = [%#ssnapshot] view'1 self
+  
+  meta "rewrite_def" function view'2
   
   meta "compute_max_steps" 1000000
   
@@ -86,7 +92,9 @@ module M_mapping_test__f [#"mapping_test.rs" 37 0 37 10]
   axiom view_spec: forall self: t_T. [%#smapping_test'4] forall i: int. Map.get (view self) i
         = (if 0 <= i /\ i < Int32.to_int self.t_T__a then 1 else 0)
   
-  function view'0 (self: MutBorrow.t t_T) : Map.map int int = [%#smodel] view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = [%#smodel] view self.current
+  
+  meta "rewrite_def" function view'0
   
   let rec incr (t: MutBorrow.t t_T) (return' (x: ())) = {[@expl:incr requires #0] [%#smapping_test'5] 0
     <= Int32.to_int (t.current).t_T__a}

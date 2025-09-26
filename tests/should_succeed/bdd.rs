@@ -149,7 +149,7 @@ impl<'arena> hashmap::Hash for Bdd<'arena> {
         self.1
     }
 
-    #[logic]
+    #[logic(inline)]
     fn hash_log(x: Self::DeepModelTy) -> Int {
         pearlite! { x@ }
     }
@@ -174,7 +174,7 @@ impl<'arena> DeepModel for Node<'arena> {
 impl<'arena> View for Node<'arena> {
     type ViewTy = NodeLog;
 
-    #[logic]
+    #[logic(inline)]
     fn view(self) -> Self::ViewTy {
         pearlite! { self.deep_model() }
     }
@@ -183,7 +183,7 @@ impl<'arena> View for Node<'arena> {
 impl<'arena> DeepModel for Bdd<'arena> {
     type DeepModelTy = u64;
 
-    #[logic]
+    #[logic(inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { self.1 }
     }
@@ -192,7 +192,7 @@ impl<'arena> DeepModel for Bdd<'arena> {
 impl<'arena> View for Bdd<'arena> {
     type ViewTy = u64;
 
-    #[logic]
+    #[logic(inline)]
     fn view(self) -> Self::ViewTy {
         pearlite! { self.deep_model() }
     }

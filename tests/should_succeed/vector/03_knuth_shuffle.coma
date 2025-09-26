@@ -25,7 +25,7 @@ module M_03_knuth_shuffle__knuth_shuffle [#"03_knuth_shuffle.rs" 13 0 13 39]
   let%span sseq'0 = "../../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
   let%span smodel = "../../../creusot-contracts/src/model.rs" 59 8 59 22
   let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 57 4 57 18
+  let%span ssnapshot = "../../../creusot-contracts/src/snapshot.rs" 57 4 57 26
   let%span srange = "../../../creusot-contracts/src/std/iter/range.rs" 23 12 27 70
   let%span srange'0 = "../../../creusot-contracts/src/std/iter/range.rs" 32 4 32 49
   let%span srange'1 = "../../../creusot-contracts/src/std/iter/range.rs" 36 4 36 34
@@ -103,7 +103,9 @@ module M_03_knuth_shuffle__knuth_shuffle [#"03_knuth_shuffle.rs" 13 0 13 39]
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'0 (self: t_Vec) : Seq.seq t_T = [%#smodel'0] view self
+  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = [%#smodel'0] view self
+  
+  meta "rewrite_def" function view'0
   
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] [%#svec] inv'3 self_}
     any
@@ -118,13 +120,21 @@ module M_03_knuth_shuffle__knuth_shuffle [#"03_knuth_shuffle.rs" 13 0 13 39]
   predicate permutation_of (self: Seq.seq t_T) (other: Seq.seq t_T) =
     [%#sseq] Permut.permut self other 0 (Seq.length self)
   
-  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
   
-  function view'2 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'0] view'1 self
+  meta "rewrite_def" function view'1
   
-  function view'3 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'2 self
+  function view'2 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'0] view'1 self
   
-  function deep_model (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  meta "rewrite_def" function view'2
+  
+  function view'3 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'2 self
+  
+  meta "rewrite_def" function view'3
+  
+  function deep_model [@inline:trivial] (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model
   
   predicate produces (self: t_Range) (visited: Seq.seq UInt64.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end
@@ -207,7 +217,10 @@ module M_03_knuth_shuffle__knuth_shuffle [#"03_knuth_shuffle.rs" 13 0 13 39]
   
   axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'8 x]. inv'8 x = invariant''5 x
   
-  function view'4 (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = [%#smodel] Slice64.view self.current
+  function view'4 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T =
+    [%#smodel] Slice64.view self.current
+  
+  meta "rewrite_def" function view'4
   
   let rec deref_mut (self_: MutBorrow.t t_Vec) (return' (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:deref_mut 'self_' type invariant] [%#svec'1] inv'6 self_}

@@ -40,8 +40,8 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   let%span stime'18 = "../../creusot-contracts/src/std/time.rs" 168 26 168 60
   let%span stime'19 = "../../creusot-contracts/src/std/time.rs" 12 14 12 77
   let%span stime'20 = "../../creusot-contracts/src/std/time.rs" 43 4 43 24
-  let%span stime'21 = "../../creusot-contracts/src/std/time.rs" 21 4 21 18
-  let%span stime'22 = "../../creusot-contracts/src/std/time.rs" 60 4 60 18
+  let%span stime'21 = "../../creusot-contracts/src/std/time.rs" 21 4 21 26
+  let%span stime'22 = "../../creusot-contracts/src/std/time.rs" 60 4 60 26
   let%span scmp = "../../creusot-contracts/src/std/cmp.rs" 59 26 59 77
   let%span scmp'0 = "../../creusot-contracts/src/std/cmp.rs" 11 26 11 75
   let%span scmp'1 = "../../creusot-contracts/src/std/cmp.rs" 51 26 51 76
@@ -124,9 +124,13 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   let rec elapsed (self_: t_Instant'0) (return' (x: t_Duration)) = any
     [ return''0 (result: t_Duration) -> {[%#stime'1] view'0 result >= 0} (! return' {result}) ]
   
-  function deep_model (self: t_Duration) : int = [%#stime'21] view'0 self
+  function deep_model [@inline:trivial] (self: t_Duration) : int = [%#stime'21] view'0 self
   
-  function deep_model'0 (self: t_Duration) : int = [%#smodel] deep_model self
+  meta "rewrite_def" function deep_model
+  
+  function deep_model'0 [@inline:trivial] (self: t_Duration) : int = [%#smodel] deep_model self
+  
+  meta "rewrite_def" function deep_model'0
   
   let rec ge (self_: t_Duration) (other: t_Duration) (return' (x: bool)) = any
     [ return''0 (result: bool) -> {[%#scmp] result = (deep_model'0 self_ >= deep_model'0 other)} (! return' {result}) ]
@@ -135,14 +139,20 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
-  function deep_model'1 (self: t_Instant'0) : int = [%#stime'22] view self
+  function deep_model'1 [@inline:trivial] (self: t_Instant'0) : int = [%#stime'22] view self
   
-  function deep_model'2 (self: t_Option) : t_Option'0 = [%#soption'3] match self with
+  meta "rewrite_def" function deep_model'1
+  
+  function deep_model'2 [@inline:trivial] (self: t_Option) : t_Option'0 = [%#soption'3] match self with
       | C_Some t -> C_Some'0 (deep_model'1 t)
       | C_None -> C_None'0
       end
   
-  function view'1 (self: t_Instant'0) : int = [%#smodel'0] view self
+  meta "rewrite_def" function deep_model'2
+  
+  function view'1 [@inline:trivial] (self: t_Instant'0) : int = [%#smodel'0] view self
+  
+  meta "rewrite_def" function view'1
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -255,7 +265,9 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   let rec unwrap (self_: t_Option) (return' (x: t_Instant'0)) = {[@expl:unwrap requires] [%#soption] self_ <> C_None}
     any [ return''0 (result: t_Instant'0) -> {[%#soption'0] C_Some result = self_} (! return' {result}) ]
   
-  function deep_model'3 (self: t_Instant'0) : int = [%#smodel] deep_model'1 self
+  function deep_model'3 [@inline:trivial] (self: t_Instant'0) : int = [%#smodel] deep_model'1 self
+  
+  meta "rewrite_def" function deep_model'3
   
   let rec eq (self_: t_Instant'0) (rhs: t_Instant'0) (return' (x: bool)) = any
     [ return''0 (result: bool) -> {[%#scmp'0] result = (deep_model'3 self_ = deep_model'3 rhs)} (! return' {result}) ]

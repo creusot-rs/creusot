@@ -31,7 +31,7 @@ pub struct PermCellOwn<T: ?Sized>(PhantomData<T>);
 impl<T> View for PermCellOwn<T> {
     type ViewTy = T;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn view(self) -> Self::ViewTy {
         *self.val()
     }

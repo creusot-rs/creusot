@@ -21,7 +21,7 @@ mod implementation {
     }
     impl<T> DeepModel for Elem<T> {
         type DeepModelTy = usize;
-        #[logic]
+        #[logic(inline)]
         fn deep_model(self) -> usize {
             self.0.addr_logic()
         }

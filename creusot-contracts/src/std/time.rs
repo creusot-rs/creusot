@@ -18,7 +18,7 @@ impl View for Duration {
 impl DeepModel for Duration {
     type DeepModelTy = Int;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         self.view()
     }
@@ -57,7 +57,7 @@ impl View for Instant {
 impl DeepModel for Instant {
     type DeepModelTy = Int;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         self.view()
     }

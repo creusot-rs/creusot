@@ -72,7 +72,7 @@ pub mod implementation {
 
     impl<T> View for PersistentArray<T> {
         type ViewTy = Seq<T>;
-        #[logic]
+        #[logic(inline)]
         fn view(self) -> Seq<T> {
             pearlite! { self.frag@.1 }
         }

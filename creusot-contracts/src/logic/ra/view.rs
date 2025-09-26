@@ -100,13 +100,13 @@ impl<R: ViewRel> View<R> {
     }
 
     /// Create a new `View` containing an authoritative version of `x`.
-    #[logic(open)]
+    #[logic(open, inline)]
     pub fn new_auth(auth: R::Auth) -> Self {
         Self::new(Some(auth), R::Frag::unit())
     }
 
     /// Create a new `View` containing a fragment version of `x`.
-    #[logic(open)]
+    #[logic(open, inline)]
     #[requires(R::rel(None, frag))]
     pub fn new_frag(frag: R::Frag) -> Self {
         Self::new(None, frag)

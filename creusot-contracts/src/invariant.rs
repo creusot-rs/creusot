@@ -165,7 +165,7 @@ impl<T: InhabitedInvariant> View for Subset<T> {
 impl<T: InhabitedInvariant + DeepModel> DeepModel for Subset<T> {
     type DeepModelTy = T::DeepModelTy;
 
-    #[logic]
+    #[logic(inline)]
     fn deep_model(self) -> T::DeepModelTy {
         pearlite! { self@.deep_model() }
     }

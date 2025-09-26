@@ -187,7 +187,10 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   function tail (self: Seq.seq t_T) : Seq.seq t_T = [%#sseq] Seq.([..]) self 1 (Seq.length self)
   
-  function view (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = [%#smodel] Slice64.view self.current
+  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T =
+    [%#smodel] Slice64.view self.current
+  
+  meta "rewrite_def" function view
   
   let rec split_first_mut (self_: MutBorrow.t (Slice64.slice t_T)) (return' (x: t_Option)) =
     {[@expl:split_first_mut 'self_' type invariant] [%#sslice] inv'3 self_}

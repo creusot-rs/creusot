@@ -98,7 +98,9 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord] UInt64.le x y = (cmp_log x y <> C_Greater)
   
-  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq bool = [%#smodel] view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq bool = [%#smodel] view self.current
+  
+  meta "rewrite_def" function view'0
   
   let rec push (self_: MutBorrow.t t_Vec) (v: bool) (return' (x: ())) = any
     [ return''0 (result: ()) -> {[%#svec'0] view self_.final = Seq.snoc (view'0 self_) v} (! return' {result}) ]

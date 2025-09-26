@@ -50,7 +50,7 @@ mod m {
 
     impl<R: RA> View for Resource<R> {
         type ViewTy = R;
-        #[logic(open)]
+        #[logic(open, inline)]
         fn view(self) -> R {
             self.val()
         }
