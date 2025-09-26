@@ -12,7 +12,7 @@
 //! (We often expand expressions like that to insert `ghost!` blocks.)
 //!
 //! We solve that by transforming THIR expressions to A-normal form.
-use std::{collections::HashMap, fmt::Formatter};
+use std::{borrow::Cow, collections::HashMap, fmt::Formatter};
 
 use creusot_args::options::ErasureCheck;
 use rustc_abi::VariantIdx;
@@ -39,9 +39,9 @@ use crate::{
         is_before_loop, is_erasure, is_ptr_own_as_mut, is_ptr_own_as_ref, is_ptr_own_from_mut,
         is_ptr_own_from_ref, is_snap_from_fn, is_spec,
     },
-    ctx::{HasTyCtxt, TranslationCtx},
-    util::{ODecodable, OEncodable},
-    validate::{ghost::is_ghost_ty_, is_ghost_block},
+    ctx::{Erasure, HasTyCtxt, TranslationCtx},
+    util::{NamelessGenericArgs, ODecodable, OEncodable},
+    validate::{is_ghost_block, is_ghost_ty_},
 };
 
 // * Top-level implementation
@@ -54,7 +54,7 @@ pub(crate) fn validate_erasures(ctx: &TranslationCtx) {
     }
     let mut err = Ok(());
     for (left, right) in ctx.iter_erasures_to_check() {
-        err = match (err, check_erasure(ctx, *left, *right)) {
+        err = match (err, check_erasure(ctx, *left, right)) {
             (_, Ok(())) => err,
             (Ok(()), Err(e)) => Err(e),
             (Err(e1), Err(e2)) => Err(e1.max(e2)),
@@ -82,7 +82,7 @@ struct MissingBody;
 fn check_erasure<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     left_local: LocalDefId,
-    (right, subst2): (DefId, ty::GenericArgsRef<'tcx>),
+    right: &Erasure<'tcx>,
 ) -> Result<(), Option<MissingBody>> {
     let left = left_local.to_def_id();
     if is_trusted_item(ctx.tcx, left) {
@@ -97,38 +97,39 @@ fn check_erasure<'tcx>(
         debug!("{:#?}", left_thir);
         None
     })?;
-    let level = if right.is_local() {
+    let level = if right.def.0.is_local() {
         // intra-crate erasure checks are always errors
         rustc_errors::Level::Error
     } else {
         // cross-crate erasure checks require a bit of set up so they are warnings by default
         erasure_check_level(ctx.opts.erasure_check)
     };
-    let right = match right.as_local() {
-        None => match ctx.erased_thir(right) {
+    let right_anf = match right.def.0.as_local() {
+        None => match ctx.erased_thir(right.def.0) {
             None if ctx.opts.erasure_check.is_error() => {
                 ctx.error(
                     left_span,
-                    format!("Missing body of #[erasure] target {}", ctx.def_path_str(right)),
+                    format!("Missing body of #[erasure] target {}", ctx.def_path_str(right.def.0)),
                 )
                 .emit();
                 return Err(None);
             }
             None => return Err(Some(MissingBody)),
-            Some(anf) => anf,
+            Some(anf) => Cow::Borrowed(anf),
         },
         Some(right_local) => {
             let Some(right_thir) = ctx.get_local_thir(right_local) else {
                 ctx.error(ctx.def_span(right_local), "#[erasure] target must have a body").emit();
                 return Err(None);
             };
-            let right = a_normal_form_or_error(ctx, right_local, right_thir).ok_or_else(|| {
+            let anf = a_normal_form_or_error(ctx, right_local, right_thir).ok_or_else(|| {
                 debug!("{:#?}", right_thir);
                 None
             })?;
-            &ty::EarlyBinder::bind(right).instantiate(ctx.tcx, subst2)
+            Cow::Owned(anf)
         }
     };
+    let right = &ty::EarlyBinder::bind(right_anf.into_owned()).instantiate(ctx.tcx, right.def.1);
     Ok(equate_anf(ctx, left_local, &left, right, level).map_err(|_| None)?)
 }
 
@@ -140,7 +141,7 @@ fn equate_anf<'tcx>(
     right: &AnfBlock<'tcx>,
     level: rustc_errors::Level,
 ) -> Result<(), ()> {
-    let mut checker = EqualityChecker::new(ctx.tcx, level);
+    let mut checker = EqualityChecker::new(ctx.tcx, left_id, level);
     let r = checker.equate(&left, &right);
     if r.is_err() {
         let tcx = ctx.tcx;
@@ -285,8 +286,8 @@ enum OpTag<'tcx> {
     BinOp(mir::BinOp),
     UnOp(mir::UnOp),
     LogicalOp(LogicalOp),
-    Call(DefId, GenericArgs<'tcx>),
-    Const(DefId, GenericArgs<'tcx>),
+    Call(DefId, NamelessGenericArgs<'tcx>),
+    Const(DefId, NamelessGenericArgs<'tcx>),
     /// Statement emitted when reborrowing a raw pointer
     UnsafeBorrow,
     Return,
@@ -325,7 +326,11 @@ impl<'tcx> AnfOp<'tcx> {
         Self::by_value(OpTag::UnOp(op), [arg].into())
     }
 
-    fn call(fun_id: DefId, subst: GenericArgs<'tcx>, args: Box<[(AnfValue<'tcx>, Span)]>) -> Self {
+    fn call(
+        fun_id: DefId,
+        subst: NamelessGenericArgs<'tcx>,
+        args: Box<[(AnfValue<'tcx>, Span)]>,
+    ) -> Self {
         Self::by_value(OpTag::Call(fun_id, subst), args)
     }
 
@@ -408,7 +413,7 @@ enum AnfPattern {
 enum AnfValue<'tcx> {
     Unit,
     Var(Var),
-    Fn(DefId, GenericArgs<'tcx>),
+    Fn(DefId, NamelessGenericArgs<'tcx>),
     Literal(
         #[type_visitable(ignore)]
         #[type_foldable(identity)]
@@ -421,6 +426,8 @@ enum AnfValue<'tcx> {
     Ctor(Ctor, Box<[(AnfValue<'tcx>, Span)]>),
     /// Cast from *[T] to *T
     Thin(Box<AnfValue<'tcx>>),
+    /// Other casts
+    Cast(ty::Ty<'tcx>, ty::Ty<'tcx>, Box<AnfValue<'tcx>>),
     /// Labels for `break` are represented as values too
     Label(
         #[type_visitable(ignore)]
@@ -597,6 +604,7 @@ struct AnfBuilder<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     ctx: Option<&'a TranslationCtx<'tcx>>,
     def_id: LocalDefId,
+    typing_env: ty::TypingEnv<'tcx>,
     thir: &'a Thir<'tcx>,
     scope_tree: &'a ScopeTree,
     /// Mapping from ANF variables to values
@@ -627,22 +635,30 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
     ) -> Self {
         let alias = HashMap::new();
         let scope_tree = tcx.region_scope_tree(def_id);
-        AnfBuilder { tcx, ctx, def_id, thir, scope_tree, alias, level }
+        let typing_env = ty::TypingEnv::post_analysis(tcx, def_id);
+        AnfBuilder { tcx, ctx, def_id, typing_env, thir, scope_tree, alias, level }
     }
 
     fn span(&self) -> Span {
         self.tcx.def_span(self.def_id)
     }
 
-    fn unsupported_syntax_<'b>(
-        &'b self,
+    fn unsupported_syntax_(
+        &self,
         span: Span,
         msg: impl Into<SubdiagMessage>,
         note: Option<String>,
     ) {
-        let diag =
-            warn_or_error(self.tcx, self.level, span, "unsupported syntax for #[erasure] check")
-                .with_span_label(span, msg);
+        let diag = warn_or_error(
+            self.tcx,
+            self.level,
+            span,
+            format!(
+                "unsupported syntax for #[erasure] check in {}",
+                self.tcx.def_path_str(self.def_id)
+            ),
+        )
+        .with_span_label(span, msg);
         let diag = match note {
             None => diag,
             Some(note) => diag.with_note(note),
@@ -650,12 +666,12 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
         diag.emit();
     }
 
-    fn unsupported_syntax<'b>(&'b self, span: Span, msg: impl Into<SubdiagMessage>) {
+    fn unsupported_syntax(&self, span: Span, msg: impl Into<SubdiagMessage>) {
         self.unsupported_syntax_(span, msg, None)
     }
 
-    fn unsupported_syntax_with_note<'b>(
-        &'b self,
+    fn unsupported_syntax_with_note(
+        &self,
         span: Span,
         msg: impl Into<SubdiagMessage>,
         note: String,
@@ -803,9 +819,19 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 let arg = self.a_normal_form_expr(*arg, stmts)?;
                 bind_var(stmts, AnfOp::deref(arg))
             }
-            // THIR inserts some &*, we simplify them
-            Borrow { arg, .. } if let Deref { arg } = &self.thir[*arg].kind => {
-                self.a_normal_form_expr(*arg, stmts)?.0
+            // Reborrows
+            Borrow { arg, .. } if let Deref { arg } = self.unscope(*arg) => {
+                let arg_ty = &self.thir[*arg].ty;
+                let (val, span) = self.a_normal_form_expr(*arg, stmts)?;
+                if arg_ty.is_ref() {
+                    val // safe reborrows are ignored
+                } else {
+                    assert!(arg_ty.is_raw_ptr());
+                    let mut place = AnfPlace::immut(val);
+                    place.add_deref(true);
+                    let bor = AnfValue::Borrow(place.into());
+                    bind_var(stmts, AnfOp::unsafe_borrow((bor, span)))
+                }
             }
             Borrow { arg, .. } => {
                 let place = self.a_normal_form_place(*arg, stmts)?;
@@ -893,6 +919,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             Use { source } => self.a_normal_form_expr(*source, stmts)?.0,
             Cast { source } => {
                 use rustc_type_ir::TyKind::{RawPtr, Slice};
+                let value = self.a_normal_form_expr(*source, stmts)?.0;
                 let source_ty = self.thir[*source].ty;
                 // {source_ty} == *const [T] and {expr.ty} == *const T
                 let is_ptr_slice_ty = match (source_ty.kind(), expr.ty.kind()) {
@@ -903,12 +930,14 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                     _ => false,
                 };
                 if is_ptr_slice_ty {
-                    let expr = self.a_normal_form_expr(*source, stmts)?.0;
-                    AnfValue::Thin(expr.into())
+                    AnfValue::Thin(value.into())
+                } else if is_noop_cast(self.tcx, self.typing_env, source_ty, expr.ty) {
+                    value
+                } else if is_primitive_cast(source_ty, expr.ty) {
+                    AnfValue::Cast(source_ty, expr.ty, value.into())
                 } else {
-                    return Err(self.unsupported_syntax_with_note(
+                    return Err(self.unsupported_syntax(
                         expr.span,
-                        "unsupported cast",
                         format!("unsupported cast from {:?} to {:?}", source_ty, expr.ty),
                     ));
                 }
@@ -922,6 +951,15 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             }
         };
         Ok((value, expr.span))
+    }
+
+    fn unscope(&self, mut expr_id: ExprId) -> &ExprKind<'tcx> {
+        loop {
+            match &self.thir[expr_id].kind {
+                ExprKind::Scope { value, .. } => expr_id = *value,
+                k => return k,
+            }
+        }
     }
 
     fn a_normal_form_place(
@@ -1152,6 +1190,34 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
     }
 }
 
+fn is_primitive_cast(from: ty::Ty, to: ty::Ty) -> bool {
+    is_primitive(from) && is_primitive(to)
+}
+
+fn is_primitive(ty: ty::Ty) -> bool {
+    use rustc_type_ir::TyKind::*;
+    match ty.kind() {
+        Bool | Char | Int(_) | Uint(_) | Float(_) => true,
+        _ => false,
+    }
+}
+
+fn is_noop_cast<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    from: ty::Ty<'tcx>,
+    to: ty::Ty<'tcx>,
+) -> bool {
+    use rustc_type_ir::TyKind::RawPtr;
+    match (from.kind(), to.kind()) {
+        (RawPtr(from_ty, _), RawPtr(to_ty, _)) => {
+            (from_ty.is_sized(tcx, typing_env) && to_ty.is_sized(tcx, typing_env))
+                || from_ty.is_slice() && to_ty.is_slice()
+        }
+        _ => false,
+    }
+}
+
 fn is_erasable(tcx: TyCtxt, thir: &Thir, expr: ExprId) -> bool {
     let mut expr = &thir[expr];
     loop {
@@ -1174,6 +1240,8 @@ fn is_erasable(tcx: TyCtxt, thir: &Thir, expr: ExprId) -> bool {
 
 struct EqualityChecker<'tcx> {
     tcx: TyCtxt<'tcx>,
+    /// ID of the function with the `#[erasure]` attribute
+    def_id: LocalDefId,
     /// Warning or Error
     level: rustc_errors::Level,
     equate_var: HashMap<Var, Var>,
@@ -1181,10 +1249,10 @@ struct EqualityChecker<'tcx> {
 }
 
 impl<'tcx> EqualityChecker<'tcx> {
-    fn new(tcx: TyCtxt<'tcx>, level: rustc_errors::Level) -> Self {
+    fn new(tcx: TyCtxt<'tcx>, def_id: LocalDefId, level: rustc_errors::Level) -> Self {
         let equate_var = HashMap::new();
         let equate_label = HashMap::new();
-        EqualityChecker { tcx, level, equate_var, equate_label }
+        EqualityChecker { tcx, def_id, level, equate_var, equate_label }
     }
 
     fn equate_value(&self, v1: &AnfValue<'tcx>, v2: &AnfValue<'tcx>) -> bool {
@@ -1205,6 +1273,9 @@ impl<'tcx> EqualityChecker<'tcx> {
                     && args1.iter().zip(args2).all(|(a1, a2)| self.equate_value(&a1.0, &a2.0))
             }
             (Fn(f1, s1), Fn(f2, s2)) => f1 == f2 && s1 == s2,
+            (Cast(from1, to1, value1), Cast(from2, to2, value2)) => {
+                from1 == from2 && to1 == to2 && self.equate_value(value1, value2)
+            }
             (Thin(v1), Thin(v2)) => self.equate_value(v1, v2),
             (Label(l1), Label(l2)) => {
                 let Some(l1_) = self.equate_label.get(l1) else { return false };
@@ -1379,70 +1450,15 @@ impl<'tcx> EqualityChecker<'tcx> {
         span2: Span,
         msg2: impl Into<SubdiagMessage>,
     ) {
-        warn_or_error(self.tcx, self.level, span, "failed #[erasure] check")
-            .with_span_label(span, msg)
-            .with_span_label(span2, msg2)
-            .emit();
-    }
-}
-
-/// Custom equality on `GenericArgsRef` to ignore the `name` symbol in `Param`.
-#[derive(Clone, Copy, Debug, Eq, TypeVisitable, TypeFoldable, TyEncodable, TyDecodable)]
-struct GenericArgs<'tcx>(ty::GenericArgsRef<'tcx>);
-
-impl<'tcx> From<ty::GenericArgsRef<'tcx>> for GenericArgs<'tcx> {
-    fn from(args: ty::GenericArgsRef<'tcx>) -> Self {
-        GenericArgs(args)
-    }
-}
-
-impl<'tcx> PartialEq<GenericArgs<'tcx>> for GenericArgs<'tcx> {
-    fn eq(&self, rhs: &Self) -> bool {
-        use rustc_type_ir::GenericArgKind::*;
-        self.0.len() == rhs.0.len()
-            && self.0.iter().zip(rhs.0).all(|(a, b)| match (a.kind(), b.kind()) {
-                (Type(t1), Type(t2)) => equal_types(&t1, &t2),
-                (Const(c1), Const(c2)) => equal_const_kinds(c1.kind(), c2.kind()),
-                (Lifetime(r1), Lifetime(r2)) => r1 == r2,
-                _ => false,
-            })
-    }
-}
-
-fn equal_types<'tcx>(t1: &ty::Ty<'tcx>, t2: &ty::Ty<'tcx>) -> bool {
-    use rustc_type_ir::TyKind::*;
-    match (t1.kind(), t2.kind()) {
-        (Ref(_, ty1, mutable1), Ref(_, ty2, mutable2)) => {
-            mutable1 == mutable2 && equal_types(ty1, ty2)
-        }
-        (Adt(adt1, subst1), Adt(adt2, subst2)) => {
-            adt1 == adt2 && GenericArgs(*subst1).eq(&GenericArgs(*subst2))
-        }
-        (Tuple(tys1), Tuple(tys2)) => {
-            tys1.len() == tys2.len()
-                && tys1.iter().zip(tys2.iter()).all(|(ty1, ty2)| equal_types(&ty1, &ty2))
-        }
-        (Array(ty1, c1), Array(ty2, c2)) => {
-            equal_types(ty1, ty2) && equal_const_kinds(c1.kind(), c2.kind())
-        }
-        (Slice(ty1), Slice(ty2)) => equal_types(ty1, ty2),
-        (RawPtr(ty1, mutable1), RawPtr(ty2, mutable2)) => {
-            mutable1 == mutable2 && equal_types(ty1, ty2)
-        }
-        (FnDef(def_id1, subst1), FnDef(def_id2, subst2)) => {
-            def_id1 == def_id2 && GenericArgs(*subst1) == GenericArgs(*subst2)
-        }
-        (Param(p1), Param(p2)) => p1.index == p2.index, // Ignore `name`
-        _ => t1 == t2,
-    }
-}
-
-/// Ignore `name` of `Param`
-fn equal_const_kinds<'tcx>(c1: ty::ConstKind<'tcx>, c2: ty::ConstKind<'tcx>) -> bool {
-    use rustc_type_ir::ConstKind::Param;
-    match (c1, c2) {
-        (Param(p1), Param(p2)) => p1.index == p2.index,
-        _ => c1 == c2,
+        warn_or_error(
+            self.tcx,
+            self.level,
+            span,
+            format!("failed #[erasure] check for {}", self.tcx.def_path_str(self.def_id)),
+        )
+        .with_span_label(span, msg)
+        .with_span_label(span2, msg2)
+        .emit();
     }
 }
 
@@ -1499,7 +1515,9 @@ impl<'tcx> PrintAnf<'tcx> {
         }
         indented.print_indent(f)?;
         indented.print_value(&body.ret.0, f)?;
-        writeln!(f, "\n}}")?;
+        writeln!(f, "")?;
+        self.print_indent(f)?;
+        writeln!(f, "}}")?;
         Ok(())
     }
 
@@ -1578,16 +1596,12 @@ impl<'tcx> PrintAnf<'tcx> {
             }
             write!(f, ")")?;
         }
-        if op.arms.len() != 0 {
-            writeln!(f, " {{")?;
-            let indented = self.indent();
-            for arm in &op.arms {
-                writeln!(f)?;
-                indented.print_body(arm, f)?;
-            }
-            write!(f, "}}")?;
-        }
         writeln!(f, "")?;
+        if op.arms.len() != 0 {
+            for arm in &op.arms {
+                self.print_body(arm, f)?;
+            }
+        }
         Ok(())
     }
 
@@ -1685,6 +1699,11 @@ impl<'tcx> PrintAnf<'tcx> {
                 self.tcx.def_path_str(def_id),
                 if subst.0.len() == 0 { String::new() } else { subst.0.print_as_list() }
             ),
+            Cast(from, to, value) => {
+                write!(f, "Cast({:?}, {:?}, ", from, to)?;
+                self.print_value(value, f)?;
+                write!(f, ")")
+            }
             Thin(v) => {
                 write!(f, "Thin(")?;
                 self.print_value(v, f)?;

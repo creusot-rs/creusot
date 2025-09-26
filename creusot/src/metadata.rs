@@ -1,5 +1,5 @@
 use crate::{
-    ctx::Erased,
+    ctx::Erasure,
     translation::{external::ExternSpec, pearlite::ScopedTerm},
     validate::AnfBlock,
 };
@@ -26,7 +26,7 @@ pub struct Metadata<'tcx> {
     crates: HashMap<CrateNum, CrateMetadata<'tcx>>,
     extern_specs: ExternSpecs<'tcx>,
     erased_thir: HashMap<DefId, AnfBlock<'tcx>>,
-    erased_defid: HashMap<DefId, Erased<'tcx>>,
+    erased_defid: HashMap<DefId, Erasure<'tcx>>,
 }
 
 impl<'tcx> Metadata<'tcx> {
@@ -61,7 +61,7 @@ impl<'tcx> Metadata<'tcx> {
         self.erased_thir.get(&id)
     }
 
-    pub(crate) fn erasure(&self, id: DefId) -> Option<&Erased<'tcx>> {
+    pub(crate) fn erasure(&self, id: DefId) -> Option<&Erasure<'tcx>> {
         self.erased_defid.get(&id)
     }
 
@@ -121,7 +121,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         tcx: TyCtxt<'tcx>,
         overrides: &HashMap<String, PathBuf>,
         cnum: CrateNum,
-    ) -> Option<(Self, ExternSpecs<'tcx>, Vec<(DefId, AnfBlock<'tcx>)>, Vec<(DefId, Erased<'tcx>)>)>
+    ) -> Option<(Self, ExternSpecs<'tcx>, Vec<(DefId, AnfBlock<'tcx>)>, Vec<(DefId, Erasure<'tcx>)>)>
     {
         let binary_path = creusot_metadata_path(tcx, overrides, cnum);
         let metadata = load_binary_metadata(tcx, cnum, &binary_path)?;
@@ -150,7 +150,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
-    erased_defid: Vec<(DefId, Erased<'tcx>)>,
+    erased_defid: Vec<(DefId, Erasure<'tcx>)>,
 }
 
 impl<'tcx> BinaryMetadata<'tcx> {
@@ -160,7 +160,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
         extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
         params_open_inv: HashMap<DefId, Vec<usize>>,
         erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
-        erased_defid: Vec<(DefId, Erased<'tcx>)>,
+        erased_defid: Vec<(DefId, Erasure<'tcx>)>,
     ) -> Self {
         let terms = terms
             .iter_mut()

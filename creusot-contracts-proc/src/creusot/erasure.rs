@@ -1,37 +1,98 @@
 use super::doc;
 use crate::common::FnOrMethod;
 use proc_macro::{Diagnostic, Level, TokenStream as TS1};
-use proc_macro2::TokenStream as TS2;
+use proc_macro2::{Span, TokenStream as TS2};
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
-    ExprPath, Pat, PathArguments, Stmt, Type, parse_macro_input, parse_quote,
-    punctuated::Punctuated, spanned::Spanned as _, token::Comma,
+    ExprPath, Pat, PathArguments, Stmt, Type,
+    parse::{Error, Parse, ParseStream, Result},
+    parse_macro_input, parse_quote,
+    punctuated::Punctuated,
+    spanned::Spanned as _,
+    token::Comma,
 };
 
-pub(crate) fn erasure(path: TS1, item: TS1) -> TS1 {
-    let path = parse_macro_input!(path as ExprPath);
+impl Parse for ErasureArg {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let private = input
+            .step(|cursor| {
+                let error = || Error::new(Span::call_site(), "");
+                let (ident, cursor) = cursor.ident().ok_or_else(error)?;
+                if ident.to_string() == "private" { Ok(((), cursor)) } else { Err(error()) }
+            })
+            .is_ok();
+        Ok(ErasureArg { private, path: input.parse()? })
+    }
+}
+
+/// `private #path` or `#path`
+/// where `#path` is `(<#type as #trait>)?(#ident::)*#ident`
+struct ErasureArg {
+    private: bool,
+    path: ExprPath,
+}
+
+/// There are two variants of this attribute
+///
+/// ## Variant 1
+///
+/// ```ignore
+/// #[erasure(foo)]
+/// fn bar(arg: T) { /* ... */ }
+///
+/// // expands to
+///
+/// fn bar(arg: T) {
+///   let _ =
+///     #[creusot::spec::erasure]
+///     || foo(arg);
+///   /* ... */
+/// }
+/// ```
+///
+/// ## Variant 2
+///
+/// To allow referring to private functions:
+///
+/// ```ignore
+/// #[erasure(private foo)]
+/// fn bar(arg: T) { /* ... */ }
+///
+/// // expands to
+///
+/// #[creusot::spec::erasure(foo)]
+/// fn bar(arg: T) { /* ... */ }
+/// ```
+pub(crate) fn erasure(arg: TS1, item: TS1) -> TS1 {
+    let doc = doc::document_spec("erasure", doc::LogicBody::Some(arg.clone()));
+    let ErasureArg { private, path } = parse_macro_input!(arg as ErasureArg);
     let mut item = parse_macro_input!(item as FnOrMethod);
-    let args: Punctuated<TS2, Comma> = item.sig.inputs.iter().filter_map(|arg| match arg {
-            syn::FnArg::Receiver(r) => {
-                Some(r.self_token.to_token_stream())
-            }
-            syn::FnArg::Typed(p) => {
-                if is_ghost_ty(&p.ty) { return None }
-                Some(match &*p.pat {
-                    Pat::Ident(p) => p.ident.to_token_stream(),
-                    _ => quote_spanned! { p.pat.span() => compile_error!("#[erasure] does not yet support pattern arguments") },
-                })
-            }
-        }).collect();
-    let erasure_gadget: Stmt = parse_quote! {
-        #[allow(let_underscore_drop)]
-        let _ =
-            #[creusot::no_translate]
-            #[creusot::spec::erasure]
-            || #path(#args);
+    if private {
+        // Add attribute to the item itself
+        item.attrs.push(parse_quote!(#[creusot::spec::erasure(#path)]))
+    } else {
+        // Add attribute to a dummy closure inside the item
+        let args: Punctuated<TS2, Comma> = item.sig.inputs.iter().filter_map(|arg| match arg {
+                syn::FnArg::Receiver(r) => {
+                    Some(r.self_token.to_token_stream())
+                }
+                syn::FnArg::Typed(p) => {
+                    if is_ghost_ty(&p.ty) { return None }
+                    Some(match &*p.pat {
+                        Pat::Ident(p) => p.ident.to_token_stream(),
+                        _ => quote_spanned! { p.pat.span() => compile_error!("#[erasure] does not yet support pattern arguments") },
+                    })
+                }
+            }).collect();
+        let erasure_gadget: Stmt = parse_quote! {
+            #[allow(let_underscore_drop)]
+            let _ =
+                #[creusot::no_translate]
+                #[creusot::spec::erasure]
+                || #path(#args);
+        };
+        item.body.as_mut().unwrap().stmts.insert(0, erasure_gadget);
     };
-    item.body.as_mut().unwrap().stmts.insert(0, erasure_gadget);
-    let doc = doc::document_spec("erasure", doc::LogicBody::Some(TS1::from(quote!(#path))));
     insert_doc(item, doc)
 }
 
