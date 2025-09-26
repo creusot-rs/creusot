@@ -52,7 +52,7 @@ There are two ways to do so:
   In this case, the recursion is accepted by Why3 automatically.
 - Else, you need to add a `#[variant(EXPR)]` attribute to the function. Creusot will then check that the expression `EXPR` strictly decreases (in a known well-founded order) at each recursive call.
 
-  The type of `EXPR` should implement the [`WellFounded`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/well_founded/trait.WellFounded.html) trait.
+  The type of `EXPR` should implement the [`WellFounded`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/logic/trait.WellFounded.html) trait.
 
 ## Prophetic functions
 
