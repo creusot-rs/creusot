@@ -41,7 +41,9 @@ The `#[erasure]` check performs the following operations.
 Additional rules for pointers:
 
 - `PtrOwn::as_ref`/`PtrOwn::as_mut` erase to unsafe shared/mutable reborrowing of raw pointers
-  (`&*p`/`&mut *p` where `p: *const T` or `p: *mut T`)
+  (`&*p`/`&mut *p` where `p: *const T` or `p: *mut T`).
+- `PtrOwn::from_ref`/`PtrOwn::from_mut` erase to raw reborrowing of references
+  (`&raw const *r` or `&raw mut *r` where `r: &T`/`&mut T`).
 
 ## Example
 
