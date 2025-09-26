@@ -72,7 +72,9 @@ module M_generic_deref_ghost__deref_wrap [#"generic_deref_ghost.rs" 8 0 8 48]
   axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_Target. [%#sops'8] postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate hist_inv (self: ()) (result_state: ()) = true
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -144,27 +146,35 @@ module M_generic_deref_ghost__bad [#"generic_deref_ghost.rs" 12 0 12 32]
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  predicate precondition (self: ()) (args: Int32.t) = [%#sghost] let self'0 = args in false
+  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) = [%#sghost] let self'0 = args in false
+  
+  meta "rewrite_def" predicate precondition
   
   let rec deref (self: Int32.t) (return' (x: Int32.t)) = any
     [ return''0 (result: Int32.t) -> {[%#sghost'0] result = self} (! return' {result}) ]
   
-  predicate postcondition_once (self: ()) (args: Int32.t) (result: Int32.t) =
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     [%#sghost] let self'0 = args in result = self'0
+  
+  meta "rewrite_def" predicate postcondition_once
   
   predicate resolve [@inline:trivial] (_0: ()) = true
   
   meta "rewrite_def" predicate resolve
   
-  predicate postcondition_mut (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
     [%#sghost] let self'0 = args in result = self'0
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: Int32.t, res: Int32.t. [%#sops'8] postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate hist_inv (self: ()) (result_state: ()) = true
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -185,7 +195,10 @@ module M_generic_deref_ghost__bad [#"generic_deref_ghost.rs" 12 0 12 32]
   
   axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
   
-  predicate postcondition (self: ()) (args: Int32.t) (result: Int32.t) = [%#sghost] let self'0 = args in result = self'0
+  predicate postcondition [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
+    [%#sghost] let self'0 = args in result = self'0
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   

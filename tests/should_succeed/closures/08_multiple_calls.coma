@@ -65,10 +65,13 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
       | s2 = return''0 {_0'0} ] ] [ & _0'0: UInt32.t = Any.any_l () | & res: UInt32.t = Any.any_l () ])
     [ return''0 (result: UInt32.t) -> (! return' {result}) ]
   
-  predicate precondition (self: closure0) (args: ()) = [%#s08_multiple_calls'1] let () = args in self._0 = self._0
+  predicate precondition [@inline:trivial] (self: closure0) (args: ()) = [%#s08_multiple_calls'2] self._0 = self._0
   
-  predicate postcondition_once (self: closure0) (args: ()) (result: UInt32.t) =
-    [%#s08_multiple_calls'1] let () = args in true
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: closure0) (args: ()) (result: UInt32.t) = true
+  
+  meta "rewrite_def" predicate postcondition_once
   
   predicate resolve (_0'0: t_T)
   
@@ -76,10 +79,14 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate hist_inv (self: closure0) (result_state: closure0) = self = result_state
+  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = self = result_state
   
-  predicate postcondition_mut (self: closure0) (args: ()) (result_state: closure0) (result: UInt32.t) =
-    [%#s08_multiple_calls'1] let () = args in hist_inv self result_state
+  meta "rewrite_def" predicate hist_inv
+  
+  predicate postcondition_mut [@inline:trivial] (self: closure0) (args: ()) (result_state: closure0) (result: UInt32.t) =
+    hist_inv self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: closure0) (args: ()) (res: UInt32.t) : ()
   
@@ -106,8 +113,9 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   axiom fn_hist_inv_spec: forall self: closure0, res_state: closure0. [%#sops'1] hist_inv self res_state
       = (self = res_state)
   
-  predicate postcondition (self: closure0) (args: ()) (result: UInt32.t) =
-    [%#s08_multiple_calls'1] let () = args in true
+  predicate postcondition [@inline:trivial] (self: closure0) (args: ()) (result: UInt32.t) = true
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: closure0) (args: ()) (res: UInt32.t) : ()
   
@@ -120,14 +128,19 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
     forall self: closure0, args: (), res_state: closure0, res: UInt32.t. [%#sops] postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  predicate postcondition_once'0 (self: closure0) (args: ()) (result: UInt32.t) = postcondition self args result
+  predicate postcondition_once'0 [@inline:trivial] (self: closure0) (args: ()) (result: UInt32.t) =
+    postcondition self args result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   predicate resolve'1 [@inline:trivial] (_0'0: closure0) = true
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate postcondition_mut'0 (self: closure0) (args: ()) (result_state: closure0) (result: UInt32.t) =
+  predicate postcondition_mut'0 [@inline:trivial] (self: closure0) (args: ()) (result_state: closure0) (result: UInt32.t) =
     postcondition self args result /\ self = result_state
+  
+  meta "rewrite_def" predicate postcondition_mut'0
   
   function fn_mut_once'0 (self: closure0) (args: ()) (res: UInt32.t) : ()
   
@@ -135,7 +148,9 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
     forall self: closure0, args: (), res: UInt32.t. [%#sops'8] postcondition_once'0 self args res
       = (exists res_state: closure0. postcondition_mut'0 self args res_state res /\ resolve'1 res_state)
   
-  predicate hist_inv'0 (self: closure0) (result_state: closure0) = self = result_state
+  predicate hist_inv'0 [@inline:trivial] (self: closure0) (result_state: closure0) = self = result_state
+  
+  meta "rewrite_def" predicate hist_inv'0
   
   function hist_inv_trans'0 (self: closure0) (b: closure0) (c: closure0) : ()
   
@@ -157,7 +172,10 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   axiom fn_hist_inv_spec'0: forall self: closure0, res_state: closure0. [%#sops'1] hist_inv'0 self res_state
       = (self = res_state)
   
-  predicate postcondition'0 (self: closure0) (args: ()) (result: UInt32.t) = postcondition self args result
+  predicate postcondition'0 [@inline:trivial] (self: closure0) (args: ()) (result: UInt32.t) =
+    postcondition self args result
+  
+  meta "rewrite_def" predicate postcondition'0
   
   function fn_once'0 (self: closure0) (args: ()) (res: UInt32.t) : ()
   

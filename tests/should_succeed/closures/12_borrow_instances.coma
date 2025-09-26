@@ -63,19 +63,26 @@ module M_12_borrow_instances__test1 [#"12_borrow_instances.rs" 8 0 8 59]
     forall self: t_F, args: UInt32.t, res_state: t_F, res: bool. [%#sops] postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  predicate postcondition_once'0 (self: t_F) (args: UInt32.t) (result: bool) = postcondition self args result
+  predicate postcondition_once'0 [@inline:trivial] (self: t_F) (args: UInt32.t) (result: bool) =
+    postcondition self args result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   predicate resolve'0 (_0: t_F)
   
-  predicate postcondition_mut'0 (self: t_F) (args: UInt32.t) (result_state: t_F) (result: bool) =
+  predicate postcondition_mut'0 [@inline:trivial] (self: t_F) (args: UInt32.t) (result_state: t_F) (result: bool) =
     postcondition self args result /\ self = result_state
+  
+  meta "rewrite_def" predicate postcondition_mut'0
   
   function fn_mut_once'0 (self: t_F) (args: UInt32.t) (res: bool) : ()
   
   axiom fn_mut_once_spec'0: forall self: t_F, args: UInt32.t, res: bool. [%#sops'8] postcondition_once'0 self args res
       = (exists res_state: t_F. postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
-  predicate hist_inv'0 (self: t_F) (result_state: t_F) = self = result_state
+  predicate hist_inv'0 [@inline:trivial] (self: t_F) (result_state: t_F) = self = result_state
+  
+  meta "rewrite_def" predicate hist_inv'0
   
   function hist_inv_trans'0 (self: t_F) (b: t_F) (c: t_F) : ()
   
@@ -96,7 +103,10 @@ module M_12_borrow_instances__test1 [#"12_borrow_instances.rs" 8 0 8 59]
   
   axiom fn_hist_inv_spec'0: forall self: t_F, res_state: t_F. [%#sops'1] hist_inv'0 self res_state = (self = res_state)
   
-  predicate postcondition'0 (self: t_F) (args: UInt32.t) (result: bool) = postcondition self args result
+  predicate postcondition'0 [@inline:trivial] (self: t_F) (args: UInt32.t) (result: bool) =
+    postcondition self args result
+  
+  meta "rewrite_def" predicate postcondition'0
   
   function fn_once'0 (self: t_F) (args: UInt32.t) (res: bool) : ()
   
@@ -172,8 +182,10 @@ module M_12_borrow_instances__test2 [#"12_borrow_instances.rs" 13 0 13 66]
     forall self: t_F, args: UInt32.t, res_state: t_F, res: bool. ([%#sops] postcondition_mut self args res_state res)
       -> ([%#sops'0] hist_inv self res_state)
   
-  predicate postcondition_once'0 (self: MutBorrow.t t_F) (args: UInt32.t) (result: bool) =
+  predicate postcondition_once'0 [@inline:trivial] (self: MutBorrow.t t_F) (args: UInt32.t) (result: bool) =
     postcondition_mut self.current args self.final result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_F) = [%#sresolve] self.final = self.current
   
@@ -183,8 +195,10 @@ module M_12_borrow_instances__test2 [#"12_borrow_instances.rs" 13 0 13 66]
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate postcondition_mut'0 (self: MutBorrow.t t_F) (args: UInt32.t) (result_state: MutBorrow.t t_F) (result: bool) =
+  predicate postcondition_mut'0 [@inline:trivial] (self: MutBorrow.t t_F) (args: UInt32.t) (result_state: MutBorrow.t t_F) (result: bool) =
     postcondition_mut self.current args result_state.current result /\ self.final = result_state.final
+  
+  meta "rewrite_def" predicate postcondition_mut'0
   
   function fn_mut_once'0 (self: MutBorrow.t t_F) (args: UInt32.t) (res: bool) : ()
   
@@ -192,8 +206,10 @@ module M_12_borrow_instances__test2 [#"12_borrow_instances.rs" 13 0 13 66]
     forall self: MutBorrow.t t_F, args: UInt32.t, res: bool. [%#sops'5] postcondition_once'0 self args res
       = (exists res_state: MutBorrow.t t_F. postcondition_mut'0 self args res_state res /\ resolve'1 res_state)
   
-  predicate hist_inv'0 (self: MutBorrow.t t_F) (result_state: MutBorrow.t t_F) =
+  predicate hist_inv'0 [@inline:trivial] (self: MutBorrow.t t_F) (result_state: MutBorrow.t t_F) =
     hist_inv self.current result_state.current /\ self.final = result_state.final
+  
+  meta "rewrite_def" predicate hist_inv'0
   
   function hist_inv_trans'0 (self: MutBorrow.t t_F) (b: MutBorrow.t t_F) (c: MutBorrow.t t_F) : ()
   

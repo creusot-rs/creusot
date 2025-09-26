@@ -9,6 +9,10 @@ module M_01_basic__uses_closure [#"01_basic.rs" 6 0 6 21]
     [ bb0 = s0 [ s0 = [ &_0'0 <- _1._0 ] s1 | s1 = return' {_0'0} ] ]
     [ & _0'0: bool = Any.any_l () | & _1: closure0 = self ]
   
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -37,6 +41,10 @@ module M_01_basic__multi_arg [#"01_basic.rs" 11 0 11 18]
     (return' (x: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = Int32.add {a'0} {b'0} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = return' {_0} ] ]
     [ & _0: Int32.t = Any.any_l () | & a'0: Int32.t = a | & b'0: Int32.t = b ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
   
   type tuple = { _p0: Int32.t; _p1: Int32.t }
   
@@ -93,7 +101,9 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv (self: closure0) (result_state: closure0) = [%#s01_basic'1] true
+  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = [%#s01_basic'1] true
+  
+  meta "rewrite_def" predicate hist_inv
   
   let rec closure0 [#"01_basic.rs" 21 16 21 23] [@coma:extspec] (self: MutBorrow.t closure0) (return' (x: ())) = bb0
     [ bb0 = s0
@@ -102,14 +112,22 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
       | s1 = -{resolve'0 _1}- s2
       | s2 = return' {_0'0} ] ] [ & _0'0: () = Any.any_l () | & _1: MutBorrow.t closure0 = self ]
   
-  predicate postcondition_once (self: closure0) (args: ()) (result: ()) =
-    [%#s01_basic'1] let () = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate postcondition_once [@inline:trivial] (self: closure0) (args: ()) (result: ()) =
+    exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
           /\ bor_self.final = e /\ closure0'post'return' bor_self result /\ hist_inv self e)
       /\ resolve'3 e
   
-  predicate postcondition_mut (self: closure0) (args: ()) (result_state: closure0) (result: ()) =
-    [%#s01_basic'1] let () = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
+  meta "rewrite_def" predicate postcondition_once
+  
+  predicate postcondition_mut [@inline:trivial] (self: closure0) (args: ()) (result_state: closure0) (result: ()) =
+    exists bor_self: MutBorrow.t closure0. bor_self.current = self
       /\ bor_self.final = result_state /\ closure0'post'return' bor_self result /\ hist_inv self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: closure0) (args: ()) (res: ()) : ()
   
@@ -203,7 +221,9 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv (self: closure0) (result_state: closure0) = [%#s01_basic'0] true
+  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = [%#s01_basic'0] true
+  
+  meta "rewrite_def" predicate hist_inv
   
   let rec closure0 [#"01_basic.rs" 38 16 38 23] [@coma:extspec] (self: MutBorrow.t closure0) (return' (x: ())) = bb0
     [ bb0 = s0 [ s0 = new_ref (fun (_ret: MutBorrow.t UInt32.t) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
@@ -224,14 +244,22 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
     | & _2: MutBorrow.t UInt32.t = Any.any_l ()
     | & _3: MutBorrow.t UInt32.t = Any.any_l () ]
   
-  predicate postcondition_once (self: closure0) (args: ()) (result: ()) =
-    [%#s01_basic'0] let () = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate postcondition_once [@inline:trivial] (self: closure0) (args: ()) (result: ()) =
+    exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
           /\ bor_self.final = e /\ closure0'post'return' bor_self result /\ hist_inv self e)
       /\ resolve'3 e
   
-  predicate postcondition_mut (self: closure0) (args: ()) (result_state: closure0) (result: ()) =
-    [%#s01_basic'0] let () = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
+  meta "rewrite_def" predicate postcondition_once
+  
+  predicate postcondition_mut [@inline:trivial] (self: closure0) (args: ()) (result_state: closure0) (result: ()) =
+    exists bor_self: MutBorrow.t closure0. bor_self.current = self
       /\ bor_self.final = result_state /\ closure0'post'return' bor_self result /\ hist_inv self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: closure0) (args: ()) (res: ()) : ()
   

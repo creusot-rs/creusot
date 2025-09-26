@@ -38,9 +38,12 @@ use std::{
     collections::{HashMap, HashSet, VecDeque},
 };
 use why3::{
-    Exp, Ident,
+    Exp, Ident, Name,
     coma::{Defn, Expr, Param, Prototype},
-    declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
+    declaration::{
+        Attribute, Axiom, Decl, DeclKind, LogicDecl, Meta, MetaArg, MetaIdent, Signature, TyDecl,
+        Use,
+    },
 };
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
@@ -112,15 +115,26 @@ fn expand_program<'tcx>(
 
     let name = names.dependency(dep).ident();
 
-    if ctx.def_kind(def_id) == DefKind::Closure {
-        // Inline the body of closures
-        let coma = program::to_why(ctx, &names, name, def_id.expect_local());
-        return vec![Decl::Coma(coma)];
-    }
-
     let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
         .instantiate(ctx.tcx, subst)
         .normalize(ctx, typing_env);
+
+    if ctx.def_kind(def_id) == DefKind::Closure {
+        // Inline the body of closures
+        let mut decls = vec![Decl::Coma(program::to_why(ctx, &names, name, def_id.expect_local()))];
+        if !pre_sig.contract.has_user_contract {
+            decls.extend(["'pre", "'post'return'"].map(|s| {
+                Decl::Meta(Meta {
+                    name: MetaIdent("rewrite_def".into()),
+                    args: Box::new([
+                        MetaArg::Keyword("predicate".into()),
+                        MetaArg::Name(Name::Local(name, Some(why3::Symbol::intern(s)))),
+                    ]),
+                })
+            }))
+        }
+        return decls;
+    }
 
     if matches!(ctx.intrinsic(def_id), Intrinsic::GhostDeref | Intrinsic::GhostDerefMut) {
         // If `Ghost::deref`` or `Ghost::deref_mut` are called direclty, then

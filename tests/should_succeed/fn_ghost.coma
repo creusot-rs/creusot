@@ -33,6 +33,10 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
       [ s0 = Int32.add {x'0} {[%#sfn_ghost'5] (1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1)
       | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x ]
   
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
   type t_FnGhostWrapper = { t_FnGhostWrapper__0: () }
   
   function view (self: t_FnGhostWrapper) : ()
@@ -40,26 +44,38 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
   let rec qy95z_new (f: ()) (return' (x: t_FnGhostWrapper)) = any
     [ return''0 (result: t_FnGhostWrapper) -> {[%#sfn_ghost'6] view result = f} (! return' {result}) ]
   
-  predicate precondition (self: ()) (args: Int32.t) = [%#sfn_ghost'13] let x = args in closure0'pre self x
+  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#sfn_ghost'13] let x = args in closure0'pre self x
   
-  predicate precondition'0 (self: t_FnGhostWrapper) (args: Int32.t) = precondition self.t_FnGhostWrapper__0 args
+  meta "rewrite_def" predicate precondition
+  
+  predicate precondition'0 [@inline:trivial] (self: t_FnGhostWrapper) (args: Int32.t) =
+    precondition self.t_FnGhostWrapper__0 args
+  
+  meta "rewrite_def" predicate precondition'0
   
   predicate resolve [@inline:trivial] (_0: ()) = true
   
   meta "rewrite_def" predicate resolve
   
-  predicate postcondition_once (self: ()) (args: Int32.t) (result: Int32.t) =
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     [%#sfn_ghost'13] let x = args in closure0'post'return' self x result /\ resolve self
   
-  predicate postcondition_mut (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
+  meta "rewrite_def" predicate postcondition_once
+  
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
     [%#sfn_ghost'13] let x = args in closure0'post'return' self x result /\ self = result_state
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: Int32.t, res: Int32.t. [%#sops'8] postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate hist_inv (self: ()) (result_state: ()) = self = result_state
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = self = result_state
+  
+  meta "rewrite_def" predicate hist_inv
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -80,8 +96,10 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
   
   axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
   
-  predicate postcondition (self: ()) (args: Int32.t) (result: Int32.t) =
+  predicate postcondition [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     [%#sfn_ghost'13] let x = args in closure0'post'return' self x result
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
@@ -94,15 +112,19 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
     forall self: (), args: Int32.t, res_state: (), res: Int32.t. [%#sops] postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  predicate postcondition_once'0 (self: t_FnGhostWrapper) (args: Int32.t) (result: Int32.t) =
+  predicate postcondition_once'0 [@inline:trivial] (self: t_FnGhostWrapper) (args: Int32.t) (result: Int32.t) =
     postcondition self.t_FnGhostWrapper__0 args result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   predicate resolve'0 [@inline:trivial] (_0: t_FnGhostWrapper) = true
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate postcondition_mut'0 (self: t_FnGhostWrapper) (args: Int32.t) (result_state: t_FnGhostWrapper) (result: Int32.t) =
+  predicate postcondition_mut'0 [@inline:trivial] (self: t_FnGhostWrapper) (args: Int32.t) (result_state: t_FnGhostWrapper) (result: Int32.t) =
     postcondition self.t_FnGhostWrapper__0 args result /\ self = result_state
+  
+  meta "rewrite_def" predicate postcondition_mut'0
   
   function fn_mut_once'0 (self: t_FnGhostWrapper) (args: Int32.t) (res: Int32.t) : ()
   
@@ -134,8 +156,10 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
     forall self: t_FnGhostWrapper, res_state: t_FnGhostWrapper. [%#sops'1] hist_inv'0 self res_state
       = (self = res_state)
   
-  predicate postcondition'0 (self: t_FnGhostWrapper) (args: Int32.t) (result: Int32.t) =
+  predicate postcondition'0 [@inline:trivial] (self: t_FnGhostWrapper) (args: Int32.t) (result: Int32.t) =
     postcondition self.t_FnGhostWrapper__0 args result
+  
+  meta "rewrite_def" predicate postcondition'0
   
   function fn_once'0 (self: t_FnGhostWrapper) (args: Int32.t) (res: Int32.t) : ()
   

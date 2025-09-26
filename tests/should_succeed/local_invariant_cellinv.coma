@@ -222,6 +222,10 @@ module M_local_invariant_cellinv__qyi5959203038510030748__read [#"local_invarian
     | & _6: t_PermCellOwn = Any.any_l ()
     | & _7: MutBorrow.t t_PermCellLocalInv = Any.any_l () ]
   
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
   type t_Tokens
   
   type tuple = { _p0: t_LocalInvariant; _p1: t_Tokens; _p2: closure0 }
@@ -229,11 +233,15 @@ module M_local_invariant_cellinv__qyi5959203038510030748__read [#"local_invarian
   predicate protocol [#"local_invariant_cellinv.rs" 30 4 30 37] (self: t_PermCellLocalInv) (id'1: t_Id) =
     [%#slocal_invariant_cellinv'4] id'0 self.t_PermCellLocalInv__0 = id'1
   
-  predicate precondition (self: closure0) (args: MutBorrow.t t_PermCellLocalInv) =
+  predicate precondition [@inline:trivial] (self: closure0) (args: MutBorrow.t t_PermCellLocalInv) =
     [%#slocal_invariant_cellinv'2] let perm = args in closure0'pre self perm
   
-  predicate postcondition_once (self: closure0) (args: MutBorrow.t t_PermCellLocalInv) (result: t_T) =
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: closure0) (args: MutBorrow.t t_PermCellLocalInv) (result: t_T) =
     [%#slocal_invariant_cellinv'2] let perm = args in closure0'post'return' self perm result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   function fin [@inline:trivial] (self: MutBorrow.t t_PermCellLocalInv) : t_PermCellLocalInv = [%#sghost'7] self.final
   
@@ -248,11 +256,13 @@ module M_local_invariant_cellinv__qyi5959203038510030748__read [#"local_invarian
   predicate contains'0 (self: t_Tokens) (namespace'0: t_Namespace) =
     [%#slocal_invariant'3] contains (namespaces self) namespace'0
   
-  predicate precondition'0 (self: ()) (args: tuple) =
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: tuple) =
     [%#slocal_invariant'4] let {_p0 = self'0; _p1 = tokens; _p2 = f} = args in (forall t: MutBorrow.t t_PermCellLocalInv. protocol t.current (public self'0)
           /\ inv'4 t
         -> precondition f t /\ (forall res: t_T. postcondition_once f t res -> protocol (fin t) (public self'0)))
     /\ contains'0 tokens (namespace self'0) /\ inv'9 f
+  
+  meta "rewrite_def" predicate precondition'0
   
   let rec open (self: t_LocalInvariant) (tokens: t_Tokens) (f: closure0) (return' (x: t_T)) =
     {[@expl:open 'f' type invariant] [%#slocal_invariant'5] inv'9 f}
@@ -270,26 +280,32 @@ module M_local_invariant_cellinv__qyi5959203038510030748__read [#"local_invarian
   
   axiom new_logic_spec: forall x: t_LocalInvariant. [%#sghost'5] new_logic x = x
   
-  predicate postcondition_once'0 (self: ()) (args: tuple) (result: t_T) =
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: tuple) (result: t_T) =
     [%#slocal_invariant'4] let {_p0 = self'0; _p1 = tokens; _p2 = f} = args in (exists t: MutBorrow.t t_PermCellLocalInv. protocol t.current (public self'0)
         /\ postcondition_once f t result)
     /\ inv'0 result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   predicate resolve'1 [@inline:trivial] (_0'0: ()) = true
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate postcondition_mut (self: ()) (args: tuple) (result_state: ()) (result: t_T) =
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: tuple) (result_state: ()) (result: t_T) =
     [%#slocal_invariant'4] let {_p0 = self'0; _p1 = tokens; _p2 = f} = args in (exists t: MutBorrow.t t_PermCellLocalInv. protocol t.current (public self'0)
         /\ postcondition_once f t result)
     /\ inv'0 result
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: tuple) (res: t_T) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: tuple, res: t_T. [%#sops'8] postcondition_once'0 self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
   
-  predicate hist_inv (self: ()) (result_state: ()) = true
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -310,10 +326,12 @@ module M_local_invariant_cellinv__qyi5959203038510030748__read [#"local_invarian
   
   axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
   
-  predicate postcondition (self: ()) (args: tuple) (result: t_T) =
+  predicate postcondition [@inline:trivial] (self: ()) (args: tuple) (result: t_T) =
     [%#slocal_invariant'4] let {_p0 = self'0; _p1 = tokens; _p2 = f} = args in (exists t: MutBorrow.t t_PermCellLocalInv. protocol t.current (public self'0)
         /\ postcondition_once f t result)
     /\ inv'0 result
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: ()) (args: tuple) (res: t_T) : ()
   
@@ -648,6 +666,10 @@ module M_local_invariant_cellinv__qyi5959203038510030748__write [#"local_invaria
     | & _9: MutBorrow.t t_PermCellOwn = Any.any_l ()
     | & _10: MutBorrow.t t_PermCellLocalInv = Any.any_l () ]
   
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
   type t_Tokens
   
   type tuple = { _p0: t_LocalInvariant; _p1: t_Tokens; _p2: closure0 }
@@ -655,11 +677,15 @@ module M_local_invariant_cellinv__qyi5959203038510030748__write [#"local_invaria
   predicate protocol [#"local_invariant_cellinv.rs" 30 4 30 37] (self: t_PermCellLocalInv) (id'1: t_Id) =
     [%#slocal_invariant_cellinv'4] id'0 self.t_PermCellLocalInv__0 = id'1
   
-  predicate precondition (self: closure0) (args: MutBorrow.t t_PermCellLocalInv) =
+  predicate precondition [@inline:trivial] (self: closure0) (args: MutBorrow.t t_PermCellLocalInv) =
     [%#slocal_invariant_cellinv'2] let perm = args in closure0'pre self perm
   
-  predicate postcondition_once (self: closure0) (args: MutBorrow.t t_PermCellLocalInv) (result: ()) =
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: closure0) (args: MutBorrow.t t_PermCellLocalInv) (result: ()) =
     [%#slocal_invariant_cellinv'2] let perm = args in closure0'post'return' self perm result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   function fin'0 [@inline:trivial] (self: MutBorrow.t t_PermCellLocalInv) : t_PermCellLocalInv = [%#sghost'6] self.final
   
@@ -674,11 +700,13 @@ module M_local_invariant_cellinv__qyi5959203038510030748__write [#"local_invaria
   predicate contains'0 (self: t_Tokens) (namespace'0: t_Namespace) =
     [%#slocal_invariant'2] contains (namespaces self) namespace'0
   
-  predicate precondition'0 (self: ()) (args: tuple) =
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: tuple) =
     [%#slocal_invariant'3] let {_p0 = self'0; _p1 = tokens; _p2 = f} = args in (forall t: MutBorrow.t t_PermCellLocalInv. protocol t.current (public self'0)
           /\ inv'4 t
         -> precondition f t /\ (forall res: (). postcondition_once f t res -> protocol (fin'0 t) (public self'0)))
     /\ contains'0 tokens (namespace self'0) /\ inv'10 f
+  
+  meta "rewrite_def" predicate precondition'0
   
   let rec open (self: t_LocalInvariant) (tokens: t_Tokens) (f: closure0) (return' (x: ())) =
     {[@expl:open 'f' type invariant] [%#slocal_invariant'4] inv'10 f}
@@ -696,24 +724,30 @@ module M_local_invariant_cellinv__qyi5959203038510030748__write [#"local_invaria
   
   axiom new_logic_spec: forall x: t_LocalInvariant. [%#sghost'5] new_logic x = x
   
-  predicate postcondition_once'0 (self: ()) (args: tuple) (result: ()) =
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: tuple) (result: ()) =
     [%#slocal_invariant'3] let {_p0 = self'0; _p1 = tokens; _p2 = f} = args in exists t: MutBorrow.t t_PermCellLocalInv. protocol t.current (public self'0)
       /\ postcondition_once f t result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   predicate resolve'6 [@inline:trivial] (_0'0: ()) = true
   
   meta "rewrite_def" predicate resolve'6
   
-  predicate postcondition_mut (self: ()) (args: tuple) (result_state: ()) (result: ()) =
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: tuple) (result_state: ()) (result: ()) =
     [%#slocal_invariant'3] let {_p0 = self'0; _p1 = tokens; _p2 = f} = args in exists t: MutBorrow.t t_PermCellLocalInv. protocol t.current (public self'0)
       /\ postcondition_once f t result
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: tuple) (res: ()) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: tuple, res: (). [%#sops'8] postcondition_once'0 self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'6 res_state)
   
-  predicate hist_inv (self: ()) (result_state: ()) = true
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -734,9 +768,11 @@ module M_local_invariant_cellinv__qyi5959203038510030748__write [#"local_invaria
   
   axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
   
-  predicate postcondition (self: ()) (args: tuple) (result: ()) =
+  predicate postcondition [@inline:trivial] (self: ()) (args: tuple) (result: ()) =
     [%#slocal_invariant'3] let {_p0 = self'0; _p1 = tokens; _p2 = f} = args in exists t: MutBorrow.t t_PermCellLocalInv. protocol t.current (public self'0)
       /\ postcondition_once f t result
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: ()) (args: tuple) (res: ()) : ()
   

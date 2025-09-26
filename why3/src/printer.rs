@@ -633,7 +633,7 @@ impl Print for MetaArg {
             MetaArg::Integer(i) => alloc.as_string(i),
             MetaArg::String(s) => alloc.text(format!("{s:?}")),
             MetaArg::Keyword(s) => alloc.text(s),
-            MetaArg::Ident(i) => i.pretty_value_name(alloc, scope),
+            MetaArg::Name(i) => i.pretty_value_name(alloc, scope),
         }
     }
 }

@@ -1,4 +1,3 @@
-// TACTIC -split_vc,+compute_in_goal,+split_vc TIME 10
 extern crate creusot_contracts;
 use creusot_contracts::*;
 

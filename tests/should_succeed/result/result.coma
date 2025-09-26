@@ -219,21 +219,28 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
       {[%#sresult'102] (exists e: Int32.t. self_ = C_Err e) -> result = default}
       (! return' {result}) ]
   
-  predicate postcondition_once (self: ()) (args: ()) (result: Int32.t) = let () = args in result = (0: Int32.t)
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    let () = args in result = (0: Int32.t)
+  
+  meta "rewrite_def" predicate postcondition_once
   
   predicate resolve'1 [@inline:trivial] (_0: ()) = true
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate postcondition_mut (self: ()) (args: ()) (result_state: ()) (result: Int32.t) =
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: Int32.t) =
     let () = args in result = (0: Int32.t)
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: ()) (res: Int32.t) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: (), res: Int32.t. [%#sops'8] postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
   
-  predicate hist_inv (self: ()) (result_state: ()) = true
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -254,7 +261,10 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
   
   axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
   
-  predicate postcondition (self: ()) (args: ()) (result: Int32.t) = let () = args in result = (0: Int32.t)
+  predicate postcondition [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    let () = args in result = (0: Int32.t)
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: ()) (args: ()) (res: Int32.t) : ()
   

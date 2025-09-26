@@ -78,17 +78,21 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)) [inv'4 x]. inv'4 x
       = invariant''3 x
   
-  predicate postcondition_once (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
     let () = args in Slice64.view result.final = (Seq.empty: Seq.seq t_T)
     /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ inv'3 result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   predicate resolve [@inline:trivial] (_0: ()) = true
   
   meta "rewrite_def" predicate resolve
   
-  predicate postcondition_mut (self: ()) (args: ()) (result_state: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
     let () = args in Slice64.view result.final = (Seq.empty: Seq.seq t_T)
     /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ inv'3 result
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
   
@@ -96,7 +100,9 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
     forall self: (), args: (), res: MutBorrow.t (Slice64.slice t_T). [%#sops'8] postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate hist_inv (self: ()) (result_state: ()) = true
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -117,9 +123,11 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
   
-  predicate postcondition (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
+  predicate postcondition [@inline:trivial] (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
     let () = args in Slice64.view result.final = (Seq.empty: Seq.seq t_T)
     /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ inv'3 result
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: ()) (args: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
   

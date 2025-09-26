@@ -147,7 +147,7 @@ module M_695__valid [#"695.rs" 12 0 12 27]
   let%span s695'7 = "695.rs" 5 0 5 79
   let%span s695'8 = "695.rs" 6 10 6 89
   let%span s695'9 = "695.rs" 16 17 16 64
-  let%span s695'10 = "695.rs" 14 15 14 47
+  let%span s695'10 = "695.rs" 1 0 14 25
   let%span sops = "../../../creusot-contracts/src/std/ops.rs" 125 4 125 61
   let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 126 4 126 40
   let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 131 4 131 35
@@ -245,8 +245,10 @@ module M_695__valid [#"695.rs" 12 0 12 27]
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate postcondition_once (self: closure2) (args: bool) (result: ()) =
+  predicate postcondition_once [@inline:trivial] (self: closure2) (args: bool) (result: ()) =
     [%#s695'9] let b = args in b /\ (self._0'0).final = (2: UInt32.t) \/ not b /\ (self._0'0).final = (1: UInt32.t)
+  
+  meta "rewrite_def" predicate postcondition_once
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
   
@@ -260,13 +262,17 @@ module M_695__valid [#"695.rs" 12 0 12 27]
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv (self: closure2) (result_state: closure2) =
+  predicate hist_inv [@inline:trivial] (self: closure2) (result_state: closure2) =
     [%#s695'9] (result_state._0'0).final = (self._0'0).final
   
-  predicate postcondition_mut (self: closure2) (args: bool) (result_state: closure2) (result: ()) =
+  meta "rewrite_def" predicate hist_inv
+  
+  predicate postcondition_mut [@inline:trivial] (self: closure2) (args: bool) (result_state: closure2) (result: ()) =
     [%#s695'9] let b = args in (b /\ (result_state._0'0).current = (2: UInt32.t)
       \/ not b /\ (result_state._0'0).current = (1: UInt32.t))
     /\ hist_inv self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: closure2) (args: bool) (res: ()) : ()
   
@@ -302,21 +308,31 @@ module M_695__valid [#"695.rs" 12 0 12 27]
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return' {result}) ]
   
-  predicate precondition (self: closure1) (args: ()) = [%#s695'10] let () = args in true
+  predicate precondition [@inline:trivial] (self: closure1) (args: ()) = true
   
-  predicate precondition'0 (self: closure2) (args: bool) = [%#s695'9] let b = args in true
+  meta "rewrite_def" predicate precondition
   
-  predicate postcondition_once'0 (self: closure1) (args: ()) (result: bool) =
-    [%#s695'10] let () = args in result = UInt32.gt self._0 (7: UInt32.t)
+  predicate precondition'0 [@inline:trivial] (self: closure2) (args: bool) = [%#s695'9] let b = args in true
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: closure1) (args: ()) (result: bool) =
+    [%#s695'3] result = UInt32.gt self._0 (7: UInt32.t)
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   predicate resolve'4 [@inline:trivial] (_0'1: closure1) = true
   
   meta "rewrite_def" predicate resolve'4
   
-  predicate hist_inv'0 (self: closure1) (result_state: closure1) = self = result_state
+  predicate hist_inv'0 [@inline:trivial] (self: closure1) (result_state: closure1) = self = result_state
   
-  predicate postcondition_mut'0 (self: closure1) (args: ()) (result_state: closure1) (result: bool) =
-    [%#s695'10] let () = args in result = UInt32.gt result_state._0 (7: UInt32.t) /\ hist_inv'0 self result_state
+  meta "rewrite_def" predicate hist_inv'0
+  
+  predicate postcondition_mut'0 [@inline:trivial] (self: closure1) (args: ()) (result_state: closure1) (result: bool) =
+    [%#s695'10] result = UInt32.gt result_state._0 (7: UInt32.t) /\ hist_inv'0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut'0
   
   function fn_mut_once'0 (self: closure1) (args: ()) (res: bool) : ()
   
@@ -343,8 +359,10 @@ module M_695__valid [#"695.rs" 12 0 12 27]
   axiom fn_hist_inv_spec: forall self: closure1, res_state: closure1. [%#sops'8] hist_inv'0 self res_state
       = (self = res_state)
   
-  predicate postcondition (self: closure1) (args: ()) (result: bool) =
-    [%#s695'10] let () = args in result = UInt32.gt self._0 (7: UInt32.t)
+  predicate postcondition [@inline:trivial] (self: closure1) (args: ()) (result: bool) =
+    [%#s695'3] result = UInt32.gt self._0 (7: UInt32.t)
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: closure1) (args: ()) (res: bool) : ()
   

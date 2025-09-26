@@ -4,7 +4,10 @@ use rustc_ast::{LitKind, MetaItemInner, Param};
 use rustc_hir::{AttrArgs, Attribute, def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::{Span, Symbol};
-use why3::declaration::{Attribute as WAttribute, Meta, MetaArg, MetaIdent};
+use why3::{
+    Name,
+    declaration::{Attribute as WAttribute, Meta, MetaArg, MetaIdent},
+};
 
 use crate::ctx::HasTyCtxt as _;
 
@@ -156,7 +159,7 @@ fn tokenstream_to_meta<'a>(
     for token in ts {
         if let Some(name) = token.name() {
             if name.as_str() == "self" {
-                args.push(MetaArg::Ident(ident))
+                args.push(MetaArg::Name(Name::local(ident)))
             } else {
                 args.push(MetaArg::Keyword(name.as_str().into()));
             }

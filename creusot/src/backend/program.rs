@@ -26,7 +26,7 @@ use crate::{
         wto::{Component, weak_topological_order},
     },
     contracts_items::Intrinsic,
-    ctx::{BodyId, Dependencies, HasTyCtxt as _, ItemType},
+    ctx::{BodyId, Dependencies, HasTyCtxt as _},
     naming::name,
     translated_item::FileModule,
     translation::{
@@ -146,15 +146,10 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     body_id: LocalDefId,
 ) -> Defn {
     let def_id = body_id.to_def_id();
-    let inferred_closure_spec =
-        ctx.is_closure_like(def_id) && !ctx.sig(def_id).contract.has_user_contract;
 
-    // We remove the barrier around the definition in the following cases:
-    let open_body =
-        // a closure with no contract
-        inferred_closure_spec
-        // a constant
-        || matches!(ctx.item_type(def_id), ItemType::Constant);
+    // We remove the barrier around the definition of closures without contracts
+    // (automatic inferrence of specifications)
+    let open_body = ctx.is_closure_like(def_id) && !ctx.sig(def_id).contract.has_user_contract;
 
     // The function receives `outer_return` as an argument handler and
     // defines the `inner_return` that wraps `outer_return` with the postcondition:

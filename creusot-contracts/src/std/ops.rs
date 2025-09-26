@@ -89,14 +89,14 @@ pub trait FnExt<Args>: FnMutExt<Args> {}
 impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     #[allow(unused_variables)]
     #[intrinsic("precondition")]
     fn precondition(self, args: Args) -> bool {
         dead
     }
 
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     #[allow(unused_variables)]
     #[intrinsic("postcondition_once")]
     fn postcondition_once(self, args: Args, result: Self::Output) -> bool {
@@ -106,14 +106,14 @@ impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
 
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     #[allow(unused_variables)]
     #[intrinsic("postcondition_mut")]
     fn postcondition_mut(self, args: Args, result_state: Self, result: Self::Output) -> bool {
         dead
     }
 
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     #[allow(unused_variables)]
     #[intrinsic("hist_inv")]
     fn hist_inv(self, result_state: Self) -> bool {
@@ -147,7 +147,7 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
 
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
-    #[logic(open)]
+    #[logic(open, inline)]
     #[allow(unused_variables)]
     #[intrinsic("postcondition")]
     fn postcondition(self, args: Args, result: Self::Output) -> bool {

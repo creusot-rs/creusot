@@ -1235,22 +1235,32 @@ module M_06_map_precond__identity [#"06_map_precond.rs" 179 0 179 37]
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate hist_inv (self: ()) (result_state: ()) = [%#s06_map_precond'1] true
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = [%#s06_map_precond'1] true
+  
+  meta "rewrite_def" predicate hist_inv
   
   let rec closure0 [#"06_map_precond.rs" 180 14 180 20] [@coma:extspec] (self: MutBorrow.t ()) (x: t_Item)
     (_1: Seq.seq t_Item) (return' (x'0: t_Item)) = bb0
     [ bb0 = s0 [ s0 = -{resolve'0 _1'0}- s1 | s1 = [ &_0 <- x'0 ] s2 | s2 = bb1 ] | bb1 = return' {_0} ]
     [ & _0: t_Item = Any.any_l () | & _1'0: MutBorrow.t () = self | & x'0: t_Item = x ]
   
-  predicate postcondition_once (self: ()) (args: tuple) (result: t_Item) =
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: tuple) (result: t_Item) =
     [%#s06_map_precond'1] let {_p0 = x; _p1 = _1} = args in exists e: (). (exists bor_self: MutBorrow.t (). bor_self.current
             = self
           /\ bor_self.final = e /\ closure0'post'return' bor_self x _1 result /\ hist_inv self e)
       /\ resolve'1 e
   
-  predicate postcondition_mut (self: ()) (args: tuple) (result_state: ()) (result: t_Item) =
+  meta "rewrite_def" predicate postcondition_once
+  
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: tuple) (result_state: ()) (result: t_Item) =
     [%#s06_map_precond'1] let {_p0 = x; _p1 = _1} = args in exists bor_self: MutBorrow.t (). bor_self.current = self
       /\ bor_self.final = result_state /\ closure0'post'return' bor_self x _1 result /\ hist_inv self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: tuple) (res: t_Item) : ()
   
@@ -1276,9 +1286,11 @@ module M_06_map_precond__identity [#"06_map_precond.rs" 179 0 179 37]
   
   predicate inv'0 (_0: t_I)
   
-  predicate precondition (self: ()) (args: tuple) =
+  predicate precondition [@inline:trivial] (self: ()) (args: tuple) =
     [%#s06_map_precond'1] let {_p0 = x; _p1 = _1} = args in forall bor_self: MutBorrow.t (). bor_self.current = self
       -> closure0'pre bor_self x _1
+  
+  meta "rewrite_def" predicate precondition
   
   predicate completed [#"common.rs" 11 4 11 36] (self: MutBorrow.t t_I)
   
@@ -1437,7 +1449,9 @@ module M_06_map_precond__increment [#"06_map_precond.rs" 187 0 187 50]
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate hist_inv (self: ()) (result_state: ()) = [%#s06_map_precond'11] true
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = [%#s06_map_precond'11] true
+  
+  meta "rewrite_def" predicate hist_inv
   
   let rec closure0 [#"06_map_precond.rs" 188 22 188 33] [@coma:extspec] (self: MutBorrow.t ()) (x: UInt32.t)
     (_1: Seq.seq UInt32.t) (return' (x'0: UInt32.t)) = bb0
@@ -1446,15 +1460,23 @@ module M_06_map_precond__increment [#"06_map_precond.rs" 187 0 187 50]
       | s1 = UInt32.add {x'0} {[%#s06_map_precond'3] (1: UInt32.t)} (fun (_ret: UInt32.t) -> [ &_0 <- _ret ] s2)
       | s2 = return' {_0} ] ] [ & _0: UInt32.t = Any.any_l () | & _1'0: MutBorrow.t () = self | & x'0: UInt32.t = x ]
   
-  predicate postcondition_once (self: ()) (args: tuple) (result: UInt32.t) =
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: tuple) (result: UInt32.t) =
     [%#s06_map_precond'11] let {_p0 = x; _p1 = _1} = args in exists e: (). (exists bor_self: MutBorrow.t (). bor_self.current
             = self
           /\ bor_self.final = e /\ closure0'post'return' bor_self x _1 result /\ hist_inv self e)
       /\ resolve'1 e
   
-  predicate postcondition_mut (self: ()) (args: tuple) (result_state: ()) (result: UInt32.t) =
+  meta "rewrite_def" predicate postcondition_once
+  
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: tuple) (result_state: ()) (result: UInt32.t) =
     [%#s06_map_precond'11] let {_p0 = x; _p1 = _1} = args in exists bor_self: MutBorrow.t (). bor_self.current = self
       /\ bor_self.final = result_state /\ closure0'post'return' bor_self x _1 result /\ hist_inv self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: tuple) (res: UInt32.t) : ()
   
@@ -1494,9 +1516,11 @@ module M_06_map_precond__increment [#"06_map_precond.rs" 187 0 187 50]
   
   axiom produces_refl_spec: forall self: t_U. [%#scommon] produces self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate precondition (self: ()) (args: tuple) =
+  predicate precondition [@inline:trivial] (self: ()) (args: tuple) =
     [%#s06_map_precond'11] let {_p0 = x; _p1 = _1} = args in forall bor_self: MutBorrow.t (). bor_self.current = self
       -> closure0'pre bor_self x _1
+  
+  meta "rewrite_def" predicate precondition
   
   predicate completed [#"common.rs" 11 4 11 36] (self: MutBorrow.t t_U)
   
@@ -1733,8 +1757,10 @@ module M_06_map_precond__counter [#"06_map_precond.rs" 198 0 198 48]
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv (self: closure0) (result_state: closure0) =
+  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) =
     [%#s06_map_precond'11] (result_state._0).final = (self._0).final
+  
+  meta "rewrite_def" predicate hist_inv
   
   let rec closure0 [#"06_map_precond.rs" 200 14 200 42] [@coma:extspec] (self: MutBorrow.t closure0) (x: UInt32.t)
     (_prod: Seq.seq UInt32.t) (return' (x'0: UInt32.t)) = bb0
@@ -1750,16 +1776,24 @@ module M_06_map_precond__counter [#"06_map_precond.rs" 198 0 198 48]
     | & x'0: UInt32.t = x
     | & _prod'0: Seq.seq UInt32.t = _prod ]
   
-  predicate postcondition_once (self: closure0) (args: tuple) (result: UInt32.t) =
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate postcondition_once [@inline:trivial] (self: closure0) (args: tuple) (result: UInt32.t) =
     [%#s06_map_precond'11] let {_p0 = x; _p1 = _prod} = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current
             = self
           /\ bor_self.final = e /\ closure0'post'return' bor_self x _prod result /\ hist_inv self e)
       /\ resolve'3 e
   
-  predicate postcondition_mut (self: closure0) (args: tuple) (result_state: closure0) (result: UInt32.t) =
+  meta "rewrite_def" predicate postcondition_once
+  
+  predicate postcondition_mut [@inline:trivial] (self: closure0) (args: tuple) (result_state: closure0) (result: UInt32.t) =
     [%#s06_map_precond'11] let {_p0 = x; _p1 = _prod} = args in exists bor_self: MutBorrow.t closure0. bor_self.current
         = self
       /\ bor_self.final = result_state /\ closure0'post'return' bor_self x _prod result /\ hist_inv self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: closure0) (args: tuple) (res: UInt32.t) : ()
   
@@ -1799,9 +1833,11 @@ module M_06_map_precond__counter [#"06_map_precond.rs" 198 0 198 48]
   
   axiom produces_refl_spec: forall self: t_I. [%#scommon] produces self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate precondition (self: closure0) (args: tuple) =
+  predicate precondition [@inline:trivial] (self: closure0) (args: tuple) =
     [%#s06_map_precond'11] let {_p0 = x; _p1 = _prod} = args in forall bor_self: MutBorrow.t closure0. bor_self.current
         = self -> closure0'pre bor_self x _prod
+  
+  meta "rewrite_def" predicate precondition
   
   predicate completed [#"common.rs" 11 4 11 36] (self: MutBorrow.t t_I)
   

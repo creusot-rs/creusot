@@ -121,21 +121,28 @@ module M_option__unwrap [#"option.rs" 12 0 12 15]
       {[%#soption'26] self_ = C_None \/ self_ = C_Some result /\ resolve default}
       (! return' {result}) ]
   
-  predicate postcondition_once (self: ()) (args: ()) (result: Int32.t) = let () = args in result = (0: Int32.t)
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    let () = args in result = (0: Int32.t)
+  
+  meta "rewrite_def" predicate postcondition_once
   
   predicate resolve'0 [@inline:trivial] (_0: ()) = true
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate postcondition_mut (self: ()) (args: ()) (result_state: ()) (result: Int32.t) =
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: Int32.t) =
     let () = args in result = (0: Int32.t)
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: ()) (res: Int32.t) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: (), res: Int32.t. [%#sops'8] postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'0 res_state)
   
-  predicate hist_inv (self: ()) (result_state: ()) = true
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -156,7 +163,10 @@ module M_option__unwrap [#"option.rs" 12 0 12 15]
   
   axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
   
-  predicate postcondition (self: ()) (args: ()) (result: Int32.t) = let () = args in result = (0: Int32.t)
+  predicate postcondition [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    let () = args in result = (0: Int32.t)
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: ()) (args: ()) (res: Int32.t) : ()
   
@@ -180,10 +190,18 @@ module M_option__unwrap [#"option.rs" 12 0 12 15]
   let rec closure0 [#"option.rs" 25 32 25 34] [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0
     [ bb0 = {false} any ]
   
-  predicate precondition (self: ()) (args: ()) = [%#soption'34] let () = args in closure0'pre self
+  meta "rewrite_def" predicate closure0'pre
   
-  predicate postcondition_once'0 (self: ()) (args: ()) (result: Int32.t) =
-    [%#soption'34] let () = args in closure0'post'return' self result
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate precondition [@inline:trivial] (self: ()) (args: ()) = [%#soption'34] closure0'pre self
+  
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    [%#soption'34] closure0'post'return' self result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec unwrap_or_else (self_: t_Option) (f: ()) (return' (x: Int32.t)) =
     {[@expl:unwrap_or_else requires] [%#soption'29] self_ = C_None -> precondition f ()}
@@ -197,10 +215,18 @@ module M_option__unwrap [#"option.rs" 12 0 12 15]
   let rec closure1 [#"option.rs" 26 32 26 34] [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = [ &_0 <- [%#soption'31] (3: Int32.t) ] s1 | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () ]
   
-  predicate precondition'0 (self: ()) (args: ()) = [%#soption'35] let () = args in closure1'pre self
+  meta "rewrite_def" predicate closure1'pre
   
-  predicate postcondition_once'1 (self: ()) (args: ()) (result: Int32.t) =
-    [%#soption'35] let () = args in closure1'post'return' self result
+  meta "rewrite_def" predicate closure1'post'return'
+  
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: ()) = [%#soption'35] closure1'pre self
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    [%#soption'35] closure1'post'return' self result
+  
+  meta "rewrite_def" predicate postcondition_once'1
   
   let rec unwrap_or_else'0 (self_: t_Option) (f: ()) (return' (x: Int32.t)) =
     {[@expl:unwrap_or_else requires] [%#soption'29] self_ = C_None -> precondition'0 f ()}
@@ -334,12 +360,21 @@ module M_option__map [#"option.rs" 31 0 31 12]
   let rec closure0 [#"option.rs" 35 21 35 24] [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: ())) = bb0
     [ bb0 = {false} any ]
   
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
   type t_Option'0 = C_None'0 | C_Some'0 ()
   
-  predicate precondition (self: ()) (args: Int32.t) = [%#soption'10] let _0 = args in closure0'pre self _0
+  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'10] let _0 = args in closure0'pre self _0
   
-  predicate postcondition_once (self: ()) (args: Int32.t) (result: ()) =
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: ()) =
     [%#soption'10] let _0 = args in closure0'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   let rec map (self_: t_Option) (f: ()) (return' (x: t_Option'0)) = {[@expl:map requires] [%#soption'5] match self_ with
       | C_None -> true
@@ -369,10 +404,19 @@ module M_option__map [#"option.rs" 31 0 31 12]
     [ bb0 = s0 [ s0 = [ &_0'0 <- [%#soption'8] (3: Int32.t) ] s1 | s1 = return' {_0'0} ] ]
     [ & _0'0: Int32.t = Any.any_l () ]
   
-  predicate precondition'0 (self: ()) (args: Int32.t) = [%#soption'11] let _0 = args in closure1'pre self _0
+  meta "rewrite_def" predicate closure1'pre
   
-  predicate postcondition_once'0 (self: ()) (args: Int32.t) (result: Int32.t) =
+  meta "rewrite_def" predicate closure1'post'return'
+  
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'11] let _0 = args in closure1'pre self _0
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     [%#soption'11] let _0 = args in closure1'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec map'0 (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:map requires] [%#soption'5] match self_ with
       | C_None -> true
@@ -405,10 +449,19 @@ module M_option__map [#"option.rs" 31 0 31 12]
       [ s0 = Int32.add {x'0} {[%#soption'9] (1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1)
       | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x ]
   
-  predicate precondition'1 (self: ()) (args: Int32.t) = [%#soption'12] let x = args in closure2'pre self x
+  meta "rewrite_def" predicate closure2'pre
   
-  predicate postcondition_once'1 (self: ()) (args: Int32.t) (result: Int32.t) =
+  meta "rewrite_def" predicate closure2'post'return'
+  
+  predicate precondition'1 [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'12] let x = args in closure2'pre self x
+  
+  meta "rewrite_def" predicate precondition'1
+  
+  predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     [%#soption'12] let x = args in closure2'post'return' self x result
+  
+  meta "rewrite_def" predicate postcondition_once'1
   
   let rec map'1 (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:map requires] [%#soption'5] match self_ with
       | C_None -> true
@@ -507,10 +560,19 @@ module M_option__inspect [#"option.rs" 40 0 40 16]
   let rec closure0 [#"option.rs" 44 25 44 28] [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: ())) = bb0
     [ bb0 = {false} any ]
   
-  predicate precondition (self: ()) (args: Int32.t) = [%#soption'7] let _0 = args in closure0'pre self _0
+  meta "rewrite_def" predicate closure0'pre
   
-  predicate postcondition_once (self: ()) (args: Int32.t) (result: ()) =
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'7] let _0 = args in closure0'pre self _0
+  
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: ()) =
     [%#soption'7] let _0 = args in closure0'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   let rec inspect (self_: t_Option) (f: ()) (return' (x: t_Option)) =
     {[@expl:inspect requires] [%#soption'3] match self_ with
@@ -543,10 +605,19 @@ module M_option__inspect [#"option.rs" 40 0 40 16]
   let rec closure1 [#"option.rs" 45 25 45 28] [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: ())) = bb0
     [ bb0 = return' {_0'0} ] [ & _0'0: () = Any.any_l () ]
   
-  predicate precondition'0 (self: ()) (args: Int32.t) = [%#soption'8] let _0 = args in closure1'pre self _0
+  meta "rewrite_def" predicate closure1'pre
   
-  predicate postcondition_once'0 (self: ()) (args: Int32.t) (result: ()) =
+  meta "rewrite_def" predicate closure1'post'return'
+  
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'8] let _0 = args in closure1'pre self _0
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: Int32.t) (result: ()) =
     [%#soption'8] let _0 = args in closure1'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec inspect'0 (self_: t_Option) (f: ()) (return' (x: t_Option)) =
     {[@expl:inspect requires] [%#soption'3] match self_ with
@@ -646,10 +717,19 @@ module M_option__map_or [#"option.rs" 48 0 48 15]
   let rec closure0 [#"option.rs" 53 27 53 30] [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: Int32.t)) = bb0
     [ bb0 = {false} any ]
   
-  predicate precondition (self: ()) (args: Int32.t) = [%#soption'21] let _0 = args in closure0'pre self _0
+  meta "rewrite_def" predicate closure0'pre
   
-  predicate postcondition_once (self: ()) (args: Int32.t) (result: Int32.t) =
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'21] let _0 = args in closure0'pre self _0
+  
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     [%#soption'21] let _0 = args in closure0'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   let rec map_or (self_: t_Option) (default: Int32.t) (f: ()) (return' (x: Int32.t)) =
     {[@expl:map_or requires] [%#soption'13] match self_ with
@@ -667,10 +747,19 @@ module M_option__map_or [#"option.rs" 48 0 48 15]
     [ bb0 = s0 [ s0 = [ &_0'0 <- [%#soption'15] (3: Int32.t) ] s1 | s1 = return' {_0'0} ] ]
     [ & _0'0: Int32.t = Any.any_l () ]
   
-  predicate precondition'0 (self: ()) (args: Int32.t) = [%#soption'22] let _0 = args in closure1'pre self _0
+  meta "rewrite_def" predicate closure1'pre
   
-  predicate postcondition_once'0 (self: ()) (args: Int32.t) (result: Int32.t) =
+  meta "rewrite_def" predicate closure1'post'return'
+  
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'22] let _0 = args in closure1'pre self _0
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     [%#soption'22] let _0 = args in closure1'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec map_or'0 (self_: t_Option) (default: Int32.t) (f: ()) (return' (x: Int32.t)) =
     {[@expl:map_or requires] [%#soption'13] match self_ with
@@ -689,10 +778,19 @@ module M_option__map_or [#"option.rs" 48 0 48 15]
       [ s0 = Int32.add {x'0} {[%#soption'16] (1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1)
       | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x ]
   
-  predicate precondition'1 (self: ()) (args: Int32.t) = [%#soption'23] let x = args in closure2'pre self x
+  meta "rewrite_def" predicate closure2'pre
   
-  predicate postcondition_once'1 (self: ()) (args: Int32.t) (result: Int32.t) =
+  meta "rewrite_def" predicate closure2'post'return'
+  
+  predicate precondition'1 [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'23] let x = args in closure2'pre self x
+  
+  meta "rewrite_def" predicate precondition'1
+  
+  predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     [%#soption'23] let x = args in closure2'post'return' self x result
+  
+  meta "rewrite_def" predicate postcondition_once'1
   
   let rec map_or'1 (self_: t_Option) (default: Int32.t) (f: ()) (return' (x: Int32.t)) =
     {[@expl:map_or requires] [%#soption'13] match self_ with
@@ -709,18 +807,35 @@ module M_option__map_or [#"option.rs" 48 0 48 15]
   let rec closure3 [#"option.rs" 58 29 58 31] [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = [ &_0 <- [%#soption'17] (2: Int32.t) ] s1 | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () ]
   
+  meta "rewrite_def" predicate closure3'pre
+  
+  meta "rewrite_def" predicate closure3'post'return'
+  
   let rec closure4 [#"option.rs" 58 35 58 38] [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: Int32.t)) = bb0
     [ bb0 = {false} any ]
   
-  predicate precondition'2 (self: ()) (args: ()) = [%#soption'24] let () = args in closure3'pre self
+  meta "rewrite_def" predicate closure4'pre
   
-  predicate precondition'3 (self: ()) (args: Int32.t) = [%#soption'25] let _0 = args in closure4'pre self _0
+  meta "rewrite_def" predicate closure4'post'return'
   
-  predicate postcondition_once'2 (self: ()) (args: ()) (result: Int32.t) =
-    [%#soption'24] let () = args in closure3'post'return' self result
+  predicate precondition'2 [@inline:trivial] (self: ()) (args: ()) = [%#soption'24] closure3'pre self
   
-  predicate postcondition_once'3 (self: ()) (args: Int32.t) (result: Int32.t) =
+  meta "rewrite_def" predicate precondition'2
+  
+  predicate precondition'3 [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'25] let _0 = args in closure4'pre self _0
+  
+  meta "rewrite_def" predicate precondition'3
+  
+  predicate postcondition_once'2 [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    [%#soption'24] closure3'post'return' self result
+  
+  meta "rewrite_def" predicate postcondition_once'2
+  
+  predicate postcondition_once'3 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     [%#soption'25] let _0 = args in closure4'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once'3
   
   let rec map_or_else (self_: t_Option) (default: ()) (f: ()) (return' (x: Int32.t)) =
     {[@expl:map_or_else requires] [%#soption'18] match self_ with
@@ -737,20 +852,37 @@ module M_option__map_or [#"option.rs" 48 0 48 15]
   let rec closure5 [#"option.rs" 59 29 59 31] [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0
     [ bb0 = {false} any ]
   
+  meta "rewrite_def" predicate closure5'pre
+  
+  meta "rewrite_def" predicate closure5'post'return'
+  
   let rec closure6 [#"option.rs" 59 42 59 45] [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: Int32.t)) = bb0
     [ bb0 = s0
       [ s0 = Int32.add {x'0} {[%#soption'20] (1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1)
       | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x ]
   
-  predicate precondition'4 (self: ()) (args: ()) = [%#soption'26] let () = args in closure5'pre self
+  meta "rewrite_def" predicate closure6'pre
   
-  predicate precondition'5 (self: ()) (args: Int32.t) = [%#soption'27] let x = args in closure6'pre self x
+  meta "rewrite_def" predicate closure6'post'return'
   
-  predicate postcondition_once'4 (self: ()) (args: ()) (result: Int32.t) =
-    [%#soption'26] let () = args in closure5'post'return' self result
+  predicate precondition'4 [@inline:trivial] (self: ()) (args: ()) = [%#soption'26] closure5'pre self
   
-  predicate postcondition_once'5 (self: ()) (args: Int32.t) (result: Int32.t) =
+  meta "rewrite_def" predicate precondition'4
+  
+  predicate precondition'5 [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'27] let x = args in closure6'pre self x
+  
+  meta "rewrite_def" predicate precondition'5
+  
+  predicate postcondition_once'4 [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    [%#soption'26] closure5'post'return' self result
+  
+  meta "rewrite_def" predicate postcondition_once'4
+  
+  predicate postcondition_once'5 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     [%#soption'27] let x = args in closure6'post'return' self x result
+  
+  meta "rewrite_def" predicate postcondition_once'5
   
   let rec map_or_else'0 (self_: t_Option) (default: ()) (f: ()) (return' (x: Int32.t)) =
     {[@expl:map_or_else requires] [%#soption'18] match self_ with
@@ -872,10 +1004,18 @@ module M_option__ok_or [#"option.rs" 62 0 62 14]
   let rec closure0 [#"option.rs" 71 30 71 32] [@coma:extspec] (self: ()) (return' (x: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_0 <- [%#soption'7] true ] s1 | s1 = return' {_0} ] ] [ & _0: bool = Any.any_l () ]
   
-  predicate precondition (self: ()) (args: ()) = [%#soption'11] let () = args in closure0'pre self
+  meta "rewrite_def" predicate closure0'pre
   
-  predicate postcondition_once (self: ()) (args: ()) (result: bool) =
-    [%#soption'11] let () = args in closure0'post'return' self result
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate precondition [@inline:trivial] (self: ()) (args: ()) = [%#soption'11] closure0'pre self
+  
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: bool) =
+    [%#soption'11] closure0'post'return' self result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   let rec ok_or_else (self_: t_Option) (err: ()) (return' (x: t_Result)) =
     {[@expl:ok_or_else requires] [%#soption'8] self_ = C_None -> precondition err ()}
@@ -889,10 +1029,18 @@ module M_option__ok_or [#"option.rs" 62 0 62 14]
   let rec closure1 [#"option.rs" 73 29 73 31] [@coma:extspec] (self: ()) (return' (x: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_0 <- [%#soption'10] false ] s1 | s1 = return' {_0} ] ] [ & _0: bool = Any.any_l () ]
   
-  predicate precondition'0 (self: ()) (args: ()) = [%#soption'12] let () = args in closure1'pre self
+  meta "rewrite_def" predicate closure1'pre
   
-  predicate postcondition_once'0 (self: ()) (args: ()) (result: bool) =
-    [%#soption'12] let () = args in closure1'post'return' self result
+  meta "rewrite_def" predicate closure1'post'return'
+  
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: ()) = [%#soption'12] closure1'pre self
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: ()) (result: bool) =
+    [%#soption'12] closure1'post'return' self result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec ok_or_else'0 (self_: t_Option) (err: ()) (return' (x: t_Result)) =
     {[@expl:ok_or_else requires] [%#soption'8] self_ = C_None -> precondition'0 err ()}
@@ -1555,10 +1703,19 @@ module M_option__and_then [#"option.rs" 129 0 129 17]
   let rec closure0 [#"option.rs" 134 26 134 44] [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: t_Option)) = bb0
     [ bb0 = {false} any ]
   
-  predicate precondition (self: ()) (args: Int32.t) = [%#soption'11] let _0 = args in closure0'pre self _0
+  meta "rewrite_def" predicate closure0'pre
   
-  predicate postcondition_once (self: ()) (args: Int32.t) (result: t_Option) =
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'11] let _0 = args in closure0'pre self _0
+  
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: t_Option) =
     [%#soption'11] let _0 = args in closure0'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   let rec and_then (self_: t_Option) (f: ()) (return' (x: t_Option)) =
     {[@expl:and_then requires] [%#soption'5] match self_ with
@@ -1607,12 +1764,16 @@ module M_option__and_then [#"option.rs" 129 0 129 17]
       \/ Int32.to_int x <> 1 /\ result = C_None}
       (! return' {result}) ]
   
-  predicate precondition'0 (self: ()) (args: Int32.t) = [%#soption'12] let x = args in true
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) = [%#soption'12] let x = args in true
   
-  predicate postcondition_once'0 (self: ()) (args: Int32.t) (result: t_Option) =
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: Int32.t) (result: t_Option) =
     [%#soption'12] let x = args in Int32.to_int x = 1
       /\ (exists y: Int32.t. result = C_Some y /\ Int32.to_int y = Int32.to_int x + 1)
     \/ Int32.to_int x <> 1 /\ result = C_None
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec and_then'0 (self_: t_Option) (f: ()) (return' (x: t_Option)) =
     {[@expl:and_then requires] [%#soption'5] match self_ with
@@ -1715,10 +1876,19 @@ module M_option__filter [#"option.rs" 146 0 146 15]
   let rec closure0 [#"option.rs" 150 24 150 27] [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: bool)) = bb0
     [ bb0 = {false} any ]
   
-  predicate precondition (self: ()) (args: Int32.t) = [%#soption'9] let _0 = args in closure0'pre self _0
+  meta "rewrite_def" predicate closure0'pre
   
-  predicate postcondition_once (self: ()) (args: Int32.t) (result: bool) =
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'9] let _0 = args in closure0'pre self _0
+  
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
     [%#soption'9] let _0 = args in closure0'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   predicate resolve [@inline:trivial] (_0: Int32.t) = true
   
@@ -1758,10 +1928,19 @@ module M_option__filter [#"option.rs" 146 0 146 15]
     [ bb0 = s0 [ s0 = [ &_0 <- x'0 = ([%#soption'7] (1: Int32.t)) ] s1 | s1 = return' {_0} ] ]
     [ & _0: bool = Any.any_l () | & x'0: Int32.t = x ]
   
-  predicate precondition'0 (self: ()) (args: Int32.t) = [%#soption'10] let x = args in closure1'pre self x
+  meta "rewrite_def" predicate closure1'pre
   
-  predicate postcondition_once'0 (self: ()) (args: Int32.t) (result: bool) =
+  meta "rewrite_def" predicate closure1'post'return'
+  
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'10] let x = args in closure1'pre self x
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
     [%#soption'10] let x = args in closure1'post'return' self x result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec filter'0 (self_: t_Option) (predicate': ()) (return' (x: t_Option)) =
     {[@expl:filter requires] [%#soption'4] match self_ with
@@ -1782,10 +1961,19 @@ module M_option__filter [#"option.rs" 146 0 146 15]
     [ bb0 = s0 [ s0 = [ &_0 <- x'0 = ([%#soption'8] (2: Int32.t)) ] s1 | s1 = return' {_0} ] ]
     [ & _0: bool = Any.any_l () | & x'0: Int32.t = x ]
   
-  predicate precondition'1 (self: ()) (args: Int32.t) = [%#soption'11] let x = args in closure2'pre self x
+  meta "rewrite_def" predicate closure2'pre
   
-  predicate postcondition_once'1 (self: ()) (args: Int32.t) (result: bool) =
+  meta "rewrite_def" predicate closure2'post'return'
+  
+  predicate precondition'1 [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'11] let x = args in closure2'pre self x
+  
+  meta "rewrite_def" predicate precondition'1
+  
+  predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
     [%#soption'11] let x = args in closure2'post'return' self x result
+  
+  meta "rewrite_def" predicate postcondition_once'1
   
   let rec filter'1 (self_: t_Option) (predicate': ()) (return' (x: t_Option)) =
     {[@expl:filter requires] [%#soption'4] match self_ with
@@ -1887,10 +2075,19 @@ module M_option__is_some_and [#"option.rs" 155 0 155 20]
     [ bb0 = s0 [ s0 = [ &_0 <- x'0 = ([%#soption'4] (1: Int32.t)) ] s1 | s1 = return' {_0} ] ]
     [ & _0: bool = Any.any_l () | & x'0: Int32.t = x ]
   
-  predicate precondition (self: ()) (args: Int32.t) = [%#soption'9] let x = args in closure0'pre self x
+  meta "rewrite_def" predicate closure0'pre
   
-  predicate postcondition_once (self: ()) (args: Int32.t) (result: bool) =
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'9] let x = args in closure0'pre self x
+  
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
     [%#soption'9] let x = args in closure0'post'return' self x result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   let rec is_some_and (self_: t_Option) (f: ()) (return' (x: bool)) =
     {[@expl:is_some_and requires] [%#soption'5] match self_ with
@@ -1908,10 +2105,19 @@ module M_option__is_some_and [#"option.rs" 155 0 155 20]
     [ bb0 = s0 [ s0 = [ &_0 <- x'0 = ([%#soption'7] (1: Int32.t)) ] s1 | s1 = return' {_0} ] ]
     [ & _0: bool = Any.any_l () | & x'0: Int32.t = x ]
   
-  predicate precondition'0 (self: ()) (args: Int32.t) = [%#soption'10] let x = args in closure1'pre self x
+  meta "rewrite_def" predicate closure1'pre
   
-  predicate postcondition_once'0 (self: ()) (args: Int32.t) (result: bool) =
+  meta "rewrite_def" predicate closure1'post'return'
+  
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'10] let x = args in closure1'pre self x
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
     [%#soption'10] let x = args in closure1'post'return' self x result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec is_some_and'0 (self_: t_Option) (f: ()) (return' (x: bool)) =
     {[@expl:is_some_and requires] [%#soption'5] match self_ with
@@ -1928,10 +2134,19 @@ module M_option__is_some_and [#"option.rs" 155 0 155 20]
   let rec closure2 [#"option.rs" 162 30 162 33] [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_0'0 <- [%#soption'8] true ] s1 | s1 = return' {_0'0} ] ] [ & _0'0: bool = Any.any_l () ]
   
-  predicate precondition'1 (self: ()) (args: Int32.t) = [%#soption'11] let _0 = args in closure2'pre self _0
+  meta "rewrite_def" predicate closure2'pre
   
-  predicate postcondition_once'1 (self: ()) (args: Int32.t) (result: bool) =
+  meta "rewrite_def" predicate closure2'post'return'
+  
+  predicate precondition'1 [@inline:trivial] (self: ()) (args: Int32.t) =
+    [%#soption'11] let _0 = args in closure2'pre self _0
+  
+  meta "rewrite_def" predicate precondition'1
+  
+  predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
     [%#soption'11] let _0 = args in closure2'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once'1
   
   let rec is_some_and'1 (self_: t_Option) (f: ()) (return' (x: bool)) =
     {[@expl:is_some_and requires] [%#soption'5] match self_ with
@@ -2008,10 +2223,18 @@ module M_option__or_else [#"option.rs" 165 0 165 16]
     [ bb0 = s0 [ s0 = [ &_0 <- C_Some ([%#soption'5] (2: Int32.t)) ] s1 | s1 = return' {_0} ] ]
     [ & _0: t_Option = Any.any_l () ]
   
-  predicate precondition (self: ()) (args: ()) = [%#soption'9] let () = args in closure0'pre self
+  meta "rewrite_def" predicate closure0'pre
   
-  predicate postcondition_once (self: ()) (args: ()) (result: t_Option) =
-    [%#soption'9] let () = args in closure0'post'return' self result
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate precondition [@inline:trivial] (self: ()) (args: ()) = [%#soption'9] closure0'pre self
+  
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
+    [%#soption'9] closure0'post'return' self result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   let rec or_else (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:or_else requires] [%#soption'6] self_
       = C_None -> precondition f ()}
@@ -2040,10 +2263,18 @@ module M_option__or_else [#"option.rs" 165 0 165 16]
   let rec closure1 [#"option.rs" 170 25 170 27] [@coma:extspec] (self: ()) (return' (x: t_Option)) = bb0
     [ bb0 = s0 [ s0 = [ &_0 <- C_None ] s1 | s1 = return' {_0} ] ] [ & _0: t_Option = Any.any_l () ]
   
-  predicate precondition'0 (self: ()) (args: ()) = [%#soption'10] let () = args in closure1'pre self
+  meta "rewrite_def" predicate closure1'pre
   
-  predicate postcondition_once'0 (self: ()) (args: ()) (result: t_Option) =
-    [%#soption'10] let () = args in closure1'post'return' self result
+  meta "rewrite_def" predicate closure1'post'return'
+  
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: ()) = [%#soption'10] closure1'pre self
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
+    [%#soption'10] closure1'post'return' self result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec or_else'0 (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:or_else requires] [%#soption'6] self_
       = C_None -> precondition'0 f ()}
@@ -2057,10 +2288,18 @@ module M_option__or_else [#"option.rs" 165 0 165 16]
   let rec closure2 [#"option.rs" 171 25 171 27] [@coma:extspec] (self: ()) (return' (x: t_Option)) = bb0
     [ bb0 = {false} any ]
   
-  predicate precondition'1 (self: ()) (args: ()) = [%#soption'11] let () = args in closure2'pre self
+  meta "rewrite_def" predicate closure2'pre
   
-  predicate postcondition_once'1 (self: ()) (args: ()) (result: t_Option) =
-    [%#soption'11] let () = args in closure2'post'return' self result
+  meta "rewrite_def" predicate closure2'post'return'
+  
+  predicate precondition'1 [@inline:trivial] (self: ()) (args: ()) = [%#soption'11] closure2'pre self
+  
+  meta "rewrite_def" predicate precondition'1
+  
+  predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
+    [%#soption'11] closure2'post'return' self result
+  
+  meta "rewrite_def" predicate postcondition_once'1
   
   let rec or_else'1 (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:or_else requires] [%#soption'6] self_
       = C_None -> precondition'1 f ()}
@@ -2343,10 +2582,18 @@ module M_option__get_or_insert [#"option.rs" 188 0 188 22]
   let rec closure0 [#"option.rs" 206 37 206 39] [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = [ &_0 <- [%#soption'25] (2: Int32.t) ] s1 | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () ]
   
-  predicate precondition (self: ()) (args: ()) = [%#soption'28] let () = args in closure0'pre self
+  meta "rewrite_def" predicate closure0'pre
   
-  predicate postcondition_once (self: ()) (args: ()) (result: Int32.t) =
-    [%#soption'28] let () = args in closure0'post'return' self result
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate precondition [@inline:trivial] (self: ()) (args: ()) = [%#soption'28] closure0'pre self
+  
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    [%#soption'28] closure0'post'return' self result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   let rec get_or_insert_with (self_: MutBorrow.t t_Option) (f: ()) (return' (x: MutBorrow.t Int32.t)) =
     {[@expl:get_or_insert_with requires] [%#soption'26] self_.current = C_None -> precondition f ()}
@@ -2360,10 +2607,18 @@ module M_option__get_or_insert [#"option.rs" 188 0 188 22]
   let rec closure1 [#"option.rs" 210 37 210 39] [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0
     [ bb0 = {false} any ]
   
-  predicate precondition'0 (self: ()) (args: ()) = [%#soption'29] let () = args in closure1'pre self
+  meta "rewrite_def" predicate closure1'pre
   
-  predicate postcondition_once'0 (self: ()) (args: ()) (result: Int32.t) =
-    [%#soption'29] let () = args in closure1'post'return' self result
+  meta "rewrite_def" predicate closure1'post'return'
+  
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: ()) = [%#soption'29] closure1'pre self
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    [%#soption'29] closure1'post'return' self result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec get_or_insert_with'0 (self_: MutBorrow.t t_Option) (f: ()) (return' (x: MutBorrow.t Int32.t)) =
     {[@expl:get_or_insert_with requires] [%#soption'26] self_.current = C_None -> precondition'0 f ()}
@@ -2618,14 +2873,23 @@ module M_option__take_if [#"option.rs" 226 0 226 16]
     (return' (x: bool)) = bb0
     [ bb0 = s0 [ s0 = -{resolve'0 _2}- s1 | s1 = {false} any ] ] [ & _2: MutBorrow.t Int32.t = _0 ]
   
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
   predicate inv (_0: MutBorrow.t Int32.t)
   
   axiom inv_axiom [@rewrite]: forall x: MutBorrow.t Int32.t [inv x]. inv x = true
   
-  predicate precondition (self: ()) (args: MutBorrow.t Int32.t) = [%#soption'13] let _0 = args in closure0'pre self _0
+  predicate precondition [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) =
+    [%#soption'13] let _0 = args in closure0'pre self _0
   
-  predicate postcondition_once (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
     [%#soption'13] let _0 = args in closure0'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   let rec take_if (self_: MutBorrow.t t_Option) (predicate': ()) (return' (x: t_Option)) =
     {[@expl:take_if requires] [%#soption'7] match self_.current with
@@ -2668,10 +2932,19 @@ module M_option__take_if [#"option.rs" 226 0 226 16]
       | s1 = [ &_0 <- x'0.current = ([%#soption'10] (2: Int32.t)) ] s2
       | s2 = return' {_0} ] ] [ & _0: bool = Any.any_l () | & x'0: MutBorrow.t Int32.t = x ]
   
-  predicate precondition'0 (self: ()) (args: MutBorrow.t Int32.t) = [%#soption'14] let x = args in closure1'pre self x
+  meta "rewrite_def" predicate closure1'pre
   
-  predicate postcondition_once'0 (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
+  meta "rewrite_def" predicate closure1'post'return'
+  
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) =
+    [%#soption'14] let x = args in closure1'pre self x
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
     [%#soption'14] let x = args in closure1'post'return' self x result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec take_if'0 (self_: MutBorrow.t t_Option) (predicate': ()) (return' (x: t_Option)) =
     {[@expl:take_if requires] [%#soption'7] match self_.current with
@@ -2702,10 +2975,19 @@ module M_option__take_if [#"option.rs" 226 0 226 16]
       | s4 = return' {_0} ] ]
     [ & _0: bool = Any.any_l () | & x'0: MutBorrow.t Int32.t = x | & res: bool = Any.any_l () ]
   
-  predicate precondition'1 (self: ()) (args: MutBorrow.t Int32.t) = [%#soption'15] let x = args in closure2'pre self x
+  meta "rewrite_def" predicate closure2'pre
   
-  predicate postcondition_once'1 (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
+  meta "rewrite_def" predicate closure2'post'return'
+  
+  predicate precondition'1 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) =
+    [%#soption'15] let x = args in closure2'pre self x
+  
+  meta "rewrite_def" predicate precondition'1
+  
+  predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
     [%#soption'15] let x = args in closure2'post'return' self x result
+  
+  meta "rewrite_def" predicate postcondition_once'1
   
   let rec take_if'1 (self_: MutBorrow.t t_Option) (predicate': ()) (return' (x: t_Option)) =
     {[@expl:take_if requires] [%#soption'7] match self_.current with
@@ -2906,21 +3188,28 @@ module M_option__copied_cloned [#"option.rs" 243 0 243 22]
   
   type tuple = { _p0: t_Option'0; _p1: t_Option }
   
-  predicate postcondition_once (self: ()) (args: Int32.t) (result: Int32.t) = let self_ = args in result = self_
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_once
   
   predicate resolve [@inline:trivial] (_0: ()) = true
   
   meta "rewrite_def" predicate resolve
   
-  predicate postcondition_mut (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
     let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: Int32.t, res: Int32.t. [%#sops'8] postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
-  predicate hist_inv (self: ()) (result_state: ()) = true
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -2941,7 +3230,10 @@ module M_option__copied_cloned [#"option.rs" 243 0 243 22]
   
   axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
   
-  predicate postcondition (self: ()) (args: Int32.t) (result: Int32.t) = let self_ = args in result = self_
+  predicate postcondition [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
@@ -3635,10 +3927,19 @@ module M_option__resolve [#"option.rs" 300 0 300 16]
     [ bb0 = s0 [ s0 = -{resolve'0 _2}- s1 | s1 = [ &_0'0 <- [%#soption'44] true ] s2 | s2 = return' {_0'0} ] ]
     [ & _0'0: bool = Any.any_l () | & _2: MutBorrow.t Int32.t = _0 ]
   
-  predicate precondition (self: ()) (args: MutBorrow.t Int32.t) = [%#soption'61] let _0 = args in closure1'pre self _0
+  meta "rewrite_def" predicate closure1'pre
   
-  predicate postcondition_once (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
+  meta "rewrite_def" predicate closure1'post'return'
+  
+  predicate precondition [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) =
+    [%#soption'61] let _0 = args in closure1'pre self _0
+  
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
     [%#soption'61] let _0 = args in closure1'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once
   
   let rec is_some_and (self_: t_Option) (f: ()) (return' (x: bool)) =
     {[@expl:is_some_and requires] [%#soption'45] match self_ with
@@ -3692,10 +3993,19 @@ module M_option__resolve [#"option.rs" 300 0 300 16]
     (return' (x: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_0'0 <- [%#soption'51] false ] s1 | s1 = return' {_0'0} ] ] [ & _0'0: bool = Any.any_l () ]
   
-  predicate precondition'0 (self: ()) (args: MutBorrow.t Int32.t) = [%#soption'63] let _0 = args in closure0'pre self _0
+  meta "rewrite_def" predicate closure0'pre
   
-  predicate postcondition_once'0 (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate precondition'0 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) =
+    [%#soption'63] let _0 = args in closure0'pre self _0
+  
+  meta "rewrite_def" predicate precondition'0
+  
+  predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
     [%#soption'63] let _0 = args in closure0'post'return' self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once'0
   
   let rec filter (self_: t_Option) (predicate': ()) (return' (x: t_Option)) =
     {[@expl:filter requires] [%#soption'52] match self_ with
@@ -3790,21 +4100,28 @@ module M_option__resolve [#"option.rs" 300 0 300 16]
         end}
       (! return' {result}) ]
   
-  predicate postcondition_once'1 (self: ()) (args: Int32.t) (result: Int32.t) = let self_ = args in result = self_
+  predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_once'1
   
   predicate resolve'11 [@inline:trivial] (_0: ()) = true
   
   meta "rewrite_def" predicate resolve'11
   
-  predicate postcondition_mut (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
     let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: Int32.t, res: Int32.t. [%#sops'8] postcondition_once'1 self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'11 res_state)
   
-  predicate hist_inv (self: ()) (result_state: ()) = true
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -3825,7 +4142,10 @@ module M_option__resolve [#"option.rs" 300 0 300 16]
   
   axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
   
-  predicate postcondition (self: ()) (args: Int32.t) (result: Int32.t) = let self_ = args in result = self_
+  predicate postcondition [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   

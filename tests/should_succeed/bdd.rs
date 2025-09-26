@@ -259,7 +259,7 @@ pub struct Context<'arena> {
 }
 
 impl<'arena> Invariant for Context<'arena> {
-    #[logic]
+    #[logic(inline)]
     fn invariant(self) -> bool {
         pearlite! {
             (forall<n: NodeLog>

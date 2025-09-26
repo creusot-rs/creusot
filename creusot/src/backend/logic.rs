@@ -14,7 +14,7 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use why3::{
-    Ident,
+    Ident, Name,
     declaration::*,
     exp::{BinOp, Exp, Trigger},
 };
@@ -153,7 +153,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
             meta_decl = Some(Decl::Meta(Meta {
                 name: MetaIdent("rewrite_def".into()),
-                args: Box::new([MetaArg::Keyword(kw.into()), MetaArg::Ident(sig.name)]),
+                args: Box::new([MetaArg::Keyword(kw.into()), MetaArg::Name(Name::local(sig.name))]),
             }))
         }
 

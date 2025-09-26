@@ -294,7 +294,14 @@ module M_06_fn_specs__caller [#"06_fn_specs.rs" 30 0 30 15]
   let rec closure0 [#"06_fn_specs.rs" 31 17 31 20] [@coma:extspec] (self: ()) (_0: UInt64.t) (return' (x: ())) = bb0
     [ bb0 = return' {_0'0} ] [ & _0'0: () = Any.any_l () ]
   
-  predicate precondition (self: ()) (args: UInt64.t) = [%#s06_fn_specs'0] let _0 = args in closure0'pre self _0
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return'
+  
+  predicate precondition [@inline:trivial] (self: ()) (args: UInt64.t) =
+    [%#s06_fn_specs'0] let _0 = args in closure0'pre self _0
+  
+  meta "rewrite_def" predicate precondition
   
   let rec fn_once_user (f: ()) (return' (x: ())) =
     {[@expl:fn_once_user requires] [%#s06_fn_specs] precondition f (0: UInt64.t)}
