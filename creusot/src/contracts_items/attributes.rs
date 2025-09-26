@@ -1,6 +1,10 @@
 //! Defines all the internal creusot attributes.
 
-use rustc_ast::{LitKind, MetaItemInner, Param};
+use rustc_ast::{
+    LitKind, MetaItemInner, Param,
+    token::TokenKind,
+    tokenstream::{TokenStream, TokenTree},
+};
 use rustc_hir::{AttrArgs, Attribute, def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::{Span, Symbol};
@@ -171,6 +175,34 @@ fn tokenstream_to_meta<'a>(
     }
     let args = args.into();
     Meta { name, args }
+}
+
+/// - `Some(Some(path))` if `#[creusot::spec::erasure(path)]`
+/// - `Some(None)` if `#[creusot::spec::erasure]`
+/// - `None` if no matching attribute
+pub(crate) fn get_erasure(tcx: TyCtxt, def_id: DefId) -> Option<Option<Vec<Symbol>>> {
+    let attr = get_attrs(tcx.get_all_attrs(def_id), &["creusot", "spec", "erasure"]).pop()?;
+    let Attribute::Unparsed(attr) = attr else { unreachable!() };
+    match &attr.args {
+        AttrArgs::Delimited(args) => Some(Some(tokenstream_to_path(tcx, def_id, &args.tokens))),
+        AttrArgs::Empty => Some(None),
+        _ => tcx.crash_and_error(tcx.def_span(def_id), "Bad #[erasure] attribute"),
+    }
+}
+
+fn tokenstream_to_path(tcx: TyCtxt, def_id: DefId, tokens: &TokenStream) -> Vec<Symbol> {
+    let crash = || tcx.crash_and_error(tcx.def_span(def_id), "Bad #[erasure] attribute");
+    tokens
+        .iter()
+        .filter_map(|token| {
+            let TokenTree::Token(token, _) = token else { crash() };
+            match token.kind {
+                TokenKind::PathSep => None,
+                TokenKind::Ident(name, _) => Some(name),
+                _ => crash(),
+            }
+        })
+        .collect()
 }
 
 pub(crate) fn creusot_clause_attrs<'tcx>(

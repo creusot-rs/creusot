@@ -132,3 +132,20 @@ pub fn specs(x: Snapshot<Int>) {
     #[invariant(false)]
     while false {}
 }
+
+pub fn nested() {
+    fn hidden() {}
+    hidden()
+}
+
+#[erasure(nested)]
+pub fn nested2() {
+    fn hidden() {}
+    hidden()
+}
+
+#[erasure(private crate::nested)]
+pub fn nested3() {
+    fn hidden() {}
+    hidden()
+}

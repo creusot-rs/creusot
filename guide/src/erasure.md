@@ -40,8 +40,10 @@ The `#[erasure]` check performs the following operations.
 
 Additional rules for pointers:
 
-- `PtrOwn::as_ref`/`PtrOwn::as_mut` erase to unsafe shared/mutable reborrowing of raw pointers
-  (`&*p`/`&mut *p` where `p: *const T` or `p: *mut T`)
+- [`PtrOwn::as_ref(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.as_ref) erases to `&*ptr` (pointer-to-reference coercion).
+- [`PtrOwn::as_mut(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.as_mut) erases to `&mut *ptr` (pointer-to-reference coercion).
+- [`PtrOwn::from_ref(r)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.from_ref) erases to `r as *const T` (reference-to-pointer coercion).
+- [`PtrOwn::from_mut(r)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.from_mut) erases to `r as *mut T` (reference-to-pointer coercion).
 
 ## Example
 
@@ -159,3 +161,32 @@ When `#[erasure(f)]` mentions a function `f` from `core` or `std`, you must use
 ```
 rustup component add rust-src --toolchain $MY_TOOLCHAIN
 ```
+
+### Private functions
+
+It is also possible to name a private function using the `private` keyword
+followed by the full path to the private function:
+
+```rust
+#[erasure(private crate_name::path::to::f)]
+```
+
+### Nested functions
+
+`#[erasure]` automatically takes nested functions into account.
+
+```rust
+fn f() {
+  fn inside_f() {}
+  inside_f()
+}
+
+#[erasure(f)]
+fn g() {
+  fn inside_f() {}
+  inside_f()
+}
+```
+
+The inner function of `g` does not need an `#[erasure]` attribute,
+but it must have the same name as its counterpart in `f`.
