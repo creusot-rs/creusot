@@ -5,7 +5,7 @@ use crate::{
     backend::{
         Why3Generator, clone_map::elaborator::Expander, dependency::Dependency, ty::ty_to_prelude,
     },
-    contracts_items::{get_builtin, is_bitwise},
+    contracts_items::{Intrinsic, get_builtin, is_bitwise},
     ctx::*,
     translation::traits::TraitResolved,
     util::{erased_identity_for_item, path_of_span},
@@ -224,19 +224,19 @@ pub(crate) trait Namer<'tcx> {
     }
 }
 
-impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
+impl<'a, 'tcx> Namer<'tcx> for CloneNames<'a, 'tcx> {
     fn raw_dependency(&self, key: Dependency<'tcx>) -> &Kind {
         self.names.insert(key, |_| {
             if let Some((did, _)) = key.did()
-                && let Some(why3_modl) = get_builtin(self.tcx, did)
+                && let Some(why3_modl) = get_builtin(self.tcx(), did)
             {
                 let why3_modl =
                     why3_modl.as_str().replace("$BW$", if self.bitwise_mode { "BW" } else { "" });
                 let qname = QName::parse(&why3_modl);
                 return Box::new(Kind::UsedBuiltin(qname));
             }
-            Box::new(key.base_ident(self.tcx).map_or(Kind::Unnamed, |base| {
-                Kind::Named(Ident::fresh(crate_name(self.tcx), base.as_str()))
+            Box::new(key.base_ident(self.ctx).map_or(Kind::Unnamed, |base| {
+                Kind::Named(Ident::fresh(crate_name(self.tcx()), base.as_str()))
             }))
         })
     }
@@ -246,7 +246,7 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
     }
 
     fn tcx(&self) -> TyCtxt<'tcx> {
-        self.tcx
+        self.ctx.tcx
     }
 
     fn source_id(&self) -> DefId {
@@ -258,7 +258,7 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
     }
 
     fn span(&self, span: Span) -> Option<Attribute> {
-        let path = path_of_span(self.tcx, span, &self.span_mode)?;
+        let path = path_of_span(self.tcx(), span, &self.span_mode)?;
         let ident = self.spans.insert(span, |_| {
             Box::new(Ident::fresh_local(format!(
                 "s{}",
@@ -273,15 +273,15 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
     }
 }
 
-impl CloneNames<'_> {
+impl<'a, 'tcx> CloneNames<'a, 'tcx> {
     fn bitwise_mode(&self) -> bool {
         self.bitwise_mode
     }
 }
 
-impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
+impl<'a, 'tcx> Namer<'tcx> for Dependencies<'a, 'tcx> {
     fn tcx(&self) -> TyCtxt<'tcx> {
-        self.tcx
+        self.names.tcx()
     }
 
     fn source_id(&self) -> DefId {
@@ -310,16 +310,15 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     }
 }
 
-pub(crate) struct Dependencies<'tcx> {
-    tcx: TyCtxt<'tcx>,
-    names: CloneNames<'tcx>,
+pub(crate) struct Dependencies<'a, 'tcx> {
+    names: CloneNames<'a, 'tcx>,
 
     // A hacky thing which is used to remember the dependncies we need to seed the expander with
     dep_set: RefCell<IndexSet<Dependency<'tcx>>>,
 }
 
-pub(crate) struct CloneNames<'tcx> {
-    tcx: TyCtxt<'tcx>,
+pub(crate) struct CloneNames<'a, 'tcx> {
+    ctx: &'a TranslationCtx<'tcx>,
     /// The main item being translated.
     /// We need this to convert `ConstParam` into `DefId` in `tyconst_to_term_final` in `constant.rs`.
     source_id: DefId,
@@ -337,16 +336,16 @@ pub(crate) struct CloneNames<'tcx> {
     constant_setters: Setters,
 }
 
-impl<'tcx> CloneNames<'tcx> {
+impl<'a, 'tcx> CloneNames<'a, 'tcx> {
     fn new(
-        tcx: TyCtxt<'tcx>,
+        ctx: &'a TranslationCtx<'tcx>,
         source_id: DefId,
         typing_env: TypingEnv<'tcx>,
         span_mode: SpanMode,
         bitwise_mode: bool,
     ) -> Self {
         CloneNames {
-            tcx,
+            ctx,
             source_id,
             typing_env,
             span_mode,
@@ -388,34 +387,28 @@ impl Kind {
     }
 }
 
-impl<'tcx> Dependencies<'tcx> {
-    pub(crate) fn new(ctx: &TranslationCtx<'tcx>, self_id: DefId) -> Self {
+impl<'a, 'tcx> Dependencies<'a, 'tcx> {
+    pub(crate) fn new(ctx: &'a TranslationCtx<'tcx>, self_id: DefId) -> Self {
         let bw = is_bitwise(ctx.tcx, self_id);
-        let names = CloneNames::new(
-            ctx.tcx,
-            self_id,
-            ctx.typing_env(self_id),
-            ctx.opts.span_mode.clone(),
-            bw,
-        );
+        let names =
+            CloneNames::new(ctx, self_id, ctx.typing_env(self_id), ctx.opts.span_mode.clone(), bw);
         debug!("cloning self: {:?}", self_id);
-        Dependencies { tcx: ctx.tcx, names, dep_set: Default::default() }
+        Dependencies { names, dep_set: Default::default() }
     }
 
-    /// Get a name for an type, _without_ adding it to the list of dependencies.
-    ///
-    /// This is a hack, used to handle namespaces.
-    pub(crate) fn def_ty_no_dependency(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
-        self.names.def_ty(def_id, subst)
+    /// Get a name for the `Namespace` type, _without_ adding it to the list of dependencies.
+    pub(crate) fn namespace_ty(&self) -> Name {
+        self.names.def_ty(Intrinsic::Namespace.get(self.names.ctx), GenericArgsRef::default())
     }
 
     pub(crate) fn provide_deps(mut self, ctx: &Why3Generator<'tcx>) -> (Vec<Decl>, Setters) {
         trace!("emitting dependencies for {:?}", self.source_id());
+        let tcx = self.tcx();
         let mut decls = Vec::new();
         let typing_env = self.typing_env();
         let source_id = self.source_id();
         let source_item = self.source_item();
-        let span = self.tcx.def_span(source_id);
+        let span = tcx.def_span(source_id);
 
         let graph =
             Expander::new(&mut self.names, typing_env, self.dep_set.into_inner().into_iter(), span);
@@ -454,7 +447,7 @@ impl<'tcx> Dependencies<'tcx> {
                 if scc.len() > 1
                     && !scc.iter().all(|node| {
                         if let Some((did, _)) = node.did()
-                            && get_builtin(self.tcx, did).is_some()
+                            && get_builtin(tcx, did).is_some()
                         {
                             false
                         } else {
@@ -467,7 +460,7 @@ impl<'tcx> Dependencies<'tcx> {
                                     TyKind::Adt(..) | TyKind::Tuple(_) | TyKind::Closure(..)
                                 ),
                                 Dependency::Item(did, _) => matches!(
-                                    self.tcx.def_kind(did),
+                                    tcx.def_kind(did),
                                     DefKind::Struct
                                         | DefKind::Enum
                                         | DefKind::Union

@@ -1,4 +1,3 @@
-// TACTIC +compute_specified
 extern crate creusot_contracts;
 
 // This proof is largely adapted from the one in Vocal (see https://github.com/ocaml-gospel/vocal/blob/main/proofs/why3/UnionFind_impl.mlw)
@@ -23,7 +22,7 @@ mod implementation {
     }
     impl<T> DeepModel for Element<T> {
         type DeepModelTy = usize;
-        #[logic]
+        #[logic(inline)]
         fn deep_model(self) -> usize {
             self.0.addr_logic()
         }
@@ -66,13 +65,12 @@ mod implementation {
     }
 
     impl<T> Invariant for UnionFind<T> {
-        #[logic]
-        #[creusot::why3_attr = "inline:trivial"]
+        #[logic(inline)]
         fn invariant(self) -> bool {
             pearlite! {
             // this invariant was not in the why3 proof: it is here because of the specifics of `DeepModel` and equality in Creusot
             (forall<e1, e2> self.0.domain.contains(e1) && self.0.domain.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2) &&
-            (forall<e> #[trigger(self.0.domain.contains(e))] self.0.domain.contains(e) ==>
+            (forall<e> /*#[trigger(self.0.domain.contains(e))]*/ self.0.domain.contains(e) ==>
                 // this invariant was not in the why3 proof: it ensures that the keys and the payloads of `perm` agree
                 self.0.perms.contains(e) &&
                 self.0.perms[e].ptr() == e.0 &&
@@ -101,8 +99,7 @@ mod implementation {
         }
 
         /// Returns all the element that are handled by this union-find structure.
-        #[logic]
-        #[open]
+        #[logic(open)]
         pub fn in_domain(self, e: Element<T>) -> bool {
             self.domain().contains(e)
         }
@@ -125,8 +122,7 @@ mod implementation {
         ///
         /// For each element, this describes the unique root element of the associated set.
         /// The root element of a root is itself.
-        #[logic]
-        #[open]
+        #[logic(open)]
         pub fn root(self, e: Element<T>) -> Element<T> {
             self.roots_map()[e]
         }
@@ -141,15 +137,13 @@ mod implementation {
         ///
         /// For each element, this describes the unique root element of the associated set.
         /// The root element of a root is itself.
-        #[logic]
-        #[open]
+        #[logic(open)]
         pub fn payload(self, e: Element<T>) -> T {
             self.payloads_map()[e]
         }
 
         /// The internals of the union-find may have changed, but the visible state has not.
-        #[logic(prophetic)]
-        #[open]
+        #[logic(open, prophetic)]
         pub fn unchanged(&mut self) -> bool {
             pearlite! {
                 (*self).domain() == (^self).domain() &&
@@ -159,15 +153,13 @@ mod implementation {
         }
 
         /// The set of elements have not changed.
-        #[logic(prophetic)]
-        #[open]
+        #[logic(open, prophetic)]
         pub fn domain_unchanged(&mut self) -> bool {
             pearlite! { (*self).domain() == (^self).domain() }
         }
 
         /// The payloads have not changed.
-        #[logic(prophetic)]
-        #[open]
+        #[logic(open, prophetic)]
         pub fn payloads_unchanged(&mut self) -> bool {
             pearlite! { (*self).payloads_map() == (^self).payloads_map() }
         }

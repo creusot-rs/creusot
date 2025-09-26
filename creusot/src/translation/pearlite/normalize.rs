@@ -1,47 +1,51 @@
 use crate::{
-    contracts_items::{get_builtin, is_box_new, is_ghost_deref, is_ghost_deref_mut},
+    contracts_items::{Intrinsic, get_builtin},
+    ctx::TranslationCtx,
     translation::{
         pearlite::{BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp, super_visit_mut_term},
         traits::TraitResolved,
     },
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{GenericArgsRef, TyCtxt, TypingEnv};
+use rustc_middle::ty::{GenericArgsRef, TypingEnv};
+use rustc_span::sym;
 
 pub(crate) fn normalize<'tcx>(
-    tcx: TyCtxt<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
     mut term: Term<'tcx>,
 ) -> Term<'tcx> {
-    NormalizeTerm { typing_env, tcx }.visit_mut_term(&mut term);
-    let term = tcx.normalize_erasing_regions(typing_env, term);
+    NormalizeTerm { typing_env, ctx }.visit_mut_term(&mut term);
+    let term = ctx.normalize_erasing_regions(typing_env, term);
     term
 }
 
-struct NormalizeTerm<'tcx> {
+struct NormalizeTerm<'a, 'tcx> {
     typing_env: TypingEnv<'tcx>,
-    tcx: TyCtxt<'tcx>,
+    ctx: &'a TranslationCtx<'tcx>,
 }
 
-impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
+impl<'a, 'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'a, 'tcx> {
     fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
         super_visit_mut_term(term, self);
         match &mut term.kind {
             TermKind::Call { id, subst, args } => {
-                (*id, *subst) = TraitResolved::resolve_item(self.tcx, self.typing_env, *id, subst)
-                    .to_opt(*id, subst)
-                    .unwrap_or_else(|| {
-                        panic!("could not resolve trait instance {:?}", (*id, *subst))
-                    });
+                (*id, *subst) =
+                    TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, *id, subst)
+                        .to_opt(*id, subst)
+                        .unwrap_or_else(|| {
+                            panic!("could not resolve trait instance {:?}", (*id, *subst))
+                        });
                 term.kind =
-                    optimize_builtin(self.tcx, *id, subst, std::mem::replace(args, Box::new([])));
+                    optimize_builtin(self.ctx, *id, subst, std::mem::replace(args, Box::new([])));
             }
             TermKind::Item(id, subst) => {
-                (*id, *subst) = TraitResolved::resolve_item(self.tcx, self.typing_env, *id, subst)
-                    .to_opt(*id, subst)
-                    .unwrap_or_else(|| {
-                        panic!("could not resolve trait instance {:?}", (*id, *subst))
-                    })
+                (*id, *subst) =
+                    TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, *id, subst)
+                        .to_opt(*id, subst)
+                        .unwrap_or_else(|| {
+                            panic!("could not resolve trait instance {:?}", (*id, *subst))
+                        })
             }
             _ => {}
         }
@@ -49,7 +53,7 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
 }
 
 fn optimize_builtin<'tcx>(
-    tcx: TyCtxt<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     id: DefId,
     subst: GenericArgsRef<'tcx>,
     args: Box<[Term<'tcx>]>,
@@ -59,7 +63,7 @@ fn optimize_builtin<'tcx>(
     use TermKind::*;
     use UnOp::*;
 
-    let builtin = get_builtin(tcx, id);
+    let builtin = get_builtin(ctx.tcx, id);
     let builtin_str = builtin.as_ref().map(|s| s.as_str());
 
     if let Some(op) = match builtin_str {
@@ -77,7 +81,9 @@ fn optimize_builtin<'tcx>(
     }
 
     match builtin_str {
-        None if is_box_new(tcx, id) || is_ghost_deref(tcx, id) || is_ghost_deref_mut(tcx, id) => {
+        None if ctx.is_diagnostic_item(sym::box_new, id)
+            || matches!(ctx.intrinsic(id), Intrinsic::GhostDeref | Intrinsic::GhostDerefMut) =>
+        {
             let [arg] = *args.into_array::<1>().unwrap();
             return Coerce { arg: Box::new(arg) };
         }

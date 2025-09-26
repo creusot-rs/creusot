@@ -3,8 +3,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 pub trait CP {
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn match_t<K>() -> bool {
         pearlite! { Self::match_n::<K>() }
     }
@@ -14,8 +13,7 @@ pub trait CP {
 }
 
 impl<L, R> CP for (L, R) {
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn match_n<N>() -> bool {
         pearlite! { true }
     }

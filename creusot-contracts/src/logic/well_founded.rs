@@ -6,7 +6,7 @@ use crate::*;
 pub trait WellFounded: Sized {
     /// Relation used to specify well-foundedness.
     #[logic]
-    #[rustc_diagnostic_item = "creusot_wf_relation"]
+    #[intrinsic("well_founded_relation")]
     fn well_founded_relation(self, other: Self) -> bool;
 
     /// Being well-founded means that there is no infinitely decreasing sequence.
@@ -19,8 +19,7 @@ pub trait WellFounded: Sized {
     /// # use creusot_contracts::{*, well_founded::WellFounded};
     /// struct MyInt(Int);
     /// impl WellFounded for MyInt {
-    ///     #[logic]
-    ///     #[open]
+    ///     #[logic(open)]
     ///     fn well_founded_relation(self, other: Self) -> bool {
     ///         Int::well_founded_relation(self.0, other.0)
     ///     }
@@ -39,14 +38,13 @@ pub trait WellFounded: Sized {
 }
 
 impl WellFounded for Int {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn well_founded_relation(self, other: Self) -> bool {
         self >= 0 && self > other
     }
 
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(result >= 0)]
     #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
     fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
@@ -59,8 +57,7 @@ macro_rules! impl_well_founded {
         $(
 
         impl WellFounded for $t {
-            #[logic]
-            #[open]
+            #[logic(open)]
             fn well_founded_relation(self, other: Self) -> bool {
                 self > other
             }
@@ -82,8 +79,7 @@ macro_rules! impl_well_founded {
 impl_well_founded!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
 impl<T: WellFounded> WellFounded for &T {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn well_founded_relation(self, other: Self) -> bool {
         T::well_founded_relation(*self, *other)
     }
@@ -97,8 +93,7 @@ impl<T: WellFounded> WellFounded for &T {
 }
 
 impl<T: WellFounded> WellFounded for Box<T> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn well_founded_relation(self, other: Self) -> bool {
         T::well_founded_relation(*self, *other)
     }
@@ -170,8 +165,7 @@ macro_rules! wf_tuples {
         }
     };
     ( @wf_relation $name1:ident $name2:ident {$res:expr} [$($to_eq:tt)*] ) => {
-        #[logic]
-        #[open]
+        #[logic(open)]
         fn well_founded_relation($name1, $name2: Self) -> bool {
             $res
         }

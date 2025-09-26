@@ -59,8 +59,9 @@ proc_macro_attributes! {
     check
     logic
     trusted
-    law
-    open
+    opaque
+    builtin
+    intrinsic
     open_inv_result
     bitwise_proof
     maintains

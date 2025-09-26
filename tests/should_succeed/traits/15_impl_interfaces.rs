@@ -13,8 +13,7 @@ impl Tr for () {
     type A = ();
 }
 
-#[trusted]
-#[logic]
+#[logic(opaque)]
 pub fn x<T: Tr>(_x: T) -> T::A {
     dead
 }

@@ -25,7 +25,7 @@ use crate::{
 /// ```
 ///
 /// This type is designed for this use-case, with no restriction on the capacity.
-#[trusted] //opaque
+#[opaque]
 pub struct FMap<K: ?Sized, V>(std::marker::PhantomData<K>, std::marker::PhantomData<V>);
 
 impl<K: ?Sized, V> View for FMap<K, V> {
@@ -34,8 +34,7 @@ impl<K: ?Sized, V> View for FMap<K, V> {
     /// View of the map
     ///
     /// This represents the actual content of the map: other methods are specified relative to this.
-    #[trusted]
-    #[logic]
+    #[logic(opaque)]
     // Adding this injectivity post-condition makes the SMT timeout on many examples
     //#[ensures(forall<m: Self> result == m@ ==> self == m)]
     //TODO: investigate
@@ -48,7 +47,7 @@ impl<K: ?Sized, V> View for FMap<K, V> {
 impl<K: ?Sized, V> FMap<K, V> {
     /// Returns the empty map.
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(result.len() == 0)]
     #[ensures(result@ == Mapping::cst(None))]
     pub fn empty() -> Self {
@@ -57,7 +56,7 @@ impl<K: ?Sized, V> FMap<K, V> {
 
     /// The number of elements in the map, also called its length.
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(result >= 0)]
     pub fn len(self) -> Int {
         dead
@@ -65,7 +64,7 @@ impl<K: ?Sized, V> FMap<K, V> {
 
     /// Returns a new map, where the key-value pair `(k, v)` has been inserted.
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(result@ == self@.set(k, Some(v)))]
     #[ensures(result.len() == if self.contains(k) { self.len() } else { self.len() + 1 })]
     pub fn insert(self, k: K, v: V) -> Self {
@@ -73,15 +72,14 @@ impl<K: ?Sized, V> FMap<K, V> {
     }
 
     /// Returns the map where containing the only key-value pair `(k, v)`.
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn singleton(k: K, v: V) -> Self {
         Self::empty().insert(k, v)
     }
 
     /// Returns a new map, where the key `k` is no longer present.
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(result@ == self@.set(k, None))]
     #[ensures(result.len() == if self.contains(k) {self.len() - 1} else {self.len()})]
     pub fn remove(self, k: K) -> Self {
@@ -91,9 +89,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     /// Get the value associated with key `k` in the map.
     ///
     /// If no value is present, returns [`None`].
-    #[logic]
-    #[open]
-    #[creusot::why3_attr = "inline:trivial"]
+    #[logic(open, inline)]
     pub fn get(self, k: K) -> Option<V> {
         self.view().get(k)
     }
@@ -101,38 +97,31 @@ impl<K: ?Sized, V> FMap<K, V> {
     /// Get the value associated with key `k` in the map.
     ///
     /// If no value is present, the returned value is meaningless.
-    #[logic]
-    #[open]
-    #[creusot::why3_attr = "inline:trivial"]
+    #[logic(open, inline)]
     pub fn lookup(self, k: K) -> V {
         self.get(k).unwrap_logic()
     }
 
     /// Returns `true` if the map contains a value for the specified key.
-    #[logic]
-    #[open]
-    #[creusot::why3_attr = "inline:trivial"]
+    #[logic(open, inline)]
     pub fn contains(self, k: K) -> bool {
         self.get(k) != None
     }
 
     /// Returns `true` if the map contains no elements.
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn is_empty(self) -> bool {
         self.ext_eq(FMap::empty())
     }
 
     /// Returns `true` if the two maps have no key in common.
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn disjoint(self, other: Self) -> bool {
         pearlite! {forall<k: K> !self.contains(k) || !other.contains(k)}
     }
 
     /// Returns `true` if all key-value pairs in `self` are also in `other`.
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn subset(self, other: Self) -> bool {
         pearlite! {
             forall<k: K> self.contains(k) ==> other.get(k) == self.get(k)
@@ -143,7 +132,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     ///
     /// If `self` and `other` are not [`disjoint`](Self::disjoint), the result is unspecified.
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[requires(self.disjoint(other))]
     #[ensures(forall<k: K> #[trigger(result.get(k))] !self.contains(k) ==> result.get(k) == other.get(k))]
     #[ensures(forall<k: K> #[trigger(result.get(k))] !other.contains(k) ==> result.get(k) == self.get(k))]
@@ -155,7 +144,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     /// Returns a new map, that contains all the key-value pairs of `self` such that the
     /// key is not in `other`.
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(result.disjoint(other))]
     #[ensures(other.subset(self) ==> other.union(result) == self)]
     #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) ==
@@ -181,8 +170,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     /// Returns `true` if `self` and `other` contain exactly the same key-value pairs.
     ///
     /// This is in fact equivalent with normal equality.
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
@@ -195,7 +183,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     ///
     /// If both map contain the same key, the entry for the result is determined by `f`.
     #[trusted]
-    #[logic]
+    #[logic(opaque)]
     #[ensures(
         forall<k: K> #[trigger(result.get(k))]
             match (self.get(k), m.get(k)) {
@@ -210,7 +198,7 @@ impl<K: ?Sized, V> FMap<K, V> {
 
     /// Map every value in `self` according to `f`. Keys are unchanged.
     #[logic]
-    #[trusted]
+    #[trusted] // The ensures clause that says the lenght do not change is rather difficult
     #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) == match self.get(k) {
         None => None,
         Some(v) => Some(f[(k, v)]),
@@ -228,7 +216,6 @@ impl<K: ?Sized, V> FMap<K, V> {
     /// A key-value pair will be in the result map if and only if it is in `self` and
     /// `p` returns `true` on this pair.
     #[logic]
-    #[trusted]
     #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) == match self.get(k) {
         None => None,
         Some(v) => if p[(k, v)] { Some(v) } else { None },
@@ -242,8 +229,8 @@ impl<K: ?Sized, V> FMap<K, V> {
 
     /// Map every value in `self` according to `f`. Keys are unchanged.
     /// If `f` returns `false`, remove the key-value from the map.
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) == match self.get(k) {
         None => None,
         Some(v) => f[(k, v)],
@@ -256,8 +243,8 @@ impl<K: ?Sized, V> FMap<K, V> {
     }
 
     /// Returns the set of keys in the map.
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(forall<k: K> result.contains(k) == self.contains(k))]
     #[ensures(result.len() == self.len())]
     pub fn keys(self) -> FSet<K> {
@@ -268,9 +255,7 @@ impl<K: ?Sized, V> FMap<K, V> {
 impl<K: ?Sized, V> IndexLogic<K> for FMap<K, V> {
     type Item = V;
 
-    #[logic]
-    #[open]
-    #[creusot::why3_attr = "inline:trivial"]
+    #[logic(open, inline)]
     fn index_logic(self, key: K) -> Self::Item {
         self.lookup(key)
     }
@@ -494,9 +479,9 @@ impl<K, V> FMap<K, V> {
 }
 
 impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
+    #[trusted]
     #[check(ghost)]
     #[ensures(result == *self)]
-    #[trusted]
     fn clone(&self) -> Self {
         *self
     }
@@ -506,8 +491,7 @@ impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
 impl<K: Clone + Copy, V: Clone + Copy> Copy for FMap<K, V> {}
 
 impl<K: ?Sized, V> Invariant for FMap<K, V> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic, inline)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {

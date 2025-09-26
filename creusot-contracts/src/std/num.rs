@@ -10,8 +10,7 @@ macro_rules! mach_int {
         impl View for $t {
             type ViewTy = Int;
             #[logic]
-            #[trusted]
-            #[creusot::builtins = concat!($ty_nm, $to_int)]
+            #[builtin(concat!($ty_nm, $to_int))]
             fn view(self) -> Self::ViewTy {
                 dead
             }
@@ -19,8 +18,7 @@ macro_rules! mach_int {
 
         impl DeepModel for $t {
             type DeepModelTy = Int;
-            #[logic]
-            #[open]
+            #[logic(open, inline)]
             fn deep_model(self) -> Self::DeepModelTy {
                 pearlite! { self@ }
             }
@@ -48,8 +46,7 @@ macro_rules! mach_int {
         impl AddLogic for $t {
             type Output = Self;
             #[logic]
-            #[trusted]
-            #[creusot::builtins = concat!($ty_nm, ".add")]
+            #[builtin(concat!($ty_nm, ".add"))]
             #[allow(unused_variables)]
             fn add(self, other: Self) -> Self {
                 dead
@@ -59,8 +56,7 @@ macro_rules! mach_int {
         impl SubLogic for $t {
             type Output = Self;
             #[logic]
-            #[trusted]
-            #[creusot::builtins = concat!($ty_nm, ".sub")]
+            #[builtin(concat!($ty_nm, ".sub"))]
             #[allow(unused_variables)]
             fn sub(self, other: Self) -> Self {
                 dead
@@ -70,8 +66,7 @@ macro_rules! mach_int {
         impl MulLogic for $t {
             type Output = Self;
             #[logic]
-            #[trusted]
-            #[creusot::builtins = concat!($ty_nm, ".mul")]
+            #[builtin(concat!($ty_nm, ".mul"))]
             #[allow(unused_variables)]
             fn mul(self, other: Self) -> Self {
                 dead
@@ -81,8 +76,7 @@ macro_rules! mach_int {
         impl NegLogic for $t {
             type Output = Self;
             #[logic]
-            #[trusted]
-            #[creusot::builtins = concat!($ty_nm, ".neg")]
+            #[builtin(concat!($ty_nm, ".neg"))]
             fn neg(self) -> Self {
                 dead
             }
@@ -90,8 +84,7 @@ macro_rules! mach_int {
 
         impl NthBitLogic for $t {
             #[logic]
-            #[trusted]
-            #[creusot::builtins = concat!($ty_nm, ".nth")]
+            #[builtin(concat!($ty_nm, ".nth"))]
             #[allow(unused_variables)]
             fn nth_bit(self, n: Int) -> bool {
                 dead

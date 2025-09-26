@@ -36,22 +36,22 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
     #[logic(prophetic)]
     fn hist_inv(self, _: Self) -> bool;
 
-    #[law]
+    #[logic(law)]
     #[requires(self.postcondition_mut(args, res_state, res))]
     #[ensures(self.hist_inv(res_state))]
     fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output);
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.hist_inv(self))]
     fn hist_inv_refl(self);
 
-    #[law]
+    #[logic(law)]
     #[requires(self.hist_inv(b))]
     #[requires(b.hist_inv(c))]
     #[ensures(self.hist_inv(c))]
     fn hist_inv_trans(self, b: Self, c: Self);
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.postcondition_once(args, res) ==
               exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output);
@@ -67,15 +67,15 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
     #[logic(prophetic)]
     fn postcondition(self, _: Args, _: Self::Output) -> bool;
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
     fn fn_mut(self, args: Args, res_state: Self, res: Self::Output);
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
     fn fn_once(self, args: Args, res: Self::Output);
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.hist_inv(res_state) == (self == res_state))]
     fn fn_hist_inv(self, res_state: Self);
 }
@@ -89,20 +89,16 @@ pub trait FnExt<Args>: FnMutExt<Args> {}
 impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
-    #[trusted]
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic, inline)]
     #[allow(unused_variables)]
-    #[rustc_diagnostic_item = "fn_once_impl_precond"]
+    #[intrinsic("precondition")]
     fn precondition(self, args: Args) -> bool {
         dead
     }
 
-    #[trusted]
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic, inline)]
     #[allow(unused_variables)]
-    #[rustc_diagnostic_item = "fn_once_impl_postcond"]
+    #[intrinsic("postcondition_once")]
     fn postcondition_once(self, args: Args, result: Self::Output) -> bool {
         dead
     }
@@ -110,43 +106,39 @@ impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
 
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
-    #[trusted]
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic, inline)]
     #[allow(unused_variables)]
-    #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
+    #[intrinsic("postcondition_mut")]
     fn postcondition_mut(self, args: Args, result_state: Self, result: Self::Output) -> bool {
         dead
     }
 
-    #[trusted]
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic, inline)]
     #[allow(unused_variables)]
-    #[rustc_diagnostic_item = "fn_mut_impl_hist_inv"]
+    #[intrinsic("hist_inv")]
     fn hist_inv(self, result_state: Self) -> bool {
         dead
     }
 
     #[trusted]
-    #[law]
+    #[logic(law)]
     #[requires(self.postcondition_mut(args, res_state, res))]
     #[ensures(self.hist_inv(res_state))]
     fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[trusted]
-    #[law]
+    #[logic(law)]
     #[ensures(self.hist_inv(self))]
     fn hist_inv_refl(self) {}
 
     #[trusted]
-    #[law]
+    #[logic(law)]
     #[requires(self.hist_inv(b))]
     #[requires(b.hist_inv(c))]
     #[ensures(self.hist_inv(c))]
     fn hist_inv_trans(self, b: Self, c: Self) {}
 
-    #[law]
+    #[logic(law)]
     #[trusted]
     #[ensures(self.postcondition_once(args, res) ==
               exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
@@ -155,26 +147,24 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
 
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
-    #[trusted]
-    #[logic]
-    #[open]
+    #[logic(open, inline)]
     #[allow(unused_variables)]
-    #[rustc_diagnostic_item = "fn_impl_postcond"]
+    #[intrinsic("postcondition")]
     fn postcondition(self, args: Args, result: Self::Output) -> bool {
         dead
     }
 
-    #[law]
+    #[logic(law)]
     #[trusted]
     #[ensures(self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
     fn fn_mut(self, args: Args, res_state: Self, res: Self::Output) {}
 
-    #[law]
+    #[logic(law)]
     #[trusted]
     #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
     fn fn_once(self, args: Args, res: Self::Output) {}
 
-    #[law]
+    #[logic(law)]
     #[trusted]
     #[ensures(self.hist_inv(res_state) == (self == res_state))]
     fn fn_hist_inv(self, res_state: Self) {}
@@ -231,19 +221,17 @@ pub trait RangeInclusiveExt<Idx> {
 }
 
 impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn start_log(self) -> Idx {
         dead
     }
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn end_log(self) -> Idx {
         dead
     }
 
-    #[logic]
+    #[logic(opaque)]
     #[trusted]
     #[ensures(!result ==> self.start_log().deep_model() <= self.end_log().deep_model())]
     fn is_empty_log(self) -> bool

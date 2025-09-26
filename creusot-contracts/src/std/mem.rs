@@ -60,9 +60,8 @@ extern_spec! {
 /// [`size_of`]: https://doc.rust-lang.org/std/mem/fn.size_of.html
 /// [RRTL]: https://doc.rust-lang.org/stable/reference/type-layout.html
 #[trusted]
-#[logic]
-#[open]
-#[rustc_diagnostic_item = "size_of_logic"]
+#[logic(open)]
+#[intrinsic("size_of_logic")]
 #[ensures(0 <= result)]
 pub fn size_of_logic<T>() -> Int {
     dead

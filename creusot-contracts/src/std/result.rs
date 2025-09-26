@@ -5,8 +5,7 @@ use ::std::fmt::Debug;
 impl<T: DeepModel, E: DeepModel> DeepModel for Result<T, E> {
     type DeepModelTy = Result<T::DeepModelTy, E::DeepModelTy>;
 
-    #[logic]
-    #[open]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         match self {
             Ok(t) => Ok(t.deep_model()),

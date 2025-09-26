@@ -6,17 +6,17 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   let%span s08_multiple_calls'3 = "08_multiple_calls.rs" 19 27 19 28
   let%span s08_multiple_calls'4 = "08_multiple_calls.rs" 17 0 17 31
   let%span s08_multiple_calls'5 = "08_multiple_calls.rs" 18 10 18 63
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 169 14 169 114
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 174 14 174 100
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 179 14 179 61
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 133 4 133 61
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 134 4 134 40
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 139 4 139 35
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 144 4 144 33
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 145 4 145 30
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 146 4 146 32
-  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 151 14 152 104
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 95 8 95 18
+  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 159 14 159 114
+  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 164 14 164 100
+  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 169 14 169 61
+  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 125 4 125 61
+  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 126 4 126 40
+  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 4 131 35
+  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 4 136 33
+  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 137 4 137 30
+  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 138 4 138 32
+  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 143 14 144 104
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
   
   use creusot.int.UInt32
   use creusot.prelude.Any
@@ -27,7 +27,7 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   predicate inv (_0'0: t_T)
   
-  predicate invariant' (self: t_T) = [%#sinvariant] inv self
+  predicate invariant' [@inline:trivial] (self: t_T) = [%#sinvariant] inv self
   
   meta "rewrite_def" predicate invariant'
   
@@ -35,7 +35,7 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: t_T) = [%#sinvariant] inv'0 self
+  predicate invariant''0 [@inline:trivial] (self: t_T) = [%#sinvariant] inv'0 self
   
   meta "rewrite_def" predicate invariant''0
   
@@ -47,7 +47,7 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   axiom inv_axiom'1 [@rewrite]: forall x: closure0 [inv'2 x]. inv'2 x = (let {_0 = x0} = x in inv'1 x0)
   
-  predicate invariant''1 (self: closure0) = [%#sinvariant] inv'2 self
+  predicate invariant''1 [@inline:trivial] (self: closure0) = [%#sinvariant] inv'2 self
   
   meta "rewrite_def" predicate invariant''1
   
@@ -65,19 +65,28 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
       | s2 = return''0 {_0'0} ] ] [ & _0'0: UInt32.t = Any.any_l () | & res: UInt32.t = Any.any_l () ])
     [ return''0 (result: UInt32.t) -> (! return' {result}) ]
   
-  predicate precondition (self: closure0) (args: ()) = [%#s08_multiple_calls'1] let () = args in self._0 = self._0
+  predicate precondition [@inline:trivial] (self: closure0) (args: ()) = [%#s08_multiple_calls'2] self._0 = self._0
   
-  predicate postcondition_once (self: closure0) (args: ()) (result: UInt32.t) =
-    [%#s08_multiple_calls'1] let () = args in true
+  meta "rewrite_def" predicate precondition
+  
+  predicate postcondition_once [@inline:trivial] (self: closure0) (args: ()) (result: UInt32.t) = true
+  
+  meta "rewrite_def" predicate postcondition_once
   
   predicate resolve (_0'0: t_T)
   
-  predicate resolve'0 (_0'0: closure0) = resolve _0'0._0
+  predicate resolve'0 [@inline:trivial] (_0'0: closure0) = resolve _0'0._0
   
-  predicate hist_inv (self: closure0) (result_state: closure0) = self = result_state
+  meta "rewrite_def" predicate resolve'0
   
-  predicate postcondition_mut (self: closure0) (args: ()) (result_state: closure0) (result: UInt32.t) =
-    [%#s08_multiple_calls'1] let () = args in hist_inv self result_state
+  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = self = result_state
+  
+  meta "rewrite_def" predicate hist_inv
+  
+  predicate postcondition_mut [@inline:trivial] (self: closure0) (args: ()) (result_state: closure0) (result: UInt32.t) =
+    hist_inv self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: closure0) (args: ()) (res: UInt32.t) : ()
   
@@ -104,8 +113,9 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   axiom fn_hist_inv_spec: forall self: closure0, res_state: closure0. [%#sops'1] hist_inv self res_state
       = (self = res_state)
   
-  predicate postcondition (self: closure0) (args: ()) (result: UInt32.t) =
-    [%#s08_multiple_calls'1] let () = args in true
+  predicate postcondition [@inline:trivial] (self: closure0) (args: ()) (result: UInt32.t) = true
+  
+  meta "rewrite_def" predicate postcondition
   
   function fn_once (self: closure0) (args: ()) (res: UInt32.t) : ()
   
@@ -118,12 +128,19 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
     forall self: closure0, args: (), res_state: closure0, res: UInt32.t. [%#sops] postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  predicate postcondition_once'0 (self: closure0) (args: ()) (result: UInt32.t) = postcondition self args result
+  predicate postcondition_once'0 [@inline:trivial] (self: closure0) (args: ()) (result: UInt32.t) =
+    postcondition self args result
   
-  predicate resolve'1 (_0'0: closure0) = true
+  meta "rewrite_def" predicate postcondition_once'0
   
-  predicate postcondition_mut'0 (self: closure0) (args: ()) (result_state: closure0) (result: UInt32.t) =
+  predicate resolve'1 [@inline:trivial] (_0'0: closure0) = true
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate postcondition_mut'0 [@inline:trivial] (self: closure0) (args: ()) (result_state: closure0) (result: UInt32.t) =
     postcondition self args result /\ self = result_state
+  
+  meta "rewrite_def" predicate postcondition_mut'0
   
   function fn_mut_once'0 (self: closure0) (args: ()) (res: UInt32.t) : ()
   
@@ -131,7 +148,9 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
     forall self: closure0, args: (), res: UInt32.t. [%#sops'8] postcondition_once'0 self args res
       = (exists res_state: closure0. postcondition_mut'0 self args res_state res /\ resolve'1 res_state)
   
-  predicate hist_inv'0 (self: closure0) (result_state: closure0) = self = result_state
+  predicate hist_inv'0 [@inline:trivial] (self: closure0) (result_state: closure0) = self = result_state
+  
+  meta "rewrite_def" predicate hist_inv'0
   
   function hist_inv_trans'0 (self: closure0) (b: closure0) (c: closure0) : ()
   
@@ -153,7 +172,10 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   axiom fn_hist_inv_spec'0: forall self: closure0, res_state: closure0. [%#sops'1] hist_inv'0 self res_state
       = (self = res_state)
   
-  predicate postcondition'0 (self: closure0) (args: ()) (result: UInt32.t) = postcondition self args result
+  predicate postcondition'0 [@inline:trivial] (self: closure0) (args: ()) (result: UInt32.t) =
+    postcondition self args result
+  
+  meta "rewrite_def" predicate postcondition'0
   
   function fn_once'0 (self: closure0) (args: ()) (res: UInt32.t) : ()
   

@@ -1,5 +1,5 @@
 use crate::{
-    contracts_items::{is_resolve_function, is_spec, is_trusted},
+    contracts_items::{is_spec, is_trusted},
     ctx::{HasTyCtxt, ItemType, TranslatedItem, TranslationCtx},
     naming::ModulePath,
     util::path_of_span,
@@ -41,7 +41,7 @@ pub struct Why3Generator<'tcx> {
     namespaces: RefCell<IndexMap<DefId, why3::Ident>>,
     /// `true` if we need to generate the namespace type for the current module.
     used_namespaces: Cell<bool>,
-    functions: Vec<TranslatedItem>,
+    pub functions: Vec<TranslatedItem>,
 }
 
 impl<'tcx> Deref for Why3Generator<'tcx> {
@@ -76,9 +76,6 @@ impl<'tcx> Why3Generator<'tcx> {
             ItemType::Impl if self.tcx.impl_trait_ref(def_id).is_some() => {
                 let modls = traits::lower_impl(self, def_id);
                 TranslatedItem::Impl { modls }
-            }
-            ItemType::Logic { .. } if is_resolve_function(self.tcx, def_id) => {
-                TranslatedItem::Logic { proof_modl: None }
             }
             ItemType::Logic { .. } => {
                 let proof_modl = logic::translate_logic(self, def_id);
@@ -115,10 +112,6 @@ impl<'tcx> Why3Generator<'tcx> {
             let name = self.ctx.item_name(namespace_fun);
             why3::Ident::fresh_local(format!("Namespace_{name}"))
         })
-    }
-
-    pub(crate) fn modules(&mut self) -> impl Iterator<Item = TranslatedItem> + '_ {
-        self.functions.drain(..)
     }
 
     /// Get a why3 attribute corresponding to this span.

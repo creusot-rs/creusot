@@ -8,8 +8,7 @@ use creusot_contracts::{
 pub struct CustomVariant(pub u32, pub u32);
 
 impl WellFounded for CustomVariant {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn well_founded_relation(self, other: Self) -> bool {
         self.0 > other.0 && self.1 > other.1
     }

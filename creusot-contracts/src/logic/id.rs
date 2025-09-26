@@ -1,5 +1,4 @@
 use crate::{ghost::Plain, *};
-use ::std::marker::PhantomData;
 
 /// A unique id, usable in logic and ghost code
 ///
@@ -10,9 +9,9 @@ use ::std::marker::PhantomData;
 /// # Usage
 ///
 /// Ids are used in [`cell::PermCell`] and [resource algebras](crate::ghost::resource::Resource).
-#[trusted]
+#[opaque]
 #[allow(dead_code)]
-pub struct Id(PhantomData<()>);
+pub struct Id(());
 
 impl Clone for Id {
     #[check(ghost)]
@@ -22,6 +21,7 @@ impl Clone for Id {
     }
 }
 impl Copy for Id {}
+
 #[trusted]
 impl Plain for Id {}
 
@@ -44,8 +44,7 @@ impl Eq for Id {}
 
 impl DeepModel for Id {
     type DeepModelTy = Id;
-    #[logic]
-    #[open]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         self
     }

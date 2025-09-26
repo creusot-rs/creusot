@@ -8,9 +8,7 @@ use ::std::{borrow::Borrow, collections::hash_set::*, hash::*};
 impl<T: DeepModel, S> View for HashSet<T, S> {
     type ViewTy = FSet<T::DeepModelTy>;
 
-    #[logic]
-    #[trusted]
-    #[open]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -59,16 +57,13 @@ extern_spec! {
 impl<T: DeepModel> View for IntoIter<T> {
     type ViewTy = FSet<T::DeepModelTy>;
 
-    #[logic]
-    #[trusted]
-    #[open]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
 }
 
-#[open]
-#[logic]
+#[logic(open)]
 pub fn set_produces<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
     start: I,
     visited: Seq<T>,
@@ -85,8 +80,7 @@ pub fn set_produces<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
     }
 }
 
-#[open]
-#[logic]
+#[logic(open)]
 #[requires(set_produces(a, ab, b))]
 #[requires(set_produces(b, bc, c))]
 #[ensures(set_produces(a, ab.concat(bc), c))]
@@ -103,25 +97,21 @@ pub fn set_produces_trans<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
 }
 
 impl<T: DeepModel> Iterator for IntoIter<T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (self@).is_empty() }
     }
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -133,34 +123,28 @@ impl<T: DeepModel> Iterator for IntoIter<T> {
 impl<'a, T: DeepModel> View for Iter<'a, T> {
     type ViewTy = FSet<T::DeepModelTy>;
 
-    #[logic]
-    #[trusted]
-    #[open]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
 }
 
 impl<'a, T: DeepModel> Iterator for Iter<'a, T> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (self@).is_empty() }
     }
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -170,8 +154,7 @@ impl<'a, T: DeepModel> Iterator for Iter<'a, T> {
 }
 
 impl<T: Eq + Hash + DeepModel, S: Default + BuildHasher> FromIterator<T> for HashSet<T, S> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
         pearlite! { forall<x: T::DeepModelTy> res@.contains(x) == exists<x1: T> x1.deep_model() == x && prod.contains(x1) }
     }
@@ -180,9 +163,7 @@ impl<T: Eq + Hash + DeepModel, S: Default + BuildHasher> FromIterator<T> for Has
 impl<'a, T: DeepModel, S> View for Intersection<'a, T, S> {
     type ViewTy = FSet<T::DeepModelTy>;
 
-    #[logic]
-    #[trusted]
-    #[open]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -191,34 +172,28 @@ impl<'a, T: DeepModel, S> View for Intersection<'a, T, S> {
 impl<'a, T: DeepModel, S> View for Difference<'a, T, S> {
     type ViewTy = FSet<T::DeepModelTy>;
 
-    #[logic]
-    #[trusted]
-    #[open]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }
 }
 
 impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Intersection<'a, T, S> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (self@).is_empty() }
     }
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -228,25 +203,21 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Intersection<'a,
 }
 
 impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Difference<'a, T, S> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (self@).is_empty() }
     }
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

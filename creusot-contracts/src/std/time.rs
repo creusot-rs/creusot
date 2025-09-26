@@ -7,8 +7,8 @@ pub use ::std::{
 impl View for Duration {
     type ViewTy = Int;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
     fn view(self) -> Self::ViewTy {
         dead
@@ -18,32 +18,27 @@ impl View for Duration {
 impl DeepModel for Duration {
     type DeepModelTy = Int;
 
-    #[logic]
-    #[open]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         self.view()
     }
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 pub fn nanos_to_micros(nanos: Int) -> Int {
     nanos / 1_000
 }
-#[logic]
-#[open]
+#[logic(open)]
 pub fn nanos_to_millis(nanos: Int) -> Int {
     nanos / 1_000_000
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 pub fn nanos_to_secs(nanos: Int) -> Int {
     nanos / 1_000_000_000
 }
 
-#[logic]
-#[open]
+#[logic(open)]
 pub fn secs_to_nanos(secs: Int) -> Int {
     secs * 1_000_000_000
 }
@@ -51,8 +46,8 @@ pub fn secs_to_nanos(secs: Int) -> Int {
 impl View for Instant {
     type ViewTy = Int;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result >= 0)]
     fn view(self) -> Self::ViewTy {
         dead
@@ -62,8 +57,7 @@ impl View for Instant {
 impl DeepModel for Instant {
     type DeepModelTy = Int;
 
-    #[logic]
-    #[open]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         self.view()
     }

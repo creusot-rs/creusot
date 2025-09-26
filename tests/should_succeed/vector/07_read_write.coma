@@ -4,28 +4,28 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   let%span s07_read_write'1 = "07_read_write.rs" 6 70 6 71
   let%span s07_read_write'2 = "07_read_write.rs" 5 11 5 24
   let%span s07_read_write'3 = "07_read_write.rs" 1 0 257 4
-  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 185 16 185 17
-  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 186 16 186 48
-  let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 187 16 187 56
-  let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 188 16 188 59
-  let%span svec'3 = "../../../creusot-contracts/src/std/vec.rs" 189 16 189 64
-  let%span svec'4 = "../../../creusot-contracts/src/std/vec.rs" 190 26 190 55
-  let%span svec'5 = "../../../creusot-contracts/src/std/vec.rs" 195 16 195 17
-  let%span svec'6 = "../../../creusot-contracts/src/std/vec.rs" 196 16 196 48
-  let%span svec'7 = "../../../creusot-contracts/src/std/vec.rs" 197 16 197 56
+  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 179 16 179 17
+  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 180 16 180 48
+  let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 181 16 181 56
+  let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 182 16 182 59
+  let%span svec'3 = "../../../creusot-contracts/src/std/vec.rs" 183 16 183 64
+  let%span svec'4 = "../../../creusot-contracts/src/std/vec.rs" 184 26 184 55
+  let%span svec'5 = "../../../creusot-contracts/src/std/vec.rs" 189 16 189 17
+  let%span svec'6 = "../../../creusot-contracts/src/std/vec.rs" 190 16 190 48
+  let%span svec'7 = "../../../creusot-contracts/src/std/vec.rs" 191 16 191 56
   let%span svec'8 = "../../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span svec'9 = "../../../creusot-contracts/src/std/vec.rs" 99 20 99 41
-  let%span smodel = "../../../creusot-contracts/src/model.rs" 63 8 63 22
-  let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 45 8 45 22
-  let%span smodel'1 = "../../../creusot-contracts/src/model.rs" 36 8 36 28
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 132 20 132 37
-  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 139 20 139 37
-  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 146 20 146 88
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 52 20 52 34
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 106 20 106 44
-  let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 95 8 95 18
-  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 685 20 685 91
-  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
+  let%span svec'9 = "../../../creusot-contracts/src/std/vec.rs" 93 20 93 41
+  let%span smodel = "../../../creusot-contracts/src/model.rs" 59 8 59 22
+  let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 43 8 43 22
+  let%span smodel'1 = "../../../creusot-contracts/src/model.rs" 35 8 35 28
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 124 20 124 37
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 129 20 129 37
+  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 134 20 134 88
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
+  let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
+  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
+  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
@@ -56,8 +56,10 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: Seq.seq t_T) =
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -75,7 +77,8 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Vec) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''2
   
@@ -86,9 +89,13 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) =
     [%#sslice] UInt64.t'int self < Seq.length seq
   
-  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
+  meta "rewrite_def" predicate in_bounds
   
-  predicate invariant''3 (self: MutBorrow.t t_T) = [%#sinvariant] inv self.current /\ inv self.final
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
+  
+  meta "rewrite_def" function view'0
+  
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_T) = [%#sinvariant] inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''3
   
@@ -99,9 +106,13 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
     [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
   
+  meta "rewrite_def" predicate has_value
+  
   predicate resolve_elswhere [@inline:trivial] (self: UInt64.t) (old': Seq.seq t_T) (fin: Seq.seq t_T) =
     [%#sslice'1] forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
       -> Seq.get old' i = Seq.get fin i
+  
+  meta "rewrite_def" predicate resolve_elswhere
   
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t t_T)) =
     {[@expl:index_mut 'self_' type invariant] [%#svec] inv'3 self_}
@@ -114,13 +125,15 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
       {[%#svec'4] Seq.length (view self_.final) = Seq.length (view'0 self_)}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 (_0: MutBorrow.t t_T) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_T) = resolve _0
   
-  predicate invariant''4 (self: t_Vec) = [%#sinvariant'0] inv'2 self
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate invariant''4 [@inline:trivial] (self: t_Vec) = [%#sinvariant'0] inv'2 self
   
   meta "rewrite_def" predicate invariant''4
   
@@ -128,9 +141,11 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''4 x
   
-  function view'1 (self: t_Vec) : Seq.seq t_T = [%#smodel'0] view self
+  function view'1 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = [%#smodel'0] view self
   
-  predicate invariant''5 (self: t_T) = [%#sinvariant'0] inv self
+  meta "rewrite_def" function view'1
+  
+  predicate invariant''5 [@inline:trivial] (self: t_T) = [%#sinvariant'0] inv self
   
   meta "rewrite_def" predicate invariant''5
   
@@ -156,7 +171,9 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   function deep_model (self: t_T) : t_DeepModelTy
   
-  function deep_model'0 (self: t_T) : t_DeepModelTy = [%#smodel'1] deep_model self
+  function deep_model'0 [@inline:trivial] (self: t_T) : t_DeepModelTy = [%#smodel'1] deep_model self
+  
+  meta "rewrite_def" function deep_model'0
   
   predicate postcondition_once (self: ()) (args: tuple) (result: bool)
   
@@ -168,11 +185,13 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
                                                                                                   _p1 = rhs }}
     any [ return''0 (result: bool) -> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ]
   
-  predicate resolve'1 (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 (_0: MutBorrow.t t_Vec) = resolve'1 _0
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
   
   meta "compute_max_steps" 1000000
   

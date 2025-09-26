@@ -1,4 +1,3 @@
-// TACTIC +inline_goal
 extern crate creusot_contracts;
 
 pub mod implementation {
@@ -73,7 +72,7 @@ pub mod implementation {
 
     impl<T> View for PersistentArray<T> {
         type ViewTy = Seq<T>;
-        #[logic]
+        #[logic(inline)]
         fn view(self) -> Seq<T> {
             pearlite! { self.frag@.1 }
         }
@@ -95,7 +94,7 @@ pub mod implementation {
     impl<T> Protocol for PA<T> {
         type Public = Id;
 
-        #[logic]
+        #[logic(inline)]
         fn protocol(self, resource_id: Id) -> bool {
             pearlite! {
                 self.partial_invariant(resource_id) &&
@@ -105,7 +104,7 @@ pub mod implementation {
     }
 
     impl<T> PA<T> {
-        #[logic]
+        #[logic(inline)]
         fn partial_invariant(self, resource_id: Id) -> bool {
             pearlite! {
                 self.auth.id() == resource_id &&

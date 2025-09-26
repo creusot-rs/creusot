@@ -13,22 +13,22 @@ module M_hillel__right_pad [#"hillel.rs" 13 0 13 59]
   let%span shillel'10 = "hillel.rs" 10 10 10 53
   let%span shillel'11 = "hillel.rs" 11 10 11 68
   let%span shillel'12 = "hillel.rs" 12 10 12 68
-  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 59 4 59 12
-  let%span smodel = "../../creusot-contracts/src/model.rs" 63 8 63 22
-  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 45 8 45 22
-  let%span svec = "../../creusot-contracts/src/std/vec.rs" 50 8 50 31
-  let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 116 16 116 17
-  let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 117 26 117 48
-  let%span svec'2 = "../../creusot-contracts/src/std/vec.rs" 120 16 120 17
-  let%span svec'3 = "../../creusot-contracts/src/std/vec.rs" 122 35 122 36
-  let%span svec'4 = "../../creusot-contracts/src/std/vec.rs" 121 26 121 56
+  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 26
+  let%span smodel = "../../creusot-contracts/src/model.rs" 59 8 59 22
+  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 43 8 43 22
+  let%span svec = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
+  let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 110 16 110 17
+  let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 111 26 111 48
+  let%span svec'2 = "../../creusot-contracts/src/std/vec.rs" 114 16 114 17
+  let%span svec'3 = "../../creusot-contracts/src/std/vec.rs" 116 35 116 36
+  let%span svec'4 = "../../creusot-contracts/src/std/vec.rs" 115 26 115 56
   let%span svec'5 = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span svec'6 = "../../creusot-contracts/src/std/vec.rs" 99 20 99 41
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 52 20 52 34
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 106 20 106 44
-  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 95 8 95 18
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 685 20 685 91
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
+  let%span svec'6 = "../../creusot-contracts/src/std/vec.rs" 93 20 93 41
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
+  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
+  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use seq.Seq
   use creusot.prelude.MutBorrow
@@ -57,13 +57,21 @@ module M_hillel__right_pad [#"hillel.rs" 13 0 13 59]
   
   axiom view_spec: forall self: t_Vec. [%#svec'5] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
   
-  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'0] view'0 self
+  meta "rewrite_def" function view'0
   
-  function view'2 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'1 self
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'0] view'0 self
+  
+  meta "rewrite_def" function view'1
+  
+  function view'2 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'1 self
+  
+  meta "rewrite_def" function view'2
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#svec] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   predicate inv (_0: t_T)
   
@@ -73,8 +81,10 @@ module M_hillel__right_pad [#"hillel.rs" 13 0 13 59]
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: Seq.seq t_T) =
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -86,7 +96,7 @@ module M_hillel__right_pad [#"hillel.rs" 13 0 13 59]
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) = [%#sinvariant'0] inv'2 self
+  predicate invariant''2 [@inline:trivial] (self: t_Vec) = [%#sinvariant'0] inv'2 self
   
   meta "rewrite_def" predicate invariant''2
   
@@ -94,14 +104,17 @@ module M_hillel__right_pad [#"hillel.rs" 13 0 13 59]
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'3 (self: t_Vec) : Seq.seq t_T = [%#smodel'0] view self
+  function view'3 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = [%#smodel'0] view self
+  
+  meta "rewrite_def" function view'3
   
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] [%#svec'0] inv'3 self_}
     any
     [ return''0 (result: UInt64.t) -> {[%#svec'1] UInt64.t'int result = Seq.length (view'3 self_)}
       (! return' {result}) ]
   
-  predicate invariant''3 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Vec) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''3
   
@@ -114,11 +127,13 @@ module M_hillel__right_pad [#"hillel.rs" 13 0 13 59]
     {[@expl:push 'v' type invariant] [%#svec'3] inv v}
     any [ return''0 (result: ()) -> {[%#svec'4] view self_.final = Seq.snoc (view'0 self_) v} (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 (_0: MutBorrow.t t_Vec) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -197,25 +212,25 @@ module M_hillel__left_pad [#"hillel.rs" 30 0 30 58]
   let%span shillel'12 = "hillel.rs" 27 10 27 62
   let%span shillel'13 = "hillel.rs" 28 10 28 83
   let%span shillel'14 = "hillel.rs" 29 10 29 99
-  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 59 4 59 12
-  let%span smodel = "../../creusot-contracts/src/model.rs" 63 8 63 22
-  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 45 8 45 22
-  let%span svec = "../../creusot-contracts/src/std/vec.rs" 50 8 50 31
-  let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 116 16 116 17
-  let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 117 26 117 48
-  let%span svec'2 = "../../creusot-contracts/src/std/vec.rs" 140 16 140 17
-  let%span svec'3 = "../../creusot-contracts/src/std/vec.rs" 145 51 145 58
-  let%span svec'4 = "../../creusot-contracts/src/std/vec.rs" 141 26 141 59
-  let%span svec'5 = "../../creusot-contracts/src/std/vec.rs" 142 26 142 82
-  let%span svec'6 = "../../creusot-contracts/src/std/vec.rs" 143 26 143 52
-  let%span svec'7 = "../../creusot-contracts/src/std/vec.rs" 144 26 144 98
+  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 26
+  let%span smodel = "../../creusot-contracts/src/model.rs" 59 8 59 22
+  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 43 8 43 22
+  let%span svec = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
+  let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 110 16 110 17
+  let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 111 26 111 48
+  let%span svec'2 = "../../creusot-contracts/src/std/vec.rs" 134 16 134 17
+  let%span svec'3 = "../../creusot-contracts/src/std/vec.rs" 139 51 139 58
+  let%span svec'4 = "../../creusot-contracts/src/std/vec.rs" 135 26 135 59
+  let%span svec'5 = "../../creusot-contracts/src/std/vec.rs" 136 26 136 82
+  let%span svec'6 = "../../creusot-contracts/src/std/vec.rs" 137 26 137 52
+  let%span svec'7 = "../../creusot-contracts/src/std/vec.rs" 138 26 138 98
   let%span svec'8 = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span svec'9 = "../../creusot-contracts/src/std/vec.rs" 99 20 99 41
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 52 20 52 34
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 106 20 106 44
-  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 95 8 95 18
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 685 20 685 91
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
+  let%span svec'9 = "../../creusot-contracts/src/std/vec.rs" 93 20 93 41
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
+  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
+  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use mach.int.Int
   use creusot.prelude.Opaque
@@ -246,11 +261,19 @@ module M_hillel__left_pad [#"hillel.rs" 30 0 30 58]
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#svec] Seq.get (view self) ix
   
-  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
+  meta "rewrite_def" function index_logic
   
-  function view'1 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'0] view'0 self
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel] view self.current
   
-  function view'2 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'1 self
+  meta "rewrite_def" function view'0
+  
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'0] view'0 self
+  
+  meta "rewrite_def" function view'1
+  
+  function view'2 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#ssnapshot] view'1 self
+  
+  meta "rewrite_def" function view'2
   
   predicate inv (_0: t_T)
   
@@ -260,8 +283,10 @@ module M_hillel__left_pad [#"hillel.rs" 30 0 30 58]
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: Seq.seq t_T) =
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -273,7 +298,7 @@ module M_hillel__left_pad [#"hillel.rs" 30 0 30 58]
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) = [%#sinvariant'0] inv'2 self
+  predicate invariant''2 [@inline:trivial] (self: t_Vec) = [%#sinvariant'0] inv'2 self
   
   meta "rewrite_def" predicate invariant''2
   
@@ -281,14 +306,17 @@ module M_hillel__left_pad [#"hillel.rs" 30 0 30 58]
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'3 (self: t_Vec) : Seq.seq t_T = [%#smodel'0] view self
+  function view'3 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = [%#smodel'0] view self
+  
+  meta "rewrite_def" function view'3
   
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] [%#svec'0] inv'3 self_}
     any
     [ return''0 (result: UInt64.t) -> {[%#svec'1] UInt64.t'int result = Seq.length (view'3 self_)}
       (! return' {result}) ]
   
-  predicate invariant''3 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Vec) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''3
   
@@ -308,11 +336,13 @@ module M_hillel__left_pad [#"hillel.rs" 30 0 30 58]
         -> index_logic self_.final i = index_logic self_.current (i - 1)}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 (_0: MutBorrow.t t_Vec) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -430,39 +460,39 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   let%span shillel'20 = "hillel.rs" 63 8 63 67
   let%span shillel'21 = "hillel.rs" 56 8 56 59
   let%span shillel'22 = "hillel.rs" 49 8 49 95
-  let%span smodel = "../../creusot-contracts/src/model.rs" 54 8 54 28
-  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 36 8 36 28
-  let%span smodel'1 = "../../creusot-contracts/src/model.rs" 45 8 45 22
-  let%span smodel'2 = "../../creusot-contracts/src/model.rs" 63 8 63 22
-  let%span svec = "../../creusot-contracts/src/std/vec.rs" 202 16 202 17
-  let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 203 26 203 42
-  let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 50 8 50 31
-  let%span svec'2 = "../../creusot-contracts/src/std/vec.rs" 120 16 120 17
-  let%span svec'3 = "../../creusot-contracts/src/std/vec.rs" 122 35 122 36
-  let%span svec'4 = "../../creusot-contracts/src/std/vec.rs" 121 26 121 56
+  let%span smodel = "../../creusot-contracts/src/model.rs" 51 8 51 28
+  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 35 8 35 28
+  let%span smodel'1 = "../../creusot-contracts/src/model.rs" 43 8 43 22
+  let%span smodel'2 = "../../creusot-contracts/src/model.rs" 59 8 59 22
+  let%span svec = "../../creusot-contracts/src/std/vec.rs" 196 16 196 17
+  let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 197 26 197 42
+  let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
+  let%span svec'2 = "../../creusot-contracts/src/std/vec.rs" 114 16 114 17
+  let%span svec'3 = "../../creusot-contracts/src/std/vec.rs" 116 35 116 36
+  let%span svec'4 = "../../creusot-contracts/src/std/vec.rs" 115 26 115 56
   let%span svec'5 = "../../creusot-contracts/src/std/vec.rs" 34 14 34 47
   let%span svec'6 = "../../creusot-contracts/src/std/vec.rs" 35 14 36 51
   let%span svec'7 = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span svec'8 = "../../creusot-contracts/src/std/vec.rs" 99 20 99 41
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 52 20 52 34
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 106 20 106 44
-  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 95 8 95 18
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 685 20 685 91
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 347 8 347 9
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 348 18 348 33
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 483 12 483 66
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 489 4 489 49
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 490 27 490 29
-  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 494 4 494 34
-  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 495 4 495 34
-  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 496 4 496 44
-  let%span sslice'7 = "../../creusot-contracts/src/std/slice.rs" 497 91 497 93
-  let%span sslice'8 = "../../creusot-contracts/src/std/slice.rs" 96 14 96 41
-  let%span sslice'9 = "../../creusot-contracts/src/std/slice.rs" 97 14 97 76
-  let%span sslice'10 = "../../creusot-contracts/src/std/slice.rs" 476 8 476 65
-  let%span sslice'11 = "../../creusot-contracts/src/std/slice.rs" 58 8 58 31
-  let%span sslice'12 = "../../creusot-contracts/src/std/slice.rs" 22 20 22 30
+  let%span svec'8 = "../../creusot-contracts/src/std/vec.rs" 93 20 93 41
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
+  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
+  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 318 8 318 9
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 319 18 319 33
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 451 12 451 66
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 456 4 456 49
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 457 27 457 29
+  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 460 4 460 34
+  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 461 4 461 34
+  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 462 4 462 44
+  let%span sslice'7 = "../../creusot-contracts/src/std/slice.rs" 463 91 463 93
+  let%span sslice'8 = "../../creusot-contracts/src/std/slice.rs" 90 14 90 41
+  let%span sslice'9 = "../../creusot-contracts/src/std/slice.rs" 91 14 91 76
+  let%span sslice'10 = "../../creusot-contracts/src/std/slice.rs" 445 8 445 65
+  let%span sslice'11 = "../../creusot-contracts/src/std/slice.rs" 54 8 54 31
+  let%span sslice'12 = "../../creusot-contracts/src/std/slice.rs" 21 20 21 30
   let%span siter = "../../creusot-contracts/src/std/iter.rs" 215 18 215 32
   let%span siter'0 = "../../creusot-contracts/src/std/iter.rs" 93 26 96 17
   let%span scmp = "../../creusot-contracts/src/std/cmp.rs" 11 16 11 17
@@ -515,6 +545,8 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#svec'1] Seq.get (view self) ix
   
+  meta "rewrite_def" function index_logic
+  
   function deep_model'0 (self: t_Vec) : Seq.seq t_DeepModelTy
   
   axiom deep_model_spec: forall self: t_Vec. [%#svec'5] Seq.length (view self) = Seq.length (deep_model'0 self)
@@ -522,7 +554,10 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   axiom deep_model_spec'0: forall self: t_Vec. [%#svec'6] forall i: int. 0 <= i /\ i < Seq.length (view self)
         -> Seq.get (deep_model'0 self) i = deep_model (index_logic self i)
   
-  function deep_model'1 (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy = [%#smodel] deep_model'0 self.current
+  function deep_model'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy =
+    [%#smodel] deep_model'0 self.current
+  
+  meta "rewrite_def" function deep_model'1
   
   predicate inv (_0: t_T)
   
@@ -532,8 +567,10 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: Seq.seq t_T) =
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -545,7 +582,7 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 (self: t_Vec) = [%#sinvariant'0] inv'2 self
+  predicate invariant''2 [@inline:trivial] (self: t_Vec) = [%#sinvariant'0] inv'2 self
   
   meta "rewrite_def" predicate invariant''2
   
@@ -559,7 +596,7 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   
   axiom inv_axiom'3 [@rewrite]: forall x: Slice64.slice t_T [inv'4 x]. inv'4 x = invariant''3 x
   
-  predicate invariant''4 (self: Slice64.slice t_T) = [%#sinvariant'0] inv'4 self
+  predicate invariant''4 [@inline:trivial] (self: Slice64.slice t_T) = [%#sinvariant'0] inv'4 self
   
   meta "rewrite_def" predicate invariant''4
   
@@ -567,9 +604,13 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   
   axiom inv_axiom'4 [@rewrite]: forall x: Slice64.slice t_T [inv'5 x]. inv'5 x = invariant''4 x
   
-  function view'0 (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel'1] Slice64.view self
+  function view'0 [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel'1] Slice64.view self
   
-  function view'1 (self: t_Vec) : Seq.seq t_T = [%#smodel'1] view self
+  meta "rewrite_def" function view'0
+  
+  function view'1 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = [%#smodel'1] view self
+  
+  meta "rewrite_def" function view'1
   
   let rec deref (self_: t_Vec) (return' (x: Slice64.slice t_T)) =
     {[@expl:deref 'self_' type invariant] [%#svec] inv'3 self_}
@@ -591,10 +632,14 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   let rec into_iter (self_: t_Iter) (return' (x: t_Iter)) = any
     [ return''0 (result: t_Iter) -> {[%#siter] result = self_} (! return' {result}) ]
   
-  function deep_model'2 (self: t_T) : t_DeepModelTy = [%#smodel'0] deep_model self
+  function deep_model'2 [@inline:trivial] (self: t_T) : t_DeepModelTy = [%#smodel'0] deep_model self
+  
+  meta "rewrite_def" function deep_model'2
   
   function index_logic'0 [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T =
     [%#sslice'11] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic'0
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
@@ -621,7 +666,7 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_Iter [inv'6 x]. inv'6 x = true
   
-  predicate invariant''5 (self: t_T) = [%#sinvariant'0] inv self
+  predicate invariant''5 [@inline:trivial] (self: t_T) = [%#sinvariant'0] inv self
   
   meta "rewrite_def" predicate invariant''5
   
@@ -635,8 +680,10 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   
   axiom inv_axiom'7 [@rewrite]: forall x: t_T [inv'8 x]. inv'8 x = invariant''6 x
   
-  predicate invariant''7 (self: Seq.seq t_T) =
+  predicate invariant''7 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'8 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''7
   
   predicate inv'9 (_0: Seq.seq t_T)
   
@@ -652,11 +699,13 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
         | C_Some a_0 -> inv'7 a_0
         end
   
-  predicate resolve (self: MutBorrow.t t_Iter) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Iter) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  function view'3 (self: MutBorrow.t t_Iter) : Slice64.slice t_T = [%#smodel'2] view'2 self.current
+  function view'3 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice t_T = [%#smodel'2] view'2 self.current
+  
+  meta "rewrite_def" function view'3
   
   predicate completed (self: MutBorrow.t t_Iter) =
     [%#sslice'10] resolve self /\ Slice64.view (view'3 self) = (Seq.empty: Seq.seq t_T)
@@ -669,13 +718,15 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
         end}
       (! return' {result}) ]
   
-  predicate resolve'0 (_0: MutBorrow.t t_Iter) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Iter) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: t_T)) = any
     [ good (field_0: t_T) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_T [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  predicate invariant''8 (self: t_T) = [%#sinvariant'0] inv'7 self
+  predicate invariant''8 [@inline:trivial] (self: t_T) = [%#sinvariant'0] inv'7 self
   
   meta "rewrite_def" predicate invariant''8
   
@@ -683,7 +734,9 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   
   axiom inv_axiom'10 [@rewrite]: forall x: t_T [inv'11 x]. inv'11 x = invariant''8 x
   
-  function deep_model'3 (self: t_T) : t_DeepModelTy = [%#smodel'0] deep_model'2 self
+  function deep_model'3 [@inline:trivial] (self: t_T) : t_DeepModelTy = [%#smodel'0] deep_model'2 self
+  
+  meta "rewrite_def" function deep_model'3
   
   let rec eq (self_: t_T) (rhs: t_T) (return' (x: bool)) = {[@expl:eq 'self_' type invariant] [%#scmp] inv'11 self_}
     {[@expl:eq 'rhs' type invariant] [%#scmp'0] inv'11 rhs}
@@ -692,7 +745,8 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   
   predicate resolve'1 (_0: t_T)
   
-  predicate invariant''9 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''9 [@inline:trivial] (self: MutBorrow.t t_Vec) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''9
   
@@ -700,17 +754,21 @@ module M_hillel__insert_unique [#"hillel.rs" 76 0 76 62]
   
   axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'12 x]. inv'12 x = invariant''9 x
   
-  predicate resolve'2 (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  predicate resolve'2 [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 (_0: MutBorrow.t t_Vec) = resolve'2 _0
+  predicate resolve'3 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'2 _0
+  
+  meta "rewrite_def" predicate resolve'3
   
   predicate is_unique [#"hillel.rs" 47 0 47 34] (s: Seq.seq t_DeepModelTy) =
     [%#shillel'22] forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s
       -> Seq.get s i = Seq.get s j -> i = j
   
-  function view'4 (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'2] view self.current
+  function view'4 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = [%#smodel'2] view self.current
+  
+  meta "rewrite_def" function view'4
   
   let rec push (self_: MutBorrow.t t_Vec) (v: t_T) (return' (x: ())) =
     {[@expl:push 'self_' type invariant] [%#svec'2] inv'12 self_}
@@ -841,35 +899,35 @@ module M_hillel__unique [#"hillel.rs" 98 0 98 56]
   let%span shillel'25 = "hillel.rs" 74 10 74 87
   let%span shillel'26 = "hillel.rs" 75 10 75 58
   let%span shillel'27 = "hillel.rs" 56 8 56 59
-  let%span smodel = "../../creusot-contracts/src/model.rs" 36 8 36 28
-  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 45 8 45 22
-  let%span smodel'1 = "../../creusot-contracts/src/model.rs" 54 8 54 28
-  let%span svec = "../../creusot-contracts/src/std/vec.rs" 108 26 108 44
+  let%span smodel = "../../creusot-contracts/src/model.rs" 35 8 35 28
+  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 43 8 43 22
+  let%span smodel'1 = "../../creusot-contracts/src/model.rs" 51 8 51 28
+  let%span svec = "../../creusot-contracts/src/std/vec.rs" 102 26 102 44
   let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 34 14 34 47
   let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 35 14 36 51
   let%span svec'2 = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span svec'3 = "../../creusot-contracts/src/std/vec.rs" 50 8 50 31
-  let%span svec'4 = "../../creusot-contracts/src/std/vec.rs" 99 20 99 41
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 52 20 52 34
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 106 20 106 44
-  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 95 8 95 18
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 685 20 685 91
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 292 8 292 9
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 293 18 293 40
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 44 14 44 44
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 45 14 45 91
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 58 8 58 31
-  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 22 20 22 30
+  let%span svec'3 = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
+  let%span svec'4 = "../../creusot-contracts/src/std/vec.rs" 93 20 93 41
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
+  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
+  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 655 20 655 91
+  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 263 8 263 9
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 264 18 264 40
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 42 14 42 44
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 43 14 43 91
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 54 8 54 31
+  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 21 20 21 30
   let%span siter = "../../creusot-contracts/src/std/iter.rs" 215 18 215 32
   let%span siter'0 = "../../creusot-contracts/src/std/iter.rs" 93 26 96 17
-  let%span srange = "../../creusot-contracts/src/std/iter/range.rs" 25 12 29 70
-  let%span srange'0 = "../../creusot-contracts/src/std/iter/range.rs" 34 4 34 49
-  let%span srange'1 = "../../creusot-contracts/src/std/iter/range.rs" 38 4 38 34
-  let%span srange'2 = "../../creusot-contracts/src/std/iter/range.rs" 39 4 39 34
-  let%span srange'3 = "../../creusot-contracts/src/std/iter/range.rs" 40 4 40 44
-  let%span srange'4 = "../../creusot-contracts/src/std/iter/range.rs" 16 8 18 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span srange = "../../creusot-contracts/src/std/iter/range.rs" 23 12 27 70
+  let%span srange'0 = "../../creusot-contracts/src/std/iter/range.rs" 32 4 32 49
+  let%span srange'1 = "../../creusot-contracts/src/std/iter/range.rs" 36 4 36 34
+  let%span srange'2 = "../../creusot-contracts/src/std/iter/range.rs" 37 4 37 34
+  let%span srange'3 = "../../creusot-contracts/src/std/iter/range.rs" 38 4 38 44
+  let%span srange'4 = "../../creusot-contracts/src/std/iter/range.rs" 15 8 17 9
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 23 28 23 33
   
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -901,8 +959,10 @@ module M_hillel__unique [#"hillel.rs" 98 0 98 56]
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: Seq.seq t_T) =
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'1 (_0: Seq.seq t_T)
   
@@ -929,7 +989,7 @@ module M_hillel__unique [#"hillel.rs" 98 0 98 56]
   
   axiom inv_axiom'2 [@rewrite]: forall x: Slice64.slice t_T [inv'3 x]. inv'3 x = invariant''2 x
   
-  predicate invariant''3 (self: Slice64.slice t_T) = [%#sinvariant'0] inv'3 self
+  predicate invariant''3 [@inline:trivial] (self: Slice64.slice t_T) = [%#sinvariant'0] inv'3 self
   
   meta "rewrite_def" predicate invariant''3
   
@@ -937,7 +997,9 @@ module M_hillel__unique [#"hillel.rs" 98 0 98 56]
   
   axiom inv_axiom'3 [@rewrite]: forall x: Slice64.slice t_T [inv'4 x]. inv'4 x = invariant''3 x
   
-  function view'0 (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel'0] Slice64.view self
+  function view'0 [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel'0] Slice64.view self
+  
+  meta "rewrite_def" function view'0
   
   let rec len (self_: Slice64.slice t_T) (return' (x: UInt64.t)) =
     {[@expl:len 'self_' type invariant] [%#sslice] inv'4 self_}
@@ -963,6 +1025,8 @@ module M_hillel__unique [#"hillel.rs" 98 0 98 56]
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T =
     [%#sslice'3] Seq.get (Slice64.view self) ix
   
+  meta "rewrite_def" function index_logic
+  
   function deep_model'0 (self: Slice64.slice t_T) : Seq.seq t_DeepModelTy
   
   axiom deep_model_spec: forall self: Slice64.slice t_T. [%#sslice'1] Seq.length (view'0 self)
@@ -971,9 +1035,14 @@ module M_hillel__unique [#"hillel.rs" 98 0 98 56]
   axiom deep_model_spec'0: forall self: Slice64.slice t_T. [%#sslice'2] forall i: int. 0 <= i
           /\ i < Seq.length (deep_model'0 self) -> Seq.get (deep_model'0 self) i = deep_model (index_logic self i)
   
-  function deep_model'1 (self: Slice64.slice t_T) : Seq.seq t_DeepModelTy = [%#smodel] deep_model'0 self
+  function deep_model'1 [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_DeepModelTy =
+    [%#smodel] deep_model'0 self
+  
+  meta "rewrite_def" function deep_model'1
   
   function index_logic'0 [@inline:trivial] (self: t_Vec) (ix: int) : t_T = [%#svec'3] Seq.get (view self) ix
+  
+  meta "rewrite_def" function index_logic'0
   
   function deep_model'2 (self: t_Vec) : Seq.seq t_DeepModelTy
   
@@ -986,7 +1055,9 @@ module M_hillel__unique [#"hillel.rs" 98 0 98 56]
     [%#shillel'19] forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s
       -> Seq.get s i = Seq.get s j -> i = j
   
-  function deep_model'3 (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  function deep_model'3 [@inline:trivial] (self: UInt64.t) : int = [%#snum] UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model'3
   
   predicate produces (self: t_Range) (visited: Seq.seq UInt64.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end
@@ -1016,7 +1087,7 @@ module M_hillel__unique [#"hillel.rs" 98 0 98 56]
   
   type t_Option = C_None | C_Some UInt64.t
   
-  predicate resolve (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -1030,13 +1101,16 @@ module M_hillel__unique [#"hillel.rs" 98 0 98 56]
         end}
       (! return' {result}) ]
   
-  predicate resolve'0 (_0: MutBorrow.t t_Range) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Range) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
     [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt64.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  predicate invariant''4 (self: MutBorrow.t t_Vec) = [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Vec) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''4
   
@@ -1044,7 +1118,10 @@ module M_hillel__unique [#"hillel.rs" 98 0 98 56]
   
   axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'7 x]. inv'7 x = invariant''4 x
   
-  function deep_model'4 (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy = [%#smodel'1] deep_model'2 self.current
+  function deep_model'4 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_DeepModelTy =
+    [%#smodel'1] deep_model'2 self.current
+  
+  meta "rewrite_def" function deep_model'4
   
   let rec insert_unique (vec: MutBorrow.t t_Vec) (elem: t_T) (return' (x: ())) =
     {[@expl:insert_unique 'vec' type invariant] [%#shillel'20] inv'7 vec}
@@ -1057,11 +1134,13 @@ module M_hillel__unique [#"hillel.rs" 98 0 98 56]
       {[%#shillel'26] contains (deep_model'2 vec.final) (deep_model elem)}
       (! return' {result}) ]
   
-  predicate resolve'1 (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 (_0: MutBorrow.t t_Vec) = resolve'1 _0
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
   
   meta "compute_max_steps" 1000000
   
@@ -1173,7 +1252,7 @@ module M_hillel__sum_range [#"hillel.rs" 121 0 121 54]
   let%span shillel'0 = "hillel.rs" 119 11 119 53
   let%span shillel'1 = "hillel.rs" 120 10 120 21
   let%span shillel'2 = "hillel.rs" 122 4 126 5
-  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 45 8 45 33
+  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
   
   use creusot.int.UInt32
   use seq.Seq
@@ -1212,7 +1291,7 @@ module M_hillel__sum_range_split [#"hillel.rs" 133 0 133 61]
   let%span shillel'4 = "hillel.rs" 119 11 119 53
   let%span shillel'5 = "hillel.rs" 120 10 120 21
   let%span shillel'6 = "hillel.rs" 122 4 126 5
-  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 45 8 45 33
+  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
   
   use creusot.int.UInt32
   use seq.Seq
@@ -1270,7 +1349,7 @@ module M_hillel__score [#"hillel.rs" 143 0 143 38]
   let%span shillel'8 = "hillel.rs" 122 4 126 5
   let%span shillel'9 = "hillel.rs" 130 10 130 18
   let%span shillel'10 = "hillel.rs" 134 4 136 5
-  let%span sint = "../../creusot-contracts/src/logic/int.rs" 174 8 174 62
+  let%span sint = "../../creusot-contracts/src/logic/int.rs" 166 8 166 62
   
   use creusot.int.UInt32
   use seq.Seq
@@ -1362,33 +1441,33 @@ module M_hillel__fulcrum [#"hillel.rs" 155 0 155 30]
   let%span shillel'33 = "hillel.rs" 131 11 131 63
   let%span shillel'34 = "hillel.rs" 132 10 132 85
   let%span shillel'35 = "hillel.rs" 134 4 136 5
-  let%span smodel = "../../creusot-contracts/src/model.rs" 45 8 45 22
-  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 63 8 63 22
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 52 20 52 34
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 416 18 416 33
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 483 12 483 66
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 293 18 293 40
-  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 489 4 489 49
-  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 490 27 490 29
-  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 494 4 494 34
-  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 495 4 495 34
-  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 496 4 496 44
-  let%span sslice'7 = "../../creusot-contracts/src/std/slice.rs" 497 91 497 93
-  let%span sslice'8 = "../../creusot-contracts/src/std/slice.rs" 96 14 96 41
-  let%span sslice'9 = "../../creusot-contracts/src/std/slice.rs" 97 14 97 76
-  let%span sslice'10 = "../../creusot-contracts/src/std/slice.rs" 476 8 476 65
-  let%span sslice'11 = "../../creusot-contracts/src/std/slice.rs" 58 8 58 31
+  let%span smodel = "../../creusot-contracts/src/model.rs" 43 8 43 22
+  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 59 8 59 22
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 387 18 387 33
+  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 451 12 451 66
+  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 264 18 264 40
+  let%span sslice'2 = "../../creusot-contracts/src/std/slice.rs" 456 4 456 49
+  let%span sslice'3 = "../../creusot-contracts/src/std/slice.rs" 457 27 457 29
+  let%span sslice'4 = "../../creusot-contracts/src/std/slice.rs" 460 4 460 34
+  let%span sslice'5 = "../../creusot-contracts/src/std/slice.rs" 461 4 461 34
+  let%span sslice'6 = "../../creusot-contracts/src/std/slice.rs" 462 4 462 44
+  let%span sslice'7 = "../../creusot-contracts/src/std/slice.rs" 463 91 463 93
+  let%span sslice'8 = "../../creusot-contracts/src/std/slice.rs" 90 14 90 41
+  let%span sslice'9 = "../../creusot-contracts/src/std/slice.rs" 91 14 91 76
+  let%span sslice'10 = "../../creusot-contracts/src/std/slice.rs" 445 8 445 65
+  let%span sslice'11 = "../../creusot-contracts/src/std/slice.rs" 54 8 54 31
   let%span siter = "../../creusot-contracts/src/std/iter.rs" 93 26 96 17
   let%span siter'0 = "../../creusot-contracts/src/std/iter.rs" 215 18 215 32
-  let%span srange = "../../creusot-contracts/src/std/iter/range.rs" 25 12 29 70
-  let%span srange'0 = "../../creusot-contracts/src/std/iter/range.rs" 34 4 34 49
-  let%span srange'1 = "../../creusot-contracts/src/std/iter/range.rs" 38 4 38 34
-  let%span srange'2 = "../../creusot-contracts/src/std/iter/range.rs" 39 4 39 34
-  let%span srange'3 = "../../creusot-contracts/src/std/iter/range.rs" 40 4 40 44
-  let%span srange'4 = "../../creusot-contracts/src/std/iter/range.rs" 16 8 18 9
-  let%span snum = "../../creusot-contracts/src/std/num.rs" 281 26 281 59
-  let%span snum'0 = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
-  let%span sint = "../../creusot-contracts/src/logic/int.rs" 174 8 174 62
+  let%span srange = "../../creusot-contracts/src/std/iter/range.rs" 23 12 27 70
+  let%span srange'0 = "../../creusot-contracts/src/std/iter/range.rs" 32 4 32 49
+  let%span srange'1 = "../../creusot-contracts/src/std/iter/range.rs" 36 4 36 34
+  let%span srange'2 = "../../creusot-contracts/src/std/iter/range.rs" 37 4 37 34
+  let%span srange'3 = "../../creusot-contracts/src/std/iter/range.rs" 38 4 38 44
+  let%span srange'4 = "../../creusot-contracts/src/std/iter/range.rs" 15 8 17 9
+  let%span snum = "../../creusot-contracts/src/std/num.rs" 274 26 274 59
+  let%span snum'0 = "../../creusot-contracts/src/std/num.rs" 23 28 23 33
+  let%span sint = "../../creusot-contracts/src/logic/int.rs" 166 8 166 62
   
   use creusot.int.UInt32
   use creusot.slice.Slice64
@@ -1418,10 +1497,14 @@ module M_hillel__fulcrum [#"hillel.rs" 155 0 155 30]
   axiom sum_range_spec: forall seq: Seq.seq UInt32.t, from: int, to': int. ([%#shillel'25] 0 <= from
         /\ from <= to' /\ to' <= Seq.length seq) -> ([%#shillel'26] sum_range seq from to' >= 0)
   
-  function view'0 (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = [%#smodel] Slice64.view self
+  function view'0 [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = [%#smodel] Slice64.view self
+  
+  meta "rewrite_def" function view'0
   
   function index_logic [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
     [%#sslice'11] Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_logic
   
   function to_ref_seq (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t
   
@@ -1455,11 +1538,13 @@ module M_hillel__fulcrum [#"hillel.rs" 155 0 155 30]
   
   type t_Option = C_None | C_Some UInt32.t
   
-  predicate resolve (self: MutBorrow.t t_Iter) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Iter) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  function view'1 (self: MutBorrow.t t_Iter) : Slice64.slice UInt32.t = [%#smodel'0] view self.current
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice UInt32.t = [%#smodel'0] view self.current
+  
+  meta "rewrite_def" function view'1
   
   predicate completed (self: MutBorrow.t t_Iter) =
     [%#sslice'10] resolve self /\ Slice64.view (view'1 self) = (Seq.empty: Seq.seq UInt32.t)
@@ -1471,7 +1556,9 @@ module M_hillel__fulcrum [#"hillel.rs" 155 0 155 30]
         end}
       (! return' {result}) ]
   
-  predicate resolve'0 (_0: MutBorrow.t t_Iter) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Iter) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: UInt32.t)) = any
     [ good (field_0: UInt32.t) -> {C_Some field_0 = input} (! ret {field_0})
@@ -1508,7 +1595,9 @@ module M_hillel__fulcrum [#"hillel.rs" 155 0 155 30]
   axiom score_spec'0: forall seq: Seq.seq UInt32.t, i: int. ([%#shillel'28] 0 <= i /\ i <= Seq.length seq)
       -> ([%#shillel'30] 0 = i \/ i = Seq.length seq -> score seq i = sum_range seq 0 (Seq.length seq))
   
-  function deep_model (self: UInt64.t) : int = [%#snum'0] UInt64.t'int self
+  function deep_model [@inline:trivial] (self: UInt64.t) : int = [%#snum'0] UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model
   
   predicate produces'0 (self: t_Range) (visited: Seq.seq UInt64.t) (o: t_Range) =
     [%#srange] self.t_Range__end = o.t_Range__end
@@ -1538,7 +1627,7 @@ module M_hillel__fulcrum [#"hillel.rs" 155 0 155 30]
   
   type t_Option'0 = C_None'0 | C_Some'0 UInt64.t
   
-  predicate resolve'1 (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve'1
   
@@ -1552,7 +1641,9 @@ module M_hillel__fulcrum [#"hillel.rs" 155 0 155 30]
         end}
       (! return' {result}) ]
   
-  predicate resolve'2 (_0: MutBorrow.t t_Range) = resolve'1 _0
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_Range) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
   
   let rec v_Some'0 (input: t_Option'0) (ret (field_0: UInt64.t)) = any
     [ good (field_0: UInt64.t) -> {C_Some'0 field_0 = input} (! ret {field_0})

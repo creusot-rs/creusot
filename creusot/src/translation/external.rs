@@ -8,7 +8,7 @@ use crate::{
         traits::TraitResolved,
     },
     util::{eq_nameless_generic_args, erased_identity_for_item, forge_def_id, forge_def_id_from},
-    validate::is_ghost_ty_,
+    validate::is_ghost_or_snap,
 };
 use rustc_hir::{
     def::DefKind,
@@ -333,7 +333,8 @@ fn build_erased<'tcx>(
             ),
         )
     }
-    let erase_args = sig1.inputs().iter().map(|arg| is_ghost_ty_(tcx, *arg)).collect::<Vec<bool>>();
+    let erase_args =
+        sig1.inputs().iter().map(|arg| is_ghost_or_snap(tcx, *arg)).collect::<Vec<bool>>();
     let len_unerased_args = erase_args.iter().filter(|&&erase| !erase).count();
     let unerased_args1 = sig1
         .inputs()
@@ -367,7 +368,9 @@ fn eq_erased_ty<'tcx>(tcx: TyCtxt<'tcx>, ty1: Ty<'tcx>, ty2: Ty<'tcx>) -> bool {
     }
     match ty1.kind() {
         TyKind::Tuple(tys)
-            if tys.len() == 2 && eq_erased_ty(tcx, tys[0], ty2) && is_ghost_ty_(tcx, tys[1]) =>
+            if tys.len() == 2
+                && eq_erased_ty(tcx, tys[0], ty2)
+                && is_ghost_or_snap(tcx, tys[1]) =>
         {
             true
         }

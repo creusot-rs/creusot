@@ -17,8 +17,7 @@ pub fn test_assign(mut s: S2) {
     s.s1.f = 2;
 }
 
-#[open]
-#[logic]
+#[logic(open)]
 pub fn test_logic(s: S2) {
     s.s1.f;
 }

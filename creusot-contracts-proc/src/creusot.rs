@@ -12,7 +12,7 @@ pub(crate) use self::{
     derive::*,
     erasure::erasure,
     extern_spec::extern_spec,
-    logic::{law, logic, open, pearlite},
+    logic::{logic, pearlite},
     proof::{ghost, ghost_let, invariant, proof_assert, snapshot},
     specs::{bitwise_proof, check, ensures, maintains, requires, variant},
 };
@@ -21,7 +21,11 @@ use crate::common::{ContractSubject, FnOrMethod};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::{FnArg, Ident, parse_macro_input, parse_quote};
+use syn::{
+    Error, FnArg, Ident, LitStr, Macro, Result, Token,
+    parse::{Parse, ParseStream},
+    parse_macro_input, parse_quote,
+};
 
 pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {
     let tokens = TokenStream::from(tokens);
@@ -40,11 +44,76 @@ pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
     })
 }
 
+pub fn opaque(_: TS1, tokens: TS1) -> TS1 {
+    let tokens = TokenStream::from(tokens);
+    TS1::from(quote! {
+        #[creusot::decl::opaque]
+        #tokens
+    })
+}
+
+struct Builtin {
+    str: TokenStream,
+    ascription: bool,
+}
+
+impl Parse for Builtin {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let str = if input.fork().parse::<Macro>().is_ok() {
+            let mac: Macro = input.parse().unwrap();
+            quote! { #mac }
+        } else {
+            let str: LitStr = input.parse()?;
+            quote! { #str }
+        };
+
+        if input.peek(Token![,]) {
+            let _: Token![,] = input.parse()?;
+            let asc: Ident = input.parse()?;
+            if asc != "ascription" {
+                Result::Err(Error::new(
+                    asc.span(),
+                    "The second parameter of #[builtin], if present, should be `ascription`.",
+                ))?
+            }
+            Ok(Builtin { str, ascription: true })
+        } else {
+            Ok(Builtin { str, ascription: false })
+        }
+    }
+}
+
+pub fn builtin(params: TS1, tokens: TS1) -> TS1 {
+    let builtin = parse_macro_input!(params as Builtin);
+    let asc = if builtin.ascription {
+        quote! { #[creusot::builtin_ascription] }
+    } else {
+        quote! {}
+    };
+    let str = builtin.str;
+
+    let tokens = TokenStream::from(tokens);
+    TS1::from(quote! {
+        #[creusot::builtin = #str]
+        #asc
+        #tokens
+    })
+}
+
+pub fn intrinsic(params: TS1, tokens: TS1) -> TS1 {
+    let params = TokenStream::from(params);
+    let tokens = TokenStream::from(tokens);
+    TS1::from(quote! {
+        #[creusot::intrinsic = #params]
+        #tokens
+    })
+}
+
 pub fn declare_namespace(namespace: TS1) -> TS1 {
     let ident = parse_macro_input!(namespace as Ident);
     quote! {
-        #[logic]
         #[trusted]
+        #[logic(opaque)]
         #[creusot::decl::new_namespace]
         #[allow(nonstandard_style)]
         pub fn #ident() -> ::creusot_contracts::ghost::local_invariant::Namespace {

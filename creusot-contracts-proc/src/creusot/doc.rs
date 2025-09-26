@@ -11,8 +11,8 @@ pub(crate) enum LogicBody {
     Some(TS1),
     /// The function does not have a body. For example, if it is a trait function.
     None,
-    /// The function has a body, but it is ignored because the function is `#[trusted]`
-    Trusted,
+    /// The function has a body, but it is ignored because the function is `opaque`
+    Opaque,
 }
 
 /// Generates a piece of documentation corresponding to the spec.
@@ -30,9 +30,9 @@ pub(crate) fn document_spec(spec_name: &str, spec_body: LogicBody) -> TokenStrea
     let spec = match spec_body {
         LogicBody::Some(s) if !s.is_empty() => s,
         _ => {
-            let spec = if matches!(spec_body, LogicBody::Trusted) {
+            let spec = if matches!(spec_body, LogicBody::Opaque) {
                 format!(
-                    "{styled_spec_name} <span class=\"tooltip\" style=\"color:Red; white-space:nowrap;\" data-title=\"this function is trusted\"><sup>&#9888;</sup></span>"
+                    "{styled_spec_name} <span class=\"tooltip\" style=\"color:Red; white-space:nowrap;\" data-title=\"this function is opaque\"><sup>&#9888;</sup></span>"
                 )
             } else {
                 styled_spec_name
@@ -96,16 +96,16 @@ pub(crate) fn document_spec(spec_name: &str, spec_body: LogicBody) -> TokenStrea
     }
 }
 
-pub(crate) fn is_trusted(attrs: &[Attribute]) -> bool {
+pub(crate) fn is_opaque(attrs: &[Attribute]) -> bool {
     for attr in attrs {
         let path = attr.path();
 
-        if path.is_ident("trusted")
+        if path.is_ident("opaque")
             || (path.segments.len() == 3
                 && path
                     .segments
                     .iter()
-                    .zip(["creusot", "decl", "trusted"])
+                    .zip(["creusot", "decl", "opaque"])
                     .all(|(s1, s2)| s1.ident == s2))
         {
             return true;

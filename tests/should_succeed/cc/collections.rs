@@ -5,8 +5,7 @@ use std::{
     hash::Hash,
 };
 
-#[trusted]
-#[logic]
+#[logic(opaque)]
 pub fn any<T>() -> T {
     dead
 }

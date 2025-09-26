@@ -9,46 +9,45 @@ pub(crate) mod traits;
 
 use crate::{
     backend::Why3Generator,
-    contracts_items::{AreContractsLoaded, are_contracts_loaded, is_no_translate},
-    ctx::{HasTyCtxt as _, TranslationCtx},
+    contracts_items::is_no_translate,
+    ctx::{Thir, TranslationCtx, gather_params_open_inv},
     metadata,
     translated_item::FileModule,
     validate::validate,
 };
-use creusot_args::options::Output;
-use rustc_hir::{def::DefKind, def_id::DefId};
+use creusot_args::options::{Options, Output};
+use indexmap::IndexMap;
+use rustc_hir::{
+    def::DefKind,
+    def_id::{DefId, LocalDefId},
+};
 use rustc_middle::ty::TyCtxt;
-use rustc_span::DUMMY_SP;
-use std::{fs::File, io::Write, path::PathBuf, time::Instant};
+use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
     Symbol,
     declaration::{Attribute, Decl, Module},
     printer::{render_decls, render_module},
 };
 
-pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
+pub(crate) fn before_analysis<'tcx>(
+    tcx: TyCtxt<'tcx>,
+) -> (IndexMap<LocalDefId, Thir<'tcx>>, HashMap<DefId, Vec<usize>>) {
     let start = Instant::now();
 
-    match are_contracts_loaded(ctx.tcx) {
-        AreContractsLoaded::Yes => {},
-        AreContractsLoaded::No => ctx.fatal_error(DUMMY_SP, "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.").with_note("Don't forget to actually use creusot_contracts: `use creusot_contracts::*;`").emit(),
-        AreContractsLoaded::MissingItems(missing) => {
-            let mut message = String::from("The `creusot_contracts` crate is loaded, but the following items are missing: ");
-            for (i, item) in missing.iter().enumerate() {
-                if i != 0 {
-                    message.push_str(", ");
-                }
-                message.push_str(item);
-            }
-            message.push_str(". Maybe your version of `creusot-contracts` is wrong?");
-            ctx.fatal_error(DUMMY_SP, message).emit()
-        },
+    let params_open_inv = gather_params_open_inv(tcx);
+
+    // Clone all THIR bodies before they are stolen by `analysis`
+    let mut thir = IndexMap::new();
+    for def_id in tcx.hir_body_owners() {
+        // If a body is missing, it means that there was an error, and we know that because `Err` is `ErrorGuaranteed`.
+        // Keep going. We will abort later in `translation::after_analysis` after doing more checks that could raise more errors.
+        if let Ok((th, expr0)) = tcx.thir_body(def_id) {
+            thir.insert(def_id, (th.borrow().clone(), expr0));
+        }
     }
 
-    ctx.clone_all_thir();
-
     debug!("before_analysis: {:?}", start.elapsed());
-    Ok(())
+    (thir, params_open_inv)
 }
 
 fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
@@ -66,9 +65,14 @@ fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
 }
 
 // TODO: Move the main loop out of `translation.rs`
-pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
+pub(crate) fn after_analysis<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    opts: Options,
+    thir: IndexMap<LocalDefId, Thir<'tcx>>,
+    params_open_inv: HashMap<DefId, Vec<usize>>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
-    ctx.load_metadata();
+    let mut ctx = TranslationCtx::new(tcx, opts.clone(), thir, params_open_inv);
     ctx.load_extern_specs();
     ctx.load_erasures();
     validate(&ctx);
@@ -103,16 +107,15 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn std:
     debug!("after_analysis_translate: {:?}", start.elapsed());
     let start = Instant::now();
 
-    if why3.should_export() {
-        let metadata = why3.metadata();
-        metadata::dump_exports(why3.tcx, &why3.opts.extern_paths, metadata);
+    if opts.export_metadata {
+        let metadata = why3.ctx.metadata();
+        metadata::dump_exports(tcx, &opts.extern_paths, metadata);
     }
 
-    if why3.should_compile() {
-        let output_target = why3.opts.output.clone();
-        let prefix = why3.opts.prefix.iter().map(|s| Symbol::intern(s)).collect();
-        let modules = why3.modules();
-        let modules = modules.flat_map(|item| item.modules());
+    if opts.should_output {
+        let output_target = opts.output.clone();
+        let prefix = opts.prefix.iter().map(|s| Symbol::intern(s)).collect();
+        let modules = why3.functions.into_iter().flat_map(|item| item.modules());
         print_crate(output_target, prefix, modules)?;
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());

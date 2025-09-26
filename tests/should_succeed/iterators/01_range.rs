@@ -12,16 +12,14 @@ struct Range {
 impl Iterator for Range {
     type Item = isize;
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             self.resolve() && self.start >= self.end
         }
     }
 
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.end == o.end && self.start <= o.start
@@ -32,13 +30,11 @@ impl Iterator for Range {
         }
     }
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

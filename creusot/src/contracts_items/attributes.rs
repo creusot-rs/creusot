@@ -8,7 +8,10 @@ use rustc_ast::{
 use rustc_hir::{AttrArgs, Attribute, def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::{Span, Symbol};
-use why3::declaration::{Attribute as WAttribute, Meta, MetaArg, MetaIdent};
+use why3::{
+    Name,
+    declaration::{Attribute as WAttribute, Meta, MetaArg, MetaIdent},
+};
 
 use crate::ctx::HasTyCtxt as _;
 
@@ -57,8 +60,10 @@ attribute_functions! {
     [creusot::decl::logic]                   => is_logic
     [creusot::decl::logic::prophetic]        => is_prophetic
     [creusot::decl::logic::sealed]           => is_sealed
+    [creusot::decl::logic::law]              => is_law
+    [creusot::decl::logic::inline]           => is_inline
+    [creusot::decl::opaque]                  => is_opaque
     [creusot::decl::trusted]                 => is_trusted
-    [creusot::decl::law]                     => is_law
     [creusot::decl::new_namespace]           => is_new_namespace
     not [creusot::decl::no_trigger]          => should_replace_trigger
     [creusot::decl::open_inv_result]         => is_open_inv_result
@@ -69,7 +74,7 @@ attribute_functions! {
     [creusot::clause::check_terminates]      => is_check_terminates
     [creusot::clause::check_ghost]           => is_check_ghost
     [creusot::bitwise]                       => is_bitwise
-    [creusot::builtins_ascription]           => is_builtins_ascription
+    [creusot::builtin_ascription]           => is_builtin_ascription
 }
 
 pub(crate) fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
@@ -85,7 +90,7 @@ pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
         || is_snapshot_closure(tcx, def_id)
 }
 
-/// Get the string on the right of `creusot::builtins = ...`
+/// Get the string on the right of `creusot::builtin = ...`
 pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     if !matches!(
         tcx.def_kind(def_id),
@@ -100,14 +105,17 @@ pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
         return None;
     }
 
-    get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "builtins"]).map(|a| {
-        a.value_str().unwrap_or_else(|| {
-            tcx.dcx().span_fatal(
-                a.span(),
-                "Attribute `creusot::builtin` should be followed by a string.".to_string(),
-            )
-        })
-    })
+    let a = get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "builtin"])?;
+    Some(a.value_str().unwrap_or_else(|| {
+        tcx.dcx().span_fatal(
+            a.span(),
+            "Attribute `creusot::builtin` should be followed by a string.".to_string(),
+        )
+    }))
+}
+
+pub(crate) fn get_intrinsic(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
+    Some(get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "intrinsic"])?.value_str().unwrap())
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
@@ -155,7 +163,7 @@ fn tokenstream_to_meta<'a>(
     for token in ts {
         if let Some(name) = token.name() {
             if name.as_str() == "self" {
-                args.push(MetaArg::Ident(ident))
+                args.push(MetaArg::Name(Name::local(ident)))
             } else {
                 args.push(MetaArg::Keyword(name.as_str().into()));
             }

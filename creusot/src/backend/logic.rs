@@ -6,16 +6,15 @@ use crate::{
         term::lower_pure_weakdep,
         ty::{self, translate_ty},
     },
-    contracts_items::{get_builtin, get_namespace_ty},
+    contracts_items::get_builtin,
     ctx::*,
     naming::name,
     translated_item::FileModule,
     translation::pearlite::Term,
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::GenericArgsRef;
 use why3::{
-    Ident,
+    Ident, Name,
     declaration::*,
     exp::{BinOp, Exp, Trigger},
 };
@@ -24,20 +23,18 @@ mod vcgen;
 
 pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<FileModule> {
     let names = Dependencies::new(ctx, def_id);
-    let pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, ctx.typing_env(def_id));
+    let pre_sig = ctx.sig(def_id).clone().normalize(ctx, ctx.typing_env(def_id));
 
-    let namespace_ty =
-        names.def_ty_no_dependency(get_namespace_ty(ctx.ctx.tcx), GenericArgsRef::default());
+    let namespace_ty = names.namespace_ty();
 
     if pre_sig.contract.is_empty() {
         return None;
     }
 
-    // Check that we don't have both `builtins` and a contract at the same time (which are contradictory)
     if get_builtin(ctx.tcx, def_id).is_some() {
         ctx.crash_and_error(
             ctx.def_span(def_id),
-            "cannot specify both `creusot::builtins` and a contract on the same definition",
+            "cannot specify both `creusot::builtin` and a contract on the same definition",
         );
     }
 
@@ -132,21 +129,33 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     sig: LogicSignature,
     kind: DeclKind,
     body: Term<'tcx>,
+    inline: bool,
 ) -> Vec<Decl> {
     let mut decls = vec![];
+    let mut lim_name = None;
 
     // We don't pull dependencies for FnDef items, because it may be more private than
     // the definition is transparent
     let body = lower_pure_weakdep(ctx, names, &body);
-    let lim_name = if sig.why_sig.uses_simple_triggers() {
-        Some(sig.why_sig.name.refresh_with(|s| format!("{s}_lim")))
-    } else {
-        None
-    };
 
     if sig.variant.is_none() {
         let mut sig = sig.why_sig.clone();
         sig.contract = Default::default();
+
+        let mut meta_decl = None;
+        if inline {
+            sig.attrs.push(Attribute::Attr("inline:trivial".into()));
+            let kw = match kind {
+                DeclKind::Constant => "constant",
+                DeclKind::Predicate => "predicate",
+                DeclKind::Function => "function",
+            };
+
+            meta_decl = Some(Decl::Meta(Meta {
+                name: MetaIdent("rewrite_def".into()),
+                args: Box::new([MetaArg::Keyword(kw.into()), MetaArg::Name(Name::local(sig.name))]),
+            }))
+        }
 
         let decl = match kind {
             DeclKind::Function => Decl::LogicDefn(LogicDefn { sig, body }),
@@ -158,17 +167,26 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
             }),
         };
 
-        decls.push(decl)
+        decls.push(decl);
+        decls.extend(meta_decl);
     } else {
         let mut decl_sig = sig.why_sig.clone();
         decl_sig.contract = Default::default();
 
         decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: decl_sig }));
 
-        if let Some(lim_name) = lim_name {
-            limited_function_encode(&mut decls, &sig.why_sig, lim_name, body, kind)
+        if sig.why_sig.uses_simple_triggers() {
+            lim_name = Some(sig.why_sig.name.refresh_with(|s| format!("{s}_lim")));
+            limited_function_encode(
+                &mut decls,
+                &sig.why_sig,
+                lim_name.unwrap(),
+                body,
+                kind,
+                inline,
+            );
         } else {
-            decls.push(Decl::Axiom(definition_axiom(&sig.why_sig, body, "def")));
+            decls.push(Decl::Axiom(definition_axiom(&sig.why_sig, body, "def", inline)));
         }
     }
 
@@ -203,6 +221,7 @@ fn limited_function_encode(
     lim_name: Ident,
     body: Exp,
     kind: DeclKind,
+    inline: bool,
 ) {
     let mut lim_sig = Signature {
         name: lim_name,
@@ -215,8 +234,8 @@ fn limited_function_encode(
     let lim_call = function_call(&lim_sig);
     lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
     decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: lim_sig }));
-    decls.push(Decl::Axiom(definition_axiom(sig, body, "def")));
-    decls.push(Decl::Axiom(definition_axiom(sig, lim_call, "def_lim")));
+    decls.push(Decl::Axiom(definition_axiom(sig, body, "def", inline)));
+    decls.push(Decl::Axiom(definition_axiom(sig, lim_call, "def_lim", inline)));
 }
 
 pub(crate) fn spec_axioms(sig: &Signature) -> impl Iterator<Item = Decl> {
@@ -234,7 +253,7 @@ pub fn function_call(sig: &Signature) -> Exp {
     Exp::var(sig.name).app(args)
 }
 
-fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
+fn definition_axiom(sig: &Signature, body: Exp, suffix: &str, rewrite: bool) -> Axiom {
     let call = function_call(sig);
     let trigger = sig.trigger.clone();
 
@@ -243,5 +262,5 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     let axiom = Exp::forall_trig(sig.args.clone(), trigger, condition);
 
     let name = sig.name.refresh_with(|s| format!("{s}_{suffix}"));
-    Axiom { name, rewrite: false, axiom }
+    Axiom { name, rewrite, axiom }
 }

@@ -28,7 +28,7 @@ pub use self::{
 /// This is also called the "epsilon operator": its goal is not extract from `∃x. P(x)`
 /// a `x` satisfying `P`.
 #[trusted]
-#[logic]
+#[logic(opaque)]
 #[requires(exists<x: T> p[x])]
 #[ensures(p[result])]
 pub fn such_that<T>(p: crate::logic::Mapping<T, bool>) -> T {
@@ -39,11 +39,11 @@ pub fn such_that<T>(p: crate::logic::Mapping<T, bool>) -> T {
 ///
 /// This function indicates a logical branch that should be impossible to reach.
 #[trusted]
-#[allow(unconditional_recursion)]
-#[logic]
+#[logic(opaque)]
 #[requires(false)]
 #[ensures(false)]
 #[variant(0)]
+#[allow(unconditional_recursion)]
 pub fn unreachable<T>() -> T {
     unreachable()
 }

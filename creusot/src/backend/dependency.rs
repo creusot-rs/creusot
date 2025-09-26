@@ -6,8 +6,8 @@ use rustc_span::Symbol;
 use rustc_type_ir::AliasTyKind;
 
 use crate::{
-    contracts_items::is_size_of_logic,
-    ctx::PreMod,
+    contracts_items::Intrinsic,
+    ctx::{PreMod, TranslationCtx},
     naming::{
         item_symb, lowercase_prefix, to_alphanumeric, translate_accessor_name, translate_name,
         type_name, value_name,
@@ -51,22 +51,22 @@ impl<'tcx> Dependency<'tcx> {
         tcx.erase_regions(self)
     }
 
-    pub(crate) fn base_ident(self, tcx: TyCtxt<'tcx>) -> Option<Symbol> {
+    pub(crate) fn base_ident(self, ctx: &TranslationCtx<'tcx>) -> Option<Symbol> {
         match self {
             Dependency::Type(ty) => match ty.kind() {
                 TyKind::Adt(def, _) if !def.is_box() => {
-                    Some(item_symb(tcx, def.did(), rustc_hir::def::Namespace::TypeNS))
+                    Some(item_symb(ctx.tcx, def.did(), rustc_hir::def::Namespace::TypeNS))
                 }
                 TyKind::Alias(AliasTyKind::Opaque, aty) => Some(Symbol::intern(&format!(
                     "opaque{}",
-                    tcx.def_path(aty.def_id).data.last().unwrap().disambiguator
+                    ctx.def_path(aty.def_id).data.last().unwrap().disambiguator
                 ))),
                 TyKind::Alias(AliasTyKind::Projection, aty) => Some(Symbol::intern(&type_name(
-                    tcx.opt_item_name(aty.def_id).unwrap_or(Symbol::intern("synthetic")).as_str(),
+                    ctx.opt_item_name(aty.def_id).unwrap_or(Symbol::intern("synthetic")).as_str(),
                 ))),
                 TyKind::Closure(def_id, _) => Some(Symbol::intern(&format!(
                     "closure{}",
-                    tcx.def_path(*def_id).data.last().unwrap().disambiguator
+                    ctx.def_path(*def_id).data.last().unwrap().disambiguator
                 ))),
                 TyKind::Param(p) => Some(Symbol::intern(&type_name(
                     &p.name
@@ -75,34 +75,36 @@ impl<'tcx> Dependency<'tcx> {
                 ))),
                 TyKind::Tuple(_) => Some(Symbol::intern("tuple")),
                 TyKind::Dynamic(_, _, _) => {
-                    Some(Symbol::intern(&type_string(tcx, String::new(), ty)))
+                    Some(Symbol::intern(&type_string(ctx.tcx, String::new(), ty)))
                 }
                 _ => None,
             },
-            Dependency::Item(did, subst) => match tcx.def_kind(did) {
-                DefKind::Impl { .. } => Some(tcx.item_name(tcx.trait_id_of_impl(did).unwrap())),
+            Dependency::Item(did, subst) => match ctx.def_kind(did) {
+                DefKind::Impl { .. } => Some(ctx.item_name(ctx.trait_id_of_impl(did).unwrap())),
                 DefKind::Closure => Some(Symbol::intern(&format!(
                     "closure{}",
-                    tcx.def_path(did).data.last().unwrap().disambiguator
+                    ctx.def_path(did).data.last().unwrap().disambiguator
                 ))),
                 DefKind::Field => {
-                    let variant = tcx.parent(did);
+                    let variant = ctx.parent(did);
                     let name = translate_accessor_name(
-                        tcx.item_name(variant).as_str(),
-                        tcx.item_name(did).as_str(),
+                        ctx.item_name(variant).as_str(),
+                        ctx.item_name(did).as_str(),
                     );
                     Some(Symbol::intern(&name))
                 }
-                DefKind::Variant => Some(item_symb(tcx, did, rustc_hir::def::Namespace::ValueNS)),
-                _ if is_size_of_logic(tcx, did) => {
-                    Some(Symbol::intern(&type_string(tcx, "size_of".into(), subst.type_at(0))))
+                DefKind::Variant => {
+                    Some(item_symb(ctx.tcx, did, rustc_hir::def::Namespace::ValueNS))
+                }
+                _ if Intrinsic::SizeOfLogic.is(ctx, did) => {
+                    Some(Symbol::intern(&type_string(ctx.tcx, "size_of".into(), subst.type_at(0))))
                 }
                 DefKind::Const | DefKind::AssocConst | DefKind::ConstParam => {
-                    tcx.opt_item_name(did).map(|name| {
+                    ctx.opt_item_name(did).map(|name| {
                         Symbol::intern(&lowercase_prefix("const_", &translate_name(name.as_str())))
                     })
                 }
-                _ => tcx
+                _ => ctx
                     .opt_item_name(did)
                     .map(|name| Symbol::intern(&value_name(&translate_name(name.as_str())))),
             },
@@ -110,11 +112,11 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::TupleField(_, ix) => Some(Symbol::intern(&format!("_p{}", ix.as_u32()))),
             Dependency::TyInvAxiom(..) => Some(Symbol::intern("inv_axiom")),
             Dependency::Eliminator(did, _) => {
-                Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
+                Some(Symbol::intern(&value_name(&translate_name(ctx.item_name(did).as_str()))))
             }
             Dependency::DynCast(source, target) => Some(Symbol::intern(&type_string(
-                tcx,
-                type_string(tcx, String::new(), target) + "_of",
+                ctx.tcx,
+                type_string(ctx.tcx, String::new(), target) + "_of",
                 source,
             ))),
             Dependency::PreMod(_) => None,

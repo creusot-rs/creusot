@@ -41,8 +41,7 @@ impl<T: ?Sized> PtrOwn<T> {
 }
 
 impl<T: ?Sized> Invariant for PtrOwn<T> {
-    #[logic]
-    #[open]
+    #[logic(open, inline)]
     fn invariant(self) -> bool {
         !self.ptr().is_null_logic() && metadata_matches(*self.val(), metadata_logic(self.ptr()))
     }
@@ -84,7 +83,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[check(ghost)]
     #[ensures(result.1.ptr() == result.0)]
     #[ensures(*result.1.val() == *r)]
-    #[cfg_attr(creusot, rustc_diagnostic_item = "ptr_own_from_ref")]
+    #[intrinsic("ptr_own_from_ref")]
     pub fn from_ref(r: &T) -> (*const T, Ghost<&PtrOwn<T>>) {
         (r, Ghost::conjure())
     }
@@ -105,7 +104,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[ensures(result.1.ptr() == result.0)]
     #[ensures(*result.1.val() == *r)]
     #[ensures(*(^result.1.inner_logic()).val() == ^r)]
-    #[cfg_attr(creusot, rustc_diagnostic_item = "ptr_own_from_mut")]
+    #[intrinsic("ptr_own_from_mut")]
     pub fn from_mut(r: &mut T) -> (*const T, Ghost<&mut PtrOwn<T>>) {
         (r, Ghost::conjure())
     }
@@ -133,7 +132,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
-    #[cfg_attr(creusot, rustc_diagnostic_item = "ptr_own_as_ref")]
+    #[intrinsic("ptr_own_as_ref")]
     pub unsafe fn as_ref(ptr: *const T, own: Ghost<&PtrOwn<T>>) -> &T {
         unsafe { &*ptr }
     }
@@ -163,7 +162,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[ensures(*result == *own.val())]
     #[ensures((^own).ptr() == own.ptr())]
     #[ensures(*(^own).val() == ^result)]
-    #[cfg_attr(creusot, rustc_diagnostic_item = "ptr_own_as_mut")]
+    #[intrinsic("ptr_own_as_mut")]
     pub unsafe fn as_mut(ptr: *const T, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
         unsafe { &mut *(ptr as *mut _) }
     }

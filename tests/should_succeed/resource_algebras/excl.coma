@@ -3,19 +3,19 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
   let%span sexcl'0 = "excl.rs" 9 16 9 21
   let%span sexcl'1 = "excl.rs" 4 10 4 26
   let%span sexcl'2 = "excl.rs" 5 10 5 18
-  let%span sexcl'3 = "../../../creusot-contracts/src/logic/ra/excl.rs" 17 8 17 12
-  let%span sexcl'4 = "../../../creusot-contracts/src/logic/ra/excl.rs" 32 14 32 32
-  let%span sexcl'5 = "../../../creusot-contracts/src/logic/ra/excl.rs" 37 14 37 98
-  let%span sresource = "../../../creusot-contracts/src/ghost/resource.rs" 76 18 76 37
-  let%span sresource'0 = "../../../creusot-contracts/src/ghost/resource.rs" 220 19 220 42
-  let%span sresource'1 = "../../../creusot-contracts/src/ghost/resource.rs" 221 18 221 32
-  let%span sresource'2 = "../../../creusot-contracts/src/ghost/resource.rs" 222 18 222 42
-  let%span sresource'3 = "../../../creusot-contracts/src/ghost/resource.rs" 53 8 53 16
+  let%span sexcl'3 = "../../../creusot-contracts/src/logic/ra/excl.rs" 16 8 16 12
+  let%span sexcl'4 = "../../../creusot-contracts/src/logic/ra/excl.rs" 29 14 29 32
+  let%span sexcl'5 = "../../../creusot-contracts/src/logic/ra/excl.rs" 33 14 33 98
+  let%span sresource = "../../../creusot-contracts/src/ghost/resource.rs" 74 18 74 37
+  let%span sresource'0 = "../../../creusot-contracts/src/ghost/resource.rs" 217 19 217 42
+  let%span sresource'1 = "../../../creusot-contracts/src/ghost/resource.rs" 218 18 218 32
+  let%span sresource'2 = "../../../creusot-contracts/src/ghost/resource.rs" 219 18 219 42
+  let%span sresource'3 = "../../../creusot-contracts/src/ghost/resource.rs" 53 8 53 30
   let%span sid = "../../../creusot-contracts/src/logic/id.rs" 31 14 31 41
-  let%span smodel = "../../../creusot-contracts/src/model.rs" 63 8 63 22
-  let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 45 8 45 22
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 52 20 52 34
-  let%span soption = "../../../creusot-contracts/src/std/option.rs" 767 8 770 9
+  let%span smodel = "../../../creusot-contracts/src/model.rs" 59 8 59 22
+  let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 43 8 43 22
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span soption = "../../../creusot-contracts/src/std/option.rs" 754 8 757 9
   
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
@@ -57,11 +57,17 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
   
   function val' (self: t_Resource) : t_Excl
   
-  function view (self: t_Resource) : t_Excl = [%#sresource'3] val' self
+  function view [@inline:trivial] (self: t_Resource) : t_Excl = [%#sresource'3] val' self
   
-  function view'0 (self: MutBorrow.t t_Resource) : t_Excl = [%#smodel] view self.current
+  meta "rewrite_def" function view
   
-  function view'1 (self: t_Resource) : t_Excl = [%#smodel'0] view self
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Resource) : t_Excl = [%#smodel] view self.current
+  
+  meta "rewrite_def" function view'0
+  
+  function view'1 [@inline:trivial] (self: t_Resource) : t_Excl = [%#smodel'0] view self
+  
+  meta "rewrite_def" function view'1
   
   let rec valid_shared (self: MutBorrow.t t_Resource) (other: t_Resource) (return' (x: ())) =
     {[@expl:valid_shared requires] [%#sresource'0] id self.current = id other}
@@ -70,11 +76,13 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
       {[%#sresource'2] op (view'0 self) (view'1 other) <> C_None}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_Resource) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Resource) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 (_0: MutBorrow.t t_Resource) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Resource) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   

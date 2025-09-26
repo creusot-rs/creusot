@@ -24,8 +24,7 @@ impl<T: UnitRA> ViewRel for AuthViewRel<T> {
     type Auth = T;
     type Frag = T;
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn rel(a: Option<T>, f: T) -> bool {
         match a {
             Some(a) => f.incl(a),
@@ -33,17 +32,17 @@ impl<T: UnitRA> ViewRel for AuthViewRel<T> {
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[requires(Self::rel(a, f1))]
     #[requires(f2.incl(f1))]
     #[ensures(Self::rel(a, f2))]
     fn rel_mono(a: Option<T>, f1: T, f2: T) {}
 
-    #[law]
+    #[logic(law)]
     #[ensures(Self::rel(None, f))]
     fn rel_none(a: Option<T>, f: T) {}
 
-    #[law]
+    #[logic(law)]
     #[ensures(Self::rel(a, T::unit()))]
     fn rel_unit(a: Option<T>) {}
 }
@@ -53,8 +52,7 @@ pub struct AuthUpdate<U>(pub U);
 impl<R: UnitRA, U: LocalUpdate<R>> Update<Auth<R>> for AuthUpdate<U> {
     type Choice = ();
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn premise(self, from: Auth<R>) -> bool {
         match from.auth() {
             Some(auth) => self.0.premise(auth, from.frag()),
@@ -62,8 +60,7 @@ impl<R: UnitRA, U: LocalUpdate<R>> Update<Auth<R>> for AuthUpdate<U> {
         }
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[requires(self.premise(from))]
     #[ensures({
         let (auth, frag) = self.0.update(from.auth().unwrap_logic(), from.frag());

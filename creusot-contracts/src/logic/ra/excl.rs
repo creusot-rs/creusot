@@ -11,14 +11,12 @@ use crate::{
 pub struct Excl<T>(pub T);
 
 impl<T> RA for Excl<T> {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn op(self, _other: Self) -> Option<Self> {
         None
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(match result {
         Some(c) => factor.op(c) == Some(self),
         None => forall<c: Self> factor.op(c) != Some(self),
@@ -27,18 +25,15 @@ impl<T> RA for Excl<T> {
         None
     }
 
-    #[law]
-    #[open(self)]
+    #[logic(open(self), law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}
 
-    #[law]
-    #[open(self)]
+    #[logic(open(self), law)]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {}
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(match result {
         Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
         None => true
@@ -62,14 +57,12 @@ pub struct ExclUpdate<T>(pub Snapshot<T>);
 impl<T> Update<Excl<T>> for ExclUpdate<T> {
     type Choice = ();
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn premise(self, _: Excl<T>) -> bool {
         true
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[requires(self.premise(from))]
     fn update(self, from: Excl<T>, _: ()) -> Excl<T> {
         Excl(*self.0)

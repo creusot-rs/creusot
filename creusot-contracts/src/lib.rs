@@ -245,15 +245,45 @@ pub mod macros {
     /// ```
     pub use base_macros::invariant;
 
-    /// Declares a trait item as being a law which is autoloaded as soon another
-    /// trait item is used in a function
-    pub use base_macros::law;
-
     /// Declare a function as being a logical function
     ///
     /// This declaration must be pure and total. It cannot be called from Rust programs,
     /// but in exchange it can use logical operations and syntax with the help of the
     /// [`pearlite!`] macro.
+    ///
+    /// # `open`
+    ///
+    /// Allows the body of a logical definition to be made visible to provers
+    ///
+    /// By default, bodies are *opaque*: they are only visible to definitions in the same
+    /// module (like `pub(self)` for visibility).
+    /// An optional visibility modifier can be provided to restrict the context in which
+    /// the body is opened.
+    ///
+    /// A body can only be visible in contexts where all the symbols used in the body are also visible.
+    /// This means you cannot open a body which refers to a `pub(crate)` symbol.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// mod inner {
+    ///     use creusot_contracts::*;
+    ///     #[logic]
+    ///     #[ensures(result == x + 1)]
+    ///     pub(super) fn foo(x: Int) -> Int {
+    ///         // ...
+    /// # x + 1
+    ///     }
+    ///
+    ///     #[logic(open)]
+    ///     pub(super) fn bar(x: Int) -> Int {
+    ///         x + 1
+    ///     }
+    /// }
+    ///
+    /// // The body of `foo` is not visible here, only the `ensures`.
+    /// // But the whole body of `bar` is visible
+    /// ```
     ///
     /// # `prophetic`
     ///
@@ -268,6 +298,21 @@ pub mod macros {
     /// ```
     /// Such a logic function cannot be used in [`snapshot!`] anymore, and cannot be
     /// called from a regular [`logic`] function.
+    ///
+    /// # law
+    ///
+    /// Declares a trait item as being a law which is autoloaded as soon another
+    /// trait item is used in a function.
+    ///
+    /// ```ignore
+    /// trait CommutativeOp {
+    ///     fn op(self, other: Self) -> Int;
+    ///
+    ///     #[logic(law)]
+    ///     #[ensures(forall<x: Self, y: Self> x.op(y) == y.op(x))]
+    ///     fn commutative();
+    /// }
+    /// ```
     pub use base_macros::logic;
 
     /// Inserts a *logical* assertion into the code
@@ -286,7 +331,25 @@ pub mod macros {
     /// ```
     pub use base_macros::proof_assert;
 
-    /// Instructs Creusot to ignore the body of a declaration, assuming any contract the declaration has is
+    /// Makes a logical definition or a type declaration opaque, meaning that users of this declaration will not see
+    /// its definition.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// #[opaque]
+    /// struct Opaque(()); // This will is an abstract type
+    ///
+    /// #[logic]
+    /// #[opaque] // Synonym: #[logic(opaque)]
+    /// fn foo() -> i32 { // This is an uninterpreted logic function
+    ///     dead
+    /// }
+    /// ```
+    pub use base_macros::opaque;
+
+    /// Instructs Creusot to not emit any VC for a declaration, assuming any contract the declaration has is
     /// valid.
     ///
     /// # Example
@@ -301,7 +364,8 @@ pub mod macros {
     /// }
     /// ```
     ///
-    /// In practice you should strive to use this as little as possible.
+    /// These declarations are part of the trusted computing base (TCB). You should strive to use
+    /// this as little as possible.
     pub use base_macros::trusted;
 
     /// Declares a variant for a function or a loop.
@@ -379,33 +443,6 @@ pub mod macros {
     /// `mut` replaced by `*` in the `requires` and `^` in the ensures.
     pub use base_macros::maintains;
 
-    /// Allows the body of a logical definition to be made visible to provers
-    ///
-    /// By default, bodies are *opaque*: they are only visible to definitions in the same
-    /// module (like `pub(self)` for visibility).
-    /// An optional visibility modifier can be provided to restrict the context in which
-    /// the body is opened.
-    ///
-    /// A body can only be visible in contexts where all the symbols used in the body are also visible.
-    /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// mod inner {
-    ///     use creusot_contracts::*;
-    ///     #[logic]
-    ///     #[ensures(result == x + 1)]
-    ///     pub(super) fn foo(x: Int) -> Int {
-    ///         // ...
-    /// # x + 1
-    ///     }
-    /// }
-    ///
-    /// // The body of `foo` is not visible here, only the `ensures`.
-    /// ```
-    pub use base_macros::open;
-
     /// This attribute can be used on a function or closure to instruct Creusot not to ensure as a postcondition that the
     /// return value of the function satisfies its [type invariant](crate::Invariant).
     pub use base_macros::open_inv_result;
@@ -413,6 +450,9 @@ pub mod macros {
     /// This attribute indicates that the function need to be proved in "bitwise" mode, which means that Creusot will use
     /// the bitvector theory of SMT solvers.
     pub use base_macros::bitwise_proof;
+
+    /// This attribute indicates that a logic function or a type should be translated to a specific type in Why3.
+    pub use base_macros::builtin;
 
     /// Check that the annotated function erases to another function.
     ///
@@ -442,6 +482,8 @@ pub mod macros {
     /// }
     /// ```
     pub use base_macros::erasure;
+
+    pub(crate) use base_macros::intrinsic;
 }
 
 #[doc(hidden)]

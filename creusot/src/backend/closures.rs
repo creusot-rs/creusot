@@ -1,5 +1,5 @@
 use crate::{
-    contracts_items::get_fn_mut_impl_hist_inv,
+    contracts_items::Intrinsic,
     ctx::*,
     naming::name,
     translation::{
@@ -73,7 +73,7 @@ pub(crate) fn closure_hist_inv<'tcx>(
         }
     }
 
-    normalize(ctx.tcx, ctx.typing_env(def_id.into()), hist_inv).span(span)
+    normalize(ctx, ctx.typing_env(def_id.into()), hist_inv).span(span)
 }
 
 pub(crate) fn closure_pre<'tcx>(
@@ -89,7 +89,10 @@ pub(crate) fn closure_pre<'tcx>(
     let PreSignature { contract, inputs, output: _ } = contract_of(ctx, def_id.into());
 
     let mut pre;
-    if contract.is_empty() {
+    if contract.has_user_contract {
+        pre = contract.requires_conj(ctx.tcx);
+        ClosSubst::pre(ctx, def_id, self_).visit_mut_term(&mut pre);
+    } else {
         let arg_vars = inputs[1..].iter().map(|&(nm, _, ty)| Term::var(nm, ty));
         let self_arg;
         let mut k = None;
@@ -120,17 +123,17 @@ pub(crate) fn closure_pre<'tcx>(
         if let Some(k) = k {
             pre = k(pre)
         }
-    } else {
-        pre = contract.requires_conj(ctx.tcx);
-        ClosSubst::pre(ctx, def_id, self_).visit_mut_term(&mut pre);
-    };
+    }
 
-    let pattern = Pattern::tuple(
-        inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
-        args.ty,
-    );
-    pre = Term::let_(pattern, args, pre).span(ctx.def_span(def_id));
-    normalize(ctx.tcx, ctx.typing_env(def_id.into()), pre)
+    if inputs.len() > 1 {
+        let pattern = Pattern::tuple(
+            inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
+            args.ty,
+        );
+        pre = Term::let_(pattern, args, pre).span(ctx.def_span(def_id));
+    }
+
+    normalize(ctx, ctx.typing_env(def_id.into()), pre)
 }
 
 pub(crate) fn closure_post<'tcx>(
@@ -149,7 +152,64 @@ pub(crate) fn closure_post<'tcx>(
 
     let to_resolve;
     let mut post;
-    if contract.is_empty() {
+    if contract.has_user_contract {
+        post = contract.ensures_conj(ctx.tcx);
+        match target_kind {
+            ClosureKind::Fn => {
+                to_resolve = vec![];
+                ClosSubst::post_ref(ctx, def_id, self_.clone(), self_).visit_mut_term(&mut post);
+            }
+            ClosureKind::FnMut => {
+                to_resolve = vec![];
+                let result_state = result_state.unwrap();
+                ClosSubst::post_ref(ctx, def_id, self_.clone(), result_state.clone())
+                    .visit_mut_term(&mut post);
+                let hist_inv = Term::call_no_normalize(
+                    ctx.tcx,
+                    Intrinsic::HistInv.get(ctx),
+                    ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from)),
+                    [self_, result_state],
+                );
+                // Thanks to that, `postcondition_mut_hist_inv` and `fn_mut` are satisfied
+                // Note that we do not include it in the `target_kind == FnOnce` case, because hist_inv
+                // is actually already included and combined with resolution when `ClosSubst::post_owned`
+                // substitutes the post state of &(resp. mut)-captured variables by the final value
+                // (resp. value).
+                post = post.conj(hist_inv);
+            }
+            ClosureKind::FnOnce => {
+                let post_projs: Vec<Option<Term>>;
+                match closure_kind {
+                    ClosureKind::FnOnce => {
+                        // If this is an FnOnce closure, then variables captured by value
+                        // are consumed by the closure, and thus we cannot refer to them in
+                        // the post state.
+                        post_projs = vec![None; closure_captures(ctx, def_id).count()];
+                        to_resolve = vec![]
+                    }
+                    ClosureKind::Fn => {
+                        post_projs = closure_captures(ctx, def_id)
+                            .map(|((f, capture), ty)| {
+                                (capture.info.capture_kind == UpvarCapture::ByValue)
+                                    .then(|| self_.clone().proj(f, ty))
+                            })
+                            .collect();
+                        to_resolve = post_projs.iter().filter_map(Clone::clone).collect();
+                    }
+                    ClosureKind::FnMut => {
+                        post_projs = closure_captures(ctx, def_id)
+                            .map(|((_, capture), ty)| {
+                                (capture.info.capture_kind == UpvarCapture::ByValue)
+                                    .then(|| Term::var(Ident::fresh_local("x"), ty))
+                            })
+                            .collect();
+                        to_resolve = post_projs.iter().filter_map(Clone::clone).collect();
+                    }
+                };
+                ClosSubst::post_owned(ctx, def_id, self_, post_projs).visit_mut_term(&mut post);
+            }
+        }
+    } else {
         let arg_vars = inputs[1..].iter().map(|&(nm, _, ty)| Term::var(nm, ty));
         let result = Term::var(name::result(), output);
         match closure_kind {
@@ -194,16 +254,12 @@ pub(crate) fn closure_post<'tcx>(
                 };
 
                 // Thanks to that, `postcondition_mut_hist_inv` and `fn_mut` are satisfied
-                let hist_inv = {
-                    let subst = ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from));
-                    let id = get_fn_mut_impl_hist_inv(ctx.tcx);
-                    Term::call_no_normalize(
-                        ctx.tcx,
-                        id,
-                        subst,
-                        [self_.clone(), result_state.clone()],
-                    )
-                };
+                let hist_inv = Term::call_no_normalize(
+                    ctx.tcx,
+                    Intrinsic::HistInv.get(ctx),
+                    ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from)),
+                    [self_.clone(), result_state.clone()],
+                );
 
                 post = Term::true_(ctx.tcx)
                     .conj(bor_self.clone().cur().eq(ctx.tcx, self_))
@@ -221,62 +277,6 @@ pub(crate) fn closure_post<'tcx>(
                     ty: ctx.types.bool,
                     span: ctx.def_span(def_id),
                 }
-            }
-        }
-    } else {
-        post = contract.ensures_conj(ctx.tcx);
-        match target_kind {
-            ClosureKind::Fn => {
-                to_resolve = vec![];
-                ClosSubst::post_ref(ctx, def_id, self_.clone(), self_).visit_mut_term(&mut post);
-            }
-            ClosureKind::FnMut => {
-                to_resolve = vec![];
-                let result_state = result_state.unwrap();
-                ClosSubst::post_ref(ctx, def_id, self_.clone(), result_state.clone())
-                    .visit_mut_term(&mut post);
-                let hist_inv = {
-                    let subst = ctx.mk_args(&[args.ty, self_.ty].map(GenericArg::from));
-                    let id = get_fn_mut_impl_hist_inv(ctx.tcx);
-                    Term::call_no_normalize(ctx.tcx, id, subst, [self_, result_state])
-                };
-                // Thanks to that, `postcondition_mut_hist_inv` and `fn_mut` are satisfied
-                // Note that we do not include it in the `target_kind == FnOnce` case, because hist_inv
-                // is actually already included and combined with resolution when `ClosSubst::post_owned`
-                // substitutes the post state of &(resp. mut)-captured variables by the final value
-                // (resp. value).
-                post = post.conj(hist_inv);
-            }
-            ClosureKind::FnOnce => {
-                let post_projs: Vec<Option<Term>>;
-                match closure_kind {
-                    ClosureKind::FnOnce => {
-                        // If this is an FnOnce closure, then variables captured by value
-                        // are consumed by the closure, and thus we cannot refer to them in
-                        // the post state.
-                        post_projs = vec![None; closure_captures(ctx, def_id).count()];
-                        to_resolve = vec![]
-                    }
-                    ClosureKind::Fn => {
-                        post_projs = closure_captures(ctx, def_id)
-                            .map(|((f, capture), ty)| {
-                                (capture.info.capture_kind == UpvarCapture::ByValue)
-                                    .then(|| self_.clone().proj(f, ty))
-                            })
-                            .collect();
-                        to_resolve = post_projs.iter().filter_map(Clone::clone).collect();
-                    }
-                    ClosureKind::FnMut => {
-                        post_projs = closure_captures(ctx, def_id)
-                            .map(|((_, capture), ty)| {
-                                (capture.info.capture_kind == UpvarCapture::ByValue)
-                                    .then(|| Term::var(Ident::fresh_local("x"), ty))
-                            })
-                            .collect();
-                        to_resolve = post_projs.iter().filter_map(Clone::clone).collect();
-                    }
-                };
-                ClosSubst::post_owned(ctx, def_id, self_, post_projs).visit_mut_term(&mut post);
             }
         }
     }
@@ -298,12 +298,15 @@ pub(crate) fn closure_post<'tcx>(
         });
     }
 
-    let pattern = Pattern::tuple(
-        inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
-        args.ty,
-    );
-    post = Term::let_(pattern, args, post).span(ctx.def_span(def_id));
-    normalize(ctx.tcx, typing_env, post)
+    if inputs.len() > 1 {
+        let pattern = Pattern::tuple(
+            inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
+            args.ty,
+        );
+        post = Term::let_(pattern, args, post).span(ctx.def_span(def_id));
+    }
+
+    normalize(ctx, typing_env, post)
 }
 
 pub(crate) fn closure_resolve<'tcx>(

@@ -10,8 +10,7 @@ pub enum OwnResult<T, E> {
 }
 
 impl<T, E> Resolve for OwnResult<T, E> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         match self {
             OwnResult::Ok(t) => resolve(t),

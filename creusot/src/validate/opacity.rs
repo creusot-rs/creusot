@@ -7,8 +7,8 @@ use rustc_middle::{
 use rustc_span::Span;
 
 use crate::{
-    backend::{is_trusted_item, projections::iter_projections_ty},
-    contracts_items::is_logic,
+    backend::projections::iter_projections_ty,
+    contracts_items::{is_logic, is_opaque},
     ctx::{HasTyCtxt, Opacity, TranslationCtx},
     translation::pearlite::{
         Pattern, PatternKind, ScopedTerm, Term, TermKind, TermVisitor, super_visit_pattern,
@@ -25,7 +25,8 @@ struct OpacityVisitor<'a, 'tcx> {
 
 impl OpacityVisitor<'_, '_> {
     fn is_visible_enough(&self, id: DefId) -> bool {
-        self.ctx.visibility(id).is_at_least(self.opacity.0, self.ctx.tcx)
+        let Opacity::Transparent(op) = self.opacity else { return true };
+        self.ctx.visibility(id).is_at_least(op, self.ctx.tcx)
     }
 
     fn error(&self, id: DefId, span: Span) {
@@ -66,8 +67,8 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                     return;
                 }
                 for fld in &adt.variant(*variant).fields {
-                    if !fld.vis.is_at_least(self.opacity.0, self.ctx.tcx) {
-                        self.error(adt.did(), term.span);
+                    if !self.is_visible_enough(fld.did) {
+                        self.error(fld.did, term.span);
                         return;
                     }
                 }
@@ -75,9 +76,9 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
             TermKind::Projection { idx, lhs } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
                 let Some(adt) = ty.ty_adt_def() else { return };
-                let fld = &adt.non_enum_variant().fields[*idx];
-                if !fld.vis.is_at_least(self.opacity.0, self.ctx.tcx) {
-                    self.error(fld.did, term.span);
+                let fdid = adt.non_enum_variant().fields[*idx].did;
+                if !self.is_visible_enough(fdid) {
+                    self.error(fdid, term.span);
                     return;
                 }
             }
@@ -85,16 +86,17 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, inner.ty);
                 let ty = ty.builtin_deref(false).unwrap();
                 for (elem, place_ty) in
-                    iter_projections_ty(self.ctx.tcx, projections, &mut PlaceTy::from_ty(ty))
+                    iter_projections_ty(self.ctx, projections, &mut PlaceTy::from_ty(ty))
                 {
                     match elem {
                         ProjectionElem::Field(field_idx, _) => {
                             let Some(adt) = place_ty.ty.ty_adt_def() else { return };
-                            let fld = &adt
+                            let fdid = adt
                                 .variant(place_ty.variant_index.unwrap_or(VariantIdx::ZERO))
-                                .fields[*field_idx];
-                            if !fld.vis.is_at_least(self.opacity.0, self.ctx.tcx) {
-                                self.error(fld.did, term.span);
+                                .fields[*field_idx]
+                                .did;
+                            if !self.is_visible_enough(fdid) {
+                                self.error(fdid, term.span);
                                 return;
                             }
                         }
@@ -115,9 +117,9 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, pat.ty);
                 let fields_def = &ty.ty_adt_def().unwrap().variants()[*variant_idx].fields;
                 for (fld, _) in patterns {
-                    let fld = &fields_def[*fld];
-                    if !fld.vis.is_at_least(self.opacity.0, self.ctx.tcx) {
-                        self.error(fld.did, pat.span);
+                    let fdid = fields_def[*fld].did;
+                    if !self.is_visible_enough(fdid) {
+                        self.error(fdid, pat.span);
                         return;
                     }
                 }
@@ -128,17 +130,17 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
     }
 }
 
-/// Validates that an `#[open]` function is not made visible in a less opened one.
-pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) {
+/// Validates that a private function is not made visible in a public one which is open.
+pub(crate) fn validate_opacity<'tcx>(ctx: &TranslationCtx<'tcx>, item: DefId) {
     let typing_env = ctx.typing_env(item);
-    if is_logic(ctx.tcx, item) && !is_trusted_item(ctx.tcx, item) {
+    if is_logic(ctx.tcx, item) && !is_opaque(ctx.tcx, item) {
         let Some(ScopedTerm(_, term)) = ctx.term(item) else { return };
         OpacityVisitor { opacity: *ctx.opacity(item), ctx, item, typing_env }.visit_term(term);
     }
     let contract = &ctx.sig(item).contract;
     // We consider variants as private, because we don't support mutual recursion for now
     for term in contract.requires.iter().chain(contract.ensures.iter()).map(|cond| &cond.term) {
-        let opacity = Opacity(ctx.visibility(item));
+        let opacity = Opacity::Transparent(ctx.visibility(item));
         OpacityVisitor { opacity, ctx, item, typing_env }.visit_term(term);
     }
 }

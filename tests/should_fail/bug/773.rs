@@ -8,7 +8,7 @@ pub trait One: Sized {
 }
 
 pub trait Tr: Sized {
-    #[law]
+    #[logic(law)]
     #[ensures(forall<x: Self, y: Self> x == y)]
     fn a(self)
     where
@@ -24,7 +24,7 @@ mod m {
     use creusot_contracts::*;
 
     impl<T> Tr for T {
-        #[law]
+        #[logic(law)]
         #[ensures(forall<x: Self, y: Self> x == y)]
         fn a(self)
         where

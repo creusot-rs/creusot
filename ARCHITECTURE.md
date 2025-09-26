@@ -99,7 +99,7 @@ fn x(param1, param2, ...) -> T { .. }
 Is transformed into
 
 ```rust
-#[rustc_diagnostic_item="x_ensures_$UUID"]
+#[creusot::item="x_ensures_$UUID"]
 fn x_ensures_$UUID(param1, param2, ..., result: T) -> bool {
 	PROP
 }
@@ -111,7 +111,7 @@ fn x(param1, param2, ...) -> T { .. }
 We lift specification clauses to top level functions which have the same parameters as the original function.
 The `ensures` macro also gets access to an additional `result` parameter which has the type of the return type of the original function.
 
-We label the lifted specification with `rustc_diagnostic_item` to be able to easily find it later.
+We label the lifted specification with `creusot::item` to be able to easily find it later.
 It suffices to look at the attributes of the function we're compiling to then be able to easily recover its specifications.
 The `prop` which is originally written in Pearlite, is encoded as a HOAS term in Rust.
 The section on compiling specifications will cover how this works

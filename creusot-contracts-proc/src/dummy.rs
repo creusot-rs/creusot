@@ -67,11 +67,19 @@ pub fn logic(_: TS1, _: TS1) -> TS1 {
     TS1::new()
 }
 
-pub fn law(_: TS1, _: TS1) -> TS1 {
-    TS1::new()
+pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
+    tokens
 }
 
-pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
+pub fn opaque(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
+pub fn intrinsic(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
+pub fn builtin(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
 
@@ -84,10 +92,6 @@ pub fn maintains(_: TS1, tokens: TS1) -> TS1 {
 }
 
 pub fn erasure(_: TS1, tokens: TS1) -> TS1 {
-    tokens
-}
-
-pub fn open(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
 

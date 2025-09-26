@@ -8,8 +8,8 @@ pub trait CopiedExt<I> {
 }
 
 impl<I> CopiedExt<I> for Copied<I> {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
@@ -17,8 +17,7 @@ impl<I> CopiedExt<I> for Copied<I> {
 }
 
 impl<I> Resolve for Copied<I> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         resolve(self.iter())
     }
@@ -35,16 +34,14 @@ where
     I: Iterator<Item = &'a T>,
     T: Copy,
 {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             exists<inner: &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed()
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             exists<s: Seq<&'a T>>
@@ -54,11 +51,11 @@ where
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

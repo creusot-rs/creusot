@@ -1,7 +1,7 @@
 use super::BodyTranslator;
 use crate::{
     backend::projections::projections_term,
-    contracts_items::{is_box_new, is_ghost_deref, is_ghost_deref_mut, is_snap_from_fn},
+    contracts_items::Intrinsic,
     ctx::{HasTyCtxt as _, TranslationCtx},
     lints::{CONTRACTLESS_EXTERNAL_FUNCTION, Diagnostics},
     translation::{
@@ -20,6 +20,7 @@ use rustc_middle::{
     },
     ty::{GenericArgKind, Ty, TyKind, TypingMode},
 };
+use rustc_span::sym;
 use rustc_trait_selection::error_reporting::InferCtxtErrorExt;
 use std::collections::{HashMap, HashSet};
 
@@ -52,7 +53,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 else {
                     self.fatal_error(fn_span, "unsupported function call type").emit()
                 };
-                if is_snap_from_fn(self.ctx.tcx, fun_def_id) {
+                if Intrinsic::SnapFromFn.is(self.ctx, fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().kind() else {
                         unreachable!()
                     };
@@ -65,7 +66,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         .map(|arg| self.translate_operand(&arg.node, arg.span))
                         .collect();
 
-                    if is_box_new(self.tcx(), fun_def_id) {
+                    if self.tcx().is_diagnostic_item(sym::box_new, fun_def_id) {
                         let [arg] = *func_args.into_array().unwrap();
                         self.emit_assignment(destination, RValue::Operand(arg), span);
                     } else {
@@ -113,8 +114,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         }
 
                         if self.ctx.sig(fun_def_id).contract.is_requires_false()
-                            && !is_ghost_deref(self.tcx(), fun_def_id)
-                            && !is_ghost_deref_mut(self.tcx(), fun_def_id)
+                            && !matches!(
+                                self.ctx.intrinsic(fun_def_id),
+                                Intrinsic::GhostDerefMut | Intrinsic::GhostDeref,
+                            )
                             && !matches!(tr_res, TraitResolved::UnknownFound)
                         {
                             target = None
@@ -148,7 +151,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 };
                 let pl = self.translate_place(pl, span);
                 let mut cond = projections_term(
-                    self.tcx(),
+                    self.ctx,
                     self.typing_env(),
                     Term::var(pl.local, self.vars[&pl.local].ty),
                     &pl.projections,

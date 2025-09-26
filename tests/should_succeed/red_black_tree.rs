@@ -767,8 +767,7 @@ impl<K: DeepModel, V> Resolve for Map<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<k: K::DeepModelTy> resolve(self@.get(k)) }
     }

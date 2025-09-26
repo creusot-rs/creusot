@@ -12,15 +12,15 @@ pub trait RevExt<I> {
 }
 
 impl<I> RevExt<I> for Rev<I> {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures((*self).iter() == *result && (^self).iter() == ^result)]
     fn iter_mut(&mut self) -> &mut I {
         dead
@@ -28,25 +28,23 @@ impl<I> RevExt<I> for Rev<I> {
 }
 
 impl<I: DoubleEndedIterator> Iterator for Rev<I> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.iter_mut().completed() }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.iter().produces_back(visited, o.iter())
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

@@ -125,7 +125,7 @@ fn logic_refinement_term<'tcx>(
     // Get the contract of the trait version
     let mut trait_sig = EarlyBinder::bind(ctx.sig(trait_item_id).clone())
         .instantiate(ctx.tcx, refn_subst)
-        .normalize(ctx.tcx, typing_env);
+        .normalize(ctx, typing_env);
 
     let mut impl_sig = ctx.sig(impl_item_id).clone();
 

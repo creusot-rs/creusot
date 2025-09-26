@@ -321,5 +321,5 @@ pub enum MetaArg {
     Integer(i128),
     String(String),
     Keyword(String),
-    Ident(Ident),
+    Name(Name),
 }

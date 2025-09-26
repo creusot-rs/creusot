@@ -282,7 +282,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         // TODO: this is currently the span of statement before which the resolve is happening,
         // would it be better to use the span where the borrow came from?
-        if !is_tyinv_trivial(self.tcx(), self.typing_env(), place_ty.ty, span) {
+        if !is_tyinv_trivial(self.ctx, self.typing_env(), place_ty.ty, span) {
             dest.push(fmir::Statement {
                 kind: fmir::StatementKind::AssertTyInv { pl: pl.clone() },
                 span,
@@ -321,12 +321,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let p = self.translate_place(rhs, span);
 
         let rhs_ty = rhs.ty(self.body, self.tcx()).ty;
-        let triv_inv = if is_tyinv_trivial(
-            self.tcx(),
-            self.typing_env(),
-            rhs_ty,
-            self.tcx().def_span(self.body_id.def_id),
-        ) {
+        let span = self.tcx().def_span(self.body_id.def_id);
+        let triv_inv = if is_tyinv_trivial(self.ctx, self.typing_env(), rhs_ty, span) {
             TrivialInv::Trivial
         } else {
             TrivialInv::NonTrivial

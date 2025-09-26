@@ -6,8 +6,7 @@ pub use ::std::boxed::*;
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     type DeepModelTy = Box<T::DeepModelTy>;
-    #[logic]
-    #[open]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         Box::new((*self).deep_model())
     }
@@ -16,8 +15,7 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
 #[cfg(feature = "nightly")]
 impl<T: View + ?Sized, A: Allocator> View for Box<T, A> {
     type ViewTy = T::ViewTy;
-    #[logic]
-    #[open]
+    #[logic(open, inline)]
     fn view(self) -> Self::ViewTy {
         (*self).view()
     }
@@ -25,8 +23,7 @@ impl<T: View + ?Sized, A: Allocator> View for Box<T, A> {
 
 #[cfg(feature = "nightly")]
 impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
-    #[logic(prophetic)]
-    #[open]
+    #[logic(open, prophetic)]
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {

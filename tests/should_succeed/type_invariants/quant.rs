@@ -4,19 +4,16 @@ use creusot_contracts::{invariant::Invariant, *};
 pub struct WithInvariant;
 
 impl Invariant for WithInvariant {
-    #[open]
-    #[logic]
+    #[logic(open)]
     fn invariant(self) -> bool {
         true
     }
 }
 
-#[law]
-#[open]
+#[logic(open, law)]
 #[ensures(forall<x: WithInvariant> x.invariant())]
 pub fn forall() {}
 
-#[law]
-#[open]
+#[logic(open, law)]
 #[ensures(exists<_x: WithInvariant> true)]
 pub fn exists() {}

@@ -1,9 +1,9 @@
 module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   let%span sinvariant_moves = "invariant_moves.rs" 6 16 6 22
-  let%span svec = "../../creusot-contracts/src/std/vec.rs" 125 26 130 17
+  let%span svec = "../../creusot-contracts/src/std/vec.rs" 119 26 124 17
   let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span smodel = "../../creusot-contracts/src/model.rs" 63 8 63 22
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 52 20 52 34
+  let%span smodel = "../../creusot-contracts/src/model.rs" 59 8 59 22
+  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
@@ -33,7 +33,9 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   axiom view_spec: forall self: t_Vec. [%#svec'0] Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 (self: MutBorrow.t t_Vec) : Seq.seq UInt32.t = [%#smodel] view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq UInt32.t = [%#smodel] view self.current
+  
+  meta "rewrite_def" function view'0
   
   let rec pop (self_: MutBorrow.t t_Vec) (return' (x: t_Option)) = any
     [ return''0 (result: t_Option) -> {[%#svec] match result with
@@ -43,11 +45,13 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
         end}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 (_0: MutBorrow.t t_Vec) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   

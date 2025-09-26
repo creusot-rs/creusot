@@ -7,8 +7,7 @@ pub trait T {
 }
 
 impl T for () {
-    #[logic(prophetic)]
-    #[open(self)]
+    #[logic(open(self), prophetic)]
     fn f() {
         ()
     }

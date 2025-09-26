@@ -15,7 +15,7 @@ pub trait IndexLogic<I: ?Sized> {
 
     /// Performs the indexing (`container[index]`) operation.
     #[logic]
-    #[rustc_diagnostic_item = "creusot_index_logic_method"]
+    #[intrinsic("index_logic")]
     fn index_logic(self, idx: I) -> Self::Item;
 }
 
@@ -31,9 +31,7 @@ impl<T: ?Sized> Fin for &mut T {
     type Target = T;
 
     #[logic(prophetic)]
-    #[trusted]
-    #[rustc_diagnostic_item = "creusot_fin"]
-    #[creusot::builtins = "fin"]
+    #[builtin("fin")]
     fn fin<'a>(self) -> &'a T {
         dead
     }

@@ -14,7 +14,7 @@ use creusot_contracts::{
 mod bumpalo {
     use creusot_contracts::*;
 
-    #[trusted]
+    #[opaque]
     pub struct Bump();
 
     impl Bump {
@@ -40,40 +40,39 @@ mod hashmap {
         fn hash_log(_: Self::DeepModelTy) -> Int;
     }
 
-    #[trusted]
+    #[opaque]
     pub struct MyHashMap<K, V>(std::marker::PhantomData<(K, V)>);
 
     impl<K: Hash, V> View for MyHashMap<K, V> {
         type ViewTy = Mapping<K::DeepModelTy, Option<V>>;
 
-        #[logic]
-        #[trusted]
+        #[logic(opaque)]
         fn view(self) -> Self::ViewTy {
             dead
         }
     }
 
     impl<K: Hash + Eq + DeepModel, V> MyHashMap<K, V> {
+        #[trusted]
         #[check(terminates)]
         #[ensures(forall<i: K::DeepModelTy> (^self)@.get(i) == (if i == key.deep_model() { Some(val) } else { self@.get(i) } ))]
-        #[trusted]
         pub fn add(&mut self, key: K, val: V) {
             panic!()
         }
 
+        #[trusted]
         #[check(terminates)]
         #[ensures(match result {
             Some(v) => self@.get(key.deep_model()) == Some(*v),
             None => self@.get(key.deep_model()) == None,
         })]
-        #[trusted]
         pub fn get<'a, 'b>(&'a self, key: &'b K) -> Option<&'a V> {
             panic!()
         }
 
+        #[trusted]
         #[check(terminates)]
         #[ensures(result@ == Mapping::cst(None))]
-        #[trusted]
         pub fn new() -> Self {
             panic!()
         }
@@ -150,7 +149,7 @@ impl<'arena> hashmap::Hash for Bdd<'arena> {
         self.1
     }
 
-    #[logic]
+    #[logic(inline)]
     fn hash_log(x: Self::DeepModelTy) -> Int {
         pearlite! { x@ }
     }
@@ -175,7 +174,7 @@ impl<'arena> DeepModel for Node<'arena> {
 impl<'arena> View for Node<'arena> {
     type ViewTy = NodeLog;
 
-    #[logic]
+    #[logic(inline)]
     fn view(self) -> Self::ViewTy {
         pearlite! { self.deep_model() }
     }
@@ -184,7 +183,7 @@ impl<'arena> View for Node<'arena> {
 impl<'arena> DeepModel for Bdd<'arena> {
     type DeepModelTy = u64;
 
-    #[logic]
+    #[logic(inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { self.1 }
     }
@@ -193,7 +192,7 @@ impl<'arena> DeepModel for Bdd<'arena> {
 impl<'arena> View for Bdd<'arena> {
     type ViewTy = u64;
 
-    #[logic]
+    #[logic(inline)]
     fn view(self) -> Self::ViewTy {
         pearlite! { self.deep_model() }
     }
@@ -260,7 +259,7 @@ pub struct Context<'arena> {
 }
 
 impl<'arena> Invariant for Context<'arena> {
-    #[logic]
+    #[logic(inline)]
     fn invariant(self) -> bool {
         pearlite! {
             (forall<n: NodeLog>

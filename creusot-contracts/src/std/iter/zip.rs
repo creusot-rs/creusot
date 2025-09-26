@@ -9,15 +9,15 @@ pub trait ZipExt<A: Iterator, B: Iterator> {
 }
 
 impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn itera(self) -> A {
         dead
     }
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iterb(self) -> B {
         dead
@@ -25,8 +25,7 @@ impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
 }
 
 impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             exists<a: &mut A, b: &mut B>
@@ -38,8 +37,7 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             // Using an `unzip` definition doesn't work well because of issues related to datatypes and `match`
@@ -50,11 +48,11 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

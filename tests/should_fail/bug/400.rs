@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 pub trait Tr {
-    #[law]
+    #[logic(law)]
     fn la();
 
     #[logic]
@@ -13,6 +13,6 @@ impl Tr for () {
     #[logic]
     fn la() {}
 
-    #[law]
+    #[logic(law)]
     fn lo() {}
 }

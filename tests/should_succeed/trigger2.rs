@@ -10,9 +10,8 @@ fn resolve_seq<T>(seq: Vec<&mut T>) -> bool {
     }
 }
 
-#[logic(prophetic)]
+#[logic(open(self), prophetic)]
 #[ensures(resolve(seq) ==> result)]
-#[open(self)]
 pub fn resolve_seq2<T>(seq: Vec<&mut T>) -> bool {
     resolve_seq(seq)
 }

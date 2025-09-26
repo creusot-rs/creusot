@@ -13,8 +13,7 @@ pub struct Fuse<I: Iterator> {
 impl<I: Iterator> Iterator for Fuse<I> {
     type Item = I::Item;
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (self.iter == None || exists<it:&mut I> it.completed() && self.iter == Some(*it))
@@ -22,8 +21,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, prod: Seq<Self::Item>, other: Self) -> bool {
         match self.iter {
             None => prod == Seq::empty() && other.iter == self.iter,
@@ -51,13 +49,11 @@ impl<I: Iterator> Iterator for Fuse<I> {
         }
     }
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -67,7 +63,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
 // Not a subtrait of `FusedIterator` here for type inference reasons.
 // extern_spec! version should be though.
 pub trait FusedIterator: Iterator {
-    #[law]
+    #[logic(law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::empty() && ^self == next)]
@@ -75,8 +71,7 @@ pub trait FusedIterator: Iterator {
 }
 
 impl<I: Iterator> FusedIterator for Fuse<I> {
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::empty() && ^self == next)]

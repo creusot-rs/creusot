@@ -16,14 +16,12 @@ pub fn derive_resolve(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 
     let expanded = quote! {
         impl #impl_generics ::creusot_contracts::Resolve for #name #ty_generics #where_clause {
-            #[::creusot_contracts::logic(prophetic)]
-            #[::creusot_contracts::open]
+            #[::creusot_contracts::logic(open, prophetic)]
             fn resolve(self) -> bool {
                 #eq
             }
 
-            #[::creusot_contracts::open(self)]
-            #[::creusot_contracts::logic(prophetic)]
+            #[::creusot_contracts::logic(open(self), prophetic)]
             #[::creusot_contracts::requires(::creusot_contracts::resolve::structural_resolve(self))]
             #[::creusot_contracts::ensures(self.resolve())]
             fn resolve_coherence(self) {}

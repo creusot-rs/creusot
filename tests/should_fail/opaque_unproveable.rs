@@ -5,8 +5,7 @@ use creusot_contracts::*;
 mod x {
     use creusot_contracts::*;
 
-    #[open(self)]
-    #[logic]
+    #[logic(open(self))]
     pub fn opaque() -> bool {
         true
     }

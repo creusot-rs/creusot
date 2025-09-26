@@ -6,8 +6,7 @@ use ::std::sync::Arc;
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Arc<T, A> {
     type DeepModelTy = T::DeepModelTy;
-    #[logic]
-    #[open]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { *self.view().deep_model() }
     }
@@ -16,8 +15,7 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Arc<T, A> {
 #[cfg(feature = "nightly")]
 impl<T: ?Sized, A: Allocator> View for Arc<T, A> {
     type ViewTy = Box<T>;
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }

@@ -9,6 +9,8 @@ use rustc_span::{Span, Symbol};
 
 pub(crate) use contractless_external_function::CONTRACTLESS_EXTERNAL_FUNCTION;
 
+use crate::validate;
+
 // Diagnostics for creusot's lints.
 //
 // This only describes the structure of the diagnostics. The actual messages
@@ -40,7 +42,7 @@ pub fn register_lints(_sess: &Session, store: &mut LintStore) {
         contractless_external_function::CONTRACTLESS_EXTERNAL_FUNCTION,
         trusted::TRUSTED_CODE,
     ]);
-    store.register_late_pass(move |_| Box::new(crate::validate::GhostValidate {}));
+    store.register_late_pass(move |_| Box::new(validate::GhostValidate {}));
     store.register_late_pass(move |_| Box::new(experimental_types::Experimental {}));
     store.register_late_pass(move |_| Box::new(trusted::TrustedCode {}));
 }

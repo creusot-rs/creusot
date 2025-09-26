@@ -20,13 +20,13 @@ use crate::{
         signature::lower_program_sig,
         term::{lower_pure, unsupported_cast},
         ty::{
-            constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, ty_to_prelude,
+            constructor, floatty_to_prelude, int, ity_to_prelude, translate_ty, ty_to_prelude,
             uty_to_prelude,
         },
         wto::{Component, weak_topological_order},
     },
-    contracts_items::{get_inv_function, get_namespace_ty, get_wf_relation},
-    ctx::{BodyId, Dependencies, HasTyCtxt as _, ItemType},
+    contracts_items::Intrinsic,
+    ctx::{BodyId, Dependencies, HasTyCtxt as _},
     naming::name,
     translated_item::FileModule,
     translation::{
@@ -61,7 +61,10 @@ use why3::{
     ty::Type,
 };
 
-pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<FileModule> {
+pub(crate) fn translate_function<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    def_id: DefId,
+) -> Option<FileModule> {
     let names = Dependencies::new(ctx, def_id);
 
     if !def_id.is_local() || !ctx.has_body(def_id) || is_trusted_item(ctx.tcx, def_id) {
@@ -71,8 +74,7 @@ pub(crate) fn translate_function(ctx: &Why3Generator, def_id: DefId) -> Option<F
     let name = names.source_ident();
     let mut defn = to_why(ctx, &names, name, def_id.expect_local());
 
-    let namespace_ty =
-        names.def_ty_no_dependency(get_namespace_ty(ctx.ctx.tcx), GenericArgsRef::default());
+    let namespace_ty = names.namespace_ty();
 
     let (mut decls, setters) = names.provide_deps(ctx);
     defn.body = setters.call_setters(defn.body);
@@ -144,15 +146,10 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     body_id: LocalDefId,
 ) -> Defn {
     let def_id = body_id.to_def_id();
-    let inferred_closure_spec =
-        ctx.is_closure_like(def_id) && !ctx.sig(def_id).contract.has_user_contract;
 
-    // We remove the barrier around the definition in the following cases:
-    let open_body =
-        // a closure with no contract
-        inferred_closure_spec
-        // a constant
-        || matches!(ctx.item_type(def_id), ItemType::Constant);
+    // We remove the barrier around the definition of closures without contracts
+    // (automatic inferrence of specifications)
+    let open_body = ctx.is_closure_like(def_id) && !ctx.sig(def_id).contract.has_user_contract;
 
     // The function receives `outer_return` as an argument handler and
     // defines the `inner_return` that wraps `outer_return` with the postcondition:
@@ -169,7 +166,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
     let mut body = why_body(ctx, names, body_id, None, &args, inner_return, &mut recursive_calls);
     let (mut sig, variant) = {
         let typing_env = names.typing_env();
-        let mut pre_sig = sig.clone().normalize(ctx.tcx, typing_env);
+        let mut pre_sig = sig.clone().normalize(ctx, typing_env);
         let variant = pre_sig.contract.variant.clone();
         pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
         (lower_program_sig(ctx, names, name, pre_sig, def_id, outer_return), variant)
@@ -192,7 +189,7 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         // ```
         let variant = {
             let subst = ctx.tcx.mk_args(&[variant_expr.ty.into()]);
-            let wf_relation = get_wf_relation(ctx.tcx);
+            let wf_relation = Intrinsic::WellFoundedRelation.get(ctx);
             let typing_env = ctx.typing_env(body_id.def_id);
             let (wf_relation, subst) =
                 TraitResolved::resolve_item(ctx.tcx, typing_env, wf_relation, subst)
@@ -390,23 +387,23 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
 
     let block = body.blocks.shift_remove(&head).unwrap();
     let variant = block.variant.clone().map(|variant| {
-        let wf_relation = get_wf_relation(lower.ctx.tcx);
-        let typing_env = lower.ctx.typing_env(lower.def_id);
-        assert_eq!(GenericArgs::identity_for_item(lower.ctx.tcx, wf_relation).len(), 1); // sanity check
-        let subst = lower.ctx.tcx.mk_args(&[variant.term.ty.into()]);
+        let wf_relation = Intrinsic::WellFoundedRelation.get(ctx);
+        let typing_env = ctx.typing_env(lower.def_id);
+        assert_eq!(GenericArgs::identity_for_item(ctx.tcx, wf_relation).len(), 1); // sanity check
+        let subst = ctx.tcx.mk_args(&[variant.term.ty.into()]);
 
         let (wf_relation, subst) =
-            TraitResolved::resolve_item(lower.ctx.tcx, typing_env, wf_relation, subst)
+            TraitResolved::resolve_item(ctx.tcx, typing_env, wf_relation, subst)
                 .to_opt(wf_relation, subst)
                 .expect("The `WellFounded` trait should be implemented in this context");
         let variant_decreases = pearlite::Term::call_no_normalize(
-            lower.ctx.tcx,
+            ctx.tcx,
             wf_relation,
             subst,
             [pearlite::Term::var(variant.old_name, variant.term.ty), variant.term.clone()],
         );
 
-        lower_pure(lower.ctx, lower.names, &variant_decreases)
+        lower_pure(ctx, lower.names, &variant_decreases)
             .with_attr(Attribute::Attr("expl:loop variant".to_string()))
     });
     let mut block = block.into_why(&lower, recursive_calls, head);
@@ -857,7 +854,7 @@ impl<'tcx> RValue<'tcx> {
                     Arg::Ty(lower.ty(e.ty(lower.ctx.tcx, lower.locals))),
                     Arg::Term(len.into_why(lower, istmts)),
                     Arg::Term(Exp::Lam(
-                        [Binder::wild(int_ty(lower.ctx, lower.names))].into(),
+                        [Binder::wild(int(lower.ctx, lower.names))].into(),
                         e.into_why(lower, istmts).boxed(),
                     )),
                 ];
@@ -1264,7 +1261,7 @@ impl<'tcx> Statement<'tcx> {
 
                 let inv_assume;
                 if triv_inv == TrivialInv::NonTrivial {
-                    let inv_did = get_inv_function(lower.ctx.tcx);
+                    let inv_did = Intrinsic::Inv.get(lower.ctx);
                     let subst = lower.ctx.tcx.mk_args(&[ty::GenericArg::from(rhs_ty)]);
                     let inv = Exp::var(lower.names.item_ident(inv_did, subst));
                     istmts.push(IntermediateStmt::Assert(inv.clone().app([rhs_rplace.clone()])));
@@ -1321,7 +1318,7 @@ impl<'tcx> Statement<'tcx> {
             }
             StatementKind::Resolve { did, subst, pl } => {
                 let t = projections_term(
-                    lower.ctx.tcx,
+                    lower.ctx,
                     lower.names.typing_env(),
                     Term::var(pl.local, lower.locals[&pl.local].ty),
                     &pl.projections,
@@ -1342,12 +1339,12 @@ impl<'tcx> Statement<'tcx> {
             }
             StatementKind::AssertTyInv { pl } => {
                 let t = projections_term(
-                    lower.ctx.tcx,
+                    lower.ctx,
                     lower.names.typing_env(),
                     Term::var(pl.local, lower.locals[&pl.local].ty),
                     &*pl.projections,
                     |e| {
-                        let inv_did = get_inv_function(lower.ctx.tcx);
+                        let inv_did = Intrinsic::Inv.get(lower.ctx);
                         let subst = lower.ctx.tcx.mk_args(&[ty::GenericArg::from(e.ty)]);
                         Term::call(lower.ctx.tcx, lower.names.typing_env(), inv_did, subst, [e])
                     },

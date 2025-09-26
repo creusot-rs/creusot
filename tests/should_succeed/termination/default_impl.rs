@@ -11,17 +11,14 @@ pub trait Foo {
     fn g();
 }
 default impl<T> Foo for T {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn f() {}
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn g() {}
 }
 
 impl Foo for () {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn g() {
         Self::f();
     }

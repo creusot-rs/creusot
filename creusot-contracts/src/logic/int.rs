@@ -22,10 +22,9 @@ use crate::{
 /// You can use the usual operators on integers: `+`, `-`, `*`, `/` and `%`.
 ///
 /// Note that those operators are _not_ available in ghost code.
-#[trusted]
-#[cfg_attr(creusot, rustc_diagnostic_item = "creusot_int", creusot::builtins = "int")]
-#[allow(dead_code)]
-pub struct Int();
+#[intrinsic("int")]
+#[builtin("int")]
+pub struct Int;
 
 impl Clone for Int {
     #[check(ghost)]
@@ -70,9 +69,8 @@ impl Int {
     /// # use creusot_contracts::*;
     /// proof_assert!(3.pow(4) == 729);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "int.Power.power"]
+    #[builtin("int.Power.power")]
     #[allow(unused_variables)]
     pub fn pow(self, p: Int) -> Int {
         dead
@@ -86,9 +84,8 @@ impl Int {
     /// # use creusot_contracts::*;
     /// proof_assert!(pow2(4) == 16);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "bv.Pow2int.pow2"]
+    #[builtin("bv.Pow2int.pow2")]
     #[allow(unused_variables)]
     pub fn pow2(self) -> Int {
         dead
@@ -102,9 +99,8 @@ impl Int {
     /// # use creusot_contracts::*;
     /// proof_assert!(10.max(2) == 10);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "int.MinMax.max"]
+    #[builtin("int.MinMax.max")]
     #[allow(unused_variables)]
     pub fn max(self, x: Int) -> Int {
         dead
@@ -119,8 +115,7 @@ impl Int {
     /// proof_assert!(10.max(2) == 2);
     /// ```
     #[logic]
-    #[creusot::builtins = "int.MinMax.min"]
-    #[trusted]
+    #[builtin("int.MinMax.min")]
     #[allow(unused_variables)]
     pub fn min(self, x: Int) -> Int {
         dead
@@ -134,9 +129,8 @@ impl Int {
     /// # use creusot_contracts::*;
     /// proof_assert!(10.div_euclid(3) == 3);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "int.EuclideanDivision.div"]
+    #[builtin("int.EuclideanDivision.div")]
     #[allow(unused_variables)]
     pub fn div_euclid(self, d: Int) -> Int {
         dead
@@ -150,9 +144,8 @@ impl Int {
     /// # use creusot_contracts::*;
     ///  proof_assert!(10.rem_euclid(3) == 1);
     /// ```
-    #[trusted]
     #[logic]
-    #[creusot::builtins = "int.EuclideanDivision.mod"]
+    #[builtin("int.EuclideanDivision.mod")]
     #[allow(unused_variables)]
     pub fn rem_euclid(self, d: Int) -> Int {
         dead
@@ -168,8 +161,7 @@ impl Int {
     /// proof_assert!(3.abs_diff(10) == 7);
     /// proof_assert!((-5).abs_diff(5) == 10);
     /// ```
-    #[logic]
-    #[open]
+    #[logic(open)]
     pub fn abs_diff(self, other: Int) -> Int {
         if self < other { other - self } else { self - other }
     }
@@ -178,8 +170,7 @@ impl Int {
 impl AddLogic for Int {
     type Output = Self;
     #[logic]
-    #[trusted]
-    #[creusot::builtins = "mach.int.Int.(+)"]
+    #[builtin("mach.int.Int.(+)")]
     #[allow(unused_variables)]
     fn add(self, other: Self) -> Self {
         dead
@@ -189,8 +180,7 @@ impl AddLogic for Int {
 impl SubLogic for Int {
     type Output = Self;
     #[logic]
-    #[trusted]
-    #[creusot::builtins = "mach.int.Int.(-)"]
+    #[builtin("mach.int.Int.(-)")]
     #[allow(unused_variables)]
     fn sub(self, other: Self) -> Self {
         dead
@@ -200,8 +190,7 @@ impl SubLogic for Int {
 impl MulLogic for Int {
     type Output = Self;
     #[logic]
-    #[trusted]
-    #[creusot::builtins = "mach.int.Int.(*)"]
+    #[builtin("mach.int.Int.(*)")]
     #[allow(unused_variables)]
     fn mul(self, other: Self) -> Self {
         dead
@@ -211,8 +200,7 @@ impl MulLogic for Int {
 impl DivLogic for Int {
     type Output = Self;
     #[logic]
-    #[trusted]
-    #[creusot::builtins = "mach.int.Int.div"]
+    #[builtin("mach.int.Int.div")]
     #[allow(unused_variables)]
     fn div(self, other: Self) -> Self {
         dead
@@ -222,8 +210,7 @@ impl DivLogic for Int {
 impl RemLogic for Int {
     type Output = Self;
     #[logic]
-    #[trusted]
-    #[creusot::builtins = "mach.int.Int.mod"]
+    #[builtin("mach.int.Int.mod")]
     #[allow(unused_variables)]
     fn rem(self, other: Self) -> Self {
         dead
@@ -233,8 +220,7 @@ impl RemLogic for Int {
 impl NegLogic for Int {
     type Output = Self;
     #[logic]
-    #[trusted]
-    #[creusot::builtins = "mach.int.Int.(-_)"]
+    #[builtin("mach.int.Int.(-_)")]
     fn neg(self) -> Self {
         dead
     }

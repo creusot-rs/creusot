@@ -6,10 +6,7 @@
 // The `lower` module then transforms a `Term` into a WhyML expression.
 
 use crate::{
-    contracts_items::{
-        is_assertion, is_deref, is_deref_mut, is_ghost_ty, is_index_logic, is_logic_closure,
-        is_snap_ty, is_spec,
-    },
+    contracts_items::{Intrinsic, is_assertion, is_logic_closure, is_spec},
     error::{CreusotResult, Error},
     translation::TranslationCtx,
 };
@@ -33,7 +30,7 @@ use rustc_middle::{
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-use rustc_span::{DUMMY_SP, Span};
+use rustc_span::{DUMMY_SP, Span, sym};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 use std::{
     assert_matches::assert_matches,
@@ -561,7 +558,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     ) -> CreusotResult<ExprId> {
         match self.unscope(expr).kind {
             ExprKind::Call { ty, ref args, .. } => {
-                if let Some(Stub::Trigger) = pearlite_stub(self.ctx.tcx, ty) {
+                if let Some(Stub::Trigger) = pearlite_stub(self.ctx, ty) {
                     let trigger = self.expr_term(args[0])?;
                     if let TermKind::Tuple { fields } = trigger.kind {
                         triggers.push(Trigger(fields));
@@ -721,7 +718,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             }
             ExprKind::Call { ty: f_ty, ref args, fun, .. } => {
                 use Stub::*;
-                match pearlite_stub(self.ctx.tcx, f_ty) {
+                match pearlite_stub(self.ctx, f_ty) {
                     Some(s @ (Forall | Exists)) => {
                         let kind =
                             if let Forall = s { QuantKind::Forall } else { QuantKind::Exists };
@@ -789,9 +786,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                             unreachable!("Call on non-function type");
                         };
                         // Allow dereferencing of `Ghost` in pearlite
-                        if is_deref(self.ctx.tcx, id)
+                        if self.ctx.is_diagnostic_item(sym::deref_method, id)
                             && let Some(adt) = subst.type_at(0).ty_adt_def()
-                            && is_ghost_ty(self.ctx.tcx, adt.did())
+                            && Intrinsic::Ghost.is(self.ctx, adt.did())
                         {
                             Ok(self.expr_term(args[0])?.coerce(ty).span(span))
                         } else {
@@ -871,14 +868,13 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::Deref { arg }
                 if let ExprKind::Call { ty, ref args, .. } = self.unscope(arg).kind
                     && let &TyKind::FnDef(f_did, subst) = ty.kind()
-                    && is_deref_mut(self.ctx.tcx, f_did)
+                    && self.ctx.is_diagnostic_item(sym::deref_mut_method, f_did)
                     && let ExprKind::Borrow { borrow_kind, arg } = self.unscope(args[0]).kind =>
             {
                 // We have just detected `*deref_mut(&mut x)`, which can happen only for Ghost and Snapshot
                 assert_matches!(borrow_kind, BorrowKind::Mut { .. });
                 assert_matches!(subst.type_at(0).kind(),
-                    TyKind::Adt(adt, _) if is_snap_ty(self.ctx.tcx, adt.did()) ||
-                                           is_ghost_ty(self.ctx.tcx,adt.did()));
+                    TyKind::Adt(adt, _) if matches!(self.ctx.intrinsic(adt.did()), Intrinsic::Snapshot | Intrinsic::Ghost));
                 Ok(self.expr_term(arg)?.coerce(ty).span(span))
             }
             ExprKind::Deref { arg } => Ok(self.expr_term(arg)?.deref().span(span)),
@@ -1153,15 +1149,14 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 TyKind::Ref(_, _, Mutability::Not)
                     if let ExprKind::Call { ty, ref args, .. } = self.unscope(arg).kind
                         && let &TyKind::FnDef(f_did, subst) = ty.kind()
-                        && is_deref(self.ctx.tcx, f_did)
+                        && self.ctx.is_diagnostic_item(sym::deref_method, f_did)
                         && let ExprKind::Borrow { borrow_kind, arg } =
                             self.unscope(args[0]).kind =>
                 {
                     // We have just detected * deref &. Treat it as nop.
                     assert_matches!(borrow_kind, BorrowKind::Shared);
                     assert_matches!(subst.type_at(0).kind(),
-                    TyKind::Adt(adt, _) if is_snap_ty(self.ctx.tcx, adt.did()) ||
-                                           is_ghost_ty(self.ctx.tcx,adt.did()));
+                        TyKind::Adt(adt, _) if matches!(self.ctx.intrinsic(adt.did()), Intrinsic::Snapshot | Intrinsic::Ghost));
                     return self.logical_reborrow_inner(arg);
                 }
                 TyKind::Adt(adtdef, _) if adtdef.is_box() => {
@@ -1173,7 +1168,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             },
             ExprKind::Call { ty: fn_ty, ref args, .. }
                 if let TyKind::FnDef(id, _) = fn_ty.kind()
-                    && is_index_logic(self.ctx.tcx, *id) =>
+                    && Intrinsic::IndexLogic.is(self.ctx, *id) =>
             {
                 if !matches!(
                     self.thir[args[0]].ty.kind(),
@@ -1234,20 +1229,20 @@ pub(crate) enum Stub {
     SeqLiteral,
 }
 
-pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
+pub(crate) fn pearlite_stub<'tcx>(ctx: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
     if let TyKind::FnDef(id, _) = *ty.kind() {
-        match tcx.get_diagnostic_name(id)?.as_str() {
-            "forall" => Some(Stub::Forall),
-            "exists" => Some(Stub::Exists),
-            "trigger" => Some(Stub::Trigger),
-            "implication" => Some(Stub::Impl),
-            "equal" => Some(Stub::Equals),
-            "neq" => Some(Stub::Neq),
-            "variant_check" => Some(Stub::VariantCheck),
-            "old" => Some(Stub::Old),
-            "dead" => Some(Stub::Dead),
-            "closure_result_constraint" => Some(Stub::ResultCheck),
-            "seq_literal" => Some(Stub::SeqLiteral),
+        match ctx.intrinsic(id) {
+            Intrinsic::Forall => Some(Stub::Forall),
+            Intrinsic::Exists => Some(Stub::Exists),
+            Intrinsic::Trigger => Some(Stub::Trigger),
+            Intrinsic::Implication => Some(Stub::Impl),
+            Intrinsic::Equal => Some(Stub::Equals),
+            Intrinsic::Neq => Some(Stub::Neq),
+            Intrinsic::VariantCheck => Some(Stub::VariantCheck),
+            Intrinsic::Old => Some(Stub::Old),
+            Intrinsic::Dead => Some(Stub::Dead),
+            Intrinsic::ClosureResult => Some(Stub::ResultCheck),
+            Intrinsic::SeqLiteral => Some(Stub::SeqLiteral),
             _ => None,
         }
     } else {

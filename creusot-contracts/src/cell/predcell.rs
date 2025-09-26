@@ -7,15 +7,14 @@ use crate::{logic::Mapping, *};
 /// Cell over predicates
 ///
 /// A wrapper around `std::cell::Cell` that allows predicates to be used to specify the contents of the cell.
-#[trusted]
+#[opaque]
 #[repr(transparent)]
 pub struct PredCell<T: ?Sized>(std::cell::Cell<T>);
 
 impl<T: ?Sized> View for PredCell<T> {
     type ViewTy = Mapping<T, bool>;
 
-    #[logic]
-    #[trusted]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
         dead
     }

@@ -11,15 +11,15 @@ pub trait SkipExt<I> {
 }
 
 impl<I> SkipExt<I> for Skip<I> {
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result >= 0 && result <= usize::MAX@)]
     fn n(self) -> Int {
         dead
@@ -27,12 +27,9 @@ impl<I> SkipExt<I> for Skip<I> {
 }
 
 impl<I> Resolve for Skip<I> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
-        pearlite! {
-            resolve(self.iter())
-        }
+        resolve(self.iter())
     }
 
     #[trusted]
@@ -43,8 +40,7 @@ impl<I> Resolve for Skip<I> {
 }
 
 impl<I: Iterator> Iterator for Skip<I> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (^self).n() == 0 &&
@@ -57,8 +53,7 @@ impl<I: Iterator> Iterator for Skip<I> {
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
@@ -70,11 +65,11 @@ impl<I: Iterator> Iterator for Skip<I> {
         }
     }
 
-    #[law]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

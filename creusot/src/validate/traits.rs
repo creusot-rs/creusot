@@ -1,11 +1,8 @@
-use rustc_hir::def::DefKind;
-
 use crate::{
-    contracts_items::{
-        is_law, is_open_inv_result, is_snapshot_deref, is_snapshot_deref_mut, is_trusted,
-    },
+    contracts_items::{Intrinsic, is_law, is_open_inv_result, is_trusted},
     ctx::{HasTyCtxt as _, TranslationCtx},
 };
+use rustc_hir::def::DefKind;
 
 /// Validate that laws have no additional generic parameters.
 ///
@@ -46,7 +43,7 @@ pub(crate) fn validate_traits(ctx: &TranslationCtx) {
 ///     fn bar() {} // ! ERROR ! bar should be marked `#[check(terminates)]`
 /// }
 /// ```
-pub(crate) fn validate_impls(ctx: &TranslationCtx) {
+pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
     for impl_id in ctx.all_local_trait_impls(()).values().flat_map(|i| i.iter()) {
         if !matches!(ctx.def_kind(*impl_id), DefKind::Impl { .. }) {
             continue;
@@ -107,7 +104,8 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                 ).emit();
             }
 
-            if is_snapshot_deref(ctx.tcx, impl_item) || is_snapshot_deref_mut(ctx.tcx, impl_item) {
+            if let Intrinsic::SnapshotDeref | Intrinsic::SnapshotDerefMut = ctx.intrinsic(impl_item)
+            {
                 continue;
             };
 
@@ -148,7 +146,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                     ctx.error(
                         ctx.def_span(impl_item),
                         format!(
-                            "Method `{}` should not be a `#[law]`, as specified by the trait declaration",
+                            "Method `{}` should not be a `#[logic(law)]`, as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
                     )
@@ -157,7 +155,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                     ctx.error(
                         ctx.def_span(impl_item),
                         format!(
-                            "Expected `{}` to be a `#[law]` as specified by the trait declaration",
+                            "Expected `{}` to be a `#[logic(law)]` as specified by the trait declaration",
                             ctx.item_name(impl_item),
                         ),
                     )

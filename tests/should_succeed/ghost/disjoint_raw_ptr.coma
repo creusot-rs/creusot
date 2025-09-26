@@ -3,26 +3,26 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   let%span sdisjoint_raw_ptr'0 = "disjoint_raw_ptr.rs" 6 33 6 37
   let%span sdisjoint_raw_ptr'1 = "disjoint_raw_ptr.rs" 11 18 11 30
   let%span sdisjoint_raw_ptr'2 = "disjoint_raw_ptr.rs" 12 18 12 26
-  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 56 4 56 52
-  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 55 14 55 64
-  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 209 26 209 30
-  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 209 48 209 52
-  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 206 14 206 64
-  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 207 14 207 28
-  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 12
-  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 89 22 89 26
-  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 89 4 89 48
-  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 88 14 88 35
-  let%span sghost'2 = "../../../creusot-contracts/src/ghost.rs" 78 14 78 18
-  let%span sghost'3 = "../../../creusot-contracts/src/ghost.rs" 78 4 78 36
-  let%span sghost'4 = "../../../creusot-contracts/src/ghost.rs" 77 14 77 31
-  let%span sghost'5 = "../../../creusot-contracts/src/ghost.rs" 181 14 181 26
-  let%span sghost'6 = "../../../creusot-contracts/src/ghost.rs" 119 8 119 18
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 52 20 52 34
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 106 20 106 44
-  let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 95 8 95 18
-  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 103 14 103 53
-  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 105 8 105 35
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 55 4 55 52
+  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 54 14 54 64
+  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 208 26 208 30
+  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 208 48 208 52
+  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 205 14 205 64
+  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 206 14 206 28
+  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 91 22 91 26
+  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 91 4 91 48
+  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 89 14 89 35
+  let%span sghost'2 = "../../../creusot-contracts/src/ghost.rs" 80 14 80 18
+  let%span sghost'3 = "../../../creusot-contracts/src/ghost.rs" 80 4 80 36
+  let%span sghost'4 = "../../../creusot-contracts/src/ghost.rs" 78 14 78 31
+  let%span sghost'5 = "../../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sghost'6 = "../../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
+  let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
+  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 96 14 96 53
+  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 98 8 98 35
   
   use creusot.int.Int32
   use creusot.prelude.Opaque
@@ -42,14 +42,16 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
-  predicate metadata_matches (_value: Int32.t) (_metadata: ()) = true
+  predicate metadata_matches (_value: Int32.t) (_metadata: ())
   
   function val' (self: t_PtrOwn) : Int32.t
   
   function metadata_logic (_0: Opaque.ptr) : ()
   
-  predicate invariant' (self: t_PtrOwn) =
+  predicate invariant' [@inline:trivial] (self: t_PtrOwn) =
     [%#sptr_own'5] not is_null_logic (ptr self) /\ metadata_matches (val' self) (metadata_logic (ptr self))
+  
+  meta "rewrite_def" predicate invariant'
   
   predicate inv (_0: t_PtrOwn)
   
@@ -59,7 +61,9 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
         | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> true
         end)
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sghost'6] inv self
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'6] inv self
+  
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'0 (_0: t_PtrOwn)
   
@@ -74,7 +78,8 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
       {[%#sptr_own'0] ptr result._p1 = result._p0 /\ val' result._p1 = v}
       (! return' {result}) ]
   
-  predicate invariant''1 (self: MutBorrow.t t_PtrOwn) = [%#sinvariant] inv'0 self.current /\ inv'0 self.final
+  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
   
   meta "rewrite_def" predicate invariant''1
   
@@ -82,7 +87,8 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 (self: MutBorrow.t t_PtrOwn) = [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+    [%#sinvariant] inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''2
   
@@ -97,7 +103,7 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
-  predicate invariant''3 (self: t_PtrOwn) = [%#sinvariant'0] inv'0 self
+  predicate invariant''3 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'0 self
   
   meta "rewrite_def" predicate invariant''3
   
@@ -105,7 +111,7 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'4 x]. inv'4 x = invariant''3 x
   
-  predicate invariant''4 (self: t_PtrOwn) = [%#sinvariant'0] inv self
+  predicate invariant''4 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv self
   
   meta "rewrite_def" predicate invariant''4
   
@@ -125,17 +131,21 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
       {[%#sptr_own'4] own1.current = own1.final}
       (! return' {result}) ]
   
-  predicate resolve (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 (_0: MutBorrow.t t_PtrOwn) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_PtrOwn) = resolve _0
   
-  predicate resolve'1 (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 (_0: MutBorrow.t t_PtrOwn) = resolve'1 _0
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_PtrOwn) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
   
   let rec new'0 (x: ()) (return' (x'0: ())) = any
     [ return''0 (result: ()) -> {[%#sghost'5] result = x} (! return' {result}) ]

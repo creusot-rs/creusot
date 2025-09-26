@@ -4,8 +4,7 @@ pub use ::std::ptr::*;
 /// Metadata of a pointer in logic.
 ///
 /// [`std::ptr::metadata`] in logic.
-#[trusted]
-#[logic]
+#[logic(opaque)]
 pub fn metadata_logic<T: ?Sized>(_: *const T) -> <T as Pointee>::Metadata {
     dead
 }
@@ -21,26 +20,22 @@ pub fn metadata_logic<T: ?Sized>(_: *const T) -> <T as Pointee>::Metadata {
 /// We would need to generate one abstract Why3 function `metadata_of : T -> Metadata`
 /// and an axiom `view_usize (metadata_of value) = len (Slice.view value)`,
 /// so two Why3 declarations instead of one.
-#[trusted]
-#[logic]
-#[open]
-#[rustc_diagnostic_item = "metadata_matches"]
+#[logic(opaque)]
+#[intrinsic("metadata_matches")]
 pub fn metadata_matches<T: ?Sized>(_value: T, _metadata: <T as Pointee>::Metadata) -> bool {
     dead
 }
 
 /// Definition of [`metadata_matches`] for slices.
-#[logic]
-#[open]
-#[rustc_diagnostic_item = "metadata_matches_slice"]
+#[logic(open)]
+#[intrinsic("metadata_matches_slice")]
 pub fn metadata_matches_slice<T>(value: [T], len: usize) -> bool {
     pearlite! { value@.len() == len@ }
 }
 
 /// Definition of [`metadata_matches`] for string slices.
-#[logic]
-#[open]
-#[rustc_diagnostic_item = "metadata_matches_str"]
+#[logic(open)]
+#[intrinsic("metadata_matches_str")]
 pub fn metadata_matches_str(value: str, len: usize) -> bool {
     pearlite! { value@.to_bytes().len() == len@ }
 }
@@ -63,21 +58,21 @@ pub struct PtrDeepModel {
 
 impl<T: ?Sized> DeepModel for *mut T {
     type DeepModelTy = PtrDeepModel;
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result.addr == self.addr_logic())]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { dead }
+        dead
     }
 }
 
 impl<T: ?Sized> DeepModel for *const T {
     type DeepModelTy = PtrDeepModel;
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(result.addr == self.addr_logic())]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { dead }
+        dead
     }
 }
 
@@ -92,14 +87,12 @@ pub trait PointerExt<T: ?Sized>: Sized {
 }
 
 impl<T: ?Sized> PointerExt<T> for *const T {
-    #[trusted]
-    #[logic]
+    #[logic(opaque)]
     fn addr_logic(self) -> usize {
         dead
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(result == (self.addr_logic() == 0usize))]
     fn is_null_logic(self) -> bool {
         self.addr_logic() == 0usize
@@ -107,14 +100,12 @@ impl<T: ?Sized> PointerExt<T> for *const T {
 }
 
 impl<T: ?Sized> PointerExt<T> for *mut T {
-    #[trusted]
-    #[logic]
+    #[logic(opaque)]
     fn addr_logic(self) -> usize {
         dead
     }
 
-    #[logic]
-    #[open]
+    #[logic(open)]
     #[ensures(result == (self.addr_logic() == 0usize))]
     fn is_null_logic(self) -> bool {
         self.addr_logic() == 0usize

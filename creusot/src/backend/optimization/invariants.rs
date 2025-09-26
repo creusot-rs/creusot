@@ -10,7 +10,7 @@ use crate::{
         projections::projection_ty,
         wto::{Component, weak_topological_order},
     },
-    contracts_items::get_snap_ty,
+    contracts_items::Intrinsic,
     ctx::TranslationCtx,
     translation::{
         fmir::{self, Block, FmirVisitor, Place, RValue, Statement, StatementKind, Terminator},
@@ -37,18 +37,16 @@ pub(crate) fn infer_proph_invariants<'tcx>(
 
     let res = borrow_prophecy_analysis(ctx, body, &wto);
 
-    let snap_ty = get_snap_ty(ctx.tcx);
-    let tcx = ctx.tcx;
     for (k, unchanged) in res.iter() {
         let inc = graph.neighbors_directed(*k, Direction::Incoming);
         let incoming = &inc.collect::<IndexSet<_>>() - &backs[k];
 
         for (ix, u) in unchanged.iter().enumerate() {
-            let Some(pterm) = place_to_term(u, tcx, &body.locals) else { continue };
+            let Some(pterm) = place_to_term(u, ctx.tcx, &body.locals) else { continue };
 
             let local = Ident::fresh_local(format!("old_{}_{ix}", k.as_u32()));
-            let subst = ctx.mk_args(&[u.ty(tcx, &body.locals).into()]);
-            let ty = Ty::new_adt(tcx, ctx.adt_def(snap_ty), subst);
+            let subst = ctx.mk_args(&[u.ty(ctx.tcx, &body.locals).into()]);
+            let ty = Ty::new_adt(ctx.tcx, ctx.adt_def(Intrinsic::Snapshot.get(ctx)), subst);
 
             body.locals
                 .insert(local, fmir::LocalDecl { span: DUMMY_SP, ty, temp: true, arg: false });
@@ -96,7 +94,7 @@ pub(crate) fn infer_proph_invariants<'tcx>(
             blk.invariants.insert(
                 0,
                 fmir::Invariant {
-                    body: old.coerce(u.ty(tcx, &body.locals)).fin().eq(tcx, pterm.fin()),
+                    body: old.coerce(u.ty(ctx.tcx, &body.locals)).fin().eq(ctx.tcx, pterm.fin()),
                     expl: "expl:mut invariant".to_string(),
                 },
             );
@@ -180,7 +178,7 @@ fn borrow_prophecy_analysis<'tcx>(
 
 fn borrow_prophecy_analysis_inner<'a, 'tcx>(
     state_parent: &mut BorrowProph<'a, 'tcx>,
-    ctx: &'a TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     body: &'a fmir::Body<'tcx>,
     c: &Component<BasicBlock>,
 ) {
@@ -266,7 +264,7 @@ impl<'tcx> FmirVisitor<'tcx> for BorrowProph<'_, 'tcx> {
 
 impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
     fn initialize(
-        ctx: &'a TranslationCtx<'tcx>,
+        ctx: &TranslationCtx<'tcx>,
         locals: &'a fmir::LocalDecls<'tcx>,
         unchanged_prophs: &'a mut IndexMap<BasicBlock, IndexSet<Place<'tcx>>>,
     ) -> Self {

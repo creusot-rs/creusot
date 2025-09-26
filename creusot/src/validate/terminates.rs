@@ -36,7 +36,9 @@
 
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{has_variant_clause, is_loop_variant, is_no_translate, is_pearlite},
+    contracts_items::{
+        has_variant_clause, is_logic, is_loop_variant, is_no_translate, is_pearlite,
+    },
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{
         pearlite::{Term, TermKind, TermVisitor, super_visit_term},
@@ -84,7 +86,10 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
     // Check for ghost loops
     for local_id in ctx.hir_body_owners() {
         let def_id = local_id.to_def_id();
-        if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
+        if is_no_translate(ctx.tcx, def_id) {
+            continue;
+        }
+        if !is_logic(ctx.tcx, def_id) && is_trusted_item(ctx.tcx, def_id) {
             continue;
         }
         let (thir, expr) = ctx.get_local_thir(local_id).unwrap();
@@ -223,7 +228,7 @@ enum GraphNode {
     /// # macro_rules! ignore { ($($t:tt)*) => {}; }
     /// # ignore! {
     /// trait Tr { // possibly in another crate
-    ///     #[logic] #[open] fn f() { /* ... */ }
+    ///     #[logic(open)] fn f() { /* ... */ }
     /// }
     /// impl Tr for Ty {} // in the current crate
     /// # }
@@ -300,7 +305,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             ctx.impl_of_assoc(def.0) != Some(impl_defid) && // The method is defined in an ancestor
             is_pearlite(ctx.tcx, def.0) && // The method is logic
             let Some(impl_ldid) = impl_defid.as_local() && // The impl is local
-            ctx.is_transparent_from(def.0, ctx.parent_module_from_def_id(impl_ldid).to_def_id())
+            ctx.is_transparent_from(def.0, impl_defid)
         {
             called_id = def.0;
             let bnds;
@@ -448,12 +453,16 @@ impl CallGraph {
         for local_id in ctx.hir_body_owners() {
             let def_id = local_id.to_def_id();
 
-            if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
+            if is_no_translate(ctx.tcx, def_id) {
                 // Cut all arcs from this function.
                 continue;
             }
 
-            if !(is_pearlite(ctx.tcx, def_id) || ctx.sig(def_id).contract.check_terminates) {
+            if !is_logic(ctx.tcx, def_id) && is_trusted_item(ctx.tcx, def_id) {
+                continue;
+            }
+
+            if !is_pearlite(ctx.tcx, def_id) && !ctx.sig(def_id).contract.check_terminates {
                 // Only consider functions marked with `terminates`: we already ensured
                 // that a `terminates` functions only calls other `terminates` functions.
                 if let Some(variant) = &ctx.sig(def_id).contract.variant {

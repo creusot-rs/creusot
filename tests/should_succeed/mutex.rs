@@ -7,7 +7,7 @@ pub trait Inv<T> {
     fn inv(&self, x: T) -> bool;
 }
 
-#[trusted]
+#[opaque]
 struct MutexInner<T>(std::sync::Mutex<T>);
 
 pub struct Mutex<T, I>(MutexInner<T>, pub I);
@@ -39,7 +39,7 @@ impl<T, I: Inv<T>> Mutex<T, I> {
     }
 }
 
-#[trusted]
+#[opaque]
 struct GuardInner<'a, T: ?Sized + 'a>(std::sync::MutexGuard<'a, T>);
 
 pub struct MutexGuard<'a, T: ?Sized + 'a, I>(GuardInner<'a, T>, pub Snapshot<I>);
@@ -61,8 +61,7 @@ impl<'a, T, I: Inv<T>> MutexGuard<'a, T, I> {
 struct Even;
 
 impl Inv<u32> for Even {
-    #[open(self)]
-    #[logic]
+    #[logic(open(self))]
     fn inv(&self, x: u32) -> bool {
         x.view() % 2 == 0
     }
@@ -108,7 +107,7 @@ impl<'a> FakeFnOnce for AddsTwo<'a> {
     }
 }
 
-#[trusted]
+#[opaque]
 struct JoinHandleInner<T>(std::thread::JoinHandle<T>);
 struct JoinHandle<T, I>(JoinHandleInner<T>, Snapshot<I>);
 
@@ -139,8 +138,7 @@ struct SpawnPostCond<F> {
 }
 
 impl<F: FakeFnOnce> Inv<F::Return> for SpawnPostCond<F> {
-    #[open(self)]
-    #[logic]
+    #[logic(open(self))]
     fn inv(&self, v: F::Return) -> bool {
         self.f.postcondition(v)
     }

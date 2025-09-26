@@ -4,8 +4,7 @@ use creusot_contracts::*;
 struct NonCopy(i32);
 impl View for NonCopy {
     type ViewTy = Int;
-    #[logic]
-    #[open(crate)]
+    #[logic(open(crate))]
     fn view(self) -> Self::ViewTy {
         pearlite! { self.0@ }
     }

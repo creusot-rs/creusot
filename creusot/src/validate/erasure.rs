@@ -35,13 +35,10 @@ use rustc_type_ir::{Interner, VisitorResult as _};
 
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{
-        is_before_loop, is_erasure, is_ptr_own_as_mut, is_ptr_own_as_ref, is_ptr_own_from_mut,
-        is_ptr_own_from_ref, is_snap_from_fn, is_spec,
-    },
+    contracts_items::{Intrinsic, is_before_loop, is_erasure, is_spec},
     ctx::{Erasure, HasTyCtxt, TranslationCtx},
     util::{NamelessGenericArgs, ODecodable, OEncodable},
-    validate::{is_ghost_block, is_ghost_ty_},
+    validate::{is_ghost_block, is_ghost_or_snap},
 };
 
 // * Top-level implementation
@@ -688,7 +685,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 let Some(pattern) = &param.pat else { return Some(Ok(AnfPattern::Wild)) };
                 // We visit even ghost variables to record their (im)mutability.
                 let pat = self.a_normal_form_pat(&pattern);
-                if is_ghost_ty_(self.tcx, param.ty) {
+                if is_ghost_or_snap(self.tcx, param.ty) {
                     return None;
                 }
                 Some(pat)
@@ -749,7 +746,12 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             Call { fun, args, .. } => {
                 let fun = self.a_normal_form_expr(*fun, stmts)?;
                 match fun.0 {
-                    AnfValue::Fn(fun_id, _) if is_snap_from_fn(self.tcx, fun_id) => AnfValue::Unit,
+                    AnfValue::Fn(fun_id, _)
+                        if let Some(ctx) = self.ctx
+                            && Intrinsic::SnapFromFn.is(ctx, fun_id) =>
+                    {
+                        AnfValue::Unit
+                    }
                     AnfValue::Fn(fun_id, subst) => 'fun: {
                         let args = args
                             .iter()
@@ -766,8 +768,9 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                             let subst =
                                 ty::EarlyBinder::bind(erased.def.1).instantiate(self.tcx, subst.0);
                             (erased.def.0, (*subst).into(), args)
-                        } else if is_ptr_own_as_ref(self.tcx, fun_id)
-                            || is_ptr_own_as_mut(self.tcx, fun_id)
+                        } else if let Some(ctx) = self.ctx
+                            && let Intrinsic::PtrOwnAsRef | Intrinsic::PtrOwnAsMut =
+                                ctx.intrinsic(fun_id)
                         {
                             let arg0 = args.into_iter().next().unwrap();
                             let mut place = std::boxed::Box::new(AnfPlace::immut(arg0.0));
@@ -776,8 +779,9 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                                 stmts,
                                 AnfOp::unsafe_borrow((AnfValue::Borrow(place), arg0.1)),
                             );
-                        } else if is_ptr_own_from_ref(self.tcx, fun_id)
-                            || is_ptr_own_from_mut(self.tcx, fun_id)
+                        } else if let Some(ctx) = self.ctx
+                            && let Intrinsic::PtrOwnFromRef | Intrinsic::PtrOwnFromMut =
+                                ctx.intrinsic(fun_id)
                         {
                             let arg0 = args.into_iter().next().unwrap();
                             let mut place = AnfPlace::immut(arg0.0);
@@ -859,7 +863,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                     .map(|f| self.a_normal_form_expr(*f, stmts))
                     .collect::<Result<::std::boxed::Box<[_]>, _>>()?;
                 if fields.len() >= 1
-                    && fields.iter().skip(1).all(|e| is_ghost_ty_(self.tcx, self.thir[*e].ty))
+                    && fields.iter().skip(1).all(|e| is_ghost_or_snap(self.tcx, self.thir[*e].ty))
                 {
                     // Erase ghost fields
                     values.into_iter().next().unwrap().0
@@ -1098,7 +1102,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                                 && subpatterns
                                     .iter()
                                     .skip(1)
-                                    .all(|p| is_ghost_ty_(self.tcx, p.pattern.ty)) =>
+                                    .all(|p| is_ghost_or_snap(self.tcx, p.pattern.ty)) =>
                         {
                             // Erase ghost fields
                             pattern = &subpatterns[0].pattern;

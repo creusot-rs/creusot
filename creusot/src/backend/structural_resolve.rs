@@ -3,7 +3,7 @@ use rustc_middle::ty::{Ty, TypingEnv};
 use rustc_type_ir::TyKind;
 
 use crate::{
-    contracts_items::{get_builtin, is_trusted},
+    contracts_items::{get_builtin, is_opaque},
     translation::pearlite::{Ident, Pattern, Term},
 };
 
@@ -20,9 +20,9 @@ pub fn structural_resolve<'tcx>(
         TyKind::Adt(adt, args) if adt.is_box() => {
             Some(resolve_of(ctx, typing_env, subject.coerce(args.type_at(0))))
         }
-        TyKind::Adt(adt, _) if is_trusted(ctx.tcx, adt.did()) => None,
+        TyKind::Adt(adt, _) if is_opaque(ctx.tcx, adt.did()) => None,
+        TyKind::Adt(adt, _) if get_builtin(ctx.tcx, adt.did()).is_some() => None,
         TyKind::Adt(adt, args) => {
-            assert!(get_builtin(ctx.tcx, adt.did()).is_none());
             let arms = adt.variants().iter_enumerated().map(|(varidx, var)| {
                 let (fields, exps): (Vec<_>, Vec<_>) = var
                     .fields

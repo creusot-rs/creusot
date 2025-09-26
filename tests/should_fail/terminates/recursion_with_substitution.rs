@@ -13,8 +13,7 @@ pub trait MyTrait {
     fn sub(self, x: u32) -> u32;
 }
 impl MyTrait for u32 {
-    #[logic]
-    #[open]
+    #[logic(open)]
     fn as_int(self) -> u32 {
         self
     }

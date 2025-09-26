@@ -3,8 +3,8 @@ use crate::{std::iter::Fuse, *};
 impl<I: Iterator> View for Fuse<I> {
     type ViewTy = Option<I>;
 
-    #[logic]
     #[trusted]
+    #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
     #[ensures(forall<other: Fuse<I>> result == other@ ==> self == other)]
     fn view(self) -> Option<I> {
@@ -13,8 +13,7 @@ impl<I: Iterator> View for Fuse<I> {
 }
 
 impl<I: Iterator> Iterator for Fuse<I> {
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (self@ == None || exists<it:&mut I> it.completed() && self@ == Some(*it)) &&
@@ -22,8 +21,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
         }
     }
 
-    #[open]
-    #[logic(prophetic)]
+    #[logic(open, prophetic)]
     fn produces(self, prod: Seq<Self::Item>, other: Self) -> bool {
         pearlite! {
             match self@ {
@@ -36,13 +34,11 @@ impl<I: Iterator> Iterator for Fuse<I> {
         }
     }
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -50,7 +46,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
 }
 
 pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
-    #[law]
+    #[logic(law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::empty() && ^self == next)]
@@ -58,8 +54,7 @@ pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
 }
 
 impl<I: Iterator> FusedIterator for Fuse<I> {
-    #[law]
-    #[open]
+    #[logic(open, law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::empty() && ^self == next)]
