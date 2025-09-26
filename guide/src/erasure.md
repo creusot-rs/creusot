@@ -40,10 +40,10 @@ The `#[erasure]` check performs the following operations.
 
 Additional rules for pointers:
 
-- `PtrOwn::as_ref`/`PtrOwn::as_mut` erase to unsafe shared/mutable reborrowing of raw pointers
-  (`&*p`/`&mut *p` where `p: *const T` or `p: *mut T`).
-- `PtrOwn::from_ref`/`PtrOwn::from_mut` erase to raw reborrowing of references
-  (`&raw const *r` or `&raw mut *r` where `r: &T`/`&mut T`).
+- [`PtrOwn::as_ref(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.as_ref) erases to `&*ptr` (pointer-to-reference coercion).
+- [`PtrOwn::as_mut(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.as_mut) erases to `&mut *ptr` (pointer-to-reference coercion).
+- [`PtrOwn::from_ref(r)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.from_ref) erases to `r as *const T` (reference-to-pointer coercion).
+- [`PtrOwn::from_mut(r)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.from_mut) erases to `r as *mut T` (reference-to-pointer coercion).
 
 ## Example
 
