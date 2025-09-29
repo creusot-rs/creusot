@@ -10,20 +10,20 @@ module M_1743__qyi7570507176118332595__minimize [#"1743.rs" 12 4 12 30] (* S *)
   let%span sghost'3 = "../../../creusot-contracts/src/ghost.rs" 181 4 183 17
   let%span sghost'4 = "../../../creusot-contracts/src/ghost.rs" 179 14 179 26
   let%span sghost'5 = "../../../creusot-contracts/src/ghost.rs" 118 8 118 18
-  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 136 40 136 43
-  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 132 15 132 31
-  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 133 14 133 35
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 138 40 138 43
+  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 134 15 134 31
+  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 135 14 135 35
   let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
   let%span smodel = "../../../creusot-contracts/src/model.rs" 43 8 43 22
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
   let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 99 14 99 53
-  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 101 8 101 35
+  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
   
   use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
   use creusot.int.Int32
+  use creusot.prelude.Ptr
   use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.Any
@@ -32,12 +32,11 @@ module M_1743__qyi7570507176118332595__minimize [#"1743.rs" 12 4 12 30] (* S *)
   
   type t_S = { t_S__perm: t_PtrOwn; t_S__ptr: Opaque.ptr }
   
-  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'0] Opaque.addr_logic_u64 self = (0: UInt64.t)
-  
-  axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self
-      = (Opaque.addr_logic_u64 self = (0: UInt64.t))
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr] Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
+  
+  predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
   predicate metadata_matches (_value: Int32.t) (_metadata: ()) = true
   
@@ -46,7 +45,8 @@ module M_1743__qyi7570507176118332595__minimize [#"1743.rs" 12 4 12 30] (* S *)
   function metadata_logic (_0: Opaque.ptr) : ()
   
   predicate invariant' [@inline:trivial] (self: t_PtrOwn) =
-    [%#sptr_own'2] not is_null_logic (ptr self) /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    [%#sptr_own'2] not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
   
   meta "rewrite_def" predicate invariant'
   

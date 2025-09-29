@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::std::mem::{align_of_logic, size_of_logic};
 use crate::*;
 pub use ::std::ptr::*;
 
@@ -11,7 +13,13 @@ pub fn metadata_logic<T: ?Sized>(_: *const T) -> <T as Pointee>::Metadata {
 
 /// Check that a value is compatible with some metadata.
 ///
-/// Intrinsic. Specializes to [`metadata_matches_slice`] for `T = [U]` and [`metadata_matches_str`] for `T = str`.
+/// If the value is a slice, this predicate asserts that the metadata equals the length of the slice,
+/// and that the total size of the slice is no more than `isize::MAX`. This latter property is assumed
+/// by pointer primitives such as [`slice::from_raw_parts`][from_raw_parts].
+///
+/// - For `T = [U]`, specializes to [`metadata_matches_slice`].
+/// - For `T = str`, specializes to [`metadata_matches_str`].
+/// - For `T: Sized`, specializes to `true`.
 ///
 /// Why did we not make this a function `fn metadata_of(value: T) -> <T as Pointee>::Metadata`?
 /// Because this way is shorter: this corresponds to a single predicate in Why3 per type `T`.
@@ -20,6 +28,8 @@ pub fn metadata_logic<T: ?Sized>(_: *const T) -> <T as Pointee>::Metadata {
 /// We would need to generate one abstract Why3 function `metadata_of : T -> Metadata`
 /// and an axiom `view_usize (metadata_of value) = len (Slice.view value)`,
 /// so two Why3 declarations instead of one.
+///
+/// [from_raw_parts]: https://doc.rust-lang.org/core/slice/fn.from_raw_parts.html
 #[logic(open)]
 #[intrinsic("metadata_matches")]
 pub fn metadata_matches<T: ?Sized>(_value: T, _metadata: <T as Pointee>::Metadata) -> bool {
@@ -30,14 +40,46 @@ pub fn metadata_matches<T: ?Sized>(_value: T, _metadata: <T as Pointee>::Metadat
 #[logic(open)]
 #[intrinsic("metadata_matches_slice")]
 pub fn metadata_matches_slice<T>(value: [T], len: usize) -> bool {
-    pearlite! { value@.len() == len@ }
+    pearlite! { value@.len() == len@ && len@ * size_of_logic::<T>() <= isize::MAX@ }
 }
 
 /// Definition of [`metadata_matches`] for string slices.
 #[logic(open)]
 #[intrinsic("metadata_matches_str")]
 pub fn metadata_matches_str(value: str, len: usize) -> bool {
-    pearlite! { value@.to_bytes().len() == len@ }
+    pearlite! { value@.to_bytes().len() == len@ && len@ <= isize::MAX@ }
+}
+
+/// Whether a pointer is aligned.
+///
+/// This is a logic version of [`<*const T>::is_aligned`][is_aligned],
+/// but extended with an additional rule for `[U]`. We make use of this property
+/// in [`ghost::PtrOwn`] to define a more precise invariant for slice pointers.
+///
+/// - For `T: Sized`, specializes to [`is_aligned_logic_sized`].
+/// - For `T = [U]`, specializes to [`is_aligned_logic_slice`].
+/// - For `T = str`, specializes to `true`.
+///
+/// [is_aligned]: https://doc.rust-lang.org/std/primitive.pointer.html#method.is_aligned
+#[allow(unused_variables)]
+#[logic(open)]
+#[intrinsic("is_aligned_logic")]
+pub fn is_aligned_logic<T: ?Sized>(ptr: *const T) -> bool {
+    dead
+}
+
+/// Definition of [`is_aligned_logic`] for `T: Sized`.
+#[logic(open)]
+#[intrinsic("is_aligned_logic_sized")]
+pub fn is_aligned_logic_sized<T>(ptr: *const T) -> bool {
+    ptr.is_aligned_to_logic(align_of_logic::<T>())
+}
+
+/// Definition of [`is_aligned_logic`] for `[T]`.
+#[logic(open)]
+#[intrinsic("is_aligned_logic_slice")]
+pub fn is_aligned_logic_slice<T>(ptr: *const [T]) -> bool {
+    ptr.is_aligned_to_logic(align_of_logic::<T>())
 }
 
 /// We conservatively model raw pointers as having an address *plus some hidden
@@ -81,45 +123,61 @@ pub trait PointerExt<T: ?Sized>: Sized {
     #[logic]
     fn addr_logic(self) -> usize;
 
+    /// `true` if the pointer is null.
+    #[logic(open, sealed)]
+    fn is_null_logic(self) -> bool {
+        self.addr_logic() == 0usize
+    }
+
+    /// Logic counterpart to [`<*const T>::is_aligned_to`][is_aligned_to]
+    ///
+    /// [is_aligned_to]: https://doc.rust-lang.org/std/primitive.pointer.html#method.is_aligned_to
+    #[logic(open, sealed)]
+    fn is_aligned_to_logic(self, align: usize) -> bool {
+        pearlite! { self.addr_logic() & (align - 1usize) == 0usize }
+    }
+
+    /// Logic counterpart to [`<*const T>::is_aligned`][is_aligned]
+    ///
+    /// This is defined as [`is_aligned_logic`] (plus a noop coercion for `*mut T`).
+    ///
+    /// [is_aligned]: https://doc.rust-lang.org/std/primitive.pointer.html#method.is_aligned
     #[logic]
-    #[ensures(result == (self.addr_logic() == 0usize))]
-    fn is_null_logic(self) -> bool;
+    fn is_aligned_logic(self) -> bool;
 }
 
 impl<T: ?Sized> PointerExt<T> for *const T {
     #[logic]
-    #[cfg_attr(target_pointer_width = "16", builtin("creusot.prelude.Opaque.addr_logic_u16"))]
-    #[cfg_attr(target_pointer_width = "32", builtin("creusot.prelude.Opaque.addr_logic_u32"))]
-    #[cfg_attr(target_pointer_width = "64", builtin("creusot.prelude.Opaque.addr_logic_u64"))]
+    #[cfg_attr(target_pointer_width = "16", builtin("creusot.prelude.Ptr$BW$.addr_logic_u16"))]
+    #[cfg_attr(target_pointer_width = "32", builtin("creusot.prelude.Ptr$BW$.addr_logic_u32"))]
+    #[cfg_attr(target_pointer_width = "64", builtin("creusot.prelude.Ptr$BW$.addr_logic_u64"))]
     fn addr_logic(self) -> usize {
         dead
     }
 
-    #[logic(open)]
-    #[ensures(result == (self.addr_logic() == 0usize))]
-    fn is_null_logic(self) -> bool {
-        self.addr_logic() == 0usize
+    #[logic(open, inline)]
+    fn is_aligned_logic(self) -> bool {
+        is_aligned_logic(self)
     }
 }
 
 impl<T: ?Sized> PointerExt<T> for *mut T {
     #[logic]
-    #[cfg_attr(target_pointer_width = "16", builtin("creusot.prelude.Opaque.addr_logic_u16"))]
-    #[cfg_attr(target_pointer_width = "32", builtin("creusot.prelude.Opaque.addr_logic_u32"))]
-    #[cfg_attr(target_pointer_width = "64", builtin("creusot.prelude.Opaque.addr_logic_u64"))]
+    #[cfg_attr(target_pointer_width = "16", builtin("creusot.prelude.Ptr$BW$.addr_logic_u16"))]
+    #[cfg_attr(target_pointer_width = "32", builtin("creusot.prelude.Ptr$BW$.addr_logic_u32"))]
+    #[cfg_attr(target_pointer_width = "64", builtin("creusot.prelude.Ptr$BW$.addr_logic_u64"))]
     fn addr_logic(self) -> usize {
         dead
     }
 
-    #[logic(open)]
-    #[ensures(result == (self.addr_logic() == 0usize))]
-    fn is_null_logic(self) -> bool {
-        self.addr_logic() == 0usize
+    #[logic(open, inline)]
+    fn is_aligned_logic(self) -> bool {
+        is_aligned_logic(self)
     }
 }
 
 extern_spec! {
-    impl<T> *const T {
+    impl<T: ?Sized> *const T {
         #[check(ghost)]
         #[ensures(result == self.addr_logic())]
         fn addr(self) -> usize;
@@ -127,9 +185,31 @@ extern_spec! {
         #[check(ghost)]
         #[ensures(result == self.is_null_logic())]
         fn is_null(self) -> bool;
+
+        #[check(ghost)]
+        #[erasure]
+        #[ensures(result == self.is_aligned_logic())]
+        fn is_aligned(self) -> bool
+            where T: Sized,
+        {
+            self.is_aligned_to(std::mem::align_of::<T>())
+        }
+
+        #[check(ghost)]
+        #[erasure]
+        #[bitwise_proof]
+        #[requires(align != 0usize && align & (align - 1usize) == 0usize)]
+        #[ensures(result == self.is_aligned_to_logic(align))]
+        fn is_aligned_to(self, align: usize) -> bool
+        {
+            if !align.is_power_of_two() {
+                ::core::panic::panic_2021!("is_aligned_to: align is not a power-of-two");
+            }
+            self.addr() & (align - 1) == 0
+        }
     }
 
-    impl<T> *mut T {
+    impl<T: ?Sized> *mut T {
         #[check(ghost)]
         #[ensures(result == self.addr_logic())]
         fn addr(self) -> usize;
@@ -137,6 +217,28 @@ extern_spec! {
         #[check(ghost)]
         #[ensures(result == self.is_null_logic())]
         fn is_null(self) -> bool;
+
+        #[check(ghost)]
+        #[erasure]
+        #[ensures(result == self.is_aligned_logic())]
+        fn is_aligned(self) -> bool
+            where T: Sized,
+        {
+            self.is_aligned_to(std::mem::align_of::<T>())
+        }
+
+        #[check(ghost)]
+        #[erasure]
+        #[bitwise_proof]
+        #[requires(align != 0usize && align & (align - 1usize) == 0usize)]
+        #[ensures(result == self.is_aligned_to_logic(align))]
+        fn is_aligned_to(self, align: usize) -> bool
+        {
+            if !align.is_power_of_two() {
+                ::core::panic::panic_2021!("is_aligned_to: align is not a power-of-two");
+            }
+            self.addr() & (align - 1) == 0
+        }
     }
 
     mod std {

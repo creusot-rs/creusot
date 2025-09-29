@@ -62,6 +62,8 @@
         never_type,
         ptr_metadata,
         hint_must_use,
+        pointer_is_aligned_to,
+        edition_panic,
     )
 )]
 

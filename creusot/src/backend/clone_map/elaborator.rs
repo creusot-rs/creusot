@@ -1107,6 +1107,7 @@ fn fn_mut_hist_inv_term<'tcx>(
 fn size_of_logic_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
+    size_of_logic_id: DefId,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     use rustc_type_ir::TyKind::*;
@@ -1116,8 +1117,71 @@ fn size_of_logic_term<'tcx>(
         return Some(Term::int(ctx.int_ty(), layout.size.bytes() as i128));
     }
     match ty.kind() {
-        Array(t, n) => size_of_array(ctx, typing_env, *t, n),
+        Array(t, n) => size_of_array(ctx, typing_env, size_of_logic_id, *t, n),
         _ => None, // TODO: Adts that are repr(C)
+    }
+}
+
+fn size_of_array<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    size_of_logic_id: DefId,
+    ty: Ty<'tcx>,
+    n: &Const<'tcx>,
+) -> Option<Term<'tcx>> {
+    let n = match n.kind() {
+        ConstKind::Value(v) => match *v.valtree {
+            ty::ValTreeKind::Leaf(scalar) => scalar.to_target_usize(ctx.tcx) as i128,
+            ty::ValTreeKind::Branch(_) => return None,
+        },
+        // TODO: ConstKind::Param
+        _ => return None,
+    };
+    let subst = ctx.mk_args(&[ty.into()]);
+    let item_size = Term::call(ctx.tcx, typing_env, size_of_logic_id, subst, []);
+    Some(item_size.bin_op(ctx.int_ty(), BinOp::Mul, Term::int(ctx.int_ty(), n)))
+}
+
+fn align_of_logic_term<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    align_of_logic_id: DefId,
+    ty: Ty<'tcx>,
+) -> Option<Term<'tcx>> {
+    use rustc_type_ir::TyKind::*;
+    if let Ok(layout) = ctx.tcx.layout_of(ty::PseudoCanonicalInput { typing_env, value: ty }) {
+        // Rustc has computed a concrete size for this type. Just use it.
+        // This handles at least primitive types, references, pointers, and ZSTs.
+        return Some(Term::int(ctx.int_ty(), layout.align.bytes() as i128));
+    }
+    match ty.kind() {
+        Array(t, _) => {
+            let subst = ctx.mk_args(&[(*t).into()]);
+            let align_of_item = Term::call(ctx.tcx, typing_env, align_of_logic_id, subst, []);
+            Some(align_of_item)
+        }
+        _ => None, // TODO: Adts that are repr(C)
+    }
+}
+
+fn is_aligned_logic_term<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    ty: Ty<'tcx>,
+    args: &[Ident],
+) -> Option<Term<'tcx>> {
+    use rustc_type_ir::TyKind::*;
+    if ty.is_sized(ctx.tcx, typing_env) {
+        let is_aligned_logic_sized = Intrinsic::IsAlignedLogicSized.get(ctx);
+        return term(ctx, typing_env, args, is_aligned_logic_sized, ctx.mk_args(&[ty.into()]));
+    }
+    match ty.kind() {
+        Slice(t) => {
+            let is_aligned_logic_slice = Intrinsic::IsAlignedLogicSlice.get(ctx);
+            term(ctx, typing_env, args, is_aligned_logic_slice, ctx.mk_args(&[(*t).into()]))
+        }
+        Str => Some(Term::true_(ctx.tcx)),
+        _ => None,
     }
 }
 
@@ -1142,25 +1206,6 @@ fn metadata_matches_term<'tcx>(
     }
 }
 
-fn size_of_array<'tcx>(
-    ctx: &Why3Generator<'tcx>,
-    typing_env: TypingEnv<'tcx>,
-    ty: Ty<'tcx>,
-    n: &Const<'tcx>,
-) -> Option<Term<'tcx>> {
-    let n = match n.kind() {
-        ConstKind::Value(v) => match *v.valtree {
-            ty::ValTreeKind::Leaf(scalar) => scalar.to_target_usize(ctx.tcx) as i128,
-            ty::ValTreeKind::Branch(_) => return None,
-        },
-        // TODO: ConstKind::Param
-        _ => return None,
-    };
-    let subst = ctx.mk_args(&[ty.into()]);
-    let item_size = Term::call(ctx.tcx, typing_env, Intrinsic::SizeOfLogic.get(ctx), subst, []);
-    Some(item_size.bin_op(ctx.int_ty(), BinOp::Mul, Term::int(ctx.int_ty(), n)))
-}
-
 /// Returns a resolved and normalized term for a dependency.
 ///
 /// Currently, it does not handle invariant axioms but otherwise returns all logical terms.
@@ -1182,7 +1227,11 @@ fn term<'tcx>(
         Intrinsic::Postcondition => fn_postcond_term(ctx, typing_env, subst, bound),
         Intrinsic::Precondition => precondition_term(ctx, typing_env, subst, bound),
         Intrinsic::HistInv => fn_mut_hist_inv_term(ctx, typing_env, subst, bound),
-        Intrinsic::SizeOfLogic => size_of_logic_term(ctx, typing_env, subst.type_at(0)),
+        Intrinsic::SizeOfLogic => size_of_logic_term(ctx, typing_env, def_id, subst.type_at(0)),
+        Intrinsic::AlignOfLogic => align_of_logic_term(ctx, typing_env, def_id, subst.type_at(0)),
+        Intrinsic::IsAlignedLogic => {
+            is_aligned_logic_term(ctx, typing_env, subst.type_at(0), bound)
+        }
         Intrinsic::MetadataMatches => metadata_matches_term(ctx, typing_env, subst, bound),
         _ => {
             let term = EarlyBinder::bind(ctx.term(def_id).unwrap().rename(bound));

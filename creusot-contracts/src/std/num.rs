@@ -184,6 +184,20 @@ macro_rules! spec_type {
     };
 }
 
+macro_rules! spec_unsized {
+    ($type:ty, $zero:expr, $one:expr) => {
+        spec_type!($type);
+
+        extern_spec! {
+            impl $type {
+                    #[check(ghost)]
+                    #[ensures(result == (self != $zero && self & (self - $one) == $zero))]
+                    fn is_power_of_two(self) -> bool;
+            }
+        }
+    };
+}
+
 /// Adds specifications for checked, wrapping, saturating, and overflowing versions of the given
 /// operation on the given type. This only works for operations that have no additional pre- or
 /// postconditions.
@@ -285,12 +299,12 @@ macro_rules! spec_abs_diff {
     };
 }
 
-spec_type!(u8);
-spec_type!(u16);
-spec_type!(u32);
-spec_type!(u64);
-spec_type!(u128);
-spec_type!(usize);
+spec_unsized!(u8, 0u8, 1u8);
+spec_unsized!(u16, 0u16, 1u16);
+spec_unsized!(u32, 0u32, 1u32);
+spec_unsized!(u64, 0u64, 1u64);
+spec_unsized!(u128, 0u128, 1u128);
+spec_unsized!(usize, 0usize, 1usize);
 
 spec_type!(i8);
 spec_type!(i16);
