@@ -748,7 +748,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 match fun.0 {
                     AnfValue::Fn(fun_id, _)
                         if let Some(ctx) = self.ctx
-                            && Intrinsic::SnapFromFn.is(ctx, fun_id) =>
+                            && Intrinsic::SnapshotFromFn.is(ctx, fun_id) =>
                     {
                         AnfValue::Unit
                     }

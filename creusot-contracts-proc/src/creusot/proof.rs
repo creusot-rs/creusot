@@ -26,16 +26,16 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
     })
 }
 
-pub fn snapshot(assertion: TS1) -> TS1 {
-    let assert = parse_macro_input!(assertion as Assertion);
-    let assert_body = pretyping::encode_block(&assert.0);
+pub fn snapshot(snapshot: TS1) -> TS1 {
+    let snap = parse_macro_input!(snapshot as Assertion);
+    let snap_body = pretyping::encode_block(&snap.0);
 
     TS1::from(quote! {
         ::creusot_contracts::__stubs::snapshot_from_fn(
             #[creusot::no_translate]
             #[creusot::spec]
             #[creusot::spec::snapshot]
-            || ::creusot_contracts::snapshot::Snapshot::new (#[allow(unused_braces)] #assert_body)
+            || #snap_body
         )
     })
 }

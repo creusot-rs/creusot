@@ -53,13 +53,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 else {
                     self.fatal_error(fn_span, "unsupported function call type").emit()
                 };
-                if Intrinsic::SnapFromFn.is(self.ctx, fun_def_id) {
+                if Intrinsic::SnapshotFromFn.is(self.ctx, fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().kind() else {
                         unreachable!()
                     };
                     let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
-                    let assertion = self.snapshots.remove(def_id).unwrap();
-                    self.emit_snapshot_assign(destination, assertion, span);
+                    let snapshot = self.snapshots.remove(def_id).unwrap();
+                    self.emit_snapshot_assign(destination, snapshot, span);
                 } else {
                     let func_args: Box<[_]> = args
                         .iter()

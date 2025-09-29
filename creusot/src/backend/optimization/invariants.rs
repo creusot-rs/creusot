@@ -82,7 +82,7 @@ pub(crate) fn infer_proph_invariants<'tcx>(
                 prev_block.stmts.push(Statement {
                     kind: StatementKind::Assignment(
                         Place { local, projections: Box::new([]) },
-                        RValue::Snapshot(pterm.clone().coerce(ty)),
+                        RValue::Snapshot(pterm.clone()),
                     ),
                     span,
                 });
