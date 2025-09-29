@@ -1132,21 +1132,11 @@ fn metadata_matches_term<'tcx>(
     if param.is_sized(ctx.tcx, typing_env) {
         Some(Term::true_(ctx.tcx))
     } else if let TyKind::Slice(ty) = param.kind() {
-        Some(Term::call(
-            ctx.tcx,
-            typing_env,
-            Intrinsic::MetadataMatchesSlice.get(ctx),
-            ctx.tcx.mk_args(&[(*ty).into()]),
-            args.iter().map(|&id| Term::var(id, param)),
-        ))
+        let metadata_matches_slice = Intrinsic::MetadataMatchesSlice.get(ctx);
+        term(ctx, typing_env, args, metadata_matches_slice, ctx.mk_args(&[(*ty).into()]))
     } else if let TyKind::Str = param.kind() {
-        Some(Term::call(
-            ctx.tcx,
-            typing_env,
-            Intrinsic::MetadataMatchesStr.get(ctx),
-            ctx.tcx.mk_args(&[]),
-            args.iter().map(|&id| Term::var(id, param)),
-        ))
+        let metadata_matches_str = Intrinsic::MetadataMatchesStr.get(ctx);
+        term(ctx, typing_env, args, metadata_matches_str, ctx.mk_args(&[]))
     } else {
         None
     }

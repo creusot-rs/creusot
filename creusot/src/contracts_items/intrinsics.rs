@@ -93,6 +93,7 @@ impl Intrinsic {
                 | Intrinsic::PostconditionOnce
                 | Intrinsic::HistInv
                 | Intrinsic::Precondition
+                | Intrinsic::MetadataMatches
         )
     }
 }
