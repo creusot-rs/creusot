@@ -669,6 +669,27 @@ impl<T> Seq<T> {
     pub fn clear_ghost(&mut self) {}
 }
 
+impl<T> ::std::ops::Index<Int> for Seq<T> {
+    type Output = T;
+
+    #[check(ghost)]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(*result == self[index])]
+    fn index(&self, index: Int) -> &Self::Output {
+        self.get_ghost(index).unwrap()
+    }
+}
+impl<T> ::std::ops::IndexMut<Int> for Seq<T> {
+    #[check(ghost)]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures((*self).len() == (^self).len())]
+    #[ensures(*result == (*self)[index] && ^result == (^self)[index])]
+    #[ensures(forall<i> i != index ==> (*self).get(i) == (^self).get(i))]
+    fn index_mut(&mut self, index: Int) -> &mut Self::Output {
+        self.get_mut_ghost(index).unwrap()
+    }
+}
+
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
 impl<T: Clone + Copy> Clone for Seq<T> {
     #[trusted]
