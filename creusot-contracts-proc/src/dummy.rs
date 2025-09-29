@@ -23,9 +23,16 @@ pub fn declare_namespace(_: TS1) -> TS1 {
 }
 
 pub fn ghost(body: TS1) -> TS1 {
-    let body = proc_macro2::TokenStream::from(crate::ghost::ghost_preprocess(body));
-    let mut body = syn::parse_quote!({ #body });
-    DeleteInvariants.visit_block_mut(&mut body);
+    let group = proc_macro2::Group::new(proc_macro2::Delimiter::Brace, body.into());
+    let body = group.into_token_stream();
+    let body = match syn::parse2(body.clone()) {
+        Err(_) => body,
+        Ok(mut b) => {
+            DeleteInvariants.visit_block_mut(&mut b);
+            b.into_token_stream()
+        }
+    };
+    let body = crate::ghost::ghost_preprocess(body);
     quote::quote! { if false {
         ::creusot_contracts::ghost::Ghost::new(#body)
     } else {

@@ -3,8 +3,7 @@
 //! This should be kept to a minimum in order to minimize the mismatch between ghost and
 //! normal code.
 
-use proc_macro::{Delimiter, Group, TokenStream, TokenTree};
-use proc_macro2::Literal;
+use proc_macro2::{Delimiter, Group, Literal, TokenStream, TokenTree};
 use quote::quote_spanned;
 
 /// Change `xxxint` into `*::creusot_contracts::Int::new(xxx)`.

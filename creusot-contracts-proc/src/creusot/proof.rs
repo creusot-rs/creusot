@@ -41,7 +41,7 @@ pub fn snapshot(assertion: TS1) -> TS1 {
 }
 
 pub fn ghost(body: TS1) -> TS1 {
-    let body = proc_macro2::TokenStream::from(crate::ghost::ghost_preprocess(body));
+    let body = proc_macro2::TokenStream::from(crate::ghost::ghost_preprocess(body.into()));
     TS1::from(quote! {
         {
             #[creusot::ghost_block]
@@ -69,7 +69,7 @@ impl syn::parse::Parse for GhostLet {
 }
 
 pub fn ghost_let(body: TS1) -> TS1 {
-    let body = crate::ghost::ghost_preprocess(body);
+    let body: TS1 = crate::ghost::ghost_preprocess(body.into()).into();
     let GhostLet { mutability, var, body } = parse_macro_input!(body as GhostLet);
     TS1::from(quote! {
         #[creusot::ghost_let]
