@@ -12,6 +12,8 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [Unreleased] - ReleaseDate
 
+## [0.6.0] - 2025-09-29
+
 ### Highlights
 
 - [Variants](https://github.com/creusot-rs/creusot/pull/1622) allow proving the termination of recursive functions and loops, which can then be used in ghost code. [Documentation.](https://creusot-rs.github.io/creusot/doc/creusot_contracts/macros/attr.variant.html)
