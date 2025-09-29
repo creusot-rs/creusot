@@ -24,8 +24,10 @@ pub fn declare_namespace(_: TS1) -> TS1 {
 
 pub fn ghost(body: TS1) -> TS1 {
     let body = proc_macro2::TokenStream::from(crate::ghost::ghost_preprocess(body));
+    let mut body = syn::parse_quote!({ #body });
+    DeleteInvariants.visit_block_mut(&mut body);
     quote::quote! { if false {
-        ::creusot_contracts::ghost::Ghost::new({ #body })
+        ::creusot_contracts::ghost::Ghost::new(#body)
     } else {
         ::creusot_contracts::ghost::Ghost::conjure()
     } }
@@ -139,17 +141,21 @@ fn is(name: &str, path: &syn::Path) -> bool {
 
 fn is_qualified(name: &str, path: &syn::Path) -> bool {
     let mut segments = path.segments.iter();
-    if let Some(first) = segments.next() {
-        if let Some(second) = segments.next() {
-            return first.ident == "creusot_contracts" && second.ident == name;
-        }
+    if let Some(first) = segments.next()
+        && let Some(second) = segments.next()
+    {
+        return first.ident == "creusot_contracts" && second.ident == name;
     }
     false
 }
 
 fn delete_invariants_attrs(attrs: &mut Vec<syn::Attribute>) {
     attrs.retain(|attr| {
-        if let syn::Meta::List(meta) = &attr.meta { !is("invariant", &meta.path) } else { true }
+        if let syn::Meta::List(meta) = &attr.meta {
+            !(is("invariant", &meta.path) || is("variant", &meta.path))
+        } else {
+            true
+        }
     });
 }
 

@@ -143,14 +143,38 @@ impl<T> Seq<T> {
     ///
     /// ```
     /// # use creusot_contracts::*;
-    /// let s = snapshot!(Seq::singleton(5).push_back(10).push_back(15));
-    /// proof_assert!(s.tail() == Seq::singleton(10).push_back(15));
+    /// let s = snapshot!(seq![5, 10, 15]);
+    /// proof_assert!(s.tail() == seq![10, 15]);
     /// proof_assert!(s.tail().tail() == Seq::singleton(15));
     /// proof_assert!(s.tail().tail().tail() == Seq::empty());
     /// ```
     #[logic(open)]
     pub fn tail(self) -> Self {
         self.subsequence(1, self.len())
+    }
+
+    /// Alias for [`Self::tail`].
+    #[logic(open)]
+    pub fn pop_front(self) -> Self {
+        self.tail()
+    }
+
+    /// Returns the sequence without its last element.
+    ///
+    /// If the sequence is empty, the result is meaningless.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// let s = snapshot!(seq![5, 10, 15]);
+    /// proof_assert!(s.pop_back() == seq![5, 10]);
+    /// proof_assert!(s.pop_back().pop_back() == Seq::singleton(5));
+    /// proof_assert!(s.pop_back().pop_back().pop_back() == Seq::empty());
+    /// ```
+    #[logic(open)]
+    pub fn pop_back(self) -> Self {
+        self.subsequence(0, self.len() - 1)
     }
 
     /// Returns the number of elements in the sequence, also referred to as its 'length'.
@@ -260,6 +284,18 @@ impl<T> Seq<T> {
     pub fn concat(self, other: Self) -> Self {
         let _ = other;
         dead
+    }
+
+    #[logic]
+    #[ensures(result.len() == self.len())]
+    #[ensures(forall<i> 0 <= i && i < self.len() ==> result[i] == m[self[i]])]
+    #[variant(self.len())]
+    pub fn map<U>(self, m: Mapping<T, U>) -> Seq<U> {
+        if self.len() == 0 {
+            Seq::empty()
+        } else {
+            self.tail().map(m).push_front(m.get(*self.index_logic_unsized(0)))
+        }
     }
 
     #[logic(open)]
@@ -654,6 +690,161 @@ impl<T> Invariant for Seq<T> {
     fn invariant(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
     }
+}
+
+// =========
+// Iterators
+// =========
+
+impl<T> IntoIterator for Seq<T> {
+    type Item = T;
+    type IntoIter = SeqIter<T>;
+
+    #[check(ghost)]
+    #[ensures(result@ == self)]
+    fn into_iter(self) -> SeqIter<T> {
+        SeqIter { inner: self }
+    }
+}
+
+/// An owning iterator for [`Seq`].
+///
+/// # Ghost code and variants
+///
+/// This iterator is only obtainable in ghost code.
+///
+/// To use it in a `for` loop, a variant must be declared:
+/// ```rust,creusot
+/// # use creusot_contracts::*;
+/// # #[requires(true)]
+/// fn iter_on_seq<T>(s: Seq<T>) {
+///     let len = snapshot!(s.len());
+///     #[variant(len - produced.len())]
+///     for i in s {
+///         // ...
+///     }
+/// }
+/// ```
+pub struct SeqIter<T> {
+    inner: Seq<T>,
+}
+
+impl<T> View for SeqIter<T> {
+    type ViewTy = Seq<T>;
+    #[logic]
+    fn view(self) -> Seq<T> {
+        self.inner
+    }
+}
+
+impl<T> ::std::iter::Iterator for SeqIter<T> {
+    type Item = T;
+
+    #[check(ghost)]
+    #[ensures(match result {
+        None => self.completed(),
+        Some(v) => (*self).produces(Seq::singleton(v), ^self)
+    })]
+    fn next(&mut self) -> Option<T> {
+        self.inner.pop_front_ghost()
+    }
+}
+
+impl<T> crate::Iterator for SeqIter<T> {
+    #[logic(prophetic, open)]
+    fn produces(self, visited: Seq<T>, o: Self) -> bool {
+        pearlite! { self@ == visited.concat(o@) }
+    }
+
+    #[logic(prophetic, open)]
+    fn completed(&mut self) -> bool {
+        pearlite! { self@ == Seq::empty() }
+    }
+
+    #[logic(law)]
+    #[ensures(self.produces(Seq::empty(), self))]
+    fn produces_refl(self) {}
+
+    #[logic(law)]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+impl<'a, T> IntoIterator for &'a Seq<T> {
+    type Item = &'a T;
+    type IntoIter = SeqIterRef<'a, T>;
+
+    #[check(ghost)]
+    #[ensures(result@ == *self)]
+    fn into_iter(self) -> Self::IntoIter {
+        SeqIterRef { inner: self, index: self.len_ghost() - self.len_ghost() }
+    }
+}
+
+/// An iterator over references in a [`Seq`].
+pub struct SeqIterRef<'a, T> {
+    inner: &'a Seq<T>,
+    index: Int,
+}
+impl<T> Invariant for SeqIterRef<'_, T> {
+    #[logic]
+    fn invariant(self) -> bool {
+        0 <= self.index && self.index <= self.inner.len()
+    }
+}
+
+impl<T> View for SeqIterRef<'_, T> {
+    type ViewTy = Seq<T>;
+    #[logic]
+    fn view(self) -> Seq<T> {
+        self.inner.subsequence(self.index, self.inner.len())
+    }
+}
+
+impl<'a, T> ::std::iter::Iterator for SeqIterRef<'a, T> {
+    type Item = &'a T;
+
+    #[check(ghost)]
+    #[ensures(match result {
+        None => self.completed(),
+        Some(v) => (*self).produces(Seq::singleton(v), ^self)
+    })]
+    fn next(&mut self) -> Option<&'a T> {
+        let _before = snapshot!((*self)@);
+        if let Some(res) = self.inner.get_ghost(self.index) {
+            self.index.incr_ghost();
+            proof_assert!((*self)@ == _before.tail());
+            Some(res)
+        } else {
+            proof_assert!(self.index == self.inner.len());
+            proof_assert!(self@ == Seq::empty());
+            None
+        }
+    }
+}
+impl<'a, T> crate::Iterator for SeqIterRef<'a, T> {
+    #[logic(prophetic, open)]
+    fn produces(self, visited: Seq<&'a T>, o: Self) -> bool {
+        let visited: Seq<T> = visited.to_owned_seq();
+        pearlite! { self@ == visited.concat(o@) }
+    }
+
+    #[logic(prophetic, open)]
+    fn completed(&mut self) -> bool {
+        pearlite! { self@ == Seq::empty() }
+    }
+
+    #[logic(law)]
+    #[ensures(self.produces(Seq::empty(), self))]
+    fn produces_refl(self) {}
+
+    #[logic(law)]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
 #[logic(open)]

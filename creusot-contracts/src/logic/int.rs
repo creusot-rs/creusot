@@ -37,30 +37,8 @@ impl Copy for Int {}
 #[trusted]
 impl Plain for Int {}
 
+// Logical functions
 impl Int {
-    /// Create a new `Int` value
-    ///
-    /// The result is wrapped in a [`Ghost`], so that it can only be access inside a
-    /// [`ghost!`] block.
-    ///
-    /// You should not have to use this method directly: instead, use the `int` suffix
-    /// inside of a `ghost` block:
-    /// ```
-    /// # use creusot_contracts::*;
-    /// let x: Ghost<Int> = ghost!(1int);
-    /// ghost! {
-    ///     let y: Int = 2int;
-    /// };
-    /// ```
-    #[trusted]
-    #[check(ghost)]
-    #[ensures(*result == value@)]
-    #[allow(unreachable_code)]
-    #[allow(unused_variables)]
-    pub fn new(value: i128) -> Ghost<Self> {
-        Ghost::conjure()
-    }
-
     /// Compute `self^p`.
     ///
     /// # Example
@@ -227,6 +205,42 @@ impl NegLogic for Int {
 }
 
 // ========== Ghost operations =============
+
+// Ghost functions
+impl Int {
+    /// Create a new `Int` value
+    ///
+    /// The result is wrapped in a [`Ghost`], so that it can only be access inside a
+    /// [`ghost!`] block.
+    ///
+    /// You should not have to use this method directly: instead, use the `int` suffix
+    /// inside of a `ghost` block:
+    /// ```
+    /// # use creusot_contracts::*;
+    /// let x: Ghost<Int> = ghost!(1int);
+    /// ghost! {
+    ///     let y: Int = 2int;
+    /// };
+    /// ```
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(*result == value@)]
+    #[allow(unreachable_code)]
+    #[allow(unused_variables)]
+    pub fn new(value: i128) -> Ghost<Self> {
+        Ghost::conjure()
+    }
+
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(^self == *self + 1)]
+    pub fn incr_ghost(&mut self) {}
+
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(^self == *self - 1)]
+    pub fn decr_ghost(&mut self) {}
+}
 
 impl PartialEq for Int {
     #[trusted]
