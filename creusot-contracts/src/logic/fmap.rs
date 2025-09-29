@@ -522,6 +522,17 @@ impl<K, V> FMap<K, V> {
     }
 }
 
+impl<'a, K, V> ::std::ops::Index<&'a K> for FMap<K, V> {
+    type Output = V;
+
+    #[check(ghost)]
+    #[requires(self.contains(*key))]
+    #[ensures(Some(*result) == self.get(*key))]
+    fn index(&self, key: &'a K) -> &Self::Output {
+        self.get_ghost(key).unwrap()
+    }
+}
+
 impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
     #[trusted]
     #[check(ghost)]
