@@ -20,7 +20,7 @@ pub fn metadata_logic<T: ?Sized>(_: *const T) -> <T as Pointee>::Metadata {
 /// We would need to generate one abstract Why3 function `metadata_of : T -> Metadata`
 /// and an axiom `view_usize (metadata_of value) = len (Slice.view value)`,
 /// so two Why3 declarations instead of one.
-#[logic(opaque)]
+#[logic(open)]
 #[intrinsic("metadata_matches")]
 pub fn metadata_matches<T: ?Sized>(_value: T, _metadata: <T as Pointee>::Metadata) -> bool {
     dead
