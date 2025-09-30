@@ -1,10 +1,12 @@
 //! Attributes that can be put on program functions to specify their contract.
 
-use super::{
-    doc::{self, document_spec},
-    pretyping,
+use crate::{
+    common::ContractSubject,
+    creusot::{
+        doc::{self, document_spec},
+        pretyping,
+    },
 };
-use crate::common::ContractSubject;
 use pearlite_syn::{Term, TermPath};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
@@ -30,7 +32,11 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     match item {
         ContractSubject::FnOrMethod(mut fn_or_meth) if fn_or_meth.is_trait_signature() => {
             let attrs = std::mem::take(&mut fn_or_meth.attrs);
-            let requires_tokens = sig_spec_item(req_name, fn_or_meth.sig.clone(), term);
+            let mut sig = fn_or_meth.sig.clone();
+            sig.ident = req_name.clone();
+            sig.output = parse_quote! { -> bool };
+
+            let requires_tokens = sig_spec_item(req_name, sig, term);
             TS1::from(quote! {
               #requires_tokens
               #[creusot::clause::requires=#name_tag]
@@ -77,13 +83,15 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     match item {
         ContractSubject::FnOrMethod(mut s) if s.is_trait_signature() => {
             let attrs = std::mem::take(&mut s.attrs);
-            let result = match s.sig.output {
+            let mut sig = s.sig.clone();
+            let result = match sig.output {
                 ReturnType::Default => parse_quote! { result: () },
-                ReturnType::Type(_, ref ty) => parse_quote! { result: #ty },
+                ReturnType::Type(_, ty) => parse_quote! { result: #ty },
             };
 
-            let mut sig = s.sig.clone();
+            sig.ident = ens_name.clone();
             sig.inputs.push(result);
+            sig.output = parse_quote! { -> bool };
             let ensures_tokens = sig_spec_item(ens_name, sig, term);
             TS1::from(quote! {
               #ensures_tokens
@@ -112,7 +120,8 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         }
         ContractSubject::Closure(mut clos) => {
             let res_id = Ident::new("res", Span::mixed_site());
-            let ensures_tokens = fn_spec_item(ens_name, FnSpecResultKind::Unified(res_id.clone()), term);
+            let ensures_tokens =
+                fn_spec_item(ens_name, FnSpecResultKind::Unified(res_id.clone()), term);
 
             let body = &clos.body;
             *clos.body = parse_quote!({
@@ -246,7 +255,7 @@ fn fn_spec_body(p: &Term) -> TokenStream {
     pretyping::encode_term(p).unwrap_or_else(|e| e.into_tokens())
 }
 
-fn spec_attrs(tag: &Ident) -> TokenStream {
+fn spec_attrs(tag: Ident) -> TokenStream {
     let name_tag = tag.to_string();
     quote! {
          #[creusot::no_translate]
@@ -266,7 +275,7 @@ enum FnSpecResultKind {
 // `requires` or `ensures`
 fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, p: Term) -> TokenStream {
     let fn_spec_body = fn_spec_body(&p);
-    let attrs = spec_attrs(&tag);
+    let attrs = spec_attrs(tag);
     let result = Ident::new("result", Span::call_site());
 
     let unify_ty_result = if let FnSpecResultKind::Unified(res) = &reskind {
@@ -291,11 +300,9 @@ fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, p: Term) -> TokenStream {
     }
 }
 
-fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
+fn sig_spec_item(tag: Ident, sig: Signature, p: Term) -> TokenStream {
     let fn_spec_body = fn_spec_body(&p);
-    let attrs = spec_attrs(&tag);
-    sig.ident = tag;
-    sig.output = parse_quote! { -> bool };
+    let attrs = spec_attrs(tag);
 
     quote! {
         #attrs

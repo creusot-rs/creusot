@@ -5,18 +5,15 @@
 //!
 //! For example, `1 + 2` becomes `creusot_contracts::logic::AddLogic::add(Int::new(1), Int::new(2))`.
 
-use pearlite_syn::Term as RT;
+use pearlite_syn::{Term, term::*};
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
+use quote::{ToTokens, quote, quote_spanned};
 use std::collections::HashSet;
 use syn::{
-    ExprMacro, Ident, Pat, PatIdent, PatType, UnOp,
+    ExprMacro, Ident, Lit, Pat, PatIdent, PatType, UnOp,
     spanned::Spanned,
     visit::{Visit, visit_pat},
 };
-
-use pearlite_syn::term::*;
-use quote::{ToTokens, quote, quote_spanned};
-use syn::Lit;
 
 #[derive(Debug)]
 pub enum EncodeError {
@@ -86,19 +83,19 @@ impl Locals {
     }
 }
 
-pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
+pub fn encode_term(term: &Term) -> Result<TokenStream, EncodeError> {
     encode_term_(term, &mut Locals::new())
 }
 
 // TODO: Rewrite this as a source to source transform and *then* call ToTokens on the result
-fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeError> {
+fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeError> {
     let sp = term.span();
     match term {
         // It's unclear what to do with macros. Either we translate the parameters, but then
         // it's impossible to handle proc macros whose parameters is not valid pearlite syntax,
         // or we don't translate parameters, but then we let the user write non-pearlite code
         // in pearlite...
-        RT::Macro(ExprMacro { mac, .. }) => {
+        Term::Macro(ExprMacro { mac, .. }) => {
             if ["proof_assert", "pearlite", "seq"].iter().any(|i| mac.path.is_ident(i)) {
                 Ok(term.to_token_stream())
             } else {
@@ -108,8 +105,8 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
                 ))
             }
         }
-        RT::Array(_) => Err(EncodeError::Unsupported(sp, "Array".into())),
-        RT::Binary(TermBinary { left, op, right }) => {
+        Term::Array(_) => Err(EncodeError::Unsupported(sp, "Array".into())),
+        Term::Binary(TermBinary { left, op, right }) => {
             let mut left = left;
             let mut right = right;
 
@@ -129,11 +126,11 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
                     | Rem(_)
             ) {
                 left = match &**left {
-                    RT::Paren(TermParen { expr, .. }) => expr,
+                    Term::Paren(TermParen { expr, .. }) => expr,
                     _ => left,
                 };
                 right = match &**right {
-                    RT::Paren(TermParen { expr, .. }) => expr,
+                    Term::Paren(TermParen { expr, .. }) => expr,
                     _ => right,
                 };
             }
@@ -177,14 +174,14 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }
         }
-        RT::Block(TermBlock { block, .. }) => Ok(encode_block_(block, locals)),
-        RT::Call(TermCall { func, args, .. }) => {
+        Term::Block(TermBlock { block, .. }) => Ok(encode_block_(block, locals)),
+        Term::Call(TermCall { func, args, .. }) => {
             let args: Vec<_> =
                 args.into_iter().map(|t| encode_term_(t, locals)).collect::<Result<_, _>>()?;
-            if let RT::Path(p) = &**func {
+            if let Term::Path(p) = &**func {
                 if p.inner.path.is_ident("old") {
                     return Ok(
-                        quote_spanned! {sp=> *::creusot_contracts::__stubs::old( #(#args),* ) },
+                        quote_spanned! {sp=> (*::creusot_contracts::__stubs::old( #(#args),* )) },
                     );
                 }
                 // Don't wrap function calls in `*&`.
@@ -196,23 +193,23 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
                 ))
             }
         }
-        RT::Cast(TermCast { expr, as_token, ty }) => {
+        Term::Cast(TermCast { expr, as_token, ty }) => {
             let expr_token = encode_term_(expr, locals)?;
             Ok(quote_spanned! {sp=> #expr_token #as_token  #ty})
         }
-        RT::Field(TermField { base, member, .. }) => {
+        Term::Field(TermField { base, member, .. }) => {
             let base = encode_term_(base, locals)?;
             Ok(quote!(#base . #member))
         }
-        RT::Group(TermGroup { expr, .. }) => {
+        Term::Group(TermGroup { expr, .. }) => {
             let term = encode_term_(expr, locals)?;
             let mut res = TokenStream::new();
             res.extend_one(TokenTree::Group(Group::new(Delimiter::None, term)));
             Ok(res)
         }
-        RT::If(TermIf { cond, then_branch, else_branch, .. }) => {
-            let cond = if let RT::Paren(TermParen { expr, .. }) = &**cond
-                && matches!(&**expr, RT::Quant(_))
+        Term::If(TermIf { cond, then_branch, else_branch, .. }) => {
+            let cond = if let Term::Paren(TermParen { expr, .. }) = &**cond
+                && matches!(&**expr, Term::Quant(_))
             {
                 &**expr
             } else {
@@ -233,8 +230,9 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
             };
             Ok(quote_spanned! {sp=> if #cond { #(#then_branch)* } #else_branch })
         }
-        RT::Index(TermIndex { expr, index, .. }) => {
-            let expr = if let RT::Paren(TermParen { expr, .. }) = &**expr { &**expr } else { expr };
+        Term::Index(TermIndex { expr, index, .. }) => {
+            let expr =
+                if let Term::Paren(TermParen { expr, .. }) = &**expr { &**expr } else { expr };
 
             let expr = encode_term_(expr, locals)?;
             let index = encode_term_(index, locals)?;
@@ -244,29 +242,29 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
                 (#expr).index_logic(#index)
             })
         }
-        RT::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
-        RT::Lit(TermLit { lit: lit @ Lit::Int(int) }) if int.suffix() == "" => {
+        Term::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
+        Term::Lit(TermLit { lit: lit @ Lit::Int(int) }) if int.suffix() == "" => {
             // FIXME: allow unbounded integers
             Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
         }
-        RT::Lit(TermLit { lit: Lit::Int(int) }) if int.suffix() == "int" => {
+        Term::Lit(TermLit { lit: Lit::Int(int) }) if int.suffix() == "int" => {
             let lit = syn::LitInt::new(int.base10_digits(), int.span());
             Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
         }
-        RT::Lit(TermLit { lit }) => Ok(quote_spanned! {sp=> #lit }),
-        RT::Match(TermMatch { expr, arms, .. }) => {
+        Term::Lit(TermLit { lit }) => Ok(quote_spanned! {sp=> #lit }),
+        Term::Match(TermMatch { expr, arms, .. }) => {
             let arms: Vec<_> =
                 arms.iter().map(|a| encode_arm_(a, locals)).collect::<Result<_, _>>()?;
             let expr = encode_term_(expr, locals)?;
             Ok(quote_spanned! {sp=> match #expr { #(#arms)* } })
         }
-        RT::MethodCall(TermMethodCall { receiver, method, turbofish, args, .. }) => {
+        Term::MethodCall(TermMethodCall { receiver, method, turbofish, args, .. }) => {
             let receiver = encode_term_(receiver, locals)?;
             let args: Vec<_> =
                 args.into_iter().map(|t| encode_term_(t, locals)).collect::<Result<_, _>>()?;
             Ok(quote_spanned! {sp=> #receiver . #method #turbofish ( #(#args),*) })
         }
-        RT::Paren(TermParen { paren_token, expr }) => {
+        Term::Paren(TermParen { paren_token, expr }) => {
             let mut tokens = TokenStream::new();
             let term = encode_term_(expr, locals)?;
             paren_token.surround(&mut tokens, |tokens| {
@@ -274,7 +272,7 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
             });
             Ok(tokens)
         }
-        RT::Path(path) if let Some(ident) = path.inner.path.get_ident() => {
+        Term::Path(path) if let Some(ident) = path.inner.path.get_ident() => {
             let term = if locals.is_ref_bound(ident) {
                 quote_spanned! { sp=> *#ident }
             } else {
@@ -282,16 +280,16 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
             };
             Ok(TokenStream::from(TokenTree::Group(Group::new(Delimiter::Parenthesis, term))))
         }
-        RT::Path(path) => Ok(quote_spanned! {sp=> #path}),
-        RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
-        RT::Reference(TermReference { mutability, expr, .. }) => {
+        Term::Path(path) => Ok(quote_spanned! {sp=> #path}),
+        Term::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
+        Term::Reference(TermReference { mutability, expr, .. }) => {
             let term = encode_term_(expr, locals)?;
             Ok(quote_spanned! {sp=>
                 & #mutability #term
             })
         }
-        RT::Repeat(_) => Err(EncodeError::Unsupported(term.span(), "Repeat".into())),
-        RT::Struct(TermStruct { path, fields, rest, brace_token, dot2_token }) => {
+        Term::Repeat(_) => Err(EncodeError::Unsupported(term.span(), "Repeat".into())),
+        Term::Struct(TermStruct { path, fields, rest, brace_token, dot2_token }) => {
             let mut ts = TokenStream::new();
             path.to_tokens(&mut ts);
 
@@ -321,7 +319,7 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
 
             Ok(ts)
         }
-        RT::Tuple(TermTuple { elems, .. }) => {
+        Term::Tuple(TermTuple { elems, .. }) => {
             if elems.is_empty() {
                 return Ok(quote_spanned! {sp=> () });
             }
@@ -329,8 +327,8 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
                 elems.into_iter().map(|t| encode_term_(t, locals)).collect::<Result<_, _>>()?;
             Ok(quote_spanned! {sp=> (#(#elems),*,) })
         }
-        RT::Type(ty) => Ok(quote_spanned! {sp=> #ty }),
-        RT::Unary(TermUnary { op, expr }) => {
+        Term::Type(ty) => Ok(quote_spanned! {sp=> #ty }),
+        Term::Unary(TermUnary { op, expr }) => {
             let term = encode_term_(expr, locals)?;
             if matches!(op, UnOp::Neg(_)) {
                 Ok(quote_spanned! {sp=> ::creusot_contracts::logic::ops::NegLogic::neg(#term) })
@@ -340,15 +338,15 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
                 })
             }
         }
-        RT::Final(TermFinal { term, .. }) => {
+        Term::Final(TermFinal { term, .. }) => {
             let term = encode_term_(term, locals)?;
             Ok(quote_spanned! {sp=>
-                * ::creusot_contracts::logic::ops::Fin::fin(#term)
+                (*::creusot_contracts::logic::ops::Fin::fin(#term))
             })
         }
-        RT::Model(TermModel { term, .. }) => {
+        Term::View(TermView { term, .. }) => {
             let term = match &**term {
-                RT::Paren(TermParen { expr, .. }) => expr,
+                Term::Paren(TermParen { expr, .. }) => expr,
                 _ => term,
             };
             let term = encode_term_(term, locals)?;
@@ -356,14 +354,14 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
                 ::creusot_contracts::model::View::view(#term)
             })
         }
-        RT::LogEq(TermLogEq { lhs, rhs, .. }) => {
+        Term::LogEq(TermLogEq { lhs, rhs, .. }) => {
             let lhs = encode_term_(lhs, locals)?;
             let rhs = encode_term_(rhs, locals)?;
             Ok(quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::equal(#lhs, #rhs)
             })
         }
-        RT::Impl(TermImpl { hyp, cons, .. }) => {
+        Term::Impl(TermImpl { hyp, cons, .. }) => {
             let hyp = match &**hyp {
                 Term::Paren(TermParen { expr, .. }) => match &**expr {
                     Term::Quant(_) => expr,
@@ -377,7 +375,7 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
                 ::creusot_contracts::__stubs::implication(#hyp, #cons)
             })
         }
-        RT::Quant(TermQuant { quant_token, args, trigger, term, .. }) => {
+        Term::Quant(TermQuant { quant_token, args, trigger, term, .. }) => {
             locals.open();
             let args_ref = args
                 .iter()
@@ -400,9 +398,9 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
                 )
             })
         }
-        RT::Dead(_) => Ok(quote_spanned! {sp=> *::creusot_contracts::__stubs::dead() }),
-        RT::Pearlite(term) => Ok(quote_spanned! {sp=> #term }),
-        RT::Closure(clos) => {
+        Term::Dead(_) => Ok(quote_spanned! {sp=> (*::creusot_contracts::__stubs::dead()) }),
+        Term::Pearlite(term) => Ok(quote_spanned! {sp=> #term }),
+        Term::Closure(clos) => {
             if clos.inputs.len() != 1 {
                 return Err(EncodeError::Unsupported(
                     term.span(),
@@ -484,7 +482,7 @@ fn encode_term_(term: &RT, locals: &mut Locals) -> Result<TokenStream, EncodeErr
                     #[creusot::no_translate] #[creusot::logic_closure] |#input| #retty #clos)
             })
         }
-        RT::__Nonexhaustive => todo!(),
+        Term::__Nonexhaustive => todo!(),
     }
 }
 

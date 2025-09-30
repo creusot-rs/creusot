@@ -1,7 +1,8 @@
 use crate::{
     backend::closures::ClosSubst,
     contracts_items::{
-        Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_open_inv_result,
+        Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_logic,
+        is_open_inv_result,
     },
     ctx::*,
     naming::{name, variable_name},
@@ -10,6 +11,7 @@ use crate::{
     },
     util::erased_identity_for_item,
 };
+use rustc_ast::Mutability;
 use rustc_hir::{AttrArgs, Safety, def::DefKind, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
