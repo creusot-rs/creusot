@@ -453,10 +453,11 @@ pub(crate) fn pearlite<'tcx>(
     }
 }
 
-pub(crate) fn pearlite_with_triggers<'tcx>(
+fn pearlite_with_triggers<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
 ) -> CreusotResult<(Box<[(PIdent, Ty<'tcx>)]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
+    let did = id.into();
     let Some((thir, expr)) = ctx.get_local_thir(id) else { return Err(Error::ErrorGuaranteed) };
     let lower = ThirTerm { ctx, item_id: id, thir };
 
@@ -468,13 +469,12 @@ pub(crate) fn pearlite_with_triggers<'tcx>(
     let to_pattern = |param: &thir::Param<'tcx>| {
         param.pat.as_ref().map(|box pat| lower.pattern_term(ctx, pat, true))
     };
-    let did = id.into();
-    let is_closure = ctx.tcx.is_closure_like(did);
+    let is_closure = ctx.is_closure_like(did);
     let patterns: Box<[Pattern]> = if is_spec(ctx.tcx, did) && is_closure {
         // Most specs are closures.
         // Preconditions and variants have all of their variables bound in the parent function.
         // Postconditions also bind a `result` variable.
-        let parent = ctx.tcx.parent(did).expect_local();
+        let parent = ctx.parent(did).expect_local();
         let Some((parent_thir, _)) = ctx.get_local_thir(parent) else {
             return Err(Error::ErrorGuaranteed);
         };

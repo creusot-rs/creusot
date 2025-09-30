@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::{logic::such_that, *};
 
 pub fn foo() {
-    let x = snapshot!(such_that(|x: Int| x + 1 == 42));
+    let x = snapshot!(such_that(|x| x + 1 == 42));
     proof_assert!(*x == 41);
 
     let y = even();

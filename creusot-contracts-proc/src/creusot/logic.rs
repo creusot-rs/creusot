@@ -84,25 +84,19 @@ pub fn logic(in_tags: TS1, tokens: TS1) -> TS1 {
         if let Some(Visibility::Public(_)) = tags.open {
             log.logic_body()
         } else {
-            doc::LogicBody::None
+            doc::LogicBody::Opaque
         },
     );
 
     match log {
-        LogicInput::Item(log) => {
-            let span = log.sig.span();
-
-            let (tags_toks, open_toks) = tags.tokens(&log.sig.ident);
-
-            let mut term = log.body;
-            let vis = log.vis;
-            let sig = log.sig;
-            let attrs = log.attrs;
+        LogicInput::Item(LogicItem { attrs, vis, sig, mut body }) => {
+            let span = sig.span();
+            let (tags_toks, open_toks) = tags.tokens(&sig.ident);
 
             if let Some(open_toks) = open_toks {
-                term.stmts.insert(0, pearlite_syn::TermStmt::Item(Item::Verbatim(open_toks)));
+                body.stmts.insert(0, pearlite_syn::TermStmt::Item(Item::Verbatim(open_toks)));
             }
-            let req_body = pretyping::encode_block(&term);
+            let req_body = pretyping::encode_block(&body);
 
             TS1::from(quote_spanned! {span =>
                 #tags_toks
@@ -111,7 +105,7 @@ pub fn logic(in_tags: TS1, tokens: TS1) -> TS1 {
                 #vis #sig #req_body
             })
         }
-        LogicInput::Sig(sig) => {
+        LogicInput::Sig(TraitItemSignature { attrs, sig, semi_token }) => {
             let span = sig.span();
 
             if tags.open.is_some() || tags.opaque {
@@ -123,9 +117,6 @@ pub fn logic(in_tags: TS1, tokens: TS1) -> TS1 {
                 .into();
             }
 
-            let attrs = sig.attrs;
-            let sig = sig.sig;
-
             let (tags_toks, open_toks) = tags.tokens(&sig.ident);
             assert!(open_toks.is_none());
 
@@ -133,7 +124,7 @@ pub fn logic(in_tags: TS1, tokens: TS1) -> TS1 {
                 #tags_toks
                 #(#attrs)*
                 #documentation
-                #sig ;
+                #sig #semi_token
             })
         }
     }

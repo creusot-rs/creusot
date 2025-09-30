@@ -19,7 +19,7 @@ pub trait WellFounded: Sized {
     /// # use creusot_contracts::{*, well_founded::WellFounded};
     /// struct MyInt(Int);
     /// impl WellFounded for MyInt {
-    ///     #[logic(open)]
+    ///     #[logic(open, inline)]
     ///     fn well_founded_relation(self, other: Self) -> bool {
     ///         Int::well_founded_relation(self.0, other.0)
     ///     }
@@ -38,7 +38,7 @@ pub trait WellFounded: Sized {
 }
 
 impl WellFounded for Int {
-    #[logic(open)]
+    #[logic(open, inline)]
     fn well_founded_relation(self, other: Self) -> bool {
         self >= 0 && self > other
     }
@@ -57,7 +57,7 @@ macro_rules! impl_well_founded {
         $(
 
         impl WellFounded for $t {
-            #[logic(open)]
+            #[logic(open, inline)]
             fn well_founded_relation(self, other: Self) -> bool {
                 self > other
             }
@@ -79,7 +79,7 @@ macro_rules! impl_well_founded {
 impl_well_founded!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
 impl<T: WellFounded> WellFounded for &T {
-    #[logic(open)]
+    #[logic(open, inline)]
     fn well_founded_relation(self, other: Self) -> bool {
         T::well_founded_relation(*self, *other)
     }
@@ -93,7 +93,7 @@ impl<T: WellFounded> WellFounded for &T {
 }
 
 impl<T: WellFounded> WellFounded for Box<T> {
-    #[logic(open)]
+    #[logic(open, inline)]
     fn well_founded_relation(self, other: Self) -> bool {
         T::well_founded_relation(*self, *other)
     }
@@ -108,24 +108,46 @@ impl<T: WellFounded> WellFounded for Box<T> {
 
 // === Implementation of `WellFounded` for tuples up to size 8.
 
+impl WellFounded for () {
+    #[logic(open, inline)]
+    fn well_founded_relation(self, _: Self) -> bool {
+        false
+    }
+
+    #[logic]
+    #[ensures(result >= 0)]
+    #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
+    fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
+        0
+    }
+}
+
 macro_rules! impl_tuple_to_pair {
-    ( $t1:ident = $idx1:tt , $($ts:ident = $idxs:tt),+ ) => {
+    ( $t1:ident = $idx1:tt, $($ts:ident = $idxs:tt,)* ) => {
         #[cfg(creusot)]
         #[allow(unused_parens)]
-        impl<$t1, $($ts),+> TupleToPair for ($t1, $($ts),+) {
-            type Target = ($t1, ($($ts),+));
+        impl<$t1, $($ts),*> TupleToPair for ($t1, $($ts,)*) {
+            type Target = ($t1, ($($ts,)*));
             #[logic]
             fn tuple_to_pair(self) -> Self::Target {
-                (self.0, ($( self . $idxs ),+))
+                (self.0, ($( self . $idxs, )*))
             }
         }
     };
 }
 
+/// Convert a tuple to a pair, because the lemmas below act on pairs.
+#[cfg(creusot)]
+trait TupleToPair {
+    type Target;
+    #[logic]
+    fn tuple_to_pair(self) -> Self::Target;
+}
+
 macro_rules! wf_tuples {
-    ( $t:ident = $idx:tt ) => {};
+    () => {};
     ( $($ts:ident = $idxs:tt),+ ) => {
-        impl_tuple_to_pair!($($ts=$idxs),+);
+        impl_tuple_to_pair!($($ts=$idxs,)+);
         wf_tuples!( @impl $($ts=$idxs),+ );
         wf_tuples!( @pop_last [$($ts=$idxs),+] [] );
     };
@@ -137,7 +159,7 @@ macro_rules! wf_tuples {
         wf_tuples!( $($ts2 = $idxs2),* );
     };
     ( @impl $($ts:ident = $idxs:tt),+ ) => {
-        impl<$($ts),+> WellFounded for ($($ts),+)
+        impl<$($ts),+> WellFounded for ($($ts,)+)
         where $($ts : WellFounded),+
         {
             wf_tuples!( @wf_relation self other {} [] $($ts=$idxs)+ );
@@ -165,7 +187,7 @@ macro_rules! wf_tuples {
         }
     };
     ( @wf_relation $name1:ident $name2:ident {$res:expr} [$($to_eq:tt)*] ) => {
-        #[logic(open)]
+        #[logic(open, inline)]
         fn well_founded_relation($name1, $name2: Self) -> bool {
             $res
         }
@@ -173,14 +195,6 @@ macro_rules! wf_tuples {
 }
 
 wf_tuples!(T0 = 0, T1 = 1, T2 = 2, T3 = 3, T4 = 4, T5 = 5, T6 = 6, T7 = 7);
-
-/// Convert a tuple to a pair, because the lemmas below act on pairs.
-#[cfg(creusot)]
-trait TupleToPair {
-    type Target;
-    #[logic]
-    fn tuple_to_pair(self) -> Self::Target;
-}
 
 /// Get an index > i, such that `s[index] < s[i]`.
 #[logic]
@@ -218,8 +232,8 @@ fn extract_nth<T1: WellFounded, T2: WellFounded>(s: Mapping<Int, (T1, T2)>, i: I
 #[logic]
 #[requires(forall<i> 0 <= i ==> <(T1, T2)>::well_founded_relation(s[i], s[i + 1]))]
 #[ensures(forall<i> 0 <= i ==> T1::well_founded_relation(result[i], result[i + 1]))]
-pub fn first_component_decr<T1: WellFounded, T2: WellFounded>(
+fn first_component_decr<T1: WellFounded, T2: WellFounded>(
     s: Mapping<Int, (T1, T2)>,
 ) -> Mapping<Int, T1> {
-    |i| if 0 <= i { s[extract_nth(s, i)].0 } else { s[i].0 }
+    |i| if 0 <= i { s[extract_nth(s, i)].0 } else { such_that(|_| true) }
 }

@@ -74,7 +74,10 @@ module M_loop_in_ghost__foo [#"loop_in_ghost.rs" 5 0 5 32]
   
   axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord] UInt32.le x y = (cmp_log x y <> C_Greater)
   
-  predicate well_founded_relation (self: UInt32.t) (other: UInt32.t) = [%#swell_founded] UInt32.gt self other
+  predicate well_founded_relation [@inline:trivial] (self: UInt32.t) (other: UInt32.t) =
+    [%#swell_founded] UInt32.gt self other
+  
+  meta "rewrite_def" predicate well_founded_relation
   
   let rec new (x: UInt32.t) (return' (x'0: UInt32.t)) = any
     [ return''0 (result: UInt32.t) -> {[%#sghost] result = x} (! return' {result}) ]

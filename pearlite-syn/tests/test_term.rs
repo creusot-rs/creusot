@@ -53,7 +53,7 @@ fn test_final() {
 #[test]
 fn test_model() {
     snapshot!(quote!(a@) as Term, @r###"
-    TermModel {
+    TermView {
         term: TermPath {
             inner: ExprPath {
                 attrs: [],
