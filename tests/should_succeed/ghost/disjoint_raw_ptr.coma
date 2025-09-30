@@ -21,8 +21,8 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
   let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 96 14 96 53
-  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 98 8 98 35
+  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 99 14 99 53
+  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 101 8 101 35
   
   use creusot.int.Int32
   use creusot.prelude.Opaque
@@ -34,11 +34,10 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   type tuple = { _p0: Opaque.ptr; _p1: t_PtrOwn }
   
-  function addr_logic (self: Opaque.ptr) : UInt64.t
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'0] Opaque.addr_logic_u64 self = (0: UInt64.t)
   
-  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'0] addr_logic self = (0: UInt64.t)
-  
-  axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self = (addr_logic self = (0: UInt64.t))
+  axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self
+      = (Opaque.addr_logic_u64 self = (0: UInt64.t))
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
@@ -127,7 +126,8 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
     {[@expl:disjoint_lemma 'own1' type invariant] [%#sptr_own'1] inv'3 own1}
     {[@expl:disjoint_lemma 'own2' type invariant] [%#sptr_own'2] inv'5 own2}
     any
-    [ return''0 (result: ()) -> {[%#sptr_own'3] addr_logic (ptr own1.current) <> addr_logic (ptr own2)}
+    [ return''0 (result: ()) -> {[%#sptr_own'3] Opaque.addr_logic_u64 (ptr own1.current)
+      <> Opaque.addr_logic_u64 (ptr own2)}
       {[%#sptr_own'4] own1.current = own1.final}
       (! return' {result}) ]
   
