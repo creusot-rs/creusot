@@ -45,6 +45,7 @@
     feature = "nightly",
     allow(incomplete_features, internal_features),
     feature(
+        core_intrinsics,
         const_destruct,
         fn_traits,
         print_internals,
