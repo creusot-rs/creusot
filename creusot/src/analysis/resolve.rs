@@ -8,8 +8,8 @@ use rustc_borrowck::consumers::{BorrowIndex, BorrowSet, PlaceExt, RegionInferenc
 use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
     mir::{
-        BasicBlock, Body, Location, PlaceRef, ProjectionElem, Rvalue, Statement, StatementKind,
-        TerminatorEdges, traversal,
+        BasicBlock, Body, BorrowKind, Location, PlaceRef, ProjectionElem, Rvalue, Statement,
+        StatementKind, TerminatorEdges, traversal,
     },
     ty::{TyCtxt, TyKind},
 };
@@ -97,8 +97,11 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
     fn frozen_of_borrows(&self, borrows: &MixedBitSet<BorrowIndex>) -> MixedBitSet<MovePathIndex> {
         let mut frozen = self.empty_bitset();
         for bi in borrows.iter() {
-            let place = self.borrow_set[bi].borrowed_place();
-            match self.move_data().rev_lookup.find(place.as_ref()) {
+            let bdata = &self.borrow_set[bi];
+            if !matches!(bdata.kind(), BorrowKind::Mut { .. }) {
+                continue;
+            }
+            match self.move_data().rev_lookup.find(bdata.borrowed_place().as_ref()) {
                 LookupResult::Exact(mp) => on_all_children_bits(&self.move_data(), mp, |mp| {
                     frozen.insert(mp);
                 }),
@@ -294,7 +297,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
         self.live.get().clone()
     }
 
-    pub fn frozen_places_before(&mut self, loc: Location) -> MixedBitSet<MovePathIndex> {
+    fn frozen_places_before(&mut self, loc: Location) -> MixedBitSet<MovePathIndex> {
         ExtendedLocation::Start(loc).seek_to(&mut self.borrows);
         self.frozen_of_borrows(self.borrows.get())
     }

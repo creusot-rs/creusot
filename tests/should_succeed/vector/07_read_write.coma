@@ -133,6 +133,14 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   meta "rewrite_def" predicate resolve'0
   
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
+  
   predicate invariant''4 [@inline:trivial] (self: t_Vec) = [%#sinvariant'0] inv'2 self
   
   meta "rewrite_def" predicate invariant''4
@@ -185,14 +193,6 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
                                                                                                   _p1 = rhs }}
     any [ return''0 (result: bool) -> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'1 _0
-  
-  meta "rewrite_def" predicate resolve'2
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -214,13 +214,12 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
       [ s0 = [ &_6 <- { _6 with current = x'0 } ] s1
       | s1 = {[@expl:type invariant] inv'4 _6} s2
       | s2 = -{resolve'0 _6}- s3
-      | s3 = index {a'0.current} {i'0} (fun (_ret: t_T) -> [ &_12 <- _ret ] s4)
-      | s4 = bb2 ]
+      | s3 = {[@expl:type invariant] inv'3 a'0} s4
+      | s4 = -{resolve'2 a'0}- s5
+      | s5 = index {a'0.current} {i'0} (fun (_ret: t_T) -> [ &_12 <- _ret ] s6)
+      | s6 = bb2 ]
     | bb2 = s0 [ s0 = eq {_12} {x'0} (fun (_ret: bool) -> [ &_10 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = {[@expl:type invariant] inv'3 a'0} s1
-      | s1 = -{resolve'2 a'0}- s2
-      | s2 = any [ br0 -> {_10 = false} (! bb4) | br1 -> {_10} (! bb6) ] ]
+    | bb3 = any [ br0 -> {_10 = false} (! bb4) | br1 -> {_10} (! bb6) ]
     | bb6 = return''0 {_0}
     | bb4 = {[%#s07_read_write] false} any ]
     [ & _0: () = Any.any_l ()

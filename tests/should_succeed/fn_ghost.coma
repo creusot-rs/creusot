@@ -250,6 +250,8 @@ module M_fn_ghost__takes_ghost_fn [#"fn_ghost.rs" 18 0 18 63]
   
   predicate inv (_0: t_F)
   
+  predicate resolve (_0: t_F)
+  
   predicate invariant' [@inline:trivial] (self: t_F) = [%#sinvariant] inv self
   
   meta "rewrite_def" predicate invariant'
@@ -261,8 +263,6 @@ module M_fn_ghost__takes_ghost_fn [#"fn_ghost.rs" 18 0 18 63]
   predicate precondition (self: t_F) (args: Int32.t)
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate resolve (_0: t_F)
   
   predicate postcondition_mut (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
@@ -319,10 +319,11 @@ module M_fn_ghost__takes_ghost_fn [#"fn_ghost.rs" 18 0 18 63]
     {[@expl:takes_ghost_fn requires] [%#sfn_ghost'1] precondition f (1: Int32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_5 <- [%#sfn_ghost] (1: Int32.t) ] s1
-      | s1 = call {f'0} {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb2 ]
+      [ s0 = {[@expl:type invariant] inv f'0} s1
+      | s1 = -{resolve f'0}- s2
+      | s2 = [ &_5 <- [%#sfn_ghost] (1: Int32.t) ] s3
+      | s3 = call {f'0} {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s4)
+      | s4 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: Int32.t = Any.any_l () | & f'0: t_F = f | & _5: Int32.t = Any.any_l () ])
     [ return''0 (result: Int32.t) ->
     {[@expl:takes_ghost_fn ensures] [%#sfn_ghost'2] postcondition f (1: Int32.t) result}

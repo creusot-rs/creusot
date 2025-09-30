@@ -740,6 +740,22 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 150 4 150 41] (* My
       (! {false}
       any) ]
   
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_K) = [%#sinvariant] inv self.current /\ inv self.final
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'10 (_0: MutBorrow.t t_K)
+  
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_K [inv'10 x]. inv'10 x = invariant''6 x
+  
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_K) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_K) = resolve'1 _0
+  
+  meta "rewrite_def" predicate resolve'2
+  
   type tuple'0 = { _p0'0: t_K; _p1'0: t_K }
   
   predicate precondition'0 (self: ()) (args: tuple'0)
@@ -758,22 +774,6 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 150 4 150 41] (* My
                                                                                                     _p1'0 = rhs }}
     any
     [ return''0 (result: bool) -> {postcondition_once'0 () { _p0'0 = self_; _p1'0 = rhs } result} (! return' {result}) ]
-  
-  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_K) = [%#sinvariant] inv self.current /\ inv self.final
-  
-  meta "rewrite_def" predicate invariant''6
-  
-  predicate inv'10 (_0: MutBorrow.t t_K)
-  
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_K [inv'10 x]. inv'10 x = invariant''6 x
-  
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_K) = [%#sresolve] self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_K) = resolve'1 _0
-  
-  meta "rewrite_def" predicate resolve'2
   
   predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_V) =
     [%#sinvariant] inv'0 self.current /\ inv'0 self.final
@@ -962,12 +962,11 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 150 4 150 41] (* My
                     [ &tl <- _ret ] -{inv'3 _ret.final}-
                     [ &l <- { l with current = C_Cons r0 _ret.final } ] s3))
           | s3 = [ &tl'0 <- tl ] s4
-          | s4 = eq {k.current} {key'0} (fun (_ret: bool) -> [ &_38 <- _ret ] s5)
-          | s5 = bb11 ]
-        | bb11 = s0
-          [ s0 = {[@expl:type invariant] inv'10 k} s1
-          | s1 = -{resolve'2 k}- s2
-          | s2 = any [ br0 -> {_38 = false} (! bb13) | br1 -> {_38} (! bb12) ] ]
+          | s4 = {[@expl:type invariant] inv'10 k} s5
+          | s5 = -{resolve'2 k}- s6
+          | s6 = eq {k.current} {key'0} (fun (_ret: bool) -> [ &_38 <- _ret ] s7)
+          | s7 = bb11 ]
+        | bb11 = any [ br0 -> {_38 = false} (! bb13) | br1 -> {_38} (! bb12) ]
         | bb13 = s0
           [ s0 = {[@expl:type invariant] inv'11 v} s1
           | s1 = -{resolve'4 v}- s2

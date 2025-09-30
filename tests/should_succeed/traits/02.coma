@@ -10,6 +10,8 @@ module M_02__omg [#"02.rs" 11 0 11 30]
   
   predicate inv (_0: t_T)
   
+  predicate resolve (_0: t_T)
+  
   predicate invariant' [@inline:trivial] (self: t_T) = [%#sinvariant] inv self
   
   meta "rewrite_def" predicate invariant'
@@ -32,16 +34,17 @@ module M_02__omg [#"02.rs" 11 0 11 30]
   let rec is_true (self: t_T) (return' (x: bool)) = {[@expl:is_true requires] precondition () self}
     any [ return''0 (result: bool) -> {postcondition_once () self result} (! return' {result}) ]
   
-  predicate resolve (_0: t_T)
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec omg [#"02.rs" 11 0 11 30] (a: t_T) (return' (x: bool)) = {[@expl:omg 'a' type invariant] [%#s02] inv a}
     (! bb0
-    [ bb0 = s0 [ s0 = is_true {a'0} (fun (_ret: bool) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv a'0} s1 | s1 = -{resolve a'0}- s2 | s2 = bb2 ]
+    [ bb0 = s0
+      [ s0 = {[@expl:type invariant] inv a'0} s1
+      | s1 = -{resolve a'0}- s2
+      | s2 = is_true {a'0} (fun (_ret: bool) -> [ &_0 <- _ret ] s3)
+      | s3 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: bool = Any.any_l () | & a'0: t_T = a ])
     [ return''0 (result: bool) -> {[@expl:omg ensures] [%#s02'0] result = true} (! return' {result}) ]
 end

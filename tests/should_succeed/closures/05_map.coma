@@ -72,36 +72,60 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
     [ good (field_0: t_A) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_A [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  type t_B
-  
   predicate inv'3 (_0: t_F)
   
-  predicate invariant''0 [@inline:trivial] (self: t_F) = [%#sinvariant'0] inv'3 self
+  predicate inv'4 (_0: t_Map)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Map [inv'4 x]. inv'4 x
+      = match x with
+        | {t_Map__iter = iter; t_Map__func = func} -> inv iter /\ inv'3 func
+        end
+  
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Map) =
+    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'4 (_0: t_F)
+  predicate inv'5 (_0: MutBorrow.t t_Map)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_F [inv'4 x]. inv'4 x = invariant''0 x
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Map [inv'5 x]. inv'5 x = invariant''0 x
   
-  predicate inv'5 (_0: t_A)
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Map) = [%#sresolve] self.final = self.current
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_A [inv'5 x]. inv'5 x = (let x0 = x in inv'1 x0)
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Map) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  type t_B
+  
+  predicate invariant''1 [@inline:trivial] (self: t_F) = [%#sinvariant'0] inv'3 self
+  
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'6 (_0: t_F)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_F [inv'6 x]. inv'6 x = invariant''1 x
+  
+  predicate inv'7 (_0: t_A)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_A [inv'7 x]. inv'7 x = (let x0 = x in inv'1 x0)
   
   predicate precondition'0 (self: t_F) (args: t_A)
   
-  predicate inv'6 (_0: t_B)
+  predicate inv'8 (_0: t_B)
   
   predicate postcondition_once'0 (self: t_F) (args: t_A) (result: t_B)
   
-  predicate resolve (_0: t_F)
+  predicate resolve'1 (_0: t_F)
   
   predicate postcondition_mut (self: t_F) (args: t_A) (result_state: t_F) (result: t_B)
   
   function fn_mut_once (self: t_F) (args: t_A) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_A, res: t_B. [%#sops'12] postcondition_once'0 self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
@@ -129,7 +153,7 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
   function fn_once (self: t_F) (args: t_A) (res: t_B) : ()
   
   axiom fn_once_spec: forall self: t_F, args: t_A, res: t_B. [%#sops'4] postcondition_once'0 self args res
-      = (postcondition self args res /\ resolve self)
+      = (postcondition self args res /\ resolve'1 self)
   
   function fn_mut (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
@@ -137,34 +161,10 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
     forall self: t_F, args: t_A, res_state: t_F, res: t_B. [%#sops'3] postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec call (self_: t_F) (arg: t_A) (return' (x: t_B)) = {[@expl:call 'self_' type invariant] [%#sops] inv'4 self_}
-    {[@expl:call 'arg' type invariant] [%#sops'0] inv'5 arg}
+  let rec call (self_: t_F) (arg: t_A) (return' (x: t_B)) = {[@expl:call 'self_' type invariant] [%#sops] inv'6 self_}
+    {[@expl:call 'arg' type invariant] [%#sops'0] inv'7 arg}
     {[@expl:call requires] [%#sops'1] precondition'0 self_ arg}
-    any [ return''0 (result: t_B) -> {inv'6 result} {[%#sops'2] postcondition self_ arg result} (! return' {result}) ]
-  
-  predicate inv'7 (_0: t_Map)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Map [inv'7 x]. inv'7 x
-      = match x with
-        | {t_Map__iter = iter; t_Map__func = func} -> inv iter /\ inv'3 func
-        end
-  
-  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Map) =
-    [%#sinvariant] inv'7 self.current /\ inv'7 self.final
-  
-  meta "rewrite_def" predicate invariant''1
-  
-  predicate inv'8 (_0: MutBorrow.t t_Map)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Map [inv'8 x]. inv'8 x = invariant''1 x
-  
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_Map) = [%#sresolve] self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_0: MutBorrow.t t_Map) = resolve'0 _0
-  
-  meta "rewrite_def" predicate resolve'1
+    any [ return''0 (result: t_B) -> {inv'8 result} {[%#sops'2] postcondition self_ arg result} (! return' {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 t_B
   
@@ -173,7 +173,7 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
   axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'9 x]. inv'9 x
       = match x with
         | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'6 a_0
+        | C_Some'0 a_0 -> inv'8 a_0
         end
   
   meta "compute_max_steps" 1000000
@@ -181,7 +181,7 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
   meta "select_lsinst" "all"
   
   let rec next'0 [#"05_map.rs" 20 4 20 44] (self: MutBorrow.t t_Map) (return' (x: t_Option'0)) =
-    {[@expl:next 'self' type invariant] [%#s05_map] inv'8 self}
+    {[@expl:next 'self' type invariant] [%#s05_map] inv'5 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv (self'0.current).t_Map__iter}
@@ -194,12 +194,13 @@ module M_05_map__qyi10775967587165326061__next [#"05_map.rs" 20 4 20 44] (* <Map
     | bb1 = any [ br0 -> {_2 = C_None} (! bb3) | br1 (x0: t_A) -> {_2 = C_Some x0} (! bb4) ]
     | bb4 = s0
       [ s0 = v_Some {_2} (fun (r0: t_A) -> [ &e <- r0 ] s1)
-      | s1 = [ &_8 <- e ] s2
-      | s2 = call {(self'0.current).t_Map__func} {_8} (fun (_ret: t_B) -> [ &_6 <- _ret ] s3)
-      | s3 = bb6 ]
-    | bb6 = s0 [ s0 = {[@expl:type invariant] inv'8 self'0} s1 | s1 = -{resolve'1 self'0}- s2 | s2 = bb7 ]
+      | s1 = {[@expl:type invariant] inv'5 self'0} s2
+      | s2 = -{resolve'0 self'0}- s3
+      | s3 = [ &_8 <- e ] s4
+      | s4 = call {(self'0.current).t_Map__func} {_8} (fun (_ret: t_B) -> [ &_6 <- _ret ] s5)
+      | s5 = bb7 ]
     | bb7 = s0 [ s0 = [ &_0 <- C_Some'0 _6 ] s1 | s1 = bb11 ]
-    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'8 self'0} s1 | s1 = -{resolve'1 self'0}- s2 | s2 = bb5 ]
+    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'5 self'0} s1 | s1 = -{resolve'0 self'0}- s2 | s2 = bb5 ]
     | bb5 = s0 [ s0 = [ &_0 <- C_None'0 ] s1 | s1 = bb11 ]
     | bb11 = return''0 {_0} ]
     [ & _0: t_Option'0 = Any.any_l ()
