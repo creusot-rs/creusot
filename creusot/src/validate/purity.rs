@@ -275,7 +275,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             self.ctx.dcx().span_err(self.thir[fun].span, msg);
                         }
                     }
-                    if Intrinsic::SnapFromFn.is(self.ctx, func_did) {
+                    if Intrinsic::SnapshotFromFn.is(self.ctx, func_did) {
                         assert!(args.len() == 1);
                         let Some(ClosureKind::Spec(closure_id)) = self.get_spec_closure(args[0])
                         else {

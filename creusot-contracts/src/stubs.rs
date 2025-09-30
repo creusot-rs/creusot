@@ -62,7 +62,7 @@ pub fn closure_result<R: ?Sized>(_: R, _: R) {}
 #[check(ghost)]
 #[trusted]
 #[intrinsic("snapshot_from_fn")]
-pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> crate::Snapshot<T>>(_: F) -> crate::Snapshot<T> {
+pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> T>(_: F) -> crate::Snapshot<T> {
     panic!()
 }
 

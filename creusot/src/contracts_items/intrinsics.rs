@@ -104,7 +104,7 @@ contracts_items! {
     "structural_resolve"        StructuralResolve
     "invariant"                 Invariant
     "resolve_method"            ResolveMethod
-    "snapshot_from_fn"          SnapFromFn
+    "snapshot_from_fn"          SnapshotFromFn
     "snapshot_deref"            SnapshotDeref
     "snapshot_deref_mut"        SnapshotDerefMut
     "ghost_new"                 GhostNew
