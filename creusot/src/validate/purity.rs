@@ -208,7 +208,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
             ExprKind::Call { fun, ref args, .. } => {
                 if let &FnDef(func_did, subst) = self.thir[fun].ty.kind() {
                     // try to specialize the called function if it is a trait method.
-                    let subst = self.ctx.erase_regions(subst);
+                    let subst = self.ctx.erase_and_anonymize_regions(subst);
                     let (func_did, _) =
                         TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, func_did, subst)
                             .to_opt(func_did, subst)

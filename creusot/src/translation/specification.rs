@@ -217,7 +217,7 @@ pub(crate) fn inherited_extern_spec<'tcx>(
 
         let assoc = ctx.opt_associated_item(def_id)?;
         let trait_ref = ctx.impl_trait_ref(assoc.container_id(ctx.tcx))?;
-        let id = assoc.trait_item_def_id?;
+        let id = assoc.trait_item_def_id()?;
 
         if ctx.extern_spec(id).is_none() {
             return None;

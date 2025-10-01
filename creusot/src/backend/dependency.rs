@@ -47,8 +47,8 @@ impl<'tcx> Dependency<'tcx> {
     }
 
     // FIXME: this function should not be necessary, dependencies should not be created non-normalized
-    pub(crate) fn erase_regions(self, tcx: TyCtxt<'tcx>) -> Self {
-        tcx.erase_regions(self)
+    pub(crate) fn erase_and_anonymize_regions(self, tcx: TyCtxt<'tcx>) -> Self {
+        tcx.erase_and_anonymize_regions(self)
     }
 
     pub(crate) fn base_ident(self, ctx: &TranslationCtx<'tcx>) -> Option<Symbol> {
@@ -74,7 +74,7 @@ impl<'tcx> Dependency<'tcx> {
                         .replace(|c: char| !(c.is_ascii_alphanumeric() || c == '\''), "_"),
                 ))),
                 TyKind::Tuple(_) => Some(Symbol::intern("tuple")),
-                TyKind::Dynamic(_, _, _) => {
+                TyKind::Dynamic(_, _) => {
                     Some(Symbol::intern(&type_string(ctx.tcx, String::new(), ty)))
                 }
                 _ => None,
@@ -193,7 +193,7 @@ fn type_string_walk(tcx: TyCtxt, prefix: &mut String, ty: Ty) {
             None => push_(prefix, "x"),
             Some(name) => push_(prefix, &to_alphanumeric(name.as_str())),
         },
-        Dynamic(traits, _, _) => {
+        Dynamic(traits, _) => {
             prefix.push_str("dyn");
             for tr in traits.iter() {
                 let ty::ExistentialPredicate::Trait(tr) = tr.skip_binder() else { continue };

@@ -51,7 +51,7 @@ use rustc_middle::{
     ty::{self, AdtDef, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
 use rustc_span::{DUMMY_SP, Span};
-use rustc_type_ir::{DynKind, IntTy};
+use rustc_type_ir::IntTy;
 use std::{collections::HashMap, fmt::Debug, iter::once};
 use why3::{
     Ident, Name,
@@ -739,7 +739,7 @@ impl<'tcx> RValue<'tcx> {
             RValue::Cast(e, source, target)
                 if let Some(source) = source.builtin_deref(false)
                     && let Some(target) = target.builtin_deref(false)
-                    && let TyKind::Dynamic(_, _, _) = target.kind() =>
+                    && let TyKind::Dynamic(_, _) = target.kind() =>
             {
                 let cast = lower.names.dyn_cast(source, target);
                 Exp::var(cast).app(vec![e.into_why(lower, istmts)])
@@ -818,8 +818,6 @@ impl<'tcx> RValue<'tcx> {
                     _ => unsupported_cast(lower.ctx, span, source, target),
                 }
             }
-            RValue::Len(op) => Exp::qvar(lower.names.in_pre(PreMod::Slice, "length"))
-                .app([op.into_why(lower, istmts)]),
             RValue::Array(fields) => {
                 let id = Ident::fresh_local("__arr_temp");
                 let ty = lower.ty(ty);
@@ -1435,5 +1433,5 @@ pub fn ptr_cast_kind<'tcx>(
 /// If `true`, this is definitely an unsized type, so pointers to it must be fat.
 /// If `false`, nothing is known for sure.
 pub fn is_unsized(ty: &Ty) -> bool {
-    matches!(ty.kind(), TyKind::Str | TyKind::Slice(_) | TyKind::Dynamic(_, _, DynKind::Dyn))
+    matches!(ty.kind(), TyKind::Str | TyKind::Slice(_) | TyKind::Dynamic(_, _))
 }

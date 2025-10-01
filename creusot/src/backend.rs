@@ -2,7 +2,7 @@ use crate::{
     contracts_items::{is_spec, is_trusted},
     ctx::{HasTyCtxt, ItemType, TranslatedItem, TranslationCtx},
     naming::ModulePath,
-    util::path_of_span,
+    util::{impl_subject, path_of_span},
 };
 use creusot_args::options::SpanMode;
 use indexmap::IndexMap;
@@ -165,7 +165,7 @@ impl<'tcx> Why3Generator<'tcx> {
             let parent_id = key.parent?; // The last segment is CrateRoot. Skip it.
 
             if key.disambiguated_data.data == rustc_hir::definitions::DefPathData::Impl {
-                return Some(display_impl_subject(&tcx.impl_subject(id).skip_binder()));
+                return Some(display_impl_subject(tcx, id));
             }
             id.index = parent_id;
         }
@@ -182,10 +182,10 @@ impl<'tcx> HasTyCtxt<'tcx> for Why3Generator<'tcx> {
     }
 }
 
-fn display_impl_subject(i: &rustc_middle::ty::ImplSubject<'_>) -> String {
-    match i {
-        rustc_middle::ty::ImplSubject::Trait(trait_ref) => trait_ref.to_string(),
-        rustc_middle::ty::ImplSubject::Inherent(ty) => ty.to_string(),
+fn display_impl_subject(tcx: TyCtxt, id: DefId) -> String {
+    match impl_subject(tcx, id) {
+        Ok(trait_ref) => trait_ref.to_string(),
+        Err(ty) => ty.to_string(),
     }
 }
 

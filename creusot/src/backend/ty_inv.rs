@@ -76,7 +76,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
             | TyKind::FnDef(_, _)
             | TyKind::FnPtr(..)
             | TyKind::RawPtr(_, _)
-            | TyKind::Dynamic(_, _, _) => (),
+            | TyKind::Dynamic(_, _) => (),
             _ => ctx.dcx().span_fatal(span, format!("Unsupported type: {ty}")),
         }
     }

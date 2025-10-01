@@ -139,7 +139,6 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
             RValue::Constructor(_, _, es) => es.iter().for_each(|e| self.visit_operand(e)),
             RValue::Cast(e, _, _) => self.visit_operand(e),
             RValue::Tuple(es) => es.iter().for_each(|e| self.visit_operand(e)),
-            RValue::Len(e) => self.visit_operand(e),
             RValue::Array(es) => es.iter().for_each(|e| self.visit_operand(e)),
             RValue::Repeat(l, r) => {
                 self.visit_operand(l);
@@ -327,7 +326,6 @@ impl<'tcx> SimplePropagator<'tcx> {
             RValue::Constructor(_, _, es) => es.iter_mut().for_each(|e| self.visit_operand(e)),
             RValue::Cast(e, _, _) => self.visit_operand(e),
             RValue::Tuple(es) => es.iter_mut().for_each(|e| self.visit_operand(e)),
-            RValue::Len(e) => self.visit_operand(e),
             RValue::Array(es) => es.iter_mut().for_each(|e| self.visit_operand(e)),
             RValue::Repeat(l, r) => {
                 self.visit_operand(l);

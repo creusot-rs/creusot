@@ -18,7 +18,7 @@ use rustc_span::{Span, Symbol};
 use creusot_args::options::SpanMode;
 
 pub(crate) fn erased_identity_for_item(tcx: TyCtxt, did: DefId) -> GenericArgsRef {
-    tcx.erase_regions(GenericArgs::identity_for_item(tcx, did))
+    tcx.erase_and_anonymize_regions(GenericArgs::identity_for_item(tcx, did))
 }
 
 pub(crate) fn parent_module(tcx: TyCtxt, mut id: DefId) -> DefId {
@@ -139,6 +139,16 @@ fn hashed_symbol(data: DefPathData) -> Option<Symbol> {
         | OpaqueTy
         | SyntheticCoroutineBody
         | NestedStatic => None,
+    }
+}
+
+pub fn impl_subject<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    id: DefId,
+) -> Result<ty::TraitRef<'tcx>, ty::Ty<'tcx>> {
+    match tcx.impl_trait_ref(id) {
+        Some(trait_ref) => Ok(trait_ref.skip_binder()),
+        None => Err(tcx.type_of(id).skip_binder()),
     }
 }
 

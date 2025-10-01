@@ -169,7 +169,7 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
 ) -> Result<(), Vec<FulfillmentError<'tcx>>> {
     let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(infcx);
     for predicate in p {
-        let predicate = infcx.tcx.erase_regions(predicate);
+        let predicate = infcx.tcx.erase_and_anonymize_regions(predicate);
         let cause = ObligationCause::dummy_with_span(sp);
         let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
         fulfill_cx.register_predicate_obligation(infcx, obligation);
@@ -326,7 +326,7 @@ impl<'tcx> TraitResolved<'tcx> {
                 );
                 let substs = substs.rebase_onto(tcx, trait_ref.def_id, args);
 
-                let leaf_substs = tcx.erase_regions(substs);
+                let leaf_substs = tcx.erase_and_anonymize_regions(substs);
 
                 TraitResolved::Instance {
                     def: (leaf_def.item.def_id, leaf_substs),
@@ -348,7 +348,7 @@ impl<'tcx> TraitResolved<'tcx> {
                 TraitResolved::UnknownFound
             }
             ImplSource::Builtin(_, _) => {
-                if matches!(substs.type_at(0).kind(), rustc_middle::ty::Dynamic(_, _, _)) {
+                if matches!(substs.type_at(0).kind(), rustc_middle::ty::Dynamic(_, _)) {
                     // These types are not supported, but we want to display a proper error message because
                     // they are rather common in real Rust code, and this is not the right place to emit
                     // such an error message.
