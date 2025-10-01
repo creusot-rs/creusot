@@ -24,6 +24,8 @@ module M_13_ref_box__call_fn [#"13_ref_box.rs" 6 0 6 50]
   
   predicate inv (_0: t_F)
   
+  predicate resolve (_0: t_F)
+  
   predicate invariant' [@inline:trivial] (self: t_F) = [%#sinvariant] inv self
   
   meta "rewrite_def" predicate invariant'
@@ -35,8 +37,6 @@ module M_13_ref_box__call_fn [#"13_ref_box.rs" 6 0 6 50]
   predicate precondition (self: t_F) (args: Int32.t)
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate resolve (_0: t_F)
   
   predicate postcondition_mut (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
@@ -92,8 +92,12 @@ module M_13_ref_box__call_fn [#"13_ref_box.rs" 6 0 6 50]
     {[@expl:call_fn 'f' type invariant] [%#s13_ref_box] inv f}
     {[@expl:call_fn requires] [%#s13_ref_box'0] precondition f x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_6 <- x'0 ] s1 | s1 = call {f'0} {_6} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb2 ]
+    [ bb0 = s0
+      [ s0 = {[@expl:type invariant] inv f'0} s1
+      | s1 = -{resolve f'0}- s2
+      | s2 = [ &_6 <- x'0 ] s3
+      | s3 = call {f'0} {_6} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s4)
+      | s4 = bb2 ]
     | bb2 = return''0 {_0} ]
     [ & _0: Int32.t = Any.any_l () | & f'0: t_F = f | & x'0: Int32.t = x | & _6: Int32.t = Any.any_l () ])
     [ return''0 (result: Int32.t) -> {[@expl:call_fn ensures] [%#s13_ref_box'1] postcondition f x result}
@@ -259,6 +263,8 @@ module M_13_ref_box__test1 [#"13_ref_box.rs" 24 0 24 52]
   
   predicate inv (_0: t_F)
   
+  predicate resolve (_0: t_F)
+  
   predicate invariant' [@inline:trivial] (self: t_F) = [%#sinvariant] inv self
   
   meta "rewrite_def" predicate invariant'
@@ -274,8 +280,6 @@ module M_13_ref_box__test1 [#"13_ref_box.rs" 24 0 24 52]
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate resolve (_0: t_F)
   
   predicate postcondition_mut (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
@@ -387,8 +391,11 @@ module M_13_ref_box__test1 [#"13_ref_box.rs" 24 0 24 52]
     {[@expl:test1 'f' type invariant] [%#s13_ref_box] inv f}
     {[@expl:test1 requires] [%#s13_ref_box'0] precondition f x}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fn {f'0} {x'0} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb2 ]
+    [ bb0 = s0
+      [ s0 = {[@expl:type invariant] inv f'0} s1
+      | s1 = -{resolve f'0}- s2
+      | s2 = call_fn {f'0} {x'0} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s3)
+      | s3 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: Int32.t = Any.any_l () | & f'0: t_F = f | & x'0: Int32.t = x ])
     [ return''0 (result: Int32.t) -> {[@expl:test1 ensures] [%#s13_ref_box'1] postcondition f x result}
       (! return' {result}) ]
@@ -584,6 +591,8 @@ module M_13_ref_box__test3 [#"13_ref_box.rs" 36 0 36 52]
   
   predicate inv (_0: t_F)
   
+  predicate resolve (_0: t_F)
+  
   predicate invariant' [@inline:trivial] (self: t_F) = [%#sinvariant] inv self
   
   meta "rewrite_def" predicate invariant'
@@ -599,8 +608,6 @@ module M_13_ref_box__test3 [#"13_ref_box.rs" 36 0 36 52]
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate resolve (_0: t_F)
   
   predicate postcondition_mut (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
@@ -695,8 +702,11 @@ module M_13_ref_box__test3 [#"13_ref_box.rs" 36 0 36 52]
     {[@expl:test3 'f' type invariant] [%#s13_ref_box] inv f}
     {[@expl:test3 requires] [%#s13_ref_box'0] precondition f x}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fnmut {f'0} {x'0} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb2 ]
+    [ bb0 = s0
+      [ s0 = {[@expl:type invariant] inv f'0} s1
+      | s1 = -{resolve f'0}- s2
+      | s2 = call_fnmut {f'0} {x'0} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s3)
+      | s3 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: Int32.t = Any.any_l () | & f'0: t_F = f | & x'0: Int32.t = x ])
     [ return''0 (result: Int32.t) -> {[@expl:test3 ensures] [%#s13_ref_box'1] postcondition f x result}
       (! return' {result}) ]
@@ -1035,6 +1045,8 @@ module M_13_ref_box__test6 [#"13_ref_box.rs" 54 0 54 52]
   
   predicate inv (_0: t_F)
   
+  predicate resolve (_0: t_F)
+  
   predicate invariant' [@inline:trivial] (self: t_F) = [%#sinvariant] inv self
   
   meta "rewrite_def" predicate invariant'
@@ -1050,8 +1062,6 @@ module M_13_ref_box__test6 [#"13_ref_box.rs" 54 0 54 52]
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate resolve (_0: t_F)
   
   predicate postcondition_mut (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
@@ -1112,8 +1122,11 @@ module M_13_ref_box__test6 [#"13_ref_box.rs" 54 0 54 52]
     {[@expl:test6 'f' type invariant] [%#s13_ref_box] inv f}
     {[@expl:test6 requires] [%#s13_ref_box'0] precondition f x}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fnonce {f'0} {x'0} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb2 ]
+    [ bb0 = s0
+      [ s0 = {[@expl:type invariant] inv f'0} s1
+      | s1 = -{resolve f'0}- s2
+      | s2 = call_fnonce {f'0} {x'0} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s3)
+      | s3 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: Int32.t = Any.any_l () | & f'0: t_F = f | & x'0: Int32.t = x ])
     [ return''0 (result: Int32.t) -> {[@expl:test6 ensures] [%#s13_ref_box'1] postcondition f x result}
       (! return' {result}) ]

@@ -23,6 +23,8 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   
   predicate inv (_0: t_F)
   
+  predicate resolve (_0: t_F)
+  
   predicate invariant' [@inline:trivial] (self: t_F) = [%#sinvariant] inv self
   
   meta "rewrite_def" predicate invariant'
@@ -34,8 +36,6 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   predicate precondition (self: t_F) (args: UInt32.t)
   
   predicate postcondition_once (self: t_F) (args: UInt32.t) (result: ())
-  
-  predicate resolve (_0: t_F)
   
   predicate postcondition_mut (self: t_F) (args: UInt32.t) (result_state: t_F) (result: ())
   
@@ -91,10 +91,11 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
     {[@expl:closure_param 'f' type invariant] [%#s03_generic_bound'0] inv f}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_3 <- [%#s03_generic_bound] (0: UInt32.t) ] s1
-      | s1 = call {f'0} {_3} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb2 ]
+      [ s0 = {[@expl:type invariant] inv f'0} s1
+      | s1 = -{resolve f'0}- s2
+      | s2 = [ &_3 <- [%#s03_generic_bound] (0: UInt32.t) ] s3
+      | s3 = call {f'0} {_3} (fun (_ret: ()) -> [ &_0 <- _ret ] s4)
+      | s4 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: () = Any.any_l () | & f'0: t_F = f | & _3: UInt32.t = Any.any_l () ])
     [ return''0 (result: ()) -> (! return' {result}) ]
 end

@@ -1459,17 +1459,33 @@ module M_own__qyi10690551671874530681__cloned [#"own.rs" 211 4 213 17] (* OwnRes
   
   predicate inv (_0: t_T)
   
-  predicate invariant' [@inline:trivial] (self: t_T) = [%#sinvariant'0] inv self
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_T) = [%#sinvariant] inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_0: t_T)
+  predicate inv'0 (_0: MutBorrow.t t_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
+  
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_T) = resolve _0
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate invariant''0 [@inline:trivial] (self: t_T) = [%#sinvariant'0] inv self
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'1 (_0: t_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'1 x]. inv'1 x = invariant''0 x
   
   predicate precondition (self: ()) (args: t_T)
   
-  axiom precondition_fndef: [%#sown'2] forall args: t_T [precondition () args]. (let self_ = args in inv'0 self_)
+  axiom precondition_fndef: [%#sown'2] forall args: t_T [precondition () args]. (let self_ = args in inv'1 self_)
       -> precondition () args
   
   predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
@@ -1481,29 +1497,13 @@ module M_own__qyi10690551671874530681__cloned [#"own.rs" 211 4 213 17] (* OwnRes
   let rec clone' (self_: t_T) (return' (x: t_T)) = {[@expl:clone requires] precondition () self_}
     any [ return''0 (result: t_T) -> {postcondition_once () self_ result} (! return' {result}) ]
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_T) = [%#sinvariant] inv self.current /\ inv self.final
-  
-  meta "rewrite_def" predicate invariant''0
-  
-  predicate inv'1 (_0: MutBorrow.t t_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_T [inv'1 x]. inv'1 x = invariant''0 x
-  
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
-  
-  meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_T) = resolve _0
-  
-  meta "rewrite_def" predicate resolve'0
-  
   predicate inv'2 (_0: t_E)
   
   predicate inv'3 (_0: t_OwnResult)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_OwnResult [inv'3 x]. inv'3 x
       = match x with
-        | C_Ok a_0 -> inv'1 a_0
+        | C_Ok a_0 -> inv'0 a_0
         | C_Err a_0 -> inv'2 a_0
         end
   
@@ -1584,10 +1584,11 @@ module M_own__qyi10690551671874530681__cloned [#"own.rs" 211 4 213 17] (* OwnRes
     | bb3 = s0 [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- C_Err'0 e ] s2 | s2 = bb10 ]
     | bb4 = s0
       [ s0 = v_Ok {self'0} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
-      | s1 = clone' {t.current} (fun (_ret: t_T) -> [ &_5 <- _ret ] s2)
-      | s2 = bb5 ]
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv'1 t} s1 | s1 = -{resolve'0 t}- s2 | s2 = [ &_0 <- C_Ok'0 _5 ] s3 | s3 = bb10 ]
+      | s1 = {[@expl:type invariant] inv'0 t} s2
+      | s2 = -{resolve'0 t}- s3
+      | s3 = clone' {t.current} (fun (_ret: t_T) -> [ &_5 <- _ret ] s4)
+      | s4 = bb5 ]
+    | bb5 = s0 [ s0 = [ &_0 <- C_Ok'0 _5 ] s1 | s1 = bb10 ]
     | bb10 = return''0 {_0} ]
     [ & _0: t_OwnResult'0 = Any.any_l ()
     | & self'0: t_OwnResult = self

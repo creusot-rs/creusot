@@ -17,21 +17,21 @@ module M_10_tyinv__f [#"10_tyinv.rs" 13 0 13 35]
   
   type t_Zero = { t_Zero__0: UInt32.t; t_Zero__1: t_T }
   
-  type closure0 = { _0: t_Zero; _1: t_Zero }
-  
-  type closure1 = { _0'0: t_Zero }
-  
   predicate invariant' [#"10_tyinv.rs" 8 4 8 30] (self: t_Zero) = [%#s10_tyinv'7] UInt32.t'int self.t_Zero__0 = 0
   
-  predicate inv (_0'1: t_T)
+  predicate inv (_0: t_T)
   
-  predicate inv'0 (_0'1: t_Zero)
+  predicate inv'0 (_0: t_Zero)
   
   axiom inv_axiom [@rewrite]: forall x: t_Zero [inv'0 x]. inv'0 x
       = (invariant' x
       /\ match x with
         | {t_Zero__0 = a_0; t_Zero__1 = a_1} -> inv a_1
         end)
+  
+  type closure0 = { _0: t_Zero; _1: t_Zero }
+  
+  type closure1 = { _0'0: t_Zero }
   
   predicate invariant''0 [@inline:trivial] (self: t_Zero) = [%#sinvariant] inv'0 self
   
@@ -105,10 +105,11 @@ module M_10_tyinv__f [#"10_tyinv.rs" 13 0 13 35]
     {[@expl:f 'y' type invariant] [%#s10_tyinv'0] inv'0 y}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &clos <- { _0 = x'0; _1 = y'0 } ] s1
-      | s1 = closure0 {clos} (fun (_ret: UInt32.t) -> [ &_6 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 y'0} s1 | s1 = {[@expl:type invariant] inv'0 x'0} s2 | s2 = bb3 ]
+      [ s0 = {[@expl:type invariant] inv'0 x'0} s1
+      | s1 = {[@expl:type invariant] inv'0 y'0} s2
+      | s2 = [ &clos <- { _0 = x'0; _1 = y'0 } ] s3
+      | s3 = closure0 {clos} (fun (_ret: UInt32.t) -> [ &_6 <- _ret ] s4)
+      | s4 = bb3 ]
     | bb3 = return''0 {_0'1} ]
     [ & _0'1: () = Any.any_l ()
     | & x'0: t_Zero = x

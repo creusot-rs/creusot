@@ -244,8 +244,7 @@ mod implementation {
             ghost! {
                 if snapshot!(x != y).into_ghost().into_inner() {
                     let (perm_x, m) = uf.perms.split_mut_ghost(&x);
-                    let perm_y = m.get_mut_ghost(&y).unwrap();
-                    PtrOwn::disjoint_lemma(perm_x, perm_y);
+                    PtrOwn::disjoint_lemma(perm_x, m.get_ghost(&y).unwrap());
                     unreachable!()
                 }
             };
