@@ -101,11 +101,8 @@ fn raw_prove(args: ProveArgs, paths: &Paths, files: &[PathBuf]) -> Result<()> {
 pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
     let paths = creusot_paths()?;
     check_why3find_json_exists(root)?;
-    let patterns = args
-        .patterns
-        .iter()
-        .map(|s| Pattern::parse(root, s))
-        .collect::<Result<Box<[Pattern]>>>()?;
+    let patterns =
+        args.patterns.iter().map(|s| Pattern::parse(root, s)).collect::<Result<Patterns>>()?;
     let files = match_patterns(&patterns)?;
     if files.is_empty() {
         // Fail if no files matched the patterns.
@@ -129,6 +126,53 @@ pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
     prove_result
 }
 
+#[derive(Debug)]
+pub struct Patterns {
+    paths: Vec<PathBuf>,
+    spatterns: Vec<SPattern>,
+}
+
+impl Patterns {
+    fn is_empty(&self) -> bool {
+        self.paths.is_empty() && self.spatterns.is_empty()
+    }
+
+    fn matches(&self, path: &Path) -> bool {
+        self.path_matches(path) || self.spattern_matches(path)
+    }
+
+    fn path_matches(&self, path: &Path) -> bool {
+        self.paths.iter().any(|pattern| pattern == path)
+    }
+
+    fn spattern_matches(&self, path: &Path) -> bool {
+        if self.spatterns.is_empty() {
+            return false;
+        }
+        let Some(spath) = strip_coma(&path) else {
+            return false;
+        };
+        self.spatterns.iter().any(|spattern| spattern.matches(&spath))
+    }
+}
+
+impl FromIterator<Pattern> for Patterns {
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = Pattern>,
+    {
+        let mut patterns = Patterns { paths: Vec::new(), spatterns: Vec::new() };
+        for pat in iter {
+            match pat {
+                Pattern::Path(path) => patterns.paths.push(path),
+                Pattern::SPattern(spattern) => patterns.spatterns.push(spattern),
+            }
+        }
+        patterns
+    }
+}
+
+#[derive(Debug)]
 pub enum Pattern {
     /// Path relative to the workspace root
     Path(PathBuf),
@@ -148,13 +192,6 @@ impl Pattern {
             Ok(Pattern::Path(path.into()))
         } else {
             SPattern::parse(s).map(Pattern::SPattern)
-        }
-    }
-
-    fn matches(&self, path: &Path) -> bool {
-        match self {
-            Pattern::Path(p) => p == path,
-            Pattern::SPattern(pat) => pat.matches(path),
         }
     }
 }
@@ -251,7 +288,7 @@ fn strip_coma_str(name: &str) -> Option<&str> {
 
 /// If no patterns, return `"verif/"`.
 /// Otherwise, list files under `verif/` that match at least one pattern.
-fn match_patterns(patterns: &[Pattern]) -> Result<Vec<PathBuf>> {
+fn match_patterns(patterns: &Patterns) -> Result<Vec<PathBuf>> {
     if patterns.is_empty() {
         Ok(vec![OUTPUT_PREFIX.into()])
     } else {
@@ -262,7 +299,7 @@ fn match_patterns(patterns: &[Pattern]) -> Result<Vec<PathBuf>> {
 }
 
 /// Recurse into `dir` and look for file names whose `strip_coma` value matches `patterns`.
-fn match_patterns_from(patterns: &[Pattern], dir: PathBuf, dest: &mut Vec<PathBuf>) -> Result<()> {
+fn match_patterns_from(patterns: &Patterns, dir: PathBuf, dest: &mut Vec<PathBuf>) -> Result<()> {
     for entry in std::fs::read_dir(dir)? {
         let entry = entry?;
         let file_type = entry.file_type()?;
@@ -270,10 +307,8 @@ fn match_patterns_from(patterns: &[Pattern], dir: PathBuf, dest: &mut Vec<PathBu
         if file_type.is_dir() {
             match_patterns_from(patterns, path, dest)?
         } else if file_type.is_file() {
-            if let Some(spath) = strip_coma(&path) {
-                if patterns.iter().any(|pat| pat.matches(&spath)) {
-                    dest.push(path)
-                }
+            if patterns.matches(&path) {
+                dest.push(path)
             }
         }
     }
