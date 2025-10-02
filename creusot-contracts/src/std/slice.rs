@@ -361,6 +361,14 @@ extern_spec! {
         #[ensures((^self)@.len() == self@.len())]
         unsafe fn get_unchecked_mut<I>(&mut self, ix: I) -> &mut <I as ::std::slice::SliceIndex<[T]>>::Output
             where I: SliceIndex<[T]>;
+
+        // Calling this is safe but you should use `as_ptr_own` instead to prove things.
+        #[check(ghost)]
+        fn as_ptr(&self) -> *const T;
+
+        // Calling this is safe but you should use `as_mut_ptr_own` instead to prove things.
+        #[check(ghost)]
+        fn as_mut_ptr(&mut self) -> *mut T;
     }
 
     impl<T, I> IndexMut<I> for [T]
