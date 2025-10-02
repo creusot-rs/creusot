@@ -6,64 +6,44 @@
 // - update the SHA256 hash for each binary accordingly (use e.g. sha256sum to compute it)
 
 // tools without binary releases
-pub const WHY3_VERSION: &'static str = "1.8.1";
+pub const WHY3_VERSION: &'static str = "1.8.2";
 pub const WHY3_CONFIG_MAGIC_NUMBER: &'static str = "14";
 pub const WHY3FIND_VERSION: &'static str = "1.2.0";
 // tools with binary releases
-pub const ALTERGO_VERSION: &'static str = "2.6.0";
-pub const Z3_VERSION: &'static str = "4.12.4";
+pub const ALTERGO_VERSION: &'static str = "2.6.2";
+pub const Z3_VERSION: &'static str = "4.15.3";
 pub const CVC4_VERSION: &'static str = "1.8";
-pub const CVC5_VERSION: &'static str = "1.0.5";
+pub const CVC5_VERSION: &'static str = "1.3.1";
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
 pub const URLS: Urls = Urls {
     altergo: Url {
-        url: "https://github.com/OCamlPro/alt-ergo/releases/download/v2.6.0/alt-ergo-v2.6.0-x86_64-linux-musl",
-        sha256: "84877f06e80a7581f5b2ddbdd731bb51eda23342f96c5cfb8eb5315aa63082f5",
+        url: "https://github.com/OCamlPro/alt-ergo/releases/download/v2.6.2/alt-ergo-v2.6.2-x86_64-linux-musl",
+        sha256: "bdc4e487f2bdfd421011c82f545df3f50530aee6d6e406b1e847d433650ca3c1",
     },
     z3: Url {
-        url: "https://github.com/Z3Prover/z3/releases/download/z3-4.12.4/z3-4.12.4-x64-glibc-2.35.zip",
-        sha256: "e23d3a5670dc83285f581c2610e9cf701bb22db09b5336d85a4df743253b2335",
+        url: "https://github.com/Z3Prover/z3/releases/download/z3-4.15.3/z3-4.15.3-x64-glibc-2.39.zip",
+        sha256: "94549c5e31a75b9c543fe6eea8f32927054765c2e92e696d2d6dde0eedf348a1",
     },
     cvc4: Url {
         url: "https://github.com/CVC4/CVC4-archived/releases/download/1.8/cvc4-1.8-x86_64-linux-opt",
         sha256: "d38a79cf984592785eda41ec888d94ca107ac1f13058740238041e28c8472e51",
     },
     cvc5: Url {
-        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.0.5/cvc5-Linux",
-        sha256: "57fa94b740e0827f655a731b97dae84fedf86e65fa897c3a56a01a83d283d15e",
-    },
-};
-
-#[cfg(all(target_os = "macos", target_arch = "x86_64"))]
-pub const URLS: Urls = Urls {
-    altergo: Url {
-        url: "https://github.com/OCamlPro/alt-ergo/releases/download/v2.6.0/alt-ergo-v2.6.0-x86_64-macos",
-        sha256: "0fad46f5a1630b8b18c2040586ae39d90d65075f25f995d4b84a54727bc2ad8b",
-    },
-    z3: Url {
-        url: "https://github.com/Z3Prover/z3/releases/download/z3-4.12.4/z3-4.12.4-x64-osx-11.7.10.zip",
-        sha256: "0e6da979dc6ec501ad878d962802d20aff465ac0c24e4c1234169f3e92a0e6a3",
-    },
-    cvc4: Url {
-        url: "https://github.com/CVC4/CVC4-archived/releases/download/1.8/cvc4-1.8-macos-opt",
-        sha256: "b8a0b8714dd947aa46182402d9caba27d3d696041e17704884bc3d8510066527",
-    },
-    cvc5: Url {
-        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.0.5/cvc5-macOS",
-        sha256: "0e74e40a3db82f3ac4d8ea23308931bedbc6afbcf3ed484b8b000da17c75885c",
+        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.3.1/cvc5-Linux-x86_64-static-gpl.zip",
+        sha256: "dcad9de0827509e8517f60da87f0c4292652627641dbcad8012644b6a982a183",
     },
 };
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub const URLS: Urls = Urls {
     altergo: Url {
-        url: "https://github.com/OCamlPro/alt-ergo/releases/download/v2.6.0/alt-ergo-v2.6.0-aarch64-macos",
-        sha256: "9d5ddae854d83527f3a180be3c79f8e94ba8e3fe641906f05b374af982bd5fdf",
+        url: "https://github.com/OCamlPro/alt-ergo/releases/download/v2.6.2/alt-ergo-v2.6.2-aarch64-macos",
+        sha256: "bfec57500243a3cf1d3b613662f5814492d49152453409a9a46d0dfeacf61b31",
     },
     z3: Url {
-        url: "https://github.com/Z3Prover/z3/releases/download/z3-4.12.4/z3-4.12.4-arm64-osx-11.0.zip",
-        sha256: "ab6798a9a85f406d7db9eb1fe692ff3db78155c509f71d0cae5933f4c47b5a38",
+        url: "https://github.com/Z3Prover/z3/releases/download/z3-4.15.3/z3-4.15.3-arm64-osx-13.7.6.zip",
+        sha256: "941659417b5464a361c49089658509f3118a0c3e8d4f8a1dc999f8b5cd1f3c71",
     },
     // CVC4 only has a macos x86_64 binary; we rely on rosetta for compatibility
     cvc4: Url {
@@ -71,8 +51,8 @@ pub const URLS: Urls = Urls {
         sha256: "b8a0b8714dd947aa46182402d9caba27d3d696041e17704884bc3d8510066527",
     },
     cvc5: Url {
-        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.0.5/cvc5-macOS-arm64",
-        sha256: "f1fe16664d88f9549da3df00853b6ddabafa68b1dc1c62d6dad0c0549cf95a33",
+        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.3.1/cvc5-macOS-arm64-static-gpl.zip",
+        sha256: "e28df7104ebac5ca0953a0e9aadd016c2c63b00ec6edc3d25820fd888e7e22c3",
     },
 };
 

@@ -38,7 +38,7 @@ const CVC4: ManagedBinary =
     ManagedBinary { bin: setup::CVC4, url: &URLS.cvc4, download: download_from_url_with_cache };
 
 const CVC5: ManagedBinary =
-    ManagedBinary { bin: setup::CVC5, url: &URLS.cvc5, download: download_from_url_with_cache };
+    ManagedBinary { bin: setup::CVC5, url: &URLS.cvc5, download: download_cvc5_from_url };
 
 /// Install Creusot
 #[derive(Debug, Parser)]
@@ -511,6 +511,32 @@ fn download_z3_from_url(url: &Url, cache_dir: &Path, dest: &Path) -> anyhow::Res
         let mut z3zipfile = archive.by_name(&z3_archive_path)?;
         let mut z3file = fs::File::create(dest)?;
         std::io::copy(&mut z3zipfile, &mut z3file)?;
+    }
+    Ok(())
+}
+
+// CVC5 releases come as a .zip archive that includes many things. We are only
+// interested in the cvc5 binary, so we extract it from the archive and throw away
+// the rest.
+
+fn download_cvc5_from_url(url: &Url, cache_dir: &Path, dest: &Path) -> anyhow::Result<()> {
+    use zip::read::ZipArchive;
+    // just use the zip file stored in the cache
+    let zip_path = cache_dir.join(url.sha256);
+    download_from_url_with_cache(url, cache_dir, &zip_path)?;
+    {
+        // extract the cvc5 binary from the .zip archive
+        let zipfile = std::fs::File::open(&zip_path)?;
+        let mut archive = ZipArchive::new(zipfile)?;
+        // find out the full path of the cvc5 binary in the archive
+        let cvc5_archive_path = archive
+            .file_names()
+            .find(|s| s.ends_with("/bin/cvc5"))
+            .map(String::from)
+            .ok_or(anyhow!("did not find a bin/cvc5 binary in the cvc5 release archive"))?;
+        let mut cvc5zipfile = archive.by_name(&cvc5_archive_path)?;
+        let mut cvc5file = fs::File::create(dest)?;
+        std::io::copy(&mut cvc5zipfile, &mut cvc5file)?;
     }
     Ok(())
 }
