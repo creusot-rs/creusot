@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{
     logic::{FSet, Mapping, ops::IndexLogic},
     std::option::OptionExt as _,
@@ -713,4 +715,30 @@ impl<'a, K, V> crate::Iterator for FMapIterRef<'a, K, V> {
             a@.get(*k) == b@.get(*k) && b@.get(*k) == c@.get(*k)
         });
     }
+}
+
+impl<K: ?Sized, V> Resolve for FMap<K, V> {
+    #[logic(open, prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! { forall<k: K, v: V> self.get(k) == Some(v) ==> resolve(k) && resolve(v) }
+    }
+
+    #[trusted]
+    #[logic(open(self), prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
+}
+
+impl<K, V> Resolve for FMapIter<K, V> {
+    #[logic(open, prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! { resolve(self@) }
+    }
+
+    #[trusted]
+    #[logic(open(self), prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }

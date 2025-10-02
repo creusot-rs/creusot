@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{logic::Mapping, *};
 
 /// A finite set type usable in pearlite and `ghost!` blocks.
@@ -520,4 +522,17 @@ pub fn concat_replicate_up_to<T>(n: Int, m: Int, s: FSet<T>) {
             concat_replicate_up_to(n, m - 1, s);
         }
     }
+}
+
+impl<T: ?Sized> Resolve for FSet<T> {
+    #[logic(open, prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! { forall<x: T> self.contains(x) ==> resolve(x) }
+    }
+
+    #[trusted]
+    #[logic(open(self), prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }

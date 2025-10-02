@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{
     ghost::Plain,
     logic::{Mapping, ops::IndexLogic},
@@ -879,6 +881,32 @@ pub fn flat_map_push_back<A, B>(xs: Seq<A>) {
         flat_map_push_back::<A, B>(xs.tail());
         proof_assert! { forall<x: A> xs.tail().push_back(x) == xs.push_back(x).tail() }
     }
+}
+
+impl<T> Resolve for Seq<T> {
+    #[logic(open, prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i : Int> resolve(self.get(i)) }
+    }
+
+    #[trusted]
+    #[logic(open(self), prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
+}
+
+impl<T> Resolve for SeqIter<T> {
+    #[logic(open, prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! { resolve(self@) }
+    }
+
+    #[trusted]
+    #[logic(open(self), prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 /// A sequence literal `seq![a, b, c]`.
