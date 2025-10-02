@@ -64,24 +64,42 @@ module Char
 end
 
 module Opaque
-  use creusot.int.UInt16
-  use creusot.int.UInt32
-  use creusot.int.UInt64
   type ptr
   let fresh_ptr (ret (result : ptr) {true}) = any
 
   (* If p is a fat pointer, strip its metadata.
      If p is a thin pointer, return it unchanged. *)
   function thin (p : ptr) : ptr
-  function len (p : ptr) : int
 
-  (* addr_logic definition depending on the architecture *)
+  type foreign
+end
+
+module Ptr
+  use creusot.int.UInt16
+  use creusot.int.UInt32
+  use creusot.int.UInt64
+  use Opaque
+
+  (* addr_logic definition depending on the architecture and BW mode *)
   function addr_logic_u16 (p : ptr) : UInt16.t
   axiom addr_logic_u16_thin : forall p. addr_logic_u16 (thin p) = addr_logic_u16 p
   function addr_logic_u32 (p : ptr) : UInt32.t
   axiom addr_logic_u32_thin : forall p. addr_logic_u32 (thin p) = addr_logic_u32 p
   function addr_logic_u64 (p : ptr) : UInt64.t
   axiom addr_logic_u64_thin : forall p. addr_logic_u64 (thin p) = addr_logic_u64 p
+end
 
-  type foreign
+module PtrBW
+  use creusot.int.UInt16BW as UInt16
+  use creusot.int.UInt32BW as UInt32
+  use creusot.int.UInt64BW as UInt64
+  use Opaque
+
+  (* addr_logic definition depending on the architecture and BW mode *)
+  function addr_logic_u16 (p : ptr) : UInt16.t
+  axiom addr_logic_u16_thin : forall p. addr_logic_u16 (thin p) = addr_logic_u16 p
+  function addr_logic_u32 (p : ptr) : UInt32.t
+  axiom addr_logic_u32_thin : forall p. addr_logic_u32 (thin p) = addr_logic_u32 p
+  function addr_logic_u64 (p : ptr) : UInt64.t
+  axiom addr_logic_u64_thin : forall p. addr_logic_u64 (thin p) = addr_logic_u64 p
 end

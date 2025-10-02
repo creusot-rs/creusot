@@ -35,6 +35,10 @@ extern_spec! {
             #[check(ghost)]
             #[ensures(result@ == size_of_logic::<T>())]
             fn size_of<T>() -> usize;
+
+            #[check(ghost)]
+            #[ensures(result == align_of_logic::<T>())]
+            fn align_of<T>() -> usize;
         }
     }
 }
@@ -64,5 +68,17 @@ extern_spec! {
 #[intrinsic("size_of_logic")]
 #[ensures(0 <= result)]
 pub fn size_of_logic<T>() -> Int {
+    dead
+}
+
+/// [`align_of`] as a logic `Int` value.
+///
+/// [`align_of`]: https://doc.rust-lang.org/std/mem/fn.align_of.html
+#[trusted]
+#[logic(open)]
+#[intrinsic("align_of_logic")]
+#[ensures(0usize != result && result & (result - 1usize) == 0usize)]
+#[ensures(size_of_logic::<T>() % result@ == 0)]
+pub fn align_of_logic<T>() -> usize {
     dead
 }

@@ -1,5 +1,8 @@
 extern crate creusot_contracts;
-use creusot_contracts::{std::mem::size_of_logic, *};
+use creusot_contracts::{
+    std::mem::{align_of_logic, size_of_logic},
+    *,
+};
 
 pub fn f() {
     proof_assert!(size_of_logic::<bool>() == 1);
@@ -9,6 +12,7 @@ pub fn f() {
     proof_assert!(size_of_logic::<()>() == 0);
     proof_assert!(size_of_logic::<[u32; 5]>() == 20);
     proof_assert!(size_of_logic::<[(); 5]>() == 0);
+    proof_assert!(align_of_logic::<u64>() == 8usize);
 }
 
 pub fn g<T>() {

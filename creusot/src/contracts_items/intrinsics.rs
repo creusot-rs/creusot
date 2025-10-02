@@ -88,6 +88,8 @@ impl Intrinsic {
             Intrinsic::Resolve
                 | Intrinsic::StructuralResolve
                 | Intrinsic::SizeOfLogic
+                | Intrinsic::AlignOfLogic
+                | Intrinsic::IsAlignedLogic
                 | Intrinsic::Postcondition
                 | Intrinsic::PostconditionMut
                 | Intrinsic::PostconditionOnce
@@ -125,6 +127,10 @@ contracts_items! {
     "namespace"                 Namespace
     "fn_ghost"                  FnGhost
     "size_of_logic"             SizeOfLogic
+    "align_of_logic"            AlignOfLogic
+    "is_aligned_logic"          IsAlignedLogic
+    "is_aligned_logic_sized"    IsAlignedLogicSized
+    "is_aligned_logic_slice"    IsAlignedLogicSlice
     "forall"                    Forall
     "exists"                    Exists
     "trigger"                   Trigger

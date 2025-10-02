@@ -3,12 +3,12 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   let%span sdisjoint_raw_ptr'0 = "disjoint_raw_ptr.rs" 6 33 6 37
   let%span sdisjoint_raw_ptr'1 = "disjoint_raw_ptr.rs" 11 18 11 30
   let%span sdisjoint_raw_ptr'2 = "disjoint_raw_ptr.rs" 12 18 12 26
-  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 55 4 55 52
-  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 54 14 54 64
-  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 208 26 208 30
-  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 208 48 208 52
-  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 205 14 205 64
-  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 206 14 206 28
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 57 4 57 52
+  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 56 14 56 64
+  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 210 26 210 30
+  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 210 48 210 52
+  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 207 14 207 64
+  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 208 14 208 28
   let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
   let%span sghost = "../../../creusot-contracts/src/ghost.rs" 91 22 91 26
   let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 91 4 91 48
@@ -21,11 +21,11 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
   let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 99 14 99 53
-  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 101 8 101 35
+  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
   
   use creusot.int.Int32
   use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -34,12 +34,11 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   type tuple = { _p0: Opaque.ptr; _p1: t_PtrOwn }
   
-  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'0] Opaque.addr_logic_u64 self = (0: UInt64.t)
-  
-  axiom is_null_logic_spec: forall self: Opaque.ptr. [%#sptr] is_null_logic self
-      = (Opaque.addr_logic_u64 self = (0: UInt64.t))
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr] Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
+  
+  predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
   predicate metadata_matches (_value: Int32.t) (_metadata: ()) = true
   
@@ -48,7 +47,8 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   function metadata_logic (_0: Opaque.ptr) : ()
   
   predicate invariant' [@inline:trivial] (self: t_PtrOwn) =
-    [%#sptr_own'5] not is_null_logic (ptr self) /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    [%#sptr_own'5] not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
   
   meta "rewrite_def" predicate invariant'
   
@@ -126,8 +126,7 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
     {[@expl:disjoint_lemma 'own1' type invariant] [%#sptr_own'1] inv'3 own1}
     {[@expl:disjoint_lemma 'own2' type invariant] [%#sptr_own'2] inv'5 own2}
     any
-    [ return''0 (result: ()) -> {[%#sptr_own'3] Opaque.addr_logic_u64 (ptr own1.current)
-      <> Opaque.addr_logic_u64 (ptr own2)}
+    [ return''0 (result: ()) -> {[%#sptr_own'3] Ptr.addr_logic_u64 (ptr own1.current) <> Ptr.addr_logic_u64 (ptr own2)}
       {[%#sptr_own'4] own1.current = own1.final}
       (! return' {result}) ]
   

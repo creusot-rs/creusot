@@ -43,7 +43,9 @@ impl<T: ?Sized> PtrOwn<T> {
 impl<T: ?Sized> Invariant for PtrOwn<T> {
     #[logic(open, inline)]
     fn invariant(self) -> bool {
-        !self.ptr().is_null_logic() && metadata_matches(*self.val(), metadata_logic(self.ptr()))
+        !self.ptr().is_null_logic()
+            && self.ptr_is_aligned_opaque()
+            && metadata_matches(*self.val(), metadata_logic(self.ptr()))
     }
 }
 
@@ -206,4 +208,17 @@ impl<T: ?Sized> PtrOwn<T> {
     #[ensures(*own1 == ^own1)]
     #[allow(unused_variables)]
     pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {}
+
+    /// The pointer of a `PtrOwn` is always aligned.
+    #[check(ghost)]
+    #[ensures(self.ptr().is_aligned_logic())]
+    pub fn ptr_is_aligned_lemma(&self) {}
+
+    /// Opaque wrapper around [`std::ptr::is_aligned_logic`].
+    /// We use this to hide alignment logic by default in `invariant` because it confuses SMT solvers sometimes.
+    /// The underlying property is exposed by [`PtrOwn::ptr_is_aligned_lemma`].
+    #[logic(open(self))]
+    pub fn ptr_is_aligned_opaque(self) -> bool {
+        self.ptr().is_aligned_logic()
+    }
 }
