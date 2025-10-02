@@ -514,7 +514,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 | Ref(_, _, _)
                 | FnDef(_, _)
                 | FnPtr(..)
-                | Dynamic(_, _, _)
+                | Dynamic(_, _)
                 | CoroutineClosure(_, _)
                 | Coroutine(_, _)
                 | CoroutineWitness(_, _)

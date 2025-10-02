@@ -118,7 +118,7 @@ impl Callbacks for ToWhy {
 fn mir_borrowck<'tcx, 'a>(
     tcx: TyCtxt<'tcx>,
     def_id: LocalDefId,
-) -> Result<&'a mir::ConcreteOpaqueTypes<'tcx>, ErrorGuaranteed> {
+) -> Result<&'a mir::DefinitionSiteHiddenTypes<'tcx>, ErrorGuaranteed> {
     let opts = ConsumerOptions::RegionInferenceContext;
     let bodies_with_facts =
         rustc_borrowck::consumers::get_bodies_with_borrowck_facts(tcx, def_id, opts);

@@ -155,10 +155,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     ),
                 }
             }
-            &Rvalue::Len(pl) => {
-                let e = Operand::Copy(self.translate_place(pl, span));
-                RValue::Len(e)
-            }
             Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, cast_ty) => {
                 let op_ty = op.ty(self.body, self.tcx());
                 RValue::Cast(self.translate_operand(op, span), op_ty, *cast_ty)

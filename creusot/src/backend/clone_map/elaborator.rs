@@ -452,7 +452,7 @@ fn expand_type<'tcx>(
             translate_tydecl(ctx, &names, (def_id, subst), typing_env)
         }
         TyKind::Tuple(_) => translate_tuple_ty(ctx, &names, ty),
-        TyKind::Dynamic(traits, _, _) => {
+        TyKind::Dynamic(traits, _) => {
             if is_logically_dyn_compatible(ctx.tcx(), traits.iter()) {
                 vec![Decl::TyDecl(TyDecl::Opaque {
                     ty_name: names.ty(ty).to_ident(),

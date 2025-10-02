@@ -74,7 +74,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         | Adt(..)
         | Tuple(_)
         | Param(_)
-        | Dynamic(_, _, _)
+        | Dynamic(_, _)
         | Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
             MlT::TConstructor(names.ty(ty))
         }

@@ -7,7 +7,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 use std::{iter::once, path::PathBuf};
 
-use crate::very_stable_hash::get_very_stable_hash;
+use crate::{util::impl_subject, very_stable_hash::get_very_stable_hash};
 
 // TODO: clean up this module. There are a bunch of redundancies.
 //
@@ -191,9 +191,8 @@ fn ident_path_segments_(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
             Some(parent_id) => parent_id,
         };
         match key.disambiguated_data.data {
-            DefPathData::Impl => {
-                segs.push(Segment::Impl(get_very_stable_hash(&tcx.impl_subject(id), &tcx).as_u64()))
-            }
+            DefPathData::Impl => segs
+                .push(Segment::Impl(get_very_stable_hash(&impl_subject(tcx, id), &tcx).as_u64())),
             _ => segs.push(Segment::Other(key.disambiguated_data)),
         }
         id.index = parent_id;

@@ -170,12 +170,12 @@ pub(crate) trait Namer<'tcx> {
             .without_search_path()
     }
 
-    // TODO: get rid of this. `erase_regions` should be the responsibility of the callers.
+    // TODO: get rid of this. `erase_and_anonymize_regions` should be the responsibility of the callers.
     // NOTE: should `Namer::ty()` be asserting with `has_erasable_regions` instead?
     fn raw_dependency(&self, dep: Dependency<'tcx>) -> &Kind;
 
     fn dependency(&self, dep: Dependency<'tcx>) -> &Kind {
-        self.raw_dependency(dep.erase_regions(self.tcx()))
+        self.raw_dependency(dep.erase_and_anonymize_regions(self.tcx()))
     }
 
     fn resolve_dependency(&self, dep: Dependency<'tcx>) -> Dependency<'tcx> {

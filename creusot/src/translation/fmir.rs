@@ -139,7 +139,6 @@ pub enum RValue<'tcx> {
     Constructor(DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>),
     Cast(Operand<'tcx>, Ty<'tcx>, Ty<'tcx>),
     Tuple(Box<[Operand<'tcx>]>),
-    Len(Operand<'tcx>),
     Array(Box<[Operand<'tcx>]>),
     Repeat(Operand<'tcx>, Operand<'tcx>),
     Ptr(Place<'tcx>),
@@ -189,7 +188,6 @@ impl RValue<'_> {
             RValue::Constructor(_, _, _) => true,
             RValue::Cast(_, _, _) => false,
             RValue::Tuple(_) => true,
-            RValue::Len(_) => true,
             RValue::Array(_) => true,
             RValue::Repeat(_, _) => true,
             RValue::Snapshot(_) => true,
@@ -720,9 +718,6 @@ pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rv
             for op in ops {
                 visitor.visit_operand(op);
             }
-        }
-        RValue::Len(op) => {
-            visitor.visit_operand(op);
         }
         RValue::Array(ops) => {
             for op in ops {

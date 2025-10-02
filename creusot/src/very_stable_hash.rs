@@ -64,6 +64,20 @@ impl<CTX, T: VeryStableHash<CTX>> VeryStableHash<CTX> for Option<T> {
     }
 }
 
+impl<CTX, T: VeryStableHash<CTX>, E: VeryStableHash<CTX>> VeryStableHash<CTX> for Result<T, E> {
+    fn very_stable_hash(&self, tcx: &CTX, hcx: &mut StableHasher) {
+        std::mem::discriminant(self).hash(hcx);
+        match self {
+            Ok(x) => {
+                x.very_stable_hash(tcx, hcx);
+            }
+            Err(e) => {
+                e.very_stable_hash(tcx, hcx);
+            }
+        }
+    }
+}
+
 impl<CTX, T: VeryStableHash<CTX>> VeryStableHash<CTX> for Vec<T> {
     fn very_stable_hash(&self, tcx: &CTX, hcx: &mut StableHasher) {
         self.as_slice().very_stable_hash(tcx, hcx);
@@ -176,10 +190,9 @@ impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::TyKind<'tcx> {
                 binder.very_stable_hash(tcx, hcx);
                 sig.very_stable_hash(tcx, hcx);
             }
-            Dynamic(trait_ty, region, kind) => {
+            Dynamic(trait_ty, region) => {
                 trait_ty.very_stable_hash(tcx, hcx);
                 region.very_stable_hash(tcx, hcx);
-                kind.very_stable_hash(tcx, hcx);
             }
             Closure(def_id, substs) => {
                 def_id.very_stable_hash(tcx, hcx);
@@ -221,16 +234,6 @@ impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::TraitRef<'tcx> {
     fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         self.def_id.very_stable_hash(tcx, hcx);
         self.args.very_stable_hash(tcx, hcx);
-    }
-}
-
-impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::ImplSubject<'tcx> {
-    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
-        std::mem::discriminant(self).hash(hcx);
-        match self {
-            ty::ImplSubject::Inherent(ty) => ty.very_stable_hash(tcx, hcx),
-            ty::ImplSubject::Trait(trait_ref) => trait_ref.very_stable_hash(tcx, hcx),
-        }
     }
 }
 
@@ -328,12 +331,6 @@ impl<'ctx> VeryStableHash<TyCtxt<'ctx>> for ty::FnSigTys<TyCtxt<'ctx>> {
 impl<'tcx, CTX, T: VeryStableHash<CTX>> VeryStableHash<CTX> for ty::EarlyBinder<'tcx, T> {
     fn very_stable_hash(&self, tcx: &CTX, hcx: &mut StableHasher) {
         self.as_ref().skip_binder().very_stable_hash(tcx, hcx);
-    }
-}
-
-impl<CTX> VeryStableHash<CTX> for ty::DynKind {
-    fn very_stable_hash(&self, _tcx: &CTX, hcx: &mut StableHasher) {
-        std::mem::discriminant(self).hash(hcx);
     }
 }
 
