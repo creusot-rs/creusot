@@ -190,3 +190,18 @@ fn g() {
 
 The inner function of `g` does not need an `#[erasure]` attribute,
 but it must have the same name as its counterpart in `f`.
+
+### Ghost functions
+
+Ghost functions are those that may appear outside of ghost blocks
+but are completely eraseable. The main examples are [`Ghost::split`][ghost-split]
+and [`Ghost::borrow`][ghost-borrow]. They are identified by the attribute `#[erasure(_)]`.
+
+[ghost-split]: https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Ghost.html#method.split
+[ghost-borrow]: https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Ghost.html#method.borrow
+
+```rust
+#[trusted]
+#[erasure(_)]
+fn split<T, U>(g: Ghost<(T, U)>) -> (Ghost<T>, Ghost<U>) { /* ... */ }
+```
