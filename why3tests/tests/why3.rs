@@ -16,6 +16,9 @@ struct Args {
     /// Update proof.json files
     #[clap(long)]
     update: bool,
+    /// Minimize proof.json files
+    #[clap(long)]
+    minimize: bool,
     /// Only check coma files that differ from the provided source in the git history (useful for small PRs)
     #[clap(long = "diff-from")]
     diff_from: Option<String>,
@@ -253,6 +256,9 @@ fn main() {
             }
             if !args.update {
                 why3find.arg("-r");
+            }
+            if args.minimize {
+                why3find.arg("-m");
             }
 
             output = why3find.ok();
