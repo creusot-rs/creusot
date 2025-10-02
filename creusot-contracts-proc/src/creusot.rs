@@ -14,7 +14,7 @@ pub(crate) use self::{
     extern_spec::extern_spec,
     logic::{logic, pearlite},
     proof::{ghost, ghost_let, invariant, proof_assert, snapshot},
-    specs::{bitwise_proof, check, ensures, maintains, requires, variant},
+    specs::{bitwise_proof, check, ensures, has_logical_alias, maintains, requires, variant},
 };
 
 use crate::common::{ContractSubject, FnOrMethod};

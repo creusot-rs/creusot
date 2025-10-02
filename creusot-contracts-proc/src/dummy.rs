@@ -112,6 +112,10 @@ pub fn bitwise_proof(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
 
+pub fn has_logical_alias(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
 pub fn derive_deep_model(_: TS1) -> TS1 {
     TS1::new()
 }

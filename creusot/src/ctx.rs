@@ -2,8 +2,8 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     callbacks,
     contracts_items::{
-        Intrinsic, gather_intrinsics, get_creusot_item, is_extern_spec, is_logic, is_opaque,
-        is_open_inv_param, is_prophetic, opacity_witness_name,
+        Intrinsic, function_has_logical_alias, gather_intrinsics, get_creusot_item, is_extern_spec,
+        is_logic, is_opaque, is_open_inv_param, is_prophetic, opacity_witness_name,
     },
     metadata::{BinaryMetadata, Metadata, encode_def_ids, get_erasure_required},
     naming::variable_name,
@@ -41,8 +41,8 @@ use rustc_middle::{
     mir::Promoted,
     thir,
     ty::{
-        Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, ResolverAstLowering, Ty, TyCtxt,
-        TypingEnv, TypingMode, Visibility,
+        Clause, GenericArg, GenericArgKind, GenericArgsRef, ParamEnv, Predicate,
+        ResolverAstLowering, Ty, TyCtxt, TypingEnv, TypingMode, Visibility,
     },
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
@@ -191,6 +191,9 @@ pub struct TranslationCtx<'tcx> {
     erasures_to_check: Vec<(LocalDefId, Erasure<'tcx>)>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
+    /// Maps the [`DefId`] of a program function `f` with a `#[has_logical_alias(f')]`
+    /// attribute to the logical function `f'`
+    logical_aliases: HashMap<DefId, (Span, DefId)>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
     terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
     trait_impl: OnceMap<DefId, Box<Vec<Refinement<'tcx>>>>,
@@ -263,6 +266,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             did2intrinsic,
             laws: Default::default(),
             externs,
+            logical_aliases: Default::default(),
             terms: Default::default(),
             creusot_items,
             variant_calls: RefCell::new(IndexMap::new()),
@@ -316,6 +320,168 @@ impl<'tcx> TranslationCtx<'tcx> {
         &self,
     ) -> impl Iterator<Item = (&LocalDefId, &(thir::Thir<'tcx>, thir::ExprId))> {
         self.local_thir.iter()
+    }
+
+    /// Get the _logical alias_ of the given program function, if any.
+    ///
+    /// Logical aliases are defined with the `#[has_logical_alias(...)]` attribute.
+    ///
+    /// The returned span is the span of the attribute.
+    pub(crate) fn logical_alias(&self, def_id: DefId) -> Option<(Span, DefId)> {
+        self.logical_aliases.get(&def_id).copied()
+    }
+
+    /// Load all the logical aliases defined in the current crate
+    ///
+    /// They can later be retrieved using [`Self::logical_alias`].
+    pub(crate) fn load_logical_aliases(&mut self) {
+        // FIXME: what about functions from another crate?
+        let tcx = self.tcx;
+        for local_id in self.hir_body_owners() {
+            let def_id = local_id.to_def_id();
+            // TODO: Put this in another file for better organisation
+            if let Some((span, logic_id)) = function_has_logical_alias(self, def_id) {
+                let program_span = tcx.def_span(def_id);
+                let logic_span = tcx.def_span(logic_id);
+                let program_subst = erased_identity_for_item(tcx, def_id);
+                let logic_subst = erased_identity_for_item(tcx, logic_id);
+                let mut program_subst = program_subst.iter().map(|arg| arg.kind());
+                let mut logic_subst = logic_subst.iter().map(|arg| arg.kind());
+                loop {
+                    let prog_arg = program_subst.next();
+                    let logic_arg = logic_subst.next();
+                    match (prog_arg, logic_arg) {
+                        (None, None) => break,
+                        (Some(arg), None) | (None, Some(arg)) => {
+                            tcx.dcx()
+                                    .struct_span_err(
+                                        span,
+                                        format!(
+                                            "mismatched generic parameters for logical alias: {} parameter {arg:?} in the alias",
+                                            if prog_arg.is_some() {
+                                                "missing"
+                                            } else {
+                                                "additional"
+                                            }),
+                                    )
+                                    .with_span_note(program_span, "function defined here")
+                                    .with_span_note(logic_span, "logical alias defined here")
+                                    .emit();
+                        }
+                        (Some(GenericArgKind::Type(t1)), Some(GenericArgKind::Type(t2))) => {
+                            if t1 != t2 {
+                                tcx.dcx().struct_span_err(span, format!("mismatched types in logical alias: expected {t1}, got {t2}"))
+                                        .with_span_note(program_span, "function defined here")
+                                        .with_span_note(logic_span, "logical alias defined here")
+                                        .emit();
+                            }
+                        }
+                        (Some(GenericArgKind::Const(c1)), Some(GenericArgKind::Const(c2))) => {
+                            let (t1, name1) = match c1.kind() {
+                                rustc_type_ir::ConstKind::Param(p) => {
+                                    (p.find_const_ty_from_env(tcx.param_env(def_id)), p.name)
+                                }
+                                _ => unreachable!(),
+                            };
+                            let (t2, name2) = match c2.kind() {
+                                rustc_type_ir::ConstKind::Param(p) => {
+                                    (p.find_const_ty_from_env(tcx.param_env(logic_id)), p.name)
+                                }
+                                _ => unreachable!(),
+                            };
+                            if t1 != t2 {
+                                tcx.dcx()
+                                        .struct_span_err(
+                                            span,
+                                           format!("mismatched types of constants: expected {t1} (constant {name1}), got {t2} (constant {name2})"),
+                                        )
+                                        .with_span_note(program_span, "function defined here")
+                                        .with_span_note(logic_span, "logical function defined here")
+                                        .emit();
+                            }
+                        }
+                        (
+                            Some(GenericArgKind::Lifetime(l1)),
+                            Some(GenericArgKind::Lifetime(l2)),
+                        ) => {
+                            if l1 != l2 {
+                                tcx.dcx()
+                                        .struct_span_err(
+                                            span,
+                                            "mismatched lifetime parameters for logical alias: expected {l1}, got {l2}",
+                                        )
+                                        .with_span_note(program_span, "function defined here")
+                                        .with_span_note(logic_span, "logical function defined here")
+                                        .emit();
+                            }
+                        }
+                        (Some(a1), Some(a2)) => {
+                            tcx.dcx()
+                                    .struct_span_err(span, format!("mismatched parameter kinds for logical alias: expected {a1:?}, got {a2:?}"))
+                                    .with_span_note(program_span, "function defined here")
+                                    .with_span_note(logic_span, "logical function defined here")
+                                    .emit();
+                        }
+                    }
+                }
+                let bounds1 = tcx.param_env(def_id).caller_bounds();
+                let bounds2 = tcx.param_env(logic_id).caller_bounds();
+                if bounds1 != bounds2 {
+                    let mut err = tcx
+                        .dcx()
+                        .struct_span_err(span, "mismatched trait bounds for logical alias");
+                    for (b1, b2) in std::iter::zip(bounds1.iter().rev(), bounds2.iter().rev()) {
+                        if b1 != b2 {
+                            err.note(format!("{b1} != {b2}"));
+                        }
+                    }
+                    if bounds1.len() < bounds2.len() {
+                        for b in bounds2.iter().rev().skip(bounds1.len()) {
+                            err.note(format!("additional bound {b} found"));
+                        }
+                    } else if bounds1.len() > bounds2.len() {
+                        for b in bounds1.iter().rev().skip(bounds2.len()) {
+                            err.note(format!("missing bound {b}"));
+                        }
+                    }
+                    err.with_span_note(program_span, "function defined here")
+                        .with_span_note(logic_span, "logical function defined here")
+                        .emit();
+                }
+
+                // the aliased function must also comes from the current crate
+                if !logic_id.is_local() {
+                    tcx.dcx()
+                        .struct_span_err(
+                            program_span,
+                            "The aliased logical function should be defined in the same crate",
+                        )
+                        .with_span_note(logic_span, "aliased function defined here")
+                        .emit();
+                }
+                // When defining an alias, neither functions must be a trait function
+                if tcx.trait_of_assoc(def_id).is_some() {
+                    tcx.dcx().span_err(
+                        program_span,
+                        "Cannot make a logical alias from a trait function",
+                    );
+                }
+                if tcx.trait_of_assoc(logic_id).is_some() {
+                    tcx.dcx()
+                        .span_err(logic_span, "Cannot make a logical alias to a trait function");
+                }
+                if tcx.dcx().has_errors().is_some() {
+                    continue;
+                }
+
+                trace!(
+                    "`{}` is an alias for `{}`",
+                    self.def_path_str(local_id),
+                    self.def_path_str(logic_id),
+                );
+                self.logical_aliases.insert(def_id, (span, logic_id));
+            }
+        }
     }
 
     queryish!(trait_impl, DefId, Vec<Refinement<'tcx>>, translate_impl);

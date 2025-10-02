@@ -66,6 +66,7 @@ proc_macro_attributes! {
     bitwise_proof
     maintains
     erasure
+    has_logical_alias
 }
 
 macro_rules! proc_macros {

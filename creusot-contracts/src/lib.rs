@@ -487,6 +487,38 @@ pub mod macros {
     pub use base_macros::erasure;
 
     pub(crate) use base_macros::intrinsic;
+
+    /// Defines a _logical alias_ for a program function.
+    ///
+    /// Logical aliases allow you to use the same name for a program and a [`logic`] function.
+    /// Creusot will generate a proof obligation to show that the two functions return
+    /// the same results.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use creusot_contracts::*;
+    /// pub struct S<T> {
+    ///     t: T,
+    /// }
+    /// impl<T> S<T> {
+    ///     #[has_logical_alias(Self::read_t_logic)]
+    ///     pub fn read_t(&self) -> &T {
+    ///         &self.t
+    ///     }
+    ///
+    ///     #[logic]
+    ///     pub fn read_t_logic(&self) -> &T {
+    ///         &self.t
+    ///     }
+    /// }
+    ///
+    /// // ...
+    ///
+    /// #[requires(s.read_t().view() == 1)]
+    /// pub fn foo(s: S<i32>) { /* ... */ }
+    /// ```
+    pub use base_macros::has_logical_alias;
 }
 
 #[doc(hidden)]

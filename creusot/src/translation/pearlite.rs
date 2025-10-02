@@ -182,6 +182,9 @@ pub enum TermKind<'tcx> {
         trigger: Box<[Trigger<'tcx>]>,
         body: Box<Term<'tcx>>,
     },
+    /// A function call.
+    ///
+    /// Be careful when building this case, that it respects [logical aliases](TranslationCtx::logical_alias).
     // TODO: Get rid of (id, subst).
     Call {
         id: DefId,
@@ -796,6 +799,10 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                                 .iter()
                                 .map(|arg| self.expr_term(*arg))
                                 .collect::<Result<_, _>>()?;
+                            let id = match self.ctx.logical_alias(id) {
+                                None => id,
+                                Some((_, alias_id)) => alias_id,
+                            };
                             Ok(Term::call_no_normalize(self.ctx.tcx, id, subst, args).span(span))
                         }
                     }
@@ -1444,6 +1451,7 @@ impl<'tcx> Term<'tcx> {
         Term { ty, kind: TermKind::Tuple { fields }, span }
     }
 
+    /// Same as [`Self::call`], but does not normalize the type of the result.
     pub(crate) fn call_no_normalize(
         tcx: TyCtxt<'tcx>,
         def_id: DefId,
@@ -1456,6 +1464,11 @@ impl<'tcx> Term<'tcx> {
         Term { ty: result, span: DUMMY_SP, kind: TermKind::Call { id: def_id, subst, args } }
     }
 
+    /// Generate a [`TermKind::Call`] for a special function described by `(def_id, subst)`
+    /// (e.g. `resolve`, `inv`, etc)
+    ///
+    /// Note that this should not be used for regular function calls, in particular because
+    /// it does not consider [logical aliases](TranslationCtx::logical_alias).
     pub(crate) fn call(
         tcx: TyCtxt<'tcx>,
         typing_env: TypingEnv<'tcx>,
