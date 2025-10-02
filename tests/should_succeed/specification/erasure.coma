@@ -228,7 +228,7 @@ module M_erasure__takes_ref_test2 [#"erasure.rs" 77 0 77 37]
     [ return''0 (result: Int32.t) -> (! return' {result}) ]
 end
 module M_erasure__foog [#"erasure.rs" 83 0 83 36]
-  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 178 14 178 26
   
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -286,24 +286,23 @@ module M_erasure__test_ptr2 [#"erasure.rs" 105 0 105 67]
   let%span serasure = "erasure.rs" 105 38 105 41
   let%span serasure'0 = "erasure.rs" 104 11 104 16
   let%span serasure'1 = "erasure.rs" 105 65 105 67
-  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 118 8 118 18
-  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 138 40 138 43
-  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 134 15 134 31
-  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 138 4 138 69
-  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 135 14 135 35
-  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 117 8 117 18
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 139 40 139 43
+  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 135 15 135 31
+  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 139 4 139 69
+  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 136 14 136 35
+  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
-  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_T
+  type t_PtrOwn
   
-  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_T }
+  type t_T
   
   predicate is_null_logic (self: Opaque.ptr) = [%#sptr] Ptr.addr_logic_u64 self = (0: UInt64.t)
   
@@ -317,54 +316,46 @@ module M_erasure__test_ptr2 [#"erasure.rs" 105 0 105 67]
   
   function metadata_logic (_0: Opaque.ptr) : ()
   
-  predicate invariant' [@inline:trivial] (self: t_PtrOwn) =
+  predicate inv (_0: Opaque.ptr)
+  
+  axiom inv_axiom [@rewrite]: forall x: Opaque.ptr [inv x]. inv x = true
+  
+  predicate invariant' (self: t_PtrOwn) =
     [%#sptr_own'3] not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv (ptr self)
   
-  meta "rewrite_def" predicate invariant'
+  predicate inv'0 (_0: t_PtrOwn)
   
-  predicate inv (_0: t_T)
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: t_T) = [%#sboxed] inv self
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant] inv'0 self
   
-  predicate inv'0 (_0: t_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'1 (_0: t_PtrOwn)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x
-      = (invariant' x
-      /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'0 val''0
-        end)
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
   
-  predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant] inv'1 self
+  predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = [%#sghost] inv'1 self
   
   meta "rewrite_def" predicate invariant''1
   
   predicate inv'2 (_0: t_PtrOwn)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 [@inline:trivial] (self: t_PtrOwn) = [%#sghost] inv'2 self
+  predicate inv'3 (_0: t_T)
+  
+  predicate invariant''2 [@inline:trivial] (self: t_T) = [%#sinvariant] inv'3 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''2 x
-  
-  predicate invariant''3 [@inline:trivial] (self: t_T) = [%#sinvariant] inv self
-  
-  meta "rewrite_def" predicate invariant''3
-  
   predicate inv'4 (_0: t_T)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_T [inv'4 x]. inv'4 x = invariant''3 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_T [inv'4 x]. inv'4 x = invariant''2 x
   
   let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return' (x: t_T)) =
-    {[@expl:as_ref 'own' type invariant] [%#sptr_own] inv'3 own}
+    {[@expl:as_ref 'own' type invariant] [%#sptr_own] inv'2 own}
     {[@expl:as_ref requires] [%#sptr_own'0] ptr'0 = ptr own}
     any
     [ return''0 (result: t_T) -> {[%#sptr_own'1] inv'4 result} {[%#sptr_own'2] result = val' own} (! return' {result}) ]
@@ -374,7 +365,7 @@ module M_erasure__test_ptr2 [#"erasure.rs" 105 0 105 67]
   meta "select_lsinst" "all"
   
   let rec test_ptr2 [#"erasure.rs" 105 0 105 67] (x: Opaque.ptr) (own: t_PtrOwn) (return' (x'0: t_T)) =
-    {[@expl:test_ptr2 'own' type invariant] [%#serasure] inv'3 own}
+    {[@expl:test_ptr2 'own' type invariant] [%#serasure] inv'2 own}
     {[@expl:test_ptr2 requires] [%#serasure'0] false}
     (! bb0
     [ bb0 = s0 [ s0 = as_ref {x'0} {own'0} (fun (_ret: t_T) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
@@ -388,17 +379,16 @@ module M_erasure__test_ptr_mut2 [#"erasure.rs" 116 0 116 79]
   let%span serasure'0 = "erasure.rs" 115 11 115 16
   let%span serasure'1 = "erasure.rs" 116 73 116 79
   let%span sghost = "../../../creusot-contracts/src/ghost.rs" 109 20 109 27
-  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 118 8 118 18
-  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 168 40 168 43
-  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 163 15 163 31
-  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 168 4 168 77
-  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 164 14 164 35
-  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 165 14 165 39
-  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 166 14 166 38
-  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
+  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 117 8 117 18
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 169 40 169 43
+  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 164 15 164 31
+  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 169 4 169 77
+  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 165 14 165 35
+  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 166 14 166 39
+  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 167 14 167 38
+  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
   let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
-  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
   
   use creusot.prelude.Opaque
@@ -407,9 +397,9 @@ module M_erasure__test_ptr_mut2 [#"erasure.rs" 116 0 116 79]
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_T
+  type t_PtrOwn
   
-  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_T }
+  type t_T
   
   predicate is_null_logic (self: Opaque.ptr) = [%#sptr] Ptr.addr_logic_u64 self = (0: UInt64.t)
   
@@ -423,59 +413,52 @@ module M_erasure__test_ptr_mut2 [#"erasure.rs" 116 0 116 79]
   
   function metadata_logic (_0: Opaque.ptr) : ()
   
-  predicate invariant' [@inline:trivial] (self: t_PtrOwn) =
+  predicate inv (_0: Opaque.ptr)
+  
+  axiom inv_axiom [@rewrite]: forall x: Opaque.ptr [inv x]. inv x = true
+  
+  predicate invariant' (self: t_PtrOwn) =
     [%#sptr_own'5] not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv (ptr self)
   
-  meta "rewrite_def" predicate invariant'
+  predicate inv'0 (_0: t_PtrOwn)
   
-  predicate inv (_0: t_T)
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: t_T) = [%#sboxed] inv self
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'0 (_0: t_T)
+  meta "rewrite_def" predicate invariant''0
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
+  predicate inv'1 (_0: MutBorrow.t t_PtrOwn)
   
-  predicate inv'1 (_0: t_PtrOwn)
+  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x
-      = (invariant' x
-      /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'0 val''0
-        end)
-  
-  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
-    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
+  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sghost'0] inv'1 self
   
   meta "rewrite_def" predicate invariant''1
   
   predicate inv'2 (_0: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sghost'0] inv'2 self
+  predicate inv'3 (_0: t_T)
+  
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_T) =
+    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_0: MutBorrow.t t_PtrOwn)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'3 x]. inv'3 x = invariant''2 x
-  
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_T) = [%#sinvariant] inv self.current /\ inv self.final
-  
-  meta "rewrite_def" predicate invariant''3
-  
   predicate inv'4 (_0: MutBorrow.t t_T)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_T [inv'4 x]. inv'4 x = invariant''3 x
+  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_T [inv'4 x]. inv'4 x = invariant''2 x
   
   function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = [%#sghost] self.final
   
   meta "rewrite_def" function fin
   
   let rec as_mut (ptr'0: Opaque.ptr) (own: MutBorrow.t t_PtrOwn) (return' (x: MutBorrow.t t_T)) =
-    {[@expl:as_mut 'own' type invariant] [%#sptr_own] inv'3 own}
+    {[@expl:as_mut 'own' type invariant] [%#sptr_own] inv'2 own}
     {[@expl:as_mut requires] [%#sptr_own'0] ptr'0 = ptr own.current}
     any
     [ return''0 (result: MutBorrow.t t_T) -> {[%#sptr_own'1] inv'4 result}
@@ -497,25 +480,25 @@ module M_erasure__test_ptr_mut2 [#"erasure.rs" 116 0 116 79]
   meta "select_lsinst" "all"
   
   let rec test_ptr_mut2 [#"erasure.rs" 116 0 116 79] (x: Opaque.ptr) (own: MutBorrow.t t_PtrOwn)
-    (return' (x'0: MutBorrow.t t_T)) = {[@expl:test_ptr_mut2 'own' type invariant] [%#serasure] inv'3 own}
+    (return' (x'0: MutBorrow.t t_T)) = {[@expl:test_ptr_mut2 'own' type invariant] [%#serasure] inv'2 own}
     {[@expl:test_ptr_mut2 requires] [%#serasure'0] false}
     (! bb0
     [ bb0 = s0 [ s0 = as_mut {x'0} {own'0} (fun (_ret: MutBorrow.t t_T) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv _7.current}
+      [ s0 = {inv'3 _7.current}
         MutBorrow.borrow_final <t_T> {_7.current} {MutBorrow.get_id _7}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_6 <- _ret ] -{inv _ret.final}-
+            [ &_6 <- _ret ] -{inv'3 _ret.final}-
             [ &_7 <- { _7 with current = _ret.final } ] s1)
-      | s1 = {inv _6.current}
+      | s1 = {inv'3 _6.current}
         MutBorrow.borrow_final <t_T> {_6.current} {MutBorrow.get_id _6}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_3 <- _ret ] -{inv _ret.final}-
+            [ &_3 <- _ret ] -{inv'3 _ret.final}-
             [ &_6 <- { _6 with current = _ret.final } ] s2)
-      | s2 = {inv _3.current}
+      | s2 = {inv'3 _3.current}
         MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_0 <- _ret ] -{inv _ret.final}-
+            [ &_0 <- _ret ] -{inv'3 _ret.final}-
             [ &_3 <- { _3 with current = _ret.final } ] s3)
       | s3 = {[@expl:type invariant] inv'4 _7} s4
       | s4 = -{resolve'0 _7}- s5
