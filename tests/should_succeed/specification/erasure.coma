@@ -287,11 +287,11 @@ module M_erasure__test_ptr2 [#"erasure.rs" 105 0 105 67]
   let%span serasure'0 = "erasure.rs" 104 11 104 16
   let%span serasure'1 = "erasure.rs" 105 65 105 67
   let%span sghost = "../../../creusot-contracts/src/ghost.rs" 117 8 117 18
-  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 139 40 139 43
-  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 135 15 135 31
-  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 139 4 139 69
-  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 136 14 136 35
-  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 170 40 170 43
+  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 166 15 166 31
+  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 170 4 170 69
+  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 167 14 167 35
+  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 47 4 47 29
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
   let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
   
@@ -380,13 +380,13 @@ module M_erasure__test_ptr_mut2 [#"erasure.rs" 116 0 116 79]
   let%span serasure'1 = "erasure.rs" 116 73 116 79
   let%span sghost = "../../../creusot-contracts/src/ghost.rs" 109 20 109 27
   let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 117 8 117 18
-  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 169 40 169 43
-  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 164 15 164 31
-  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 169 4 169 77
-  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 165 14 165 35
-  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 166 14 166 39
-  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 167 14 167 38
-  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 200 40 200 43
+  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 195 15 195 31
+  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 200 4 200 77
+  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 196 14 196 35
+  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 197 14 197 39
+  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 198 14 198 38
+  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 47 4 47 29
   let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
   let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
   let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
@@ -639,4 +639,473 @@ module M_erasure__nested3__hidden [#"erasure.rs" 149 4 149 15]
   
   let rec hidden [#"erasure.rs" 149 4 149 15] (return' (x: ())) = (! bb0
     [ bb0 = return''0 {_0} ] [ & _0: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+end
+module M_erasure__slice_as_ptr [#"erasure.rs" 153 0 153 43]
+  let%span serasure = "erasure.rs" 153 23 153 24
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 382 8 382 9
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 21 20 21 30
+  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 713 20 713 91
+  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
+
+  use creusot.slice.Slice64
+  use creusot.prelude.Opaque
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.Any
+
+  type t_T
+
+  predicate inv (_0: t_T)
+
+  predicate invariant' (self: t_T) = [%#sboxed] inv self
+
+  predicate inv'0 (_0: t_T)
+
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+
+  meta "rewrite_def" predicate invariant''0
+
+  predicate inv'1 (_0: Seq.seq t_T)
+
+  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+
+  predicate invariant''1 (self: Slice64.slice t_T) = [%#sslice'0] inv'1 (Slice64.view self)
+
+  predicate inv'2 (_0: Slice64.slice t_T)
+
+  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.slice t_T [inv'2 x]. inv'2 x = invariant''1 x
+
+  predicate invariant''2 [@inline:trivial] (self: Slice64.slice t_T) = [%#sinvariant] inv'2 self
+
+  meta "rewrite_def" predicate invariant''2
+
+  predicate inv'3 (_0: Slice64.slice t_T)
+
+  axiom inv_axiom'2 [@rewrite]: forall x: Slice64.slice t_T [inv'3 x]. inv'3 x = invariant''2 x
+
+  let rec as_ptr (self_: Slice64.slice t_T) (return' (x: Opaque.ptr)) =
+    {[@expl:as_ptr 'self_' type invariant] [%#sslice] inv'3 self_}
+    any [ return''0 (result: Opaque.ptr) -> (! return' {result}) ]
+
+  meta "compute_max_steps" 1000000
+
+  meta "select_lsinst" "all"
+
+  let rec slice_as_ptr [#"erasure.rs" 153 0 153 43] (s: Slice64.slice t_T) (return' (x: Opaque.ptr)) =
+    {[@expl:slice_as_ptr 's' type invariant] [%#serasure] inv'3 s}
+    (! bb0
+    [ bb0 = s0 [ s0 = as_ptr {s'0} (fun (_ret: Opaque.ptr) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return''0 {_0} ]
+    [ & _0: Opaque.ptr = Any.any_l () | & s'0: Slice64.slice t_T = s ])
+    [ return''0 (result: Opaque.ptr) -> (! return' {result}) ]
+end
+module M_erasure__slice_as_ptr_own [#"erasure.rs" 158 0 158 70]
+  let%span serasure = "erasure.rs" 158 27 158 28
+  let%span serasure'0 = "erasure.rs" 158 39 158 70
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 117 8 117 18
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 47 4 47 29
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
+  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
+  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 43 16 43 82
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 104 19 104 23
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 104 4 104 59
+  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 101 14 101 52
+  let%span sslice'2 = "../../../creusot-contracts/src/std/slice.rs" 102 14 102 38
+  let%span sslice'3 = "../../../creusot-contracts/src/std/slice.rs" 21 20 21 30
+  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 713 20 713 91
+  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
+  let%span smodel = "../../../creusot-contracts/src/model.rs" 43 8 43 22
+  let%span smem = "../../../creusot-contracts/src/std/mem.rs" 69 10 69 21
+
+  use creusot.slice.Slice64
+  use creusot.prelude.Opaque
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use creusot.int.Int64
+  use creusot.prelude.Any
+
+  type t_T
+
+  type t_PtrOwn
+
+  type tuple = { _p0: Opaque.ptr; _p1: t_PtrOwn }
+
+  predicate inv (_0: t_T)
+
+  predicate invariant' (self: t_T) = [%#sboxed] inv self
+
+  predicate inv'0 (_0: t_T)
+
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+
+  meta "rewrite_def" predicate invariant''0
+
+  predicate inv'1 (_0: Seq.seq t_T)
+
+  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+
+  predicate invariant''1 (self: Slice64.slice t_T) = [%#sslice'3] inv'1 (Slice64.view self)
+
+  predicate inv'2 (_0: Slice64.slice t_T)
+
+  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.slice t_T [inv'2 x]. inv'2 x = invariant''1 x
+
+  predicate invariant''2 [@inline:trivial] (self: Slice64.slice t_T) = [%#sinvariant] inv'2 self
+
+  meta "rewrite_def" predicate invariant''2
+
+  predicate inv'3 (_0: Slice64.slice t_T)
+
+  axiom inv_axiom'2 [@rewrite]: forall x: Slice64.slice t_T [inv'3 x]. inv'3 x = invariant''2 x
+
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr] Ptr.addr_logic_u64 self = (0: UInt64.t)
+
+  function ptr (self: t_PtrOwn) : Opaque.ptr
+
+  predicate ptr_is_aligned_opaque (self: t_PtrOwn)
+
+  constant size_of_T : int
+
+  axiom size_of_T_spec: [%#smem] 0 <= size_of_T
+
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+
+  predicate metadata_matches (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
+    [%#sptr'0] Seq.length (Slice64.view _value) = UInt64.t'int _metadata
+    /\ UInt64.t'int _metadata * size_of_T <= Int64.to_int const_MAX
+
+  function val' (self: t_PtrOwn) : Slice64.slice t_T
+
+  function metadata_logic (_0: Opaque.ptr) : UInt64.t
+
+  predicate inv'4 (_0: Opaque.ptr)
+
+  axiom inv_axiom'3 [@rewrite]: forall x: Opaque.ptr [inv'4 x]. inv'4 x = true
+
+  predicate invariant''3 (self: t_PtrOwn) =
+    [%#sptr_own] not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'4 (ptr self)
+
+  predicate inv'5 (_0: t_PtrOwn)
+
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''3 x
+
+  predicate invariant''4 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant] inv'5 self
+
+  meta "rewrite_def" predicate invariant''4
+
+  predicate inv'6 (_0: t_PtrOwn)
+
+  axiom inv_axiom'5 [@rewrite]: forall x: t_PtrOwn [inv'6 x]. inv'6 x = invariant''4 x
+
+  predicate invariant''5 [@inline:trivial] (self: t_PtrOwn) = [%#sghost] inv'6 self
+
+  meta "rewrite_def" predicate invariant''5
+
+  predicate inv'7 (_0: t_PtrOwn)
+
+  axiom inv_axiom'6 [@rewrite]: forall x: t_PtrOwn [inv'7 x]. inv'7 x = invariant''5 x
+
+  predicate inv'8 (_0: tuple)
+
+  axiom inv_axiom'7 [@rewrite]: forall x: tuple [inv'8 x]. inv'8 x = (let {_p0 = x0; _p1 = x1} = x in inv'7 x1)
+
+  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel] Slice64.view self
+
+  meta "rewrite_def" function view
+
+  let rec as_ptr_own (self: Slice64.slice t_T) (return' (x: tuple)) =
+    {[@expl:as_ptr_own 'self' type invariant] [%#sslice] inv'3 self}
+    any
+    [ return''0 (result: tuple) -> {[%#sslice'0] inv'8 result}
+      {[%#sslice'1] result._p0 = Opaque.thin (ptr result._p1)}
+      {[%#sslice'2] view self = view (val' result._p1)}
+      (! return' {result}) ]
+
+  meta "compute_max_steps" 1000000
+
+  meta "select_lsinst" "all"
+
+  let rec slice_as_ptr_own [#"erasure.rs" 158 0 158 70] (s: Slice64.slice t_T) (return' (x: tuple)) =
+    {[@expl:slice_as_ptr_own 's' type invariant] [%#serasure] inv'3 s}
+    (! bb0
+    [ bb0 = s0 [ s0 = as_ptr_own {s'0} (fun (_ret: tuple) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return''0 {_0} ]
+    [ & _0: tuple = Any.any_l () | & s'0: Slice64.slice t_T = s ])
+    [ return''0 (result: tuple) -> {[@expl:slice_as_ptr_own result type invariant] [%#serasure'0] inv'8 result}
+      (! return' {result}) ]
+end
+module M_erasure__slice_as_mut_ptr [#"erasure.rs" 162 0 162 49]
+  let%span serasure = "erasure.rs" 162 27 162 28
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 386 8 386 9
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 21 20 21 30
+  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 713 20 713 91
+  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
+
+  use creusot.prelude.MutBorrow
+  use creusot.slice.Slice64
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.Opaque
+  use creusot.prelude.Any
+
+  type t_T
+
+  predicate inv (_0: t_T)
+
+  predicate invariant' (self: t_T) = [%#sboxed] inv self
+
+  predicate inv'0 (_0: t_T)
+
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+
+  meta "rewrite_def" predicate invariant''0
+
+  predicate inv'1 (_0: Seq.seq t_T)
+
+  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+
+  predicate invariant''1 (self: Slice64.slice t_T) = [%#sslice'0] inv'1 (Slice64.view self)
+
+  predicate inv'2 (_0: Slice64.slice t_T)
+
+  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.slice t_T [inv'2 x]. inv'2 x = invariant''1 x
+
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+
+  meta "rewrite_def" predicate invariant''2
+
+  predicate inv'3 (_0: MutBorrow.t (Slice64.slice t_T))
+
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'3 x]. inv'3 x = invariant''2 x
+
+  let rec as_mut_ptr (self_: MutBorrow.t (Slice64.slice t_T)) (return' (x: Opaque.ptr)) =
+    {[@expl:as_mut_ptr 'self_' type invariant] [%#sslice] inv'3 self_}
+    any [ return''0 (result: Opaque.ptr) -> (! return' {result}) ]
+
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) = [%#sresolve] self.final = self.current
+
+  meta "rewrite_def" predicate resolve
+
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (Slice64.slice t_T)) = resolve _0
+
+  meta "rewrite_def" predicate resolve'0
+
+  meta "compute_max_steps" 1000000
+
+  meta "select_lsinst" "all"
+
+  let rec slice_as_mut_ptr [#"erasure.rs" 162 0 162 49] (s: MutBorrow.t (Slice64.slice t_T)) (return' (x: Opaque.ptr)) =
+    {[@expl:slice_as_mut_ptr 's' type invariant] [%#serasure] inv'3 s}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {inv'2 s'0.current}
+        MutBorrow.borrow_final <Slice64.slice t_T> {s'0.current} {MutBorrow.get_id s'0}
+          (fun (_ret: MutBorrow.t (Slice64.slice t_T)) ->
+            [ &_2 <- _ret ] -{inv'2 _ret.final}-
+            [ &s'0 <- { s'0 with current = _ret.final } ] s1)
+      | s1 = as_mut_ptr {_2} (fun (_ret: Opaque.ptr) -> [ &_0 <- _ret ] s2)
+      | s2 = bb1 ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 s'0} s1 | s1 = -{resolve'0 s'0}- s2 | s2 = return''0 {_0} ] ]
+    [ & _0: Opaque.ptr = Any.any_l ()
+    | & s'0: MutBorrow.t (Slice64.slice t_T) = s
+    | & _2: MutBorrow.t (Slice64.slice t_T) = Any.any_l () ]) [ return''0 (result: Opaque.ptr) -> (! return' {result}) ]
+end
+module M_erasure__slice_as_mut_ptr_own [#"erasure.rs" 167 0 167 82]
+  let%span serasure = "erasure.rs" 167 31 167 32
+  let%span serasure'0 = "erasure.rs" 167 47 167 82
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 117 8 117 18
+  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 47 4 47 29
+  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
+  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 218 4 218 18
+  let%span sptr'0 = "../../../creusot-contracts/src/std/ptr.rs" 232 14 232 116
+  let%span sptr'1 = "../../../creusot-contracts/src/std/ptr.rs" 226 20 226 41
+  let%span sptr'2 = "../../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
+  let%span sptr'3 = "../../../creusot-contracts/src/std/ptr.rs" 43 16 43 82
+  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
+  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 117 27 117 31
+  let%span sslice'0 = "../../../creusot-contracts/src/std/slice.rs" 117 4 117 71
+  let%span sslice'1 = "../../../creusot-contracts/src/std/slice.rs" 112 14 112 55
+  let%span sslice'2 = "../../../creusot-contracts/src/std/slice.rs" 113 14 113 72
+  let%span sslice'3 = "../../../creusot-contracts/src/std/slice.rs" 114 14 114 38
+  let%span sslice'4 = "../../../creusot-contracts/src/std/slice.rs" 115 14 115 58
+  let%span sslice'5 = "../../../creusot-contracts/src/std/slice.rs" 21 20 21 30
+  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 713 20 713 91
+  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
+  let%span smodel = "../../../creusot-contracts/src/model.rs" 59 8 59 22
+  let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 43 8 43 22
+  let%span smem = "../../../creusot-contracts/src/std/mem.rs" 69 10 69 21
+
+  use creusot.prelude.MutBorrow
+  use creusot.slice.Slice64
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use creusot.int.Int64
+  use creusot.prelude.Any
+
+  type t_T
+
+  predicate inv (_0: t_T)
+
+  predicate invariant' (self: t_T) = [%#sboxed] inv self
+
+  predicate inv'0 (_0: t_T)
+
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
+    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+
+  meta "rewrite_def" predicate invariant''0
+
+  predicate inv'1 (_0: Seq.seq t_T)
+
+  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+
+  predicate invariant''1 (self: Slice64.slice t_T) = [%#sslice'5] inv'1 (Slice64.view self)
+
+  predicate inv'2 (_0: Slice64.slice t_T)
+
+  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.slice t_T [inv'2 x]. inv'2 x = invariant''1 x
+
+  type t_PtrOwn
+
+  type tuple = { _p0: Opaque.ptr; _p1: MutBorrow.t t_PtrOwn }
+
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+
+  meta "rewrite_def" predicate invariant''2
+
+  predicate inv'3 (_0: MutBorrow.t (Slice64.slice t_T))
+
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'3 x]. inv'3 x = invariant''2 x
+
+  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'2] Ptr.addr_logic_u64 self = (0: UInt64.t)
+
+  function ptr (self: t_PtrOwn) : Opaque.ptr
+
+  predicate ptr_is_aligned_opaque (self: t_PtrOwn)
+
+  constant size_of_T : int
+
+  axiom size_of_T_spec: [%#smem] 0 <= size_of_T
+
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+
+  predicate metadata_matches (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
+    [%#sptr'3] Seq.length (Slice64.view _value) = UInt64.t'int _metadata
+    /\ UInt64.t'int _metadata * size_of_T <= Int64.to_int const_MAX
+
+  function val' (self: t_PtrOwn) : Slice64.slice t_T
+
+  function metadata_logic (_0: Opaque.ptr) : UInt64.t
+
+  predicate inv'4 (_0: Opaque.ptr)
+
+  axiom inv_axiom'3 [@rewrite]: forall x: Opaque.ptr [inv'4 x]. inv'4 x = true
+
+  predicate invariant''3 (self: t_PtrOwn) =
+    [%#sptr_own] not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'4 (ptr self)
+
+  predicate inv'5 (_0: t_PtrOwn)
+
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''3 x
+
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
+
+  meta "rewrite_def" predicate invariant''4
+
+  predicate inv'6 (_0: MutBorrow.t t_PtrOwn)
+
+  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'6 x]. inv'6 x = invariant''4 x
+
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sghost] inv'6 self
+
+  meta "rewrite_def" predicate invariant''5
+
+  predicate inv'7 (_0: MutBorrow.t t_PtrOwn)
+
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'7 x]. inv'7 x = invariant''5 x
+
+  predicate inv'8 (_0: tuple)
+
+  axiom inv_axiom'7 [@rewrite]: forall x: tuple [inv'8 x]. inv'8 x = (let {_p0 = x0; _p1 = x1} = x in inv'7 x1)
+
+  function len_logic (self: Opaque.ptr) : int = [%#sptr'1] UInt64.t'int (metadata_logic self)
+
+  function as_ptr_logic (self: Opaque.ptr) : Opaque.ptr = [%#sptr] Opaque.thin self
+
+  function slice_ptr_ext (self: Opaque.ptr) (other: Opaque.ptr) : ()
+
+  axiom slice_ptr_ext_spec: forall self: Opaque.ptr, other: Opaque.ptr. [%#sptr'0] as_ptr_logic self
+          = as_ptr_logic other
+        /\ len_logic self = len_logic other -> self = other
+
+  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T =
+    [%#smodel] Slice64.view self.current
+
+  meta "rewrite_def" function view
+
+  function view'0 [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = [%#smodel'0] Slice64.view self
+
+  meta "rewrite_def" function view'0
+
+  let rec as_mut_ptr_own (self: MutBorrow.t (Slice64.slice t_T)) (return' (x: tuple)) =
+    {[@expl:as_mut_ptr_own 'self' type invariant] [%#sslice] inv'3 self}
+    any
+    [ return''0 (result: tuple) -> {[%#sslice'0] inv'8 result}
+      {[%#sslice'1] result._p0 = as_ptr_logic (ptr (result._p1).current)}
+      {[%#sslice'2] result._p0 = as_ptr_logic (ptr (result._p1).final)}
+      {[%#sslice'3] view self = view'0 (val' (result._p1).current)}
+      {[%#sslice'4] Slice64.view self.final = view'0 (val' (result._p1).final)}
+      (! return' {result}) ]
+
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) = [%#sresolve] self.final = self.current
+
+  meta "rewrite_def" predicate resolve
+
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (Slice64.slice t_T)) = resolve _0
+
+  meta "rewrite_def" predicate resolve'0
+
+  meta "compute_max_steps" 1000000
+
+  meta "select_lsinst" "all"
+
+  let rec slice_as_mut_ptr_own [#"erasure.rs" 167 0 167 82] (s: MutBorrow.t (Slice64.slice t_T)) (return' (x: tuple)) =
+    {[@expl:slice_as_mut_ptr_own 's' type invariant] [%#serasure] inv'3 s}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {inv'2 s'0.current}
+        MutBorrow.borrow_final <Slice64.slice t_T> {s'0.current} {MutBorrow.get_id s'0}
+          (fun (_ret: MutBorrow.t (Slice64.slice t_T)) ->
+            [ &_3 <- _ret ] -{inv'2 _ret.final}-
+            [ &s'0 <- { s'0 with current = _ret.final } ] s1)
+      | s1 = as_mut_ptr_own {_3} (fun (_ret: tuple) -> [ &_0 <- _ret ] s2)
+      | s2 = bb1 ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 s'0} s1 | s1 = -{resolve'0 s'0}- s2 | s2 = return''0 {_0} ] ]
+    [ & _0: tuple = Any.any_l ()
+    | & s'0: MutBorrow.t (Slice64.slice t_T) = s
+    | & _3: MutBorrow.t (Slice64.slice t_T) = Any.any_l () ])
+    [ return''0 (result: tuple) -> {[@expl:slice_as_mut_ptr_own result type invariant] [%#serasure'0] inv'8 result}
+      (! return' {result}) ]
 end
