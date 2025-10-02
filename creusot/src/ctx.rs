@@ -187,7 +187,7 @@ pub struct TranslationCtx<'tcx> {
     erasure_required: RefCell<IndexSet<DefId>>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
-    erased_local_defid: HashMap<LocalDefId, Erasure<'tcx>>,
+    erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
     erasures_to_check: Vec<(LocalDefId, Erasure<'tcx>)>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
@@ -587,7 +587,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
         for (&def_id, _) in self.local_thir.iter() {
             if let Some(erasure) = extract_erasure_from_child(self, def_id) {
-                self.erased_local_defid.insert(def_id, erasure.clone());
+                self.erased_local_defid.insert(def_id, Some(erasure.clone()));
                 self.erasures_to_check.push((def_id, erasure));
             }
         }
@@ -655,7 +655,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         *self.crate_name.get_or_init(|| crate_name(self.tcx))
     }
 
-    pub(crate) fn erasure(&self, def_id: DefId) -> Option<&Erasure<'tcx>> {
+    pub(crate) fn erasure(&self, def_id: DefId) -> Option<&Option<Erasure<'tcx>>> {
         match def_id.as_local() {
             Some(local) => self.erased_local_defid.get(&local),
             None => self.externs.erasure(def_id),

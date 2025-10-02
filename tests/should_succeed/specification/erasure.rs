@@ -149,3 +149,10 @@ pub fn nested3() {
     fn hidden() {}
     hidden()
 }
+
+pub fn ghost_split() {}
+
+#[erasure(ghost_split)]
+pub fn ghost_split2() {
+    let (_, _) = ghost! { ((), ()) }.split();
+}

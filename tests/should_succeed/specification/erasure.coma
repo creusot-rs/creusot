@@ -228,7 +228,7 @@ module M_erasure__takes_ref_test2 [#"erasure.rs" 77 0 77 37]
     [ return''0 (result: Int32.t) -> (! return' {result}) ]
 end
 module M_erasure__foog [#"erasure.rs" 83 0 83 36]
-  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 178 14 178 26
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 181 14 181 26
   
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -639,4 +639,49 @@ module M_erasure__nested3__hidden [#"erasure.rs" 149 4 149 15]
   
   let rec hidden [#"erasure.rs" 149 4 149 15] (return' (x: ())) = (! bb0
     [ bb0 = return''0 {_0} ] [ & _0: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+end
+module M_erasure__ghost_split [#"erasure.rs" 153 0 153 20]
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec ghost_split [#"erasure.rs" 153 0 153 20] (return' (x: ())) = (! bb0
+    [ bb0 = return''0 {_0} ] [ & _0: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+end
+module M_erasure__ghost_split2 [#"erasure.rs" 156 0 156 21]
+  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 181 14 181 26
+  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 229 14 229 36
+  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 230 14 230 36
+  
+  use creusot.prelude.Any
+  
+  type tuple = { _p0: (); _p1: () }
+  
+  let rec new (x: tuple) (return' (x'0: tuple)) = any
+    [ return''0 (result: tuple) -> {[%#sghost] result = x} (! return' {result}) ]
+  
+  type tuple'0 = { _p0'0: (); _p1'0: () }
+  
+  let rec split (self: tuple) (return' (x: tuple'0)) = any
+    [ return''0 (result: tuple'0) -> {[%#sghost'0] self._p0 = result._p0'0}
+      {[%#sghost'1] self._p1 = result._p1'0}
+      (! return' {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec ghost_split2 [#"erasure.rs" 156 0 156 21] (return' (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_4 <- { _p0 = _5; _p1 = _6 } ] s1 | s1 = new {_4} (fun (_ret: tuple) -> [ &_3 <- _ret ] s2) | s2 = bb1 ]
+    | bb1 = s0 [ s0 = split {_3} (fun (_ret: tuple'0) -> [ &_2 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = return''0 {_0} ]
+    [ & _0: () = Any.any_l ()
+    | & _2: tuple'0 = Any.any_l ()
+    | & _3: tuple = Any.any_l ()
+    | & _4: tuple = Any.any_l ()
+    | & _5: () = Any.any_l ()
+    | & _6: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end

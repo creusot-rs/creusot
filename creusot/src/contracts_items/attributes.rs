@@ -177,32 +177,47 @@ fn tokenstream_to_meta<'a>(
     Meta { name, args }
 }
 
-/// - `Some(Some(path))` if `#[creusot::spec::erasure(path)]`
-/// - `Some(None)` if `#[creusot::spec::erasure]`
-/// - `None` if no matching attribute
-pub(crate) fn get_erasure(tcx: TyCtxt, def_id: DefId) -> Option<Option<Vec<Symbol>>> {
+pub(crate) enum ErasureKind {
+    /// `#[creusot::spec::erasure(_)]` (from `#[erasure(_)]`)
+    Ghost,
+    /// `#[creusot::spec::erasure(path)]` (from `#[erasure(private path)]`)
+    Private(Vec<Symbol>),
+    /// `#[creusot::spec::erasure]` (from `#[erasure(path)]`)
+    Parent,
+}
+
+pub(crate) fn get_erasure(tcx: TyCtxt, def_id: DefId) -> Option<ErasureKind> {
     let attr = get_attrs(tcx.get_all_attrs(def_id), &["creusot", "spec", "erasure"]).pop()?;
     let Attribute::Unparsed(attr) = attr else { unreachable!() };
     match &attr.args {
-        AttrArgs::Delimited(args) => Some(Some(tokenstream_to_path(tcx, def_id, &args.tokens))),
-        AttrArgs::Empty => Some(None),
+        AttrArgs::Delimited(args) => Some(parse_erasure_arg(tcx, def_id, &args.tokens)),
+        AttrArgs::Empty => Some(ErasureKind::Parent),
         _ => tcx.crash_and_error(tcx.def_span(def_id), "Bad #[erasure] attribute"),
     }
 }
 
-fn tokenstream_to_path(tcx: TyCtxt, def_id: DefId, tokens: &TokenStream) -> Vec<Symbol> {
+fn parse_erasure_arg(tcx: TyCtxt, def_id: DefId, tokens: &TokenStream) -> ErasureKind {
     let crash = || tcx.crash_and_error(tcx.def_span(def_id), "Bad #[erasure] attribute");
-    tokens
-        .iter()
-        .filter_map(|token| {
-            let TokenTree::Token(token, _) = token else { crash() };
-            match token.kind {
-                TokenKind::PathSep => None,
-                TokenKind::Ident(name, _) => Some(name),
-                _ => crash(),
-            }
-        })
-        .collect()
+    if tokens.len() == 1
+        && let TokenTree::Token(token, _) = tokens.get(0).unwrap()
+        && let TokenKind::Ident(sym, _) = token.kind
+        && sym.as_str() == "_"
+    {
+        return ErasureKind::Ghost;
+    }
+    ErasureKind::Private(
+        tokens
+            .iter()
+            .filter_map(|token| {
+                let TokenTree::Token(token, _) = token else { crash() };
+                match token.kind {
+                    TokenKind::PathSep => None,
+                    TokenKind::Ident(name, _) => Some(name),
+                    _ => crash(),
+                }
+            })
+            .collect(),
+    )
 }
 
 pub(crate) fn creusot_clause_attrs<'tcx>(

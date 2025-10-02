@@ -470,6 +470,13 @@ pub mod macros {
     ///
     /// #[erasure(private crate_name::full::path::to::f2)]
     /// fn g2(y: bool) { /* ... */ }
+    ///
+    /// #[trusted]
+    /// #[erasure(_)]
+    /// fn split<T, U>(g: Ghost<(T, U)>) -> (Ghost<T>, Ghost<U>) {
+    ///     /* ... */
+    /// # unimplemented!()
+    /// }
     /// ```
     ///
     /// # Inside `extern_spec!`
