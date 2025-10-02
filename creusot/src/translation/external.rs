@@ -1,6 +1,6 @@
 use super::specification::inputs_and_output_from_thir;
 use crate::{
-    contracts_items::{get_erasure, is_trusted},
+    contracts_items::{ErasureKind, get_erasure, is_trusted},
     ctx::*,
     translation::{
         pearlite::PIdent,
@@ -195,20 +195,20 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItem<'a, 'tcx> {
 /// Input: `local_def_id` of a `#[creusot::spec::erasure]` closure.
 /// Output:
 /// - `LocalDefId` of the original `#[erasure]` item (the parent of the input id)
-/// - `Erasure<'tcx>` info about the erased function from the point of view of callers
-///   (THIR trait method calls are not resolved)
+/// - `Option<Erasure<'tcx>>` info about the erased function from the point of view of callers
+///   (THIR trait method calls are not resolved), or `None` for ghost .
 /// - `Option<Erasure<'tcx>>` of the actual body of the erased function, if
 ///   the `#[erasure]`-carrying function is not also `#[trusted]`.
 pub(crate) fn extract_erasure_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     local_def_id: LocalDefId,
     &(ref thir, expr): &(Thir<'tcx>, thir::ExprId),
-) -> Option<(LocalDefId, Erasure<'tcx>, Option<Erasure<'tcx>>)> {
+) -> Option<(LocalDefId, Option<Erasure<'tcx>>, Option<Erasure<'tcx>>)> {
     let def_id = local_def_id.to_def_id();
     let (id_this, (id_erased, subst_erased), (id_resolved, subst_resolved)) =
         match get_erasure(ctx.tcx, def_id) {
             None => return None,
-            Some(None) => {
+            Some(ErasureKind::Parent) => {
                 let parent = ctx.tcx.parent(def_id);
                 let (id_erased, subst_erased) = extract_extern_item(thir, expr).unwrap();
                 debug!("extract_erasure_from_item: {parent:?} erases to {id_erased:?}");
@@ -227,7 +227,7 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
                 });
                 (parent, (id_erased, subst_erased), (id_resolved, subst_resolved))
             }
-            Some(Some(path)) => {
+            Some(ErasureKind::Private(path)) => {
                 debug!("extract_erasure_from_item: {def_id:?} erases to private {path:?}");
                 let id_erased = forge_def_id(ctx.tcx, &path)
                     .unwrap_or_else(|e| ctx.crash_and_error(ctx.def_span(def_id), e));
@@ -247,6 +247,15 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
                 }
                 (def_id, (id_erased, subst_erased), (id_erased, subst_erased))
             }
+            Some(ErasureKind::Ghost) => {
+                if !is_trusted(ctx.tcx, def_id) {
+                    ctx.crash_and_error(
+                        ctx.def_span(def_id),
+                        format!("#[erasure(_)] requires the #[trusted] attribute"),
+                    )
+                }
+                return Some((local_def_id, None, None));
+            }
         };
     let erased = build_erased(ctx.tcx, id_this, id_erased, subst_erased);
     let to_check = if is_trusted(ctx.tcx, id_this) {
@@ -254,7 +263,7 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
     } else {
         Some(Erasure { def: (id_resolved, subst_resolved), erase_args: erased.erase_args.clone() })
     };
-    Some((id_this.expect_local(), erased, to_check))
+    Some((id_this.expect_local(), Some(erased), to_check))
 }
 
 /// Extract erasure for nested items
@@ -279,7 +288,8 @@ pub(crate) fn extract_erasure_from_child<'tcx>(
             return None;
         };
         match ctx.erasure(parent) {
-            Some(erased) => break erased,
+            Some(Some(erased)) => break erased,
+            Some(None) => return None,
             None => {
                 continue;
             }

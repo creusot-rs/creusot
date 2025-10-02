@@ -770,6 +770,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                         let (fun_id, subst, args) = if let Some(erased) =
                             self.ctx.and_then(|ctx| ctx.erasure(fun_id_resolved))
                         {
+                            let Some(erased) = erased else { break 'fun AnfValue::Unit };
                             let args = args
                                 .into_iter()
                                 .zip(&erased.erase_args)

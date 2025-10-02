@@ -134,6 +134,7 @@ impl<T: ?Sized> Resolve for Ghost<T> {
 impl<T: ?Sized> Ghost<T> {
     /// Transforms a `&Ghost<T>` into `Ghost<&T>`
     #[trusted]
+    #[erasure(_)]
     #[check(ghost)]
     #[ensures(**result == **self)]
     pub fn borrow(&self) -> Ghost<&T> {
@@ -142,6 +143,7 @@ impl<T: ?Sized> Ghost<T> {
 
     /// Transforms a `&mut Ghost<T>` into a `Ghost<&mut T>`.
     #[trusted]
+    #[erasure(_)]
     #[check(ghost)]
     #[ensures(*result == &mut **self)]
     pub fn borrow_mut(&mut self) -> Ghost<&mut T> {
@@ -155,6 +157,7 @@ impl<T: ?Sized> Ghost<T> {
     /// contexts, when axiomatizing an API that is believed to be sound for
     /// external reasons.
     #[trusted]
+    #[erasure(_)]
     #[check(ghost)]
     #[requires(false)]
     pub fn conjure() -> Self {
@@ -222,6 +225,7 @@ impl<T: ?Sized> Ghost<T> {
 impl<T, U: ?Sized> Ghost<(T, U)> {
     #[check(ghost)]
     #[trusted]
+    #[erasure(_)]
     #[ensures((*self).0 == *result.0)]
     #[ensures((*self).1 == *result.1)]
     pub fn split(self) -> (Ghost<T>, Ghost<U>) {
