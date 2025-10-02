@@ -37,6 +37,7 @@ use crate::{
     backend::is_trusted_item,
     contracts_items::{Intrinsic, is_before_loop, is_erasure, is_spec},
     ctx::{Erasure, HasTyCtxt, TranslationCtx},
+    translation::traits::TraitResolved,
     util::{NamelessGenericArgs, ODecodable, OEncodable},
     validate::{is_ghost_block, is_ghost_or_snap},
 };
@@ -757,16 +758,25 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                             .iter()
                             .map(|arg| self.a_normal_form_expr(*arg, stmts))
                             .collect::<Result<::std::boxed::Box<[_]>, _>>()?;
+                        let (fun_id_resolved, subst_resolved) =
+                            TraitResolved::resolve_item(self.tcx, self.typing_env, fun_id, subst.0)
+                                .to_opt(fun_id, subst.0)
+                                .unwrap_or_else(|| {
+                                    self.tcx.crash_and_error(
+                                        self.span(),
+                                        "could not resolve call in `#[erasure]` check",
+                                    )
+                                });
                         let (fun_id, subst, args) = if let Some(erased) =
-                            self.ctx.and_then(|ctx| ctx.erasure(fun_id))
+                            self.ctx.and_then(|ctx| ctx.erasure(fun_id_resolved))
                         {
                             let args = args
                                 .into_iter()
                                 .zip(&erased.erase_args)
                                 .filter_map(|(arg, &erase)| if erase { None } else { Some(arg) })
                                 .collect();
-                            let subst =
-                                ty::EarlyBinder::bind(erased.def.1).instantiate(self.tcx, subst.0);
+                            let subst = ty::EarlyBinder::bind(erased.def.1)
+                                .instantiate(self.tcx, subst_resolved);
                             (erased.def.0, (*subst).into(), args)
                         } else if let Some(ctx) = self.ctx
                             && let Intrinsic::PtrOwnAsRef | Intrinsic::PtrOwnAsMut =

@@ -205,46 +205,49 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
     &(ref thir, expr): &(Thir<'tcx>, thir::ExprId),
 ) -> Option<(LocalDefId, Erasure<'tcx>, Option<Erasure<'tcx>>)> {
     let def_id = local_def_id.to_def_id();
-    let (id_this, (id_erased, subst_erased), (id_resolved, subst_resolved)) = match get_erasure(
-        ctx.tcx, def_id,
-    ) {
-        None => return None,
-        Some(None) => {
-            let parent = ctx.tcx.parent(def_id);
-            let (id_erased, subst_erased) = extract_extern_item(thir, expr).unwrap();
-            debug!("extract_erasure_from_item: {parent:?} erases to {id_erased:?}");
-            let (id_resolved, subst_resolved) =
-                TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id_erased, subst_erased).to_opt(id_erased, subst_erased).unwrap_or_else(|| {
-                    let mut err = ctx.fatal_error(
-                        ctx.def_span(def_id),
-                        "could not derive original instance from external specification",
-                    );
-                    err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
-                    err.emit()
-                });
-            (parent, (id_erased, subst_erased), (id_resolved, subst_resolved))
-        }
-        Some(Some(path)) => {
-            debug!("extract_erasure_from_item: {def_id:?} erases to private {path:?}");
-            let id_erased = forge_def_id(ctx.tcx, &path)
-                .unwrap_or_else(|e| ctx.crash_and_error(ctx.def_span(def_id), e));
-            let subst_erased = erased_identity_for_item(ctx.tcx, id_erased);
-            let subst_this = erased_identity_for_item(ctx.tcx, def_id);
-            if !eq_nameless_generic_args(subst_erased, subst_this) {
-                ctx.crash_and_error(
-                    ctx.def_span(def_id),
-                    format!(
-                        "#[erasure] generics don't match\n {} {:?}\n {} {:?}",
-                        ctx.def_path_str(def_id),
-                        subst_this,
-                        ctx.def_path_str(id_erased),
-                        subst_erased,
-                    ),
+    let (id_this, (id_erased, subst_erased), (id_resolved, subst_resolved)) =
+        match get_erasure(ctx.tcx, def_id) {
+            None => return None,
+            Some(None) => {
+                let parent = ctx.tcx.parent(def_id);
+                let (id_erased, subst_erased) = extract_extern_item(thir, expr).unwrap();
+                debug!("extract_erasure_from_item: {parent:?} erases to {id_erased:?}");
+                let (id_resolved, subst_resolved) = TraitResolved::resolve_item(
+                    ctx.tcx,
+                    ctx.typing_env(def_id),
+                    id_erased,
+                    subst_erased,
                 )
+                .to_opt(id_erased, subst_erased)
+                .unwrap_or_else(|| {
+                    ctx.crash_and_error(
+                        ctx.def_span(def_id),
+                        "could not resolve `#[erasure]` target",
+                    )
+                });
+                (parent, (id_erased, subst_erased), (id_resolved, subst_resolved))
             }
-            (def_id, (id_erased, subst_erased), (id_erased, subst_erased))
-        }
-    };
+            Some(Some(path)) => {
+                debug!("extract_erasure_from_item: {def_id:?} erases to private {path:?}");
+                let id_erased = forge_def_id(ctx.tcx, &path)
+                    .unwrap_or_else(|e| ctx.crash_and_error(ctx.def_span(def_id), e));
+                let subst_erased = erased_identity_for_item(ctx.tcx, id_erased);
+                let subst_this = erased_identity_for_item(ctx.tcx, def_id);
+                if !eq_nameless_generic_args(subst_erased, subst_this) {
+                    ctx.crash_and_error(
+                        ctx.def_span(def_id),
+                        format!(
+                            "#[erasure] generics don't match\n {} {:?}\n {} {:?}",
+                            ctx.def_path_str(def_id),
+                            subst_this,
+                            ctx.def_path_str(id_erased),
+                            subst_erased,
+                        ),
+                    )
+                }
+                (def_id, (id_erased, subst_erased), (id_erased, subst_erased))
+            }
+        };
     let erased = build_erased(ctx.tcx, id_this, id_erased, subst_erased);
     let to_check = if is_trusted(ctx.tcx, id_this) {
         None
