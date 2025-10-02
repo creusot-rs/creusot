@@ -112,7 +112,6 @@ impl<T: ?Sized + Fin> Fin for Ghost<T> {
 
 impl<T: ?Sized> Invariant for Ghost<T> {
     #[logic(open, prophetic, inline)]
-    #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         inv(*self)

@@ -67,13 +67,12 @@ module M_union_find_cpp__implementation__qyi10913086124150880335__roots_map [#"u
   let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
   let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
   let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 553 20 553 76
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 552 20 552 76
   let%span soption = "../../creusot-contracts/src/std/option.rs" 744 15 744 27
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 746 8 749 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
   
   use creusot.prelude.Opaque
   use set.Fset
@@ -99,11 +98,7 @@ module M_union_find_cpp__implementation__qyi10913086124150880335__roots_map [#"u
   
   meta "rewrite_def" predicate contains
   
-  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
-  
-  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
-  
-  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Node }
+  type t_PtrOwn
   
   type t_Option = C_None | C_Some t_PtrOwn
   
@@ -146,6 +141,10 @@ module M_union_find_cpp__implementation__qyi10913086124150880335__roots_map [#"u
   
   meta "rewrite_def" function index_logic'1
   
+  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
+  
+  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
+  
   function val' (self: t_PtrOwn) : t_Node
   
   function index_logic'2 [@inline:trivial] (self: Map.map t_Elem t_T) (a: t_Elem) : t_T = [%#smapping] Map.get self a
@@ -181,58 +180,40 @@ module M_union_find_cpp__implementation__qyi10913086124150880335__roots_map [#"u
   
   function metadata_logic (_0: Opaque.ptr) : ()
   
-  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) =
+  predicate inv'0 (_0: Opaque.ptr)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     [%#sptr_own] not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
   
-  meta "rewrite_def" predicate invariant''0
+  predicate inv'1 (_0: t_PtrOwn)
   
-  predicate inv'0 (_0: t_T)
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
   
-  predicate inv'1 (_0: t_Node)
+  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
+    [%#sfmap'3] forall k: t_Elem. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'2 (_0: t_FMap)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  
+  predicate inv'3 (_0: t_UFInner)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
       = match x with
-        | C_Root rank payload -> inv'0 payload
-        | C_Link a_0 -> true
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'2 perms
         end
   
-  predicate invariant''1 (self: t_Node) = [%#sboxed] inv'1 self
+  predicate inv'4 (_0: t_UF)
   
-  predicate inv'2 (_0: t_Node)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''1 x
-  
-  predicate inv'3 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x
-      = (invariant''0 x
-      /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
-        end)
-  
-  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
-    [%#sfmap'3] forall k: t_Elem. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
-  
-  meta "rewrite_def" predicate invariant''2
-  
-  predicate inv'4 (_0: t_FMap)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
-  
-  predicate inv'5 (_0: t_UFInner)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
-      = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'4 perms
-        end
-  
-  predicate inv'6 (_0: t_UF)
-  
-  axiom inv_axiom'5 [@rewrite]: forall x: t_UF [inv'6 x]. inv'6 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UF [inv'4 x]. inv'4 x
       = (invariant' x
       /\ match x with
-        | {t_UF__0 = a_0} -> inv'5 a_0
+        | {t_UF__0 = a_0} -> inv'3 a_0
         end)
   
   function domain [#"union_find_cpp.rs" 89 8 89 44] (self: t_UF) : Fset.fset t_Elem =
@@ -249,7 +230,7 @@ module M_union_find_cpp__implementation__qyi10913086124150880335__roots_map [#"u
   
   function roots_map [#"union_find_cpp.rs" 109 8 109 59] (self'0: t_UF) : Map.map t_Elem t_Elem
   
-  goal vc_roots_map: ([%#sunion_find_cpp] inv'6 self)
+  goal vc_roots_map: ([%#sunion_find_cpp] inv'4 self)
     -> (let result = (self.t_UF__0).t_UFInner__roots in [@expl:roots_map ensures] [%#sunion_find_cpp'0] forall e: t_Elem. in_domain self e
       -> in_domain self (index_logic'1 result e)
       /\ index_logic'1 result e = index_logic'1 result (index_logic'1 result e))
@@ -274,7 +255,7 @@ module M_union_find_cpp__implementation__new [#"union_find_cpp.rs" 161 4 161 35]
   let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 52 14 52 43
   let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
   let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
-  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 553 20 553 76
+  let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 552 20 552 76
   let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
   let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
   let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
@@ -282,21 +263,20 @@ module M_union_find_cpp__implementation__new [#"union_find_cpp.rs" 161 4 161 35]
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 746 8 749 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 203 22 203 26
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 203 4 205 17
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 201 14 201 29
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 181 15 181 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 181 4 183 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 202 22 202 26
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 202 4 204 17
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 200 14 200 29
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 180 15 180 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 180 4 182 17
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 178 14 178 26
+  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 117 8 117 18
   
   use set.Fset
   use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use map.Map
   use creusot.prelude.Ptr
+  use creusot.int.UInt64
   use mach.int.Int
   use map.Const
   use creusot.prelude.Any
@@ -305,13 +285,7 @@ module M_union_find_cpp__implementation__new [#"union_find_cpp.rs" 161 4 161 35]
   
   type t_FMap
   
-  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
-  
-  type t_T
-  
-  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
-  
-  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Node }
+  type t_PtrOwn
   
   type t_Option = C_None | C_Some t_PtrOwn
   
@@ -335,41 +309,29 @@ module M_union_find_cpp__implementation__new [#"union_find_cpp.rs" 161 4 161 35]
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
+  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
+  
+  type t_T
+  
+  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
+  
   predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
   
   function val' (self: t_PtrOwn) : t_Node
   
   function metadata_logic (_0: Opaque.ptr) : ()
   
-  predicate invariant' [@inline:trivial] (self: t_PtrOwn) =
+  predicate inv'0 (_0: Opaque.ptr)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  
+  predicate invariant' (self: t_PtrOwn) =
     [%#sptr_own] not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
   
-  meta "rewrite_def" predicate invariant'
+  predicate inv'1 (_0: t_PtrOwn)
   
-  predicate inv'0 (_0: t_T)
-  
-  predicate inv'1 (_0: t_Node)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
-      = match x with
-        | C_Root rank payload -> inv'0 payload
-        | C_Link a_0 -> true
-        end
-  
-  predicate invariant''0 (self: t_Node) = [%#sboxed] inv'1 self
-  
-  predicate inv'2 (_0: t_Node)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''0 x
-  
-  predicate inv'3 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x
-      = (invariant' x
-      /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
-        end)
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant' x
   
   predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
   
@@ -393,22 +355,22 @@ module M_union_find_cpp__implementation__new [#"union_find_cpp.rs" 161 4 161 35]
   
   meta "rewrite_def" function index_logic'0
   
-  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
-    [%#sfmap'8] forall k: t_Elem. contains self k -> inv k /\ inv'3 (index_logic'0 self k)
+  predicate invariant''0 [@inline:trivial] (self: t_FMap) =
+    [%#sfmap'8] forall k: t_Elem. contains self k -> inv k /\ inv'1 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'2 (_0: t_FMap)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate invariant''1 [@inline:trivial] (self: t_FMap) = [%#sghost'5] inv'2 self
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'4 (_0: t_FMap)
+  predicate inv'3 (_0: t_FMap)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''1 x
-  
-  predicate invariant''2 [@inline:trivial] (self: t_FMap) = [%#sghost'5] inv'4 self
-  
-  meta "rewrite_def" predicate invariant''2
-  
-  predicate inv'5 (_0: t_FMap)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_FMap [inv'5 x]. inv'5 x = invariant''2 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate ext_eq (self: t_FMap) (other: t_FMap) = [%#sfmap'3] forall k: t_Elem. get self k = get other k
   
@@ -427,11 +389,11 @@ module M_union_find_cpp__implementation__new [#"union_find_cpp.rs" 161 4 161 35]
   predicate is_empty (self: t_FMap) = [%#sfmap'1] ext_eq self empty
   
   let rec new (return' (x: t_FMap)) = any
-    [ return''0 (result: t_FMap) -> {[%#sfmap] inv'5 result} {[%#sfmap'0] is_empty result} (! return' {result}) ]
+    [ return''0 (result: t_FMap) -> {[%#sfmap] inv'3 result} {[%#sfmap'0] is_empty result} (! return' {result}) ]
   
   let rec into_inner (self: t_FMap) (return' (x: t_FMap)) =
-    {[@expl:into_inner 'self' type invariant] [%#sghost] inv'5 self}
-    any [ return''0 (result: t_FMap) -> {[%#sghost'0] inv'4 result} {[%#sghost'1] result = self} (! return' {result}) ]
+    {[@expl:into_inner 'self' type invariant] [%#sghost] inv'3 self}
+    any [ return''0 (result: t_FMap) -> {[%#sghost'0] inv'2 result} {[%#sghost'1] result = self} (! return' {result}) ]
   
   predicate index_logic'1 [@inline:trivial] (self: Map.map (Map.map t_Elem t_T) bool) (a: Map.map t_Elem t_T) =
     [%#smapping] Map.get self a
@@ -476,7 +438,7 @@ module M_union_find_cpp__implementation__new [#"union_find_cpp.rs" 161 4 161 35]
   
   meta "rewrite_def" function index_logic'4
   
-  predicate invariant''3 [#"union_find_cpp.rs" 64 8 64 34] [@inline:trivial] (self: t_UF) =
+  predicate invariant''2 [#"union_find_cpp.rs" 64 8 64 34] [@inline:trivial] (self: t_UF) =
     [%#sunion_find_cpp'5] forall e: t_Elem. contains'0 (self.t_UF__0).t_UFInner__domain e
       -> contains (self.t_UF__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UF__0).t_UFInner__perms e) = e.t_Elem__0
@@ -491,33 +453,33 @@ module M_union_find_cpp__implementation__new [#"union_find_cpp.rs" 161 4 161 35]
         /\ index_logic'4 (self.t_UF__0).t_UFInner__payloads e = payload
         end
   
-  meta "rewrite_def" predicate invariant''3
+  meta "rewrite_def" predicate invariant''2
   
-  predicate inv'6 (_0: t_UFInner)
+  predicate inv'4 (_0: t_UFInner)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_UFInner [inv'6 x]. inv'6 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'4 x]. inv'4 x
       = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'4 perms
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'2 perms
         end
   
-  predicate inv'7 (_0: t_UF)
+  predicate inv'5 (_0: t_UF)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_UF [inv'7 x]. inv'7 x
-      = (invariant''3 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UF [inv'5 x]. inv'5 x
+      = (invariant''2 x
       /\ match x with
-        | {t_UF__0 = a_0} -> inv'6 a_0
+        | {t_UF__0 = a_0} -> inv'4 a_0
         end)
   
-  predicate invariant''4 [@inline:trivial] (self: t_UF) = [%#sghost'5] inv'7 self
+  predicate invariant''3 [@inline:trivial] (self: t_UF) = [%#sghost'5] inv'5 self
   
-  meta "rewrite_def" predicate invariant''4
+  meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 (_0: t_UF)
+  predicate inv'6 (_0: t_UF)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_UF [inv'8 x]. inv'8 x = invariant''4 x
+  axiom inv_axiom'6 [@rewrite]: forall x: t_UF [inv'6 x]. inv'6 x = invariant''3 x
   
-  let rec new'0 (x: t_UF) (return' (x'0: t_UF)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'7 x}
-    any [ return''0 (result: t_UF) -> {[%#sghost'3] inv'8 result} {[%#sghost'4] result = x} (! return' {result}) ]
+  let rec new'0 (x: t_UF) (return' (x'0: t_UF)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'5 x}
+    any [ return''0 (result: t_UF) -> {[%#sghost'3] inv'6 result} {[%#sghost'4] result = x} (! return' {result}) ]
   
   function domain [#"union_find_cpp.rs" 89 8 89 44] (self: t_UF) : Fset.fset t_Elem =
     [%#sunion_find_cpp'4] (self.t_UF__0).t_UFInner__domain
@@ -551,7 +513,7 @@ module M_union_find_cpp__implementation__new [#"union_find_cpp.rs" 161 4 161 35]
     | & _7: t_FMap = Any.any_l ()
     | & _8: Map.map t_Elem t_T = Any.any_l ()
     | & _10: Map.map t_Elem t_Elem = Any.any_l () ])
-    [ return''0 (result: t_UF) -> {[@expl:new result type invariant] [%#sunion_find_cpp'2] inv'8 result}
+    [ return''0 (result: t_UF) -> {[@expl:new result type invariant] [%#sunion_find_cpp'2] inv'6 result}
       {[@expl:new ensures] [%#sunion_find_cpp'3] Fset.is_empty (domain result)}
       (! return' {result}) ]
 end
@@ -588,7 +550,7 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
   let%span sfmap'7 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
   let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 68 14 68 46
   let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 69 14 69 88
-  let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 553 20 553 76
+  let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 552 20 552 76
   let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
   let%span sfmap'12 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
   let%span sfmap'13 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
@@ -599,21 +561,20 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
   let%span soption'2 = "../../creusot-contracts/src/std/option.rs" 746 8 749 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 57 15 57 16
-  let%span sptr_own'0 = "../../creusot-contracts/src/ghost/ptr_own.rs" 57 4 57 52
-  let%span sptr_own'1 = "../../creusot-contracts/src/ghost/ptr_own.rs" 56 14 56 64
-  let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 210 26 210 30
-  let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 210 48 210 52
-  let%span sptr_own'4 = "../../creusot-contracts/src/ghost/ptr_own.rs" 207 14 207 64
-  let%span sptr_own'5 = "../../creusot-contracts/src/ghost/ptr_own.rs" 208 14 208 28
-  let%span sptr_own'6 = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 203 22 203 26
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 203 4 205 17
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 201 14 201 29
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 58 15 58 16
+  let%span sptr_own'0 = "../../creusot-contracts/src/ghost/ptr_own.rs" 58 4 58 52
+  let%span sptr_own'1 = "../../creusot-contracts/src/ghost/ptr_own.rs" 57 14 57 64
+  let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 211 26 211 30
+  let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 211 48 211 52
+  let%span sptr_own'4 = "../../creusot-contracts/src/ghost/ptr_own.rs" 208 14 208 64
+  let%span sptr_own'5 = "../../creusot-contracts/src/ghost/ptr_own.rs" 209 14 209 28
+  let%span sptr_own'6 = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 202 22 202 26
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 202 4 204 17
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 200 14 200 29
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 178 14 178 26
   let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 117 8 117 18
   let%span speano = "../../creusot-contracts/src/peano.rs" 128 14 128 30
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
@@ -639,7 +600,7 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
   
   type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
   
-  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Node }
+  type t_PtrOwn
   
   type tuple = { _p0: Opaque.ptr; _p1: t_PtrOwn }
   
@@ -665,33 +626,25 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
   
   function metadata_logic (_0: Opaque.ptr) : ()
   
-  predicate invariant' [@inline:trivial] (self: t_PtrOwn) =
+  predicate inv'1 (_0: Opaque.ptr)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'1 x]. inv'1 x = true
+  
+  predicate invariant' (self: t_PtrOwn) =
     [%#sptr_own'6] not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
-  
-  meta "rewrite_def" predicate invariant'
-  
-  predicate invariant''0 (self: t_Node) = [%#sboxed] inv'0 self
-  
-  predicate inv'1 (_0: t_Node)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x = invariant''0 x
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'1 (ptr self)
   
   predicate inv'2 (_0: t_PtrOwn)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x
-      = (invariant' x
-      /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'1 val''0
-        end)
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant' x
   
-  predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'4] inv'2 self
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'4] inv'2 self
   
-  meta "rewrite_def" predicate invariant''1
+  meta "rewrite_def" predicate invariant''0
   
   predicate inv'3 (_0: t_PtrOwn)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''0 x
   
   predicate inv'4 (_0: tuple)
   
@@ -765,7 +718,7 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
   
   meta "rewrite_def" function index_logic'2
   
-  predicate invariant''2 [#"union_find_cpp.rs" 64 8 64 34] [@inline:trivial] (self: t_UF) =
+  predicate invariant''1 [#"union_find_cpp.rs" 64 8 64 34] [@inline:trivial] (self: t_UF) =
     [%#sunion_find_cpp'15] forall e: t_Elem. contains (self.t_UF__0).t_UFInner__domain e
       -> contains'0 (self.t_UF__0).t_UFInner__perms e
       /\ ptr (index_logic'0 (self.t_UF__0).t_UFInner__perms e) = e.t_Elem__0
@@ -780,20 +733,20 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
         /\ index_logic'2 (self.t_UF__0).t_UFInner__payloads e = payload
         end
   
-  meta "rewrite_def" predicate invariant''2
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'5 (_0: t_Elem)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Elem [inv'5 x]. inv'5 x = true
   
-  predicate invariant''3 [@inline:trivial] (self: t_FMap) =
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
     [%#sfmap'10] forall k: t_Elem. contains'0 self k -> inv'5 k /\ inv'2 (index_logic'0 self k)
   
-  meta "rewrite_def" predicate invariant''3
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'6 (_0: t_FMap)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_FMap [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_FMap [inv'6 x]. inv'6 x = invariant''2 x
   
   predicate inv'7 (_0: t_UFInner)
   
@@ -805,27 +758,27 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
   predicate inv'8 (_0: t_UF)
   
   axiom inv_axiom'7 [@rewrite]: forall x: t_UF [inv'8 x]. inv'8 x
-      = (invariant''2 x
+      = (invariant''1 x
       /\ match x with
         | {t_UF__0 = a_0} -> inv'7 a_0
         end)
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UF) =
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UF) =
     [%#sinvariant] inv'8 self.current /\ inv'8 self.final
   
-  meta "rewrite_def" predicate invariant''4
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'9 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_UF [inv'9 x]. inv'9 x = invariant''4 x
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_UF [inv'9 x]. inv'9 x = invariant''3 x
   
-  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sghost'4] inv'9 self
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sghost'4] inv'9 self
   
-  meta "rewrite_def" predicate invariant''5
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'10 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_UF [inv'10 x]. inv'10 x = invariant''5 x
+  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_UF [inv'10 x]. inv'10 x = invariant''4 x
   
   let rec into_inner'0 (self: MutBorrow.t t_UF) (return' (x: MutBorrow.t t_UF)) =
     {[@expl:into_inner 'self' type invariant] [%#sghost] inv'10 self}
@@ -838,21 +791,21 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
   
   type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
   
-  predicate invariant''6 [@inline:trivial] (self: t_FMap) = [%#sinvariant'0] inv'6 self
+  predicate invariant''5 [@inline:trivial] (self: t_FMap) = [%#sinvariant'0] inv'6 self
   
-  meta "rewrite_def" predicate invariant''6
+  meta "rewrite_def" predicate invariant''5
   
   predicate inv'11 (_0: t_FMap)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_FMap [inv'11 x]. inv'11 x = invariant''6 x
+  axiom inv_axiom'10 [@rewrite]: forall x: t_FMap [inv'11 x]. inv'11 x = invariant''5 x
   
-  predicate invariant''7 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'2 self
+  predicate invariant''6 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'2 self
   
-  meta "rewrite_def" predicate invariant''7
+  meta "rewrite_def" predicate invariant''6
   
   predicate inv'12 (_0: t_PtrOwn)
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''7 x
+  axiom inv_axiom'11 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''6 x
   
   predicate inv'13 (_0: t_Option'0)
   
@@ -878,14 +831,14 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
     [ good (field_0: t_PtrOwn) -> {C_Some'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_PtrOwn [C_Some'0 field_0: t_Option'0]. C_Some'0 field_0 <> input} (! {false} any) ]
   
-  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
     [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
-  meta "rewrite_def" predicate invariant''8
+  meta "rewrite_def" predicate invariant''7
   
   predicate inv'14 (_0: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'13 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'14 x]. inv'14 x = invariant''8 x
+  axiom inv_axiom'13 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'14 x]. inv'14 x = invariant''7 x
   
   let rec disjoint_lemma (own1: MutBorrow.t t_PtrOwn) (own2: t_PtrOwn) (return' (x: ())) =
     {[@expl:disjoint_lemma 'own1' type invariant] [%#sptr_own'2] inv'14 own1}
@@ -903,14 +856,14 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate invariant''9 [@inline:trivial] (self: MutBorrow.t t_FMap) =
+  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_FMap) =
     [%#sinvariant] inv'6 self.current /\ inv'6 self.final
   
-  meta "rewrite_def" predicate invariant''9
+  meta "rewrite_def" predicate invariant''8
   
   predicate inv'15 (_0: MutBorrow.t t_FMap)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'15 x]. inv'15 x = invariant''9 x
+  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'15 x]. inv'15 x = invariant''8 x
   
   predicate inv'16 (_0: t_Option)
   
@@ -1013,14 +966,15 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
       | s3 = into_inner {perm} (fun (_ret: t_PtrOwn) -> [ &_22 <- _ret ] s4)
       | s4 = bb5 ]
     | bb5 = s0 [ s0 = into_inner'0 {uf'0} (fun (_ret: MutBorrow.t t_UF) -> [ &_24 <- _ret ] s1) | s1 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_21 <- { _p0'0 = _22; _p1'0 = _24 } ] s1 | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &perm'0 <- _21._p0'0 ] s1 | s1 = [ &uf'1 <- _21._p1'0 ] s2 | s2 = bb8 ]
-    | bb8 = s0
-      [ s0 = [ &_30 <- elt ] s1
-      | s1 = get_ghost {((uf'1.current).t_UF__0).t_UFInner__perms} {_30} (fun (_ret: t_Option'0) -> [ &_27 <- _ret ] s2)
-      | s2 = bb9 ]
-    | bb9 = any [ br0 -> {_27 = C_None'0} (! bb15) | br1 (x0: t_PtrOwn) -> {_27 = C_Some'0 x0} (! bb12) ]
-    | bb12 = s0
+    | bb6 = s0
+      [ s0 = [ &_21 <- { _p0'0 = _22; _p1'0 = _24 } ] s1
+      | s1 = [ &perm'0 <- _21._p0'0 ] s2
+      | s2 = [ &uf'1 <- _21._p1'0 ] s3
+      | s3 = [ &_30 <- elt ] s4
+      | s4 = get_ghost {((uf'1.current).t_UF__0).t_UFInner__perms} {_30} (fun (_ret: t_Option'0) -> [ &_27 <- _ret ] s5)
+      | s5 = bb7 ]
+    | bb7 = any [ br0 -> {_27 = C_None'0} (! bb13) | br1 (x0: t_PtrOwn) -> {_27 = C_Some'0 x0} (! bb10) ]
+    | bb10 = s0
       [ s0 = v_Some {_27} (fun (r0: t_PtrOwn) -> [ &other_perm <- r0 ] s1)
       | s1 = {inv'2 perm'0}
         MutBorrow.borrow_mut <t_PtrOwn> {perm'0}
@@ -1031,9 +985,9 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
             [ &_33 <- _ret ] -{inv'2 _ret.final}-
             [ &_34 <- { _34 with current = _ret.final } ] s3)
       | s3 = disjoint_lemma {_33} {other_perm} (fun (_ret: ()) -> [ &_26 <- _ret ] s4)
-      | s4 = bb14 ]
-    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'14 _34} s1 | s1 = -{resolve'0 _34}- s2 | s2 = bb15 ]
-    | bb15 = s0
+      | s4 = bb12 ]
+    | bb12 = s0 [ s0 = {[@expl:type invariant] inv'14 _34} s1 | s1 = -{resolve'0 _34}- s2 | s2 = bb13 ]
+    | bb13 = s0
       [ s0 = {inv'6 ((uf'1.current).t_UF__0).t_UFInner__perms}
         MutBorrow.borrow_final <t_FMap> {((uf'1.current).t_UF__0).t_UFInner__perms}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id uf'1) 1) 2}
@@ -1044,28 +998,28 @@ module M_union_find_cpp__implementation__make [#"union_find_cpp.rs" 178 4 178 68
       | s1 = insert_ghost {_37} {elt} {perm'0} (fun (_ret: t_Option) -> [ &_36 <- _ret ] s2)
       | s2 = {[@expl:type invariant] inv'16 _36} s3
       | s3 = -{resolve'3 _36}- s4
-      | s4 = bb17 ]
-    | bb17 = s0
-      [ s0 = [ &_40 <- [%#sunion_find_cpp'0] insert'0 ((uf'1.current).t_UF__0).t_UFInner__domain elt ] s1 | s1 = bb18 ]
-    | bb18 = s0
+      | s4 = bb14 ]
+    | bb14 = s0
+      [ s0 = [ &_40 <- [%#sunion_find_cpp'0] insert'0 ((uf'1.current).t_UF__0).t_UFInner__domain elt ] s1 | s1 = bb15 ]
+    | bb15 = s0
       [ s0 = [ &uf'1 <- { uf'1 with current = { t_UF__0 = { (uf'1.current).t_UF__0 with t_UFInner__domain = _40 } } } ]
         s1
       | s1 = [ &_42 <- [%#sunion_find_cpp'1] Map.set ((uf'1.current).t_UF__0).t_UFInner__payloads elt payload_snap ] s2
-      | s2 = bb19 ]
-    | bb19 = s0
+      | s2 = bb16 ]
+    | bb16 = s0
       [ s0 =
         [ &uf'1 <- { uf'1 with current = { t_UF__0 = { (uf'1.current).t_UF__0 with t_UFInner__payloads = _42 } } } ] s1
       | s1 = [ &_44 <- [%#sunion_find_cpp'2] Map.set ((uf'1.current).t_UF__0).t_UFInner__roots elt elt ] s2
-      | s2 = bb20 ]
-    | bb20 = s0
+      | s2 = bb17 ]
+    | bb17 = s0
       [ s0 = [ &uf'1 <- { uf'1 with current = { t_UF__0 = { (uf'1.current).t_UF__0 with t_UFInner__roots = _44 } } } ]
         s1
       | s1 = {[@expl:type invariant] inv'9 uf'1} s2
       | s2 = -{resolve'5 uf'1}- s3
-      | s3 = bb21 ]
-    | bb21 = s0 [ s0 = new'1 {_18} (fun (_ret: ()) -> [ &_17 <- _ret ] s1) | s1 = bb22 ]
-    | bb22 = s0 [ s0 = [ &_0 <- elt ] s1 | s1 = bb23 ]
-    | bb23 = return''0 {_0} ]
+      | s3 = new'1 {_18} (fun (_ret: ()) -> [ &_17 <- _ret ] s4)
+      | s4 = bb18 ]
+    | bb18 = s0 [ s0 = [ &_0 <- elt ] s1 | s1 = bb19 ]
+    | bb19 = return''0 {_0} ]
     [ & _0: t_Elem = Any.any_l ()
     | & uf'0: MutBorrow.t t_UF = uf
     | & payload'0: t_T = payload
@@ -1130,7 +1084,7 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
   let%span sfmap'8 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
   let%span sfmap'9 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
   let%span sfmap'10 = "../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
-  let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 553 20 553 76
+  let%span sfmap'11 = "../../creusot-contracts/src/logic/fmap.rs" 552 20 552 76
   let%span sfmap'12 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
   let%span soption = "../../creusot-contracts/src/std/option.rs" 148 16 148 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 149 27 149 39
@@ -1140,30 +1094,29 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
   let%span soption'4 = "../../creusot-contracts/src/std/option.rs" 746 8 749 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 138 40 138 43
-  let%span sptr_own'0 = "../../creusot-contracts/src/ghost/ptr_own.rs" 134 15 134 31
-  let%span sptr_own'1 = "../../creusot-contracts/src/ghost/ptr_own.rs" 138 4 138 69
-  let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 135 14 135 35
-  let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 168 40 168 43
-  let%span sptr_own'4 = "../../creusot-contracts/src/ghost/ptr_own.rs" 163 15 163 31
-  let%span sptr_own'5 = "../../creusot-contracts/src/ghost/ptr_own.rs" 168 4 168 77
-  let%span sptr_own'6 = "../../creusot-contracts/src/ghost/ptr_own.rs" 164 14 164 35
-  let%span sptr_own'7 = "../../creusot-contracts/src/ghost/ptr_own.rs" 165 14 165 39
-  let%span sptr_own'8 = "../../creusot-contracts/src/ghost/ptr_own.rs" 166 14 166 38
-  let%span sptr_own'9 = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 139 40 139 43
+  let%span sptr_own'0 = "../../creusot-contracts/src/ghost/ptr_own.rs" 135 15 135 31
+  let%span sptr_own'1 = "../../creusot-contracts/src/ghost/ptr_own.rs" 139 4 139 69
+  let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 136 14 136 35
+  let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 169 40 169 43
+  let%span sptr_own'4 = "../../creusot-contracts/src/ghost/ptr_own.rs" 164 15 164 31
+  let%span sptr_own'5 = "../../creusot-contracts/src/ghost/ptr_own.rs" 169 4 169 77
+  let%span sptr_own'6 = "../../creusot-contracts/src/ghost/ptr_own.rs" 165 14 165 35
+  let%span sptr_own'7 = "../../creusot-contracts/src/ghost/ptr_own.rs" 166 14 166 39
+  let%span sptr_own'8 = "../../creusot-contracts/src/ghost/ptr_own.rs" 167 14 167 38
+  let%span sptr_own'9 = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
   let%span sghost = "../../creusot-contracts/src/ghost.rs" 80 14 80 18
   let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 80 4 80 36
   let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 78 14 78 31
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 181 15 181 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 181 4 183 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 180 15 180 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 180 4 182 17
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 178 14 178 26
   let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 91 22 91 26
   let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 91 4 91 48
   let%span sghost'7 = "../../creusot-contracts/src/ghost.rs" 89 14 89 35
   let%span sghost'8 = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
-  let%span sghost'9 = "../../creusot-contracts/src/ghost.rs" 125 8 125 22
-  let%span sghost'10 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sghost'9 = "../../creusot-contracts/src/ghost.rs" 124 8 124 22
+  let%span sghost'10 = "../../creusot-contracts/src/ghost.rs" 117 8 117 18
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
@@ -1195,11 +1148,7 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
   
   meta "rewrite_def" predicate contains
   
-  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
-  
-  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
-  
-  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Node }
+  type t_PtrOwn
   
   type t_Option = C_None | C_Some t_PtrOwn
   
@@ -1242,6 +1191,10 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
   
   meta "rewrite_def" function index_logic'1
   
+  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
+  
+  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
+  
   function val' (self: t_PtrOwn) : t_Node
   
   function index_logic'2 [@inline:trivial] (self: Map.map t_Elem t_T) (a: t_Elem) : t_T = [%#smapping] Map.get self a
@@ -1277,124 +1230,106 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
   
   function metadata_logic (_0: Opaque.ptr) : ()
   
-  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) =
+  predicate inv'0 (_0: Opaque.ptr)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     [%#sptr_own'9] not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
   
-  meta "rewrite_def" predicate invariant''0
+  predicate inv'1 (_0: t_PtrOwn)
   
-  predicate inv'0 (_0: t_T)
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
   
-  predicate inv'1 (_0: t_Node)
+  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
+    [%#sfmap'11] forall k: t_Elem. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'2 (_0: t_FMap)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  
+  predicate inv'3 (_0: t_UFInner)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
       = match x with
-        | C_Root rank payload -> inv'0 payload
-        | C_Link a_0 -> true
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'2 perms
         end
   
-  predicate invariant''1 (self: t_Node) = [%#sboxed] inv'1 self
+  predicate inv'4 (_0: t_UF)
   
-  predicate inv'2 (_0: t_Node)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''1 x
-  
-  predicate inv'3 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x
-      = (invariant''0 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UF [inv'4 x]. inv'4 x
+      = (invariant' x
       /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
+        | {t_UF__0 = a_0} -> inv'3 a_0
         end)
   
-  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
-    [%#sfmap'11] forall k: t_Elem. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_UF) =
+    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_0: t_FMap)
+  predicate inv'5 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
+  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_UF [inv'5 x]. inv'5 x = invariant''2 x
   
-  predicate inv'5 (_0: t_UFInner)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
-      = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'4 perms
-        end
-  
-  predicate inv'6 (_0: t_UF)
-  
-  axiom inv_axiom'5 [@rewrite]: forall x: t_UF [inv'6 x]. inv'6 x
-      = (invariant' x
-      /\ match x with
-        | {t_UF__0 = a_0} -> inv'5 a_0
-        end)
-  
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UF) =
-    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sghost'10] inv'5 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'7 (_0: MutBorrow.t t_UF)
+  predicate inv'6 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UF [inv'7 x]. inv'7 x = invariant''3 x
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UF [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sghost'10] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sinvariant'0] inv'6 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'8 (_0: MutBorrow.t t_UF)
+  predicate inv'7 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UF [inv'8 x]. inv'8 x = invariant''4 x
+  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UF [inv'7 x]. inv'7 x = invariant''4 x
   
-  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sinvariant'0] inv'8 self
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sinvariant'0] inv'5 self
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'9 (_0: MutBorrow.t t_UF)
+  predicate inv'8 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_UF [inv'9 x]. inv'9 x = invariant''5 x
-  
-  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sinvariant'0] inv'7 self
-  
-  meta "rewrite_def" predicate invariant''6
-  
-  predicate inv'10 (_0: MutBorrow.t t_UF)
-  
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_UF [inv'10 x]. inv'10 x = invariant''6 x
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_UF [inv'8 x]. inv'8 x = invariant''5 x
   
   let rec deref (self: MutBorrow.t t_UF) (return' (x: MutBorrow.t t_UF)) =
-    {[@expl:deref 'self' type invariant] [%#sghost] inv'9 self}
+    {[@expl:deref 'self' type invariant] [%#sghost] inv'7 self}
     any
-    [ return''0 (result: MutBorrow.t t_UF) -> {[%#sghost'0] inv'10 result}
+    [ return''0 (result: MutBorrow.t t_UF) -> {[%#sghost'0] inv'8 result}
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
   
-  predicate invariant''7 [@inline:trivial] (self: t_FMap) = [%#sinvariant'0] inv'4 self
+  predicate invariant''6 [@inline:trivial] (self: t_FMap) = [%#sinvariant'0] inv'2 self
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'9 (_0: t_FMap)
+  
+  axiom inv_axiom'9 [@rewrite]: forall x: t_FMap [inv'9 x]. inv'9 x = invariant''6 x
+  
+  predicate invariant''7 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'1 self
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'11 (_0: t_FMap)
+  predicate inv'10 (_0: t_PtrOwn)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_FMap [inv'11 x]. inv'11 x = invariant''7 x
+  axiom inv_axiom'10 [@rewrite]: forall x: t_PtrOwn [inv'10 x]. inv'10 x = invariant''7 x
   
-  predicate invariant''8 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'3 self
+  predicate inv'11 (_0: t_Option'0)
   
-  meta "rewrite_def" predicate invariant''8
-  
-  predicate inv'12 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'11 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''8 x
-  
-  predicate inv'13 (_0: t_Option'0)
-  
-  axiom inv_axiom'12 [@rewrite]: forall x: t_Option'0 [inv'13 x]. inv'13 x
+  axiom inv_axiom'11 [@rewrite]: forall x: t_Option'0 [inv'11 x]. inv'11 x
       = match x with
         | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'12 a_0
+        | C_Some'0 a_0 -> inv'10 a_0
         end
   
   function map_logic (self: t_Option) (f: Map.map t_PtrOwn t_PtrOwn) : t_Option'0 = [%#soption'2] match self with
@@ -1403,38 +1338,48 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
       end
   
   let rec get_ghost (self: t_FMap) (key: t_Elem) (return' (x: t_Option'0)) =
-    {[@expl:get_ghost 'self' type invariant] [%#sfmap] inv'11 self}
+    {[@expl:get_ghost 'self' type invariant] [%#sfmap] inv'9 self}
     any
-    [ return''0 (result: t_Option'0) -> {[%#sfmap'0] inv'13 result}
+    [ return''0 (result: t_Option'0) -> {[%#sfmap'0] inv'11 result}
       {[%#sfmap'1] result = map_logic (get self key) (fun (v: t_PtrOwn) -> v)}
       (! return' {result}) ]
   
   let rec unwrap (self_: t_Option'0) (return' (x: t_PtrOwn)) =
-    {[@expl:unwrap 'self_' type invariant] [%#soption] inv'13 self_}
+    {[@expl:unwrap 'self_' type invariant] [%#soption] inv'11 self_}
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None'0}
-    any [ return''0 (result: t_PtrOwn) -> {inv'12 result} {[%#soption'1] C_Some'0 result = self_} (! return' {result}) ]
+    any [ return''0 (result: t_PtrOwn) -> {inv'10 result} {[%#soption'1] C_Some'0 result = self_} (! return' {result}) ]
   
-  predicate invariant''9 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'10] inv'12 self
+  predicate invariant''8 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'10] inv'10 self
+  
+  meta "rewrite_def" predicate invariant''8
+  
+  predicate inv'12 (_0: t_PtrOwn)
+  
+  axiom inv_axiom'12 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''8 x
+  
+  let rec new (x: t_PtrOwn) (return' (x'0: t_PtrOwn)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'10 x}
+    any [ return''0 (result: t_PtrOwn) -> {[%#sghost'3] inv'12 result} {[%#sghost'4] result = x} (! return' {result}) ]
+  
+  predicate inv'13 (_0: t_T)
+  
+  predicate inv'14 (_0: t_Node)
+  
+  axiom inv_axiom'13 [@rewrite]: forall x: t_Node [inv'14 x]. inv'14 x
+      = match x with
+        | C_Root rank payload -> inv'13 payload
+        | C_Link a_0 -> true
+        end
+  
+  predicate invariant''9 [@inline:trivial] (self: t_Node) = [%#sinvariant'0] inv'14 self
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'14 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'13 [@rewrite]: forall x: t_PtrOwn [inv'14 x]. inv'14 x = invariant''9 x
-  
-  let rec new (x: t_PtrOwn) (return' (x'0: t_PtrOwn)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'12 x}
-    any [ return''0 (result: t_PtrOwn) -> {[%#sghost'3] inv'14 result} {[%#sghost'4] result = x} (! return' {result}) ]
-  
-  predicate invariant''10 [@inline:trivial] (self: t_Node) = [%#sinvariant'0] inv'1 self
-  
-  meta "rewrite_def" predicate invariant''10
-  
   predicate inv'15 (_0: t_Node)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: t_Node [inv'15 x]. inv'15 x = invariant''10 x
+  axiom inv_axiom'14 [@rewrite]: forall x: t_Node [inv'15 x]. inv'15 x = invariant''9 x
   
   let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return' (x: t_Node)) =
-    {[@expl:as_ref 'own' type invariant] [%#sptr_own] inv'14 own}
+    {[@expl:as_ref 'own' type invariant] [%#sptr_own] inv'12 own}
     {[@expl:as_ref requires] [%#sptr_own'0] ptr'0 = ptr own}
     any
     [ return''0 (result: t_Node) -> {[%#sptr_own'1] inv'15 result}
@@ -1445,23 +1390,23 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
     [ good (field_0: t_Elem) -> {C_Link field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_Elem [C_Link field_0: t_Node]. C_Link field_0 <> input} (! {false} any) ]
   
-  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF)) =
-    [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+  predicate invariant''10 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF)) =
+    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
   
-  meta "rewrite_def" predicate invariant''11
+  meta "rewrite_def" predicate invariant''10
   
   predicate inv'16 (_0: MutBorrow.t (MutBorrow.t t_UF))
   
-  axiom inv_axiom'15 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'16 x]. inv'16 x = invariant''11 x
+  axiom inv_axiom'15 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'16 x]. inv'16 x = invariant''10 x
   
-  predicate invariant''12 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF)) =
-    [%#sinvariant] inv'7 self.current /\ inv'7 self.final
+  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF)) =
+    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
   
-  meta "rewrite_def" predicate invariant''12
+  meta "rewrite_def" predicate invariant''11
   
   predicate inv'17 (_0: MutBorrow.t (MutBorrow.t t_UF))
   
-  axiom inv_axiom'16 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'17 x]. inv'17 x = invariant''12 x
+  axiom inv_axiom'16 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'17 x]. inv'17 x = invariant''11 x
   
   let rec deref_mut (self: MutBorrow.t (MutBorrow.t t_UF)) (return' (x: MutBorrow.t (MutBorrow.t t_UF))) =
     {[@expl:deref_mut 'self' type invariant] [%#sghost'5] inv'16 self}
@@ -1487,28 +1432,28 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
   meta "rewrite_def" predicate resolve'2
   
   let rec new'0 (x: MutBorrow.t t_UF) (return' (x'0: MutBorrow.t t_UF)) =
-    {[@expl:new 'x' type invariant] [%#sghost'2] inv'7 x}
+    {[@expl:new 'x' type invariant] [%#sghost'2] inv'5 x}
     any
-    [ return''0 (result: MutBorrow.t t_UF) -> {[%#sghost'3] inv'8 result}
+    [ return''0 (result: MutBorrow.t t_UF) -> {[%#sghost'3] inv'6 result}
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
-  predicate invariant''13 [@inline:trivial] (self: MutBorrow.t t_UFInner) =
-    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
+  predicate invariant''12 [@inline:trivial] (self: MutBorrow.t t_UFInner) =
+    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
   
-  meta "rewrite_def" predicate invariant''13
+  meta "rewrite_def" predicate invariant''12
   
   predicate inv'18 (_0: MutBorrow.t t_UFInner)
   
-  axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'18 x]. inv'18 x = invariant''13 x
+  axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'18 x]. inv'18 x = invariant''12 x
   
-  predicate invariant''14 [@inline:trivial] (self: MutBorrow.t t_UFInner) = [%#sghost'10] inv'18 self
+  predicate invariant''13 [@inline:trivial] (self: MutBorrow.t t_UFInner) = [%#sghost'10] inv'18 self
   
-  meta "rewrite_def" predicate invariant''14
+  meta "rewrite_def" predicate invariant''13
   
   predicate inv'19 (_0: MutBorrow.t t_UFInner)
   
-  axiom inv_axiom'18 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'19 x]. inv'19 x = invariant''14 x
+  axiom inv_axiom'18 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'19 x]. inv'19 x = invariant''13 x
   
   let rec new'1 (x: MutBorrow.t t_UFInner) (return' (x'0: MutBorrow.t t_UFInner)) =
     {[@expl:new 'x' type invariant] [%#sghost'2] inv'18 x}
@@ -1517,23 +1462,23 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
-  predicate invariant''15 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
+  predicate invariant''14 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
     [%#sinvariant] inv'19 self.current /\ inv'19 self.final
   
-  meta "rewrite_def" predicate invariant''15
+  meta "rewrite_def" predicate invariant''14
   
   predicate inv'20 (_0: MutBorrow.t (MutBorrow.t t_UFInner))
   
-  axiom inv_axiom'19 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'20 x]. inv'20 x = invariant''15 x
+  axiom inv_axiom'19 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'20 x]. inv'20 x = invariant''14 x
   
-  predicate invariant''16 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
+  predicate invariant''15 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
     [%#sinvariant] inv'18 self.current /\ inv'18 self.final
   
-  meta "rewrite_def" predicate invariant''16
+  meta "rewrite_def" predicate invariant''15
   
   predicate inv'21 (_0: MutBorrow.t (MutBorrow.t t_UFInner))
   
-  axiom inv_axiom'20 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'21 x]. inv'21 x = invariant''16 x
+  axiom inv_axiom'20 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'21 x]. inv'21 x = invariant''15 x
   
   let rec deref_mut'0 (self: MutBorrow.t (MutBorrow.t t_UFInner)) (return' (x: MutBorrow.t (MutBorrow.t t_UFInner))) =
     {[@expl:deref_mut 'self' type invariant] [%#sghost'5] inv'20 self}
@@ -1544,23 +1489,23 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
   
   type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_PtrOwn)
   
-  predicate invariant''17 [@inline:trivial] (self: MutBorrow.t t_FMap) =
-    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
+  predicate invariant''16 [@inline:trivial] (self: MutBorrow.t t_FMap) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
   
-  meta "rewrite_def" predicate invariant''17
+  meta "rewrite_def" predicate invariant''16
   
   predicate inv'22 (_0: MutBorrow.t t_FMap)
   
-  axiom inv_axiom'21 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'22 x]. inv'22 x = invariant''17 x
+  axiom inv_axiom'21 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'22 x]. inv'22 x = invariant''16 x
   
-  predicate invariant''18 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
-    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  predicate invariant''17 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
   
-  meta "rewrite_def" predicate invariant''18
+  meta "rewrite_def" predicate invariant''17
   
   predicate inv'23 (_0: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'22 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'23 x]. inv'23 x = invariant''18 x
+  axiom inv_axiom'22 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'23 x]. inv'23 x = invariant''17 x
   
   predicate inv'24 (_0: t_Option'1)
   
@@ -1608,13 +1553,13 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
   
   meta "rewrite_def" predicate resolve'4
   
-  predicate invariant''19 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sghost'10] inv'23 self
+  predicate invariant''18 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sghost'10] inv'23 self
   
-  meta "rewrite_def" predicate invariant''19
+  meta "rewrite_def" predicate invariant''18
   
   predicate inv'25 (_0: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'24 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'25 x]. inv'25 x = invariant''19 x
+  axiom inv_axiom'24 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'25 x]. inv'25 x = invariant''18 x
   
   let rec new'2 (x: MutBorrow.t t_PtrOwn) (return' (x'0: MutBorrow.t t_PtrOwn)) =
     {[@expl:new 'x' type invariant] [%#sghost'2] inv'23 x}
@@ -1623,14 +1568,14 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
-  predicate invariant''20 [@inline:trivial] (self: MutBorrow.t t_Node) =
-    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
+  predicate invariant''19 [@inline:trivial] (self: MutBorrow.t t_Node) =
+    [%#sinvariant] inv'14 self.current /\ inv'14 self.final
   
-  meta "rewrite_def" predicate invariant''20
+  meta "rewrite_def" predicate invariant''19
   
   predicate inv'26 (_0: MutBorrow.t t_Node)
   
-  axiom inv_axiom'25 [@rewrite]: forall x: MutBorrow.t t_Node [inv'26 x]. inv'26 x = invariant''20 x
+  axiom inv_axiom'25 [@rewrite]: forall x: MutBorrow.t t_Node [inv'26 x]. inv'26 x = invariant''19 x
   
   function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = [%#sghost'8] self.final
   
@@ -1687,7 +1632,7 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
   function roots_map [#"union_find_cpp.rs" 109 8 109 59] (self: t_UF) : Map.map t_Elem t_Elem =
     [%#sunion_find_cpp'9] (self.t_UF__0).t_UFInner__roots
   
-  axiom roots_map_spec: forall self: t_UF. ([%#sunion_find_cpp'7] inv'6 self)
+  axiom roots_map_spec: forall self: t_UF. ([%#sunion_find_cpp'7] inv'4 self)
       -> ([%#sunion_find_cpp'8] forall e: t_Elem. in_domain self e
         -> in_domain self (index_logic'1 (roots_map self) e)
         /\ index_logic'1 (roots_map self) e = index_logic'1 (roots_map self) (index_logic'1 (roots_map self) e))
@@ -1707,7 +1652,7 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
   meta "select_lsinst" "all"
   
   let rec find [#"union_find_cpp.rs" 202 4 202 71] (uf: MutBorrow.t t_UF) (elem: t_Elem) (return' (x: t_Elem)) =
-    {[@expl:find 'uf' type invariant] [%#sunion_find_cpp] inv'8 uf}
+    {[@expl:find 'uf' type invariant] [%#sunion_find_cpp] inv'6 uf}
     {[@expl:find requires] [%#sunion_find_cpp'0] in_domain uf.current elem}
     (! bb0
     [ bb0 = s0 [ s0 = deref {uf'0} (fun (_ret: MutBorrow.t t_UF) -> [ &_9 <- _ret ] s1) | s1 = bb1 ]
@@ -1722,53 +1667,53 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
       [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_15 = C_Root x0 x1} (! bb7) | br1 (x0: t_Elem) -> {_15 = C_Link x0} (! bb8) ]
     | bb8 = s0
       [ s0 = v_Link {_15} (fun (r0: t_Elem) -> [ &e <- r0 ] s1)
-      | s1 = {inv'8 uf'0}
+      | s1 = {inv'6 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UF> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UF)) ->
-            [ &_26 <- _ret ] -{inv'8 _ret.final}-
+            [ &_26 <- _ret ] -{inv'6 _ret.final}-
             [ &uf'0 <- _ret.final ] s2)
       | s2 = deref_mut {_26} (fun (_ret: MutBorrow.t (MutBorrow.t t_UF)) -> [ &_25 <- _ret ] s3)
       | s3 = bb10 ]
     | bb10 = s0
-      [ s0 = {inv'6 (_25.current).current}
+      [ s0 = {inv'4 (_25.current).current}
         MutBorrow.borrow_mut <t_UF> {(_25.current).current}
           (fun (_ret: MutBorrow.t t_UF) ->
-            [ &_24 <- _ret ] -{inv'6 _ret.final}-
+            [ &_24 <- _ret ] -{inv'4 _ret.final}-
             [ &_25 <- { _25 with current = { _25.current with current = _ret.final } } ] s1)
-      | s1 = {inv'6 _24.current}
+      | s1 = {inv'4 _24.current}
         MutBorrow.borrow_final <t_UF> {_24.current} {MutBorrow.get_id _24}
           (fun (_ret: MutBorrow.t t_UF) ->
-            [ &_23 <- _ret ] -{inv'6 _ret.final}-
+            [ &_23 <- _ret ] -{inv'4 _ret.final}-
             [ &_24 <- { _24 with current = _ret.final } ] s2)
       | s2 = {[@expl:type invariant] inv'17 _25} s3
       | s3 = -{resolve'0 _25}- s4
-      | s4 = {[@expl:type invariant] inv'7 _24} s5
+      | s4 = {[@expl:type invariant] inv'5 _24} s5
       | s5 = -{resolve'2 _24}- s6
-      | s6 = {inv'6 _23.current}
+      | s6 = {inv'4 _23.current}
         MutBorrow.borrow_final <t_UF> {_23.current} {MutBorrow.get_id _23}
           (fun (_ret: MutBorrow.t t_UF) ->
-            [ &_22 <- _ret ] -{inv'6 _ret.final}-
+            [ &_22 <- _ret ] -{inv'4 _ret.final}-
             [ &_23 <- { _23 with current = _ret.final } ] s7)
       | s7 = new'0 {_22} (fun (_ret: MutBorrow.t t_UF) -> [ &_21 <- _ret ] s8)
       | s8 = bb11 ]
     | bb11 = s0
-      [ s0 = {[@expl:type invariant] inv'7 _23} s1
+      [ s0 = {[@expl:type invariant] inv'5 _23} s1
       | s1 = -{resolve'2 _23}- s2
       | s2 = find {_21} {e} (fun (_ret: t_Elem) -> [ &root'0 <- _ret ] s3)
       | s3 = bb12 ]
     | bb12 = s0
-      [ s0 = {inv'8 uf'0}
+      [ s0 = {inv'6 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UF> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UF)) ->
-            [ &_30 <- _ret ] -{inv'8 _ret.final}-
+            [ &_30 <- _ret ] -{inv'6 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
       | s1 = deref_mut {_30} (fun (_ret: MutBorrow.t (MutBorrow.t t_UF)) -> [ &_29 <- _ret ] s2)
       | s2 = bb13 ]
     | bb13 = s0
-      [ s0 = {inv'5 ((_29.current).current).t_UF__0}
+      [ s0 = {inv'3 ((_29.current).current).t_UF__0}
         MutBorrow.borrow_mut <t_UFInner> {((_29.current).current).t_UF__0}
           (fun (_ret: MutBorrow.t t_UFInner) ->
-            [ &__temp'0 <- _ret ] -{inv'5 _ret.final}-
+            [ &__temp'0 <- _ret ] -{inv'3 _ret.final}-
             [ &_29 <- { _29 with current = { _29.current with current = { t_UF__0 = _ret.final } } } ] s1)
       | s1 = new'1 {__temp'0} (fun (_ret: MutBorrow.t t_UFInner) -> [ &uf'1 <- _ret ] s2)
       | s2 = bb14 ]
@@ -1782,10 +1727,10 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
       | s2 = bb15 ]
     | bb15 = s0
       [ s0 = [ &_39 <- elem'0 ] s1
-      | s1 = {inv'4 ((_36.current).current).t_UFInner__perms}
+      | s1 = {inv'2 ((_36.current).current).t_UFInner__perms}
         MutBorrow.borrow_mut <t_FMap> {((_36.current).current).t_UFInner__perms}
           (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_35 <- _ret ] -{inv'4 _ret.final}-
+            [ &_35 <- _ret ] -{inv'2 _ret.final}-
             [ &_36 <- { _36 with current = { _36.current with current = { (_36.current).current with t_UFInner__perms = _ret.final } } } ]
             s2)
       | s2 = get_mut_ghost {_35} {_39} (fun (_ret: t_Option'1) -> [ &_34 <- _ret ] s3)
@@ -1801,7 +1746,7 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
       | s1 = as_mut {elem'0.t_Elem__0} {mut_perm} (fun (_ret: MutBorrow.t t_Node) -> [ &_45 <- _ret ] s2)
       | s2 = bb20 ]
     | bb20 = s0
-      [ s0 = {[@expl:type invariant] inv'1 _45.current} s1
+      [ s0 = {[@expl:type invariant] inv'14 _45.current} s1
       | s1 = [ &_45 <- { _45 with current = _43 } ] s2
       | s2 = {[@expl:type invariant] inv'26 _45} s3
       | s3 = -{resolve'6 _45}- s4
@@ -1809,11 +1754,11 @@ module M_union_find_cpp__implementation__find [#"union_find_cpp.rs" 202 4 202 71
       | s5 = -{resolve'10 uf'1}- s6
       | s6 = {[@expl:type invariant] inv'17 _29} s7
       | s7 = -{resolve'0 _29}- s8
-      | s8 = {[@expl:type invariant] inv'8 uf'0} s9
+      | s8 = {[@expl:type invariant] inv'6 uf'0} s9
       | s9 = -{resolve'12 uf'0}- s10
       | s10 = bb22 ]
     | bb22 = s0 [ s0 = [ &_0 <- root'0 ] s1 | s1 = bb23 ]
-    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'8 uf'0} s1 | s1 = -{resolve'12 uf'0}- s2 | s2 = bb9 ]
+    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'6 uf'0} s1 | s1 = -{resolve'12 uf'0}- s2 | s2 = bb9 ]
     | bb9 = s0 [ s0 = [ &_0 <- elem'0 ] s1 | s1 = bb23 ]
     | bb23 = return''0 {_0} ]
     [ & _0: t_Elem = Any.any_l ()
@@ -1874,7 +1819,7 @@ module M_union_find_cpp__implementation__get [#"union_find_cpp.rs" 223 4 223 57]
   let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
   let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
   let%span sfmap'4 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
-  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 553 20 553 76
+  let%span sfmap'5 = "../../creusot-contracts/src/logic/fmap.rs" 552 20 552 76
   let%span sfmap'6 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
   let%span soption = "../../creusot-contracts/src/std/option.rs" 148 16 148 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 149 27 149 39
@@ -1884,19 +1829,18 @@ module M_union_find_cpp__implementation__get [#"union_find_cpp.rs" 223 4 223 57]
   let%span soption'4 = "../../creusot-contracts/src/std/option.rs" 746 8 749 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 138 40 138 43
-  let%span sptr_own'0 = "../../creusot-contracts/src/ghost/ptr_own.rs" 134 15 134 31
-  let%span sptr_own'1 = "../../creusot-contracts/src/ghost/ptr_own.rs" 138 4 138 69
-  let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 135 14 135 35
-  let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 139 40 139 43
+  let%span sptr_own'0 = "../../creusot-contracts/src/ghost/ptr_own.rs" 135 15 135 31
+  let%span sptr_own'1 = "../../creusot-contracts/src/ghost/ptr_own.rs" 139 4 139 69
+  let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 136 14 136 35
+  let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
   let%span sghost = "../../creusot-contracts/src/ghost.rs" 80 14 80 18
   let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 80 4 80 36
   let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 78 14 78 31
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 181 15 181 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 181 4 183 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 180 15 180 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 180 4 182 17
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 178 14 178 26
+  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 117 8 117 18
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   
   use creusot.prelude.Opaque
@@ -1924,11 +1868,7 @@ module M_union_find_cpp__implementation__get [#"union_find_cpp.rs" 223 4 223 57]
   
   meta "rewrite_def" predicate contains
   
-  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
-  
-  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
-  
-  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Node }
+  type t_PtrOwn
   
   type t_Option = C_None | C_Some t_PtrOwn
   
@@ -1971,6 +1911,10 @@ module M_union_find_cpp__implementation__get [#"union_find_cpp.rs" 223 4 223 57]
   
   meta "rewrite_def" function index_logic'1
   
+  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
+  
+  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
+  
   function val' (self: t_PtrOwn) : t_Node
   
   function index_logic'2 [@inline:trivial] (self: Map.map t_Elem t_T) (a: t_Elem) : t_T = [%#smapping] Map.get self a
@@ -2006,119 +1950,101 @@ module M_union_find_cpp__implementation__get [#"union_find_cpp.rs" 223 4 223 57]
   
   function metadata_logic (_0: Opaque.ptr) : ()
   
-  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) =
+  predicate inv'0 (_0: Opaque.ptr)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     [%#sptr_own'3] not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
   
-  meta "rewrite_def" predicate invariant''0
+  predicate inv'1 (_0: t_PtrOwn)
   
-  predicate inv'0 (_0: t_T)
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
   
-  predicate inv'1 (_0: t_Node)
+  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
+    [%#sfmap'5] forall k: t_Elem. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'2 (_0: t_FMap)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  
+  predicate inv'3 (_0: t_UFInner)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
       = match x with
-        | C_Root rank payload -> inv'0 payload
-        | C_Link a_0 -> true
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'2 perms
         end
   
-  predicate invariant''1 (self: t_Node) = [%#sboxed] inv'1 self
+  predicate inv'4 (_0: t_UF)
   
-  predicate inv'2 (_0: t_Node)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''1 x
-  
-  predicate inv'3 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x
-      = (invariant''0 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UF [inv'4 x]. inv'4 x
+      = (invariant' x
       /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
+        | {t_UF__0 = a_0} -> inv'3 a_0
         end)
   
-  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
-    [%#sfmap'5] forall k: t_Elem. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  predicate invariant''2 [@inline:trivial] (self: t_UF) = [%#sinvariant] inv'4 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_0: t_FMap)
+  predicate inv'5 (_0: t_UF)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UF [inv'5 x]. inv'5 x = invariant''2 x
   
-  predicate inv'5 (_0: t_UFInner)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
-      = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'4 perms
-        end
-  
-  predicate inv'6 (_0: t_UF)
-  
-  axiom inv_axiom'5 [@rewrite]: forall x: t_UF [inv'6 x]. inv'6 x
-      = (invariant' x
-      /\ match x with
-        | {t_UF__0 = a_0} -> inv'5 a_0
-        end)
-  
-  predicate invariant''3 [@inline:trivial] (self: t_UF) = [%#sinvariant] inv'6 self
+  predicate invariant''3 [@inline:trivial] (self: t_UF) = [%#sghost'5] inv'5 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'7 (_0: t_UF)
+  predicate inv'6 (_0: t_UF)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_UF [inv'7 x]. inv'7 x = invariant''3 x
+  axiom inv_axiom'6 [@rewrite]: forall x: t_UF [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate invariant''4 [@inline:trivial] (self: t_UF) = [%#sghost'5] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: t_UF) = [%#sinvariant] inv'6 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'8 (_0: t_UF)
+  predicate inv'7 (_0: t_UF)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_UF [inv'8 x]. inv'8 x = invariant''4 x
+  axiom inv_axiom'7 [@rewrite]: forall x: t_UF [inv'7 x]. inv'7 x = invariant''4 x
   
-  predicate invariant''5 [@inline:trivial] (self: t_UF) = [%#sinvariant] inv'8 self
+  predicate invariant''5 [@inline:trivial] (self: t_UF) = [%#sinvariant] inv'5 self
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'9 (_0: t_UF)
+  predicate inv'8 (_0: t_UF)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_UF [inv'9 x]. inv'9 x = invariant''5 x
+  axiom inv_axiom'8 [@rewrite]: forall x: t_UF [inv'8 x]. inv'8 x = invariant''5 x
   
-  predicate invariant''6 [@inline:trivial] (self: t_UF) = [%#sinvariant] inv'7 self
-  
-  meta "rewrite_def" predicate invariant''6
-  
-  predicate inv'10 (_0: t_UF)
-  
-  axiom inv_axiom'9 [@rewrite]: forall x: t_UF [inv'10 x]. inv'10 x = invariant''6 x
-  
-  let rec deref (self: t_UF) (return' (x: t_UF)) = {[@expl:deref 'self' type invariant] [%#sghost] inv'9 self}
-    any [ return''0 (result: t_UF) -> {[%#sghost'0] inv'10 result} {[%#sghost'1] result = self} (! return' {result}) ]
+  let rec deref (self: t_UF) (return' (x: t_UF)) = {[@expl:deref 'self' type invariant] [%#sghost] inv'7 self}
+    any [ return''0 (result: t_UF) -> {[%#sghost'0] inv'8 result} {[%#sghost'1] result = self} (! return' {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
   
-  predicate invariant''7 [@inline:trivial] (self: t_FMap) = [%#sinvariant] inv'4 self
+  predicate invariant''6 [@inline:trivial] (self: t_FMap) = [%#sinvariant] inv'2 self
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'9 (_0: t_FMap)
+  
+  axiom inv_axiom'9 [@rewrite]: forall x: t_FMap [inv'9 x]. inv'9 x = invariant''6 x
+  
+  predicate invariant''7 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant] inv'1 self
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'11 (_0: t_FMap)
+  predicate inv'10 (_0: t_PtrOwn)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_FMap [inv'11 x]. inv'11 x = invariant''7 x
+  axiom inv_axiom'10 [@rewrite]: forall x: t_PtrOwn [inv'10 x]. inv'10 x = invariant''7 x
   
-  predicate invariant''8 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant] inv'3 self
+  predicate inv'11 (_0: t_Option'0)
   
-  meta "rewrite_def" predicate invariant''8
-  
-  predicate inv'12 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'11 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''8 x
-  
-  predicate inv'13 (_0: t_Option'0)
-  
-  axiom inv_axiom'12 [@rewrite]: forall x: t_Option'0 [inv'13 x]. inv'13 x
+  axiom inv_axiom'11 [@rewrite]: forall x: t_Option'0 [inv'11 x]. inv'11 x
       = match x with
         | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'12 a_0
+        | C_Some'0 a_0 -> inv'10 a_0
         end
   
   function map_logic (self: t_Option) (f: Map.map t_PtrOwn t_PtrOwn) : t_Option'0 = [%#soption'2] match self with
@@ -2127,38 +2053,48 @@ module M_union_find_cpp__implementation__get [#"union_find_cpp.rs" 223 4 223 57]
       end
   
   let rec get_ghost (self: t_FMap) (key: t_Elem) (return' (x: t_Option'0)) =
-    {[@expl:get_ghost 'self' type invariant] [%#sfmap] inv'11 self}
+    {[@expl:get_ghost 'self' type invariant] [%#sfmap] inv'9 self}
     any
-    [ return''0 (result: t_Option'0) -> {[%#sfmap'0] inv'13 result}
+    [ return''0 (result: t_Option'0) -> {[%#sfmap'0] inv'11 result}
       {[%#sfmap'1] result = map_logic (get self key) (fun (v: t_PtrOwn) -> v)}
       (! return' {result}) ]
   
   let rec unwrap (self_: t_Option'0) (return' (x: t_PtrOwn)) =
-    {[@expl:unwrap 'self_' type invariant] [%#soption] inv'13 self_}
+    {[@expl:unwrap 'self_' type invariant] [%#soption] inv'11 self_}
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None'0}
-    any [ return''0 (result: t_PtrOwn) -> {inv'12 result} {[%#soption'1] C_Some'0 result = self_} (! return' {result}) ]
+    any [ return''0 (result: t_PtrOwn) -> {inv'10 result} {[%#soption'1] C_Some'0 result = self_} (! return' {result}) ]
   
-  predicate invariant''9 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'5] inv'12 self
+  predicate invariant''8 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'5] inv'10 self
+  
+  meta "rewrite_def" predicate invariant''8
+  
+  predicate inv'12 (_0: t_PtrOwn)
+  
+  axiom inv_axiom'12 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''8 x
+  
+  let rec new (x: t_PtrOwn) (return' (x'0: t_PtrOwn)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'10 x}
+    any [ return''0 (result: t_PtrOwn) -> {[%#sghost'3] inv'12 result} {[%#sghost'4] result = x} (! return' {result}) ]
+  
+  predicate inv'13 (_0: t_T)
+  
+  predicate inv'14 (_0: t_Node)
+  
+  axiom inv_axiom'13 [@rewrite]: forall x: t_Node [inv'14 x]. inv'14 x
+      = match x with
+        | C_Root rank payload -> inv'13 payload
+        | C_Link a_0 -> true
+        end
+  
+  predicate invariant''9 [@inline:trivial] (self: t_Node) = [%#sinvariant] inv'14 self
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'14 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'13 [@rewrite]: forall x: t_PtrOwn [inv'14 x]. inv'14 x = invariant''9 x
-  
-  let rec new (x: t_PtrOwn) (return' (x'0: t_PtrOwn)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'12 x}
-    any [ return''0 (result: t_PtrOwn) -> {[%#sghost'3] inv'14 result} {[%#sghost'4] result = x} (! return' {result}) ]
-  
-  predicate invariant''10 [@inline:trivial] (self: t_Node) = [%#sinvariant] inv'1 self
-  
-  meta "rewrite_def" predicate invariant''10
-  
   predicate inv'15 (_0: t_Node)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: t_Node [inv'15 x]. inv'15 x = invariant''10 x
+  axiom inv_axiom'14 [@rewrite]: forall x: t_Node [inv'15 x]. inv'15 x = invariant''9 x
   
   let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return' (x: t_Node)) =
-    {[@expl:as_ref 'own' type invariant] [%#sptr_own] inv'14 own}
+    {[@expl:as_ref 'own' type invariant] [%#sptr_own] inv'12 own}
     {[@expl:as_ref requires] [%#sptr_own'0] ptr'0 = ptr own}
     any
     [ return''0 (result: t_Node) -> {[%#sptr_own'1] inv'15 result}
@@ -2180,7 +2116,7 @@ module M_union_find_cpp__implementation__get [#"union_find_cpp.rs" 223 4 223 57]
   function roots_map [#"union_find_cpp.rs" 109 8 109 59] (self: t_UF) : Map.map t_Elem t_Elem =
     [%#sunion_find_cpp'10] (self.t_UF__0).t_UFInner__roots
   
-  axiom roots_map_spec: forall self: t_UF. ([%#sunion_find_cpp'8] inv'6 self)
+  axiom roots_map_spec: forall self: t_UF. ([%#sunion_find_cpp'8] inv'4 self)
       -> ([%#sunion_find_cpp'9] forall e: t_Elem. in_domain self e
         -> in_domain self (index_logic'1 (roots_map self) e)
         /\ index_logic'1 (roots_map self) e = index_logic'1 (roots_map self) (index_logic'1 (roots_map self) e))
@@ -2188,13 +2124,13 @@ module M_union_find_cpp__implementation__get [#"union_find_cpp.rs" 223 4 223 57]
   function root [#"union_find_cpp.rs" 118 8 118 48] (self: t_UF) (e: t_Elem) : t_Elem =
     [%#sunion_find_cpp'5] index_logic'1 (roots_map self) e
   
-  predicate invariant''11 [@inline:trivial] (self: t_T) = [%#sinvariant] inv'0 self
+  predicate invariant''10 [@inline:trivial] (self: t_T) = [%#sinvariant] inv'13 self
   
-  meta "rewrite_def" predicate invariant''11
+  meta "rewrite_def" predicate invariant''10
   
   predicate inv'16 (_0: t_T)
   
-  axiom inv_axiom'15 [@rewrite]: forall x: t_T [inv'16 x]. inv'16 x = invariant''11 x
+  axiom inv_axiom'15 [@rewrite]: forall x: t_T [inv'16 x]. inv'16 x = invariant''10 x
   
   function payloads_map [#"union_find_cpp.rs" 124 8 124 56] (self: t_UF) : Map.map t_Elem t_T =
     [%#sunion_find_cpp'11] (self.t_UF__0).t_UFInner__payloads
@@ -2207,7 +2143,7 @@ module M_union_find_cpp__implementation__get [#"union_find_cpp.rs" 223 4 223 57]
   meta "select_lsinst" "all"
   
   let rec get'0 [#"union_find_cpp.rs" 223 4 223 57] (uf: t_UF) (elem: t_Elem) (return' (x: t_T)) =
-    {[@expl:get 'uf' type invariant] [%#sunion_find_cpp] inv'8 uf}
+    {[@expl:get 'uf' type invariant] [%#sunion_find_cpp] inv'6 uf}
     {[@expl:get requires #0] [%#sunion_find_cpp'0] in_domain uf elem}
     {[@expl:get requires #1] [%#sunion_find_cpp'1] root uf elem = elem}
     (! bb0
@@ -2289,7 +2225,7 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   let%span sfmap'17 = "../../creusot-contracts/src/logic/fmap.rs" 69 14 69 88
   let%span sfmap'18 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
   let%span sfmap'19 = "../../creusot-contracts/src/logic/fmap.rs" 60 14 60 25
-  let%span sfmap'20 = "../../creusot-contracts/src/logic/fmap.rs" 553 20 553 76
+  let%span sfmap'20 = "../../creusot-contracts/src/logic/fmap.rs" 552 20 552 76
   let%span sfmap'21 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
   let%span soption = "../../creusot-contracts/src/std/option.rs" 148 16 148 17
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 149 27 149 39
@@ -2299,32 +2235,31 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   let%span soption'4 = "../../creusot-contracts/src/std/option.rs" 746 8 749 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 210 26 210 30
-  let%span sptr_own'0 = "../../creusot-contracts/src/ghost/ptr_own.rs" 210 48 210 52
-  let%span sptr_own'1 = "../../creusot-contracts/src/ghost/ptr_own.rs" 207 14 207 64
-  let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 208 14 208 28
-  let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 168 40 168 43
-  let%span sptr_own'4 = "../../creusot-contracts/src/ghost/ptr_own.rs" 163 15 163 31
-  let%span sptr_own'5 = "../../creusot-contracts/src/ghost/ptr_own.rs" 168 4 168 77
-  let%span sptr_own'6 = "../../creusot-contracts/src/ghost/ptr_own.rs" 164 14 164 35
-  let%span sptr_own'7 = "../../creusot-contracts/src/ghost/ptr_own.rs" 165 14 165 39
-  let%span sptr_own'8 = "../../creusot-contracts/src/ghost/ptr_own.rs" 166 14 166 38
-  let%span sptr_own'9 = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 211 26 211 30
+  let%span sptr_own'0 = "../../creusot-contracts/src/ghost/ptr_own.rs" 211 48 211 52
+  let%span sptr_own'1 = "../../creusot-contracts/src/ghost/ptr_own.rs" 208 14 208 64
+  let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 209 14 209 28
+  let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 169 40 169 43
+  let%span sptr_own'4 = "../../creusot-contracts/src/ghost/ptr_own.rs" 164 15 164 31
+  let%span sptr_own'5 = "../../creusot-contracts/src/ghost/ptr_own.rs" 169 4 169 77
+  let%span sptr_own'6 = "../../creusot-contracts/src/ghost/ptr_own.rs" 165 14 165 35
+  let%span sptr_own'7 = "../../creusot-contracts/src/ghost/ptr_own.rs" 166 14 166 39
+  let%span sptr_own'8 = "../../creusot-contracts/src/ghost/ptr_own.rs" 167 14 167 38
+  let%span sptr_own'9 = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
   let%span sghost = "../../creusot-contracts/src/ghost.rs" 91 22 91 26
   let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 91 4 91 48
   let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 89 14 89 35
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 181 15 181 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 181 4 183 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 201 14 201 29
-  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 228 17 228 21
-  let%span sghost'7 = "../../creusot-contracts/src/ghost.rs" 228 4 228 46
-  let%span sghost'8 = "../../creusot-contracts/src/ghost.rs" 226 14 226 36
-  let%span sghost'9 = "../../creusot-contracts/src/ghost.rs" 227 14 227 36
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 180 15 180 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 180 4 182 17
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 178 14 178 26
+  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 200 14 200 29
+  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 227 17 227 21
+  let%span sghost'7 = "../../creusot-contracts/src/ghost.rs" 227 4 227 46
+  let%span sghost'8 = "../../creusot-contracts/src/ghost.rs" 225 14 225 36
+  let%span sghost'9 = "../../creusot-contracts/src/ghost.rs" 226 14 226 36
   let%span sghost'10 = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
-  let%span sghost'11 = "../../creusot-contracts/src/ghost.rs" 125 8 125 22
-  let%span sghost'12 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sghost'11 = "../../creusot-contracts/src/ghost.rs" 124 8 124 22
+  let%span sghost'12 = "../../creusot-contracts/src/ghost.rs" 117 8 117 18
   let%span speano = "../../creusot-contracts/src/peano.rs" 149 14 149 38
   let%span speano'0 = "../../creusot-contracts/src/peano.rs" 41 4 41 26
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
@@ -2375,11 +2310,7 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   
   meta "rewrite_def" predicate contains
   
-  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
-  
-  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
-  
-  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Node }
+  type t_PtrOwn
   
   type t_Option = C_None | C_Some t_PtrOwn
   
@@ -2422,6 +2353,10 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   
   meta "rewrite_def" function index_logic'1
   
+  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
+  
+  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
+  
   function val' (self: t_PtrOwn) : t_Node
   
   function index_logic'2 [@inline:trivial] (self: Map.map t_Elem t_T) (a: t_Elem) : t_T = [%#smapping] Map.get self a
@@ -2457,123 +2392,105 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   
   function metadata_logic (_0: Opaque.ptr) : ()
   
-  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) =
+  predicate inv'0 (_0: Opaque.ptr)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     [%#sptr_own'9] not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
   
-  meta "rewrite_def" predicate invariant''0
+  predicate inv'1 (_0: t_PtrOwn)
   
-  predicate inv'0 (_0: t_T)
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
   
-  predicate inv'1 (_0: t_Node)
+  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
+    [%#sfmap'20] forall k: t_Elem. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'2 (_0: t_FMap)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  
+  predicate inv'3 (_0: t_UFInner)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
       = match x with
-        | C_Root rank payload -> inv'0 payload
-        | C_Link a_0 -> true
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'2 perms
         end
   
-  predicate invariant''1 (self: t_Node) = [%#sboxed] inv'1 self
+  predicate inv'4 (_0: t_UF)
   
-  predicate inv'2 (_0: t_Node)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''1 x
-  
-  predicate inv'3 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x
-      = (invariant''0 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UF [inv'4 x]. inv'4 x
+      = (invariant' x
       /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
+        | {t_UF__0 = a_0} -> inv'3 a_0
         end)
   
-  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
-    [%#sfmap'20] forall k: t_Elem. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_UF) =
+    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_0: t_FMap)
+  predicate inv'5 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
+  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_UF [inv'5 x]. inv'5 x = invariant''2 x
   
-  predicate inv'5 (_0: t_UFInner)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
-      = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'4 perms
-        end
-  
-  predicate inv'6 (_0: t_UF)
-  
-  axiom inv_axiom'5 [@rewrite]: forall x: t_UF [inv'6 x]. inv'6 x
-      = (invariant' x
-      /\ match x with
-        | {t_UF__0 = a_0} -> inv'5 a_0
-        end)
-  
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UF) =
-    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sghost'12] inv'5 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'7 (_0: MutBorrow.t t_UF)
+  predicate inv'6 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UF [inv'7 x]. inv'7 x = invariant''3 x
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UF [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sghost'12] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF)) =
+    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'8 (_0: MutBorrow.t t_UF)
+  predicate inv'7 (_0: MutBorrow.t (MutBorrow.t t_UF))
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UF [inv'8 x]. inv'8 x = invariant''4 x
+  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'7 x]. inv'7 x = invariant''4 x
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF)) =
-    [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'9 (_0: MutBorrow.t (MutBorrow.t t_UF))
+  predicate inv'8 (_0: MutBorrow.t (MutBorrow.t t_UF))
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'9 x]. inv'9 x = invariant''5 x
-  
-  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF)) =
-    [%#sinvariant] inv'7 self.current /\ inv'7 self.final
-  
-  meta "rewrite_def" predicate invariant''6
-  
-  predicate inv'10 (_0: MutBorrow.t (MutBorrow.t t_UF))
-  
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'10 x]. inv'10 x = invariant''6 x
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'8 x]. inv'8 x = invariant''5 x
   
   let rec deref_mut (self: MutBorrow.t (MutBorrow.t t_UF)) (return' (x: MutBorrow.t (MutBorrow.t t_UF))) =
-    {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'9 self}
+    {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'7 self}
     any
-    [ return''0 (result: MutBorrow.t (MutBorrow.t t_UF)) -> {[%#sghost'0] inv'10 result}
+    [ return''0 (result: MutBorrow.t (MutBorrow.t t_UF)) -> {[%#sghost'0] inv'8 result}
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
-  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_UFInner) =
-    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_UFInner) =
+    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'9 (_0: MutBorrow.t t_UFInner)
+  
+  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'9 x]. inv'9 x = invariant''6 x
+  
+  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_UFInner) = [%#sghost'12] inv'9 self
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'11 (_0: MutBorrow.t t_UFInner)
+  predicate inv'10 (_0: MutBorrow.t t_UFInner)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'11 x]. inv'11 x = invariant''7 x
-  
-  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_UFInner) = [%#sghost'12] inv'11 self
-  
-  meta "rewrite_def" predicate invariant''8
-  
-  predicate inv'12 (_0: MutBorrow.t t_UFInner)
-  
-  axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'12 x]. inv'12 x = invariant''8 x
+  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'10 x]. inv'10 x = invariant''7 x
   
   let rec new (x: MutBorrow.t t_UFInner) (return' (x'0: MutBorrow.t t_UFInner)) =
-    {[@expl:new 'x' type invariant] [%#sghost'2] inv'11 x}
+    {[@expl:new 'x' type invariant] [%#sghost'2] inv'9 x}
     any
-    [ return''0 (result: MutBorrow.t t_UFInner) -> {[%#sghost'3] inv'12 result}
+    [ return''0 (result: MutBorrow.t t_UFInner) -> {[%#sghost'3] inv'10 result}
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
@@ -2596,55 +2513,55 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   let rec into_inner (self: bool) (return' (x: bool)) = any
     [ return''0 (result: bool) -> {[%#sghost'5] result = self} (! return' {result}) ]
   
+  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
+    [%#sinvariant] inv'10 self.current /\ inv'10 self.final
+  
+  meta "rewrite_def" predicate invariant''8
+  
+  predicate inv'11 (_0: MutBorrow.t (MutBorrow.t t_UFInner))
+  
+  axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'11 x]. inv'11 x = invariant''8 x
+  
   predicate invariant''9 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
-    [%#sinvariant] inv'12 self.current /\ inv'12 self.final
+    [%#sinvariant] inv'9 self.current /\ inv'9 self.final
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'13 (_0: MutBorrow.t (MutBorrow.t t_UFInner))
+  predicate inv'12 (_0: MutBorrow.t (MutBorrow.t t_UFInner))
   
-  axiom inv_axiom'12 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'13 x]. inv'13 x = invariant''9 x
-  
-  predicate invariant''10 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
-    [%#sinvariant] inv'11 self.current /\ inv'11 self.final
-  
-  meta "rewrite_def" predicate invariant''10
-  
-  predicate inv'14 (_0: MutBorrow.t (MutBorrow.t t_UFInner))
-  
-  axiom inv_axiom'13 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'14 x]. inv'14 x = invariant''10 x
+  axiom inv_axiom'12 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'12 x]. inv'12 x = invariant''9 x
   
   let rec deref_mut'0 (self: MutBorrow.t (MutBorrow.t t_UFInner)) (return' (x: MutBorrow.t (MutBorrow.t t_UFInner))) =
-    {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'13 self}
+    {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'11 self}
     any
-    [ return''0 (result: MutBorrow.t (MutBorrow.t t_UFInner)) -> {[%#sghost'0] inv'14 result}
+    [ return''0 (result: MutBorrow.t (MutBorrow.t t_UFInner)) -> {[%#sghost'0] inv'12 result}
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
   type tuple = { _p0: MutBorrow.t t_PtrOwn; _p1: MutBorrow.t t_FMap }
   
-  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t t_FMap) =
-    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
+  predicate invariant''10 [@inline:trivial] (self: MutBorrow.t t_FMap) =
+    [%#sinvariant] inv'2 self.current /\ inv'2 self.final
+  
+  meta "rewrite_def" predicate invariant''10
+  
+  predicate inv'13 (_0: MutBorrow.t t_FMap)
+  
+  axiom inv_axiom'13 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'13 x]. inv'13 x = invariant''10 x
+  
+  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
+    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''11
   
-  predicate inv'15 (_0: MutBorrow.t t_FMap)
+  predicate inv'14 (_0: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'15 x]. inv'15 x = invariant''11 x
+  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'14 x]. inv'14 x = invariant''11 x
   
-  predicate invariant''12 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
-    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  predicate inv'15 (_0: tuple)
   
-  meta "rewrite_def" predicate invariant''12
-  
-  predicate inv'16 (_0: MutBorrow.t t_PtrOwn)
-  
-  axiom inv_axiom'15 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'16 x]. inv'16 x = invariant''12 x
-  
-  predicate inv'17 (_0: tuple)
-  
-  axiom inv_axiom'16 [@rewrite]: forall x: tuple [inv'17 x]. inv'17 x
-      = (let {_p0 = x0; _p1 = x1} = x in inv'16 x0 /\ inv'15 x1)
+  axiom inv_axiom'15 [@rewrite]: forall x: tuple [inv'15 x]. inv'15 x
+      = (let {_p0 = x0; _p1 = x1} = x in inv'14 x0 /\ inv'13 x1)
   
   function len (self: t_FMap) : int
   
@@ -2666,10 +2583,10 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
       = (if contains'0 self k then len self else len self + 1)
   
   let rec split_mut_ghost (self: MutBorrow.t t_FMap) (key: t_Elem) (return' (x: tuple)) =
-    {[@expl:split_mut_ghost 'self' type invariant] [%#sfmap] inv'15 self}
+    {[@expl:split_mut_ghost 'self' type invariant] [%#sfmap] inv'13 self}
     {[@expl:split_mut_ghost requires] [%#sfmap'0] contains'0 self.current key}
     any
-    [ return''0 (result: tuple) -> {[%#sfmap'1] inv'17 result}
+    [ return''0 (result: tuple) -> {[%#sfmap'1] inv'15 result}
       {[%#sfmap'2] (result._p1).current = remove self.current key}
       {[%#sfmap'3] index_logic'0 self.current key = (result._p0).current
       /\ self.final = insert (result._p1).final key (result._p0).final}
@@ -2694,28 +2611,28 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   
   type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
   
-  predicate invariant''13 [@inline:trivial] (self: t_FMap) = [%#sinvariant'0] inv'4 self
+  predicate invariant''12 [@inline:trivial] (self: t_FMap) = [%#sinvariant'0] inv'2 self
+  
+  meta "rewrite_def" predicate invariant''12
+  
+  predicate inv'16 (_0: t_FMap)
+  
+  axiom inv_axiom'16 [@rewrite]: forall x: t_FMap [inv'16 x]. inv'16 x = invariant''12 x
+  
+  predicate invariant''13 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'1 self
   
   meta "rewrite_def" predicate invariant''13
   
-  predicate inv'18 (_0: t_FMap)
+  predicate inv'17 (_0: t_PtrOwn)
   
-  axiom inv_axiom'17 [@rewrite]: forall x: t_FMap [inv'18 x]. inv'18 x = invariant''13 x
+  axiom inv_axiom'17 [@rewrite]: forall x: t_PtrOwn [inv'17 x]. inv'17 x = invariant''13 x
   
-  predicate invariant''14 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'3 self
+  predicate inv'18 (_0: t_Option'0)
   
-  meta "rewrite_def" predicate invariant''14
-  
-  predicate inv'19 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'18 [@rewrite]: forall x: t_PtrOwn [inv'19 x]. inv'19 x = invariant''14 x
-  
-  predicate inv'20 (_0: t_Option'0)
-  
-  axiom inv_axiom'19 [@rewrite]: forall x: t_Option'0 [inv'20 x]. inv'20 x
+  axiom inv_axiom'18 [@rewrite]: forall x: t_Option'0 [inv'18 x]. inv'18 x
       = match x with
         | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'19 a_0
+        | C_Some'0 a_0 -> inv'17 a_0
         end
   
   function map_logic (self: t_Option) (f: Map.map t_PtrOwn t_PtrOwn) : t_Option'0 = [%#soption'2] match self with
@@ -2724,20 +2641,20 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
       end
   
   let rec get_ghost (self: t_FMap) (key: t_Elem) (return' (x: t_Option'0)) =
-    {[@expl:get_ghost 'self' type invariant] [%#sfmap'4] inv'18 self}
+    {[@expl:get_ghost 'self' type invariant] [%#sfmap'4] inv'16 self}
     any
-    [ return''0 (result: t_Option'0) -> {[%#sfmap'5] inv'20 result}
+    [ return''0 (result: t_Option'0) -> {[%#sfmap'5] inv'18 result}
       {[%#sfmap'6] result = map_logic (get self key) (fun (v: t_PtrOwn) -> v)}
       (! return' {result}) ]
   
   let rec unwrap (self_: t_Option'0) (return' (x: t_PtrOwn)) =
-    {[@expl:unwrap 'self_' type invariant] [%#soption] inv'20 self_}
+    {[@expl:unwrap 'self_' type invariant] [%#soption] inv'18 self_}
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None'0}
-    any [ return''0 (result: t_PtrOwn) -> {inv'19 result} {[%#soption'1] C_Some'0 result = self_} (! return' {result}) ]
+    any [ return''0 (result: t_PtrOwn) -> {inv'17 result} {[%#soption'1] C_Some'0 result = self_} (! return' {result}) ]
   
   let rec disjoint_lemma (own1: MutBorrow.t t_PtrOwn) (own2: t_PtrOwn) (return' (x: ())) =
-    {[@expl:disjoint_lemma 'own1' type invariant] [%#sptr_own] inv'16 own1}
-    {[@expl:disjoint_lemma 'own2' type invariant] [%#sptr_own'0] inv'19 own2}
+    {[@expl:disjoint_lemma 'own1' type invariant] [%#sptr_own] inv'14 own1}
+    {[@expl:disjoint_lemma 'own2' type invariant] [%#sptr_own'0] inv'17 own2}
     any
     [ return''0 (result: ()) -> {[%#sptr_own'1] Ptr.addr_logic_u64 (ptr own1.current) <> Ptr.addr_logic_u64 (ptr own2)}
       {[%#sptr_own'2] own1.current = own1.final}
@@ -2794,62 +2711,72 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   let rec new'0 (x: ()) (return' (x'0: ())) = any
     [ return''0 (result: ()) -> {[%#sghost'4] result = x} (! return' {result}) ]
   
-  predicate invariant''15 [@inline:trivial] (self: tuple) = [%#sghost'12] inv'17 self
+  predicate invariant''14 [@inline:trivial] (self: tuple) = [%#sghost'12] inv'15 self
   
-  meta "rewrite_def" predicate invariant''15
+  meta "rewrite_def" predicate invariant''14
   
-  predicate inv'21 (_0: tuple)
+  predicate inv'19 (_0: tuple)
   
-  axiom inv_axiom'20 [@rewrite]: forall x: tuple [inv'21 x]. inv'21 x = invariant''15 x
+  axiom inv_axiom'19 [@rewrite]: forall x: tuple [inv'19 x]. inv'19 x = invariant''14 x
   
-  let rec new'1 (x: tuple) (return' (x'0: tuple)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'17 x}
-    any [ return''0 (result: tuple) -> {[%#sghost'3] inv'21 result} {[%#sghost'4] result = x} (! return' {result}) ]
+  let rec new'1 (x: tuple) (return' (x'0: tuple)) = {[@expl:new 'x' type invariant] [%#sghost'2] inv'15 x}
+    any [ return''0 (result: tuple) -> {[%#sghost'3] inv'19 result} {[%#sghost'4] result = x} (! return' {result}) ]
   
   type tuple'0 = { _p0'0: MutBorrow.t t_PtrOwn; _p1'0: MutBorrow.t t_FMap }
   
-  predicate invariant''16 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sghost'12] inv'16 self
+  predicate invariant''15 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sghost'12] inv'14 self
+  
+  meta "rewrite_def" predicate invariant''15
+  
+  predicate inv'20 (_0: MutBorrow.t t_PtrOwn)
+  
+  axiom inv_axiom'20 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'20 x]. inv'20 x = invariant''15 x
+  
+  predicate invariant''16 [@inline:trivial] (self: MutBorrow.t t_FMap) = [%#sghost'12] inv'13 self
   
   meta "rewrite_def" predicate invariant''16
   
-  predicate inv'22 (_0: MutBorrow.t t_PtrOwn)
+  predicate inv'21 (_0: MutBorrow.t t_FMap)
   
-  axiom inv_axiom'21 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'22 x]. inv'22 x = invariant''16 x
+  axiom inv_axiom'21 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'21 x]. inv'21 x = invariant''16 x
   
-  predicate invariant''17 [@inline:trivial] (self: MutBorrow.t t_FMap) = [%#sghost'12] inv'15 self
+  predicate inv'22 (_0: tuple'0)
   
-  meta "rewrite_def" predicate invariant''17
+  axiom inv_axiom'22 [@rewrite]: forall x: tuple'0 [inv'22 x]. inv'22 x
+      = (let {_p0'0 = x0; _p1'0 = x1} = x in inv'20 x0 /\ inv'21 x1)
   
-  predicate inv'23 (_0: MutBorrow.t t_FMap)
-  
-  axiom inv_axiom'22 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'23 x]. inv'23 x = invariant''17 x
-  
-  predicate inv'24 (_0: tuple'0)
-  
-  axiom inv_axiom'23 [@rewrite]: forall x: tuple'0 [inv'24 x]. inv'24 x
-      = (let {_p0'0 = x0; _p1'0 = x1} = x in inv'22 x0 /\ inv'23 x1)
-  
-  let rec split (self: tuple) (return' (x: tuple'0)) = {[@expl:split 'self' type invariant] [%#sghost'6] inv'21 self}
+  let rec split (self: tuple) (return' (x: tuple'0)) = {[@expl:split 'self' type invariant] [%#sghost'6] inv'19 self}
     any
-    [ return''0 (result: tuple'0) -> {[%#sghost'7] inv'24 result}
+    [ return''0 (result: tuple'0) -> {[%#sghost'7] inv'22 result}
       {[%#sghost'8] self._p0 = result._p0'0}
       {[%#sghost'9] self._p1 = result._p1'0}
       (! return' {result}) ]
   
-  predicate invariant''18 [@inline:trivial] (self: MutBorrow.t t_Node) =
-    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
+  predicate inv'23 (_0: t_T)
   
-  meta "rewrite_def" predicate invariant''18
+  predicate inv'24 (_0: t_Node)
+  
+  axiom inv_axiom'23 [@rewrite]: forall x: t_Node [inv'24 x]. inv'24 x
+      = match x with
+        | C_Root rank payload -> inv'23 payload
+        | C_Link a_0 -> true
+        end
+  
+  predicate invariant''17 [@inline:trivial] (self: MutBorrow.t t_Node) =
+    [%#sinvariant] inv'24 self.current /\ inv'24 self.final
+  
+  meta "rewrite_def" predicate invariant''17
   
   predicate inv'25 (_0: MutBorrow.t t_Node)
   
-  axiom inv_axiom'24 [@rewrite]: forall x: MutBorrow.t t_Node [inv'25 x]. inv'25 x = invariant''18 x
+  axiom inv_axiom'24 [@rewrite]: forall x: MutBorrow.t t_Node [inv'25 x]. inv'25 x = invariant''17 x
   
   function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = [%#sghost'10] self.final
   
   meta "rewrite_def" function fin
   
   let rec as_mut (ptr'0: Opaque.ptr) (own: MutBorrow.t t_PtrOwn) (return' (x: MutBorrow.t t_Node)) =
-    {[@expl:as_mut 'own' type invariant] [%#sptr_own'3] inv'22 own}
+    {[@expl:as_mut 'own' type invariant] [%#sptr_own'3] inv'20 own}
     {[@expl:as_mut requires] [%#sptr_own'4] ptr'0 = ptr own.current}
     any
     [ return''0 (result: MutBorrow.t t_Node) -> {[%#sptr_own'5] inv'25 result}
@@ -2866,23 +2793,23 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   
   meta "rewrite_def" predicate resolve'16
   
-  predicate invariant''19 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap)) =
-    [%#sinvariant] inv'23 self.current /\ inv'23 self.final
+  predicate invariant''18 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap)) =
+    [%#sinvariant] inv'21 self.current /\ inv'21 self.final
   
-  meta "rewrite_def" predicate invariant''19
+  meta "rewrite_def" predicate invariant''18
   
   predicate inv'26 (_0: MutBorrow.t (MutBorrow.t t_FMap))
   
-  axiom inv_axiom'25 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_FMap) [inv'26 x]. inv'26 x = invariant''19 x
+  axiom inv_axiom'25 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_FMap) [inv'26 x]. inv'26 x = invariant''18 x
   
-  predicate invariant''20 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap)) =
-    [%#sinvariant] inv'15 self.current /\ inv'15 self.final
+  predicate invariant''19 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap)) =
+    [%#sinvariant] inv'13 self.current /\ inv'13 self.final
   
-  meta "rewrite_def" predicate invariant''20
+  meta "rewrite_def" predicate invariant''19
   
   predicate inv'27 (_0: MutBorrow.t (MutBorrow.t t_FMap))
   
-  axiom inv_axiom'26 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_FMap) [inv'27 x]. inv'27 x = invariant''20 x
+  axiom inv_axiom'26 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_FMap) [inv'27 x]. inv'27 x = invariant''19 x
   
   let rec deref_mut'1 (self: MutBorrow.t (MutBorrow.t t_FMap)) (return' (x: MutBorrow.t (MutBorrow.t t_FMap))) =
     {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'26 self}
@@ -2898,11 +2825,11 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   axiom inv_axiom'27 [@rewrite]: forall x: t_Option'1 [inv'28 x]. inv'28 x
       = match x with
         | C_None'1 -> true
-        | C_Some'1 a_0 -> inv'16 a_0
+        | C_Some'1 a_0 -> inv'14 a_0
         end
   
   let rec get_mut_ghost (self: MutBorrow.t t_FMap) (key: t_Elem) (return' (x: t_Option'1)) =
-    {[@expl:get_mut_ghost 'self' type invariant] [%#sfmap'7] inv'15 self}
+    {[@expl:get_mut_ghost 'self' type invariant] [%#sfmap'7] inv'13 self}
     any
     [ return''0 (result: t_Option'1) -> {[%#sfmap'8] inv'28 result}
       {[%#sfmap'9] if contains'0 self.current key then
@@ -2922,7 +2849,7 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
     {[@expl:unwrap 'self_' type invariant] [%#soption] inv'28 self_}
     {[@expl:unwrap requires] [%#soption'0] self_ <> C_None'1}
     any
-    [ return''0 (result: MutBorrow.t t_PtrOwn) -> {inv'16 result}
+    [ return''0 (result: MutBorrow.t t_PtrOwn) -> {inv'14 result}
       {[%#soption'1] C_Some'1 result = self_}
       (! return' {result}) ]
   
@@ -2936,9 +2863,9 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   meta "rewrite_def" predicate resolve'18
   
   let rec new'2 (x: MutBorrow.t t_PtrOwn) (return' (x'0: MutBorrow.t t_PtrOwn)) =
-    {[@expl:new 'x' type invariant] [%#sghost'2] inv'16 x}
+    {[@expl:new 'x' type invariant] [%#sghost'2] inv'14 x}
     any
-    [ return''0 (result: MutBorrow.t t_PtrOwn) -> {[%#sghost'3] inv'22 result}
+    [ return''0 (result: MutBorrow.t t_PtrOwn) -> {[%#sghost'3] inv'20 result}
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
@@ -3045,7 +2972,7 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   function roots_map [#"union_find_cpp.rs" 109 8 109 59] (self: t_UF) : Map.map t_Elem t_Elem =
     [%#sunion_find_cpp'17] (self.t_UF__0).t_UFInner__roots
   
-  axiom roots_map_spec: forall self: t_UF. ([%#sunion_find_cpp'15] inv'6 self)
+  axiom roots_map_spec: forall self: t_UF. ([%#sunion_find_cpp'15] inv'4 self)
       -> ([%#sunion_find_cpp'16] forall e: t_Elem. in_domain self e
         -> in_domain self (index_logic'1 (roots_map self) e)
         /\ index_logic'1 (roots_map self) e = index_logic'1 (roots_map self) (index_logic'1 (roots_map self) e))
@@ -3071,23 +2998,23 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
   meta "select_lsinst" "all"
   
   let rec link [#"union_find_cpp.rs" 241 4 241 76] (uf: MutBorrow.t t_UF) (x: t_Elem) (y: t_Elem)
-    (return' (x'0: t_Elem)) = {[@expl:link 'uf' type invariant] [%#sunion_find_cpp'2] inv'8 uf}
+    (return' (x'0: t_Elem)) = {[@expl:link 'uf' type invariant] [%#sunion_find_cpp'2] inv'6 uf}
     {[@expl:link requires #0] [%#sunion_find_cpp'3] in_domain uf.current x /\ in_domain uf.current y}
     {[@expl:link requires #1] [%#sunion_find_cpp'4] root uf.current x = x /\ root uf.current y = y}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'8 uf'0}
+      [ s0 = {inv'6 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UF> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UF)) ->
-            [ &_12 <- _ret ] -{inv'8 _ret.final}-
+            [ &_12 <- _ret ] -{inv'6 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
       | s1 = deref_mut {_12} (fun (_ret: MutBorrow.t (MutBorrow.t t_UF)) -> [ &_11 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'5 ((_11.current).current).t_UF__0}
+      [ s0 = {inv'3 ((_11.current).current).t_UF__0}
         MutBorrow.borrow_mut <t_UFInner> {((_11.current).current).t_UF__0}
           (fun (_ret: MutBorrow.t t_UFInner) ->
-            [ &__temp <- _ret ] -{inv'5 _ret.final}-
+            [ &__temp <- _ret ] -{inv'3 _ret.final}-
             [ &_11 <- { _11 with current = { _11.current with current = { t_UF__0 = _ret.final } } } ] s1)
       | s1 = new {__temp} (fun (_ret: MutBorrow.t t_UFInner) -> [ &uf'1 <- _ret ] s2)
       | s2 = bb2 ]
@@ -3098,19 +3025,19 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
     | bb6 = s0 [ s0 = into_inner {_23} (fun (_ret: bool) -> [ &_22 <- _ret ] s1) | s1 = bb7 ]
     | bb7 = any [ br0 -> {_22 = false} (! bb14) | br1 -> {_22} (! bb8) ]
     | bb8 = s0
-      [ s0 = {inv'12 uf'1}
+      [ s0 = {inv'10 uf'1}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'1}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_31 <- _ret ] -{inv'12 _ret.final}-
+            [ &_31 <- _ret ] -{inv'10 _ret.final}-
             [ &uf'1 <- _ret.final ] s1)
       | s1 = deref_mut'0 {_31} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_30 <- _ret ] s2)
       | s2 = bb9 ]
     | bb9 = s0
       [ s0 = [ &_33 <- x'0 ] s1
-      | s1 = {inv'4 ((_30.current).current).t_UFInner__perms}
+      | s1 = {inv'2 ((_30.current).current).t_UFInner__perms}
         MutBorrow.borrow_mut <t_FMap> {((_30.current).current).t_UFInner__perms}
           (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_29 <- _ret ] -{inv'4 _ret.final}-
+            [ &_29 <- _ret ] -{inv'2 _ret.final}-
             [ &_30 <- { _30 with current = { _30.current with current = { (_30.current).current with t_UFInner__perms = _ret.final } } } ]
             s2)
       | s2 = split_mut_ghost {_29} {_33} (fun (_ret: tuple) -> [ &_28 <- _ret ] s3)
@@ -3118,62 +3045,62 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
     | bb10 = s0
       [ s0 = [ &perm_x <- _28._p0 ] s1
       | s1 = [ &m <- _28._p1 ] s2
-      | s2 = {[@expl:type invariant] inv'14 _30} s3
+      | s2 = {[@expl:type invariant] inv'12 _30} s3
       | s3 = -{resolve'0 _30}- s4
-      | s4 = {[@expl:type invariant] inv'15 m} s5
+      | s4 = {[@expl:type invariant] inv'13 m} s5
       | s5 = -{resolve'2 m}- s6
       | s6 = [ &_41 <- y'0 ] s7
       | s7 = get_ghost {m.current} {_41} (fun (_ret: t_Option'0) -> [ &_38 <- _ret ] s8)
       | s8 = bb11 ]
     | bb11 = s0 [ s0 = unwrap {_38} (fun (_ret: t_PtrOwn) -> [ &_37 <- _ret ] s1) | s1 = bb12 ]
     | bb12 = s0
-      [ s0 = {inv'3 perm_x.current}
+      [ s0 = {inv'1 perm_x.current}
         MutBorrow.borrow_final <t_PtrOwn> {perm_x.current} {MutBorrow.get_id perm_x}
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
-            [ &_35 <- _ret ] -{inv'3 _ret.final}-
+            [ &_35 <- _ret ] -{inv'1 _ret.final}-
             [ &perm_x <- { perm_x with current = _ret.final } ] s1)
       | s1 = disjoint_lemma {_35} {_37} (fun (_ret: ()) -> [ &_34 <- _ret ] s2)
       | s2 = bb13 ]
     | bb13 = s0
-      [ s0 = {[@expl:type invariant] inv'16 perm_x} s1
+      [ s0 = {[@expl:type invariant] inv'14 perm_x} s1
       | s1 = -{resolve'4 perm_x}- s2
-      | s2 = {[@expl:type invariant] inv'12 uf'1} s3
+      | s2 = {[@expl:type invariant] inv'10 uf'1} s3
       | s3 = -{resolve'8 uf'1}- s4
-      | s4 = {[@expl:type invariant] inv'10 _11} s5
+      | s4 = {[@expl:type invariant] inv'8 _11} s5
       | s5 = -{resolve'10 _11}- s6
-      | s6 = {[@expl:type invariant] inv'8 uf'0} s7
+      | s6 = {[@expl:type invariant] inv'6 uf'0} s7
       | s7 = -{resolve'14 uf'0}- s8
       | s8 = {false} any ]
     | bb14 = s0
-      [ s0 = {[@expl:type invariant] inv'12 uf'1} s1
+      [ s0 = {[@expl:type invariant] inv'10 uf'1} s1
       | s1 = -{resolve'8 uf'1}- s2
-      | s2 = {[@expl:type invariant] inv'10 _11} s3
+      | s2 = {[@expl:type invariant] inv'8 _11} s3
       | s3 = -{resolve'10 _11}- s4
-      | s4 = {[@expl:type invariant] inv'8 uf'0} s5
+      | s4 = {[@expl:type invariant] inv'6 uf'0} s5
       | s5 = -{resolve'14 uf'0}- s6
       | s6 = new'0 {_21} (fun (_ret: ()) -> [ &_20 <- _ret ] s7)
       | s7 = bb15 ]
     | bb15 = s0 [ s0 = [ &_0 <- x'0 ] s1 | s1 = bb54 ]
     | bb16 = s0
-      [ s0 = {inv'12 uf'1}
+      [ s0 = {inv'10 uf'1}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'1}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_50 <- _ret ] -{inv'12 _ret.final}-
+            [ &_50 <- _ret ] -{inv'10 _ret.final}-
             [ &uf'1 <- _ret.final ] s1)
       | s1 = deref_mut'0 {_50} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_49 <- _ret ] s2)
       | s2 = bb17 ]
     | bb17 = s0
       [ s0 = [ &_52 <- x'0 ] s1
-      | s1 = {inv'4 ((_49.current).current).t_UFInner__perms}
+      | s1 = {inv'2 ((_49.current).current).t_UFInner__perms}
         MutBorrow.borrow_mut <t_FMap> {((_49.current).current).t_UFInner__perms}
           (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_48 <- _ret ] -{inv'4 _ret.final}-
+            [ &_48 <- _ret ] -{inv'2 _ret.final}-
             [ &_49 <- { _49 with current = { _49.current with current = { (_49.current).current with t_UFInner__perms = _ret.final } } } ]
             s2)
       | s2 = split_mut_ghost {_48} {_52} (fun (_ret: tuple) -> [ &_47 <- _ret ] s3)
       | s3 = bb18 ]
     | bb18 = s0
-      [ s0 = {[@expl:type invariant] inv'14 _49} s1
+      [ s0 = {[@expl:type invariant] inv'12 _49} s1
       | s1 = -{resolve'0 _49}- s2
       | s2 = new'1 {_47} (fun (_ret: tuple) -> [ &_46 <- _ret ] s3)
       | s3 = bb19 ]
@@ -3184,57 +3111,57 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
       | s2 = as_mut {x'0.t_Elem__0} {perm_x'0} (fun (_ret: MutBorrow.t t_Node) -> [ &_54 <- _ret ] s3)
       | s3 = bb21 ]
     | bb21 = s0
-      [ s0 = {inv'1 _54.current}
+      [ s0 = {inv'24 _54.current}
         MutBorrow.borrow_final <t_Node> {_54.current} {MutBorrow.get_id _54}
           (fun (_ret: MutBorrow.t t_Node) ->
-            [ &bx <- _ret ] -{inv'1 _ret.final}-
+            [ &bx <- _ret ] -{inv'24 _ret.final}-
             [ &_54 <- { _54 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'25 _54} s2
       | s2 = -{resolve'16 _54}- s3
-      | s3 = {inv'23 m'0}
+      | s3 = {inv'21 m'0}
         MutBorrow.borrow_mut <MutBorrow.t t_FMap> {m'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_FMap)) ->
-            [ &_67 <- _ret ] -{inv'23 _ret.final}-
+            [ &_67 <- _ret ] -{inv'21 _ret.final}-
             [ &m'0 <- _ret.final ] s4)
       | s4 = deref_mut'1 {_67} (fun (_ret: MutBorrow.t (MutBorrow.t t_FMap)) -> [ &_66 <- _ret ] s5)
       | s5 = bb22 ]
     | bb22 = s0
       [ s0 = [ &_69 <- y'0 ] s1
-      | s1 = {inv'4 (_66.current).current}
+      | s1 = {inv'2 (_66.current).current}
         MutBorrow.borrow_mut <t_FMap> {(_66.current).current}
           (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_65 <- _ret ] -{inv'4 _ret.final}-
+            [ &_65 <- _ret ] -{inv'2 _ret.final}-
             [ &_66 <- { _66 with current = { _66.current with current = _ret.final } } ] s2)
       | s2 = get_mut_ghost {_65} {_69} (fun (_ret: t_Option'1) -> [ &_64 <- _ret ] s3)
       | s3 = bb23 ]
     | bb23 = s0 [ s0 = unwrap'0 {_64} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_63 <- _ret ] s1) | s1 = bb24 ]
     | bb24 = s0
-      [ s0 = {inv'3 _63.current}
+      [ s0 = {inv'1 _63.current}
         MutBorrow.borrow_final <t_PtrOwn> {_63.current} {MutBorrow.get_id _63}
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
-            [ &_62 <- _ret ] -{inv'3 _ret.final}-
+            [ &_62 <- _ret ] -{inv'1 _ret.final}-
             [ &_63 <- { _63 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'27 _66} s2
       | s2 = -{resolve'18 _66}- s3
-      | s3 = {[@expl:type invariant] inv'16 _63} s4
+      | s3 = {[@expl:type invariant] inv'14 _63} s4
       | s4 = -{resolve'4 _63}- s5
-      | s5 = {inv'3 _62.current}
+      | s5 = {inv'1 _62.current}
         MutBorrow.borrow_final <t_PtrOwn> {_62.current} {MutBorrow.get_id _62}
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
-            [ &_61 <- _ret ] -{inv'3 _ret.final}-
+            [ &_61 <- _ret ] -{inv'1 _ret.final}-
             [ &_62 <- { _62 with current = _ret.final } ] s6)
       | s6 = new'2 {_61} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_60 <- _ret ] s7)
       | s7 = bb25 ]
     | bb25 = s0
-      [ s0 = {[@expl:type invariant] inv'16 _62} s1
+      [ s0 = {[@expl:type invariant] inv'14 _62} s1
       | s1 = -{resolve'4 _62}- s2
       | s2 = as_mut {y'0.t_Elem__0} {_60} (fun (_ret: MutBorrow.t t_Node) -> [ &_58 <- _ret ] s3)
       | s3 = bb26 ]
     | bb26 = s0
-      [ s0 = {inv'1 _58.current}
+      [ s0 = {inv'24 _58.current}
         MutBorrow.borrow_final <t_Node> {_58.current} {MutBorrow.get_id _58}
           (fun (_ret: MutBorrow.t t_Node) ->
-            [ &by' <- _ret ] -{inv'1 _ret.final}-
+            [ &by' <- _ret ] -{inv'24 _ret.final}-
             [ &_58 <- { _58 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'25 _58} s2
       | s2 = -{resolve'16 _58}- s3
@@ -3278,12 +3205,12 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
       | s1 = -{resolve'20 rx}- s2
       | s2 = {[@expl:type invariant] inv'25 by'} s3
       | s3 = -{resolve'16 by'}- s4
-      | s4 = {[@expl:type invariant] inv'23 m'0} s5
+      | s4 = {[@expl:type invariant] inv'21 m'0} s5
       | s5 = -{resolve'22 m'0}- s6
       | s6 = [ &_80 <- C_Link y'0 ] s7
       | s7 = bb35 ]
     | bb35 = s0
-      [ s0 = {[@expl:type invariant] inv'1 bx.current} s1
+      [ s0 = {[@expl:type invariant] inv'24 bx.current} s1
       | s1 = [ &bx <- { bx with current = _80 } ] s2
       | s2 = {[@expl:type invariant] inv'25 bx} s3
       | s3 = -{resolve'16 bx}- s4
@@ -3297,10 +3224,10 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
          ] s1
       | s1 = bb38 ]
     | bb38 = s0
-      [ s0 = {inv'12 uf'1}
+      [ s0 = {inv'10 uf'1}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'1}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_87 <- _ret ] -{inv'12 _ret.final}-
+            [ &_87 <- _ret ] -{inv'10 _ret.final}-
             [ &uf'1 <- _ret.final ] s1)
       | s1 = deref_mut'0 {_87} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_86 <- _ret ] s2)
       | s2 = bb39 ]
@@ -3308,13 +3235,13 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
       [ s0 =
         [ &_86 <- { _86 with current = { _86.current with current = { (_86.current).current with t_UFInner__roots = _84 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'14 _86} s2
+      | s1 = {[@expl:type invariant] inv'12 _86} s2
       | s2 = -{resolve'0 _86}- s3
-      | s3 = {[@expl:type invariant] inv'12 uf'1} s4
+      | s3 = {[@expl:type invariant] inv'10 uf'1} s4
       | s4 = -{resolve'8 uf'1}- s5
-      | s5 = {[@expl:type invariant] inv'10 _11} s6
+      | s5 = {[@expl:type invariant] inv'8 _11} s6
       | s6 = -{resolve'10 _11}- s7
-      | s7 = {[@expl:type invariant] inv'8 uf'0} s8
+      | s7 = {[@expl:type invariant] inv'6 uf'0} s8
       | s8 = -{resolve'14 uf'0}- s9
       | s9 = new'0 {_83} (fun (_ret: ()) -> [ &_82 <- _ret ] s10)
       | s10 = bb40 ]
@@ -3329,11 +3256,11 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
       [ s0 = -{resolve'20 rx}- s1 | s1 = {[@expl:type invariant] inv'25 bx} s2 | s2 = -{resolve'16 bx}- s3 | s3 = bb46 ]
     | bb46 = s0 [ s0 = [ &_94 <- C_Link x'0 ] s1 | s1 = bb47 ]
     | bb47 = s0
-      [ s0 = {[@expl:type invariant] inv'1 by'.current} s1
+      [ s0 = {[@expl:type invariant] inv'24 by'.current} s1
       | s1 = [ &by' <- { by' with current = _94 } ] s2
       | s2 = {[@expl:type invariant] inv'25 by'} s3
       | s3 = -{resolve'16 by'}- s4
-      | s4 = {[@expl:type invariant] inv'23 m'0} s5
+      | s4 = {[@expl:type invariant] inv'21 m'0} s5
       | s5 = -{resolve'22 m'0}- s6
       | s6 = bb49 ]
     | bb49 = s0
@@ -3345,10 +3272,10 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
          ] s1
       | s1 = bb50 ]
     | bb50 = s0
-      [ s0 = {inv'12 uf'1}
+      [ s0 = {inv'10 uf'1}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'1}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_101 <- _ret ] -{inv'12 _ret.final}-
+            [ &_101 <- _ret ] -{inv'10 _ret.final}-
             [ &uf'1 <- _ret.final ] s1)
       | s1 = deref_mut'0 {_101} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_100 <- _ret ] s2)
       | s2 = bb51 ]
@@ -3356,13 +3283,13 @@ module M_union_find_cpp__implementation__link [#"union_find_cpp.rs" 241 4 241 76
       [ s0 =
         [ &_100 <- { _100 with current = { _100.current with current = { (_100.current).current with t_UFInner__roots = _98 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'14 _100} s2
+      | s1 = {[@expl:type invariant] inv'12 _100} s2
       | s2 = -{resolve'0 _100}- s3
-      | s3 = {[@expl:type invariant] inv'12 uf'1} s4
+      | s3 = {[@expl:type invariant] inv'10 uf'1} s4
       | s4 = -{resolve'8 uf'1}- s5
-      | s5 = {[@expl:type invariant] inv'10 _11} s6
+      | s5 = {[@expl:type invariant] inv'8 _11} s6
       | s6 = -{resolve'10 _11}- s7
-      | s7 = {[@expl:type invariant] inv'8 uf'0} s8
+      | s7 = {[@expl:type invariant] inv'6 uf'0} s8
       | s8 = -{resolve'14 uf'0}- s9
       | s9 = new'0 {_97} (fun (_ret: ()) -> [ &_96 <- _ret ] s10)
       | s10 = bb52 ]
@@ -3482,21 +3409,20 @@ module M_union_find_cpp__implementation__union [#"union_find_cpp.rs" 283 4 283 8
   let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
   let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
   let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 100 4 100 26
-  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 553 20 553 76
+  let%span sfmap'3 = "../../creusot-contracts/src/logic/fmap.rs" 552 20 552 76
   let%span soption = "../../creusot-contracts/src/std/option.rs" 744 15 744 27
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 746 8 749 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
   let%span sghost = "../../creusot-contracts/src/ghost.rs" 91 22 91 26
   let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 91 4 91 48
   let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 89 14 89 35
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 181 15 181 16
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 181 4 183 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 179 14 179 26
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 180 15 180 16
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 180 4 182 17
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 178 14 178 26
   let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
-  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 117 8 117 18
   let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
   
@@ -3526,11 +3452,7 @@ module M_union_find_cpp__implementation__union [#"union_find_cpp.rs" 283 4 283 8
   
   meta "rewrite_def" predicate contains
   
-  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
-  
-  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
-  
-  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Node }
+  type t_PtrOwn
   
   type t_Option = C_None | C_Some t_PtrOwn
   
@@ -3573,6 +3495,10 @@ module M_union_find_cpp__implementation__union [#"union_find_cpp.rs" 283 4 283 8
   
   meta "rewrite_def" function index_logic'1
   
+  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
+  
+  type t_Node = C_Root t_PeanoInt t_T | C_Link t_Elem
+  
   function val' (self: t_PtrOwn) : t_Node
   
   function index_logic'2 [@inline:trivial] (self: Map.map t_Elem t_T) (a: t_Elem) : t_T = [%#smapping] Map.get self a
@@ -3608,99 +3534,81 @@ module M_union_find_cpp__implementation__union [#"union_find_cpp.rs" 283 4 283 8
   
   function metadata_logic (_0: Opaque.ptr) : ()
   
-  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) =
+  predicate inv'0 (_0: Opaque.ptr)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     [%#sptr_own] not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
   
-  meta "rewrite_def" predicate invariant''0
+  predicate inv'1 (_0: t_PtrOwn)
   
-  predicate inv'0 (_0: t_T)
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
   
-  predicate inv'1 (_0: t_Node)
+  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
+    [%#sfmap'3] forall k: t_Elem. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'2 (_0: t_FMap)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  
+  predicate inv'3 (_0: t_UFInner)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
       = match x with
-        | C_Root rank payload -> inv'0 payload
-        | C_Link a_0 -> true
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'2 perms
         end
   
-  predicate invariant''1 (self: t_Node) = [%#sboxed] inv'1 self
+  predicate inv'4 (_0: t_UF)
   
-  predicate inv'2 (_0: t_Node)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''1 x
-  
-  predicate inv'3 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x
-      = (invariant''0 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UF [inv'4 x]. inv'4 x
+      = (invariant' x
       /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> inv'2 val''0
+        | {t_UF__0 = a_0} -> inv'3 a_0
         end)
   
-  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
-    [%#sfmap'3] forall k: t_Elem. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_UF) =
+    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_0: t_FMap)
+  predicate inv'5 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
+  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_UF [inv'5 x]. inv'5 x = invariant''2 x
   
-  predicate inv'5 (_0: t_UFInner)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
-      = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'4 perms
-        end
-  
-  predicate inv'6 (_0: t_UF)
-  
-  axiom inv_axiom'5 [@rewrite]: forall x: t_UF [inv'6 x]. inv'6 x
-      = (invariant' x
-      /\ match x with
-        | {t_UF__0 = a_0} -> inv'5 a_0
-        end)
-  
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UF) =
-    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sghost'6] inv'5 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'7 (_0: MutBorrow.t t_UF)
+  predicate inv'6 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UF [inv'7 x]. inv'7 x = invariant''3 x
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UF [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sghost'6] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF)) =
+    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'8 (_0: MutBorrow.t t_UF)
+  predicate inv'7 (_0: MutBorrow.t (MutBorrow.t t_UF))
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UF [inv'8 x]. inv'8 x = invariant''4 x
+  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'7 x]. inv'7 x = invariant''4 x
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF)) =
-    [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'9 (_0: MutBorrow.t (MutBorrow.t t_UF))
+  predicate inv'8 (_0: MutBorrow.t (MutBorrow.t t_UF))
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'9 x]. inv'9 x = invariant''5 x
-  
-  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF)) =
-    [%#sinvariant] inv'7 self.current /\ inv'7 self.final
-  
-  meta "rewrite_def" predicate invariant''6
-  
-  predicate inv'10 (_0: MutBorrow.t (MutBorrow.t t_UF))
-  
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'10 x]. inv'10 x = invariant''6 x
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UF) [inv'8 x]. inv'8 x = invariant''5 x
   
   let rec deref_mut (self: MutBorrow.t (MutBorrow.t t_UF)) (return' (x: MutBorrow.t (MutBorrow.t t_UF))) =
-    {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'9 self}
+    {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'7 self}
     any
-    [ return''0 (result: MutBorrow.t (MutBorrow.t t_UF)) -> {[%#sghost'0] inv'10 result}
+    [ return''0 (result: MutBorrow.t (MutBorrow.t t_UF)) -> {[%#sghost'0] inv'8 result}
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
@@ -3721,9 +3629,9 @@ module M_union_find_cpp__implementation__union [#"union_find_cpp.rs" 283 4 283 8
   meta "rewrite_def" predicate resolve'2
   
   let rec new (x: MutBorrow.t t_UF) (return' (x'0: MutBorrow.t t_UF)) =
-    {[@expl:new 'x' type invariant] [%#sghost'2] inv'7 x}
+    {[@expl:new 'x' type invariant] [%#sghost'2] inv'5 x}
     any
-    [ return''0 (result: MutBorrow.t t_UF) -> {[%#sghost'3] inv'8 result}
+    [ return''0 (result: MutBorrow.t t_UF) -> {[%#sghost'3] inv'6 result}
       {[%#sghost'4] result = x}
       (! return' {result}) ]
   
@@ -3736,7 +3644,7 @@ module M_union_find_cpp__implementation__union [#"union_find_cpp.rs" 283 4 283 8
   function roots_map [#"union_find_cpp.rs" 109 8 109 59] (self: t_UF) : Map.map t_Elem t_Elem =
     [%#sunion_find_cpp'24] (self.t_UF__0).t_UFInner__roots
   
-  axiom roots_map_spec: forall self: t_UF. ([%#sunion_find_cpp'22] inv'6 self)
+  axiom roots_map_spec: forall self: t_UF. ([%#sunion_find_cpp'22] inv'4 self)
       -> ([%#sunion_find_cpp'23] forall e: t_Elem. in_domain self e
         -> in_domain self (index_logic'1 (roots_map self) e)
         /\ index_logic'1 (roots_map self) e = index_logic'1 (roots_map self) (index_logic'1 (roots_map self) e))
@@ -3752,7 +3660,7 @@ module M_union_find_cpp__implementation__union [#"union_find_cpp.rs" 283 4 283 8
     /\ roots_map self.current = roots_map self.final /\ payloads_map self.current = payloads_map self.final
   
   let rec find (uf: MutBorrow.t t_UF) (elem: t_Elem) (return' (x: t_Elem)) =
-    {[@expl:find 'uf' type invariant] [%#sunion_find_cpp'4] inv'8 uf}
+    {[@expl:find 'uf' type invariant] [%#sunion_find_cpp'4] inv'6 uf}
     {[@expl:find requires] [%#sunion_find_cpp'5] in_domain uf.current elem}
     any
     [ return''0 (result: t_Elem) -> {[%#sunion_find_cpp'6] result = root uf.current elem}
@@ -3770,7 +3678,7 @@ module M_union_find_cpp__implementation__union [#"union_find_cpp.rs" 283 4 283 8
   meta "rewrite_def" function fin
   
   let rec link (uf: MutBorrow.t t_UF) (x: t_Elem) (y: t_Elem) (return' (x'0: t_Elem)) =
-    {[@expl:link 'uf' type invariant] [%#sunion_find_cpp'8] inv'8 uf}
+    {[@expl:link 'uf' type invariant] [%#sunion_find_cpp'8] inv'6 uf}
     {[@expl:link requires #0] [%#sunion_find_cpp'9] in_domain uf.current x /\ in_domain uf.current y}
     {[@expl:link requires #1] [%#sunion_find_cpp'10] root uf.current x = x /\ root uf.current y = y}
     any
@@ -3791,76 +3699,76 @@ module M_union_find_cpp__implementation__union [#"union_find_cpp.rs" 283 4 283 8
   meta "select_lsinst" "all"
   
   let rec union [#"union_find_cpp.rs" 283 4 283 81] (uf: MutBorrow.t t_UF) (x: t_Elem) (y: t_Elem)
-    (return' (x'0: t_Elem)) = {[@expl:union 'uf' type invariant] [%#sunion_find_cpp] inv'8 uf}
+    (return' (x'0: t_Elem)) = {[@expl:union 'uf' type invariant] [%#sunion_find_cpp] inv'6 uf}
     {[@expl:union requires] [%#sunion_find_cpp'0] in_domain uf.current x /\ in_domain uf.current y}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'8 uf'0}
+      [ s0 = {inv'6 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UF> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UF)) ->
-            [ &_14 <- _ret ] -{inv'8 _ret.final}-
+            [ &_14 <- _ret ] -{inv'6 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
       | s1 = deref_mut {_14} (fun (_ret: MutBorrow.t (MutBorrow.t t_UF)) -> [ &_13 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'6 (_13.current).current}
+      [ s0 = {inv'4 (_13.current).current}
         MutBorrow.borrow_mut <t_UF> {(_13.current).current}
           (fun (_ret: MutBorrow.t t_UF) ->
-            [ &_12 <- _ret ] -{inv'6 _ret.final}-
+            [ &_12 <- _ret ] -{inv'4 _ret.final}-
             [ &_13 <- { _13 with current = { _13.current with current = _ret.final } } ] s1)
-      | s1 = {inv'6 _12.current}
+      | s1 = {inv'4 _12.current}
         MutBorrow.borrow_final <t_UF> {_12.current} {MutBorrow.get_id _12}
           (fun (_ret: MutBorrow.t t_UF) ->
-            [ &_11 <- _ret ] -{inv'6 _ret.final}-
+            [ &_11 <- _ret ] -{inv'4 _ret.final}-
             [ &_12 <- { _12 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'10 _13} s3
+      | s2 = {[@expl:type invariant] inv'8 _13} s3
       | s3 = -{resolve'0 _13}- s4
-      | s4 = {[@expl:type invariant] inv'7 _12} s5
+      | s4 = {[@expl:type invariant] inv'5 _12} s5
       | s5 = -{resolve'2 _12}- s6
-      | s6 = {inv'6 _11.current}
+      | s6 = {inv'4 _11.current}
         MutBorrow.borrow_final <t_UF> {_11.current} {MutBorrow.get_id _11}
           (fun (_ret: MutBorrow.t t_UF) ->
-            [ &_10 <- _ret ] -{inv'6 _ret.final}-
+            [ &_10 <- _ret ] -{inv'4 _ret.final}-
             [ &_11 <- { _11 with current = _ret.final } ] s7)
       | s7 = new {_10} (fun (_ret: MutBorrow.t t_UF) -> [ &_9 <- _ret ] s8)
       | s8 = bb2 ]
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv'7 _11} s1
+      [ s0 = {[@expl:type invariant] inv'5 _11} s1
       | s1 = -{resolve'2 _11}- s2
       | s2 = find {_9} {x'0} (fun (_ret: t_Elem) -> [ &rx <- _ret ] s3)
       | s3 = bb3 ]
     | bb3 = s0
-      [ s0 = {inv'8 uf'0}
+      [ s0 = {inv'6 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UF> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UF)) ->
-            [ &_22 <- _ret ] -{inv'8 _ret.final}-
+            [ &_22 <- _ret ] -{inv'6 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
       | s1 = deref_mut {_22} (fun (_ret: MutBorrow.t (MutBorrow.t t_UF)) -> [ &_21 <- _ret ] s2)
       | s2 = bb4 ]
     | bb4 = s0
-      [ s0 = {inv'6 (_21.current).current}
+      [ s0 = {inv'4 (_21.current).current}
         MutBorrow.borrow_mut <t_UF> {(_21.current).current}
           (fun (_ret: MutBorrow.t t_UF) ->
-            [ &_20 <- _ret ] -{inv'6 _ret.final}-
+            [ &_20 <- _ret ] -{inv'4 _ret.final}-
             [ &_21 <- { _21 with current = { _21.current with current = _ret.final } } ] s1)
-      | s1 = {inv'6 _20.current}
+      | s1 = {inv'4 _20.current}
         MutBorrow.borrow_final <t_UF> {_20.current} {MutBorrow.get_id _20}
           (fun (_ret: MutBorrow.t t_UF) ->
-            [ &_19 <- _ret ] -{inv'6 _ret.final}-
+            [ &_19 <- _ret ] -{inv'4 _ret.final}-
             [ &_20 <- { _20 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'10 _21} s3
+      | s2 = {[@expl:type invariant] inv'8 _21} s3
       | s3 = -{resolve'0 _21}- s4
-      | s4 = {[@expl:type invariant] inv'7 _20} s5
+      | s4 = {[@expl:type invariant] inv'5 _20} s5
       | s5 = -{resolve'2 _20}- s6
-      | s6 = {inv'6 _19.current}
+      | s6 = {inv'4 _19.current}
         MutBorrow.borrow_final <t_UF> {_19.current} {MutBorrow.get_id _19}
           (fun (_ret: MutBorrow.t t_UF) ->
-            [ &_18 <- _ret ] -{inv'6 _ret.final}-
+            [ &_18 <- _ret ] -{inv'4 _ret.final}-
             [ &_19 <- { _19 with current = _ret.final } ] s7)
       | s7 = new {_18} (fun (_ret: MutBorrow.t t_UF) -> [ &_17 <- _ret ] s8)
       | s8 = bb5 ]
     | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv'7 _19} s1
+      [ s0 = {[@expl:type invariant] inv'5 _19} s1
       | s1 = -{resolve'2 _19}- s2
       | s2 = find {_17} {y'0} (fun (_ret: t_Elem) -> [ &ry <- _ret ] s3)
       | s3 = bb6 ]
@@ -3941,7 +3849,7 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
   let%span smapping = "../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
   let%span sfset = "../../creusot-contracts/src/logic/fset.rs" 55 8 55 26
   let%span sfset'0 = "../../creusot-contracts/src/logic/fset.rs" 39 8 39 26
-  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 553 20 553 76
+  let%span sfmap = "../../creusot-contracts/src/logic/fmap.rs" 552 20 552 76
   let%span sfmap'0 = "../../creusot-contracts/src/logic/fmap.rs" 108 8 108 27
   let%span sfmap'1 = "../../creusot-contracts/src/logic/fmap.rs" 258 4 258 26
   let%span sfmap'2 = "../../creusot-contracts/src/logic/fmap.rs" 92 4 92 26
@@ -3950,15 +3858,15 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
   let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 746 8 749 9
   let%span slogic = "../../creusot-contracts/src/logic.rs" 32 11 32 28
   let%span slogic'0 = "../../creusot-contracts/src/logic.rs" 33 0 33 21
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 26
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 148 27 148 31
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 148 4 148 49
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 147 14 147 36
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 140 19 140 23
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 140 4 140 37
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 139 14 139 32
+  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
+  let%span sghost = "../../creusot-contracts/src/ghost.rs" 147 27 147 31
+  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 147 4 147 49
+  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 146 14 146 36
+  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 139 19 139 23
+  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 139 4 139 37
+  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 138 14 138 32
   let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
-  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 118 8 118 18
+  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 117 8 117 18
   let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
   let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
   
@@ -3966,8 +3874,8 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
   use set.Fset
   use creusot.int.Int32
   use map.Map
-  use creusot.int.UInt64
   use creusot.prelude.Ptr
+  use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
@@ -3985,11 +3893,7 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
   
   predicate invariant' [#"union_find_cpp.rs" 64 8 64 34] (self: t_UF)
   
-  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
-  
-  type t_Node = C_Root t_PeanoInt Int32.t | C_Link t_Elem
-  
-  type t_PtrOwn = { t_PtrOwn__ptr: Opaque.ptr; t_PtrOwn__val: t_Node }
+  type t_PtrOwn
   
   type t_Option = C_None | C_Some t_PtrOwn
   
@@ -4013,25 +3917,27 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
+  type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
+  
+  type t_Node = C_Root t_PeanoInt Int32.t | C_Link t_Elem
+  
   predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
   
   function val' (self: t_PtrOwn) : t_Node
   
   function metadata_logic (_0: Opaque.ptr) : ()
   
-  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) =
+  predicate inv'0 (_0: Opaque.ptr)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     [%#sptr_own] not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
   
-  meta "rewrite_def" predicate invariant''0
+  predicate inv'1 (_0: t_PtrOwn)
   
-  predicate inv'0 (_0: t_PtrOwn)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x
-      = (invariant''0 x
-      /\ match x with
-        | {t_PtrOwn__ptr = ptr'0; t_PtrOwn__val = val''0} -> true
-        end)
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
   
   predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = [%#smapping] Map.get self a
   
@@ -4056,74 +3962,74 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
   meta "rewrite_def" function index_logic'0
   
   predicate invariant''1 [@inline:trivial] (self: t_FMap) =
-    [%#sfmap] forall k: t_Elem. contains self k -> inv k /\ inv'0 (index_logic'0 self k)
+    [%#sfmap] forall k: t_Elem. contains self k -> inv k /\ inv'1 (index_logic'0 self k)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'1 (_0: t_FMap)
+  predicate inv'2 (_0: t_FMap)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_FMap [inv'1 x]. inv'1 x = invariant''1 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate inv'2 (_0: t_UFInner)
+  predicate inv'3 (_0: t_UFInner)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_UFInner [inv'2 x]. inv'2 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
       = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'1 perms
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots} -> inv'2 perms
         end
-  
-  predicate inv'3 (_0: t_UF)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_UF [inv'3 x]. inv'3 x
-      = (invariant' x
-      /\ match x with
-        | {t_UF__0 = a_0} -> inv'2 a_0
-        end)
-  
-  predicate invariant''2 [@inline:trivial] (self: t_UF) = [%#sghost'6] inv'3 self
-  
-  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_0: t_UF)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UF [inv'4 x]. inv'4 x = invariant''2 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UF [inv'4 x]. inv'4 x
+      = (invariant' x
+      /\ match x with
+        | {t_UF__0 = a_0} -> inv'3 a_0
+        end)
+  
+  predicate invariant''2 [@inline:trivial] (self: t_UF) = [%#sghost'6] inv'4 self
+  
+  meta "rewrite_def" predicate invariant''2
+  
+  predicate inv'5 (_0: t_UF)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UF [inv'5 x]. inv'5 x = invariant''2 x
   
   function domain [#"union_find_cpp.rs" 89 8 89 44] (self: t_UF) : Fset.fset t_Elem
   
   let rec new (return' (x: t_UF)) = any
-    [ return''0 (result: t_UF) -> {[%#sunion_find_cpp'11] inv'4 result}
+    [ return''0 (result: t_UF) -> {[%#sunion_find_cpp'11] inv'5 result}
       {[%#sunion_find_cpp'12] Fset.is_empty (domain result)}
       (! return' {result}) ]
   
   predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UF) =
-    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
+    [%#sinvariant] inv'5 self.current /\ inv'5 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'5 (_0: MutBorrow.t t_UF)
+  predicate inv'6 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_UF [inv'5 x]. inv'5 x = invariant''3 x
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UF [inv'6 x]. inv'6 x = invariant''3 x
   
   predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UF) =
-    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+    [%#sinvariant] inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'6 (_0: MutBorrow.t t_UF)
+  predicate inv'7 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UF [inv'6 x]. inv'6 x = invariant''4 x
+  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UF [inv'7 x]. inv'7 x = invariant''4 x
   
-  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sghost'6] inv'6 self
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_UF) = [%#sghost'6] inv'7 self
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'7 (_0: MutBorrow.t t_UF)
+  predicate inv'8 (_0: MutBorrow.t t_UF)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UF [inv'7 x]. inv'7 x = invariant''5 x
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_UF [inv'8 x]. inv'8 x = invariant''5 x
   
   let rec borrow_mut (self: MutBorrow.t t_UF) (return' (x: MutBorrow.t t_UF)) =
-    {[@expl:borrow_mut 'self' type invariant] [%#sghost] inv'5 self}
+    {[@expl:borrow_mut 'self' type invariant] [%#sghost] inv'6 self}
     any
-    [ return''0 (result: MutBorrow.t t_UF) -> {[%#sghost'0] inv'7 result}
+    [ return''0 (result: MutBorrow.t t_UF) -> {[%#sghost'0] inv'8 result}
       {[%#sghost'1] result = self}
       (! return' {result}) ]
   
@@ -4149,7 +4055,7 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
   
   function roots_map [#"union_find_cpp.rs" 109 8 109 59] (self: t_UF) : Map.map t_Elem t_Elem
   
-  axiom roots_map_spec: forall self: t_UF. ([%#sunion_find_cpp'32] inv'3 self)
+  axiom roots_map_spec: forall self: t_UF. ([%#sunion_find_cpp'32] inv'4 self)
       -> ([%#sunion_find_cpp'33] forall e: t_Elem. in_domain self e
         -> in_domain self (index_logic'1 (roots_map self) e)
         /\ index_logic'1 (roots_map self) e = index_logic'1 (roots_map self) (index_logic'1 (roots_map self) e))
@@ -4157,7 +4063,7 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
   function payloads_map [#"union_find_cpp.rs" 124 8 124 56] (self: t_UF) : Map.map t_Elem Int32.t
   
   let rec make (uf: MutBorrow.t t_UF) (payload: Int32.t) (return' (x: t_Elem)) =
-    {[@expl:make 'uf' type invariant] [%#sunion_find_cpp'13] inv'7 uf}
+    {[@expl:make 'uf' type invariant] [%#sunion_find_cpp'13] inv'8 uf}
     any
     [ return''0 (result: t_Elem) -> {[%#sunion_find_cpp'14] not in_domain uf.current result}
       {[%#sunion_find_cpp'15] domain (fin uf) = insert (domain uf.current) result}
@@ -4165,32 +4071,32 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
       {[%#sunion_find_cpp'17] payloads_map (fin uf) = Map.set (payloads_map uf.current) result payload}
       (! return' {result}) ]
   
-  predicate invariant''6 [@inline:trivial] (self: t_UF) = [%#sinvariant'0] inv'4 self
+  predicate invariant''6 [@inline:trivial] (self: t_UF) = [%#sinvariant'0] inv'5 self
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'8 (_0: t_UF)
+  predicate inv'9 (_0: t_UF)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_UF [inv'8 x]. inv'8 x = invariant''6 x
+  axiom inv_axiom'9 [@rewrite]: forall x: t_UF [inv'9 x]. inv'9 x = invariant''6 x
   
-  predicate invariant''7 [@inline:trivial] (self: t_UF) = [%#sinvariant'0] inv'3 self
+  predicate invariant''7 [@inline:trivial] (self: t_UF) = [%#sinvariant'0] inv'4 self
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'9 (_0: t_UF)
+  predicate inv'10 (_0: t_UF)
   
-  axiom inv_axiom'9 [@rewrite]: forall x: t_UF [inv'9 x]. inv'9 x = invariant''7 x
+  axiom inv_axiom'10 [@rewrite]: forall x: t_UF [inv'10 x]. inv'10 x = invariant''7 x
   
-  predicate invariant''8 [@inline:trivial] (self: t_UF) = [%#sghost'6] inv'9 self
+  predicate invariant''8 [@inline:trivial] (self: t_UF) = [%#sghost'6] inv'10 self
   
   meta "rewrite_def" predicate invariant''8
   
-  predicate inv'10 (_0: t_UF)
+  predicate inv'11 (_0: t_UF)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_UF [inv'10 x]. inv'10 x = invariant''8 x
+  axiom inv_axiom'11 [@rewrite]: forall x: t_UF [inv'11 x]. inv'11 x = invariant''8 x
   
-  let rec borrow (self: t_UF) (return' (x: t_UF)) = {[@expl:borrow 'self' type invariant] [%#sghost'2] inv'8 self}
-    any [ return''0 (result: t_UF) -> {[%#sghost'3] inv'10 result} {[%#sghost'4] result = self} (! return' {result}) ]
+  let rec borrow (self: t_UF) (return' (x: t_UF)) = {[@expl:borrow 'self' type invariant] [%#sghost'2] inv'9 self}
+    any [ return''0 (result: t_UF) -> {[%#sghost'3] inv'11 result} {[%#sghost'4] result = self} (! return' {result}) ]
   
   function root [#"union_find_cpp.rs" 118 8 118 48] (self: t_UF) (e: t_Elem) : t_Elem =
     [%#sunion_find_cpp'34] index_logic'1 (roots_map self) e
@@ -4204,7 +4110,7 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
     [%#sunion_find_cpp'35] index_logic'2 (payloads_map self) e
   
   let rec get'0 (uf: t_UF) (elem: t_Elem) (return' (x: Int32.t)) =
-    {[@expl:get 'uf' type invariant] [%#sunion_find_cpp'18] inv'10 uf}
+    {[@expl:get 'uf' type invariant] [%#sunion_find_cpp'18] inv'11 uf}
     {[@expl:get requires #0] [%#sunion_find_cpp'19] in_domain uf elem}
     {[@expl:get requires #1] [%#sunion_find_cpp'20] root uf elem = elem}
     any [ return''0 (result: Int32.t) -> {[%#sunion_find_cpp'21] result = payload uf elem} (! return' {result}) ]
@@ -4216,7 +4122,7 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
     [%#sunion_find_cpp'37] payloads_map self.current = payloads_map self.final
   
   let rec union (uf: MutBorrow.t t_UF) (x: t_Elem) (y: t_Elem) (return' (x'0: t_Elem)) =
-    {[@expl:union 'uf' type invariant] [%#sunion_find_cpp'22] inv'7 uf}
+    {[@expl:union 'uf' type invariant] [%#sunion_find_cpp'22] inv'8 uf}
     {[@expl:union requires] [%#sunion_find_cpp'23] in_domain uf.current x /\ in_domain uf.current y}
     any
     [ return''0 (result: t_Elem) -> {[%#sunion_find_cpp'24] domain_unchanged uf /\ payloads_unchanged uf}
@@ -4235,7 +4141,7 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
     /\ roots_map self.current = roots_map self.final /\ payloads_map self.current = payloads_map self.final
   
   let rec find (uf: MutBorrow.t t_UF) (elem: t_Elem) (return' (x: t_Elem)) =
-    {[@expl:find 'uf' type invariant] [%#sunion_find_cpp'27] inv'7 uf}
+    {[@expl:find 'uf' type invariant] [%#sunion_find_cpp'27] inv'8 uf}
     {[@expl:find requires] [%#sunion_find_cpp'28] in_domain uf.current elem}
     any
     [ return''0 (result: t_Elem) -> {[%#sunion_find_cpp'29] result = root uf.current elem}
@@ -4249,25 +4155,25 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
   let rec example [#"union_find_cpp.rs" 292 0 292 16] (return' (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = new (fun (_ret: t_UF) -> [ &uf <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'4 uf}
+      [ s0 = {inv'5 uf}
         MutBorrow.borrow_mut <t_UF> {uf}
-          (fun (_ret: MutBorrow.t t_UF) -> [ &_4 <- _ret ] -{inv'4 _ret.final}- [ &uf <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t t_UF) -> [ &_4 <- _ret ] -{inv'5 _ret.final}- [ &uf <- _ret.final ] s1)
       | s1 = borrow_mut {_4} (fun (_ret: MutBorrow.t t_UF) -> [ &_3 <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = s0
       [ s0 = make {_3} {[%#sunion_find_cpp] (1: Int32.t)} (fun (_ret: t_Elem) -> [ &x <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
-      [ s0 = {inv'4 uf}
+      [ s0 = {inv'5 uf}
         MutBorrow.borrow_mut <t_UF> {uf}
-          (fun (_ret: MutBorrow.t t_UF) -> [ &_7 <- _ret ] -{inv'4 _ret.final}- [ &uf <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t t_UF) -> [ &_7 <- _ret ] -{inv'5 _ret.final}- [ &uf <- _ret.final ] s1)
       | s1 = borrow_mut {_7} (fun (_ret: MutBorrow.t t_UF) -> [ &_6 <- _ret ] s2)
       | s2 = bb4 ]
     | bb4 = s0
       [ s0 = make {_6} {[%#sunion_find_cpp'0] (2: Int32.t)} (fun (_ret: t_Elem) -> [ &y <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = {inv'4 uf}
+      [ s0 = {inv'5 uf}
         MutBorrow.borrow_mut <t_UF> {uf}
-          (fun (_ret: MutBorrow.t t_UF) -> [ &_10 <- _ret ] -{inv'4 _ret.final}- [ &uf <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t t_UF) -> [ &_10 <- _ret ] -{inv'5 _ret.final}- [ &uf <- _ret.final ] s1)
       | s1 = borrow_mut {_10} (fun (_ret: MutBorrow.t t_UF) -> [ &_9 <- _ret ] s2)
       | s2 = bb6 ]
     | bb6 = s0
@@ -4288,23 +4194,23 @@ module M_union_find_cpp__example [#"union_find_cpp.rs" 292 0 292 16]
       [ s0 = [ &_28 <- _30 = ([%#sunion_find_cpp'4] (3: Int32.t)) ] s1
       | s1 = any [ br0 -> {_28 = false} (! bb19) | br1 -> {_28} (! bb18) ] ]
     | bb18 = s0
-      [ s0 = {inv'4 uf}
+      [ s0 = {inv'5 uf}
         MutBorrow.borrow_mut <t_UF> {uf}
-          (fun (_ret: MutBorrow.t t_UF) -> [ &_37 <- _ret ] -{inv'4 _ret.final}- [ &uf <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t t_UF) -> [ &_37 <- _ret ] -{inv'5 _ret.final}- [ &uf <- _ret.final ] s1)
       | s1 = borrow_mut {_37} (fun (_ret: MutBorrow.t t_UF) -> [ &_36 <- _ret ] s2)
       | s2 = bb20 ]
     | bb20 = s0 [ s0 = union {_36} {x} {y} (fun (_ret: t_Elem) -> [ &_35 <- _ret ] s1) | s1 = bb21 ]
     | bb21 = s0
-      [ s0 = {inv'4 uf}
+      [ s0 = {inv'5 uf}
         MutBorrow.borrow_mut <t_UF> {uf}
-          (fun (_ret: MutBorrow.t t_UF) -> [ &_42 <- _ret ] -{inv'4 _ret.final}- [ &uf <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t t_UF) -> [ &_42 <- _ret ] -{inv'5 _ret.final}- [ &uf <- _ret.final ] s1)
       | s1 = borrow_mut {_42} (fun (_ret: MutBorrow.t t_UF) -> [ &_41 <- _ret ] s2)
       | s2 = bb22 ]
     | bb22 = s0 [ s0 = find {_41} {x} (fun (_ret: t_Elem) -> [ &xr <- _ret ] s1) | s1 = bb23 ]
     | bb23 = s0
-      [ s0 = {inv'4 uf}
+      [ s0 = {inv'5 uf}
         MutBorrow.borrow_mut <t_UF> {uf}
-          (fun (_ret: MutBorrow.t t_UF) -> [ &_46 <- _ret ] -{inv'4 _ret.final}- [ &uf <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t t_UF) -> [ &_46 <- _ret ] -{inv'5 _ret.final}- [ &uf <- _ret.final ] s1)
       | s1 = borrow_mut {_46} (fun (_ret: MutBorrow.t t_UF) -> [ &_45 <- _ret ] s2)
       | s2 = bb24 ]
     | bb24 = s0 [ s0 = find {_45} {y} (fun (_ret: t_Elem) -> [ &yr <- _ret ] s1) | s1 = bb25 ]

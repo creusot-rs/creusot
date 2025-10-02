@@ -1,5 +1,7 @@
 //! Raw pointers with ghost code
 
+use ::std::marker::PhantomData;
+
 #[cfg(creusot)]
 use crate::std::ptr::{metadata_logic, metadata_matches};
 use crate::*;
@@ -21,31 +23,30 @@ use crate::*;
 /// Creusot ensures that every operation on the inner value uses the right [`PtrOwn`] object
 /// created by [`PtrOwn::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
 #[allow(dead_code)]
-pub struct PtrOwn<T: ?Sized> {
-    ptr: *const T,
-    val: Box<T>,
-}
+#[opaque]
+pub struct PtrOwn<T: ?Sized>(PhantomData<T>);
 
 impl<T: ?Sized> PtrOwn<T> {
     /// The raw pointer whose ownership is tracked by this `PtrOwn`
-    #[logic]
+    #[logic(opaque)]
     pub fn ptr(self) -> *const T {
-        self.ptr
+        dead
     }
 
     /// The value currently stored at address [`self.ptr()`](Self::ptr)
-    #[logic]
+    #[logic(opaque)]
     pub fn val<'a>(self) -> &'a T {
-        &*self.val
+        dead
     }
 }
 
 impl<T: ?Sized> Invariant for PtrOwn<T> {
-    #[logic(open, inline)]
+    #[logic(open, prophetic)]
     fn invariant(self) -> bool {
         !self.ptr().is_null_logic()
             && self.ptr_is_aligned_opaque()
             && metadata_matches(*self.val(), metadata_logic(self.ptr()))
+            && inv(self.ptr())
     }
 }
 

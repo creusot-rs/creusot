@@ -547,7 +547,6 @@ impl<K: Clone + Copy, V: Clone + Copy> Copy for FMap<K, V> {}
 
 impl<K: ?Sized, V> Invariant for FMap<K, V> {
     #[logic(open, prophetic, inline)]
-    #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<k: K> self.contains(k) ==> inv(k) && inv(self[k]) }

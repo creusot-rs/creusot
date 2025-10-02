@@ -442,7 +442,6 @@ impl<T: Clone + Copy> Copy for FSet<T> {}
 
 impl<T> Invariant for FSet<T> {
     #[logic(open, prophetic, inline)]
-    #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<x: T> self.contains(x) ==> inv(x) }
