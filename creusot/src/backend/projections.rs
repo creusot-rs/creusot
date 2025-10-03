@@ -303,10 +303,10 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, N: Namer<'tcx>>(
 pub(crate) fn projections_term<'tcx, 'a, V: Debug>(
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
-    subject: Term<'tcx>,
-    proj: &[ProjectionElem<V, Ty<'tcx>>],
-    exp: impl FnOnce(Term<'tcx>) -> Term<'tcx> + 'a,
-    default: Option<Term<'tcx>>,
+    subject: Term<'tcx>,                               // The thing which is projected
+    proj: &[ProjectionElem<V, Ty<'tcx>>],              // The projections
+    exp: impl FnOnce(Term<'tcx>) -> Term<'tcx> + 'a,   // What to do with the result of the projection
+    default: Option<Term<'tcx>>,                       // What to return if the projection fails (sum types)
     mut translate_index: impl FnMut(&V) -> Term<'tcx>,
     span: Span,
 ) -> Term<'tcx> {

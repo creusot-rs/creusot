@@ -1198,22 +1198,6 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     }
 }
 
-pub(crate) fn type_invariant_term<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
-    typing_env: TypingEnv<'tcx>,
-    ident: Ident,
-    span: Span,
-    ty: Ty<'tcx>,
-) -> Option<Term<'tcx>> {
-    let args = Box::new([Term { ty, span, kind: TermKind::Var(ident.into()) }]);
-    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(typing_env, ty, span)?;
-    Some(Term {
-        ty: ctx.types.bool,
-        span,
-        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, args },
-    })
-}
-
 #[derive(Debug)]
 pub(crate) enum Stub {
     Forall,

@@ -12,7 +12,7 @@ use crate::{
         ty::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
         },
-        ty_inv::InvariantElaborator,
+        ty_inv::elaborate_inv,
     },
     contracts_items::{Intrinsic, get_builtin, is_inline, is_logic, why3_metas},
     ctx::{BodyId, HasTyCtxt as _, ItemType},
@@ -398,12 +398,10 @@ fn expand_ty_inv_axiom<'tcx>(
     ctx: &Why3Generator<'tcx>,
     ty: Ty<'tcx>,
 ) -> Vec<Decl> {
-    let param_env = elab.typing_env;
-    let span = elab.root_span;
+    let Some((term, rewrite)) = elaborate_inv(ctx, elab.typing_env, ty, elab.root_span) else {
+        return vec![];
+    };
     let names = elab.namer(Dependency::TyInvAxiom(ty));
-    let mut elab = InvariantElaborator::new(param_env, ctx);
-    let Some(term) = elab.elaborate_inv(ty, span) else { return vec![] };
-    let rewrite = elab.rewrite;
     let axiom = lower_pure_weakdep(ctx, &names, &term);
     let axiom =
         Axiom { name: names.dependency(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom };

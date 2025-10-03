@@ -1,5 +1,4 @@
 use crate::{
-    backend::ty_inv::is_tyinv_trivial,
     callbacks,
     contracts_items::{
         Intrinsic, gather_intrinsics, get_creusot_item, is_extern_spec, is_logic, is_opaque,
@@ -362,22 +361,6 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
         callbacks::get_body(self.tcx, def_id)
-    }
-
-    /// `span` is used for diagnostics.
-    pub(crate) fn type_invariant(
-        &self,
-        typing_env: TypingEnv<'tcx>,
-        ty: Ty<'tcx>,
-        span: Span,
-    ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        let ty = self.normalize_erasing_regions(typing_env, ty);
-        if is_tyinv_trivial(self, typing_env, ty, span) {
-            None
-        } else {
-            let substs = self.mk_args(&[GenericArg::from(ty)]);
-            Some((Intrinsic::Inv.get(self), substs))
-        }
     }
 
     pub(crate) fn resolve(

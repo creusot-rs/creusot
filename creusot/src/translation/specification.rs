@@ -1,13 +1,11 @@
 use crate::{
-    backend::closures::ClosSubst,
+    backend::{closures::ClosSubst, ty_inv::inv_call},
     contracts_items::{
         Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_open_inv_result,
     },
     ctx::*,
     naming::{name, variable_name},
-    translation::pearlite::{
-        Ident, Literal, PIdent, Term, TermKind, TermVisitorMut, normalize, type_invariant_term,
-    },
+    translation::pearlite::{Ident, Literal, PIdent, Term, TermKind, TermVisitorMut, normalize},
     util::erased_identity_for_item,
 };
 use rustc_hir::{AttrArgs, Safety, def::DefKind, def_id::DefId};
@@ -325,11 +323,11 @@ impl<'tcx> PreSignature<'tcx> {
 
         let new_requires = self.inputs.iter().enumerate().filter_map(|(i, (ident, span, ty))| {
             if !params_open_inv.contains(&i)
-                && let Some(term) = type_invariant_term(ctx, typing_env, ident.0, *span, *ty)
+                && let Some(term) = inv_call(ctx, typing_env, Term::var(ident.0, *ty))
             {
                 let expl =
                     format!("expl:{} '{}' type invariant", fn_name, ident.0.name().to_string());
-                Some(Condition { term, expl })
+                Some(Condition { term: term.span(*span), expl })
             } else {
                 None
             }
@@ -338,16 +336,16 @@ impl<'tcx> PreSignature<'tcx> {
 
         let ret_ty_span: Option<Span> = try { ctx.hir_get_fn_output(def_id.as_local()?)?.span() };
         if (ctx.def_kind(def_id) == DefKind::ConstParam || !is_open_inv_result(ctx.tcx, def_id))
-            && let Some(term) = type_invariant_term(
-                ctx,
-                typing_env,
-                name::result(),
-                ret_ty_span.unwrap_or_else(|| ctx.def_span(def_id)),
-                self.output,
-            )
+            && let Some(term) = inv_call(ctx, typing_env, Term::var(name::result(), self.output))
         {
             let expl = format!("expl:{} result type invariant", fn_name);
-            self.contract.ensures.insert(0, Condition { term, expl });
+            self.contract.ensures.insert(
+                0,
+                Condition {
+                    term: term.span(ret_ty_span.unwrap_or_else(|| ctx.def_span(def_id))),
+                    expl,
+                },
+            );
         }
     }
 }
@@ -382,7 +380,6 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             ClosureKind::FnMut => self_.clone().cur(),
             ClosureKind::FnOnce => self_.clone(),
         };
-
         let mut pre_subst = ClosSubst::pre(ctx, def_id.expect_local(), self_pre.clone());
         for pre in &mut presig.contract.requires {
             pre_subst.visit_mut_term(&mut pre.term);
