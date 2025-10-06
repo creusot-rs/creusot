@@ -73,6 +73,7 @@ attribute_functions! {
     [creusot::clause::variant]               => has_variant_clause
     [creusot::clause::check_terminates]      => is_check_terminates
     [creusot::clause::check_ghost]           => is_check_ghost
+    [creusot::clause::check_ghost::trusted]  => is_check_ghost_trusted
     [creusot::bitwise]                       => is_bitwise
     [creusot::builtin_ascription]           => is_builtin_ascription
 }

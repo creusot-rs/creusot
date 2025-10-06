@@ -147,34 +147,17 @@ pub fn maintains(attr: TS1, body: TS1) -> TS1 {
 }
 
 pub fn check(args: TS1, tokens: TS1) -> TS1 {
-    let modes = parse_macro_input!(args with Punctuated<Ident, Token![,]>::parse_terminated);
-    let mut terminates = false;
-    let mut ghost = false;
-    for mode in modes {
-        let err = |msg| syn::Error::new(mode.span(), msg).into_compile_error().into();
-        if mode == "terminates" {
-            if terminates {
-                return err("modes can only be specified once".to_string());
-            }
-            terminates = true;
-        } else if mode == "ghost" {
-            if ghost {
-                return err("modes can only be specified once".to_string());
-            }
-            ghost = true;
-            terminates = true;
-        } else {
-            return err(format!(
-                "unknown mode `{mode}`. Accepted modes are `terminates` or `ghost`"
-            ));
-        }
-    }
-
-    if !(terminates || ghost) {
-        return syn::Error::new(Span::call_site(), "you must specify at least one mode")
-            .into_compile_error()
-            .into();
-    }
+    let mode = parse_macro_input!(args as Ident);
+    let (terminates, ghost, ghost_trusted) = if mode == "terminates" {
+        (true, false, false)
+    } else if mode == "ghost" {
+        (true, true, false)
+    } else if mode == "ghost_trusted" {
+        (true, true, true)
+    } else {
+        let msg = format!("unknown mode `{mode}`. Accepted modes are `terminates` or `ghost`");
+        return quote! { compile_error!(#msg) }.into()
+    };
     let mut documentation = TokenStream::new();
     let mut clauses = TokenStream::new();
     if terminates {
@@ -185,7 +168,9 @@ pub fn check(args: TS1, tokens: TS1) -> TS1 {
         documentation.extend(document_spec("ghost", doc::LogicBody::None));
         clauses.extend(quote!(#[creusot::clause::check_ghost]));
     }
-
+    if ghost_trusted {
+        clauses.extend(quote!(#[creusot::clause::check_ghost::trusted]))
+    }
     let item = tokens.clone();
     let item = parse_macro_input!(item as ContractSubject);
     let is_closure = if ghost {
