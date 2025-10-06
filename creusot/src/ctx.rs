@@ -334,7 +334,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.terms
             .insert(def_id, |_| {
                 if self.tcx.hir_maybe_body_owned_by(local_id).is_some() {
-                    let (bound, term) = match pearlite::pearlite(self, local_id) {
+                    let (bound, term) = match pearlite::from_thir(self, local_id) {
                         Ok(t) => t,
                         Err(err) => err.abort(self.tcx),
                     };

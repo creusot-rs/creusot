@@ -2,7 +2,10 @@ use crate::{
     contracts_items::{Intrinsic, get_builtin},
     ctx::TranslationCtx,
     translation::{
-        pearlite::{BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp, super_visit_mut_term},
+        pearlite::{
+            BinOp, Literal, Term, TermKind, UnOp,
+            visit::{TermVisitorMut, super_visit_mut_term},
+        },
         traits::TraitResolved,
     },
 };

@@ -1,6 +1,9 @@
 use crate::translation::{
     fmir::{Block, Body, LocalDecls, Operand, Place, RValue, Statement, StatementKind, Terminator},
-    pearlite::{Ident, Term, TermKind, TermVisitor, super_visit_term},
+    pearlite::{
+        Ident, Term, TermKind,
+        visit::{TermVisitor, super_visit_term},
+    },
 };
 use rustc_middle::mir;
 use std::collections::{HashMap, HashSet};

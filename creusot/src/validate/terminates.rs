@@ -41,7 +41,10 @@ use crate::{
     },
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{
-        pearlite::{Term, TermKind, TermVisitor, super_visit_term},
+        pearlite::{
+            Term, TermKind,
+            visit::{TermVisitor, super_visit_term},
+        },
         traits::{ImplSource_, TraitResolved},
     },
     util::erased_identity_for_item,

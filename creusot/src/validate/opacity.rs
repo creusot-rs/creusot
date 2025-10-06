@@ -11,8 +11,8 @@ use crate::{
     contracts_items::{is_logic, is_opaque},
     ctx::{HasTyCtxt, Opacity, TranslationCtx},
     translation::pearlite::{
-        Pattern, PatternKind, ScopedTerm, Term, TermKind, TermVisitor, super_visit_pattern,
-        super_visit_term,
+        Pattern, PatternKind, ScopedTerm, Term, TermKind,
+        visit::{TermVisitor, super_visit_pattern, super_visit_term},
     },
 };
 

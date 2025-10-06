@@ -4,37 +4,37 @@ use crate::{
     naming::name,
     translation::{
         pearlite::{
-            Ident, Pattern, Term, TermKind, TermVisitorMut, normalize, super_visit_mut_term,
+            Ident, Pattern, Term, TermKind, normalize,
+            visit::{TermVisitorMut, super_visit_mut_term},
         },
         specification::{PreSignature, contract_of},
     },
 };
-use indexmap::IndexMap;
 use itertools::Itertools;
 use rustc_abi::FieldIdx;
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_hir_typeck::expr_use_visitor::PlaceBase;
+use rustc_index::IndexVec;
 use rustc_middle::{
     mir::Mutability,
     ty::{
-        BorrowKind, CapturedPlace, ClosureKind, GenericArg, GenericArgsRef, Ty, TyKind, TypingEnv,
-        UpvarCapture,
+        BorrowKind, CapturedPlace, ClosureKind, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind,
+        TypingEnv, UpvarCapture,
     },
 };
-use std::{assert_matches::assert_matches, collections::HashSet, iter::once};
+use std::{assert_matches::assert_matches, iter::once};
 
 fn closure_captures<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
+    tcx: TyCtxt<'tcx>,
     def_id: LocalDefId,
-) -> impl Iterator<Item = ((FieldIdx, &'tcx CapturedPlace<'tcx>), Ty<'tcx>)> {
-    let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
+) -> impl Iterator<Item = (FieldIdx, &'tcx CapturedPlace<'tcx>, Ty<'tcx>)> {
+    let TyKind::Closure(_, subst) = tcx.type_of(def_id).instantiate_identity().kind() else {
         unreachable!()
     };
-
-    (0usize..)
-        .map(|ix| -> FieldIdx { ix.into() })
-        .zip(ctx.closure_captures(def_id).iter().copied())
+    tcx.closure_captures(def_id)
+        .iter()
         .zip_eq(subst.as_closure().upvar_tys())
+        .enumerate()
+        .map(|(ix, (&capture, ty))| (ix.into(), capture, ty))
 }
 
 pub(crate) fn closure_hist_inv<'tcx>(
@@ -56,7 +56,7 @@ pub(crate) fn closure_hist_inv<'tcx>(
 
     let span = ctx.def_span(def_id);
     let mut hist_inv = Term::true_(ctx.tcx);
-    for ((f, capture), ty) in closure_captures(ctx, def_id) {
+    for (f, capture, ty) in closure_captures(ctx.tcx, def_id) {
         match capture.info.capture_kind {
             // if we captured by value we get no hist_inving predicate
             UpvarCapture::ByValue => continue,
@@ -91,7 +91,7 @@ pub(crate) fn closure_pre<'tcx>(
     let mut pre;
     if contract.has_user_contract {
         pre = contract.requires_conj(ctx.tcx);
-        ClosSubst::pre(ctx, def_id, self_).visit_mut_term(&mut pre);
+        ClosSubst::pre_or_cur(ctx.tcx, def_id, self_).subst(ctx.tcx, &mut pre);
     } else {
         let arg_vars = inputs[1..].iter().map(|&(nm, _, ty)| Term::var(nm, ty));
         let self_arg;
@@ -157,13 +157,14 @@ pub(crate) fn closure_post<'tcx>(
         match target_kind {
             ClosureKind::Fn => {
                 to_resolve = vec![];
-                ClosSubst::post_ref(ctx, def_id, self_.clone(), self_).visit_mut_term(&mut post);
+                ClosSubst::post_ref(ctx.tcx, def_id, self_.clone(), self_)
+                    .subst(ctx.tcx, &mut post);
             }
             ClosureKind::FnMut => {
                 to_resolve = vec![];
                 let result_state = result_state.unwrap();
-                ClosSubst::post_ref(ctx, def_id, self_.clone(), result_state.clone())
-                    .visit_mut_term(&mut post);
+                ClosSubst::post_ref(ctx.tcx, def_id, self_.clone(), result_state.clone())
+                    .subst(ctx.tcx, &mut post);
                 let hist_inv = Term::call_no_normalize(
                     ctx.tcx,
                     Intrinsic::HistInv.get(ctx),
@@ -184,12 +185,12 @@ pub(crate) fn closure_post<'tcx>(
                         // If this is an FnOnce closure, then variables captured by value
                         // are consumed by the closure, and thus we cannot refer to them in
                         // the post state.
-                        post_projs = vec![None; closure_captures(ctx, def_id).count()];
+                        post_projs = vec![None; closure_captures(ctx.tcx, def_id).count()];
                         to_resolve = vec![]
                     }
                     ClosureKind::Fn => {
-                        post_projs = closure_captures(ctx, def_id)
-                            .map(|((f, capture), ty)| {
+                        post_projs = closure_captures(ctx.tcx, def_id)
+                            .map(|(f, capture, ty)| {
                                 (capture.info.capture_kind == UpvarCapture::ByValue)
                                     .then(|| self_.clone().proj(f, ty))
                             })
@@ -197,8 +198,8 @@ pub(crate) fn closure_post<'tcx>(
                         to_resolve = post_projs.iter().filter_map(Clone::clone).collect();
                     }
                     ClosureKind::FnMut => {
-                        post_projs = closure_captures(ctx, def_id)
-                            .map(|((_, capture), ty)| {
+                        post_projs = closure_captures(ctx.tcx, def_id)
+                            .map(|(_, capture, ty)| {
                                 (capture.info.capture_kind == UpvarCapture::ByValue)
                                     .then(|| Term::var(Ident::fresh_local("x"), ty))
                             })
@@ -206,7 +207,7 @@ pub(crate) fn closure_post<'tcx>(
                         to_resolve = post_projs.iter().filter_map(Clone::clone).collect();
                     }
                 };
-                ClosSubst::post_owned(ctx, def_id, self_, post_projs).visit_mut_term(&mut post);
+                ClosSubst::post_owned(ctx.tcx, def_id, self_, post_projs).subst(ctx.tcx, &mut post);
             }
         }
     } else {
@@ -331,123 +332,74 @@ pub(crate) fn closure_resolve<'tcx>(
 
 // Responsible for replacing occurences of captured variables with projections from the closure environment.
 // Must also account for the *kind* of capture and the *kind* of closure involved each time.
-pub(crate) struct ClosSubst<'tcx, 'a> {
-    ctx: &'a TranslationCtx<'tcx>,
-    map_cur: IndexMap<Ident, Option<Term<'tcx>>>,
-    map_old: IndexMap<Ident, Term<'tcx>>,
-    bound: HashSet<Ident>,
+pub(crate) struct ClosSubst<'tcx> {
+    cur_caps: IndexVec<FieldIdx, Option<Term<'tcx>>>,
+    old_caps: Option<IndexVec<FieldIdx, Term<'tcx>>>,
 }
 
-impl<'tcx> TermVisitorMut<'tcx> for ClosSubst<'tcx, '_> {
+struct ClosSubstState<'a, 'tcx> {
+    tcx: TyCtxt<'tcx>,
+    subst: &'a ClosSubst<'tcx>,
+    old: bool,
+}
+
+impl<'a, 'tcx> TermVisitorMut<'tcx> for ClosSubstState<'a, 'tcx> {
     fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
         match &mut term.kind {
-            TermKind::Old { term: box Term { kind: TermKind::Var(x), .. }, .. }
-                if !self.bound.contains(&x.0)
-                    && let Some(v) = self.map_old.get(&x.0) =>
-            {
-                *term = v.clone();
-            }
-            TermKind::Old { .. } => self.ctx.crash_and_error(
-                term.span,
-                "`old` should only be used in post-conditions of closures for captured variables.",
-            ),
-            TermKind::Var(x)
-                if !self.bound.contains(&x.0)
-                    && let Some(v) = self.map_cur.get(&x.0) =>
-            {
-                if let Some(v) = v {
-                    *term = v.clone();
-                } else {
-                    self.ctx.fatal_error(
-                        term.span,
-                        "Use of a closure capture in a post-condition, but it is consumed by the closure.",
-                    ).emit()
+            TermKind::Old { term:t } => {
+                if self.old {
+                    self.tcx.fatal_error(term.span, "Nested use of `old`").emit()
                 }
-            }
-            TermKind::Quant { binder, .. } => {
-                let mut bound = self.bound.clone();
-                for (ident, _) in binder {
-                    bound.insert(ident.0);
+                if self.subst.old_caps.is_none() {
+                    self.tcx.fatal_error(term.span, "The `old` modifier should only be used in #[ensures(..)] clauses of closures.").emit()
                 }
-                std::mem::swap(&mut self.bound, &mut bound);
-                super_visit_mut_term(term, self);
-                std::mem::swap(&mut self.bound, &mut bound);
+                self.old = true;
+                self.visit_mut_term(t);
+                *term = std::mem::replace(t, /* Dummy */ Term::unit(self.tcx));
+                self.old = false;
             }
-            TermKind::Match { arms, .. } => {
-                let mut bound = self.bound.clone();
-                arms.iter().for_each(|arm| arm.0.binds(&mut bound));
-                std::mem::swap(&mut self.bound, &mut bound);
-                super_visit_mut_term(term, self);
-                std::mem::swap(&mut self.bound, &mut bound);
-            }
-            TermKind::Let { pattern, box arg, box body } => {
-                self.visit_mut_term(arg);
-                let mut bound = self.bound.clone();
-                pattern.binds(&mut bound);
-                std::mem::swap(&mut self.bound, &mut bound);
-                self.visit_mut_term(body);
-                std::mem::swap(&mut self.bound, &mut bound);
-            }
-            TermKind::Closure { bound: bound_new, box body } => {
-                let mut bound = self.bound.clone();
-                bound.extend(bound_new.iter().map(|b| b.0.0));
-                std::mem::swap(&mut self.bound, &mut bound);
-                self.visit_mut_term(body);
-                std::mem::swap(&mut self.bound, &mut bound);
-            }
+            TermKind::Capture(fidx) if self.old => *term = self.subst.old_caps.as_ref().unwrap()[*fidx].clone(),
+            TermKind::Capture(fidx) if !self.old && let Some(v) = &self.subst.cur_caps[*fidx] => *term = v.clone(),
+            TermKind::Capture(_) => self.tcx.fatal_error(
+                    term.span,
+                    "Use of a closure capture in an #[ensures(..)] clause, but it is consumed by the closure.",
+                ).emit(),
             _ => super_visit_mut_term(term, self),
         }
     }
 }
 
-impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
-    pub(crate) fn pre(
-        ctx: &'a TranslationCtx<'tcx>,
-        def_id: LocalDefId,
-        self_pre: Term<'tcx>,
-    ) -> Self {
-        let map_cur = closure_captures(ctx, def_id)
-            .map(|((f, cap), ty)| {
-                let span = cap.get_path_span(ctx.tcx);
-                if !cap.place.projections.is_empty() {
-                    ctx.dcx().span_bug(
-                        span,
-                        format!("This specification captures a structure field. This is currently not supported by Creusot (see Issue #1538). The workaround is to use Rust edition 2018."),
-                    )
-                }
-                let proj = self_pre.clone().proj(f, ty).span(span);
+impl<'tcx> ClosSubst<'tcx> {
+    pub(crate) fn pre_or_cur(tcx: TyCtxt<'tcx>, def_id: LocalDefId, self_: Term<'tcx>) -> Self {
+        let cur_caps = closure_captures(tcx, def_id)
+            .map(|(f, cap, ty)| {
+                let span = cap.get_path_span(tcx);
+                let proj = self_.clone().proj(f, ty).span(span);
                 let term = match cap.info.capture_kind {
                     UpvarCapture::ByValue => proj,
                     UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
                         proj.cur()
                     }
                     UpvarCapture::ByRef(BorrowKind::Immutable) => proj.shr_deref(),
-                    UpvarCapture::ByUse => ctx.crash_and_error(span, "ByUse capture kind is not supported"),
+                    UpvarCapture::ByUse => {
+                        tcx.crash_and_error(span, "ByUse capture kind is not supported")
+                    }
                 };
-                let hir_id = match cap.place.base {
-                    PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
-                        span,
-                        format!("Unexpected place in closure capture: {:?}", cap.place.base),
-                    ),
-                    PlaceBase::Local(hir_id) => hir_id,
-                    PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
-                };
-                (ctx.rename(hir_id), Some(term))
+                Some(term)
             })
             .collect();
-        ClosSubst { ctx, map_cur, map_old: Default::default(), bound: Default::default() }
+        ClosSubst { cur_caps, old_caps: None }
     }
 
     pub(crate) fn post_ref(
-        ctx: &'a TranslationCtx<'tcx>,
+        tcx: TyCtxt<'tcx>,
         def_id: LocalDefId,
         self_pre: Term<'tcx>,
         self_post: Term<'tcx>,
     ) -> Self {
-        let (map_old, map_cur) = closure_captures(ctx, def_id)
-            .map(|((f, cap), ty)| {
-                assert!(cap.place.projections.is_empty());
-                let span = cap.get_path_span(ctx.tcx);
+        let (old_caps, cur_caps) = closure_captures(tcx, def_id)
+            .map(|(f, cap, ty)| {
+                let span = cap.get_path_span(tcx);
                 let proj_pre = self_pre.clone().proj(f, ty).span(span);
                 let proj_post = self_post.clone().proj(f, ty).span(span);
                 let (term_pre, term_post) = match cap.info.capture_kind {
@@ -459,36 +411,28 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                         (proj_pre.shr_deref(), proj_post.shr_deref())
                     }
                     UpvarCapture::ByUse => {
-                        ctx.crash_and_error(span, "ByUse capture kind is not supported")
+                        tcx.crash_and_error(span, "ByUse capture kind is not supported")
                     }
                 };
-                let hir_id = match cap.place.base {
-                    PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
-                        span,
-                        format!("Unexpected place in closure capture: {:?}", cap.place.base),
-                    ),
-                    PlaceBase::Local(hir_id) => hir_id,
-                    PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
-                };
-                let nm = ctx.rename(hir_id);
-                ((nm, term_pre), (nm, Some(term_post)))
+                (term_pre, Some(term_post))
             })
             .unzip();
-        ClosSubst { ctx, map_cur, map_old, bound: Default::default() }
+        ClosSubst { cur_caps, old_caps: Some(old_caps) }
     }
 
     pub(crate) fn post_owned(
-        ctx: &'a TranslationCtx<'tcx>,
+        tcx: TyCtxt<'tcx>,
         def_id: LocalDefId,
-        self_: Term<'tcx>,
+        self_pre: Term<'tcx>,
+        // Should be None for all ByRef captures. For ByValue captures, either contains None (if it is actually an FnOnce closure) or
+        // Some(x), where x is the value in the post state for FnMut and Fn closures.
         post_owned_projs: impl IntoIterator<Item = Option<Term<'tcx>>>,
     ) -> Self {
-        let (map_old, map_cur) = closure_captures(ctx, def_id)
+        let (old_caps, cur_caps) = closure_captures(tcx, def_id)
             .zip(post_owned_projs)
-            .map(|(((f, cap), ty), post_owned_proj)| {
-                assert!(cap.place.projections.is_empty());
-                let span = cap.get_path_span(ctx.tcx);
-                let proj = self_.clone().proj(f, ty).span(span);
+            .map(|((f, cap, ty), post_owned_proj)| {
+                let span = cap.get_path_span(tcx);
+                let proj = self_pre.clone().proj(f, ty).span(span);
                 let (term_pre, term_post) = match cap.info.capture_kind {
                     UpvarCapture::ByValue => (proj, post_owned_proj),
                     UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
@@ -500,21 +444,16 @@ impl<'tcx, 'a> ClosSubst<'tcx, 'a> {
                         (proj.clone().shr_deref(), Some(proj.shr_deref()))
                     }
                     UpvarCapture::ByUse => {
-                        ctx.crash_and_error(span, "ByUse capture kind is not supported")
+                        tcx.crash_and_error(span, "ByUse capture kind is not supported")
                     }
                 };
-                let hir_id = match cap.place.base {
-                    PlaceBase::Rvalue | PlaceBase::StaticItem => ctx.dcx().span_bug(
-                        span,
-                        format!("Unexpected place in closure capture: {:?}", cap.place.base),
-                    ),
-                    PlaceBase::Local(hir_id) => hir_id,
-                    PlaceBase::Upvar(upvar_id) => upvar_id.var_path.hir_id,
-                };
-                let nm = ctx.rename(hir_id);
-                ((nm, term_pre), (nm, term_post))
+                (term_pre, term_post)
             })
             .unzip();
-        ClosSubst { ctx, map_cur, map_old, bound: Default::default() }
+        ClosSubst { cur_caps, old_caps: Some(old_caps) }
+    }
+
+    pub(crate) fn subst(&self, tcx: TyCtxt<'tcx>, term: &mut Term<'tcx>) {
+        ClosSubstState { tcx, subst: self, old: false }.visit_mut_term(term);
     }
 }

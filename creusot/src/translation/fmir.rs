@@ -370,7 +370,6 @@ pub struct Body<'tcx> {
     /// This is the name of the variable holding the variant's value at the
     /// start of the function
     pub(crate) function_variant: PIdent,
-    pub(crate) arg_count: usize,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
     pub(crate) fresh: usize,
     pub(crate) block_spans: HashMap<BasicBlock, Span>,
@@ -397,7 +396,6 @@ impl<'tcx> TypeFoldable<TyCtxt<'tcx>> for Body<'tcx> {
         F: rustc_middle::ty::TypeFolder<TyCtxt<'tcx>>,
     {
         Self {
-            arg_count: self.arg_count,
             variant_locals: self.variant_locals.fold_with(f),
             function_variant: self.function_variant.fold_with(f),
             fresh: self.fresh,
@@ -412,7 +410,6 @@ impl<'tcx> TypeFoldable<TyCtxt<'tcx>> for Body<'tcx> {
         F: rustc_middle::ty::FallibleTypeFolder<TyCtxt<'tcx>>,
     {
         Ok(Self {
-            arg_count: self.arg_count,
             variant_locals: self.variant_locals.try_fold_with(f)?,
             function_variant: self.function_variant.try_fold_with(f)?,
             fresh: self.fresh,
@@ -552,7 +549,7 @@ impl<'tcx> ScopeTree<'tcx> {
 ///   + a `Deref` projection if the closure is FnMut.
 ///   + a `Field` projection.
 ///   + a `Deref` projection if the capture is mutable.
-pub fn place_to_term<'tcx>(
+fn place_to_term<'tcx>(
     tcx: TyCtxt<'tcx>,
     p: mir::Place<'tcx>,
     locals: &HashMap<Local, (Symbol, Ident)>,
