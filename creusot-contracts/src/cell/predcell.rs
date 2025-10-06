@@ -3,13 +3,14 @@
 //! This module provides [PredCell], a wrapper around `std::cell::Cell` that allows predicates to be used to specify the contents of the cell.
 
 use crate::{logic::Mapping, *};
+use ::std::cell::Cell;
 
 /// Cell over predicates
 ///
 /// A wrapper around `std::cell::Cell` that allows predicates to be used to specify the contents of the cell.
 #[opaque]
 #[repr(transparent)]
-pub struct PredCell<T: ?Sized>(std::cell::Cell<T>);
+pub struct PredCell<T: ?Sized>(Cell<T>);
 
 impl<T: ?Sized> View for PredCell<T> {
     type ViewTy = Mapping<T, bool>;
@@ -26,7 +27,7 @@ impl<T> PredCell<T> {
     #[requires(_pred[v])]
     #[ensures(result@ == *_pred)]
     pub const fn new(v: T, _pred: Snapshot<Mapping<T, bool>>) -> Self {
-        Self(std::cell::Cell::new(v))
+        Self(Cell::new(v))
     }
 
     /// See the method [`Cell::set`](https://doc.rust-lang.org/std/cell/struct.Cell.html#method.set) documentation.
@@ -84,7 +85,7 @@ impl<T: ?Sized> PredCell<T> {
     #[ensures(_pred[^t])]
     #[ensures(result@ == *_pred)]
     pub const fn from_mut(t: &mut T, _pred: Snapshot<Mapping<T, bool>>) -> &PredCell<T> {
-        unsafe { std::mem::transmute(std::cell::Cell::from_mut(t)) }
+        unsafe { std::mem::transmute(Cell::from_mut(t)) }
     }
 
     // TODO: Find a way to write the `get_mut` function

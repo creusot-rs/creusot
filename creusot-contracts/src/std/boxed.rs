@@ -40,6 +40,17 @@ extern_spec! {
                 fn new(val: T) -> Self;
             }
 
+            impl<T: ?Sized> Box<T> {
+                // Postulate `check(ghost)`.
+                // It is used in a `#[trusted]` primitive in `ptr_own`.
+                #[check(ghost)]
+                #[requires(false)]
+                unsafe fn from_raw(raw: *mut T) -> Box<T>;
+
+                #[check(ghost)]
+                fn into_raw(self) -> *const T;
+            }
+
             impl<T, A: Allocator> Box<T, A> {
                 #[check(ghost)]
                 #[ensures(**self == *result)]
