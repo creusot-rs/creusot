@@ -156,7 +156,7 @@ pub fn check(args: TS1, tokens: TS1) -> TS1 {
         (true, true, true)
     } else {
         let msg = format!("unknown mode `{mode}`. Accepted modes are `terminates` or `ghost`");
-        return quote! { compile_error!(#msg) }.into()
+        return quote! { compile_error!(#msg) }.into();
     };
     let mut documentation = TokenStream::new();
     let mut clauses = TokenStream::new();
