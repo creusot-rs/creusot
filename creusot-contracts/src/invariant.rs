@@ -302,7 +302,6 @@ impl<T: InhabitedInvariant> Resolve for Subset<T> {
 }
 
 impl<T: InhabitedInvariant + DeepModel + PartialEq> PartialEq for Subset<T> {
-    #[check(ghost)]
     #[trusted]
     #[ensures(result == (self.deep_model() == rhs.deep_model()))]
     fn eq(&self, rhs: &Self) -> bool {

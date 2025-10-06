@@ -264,6 +264,12 @@ extern_spec! {
             #[check(ghost)]
             #[ensures(result == metadata_logic(ptr))]
             fn metadata<T: ?Sized>(ptr: *const T) -> <T as Pointee>::Metadata;
+
+            // Postulate `check(ghost)`.
+            // It is used in a `#[trusted]` primitive in `peano`.
+            #[check(ghost)]
+            #[ensures(false)]
+            unsafe fn read_volatile<T>(src: *const T) -> T;
         }
     }
 

@@ -1,7 +1,7 @@
 use crate::{
-    backend::is_trusted_item,
     contracts_items::{
-        Intrinsic, is_erasure, is_logic, is_prophetic, is_snapshot_closure, is_spec,
+        Intrinsic, is_check_ghost_trusted, is_erasure, is_logic, is_prophetic, is_snapshot_closure,
+        is_spec,
     },
     ctx::{HasTyCtxt, TranslationCtx},
     translation::traits::TraitResolved,
@@ -78,14 +78,9 @@ pub(crate) fn validate_purity<'tcx>(
 ) {
     // Only start traversing from top-level definitions. Closures will be visited during the traversal
     // of their parents so that they can inherit the context from their parent.
-    if ctx.tcx.is_closure_like(def_id) {
+    if ctx.tcx.is_closure_like(def_id) || is_check_ghost_trusted(ctx.tcx, def_id) {
         return;
     }
-
-    if !is_logic(ctx.tcx, def_id) && is_trusted_item(ctx.tcx, def_id) {
-        return;
-    }
-
     let typing_env = ctx.typing_env(def_id);
     PurityVisitor { ctx, thir, context: Purity::of_def_id(ctx, def_id), typing_env }
         .visit_expr(&thir[expr]);

@@ -37,6 +37,9 @@ extern_spec! {
             fn size_of<T>() -> usize;
 
             #[check(ghost)]
+            fn size_of_val<T: ?Sized>(val: &T) -> usize;
+
+            #[check(ghost)]
             #[ensures(result == align_of_logic::<T>())]
             fn align_of<T>() -> usize;
         }

@@ -214,8 +214,6 @@ pub trait LocalInvariantExt<'a> {
 
     /// Alias for [`LocalInvariant::open`], to use method call syntax (`inv.open(...)`).
     #[requires(false)]
-    #[ensures(true)]
-    #[check(ghost)]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A;
@@ -230,7 +228,6 @@ impl<'a, T: Protocol> LocalInvariantExt<'a> for Ghost<&'a LocalInvariant<T>> {
         // f must restore the invariant
         (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol(self.public())))]
     #[ensures(exists<t: Ghost<&mut T>> t.protocol(self.public()) && f.postcondition_once((t,), result))]
-    #[check(ghost)]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
@@ -253,7 +250,6 @@ where
     #[ensures(exists<this> T::deref.postcondition((*self,), this) &&
         <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::open.postcondition((Ghost::new_logic(this), tokens, f), result)
     )]
-    #[check(ghost)]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
@@ -271,7 +267,6 @@ where
 
     #[requires(<Ghost<&'a L> as LocalInvariantExt<'a>>::open.precondition((Ghost::new_logic(&**self), tokens, f)))]
     #[ensures(<Ghost<&'a L> as LocalInvariantExt<'a>>::open.postcondition((Ghost::new_logic(&**self), tokens, f), result))]
-    #[check(ghost)]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
@@ -325,7 +320,6 @@ impl<T: Protocol> LocalInvariant<T> {
         // f must restore the invariant
         (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol(this.public())))]
     #[ensures(exists<t: Ghost<&mut T>> t.protocol(this.public()) && f.postcondition_once((t,), result))]
-    #[check(ghost)]
     pub fn open<'a, A>(
         this: Ghost<&'a Self>,
         tokens: Ghost<Tokens<'a>>,
