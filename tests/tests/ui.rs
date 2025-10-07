@@ -46,6 +46,8 @@ struct Args {
     /// Overwrite expected output files with actual output
     #[clap(long)]
     bless: bool,
+    #[clap(long)]
+    with_spans: bool,
     /// Run #[erasure] checks on creusot-contracts (and only that)
     #[clap(long)]
     erasure_check: bool,
@@ -94,11 +96,12 @@ fn main() {
 
     let (mut failed, mut total) =
         (if contracts_success { 0 } else { 1 }, if test_creusot_contracts { 1 } else { 0 });
-
-    let (fail1, total1) =
-        should_fail("tests/should_fail/**/*.rs", &args, |p| run_creusot(p, &paths));
-    let (fail2, total2) =
-        should_succeed("tests/should_succeed/**/*.rs", &args, |p| run_creusot(p, &paths));
+    let (fail1, total1) = should_fail("tests/should_fail/**/*.rs", &args, |p| {
+        run_creusot(p, &paths, args.with_spans)
+    });
+    let (fail2, total2) = should_succeed("tests/should_succeed/**/*.rs", &args, |p| {
+        run_creusot(p, &paths, args.with_spans)
+    });
 
     total += total1 + total2;
     failed += fail1 + fail2;
@@ -172,7 +175,7 @@ fn translate_creusot_contracts(
             .status()
             .unwrap();
     }
-    let mut build = build_creusot_contracts(paths, true, ErasureCheck::No);
+    let mut build = build_creusot_contracts(paths, true, ErasureCheck::No, args.with_spans);
     let mut out = args.stream();
     let output = build.output().expect("could not translate `creusot_contracts`");
     if !output.status.success() {
@@ -201,10 +204,7 @@ fn translate_creusot_contracts(
 
     if args.bless {
         if output.stdout.is_empty() {
-            panic!(
-                "creusot-contracts should have an output! stderr is:\n\n{}",
-                std::str::from_utf8(&output.stderr).unwrap()
-            )
+            panic!("creusot-contracts should have an output!")
         }
 
         if success {
@@ -239,6 +239,7 @@ fn build_creusot_contracts(
     paths: &CreusotPaths,
     output_cmeta: bool,
     erasure_check: ErasureCheck,
+    with_spans: bool,
 ) -> Command {
     let mut build = Command::new(CARGO_CREUSOT);
     build.arg("creusot"); // cargo creusot
@@ -252,12 +253,12 @@ fn build_creusot_contracts(
     } else {
         build.arg("--export-metadata=false");
     }
-    build.args([
-        "--no-check-version",
-        "--stdout",
-        "--span-mode=relative",
-        "--spans-relative-to=tests/creusot-contracts",
-    ]);
+    if with_spans {
+        build.arg("--span-mode=relative");
+    } else {
+        build.arg("--span-mode=off");
+    }
+    build.args(["--no-check-version", "--stdout", "--spans-relative-to=tests/creusot-contracts"]);
     build.arg("--creusot-rustc").arg(&paths.creusot_rustc);
     build.args(["--", "--package", "creusot-contracts", "--quiet"]).env("CREUSOT_CONTINUE", "true");
     if matches!(erasure_check, ErasureCheck::Warn | ErasureCheck::Error) {
@@ -266,7 +267,11 @@ fn build_creusot_contracts(
     build
 }
 
-fn run_creusot(file: &Path, paths: &CreusotPaths) -> Option<std::process::Command> {
+fn run_creusot(
+    file: &Path,
+    paths: &CreusotPaths,
+    with_spans: bool,
+) -> Option<std::process::Command> {
     let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
     if header_line.contains("UISKIP") {
         return None;
@@ -298,10 +303,14 @@ fn run_creusot(file: &Path, paths: &CreusotPaths) -> Option<std::process::Comman
         "--",
         "--stdout",
         "--export-metadata=false",
-        "--span-mode=relative",
         // we will write the coma output next to the .rs file
         "--spans-relative-to=.",
     ]);
+    if with_spans {
+        cmd.arg("--span-mode=relative");
+    } else {
+        cmd.arg("--span-mode=off");
+    }
     cmd.args(args);
     cmd.args(&["--creusot-extern", &format!("creusot_contracts={}", paths.cmeta.display())]);
 
@@ -452,7 +461,9 @@ where
                     if !success {
                         erase_in_flight(out);
                         write!(out, "{}: ", entry.display()).unwrap();
-                        if no_warn {
+                        if args.with_spans {
+                            writeln_color!(out, Color::Blue, "blessed with spans");
+                        } else if no_warn {
                             writeln_color!(out, Color::Blue, "blessed");
                         } else {
                             writeln_color!(out, Color::Magenta, "blessed (with warnings)");
@@ -496,7 +507,7 @@ fn erasure_check(paths: &CreusotPaths) {
     let build_once = |erasure_check, msg: &str| {
         print!("{msg}");
         std::io::stdout().flush().unwrap();
-        let mut build = build_creusot_contracts(paths, false, erasure_check);
+        let mut build = build_creusot_contracts(paths, false, erasure_check, false);
         let output = build.output().unwrap();
         if !output.status.success() {
             println!("failed");
