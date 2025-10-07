@@ -1083,15 +1083,18 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 let _ = self.a_normal_form_expr(*expr, stmts)?;
             }
             Let { pattern, initializer, else_block, span, .. } => {
-                if let Some(_) = else_block {
-                    return Err(self.unsupported_syntax(*span, "unsupported let-else"));
-                }
                 let Some(initializer) = initializer else {
                     return Err(
                         self.unsupported_syntax(*span, "unsupported let without initializer")
                     );
                 };
                 if is_erasable(self.tcx, self.thir, *initializer) {
+                    if let Some(_) = else_block {
+                        return Err(self.unsupported_syntax(
+                            *span,
+                            "unexpected let-else in erased let (this shouldn't happen)",
+                        ));
+                    }
                     return Ok(());
                 }
                 let rhs = self.a_normal_form_expr(*initializer, stmts)?;
