@@ -1,17 +1,4 @@
-module M_vec_inv__vec [#"vec_inv.rs" 17 0 17 32]
-  let%span svec_inv = "vec_inv.rs" 18 20 18 43
-  let%span svec_inv'0 = "vec_inv.rs" 17 11 17 12
-  let%span svec_inv'1 = "vec_inv.rs" 16 11 16 23
-  let%span svec_inv'2 = "vec_inv.rs" 12 20 12 43
-  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 48 8 48 31
-  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span svec'1 = "../../../creusot-contracts/src/std/vec.rs" 77 20 77 76
-  let%span svec'2 = "../../../creusot-contracts/src/std/vec.rs" 93 20 93 41
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 713 20 713 91
-  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
-  
+module M_vec_inv__vec
   use creusot.prelude.Opaque
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
@@ -34,8 +21,7 @@ module M_vec_inv__vec [#"vec_inv.rs" 17 0 17 32]
   
   type t_SumTo10 = { t_SumTo10__a: Int32.t; t_SumTo10__b: Int32.t }
   
-  predicate invariant' [#"vec_inv.rs" 11 4 11 30] (self: t_SumTo10) =
-    [%#svec_inv'2] Int32.to_int self.t_SumTo10__a + Int32.to_int self.t_SumTo10__b = 10
+  predicate invariant' (self: t_SumTo10) = Int32.to_int self.t_SumTo10__a + Int32.to_int self.t_SumTo10__b = 10
   
   predicate inv (_0: t_SumTo10)
   
@@ -45,8 +31,7 @@ module M_vec_inv__vec [#"vec_inv.rs" 17 0 17 32]
         | {t_SumTo10__a = a; t_SumTo10__b = b} -> true
         end)
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_SumTo10) =
-    [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_SumTo10) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''0
   
@@ -54,14 +39,14 @@ module M_vec_inv__vec [#"vec_inv.rs" 17 0 17 32]
   
   axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_SumTo10 [inv'0 x]. inv'0 x = invariant''0 x
   
-  predicate invariant''1 (self: MutBorrow.t t_SumTo10) = [%#sboxed] inv'0 self
+  predicate invariant''1 (self: MutBorrow.t t_SumTo10) = inv'0 self
   
   predicate inv'1 (_0: MutBorrow.t t_SumTo10)
   
   axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_SumTo10 [inv'1 x]. inv'1 x = invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: Seq.seq (MutBorrow.t t_SumTo10)) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''2
   
@@ -73,15 +58,15 @@ module M_vec_inv__vec [#"vec_inv.rs" 17 0 17 32]
   
   function view (self: t_Vec) : Seq.seq (MutBorrow.t t_SumTo10)
   
-  axiom view_spec: forall self: t_Vec. [%#svec'0] Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate invariant''3 (self: t_Vec) = [%#svec'2] inv'2 (view self)
+  predicate invariant''3 (self: t_Vec) = inv'2 (view self)
   
   predicate inv'3 (_0: t_Vec)
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''3 x
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_SumTo10) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_SumTo10) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -89,13 +74,12 @@ module M_vec_inv__vec [#"vec_inv.rs" 17 0 17 32]
   
   meta "rewrite_def" predicate resolve'0
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : MutBorrow.t t_SumTo10 =
-    [%#svec] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : MutBorrow.t t_SumTo10 = Seq.get (view self) ix
   
   meta "rewrite_def" function index_logic
   
   predicate resolve'1 [@inline:trivial] (self: t_Vec) =
-    [%#svec'1] forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'0 (index_logic self i)
+    forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'0 (index_logic self i)
   
   meta "rewrite_def" predicate resolve'1
   
@@ -107,14 +91,13 @@ module M_vec_inv__vec [#"vec_inv.rs" 17 0 17 32]
   
   meta "select_lsinst" "all"
   
-  let rec vec [#"vec_inv.rs" 17 0 17 32] (x: t_Vec) (return' (x'0: ())) =
-    {[@expl:vec 'x' type invariant] [%#svec_inv'0] inv'3 x}
-    {[@expl:vec requires] [%#svec_inv'1] Seq.length (view x) > 0}
+  let rec vec (x: t_Vec) (return' (x'0: ())) = {[@expl:vec 'x' type invariant] inv'3 x}
+    {[@expl:vec requires] Seq.length (view x) > 0}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:type invariant] inv'3 x'0} s1
       | s1 = -{resolve'2 x'0}- s2
-      | s2 = {[@expl:assertion] [%#svec_inv] Int32.to_int ((index_logic x'0 0).current).t_SumTo10__a
+      | s2 = {[@expl:assertion] Int32.to_int ((index_logic x'0 0).current).t_SumTo10__a
           + Int32.to_int ((index_logic x'0 0).current).t_SumTo10__b
         = 10}
         s3

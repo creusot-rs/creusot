@@ -1,7 +1,4 @@
-module M_specialize__f [#"specialize.rs" 22 0 22 21]
-  let%span sspecialize = "specialize.rs" 25 20 25 25
-  let%span sspecialize'0 = "specialize.rs" 18 14 18 18
-  
+module M_specialize__f
   use creusot.prelude.Opaque
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -18,28 +15,19 @@ module M_specialize__f [#"specialize.rs" 22 0 22 21]
   
   type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  let rec x (self: t_Vec) (return' (x'0: ())) = any
-    [ return''0 (result: ()) -> {[%#sspecialize'0] true} (! return' {result}) ]
+  let rec x (self: t_Vec) (return' (x'0: ())) = any [ return''0 (result: ()) -> {true} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f [#"specialize.rs" 22 0 22 21] (v: t_Vec) (return' (x'0: ())) = (! bb0
+  let rec f (v: t_Vec) (return' (x'0: ())) = (! bb0
     [ bb0 = s0 [ s0 = x {v'0} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] [%#sspecialize] false} s1 | s1 = bb2 ]
+    | bb1 = s0 [ s0 = {[@expl:assertion] false} s1 | s1 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: () = Any.any_l () | & v'0: t_Vec = v | & _2: () = Any.any_l () ])
     [ return''0 (result: ()) -> (! return' {result}) ]
 end
-module M_specialize__g [#"specialize.rs" 28 0 28 22]
-  let%span sspecialize = "specialize.rs" 32 20 32 25
-  let%span sspecialize'0 = "specialize.rs" 28 12 28 13
-  let%span sspecialize'1 = "specialize.rs" 1 0 7 4
-  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 93 20 93 41
-  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 713 20 713 91
-  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  
+module M_specialize__g
   use creusot.prelude.Opaque
   use creusot.int.UInt64
   use seq.Seq
@@ -62,14 +50,14 @@ module M_specialize__g [#"specialize.rs" 28 0 28 22]
   
   predicate inv (_0: t_T)
   
-  predicate invariant' (self: t_T) = [%#sboxed] inv self
+  predicate invariant' (self: t_T) = inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
@@ -81,9 +69,9 @@ module M_specialize__g [#"specialize.rs" 28 0 28 22]
   
   function view (self: t_Vec) : Seq.seq t_T
   
-  axiom view_spec: forall self: t_Vec. [%#svec'0] Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate invariant''1 (self: t_Vec) = [%#svec] inv'1 (view self)
+  predicate invariant''1 (self: t_Vec) = inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
@@ -91,13 +79,13 @@ module M_specialize__g [#"specialize.rs" 28 0 28 22]
   
   predicate precondition (self: ()) (args: t_Vec)
   
-  axiom precondition_fndef: [%#sspecialize'1] forall args: t_Vec [precondition () args]. (let self = args in inv'2 self)
+  axiom precondition_fndef: forall args: t_Vec [precondition () args]. (let self = args in inv'2 self)
       -> precondition () args
   
   predicate postcondition_once (self: ()) (args: t_Vec) (result: ())
   
   axiom postcondition_fndef:
-    [%#sspecialize'1] forall args: t_Vec, res: () [postcondition_once () args res]. postcondition_once () args res
+    forall args: t_Vec, res: () [postcondition_once () args res]. postcondition_once () args res
       -> (let self = args in true)
   
   let rec x (self: t_Vec) (return' (x'0: ())) = {[@expl:x requires] precondition () self}
@@ -107,18 +95,14 @@ module M_specialize__g [#"specialize.rs" 28 0 28 22]
   
   meta "select_lsinst" "all"
   
-  let rec g [#"specialize.rs" 28 0 28 22] (v: t_Vec) (return' (x'0: ())) =
-    {[@expl:g 'v' type invariant] [%#sspecialize'0] inv'2 v}
+  let rec g (v: t_Vec) (return' (x'0: ())) = {[@expl:g 'v' type invariant] inv'2 v}
     (! bb0
     [ bb0 = s0 [ s0 = x {v'0} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] [%#sspecialize] false} s1 | s1 = bb2 ]
+    | bb1 = s0 [ s0 = {[@expl:assertion] false} s1 | s1 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: () = Any.any_l () | & v'0: t_Vec = v | & _2: () = Any.any_l () ])
     [ return''0 (result: ()) -> (! return' {result}) ]
 end
-module M_specialize__h [#"specialize.rs" 35 0 35 21]
-  let%span sspecialize = "specialize.rs" 38 20 38 25
-  let%span sspecialize'0 = "specialize.rs" 12 14 12 19
-  
+module M_specialize__h
   use creusot.prelude.Opaque
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -135,26 +119,19 @@ module M_specialize__h [#"specialize.rs" 35 0 35 21]
   
   type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
   
-  let rec x (self: t_Vec) (return' (x'0: ())) = any
-    [ return''0 (result: ()) -> {[%#sspecialize'0] false} (! return' {result}) ]
+  let rec x (self: t_Vec) (return' (x'0: ())) = any [ return''0 (result: ()) -> {false} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec h [#"specialize.rs" 35 0 35 21] (v: t_Vec) (return' (x'0: ())) = (! bb0
+  let rec h (v: t_Vec) (return' (x'0: ())) = (! bb0
     [ bb0 = s0 [ s0 = x {v'0} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] [%#sspecialize] false} s1 | s1 = bb2 ]
+    | bb1 = s0 [ s0 = {[@expl:assertion] false} s1 | s1 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: () = Any.any_l () | & v'0: t_Vec = v | & _2: () = Any.any_l () ])
     [ return''0 (result: ()) -> (! return' {result}) ]
 end
-module M_specialize__qyi7590077194068412461__x__refines [#"specialize.rs" 13 4 13 22] (* <std::vec::Vec<U> as T> *)
-  let%span sspecialize = "specialize.rs" 13 4 13 22
-  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 93 20 93 41
-  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 713 20 713 91
-  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  
+module M_specialize__qyi7590077194068412461__x__refines (* <std::vec::Vec<U> as T> *)
   use creusot.prelude.Opaque
   use creusot.int.UInt64
   use seq.Seq
@@ -176,14 +153,14 @@ module M_specialize__qyi7590077194068412461__x__refines [#"specialize.rs" 13 4 1
   
   predicate inv (_0: t_U)
   
-  predicate invariant' (self: t_U) = [%#sboxed] inv self
+  predicate invariant' (self: t_U) = inv self
   
   predicate inv'0 (_0: t_U)
   
   axiom inv_axiom [@rewrite]: forall x: t_U [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_U) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
@@ -195,9 +172,9 @@ module M_specialize__qyi7590077194068412461__x__refines [#"specialize.rs" 13 4 1
   
   function view (self: t_Vec) : Seq.seq t_U
   
-  axiom view_spec: forall self: t_Vec. [%#svec'0] Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate invariant''1 (self: t_Vec) = [%#svec] inv'1 (view self)
+  predicate invariant''1 (self: t_Vec) = inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
@@ -207,5 +184,5 @@ module M_specialize__qyi7590077194068412461__x__refines [#"specialize.rs" 13 4 1
   
   meta "select_lsinst" "all"
   
-  goal refines: [%#sspecialize] forall self: t_Vec. inv'2 self -> inv'2 self
+  goal refines: forall self: t_Vec. inv'2 self -> inv'2 self
 end

@@ -1,10 +1,4 @@
-module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
-  let%span sinvariant_moves = "invariant_moves.rs" 6 16 6 22
-  let%span svec = "../../creusot-contracts/src/std/vec.rs" 119 26 124 17
-  let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span smodel = "../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_invariant_moves__test_invariant_move
   use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -31,21 +25,21 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   function view (self: t_Vec) : Seq.seq UInt32.t
   
-  axiom view_spec: forall self: t_Vec. [%#svec'0] Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq UInt32.t = [%#smodel] view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq UInt32.t = view self.current
   
   meta "rewrite_def" function view'0
   
   let rec pop (self_: MutBorrow.t t_Vec) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {[%#svec] match result with
+    [ return''0 (result: t_Option) -> {match result with
         | C_Some t -> view self_.final = Seq.([..]) (view'0 self_) 0 (Seq.length (view'0 self_) - 1)
         /\ view'0 self_ = Seq.snoc (view self_.final) t
         | C_None -> self_.current = self_.final /\ Seq.length (view'0 self_) = 0
         end}
       (! return' {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -57,10 +51,10 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   meta "select_lsinst" "all"
   
-  let rec test_invariant_move [#"invariant_moves.rs" 5 0 5 43] (x: t_Vec) (return' (x'0: ())) = (! bb0
+  let rec test_invariant_move (x: t_Vec) (return' (x'0: ())) = (! bb0
     [ bb0 = bb1
     | bb1 = bb1'0
-      [ bb1'0 = {[@expl:loop invariant] [%#sinvariant_moves] x'0 = x'0}
+      [ bb1'0 = {[@expl:loop invariant] x'0 = x'0}
         (! s0)
         [ s0 = bb2 ]
         [ bb2 = s0

@@ -1,13 +1,4 @@
-module M_01_basic__adds_two [#"01_basic.rs" 6 0 6 34]
-  let%span s01_basic = "01_basic.rs" 10 11 10 17
-  let%span s01_basic'0 = "01_basic.rs" 11 18 11 19
-  let%span s01_basic'1 = "01_basic.rs" 13 14 13 15
-  let%span s01_basic'2 = "01_basic.rs" 5 11 5 37
-  let%span spredcell = "../../../creusot-contracts/src/cell/predcell.rs" 65 4 65 29
-  let%span spredcell'0 = "../../../creusot-contracts/src/cell/predcell.rs" 34 4 34 25
-  let%span smodel = "../../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span smapping = "../../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
-  
+module M_01_basic__adds_two
   use creusot.int.UInt32
   use map.Map
   use creusot.prelude.Any
@@ -15,39 +6,38 @@ module M_01_basic__adds_two [#"01_basic.rs" 6 0 6 34]
   
   type t_PredCell
   
-  predicate index_logic [@inline:trivial] (self: Map.map UInt32.t bool) (a: UInt32.t) = [%#smapping] Map.get self a
+  predicate index_logic [@inline:trivial] (self: Map.map UInt32.t bool) (a: UInt32.t) = Map.get self a
   
   meta "rewrite_def" predicate index_logic
   
   function view (self: t_PredCell) : Map.map UInt32.t bool
   
-  function view'0 [@inline:trivial] (self: t_PredCell) : Map.map UInt32.t bool = [%#smodel] view self
+  function view'0 [@inline:trivial] (self: t_PredCell) : Map.map UInt32.t bool = view self
   
   meta "rewrite_def" function view'0
   
   let rec get (self: t_PredCell) (return' (x: UInt32.t)) = any
-    [ return''0 (result: UInt32.t) -> {[%#spredcell] index_logic (view'0 self) result} (! return' {result}) ]
+    [ return''0 (result: UInt32.t) -> {index_logic (view'0 self) result} (! return' {result}) ]
   
-  let rec set (self: t_PredCell) (v: UInt32.t) (return' (x: ())) =
-    {[@expl:set requires] [%#spredcell'0] index_logic (view'0 self) v}
+  let rec set (self: t_PredCell) (v: UInt32.t) (return' (x: ())) = {[@expl:set requires] index_logic (view'0 self) v}
     any [ return''0 (result: ()) -> (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec adds_two [#"01_basic.rs" 6 0 6 34] (c: t_PredCell) (return' (x: ())) =
-    {[@expl:adds_two requires] [%#s01_basic'2] view'0 c = fun (z: UInt32.t) -> Int.mod (UInt32.t'int z) 2 = 0}
+  let rec adds_two (c: t_PredCell) (return' (x: ())) = {[@expl:adds_two requires] view'0 c
+    = fun (z: UInt32.t) -> Int.mod (UInt32.t'int z) 2 = 0}
     (! bb0
     [ bb0 = s0 [ s0 = get {c'0} (fun (_ret: UInt32.t) -> [ &v <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = [ &_5 <- UInt32.lt v ([%#s01_basic] (100000: UInt32.t)) ] s1
+      [ s0 = [ &_5 <- UInt32.lt v (100000: UInt32.t) ] s1
       | s1 = any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb2) ] ]
     | bb2 = s0
-      [ s0 = UInt32.add {v} {[%#s01_basic'0] (2: UInt32.t)} (fun (_ret: UInt32.t) -> [ &_9 <- _ret ] s1)
+      [ s0 = UInt32.add {v} {(2: UInt32.t)} (fun (_ret: UInt32.t) -> [ &_9 <- _ret ] s1)
       | s1 = set {c'0} {_9} (fun (_ret: ()) -> [ &_7 <- _ret ] s2)
       | s2 = bb6 ]
-    | bb4 = s0 [ s0 = set {c'0} {[%#s01_basic'1] (0: UInt32.t)} (fun (_ret: ()) -> [ &_11 <- _ret ] s1) | s1 = bb6 ]
+    | bb4 = s0 [ s0 = set {c'0} {(0: UInt32.t)} (fun (_ret: ()) -> [ &_11 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = return''0 {_0} ]
     [ & _0: () = Any.any_l ()
     | & c'0: t_PredCell = c

@@ -1,21 +1,4 @@
-module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 23 0 23 30]
-  let%span sinplace_list_reversal = "inplace_list_reversal.rs" 24 16 24 31
-  let%span sinplace_list_reversal'0 = "inplace_list_reversal.rs" 29 16 29 73
-  let%span sinplace_list_reversal'1 = "inplace_list_reversal.rs" 28 16 28 25
-  let%span sinplace_list_reversal'2 = "inplace_list_reversal.rs" 27 16 27 25
-  let%span sinplace_list_reversal'3 = "inplace_list_reversal.rs" 23 14 23 15
-  let%span sinplace_list_reversal'4 = "inplace_list_reversal.rs" 22 10 22 35
-  let%span sinplace_list_reversal'5 = "inplace_list_reversal.rs" 16 4 19 5
-  let%span smem = "../../creusot-contracts/src/std/mem.rs" 10 26 10 30
-  let%span smem'0 = "../../creusot-contracts/src/std/mem.rs" 10 40 10 43
-  let%span smem'1 = "../../creusot-contracts/src/std/mem.rs" 8 22 8 34
-  let%span smem'2 = "../../creusot-contracts/src/std/mem.rs" 9 22 9 37
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 56 8 56 22
-  let%span sresolve'0 = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sresolve'1 = "../../creusot-contracts/src/resolve.rs" 32 8 32 42
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
-  
+module M_inplace_list_reversal__rev
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
@@ -32,7 +15,7 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 23 0 23 30]
   
   axiom inv_axiom [@rewrite]: forall x: tuple [inv'0 x]. inv'0 x = (let {_p0 = x0; _p1 = x1} = x in inv x0 /\ inv'1 x1)
   
-  predicate invariant' (self: tuple) = [%#sboxed] inv'0 self
+  predicate invariant' (self: tuple) = inv'0 self
   
   predicate inv'2 (_0: tuple)
   
@@ -44,8 +27,7 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 23 0 23 30]
         | C_Cons a_0 -> inv'2 a_0
         end
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_List) =
-    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_List) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''0
   
@@ -54,16 +36,11 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 23 0 23 30]
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_List [inv'3 x]. inv'3 x = invariant''0 x
   
   let rec replace (dest: MutBorrow.t t_List) (src: t_List) (return' (x: t_List)) =
-    {[@expl:replace 'dest' type invariant] [%#smem] inv'3 dest}
-    {[@expl:replace 'src' type invariant] [%#smem'0] inv'1 src}
-    any
-    [ return''0 (result: t_List) -> {inv'1 result}
-      {[%#smem'1] dest.final = src}
-      {[%#smem'2] result = dest.current}
-      (! return' {result}) ]
+    {[@expl:replace 'dest' type invariant] inv'3 dest}
+    {[@expl:replace 'src' type invariant] inv'1 src}
+    any [ return''0 (result: t_List) -> {inv'1 result} {dest.final = src} {result = dest.current} (! return' {result}) ]
   
-  function rev_append [#"inplace_list_reversal.rs" 15 0 15 55] (n: t_List) (o: t_List) : t_List =
-    [%#sinplace_list_reversal'5] match n with
+  function rev_append (n: t_List) (o: t_List) : t_List = match n with
       | C_Nil -> o
       | C_Cons {_p0 = hd; _p1 = tl} -> rev_append tl (C_Cons { _p0 = hd; _p1 = o })
       end
@@ -78,7 +55,7 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 23 0 23 30]
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (self: tuple) = [%#sresolve'1] resolve self._p0 /\ resolve'0 self._p1
+  predicate resolve'1 [@inline:trivial] (self: tuple) = resolve self._p0 /\ resolve'0 self._p1
   
   meta "rewrite_def" predicate resolve'1
   
@@ -86,7 +63,7 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 23 0 23 30]
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (self: tuple) = [%#sresolve] resolve'2 self
+  predicate resolve'3 [@inline:trivial] (self: tuple) = resolve'2 self
   
   meta "rewrite_def" predicate resolve'3
   
@@ -94,7 +71,7 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 23 0 23 30]
   
   meta "rewrite_def" predicate resolve'4
   
-  predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_List) = [%#sresolve'0] self.final = self.current
+  predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'5
   
@@ -106,10 +83,9 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 23 0 23 30]
   
   meta "select_lsinst" "all"
   
-  let rec rev [#"inplace_list_reversal.rs" 23 0 23 30] (l: MutBorrow.t t_List) (return' (x: ())) =
-    {[@expl:rev 'l' type invariant] [%#sinplace_list_reversal'3] inv'3 l}
+  let rec rev (l: MutBorrow.t t_List) (return' (x: ())) = {[@expl:rev 'l' type invariant] inv'3 l}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_l <- [%#sinplace_list_reversal] l'0 ] s1 | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &old_l <- l'0 ] s1 | s1 = bb1 ]
     | bb1 = s0
       [ s0 = [ &prev <- C_Nil ] s1
       | s1 = [ &_8 <- C_Nil ] s2
@@ -121,9 +97,9 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 23 0 23 30]
       | s3 = replace {_7} {_8} (fun (_ret: t_List) -> [ &head <- _ret ] s4)
       | s4 = bb3 ]
     | bb3 = bb3'0
-      [ bb3'0 = {[@expl:loop invariant #0] [%#sinplace_list_reversal'2] inv'1 prev}
-        {[@expl:loop invariant #1] [%#sinplace_list_reversal'1] inv'1 head}
-        {[@expl:loop invariant #2] [%#sinplace_list_reversal'0] rev_append head prev = rev_append old_l.current (C_Nil)}
+      [ bb3'0 = {[@expl:loop invariant #0] inv'1 prev}
+        {[@expl:loop invariant #1] inv'1 head}
+        {[@expl:loop invariant #2] rev_append head prev = rev_append old_l.current (C_Nil)}
         (! s0)
         [ s0 = bb4 ]
         [ bb4 = any [ br0 -> {head = C_Nil} (! bb18) | br1 (x0: tuple) -> {head = C_Cons x0} (! bb6) ]
@@ -162,7 +138,5 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 23 0 23 30]
     | & curr: tuple = Any.any_l ()
     | & next: t_List = Any.any_l ()
     | & _19: t_List = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:rev ensures] [%#sinplace_list_reversal'4] l.final
-      = rev_append l.current (C_Nil)}
-      (! return' {result}) ]
+    [ return''0 (result: ()) -> {[@expl:rev ensures] l.final = rev_append l.current (C_Nil)} (! return' {result}) ]
 end

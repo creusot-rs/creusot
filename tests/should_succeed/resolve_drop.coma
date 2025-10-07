@@ -1,14 +1,9 @@
-module M_resolve_drop__f [#"resolve_drop.rs" 4 0 4 10]
-  let%span sresolve_drop = "resolve_drop.rs" 5 16 5 18
-  let%span sresolve_drop'0 = "resolve_drop.rs" 7 11 7 12
-  let%span sresolve_drop'1 = "resolve_drop.rs" 8 18 8 26
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_resolve_drop__f
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -20,18 +15,17 @@ module M_resolve_drop__f [#"resolve_drop.rs" 4 0 4 10]
   
   meta "select_lsinst" "all"
   
-  let rec f [#"resolve_drop.rs" 4 0 4 10] (return' (x: ())) = (! bb0
+  let rec f (return' (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &x <- [%#sresolve_drop] (12: Int32.t) ] s1
+      [ s0 = [ &x <- (12: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_3 <- _ret ] [ &x <- _ret.final ] s2)
       | s2 = [ &b <- _3 ] s3
       | s3 = bb1 ]
     | bb1 = s0
-      [ s0 = Int32.add {b.current} {[%#sresolve_drop'0] (1: Int32.t)}
-          (fun (_ret: Int32.t) -> [ &b <- { b with current = _ret } ] s1)
+      [ s0 = Int32.add {b.current} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &b <- { b with current = _ret } ] s1)
       | s1 = -{resolve'0 b}- s2
-      | s2 = {[@expl:assertion] [%#sresolve_drop'1] Int32.to_int x = 13} s3
+      | s2 = {[@expl:assertion] Int32.to_int x = 13} s3
       | s3 = bb2 ]
     | bb2 = return''0 {_0} ]
     [ & _0: () = Any.any_l ()

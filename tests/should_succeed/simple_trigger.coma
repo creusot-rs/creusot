@@ -1,14 +1,7 @@
-module M_simple_trigger__id [#"simple_trigger.rs" 10 0 10 24]
-  let%span ssimple_trigger = "simple_trigger.rs" 8 10 8 11
-  let%span ssimple_trigger'0 = "simple_trigger.rs" 7 11 7 17
-  let%span ssimple_trigger'1 = "simple_trigger.rs" 9 10 9 32
-  let%span ssimple_trigger'2 = "simple_trigger.rs" 11 4 11 42
-  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
-  
+module M_simple_trigger__id
   use mach.int.Int
   
-  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) =
-    [%#swell_founded] self >= 0 /\ self > other
+  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
   meta "rewrite_def" predicate well_founded_relation
   
@@ -18,45 +11,35 @@ module M_simple_trigger__id [#"simple_trigger.rs" 10 0 10 24]
   
   constant i : int
   
-  function id [#"simple_trigger.rs" 10 0 10 24] (i'0: int) : int
+  function id (i'0: int) : int
   
-  goal vc_id: ([%#ssimple_trigger'0] i >= 0)
+  goal vc_id: i >= 0
     -> (if i = 0 then
-      [@expl:id ensures] [%#ssimple_trigger'1] i = 0 -> 0 = 0
+      [@expl:id ensures] i = 0 -> 0 = 0
     else
-      (([@expl:id requires] [%#ssimple_trigger'0] i - 1 >= 0)
-        /\ well_founded_relation ([%#ssimple_trigger] i) ([%#ssimple_trigger] i - 1))
-      /\ (([%#ssimple_trigger'1] i - 1 = 0 -> id (i - 1) = 0)
-      -> ([@expl:id ensures] [%#ssimple_trigger'1] i = 0 -> id (i - 1) + 1 = 0))
+      (([@expl:id requires] i - 1 >= 0) /\ well_founded_relation i (i - 1))
+      /\ (i - 1 = 0 -> id (i - 1) = 0 -> ([@expl:id ensures] i = 0 -> id (i - 1) + 1 = 0))
     )
 end
-module M_simple_trigger__test [#"simple_trigger.rs" 15 0 15 13]
-  let%span ssimple_trigger = "simple_trigger.rs" 14 10 14 20
-  let%span ssimple_trigger'0 = "simple_trigger.rs" 8 10 8 11
-  let%span ssimple_trigger'1 = "simple_trigger.rs" 7 11 7 17
-  let%span ssimple_trigger'2 = "simple_trigger.rs" 9 10 9 32
-  let%span ssimple_trigger'3 = "simple_trigger.rs" 11 4 11 42
-  
+module M_simple_trigger__test
   use creusot.prelude.Any
   use mach.int.Int
   
-  function id [#"simple_trigger.rs" 10 0 10 24] (i: int) : int
+  function id (i: int) : int
   
   function id_lim (i: int) : int
   
-  axiom id_def: forall i: int [id i]. ([%#ssimple_trigger'1] i >= 0)
-      -> id i = ([%#ssimple_trigger'3] if i = 0 then 0 else id (i - 1) + 1)
+  axiom id_def: forall i: int [id i]. i >= 0 -> id i = (if i = 0 then 0 else id (i - 1) + 1)
   
-  axiom id_def_lim: forall i: int [id i]. ([%#ssimple_trigger'1] i >= 0) -> id i = id_lim i
+  axiom id_def_lim: forall i: int [id i]. i >= 0 -> id i = id_lim i
   
-  axiom id_lim_spec: forall i: int [id_lim i]. ([%#ssimple_trigger'1] i >= 0)
-      -> ([%#ssimple_trigger'2] i = 0 -> id_lim i = 0)
+  axiom id_lim_spec: forall i: int [id_lim i]. i >= 0 -> i = 0 -> id_lim i = 0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test [#"simple_trigger.rs" 15 0 15 13] (return' (x: ())) = (! bb0
+  let rec test (return' (x: ())) = (! bb0
     [ bb0 = return''0 {_0} ] [ & _0: () = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:test ensures] [%#ssimple_trigger] id 1 = 1} (! return' {result}) ]
+    [ return''0 (result: ()) -> {[@expl:test ensures] id 1 = 1} (! return' {result}) ]
 end

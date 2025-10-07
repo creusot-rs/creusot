@@ -1,16 +1,4 @@
-module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
-  let%span smapping_test = "mapping_test.rs" 30 16 30 31
-  let%span smapping_test'0 = "mapping_test.rs" 31 14 31 15
-  let%span smapping_test'1 = "mapping_test.rs" 34 19 34 50
-  let%span smapping_test'2 = "mapping_test.rs" 26 12 26 24
-  let%span smapping_test'3 = "mapping_test.rs" 27 12 27 26
-  let%span smapping_test'4 = "mapping_test.rs" 28 11 28 37
-  let%span smapping_test'5 = "mapping_test.rs" 19 8 20 72
-  let%span ssnapshot = "../../creusot-contracts/src/snapshot.rs" 57 4 57 26
-  let%span smodel = "../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_mapping_test__incr
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use map.Map
@@ -19,7 +7,7 @@ module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
   
   type t_T = { t_T__a: Int32.t }
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -27,20 +15,20 @@ module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
   
   meta "rewrite_def" predicate resolve'0
   
-  function view [#"mapping_test.rs" 21 4 21 33] (self: t_T) : Map.map int int
+  function view (self: t_T) : Map.map int int
   
-  axiom view_spec: forall self: t_T. [%#smapping_test'5] forall i: int. Map.get (view self) i
+  axiom view_spec: forall self: t_T. forall i: int. Map.get (view self) i
         = (if 0 <= i /\ i < Int32.to_int self.t_T__a then 1 else 0)
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = [%#smodel] view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = view self.current
   
   meta "rewrite_def" function view'0
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = [%#smodel'0] view'0 self
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = view'0 self
   
   meta "rewrite_def" function view'1
   
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = [%#ssnapshot] view'1 self
+  function view'2 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = view'1 self
   
   meta "rewrite_def" function view'2
   
@@ -48,37 +36,22 @@ module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
   
   meta "select_lsinst" "all"
   
-  let rec incr [#"mapping_test.rs" 29 0 29 18] (t: MutBorrow.t t_T) (return' (x: ())) =
-    {[@expl:incr requires #0] [%#smapping_test'2] 0 <= Int32.to_int (t.current).t_T__a}
-    {[@expl:incr requires #1] [%#smapping_test'3] Int32.to_int (t.current).t_T__a < 1000}
+  let rec incr (t: MutBorrow.t t_T) (return' (x: ())) = {[@expl:incr requires #0] 0 <= Int32.to_int (t.current).t_T__a}
+    {[@expl:incr requires #1] Int32.to_int (t.current).t_T__a < 1000}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_t <- [%#smapping_test] t'0 ] s1 | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &old_t <- t'0 ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = Int32.add {(t'0.current).t_T__a} {[%#smapping_test'0] (1: Int32.t)}
+      [ s0 = Int32.add {(t'0.current).t_T__a} {(1: Int32.t)}
           (fun (_ret: Int32.t) -> [ &t'0 <- { t'0 with current = { t_T__a = _ret } } ] s1)
       | s1 = -{resolve'0 t'0}- s2
-      | s2 = {[@expl:assertion] [%#smapping_test'1] view t'0.final
-        = Map.set (view'2 old_t) (Int32.to_int (old_t.current).t_T__a) 1}
-        s3
+      | s2 = {[@expl:assertion] view t'0.final = Map.set (view'2 old_t) (Int32.to_int (old_t.current).t_T__a) 1} s3
       | s3 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l () | & t'0: MutBorrow.t t_T = t | & old_t: MutBorrow.t t_T = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:incr ensures] [%#smapping_test'4] view t.final
+    [ return''0 (result: ()) -> {[@expl:incr ensures] view t.final
       = Map.set (view'0 t) (Int32.to_int (t.current).t_T__a) 1}
       (! return' {result}) ]
 end
-module M_mapping_test__f [#"mapping_test.rs" 37 0 37 10]
-  let%span smapping_test = "mapping_test.rs" 38 23 38 25
-  let%span smapping_test'0 = "mapping_test.rs" 39 19 39 34
-  let%span smapping_test'1 = "mapping_test.rs" 40 19 40 34
-  let%span smapping_test'2 = "mapping_test.rs" 42 19 42 34
-  let%span smapping_test'3 = "mapping_test.rs" 43 19 43 34
-  let%span smapping_test'4 = "mapping_test.rs" 19 8 20 72
-  let%span smapping_test'5 = "mapping_test.rs" 26 12 26 24
-  let%span smapping_test'6 = "mapping_test.rs" 27 12 27 26
-  let%span smapping_test'7 = "mapping_test.rs" 28 11 28 37
-  let%span smodel = "../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_mapping_test__f
   use creusot.int.Int32
   use map.Map
   use mach.int.Int
@@ -87,24 +60,22 @@ module M_mapping_test__f [#"mapping_test.rs" 37 0 37 10]
   
   type t_T = { t_T__a: Int32.t }
   
-  function view [#"mapping_test.rs" 21 4 21 33] (self: t_T) : Map.map int int
+  function view (self: t_T) : Map.map int int
   
-  axiom view_spec: forall self: t_T. [%#smapping_test'4] forall i: int. Map.get (view self) i
+  axiom view_spec: forall self: t_T. forall i: int. Map.get (view self) i
         = (if 0 <= i /\ i < Int32.to_int self.t_T__a then 1 else 0)
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = [%#smodel] view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_T) : Map.map int int = view self.current
   
   meta "rewrite_def" function view'0
   
-  let rec incr (t: MutBorrow.t t_T) (return' (x: ())) = {[@expl:incr requires #0] [%#smapping_test'5] 0
-    <= Int32.to_int (t.current).t_T__a}
-    {[@expl:incr requires #1] [%#smapping_test'6] Int32.to_int (t.current).t_T__a < 1000}
+  let rec incr (t: MutBorrow.t t_T) (return' (x: ())) = {[@expl:incr requires #0] 0 <= Int32.to_int (t.current).t_T__a}
+    {[@expl:incr requires #1] Int32.to_int (t.current).t_T__a < 1000}
     any
-    [ return''0 (result: ()) -> {[%#smapping_test'7] view t.final
-      = Map.set (view'0 t) (Int32.to_int (t.current).t_T__a) 1}
+    [ return''0 (result: ()) -> {view t.final = Map.set (view'0 t) (Int32.to_int (t.current).t_T__a) 1}
       (! return' {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -116,11 +87,11 @@ module M_mapping_test__f [#"mapping_test.rs" 37 0 37 10]
   
   meta "select_lsinst" "all"
   
-  let rec f [#"mapping_test.rs" 37 0 37 10] (return' (x: ())) = (! bb0
+  let rec f (return' (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &x <- { t_T__a = ([%#smapping_test] (42: Int32.t)) } ] s1
-      | s1 = {[@expl:assertion] [%#smapping_test'0] Map.get (view x) 13 = 1} s2
-      | s2 = {[@expl:assertion] [%#smapping_test'1] Map.get (view x) 42 = 0} s3
+      [ s0 = [ &x <- { t_T__a = (42: Int32.t) } ] s1
+      | s1 = {[@expl:assertion] Map.get (view x) 13 = 1} s2
+      | s2 = {[@expl:assertion] Map.get (view x) 42 = 0} s3
       | s3 = MutBorrow.borrow_mut <t_T> {x} (fun (_ret: MutBorrow.t t_T) -> [ &_8 <- _ret ] [ &x <- _ret.final ] s4)
       | s4 = MutBorrow.borrow_final <t_T> {_8.current} {MutBorrow.get_id _8}
           (fun (_ret: MutBorrow.t t_T) -> [ &_7 <- _ret ] [ &_8 <- { _8 with current = _ret.final } ] s5)
@@ -128,8 +99,8 @@ module M_mapping_test__f [#"mapping_test.rs" 37 0 37 10]
       | s6 = bb1 ]
     | bb1 = s0
       [ s0 = -{resolve'0 _8}- s1
-      | s1 = {[@expl:assertion] [%#smapping_test'2] Map.get (view x) 13 = 1} s2
-      | s2 = {[@expl:assertion] [%#smapping_test'3] Map.get (view x) 42 = 1} s3
+      | s1 = {[@expl:assertion] Map.get (view x) 13 = 1} s2
+      | s2 = {[@expl:assertion] Map.get (view x) 42 = 1} s3
       | s3 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: t_T = Any.any_l ()

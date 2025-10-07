@@ -1,13 +1,7 @@
-module M_1204__evil [#"1204.rs" 8 0 8 26]
-  let%span s1204 = "1204.rs" 7 10 7 11
-  let%span s1204'0 = "1204.rs" 6 11 6 16
-  let%span s1204'1 = "1204.rs" 9 4 9 16
-  let%span swell_founded = "../../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
-  
+module M_1204__evil
   use mach.int.Int
   
-  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) =
-    [%#swell_founded] self >= 0 /\ self > other
+  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
   meta "rewrite_def" predicate well_founded_relation
   
@@ -17,33 +11,26 @@ module M_1204__evil [#"1204.rs" 8 0 8 26]
   
   constant x : int
   
-  function evil [#"1204.rs" 8 0 8 26] (x'0: int) : int
+  function evil (x'0: int) : int
   
-  goal vc_evil: ([%#s1204'0] false)
-    -> ([@expl:evil requires] [%#s1204'0] false) /\ well_founded_relation ([%#s1204] x) ([%#s1204] - x)
+  goal vc_evil: false -> ([@expl:evil requires] false) /\ well_founded_relation x (- x)
 end
-module M_1204__wrong [#"1204.rs" 14 0 14 14]
-  let%span s1204 = "1204.rs" 13 10 13 15
-  let%span s1204'0 = "1204.rs" 6 11 6 16
-  let%span s1204'1 = "1204.rs" 15 4 15 43
-  let%span s1204'2 = "1204.rs" 7 10 7 11
-  let%span s1204'3 = "1204.rs" 9 4 9 16
-  
+module M_1204__wrong
   use mach.int.Int
   
-  function evil [#"1204.rs" 8 0 8 26] (x: int) : int
+  function evil (x: int) : int
   
-  axiom evil_def: forall x: int. ([%#s1204'0] false) -> evil x = ([%#s1204'3] evil (- x) + 1)
+  axiom evil_def: forall x: int. false -> evil x = evil (- x) + 1
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  function wrong [#"1204.rs" 14 0 14 14] : ()
+  function wrong : ()
   
-  goal vc_wrong: ([@expl:evil requires] [%#s1204'0] false)
-    /\ ([@expl:evil requires] [%#s1204'0] false)
+  goal vc_wrong: ([@expl:evil requires] false)
+    /\ ([@expl:evil requires] false)
     /\ evil 1 = evil (- 1) + 1
-    && ([@expl:evil requires] [%#s1204'0] false)
-    /\ ([@expl:evil requires] [%#s1204'0] false) /\ evil (- 1) = evil 1 + 1 && ([@expl:wrong ensures] [%#s1204] false)
+    && ([@expl:evil requires] false)
+    /\ ([@expl:evil requires] false) /\ evil (- 1) = evil 1 + 1 && ([@expl:wrong ensures] false)
 end

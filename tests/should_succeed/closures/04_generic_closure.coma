@@ -1,23 +1,4 @@
-module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
-  let%span s04_generic_closure = "04_generic_closure.rs" 5 40 5 41
-  let%span s04_generic_closure'0 = "04_generic_closure.rs" 5 46 5 47
-  let%span s04_generic_closure'1 = "04_generic_closure.rs" 5 55 5 56
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 189 16 189 17
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 191 31 191 34
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 189 27 189 52
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 190 26 190 60
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 159 14 159 114
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 164 14 164 100
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 169 14 169 61
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'9 = "../../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'10 = "../../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'11 = "../../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'12 = "../../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  
+module M_04_generic_closure__generic_closure
   use creusot.prelude.Any
   
   type t_F
@@ -30,7 +11,7 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   type t_B
   
-  predicate invariant' [@inline:trivial] (self: t_F) = [%#sinvariant] inv self
+  predicate invariant' [@inline:trivial] (self: t_F) = inv self
   
   meta "rewrite_def" predicate invariant'
   
@@ -54,55 +35,52 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   function fn_mut_once (self: t_F) (args: t_A) (res: t_B) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: t_A, res: t_B. [%#sops'12] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: t_F, args: t_A, res: t_B. postcondition_once self args res
       = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'9] hist_inv self b)
-      -> ([%#sops'10] hist_inv b c) -> ([%#sops'11] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. [%#sops'8] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
   
   function postcondition_mut_hist_inv (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: t_A, res_state: t_F, res: t_B. ([%#sops'6] postcondition_mut self args res_state res)
-      -> ([%#sops'7] hist_inv self res_state)
+    forall self: t_F, args: t_A, res_state: t_F, res: t_B. postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   function fn_hist_inv (self: t_F) (res_state: t_F) : ()
   
-  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'5] hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. hist_inv self res_state = (self = res_state)
   
   predicate postcondition (self: t_F) (args: t_A) (result: t_B)
   
   function fn_once (self: t_F) (args: t_A) (res: t_B) : ()
   
-  axiom fn_once_spec: forall self: t_F, args: t_A, res: t_B. [%#sops'4] postcondition_once self args res
+  axiom fn_once_spec: forall self: t_F, args: t_A, res: t_B. postcondition_once self args res
       = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
-  axiom fn_mut_spec:
-    forall self: t_F, args: t_A, res_state: t_F, res: t_B. [%#sops'3] postcondition_mut self args res_state res
+  axiom fn_mut_spec: forall self: t_F, args: t_A, res_state: t_F, res: t_B. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec call (self_: t_F) (arg: t_A) (return' (x: t_B)) = {[@expl:call 'self_' type invariant] [%#sops] inv'0 self_}
-    {[@expl:call 'arg' type invariant] [%#sops'0] inv'2 arg}
-    {[@expl:call requires] [%#sops'1] precondition self_ arg}
-    any [ return''0 (result: t_B) -> {inv'3 result} {[%#sops'2] postcondition self_ arg result} (! return' {result}) ]
+  let rec call (self_: t_F) (arg: t_A) (return' (x: t_B)) = {[@expl:call 'self_' type invariant] inv'0 self_}
+    {[@expl:call 'arg' type invariant] inv'2 arg}
+    {[@expl:call requires] precondition self_ arg}
+    any [ return''0 (result: t_B) -> {inv'3 result} {postcondition self_ arg result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec generic_closure [#"04_generic_closure.rs" 5 0 5 56] (f: t_F) (a: t_A) (return' (x: t_B)) =
-    {[@expl:generic_closure 'f' type invariant] [%#s04_generic_closure] inv f}
-    {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure'0] inv'1 a}
+  let rec generic_closure (f: t_F) (a: t_A) (return' (x: t_B)) = {[@expl:generic_closure 'f' type invariant] inv f}
+    {[@expl:generic_closure 'a' type invariant] inv'1 a}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:type invariant] inv f'0} s1
@@ -111,14 +89,9 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
       | s3 = call {f'0} {_4} (fun (_ret: t_B) -> [ &_0 <- _ret ] s4)
       | s4 = bb4 ]
     | bb4 = return''0 {_0} ] [ & _0: t_B = Any.any_l () | & f'0: t_F = f | & a'0: t_A = a | & _4: t_A = Any.any_l () ])
-    [ return''0 (result: t_B) -> {[@expl:generic_closure result type invariant] [%#s04_generic_closure'1] inv'3 result}
-      (! return' {result}) ]
+    [ return''0 (result: t_B) -> {[@expl:generic_closure result type invariant] inv'3 result} (! return' {result}) ]
 end
-module M_04_generic_closure__mapper [#"04_generic_closure.rs" 9 0 9 22]
-  let%span s04_generic_closure = "04_generic_closure.rs" 9 17 9 18
-  let%span s04_generic_closure'0 = "04_generic_closure.rs" 10 29 10 31
-  let%span s04_generic_closure'1 = "04_generic_closure.rs" 5 46 5 47
-  
+module M_04_generic_closure__mapper
   use creusot.prelude.Any
   
   type t_A
@@ -127,7 +100,7 @@ module M_04_generic_closure__mapper [#"04_generic_closure.rs" 9 0 9 22]
   
   predicate resolve (_0: t_A)
   
-  let rec closure0 [#"04_generic_closure.rs" 10 28 10 32] [@coma:extspec] (self: ()) (_a: t_A) (return' (x: ())) = bb0
+  let rec closure0 [@coma:extspec] (self: ()) (_a: t_A) (return' (x: ())) = bb0
     [ bb0 = s0 [ s0 = {[@expl:type invariant] inv _a'0} s1 | s1 = -{resolve _a'0}- s2 | s2 = bb1 ]
     | bb1 = return' {_0} ] [ & _0: () = Any.any_l () | & _a'0: t_A = _a ]
   
@@ -135,16 +108,14 @@ module M_04_generic_closure__mapper [#"04_generic_closure.rs" 9 0 9 22]
   
   meta "rewrite_def" predicate closure0'post'return'
   
-  let rec generic_closure (f: ()) (a: t_A) (return' (x: ())) =
-    {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure'1] inv a}
+  let rec generic_closure (f: ()) (a: t_A) (return' (x: ())) = {[@expl:generic_closure 'a' type invariant] inv a}
     any [ return''0 (result: ()) -> (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec mapper [#"04_generic_closure.rs" 9 0 9 22] (x: t_A) (return' (x'0: ())) =
-    {[@expl:mapper 'x' type invariant] [%#s04_generic_closure] inv x}
+  let rec mapper (x: t_A) (return' (x'0: ())) = {[@expl:mapper 'x' type invariant] inv x}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_3 <- () ] s1 | s1 = generic_closure {_3} {x'0} (fun (_ret: ()) -> [ &_2 <- _ret ] s2) | s2 = bb2 ]

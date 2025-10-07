@@ -1,12 +1,9 @@
-module M_immut__f [#"immut.rs" 3 0 3 10]
-  let%span simmut = "immut.rs" 4 16 4 18
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_immut__f
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -18,9 +15,9 @@ module M_immut__f [#"immut.rs" 3 0 3 10]
   
   meta "select_lsinst" "all"
   
-  let rec f [#"immut.rs" 3 0 3 10] (return' (x: ())) = (! bb0
+  let rec f (return' (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &a <- [%#simmut] (10: UInt32.t) ] s1
+      [ s0 = [ &a <- (10: UInt32.t) ] s1
       | s1 = MutBorrow.borrow_mut <UInt32.t> {a}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &b <- _ret ] [ &a <- _ret.final ] s2)
       | s2 = -{resolve'0 b}- s3

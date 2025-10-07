@@ -1,29 +1,10 @@
-module M_682__add_some [#"682.rs" 6 0 6 24]
-  let%span s682 = "682.rs" 7 10 7 11
-  let%span s682'0 = "682.rs" 4 11 4 33
-  let%span s682'1 = "682.rs" 5 10 5 17
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 124 39 124 89
-  let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 128 39 128 86
-  let%span sord'1 = "../../../creusot-contracts/src/logic/ord.rs" 132 39 132 86
-  let%span sord'2 = "../../../creusot-contracts/src/logic/ord.rs" 136 39 136 89
-  let%span sord'3 = "../../../creusot-contracts/src/logic/ord.rs" 140 39 140 70
-  let%span sord'4 = "../../../creusot-contracts/src/logic/ord.rs" 144 40 144 57
-  let%span sord'5 = "../../../creusot-contracts/src/logic/ord.rs" 145 40 145 57
-  let%span sord'6 = "../../../creusot-contracts/src/logic/ord.rs" 146 39 146 56
-  let%span sord'7 = "../../../creusot-contracts/src/logic/ord.rs" 150 40 150 70
-  let%span sord'8 = "../../../creusot-contracts/src/logic/ord.rs" 151 39 151 72
-  let%span sord'9 = "../../../creusot-contracts/src/logic/ord.rs" 155 40 155 73
-  let%span sord'10 = "../../../creusot-contracts/src/logic/ord.rs" 156 39 156 69
-  let%span sord'11 = "../../../creusot-contracts/src/logic/ord.rs" 160 39 160 84
-  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 240 16 246 17
-  
+module M_682__add_some
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use mach.int.Int
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -35,7 +16,7 @@ module M_682__add_some [#"682.rs" 6 0 6 24]
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = [%#sord'12] if UInt64.lt self o then
+  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
       C_Less
     else
       if self = o then C_Equal else C_Greater
@@ -43,80 +24,56 @@ module M_682__add_some [#"682.rs" 6 0 6 24]
   
   function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'11] (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
   
   function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. ([%#sord'9] cmp_log x y = C_Greater)
-      -> ([%#sord'10] cmp_log y x = C_Less)
+  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
   
   function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. ([%#sord'7] cmp_log x y = C_Less)
-      -> ([%#sord'8] cmp_log y x = C_Greater)
+  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
   
   function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
+  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
+      -> cmp_log y z = o -> cmp_log x z = o
   
   function refl (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. [%#sord'3] cmp_log x x = C_Equal
+  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
   
   function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'2] UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
   
   function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'1] UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
   
   function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'0] UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
   
   function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord] UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec add_some [#"682.rs" 6 0 6 24] (a: MutBorrow.t UInt64.t) (return' (x: ())) =
-    {[@expl:add_some requires] [%#s682'0] UInt64.t'int a.current <= Int.div (UInt64.t'int const_MAX) 2}
+  let rec add_some (a: MutBorrow.t UInt64.t) (return' (x: ())) = {[@expl:add_some requires] UInt64.t'int a.current
+    <= Int.div (UInt64.t'int const_MAX) 2}
     (! bb0
     [ bb0 = s0
-      [ s0 = UInt64.add {a'0.current} {[%#s682] (1: UInt64.t)}
+      [ s0 = UInt64.add {a'0.current} {(1: UInt64.t)}
           (fun (_ret: UInt64.t) -> [ &a'0 <- { a'0 with current = _ret } ] s1)
       | s1 = -{resolve'0 a'0}- s2
       | s2 = return''0 {_0} ] ] [ & _0: () = Any.any_l () | & a'0: MutBorrow.t UInt64.t = a ])
-    [ return''0 (result: ()) -> {[@expl:add_some ensures] [%#s682'1] UInt64.gt a.final a.current} (! return' {result}) ]
+    [ return''0 (result: ()) -> {[@expl:add_some ensures] UInt64.gt a.final a.current} (! return' {result}) ]
 end
-module M_682__foo [#"682.rs" 12 0 12 23]
-  let%span s682 = "682.rs" 13 29 13 42
-  let%span s682'0 = "682.rs" 15 18 15 27
-  let%span s682'1 = "682.rs" 10 11 10 21
-  let%span s682'2 = "682.rs" 11 10 11 17
-  let%span s682'3 = "682.rs" 4 11 4 33
-  let%span s682'4 = "682.rs" 5 10 5 17
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 124 39 124 89
-  let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 128 39 128 86
-  let%span sord'1 = "../../../creusot-contracts/src/logic/ord.rs" 132 39 132 86
-  let%span sord'2 = "../../../creusot-contracts/src/logic/ord.rs" 136 39 136 89
-  let%span sord'3 = "../../../creusot-contracts/src/logic/ord.rs" 140 39 140 70
-  let%span sord'4 = "../../../creusot-contracts/src/logic/ord.rs" 144 40 144 57
-  let%span sord'5 = "../../../creusot-contracts/src/logic/ord.rs" 145 40 145 57
-  let%span sord'6 = "../../../creusot-contracts/src/logic/ord.rs" 146 39 146 56
-  let%span sord'7 = "../../../creusot-contracts/src/logic/ord.rs" 150 40 150 70
-  let%span sord'8 = "../../../creusot-contracts/src/logic/ord.rs" 151 39 151 72
-  let%span sord'9 = "../../../creusot-contracts/src/logic/ord.rs" 155 40 155 73
-  let%span sord'10 = "../../../creusot-contracts/src/logic/ord.rs" 156 39 156 69
-  let%span sord'11 = "../../../creusot-contracts/src/logic/ord.rs" 160 39 160 84
-  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 240 16 246 17
-  
+module M_682__foo
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
   use mach.int.Int
@@ -126,7 +83,7 @@ module M_682__foo [#"682.rs" 12 0 12 23]
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = [%#sord'12] if UInt64.lt self o then
+  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
       C_Less
     else
       if self = o then C_Equal else C_Greater
@@ -134,48 +91,46 @@ module M_682__foo [#"682.rs" 12 0 12 23]
   
   function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'11] (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
   
   function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. ([%#sord'9] cmp_log x y = C_Greater)
-      -> ([%#sord'10] cmp_log y x = C_Less)
+  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
   
   function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. ([%#sord'7] cmp_log x y = C_Less)
-      -> ([%#sord'8] cmp_log y x = C_Greater)
+  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
   
   function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
+  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
+      -> cmp_log y z = o -> cmp_log x z = o
   
   function refl (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. [%#sord'3] cmp_log x x = C_Equal
+  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
   
   function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'2] UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
   
   function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'1] UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
   
   function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'0] UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
   
   function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord] UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
   
-  let rec add_some (a: MutBorrow.t UInt64.t) (return' (x: ())) =
-    {[@expl:add_some requires] [%#s682'3] UInt64.t'int a.current <= Int.div (UInt64.t'int const_MAX) 2}
-    any [ return''0 (result: ()) -> {[%#s682'4] UInt64.gt a.final a.current} (! return' {result}) ]
+  let rec add_some (a: MutBorrow.t UInt64.t) (return' (x: ())) = {[@expl:add_some requires] UInt64.t'int a.current
+    <= Int.div (UInt64.t'int const_MAX) 2}
+    any [ return''0 (result: ()) -> {UInt64.gt a.final a.current} (! return' {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -187,23 +142,20 @@ module M_682__foo [#"682.rs" 12 0 12 23]
   
   meta "select_lsinst" "all"
   
-  let rec foo [#"682.rs" 12 0 12 23] (a: MutBorrow.t UInt64.t) (return' (x: ())) =
-    {[@expl:foo requires] [%#s682'1] a.current = (3: UInt64.t)}
+  let rec foo (a: MutBorrow.t UInt64.t) (return' (x: ())) = {[@expl:foo requires] a.current = (3: UInt64.t)}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &a_p <- [%#s682] a'0.current ] s1 | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &a_p <- a'0.current ] s1 | s1 = bb1 ]
     | bb1 = s0
       [ s0 = MutBorrow.borrow_final <UInt64.t> {a'0.current} {MutBorrow.get_id a'0}
           (fun (_ret: MutBorrow.t UInt64.t) -> [ &_7 <- _ret ] [ &a'0 <- { a'0 with current = _ret.final } ] s1)
       | s1 = add_some {_7} (fun (_ret: ()) -> [ &_6 <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = s0
-      [ s0 = -{resolve'0 a'0}- s1
-      | s1 = {[@expl:assertion] [%#s682'0] UInt64.gt a'0.current a_p} s2
-      | s2 = return''0 {_0} ] ]
+      [ s0 = -{resolve'0 a'0}- s1 | s1 = {[@expl:assertion] UInt64.gt a'0.current a_p} s2 | s2 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a'0: MutBorrow.t UInt64.t = a
     | & a_p: UInt64.t = Any.any_l ()
     | & _6: () = Any.any_l ()
     | & _7: MutBorrow.t UInt64.t = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:foo ensures] [%#s682'2] UInt64.gt a.final a.current} (! return' {result}) ]
+    [ return''0 (result: ()) -> {[@expl:foo ensures] UInt64.gt a.final a.current} (! return' {result}) ]
 end

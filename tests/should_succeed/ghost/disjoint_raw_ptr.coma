@@ -1,28 +1,4 @@
-module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
-  let%span sdisjoint_raw_ptr = "disjoint_raw_ptr.rs" 5 37 5 41
-  let%span sdisjoint_raw_ptr'0 = "disjoint_raw_ptr.rs" 6 33 6 37
-  let%span sdisjoint_raw_ptr'1 = "disjoint_raw_ptr.rs" 11 18 11 30
-  let%span sdisjoint_raw_ptr'2 = "disjoint_raw_ptr.rs" 12 18 12 26
-  let%span sptr_own = "../../../creusot-contracts/src/ghost/ptr_own.rs" 58 4 58 52
-  let%span sptr_own'0 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 57 14 57 64
-  let%span sptr_own'1 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 211 26 211 30
-  let%span sptr_own'2 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 211 48 211 52
-  let%span sptr_own'3 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 208 14 208 64
-  let%span sptr_own'4 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 209 14 209 28
-  let%span sptr_own'5 = "../../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
-  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 91 22 91 26
-  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 91 4 91 48
-  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 89 14 89 35
-  let%span sghost'2 = "../../../creusot-contracts/src/ghost.rs" 80 14 80 18
-  let%span sghost'3 = "../../../creusot-contracts/src/ghost.rs" 80 4 80 36
-  let%span sghost'4 = "../../../creusot-contracts/src/ghost.rs" 78 14 78 31
-  let%span sghost'5 = "../../../creusot-contracts/src/ghost.rs" 181 14 181 26
-  let%span sghost'6 = "../../../creusot-contracts/src/ghost.rs" 117 8 117 18
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
-  let%span sinvariant'0 = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  let%span sptr = "../../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
-  
+module M_disjoint_raw_ptr__foo
   use creusot.int.Int32
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
@@ -34,7 +10,7 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   type tuple = { _p0: Opaque.ptr; _p1: t_PtrOwn }
   
-  predicate is_null_logic (self: Opaque.ptr) = [%#sptr] Ptr.addr_logic_u64 self = (0: UInt64.t)
+  predicate is_null_logic (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
@@ -51,14 +27,14 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   axiom inv_axiom [@rewrite]: forall x: Opaque.ptr [inv x]. inv x = true
   
   predicate invariant' (self: t_PtrOwn) =
-    [%#sptr_own'5] not is_null_logic (ptr self)
+    not is_null_logic (ptr self)
     /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv (ptr self)
   
   predicate inv'0 (_0: t_PtrOwn)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'6] inv'0 self
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = inv'0 self
   
   meta "rewrite_def" predicate invariant''0
   
@@ -71,12 +47,11 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   axiom inv_axiom'2 [@rewrite]: forall x: tuple [inv'2 x]. inv'2 x = (let {_p0 = x0; _p1 = x1} = x in inv'1 x1)
   
   let rec new (v: Int32.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {[%#sptr_own] inv'2 result}
-      {[%#sptr_own'0] ptr result._p1 = result._p0 /\ val' result._p1 = v}
+    [ return''0 (result: tuple) -> {inv'2 result}
+      {ptr result._p1 = result._p0 /\ val' result._p1 = v}
       (! return' {result}) ]
   
-  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
-    [%#sinvariant] inv'1 self.current /\ inv'1 self.final
+  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''1
   
@@ -84,8 +59,7 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
-    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'0 self.current /\ inv'0 self.final
   
   meta "rewrite_def" predicate invariant''2
   
@@ -94,13 +68,10 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'4 x]. inv'4 x = invariant''2 x
   
   let rec deref_mut (self: MutBorrow.t t_PtrOwn) (return' (x: MutBorrow.t t_PtrOwn)) =
-    {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'3 self}
-    any
-    [ return''0 (result: MutBorrow.t t_PtrOwn) -> {[%#sghost'0] inv'4 result}
-      {[%#sghost'1] result = self}
-      (! return' {result}) ]
+    {[@expl:deref_mut 'self' type invariant] inv'3 self}
+    any [ return''0 (result: MutBorrow.t t_PtrOwn) -> {inv'4 result} {result = self} (! return' {result}) ]
   
-  predicate invariant''3 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'1 self
+  predicate invariant''3 [@inline:trivial] (self: t_PtrOwn) = inv'1 self
   
   meta "rewrite_def" predicate invariant''3
   
@@ -108,7 +79,7 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''3 x
   
-  predicate invariant''4 [@inline:trivial] (self: t_PtrOwn) = [%#sinvariant'0] inv'0 self
+  predicate invariant''4 [@inline:trivial] (self: t_PtrOwn) = inv'0 self
   
   meta "rewrite_def" predicate invariant''4
   
@@ -116,19 +87,18 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   axiom inv_axiom'6 [@rewrite]: forall x: t_PtrOwn [inv'6 x]. inv'6 x = invariant''4 x
   
-  let rec deref (self: t_PtrOwn) (return' (x: t_PtrOwn)) = {[@expl:deref 'self' type invariant] [%#sghost'2] inv'5 self}
-    any
-    [ return''0 (result: t_PtrOwn) -> {[%#sghost'3] inv'6 result} {[%#sghost'4] result = self} (! return' {result}) ]
+  let rec deref (self: t_PtrOwn) (return' (x: t_PtrOwn)) = {[@expl:deref 'self' type invariant] inv'5 self}
+    any [ return''0 (result: t_PtrOwn) -> {inv'6 result} {result = self} (! return' {result}) ]
   
   let rec disjoint_lemma (own1: MutBorrow.t t_PtrOwn) (own2: t_PtrOwn) (return' (x: ())) =
-    {[@expl:disjoint_lemma 'own1' type invariant] [%#sptr_own'1] inv'4 own1}
-    {[@expl:disjoint_lemma 'own2' type invariant] [%#sptr_own'2] inv'6 own2}
+    {[@expl:disjoint_lemma 'own1' type invariant] inv'4 own1}
+    {[@expl:disjoint_lemma 'own2' type invariant] inv'6 own2}
     any
-    [ return''0 (result: ()) -> {[%#sptr_own'3] Ptr.addr_logic_u64 (ptr own1.current) <> Ptr.addr_logic_u64 (ptr own2)}
-      {[%#sptr_own'4] own1.current = own1.final}
+    [ return''0 (result: ()) -> {Ptr.addr_logic_u64 (ptr own1.current) <> Ptr.addr_logic_u64 (ptr own2)}
+      {own1.current = own1.final}
       (! return' {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -136,7 +106,7 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'1
   
@@ -144,19 +114,18 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   meta "rewrite_def" predicate resolve'2
   
-  let rec new'0 (x: ()) (return' (x'0: ())) = any
-    [ return''0 (result: ()) -> {[%#sghost'5] result = x} (! return' {result}) ]
+  let rec new'0 (x: ()) (return' (x'0: ())) = any [ return''0 (result: ()) -> {result = x} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec foo [#"disjoint_raw_ptr.rs" 4 0 4 12] (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = new {[%#sdisjoint_raw_ptr] (1: Int32.t)} (fun (_ret: tuple) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
+  let rec foo (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = new {(1: Int32.t)} (fun (_ret: tuple) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
       [ s0 = [ &p1 <- _3._p0 ] s1
       | s1 = [ &own1 <- _3._p1 ] s2
-      | s2 = new {[%#sdisjoint_raw_ptr'0] (1: Int32.t)} (fun (_ret: tuple) -> [ &_6 <- _ret ] s3)
+      | s2 = new {(1: Int32.t)} (fun (_ret: tuple) -> [ &_6 <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = s0
       [ s0 = [ &p2 <- _6._p0 ] s1
@@ -188,9 +157,7 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
       | s4 = new'0 {_8} (fun (_ret: ()) -> [ &_7 <- _ret ] s5)
       | s5 = bb6 ]
     | bb6 = s0
-      [ s0 = {[@expl:assertion] [%#sdisjoint_raw_ptr'1] own1 <> own2} s1
-      | s1 = {[@expl:assertion] [%#sdisjoint_raw_ptr'2] p1 <> p2} s2
-      | s2 = return''0 {_0} ] ]
+      [ s0 = {[@expl:assertion] own1 <> own2} s1 | s1 = {[@expl:assertion] p1 <> p2} s2 | s2 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & p1: Opaque.ptr = Any.any_l ()
     | & own1: t_PtrOwn = Any.any_l ()

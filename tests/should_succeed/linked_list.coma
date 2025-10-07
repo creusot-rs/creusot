@@ -1,18 +1,4 @@
-module M_linked_list__qyi10858349784728989480__new [#"linked_list.rs" 54 4 54 27] (* List<T> *)
-  let%span slinked_list = "linked_list.rs" 54 20 54 27
-  let%span slinked_list'0 = "linked_list.rs" 53 14 53 37
-  let%span slinked_list'1 = "linked_list.rs" 42 12 42 74
-  let%span slinked_list'2 = "linked_list.rs" 49 4 49 41
-  let%span slinked_list'3 = "linked_list.rs" 21 12 31 69
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 247 12 247 46
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 446 4 446 31
-  let%span sseq'0 = "../../creusot-contracts/src/logic/seq.rs" 444 14 444 38
-  let%span sseq'1 = "../../creusot-contracts/src/logic/seq.rs" 713 20 713 91
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 117 8 117 18
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
-  
+module M_linked_list__qyi10858349784728989480__new (* List<T> *)
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
@@ -21,10 +7,10 @@ module M_linked_list__qyi10858349784728989480__new [#"linked_list.rs" 54 4 54 27
   use creusot.prelude.Any
   use map.Map
   
-  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'0] Ptr.addr_logic_u64 self = (0: UInt64.t)
+  predicate is_null_logic (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   let rec null (return' (x: Opaque.ptr)) = any
-    [ return''0 (result: Opaque.ptr) -> {[%#sptr] is_null_logic result} (! return' {result}) ]
+    [ return''0 (result: Opaque.ptr) -> {is_null_logic result} (! return' {result}) ]
   
   type t_PtrOwn
   
@@ -47,21 +33,21 @@ module M_linked_list__qyi10858349784728989480__new [#"linked_list.rs" 54 4 54 27
   axiom inv_axiom [@rewrite]: forall x: Opaque.ptr [inv x]. inv x = true
   
   predicate invariant' (self: t_PtrOwn) =
-    [%#sptr_own] not is_null_logic (ptr self)
+    not is_null_logic (ptr self)
     /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv (ptr self)
   
   predicate inv'0 (_0: t_PtrOwn)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 (self: t_PtrOwn) = [%#sboxed] inv'0 self
+  predicate invariant''0 (self: t_PtrOwn) = inv'0 self
   
   predicate inv'1 (_0: t_PtrOwn)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
   
   predicate invariant''1 [@inline:trivial] (self: Seq.seq t_PtrOwn) =
-    [%#sseq'1] forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''1
   
@@ -69,7 +55,7 @@ module M_linked_list__qyi10858349784728989480__new [#"linked_list.rs" 54 4 54 27
   
   axiom inv_axiom'2 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate invariant''2 [@inline:trivial] (self: Seq.seq t_PtrOwn) = [%#sghost] inv'2 self
+  predicate invariant''2 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'2 self
   
   meta "rewrite_def" predicate invariant''2
   
@@ -78,14 +64,14 @@ module M_linked_list__qyi10858349784728989480__new [#"linked_list.rs" 54 4 54 27
   axiom inv_axiom'3 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'3 x]. inv'3 x = invariant''2 x
   
   let rec new (return' (x: Seq.seq t_PtrOwn)) = any
-    [ return''0 (result: Seq.seq t_PtrOwn) -> {[%#sseq] inv'3 result}
-      {[%#sseq'0] result = (Seq.empty: Seq.seq t_PtrOwn)}
+    [ return''0 (result: Seq.seq t_PtrOwn) -> {inv'3 result}
+      {result = (Seq.empty: Seq.seq t_PtrOwn)}
       (! return' {result}) ]
   
   type t_List = { t_List__first: Opaque.ptr; t_List__last: Opaque.ptr; t_List__seq: Seq.seq t_PtrOwn }
   
-  predicate invariant''3 [#"linked_list.rs" 19 4 19 30] (self: t_List) =
-    [%#slinked_list'3] self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
+  predicate invariant''3 (self: t_List) =
+    self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
       /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
     \/ Seq.length self.t_List__seq > 0
     /\ self.t_List__first = ptr (Seq.get self.t_List__seq 0)
@@ -102,17 +88,17 @@ module M_linked_list__qyi10858349784728989480__new [#"linked_list.rs" 54 4 54 27
         | {t_List__first = first; t_List__last = last; t_List__seq = seq} -> inv'3 seq
         end)
   
-  function seq_map [#"linked_list.rs" 48 0 48 66] (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
-    [%#slinked_list'2] Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))
+  function seq_map (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
+    Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))
   
-  function view [#"linked_list.rs" 40 4 40 33] (self: t_List) : Seq.seq t_T =
-    [%#slinked_list'1] seq_map self.t_List__seq (fun (ptr_own: t_PtrOwn) -> (val' ptr_own).t_Cell__v)
+  function view (self: t_List) : Seq.seq t_T =
+    seq_map self.t_List__seq (fun (ptr_own: t_PtrOwn) -> (val' ptr_own).t_Cell__v)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec new'0 [#"linked_list.rs" 54 4 54 27] (return' (x: t_List)) = (! bb0
+  let rec new'0 (return' (x: t_List)) = (! bb0
     [ bb0 = s0 [ s0 = null (fun (_ret: Opaque.ptr) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = null (fun (_ret: Opaque.ptr) -> [ &_3 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = new (fun (_ret: Seq.seq t_PtrOwn) -> [ &_4 <- _ret ] s1) | s1 = bb3 ]
@@ -122,67 +108,11 @@ module M_linked_list__qyi10858349784728989480__new [#"linked_list.rs" 54 4 54 27
     | & _2: Opaque.ptr = Any.any_l ()
     | & _3: Opaque.ptr = Any.any_l ()
     | & _4: Seq.seq t_PtrOwn = Any.any_l () ])
-    [ return''0 (result: t_List) -> {[@expl:new result type invariant] [%#slinked_list] inv'4 result}
-      {[@expl:new ensures] [%#slinked_list'0] view result = (Seq.empty: Seq.seq t_T)}
+    [ return''0 (result: t_List) -> {[@expl:new result type invariant] inv'4 result}
+      {[@expl:new ensures] view result = (Seq.empty: Seq.seq t_T)}
       (! return' {result}) ]
 end
-module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4 59 37] (* List<T> *)
-  let%span slinked_list = "linked_list.rs" 70 57 70 61
-  let%span slinked_list'0 = "linked_list.rs" 59 26 59 30
-  let%span slinked_list'1 = "linked_list.rs" 59 32 59 33
-  let%span slinked_list'2 = "linked_list.rs" 58 14 58 47
-  let%span slinked_list'3 = "linked_list.rs" 42 12 42 74
-  let%span slinked_list'4 = "linked_list.rs" 49 4 49 41
-  let%span slinked_list'5 = "linked_list.rs" 21 12 31 69
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 247 12 247 46
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 186 18 186 48
-  let%span sptr'1 = "../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 470 22 470 26
-  let%span sseq'0 = "../../creusot-contracts/src/logic/seq.rs" 469 14 469 34
-  let%span sseq'1 = "../../creusot-contracts/src/logic/seq.rs" 596 30 596 34
-  let%span sseq'2 = "../../creusot-contracts/src/logic/seq.rs" 596 4 596 65
-  let%span sseq'3 = "../../creusot-contracts/src/logic/seq.rs" 590 14 593 5
-  let%span sseq'4 = "../../creusot-contracts/src/logic/seq.rs" 594 14 594 71
-  let%span sseq'5 = "../../creusot-contracts/src/logic/seq.rs" 595 14 595 44
-  let%span sseq'6 = "../../creusot-contracts/src/logic/seq.rs" 537 32 537 36
-  let%span sseq'7 = "../../creusot-contracts/src/logic/seq.rs" 537 38 537 39
-  let%span sseq'8 = "../../creusot-contracts/src/logic/seq.rs" 536 14 536 40
-  let%span sseq'9 = "../../creusot-contracts/src/logic/seq.rs" 76 8 76 82
-  let%span sseq'10 = "../../creusot-contracts/src/logic/seq.rs" 713 20 713 91
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 80 14 80 18
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 80 4 80 36
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 78 14 78 31
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 203 14 203 29
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 91 22 91 26
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 91 4 91 48
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 89 14 89 35
-  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 183 15 183 16
-  let%span sghost'7 = "../../creusot-contracts/src/ghost.rs" 183 4 185 17
-  let%span sghost'8 = "../../creusot-contracts/src/ghost.rs" 181 14 181 26
-  let%span sghost'9 = "../../creusot-contracts/src/ghost.rs" 205 22 205 26
-  let%span sghost'10 = "../../creusot-contracts/src/ghost.rs" 205 4 207 17
-  let%span sghost'11 = "../../creusot-contracts/src/ghost.rs" 109 20 109 27
-  let%span sghost'12 = "../../creusot-contracts/src/ghost.rs" 117 8 117 18
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 69 20 69 23
-  let%span sptr_own'0 = "../../creusot-contracts/src/ghost/ptr_own.rs" 69 4 69 64
-  let%span sptr_own'1 = "../../creusot-contracts/src/ghost/ptr_own.rs" 67 14 67 67
-  let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 169 40 169 43
-  let%span sptr_own'3 = "../../creusot-contracts/src/ghost/ptr_own.rs" 164 15 164 31
-  let%span sptr_own'4 = "../../creusot-contracts/src/ghost/ptr_own.rs" 169 4 169 77
-  let%span sptr_own'5 = "../../creusot-contracts/src/ghost/ptr_own.rs" 165 14 165 35
-  let%span sptr_own'6 = "../../creusot-contracts/src/ghost/ptr_own.rs" 166 14 166 39
-  let%span sptr_own'7 = "../../creusot-contracts/src/ghost/ptr_own.rs" 167 14 167 38
-  let%span sptr_own'8 = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
-  let%span sint = "../../creusot-contracts/src/logic/int.rs" 227 14 227 31
-  let%span sint'0 = "../../creusot-contracts/src/logic/int.rs" 312 14 312 36
-  let%span soption = "../../creusot-contracts/src/std/option.rs" 148 16 148 17
-  let%span soption'0 = "../../creusot-contracts/src/std/option.rs" 149 27 149 39
-  let%span soption'1 = "../../creusot-contracts/src/std/option.rs" 150 26 150 46
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
-  let%span sinvariant'0 = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  
+module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
@@ -193,10 +123,10 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   use creusot.prelude.Any
   use map.Map
   
-  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'1] Ptr.addr_logic_u64 self = (0: UInt64.t)
+  predicate is_null_logic (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   let rec null (return' (x: Opaque.ptr)) = any
-    [ return''0 (result: Opaque.ptr) -> {[%#sptr] is_null_logic result} (! return' {result}) ]
+    [ return''0 (result: Opaque.ptr) -> {is_null_logic result} (! return' {result}) ]
   
   type t_T
   
@@ -215,7 +145,7 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
         | {t_Cell__v = v; t_Cell__next = next} -> inv v
         end
   
-  predicate invariant' (self: t_Cell) = [%#sboxed] inv'0 self
+  predicate invariant' (self: t_Cell) = inv'0 self
   
   predicate inv'1 (_0: t_Cell)
   
@@ -236,14 +166,14 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   axiom inv_axiom'1 [@rewrite]: forall x: Opaque.ptr [inv'2 x]. inv'2 x = true
   
   predicate invariant''0 (self: t_PtrOwn) =
-    [%#sptr_own'8] not is_null_logic (ptr self)
+    not is_null_logic (ptr self)
     /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'2 (ptr self)
   
   predicate inv'3 (_0: t_PtrOwn)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''0 x
   
-  predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'12] inv'3 self
+  predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = inv'3 self
   
   meta "rewrite_def" predicate invariant''1
   
@@ -255,26 +185,25 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   
   axiom inv_axiom'4 [@rewrite]: forall x: tuple [inv'5 x]. inv'5 x = (let {_p0 = x0; _p1 = x1} = x in inv'4 x1)
   
-  let rec from_box (val''0: t_Cell) (return' (x: tuple)) =
-    {[@expl:from_box 'val' type invariant] [%#sptr_own] inv'1 val''0}
+  let rec from_box (val''0: t_Cell) (return' (x: tuple)) = {[@expl:from_box 'val' type invariant] inv'1 val''0}
     any
-    [ return''0 (result: tuple) -> {[%#sptr_own'0] inv'5 result}
-      {[%#sptr_own'1] ptr result._p1 = result._p0 /\ val' result._p1 = val''0}
+    [ return''0 (result: tuple) -> {inv'5 result}
+      {ptr result._p1 = result._p0 /\ val' result._p1 = val''0}
       (! return' {result}) ]
   
   type t_List = { t_List__first: Opaque.ptr; t_List__last: Opaque.ptr; t_List__seq: Seq.seq t_PtrOwn }
   
   let rec is_null (self_: Opaque.ptr) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {[%#sptr'0] result = is_null_logic self_} (! return' {result}) ]
+    [ return''0 (result: bool) -> {result = is_null_logic self_} (! return' {result}) ]
   
-  predicate invariant''2 (self: t_PtrOwn) = [%#sboxed] inv'3 self
+  predicate invariant''2 (self: t_PtrOwn) = inv'3 self
   
   predicate inv'6 (_0: t_PtrOwn)
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_PtrOwn [inv'6 x]. inv'6 x = invariant''2 x
   
   predicate invariant''3 [@inline:trivial] (self: Seq.seq t_PtrOwn) =
-    [%#sseq'10] forall i: int. 0 <= i /\ i < Seq.length self -> inv'6 (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv'6 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''3
   
@@ -282,7 +211,7 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   
   axiom inv_axiom'6 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate invariant''4 [@inline:trivial] (self: Seq.seq t_PtrOwn) = [%#sghost'12] inv'7 self
+  predicate invariant''4 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'7 self
   
   meta "rewrite_def" predicate invariant''4
   
@@ -290,7 +219,7 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   
   axiom inv_axiom'7 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'8 x]. inv'8 x = invariant''4 x
   
-  predicate invariant''5 [@inline:trivial] (self: Seq.seq t_PtrOwn) = [%#sinvariant'0] inv'8 self
+  predicate invariant''5 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'8 self
   
   meta "rewrite_def" predicate invariant''5
   
@@ -298,7 +227,7 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   
   axiom inv_axiom'8 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'9 x]. inv'9 x = invariant''5 x
   
-  predicate invariant''6 [@inline:trivial] (self: Seq.seq t_PtrOwn) = [%#sinvariant'0] inv'7 self
+  predicate invariant''6 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'7 self
   
   meta "rewrite_def" predicate invariant''6
   
@@ -307,27 +236,23 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   axiom inv_axiom'9 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'10 x]. inv'10 x = invariant''6 x
   
   let rec deref (self: Seq.seq t_PtrOwn) (return' (x: Seq.seq t_PtrOwn)) =
-    {[@expl:deref 'self' type invariant] [%#sghost] inv'9 self}
-    any
-    [ return''0 (result: Seq.seq t_PtrOwn) -> {[%#sghost'0] inv'10 result}
-      {[%#sghost'1] result = self}
-      (! return' {result}) ]
+    {[@expl:deref 'self' type invariant] inv'9 self}
+    any [ return''0 (result: Seq.seq t_PtrOwn) -> {inv'10 result} {result = self} (! return' {result}) ]
   
-  let rec len_ghost (self: Seq.seq t_PtrOwn) (return' (x: int)) =
-    {[@expl:len_ghost 'self' type invariant] [%#sseq] inv'10 self}
-    any [ return''0 (result: int) -> {[%#sseq'0] result = Seq.length self} (! return' {result}) ]
+  let rec len_ghost (self: Seq.seq t_PtrOwn) (return' (x: int)) = {[@expl:len_ghost 'self' type invariant] inv'10 self}
+    any [ return''0 (result: int) -> {result = Seq.length self} (! return' {result}) ]
   
   let rec new (value: Int128.t) (return' (x: int)) = any
-    [ return''0 (result: int) -> {[%#sint] result = Int128.to_int value} (! return' {result}) ]
+    [ return''0 (result: int) -> {result = Int128.to_int value} (! return' {result}) ]
   
   let rec into_inner (self: int) (return' (x: int)) = any
-    [ return''0 (result: int) -> {[%#sghost'2] result = self} (! return' {result}) ]
+    [ return''0 (result: int) -> {result = self} (! return' {result}) ]
   
   let rec sub (self: int) (other: int) (return' (x: int)) = any
-    [ return''0 (result: int) -> {[%#sint'0] result = self - other} (! return' {result}) ]
+    [ return''0 (result: int) -> {result = self - other} (! return' {result}) ]
   
   predicate invariant''7 [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    [%#sinvariant] inv'8 self.current /\ inv'8 self.final
+    inv'8 self.current /\ inv'8 self.final
   
   meta "rewrite_def" predicate invariant''7
   
@@ -336,7 +261,7 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'11 x]. inv'11 x = invariant''7 x
   
   predicate invariant''8 [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    [%#sinvariant] inv'7 self.current /\ inv'7 self.final
+    inv'7 self.current /\ inv'7 self.final
   
   meta "rewrite_def" predicate invariant''8
   
@@ -345,16 +270,12 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'12 x]. inv'12 x = invariant''8 x
   
   let rec deref_mut (self: MutBorrow.t (Seq.seq t_PtrOwn)) (return' (x: MutBorrow.t (Seq.seq t_PtrOwn))) =
-    {[@expl:deref_mut 'self' type invariant] [%#sghost'3] inv'11 self}
-    any
-    [ return''0 (result: MutBorrow.t (Seq.seq t_PtrOwn)) -> {[%#sghost'4] inv'12 result}
-      {[%#sghost'5] result = self}
-      (! return' {result}) ]
+    {[@expl:deref_mut 'self' type invariant] inv'11 self}
+    any [ return''0 (result: MutBorrow.t (Seq.seq t_PtrOwn)) -> {inv'12 result} {result = self} (! return' {result}) ]
   
   type t_Option = C_None | C_Some (MutBorrow.t t_PtrOwn)
   
-  predicate invariant''9 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) =
-    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  predicate invariant''9 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''9
   
@@ -372,33 +293,30 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   
   type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
   
-  function get (self: Seq.seq t_PtrOwn) (ix: int) : t_Option'0 = [%#sseq'9] if 0 <= ix /\ ix < Seq.length self then
+  function get (self: Seq.seq t_PtrOwn) (ix: int) : t_Option'0 = if 0 <= ix /\ ix < Seq.length self then
       C_Some'0 (Seq.get self ix)
     else
       C_None'0
   
   
   let rec get_mut_ghost (self: MutBorrow.t (Seq.seq t_PtrOwn)) (index: int) (return' (x: t_Option)) =
-    {[@expl:get_mut_ghost 'self' type invariant] [%#sseq'1] inv'12 self}
+    {[@expl:get_mut_ghost 'self' type invariant] inv'12 self}
     any
-    [ return''0 (result: t_Option) -> {[%#sseq'2] inv'14 result}
-      {[%#sseq'3] match result with
+    [ return''0 (result: t_Option) -> {inv'14 result}
+      {match result with
         | C_None -> get self.current index = C_None'0 /\ self.current = self.final
         | C_Some r -> get self.current index = C_Some'0 (r.current) /\ r.final = Seq.get self.final index
         end}
-      {[%#sseq'4] forall i: int. i <> index -> get self.current i = get self.final i}
-      {[%#sseq'5] Seq.length self.current = Seq.length self.final}
+      {forall i: int. i <> index -> get self.current i = get self.final i}
+      {Seq.length self.current = Seq.length self.final}
       (! return' {result}) ]
   
   let rec unwrap (self_: t_Option) (return' (x: MutBorrow.t t_PtrOwn)) =
-    {[@expl:unwrap 'self_' type invariant] [%#soption] inv'14 self_}
-    {[@expl:unwrap requires] [%#soption'0] self_ <> C_None}
-    any
-    [ return''0 (result: MutBorrow.t t_PtrOwn) -> {inv'13 result}
-      {[%#soption'1] C_Some result = self_}
-      (! return' {result}) ]
+    {[@expl:unwrap 'self_' type invariant] inv'14 self_}
+    {[@expl:unwrap requires] self_ <> C_None}
+    any [ return''0 (result: MutBorrow.t t_PtrOwn) -> {inv'13 result} {C_Some result = self_} (! return' {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -406,7 +324,7 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sresolve] self.final = self.current
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'1
   
@@ -414,7 +332,7 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate invariant''10 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = [%#sghost'12] inv'13 self
+  predicate invariant''10 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'13 self
   
   meta "rewrite_def" predicate invariant''10
   
@@ -423,14 +341,10 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'15 x]. inv'15 x = invariant''10 x
   
   let rec new'0 (x: MutBorrow.t t_PtrOwn) (return' (x'0: MutBorrow.t t_PtrOwn)) =
-    {[@expl:new 'x' type invariant] [%#sghost'6] inv'13 x}
-    any
-    [ return''0 (result: MutBorrow.t t_PtrOwn) -> {[%#sghost'7] inv'15 result}
-      {[%#sghost'8] result = x}
-      (! return' {result}) ]
+    {[@expl:new 'x' type invariant] inv'13 x}
+    any [ return''0 (result: MutBorrow.t t_PtrOwn) -> {inv'15 result} {result = x} (! return' {result}) ]
   
-  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t t_Cell) =
-    [%#sinvariant] inv'0 self.current /\ inv'0 self.final
+  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t t_Cell) = inv'0 self.current /\ inv'0 self.final
   
   meta "rewrite_def" predicate invariant''11
   
@@ -438,21 +352,21 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   
   axiom inv_axiom'15 [@rewrite]: forall x: MutBorrow.t t_Cell [inv'16 x]. inv'16 x = invariant''11 x
   
-  function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = [%#sghost'11] self.final
+  function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = self.final
   
   meta "rewrite_def" function fin
   
   let rec as_mut (ptr'0: Opaque.ptr) (own: MutBorrow.t t_PtrOwn) (return' (x: MutBorrow.t t_Cell)) =
-    {[@expl:as_mut 'own' type invariant] [%#sptr_own'2] inv'15 own}
-    {[@expl:as_mut requires] [%#sptr_own'3] ptr'0 = ptr own.current}
+    {[@expl:as_mut 'own' type invariant] inv'15 own}
+    {[@expl:as_mut requires] ptr'0 = ptr own.current}
     any
-    [ return''0 (result: MutBorrow.t t_Cell) -> {[%#sptr_own'4] inv'16 result}
-      {[%#sptr_own'5] result.current = val' own.current}
-      {[%#sptr_own'6] ptr (fin own) = ptr own.current}
-      {[%#sptr_own'7] val' (fin own) = result.final}
+    [ return''0 (result: MutBorrow.t t_Cell) -> {inv'16 result}
+      {result.current = val' own.current}
+      {ptr (fin own) = ptr own.current}
+      {val' (fin own) = result.final}
       (! return' {result}) ]
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Cell) = [%#sresolve] self.final = self.current
+  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Cell) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'3
   
@@ -460,18 +374,16 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   
   meta "rewrite_def" predicate resolve'4
   
-  let rec into_inner'0 (self: t_PtrOwn) (return' (x: t_PtrOwn)) =
-    {[@expl:into_inner 'self' type invariant] [%#sghost'9] inv'4 self}
-    any
-    [ return''0 (result: t_PtrOwn) -> {[%#sghost'10] inv'3 result} {[%#sghost'2] result = self} (! return' {result}) ]
+  let rec into_inner'0 (self: t_PtrOwn) (return' (x: t_PtrOwn)) = {[@expl:into_inner 'self' type invariant] inv'4 self}
+    any [ return''0 (result: t_PtrOwn) -> {inv'3 result} {result = self} (! return' {result}) ]
   
   let rec push_back_ghost (self: MutBorrow.t (Seq.seq t_PtrOwn)) (x: t_PtrOwn) (return' (x'0: ())) =
-    {[@expl:push_back_ghost 'self' type invariant] [%#sseq'6] inv'12 self}
-    {[@expl:push_back_ghost 'x' type invariant] [%#sseq'7] inv'3 x}
-    any [ return''0 (result: ()) -> {[%#sseq'8] self.final = Seq.snoc self.current x} (! return' {result}) ]
+    {[@expl:push_back_ghost 'self' type invariant] inv'12 self}
+    {[@expl:push_back_ghost 'x' type invariant] inv'3 x}
+    any [ return''0 (result: ()) -> {self.final = Seq.snoc self.current x} (! return' {result}) ]
   
-  predicate invariant''12 [#"linked_list.rs" 19 4 19 30] (self: t_List) =
-    [%#slinked_list'5] self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
+  predicate invariant''12 (self: t_List) =
+    self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
       /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
     \/ Seq.length self.t_List__seq > 0
     /\ self.t_List__first = ptr (Seq.get self.t_List__seq 0)
@@ -488,8 +400,7 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
         | {t_List__first = first; t_List__last = last; t_List__seq = seq} -> inv'8 seq
         end)
   
-  predicate invariant''13 [@inline:trivial] (self: MutBorrow.t t_List) =
-    [%#sinvariant] inv'17 self.current /\ inv'17 self.final
+  predicate invariant''13 [@inline:trivial] (self: MutBorrow.t t_List) = inv'17 self.current /\ inv'17 self.final
   
   meta "rewrite_def" predicate invariant''13
   
@@ -497,7 +408,7 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   
   axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_List [inv'18 x]. inv'18 x = invariant''13 x
   
-  predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_List) = [%#sresolve] self.final = self.current
+  predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'5
   
@@ -505,22 +416,21 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
   
   meta "rewrite_def" predicate resolve'6
   
-  let rec new'1 (x: ()) (return' (x'0: ())) = any
-    [ return''0 (result: ()) -> {[%#sghost'8] result = x} (! return' {result}) ]
+  let rec new'1 (x: ()) (return' (x'0: ())) = any [ return''0 (result: ()) -> {result = x} (! return' {result}) ]
   
-  function seq_map [#"linked_list.rs" 48 0 48 66] (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
-    [%#slinked_list'4] Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))
+  function seq_map (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
+    Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))
   
-  function view [#"linked_list.rs" 40 4 40 33] (self: t_List) : Seq.seq t_T =
-    [%#slinked_list'3] seq_map self.t_List__seq (fun (ptr_own: t_PtrOwn) -> (val' ptr_own).t_Cell__v)
+  function view (self: t_List) : Seq.seq t_T =
+    seq_map self.t_List__seq (fun (ptr_own: t_PtrOwn) -> (val' ptr_own).t_Cell__v)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec push_back [#"linked_list.rs" 59 4 59 37] (self: MutBorrow.t t_List) (x: t_T) (return' (x'0: ())) =
-    {[@expl:push_back 'self' type invariant] [%#slinked_list'0] inv'18 self}
-    {[@expl:push_back 'x' type invariant] [%#slinked_list'1] inv x}
+  let rec push_back (self: MutBorrow.t t_List) (x: t_T) (return' (x'0: ())) =
+    {[@expl:push_back 'self' type invariant] inv'18 self}
+    {[@expl:push_back 'x' type invariant] inv x}
     (! bb0
     [ bb0 = s0 [ s0 = null (fun (_ret: Opaque.ptr) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = [ &_5 <- { t_Cell__v = x'0; t_Cell__next = _7 } ] s1 | s1 = bb2 ]
@@ -539,7 +449,7 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
     | bb7 = s0
       [ s0 = deref {(self'0.current).t_List__seq} (fun (_ret: Seq.seq t_PtrOwn) -> [ &_26 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0 [ s0 = len_ghost {_26} (fun (_ret: int) -> [ &_24 <- _ret ] s1) | s1 = bb9 ]
-    | bb9 = s0 [ s0 = new {[%#slinked_list] (1: Int128.t)} (fun (_ret: int) -> [ &_29 <- _ret ] s1) | s1 = bb10 ]
+    | bb9 = s0 [ s0 = new {(1: Int128.t)} (fun (_ret: int) -> [ &_29 <- _ret ] s1) | s1 = bb10 ]
     | bb10 = s0 [ s0 = into_inner {_29} (fun (_ret: int) -> [ &_28 <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0 [ s0 = sub {_24} {_28} (fun (_ret: int) -> [ &off <- _ret ] s1) | s1 = bb12 ]
     | bb12 = s0
@@ -651,40 +561,10 @@ module M_linked_list__qyi10858349784728989480__push_back [#"linked_list.rs" 59 4
     | & _41: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
     | & _42: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
     | & _43: t_PtrOwn = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:push_back ensures] [%#slinked_list'2] view self.final
-      = Seq.snoc (view self.current) x}
+    [ return''0 (result: ()) -> {[@expl:push_back ensures] view self.final = Seq.snoc (view self.current) x}
       (! return' {result}) ]
 end
-module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 4 82 38] (* List<T> *)
-  let%span slinked_list = "linked_list.rs" 82 27 82 31
-  let%span slinked_list'0 = "linked_list.rs" 82 33 82 34
-  let%span slinked_list'1 = "linked_list.rs" 81 14 81 48
-  let%span slinked_list'2 = "linked_list.rs" 42 12 42 74
-  let%span slinked_list'3 = "linked_list.rs" 49 4 49 41
-  let%span slinked_list'4 = "linked_list.rs" 21 12 31 69
-  let%span sptr = "../../creusot-contracts/src/std/ptr.rs" 186 18 186 48
-  let%span sptr'0 = "../../creusot-contracts/src/std/ptr.rs" 129 8 129 35
-  let%span sseq = "../../creusot-contracts/src/logic/seq.rs" 515 33 515 37
-  let%span sseq'0 = "../../creusot-contracts/src/logic/seq.rs" 515 39 515 40
-  let%span sseq'1 = "../../creusot-contracts/src/logic/seq.rs" 514 14 514 41
-  let%span sseq'2 = "../../creusot-contracts/src/logic/seq.rs" 251 8 251 27
-  let%span sseq'3 = "../../creusot-contracts/src/logic/seq.rs" 713 20 713 91
-  let%span sghost = "../../creusot-contracts/src/ghost.rs" 91 22 91 26
-  let%span sghost'0 = "../../creusot-contracts/src/ghost.rs" 91 4 91 48
-  let%span sghost'1 = "../../creusot-contracts/src/ghost.rs" 89 14 89 35
-  let%span sghost'2 = "../../creusot-contracts/src/ghost.rs" 205 22 205 26
-  let%span sghost'3 = "../../creusot-contracts/src/ghost.rs" 205 4 207 17
-  let%span sghost'4 = "../../creusot-contracts/src/ghost.rs" 203 14 203 29
-  let%span sghost'5 = "../../creusot-contracts/src/ghost.rs" 181 14 181 26
-  let%span sghost'6 = "../../creusot-contracts/src/ghost.rs" 117 8 117 18
-  let%span sboxed = "../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  let%span sptr_own = "../../creusot-contracts/src/ghost/ptr_own.rs" 58 15 58 16
-  let%span sptr_own'0 = "../../creusot-contracts/src/ghost/ptr_own.rs" 58 4 58 52
-  let%span sptr_own'1 = "../../creusot-contracts/src/ghost/ptr_own.rs" 57 14 57 64
-  let%span sptr_own'2 = "../../creusot-contracts/src/ghost/ptr_own.rs" 44 4 44 29
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
-  
+module M_linked_list__qyi10858349784728989480__push_front (* List<T> *)
   use creusot.prelude.Opaque
   use seq.Seq
   use creusot.prelude.Ptr
@@ -713,7 +593,7 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
         | {t_Cell__v = v; t_Cell__next = next} -> inv v
         end
   
-  predicate is_null_logic (self: Opaque.ptr) = [%#sptr'0] Ptr.addr_logic_u64 self = (0: UInt64.t)
+  predicate is_null_logic (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   function ptr (self: t_PtrOwn) : Opaque.ptr
   
@@ -730,14 +610,14 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
   axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'1 x]. inv'1 x = true
   
   predicate invariant' (self: t_PtrOwn) =
-    [%#sptr_own'2] not is_null_logic (ptr self)
+    not is_null_logic (ptr self)
     /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'1 (ptr self)
   
   predicate inv'2 (_0: t_PtrOwn)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant' x
   
-  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = [%#sghost'6] inv'2 self
+  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = inv'2 self
   
   meta "rewrite_def" predicate invariant''0
   
@@ -749,23 +629,23 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
   
   axiom inv_axiom'3 [@rewrite]: forall x: tuple [inv'4 x]. inv'4 x = (let {_p0 = x0; _p1 = x1} = x in inv'3 x1)
   
-  let rec new (v: t_Cell) (return' (x: tuple)) = {[@expl:new 'v' type invariant] [%#sptr_own] inv'0 v}
+  let rec new (v: t_Cell) (return' (x: tuple)) = {[@expl:new 'v' type invariant] inv'0 v}
     any
-    [ return''0 (result: tuple) -> {[%#sptr_own'0] inv'4 result}
-      {[%#sptr_own'1] ptr result._p1 = result._p0 /\ val' result._p1 = v}
+    [ return''0 (result: tuple) -> {inv'4 result}
+      {ptr result._p1 = result._p0 /\ val' result._p1 = v}
       (! return' {result}) ]
   
   let rec is_null (self_: Opaque.ptr) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {[%#sptr] result = is_null_logic self_} (! return' {result}) ]
+    [ return''0 (result: bool) -> {result = is_null_logic self_} (! return' {result}) ]
   
-  predicate invariant''1 (self: t_PtrOwn) = [%#sboxed] inv'2 self
+  predicate invariant''1 (self: t_PtrOwn) = inv'2 self
   
   predicate inv'5 (_0: t_PtrOwn)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: Seq.seq t_PtrOwn) =
-    [%#sseq'3] forall i: int. 0 <= i /\ i < Seq.length self -> inv'5 (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv'5 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''2
   
@@ -773,7 +653,7 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
   
   axiom inv_axiom'5 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'6 x]. inv'6 x = invariant''2 x
   
-  predicate invariant''3 [@inline:trivial] (self: Seq.seq t_PtrOwn) = [%#sghost'6] inv'6 self
+  predicate invariant''3 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'6 self
   
   meta "rewrite_def" predicate invariant''3
   
@@ -782,7 +662,7 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
   axiom inv_axiom'6 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'7 x]. inv'7 x = invariant''3 x
   
   predicate invariant''4 [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    [%#sinvariant] inv'7 self.current /\ inv'7 self.final
+    inv'7 self.current /\ inv'7 self.final
   
   meta "rewrite_def" predicate invariant''4
   
@@ -791,7 +671,7 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
   axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'8 x]. inv'8 x = invariant''4 x
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    [%#sinvariant] inv'6 self.current /\ inv'6 self.final
+    inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''5
   
@@ -800,28 +680,22 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
   axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'9 x]. inv'9 x = invariant''5 x
   
   let rec deref_mut (self: MutBorrow.t (Seq.seq t_PtrOwn)) (return' (x: MutBorrow.t (Seq.seq t_PtrOwn))) =
-    {[@expl:deref_mut 'self' type invariant] [%#sghost] inv'8 self}
-    any
-    [ return''0 (result: MutBorrow.t (Seq.seq t_PtrOwn)) -> {[%#sghost'0] inv'9 result}
-      {[%#sghost'1] result = self}
-      (! return' {result}) ]
+    {[@expl:deref_mut 'self' type invariant] inv'8 self}
+    any [ return''0 (result: MutBorrow.t (Seq.seq t_PtrOwn)) -> {inv'9 result} {result = self} (! return' {result}) ]
   
-  let rec into_inner (self: t_PtrOwn) (return' (x: t_PtrOwn)) =
-    {[@expl:into_inner 'self' type invariant] [%#sghost'2] inv'3 self}
-    any
-    [ return''0 (result: t_PtrOwn) -> {[%#sghost'3] inv'2 result} {[%#sghost'4] result = self} (! return' {result}) ]
+  let rec into_inner (self: t_PtrOwn) (return' (x: t_PtrOwn)) = {[@expl:into_inner 'self' type invariant] inv'3 self}
+    any [ return''0 (result: t_PtrOwn) -> {inv'2 result} {result = self} (! return' {result}) ]
   
-  function push_front [@inline:trivial] (self: Seq.seq t_PtrOwn) (x: t_PtrOwn) : Seq.seq t_PtrOwn =
-    [%#sseq'2] Seq.cons x self
+  function push_front [@inline:trivial] (self: Seq.seq t_PtrOwn) (x: t_PtrOwn) : Seq.seq t_PtrOwn = Seq.cons x self
   
   meta "rewrite_def" function push_front
   
   let rec push_front_ghost (self: MutBorrow.t (Seq.seq t_PtrOwn)) (x: t_PtrOwn) (return' (x'0: ())) =
-    {[@expl:push_front_ghost 'self' type invariant] [%#sseq] inv'9 self}
-    {[@expl:push_front_ghost 'x' type invariant] [%#sseq'0] inv'2 x}
-    any [ return''0 (result: ()) -> {[%#sseq'1] self.final = push_front self.current x} (! return' {result}) ]
+    {[@expl:push_front_ghost 'self' type invariant] inv'9 self}
+    {[@expl:push_front_ghost 'x' type invariant] inv'2 x}
+    any [ return''0 (result: ()) -> {self.final = push_front self.current x} (! return' {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -829,8 +703,8 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate invariant''6 [#"linked_list.rs" 19 4 19 30] (self: t_List) =
-    [%#slinked_list'4] self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
+  predicate invariant''6 (self: t_List) =
+    self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
       /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
     \/ Seq.length self.t_List__seq > 0
     /\ self.t_List__first = ptr (Seq.get self.t_List__seq 0)
@@ -847,8 +721,7 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
         | {t_List__first = first; t_List__last = last; t_List__seq = seq} -> inv'7 seq
         end)
   
-  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_List) =
-    [%#sinvariant] inv'10 self.current /\ inv'10 self.final
+  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_List) = inv'10 self.current /\ inv'10 self.final
   
   meta "rewrite_def" predicate invariant''7
   
@@ -856,7 +729,7 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
   
   axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_List [inv'11 x]. inv'11 x = invariant''7 x
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_List) = [%#sresolve] self.final = self.current
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'1
   
@@ -864,16 +737,15 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
   
   meta "rewrite_def" predicate resolve'2
   
-  let rec new'0 (x: ()) (return' (x'0: ())) = any
-    [ return''0 (result: ()) -> {[%#sghost'5] result = x} (! return' {result}) ]
+  let rec new'0 (x: ()) (return' (x'0: ())) = any [ return''0 (result: ()) -> {result = x} (! return' {result}) ]
   
-  function seq_map [#"linked_list.rs" 48 0 48 66] (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
-    [%#slinked_list'3] Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))
+  function seq_map (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
+    Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))
   
-  function view [#"linked_list.rs" 40 4 40 33] (self: t_List) : Seq.seq t_T =
-    [%#slinked_list'2] seq_map self.t_List__seq (fun (ptr_own: t_PtrOwn) -> (val' ptr_own).t_Cell__v)
+  function view (self: t_List) : Seq.seq t_T =
+    seq_map self.t_List__seq (fun (ptr_own: t_PtrOwn) -> (val' ptr_own).t_Cell__v)
   
-  function push_front'0 [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = [%#sseq'2] Seq.cons x self
+  function push_front'0 [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
   
   meta "rewrite_def" function push_front'0
   
@@ -881,9 +753,9 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
   
   meta "select_lsinst" "all"
   
-  let rec push_front'1 [#"linked_list.rs" 82 4 82 38] (self: MutBorrow.t t_List) (x: t_T) (return' (x'0: ())) =
-    {[@expl:push_front 'self' type invariant] [%#slinked_list] inv'11 self}
-    {[@expl:push_front 'x' type invariant] [%#slinked_list'0] inv x}
+  let rec push_front'1 (self: MutBorrow.t t_List) (x: t_T) (return' (x'0: ())) =
+    {[@expl:push_front 'self' type invariant] inv'11 self}
+    {[@expl:push_front 'x' type invariant] inv x}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_7 <- { t_Cell__v = x'0; t_Cell__next = (self'0.current).t_List__first } ] s1 | s1 = bb1 ]
     | bb1 = s0 [ s0 = new {_7} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb2 ]
@@ -936,7 +808,6 @@ module M_linked_list__qyi10858349784728989480__push_front [#"linked_list.rs" 82 
     | & _18: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
     | & _19: MutBorrow.t (Seq.seq t_PtrOwn) = Any.any_l ()
     | & _20: t_PtrOwn = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:push_front ensures] [%#slinked_list'1] view self.final
-      = push_front'0 (view self.current) x}
+    [ return''0 (result: ()) -> {[@expl:push_front ensures] view self.final = push_front'0 (view self.current) x}
       (! return' {result}) ]
 end

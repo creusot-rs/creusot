@@ -1,15 +1,11 @@
-module M_while_let__f [#"while_let.rs" 4 0 4 10]
-  let%span swhile_let = "while_let.rs" 5 21 5 23
-  let%span swhile_let'0 = "while_let.rs" 8 16 8 20
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_while_let__f
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_Option = C_None | C_Some Int32.t
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Option) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -21,16 +17,16 @@ module M_while_let__f [#"while_let.rs" 4 0 4 10]
   
   meta "select_lsinst" "all"
   
-  let rec f [#"while_let.rs" 4 0 4 10] (return' (x: ())) = (! bb0
+  let rec f (return' (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &a <- C_Some ([%#swhile_let] (10: Int32.t)) ] s1
+      [ s0 = [ &a <- C_Some (10: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <t_Option> {a}
           (fun (_ret: MutBorrow.t t_Option) -> [ &b <- _ret ] [ &a <- _ret.final ] s2)
       | s2 = [ &old_1_0 <- b ] s3
       | s3 = bb1 ]
     | bb1 = bb1'0
       [ bb1'0 = {[@expl:mut invariant] old_1_0.final = b.final}
-        {[@expl:loop invariant] [%#swhile_let'0] true}
+        {[@expl:loop invariant] true}
         (! s0)
         [ s0 = bb2 ]
         [ bb2 = any [ br0 -> {b.current = C_None} (! bb5) | br1 (x0: Int32.t) -> {b.current = C_Some x0} (! bb4) ]

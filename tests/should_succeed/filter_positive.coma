@@ -1,14 +1,9 @@
-module M_filter_positive__num_of_pos [#"filter_positive.rs" 34 0 34 49]
-  let%span sfilter_positive = "filter_positive.rs" 33 10 33 13
-  let%span sfilter_positive'0 = "filter_positive.rs" 36 8 42 9
-  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
-  
+module M_filter_positive__num_of_pos
   use creusot.int.Int32
   use seq.Seq
   use mach.int.Int
   
-  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) =
-    [%#swell_founded] self >= 0 /\ self > other
+  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
   meta "rewrite_def" predicate well_founded_relation
   
@@ -22,42 +17,33 @@ module M_filter_positive__num_of_pos [#"filter_positive.rs" 34 0 34 49]
   
   constant t : Seq.seq Int32.t
   
-  function num_of_pos [#"filter_positive.rs" 34 0 34 49] (i'0: int) (j'0: int) (t'0: Seq.seq Int32.t) : int
+  function num_of_pos (i'0: int) (j'0: int) (t'0: Seq.seq Int32.t) : int
   
   goal vc_num_of_pos: if i >= j then
       true
     else
       if Int32.to_int (Seq.get t (j - 1)) > 0 then
-        well_founded_relation ([%#sfilter_positive] j - i) ([%#sfilter_positive] j - 1 - i)
+        well_founded_relation (j - i) (j - 1 - i)
       else
-        well_founded_relation ([%#sfilter_positive] j - i) ([%#sfilter_positive] j - 1 - i)
+        well_founded_relation (j - i) (j - 1 - i)
     
 
 end
-module M_filter_positive__lemma_num_of_pos_increasing [#"filter_positive.rs" 62 0 62 67]
-  let%span sfilter_positive = "filter_positive.rs" 61 10 61 13
-  let%span sfilter_positive'0 = "filter_positive.rs" 59 11 59 17
-  let%span sfilter_positive'1 = "filter_positive.rs" 60 10 60 48
-  let%span sfilter_positive'2 = "filter_positive.rs" 64 8 66 9
-  let%span sfilter_positive'3 = "filter_positive.rs" 33 10 33 13
-  let%span sfilter_positive'4 = "filter_positive.rs" 36 8 42 9
-  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
-  
+module M_filter_positive__lemma_num_of_pos_increasing
   use creusot.int.Int32
   use seq.Seq
   use mach.int.Int
   
-  function num_of_pos [#"filter_positive.rs" 34 0 34 49] (i: int) (j: int) (t: Seq.seq Int32.t) : int
+  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
   
   axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t. num_of_pos i j t
-      = ([%#sfilter_positive'4] if i >= j then
+      = (if i >= j then
         0
       else
         if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
       )
   
-  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) =
-    [%#swell_founded] self >= 0 /\ self > other
+  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
   meta "rewrite_def" predicate well_founded_relation
   
@@ -73,34 +59,26 @@ module M_filter_positive__lemma_num_of_pos_increasing [#"filter_positive.rs" 62 
   
   constant t : Seq.seq Int32.t
   
-  function lemma_num_of_pos_increasing [#"filter_positive.rs" 62 0 62 67] (i'0: int) (j'0: int) (k'0: int) (t'0: Seq.seq Int32.t) : ()
+  function lemma_num_of_pos_increasing (i'0: int) (j'0: int) (k'0: int) (t'0: Seq.seq Int32.t) : ()
   
-  goal vc_lemma_num_of_pos_increasing: ([%#sfilter_positive'0] j <= k)
+  goal vc_lemma_num_of_pos_increasing: j <= k
     -> (if j < k then
-      (([@expl:lemma_num_of_pos_increasing requires] [%#sfilter_positive'0] j + 1 <= k)
-        /\ well_founded_relation ([%#sfilter_positive] k - j) ([%#sfilter_positive] k - (j + 1)))
-      /\ (([%#sfilter_positive'1] num_of_pos i (j + 1) t <= num_of_pos i k t)
-      -> ([@expl:lemma_num_of_pos_increasing ensures] [%#sfilter_positive'1] num_of_pos i j t <= num_of_pos i k t))
+      (([@expl:lemma_num_of_pos_increasing requires] j + 1 <= k) /\ well_founded_relation (k - j) (k - (j + 1)))
+      /\ (num_of_pos i (j + 1) t <= num_of_pos i k t
+      -> ([@expl:lemma_num_of_pos_increasing ensures] num_of_pos i j t <= num_of_pos i k t))
     else
-      [@expl:lemma_num_of_pos_increasing ensures] [%#sfilter_positive'1] num_of_pos i j t <= num_of_pos i k t
+      [@expl:lemma_num_of_pos_increasing ensures] num_of_pos i j t <= num_of_pos i k t
     )
 end
-module M_filter_positive__lemma_num_of_pos_strictly_increasing [#"filter_positive.rs" 76 0 76 60]
-  let%span sfilter_positive = "filter_positive.rs" 73 11 73 32
-  let%span sfilter_positive'0 = "filter_positive.rs" 74 11 74 20
-  let%span sfilter_positive'1 = "filter_positive.rs" 75 10 75 49
-  let%span sfilter_positive'2 = "filter_positive.rs" 76 61 76 63
-  let%span sfilter_positive'3 = "filter_positive.rs" 33 10 33 13
-  let%span sfilter_positive'4 = "filter_positive.rs" 36 8 42 9
-  
+module M_filter_positive__lemma_num_of_pos_strictly_increasing
   use creusot.int.Int32
   use seq.Seq
   use mach.int.Int
   
-  function num_of_pos [#"filter_positive.rs" 34 0 34 49] (i: int) (j: int) (t: Seq.seq Int32.t) : int
+  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
   
   axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t. num_of_pos i j t
-      = ([%#sfilter_positive'4] if i >= j then
+      = (if i >= j then
         0
       else
         if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
@@ -114,61 +92,13 @@ module M_filter_positive__lemma_num_of_pos_strictly_increasing [#"filter_positiv
   
   constant t : Seq.seq Int32.t
   
-  function lemma_num_of_pos_strictly_increasing [#"filter_positive.rs" 76 0 76 60] (i'0: int) (t'0: Seq.seq Int32.t) : ()
+  function lemma_num_of_pos_strictly_increasing (i'0: int) (t'0: Seq.seq Int32.t) : ()
   
-  goal vc_lemma_num_of_pos_strictly_increasing: ([%#sfilter_positive] 0 <= i /\ i < Seq.length t)
-    -> ([%#sfilter_positive'0] Int32.to_int (Seq.get t i) > 0)
-    -> ([@expl:lemma_num_of_pos_strictly_increasing ensures] [%#sfilter_positive'1] num_of_pos 0 i t
-    < num_of_pos 0 (i + 1) t)
+  goal vc_lemma_num_of_pos_strictly_increasing: 0 <= i /\ i < Seq.length t
+    -> Int32.to_int (Seq.get t i) > 0
+    -> ([@expl:lemma_num_of_pos_strictly_increasing ensures] num_of_pos 0 i t < num_of_pos 0 (i + 1) t)
 end
-module M_filter_positive__m [#"filter_positive.rs" 79 0 79 33]
-  let%span sfilter_positive = "filter_positive.rs" 80 27 80 28
-  let%span sfilter_positive'0 = "filter_positive.rs" 81 23 81 24
-  let%span sfilter_positive'1 = "filter_positive.rs" 84 16 84 45
-  let%span sfilter_positive'2 = "filter_positive.rs" 83 16 83 28
-  let%span sfilter_positive'3 = "filter_positive.rs" 82 16 82 30
-  let%span sfilter_positive'4 = "filter_positive.rs" 87 18 87 19
-  let%span sfilter_positive'5 = "filter_positive.rs" 88 21 88 22
-  let%span sfilter_positive'6 = "filter_positive.rs" 90 13 90 14
-  let%span sfilter_positive'7 = "filter_positive.rs" 92 31 92 32
-  let%span sfilter_positive'8 = "filter_positive.rs" 93 12 93 13
-  let%span sfilter_positive'9 = "filter_positive.rs" 95 8 95 9
-  let%span sfilter_positive'10 = "filter_positive.rs" 97 16 97 53
-  let%span sfilter_positive'11 = "filter_positive.rs" 96 16 96 45
-  let%span sfilter_positive'12 = "filter_positive.rs" 100 18 100 19
-  let%span sfilter_positive'13 = "filter_positive.rs" 103 16 103 59
-  let%span sfilter_positive'14 = "filter_positive.rs" 107 16 107 63
-  let%span sfilter_positive'15 = "filter_positive.rs" 111 21 111 22
-  let%span sfilter_positive'16 = "filter_positive.rs" 113 13 113 14
-  let%span sfilter_positive'17 = "filter_positive.rs" 33 10 33 13
-  let%span sfilter_positive'18 = "filter_positive.rs" 36 8 42 9
-  let%span sfilter_positive'19 = "filter_positive.rs" 73 11 73 32
-  let%span sfilter_positive'20 = "filter_positive.rs" 74 11 74 20
-  let%span sfilter_positive'21 = "filter_positive.rs" 75 10 75 49
-  let%span sfilter_positive'22 = "filter_positive.rs" 76 61 76 63
-  let%span sfilter_positive'23 = "filter_positive.rs" 61 10 61 13
-  let%span sfilter_positive'24 = "filter_positive.rs" 59 11 59 17
-  let%span sfilter_positive'25 = "filter_positive.rs" 60 10 60 48
-  let%span sfilter_positive'26 = "filter_positive.rs" 64 8 66 9
-  let%span svec = "../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span svec'0 = "../../creusot-contracts/src/std/vec.rs" 111 26 111 48
-  let%span svec'1 = "../../creusot-contracts/src/std/vec.rs" 190 16 190 48
-  let%span svec'2 = "../../creusot-contracts/src/std/vec.rs" 191 16 191 56
-  let%span svec'3 = "../../creusot-contracts/src/std/vec.rs" 208 22 208 41
-  let%span svec'4 = "../../creusot-contracts/src/std/vec.rs" 209 22 209 70
-  let%span svec'5 = "../../creusot-contracts/src/std/vec.rs" 180 16 180 48
-  let%span svec'6 = "../../creusot-contracts/src/std/vec.rs" 181 16 181 56
-  let%span svec'7 = "../../creusot-contracts/src/std/vec.rs" 182 16 182 59
-  let%span svec'8 = "../../creusot-contracts/src/std/vec.rs" 183 16 183 64
-  let%span svec'9 = "../../creusot-contracts/src/std/vec.rs" 184 26 184 55
-  let%span svec'10 = "../../creusot-contracts/src/std/vec.rs" 48 8 48 31
-  let%span smodel = "../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span smodel'0 = "../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sslice = "../../creusot-contracts/src/std/slice.rs" 124 20 124 37
-  let%span sslice'0 = "../../creusot-contracts/src/std/slice.rs" 129 20 129 37
-  let%span sslice'1 = "../../creusot-contracts/src/std/slice.rs" 134 20 134 88
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_filter_positive__m
   use creusot.int.UInt64
   use creusot.int.Int32
   use seq.Seq
@@ -177,10 +107,10 @@ module M_filter_positive__m [#"filter_positive.rs" 79 0 79 33]
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  function num_of_pos [#"filter_positive.rs" 34 0 34 49] (i: int) (j: int) (t: Seq.seq Int32.t) : int
+  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
   
   axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t. num_of_pos i j t
-      = ([%#sfilter_positive'18] if i >= j then
+      = (if i >= j then
         0
       else
         if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
@@ -202,77 +132,69 @@ module M_filter_positive__m [#"filter_positive.rs" 79 0 79 33]
   
   function view (self: t_Vec) : Seq.seq Int32.t
   
-  axiom view_spec: forall self: t_Vec. [%#svec] Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq Int32.t = [%#smodel] view self
+  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq Int32.t = view self
   
   meta "rewrite_def" function view'0
   
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {[%#svec'0] UInt64.t'int result = Seq.length (view'0 self_)}
-      (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
   
-  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
-    [%#sslice] UInt64.t'int self < Seq.length seq
+  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) = UInt64.t'int self < Seq.length seq
   
   meta "rewrite_def" predicate in_bounds
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) (out: Int32.t) =
-    [%#sslice'0] Seq.get seq (UInt64.t'int self) = out
+    Seq.get seq (UInt64.t'int self) = out
   
   meta "rewrite_def" predicate has_value
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: Int32.t)) =
-    {[@expl:index requires] [%#svec'1] in_bounds ix (view'0 self_)}
-    any [ return''0 (result: Int32.t) -> {[%#svec'2] has_value ix (view'0 self_) result} (! return' {result}) ]
+    {[@expl:index requires] in_bounds ix (view'0 self_)}
+    any [ return''0 (result: Int32.t) -> {has_value ix (view'0 self_) result} (! return' {result}) ]
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = [%#svec'10] Seq.get (view self) ix
+  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = Seq.get (view self) ix
   
   meta "rewrite_def" function index_logic
   
   let rec from_elem (elem: Int32.t) (n: UInt64.t) (return' (x: t_Vec)) = any
-    [ return''0 (result: t_Vec) -> {[%#svec'3] Seq.length (view result) = UInt64.t'int n}
-      {[%#svec'4] forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic result i = elem}
+    [ return''0 (result: t_Vec) -> {Seq.length (view result) = UInt64.t'int n}
+      {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic result i = elem}
       (! return' {result}) ]
   
-  function lemma_num_of_pos_strictly_increasing [#"filter_positive.rs" 76 0 76 60] (i: int) (t: Seq.seq Int32.t) : () =
-    [%#sfilter_positive'22] ()
+  function lemma_num_of_pos_strictly_increasing (i: int) (t: Seq.seq Int32.t) : () = ()
   
-  axiom lemma_num_of_pos_strictly_increasing_spec: forall i: int, t: Seq.seq Int32.t. ([%#sfilter_positive'19] 0 <= i
-        /\ i < Seq.length t)
-      -> ([%#sfilter_positive'20] Int32.to_int (Seq.get t i) > 0)
-      -> ([%#sfilter_positive'21] num_of_pos 0 i t < num_of_pos 0 (i + 1) t)
+  axiom lemma_num_of_pos_strictly_increasing_spec: forall i: int, t: Seq.seq Int32.t. 0 <= i /\ i < Seq.length t
+      -> Int32.to_int (Seq.get t i) > 0 -> num_of_pos 0 i t < num_of_pos 0 (i + 1) t
   
-  function lemma_num_of_pos_increasing [#"filter_positive.rs" 62 0 62 67] (i: int) (j: int) (k: int) (t: Seq.seq Int32.t) : ()
+  function lemma_num_of_pos_increasing (i: int) (j: int) (k: int) (t: Seq.seq Int32.t) : ()
   
-  axiom lemma_num_of_pos_increasing_def: forall i: int, j: int, k: int, t: Seq.seq Int32.t. ([%#sfilter_positive'24] j
-        <= k)
-      -> lemma_num_of_pos_increasing i j k t
-      = ([%#sfilter_positive'26] if j < k then lemma_num_of_pos_increasing i (j + 1) k t else ())
+  axiom lemma_num_of_pos_increasing_def: forall i: int, j: int, k: int, t: Seq.seq Int32.t. j <= k
+      -> lemma_num_of_pos_increasing i j k t = (if j < k then lemma_num_of_pos_increasing i (j + 1) k t else ())
   
-  axiom lemma_num_of_pos_increasing_spec: forall i: int, j: int, k: int, t: Seq.seq Int32.t. ([%#sfilter_positive'24] j
-        <= k) -> ([%#sfilter_positive'25] num_of_pos i j t <= num_of_pos i k t)
+  axiom lemma_num_of_pos_increasing_spec: forall i: int, j: int, k: int, t: Seq.seq Int32.t. j <= k
+      -> num_of_pos i j t <= num_of_pos i k t
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq Int32.t = [%#smodel'0] view self.current
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq Int32.t = view self.current
   
   meta "rewrite_def" function view'1
   
   predicate resolve_elswhere [@inline:trivial] (self: UInt64.t) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
-    [%#sslice'1] forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
-      -> Seq.get old' i = Seq.get fin i
+    forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   
   meta "rewrite_def" predicate resolve_elswhere
   
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t Int32.t)) =
-    {[@expl:index_mut requires] [%#svec'5] in_bounds ix (view'1 self_)}
+    {[@expl:index_mut requires] in_bounds ix (view'1 self_)}
     any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {[%#svec'6] has_value ix (view'1 self_) result.current}
-      {[%#svec'7] has_value ix (view self_.final) result.final}
-      {[%#svec'8] resolve_elswhere ix (view'1 self_) (view self_.final)}
-      {[%#svec'9] Seq.length (view self_.final) = Seq.length (view'1 self_)}
+    [ return''0 (result: MutBorrow.t Int32.t) -> {has_value ix (view'1 self_) result.current}
+      {has_value ix (view self_.final) result.final}
+      {resolve_elswhere ix (view'1 self_) (view self_.final)}
+      {Seq.length (view self_.final) = Seq.length (view'1 self_)}
       (! return' {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -284,15 +206,12 @@ module M_filter_positive__m [#"filter_positive.rs" 79 0 79 33]
   
   meta "select_lsinst" "all"
   
-  let rec m [#"filter_positive.rs" 79 0 79 33] (t: t_Vec) (return' (x: t_Vec)) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &count <- [%#sfilter_positive] (0: UInt64.t) ] s1
-      | s1 = [ &i <- [%#sfilter_positive'0] (0: UInt64.t) ] s2
-      | s2 = bb1 ]
+  let rec m (t: t_Vec) (return' (x: t_Vec)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &count <- (0: UInt64.t) ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = bb1 ]
     | bb1 = bb1'0
-      [ bb1'0 = {[@expl:loop invariant #0] [%#sfilter_positive'3] UInt64.t'int i <= Seq.length (view t'0)}
-        {[@expl:loop invariant #1] [%#sfilter_positive'2] UInt64.t'int count <= UInt64.t'int i}
-        {[@expl:loop invariant #2] [%#sfilter_positive'1] UInt64.t'int count = num_of_pos 0 (UInt64.t'int i) (view t'0)}
+      [ bb1'0 = {[@expl:loop invariant #0] UInt64.t'int i <= Seq.length (view t'0)}
+        {[@expl:loop invariant #1] UInt64.t'int count <= UInt64.t'int i}
+        {[@expl:loop invariant #2] UInt64.t'int count = num_of_pos 0 (UInt64.t'int i) (view t'0)}
         (! s0)
         [ s0 = bb2 ]
         [ bb2 = s0 [ s0 = len {t'0} (fun (_ret: UInt64.t) -> [ &_13 <- _ret ] s1) | s1 = bb3 ]
@@ -300,27 +219,16 @@ module M_filter_positive__m [#"filter_positive.rs" 79 0 79 33]
           [ s0 = [ &_11 <- UInt64.lt i _13 ] s1 | s1 = any [ br0 -> {_11 = false} (! bb9) | br1 -> {_11} (! bb4) ] ]
         | bb4 = s0 [ s0 = index {t'0} {i} (fun (_ret: Int32.t) -> [ &_18 <- _ret ] s1) | s1 = bb5 ]
         | bb5 = s0
-          [ s0 = [ &_16 <- Int32.gt _18 ([%#sfilter_positive'4] (0: Int32.t)) ] s1
+          [ s0 = [ &_16 <- Int32.gt _18 (0: Int32.t) ] s1
           | s1 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb6) ] ]
         | bb6 = s0
-          [ s0 = UInt64.add {count} {[%#sfilter_positive'5] (1: UInt64.t)}
-              (fun (_ret: UInt64.t) -> [ &count <- _ret ] s1)
-          | s1 = bb8 ]
-        | bb8 = s0
-          [ s0 = UInt64.add {i} {[%#sfilter_positive'6] (1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1)
-          | s1 = bb1'0 ] ] ]
-    | bb9 = s0
-      [ s0 = from_elem {[%#sfilter_positive'7] (0: Int32.t)} {count} (fun (_ret: t_Vec) -> [ &u <- _ret ] s1)
-      | s1 = bb10 ]
-    | bb10 = s0
-      [ s0 = [ &count <- [%#sfilter_positive'8] (0: UInt64.t) ] s1
-      | s1 = [ &i <- [%#sfilter_positive'9] (0: UInt64.t) ] s2
-      | s2 = bb11 ]
+          [ s0 = UInt64.add {count} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &count <- _ret ] s1) | s1 = bb8 ]
+        | bb8 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb1'0 ] ] ]
+    | bb9 = s0 [ s0 = from_elem {(0: Int32.t)} {count} (fun (_ret: t_Vec) -> [ &u <- _ret ] s1) | s1 = bb10 ]
+    | bb10 = s0 [ s0 = [ &count <- (0: UInt64.t) ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = bb11 ]
     | bb11 = bb11'0
-      [ bb11'0 = {[@expl:loop invariant #0] [%#sfilter_positive'11] UInt64.t'int count
-        = num_of_pos 0 (UInt64.t'int i) (view t'0)}
-        {[@expl:loop invariant #1] [%#sfilter_positive'10] Seq.length (view u)
-        = num_of_pos 0 (Seq.length (view t'0)) (view t'0)}
+      [ bb11'0 = {[@expl:loop invariant #0] UInt64.t'int count = num_of_pos 0 (UInt64.t'int i) (view t'0)}
+        {[@expl:loop invariant #1] Seq.length (view u) = num_of_pos 0 (Seq.length (view t'0)) (view t'0)}
         (! s0)
         [ s0 = bb12 ]
         [ bb12 = s0 [ s0 = len {t'0} (fun (_ret: UInt64.t) -> [ &_30 <- _ret ] s1) | s1 = bb13 ]
@@ -328,14 +236,14 @@ module M_filter_positive__m [#"filter_positive.rs" 79 0 79 33]
           [ s0 = [ &_28 <- UInt64.lt i _30 ] s1 | s1 = any [ br0 -> {_28 = false} (! bb21) | br1 -> {_28} (! bb14) ] ]
         | bb14 = s0 [ s0 = index {t'0} {i} (fun (_ret: Int32.t) -> [ &_35 <- _ret ] s1) | s1 = bb15 ]
         | bb15 = s0
-          [ s0 = [ &_33 <- Int32.gt _35 ([%#sfilter_positive'12] (0: Int32.t)) ] s1
+          [ s0 = [ &_33 <- Int32.gt _35 (0: Int32.t) ] s1
           | s1 = any [ br0 -> {_33 = false} (! bb20) | br1 -> {_33} (! bb16) ] ]
         | bb16 = s0
           [ s0 =
-            {[@expl:assertion] [%#sfilter_positive'13] let _ = lemma_num_of_pos_strictly_increasing (UInt64.t'int i) (view u) in num_of_pos 0 (UInt64.t'int i) (view t'0)
+            {[@expl:assertion] let _ = lemma_num_of_pos_strictly_increasing (UInt64.t'int i) (view u) in num_of_pos 0 (UInt64.t'int i) (view t'0)
             < num_of_pos 0 (UInt64.t'int i + 1) (view t'0)}
             s1
-          | s1 = {[@expl:assertion] [%#sfilter_positive'14] let _ = lemma_num_of_pos_increasing 0 (UInt64.t'int i
+          | s1 = {[@expl:assertion] let _ = lemma_num_of_pos_increasing 0 (UInt64.t'int i
             + 1) (Seq.length (view t'0)) (view t'0) in UInt64.t'int count < Seq.length (view u)}
             s2
           | s2 = index {t'0} {i} (fun (_ret: Int32.t) -> [ &_43 <- _ret ] s3)
@@ -348,12 +256,10 @@ module M_filter_positive__m [#"filter_positive.rs" 79 0 79 33]
         | bb18 = s0
           [ s0 = [ &_46 <- { _46 with current = _43 } ] s1
           | s1 = -{resolve'0 _46}- s2
-          | s2 = UInt64.add {count} {[%#sfilter_positive'15] (1: UInt64.t)}
-              (fun (_ret: UInt64.t) -> [ &count <- _ret ] s3)
+          | s2 = UInt64.add {count} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &count <- _ret ] s3)
           | s3 = bb20 ]
         | bb20 = s0
-          [ s0 = UInt64.add {i} {[%#sfilter_positive'16] (1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1)
-          | s1 = bb11'0 ] ] ]
+          [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb11'0 ] ] ]
     | bb21 = s0 [ s0 = [ &_0 <- u ] s1 | s1 = bb23 ]
     | bb23 = return''0 {_0} ]
     [ & _0: t_Vec = Any.any_l ()

@@ -1,34 +1,4 @@
-module M_1410__bar [#"1410.rs" 6 0 6 32]
-  let%span s1410 = "1410.rs" 9 13 9 14
-  let%span s1410'0 = "1410.rs" 9 16 9 17
-  let%span s1410'1 = "1410.rs" 9 4 9 7
-  let%span s1410'2 = "1410.rs" 8 16 8 58
-  let%span s1410'3 = "1410.rs" 7 16 7 22
-  let%span s1410'4 = "1410.rs" 9 4 9 7
-  let%span s1410'5 = "1410.rs" 6 27 6 28
-  let%span s1410'6 = "1410.rs" 5 0 5 31
-  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 215 18 215 32
-  let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 93 26 96 17
-  let%span srange = "../../../creusot-contracts/src/std/iter/range.rs" 23 12 27 70
-  let%span srange'0 = "../../../creusot-contracts/src/std/iter/range.rs" 32 4 32 49
-  let%span srange'1 = "../../../creusot-contracts/src/std/iter/range.rs" 36 4 36 34
-  let%span srange'2 = "../../../creusot-contracts/src/std/iter/range.rs" 37 4 37 34
-  let%span srange'3 = "../../../creusot-contracts/src/std/iter/range.rs" 38 4 38 44
-  let%span srange'4 = "../../../creusot-contracts/src/std/iter/range.rs" 15 8 17 9
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 183 16 183 17
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 183 27 183 52
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 184 26 184 71
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  let%span snum = "../../../creusot-contracts/src/std/num.rs" 23 28 23 33
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
-  
+module M_1410__bar
   use creusot.int.Int32
   use seq.Seq
   use mach.int.Int
@@ -38,7 +8,7 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
   type t_Range = { t_Range__start: Int32.t; t_Range__end: Int32.t }
   
   let rec into_iter (self_: t_Range) (return' (x: t_Range)) = any
-    [ return''0 (result: t_Range) -> {[%#siter] result = self_} (! return' {result}) ]
+    [ return''0 (result: t_Range) -> {result = self_} (! return' {result}) ]
   
   type t_F
   
@@ -46,12 +16,12 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
   
   predicate inv (_0: t_F)
   
-  function deep_model [@inline:trivial] (self: Int32.t) : int = [%#snum] Int32.to_int self
+  function deep_model [@inline:trivial] (self: Int32.t) : int = Int32.to_int self
   
   meta "rewrite_def" function deep_model
   
   predicate produces (self: t_Range) (visited: Seq.seq Int32.t) (o: t_Range) =
-    [%#srange] self.t_Range__end = o.t_Range__end
+    self.t_Range__end = o.t_Range__end
     /\ deep_model self.t_Range__start <= deep_model o.t_Range__start
     /\ (Seq.length visited > 0 -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
     /\ Seq.length visited = deep_model o.t_Range__start - deep_model self.t_Range__start
@@ -61,12 +31,12 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
   function produces_trans (a: t_Range) (ab: Seq.seq Int32.t) (b: t_Range) (bc: Seq.seq Int32.t) (c: t_Range) : ()
   
   axiom produces_trans_spec:
-    forall a: t_Range, ab: Seq.seq Int32.t, b: t_Range, bc: Seq.seq Int32.t, c: t_Range. ([%#srange'1] produces a ab b)
-      -> ([%#srange'2] produces b bc c) -> ([%#srange'3] produces a (Seq.(++) ab bc) c)
+    forall a: t_Range, ab: Seq.seq Int32.t, b: t_Range, bc: Seq.seq Int32.t, c: t_Range. produces a ab b
+      -> produces b bc c -> produces a (Seq.(++) ab bc) c
   
   function produces_refl (self: t_Range) : ()
   
-  axiom produces_refl_spec: forall self: t_Range. [%#srange'0] produces self (Seq.empty: Seq.seq Int32.t) self
+  axiom produces_refl_spec: forall self: t_Range. produces self (Seq.empty: Seq.seq Int32.t) self
   
   predicate inv'0 (_0: t_Range)
   
@@ -78,15 +48,15 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
   
   type t_Option = C_None | C_Some Int32.t
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
   predicate completed (self: MutBorrow.t t_Range) =
-    [%#srange'4] resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
+    resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
   
   let rec next (self_: MutBorrow.t t_Range) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {[%#siter'0] match result with
+    [ return''0 (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
@@ -100,7 +70,7 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
     [ good (field_0: Int32.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: Int32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_F) = [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_F) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant'
   
@@ -116,52 +86,49 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
   
   function fn_mut_once (self: t_F) (args: ()) (res: ()) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: (), res: (). [%#sops'8] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: t_F, args: (), res: (). postcondition_once self args res
       = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'5] hist_inv self b)
-      -> ([%#sops'6] hist_inv b c) -> ([%#sops'7] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. [%#sops'4] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
   
   function postcondition_mut_hist_inv (self: t_F) (args: ()) (res_state: t_F) (res: ()) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: (), res_state: t_F, res: (). ([%#sops'2] postcondition_mut self args res_state res)
-      -> ([%#sops'3] hist_inv self res_state)
+    forall self: t_F, args: (), res_state: t_F, res: (). postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   let rec call_mut (self_: MutBorrow.t t_F) (arg: ()) (return' (x: ())) =
-    {[@expl:call_mut 'self_' type invariant] [%#sops] inv'2 self_}
-    {[@expl:call_mut requires] [%#sops'0] precondition self_.current arg}
-    any
-    [ return''0 (result: ()) -> {[%#sops'1] postcondition_mut self_.current arg self_.final result}
-      (! return' {result}) ]
+    {[@expl:call_mut 'self_' type invariant] inv'2 self_}
+    {[@expl:call_mut requires] precondition self_.current arg}
+    any [ return''0 (result: ()) -> {postcondition_mut self_.current arg self_.final result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec bar [#"1410.rs" 6 0 6 32] (f: t_F) (return' (x: ())) = {[@expl:bar 'f' type invariant] [%#s1410'5] inv f}
-    {[@expl:bar requires] [%#s1410'6] precondition f ()}
+  let rec bar (f: t_F) (return' (x: ())) = {[@expl:bar 'f' type invariant] inv f}
+    {[@expl:bar requires] precondition f ()}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_4 <- { t_Range__start = ([%#s1410] (0: Int32.t)); t_Range__end = ([%#s1410'0] (1: Int32.t)) } ] s1
+      [ s0 = [ &_4 <- { t_Range__start = (0: Int32.t); t_Range__end = (1: Int32.t) } ] s1
       | s1 = into_iter {_4} (fun (_ret: t_Range) -> [ &iter <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &iter_old <- [%#s1410'1] iter ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &produced <- [%#s1410'1] Seq.empty: Seq.seq Int32.t ] s1 | s1 = bb4 ]
+    | bb1 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s1 | s1 = bb4 ]
     | bb4 = bb4'0
-      [ bb4'0 = {[@expl:for invariant] [%#s1410'1] inv'1 produced}
-        {[@expl:for invariant] [%#s1410'1] inv'0 iter}
-        {[@expl:for invariant] [%#s1410'1] produces iter_old produced iter}
-        {[@expl:loop invariant #0] [%#s1410'3] inv f'0}
-        {[@expl:loop invariant #1] [%#s1410'2] Seq.length produced = 0 -> precondition f'0 ()}
+      [ bb4'0 = {[@expl:for invariant] inv'1 produced}
+        {[@expl:for invariant] inv'0 iter}
+        {[@expl:for invariant] produces iter_old produced iter}
+        {[@expl:loop invariant #0] inv f'0}
+        {[@expl:loop invariant #1] Seq.length produced = 0 -> precondition f'0 ()}
         (! s0)
         [ s0 = bb5 ]
         [ bb5 = s0
@@ -176,7 +143,7 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
           | s1 = any [ br0 -> {_16 = C_None} (! bb9) | br1 (x0: Int32.t) -> {_16 = C_Some x0} (! bb10) ] ]
         | bb10 = s0
           [ s0 = v_Some {_16} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_21 <- [%#s1410'4] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s1 = [ &_21 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb11 ]
         | bb11 = s0
           [ s0 = [ &produced <- _21 ] s1
