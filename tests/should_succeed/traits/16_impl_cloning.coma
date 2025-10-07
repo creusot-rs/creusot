@@ -1,14 +1,4 @@
-module M_16_impl_cloning__test [#"16_impl_cloning.rs" 15 0 15 30]
-  let%span s16_impl_cloning = "16_impl_cloning.rs" 15 15 15 16
-  let%span s16_impl_cloning'0 = "16_impl_cloning.rs" 14 10 14 21
-  let%span smodel = "../../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
-  let%span svec = "../../../creusot-contracts/src/std/vec.rs" 93 20 93 41
-  let%span svec'0 = "../../../creusot-contracts/src/std/vec.rs" 22 14 22 41
-  let%span sseq = "../../../creusot-contracts/src/logic/seq.rs" 713 20 713 91
-  let%span sboxed = "../../../creusot-contracts/src/std/boxed.rs" 30 8 30 18
-  
+module M_16_impl_cloning__test
   use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
   use creusot.int.UInt64
@@ -34,14 +24,14 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 15 0 15 30]
   
   predicate inv (_0: t_T)
   
-  predicate invariant' (self: t_T) = [%#sboxed] inv self
+  predicate invariant' (self: t_T) = inv self
   
   predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
-    [%#sseq] forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
@@ -53,9 +43,9 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 15 0 15 30]
   
   function view (self: t_Vec) : Seq.seq t_T
   
-  axiom view_spec: forall self: t_Vec. [%#svec'0] Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate invariant''1 (self: t_Vec) = [%#svec] inv'1 (view self)
+  predicate invariant''1 (self: t_Vec) = inv'1 (view self)
   
   predicate inv'2 (_0: t_Vec)
   
@@ -68,8 +58,7 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 15 0 15 30]
         | {t_Vec__0 = a_0} -> inv'2 a_0
         end
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Vec'0) =
-    [%#sinvariant] inv'3 self.current /\ inv'3 self.final
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Vec'0) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''2
   
@@ -77,7 +66,7 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 15 0 15 30]
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Vec'0 [inv'4 x]. inv'4 x = invariant''2 x
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec'0) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec'0) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -85,9 +74,9 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 15 0 15 30]
   
   meta "rewrite_def" predicate resolve'0
   
-  function view'0 [#"16_impl_cloning.rs" 9 4 9 33] (self: t_Vec'0) : Seq.seq t_T
+  function view'0 (self: t_Vec'0) : Seq.seq t_T
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec'0) : Seq.seq t_T = [%#smodel] view'0 self.current
+  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec'0) : Seq.seq t_T = view'0 self.current
   
   meta "rewrite_def" function view'1
   
@@ -95,11 +84,9 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 15 0 15 30]
   
   meta "select_lsinst" "all"
   
-  let rec test [#"16_impl_cloning.rs" 15 0 15 30] (x: MutBorrow.t t_Vec'0) (return' (x'0: ())) =
-    {[@expl:test 'x' type invariant] [%#s16_impl_cloning] inv'4 x}
+  let rec test (x: MutBorrow.t t_Vec'0) (return' (x'0: ())) = {[@expl:test 'x' type invariant] inv'4 x}
     (! bb0
     [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'4 x'0} s1 | s1 = -{resolve'0 x'0}- s2 | s2 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l () | & x'0: MutBorrow.t t_Vec'0 = x ])
-    [ return''0 (result: ()) -> {[@expl:test ensures] [%#s16_impl_cloning'0] view'1 x = view'0 x.current}
-      (! return' {result}) ]
+    [ return''0 (result: ()) -> {[@expl:test ensures] view'1 x = view'0 x.current} (! return' {result}) ]
 end

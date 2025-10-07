@@ -1,11 +1,4 @@
-module M_pair_bor_mut__pair_bor_mut [#"pair_bor_mut.rs" 6 0 6 84]
-  let%span spair_bor_mut = "pair_bor_mut.rs" 6 27 6 28
-  let%span spair_bor_mut'0 = "pair_bor_mut.rs" 6 75 6 84
-  let%span spair_bor_mut'1 = "pair_bor_mut.rs" 4 10 5 48
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sresolve'0 = "../../creusot-contracts/src/resolve.rs" 32 8 32 42
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
-  
+module M_pair_bor_mut__pair_bor_mut
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
@@ -15,7 +8,7 @@ module M_pair_bor_mut__pair_bor_mut [#"pair_bor_mut.rs" 6 0 6 84]
   
   predicate inv (_0: t_T)
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_T) = [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_T) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant'
   
@@ -23,7 +16,7 @@ module M_pair_bor_mut__pair_bor_mut [#"pair_bor_mut.rs" 6 0 6 84]
   
   axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -36,7 +29,7 @@ module M_pair_bor_mut__pair_bor_mut [#"pair_bor_mut.rs" 6 0 6 84]
   axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x
       = (let {_p0 = x0; _p1 = x1} = x in inv'0 x0 /\ inv'0 x1)
   
-  predicate resolve'1 [@inline:trivial] (self: tuple) = [%#sresolve'0] resolve'0 self._p0 /\ resolve'0 self._p1
+  predicate resolve'1 [@inline:trivial] (self: tuple) = resolve'0 self._p0 /\ resolve'0 self._p1
   
   meta "rewrite_def" predicate resolve'1
   
@@ -48,8 +41,8 @@ module M_pair_bor_mut__pair_bor_mut [#"pair_bor_mut.rs" 6 0 6 84]
   
   meta "select_lsinst" "all"
   
-  let rec pair_bor_mut [#"pair_bor_mut.rs" 6 0 6 84] (p: tuple) (take_first: bool) (return' (x: MutBorrow.t t_T)) =
-    {[@expl:pair_bor_mut 'p' type invariant] [%#spair_bor_mut] inv'1 p}
+  let rec pair_bor_mut (p: tuple) (take_first: bool) (return' (x: MutBorrow.t t_T)) =
+    {[@expl:pair_bor_mut 'p' type invariant] inv'1 p}
     (! bb0
     [ bb0 = any [ br0 -> {take_first'0 = false} (! bb2) | br1 -> {take_first'0} (! bb1) ]
     | bb1 = s0
@@ -97,9 +90,8 @@ module M_pair_bor_mut__pair_bor_mut [#"pair_bor_mut.rs" 6 0 6 84]
     | & _3: MutBorrow.t t_T = Any.any_l ()
     | & _5: MutBorrow.t t_T = Any.any_l ()
     | & _7: MutBorrow.t t_T = Any.any_l () ])
-    [ return''0 (result: MutBorrow.t t_T) ->
-    {[@expl:pair_bor_mut result type invariant] [%#spair_bor_mut'0] inv'0 result}
-      {[@expl:pair_bor_mut ensures] [%#spair_bor_mut'1] if take_first then
+    [ return''0 (result: MutBorrow.t t_T) -> {[@expl:pair_bor_mut result type invariant] inv'0 result}
+      {[@expl:pair_bor_mut ensures] if take_first then
         result = p._p0 /\ (p._p1).final = (p._p1).current
       else
         result = p._p1 /\ (p._p0).final = (p._p0).current

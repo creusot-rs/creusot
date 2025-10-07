@@ -1,11 +1,4 @@
-module M_projection_toggle__proj_toggle [#"projection_toggle.rs" 5 0 5 87]
-  let%span sprojection_toggle = "projection_toggle.rs" 5 47 5 48
-  let%span sprojection_toggle'0 = "projection_toggle.rs" 5 61 5 62
-  let%span sprojection_toggle'1 = "projection_toggle.rs" 5 78 5 87
-  let%span sprojection_toggle'2 = "projection_toggle.rs" 4 10 4 80
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
-  
+module M_projection_toggle__proj_toggle
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
@@ -13,7 +6,7 @@ module M_projection_toggle__proj_toggle [#"projection_toggle.rs" 5 0 5 87]
   
   predicate inv (_0: t_T)
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_T) = [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_T) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant'
   
@@ -21,7 +14,7 @@ module M_projection_toggle__proj_toggle [#"projection_toggle.rs" 5 0 5 87]
   
   axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'0 x]. inv'0 x = invariant' x
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -33,9 +26,9 @@ module M_projection_toggle__proj_toggle [#"projection_toggle.rs" 5 0 5 87]
   
   meta "select_lsinst" "all"
   
-  let rec proj_toggle [#"projection_toggle.rs" 5 0 5 87] (toggle: bool) (a: MutBorrow.t t_T) (b: MutBorrow.t t_T)
-    (return' (x: MutBorrow.t t_T)) = {[@expl:proj_toggle 'a' type invariant] [%#sprojection_toggle] inv'0 a}
-    {[@expl:proj_toggle 'b' type invariant] [%#sprojection_toggle'0] inv'0 b}
+  let rec proj_toggle (toggle: bool) (a: MutBorrow.t t_T) (b: MutBorrow.t t_T) (return' (x: MutBorrow.t t_T)) =
+    {[@expl:proj_toggle 'a' type invariant] inv'0 a}
+    {[@expl:proj_toggle 'b' type invariant] inv'0 b}
     (! bb0
     [ bb0 = any [ br0 -> {toggle'0 = false} (! bb2) | br1 -> {toggle'0} (! bb1) ]
     | bb1 = s0
@@ -90,39 +83,29 @@ module M_projection_toggle__proj_toggle [#"projection_toggle.rs" 5 0 5 87]
     | & _4: MutBorrow.t t_T = Any.any_l ()
     | & _6: MutBorrow.t t_T = Any.any_l ()
     | & _8: MutBorrow.t t_T = Any.any_l () ])
-    [ return''0 (result: MutBorrow.t t_T) ->
-    {[@expl:proj_toggle result type invariant] [%#sprojection_toggle'1] inv'0 result}
-      {[@expl:proj_toggle ensures] [%#sprojection_toggle'2] if toggle then
+    [ return''0 (result: MutBorrow.t t_T) -> {[@expl:proj_toggle result type invariant] inv'0 result}
+      {[@expl:proj_toggle ensures] if toggle then
         result = a /\ b.final = b.current
       else
         result = b /\ a.final = a.current
       }
       (! return' {result}) ]
 end
-module M_projection_toggle__f [#"projection_toggle.rs" 9 0 9 10]
-  let%span sprojection_toggle = "projection_toggle.rs" 10 16 10 18
-  let%span sprojection_toggle'0 = "projection_toggle.rs" 11 16 11 17
-  let%span sprojection_toggle'1 = "projection_toggle.rs" 13 24 13 28
-  let%span sprojection_toggle'2 = "projection_toggle.rs" 15 10 15 11
-  let%span sprojection_toggle'3 = "projection_toggle.rs" 16 17 16 19
-  let%span sprojection_toggle'4 = "projection_toggle.rs" 16 4 16 20
-  let%span sprojection_toggle'5 = "projection_toggle.rs" 4 10 4 80
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_projection_toggle__f
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   let rec proj_toggle (toggle: bool) (a: MutBorrow.t Int32.t) (b: MutBorrow.t Int32.t)
     (return' (x: MutBorrow.t Int32.t)) = any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {[%#sprojection_toggle'5] if toggle then
+    [ return''0 (result: MutBorrow.t Int32.t) -> {if toggle then
         result = a /\ b.final = b.current
       else
         result = b /\ a.final = a.current
       }
       (! return' {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -134,10 +117,10 @@ module M_projection_toggle__f [#"projection_toggle.rs" 9 0 9 10]
   
   meta "select_lsinst" "all"
   
-  let rec f [#"projection_toggle.rs" 9 0 9 10] (return' (x: ())) = (! bb0
+  let rec f (return' (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &a <- [%#sprojection_toggle] (10: Int32.t) ] s1
-      | s1 = [ &b <- [%#sprojection_toggle'0] (5: Int32.t) ] s2
+      [ s0 = [ &a <- (10: Int32.t) ] s1
+      | s1 = [ &b <- (5: Int32.t) ] s2
       | s2 = MutBorrow.borrow_mut <Int32.t> {a}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_5 <- _ret ] [ &a <- _ret.final ] s3)
       | s3 = MutBorrow.borrow_mut <Int32.t> {b}
@@ -146,19 +129,17 @@ module M_projection_toggle__f [#"projection_toggle.rs" 9 0 9 10]
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_4 <- _ret ] [ &_5 <- { _5 with current = _ret.final } ] s5)
       | s5 = MutBorrow.borrow_final <Int32.t> {_7.current} {MutBorrow.get_id _7}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_6 <- _ret ] [ &_7 <- { _7 with current = _ret.final } ] s6)
-      | s6 = proj_toggle {[%#sprojection_toggle'1] true} {_4} {_6}
-          (fun (_ret: MutBorrow.t Int32.t) -> [ &x <- _ret ] s7)
+      | s6 = proj_toggle {true} {_4} {_6} (fun (_ret: MutBorrow.t Int32.t) -> [ &x <- _ret ] s7)
       | s7 = bb1 ]
     | bb1 = s0
       [ s0 = -{resolve'0 _7}- s1
       | s1 = -{resolve'0 _5}- s2
-      | s2 = Int32.add {x.current} {[%#sprojection_toggle'2] (5: Int32.t)}
-          (fun (_ret: Int32.t) -> [ &x <- { x with current = _ret } ] s3)
+      | s2 = Int32.add {x.current} {(5: Int32.t)} (fun (_ret: Int32.t) -> [ &x <- { x with current = _ret } ] s3)
       | s3 = -{resolve'0 x}- s4
-      | s4 = [ &_9 <- a = ([%#sprojection_toggle'3] (15: Int32.t)) ] s5
+      | s4 = [ &_9 <- a = (15: Int32.t) ] s5
       | s5 = any [ br0 -> {_9 = false} (! bb3) | br1 -> {_9} (! bb2) ] ]
     | bb2 = return''0 {_0}
-    | bb3 = {[%#sprojection_toggle'4] false} any ]
+    | bb3 = {false} any ]
     [ & _0: () = Any.any_l ()
     | & a: Int32.t = Any.any_l ()
     | & b: Int32.t = Any.any_l ()

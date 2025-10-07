@@ -1,35 +1,18 @@
-module M_const__foo [#"const.rs" 10 0 10 27]
-  let%span sconst = "const.rs" 11 4 11 7
-  let%span sconst'0 = "const.rs" 9 10 9 27
-  let%span sconst'1 = "const.rs" 6 0 6 16
-  
+module M_const__foo
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  constant const_FOO: UInt64.t = [%#sconst'1] (42: UInt64.t)
+  constant const_FOO: UInt64.t = (42: UInt64.t)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec foo [#"const.rs" 10 0 10 27] (return' (x: UInt64.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- [%#sconst] const_FOO ] s1 | s1 = return''0 {_0} ] ] [ & _0: UInt64.t = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:foo ensures] [%#sconst'0] result = (42: UInt64.t)} (! return' {result}) ]
+  let rec foo (return' (x: UInt64.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- const_FOO ] s1 | s1 = return''0 {_0} ] ] [ & _0: UInt64.t = Any.any_l () ])
+    [ return''0 (result: UInt64.t) -> {[@expl:foo ensures] result = (42: UInt64.t)} (! return' {result}) ]
 end
-module M_const__array [#"const.rs" 16 0 16 29]
-  let%span sconst = "const.rs" 19 4 19 5
-  let%span sconst'0 = "const.rs" 19 14 19 15
-  let%span sconst'1 = "const.rs" 15 10 15 27
-  let%span sconst'2 = "const.rs" 17 4 17 21
-  let%span sconst'3 = "const.rs" 17 24 17 30
-  let%span sconst'4 = "const.rs" 17 25 17 26
-  let%span sconst'5 = "const.rs" 18 4 18 27
-  let%span sconst'6 = "const.rs" 18 30 18 42
-  let%span sconst'7 = "const.rs" 18 31 18 32
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 264 18 264 40
-  let%span smodel = "../../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span sarray = "../../../creusot-contracts/src/std/array.rs" 10 20 10 51
-  
+module M_const__array
   use creusot.slice.Slice64
   use creusot.int.Int32
   use seq.Seq
@@ -41,44 +24,44 @@ module M_const__array [#"const.rs" 16 0 16 29]
   axiom inv_axiom [@rewrite]: forall x: Seq.seq Int32.t [inv x]. inv x = true
   
   predicate invariant' (self: Slice64.array Int32.t) =
-    [%#sarray] inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (9: UInt64.t)
+    inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (9: UInt64.t)
   
   predicate inv'0 (_0: Slice64.array Int32.t)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Slice64.array Int32.t [inv'0 x]. inv'0 x = invariant' x
   
-  constant const_X [#"const.rs" 17 4 17 21] : Slice64.array Int32.t
+  constant const_X : Slice64.array Int32.t
   
-  axiom const_X_spec: [%#sconst'2] inv'0 const_X
+  axiom const_X_spec: inv'0 const_X
   
   let rec set_X (ret) = bb0
     [ bb0 = s0
-      [ s0 = Slice64.create <Int32.t> {[%#sconst'3] (9: UInt64.t)} {fun (_: int) -> [%#sconst'4] (1: Int32.t)}
+      [ s0 = Slice64.create <Int32.t> {(9: UInt64.t)} {fun (_: int) -> (1: Int32.t)}
           (fun (_res: Slice64.array Int32.t) -> [ &_0 <- _res ] s1)
       | s1 = const_ret {_0} ] ] [ & _0: Slice64.array Int32.t = Any.any_l () ]
     [ const_ret (_const: Slice64.array Int32.t) -> -{const_X = _const}- ret ]
   
-  function view [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t = [%#smodel] Slice64.view self
+  function view [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t = Slice64.view self
   
   meta "rewrite_def" function view
   
   let rec len (self_: Slice64.slice Int32.t) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {[%#sslice] Seq.length (view self_) = UInt64.t'int result} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {Seq.length (view self_) = UInt64.t'int result} (! return' {result}) ]
   
   predicate invariant''0 (self: Slice64.array Int32.t) =
-    [%#sarray] inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (43: UInt64.t)
+    inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (43: UInt64.t)
   
   predicate inv'1 (_0: Slice64.array Int32.t)
   
   axiom inv_axiom'1 [@rewrite]: forall x: Slice64.array Int32.t [inv'1 x]. inv'1 x = invariant''0 x
   
-  constant const_Y [#"const.rs" 18 4 18 27] : Slice64.array Int32.t
+  constant const_Y : Slice64.array Int32.t
   
-  axiom const_Y_spec: [%#sconst'5] inv'1 const_Y
+  axiom const_Y_spec: inv'1 const_Y
   
   let rec set_Y (ret) = bb0
     [ bb0 = s0
-      [ s0 = Slice64.create <Int32.t> {[%#sconst'6] (43: UInt64.t)} {fun (_: int) -> [%#sconst'7] (1: Int32.t)}
+      [ s0 = Slice64.create <Int32.t> {(43: UInt64.t)} {fun (_: int) -> (1: Int32.t)}
           (fun (_res: Slice64.array Int32.t) -> [ &_0 <- _res ] s1)
       | s1 = const_ret {_0} ] ] [ & _0: Slice64.array Int32.t = Any.any_l () ]
     [ const_ret (_const: Slice64.array Int32.t) -> -{const_Y = _const}- ret ]
@@ -87,19 +70,19 @@ module M_const__array [#"const.rs" 16 0 16 29]
   
   meta "select_lsinst" "all"
   
-  let rec array [#"const.rs" 16 0 16 29] (return' (x: UInt64.t)) = set_Y
+  let rec array (return' (x: UInt64.t)) = set_Y
       (set_X
         ((! bb0
         [ bb0 = s0
           [ s0 = bb0'0
-            [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- [%#sconst] const_X ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
+            [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- const_X ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
             [ & _0'0: Slice64.array Int32.t = Any.any_l () ]
             [ _const_ret (_const: Slice64.array Int32.t) -> [ &_11 <- _const ] s1 ]
           | s1 = len {_11} (fun (_ret: UInt64.t) -> [ &_2 <- _ret ] s2)
           | s2 = bb1 ]
         | bb1 = s0
           [ s0 = bb0'0
-            [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- [%#sconst'0] const_Y ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
+            [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- const_Y ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
             [ & _0'0: Slice64.array Int32.t = Any.any_l () ]
             [ _const_ret (_const: Slice64.array Int32.t) -> [ &_10 <- _const ] s1 ]
           | s1 = len {_10} (fun (_ret: UInt64.t) -> [ &_6 <- _ret ] s2)
@@ -110,80 +93,53 @@ module M_const__array [#"const.rs" 16 0 16 29]
         | & _6: UInt64.t = Any.any_l ()
         | & _10: Slice64.array Int32.t = Any.any_l ()
         | & _11: Slice64.array Int32.t = Any.any_l () ])
-        [ return''0 (result: UInt64.t) -> {[@expl:array ensures] [%#sconst'1] result = (52: UInt64.t)}
-          (! return' {result}) ]))
+        [ return''0 (result: UInt64.t) -> {[@expl:array ensures] result = (52: UInt64.t)} (! return' {result}) ]))
 end
-module M_const__array_param [#"const.rs" 24 0 24 51]
-  let%span sconst = "const.rs" 25 30 25 36
-  let%span sconst'0 = "const.rs" 25 31 25 32
-  let%span sconst'1 = "const.rs" 23 10 23 21
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 264 18 264 40
-  let%span smodel = "../../../creusot-contracts/src/model.rs" 43 8 43 22
-  
+module M_const__array_param
   use creusot.int.UInt32
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.prelude.Any
   use seq.Seq
   
-  constant const_N [#"const.rs" 24 25 24 39] : UInt64.t
+  constant const_N : UInt64.t
   
-  function view [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = [%#smodel] Slice64.view self
+  function view [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = Slice64.view self
   
   meta "rewrite_def" function view
   
   let rec len (self_: Slice64.slice UInt32.t) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {[%#sslice] Seq.length (view self_) = UInt64.t'int result} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {Seq.length (view self_) = UInt64.t'int result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec array_param [#"const.rs" 24 0 24 51] (return' (x: UInt64.t)) = (! bb0
+  let rec array_param (return' (x: UInt64.t)) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
-          [ s0'0 = Slice64.create <UInt32.t> {[%#sconst] const_N} {fun (_: int) -> [%#sconst'0] (1: UInt32.t)}
+          [ s0'0 = Slice64.create <UInt32.t> {const_N} {fun (_: int) -> (1: UInt32.t)}
               (fun (_res: Slice64.array UInt32.t) -> [ &_0'0 <- _res ] s1'0)
           | s1'0 = _const_ret {_0'0} ] ] [ & _0'0: Slice64.array UInt32.t = Any.any_l () ]
         [ _const_ret (_const: Slice64.array UInt32.t) -> [ &x <- _const ] s1 ]
       | s1 = len {x} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = return''0 {_0} ] [ & _0: UInt64.t = Any.any_l () | & x: Slice64.array UInt32.t = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:array_param ensures] [%#sconst'1] result = const_N} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {[@expl:array_param ensures] result = const_N} (! return' {result}) ]
 end
-module M_const__add_one [#"const.rs" 32 0 32 47]
-  let%span sconst = "const.rs" 33 16 33 17
-  let%span sconst'0 = "const.rs" 33 12 33 13
-  let%span sconst'1 = "const.rs" 33 12 33 17
-  let%span sconst'2 = "const.rs" 30 11 30 25
-  let%span sconst'3 = "const.rs" 31 10 31 27
-  let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 124 39 124 89
-  let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 128 39 128 86
-  let%span sord'1 = "../../../creusot-contracts/src/logic/ord.rs" 132 39 132 86
-  let%span sord'2 = "../../../creusot-contracts/src/logic/ord.rs" 136 39 136 89
-  let%span sord'3 = "../../../creusot-contracts/src/logic/ord.rs" 140 39 140 70
-  let%span sord'4 = "../../../creusot-contracts/src/logic/ord.rs" 144 40 144 57
-  let%span sord'5 = "../../../creusot-contracts/src/logic/ord.rs" 145 40 145 57
-  let%span sord'6 = "../../../creusot-contracts/src/logic/ord.rs" 146 39 146 56
-  let%span sord'7 = "../../../creusot-contracts/src/logic/ord.rs" 150 40 150 70
-  let%span sord'8 = "../../../creusot-contracts/src/logic/ord.rs" 151 39 151 72
-  let%span sord'9 = "../../../creusot-contracts/src/logic/ord.rs" 155 40 155 73
-  let%span sord'10 = "../../../creusot-contracts/src/logic/ord.rs" 156 39 156 69
-  let%span sord'11 = "../../../creusot-contracts/src/logic/ord.rs" 160 39 160 84
-  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 240 16 246 17
-  
+module M_const__add_one
   use creusot.int.UInt64
   use creusot.prelude.Any
   use mach.int.Int
   
-  constant const_N [#"const.rs" 32 21 32 35] : UInt64.t
+  constant const_N : UInt64.t
   
   type tuple = { _p0: UInt64.t; _p1: bool }
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = [%#sord'12] if UInt64.lt self o then
+  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
       C_Less
     else
       if self = o then C_Equal else C_Greater
@@ -191,42 +147,40 @@ module M_const__add_one [#"const.rs" 32 0 32 47]
   
   function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'11] (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
   
   function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. ([%#sord'9] cmp_log x y = C_Greater)
-      -> ([%#sord'10] cmp_log y x = C_Less)
+  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
   
   function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. ([%#sord'7] cmp_log x y = C_Less)
-      -> ([%#sord'8] cmp_log y x = C_Greater)
+  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
   
   function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
+  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
+      -> cmp_log y z = o -> cmp_log x z = o
   
   function refl (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. [%#sord'3] cmp_log x x = C_Equal
+  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
   
   function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'2] UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
   
   function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'1] UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
   
   function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'0] UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
   
   function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord] UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -234,54 +188,30 @@ module M_const__add_one [#"const.rs" 32 0 32 47]
   
   meta "select_lsinst" "all"
   
-  let rec add_one [#"const.rs" 32 0 32 47] (return' (x: UInt64.t)) =
-    {[@expl:add_one requires] [%#sconst'2] UInt64.lt const_N const_MAX}
+  let rec add_one (return' (x: UInt64.t)) = {[@expl:add_one requires] UInt64.lt const_N const_MAX}
     (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
-          [ s0'0 =
-            [ &_1 <- let (_fst, _snd) = UInt64.add_with_overflow ([%#sconst'0] const_N) ([%#sconst] (1: UInt64.t)) in { _p0 = _fst;
-                                                                                                                        _p1 = _snd } ]
-            s1'0
-          | s1'0 = {[@expl:Add overflow] [%#sconst'1] not _1._p1} s2
+          [ s0'0 = [ &_1 <- let (_fst, _snd) = UInt64.add_with_overflow const_N (1: UInt64.t) in { _p0 = _fst;
+                                                                                                   _p1 = _snd } ] s1'0
+          | s1'0 = {[@expl:Add overflow] not _1._p1} s2
           | s2 = bb1 ]
         | bb1 = s0'0 [ s0'0 = [ &_0'0 <- _1._p0 ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
         [ & _0'0: UInt64.t = Any.any_l () | & _1: tuple = Any.any_l () ]
         [ _const_ret (_const: UInt64.t) -> [ &_0 <- _const ] s1 ]
       | s1 = return''0 {_0} ] ] [ & _0: UInt64.t = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:add_one ensures] [%#sconst'3] UInt64.t'int result
-      = UInt64.t'int const_N + 1}
+    [ return''0 (result: UInt64.t) -> {[@expl:add_one ensures] UInt64.t'int result = UInt64.t'int const_N + 1}
       (! return' {result}) ]
 end
-module M_const__add_one_2 [#"const.rs" 44 0 44 49]
-  let%span sconst = "const.rs" 42 11 42 25
-  let%span sconst'0 = "const.rs" 43 10 43 41
-  let%span sconst'1 = "const.rs" 30 11 30 25
-  let%span sconst'2 = "const.rs" 31 10 31 27
-  let%span sconst'3 = "const.rs" 38 16 38 22
-  let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 124 39 124 89
-  let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 128 39 128 86
-  let%span sord'1 = "../../../creusot-contracts/src/logic/ord.rs" 132 39 132 86
-  let%span sord'2 = "../../../creusot-contracts/src/logic/ord.rs" 136 39 136 89
-  let%span sord'3 = "../../../creusot-contracts/src/logic/ord.rs" 140 39 140 70
-  let%span sord'4 = "../../../creusot-contracts/src/logic/ord.rs" 144 40 144 57
-  let%span sord'5 = "../../../creusot-contracts/src/logic/ord.rs" 145 40 145 57
-  let%span sord'6 = "../../../creusot-contracts/src/logic/ord.rs" 146 39 146 56
-  let%span sord'7 = "../../../creusot-contracts/src/logic/ord.rs" 150 40 150 70
-  let%span sord'8 = "../../../creusot-contracts/src/logic/ord.rs" 151 39 151 72
-  let%span sord'9 = "../../../creusot-contracts/src/logic/ord.rs" 155 40 155 73
-  let%span sord'10 = "../../../creusot-contracts/src/logic/ord.rs" 156 39 156 69
-  let%span sord'11 = "../../../creusot-contracts/src/logic/ord.rs" 160 39 160 84
-  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 240 16 246 17
-  
+module M_const__add_one_2
   use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.Any
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = [%#sord'12] if UInt64.lt self o then
+  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
       C_Less
     else
       if self = o then C_Equal else C_Greater
@@ -289,252 +219,212 @@ module M_const__add_one_2 [#"const.rs" 44 0 44 49]
   
   function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'11] (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
   
   function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. ([%#sord'9] cmp_log x y = C_Greater)
-      -> ([%#sord'10] cmp_log y x = C_Less)
+  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
   
   function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. ([%#sord'7] cmp_log x y = C_Less)
-      -> ([%#sord'8] cmp_log y x = C_Greater)
+  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
   
   function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
+  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
+      -> cmp_log y z = o -> cmp_log x z = o
   
   function refl (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. [%#sord'3] cmp_log x x = C_Equal
+  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
   
   function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'2] UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
   
   function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'1] UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
   
   function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'0] UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
   
   function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord] UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
   
-  constant const_M [#"const.rs" 44 23 44 37] : UInt64.t
+  constant const_M : UInt64.t
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  let rec add_one (return' (x: UInt64.t)) = {[@expl:add_one requires] [%#sconst'1] UInt64.lt const_M const_MAX}
-    any
-    [ return''0 (result: UInt64.t) -> {[%#sconst'2] UInt64.t'int result = UInt64.t'int const_M + 1}
-      (! return' {result}) ]
+  let rec add_one (return' (x: UInt64.t)) = {[@expl:add_one requires] UInt64.lt const_M const_MAX}
+    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = UInt64.t'int const_M + 1} (! return' {result}) ]
   
-  constant add_one_logic: int = [%#sconst'3] UInt64.t'int const_M + 1
+  constant add_one_logic: int = UInt64.t'int const_M + 1
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec add_one_2 [#"const.rs" 44 0 44 49] (return' (x: UInt64.t)) =
-    {[@expl:add_one_2 requires] [%#sconst] UInt64.lt const_M const_MAX}
+  let rec add_one_2 (return' (x: UInt64.t)) = {[@expl:add_one_2 requires] UInt64.lt const_M const_MAX}
     (! bb0
     [ bb0 = s0 [ s0 = add_one (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return''0 {_0} ]
     [ & _0: UInt64.t = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:add_one_2 ensures] [%#sconst'0] UInt64.t'int result = add_one_logic}
+    [ return''0 (result: UInt64.t) -> {[@expl:add_one_2 ensures] UInt64.t'int result = add_one_logic}
       (! return' {result}) ]
 end
-module M_const__nat [#"const.rs" 54 0 54 35]
-  let%span sconst = "const.rs" 55 12 55 20
-  let%span sconst'0 = "const.rs" 53 10 53 28
-  
+module M_const__nat
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  constant const_VALUE [#"const.rs" 49 4 49 22] : UInt64.t
+  constant const_VALUE : UInt64.t
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec nat [#"const.rs" 54 0 54 35] (return' (x: UInt64.t)) = (! bb0
+  let rec nat (return' (x: UInt64.t)) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
-        [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- [%#sconst] const_VALUE ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
+        [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- const_VALUE ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
         [ & _0'0: UInt64.t = Any.any_l () ] [ _const_ret (_const: UInt64.t) -> [ &_0 <- _const ] s1 ]
       | s1 = return''0 {_0} ] ] [ & _0: UInt64.t = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:nat ensures] [%#sconst'0] result = const_VALUE} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {[@expl:nat ensures] result = const_VALUE} (! return' {result}) ]
 end
-module M_const__Parent__child [#"const.rs" 61 4 61 39]
-  let%span sconst = "const.rs" 62 12 62 13
-  let%span sconst'0 = "const.rs" 62 8 62 9
-  let%span sconst'1 = "const.rs" 60 15 60 37
-  let%span sconst'2 = "const.rs" 1 0 61 4
-  
+module M_const__Parent__child
   use creusot.int.UInt64
   use creusot.prelude.Any
   use mach.int.Int
   
-  constant const_M [#"const.rs" 61 13 61 27] : UInt64.t
+  constant const_M : UInt64.t
   
-  constant const_N [#"const.rs" 59 17 59 31] : UInt64.t
+  constant const_N : UInt64.t
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   predicate precondition (self: ()) (args: ())
   
-  axiom precondition_fndef: [%#sconst'2] forall args: () [precondition () args]. (let () = args in UInt64.t'int const_N
+  axiom precondition_fndef: forall args: () [precondition () args]. (let () = args in UInt64.t'int const_N
           + UInt64.t'int const_M
         <= UInt64.t'int const_MAX) -> precondition () args
   
   predicate postcondition_once (self: ()) (args: ()) (result: UInt64.t)
   
   axiom postcondition_fndef:
-    [%#sconst'2] forall args: (), res: UInt64.t [postcondition_once () args res]. postcondition_once () args res
+    forall args: (), res: UInt64.t [postcondition_once () args res]. postcondition_once () args res
       -> (let () = args in true)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec child [#"const.rs" 61 4 61 39] (return' (x: UInt64.t)) =
-    {[@expl:child requires] [%#sconst'1] UInt64.t'int const_N + UInt64.t'int const_M <= UInt64.t'int const_MAX}
+  let rec child (return' (x: UInt64.t)) = {[@expl:child requires] UInt64.t'int const_N + UInt64.t'int const_M
+    <= UInt64.t'int const_MAX}
     (! bb0
     [ bb0 = s0
-      [ s0 = UInt64.add {[%#sconst'0] const_N} {[%#sconst] const_M} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1)
-      | s1 = return''0 {_0} ] ] [ & _0: UInt64.t = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> (! return' {result}) ]
+      [ s0 = UInt64.add {const_N} {const_M} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = return''0 {_0} ] ]
+    [ & _0: UInt64.t = Any.any_l () ]) [ return''0 (result: UInt64.t) -> (! return' {result}) ]
 end
-module M_const__nat_i [#"const.rs" 75 0 75 59]
-  let%span sconst = "const.rs" 74 10 74 21
-  let%span sconst'0 = "const.rs" 53 10 53 28
-  let%span sconst'1 = "const.rs" 70 25 70 26
-  
+module M_const__nat_i
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  constant const_N [#"const.rs" 75 30 75 44] : UInt64.t
+  constant const_N : UInt64.t
   
-  constant const_VALUE: UInt64.t = [%#sconst'1] const_N
+  constant const_VALUE: UInt64.t = const_N
   
   let rec nat (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {[%#sconst'0] result = const_VALUE} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {result = const_VALUE} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec nat_i [#"const.rs" 75 0 75 59] (return' (x: UInt64.t)) = (! bb0
+  let rec nat_i (return' (x: UInt64.t)) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = nat (fun (_ret: UInt64.t) -> [ &_0'0 <- _ret ] s1'0) | s1'0 = bb1 ]
         | bb1 = _const_ret {_0'0} ] [ & _0'0: UInt64.t = Any.any_l () ]
         [ _const_ret (_const: UInt64.t) -> [ &_0 <- _const ] s1 ]
       | s1 = return''0 {_0} ] ] [ & _0: UInt64.t = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:nat_i ensures] [%#sconst] result = const_N} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {[@expl:nat_i ensures] result = const_N} (! return' {result}) ]
 end
-module M_const__nat_i2 [#"const.rs" 86 0 86 38]
-  let%span sconst = "const.rs" 87 12 87 33
-  let%span sconst'0 = "const.rs" 85 10 85 28
-  let%span sconst'1 = "const.rs" 82 25 82 33
-  
+module M_const__nat_i2
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  constant const_VALUE [#"const.rs" 49 4 49 22] : UInt64.t
+  constant const_VALUE : UInt64.t
   
-  constant const_VALUE'0: UInt64.t = [%#sconst'1] const_VALUE
+  constant const_VALUE'0: UInt64.t = const_VALUE
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec nat_i2 [#"const.rs" 86 0 86 38] (return' (x: UInt64.t)) = (! bb0
+  let rec nat_i2 (return' (x: UInt64.t)) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
-        [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- [%#sconst] const_VALUE'0 ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
+        [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- const_VALUE'0 ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
         [ & _0'0: UInt64.t = Any.any_l () ] [ _const_ret (_const: UInt64.t) -> [ &_0 <- _const ] s1 ]
       | s1 = return''0 {_0} ] ] [ & _0: UInt64.t = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:nat_i2 ensures] [%#sconst'0] result = const_VALUE} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {[@expl:nat_i2 ensures] result = const_VALUE} (! return' {result}) ]
 end
-module M_const__tuple [#"const.rs" 94 0 94 36]
-  let%span sconst = "const.rs" 95 4 95 7
-  let%span sconst'0 = "const.rs" 92 11 92 27
-  let%span sconst'1 = "const.rs" 93 10 93 24
-  let%span sconst'2 = "const.rs" 90 0 90 23
-  
+module M_const__tuple
   use creusot.int.UInt64
   use creusot.int.Int32
   use creusot.prelude.Any
   
   type tuple = { _p0: UInt64.t; _p1: Int32.t }
   
-  constant const_TUP: tuple = [%#sconst'2] { _p0 = (42: UInt64.t); _p1 = (24: Int32.t) }
+  constant const_TUP: tuple = { _p0 = (42: UInt64.t); _p1 = (24: Int32.t) }
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec tuple [#"const.rs" 94 0 94 36] (return' (x: tuple)) = {[@expl:tuple requires] [%#sconst'0] const_TUP._p0
-    = (42: UInt64.t)}
+  let rec tuple (return' (x: tuple)) = {[@expl:tuple requires] const_TUP._p0 = (42: UInt64.t)}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- [%#sconst] const_TUP ] s1 | s1 = return''0 {_0} ] ] [ & _0: tuple = Any.any_l () ])
-    [ return''0 (result: tuple) -> {[@expl:tuple ensures] [%#sconst'1] const_TUP._p1 = (24: Int32.t)}
-      (! return' {result}) ]
+    [ bb0 = s0 [ s0 = [ &_0 <- const_TUP ] s1 | s1 = return''0 {_0} ] ] [ & _0: tuple = Any.any_l () ])
+    [ return''0 (result: tuple) -> {[@expl:tuple ensures] const_TUP._p1 = (24: Int32.t)} (! return' {result}) ]
 end
-module M_const__inline_tuple [#"const.rs" 98 0 98 27]
-  let%span sconst = "const.rs" 100 18 100 29
-  let%span sconst'0 = "const.rs" 99 4 99 28
-  let%span sconst'1 = "const.rs" 90 0 90 23
-  
+module M_const__inline_tuple
   use creusot.int.UInt64
   use creusot.int.Int32
   use creusot.prelude.Any
   
   type tuple = { _p0: UInt64.t; _p1: Int32.t }
   
-  constant const_ITUP: tuple = [%#sconst'0] { _p0 = (42: UInt64.t); _p1 = (24: Int32.t) }
+  constant const_ITUP: tuple = { _p0 = (42: UInt64.t); _p1 = (24: Int32.t) }
   
-  constant const_TUP: tuple = [%#sconst'1] { _p0 = (42: UInt64.t); _p1 = (24: Int32.t) }
+  constant const_TUP: tuple = { _p0 = (42: UInt64.t); _p1 = (24: Int32.t) }
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec inline_tuple [#"const.rs" 98 0 98 27] (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:assertion] [%#sconst] const_ITUP = const_TUP} s1 | s1 = return''0 {_0} ] ]
+  let rec inline_tuple (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = {[@expl:assertion] const_ITUP = const_TUP} s1 | s1 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end
-module M_const__nat_i3 [#"const.rs" 109 0 109 29]
-  let%span sconst = "const.rs" 110 20 110 67
-  let%span sconst'0 = "const.rs" 106 44 106 52
-  let%span sconst'1 = "const.rs" 106 33 106 41
-  let%span sconst'2 = "const.rs" 106 33 106 52
-  
+module M_const__nat_i3
   use creusot.int.UInt64
   use creusot.prelude.Any
   use mach.int.Int
   
-  constant const_VALUE [#"const.rs" 49 4 49 22] : UInt64.t
+  constant const_VALUE : UInt64.t
   
   type tuple = { _p0: UInt64.t; _p1: bool }
   
-  constant const_VALUE'0 [#"const.rs" 106 4 106 22] : UInt64.t
+  constant const_VALUE'0 : UInt64.t
   
   let rec set_VALUE (ret) = bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
-          [ s0'0 =
-            [ &_1 <- let (_fst, _snd) = UInt64.add_with_overflow ([%#sconst'1] const_VALUE) ([%#sconst'0] const_VALUE) in { _p0 = _fst;
-                                                                                                                            _p1 = _snd } ]
-            s1'0
-          | s1'0 = {[@expl:Add overflow] [%#sconst'2] not _1._p1} s2
+          [ s0'0 = [ &_1 <- let (_fst, _snd) = UInt64.add_with_overflow const_VALUE const_VALUE in { _p0 = _fst;
+                                                                                                     _p1 = _snd } ] s1'0
+          | s1'0 = {[@expl:Add overflow] not _1._p1} s2
           | s2 = bb1 ]
         | bb1 = s0'0 [ s0'0 = [ &_0'0 <- _1._p0 ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
         [ & _0'0: UInt64.t = Any.any_l () | & _1: tuple = Any.any_l () ]
@@ -546,40 +436,30 @@ module M_const__nat_i3 [#"const.rs" 109 0 109 29]
   
   meta "select_lsinst" "all"
   
-  let rec nat_i3 [#"const.rs" 109 0 109 29] (return' (x: ())) = set_VALUE
+  let rec nat_i3 (return' (x: ())) = set_VALUE
       ((! bb0
       [ bb0 = s0
-        [ s0 = {[@expl:assertion] [%#sconst] UInt64.t'int const_VALUE'0
-          = UInt64.t'int const_VALUE + UInt64.t'int const_VALUE}
-          s1
+        [ s0 = {[@expl:assertion] UInt64.t'int const_VALUE'0 = UInt64.t'int const_VALUE + UInt64.t'int const_VALUE} s1
         | s1 = return''0 {_0} ] ] [ & _0: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ])
 end
-module M_const__nat_i3_logic [#"const.rs" 116 0 116 29]
-  let%span sconst = "const.rs" 115 10 115 57
-  let%span sconst'0 = "const.rs" 116 30 116 32
-  let%span sconst'1 = "const.rs" 106 44 106 52
-  let%span sconst'2 = "const.rs" 106 33 106 41
-  let%span sconst'3 = "const.rs" 106 33 106 52
-  
+module M_const__nat_i3_logic
   use creusot.int.UInt64
   use creusot.prelude.Any
   use mach.int.Int
   
-  constant const_VALUE [#"const.rs" 49 4 49 22] : UInt64.t
+  constant const_VALUE : UInt64.t
   
   type tuple = { _p0: UInt64.t; _p1: bool }
   
-  constant const_VALUE'0 [#"const.rs" 106 4 106 22] : UInt64.t
+  constant const_VALUE'0 : UInt64.t
   
   let rec set_VALUE (ret) = bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
-          [ s0'0 =
-            [ &_1 <- let (_fst, _snd) = UInt64.add_with_overflow ([%#sconst'2] const_VALUE) ([%#sconst'1] const_VALUE) in { _p0 = _fst;
-                                                                                                                            _p1 = _snd } ]
-            s1'0
-          | s1'0 = {[@expl:Add overflow] [%#sconst'3] not _1._p1} s2
+          [ s0'0 = [ &_1 <- let (_fst, _snd) = UInt64.add_with_overflow const_VALUE const_VALUE in { _p0 = _fst;
+                                                                                                     _p1 = _snd } ] s1'0
+          | s1'0 = {[@expl:Add overflow] not _1._p1} s2
           | s2 = bb1 ]
         | bb1 = s0'0 [ s0'0 = [ &_0'0 <- _1._p0 ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
         [ & _0'0: UInt64.t = Any.any_l () | & _1: tuple = Any.any_l () ]
@@ -591,27 +471,13 @@ module M_const__nat_i3_logic [#"const.rs" 116 0 116 29]
   
   meta "select_lsinst" "all"
   
-  function nat_i3_logic [#"const.rs" 116 0 116 29] : ()
+  function nat_i3_logic : ()
   
   let rec vc_nat_i3_logic (ret) = set_VALUE
-      ({[@expl:nat_i3_logic ensures] [%#sconst] UInt64.t'int const_VALUE'0
-      = UInt64.t'int const_VALUE + UInt64.t'int const_VALUE}
+      ({[@expl:nat_i3_logic ensures] UInt64.t'int const_VALUE'0 = UInt64.t'int const_VALUE + UInt64.t'int const_VALUE}
       ret)
 end
-module M_const__qyi4420995221928654116__clone [#"const.rs" 118 9 118 14] (* <Peano as creusot_contracts::Clone> *)
-  let%span sconst = "const.rs" 118 9 118 14
-  let%span sclone = "../../../creusot-contracts/src/std/clone.rs" 43 18 43 33
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 159 14 159 114
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 164 14 164 100
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 169 14 169 61
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  
+module M_const__qyi4420995221928654116__clone (* <Peano as creusot_contracts::Clone> *)
   use creusot.prelude.Any
   
   type t_Peano = C_Z | C_S t_Peano
@@ -621,7 +487,7 @@ module M_const__qyi4420995221928654116__clone [#"const.rs" 118 9 118 14] (* <Pea
     | bad -> {forall field_0: t_Peano [C_S field_0: t_Peano]. C_S field_0 <> input} (! {false} any) ]
   
   let rec clone' (self_: t_Peano) (return' (x: t_Peano)) = any
-    [ return''0 (result: t_Peano) -> {[%#sclone] result = self_} (! return' {result}) ]
+    [ return''0 (result: t_Peano) -> {result = self_} (! return' {result}) ]
   
   type tuple = { _p0: t_Peano; _p1: t_Peano }
   
@@ -641,7 +507,7 @@ module M_const__qyi4420995221928654116__clone [#"const.rs" 118 9 118 14] (* <Pea
   
   function fn_mut_once (self: ()) (args: t_Peano) (res: t_Peano) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: t_Peano, res: t_Peano. [%#sops'8] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: (), args: t_Peano, res: t_Peano. postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
@@ -650,22 +516,21 @@ module M_const__qyi4420995221928654116__clone [#"const.rs" 118 9 118 14] (* <Pea
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
-      -> ([%#sops'6] hist_inv b c) -> ([%#sops'7] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: ()) : ()
   
-  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
   
   function postcondition_mut_hist_inv (self: ()) (args: t_Peano) (res_state: ()) (res: t_Peano) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: t_Peano, res_state: (), res: t_Peano. ([%#sops'2] postcondition_mut self args res_state res)
-      -> ([%#sops'3] hist_inv self res_state)
+    forall self: (), args: t_Peano, res_state: (), res: t_Peano. postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   function fn_hist_inv (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
   
   predicate postcondition [@inline:trivial] (self: ()) (args: t_Peano) (result: t_Peano) =
     let self_ = args in result = self_
@@ -674,20 +539,20 @@ module M_const__qyi4420995221928654116__clone [#"const.rs" 118 9 118 14] (* <Pea
   
   function fn_once (self: ()) (args: t_Peano) (res: t_Peano) : ()
   
-  axiom fn_once_spec: forall self: (), args: t_Peano, res: t_Peano. [%#sops'0] postcondition_once self args res
+  axiom fn_once_spec: forall self: (), args: t_Peano, res: t_Peano. postcondition_once self args res
       = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: ()) (args: t_Peano) (res_state: ()) (res: t_Peano) : ()
   
   axiom fn_mut_spec:
-    forall self: (), args: t_Peano, res_state: (), res: t_Peano. [%#sops] postcondition_mut self args res_state res
+    forall self: (), args: t_Peano, res_state: (), res: t_Peano. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec clone''0 [#"const.rs" 118 9 118 14] (self: t_Peano) (return' (x: t_Peano)) = (! bb0
+  let rec clone''0 (self: t_Peano) (return' (x: t_Peano)) = (! bb0
     [ bb0 = any [ br0 -> {self'0 = C_Z} (! bb4) | br1 (x0: t_Peano) -> {self'0 = C_S x0} (! bb3) ]
     | bb3 = s0
       [ s0 = v_S {self'0} (fun (r0: t_Peano) -> [ &v0_1 <- r0 ] s1)
@@ -702,21 +567,14 @@ module M_const__qyi4420995221928654116__clone [#"const.rs" 118 9 118 14] (* <Pea
     | & v0_1: t_Peano = Any.any_l ()
     | & _6: t_Peano = Any.any_l ()
     | & _8: t_Peano = Any.any_l () ])
-    [ return''0 (result: t_Peano) -> {[@expl:clone ensures] [%#sconst] match { _p0 = self; _p1 = result } with
+    [ return''0 (result: t_Peano) -> {[@expl:clone ensures] match { _p0 = self; _p1 = result } with
         | {_p0 = C_Z; _p1 = C_Z} -> true
         | {_p0 = C_S v0_1; _p1 = C_S v0_r} -> postcondition () v0_1 v0_r
         | _ -> false
         end}
       (! return' {result}) ]
 end
-module M_const__zero [#"const.rs" 127 0 127 22]
-  let%span sconst = "const.rs" 128 4 128 10
-  let%span sconst'0 = "const.rs" 128 11 128 12
-  let%span sconst'1 = "const.rs" 128 4 128 13
-  let%span sconst'2 = "const.rs" 126 10 126 28
-  let%span sconst'3 = "const.rs" 124 0 124 24
-  let%span sarray = "../../../creusot-contracts/src/std/array.rs" 10 20 10 51
-  
+module M_const__zero
   use creusot.slice.Slice64
   use seq.Seq
   use creusot.int.UInt64
@@ -729,15 +587,15 @@ module M_const__zero [#"const.rs" 127 0 127 22]
   axiom inv_axiom [@rewrite]: forall x: Seq.seq t_Peano [inv x]. inv x = true
   
   predicate invariant' (self: Slice64.array t_Peano) =
-    [%#sarray] inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (2: UInt64.t)
+    inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (2: UInt64.t)
   
   predicate inv'0 (_0: Slice64.array t_Peano)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Slice64.array t_Peano [inv'0 x]. inv'0 x = invariant' x
   
-  constant const_PEANOS [#"const.rs" 124 0 124 24] : Slice64.array t_Peano
+  constant const_PEANOS : Slice64.array t_Peano
   
-  axiom const_PEANOS_spec: [%#sconst'3] inv'0 const_PEANOS
+  axiom const_PEANOS_spec: inv'0 const_PEANOS
   
   let rec set_PEANOS (ret) = bb0
     [ bb0 = s0
@@ -763,59 +621,50 @@ module M_const__zero [#"const.rs" 127 0 127 22]
   
   meta "select_lsinst" "all"
   
-  let rec zero [#"const.rs" 127 0 127 22] (return' (x: t_Peano)) = set_PEANOS
+  let rec zero (return' (x: t_Peano)) = set_PEANOS
       ((! bb0
       [ bb0 = s0
-        [ s0 = [ &_2 <- [%#sconst] const_PEANOS ] s1
-        | s1 = [ &_3 <- [%#sconst'0] (0: UInt64.t) ] s2
-        | s2 = [ &_4 <- UInt64.lt _3 ([%#sconst'1] (2: UInt64.t)) ] s3
-        | s3 = {[@expl:index in bounds] [%#sconst'1] _4} s4
+        [ s0 = [ &_2 <- const_PEANOS ] s1
+        | s1 = [ &_3 <- (0: UInt64.t) ] s2
+        | s2 = [ &_4 <- UInt64.lt _3 (2: UInt64.t) ] s3
+        | s3 = {[@expl:index in bounds] _4} s4
         | s4 = bb1 ]
       | bb1 = s0 [ s0 = Slice64.get <t_Peano> {_2} {_3} (fun (r: t_Peano) -> [ &_0 <- r ] s1) | s1 = return''0 {_0} ] ]
       [ & _0: t_Peano = Any.any_l ()
       | & _2: Slice64.array t_Peano = Any.any_l ()
       | & _3: UInt64.t = Any.any_l ()
       | & _4: bool = Any.any_l () ])
-      [ return''0 (result: t_Peano) -> {[@expl:zero ensures] [%#sconst'2] result = C_Z} (! return' {result}) ])
+      [ return''0 (result: t_Peano) -> {[@expl:zero ensures] result = C_Z} (! return' {result}) ])
 end
-module M_const__str [#"const.rs" 134 0 134 28]
-  let%span sconst = "const.rs" 135 4 135 7
-  let%span sconst'0 = "const.rs" 133 10 133 23
-  let%span sconst'1 = "const.rs" 131 30 131 37
-  
+module M_const__str
   use creusot.prelude.Any
   
-  constant const_STR [#"const.rs" 131 0 131 27] : string
+  constant const_STR : string
   
   let rec set_STR (ret) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- [%#sconst'1] "Hello" ] s1 | s1 = const_ret {_0} ] ] [ & _0: string = Any.any_l () ]
+    [ bb0 = s0 [ s0 = [ &_0 <- "Hello" ] s1 | s1 = const_ret {_0} ] ] [ & _0: string = Any.any_l () ]
     [ const_ret (_const: string) -> -{const_STR = _const}- ret ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec str [#"const.rs" 134 0 134 28] (return' (x: string)) = set_STR
+  let rec str (return' (x: string)) = set_STR
       ((! bb0
-      [ bb0 = s0 [ s0 = [ &_0 <- [%#sconst] const_STR ] s1 | s1 = return''0 {_0} ] ] [ & _0: string = Any.any_l () ])
-      [ return''0 (result: string) -> {[@expl:str ensures] [%#sconst'0] result = const_STR} (! return' {result}) ])
+      [ bb0 = s0 [ s0 = [ &_0 <- const_STR ] s1 | s1 = return''0 {_0} ] ] [ & _0: string = Any.any_l () ])
+      [ return''0 (result: string) -> {[@expl:str ensures] result = const_STR} (! return' {result}) ])
 end
-module M_const__is_zst [#"const.rs" 140 0 140 32]
-  let%span sconst = "const.rs" 141 12 141 58
-  let%span sconst'0 = "const.rs" 139 10 139 66
-  let%span smem = "../../../creusot-contracts/src/std/mem.rs" 36 22 36 53
-  let%span smem'0 = "../../../creusot-contracts/src/std/mem.rs" 72 10 72 21
-  
+module M_const__is_zst
   use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.Any
   
   constant size_of_T : int
   
-  axiom size_of_T_spec: [%#smem'0] 0 <= size_of_T
+  axiom size_of_T_spec: 0 <= size_of_T
   
   let rec size_of (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {[%#smem] UInt64.t'int result = size_of_T} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = size_of_T} (! return' {result}) ]
   
   constant const_IS_ZST : bool
   
@@ -829,62 +678,51 @@ module M_const__is_zst [#"const.rs" 140 0 140 32]
   
   meta "select_lsinst" "all"
   
-  let rec is_zst [#"const.rs" 140 0 140 32] (return' (x: bool)) = set_IS_ZST
+  let rec is_zst (return' (x: bool)) = set_IS_ZST
       ((! bb0
       [ bb0 = s0
         [ s0 = bb0'0
-          [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- [%#sconst] const_IS_ZST ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
+          [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- const_IS_ZST ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
           [ & _0'0: bool = Any.any_l () ] [ _const_ret (_const: bool) -> [ &_0 <- _const ] s1 ]
         | s1 = return''0 {_0} ] ] [ & _0: bool = Any.any_l () ])
-      [ return''0 (result: bool) -> {[@expl:is_zst ensures] [%#sconst'0] result = const_IS_ZST} (! return' {result}) ])
+      [ return''0 (result: bool) -> {[@expl:is_zst ensures] result = const_IS_ZST} (! return' {result}) ])
 end
-module M_const__is_zst_z [#"const.rs" 148 0 148 31]
-  let%span sconst = "const.rs" 147 10 147 16
-  let%span sconst'0 = "const.rs" 139 10 139 66
-  
+module M_const__is_zst_z
   use creusot.prelude.Any
   
   constant const_IS_ZST: bool = true
   
-  let rec is_zst (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {[%#sconst'0] result = const_IS_ZST} (! return' {result}) ]
+  let rec is_zst (return' (x: bool)) = any [ return''0 (result: bool) -> {result = const_IS_ZST} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec is_zst_z [#"const.rs" 148 0 148 31] (return' (x: bool)) = (! bb0
+  let rec is_zst_z (return' (x: bool)) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = is_zst (fun (_ret: bool) -> [ &_0'0 <- _ret ] s1'0) | s1'0 = bb1 ]
         | bb1 = _const_ret {_0'0} ] [ & _0'0: bool = Any.any_l () ]
         [ _const_ret (_const: bool) -> [ &_0 <- _const ] s1 ]
       | s1 = return''0 {_0} ] ] [ & _0: bool = Any.any_l () ])
-    [ return''0 (result: bool) -> {[@expl:is_zst_z ensures] [%#sconst] result} (! return' {result}) ]
+    [ return''0 (result: bool) -> {[@expl:is_zst_z ensures] result} (! return' {result}) ]
 end
-module M_const__max_entries_capacity [#"const.rs" 154 0 154 29]
-  let%span sconst = "const.rs" 155 18 155 43
-  let%span sconst'0 = "const.rs" 152 0 152 37
-  
+module M_const__max_entries_capacity
   use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.Any
   
-  constant const_MAX_ENTRIES_CAPACITY: UInt64.t = [%#sconst'0] (1152921504606846975: UInt64.t)
+  constant const_MAX_ENTRIES_CAPACITY: UInt64.t = (1152921504606846975: UInt64.t)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec max_entries_capacity [#"const.rs" 154 0 154 29] (return' (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = {[@expl:assertion] [%#sconst] UInt64.t'int const_MAX_ENTRIES_CAPACITY > 0} s1 | s1 = return''0 {_0} ] ]
+  let rec max_entries_capacity (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = {[@expl:assertion] UInt64.t'int const_MAX_ENTRIES_CAPACITY > 0} s1 | s1 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end
-module M_const__some_fn_pointer [#"const.rs" 159 0 159 27]
-  let%span sconst = "const.rs" 160 4 160 5
-  let%span sconst'0 = "const.rs" 158 10 158 22
-  
+module M_const__some_fn_pointer
   use creusot.int.Int32
   use creusot.prelude.Any
   
@@ -892,35 +730,30 @@ module M_const__some_fn_pointer [#"const.rs" 159 0 159 27]
   
   meta "select_lsinst" "all"
   
-  let rec some_fn_pointer [#"const.rs" 159 0 159 27] (return' (x: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- [%#sconst] (2: Int32.t) ] s1 | s1 = return''0 {_0} ] ] [ & _0: Int32.t = Any.any_l () ])
-    [ return''0 (result: Int32.t) -> {[@expl:some_fn_pointer ensures] [%#sconst'0] Int32.to_int result = 2}
-      (! return' {result}) ]
+  let rec some_fn_pointer (return' (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- (2: Int32.t) ] s1 | s1 = return''0 {_0} ] ] [ & _0: Int32.t = Any.any_l () ])
+    [ return''0 (result: Int32.t) -> {[@expl:some_fn_pointer ensures] Int32.to_int result = 2} (! return' {result}) ]
 end
-module M_const__fn_pointer_test [#"const.rs" 163 0 163 24]
-  let%span sconst = "const.rs" 164 13 164 28
-  let%span sconst'0 = "const.rs" 166 18 166 25
-  let%span sconst'1 = "const.rs" 158 10 158 22
-  
+module M_const__fn_pointer_test
   use creusot.prelude.Any
   use creusot.int.Int32
   
   let rec some_fn_pointer (return' (x: Int32.t)) = any
-    [ return''0 (result: Int32.t) -> {[%#sconst'1] Int32.to_int result = 2} (! return' {result}) ]
+    [ return''0 (result: Int32.t) -> {Int32.to_int result = 2} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec fn_pointer_test [#"const.rs" 163 0 163 24] (return' (x: ())) = (! bb0
+  let rec fn_pointer_test (return' (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
-        [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- [%#sconst] () ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
-        [ & _0'0: () = Any.any_l () ] [ _const_ret (_const: ()) -> [ &_7 <- _const ] s1 ]
+        [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- () ] s1'0 | s1'0 = _const_ret {_0'0} ] ] [ & _0'0: () = Any.any_l () ]
+        [ _const_ret (_const: ()) -> [ &_7 <- _const ] s1 ]
       | s1 = [ &x <- _7 ] s2
       | s2 = some_fn_pointer (fun (_ret: Int32.t) -> [ &y <- _ret ] s3)
       | s3 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] [%#sconst'0] Int32.to_int y = 2} s1 | s1 = return''0 {_0} ] ]
+    | bb1 = s0 [ s0 = {[@expl:assertion] Int32.to_int y = 2} s1 | s1 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l () | & x: () = Any.any_l () | & y: Int32.t = Any.any_l () | & _7: () = Any.any_l () ])
     [ return''0 (result: ()) -> (! return' {result}) ]
 end

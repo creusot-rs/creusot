@@ -1,22 +1,4 @@
-module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
-  let%span sexcl = "excl.rs" 9 16 9 21
-  let%span sexcl'0 = "excl.rs" 9 8 9 22
-  let%span sexcl'1 = "excl.rs" 4 10 4 26
-  let%span sexcl'2 = "excl.rs" 5 10 5 18
-  let%span sexcl'3 = "../../../creusot-contracts/src/logic/ra/excl.rs" 16 8 16 12
-  let%span sexcl'4 = "../../../creusot-contracts/src/logic/ra/excl.rs" 29 14 29 32
-  let%span sexcl'5 = "../../../creusot-contracts/src/logic/ra/excl.rs" 33 14 33 98
-  let%span sresource = "../../../creusot-contracts/src/ghost/resource.rs" 74 18 74 37
-  let%span sresource'0 = "../../../creusot-contracts/src/ghost/resource.rs" 217 19 217 42
-  let%span sresource'1 = "../../../creusot-contracts/src/ghost/resource.rs" 218 18 218 32
-  let%span sresource'2 = "../../../creusot-contracts/src/ghost/resource.rs" 219 18 219 42
-  let%span sresource'3 = "../../../creusot-contracts/src/ghost/resource.rs" 53 8 53 30
-  let%span sid = "../../../creusot-contracts/src/logic/id.rs" 31 14 31 41
-  let%span smodel = "../../../creusot-contracts/src/model.rs" 59 8 59 22
-  let%span smodel'0 = "../../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span soption = "../../../creusot-contracts/src/std/option.rs" 754 8 757 9
-  
+module M_excl__exclusivity
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
   use map.Map
@@ -29,54 +11,53 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
   function id (self: t_Resource) : t_Id
   
   let rec id_ghost (self: t_Resource) (return' (x: t_Id)) = any
-    [ return''0 (result: t_Id) -> {[%#sresource] result = id self} (! return' {result}) ]
+    [ return''0 (result: t_Id) -> {result = id self} (! return' {result}) ]
   
   let rec eq (self: t_Id) (other: t_Id) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {[%#sid] result = (self = other)} (! return' {result}) ]
+    [ return''0 (result: bool) -> {result = (self = other)} (! return' {result}) ]
   
   type t_Excl = { t_Excl__0: Int32.t }
   
   type t_Option = C_None | C_Some t_Excl
   
-  function and_then_logic (self: t_Option) (f: Map.map t_Excl t_Option) : t_Option = [%#soption] match self with
+  function and_then_logic (self: t_Option) (f: Map.map t_Excl t_Option) : t_Option = match self with
       | C_None -> C_None
       | C_Some x -> Map.get f x
       end
   
-  function op (self: t_Excl) (_other: t_Excl) : t_Option = [%#sexcl'3] C_None
+  function op (self: t_Excl) (_other: t_Excl) : t_Option = C_None
   
   function associative (a: t_Excl) (b: t_Excl) (c: t_Excl) : ()
   
-  axiom associative_spec:
-    forall a: t_Excl, b: t_Excl, c: t_Excl. [%#sexcl'5] and_then_logic (op a b) (fun (ab: t_Excl) -> op ab c)
+  axiom associative_spec: forall a: t_Excl, b: t_Excl, c: t_Excl. and_then_logic (op a b) (fun (ab: t_Excl) -> op ab c)
       = and_then_logic (op b c) (fun (bc: t_Excl) -> op a bc)
   
   function commutative (a: t_Excl) (b: t_Excl) : ()
   
-  axiom commutative_spec: forall a: t_Excl, b: t_Excl. [%#sexcl'4] op a b = op b a
+  axiom commutative_spec: forall a: t_Excl, b: t_Excl. op a b = op b a
   
   function val' (self: t_Resource) : t_Excl
   
-  function view [@inline:trivial] (self: t_Resource) : t_Excl = [%#sresource'3] val' self
+  function view [@inline:trivial] (self: t_Resource) : t_Excl = val' self
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Resource) : t_Excl = [%#smodel] view self.current
+  function view'0 [@inline:trivial] (self: MutBorrow.t t_Resource) : t_Excl = view self.current
   
   meta "rewrite_def" function view'0
   
-  function view'1 [@inline:trivial] (self: t_Resource) : t_Excl = [%#smodel'0] view self
+  function view'1 [@inline:trivial] (self: t_Resource) : t_Excl = view self
   
   meta "rewrite_def" function view'1
   
   let rec valid_shared (self: MutBorrow.t t_Resource) (other: t_Resource) (return' (x: ())) =
-    {[@expl:valid_shared requires] [%#sresource'0] id self.current = id other}
+    {[@expl:valid_shared requires] id self.current = id other}
     any
-    [ return''0 (result: ()) -> {[%#sresource'1] self.final = self.current}
-      {[%#sresource'2] op (view'0 self) (view'1 other) <> C_None}
+    [ return''0 (result: ()) -> {self.final = self.current}
+      {op (view'0 self) (view'1 other) <> C_None}
       (! return' {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Resource) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Resource) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -88,7 +69,7 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
   
   meta "select_lsinst" "all"
   
-  let rec exclusivity [#"excl.rs" 6 0 6 72] (x: MutBorrow.t t_Resource) (y: t_Resource) (return' (x'0: ())) = (! bb0
+  let rec exclusivity (x: MutBorrow.t t_Resource) (y: t_Resource) (return' (x'0: ())) = (! bb0
     [ bb0 = s0 [ s0 = id_ghost {x'0.current} (fun (_ret: t_Id) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = id_ghost {y'0} (fun (_ret: t_Id) -> [ &_10 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = eq {_7} {_10} (fun (_ret: bool) -> [ &_5 <- _ret ] s1) | s1 = bb3 ]
@@ -98,10 +79,8 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
           (fun (_ret: MutBorrow.t t_Resource) -> [ &_13 <- _ret ] [ &x'0 <- { x'0 with current = _ret.final } ] s1)
       | s1 = valid_shared {_13} {y'0} (fun (_ret: ()) -> [ &_12 <- _ret ] s2)
       | s2 = bb5 ]
-    | bb5 = s0
-      [ s0 = -{resolve'0 x'0}- s1
-      | s1 = any [ br0 -> {([%#sexcl] false) = false} (! bb6) | br1 -> {[%#sexcl] false} (! bb9) ] ]
-    | bb6 = {[%#sexcl'0] false} any
+    | bb5 = s0 [ s0 = -{resolve'0 x'0}- s1 | s1 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb9) ] ]
+    | bb6 = {false} any
     | bb8 = s0 [ s0 = -{resolve'0 x'0}- s1 | s1 = bb9 ]
     | bb9 = return''0 {_0} ]
     [ & _0: () = Any.any_l ()
@@ -112,7 +91,7 @@ module M_excl__exclusivity [#"excl.rs" 6 0 6 72]
     | & _10: t_Id = Any.any_l ()
     | & _12: () = Any.any_l ()
     | & _13: MutBorrow.t t_Resource = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:exclusivity ensures #0] [%#sexcl'1] id x.current <> id y}
-      {[@expl:exclusivity ensures #1] [%#sexcl'2] x.current = x.final}
+    [ return''0 (result: ()) -> {[@expl:exclusivity ensures #0] id x.current <> id y}
+      {[@expl:exclusivity ensures #1] x.current = x.final}
       (! return' {result}) ]
 end

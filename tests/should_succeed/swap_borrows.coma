@@ -1,8 +1,4 @@
-module M_swap_borrows__swap [#"swap_borrows.rs" 5 0 5 31]
-  let%span sswap_borrows = "swap_borrows.rs" 5 11 5 12
-  let%span sswap_borrows'0 = "swap_borrows.rs" 5 25 5 31
-  let%span sswap_borrows'1 = "swap_borrows.rs" 4 10 4 30
-  
+module M_swap_borrows__swap
   use creusot.prelude.Any
   
   type t_T
@@ -19,24 +15,15 @@ module M_swap_borrows__swap [#"swap_borrows.rs" 5 0 5 31]
   
   meta "select_lsinst" "all"
   
-  let rec swap [#"swap_borrows.rs" 5 0 5 31] (x: tuple) (return' (x'0: tuple)) =
-    {[@expl:swap 'x' type invariant] [%#sswap_borrows] inv'0 x}
+  let rec swap (x: tuple) (return' (x'0: tuple)) = {[@expl:swap 'x' type invariant] inv'0 x}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_0 <- { _p0 = x'0._p1; _p1 = x'0._p0 } ] s1 | s1 = bb3 ] | bb3 = return''0 {_0} ]
     [ & _0: tuple = Any.any_l () | & x'0: tuple = x ])
-    [ return''0 (result: tuple) -> {[@expl:swap result type invariant] [%#sswap_borrows'0] inv'0 result}
-      {[@expl:swap ensures] [%#sswap_borrows'1] result = { _p0 = x._p1; _p1 = x._p0 }}
+    [ return''0 (result: tuple) -> {[@expl:swap result type invariant] inv'0 result}
+      {[@expl:swap ensures] result = { _p0 = x._p1; _p1 = x._p0 }}
       (! return' {result}) ]
 end
-module M_swap_borrows__f [#"swap_borrows.rs" 10 0 10 10]
-  let%span sswap_borrows = "swap_borrows.rs" 11 26 11 27
-  let%span sswap_borrows'0 = "swap_borrows.rs" 11 29 11 30
-  let%span sswap_borrows'1 = "swap_borrows.rs" 13 11 13 13
-  let%span sswap_borrows'2 = "swap_borrows.rs" 15 20 15 30
-  let%span sswap_borrows'3 = "swap_borrows.rs" 16 20 16 29
-  let%span sswap_borrows'4 = "swap_borrows.rs" 4 10 4 30
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_swap_borrows__f
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -46,10 +33,9 @@ module M_swap_borrows__f [#"swap_borrows.rs" 10 0 10 10]
   type tuple'0 = { _p0'0: MutBorrow.t UInt32.t; _p1'0: MutBorrow.t UInt32.t }
   
   let rec swap (x: tuple'0) (return' (x'0: tuple'0)) = any
-    [ return''0 (result: tuple'0) -> {[%#sswap_borrows'4] result = { _p0'0 = x._p1'0; _p1'0 = x._p0'0 }}
-      (! return' {result}) ]
+    [ return''0 (result: tuple'0) -> {result = { _p0'0 = x._p1'0; _p1'0 = x._p0'0 }} (! return' {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -61,9 +47,9 @@ module M_swap_borrows__f [#"swap_borrows.rs" 10 0 10 10]
   
   meta "select_lsinst" "all"
   
-  let rec f [#"swap_borrows.rs" 10 0 10 10] (return' (x: ())) = (! bb0
+  let rec f (return' (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_3 <- { _p0 = ([%#sswap_borrows] (0: UInt32.t)); _p1 = ([%#sswap_borrows'0] (0: UInt32.t)) } ] s1
+      [ s0 = [ &_3 <- { _p0 = (0: UInt32.t); _p1 = (0: UInt32.t) } ] s1
       | s1 = [ &a <- _3._p0 ] s2
       | s2 = [ &b <- _3._p1 ] s3
       | s3 = MutBorrow.borrow_mut <UInt32.t> {a}
@@ -78,10 +64,10 @@ module M_swap_borrows__f [#"swap_borrows.rs" 10 0 10 10]
     | bb1 = s0
       [ s0 = -{resolve'0 p._p1'0}- s1
       | s1 = -{resolve'0 _8}- s2
-      | s2 = [ &p <- { p with _p0'0 = { p._p0'0 with current = ([%#sswap_borrows'1] (10: UInt32.t)) } } ] s3
+      | s2 = [ &p <- { p with _p0'0 = { p._p0'0 with current = (10: UInt32.t) } } ] s3
       | s3 = -{resolve'0 p._p0'0}- s4
-      | s4 = {[@expl:assertion] [%#sswap_borrows'2] b = (10: UInt32.t)} s5
-      | s5 = {[@expl:assertion] [%#sswap_borrows'3] a = (0: UInt32.t)} s6
+      | s4 = {[@expl:assertion] b = (10: UInt32.t)} s5
+      | s5 = {[@expl:assertion] a = (0: UInt32.t)} s6
       | s6 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a: UInt32.t = Any.any_l ()

@@ -1,19 +1,4 @@
-module M_03_as_slice_of_cells__splits_up [#"03_as_slice_of_cells.rs" 7 0 7 54]
-  let%span s03_as_slice_of_cells = "03_as_slice_of_cells.rs" 9 8 9 41
-  let%span s03_as_slice_of_cells'0 = "03_as_slice_of_cells.rs" 15 11 15 12
-  let%span s03_as_slice_of_cells'1 = "03_as_slice_of_cells.rs" 15 5 15 13
-  let%span s03_as_slice_of_cells'2 = "03_as_slice_of_cells.rs" 15 27 15 28
-  let%span s03_as_slice_of_cells'3 = "03_as_slice_of_cells.rs" 15 21 15 29
-  let%span s03_as_slice_of_cells'4 = "03_as_slice_of_cells.rs" 5 11 5 93
-  let%span s03_as_slice_of_cells'5 = "03_as_slice_of_cells.rs" 6 10 6 50
-  let%span spredcell = "../../../creusot-contracts/src/cell/predcell.rs" 106 15 106 127
-  let%span spredcell'0 = "../../../creusot-contracts/src/cell/predcell.rs" 107 14 107 81
-  let%span spredcell'1 = "../../../creusot-contracts/src/cell/predcell.rs" 108 14 108 42
-  let%span spredcell'2 = "../../../creusot-contracts/src/cell/predcell.rs" 65 4 65 29
-  let%span smapping = "../../../creusot-contracts/src/logic/mapping.rs" 62 4 62 26
-  let%span smodel = "../../../creusot-contracts/src/model.rs" 43 8 43 22
-  let%span sslice = "../../../creusot-contracts/src/std/slice.rs" 54 8 54 31
-  
+module M_03_as_slice_of_cells__splits_up
   use creusot.int.UInt32
   use mach.int.Int
   use map.Map
@@ -27,59 +12,58 @@ module M_03_as_slice_of_cells__splits_up [#"03_as_slice_of_cells.rs" 7 0 7 54]
   type t_PredCell'0
   
   predicate index_logic [@inline:trivial] (self: Map.map (Slice64.slice UInt32.t) bool) (a: Slice64.slice UInt32.t) =
-    [%#smapping] Map.get self a
+    Map.get self a
   
   meta "rewrite_def" predicate index_logic
   
   function view (self: t_PredCell) : Map.map (Slice64.slice UInt32.t) bool
   
-  function view'0 [@inline:trivial] (self: t_PredCell) : Map.map (Slice64.slice UInt32.t) bool = [%#smodel] view self
+  function view'0 [@inline:trivial] (self: t_PredCell) : Map.map (Slice64.slice UInt32.t) bool = view self
   
   meta "rewrite_def" function view'0
   
-  predicate index_logic'0 [@inline:trivial] (self: Map.map UInt32.t bool) (a: UInt32.t) = [%#smapping] Map.get self a
+  predicate index_logic'0 [@inline:trivial] (self: Map.map UInt32.t bool) (a: UInt32.t) = Map.get self a
   
   meta "rewrite_def" predicate index_logic'0
   
   function index_logic'1 [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
-    [%#sslice] Seq.get (Slice64.view self) ix
+    Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic'1
   
   function view'1 (self: t_PredCell'0) : Map.map UInt32.t bool
   
   function index_logic'2 [@inline:trivial] (self: Slice64.slice t_PredCell'0) (ix: int) : t_PredCell'0 =
-    [%#sslice] Seq.get (Slice64.view self) ix
+    Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic'2
   
-  function view'2 [@inline:trivial] (self: Slice64.slice t_PredCell'0) : Seq.seq t_PredCell'0 =
-    [%#smodel] Slice64.view self
+  function view'2 [@inline:trivial] (self: Slice64.slice t_PredCell'0) : Seq.seq t_PredCell'0 = Slice64.view self
   
   meta "rewrite_def" function view'2
   
   let rec as_slice_of_cells (self: t_PredCell) (_pred: Seq.seq (Map.map UInt32.t bool))
     (return' (x: Slice64.slice t_PredCell'0)) =
-    {[@expl:as_slice_of_cells requires] [%#spredcell] forall s: Slice64.slice UInt32.t. index_logic (view'0 self) s
+    {[@expl:as_slice_of_cells requires] forall s: Slice64.slice UInt32.t. index_logic (view'0 self) s
       = (Seq.length _pred = Seq.length (Slice64.view s)
       /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view s)
         -> index_logic'0 (Seq.get _pred i) (index_logic'1 s i)))}
     any
-    [ return''0 (result: Slice64.slice t_PredCell'0) -> {[%#spredcell'0] forall i: int. 0 <= i /\ i < Seq.length _pred
+    [ return''0 (result: Slice64.slice t_PredCell'0) -> {forall i: int. 0 <= i /\ i < Seq.length _pred
         -> view'1 (index_logic'2 result i) = Seq.get _pred i}
-      {[%#spredcell'1] Seq.length (view'2 result) = Seq.length _pred}
+      {Seq.length (view'2 result) = Seq.length _pred}
       (! return' {result}) ]
   
-  function view'3 [@inline:trivial] (self: t_PredCell'0) : Map.map UInt32.t bool = [%#smodel] view'1 self
+  function view'3 [@inline:trivial] (self: t_PredCell'0) : Map.map UInt32.t bool = view'1 self
   
   meta "rewrite_def" function view'3
   
   let rec get (self: t_PredCell'0) (return' (x: UInt32.t)) = any
-    [ return''0 (result: UInt32.t) -> {[%#spredcell'2] index_logic'0 (view'3 self) result} (! return' {result}) ]
+    [ return''0 (result: UInt32.t) -> {index_logic'0 (view'3 self) result} (! return' {result}) ]
   
   type tuple = { _p0: UInt32.t; _p1: UInt32.t }
   
-  function view'4 [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = [%#smodel] Slice64.view self
+  function view'4 [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = Slice64.view self
   
   meta "rewrite_def" function view'4
   
@@ -87,33 +71,33 @@ module M_03_as_slice_of_cells__splits_up [#"03_as_slice_of_cells.rs" 7 0 7 54]
   
   meta "select_lsinst" "all"
   
-  let rec splits_up [#"03_as_slice_of_cells.rs" 7 0 7 54] (cell: t_PredCell) (return' (x: tuple)) =
-    {[@expl:splits_up requires] [%#s03_as_slice_of_cells'4] forall s: Slice64.slice UInt32.t. index_logic (view'0 cell) s
+  let rec splits_up (cell: t_PredCell) (return' (x: tuple)) =
+    {[@expl:splits_up requires] forall s: Slice64.slice UInt32.t. index_logic (view'0 cell) s
       = (Seq.length (view'4 s) = 2
       /\ Int.mod (UInt32.t'int (index_logic'1 s 0)) 2 = 0 /\ Int.mod (UInt32.t'int (index_logic'1 s 1)) 2 = 1)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &snapshot <- [%#s03_as_slice_of_cells] let pred0 = fun (z: UInt32.t) -> Int.mod (UInt32.t'int z) 2
+      [ s0 = [ &snapshot <- let pred0 = fun (z: UInt32.t) -> Int.mod (UInt32.t'int z) 2
         = 0 in let pred1 = fun (z: UInt32.t) -> Int.mod (UInt32.t'int z) 2 = 1 in Seq.create 2 [|pred0;pred1|] ] s1
       | s1 = bb1 ]
     | bb1 = s0
       [ s0 = as_slice_of_cells {cell'0} {snapshot} (fun (_ret: Slice64.slice t_PredCell'0) -> [ &slice <- _ret ] s1)
       | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = [ &_11 <- [%#s03_as_slice_of_cells'0] (0: UInt64.t) ] s1
+      [ s0 = [ &_11 <- (0: UInt64.t) ] s1
       | s1 = [ &_12 <- Slice64.length slice ] s2
       | s2 = [ &_13 <- UInt64.lt _11 _12 ] s3
-      | s3 = {[@expl:index in bounds] [%#s03_as_slice_of_cells'1] _13} s4
+      | s3 = {[@expl:index in bounds] _13} s4
       | s4 = bb3 ]
     | bb3 = s0
       [ s0 = Slice64.get <t_PredCell'0> {slice} {_11}
           (fun (r: t_PredCell'0) -> get {r} (fun (_ret: UInt32.t) -> [ &_9 <- _ret ] s1))
       | s1 = bb4 ]
     | bb4 = s0
-      [ s0 = [ &_16 <- [%#s03_as_slice_of_cells'2] (1: UInt64.t) ] s1
+      [ s0 = [ &_16 <- (1: UInt64.t) ] s1
       | s1 = [ &_17 <- Slice64.length slice ] s2
       | s2 = [ &_18 <- UInt64.lt _16 _17 ] s3
-      | s3 = {[@expl:index in bounds] [%#s03_as_slice_of_cells'3] _18} s4
+      | s3 = {[@expl:index in bounds] _18} s4
       | s4 = bb5 ]
     | bb5 = s0
       [ s0 = Slice64.get <t_PredCell'0> {slice} {_16}
@@ -132,8 +116,7 @@ module M_03_as_slice_of_cells__splits_up [#"03_as_slice_of_cells.rs" 7 0 7 54]
     | & _16: UInt64.t = Any.any_l ()
     | & _17: UInt64.t = Any.any_l ()
     | & _18: bool = Any.any_l () ])
-    [ return''0 (result: tuple) ->
-    {[@expl:splits_up ensures] [%#s03_as_slice_of_cells'5] Int.mod (UInt32.t'int result._p0) 2 = 0
+    [ return''0 (result: tuple) -> {[@expl:splits_up ensures] Int.mod (UInt32.t'int result._p0) 2 = 0
       /\ Int.mod (UInt32.t'int result._p1) 2 = 1}
       (! return' {result}) ]
 end

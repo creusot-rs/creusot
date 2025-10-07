@@ -1,25 +1,4 @@
-module M_seq__f [#"seq.rs" 5 0 5 26]
-  let%span sseq = "seq.rs" 7 20 7 21
-  let%span sseq'0 = "seq.rs" 10 36 10 37
-  let%span sseq'1 = "seq.rs" 10 51 10 52
-  let%span sseq'2 = "seq.rs" 4 10 4 27
-  let%span sseq'3 = "../../../creusot-contracts/src/logic/seq.rs" 444 14 444 38
-  let%span sseq'4 = "../../../creusot-contracts/src/logic/seq.rs" 514 14 514 41
-  let%span sseq'5 = "../../../creusot-contracts/src/logic/seq.rs" 590 14 593 5
-  let%span sseq'6 = "../../../creusot-contracts/src/logic/seq.rs" 594 14 594 71
-  let%span sseq'7 = "../../../creusot-contracts/src/logic/seq.rs" 595 14 595 44
-  let%span sseq'8 = "../../../creusot-contracts/src/logic/seq.rs" 251 8 251 27
-  let%span sseq'9 = "../../../creusot-contracts/src/logic/seq.rs" 76 8 76 82
-  let%span sseq'10 = "../../../creusot-contracts/src/logic/seq.rs" 889 20 889 56
-  let%span sghost = "../../../creusot-contracts/src/ghost.rs" 203 14 203 29
-  let%span sghost'0 = "../../../creusot-contracts/src/ghost.rs" 78 14 78 31
-  let%span sghost'1 = "../../../creusot-contracts/src/ghost.rs" 181 14 181 26
-  let%span sint = "../../../creusot-contracts/src/logic/int.rs" 227 14 227 31
-  let%span soption = "../../../creusot-contracts/src/std/option.rs" 149 27 149 39
-  let%span soption'0 = "../../../creusot-contracts/src/std/option.rs" 150 26 150 46
-  let%span soption'1 = "../../../creusot-contracts/src/std/option.rs" 772 8 775 9
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_seq__f
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use seq.Seq
@@ -28,56 +7,50 @@ module M_seq__f [#"seq.rs" 5 0 5 26]
   use creusot.prelude.Any
   
   let rec new (return' (x: Seq.seq (MutBorrow.t UInt64.t))) = any
-    [ return''0 (result: Seq.seq (MutBorrow.t UInt64.t)) -> {[%#sseq'3] result
-      = (Seq.empty: Seq.seq (MutBorrow.t UInt64.t))}
+    [ return''0 (result: Seq.seq (MutBorrow.t UInt64.t)) -> {result = (Seq.empty: Seq.seq (MutBorrow.t UInt64.t))}
       (! return' {result}) ]
   
   let rec into_inner (self: Seq.seq (MutBorrow.t UInt64.t)) (return' (x: Seq.seq (MutBorrow.t UInt64.t))) = any
-    [ return''0 (result: Seq.seq (MutBorrow.t UInt64.t)) -> {[%#sghost] result = self} (! return' {result}) ]
+    [ return''0 (result: Seq.seq (MutBorrow.t UInt64.t)) -> {result = self} (! return' {result}) ]
   
   function push_front [@inline:trivial] (self: Seq.seq (MutBorrow.t UInt64.t)) (x: MutBorrow.t UInt64.t) : Seq.seq (MutBorrow.t UInt64.t)
-   = [%#sseq'8] Seq.cons x self
+   = Seq.cons x self
   
   meta "rewrite_def" function push_front
   
   let rec push_front_ghost (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (x: MutBorrow.t UInt64.t)
     (return' (x'0: ())) = any
-    [ return''0 (result: ()) -> {[%#sseq'4] self.final = push_front self.current x} (! return' {result}) ]
+    [ return''0 (result: ()) -> {self.final = push_front self.current x} (! return' {result}) ]
   
   let rec new'0 (value: Int128.t) (return' (x: int)) = any
-    [ return''0 (result: int) -> {[%#sint] result = Int128.to_int value} (! return' {result}) ]
+    [ return''0 (result: int) -> {result = Int128.to_int value} (! return' {result}) ]
   
-  let rec deref (self: int) (return' (x: int)) = any
-    [ return''0 (result: int) -> {[%#sghost'0] result = self} (! return' {result}) ]
+  let rec deref (self: int) (return' (x: int)) = any [ return''0 (result: int) -> {result = self} (! return' {result}) ]
   
   type t_Option = C_None | C_Some (MutBorrow.t (MutBorrow.t UInt64.t))
   
   type t_Option'0 = C_None'0 | C_Some'0 (MutBorrow.t UInt64.t)
   
-  function get (self: Seq.seq (MutBorrow.t UInt64.t)) (ix: int) : t_Option'0 = [%#sseq'9] if 0 <= ix
-    /\ ix < Seq.length self then
+  function get (self: Seq.seq (MutBorrow.t UInt64.t)) (ix: int) : t_Option'0 = if 0 <= ix /\ ix < Seq.length self then
       C_Some'0 (Seq.get self ix)
     else
       C_None'0
   
   
   let rec get_mut_ghost (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (index: int) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {[%#sseq'5] match result with
+    [ return''0 (result: t_Option) -> {match result with
         | C_None -> get self.current index = C_None'0 /\ self.current = self.final
         | C_Some r -> get self.current index = C_Some'0 (r.current) /\ r.final = Seq.get self.final index
         end}
-      {[%#sseq'6] forall i: int. i <> index -> get self.current i = get self.final i}
-      {[%#sseq'7] Seq.length self.current = Seq.length self.final}
+      {forall i: int. i <> index -> get self.current i = get self.final i}
+      {Seq.length self.current = Seq.length self.final}
       (! return' {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: MutBorrow.t (MutBorrow.t UInt64.t))) =
-    {[@expl:unwrap requires] [%#soption] self_ <> C_None}
-    any
-    [ return''0 (result: MutBorrow.t (MutBorrow.t UInt64.t)) -> {[%#soption'0] C_Some result = self_}
-      (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return' (x: MutBorrow.t (MutBorrow.t UInt64.t))) = {[@expl:unwrap requires] self_
+    <> C_None}
+    any [ return''0 (result: MutBorrow.t (MutBorrow.t UInt64.t)) -> {C_Some result = self_} (! return' {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t UInt64.t)) =
-    [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t UInt64.t)) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -85,7 +58,7 @@ module M_seq__f [#"seq.rs" 5 0 5 26]
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t UInt64.t) = [%#sresolve] self.final = self.current
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'1
   
@@ -94,7 +67,7 @@ module M_seq__f [#"seq.rs" 5 0 5 26]
   meta "rewrite_def" predicate resolve'2
   
   predicate resolve'3 [@inline:trivial] (self: t_Option'0) =
-    [%#soption'1] match self with
+    match self with
       | C_Some'0 x -> resolve'2 x
       | C_None'0 -> true
       end
@@ -105,22 +78,22 @@ module M_seq__f [#"seq.rs" 5 0 5 26]
   
   meta "rewrite_def" predicate resolve'4
   
-  predicate resolve'5 (self: Seq.seq (MutBorrow.t UInt64.t)) = [%#sseq'10] forall i: int. resolve'4 (get self i)
+  predicate resolve'5 (self: Seq.seq (MutBorrow.t UInt64.t)) = forall i: int. resolve'4 (get self i)
   
   predicate resolve'6 [@inline:trivial] (_0: Seq.seq (MutBorrow.t UInt64.t)) = resolve'5 _0
   
   meta "rewrite_def" predicate resolve'6
   
   let rec new'1 (x: UInt64.t) (return' (x'0: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {[%#sghost'1] result = x} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {result = x} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f [#"seq.rs" 5 0 5 26] (return' (x: UInt64.t)) = (! bb0
+  let rec f (return' (x: UInt64.t)) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &x <- [%#sseq] (0: UInt64.t) ] s1
+      [ s0 = [ &x <- (0: UInt64.t) ] s1
       | s1 = new (fun (_ret: Seq.seq (MutBorrow.t UInt64.t)) -> [ &_5 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0 [ s0 = into_inner {_5} (fun (_ret: Seq.seq (MutBorrow.t UInt64.t)) -> [ &s <- _ret ] s1) | s1 = bb2 ]
@@ -131,7 +104,7 @@ module M_seq__f [#"seq.rs" 5 0 5 26]
           (fun (_ret: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) -> [ &_7 <- _ret ] [ &s <- _ret.final ] s2)
       | s2 = push_front_ghost {_7} {_8} (fun (_ret: ()) -> [ &_6 <- _ret ] s3)
       | s3 = bb3 ]
-    | bb3 = s0 [ s0 = new'0 {[%#sseq'0] (0: Int128.t)} (fun (_ret: int) -> [ &_15 <- _ret ] s1) | s1 = bb4 ]
+    | bb3 = s0 [ s0 = new'0 {(0: Int128.t)} (fun (_ret: int) -> [ &_15 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0 [ s0 = deref {_15} (fun (_ret: int) -> [ &_13 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
       [ s0 = MutBorrow.borrow_mut <Seq.seq (MutBorrow.t UInt64.t)> {s}
@@ -140,7 +113,7 @@ module M_seq__f [#"seq.rs" 5 0 5 26]
       | s2 = bb6 ]
     | bb6 = s0 [ s0 = unwrap {_10} (fun (_ret: MutBorrow.t (MutBorrow.t UInt64.t)) -> [ &_9 <- _ret ] s1) | s1 = bb7 ]
     | bb7 = s0
-      [ s0 = [ &_9 <- { _9 with current = { _9.current with current = ([%#sseq'1] (1: UInt64.t)) } } ] s1
+      [ s0 = [ &_9 <- { _9 with current = { _9.current with current = (1: UInt64.t) } } ] s1
       | s1 = -{resolve'0 _9}- s2
       | s2 = -{resolve'6 s}- s3
       | s3 = new'1 {x} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s4)
@@ -158,5 +131,5 @@ module M_seq__f [#"seq.rs" 5 0 5 26]
     | & _11: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t)) = Any.any_l ()
     | & _13: int = Any.any_l ()
     | & _15: int = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:f ensures] [%#sseq'2] result = (1: UInt64.t)} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {[@expl:f ensures] result = (1: UInt64.t)} (! return' {result}) ]
 end

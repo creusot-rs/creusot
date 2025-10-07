@@ -1,23 +1,4 @@
-module M_inference__call_with_one [#"inference.rs" 6 0 6 52]
-  let%span sinference = "inference.rs" 7 6 7 7
-  let%span sinference'0 = "inference.rs" 6 40 6 41
-  let%span sinference'1 = "inference.rs" 4 0 4 36
-  let%span sinference'2 = "inference.rs" 5 0 5 44
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 189 16 189 17
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 189 27 189 52
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 190 26 190 60
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 159 14 159 114
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 164 14 164 100
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 169 14 169 61
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'9 = "../../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'10 = "../../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'11 = "../../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  
+module M_inference__call_with_one
   use creusot.int.Int32
   use creusot.prelude.Any
   
@@ -27,7 +8,7 @@ module M_inference__call_with_one [#"inference.rs" 6 0 6 52]
   
   predicate resolve (_0: t_F)
   
-  predicate invariant' [@inline:trivial] (self: t_F) = [%#sinvariant] inv self
+  predicate invariant' [@inline:trivial] (self: t_F) = inv self
   
   meta "rewrite_def" predicate invariant'
   
@@ -43,85 +24,64 @@ module M_inference__call_with_one [#"inference.rs" 6 0 6 52]
   
   function fn_mut_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'11] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once self args res
       = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'8] hist_inv self b)
-      -> ([%#sops'9] hist_inv b c) -> ([%#sops'10] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. [%#sops'7] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
   
   function postcondition_mut_hist_inv (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops'5] postcondition_mut self args res_state res)
-      -> ([%#sops'6] hist_inv self res_state)
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   function fn_hist_inv (self: t_F) (res_state: t_F) : ()
   
-  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'4] hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. hist_inv self res_state = (self = res_state)
   
   predicate postcondition (self: t_F) (args: Int32.t) (result: Int32.t)
   
   function fn_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'3] postcondition_once self args res
+  axiom fn_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once self args res
       = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops'2] postcondition_mut self args res_state res
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec call (self_: t_F) (arg: Int32.t) (return' (x: Int32.t)) =
-    {[@expl:call 'self_' type invariant] [%#sops] inv'0 self_}
-    {[@expl:call requires] [%#sops'0] precondition self_ arg}
-    any [ return''0 (result: Int32.t) -> {[%#sops'1] postcondition self_ arg result} (! return' {result}) ]
+  let rec call (self_: t_F) (arg: Int32.t) (return' (x: Int32.t)) = {[@expl:call 'self_' type invariant] inv'0 self_}
+    {[@expl:call requires] precondition self_ arg}
+    any [ return''0 (result: Int32.t) -> {postcondition self_ arg result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_with_one [#"inference.rs" 6 0 6 52] (f: t_F) (return' (x: Int32.t)) =
-    {[@expl:call_with_one 'f' type invariant] [%#sinference'0] inv f}
-    {[@expl:call_with_one requires] [%#sinference'1] precondition f (1: Int32.t)}
+  let rec call_with_one (f: t_F) (return' (x: Int32.t)) = {[@expl:call_with_one 'f' type invariant] inv f}
+    {[@expl:call_with_one requires] precondition f (1: Int32.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:type invariant] inv f'0} s1
       | s1 = -{resolve f'0}- s2
-      | s2 = [ &_5 <- [%#sinference] (1: Int32.t) ] s3
+      | s2 = [ &_5 <- (1: Int32.t) ] s3
       | s3 = call {f'0} {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s4)
       | s4 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: Int32.t = Any.any_l () | & f'0: t_F = f | & _5: Int32.t = Any.any_l () ])
-    [ return''0 (result: Int32.t) ->
-    {[@expl:call_with_one ensures] [%#sinference'2] postcondition f (1: Int32.t) result}
+    [ return''0 (result: Int32.t) -> {[@expl:call_with_one ensures] postcondition f (1: Int32.t) result}
       (! return' {result}) ]
 end
-module M_inference__call_with_one_mut [#"inference.rs" 12 0 12 60]
-  let%span sinference = "inference.rs" 13 6 13 7
-  let%span sinference'0 = "inference.rs" 12 43 12 44
-  let%span sinference'1 = "inference.rs" 10 11 10 37
-  let%span sinference'2 = "inference.rs" 11 10 11 53
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 183 16 183 17
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 183 27 183 52
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 184 26 184 71
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 99 20 99 44
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_inference__call_with_one_mut
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -130,7 +90,7 @@ module M_inference__call_with_one_mut [#"inference.rs" 12 0 12 60]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_F) = [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_F) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant'
   
@@ -148,34 +108,31 @@ module M_inference__call_with_one_mut [#"inference.rs" 12 0 12 60]
   
   function fn_mut_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'8] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once self args res
       = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'5] hist_inv self b)
-      -> ([%#sops'6] hist_inv b c) -> ([%#sops'7] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. [%#sops'4] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
   
   function postcondition_mut_hist_inv (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops'2] postcondition_mut self args res_state res)
-      -> ([%#sops'3] hist_inv self res_state)
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   let rec call_mut (self_: MutBorrow.t t_F) (arg: Int32.t) (return' (x: Int32.t)) =
-    {[@expl:call_mut 'self_' type invariant] [%#sops] inv'0 self_}
-    {[@expl:call_mut requires] [%#sops'0] precondition self_.current arg}
-    any
-    [ return''0 (result: Int32.t) -> {[%#sops'1] postcondition_mut self_.current arg self_.final result}
-      (! return' {result}) ]
+    {[@expl:call_mut 'self_' type invariant] inv'0 self_}
+    {[@expl:call_mut requires] precondition self_.current arg}
+    any [ return''0 (result: Int32.t) -> {postcondition_mut self_.current arg self_.final result} (! return' {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_F) = [%#sresolve] self.final = self.current
+  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_F) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'0
   
@@ -187,9 +144,9 @@ module M_inference__call_with_one_mut [#"inference.rs" 12 0 12 60]
   
   meta "select_lsinst" "all"
   
-  let rec call_with_one_mut [#"inference.rs" 12 0 12 60] (f: MutBorrow.t t_F) (return' (x: Int32.t)) =
-    {[@expl:call_with_one_mut 'f' type invariant] [%#sinference'0] inv'0 f}
-    {[@expl:call_with_one_mut requires] [%#sinference'1] precondition f.current (1: Int32.t)}
+  let rec call_with_one_mut (f: MutBorrow.t t_F) (return' (x: Int32.t)) =
+    {[@expl:call_with_one_mut 'f' type invariant] inv'0 f}
+    {[@expl:call_with_one_mut requires] precondition f.current (1: Int32.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv f'0.current}
@@ -197,7 +154,7 @@ module M_inference__call_with_one_mut [#"inference.rs" 12 0 12 60]
           (fun (_ret: MutBorrow.t t_F) ->
             [ &_4 <- _ret ] -{inv _ret.final}-
             [ &f'0 <- { f'0 with current = _ret.final } ] s1)
-      | s1 = [ &_5 <- [%#sinference] (1: Int32.t) ] s2
+      | s1 = [ &_5 <- (1: Int32.t) ] s2
       | s2 = call_mut {_4} {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 f'0} s1 | s1 = -{resolve'1 f'0}- s2 | s2 = return''0 {_0} ] ]
@@ -206,18 +163,10 @@ module M_inference__call_with_one_mut [#"inference.rs" 12 0 12 60]
     | & _4: MutBorrow.t t_F = Any.any_l ()
     | & _5: Int32.t = Any.any_l () ])
     [ return''0 (result: Int32.t) ->
-    {[@expl:call_with_one_mut ensures] [%#sinference'2] postcondition_mut f.current (1: Int32.t) f.final result}
+    {[@expl:call_with_one_mut ensures] postcondition_mut f.current (1: Int32.t) f.final result}
       (! return' {result}) ]
 end
-module M_inference__call_with_one_once [#"inference.rs" 18 0 18 61]
-  let%span sinference = "inference.rs" 19 6 19 7
-  let%span sinference'0 = "inference.rs" 18 49 18 50
-  let%span sinference'1 = "inference.rs" 16 0 16 36
-  let%span sinference'2 = "inference.rs" 17 0 17 49
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 177 16 177 17
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 177 16 177 51
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 178 16 178 64
-  
+module M_inference__call_with_one_once
   use creusot.int.Int32
   use creusot.prelude.Any
   
@@ -230,69 +179,39 @@ module M_inference__call_with_one_once [#"inference.rs" 18 0 18 61]
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
   let rec call_once (self_: t_F) (arg: Int32.t) (return' (x: Int32.t)) =
-    {[@expl:call_once 'self_' type invariant] [%#sops] inv self_}
-    {[@expl:call_once requires] [%#sops'0] precondition self_ arg}
-    any [ return''0 (result: Int32.t) -> {[%#sops'1] postcondition_once self_ arg result} (! return' {result}) ]
+    {[@expl:call_once 'self_' type invariant] inv self_}
+    {[@expl:call_once requires] precondition self_ arg}
+    any [ return''0 (result: Int32.t) -> {postcondition_once self_ arg result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_with_one_once [#"inference.rs" 18 0 18 61] (f: t_F) (return' (x: Int32.t)) =
-    {[@expl:call_with_one_once 'f' type invariant] [%#sinference'0] inv f}
-    {[@expl:call_with_one_once requires] [%#sinference'1] precondition f (1: Int32.t)}
+  let rec call_with_one_once (f: t_F) (return' (x: Int32.t)) = {[@expl:call_with_one_once 'f' type invariant] inv f}
+    {[@expl:call_with_one_once requires] precondition f (1: Int32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_5 <- [%#sinference] (1: Int32.t) ] s1
+      [ s0 = [ &_5 <- (1: Int32.t) ] s1
       | s1 = call_once {f'0} {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: Int32.t = Any.any_l () | & f'0: t_F = f | & _5: Int32.t = Any.any_l () ])
-    [ return''0 (result: Int32.t) ->
-    {[@expl:call_with_one_once ensures] [%#sinference'2] postcondition_once f (1: Int32.t) result}
+    [ return''0 (result: Int32.t) -> {[@expl:call_with_one_once ensures] postcondition_once f (1: Int32.t) result}
       (! return' {result}) ]
 end
-module M_inference__closure_fn [#"inference.rs" 22 0 22 19]
-  let%span sinference = "inference.rs" 25 32 25 33
-  let%span sinference'0 = "inference.rs" 26 41 26 42
-  let%span sinference'1 = "inference.rs" 27 37 27 38
-  let%span sinference'2 = "inference.rs" 27 4 27 39
-  let%span sinference'3 = "inference.rs" 26 4 26 43
-  let%span sinference'4 = "inference.rs" 25 4 25 34
-  let%span sinference'5 = "inference.rs" 23 29 23 30
-  let%span sinference'6 = "inference.rs" 4 0 4 36
-  let%span sinference'7 = "inference.rs" 5 0 5 44
-  let%span sinference'8 = "inference.rs" 10 11 10 37
-  let%span sinference'9 = "inference.rs" 11 10 11 53
-  let%span sinference'10 = "inference.rs" 16 0 16 36
-  let%span sinference'11 = "inference.rs" 17 0 17 49
-  let%span sinference'12 = "inference.rs" 23 16 23 24
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 159 14 159 114
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 164 14 164 100
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 169 14 169 61
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'6 = "../../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'7 = "../../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'8 = "../../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_inference__closure_fn
   use creusot.int.Int32
   use creusot.prelude.Any
   use creusot.prelude.MutBorrow
   
-  let rec closure0 [#"inference.rs" 23 16 23 24] [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: Int32.t)) = bb0
-    [ bb0 = s0
-      [ s0 = Int32.add {x'0} {[%#sinference'5] (1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1)
-      | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x ]
+  let rec closure0 [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: Int32.t)) = bb0
+    [ bb0 = s0 [ s0 = Int32.add {x'0} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = return' {_0} ] ]
+    [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x ]
   
   meta "rewrite_def" predicate closure0'pre
   
   meta "rewrite_def" predicate closure0'post'return'
   
-  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) =
-    [%#sinference'12] let x = args in closure0'pre self x
+  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in closure0'pre self x
   
   meta "rewrite_def" predicate precondition
   
@@ -301,18 +220,18 @@ module M_inference__closure_fn [#"inference.rs" 22 0 22 19]
   meta "rewrite_def" predicate resolve
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    [%#sinference'12] let x = args in closure0'post'return' self x result /\ resolve self
+    let x = args in closure0'post'return' self x result /\ resolve self
   
   meta "rewrite_def" predicate postcondition_once
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
-    [%#sinference'12] let x = args in closure0'post'return' self x result /\ self = result_state
+    let x = args in closure0'post'return' self x result /\ self = result_state
   
   meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: Int32.t, res: Int32.t. [%#sops'8] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: (), args: Int32.t, res: Int32.t. postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = self = result_state
@@ -321,50 +240,47 @@ module M_inference__closure_fn [#"inference.rs" 22 0 22 19]
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
-      -> ([%#sops'6] hist_inv b c) -> ([%#sops'7] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: ()) : ()
   
-  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
   
   function postcondition_mut_hist_inv (self: ()) (args: Int32.t) (res_state: ()) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: Int32.t, res_state: (), res: Int32.t. ([%#sops'2] postcondition_mut self args res_state res)
-      -> ([%#sops'3] hist_inv self res_state)
+    forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   function fn_hist_inv (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
   
   predicate postcondition [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    [%#sinference'12] let x = args in closure0'post'return' self x result
+    let x = args in closure0'post'return' self x result
   
   meta "rewrite_def" predicate postcondition
   
   function fn_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_once_spec: forall self: (), args: Int32.t, res: Int32.t. [%#sops'0] postcondition_once self args res
+  axiom fn_once_spec: forall self: (), args: Int32.t, res: Int32.t. postcondition_once self args res
       = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: ()) (args: Int32.t) (res_state: ()) (res: Int32.t) : ()
   
   axiom fn_mut_spec:
-    forall self: (), args: Int32.t, res_state: (), res: Int32.t. [%#sops] postcondition_mut self args res_state res
+    forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec call_with_one (f: ()) (return' (x: Int32.t)) =
-    {[@expl:call_with_one requires] [%#sinference'6] precondition f (1: Int32.t)}
-    any [ return''0 (result: Int32.t) -> {[%#sinference'7] postcondition f (1: Int32.t) result} (! return' {result}) ]
+  let rec call_with_one (f: ()) (return' (x: Int32.t)) = {[@expl:call_with_one requires] precondition f (1: Int32.t)}
+    any [ return''0 (result: Int32.t) -> {postcondition f (1: Int32.t) result} (! return' {result}) ]
   
   let rec call_with_one_mut (f: MutBorrow.t ()) (return' (x: Int32.t)) =
-    {[@expl:call_with_one_mut requires] [%#sinference'8] precondition f.current (1: Int32.t)}
+    {[@expl:call_with_one_mut requires] precondition f.current (1: Int32.t)}
     any
-    [ return''0 (result: Int32.t) -> {[%#sinference'9] postcondition_mut f.current (1: Int32.t) f.final result}
-      (! return' {result}) ]
+    [ return''0 (result: Int32.t) -> {postcondition_mut f.current (1: Int32.t) f.final result} (! return' {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t ()) = [%#sresolve] self.final = self.current
+  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t ()) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'0
   
@@ -373,19 +289,16 @@ module M_inference__closure_fn [#"inference.rs" 22 0 22 19]
   meta "rewrite_def" predicate resolve'1
   
   let rec call_with_one_once (f: ()) (return' (x: Int32.t)) =
-    {[@expl:call_with_one_once requires] [%#sinference'10] precondition f (1: Int32.t)}
-    any
-    [ return''0 (result: Int32.t) -> {[%#sinference'11] postcondition_once f (1: Int32.t) result} (! return' {result}) ]
+    {[@expl:call_with_one_once requires] precondition f (1: Int32.t)}
+    any [ return''0 (result: Int32.t) -> {postcondition_once f (1: Int32.t) result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec closure_fn [#"inference.rs" 22 0 22 19] (return' (x: ())) = (! bb0
+  let rec closure_fn (return' (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &f <- () ] s1 | s1 = call_with_one {f} (fun (_ret: Int32.t) -> [ &_4 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_3 <- _4 = ([%#sinference] (2: Int32.t)) ] s1
-      | s1 = any [ br0 -> {_3 = false} (! bb3) | br1 -> {_3} (! bb2) ] ]
+    | bb1 = s0 [ s0 = [ &_3 <- _4 = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_3 = false} (! bb3) | br1 -> {_3} (! bb2) ] ]
     | bb2 = s0
       [ s0 = MutBorrow.borrow_mut <()> {f} (fun (_ret: MutBorrow.t ()) -> [ &_11 <- _ret ] [ &f <- _ret.final ] s1)
       | s1 = MutBorrow.borrow_final <()> {_11.current} {MutBorrow.get_id _11}
@@ -394,16 +307,15 @@ module M_inference__closure_fn [#"inference.rs" 22 0 22 19]
       | s3 = bb4 ]
     | bb4 = s0
       [ s0 = -{resolve'1 _11}- s1
-      | s1 = [ &_8 <- _9 = ([%#sinference'0] (2: Int32.t)) ] s2
+      | s1 = [ &_8 <- _9 = (2: Int32.t) ] s2
       | s2 = any [ br0 -> {_8 = false} (! bb6) | br1 -> {_8} (! bb5) ] ]
     | bb5 = s0 [ s0 = call_with_one_once {f} (fun (_ret: Int32.t) -> [ &_15 <- _ret ] s1) | s1 = bb7 ]
     | bb7 = s0
-      [ s0 = [ &_14 <- _15 = ([%#sinference'1] (2: Int32.t)) ] s1
-      | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
+      [ s0 = [ &_14 <- _15 = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
     | bb8 = return''0 {_0}
-    | bb9 = {[%#sinference'2] false} any
-    | bb6 = {[%#sinference'3] false} any
-    | bb3 = {[%#sinference'4] false} any ]
+    | bb9 = {false} any
+    | bb6 = {false} any
+    | bb3 = {false} any ]
     [ & _0: () = Any.any_l ()
     | & f: () = Any.any_l ()
     | & _3: bool = Any.any_l ()
@@ -415,35 +327,14 @@ module M_inference__closure_fn [#"inference.rs" 22 0 22 19]
     | & _14: bool = Any.any_l ()
     | & _15: Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end
-module M_inference__closure_fn_mut [#"inference.rs" 30 0 30 23]
-  let%span sinference = "inference.rs" 31 16 31 17
-  let%span sinference'0 = "inference.rs" 37 41 37 42
-  let%span sinference'1 = "inference.rs" 38 37 38 38
-  let%span sinference'2 = "inference.rs" 39 17 39 18
-  let%span sinference'3 = "inference.rs" 39 4 39 19
-  let%span sinference'4 = "inference.rs" 38 4 38 39
-  let%span sinference'5 = "inference.rs" 37 4 37 43
-  let%span sinference'6 = "inference.rs" 10 11 10 37
-  let%span sinference'7 = "inference.rs" 11 10 11 53
-  let%span sinference'8 = "inference.rs" 16 0 16 36
-  let%span sinference'9 = "inference.rs" 17 0 17 49
-  let%span sinference'10 = "inference.rs" 32 16 32 24
-  let%span sops = "../../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'0 = "../../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'1 = "../../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'2 = "../../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'3 = "../../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'4 = "../../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'5 = "../../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_inference__closure_fn_mut
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type closure0 = { _0: MutBorrow.t Int32.t }
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t closure0) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t closure0) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -451,7 +342,7 @@ module M_inference__closure_fn_mut [#"inference.rs" 30 0 30 23]
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t Int32.t) = [%#sresolve] self.final = self.current
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'1
   
@@ -464,12 +355,11 @@ module M_inference__closure_fn_mut [#"inference.rs" 30 0 30 23]
   meta "rewrite_def" predicate resolve'3
   
   predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) =
-    [%#sinference'10] (result_state._0).final = (self._0).final
+    (result_state._0).final = (self._0).final
   
   meta "rewrite_def" predicate hist_inv
   
-  let rec closure0 [#"inference.rs" 32 16 32 24] [@coma:extspec] (self: MutBorrow.t closure0) (x: Int32.t)
-    (return' (x'0: Int32.t)) = bb0
+  let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (x: Int32.t) (return' (x'0: Int32.t)) = bb0
     [ bb0 = s0
       [ s0 = Int32.add {((_1.current)._0).current} {x'0}
           (fun (_ret: Int32.t) -> [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s1)
@@ -483,64 +373,59 @@ module M_inference__closure_fn_mut [#"inference.rs" 30 0 30 23]
   meta "rewrite_def" predicate closure0'post'return'
   
   predicate postcondition_once [@inline:trivial] (self: closure0) (args: Int32.t) (result: Int32.t) =
-    [%#sinference'10] let x = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current
-            = self
+    let x = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
           /\ bor_self.final = e /\ closure0'post'return' bor_self x result /\ hist_inv self e)
       /\ resolve'3 e
   
   meta "rewrite_def" predicate postcondition_once
   
   predicate postcondition_mut [@inline:trivial] (self: closure0) (args: Int32.t) (result_state: closure0) (result: Int32.t) =
-    [%#sinference'10] let x = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
+    let x = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
       /\ bor_self.final = result_state /\ closure0'post'return' bor_self x result /\ hist_inv self result_state
   
   meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: closure0) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_mut_once_spec:
-    forall self: closure0, args: Int32.t, res: Int32.t. [%#sops'5] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: closure0, args: Int32.t, res: Int32.t. postcondition_once self args res
       = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'3 res_state)
   
   function hist_inv_trans (self: closure0) (b: closure0) (c: closure0) : ()
   
-  axiom hist_inv_trans_spec: forall self: closure0, b: closure0, c: closure0. ([%#sops'2] hist_inv self b)
-      -> ([%#sops'3] hist_inv b c) -> ([%#sops'4] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: closure0, b: closure0, c: closure0. hist_inv self b
+      -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: closure0) : ()
   
-  axiom hist_inv_refl_spec: forall self: closure0. [%#sops'1] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: closure0. hist_inv self self
   
   function postcondition_mut_hist_inv (self: closure0) (args: Int32.t) (res_state: closure0) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: closure0, args: Int32.t, res_state: closure0, res: Int32.t. ([%#sops] postcondition_mut self args res_state res)
-      -> ([%#sops'0] hist_inv self res_state)
+    forall self: closure0, args: Int32.t, res_state: closure0, res: Int32.t. postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   predicate precondition [@inline:trivial] (self: closure0) (args: Int32.t) =
-    [%#sinference'10] let x = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self
-      -> closure0'pre bor_self x
+    let x = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self -> closure0'pre bor_self x
   
   meta "rewrite_def" predicate precondition
   
   let rec call_with_one_mut (f: MutBorrow.t closure0) (return' (x: Int32.t)) =
-    {[@expl:call_with_one_mut requires] [%#sinference'6] precondition f.current (1: Int32.t)}
+    {[@expl:call_with_one_mut requires] precondition f.current (1: Int32.t)}
     any
-    [ return''0 (result: Int32.t) -> {[%#sinference'7] postcondition_mut f.current (1: Int32.t) f.final result}
-      (! return' {result}) ]
+    [ return''0 (result: Int32.t) -> {postcondition_mut f.current (1: Int32.t) f.final result} (! return' {result}) ]
   
   let rec call_with_one_once (f: closure0) (return' (x: Int32.t)) =
-    {[@expl:call_with_one_once requires] [%#sinference'8] precondition f (1: Int32.t)}
-    any
-    [ return''0 (result: Int32.t) -> {[%#sinference'9] postcondition_once f (1: Int32.t) result} (! return' {result}) ]
+    {[@expl:call_with_one_once requires] precondition f (1: Int32.t)}
+    any [ return''0 (result: Int32.t) -> {postcondition_once f (1: Int32.t) result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec closure_fn_mut [#"inference.rs" 30 0 30 23] (return' (x: ())) = (! bb0
+  let rec closure_fn_mut (return' (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &y <- [%#sinference] (0: Int32.t) ] s1
+      [ s0 = [ &y <- (0: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {y}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_3 <- _ret ] [ &y <- _ret.final ] s2)
       | s2 = [ &f <- { _0 = _3 } ] s3
@@ -552,19 +437,17 @@ module M_inference__closure_fn_mut [#"inference.rs" 30 0 30 23]
       | s6 = bb1 ]
     | bb1 = s0
       [ s0 = -{resolve'0 _8}- s1
-      | s1 = [ &_5 <- _6 = ([%#sinference'0] (1: Int32.t)) ] s2
+      | s1 = [ &_5 <- _6 = (1: Int32.t) ] s2
       | s2 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
     | bb2 = s0 [ s0 = call_with_one_once {f} (fun (_ret: Int32.t) -> [ &_12 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0
-      [ s0 = [ &_11 <- _12 = ([%#sinference'1] (2: Int32.t)) ] s1
-      | s1 = any [ br0 -> {_11 = false} (! bb6) | br1 -> {_11} (! bb5) ] ]
+      [ s0 = [ &_11 <- _12 = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_11 = false} (! bb6) | br1 -> {_11} (! bb5) ] ]
     | bb5 = s0
-      [ s0 = [ &_16 <- y = ([%#sinference'2] (2: Int32.t)) ] s1
-      | s1 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb7) ] ]
+      [ s0 = [ &_16 <- y = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb7) ] ]
     | bb7 = return''0 {_0'0}
-    | bb8 = {[%#sinference'3] false} any
-    | bb6 = {[%#sinference'4] false} any
-    | bb3 = s0 [ s0 = -{resolve'3 f}- s1 | s1 = {[%#sinference'5] false} any ] ]
+    | bb8 = {false} any
+    | bb6 = {false} any
+    | bb3 = s0 [ s0 = -{resolve'3 f}- s1 | s1 = {false} any ] ]
     [ & _0'0: () = Any.any_l ()
     | & y: Int32.t = Any.any_l ()
     | & f: closure0 = Any.any_l ()
@@ -577,24 +460,13 @@ module M_inference__closure_fn_mut [#"inference.rs" 30 0 30 23]
     | & _12: Int32.t = Any.any_l ()
     | & _16: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end
-module M_inference__closure_fn_once [#"inference.rs" 42 0 42 24]
-  let%span sinference = "inference.rs" 43 21 43 22
-  let%span sinference'0 = "inference.rs" 44 16 44 17
-  let%span sinference'1 = "inference.rs" 51 37 51 38
-  let%span sinference'2 = "inference.rs" 52 17 52 18
-  let%span sinference'3 = "inference.rs" 52 4 52 19
-  let%span sinference'4 = "inference.rs" 51 4 51 39
-  let%span sinference'5 = "inference.rs" 16 0 16 36
-  let%span sinference'6 = "inference.rs" 17 0 17 49
-  let%span sinference'7 = "inference.rs" 45 12 45 25
-  
+module M_inference__closure_fn_once
   use creusot.int.Int32
   use creusot.prelude.Any
   
   type closure0 = { _0: Int32.t; _1: Int32.t }
   
-  let rec closure0 [#"inference.rs" 45 12 45 25] [@coma:extspec] (self: closure0) (x: Int32.t)
-    (return' (x'0: Int32.t)) = bb0
+  let rec closure0 [@coma:extspec] (self: closure0) (x: Int32.t) (return' (x'0: Int32.t)) = bb0
     [ bb0 = s0
       [ s0 = [ &move_y <- _1'0._0 ] s1
       | s1 = Int32.add {move_y} {x'0} (fun (_ret: Int32.t) -> [ &_4 <- _ret ] s2)
@@ -612,41 +484,36 @@ module M_inference__closure_fn_once [#"inference.rs" 42 0 42 24]
   
   meta "rewrite_def" predicate closure0'post'return'
   
-  predicate precondition [@inline:trivial] (self: closure0) (args: Int32.t) =
-    [%#sinference'7] let x = args in closure0'pre self x
+  predicate precondition [@inline:trivial] (self: closure0) (args: Int32.t) = let x = args in closure0'pre self x
   
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once [@inline:trivial] (self: closure0) (args: Int32.t) (result: Int32.t) =
-    [%#sinference'7] let x = args in closure0'post'return' self x result
+    let x = args in closure0'post'return' self x result
   
   meta "rewrite_def" predicate postcondition_once
   
   let rec call_with_one_once (f: closure0) (return' (x: Int32.t)) =
-    {[@expl:call_with_one_once requires] [%#sinference'5] precondition f (1: Int32.t)}
-    any
-    [ return''0 (result: Int32.t) -> {[%#sinference'6] postcondition_once f (1: Int32.t) result} (! return' {result}) ]
+    {[@expl:call_with_one_once requires] precondition f (1: Int32.t)}
+    any [ return''0 (result: Int32.t) -> {postcondition_once f (1: Int32.t) result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec closure_fn_once [#"inference.rs" 42 0 42 24] (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &y <- [%#sinference] (2: Int32.t) ] s1 | s1 = bb1 ]
+  let rec closure_fn_once (return' (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = [ &y <- (2: Int32.t) ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = [ &z <- [%#sinference'0] (0: Int32.t) ] s1
+      [ s0 = [ &z <- (0: Int32.t) ] s1
       | s1 = [ &f <- { _0 = y; _1 = z } ] s2
       | s2 = call_with_one_once {f} (fun (_ret: Int32.t) -> [ &_6 <- _ret ] s3)
       | s3 = bb2 ]
-    | bb2 = s0
-      [ s0 = [ &_5 <- _6 = ([%#sinference'1] (3: Int32.t)) ] s1
-      | s1 = any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb3) ] ]
+    | bb2 = s0 [ s0 = [ &_5 <- _6 = (3: Int32.t) ] s1 | s1 = any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = [ &_10 <- z = ([%#sinference'2] (0: Int32.t)) ] s1
-      | s1 = any [ br0 -> {_10 = false} (! bb6) | br1 -> {_10} (! bb8) ] ]
+      [ s0 = [ &_10 <- z = (0: Int32.t) ] s1 | s1 = any [ br0 -> {_10 = false} (! bb6) | br1 -> {_10} (! bb8) ] ]
     | bb8 = return''0 {_0'0}
-    | bb6 = {[%#sinference'3] false} any
-    | bb4 = {[%#sinference'4] false} any ]
+    | bb6 = {false} any
+    | bb4 = {false} any ]
     [ & _0'0: () = Any.any_l ()
     | & y: Int32.t = Any.any_l ()
     | & z: Int32.t = Any.any_l ()

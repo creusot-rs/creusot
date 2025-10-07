@@ -1,21 +1,4 @@
-module M_generic_deref_snap__deref_wrap [#"generic_deref_snap.rs" 8 0 8 48]
-  let%span sgeneric_deref_snap = "generic_deref_snap.rs" 8 28 8 29
-  let%span sgeneric_deref_snap'0 = "generic_deref_snap.rs" 6 11 6 38
-  let%span sgeneric_deref_snap'1 = "generic_deref_snap.rs" 8 38 8 48
-  let%span sgeneric_deref_snap'2 = "generic_deref_snap.rs" 7 10 7 46
-  let%span sgeneric_deref_snap'3 = "generic_deref_snap.rs" 1 0 150 4
-  let%span sops = "../../creusot-contracts/src/std/ops.rs" 159 14 159 114
-  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 164 14 164 100
-  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 169 14 169 61
-  let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'3 = "../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'4 = "../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'5 = "../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  
+module M_generic_deref_snap__deref_wrap
   use creusot.prelude.Any
   
   type t_T
@@ -24,13 +7,11 @@ module M_generic_deref_snap__deref_wrap [#"generic_deref_snap.rs" 8 0 8 48]
   
   predicate precondition (self: ()) (args: t_T)
   
-  axiom precondition_fndef:
-    [%#sgeneric_deref_snap'3] forall args: t_T [precondition () args]. (let self_ = args in false)
-      -> precondition () args
+  axiom precondition_fndef: forall args: t_T [precondition () args]. (let self_ = args in false) -> precondition () args
   
   predicate inv (_0: t_Target)
   
-  predicate invariant' [@inline:trivial] (self: t_Target) = [%#sinvariant] inv self
+  predicate invariant' [@inline:trivial] (self: t_Target) = inv self
   
   meta "rewrite_def" predicate invariant'
   
@@ -41,7 +22,7 @@ module M_generic_deref_snap__deref_wrap [#"generic_deref_snap.rs" 8 0 8 48]
   predicate postcondition_once (self: ()) (args: t_T) (result: t_Target)
   
   axiom postcondition_fndef:
-    [%#sgeneric_deref_snap'3] forall args: t_T, res: t_Target [postcondition_once () args res]. postcondition_once () args res
+    forall args: t_T, res: t_Target [postcondition_once () args res]. postcondition_once () args res
       -> (let self_ = args in inv'0 res)
   
   let rec deref (self_: t_T) (return' (x: t_Target)) = {[@expl:deref requires] precondition () self_}
@@ -49,7 +30,7 @@ module M_generic_deref_snap__deref_wrap [#"generic_deref_snap.rs" 8 0 8 48]
   
   predicate inv'1 (_0: t_T)
   
-  predicate invariant''0 [@inline:trivial] (self: t_T) = [%#sinvariant] inv'1 self
+  predicate invariant''0 [@inline:trivial] (self: t_T) = inv'1 self
   
   meta "rewrite_def" predicate invariant''0
   
@@ -64,12 +45,12 @@ module M_generic_deref_snap__deref_wrap [#"generic_deref_snap.rs" 8 0 8 48]
   predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_Target)
   
   axiom postcondition_fndef'0:
-    [%#sgeneric_deref_snap'3] forall args: t_T, res: t_Target [postcondition_mut () args () res]. postcondition_mut () args () res
+    forall args: t_T, res: t_Target [postcondition_mut () args () res]. postcondition_mut () args () res
       -> (let self_ = args in inv'0 res)
   
   function fn_mut_once (self: ()) (args: t_T) (res: t_Target) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_Target. [%#sops'8] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_Target. postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
@@ -78,83 +59,64 @@ module M_generic_deref_snap__deref_wrap [#"generic_deref_snap.rs" 8 0 8 48]
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
-      -> ([%#sops'6] hist_inv b c) -> ([%#sops'7] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: ()) : ()
   
-  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
   
   function postcondition_mut_hist_inv (self: ()) (args: t_T) (res_state: ()) (res: t_Target) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: t_T, res_state: (), res: t_Target. ([%#sops'2] postcondition_mut self args res_state res)
-      -> ([%#sops'3] hist_inv self res_state)
+    forall self: (), args: t_T, res_state: (), res: t_Target. postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   function fn_hist_inv (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
   
   predicate postcondition (self: ()) (args: t_T) (result: t_Target)
   
-  axiom postcondition_fndef'1:
-    [%#sgeneric_deref_snap'3] forall args: t_T, res: t_Target [postcondition () args res]. postcondition () args res
+  axiom postcondition_fndef'1: forall args: t_T, res: t_Target [postcondition () args res]. postcondition () args res
       -> (let self_ = args in inv'0 res)
   
   function fn_once (self: ()) (args: t_T) (res: t_Target) : ()
   
-  axiom fn_once_spec: forall self: (), args: t_T, res: t_Target. [%#sops'0] postcondition_once self args res
+  axiom fn_once_spec: forall self: (), args: t_T, res: t_Target. postcondition_once self args res
       = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_Target) : ()
   
-  axiom fn_mut_spec:
-    forall self: (), args: t_T, res_state: (), res: t_Target. [%#sops] postcondition_mut self args res_state res
+  axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_Target. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec deref_wrap [#"generic_deref_snap.rs" 8 0 8 48] (x: t_T) (return' (x'0: t_Target)) =
-    {[@expl:deref_wrap 'x' type invariant] [%#sgeneric_deref_snap] inv'2 x}
-    {[@expl:deref_wrap requires] [%#sgeneric_deref_snap'0] precondition () x}
+  let rec deref_wrap (x: t_T) (return' (x'0: t_Target)) = {[@expl:deref_wrap 'x' type invariant] inv'2 x}
+    {[@expl:deref_wrap requires] precondition () x}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_6 <- x'0 ] s1 | s1 = deref {_6} (fun (_ret: t_Target) -> [ &_4 <- _ret ] s2) | s2 = bb1 ]
     | bb1 = s0 [ s0 = [ &_0 <- _4 ] s1 | s1 = return''0 {_0} ] ]
     [ & _0: t_Target = Any.any_l () | & x'0: t_T = x | & _4: t_Target = Any.any_l () | & _6: t_T = Any.any_l () ])
-    [ return''0 (result: t_Target) -> {[@expl:deref_wrap result type invariant] [%#sgeneric_deref_snap'1] inv'0 result}
-      {[@expl:deref_wrap ensures] [%#sgeneric_deref_snap'2] postcondition () x result}
+    [ return''0 (result: t_Target) -> {[@expl:deref_wrap result type invariant] inv'0 result}
+      {[@expl:deref_wrap ensures] postcondition () x result}
       (! return' {result}) ]
 end
-module M_generic_deref_snap__bad [#"generic_deref_snap.rs" 12 0 12 35]
-  let%span sgeneric_deref_snap = "generic_deref_snap.rs" 6 11 6 38
-  let%span sgeneric_deref_snap'0 = "generic_deref_snap.rs" 7 10 7 46
-  let%span sgeneric_deref_snap'1 = "generic_deref_snap.rs" 1 0 150 4
-  let%span sops = "../../creusot-contracts/src/std/ops.rs" 159 14 159 114
-  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 164 14 164 100
-  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 169 14 169 61
-  let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'3 = "../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'4 = "../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'5 = "../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  
+module M_generic_deref_snap__bad
   use creusot.int.Int32
   use creusot.prelude.Any
   
   predicate precondition (self: ()) (args: Int32.t)
   
-  axiom precondition_fndef:
-    [%#sgeneric_deref_snap'1] forall args: Int32.t [precondition () args]. (let self_ = args in false)
+  axiom precondition_fndef: forall args: Int32.t [precondition () args]. (let self_ = args in false)
       -> precondition () args
   
   predicate postcondition_once (self: ()) (args: Int32.t) (result: Int32.t)
   
   axiom postcondition_fndef:
-    [%#sgeneric_deref_snap'1] forall args: Int32.t, res: Int32.t [postcondition_once () args res]. postcondition_once () args res
+    forall args: Int32.t, res: Int32.t [postcondition_once () args res]. postcondition_once () args res
       -> (let self_ = args in true)
   
   predicate resolve [@inline:trivial] (_0: ()) = true
@@ -164,12 +126,12 @@ module M_generic_deref_snap__bad [#"generic_deref_snap.rs" 12 0 12 35]
   predicate postcondition_mut (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t)
   
   axiom postcondition_fndef'0:
-    [%#sgeneric_deref_snap'1] forall args: Int32.t, res: Int32.t [postcondition_mut () args () res]. postcondition_mut () args () res
+    forall args: Int32.t, res: Int32.t [postcondition_mut () args () res]. postcondition_mut () args () res
       -> (let self_ = args in true)
   
   function fn_mut_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: Int32.t, res: Int32.t. [%#sops'8] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: (), args: Int32.t, res: Int32.t. postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
@@ -178,49 +140,46 @@ module M_generic_deref_snap__bad [#"generic_deref_snap.rs" 12 0 12 35]
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
-      -> ([%#sops'6] hist_inv b c) -> ([%#sops'7] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: ()) : ()
   
-  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
   
   function postcondition_mut_hist_inv (self: ()) (args: Int32.t) (res_state: ()) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: Int32.t, res_state: (), res: Int32.t. ([%#sops'2] postcondition_mut self args res_state res)
-      -> ([%#sops'3] hist_inv self res_state)
+    forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   function fn_hist_inv (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
   
   predicate postcondition (self: ()) (args: Int32.t) (result: Int32.t)
   
-  axiom postcondition_fndef'1:
-    [%#sgeneric_deref_snap'1] forall args: Int32.t, res: Int32.t [postcondition () args res]. postcondition () args res
+  axiom postcondition_fndef'1: forall args: Int32.t, res: Int32.t [postcondition () args res]. postcondition () args res
       -> (let self_ = args in true)
   
   function fn_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_once_spec: forall self: (), args: Int32.t, res: Int32.t. [%#sops'0] postcondition_once self args res
+  axiom fn_once_spec: forall self: (), args: Int32.t, res: Int32.t. postcondition_once self args res
       = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: ()) (args: Int32.t) (res_state: ()) (res: Int32.t) : ()
   
   axiom fn_mut_spec:
-    forall self: (), args: Int32.t, res_state: (), res: Int32.t. [%#sops] postcondition_mut self args res_state res
+    forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec deref_wrap (x: Int32.t) (return' (x'0: Int32.t)) =
-    {[@expl:deref_wrap requires] [%#sgeneric_deref_snap] precondition () x}
-    any [ return''0 (result: Int32.t) -> {[%#sgeneric_deref_snap'0] postcondition () x result} (! return' {result}) ]
+  let rec deref_wrap (x: Int32.t) (return' (x'0: Int32.t)) = {[@expl:deref_wrap requires] precondition () x}
+    any [ return''0 (result: Int32.t) -> {postcondition () x result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec bad [#"generic_deref_snap.rs" 12 0 12 35] (x: Int32.t) (return' (x'0: Int32.t)) = (! bb0
+  let rec bad (x: Int32.t) (return' (x'0: Int32.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_4 <- x'0 ] s1 | s1 = deref_wrap {_4} (fun (_ret: Int32.t) -> [ &_2 <- _ret ] s2) | s2 = bb1 ]
     | bb1 = s0 [ s0 = [ &_0 <- _2 ] s1 | s1 = return''0 {_0} ] ]
     [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x | & _2: Int32.t = Any.any_l () | & _4: Int32.t = Any.any_l () ])

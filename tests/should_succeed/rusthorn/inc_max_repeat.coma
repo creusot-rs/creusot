@@ -1,26 +1,9 @@
-module M_inc_max_repeat__take_max [#"inc_max_repeat.rs" 6 0 6 64]
-  let%span sinc_max_repeat = "inc_max_repeat.rs" 4 10 5 54
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 124 39 124 89
-  let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 128 39 128 86
-  let%span sord'1 = "../../../creusot-contracts/src/logic/ord.rs" 132 39 132 86
-  let%span sord'2 = "../../../creusot-contracts/src/logic/ord.rs" 136 39 136 89
-  let%span sord'3 = "../../../creusot-contracts/src/logic/ord.rs" 140 39 140 70
-  let%span sord'4 = "../../../creusot-contracts/src/logic/ord.rs" 144 40 144 57
-  let%span sord'5 = "../../../creusot-contracts/src/logic/ord.rs" 145 40 145 57
-  let%span sord'6 = "../../../creusot-contracts/src/logic/ord.rs" 146 39 146 56
-  let%span sord'7 = "../../../creusot-contracts/src/logic/ord.rs" 150 40 150 70
-  let%span sord'8 = "../../../creusot-contracts/src/logic/ord.rs" 151 39 151 72
-  let%span sord'9 = "../../../creusot-contracts/src/logic/ord.rs" 155 40 155 73
-  let%span sord'10 = "../../../creusot-contracts/src/logic/ord.rs" 156 39 156 69
-  let%span sord'11 = "../../../creusot-contracts/src/logic/ord.rs" 160 39 160 84
-  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 240 16 246 17
-  
+module M_inc_max_repeat__take_max
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -30,7 +13,7 @@ module M_inc_max_repeat__take_max [#"inc_max_repeat.rs" 6 0 6 64]
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
-  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering = [%#sord'12] if UInt32.lt self o then
+  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering = if UInt32.lt self o then
       C_Less
     else
       if self = o then C_Equal else C_Greater
@@ -38,49 +21,46 @@ module M_inc_max_repeat__take_max [#"inc_max_repeat.rs" 6 0 6 64]
   
   function eq_cmp (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt32.t, y: UInt32.t. [%#sord'11] (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (cmp_log x y = C_Equal)
   
   function antisym2 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom antisym2_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'9] cmp_log x y = C_Greater)
-      -> ([%#sord'10] cmp_log y x = C_Less)
+  axiom antisym2_spec: forall x: UInt32.t, y: UInt32.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
   
   function antisym1 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom antisym1_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'7] cmp_log x y = C_Less)
-      -> ([%#sord'8] cmp_log y x = C_Greater)
+  axiom antisym1_spec: forall x: UInt32.t, y: UInt32.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
   
   function trans (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
+  axiom trans_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. cmp_log x y = o
+      -> cmp_log y z = o -> cmp_log x z = o
   
   function refl (x: UInt32.t) : ()
   
-  axiom refl_spec: forall x: UInt32.t. [%#sord'3] cmp_log x x = C_Equal
+  axiom refl_spec: forall x: UInt32.t. cmp_log x x = C_Equal
   
   function cmp_gt_log (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord'2] UInt32.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y = (cmp_log x y = C_Greater)
   
   function cmp_ge_log (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord'1] UInt32.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y = (cmp_log x y <> C_Less)
   
   function cmp_lt_log (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord'0] UInt32.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y = (cmp_log x y = C_Less)
   
   function cmp_le_log (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord] UInt32.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log x y <> C_Greater)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec take_max [#"inc_max_repeat.rs" 6 0 6 64] (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t)
-    (return' (x: MutBorrow.t UInt32.t)) = (! bb0
+  let rec take_max (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (return' (x: MutBorrow.t UInt32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- UInt32.ge ma'0.current mb'0.current ] s1
       | s1 = any [ br0 -> {_6 = false} (! bb2) | br1 -> {_6} (! bb1) ] ]
@@ -114,49 +94,14 @@ module M_inc_max_repeat__take_max [#"inc_max_repeat.rs" 6 0 6 64]
     | & _5: MutBorrow.t UInt32.t = Any.any_l ()
     | & _6: bool = Any.any_l ()
     | & _9: MutBorrow.t UInt32.t = Any.any_l () ])
-    [ return''0 (result: MutBorrow.t UInt32.t) ->
-    {[@expl:take_max ensures] [%#sinc_max_repeat] if UInt32.ge ma.current mb.current then
+    [ return''0 (result: MutBorrow.t UInt32.t) -> {[@expl:take_max ensures] if UInt32.ge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
       }
       (! return' {result}) ]
 end
-module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
-  let%span sinc_max_repeat = "inc_max_repeat.rs" 14 13 14 14
-  let%span sinc_max_repeat'0 = "inc_max_repeat.rs" 14 4 14 7
-  let%span sinc_max_repeat'1 = "inc_max_repeat.rs" 13 16 13 70
-  let%span sinc_max_repeat'2 = "inc_max_repeat.rs" 12 16 12 84
-  let%span sinc_max_repeat'3 = "inc_max_repeat.rs" 14 4 14 7
-  let%span sinc_max_repeat'4 = "inc_max_repeat.rs" 16 15 16 16
-  let%span sinc_max_repeat'5 = "inc_max_repeat.rs" 18 4 18 37
-  let%span sinc_max_repeat'6 = "inc_max_repeat.rs" 10 11 10 70
-  let%span sinc_max_repeat'7 = "inc_max_repeat.rs" 4 10 5 54
-  let%span sresolve = "../../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  let%span sord = "../../../creusot-contracts/src/logic/ord.rs" 124 39 124 89
-  let%span sord'0 = "../../../creusot-contracts/src/logic/ord.rs" 128 39 128 86
-  let%span sord'1 = "../../../creusot-contracts/src/logic/ord.rs" 132 39 132 86
-  let%span sord'2 = "../../../creusot-contracts/src/logic/ord.rs" 136 39 136 89
-  let%span sord'3 = "../../../creusot-contracts/src/logic/ord.rs" 140 39 140 70
-  let%span sord'4 = "../../../creusot-contracts/src/logic/ord.rs" 144 40 144 57
-  let%span sord'5 = "../../../creusot-contracts/src/logic/ord.rs" 145 40 145 57
-  let%span sord'6 = "../../../creusot-contracts/src/logic/ord.rs" 146 39 146 56
-  let%span sord'7 = "../../../creusot-contracts/src/logic/ord.rs" 150 40 150 70
-  let%span sord'8 = "../../../creusot-contracts/src/logic/ord.rs" 151 39 151 72
-  let%span sord'9 = "../../../creusot-contracts/src/logic/ord.rs" 155 40 155 73
-  let%span sord'10 = "../../../creusot-contracts/src/logic/ord.rs" 156 39 156 69
-  let%span sord'11 = "../../../creusot-contracts/src/logic/ord.rs" 160 39 160 84
-  let%span sord'12 = "../../../creusot-contracts/src/logic/ord.rs" 240 16 246 17
-  let%span siter = "../../../creusot-contracts/src/std/iter.rs" 215 18 215 32
-  let%span siter'0 = "../../../creusot-contracts/src/std/iter.rs" 93 26 96 17
-  let%span srange = "../../../creusot-contracts/src/std/iter/range.rs" 23 12 27 70
-  let%span srange'0 = "../../../creusot-contracts/src/std/iter/range.rs" 32 4 32 49
-  let%span srange'1 = "../../../creusot-contracts/src/std/iter/range.rs" 36 4 36 34
-  let%span srange'2 = "../../../creusot-contracts/src/std/iter/range.rs" 37 4 37 34
-  let%span srange'3 = "../../../creusot-contracts/src/std/iter/range.rs" 38 4 38 44
-  let%span srange'4 = "../../../creusot-contracts/src/std/iter/range.rs" 15 8 17 9
-  let%span snum = "../../../creusot-contracts/src/std/num.rs" 23 28 23 33
-  
+module M_inc_max_repeat__inc_max_repeat
   use creusot.int.UInt32
   use seq.Seq
   use mach.int.Int
@@ -166,14 +111,14 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
   type t_Range = { t_Range__start: UInt32.t; t_Range__end: UInt32.t }
   
   let rec into_iter (self_: t_Range) (return' (x: t_Range)) = any
-    [ return''0 (result: t_Range) -> {[%#siter] result = self_} (! return' {result}) ]
+    [ return''0 (result: t_Range) -> {result = self_} (! return' {result}) ]
   
-  function deep_model [@inline:trivial] (self: UInt32.t) : int = [%#snum] UInt32.t'int self
+  function deep_model [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
   
   meta "rewrite_def" function deep_model
   
   predicate produces (self: t_Range) (visited: Seq.seq UInt32.t) (o: t_Range) =
-    [%#srange] self.t_Range__end = o.t_Range__end
+    self.t_Range__end = o.t_Range__end
     /\ deep_model self.t_Range__start <= deep_model o.t_Range__start
     /\ (Seq.length visited > 0 -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
     /\ Seq.length visited = deep_model o.t_Range__start - deep_model self.t_Range__start
@@ -183,12 +128,12 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
   function produces_trans (a: t_Range) (ab: Seq.seq UInt32.t) (b: t_Range) (bc: Seq.seq UInt32.t) (c: t_Range) : ()
   
   axiom produces_trans_spec:
-    forall a: t_Range, ab: Seq.seq UInt32.t, b: t_Range, bc: Seq.seq UInt32.t, c: t_Range. ([%#srange'1] produces a ab b)
-      -> ([%#srange'2] produces b bc c) -> ([%#srange'3] produces a (Seq.(++) ab bc) c)
+    forall a: t_Range, ab: Seq.seq UInt32.t, b: t_Range, bc: Seq.seq UInt32.t, c: t_Range. produces a ab b
+      -> produces b bc c -> produces a (Seq.(++) ab bc) c
   
   function produces_refl (self: t_Range) : ()
   
-  axiom produces_refl_spec: forall self: t_Range. [%#srange'0] produces self (Seq.empty: Seq.seq UInt32.t) self
+  axiom produces_refl_spec: forall self: t_Range. produces self (Seq.empty: Seq.seq UInt32.t) self
   
   predicate inv (_0: t_Range)
   
@@ -200,15 +145,15 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
   
   type t_Option = C_None | C_Some UInt32.t
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
   predicate completed (self: MutBorrow.t t_Range) =
-    [%#srange'4] resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
+    resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
   
   let rec next (self_: MutBorrow.t t_Range) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {[%#siter'0] match result with
+    [ return''0 (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
@@ -224,7 +169,7 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
-  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering = [%#sord'12] if UInt32.lt self o then
+  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering = if UInt32.lt self o then
       C_Less
     else
       if self = o then C_Equal else C_Greater
@@ -232,52 +177,50 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
   
   function eq_cmp (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt32.t, y: UInt32.t. [%#sord'11] (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (cmp_log x y = C_Equal)
   
   function antisym2 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom antisym2_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'9] cmp_log x y = C_Greater)
-      -> ([%#sord'10] cmp_log y x = C_Less)
+  axiom antisym2_spec: forall x: UInt32.t, y: UInt32.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
   
   function antisym1 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom antisym1_spec: forall x: UInt32.t, y: UInt32.t. ([%#sord'7] cmp_log x y = C_Less)
-      -> ([%#sord'8] cmp_log y x = C_Greater)
+  axiom antisym1_spec: forall x: UInt32.t, y: UInt32.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
   
   function trans (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
+  axiom trans_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. cmp_log x y = o
+      -> cmp_log y z = o -> cmp_log x z = o
   
   function refl (x: UInt32.t) : ()
   
-  axiom refl_spec: forall x: UInt32.t. [%#sord'3] cmp_log x x = C_Equal
+  axiom refl_spec: forall x: UInt32.t. cmp_log x x = C_Equal
   
   function cmp_gt_log (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord'2] UInt32.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y = (cmp_log x y = C_Greater)
   
   function cmp_ge_log (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord'1] UInt32.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y = (cmp_log x y <> C_Less)
   
   function cmp_lt_log (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord'0] UInt32.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y = (cmp_log x y = C_Less)
   
   function cmp_le_log (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. [%#sord] UInt32.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log x y <> C_Greater)
   
   let rec take_max (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (return' (x: MutBorrow.t UInt32.t)) = any
-    [ return''0 (result: MutBorrow.t UInt32.t) -> {[%#sinc_max_repeat'7] if UInt32.ge ma.current mb.current then
+    [ return''0 (result: MutBorrow.t UInt32.t) -> {if UInt32.ge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
       }
       (! return' {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t UInt32.t) = [%#sresolve] self.final = self.current
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'1
   
@@ -289,23 +232,23 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
   
   meta "select_lsinst" "all"
   
-  let rec inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53] (a: UInt32.t) (b: UInt32.t) (n: UInt32.t) (return' (x: ())) =
-    {[@expl:inc_max_repeat requires] [%#sinc_max_repeat'6] UInt32.le a (1000000: UInt32.t)
+  let rec inc_max_repeat (a: UInt32.t) (b: UInt32.t) (n: UInt32.t) (return' (x: ())) =
+    {[@expl:inc_max_repeat requires] UInt32.le a (1000000: UInt32.t)
     /\ UInt32.le b (1000000: UInt32.t) /\ UInt32.le n (1000000: UInt32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_7 <- { t_Range__start = ([%#sinc_max_repeat] (0: UInt32.t)); t_Range__end = n'0 } ] s1
+      [ s0 = [ &_7 <- { t_Range__start = (0: UInt32.t); t_Range__end = n'0 } ] s1
       | s1 = into_iter {_7} (fun (_ret: t_Range) -> [ &iter <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &iter_old <- [%#sinc_max_repeat'0] iter ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &produced <- [%#sinc_max_repeat'0] Seq.empty: Seq.seq UInt32.t ] s1 | s1 = bb4 ]
+    | bb1 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq UInt32.t ] s1 | s1 = bb4 ]
     | bb4 = bb4'0
-      [ bb4'0 = {[@expl:for invariant] [%#sinc_max_repeat'0] inv'0 produced}
-        {[@expl:for invariant] [%#sinc_max_repeat'0] inv iter}
-        {[@expl:for invariant] [%#sinc_max_repeat'0] produces iter_old produced iter}
-        {[@expl:loop invariant #0] [%#sinc_max_repeat'2] UInt32.t'int a'0 <= 1000000 + Seq.length produced
+      [ bb4'0 = {[@expl:for invariant] inv'0 produced}
+        {[@expl:for invariant] inv iter}
+        {[@expl:for invariant] produces iter_old produced iter}
+        {[@expl:loop invariant #0] UInt32.t'int a'0 <= 1000000 + Seq.length produced
         /\ UInt32.t'int b'0 <= 1000000 + Seq.length produced}
-        {[@expl:loop invariant #1] [%#sinc_max_repeat'1] UInt32.t'int a'0 >= UInt32.t'int b'0 + Seq.length produced
+        {[@expl:loop invariant #1] UInt32.t'int a'0 >= UInt32.t'int b'0 + Seq.length produced
         \/ UInt32.t'int b'0 >= UInt32.t'int a'0 + Seq.length produced}
         (! s0)
         [ s0 = bb5 ]
@@ -321,7 +264,7 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
           | s1 = any [ br0 -> {_20 = C_None} (! bb9) | br1 (x0: UInt32.t) -> {_20 = C_Some x0} (! bb10) ] ]
         | bb10 = s0
           [ s0 = v_Some {_20} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_25 <- [%#sinc_max_repeat'3] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s1 = [ &_25 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb11 ]
         | bb11 = s0
           [ s0 = [ &produced <- _25 ] s1
@@ -338,7 +281,7 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
         | bb12 = s0
           [ s0 = -{resolve'2 _31}- s1
           | s1 = -{resolve'2 _29}- s2
-          | s2 = UInt32.add {mc.current} {[%#sinc_max_repeat'4] (1: UInt32.t)}
+          | s2 = UInt32.add {mc.current} {(1: UInt32.t)}
               (fun (_ret: UInt32.t) -> [ &mc <- { mc with current = _ret } ] s3)
           | s3 = -{resolve'2 mc}- s4
           | s4 = bb4'0 ] ] ]
@@ -351,7 +294,7 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 11 0 11 53]
       | s1 = [ &_39 <- UInt32.ge b'0 _41 ] s2
       | s2 = any [ br0 -> {_39 = false} (! bb16) | br1 -> {_39} (! bb17) ] ]
     | bb17 = return''0 {_0}
-    | bb16 = {[%#sinc_max_repeat'5] false} any ]
+    | bb16 = {false} any ]
     [ & _0: () = Any.any_l ()
     | & a'0: UInt32.t = a
     | & b'0: UInt32.t = b

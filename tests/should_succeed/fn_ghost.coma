@@ -1,37 +1,10 @@
-module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
-  let%span sfn_ghost = "fn_ghost.rs" 8 22 8 23
-  let%span sfn_ghost'0 = "fn_ghost.rs" 10 22 10 23
-  let%span sfn_ghost'1 = "fn_ghost.rs" 12 22 12 23
-  let%span sfn_ghost'2 = "fn_ghost.rs" 12 4 12 24
-  let%span sfn_ghost'3 = "fn_ghost.rs" 10 4 10 24
-  let%span sfn_ghost'4 = "fn_ghost.rs" 8 4 8 24
-  let%span sfn_ghost'5 = "fn_ghost.rs" 6 17 6 18
-  let%span sfn_ghost'6 = "../../creusot-contracts/src/ghost/fn_ghost.rs" 76 14 76 26
-  let%span sfn_ghost'7 = "fn_ghost.rs" 15 0 15 36
-  let%span sfn_ghost'8 = "fn_ghost.rs" 16 0 16 44
-  let%span sfn_ghost'9 = "fn_ghost.rs" 22 0 22 36
-  let%span sfn_ghost'10 = "fn_ghost.rs" 23 10 23 61
-  let%span sfn_ghost'11 = "fn_ghost.rs" 29 0 29 36
-  let%span sfn_ghost'12 = "fn_ghost.rs" 30 0 30 49
-  let%span sfn_ghost'13 = "fn_ghost.rs" 6 4 6 12
-  let%span sops = "../../creusot-contracts/src/std/ops.rs" 159 14 159 114
-  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 164 14 164 100
-  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 169 14 169 61
-  let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'3 = "../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'4 = "../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'5 = "../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  
+module M_fn_ghost__foo
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  let rec closure0 [#"fn_ghost.rs" 6 4 6 12] [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: Int32.t)) = bb0
-    [ bb0 = s0
-      [ s0 = Int32.add {x'0} {[%#sfn_ghost'5] (1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1)
-      | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x ]
+  let rec closure0 [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: Int32.t)) = bb0
+    [ bb0 = s0 [ s0 = Int32.add {x'0} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = return' {_0} ] ]
+    [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -42,10 +15,9 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
   function view (self: t_FnGhostWrapper) : ()
   
   let rec qy95z_new (f: ()) (return' (x: t_FnGhostWrapper)) = any
-    [ return''0 (result: t_FnGhostWrapper) -> {[%#sfn_ghost'6] view result = f} (! return' {result}) ]
+    [ return''0 (result: t_FnGhostWrapper) -> {view result = f} (! return' {result}) ]
   
-  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) =
-    [%#sfn_ghost'13] let x = args in closure0'pre self x
+  predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in closure0'pre self x
   
   meta "rewrite_def" predicate precondition
   
@@ -59,18 +31,18 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
   meta "rewrite_def" predicate resolve
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    [%#sfn_ghost'13] let x = args in closure0'post'return' self x result /\ resolve self
+    let x = args in closure0'post'return' self x result /\ resolve self
   
   meta "rewrite_def" predicate postcondition_once
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
-    [%#sfn_ghost'13] let x = args in closure0'post'return' self x result /\ self = result_state
+    let x = args in closure0'post'return' self x result /\ self = result_state
   
   meta "rewrite_def" predicate postcondition_mut
   
   function fn_mut_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: Int32.t, res: Int32.t. [%#sops'8] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: (), args: Int32.t, res: Int32.t. postcondition_once self args res
       = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = self = result_state
@@ -79,37 +51,36 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). ([%#sops'5] hist_inv self b)
-      -> ([%#sops'6] hist_inv b c) -> ([%#sops'7] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: ()) : ()
   
-  axiom hist_inv_refl_spec: forall self: (). [%#sops'4] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
   
   function postcondition_mut_hist_inv (self: ()) (args: Int32.t) (res_state: ()) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: Int32.t, res_state: (), res: Int32.t. ([%#sops'2] postcondition_mut self args res_state res)
-      -> ([%#sops'3] hist_inv self res_state)
+    forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   function fn_hist_inv (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_spec: forall self: (), res_state: (). [%#sops'1] hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
   
   predicate postcondition [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    [%#sfn_ghost'13] let x = args in closure0'post'return' self x result
+    let x = args in closure0'post'return' self x result
   
   meta "rewrite_def" predicate postcondition
   
   function fn_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_once_spec: forall self: (), args: Int32.t, res: Int32.t. [%#sops'0] postcondition_once self args res
+  axiom fn_once_spec: forall self: (), args: Int32.t, res: Int32.t. postcondition_once self args res
       = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: ()) (args: Int32.t) (res_state: ()) (res: Int32.t) : ()
   
   axiom fn_mut_spec:
-    forall self: (), args: Int32.t, res_state: (), res: Int32.t. [%#sops] postcondition_mut self args res_state res
+    forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
   predicate postcondition_once'0 [@inline:trivial] (self: t_FnGhostWrapper) (args: Int32.t) (result: Int32.t) =
@@ -129,7 +100,7 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
   function fn_mut_once'0 (self: t_FnGhostWrapper) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_spec'0:
-    forall self: t_FnGhostWrapper, args: Int32.t, res: Int32.t. [%#sops'8] postcondition_once'0 self args res
+    forall self: t_FnGhostWrapper, args: Int32.t, res: Int32.t. postcondition_once'0 self args res
       = (exists res_state: t_FnGhostWrapper. postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   predicate hist_inv'0 (self: t_FnGhostWrapper) (result_state: t_FnGhostWrapper)
@@ -137,23 +108,22 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
   function hist_inv_trans'0 (self: t_FnGhostWrapper) (b: t_FnGhostWrapper) (c: t_FnGhostWrapper) : ()
   
   axiom hist_inv_trans_spec'0:
-    forall self: t_FnGhostWrapper, b: t_FnGhostWrapper, c: t_FnGhostWrapper. ([%#sops'5] hist_inv'0 self b)
-      -> ([%#sops'6] hist_inv'0 b c) -> ([%#sops'7] hist_inv'0 self c)
+    forall self: t_FnGhostWrapper, b: t_FnGhostWrapper, c: t_FnGhostWrapper. hist_inv'0 self b
+      -> hist_inv'0 b c -> hist_inv'0 self c
   
   function hist_inv_refl'0 (self: t_FnGhostWrapper) : ()
   
-  axiom hist_inv_refl_spec'0: forall self: t_FnGhostWrapper. [%#sops'4] hist_inv'0 self self
+  axiom hist_inv_refl_spec'0: forall self: t_FnGhostWrapper. hist_inv'0 self self
   
   function postcondition_mut_hist_inv'0 (self: t_FnGhostWrapper) (args: Int32.t) (res_state: t_FnGhostWrapper) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_spec'0:
-    forall self: t_FnGhostWrapper, args: Int32.t, res_state: t_FnGhostWrapper, res: Int32.t. ([%#sops'2] postcondition_mut'0 self args res_state res)
-      -> ([%#sops'3] hist_inv'0 self res_state)
+    forall self: t_FnGhostWrapper, args: Int32.t, res_state: t_FnGhostWrapper, res: Int32.t. postcondition_mut'0 self args res_state res
+      -> hist_inv'0 self res_state
   
   function fn_hist_inv'0 (self: t_FnGhostWrapper) (res_state: t_FnGhostWrapper) : ()
   
-  axiom fn_hist_inv_spec'0:
-    forall self: t_FnGhostWrapper, res_state: t_FnGhostWrapper. [%#sops'1] hist_inv'0 self res_state
+  axiom fn_hist_inv_spec'0: forall self: t_FnGhostWrapper, res_state: t_FnGhostWrapper. hist_inv'0 self res_state
       = (self = res_state)
   
   predicate postcondition'0 [@inline:trivial] (self: t_FnGhostWrapper) (args: Int32.t) (result: Int32.t) =
@@ -163,56 +133,50 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
   
   function fn_once'0 (self: t_FnGhostWrapper) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_once_spec'0:
-    forall self: t_FnGhostWrapper, args: Int32.t, res: Int32.t. [%#sops'0] postcondition_once'0 self args res
+  axiom fn_once_spec'0: forall self: t_FnGhostWrapper, args: Int32.t, res: Int32.t. postcondition_once'0 self args res
       = (postcondition'0 self args res /\ resolve'0 self)
   
   function fn_mut'0 (self: t_FnGhostWrapper) (args: Int32.t) (res_state: t_FnGhostWrapper) (res: Int32.t) : ()
   
   axiom fn_mut_spec'0:
-    forall self: t_FnGhostWrapper, args: Int32.t, res_state: t_FnGhostWrapper, res: Int32.t. [%#sops] postcondition_mut'0 self args res_state res
+    forall self: t_FnGhostWrapper, args: Int32.t, res_state: t_FnGhostWrapper, res: Int32.t. postcondition_mut'0 self args res_state res
       = (postcondition'0 self args res /\ self = res_state)
   
   let rec takes_ghost_fn (f: t_FnGhostWrapper) (return' (x: Int32.t)) =
-    {[@expl:takes_ghost_fn requires] [%#sfn_ghost'7] precondition'0 f (1: Int32.t)}
-    any [ return''0 (result: Int32.t) -> {[%#sfn_ghost'8] postcondition'0 f (1: Int32.t) result} (! return' {result}) ]
+    {[@expl:takes_ghost_fn requires] precondition'0 f (1: Int32.t)}
+    any [ return''0 (result: Int32.t) -> {postcondition'0 f (1: Int32.t) result} (! return' {result}) ]
   
   let rec takes_ghost_fnmut (f: t_FnGhostWrapper) (return' (x: Int32.t)) =
-    {[@expl:takes_ghost_fnmut requires] [%#sfn_ghost'9] precondition'0 f (1: Int32.t)}
+    {[@expl:takes_ghost_fnmut requires] precondition'0 f (1: Int32.t)}
     any
-    [ return''0 (result: Int32.t) ->
-    {[%#sfn_ghost'10] exists f2: t_FnGhostWrapper. postcondition_mut'0 f (1: Int32.t) f2 result}
+    [ return''0 (result: Int32.t) -> {exists f2: t_FnGhostWrapper. postcondition_mut'0 f (1: Int32.t) f2 result}
       (! return' {result}) ]
   
   let rec takes_ghost_fnonce (f: t_FnGhostWrapper) (return' (x: Int32.t)) =
-    {[@expl:takes_ghost_fnonce requires] [%#sfn_ghost'11] precondition'0 f (1: Int32.t)}
-    any
-    [ return''0 (result: Int32.t) -> {[%#sfn_ghost'12] postcondition_once'0 f (1: Int32.t) result}
-      (! return' {result}) ]
+    {[@expl:takes_ghost_fnonce requires] precondition'0 f (1: Int32.t)}
+    any [ return''0 (result: Int32.t) -> {postcondition_once'0 f (1: Int32.t) result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec foo [#"fn_ghost.rs" 4 0 4 12] (return' (x: ())) = (! bb0
+  let rec foo (return' (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_2 <- () ] s1 | s1 = qy95z_new {_2} (fun (_ret: t_FnGhostWrapper) -> [ &f <- _ret ] s2) | s2 = bb1 ]
     | bb1 = s0 [ s0 = takes_ghost_fn {f} (fun (_ret: Int32.t) -> [ &result <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = [ &_6 <- result = ([%#sfn_ghost] (2: Int32.t)) ] s1
-      | s1 = any [ br0 -> {_6 = false} (! bb4) | br1 -> {_6} (! bb3) ] ]
+      [ s0 = [ &_6 <- result = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_6 = false} (! bb4) | br1 -> {_6} (! bb3) ] ]
     | bb3 = s0 [ s0 = takes_ghost_fnmut {f} (fun (_ret: Int32.t) -> [ &result'0 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = [ &_12 <- result'0 = ([%#sfn_ghost'0] (2: Int32.t)) ] s1
-      | s1 = any [ br0 -> {_12 = false} (! bb7) | br1 -> {_12} (! bb6) ] ]
+      [ s0 = [ &_12 <- result'0 = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_12 = false} (! bb7) | br1 -> {_12} (! bb6) ] ]
     | bb6 = s0 [ s0 = takes_ghost_fnonce {f} (fun (_ret: Int32.t) -> [ &result'1 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
-      [ s0 = [ &_18 <- result'1 = ([%#sfn_ghost'1] (2: Int32.t)) ] s1
+      [ s0 = [ &_18 <- result'1 = (2: Int32.t) ] s1
       | s1 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ] ]
     | bb9 = return''0 {_0}
-    | bb10 = {[%#sfn_ghost'2] false} any
-    | bb7 = {[%#sfn_ghost'3] false} any
-    | bb4 = {[%#sfn_ghost'4] false} any ]
+    | bb10 = {false} any
+    | bb7 = {false} any
+    | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
     | & f: t_FnGhostWrapper = Any.any_l ()
     | & _2: () = Any.any_l ()
@@ -223,26 +187,7 @@ module M_fn_ghost__foo [#"fn_ghost.rs" 4 0 4 12]
     | & result'1: Int32.t = Any.any_l ()
     | & _18: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
 end
-module M_fn_ghost__takes_ghost_fn [#"fn_ghost.rs" 18 0 18 63]
-  let%span sfn_ghost = "fn_ghost.rs" 19 6 19 7
-  let%span sfn_ghost'0 = "fn_ghost.rs" 18 51 18 52
-  let%span sfn_ghost'1 = "fn_ghost.rs" 15 0 15 36
-  let%span sfn_ghost'2 = "fn_ghost.rs" 16 0 16 44
-  let%span sops = "../../creusot-contracts/src/std/ops.rs" 189 16 189 17
-  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 189 27 189 52
-  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 190 26 190 60
-  let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 159 14 159 114
-  let%span sops'3 = "../../creusot-contracts/src/std/ops.rs" 164 14 164 100
-  let%span sops'4 = "../../creusot-contracts/src/std/ops.rs" 169 14 169 61
-  let%span sops'5 = "../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'9 = "../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'10 = "../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'11 = "../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  
+module M_fn_ghost__takes_ghost_fn
   use creusot.int.Int32
   use creusot.prelude.Any
   
@@ -252,7 +197,7 @@ module M_fn_ghost__takes_ghost_fn [#"fn_ghost.rs" 18 0 18 63]
   
   predicate resolve (_0: t_F)
   
-  predicate invariant' [@inline:trivial] (self: t_F) = [%#sinvariant] inv self
+  predicate invariant' [@inline:trivial] (self: t_F) = inv self
   
   meta "rewrite_def" predicate invariant'
   
@@ -268,84 +213,64 @@ module M_fn_ghost__takes_ghost_fn [#"fn_ghost.rs" 18 0 18 63]
   
   function fn_mut_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'11] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once self args res
       = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'8] hist_inv self b)
-      -> ([%#sops'9] hist_inv b c) -> ([%#sops'10] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. [%#sops'7] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
   
   function postcondition_mut_hist_inv (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops'5] postcondition_mut self args res_state res)
-      -> ([%#sops'6] hist_inv self res_state)
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   function fn_hist_inv (self: t_F) (res_state: t_F) : ()
   
-  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. [%#sops'4] hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. hist_inv self res_state = (self = res_state)
   
   predicate postcondition (self: t_F) (args: Int32.t) (result: Int32.t)
   
   function fn_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'3] postcondition_once self args res
+  axiom fn_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once self args res
       = (postcondition self args res /\ resolve self)
   
   function fn_mut (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. [%#sops'2] postcondition_mut self args res_state res
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec call (self_: t_F) (arg: Int32.t) (return' (x: Int32.t)) =
-    {[@expl:call 'self_' type invariant] [%#sops] inv'0 self_}
-    {[@expl:call requires] [%#sops'0] precondition self_ arg}
-    any [ return''0 (result: Int32.t) -> {[%#sops'1] postcondition self_ arg result} (! return' {result}) ]
+  let rec call (self_: t_F) (arg: Int32.t) (return' (x: Int32.t)) = {[@expl:call 'self_' type invariant] inv'0 self_}
+    {[@expl:call requires] precondition self_ arg}
+    any [ return''0 (result: Int32.t) -> {postcondition self_ arg result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec takes_ghost_fn [#"fn_ghost.rs" 18 0 18 63] (f: t_F) (return' (x: Int32.t)) =
-    {[@expl:takes_ghost_fn 'f' type invariant] [%#sfn_ghost'0] inv f}
-    {[@expl:takes_ghost_fn requires] [%#sfn_ghost'1] precondition f (1: Int32.t)}
+  let rec takes_ghost_fn (f: t_F) (return' (x: Int32.t)) = {[@expl:takes_ghost_fn 'f' type invariant] inv f}
+    {[@expl:takes_ghost_fn requires] precondition f (1: Int32.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:type invariant] inv f'0} s1
       | s1 = -{resolve f'0}- s2
-      | s2 = [ &_5 <- [%#sfn_ghost] (1: Int32.t) ] s3
+      | s2 = [ &_5 <- (1: Int32.t) ] s3
       | s3 = call {f'0} {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s4)
       | s4 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: Int32.t = Any.any_l () | & f'0: t_F = f | & _5: Int32.t = Any.any_l () ])
-    [ return''0 (result: Int32.t) ->
-    {[@expl:takes_ghost_fn ensures] [%#sfn_ghost'2] postcondition f (1: Int32.t) result}
+    [ return''0 (result: Int32.t) -> {[@expl:takes_ghost_fn ensures] postcondition f (1: Int32.t) result}
       (! return' {result}) ]
 end
-module M_fn_ghost__takes_ghost_fnmut [#"fn_ghost.rs" 25 0 25 73]
-  let%span sfn_ghost = "fn_ghost.rs" 26 6 26 7
-  let%span sfn_ghost'0 = "fn_ghost.rs" 25 61 25 62
-  let%span sfn_ghost'1 = "fn_ghost.rs" 22 0 22 36
-  let%span sfn_ghost'2 = "fn_ghost.rs" 23 10 23 61
-  let%span sops = "../../creusot-contracts/src/std/ops.rs" 183 16 183 17
-  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 183 27 183 52
-  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 184 26 184 71
-  let%span sops'2 = "../../creusot-contracts/src/std/ops.rs" 125 4 125 61
-  let%span sops'3 = "../../creusot-contracts/src/std/ops.rs" 126 4 126 40
-  let%span sops'4 = "../../creusot-contracts/src/std/ops.rs" 131 4 131 35
-  let%span sops'5 = "../../creusot-contracts/src/std/ops.rs" 136 4 136 33
-  let%span sops'6 = "../../creusot-contracts/src/std/ops.rs" 137 4 137 30
-  let%span sops'7 = "../../creusot-contracts/src/std/ops.rs" 138 4 138 32
-  let%span sops'8 = "../../creusot-contracts/src/std/ops.rs" 143 14 144 104
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 99 20 99 44
-  
+module M_fn_ghost__takes_ghost_fnmut
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -354,7 +279,7 @@ module M_fn_ghost__takes_ghost_fnmut [#"fn_ghost.rs" 25 0 25 73]
   
   predicate inv (_0: t_F)
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_F) = [%#sinvariant] inv self.current /\ inv self.final
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_F) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant'
   
@@ -372,46 +297,42 @@ module M_fn_ghost__takes_ghost_fnmut [#"fn_ghost.rs" 25 0 25 73]
   
   function fn_mut_once (self: t_F) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. [%#sops'8] postcondition_once self args res
+  axiom fn_mut_once_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once self args res
       = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
   function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. ([%#sops'5] hist_inv self b)
-      -> ([%#sops'6] hist_inv b c) -> ([%#sops'7] hist_inv self c)
+  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
   
   function hist_inv_refl (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. [%#sops'4] hist_inv self self
+  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
   
   function postcondition_mut_hist_inv (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. ([%#sops'2] postcondition_mut self args res_state res)
-      -> ([%#sops'3] hist_inv self res_state)
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut self args res_state res
+      -> hist_inv self res_state
   
   let rec call_mut (self_: MutBorrow.t t_F) (arg: Int32.t) (return' (x: Int32.t)) =
-    {[@expl:call_mut 'self_' type invariant] [%#sops] inv'0 self_}
-    {[@expl:call_mut requires] [%#sops'0] precondition self_.current arg}
-    any
-    [ return''0 (result: Int32.t) -> {[%#sops'1] postcondition_mut self_.current arg self_.final result}
-      (! return' {result}) ]
+    {[@expl:call_mut 'self_' type invariant] inv'0 self_}
+    {[@expl:call_mut requires] precondition self_.current arg}
+    any [ return''0 (result: Int32.t) -> {postcondition_mut self_.current arg self_.final result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec takes_ghost_fnmut [#"fn_ghost.rs" 25 0 25 73] (f: t_F) (return' (x: Int32.t)) =
-    {[@expl:takes_ghost_fnmut 'f' type invariant] [%#sfn_ghost'0] inv f}
-    {[@expl:takes_ghost_fnmut requires] [%#sfn_ghost'1] precondition f (1: Int32.t)}
+  let rec takes_ghost_fnmut (f: t_F) (return' (x: Int32.t)) = {[@expl:takes_ghost_fnmut 'f' type invariant] inv f}
+    {[@expl:takes_ghost_fnmut requires] precondition f (1: Int32.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv f'0}
         MutBorrow.borrow_mut <t_F> {f'0}
           (fun (_ret: MutBorrow.t t_F) -> [ &_4 <- _ret ] -{inv _ret.final}- [ &f'0 <- _ret.final ] s1)
-      | s1 = [ &_5 <- [%#sfn_ghost] (1: Int32.t) ] s2
+      | s1 = [ &_5 <- (1: Int32.t) ] s2
       | s2 = call_mut {_4} {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb2 ]
@@ -421,18 +342,10 @@ module M_fn_ghost__takes_ghost_fnmut [#"fn_ghost.rs" 25 0 25 73]
     | & _4: MutBorrow.t t_F = Any.any_l ()
     | & _5: Int32.t = Any.any_l () ])
     [ return''0 (result: Int32.t) ->
-    {[@expl:takes_ghost_fnmut ensures] [%#sfn_ghost'2] exists f2: t_F. postcondition_mut f (1: Int32.t) f2 result}
+    {[@expl:takes_ghost_fnmut ensures] exists f2: t_F. postcondition_mut f (1: Int32.t) f2 result}
       (! return' {result}) ]
 end
-module M_fn_ghost__takes_ghost_fnonce [#"fn_ghost.rs" 32 0 32 71]
-  let%span sfn_ghost = "fn_ghost.rs" 33 6 33 7
-  let%span sfn_ghost'0 = "fn_ghost.rs" 32 59 32 60
-  let%span sfn_ghost'1 = "fn_ghost.rs" 29 0 29 36
-  let%span sfn_ghost'2 = "fn_ghost.rs" 30 0 30 49
-  let%span sops = "../../creusot-contracts/src/std/ops.rs" 177 16 177 17
-  let%span sops'0 = "../../creusot-contracts/src/std/ops.rs" 177 16 177 51
-  let%span sops'1 = "../../creusot-contracts/src/std/ops.rs" 178 16 178 64
-  
+module M_fn_ghost__takes_ghost_fnonce
   use creusot.int.Int32
   use creusot.prelude.Any
   
@@ -445,24 +358,22 @@ module M_fn_ghost__takes_ghost_fnonce [#"fn_ghost.rs" 32 0 32 71]
   predicate postcondition_once (self: t_F) (args: Int32.t) (result: Int32.t)
   
   let rec call_once (self_: t_F) (arg: Int32.t) (return' (x: Int32.t)) =
-    {[@expl:call_once 'self_' type invariant] [%#sops] inv self_}
-    {[@expl:call_once requires] [%#sops'0] precondition self_ arg}
-    any [ return''0 (result: Int32.t) -> {[%#sops'1] postcondition_once self_ arg result} (! return' {result}) ]
+    {[@expl:call_once 'self_' type invariant] inv self_}
+    {[@expl:call_once requires] precondition self_ arg}
+    any [ return''0 (result: Int32.t) -> {postcondition_once self_ arg result} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec takes_ghost_fnonce [#"fn_ghost.rs" 32 0 32 71] (f: t_F) (return' (x: Int32.t)) =
-    {[@expl:takes_ghost_fnonce 'f' type invariant] [%#sfn_ghost'0] inv f}
-    {[@expl:takes_ghost_fnonce requires] [%#sfn_ghost'1] precondition f (1: Int32.t)}
+  let rec takes_ghost_fnonce (f: t_F) (return' (x: Int32.t)) = {[@expl:takes_ghost_fnonce 'f' type invariant] inv f}
+    {[@expl:takes_ghost_fnonce requires] precondition f (1: Int32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_5 <- [%#sfn_ghost] (1: Int32.t) ] s1
+      [ s0 = [ &_5 <- (1: Int32.t) ] s1
       | s1 = call_once {f'0} {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: Int32.t = Any.any_l () | & f'0: t_F = f | & _5: Int32.t = Any.any_l () ])
-    [ return''0 (result: Int32.t) ->
-    {[@expl:takes_ghost_fnonce ensures] [%#sfn_ghost'2] postcondition_once f (1: Int32.t) result}
+    [ return''0 (result: Int32.t) -> {[@expl:takes_ghost_fnonce ensures] postcondition_once f (1: Int32.t) result}
       (! return' {result}) ]
 end

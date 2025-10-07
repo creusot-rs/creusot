@@ -1,9 +1,4 @@
-module M_02__omg [#"02.rs" 11 0 11 30]
-  let%span s02 = "02.rs" 11 17 11 18
-  let%span s02'0 = "02.rs" 10 10 10 24
-  let%span s02'1 = "02.rs" 1 0 7 4
-  let%span sinvariant = "../../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  
+module M_02__omg
   use creusot.prelude.Any
   
   type t_T
@@ -12,7 +7,7 @@ module M_02__omg [#"02.rs" 11 0 11 30]
   
   predicate resolve (_0: t_T)
   
-  predicate invariant' [@inline:trivial] (self: t_T) = [%#sinvariant] inv self
+  predicate invariant' [@inline:trivial] (self: t_T) = inv self
   
   meta "rewrite_def" predicate invariant'
   
@@ -22,13 +17,13 @@ module M_02__omg [#"02.rs" 11 0 11 30]
   
   predicate precondition (self: ()) (args: t_T)
   
-  axiom precondition_fndef: [%#s02'1] forall args: t_T [precondition () args]. (let self = args in inv'0 self)
+  axiom precondition_fndef: forall args: t_T [precondition () args]. (let self = args in inv'0 self)
       -> precondition () args
   
   predicate postcondition_once (self: ()) (args: t_T) (result: bool)
   
   axiom postcondition_fndef:
-    [%#s02'1] forall args: t_T, res: bool [postcondition_once () args res]. postcondition_once () args res
+    forall args: t_T, res: bool [postcondition_once () args res]. postcondition_once () args res
       -> (let self = args in res = true)
   
   let rec is_true (self: t_T) (return' (x: bool)) = {[@expl:is_true requires] precondition () self}
@@ -38,7 +33,7 @@ module M_02__omg [#"02.rs" 11 0 11 30]
   
   meta "select_lsinst" "all"
   
-  let rec omg [#"02.rs" 11 0 11 30] (a: t_T) (return' (x: bool)) = {[@expl:omg 'a' type invariant] [%#s02] inv a}
+  let rec omg (a: t_T) (return' (x: bool)) = {[@expl:omg 'a' type invariant] inv a}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:type invariant] inv a'0} s1
@@ -46,5 +41,5 @@ module M_02__omg [#"02.rs" 11 0 11 30]
       | s2 = is_true {a'0} (fun (_ret: bool) -> [ &_0 <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = return''0 {_0} ] [ & _0: bool = Any.any_l () | & a'0: t_T = a ])
-    [ return''0 (result: bool) -> {[@expl:omg ensures] [%#s02'0] result = true} (! return' {result}) ]
+    [ return''0 (result: bool) -> {[@expl:omg ensures] result = true} (! return' {result}) ]
 end

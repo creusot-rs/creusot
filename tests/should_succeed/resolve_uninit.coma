@@ -1,23 +1,17 @@
-module M_resolve_uninit__maybe_uninit [#"resolve_uninit.rs" 5 0 5 51]
-  let%span sresolve_uninit = "resolve_uninit.rs" 5 41 5 42
-  let%span sresolve_uninit'0 = "resolve_uninit.rs" 5 50 5 51
-  let%span sresolve_uninit'1 = "resolve_uninit.rs" 1 0 139 4
-  
+module M_resolve_uninit__maybe_uninit
   use creusot.prelude.Any
   
   type t_T
   
   predicate precondition (self: ()) (args: ())
   
-  axiom precondition_fndef: [%#sresolve_uninit'1] forall args: () [precondition () args]. (let () = args in true)
-      -> precondition () args
+  axiom precondition_fndef: forall args: () [precondition () args]. (let () = args in true) -> precondition () args
   
   predicate inv (_0: t_T)
   
   predicate postcondition_once (self: ()) (args: ()) (result: t_T)
   
-  axiom postcondition_fndef:
-    [%#sresolve_uninit'1] forall args: (), res: t_T [postcondition_once () args res]. postcondition_once () args res
+  axiom postcondition_fndef: forall args: (), res: t_T [postcondition_once () args res]. postcondition_once () args res
       -> (let () = args in inv res)
   
   let rec default (return' (x: t_T)) = {[@expl:default requires] precondition () ()}
@@ -29,8 +23,7 @@ module M_resolve_uninit__maybe_uninit [#"resolve_uninit.rs" 5 0 5 51]
   
   meta "select_lsinst" "all"
   
-  let rec maybe_uninit [#"resolve_uninit.rs" 5 0 5 51] (b: bool) (y: t_T) (return' (x: t_T)) =
-    {[@expl:maybe_uninit 'y' type invariant] [%#sresolve_uninit] inv y}
+  let rec maybe_uninit (b: bool) (y: t_T) (return' (x: t_T)) = {[@expl:maybe_uninit 'y' type invariant] inv y}
     (! bb0
     [ bb0 = any [ br0 -> {b'0 = false} (! bb8) | br1 -> {b'0} (! bb1) ]
     | bb1 = s0 [ s0 = default (fun (_ret: t_T) -> [ &_6 <- _ret ] s1) | s1 = bb3 ]
@@ -43,20 +36,14 @@ module M_resolve_uninit__maybe_uninit [#"resolve_uninit.rs" 5 0 5 51]
     | & y'0: t_T = y
     | & x: t_T = Any.any_l ()
     | & _6: t_T = Any.any_l () ])
-    [ return''0 (result: t_T) -> {[@expl:maybe_uninit result type invariant] [%#sresolve_uninit'0] inv result}
-      (! return' {result}) ]
+    [ return''0 (result: t_T) -> {[@expl:maybe_uninit result type invariant] inv result} (! return' {result}) ]
 end
-module M_resolve_uninit__init_join [#"resolve_uninit.rs" 15 0 15 37]
-  let%span sresolve_uninit = "resolve_uninit.rs" 27 9 27 10
-  let%span sresolve_uninit'0 = "resolve_uninit.rs" 28 17 28 18
-  let%span sresolve_uninit'1 = "resolve_uninit.rs" 28 4 28 19
-  let%span sresolve = "../../creusot-contracts/src/resolve.rs" 44 20 44 34
-  
+module M_resolve_uninit__init_join
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = [%#sresolve] self.final = self.current
+  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
@@ -68,7 +55,7 @@ module M_resolve_uninit__init_join [#"resolve_uninit.rs" 15 0 15 37]
   
   meta "select_lsinst" "all"
   
-  let rec init_join [#"resolve_uninit.rs" 15 0 15 37] (b: bool) (x: Int32.t) (return' (x'0: ())) = (! bb0
+  let rec init_join (b: bool) (x: Int32.t) (return' (x'0: ())) = (! bb0
     [ bb0 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ]
     | bb1 = s0
       [ s0 = MutBorrow.borrow_mut <Int32.t> {x'0}
@@ -94,12 +81,12 @@ module M_resolve_uninit__init_join [#"resolve_uninit.rs" 15 0 15 37]
       | s3 = -{resolve'0 _12}- s4
       | s4 = bb3 ]
     | bb3 = s0
-      [ s0 = [ &y <- { y with current = ([%#sresolve_uninit] (5: Int32.t)) } ] s1
+      [ s0 = [ &y <- { y with current = (5: Int32.t) } ] s1
       | s1 = -{resolve'0 y}- s2
-      | s2 = [ &_14 <- x'0 = ([%#sresolve_uninit'0] (5: Int32.t)) ] s3
+      | s2 = [ &_14 <- x'0 = (5: Int32.t) ] s3
       | s3 = any [ br0 -> {_14 = false} (! bb5) | br1 -> {_14} (! bb4) ] ]
     | bb4 = return''0 {_0}
-    | bb5 = {[%#sresolve_uninit'1] false} any ]
+    | bb5 = {false} any ]
     [ & _0: () = Any.any_l ()
     | & b'0: bool = b
     | & x'0: Int32.t = x

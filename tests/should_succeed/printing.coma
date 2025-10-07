@@ -1,30 +1,4 @@
-module M_printing__f [#"printing.rs" 4 0 4 10]
-  let%span sprinting = "printing.rs" 5 11 5 19
-  let%span sprinting'0 = "printing.rs" 6 13 6 21
-  let%span sprinting'1 = "printing.rs" 7 12 7 20
-  let%span sprinting'2 = "printing.rs" 8 14 8 23
-  let%span sprinting'3 = "printing.rs" 10 18 10 28
-  let%span sfmt = "../../creusot-contracts/src/std/fmt.rs" 142 45 142 51
-  let%span sfmt'0 = "../../creusot-contracts/src/std/fmt.rs" 141 27 141 38
-  let%span sio = "../../creusot-contracts/src/std/io.rs" 10 22 10 26
-  let%span sio'0 = "../../creusot-contracts/src/std/io.rs" 16 22 16 26
-  let%span sord = "../../creusot-contracts/src/logic/ord.rs" 124 39 124 89
-  let%span sord'0 = "../../creusot-contracts/src/logic/ord.rs" 128 39 128 86
-  let%span sord'1 = "../../creusot-contracts/src/logic/ord.rs" 132 39 132 86
-  let%span sord'2 = "../../creusot-contracts/src/logic/ord.rs" 136 39 136 89
-  let%span sord'3 = "../../creusot-contracts/src/logic/ord.rs" 140 39 140 70
-  let%span sord'4 = "../../creusot-contracts/src/logic/ord.rs" 144 40 144 57
-  let%span sord'5 = "../../creusot-contracts/src/logic/ord.rs" 145 40 145 57
-  let%span sord'6 = "../../creusot-contracts/src/logic/ord.rs" 146 39 146 56
-  let%span sord'7 = "../../creusot-contracts/src/logic/ord.rs" 150 40 150 70
-  let%span sord'8 = "../../creusot-contracts/src/logic/ord.rs" 151 39 151 72
-  let%span sord'9 = "../../creusot-contracts/src/logic/ord.rs" 155 40 155 73
-  let%span sord'10 = "../../creusot-contracts/src/logic/ord.rs" 156 39 156 69
-  let%span sord'11 = "../../creusot-contracts/src/logic/ord.rs" 160 39 160 84
-  let%span sord'12 = "../../creusot-contracts/src/logic/ord.rs" 240 16 246 17
-  let%span sinvariant = "../../creusot-contracts/src/invariant.rs" 90 8 90 18
-  let%span sarray = "../../creusot-contracts/src/std/array.rs" 10 20 10 51
-  
+module M_printing__f
   use creusot.slice.Slice64
   use creusot.prelude.Any
   use creusot.int.UInt64
@@ -60,13 +34,13 @@ module M_printing__f [#"printing.rs" 4 0 4 10]
   axiom inv_axiom [@rewrite]: forall x: Seq.seq string [inv x]. inv x = true
   
   predicate invariant' (self: Slice64.array string) =
-    [%#sarray] inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (1: UInt64.t)
+    inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (1: UInt64.t)
   
   predicate inv'0 (_0: Slice64.array string)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Slice64.array string [inv'0 x]. inv'0 x = invariant' x
   
-  predicate invariant''0 [@inline:trivial] (self: Slice64.array string) = [%#sinvariant] inv'0 self
+  predicate invariant''0 [@inline:trivial] (self: Slice64.array string) = inv'0 self
   
   meta "rewrite_def" predicate invariant''0
   
@@ -76,7 +50,7 @@ module M_printing__f [#"printing.rs" 4 0 4 10]
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = [%#sord'12] if UInt64.lt self o then
+  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
       C_Less
     else
       if self = o then C_Equal else C_Greater
@@ -84,65 +58,62 @@ module M_printing__f [#"printing.rs" 4 0 4 10]
   
   function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'11] (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
   
   function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. ([%#sord'9] cmp_log x y = C_Greater)
-      -> ([%#sord'10] cmp_log y x = C_Less)
+  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
   
   function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. ([%#sord'7] cmp_log x y = C_Less)
-      -> ([%#sord'8] cmp_log y x = C_Greater)
+  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
   
   function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. ([%#sord'4] cmp_log x y = o)
-      -> ([%#sord'5] cmp_log y z = o) -> ([%#sord'6] cmp_log x z = o)
+  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
+      -> cmp_log y z = o -> cmp_log x z = o
   
   function refl (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. [%#sord'3] cmp_log x x = C_Equal
+  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
   
   function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'2] UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
   
   function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'1] UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
   
   function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord'0] UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
   
   function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. [%#sord] UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
   
   let rec new_const (pieces: Slice64.array string) (return' (x: t_Arguments)) =
-    {[@expl:new_const 'pieces' type invariant] [%#sfmt] inv'1 pieces}
-    {[@expl:new_const requires] [%#sfmt'0] UInt64.le (1: UInt64.t) (1: UInt64.t)}
+    {[@expl:new_const 'pieces' type invariant] inv'1 pieces}
+    {[@expl:new_const requires] UInt64.le (1: UInt64.t) (1: UInt64.t)}
     any [ return''0 (result: t_Arguments) -> (! return' {result}) ]
   
   let rec qy95zprint (args: t_Arguments) (return' (x: ())) = any
-    [ return''0 (result: ()) -> {[%#sio] true} (! return' {result}) ]
+    [ return''0 (result: ()) -> {true} (! return' {result}) ]
   
   let rec qy95zeprint (args: t_Arguments) (return' (x: ())) = any
-    [ return''0 (result: ()) -> {[%#sio'0] true} (! return' {result}) ]
+    [ return''0 (result: ()) -> {true} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f [#"printing.rs" 4 0 4 10] (return' (x: ())) = (! bb0
+  let rec f (return' (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0
-                = ([%#sprinting] "Hello ")
+            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = "Hello "
               /\ Seq.length __arr_temp.Slice64.elts = 1}-
               [ &_1 <- __arr_temp ] s1'0) ]
           | s1'0 = [ &_0'0 <- _1 ] s2'0
@@ -157,8 +128,7 @@ module M_printing__f [#"printing.rs" 4 0 4 10]
       [ s0 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0
-                = ([%#sprinting'0] "world!\n")
+            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = "world!\n"
               /\ Seq.length __arr_temp.Slice64.elts = 1}-
               [ &_1 <- __arr_temp ] s1'0) ]
           | s1'0 = [ &_0'0 <- _1 ] s2'0
@@ -173,8 +143,7 @@ module M_printing__f [#"printing.rs" 4 0 4 10]
       [ s0 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0
-                = ([%#sprinting'1] "Hello ")
+            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = "Hello "
               /\ Seq.length __arr_temp.Slice64.elts = 1}-
               [ &_1 <- __arr_temp ] s1'0) ]
           | s1'0 = [ &_0'0 <- _1 ] s2'0
@@ -189,8 +158,7 @@ module M_printing__f [#"printing.rs" 4 0 4 10]
       [ s0 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0
-                = ([%#sprinting'2] "stderr!\n")
+            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = "stderr!\n"
               /\ Seq.length __arr_temp.Slice64.elts = 1}-
               [ &_1 <- __arr_temp ] s1'0) ]
           | s1'0 = [ &_0'0 <- _1 ] s2'0
@@ -201,7 +169,7 @@ module M_printing__f [#"printing.rs" 4 0 4 10]
       | s2 = new_const {_23} (fun (_ret: t_Arguments) -> [ &_21 <- _ret ] s3)
       | s3 = bb7 ]
     | bb7 = s0 [ s0 = qy95zeprint {_21} (fun (_ret: ()) -> [ &_20 <- _ret ] s1) | s1 = bb8 ]
-    | bb8 = s0 [ s0 = {[@expl:assertion] [%#sprinting'3] 1 + 1 = 2} s1 | s1 = return''0 {_0} ] ]
+    | bb8 = s0 [ s0 = {[@expl:assertion] 1 + 1 = 2} s1 | s1 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & _2: () = Any.any_l ()
     | & _3: t_Arguments = Any.any_l ()
