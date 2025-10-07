@@ -5,7 +5,8 @@ use creusot_contracts::*;
 #[ensures(result@ == 2)]
 pub fn disjoint_captures(mut p: (i32, i32)) -> i32 {
     let p0 = &p.0;
-    let mut clos = #[ensures(p.1@ == 1)] || {
+    let mut clos = #[ensures(p.1@ == 1)]
+    || {
         p.1 = 1;
     };
     clos();
