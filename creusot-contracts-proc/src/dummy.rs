@@ -34,7 +34,7 @@ pub fn ghost(body: TS1) -> TS1 {
     };
     let body = crate::ghost::ghost_preprocess(body);
     quote::quote! { if false {
-        ::creusot_contracts::ghost::Ghost::new(#body)
+        ::creusot_contracts::ghost::Ghost::new({ #body })
     } else {
         ::creusot_contracts::ghost::Ghost::conjure()
     } }
