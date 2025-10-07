@@ -24,11 +24,11 @@ module M_two_phase__test
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
+  let rec len (self_: t_Vec) (return (x: UInt64.t)) = any
+    [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
-  let rec push (self_: MutBorrow.t t_Vec) (v: UInt64.t) (return' (x: ())) = any
-    [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return' {result}) ]
+  let rec push (self_: MutBorrow.t t_Vec) (v: UInt64.t) (return (x: ())) = any
+    [ return' (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
   
@@ -46,22 +46,22 @@ module M_two_phase__test
   
   meta "select_lsinst" "all"
   
-  let rec test (v: MutBorrow.t t_Vec) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = len {v'0.current} (fun (_ret: UInt64.t) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+  let rec test (v: MutBorrow.t t_Vec) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = len {v.current} (fun (_ret: UInt64.t) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = MutBorrow.borrow_final <t_Vec> {v'0.current} {MutBorrow.get_id v'0}
-          (fun (_ret: MutBorrow.t t_Vec) -> [ &_4 <- _ret ] [ &v'0 <- { v'0 with current = _ret.final } ] s1)
+      [ s0 = MutBorrow.borrow_final <t_Vec> {v.current} {MutBorrow.get_id v}
+          (fun (_ret: MutBorrow.t t_Vec) -> [ &_4 <- _ret ] [ &v <- { v with current = _ret.final } ] s1)
       | s1 = push {_4} {_5} (fun (_ret: ()) -> [ &_3 <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = s0 [ s0 = -{resolve'0 v'0}- s1 | s1 = return''0 {_0} ] ]
+    | bb2 = s0 [ s0 = -{resolve'0 v}- s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & v'0: MutBorrow.t t_Vec = v
+    | & v: MutBorrow.t t_Vec = v
     | & _3: () = Any.any_l ()
     | & _4: MutBorrow.t t_Vec = Any.any_l ()
     | & _5: UInt64.t = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:test ensures] UInt64.t'int (index_logic v.final (Seq.length (view v.current)))
+    [ return (result: ()) -> {[@expl:test ensures] UInt64.t'int (index_logic v.final (Seq.length (view v.current)))
       = Seq.length (view v.current)}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_two_phase__qyi14099956410468907124__insert (* VacantEntry<'_, K> *)
   use creusot.prelude.MutBorrow
@@ -110,8 +110,8 @@ module M_two_phase__qyi14099956410468907124__insert (* VacantEntry<'_, K> *)
   axiom postcondition_fndef: forall args: t_K, res: t_K [postcondition_once () args res]. postcondition_once () args res
       -> (let self_ = args in inv res)
   
-  let rec clone' (self_: t_K) (return' (x: t_K)) = {[@expl:clone requires] precondition () self_}
-    any [ return''0 (result: t_K) -> {postcondition_once () self_ result} (! return' {result}) ]
+  let rec clone' (self_: t_K) (return (x: t_K)) = {[@expl:clone requires] precondition () self_}
+    any [ return' (result: t_K) -> {postcondition_once () self_ result} (! return {result}) ]
   
   predicate invariant''0 (self: t_K) = inv self
   
@@ -152,16 +152,16 @@ module M_two_phase__qyi14099956410468907124__insert (* VacantEntry<'_, K> *)
   
   meta "rewrite_def" function index_logic
   
-  let rec insert (self_: MutBorrow.t t_Vec) (index: UInt64.t) (element: t_K) (return' (x: ())) =
+  let rec insert (self_: MutBorrow.t t_Vec) (index: UInt64.t) (element: t_K) (return (x: ())) =
     {[@expl:insert 'self_' type invariant] inv'4 self_}
     {[@expl:insert 'element' type invariant] inv element}
     any
-    [ return''0 (result: ()) -> {Seq.length (view self_.final) = Seq.length (view self_.current) + 1}
+    [ return' (result: ()) -> {Seq.length (view self_.final) = Seq.length (view self_.current) + 1}
       {forall i: int. 0 <= i /\ i < UInt64.t'int index -> index_logic self_.final i = index_logic self_.current i}
       {index_logic self_.final (UInt64.t'int index) = element}
       {forall i: int. UInt64.t'int index < i /\ i < Seq.length (view self_.final)
         -> index_logic self_.final i = index_logic self_.current (i - 1)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate inv'5 (_0: t_VacantEntry)
   
@@ -190,22 +190,22 @@ module M_two_phase__qyi14099956410468907124__insert (* VacantEntry<'_, K> *)
   
   meta "select_lsinst" "all"
   
-  let rec insert'0 (self: MutBorrow.t t_VacantEntry) (return' (x: ())) =
+  let rec insert'0 (self: MutBorrow.t t_VacantEntry) (return (x: ())) =
     {[@expl:insert 'self' type invariant] inv'6 self}
     (! bb0
-    [ bb0 = s0 [ s0 = clone' {(self'0.current).t_VacantEntry__key} (fun (_ret: t_K) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = clone' {(self.current).t_VacantEntry__key} (fun (_ret: t_K) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'3 ((self'0.current).t_VacantEntry__map).current}
-        MutBorrow.borrow_mut <t_Vec> {((self'0.current).t_VacantEntry__map).current}
+      [ s0 = {inv'3 ((self.current).t_VacantEntry__map).current}
+        MutBorrow.borrow_mut <t_Vec> {((self.current).t_VacantEntry__map).current}
           (fun (_ret: MutBorrow.t t_Vec) ->
             [ &_2 <- _ret ] -{inv'3 _ret.final}-
-            [ &self'0 <- { self'0 with current = { self'0.current with t_VacantEntry__map = { (self'0.current).t_VacantEntry__map with current = _ret.final } } } ]
+            [ &self <- { self with current = { self.current with t_VacantEntry__map = { (self.current).t_VacantEntry__map with current = _ret.final } } } ]
             s1)
-      | s1 = insert {_2} {(self'0.current).t_VacantEntry__index} {_4} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
+      | s1 = insert {_2} {(self.current).t_VacantEntry__index} {_4} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'6 self'0} s1 | s1 = -{resolve'0 self'0}- s2 | s2 = return''0 {_0} ] ]
+    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'6 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & self'0: MutBorrow.t t_VacantEntry = self
+    | & self: MutBorrow.t t_VacantEntry = self
     | & _2: MutBorrow.t t_Vec = Any.any_l ()
-    | & _4: t_K = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _4: t_K = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

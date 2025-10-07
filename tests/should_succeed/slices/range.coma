@@ -26,11 +26,11 @@ module M_range__slice_range_inclusive
   axiom is_empty_log_spec: forall self: t_RangeInclusive. not is_empty_log self
       -> deep_model (start_log self) <= deep_model (end_log self)
   
-  let rec new (start: UInt64.t) (end': UInt64.t) (return' (x: t_RangeInclusive)) = any
-    [ return''0 (result: t_RangeInclusive) -> {start_log result = start}
+  let rec new (start: UInt64.t) (end': UInt64.t) (return (x: t_RangeInclusive)) = any
+    [ return' (result: t_RangeInclusive) -> {start_log result = start}
       {end_log result = end'}
       {deep_model start <= deep_model end' -> not is_empty_log result}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate in_bounds (self: t_RangeInclusive) (seq: Seq.seq UInt32.t)
   
@@ -54,15 +54,15 @@ module M_range__slice_range_inclusive
         /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   
   let rec index_mut (self_: MutBorrow.t (Slice64.slice UInt32.t)) (ix: t_RangeInclusive)
-    (return' (x: MutBorrow.t (Slice64.slice UInt32.t))) =
+    (return (x: MutBorrow.t (Slice64.slice UInt32.t))) =
     {[@expl:index_mut requires] in_bounds ix (Slice64.view self_.current)}
     any
-    [ return''0 (result: MutBorrow.t (Slice64.slice UInt32.t)) ->
+    [ return' (result: MutBorrow.t (Slice64.slice UInt32.t)) ->
     {has_value ix (Slice64.view self_.current) result.current}
       {has_value ix (Slice64.view self_.final) result.final}
       {resolve_elswhere ix (Slice64.view self_.current) (Slice64.view self_.final)}
       {Seq.length (Slice64.view self_.final) = Seq.length (Slice64.view self_.current)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice UInt32.t)) = self.final = self.current
   
@@ -76,14 +76,14 @@ module M_range__slice_range_inclusive
   
   meta "select_lsinst" "all"
   
-  let rec slice_range_inclusive (a: MutBorrow.t (Slice64.slice UInt32.t)) (return' (x: ())) =
+  let rec slice_range_inclusive (a: MutBorrow.t (Slice64.slice UInt32.t)) (return (x: ())) =
     {[@expl:slice_range_inclusive requires] Slice64.view a.current
     = Seq.create 4 [|(0: UInt32.t);(0: UInt32.t);(0: UInt32.t);(0: UInt32.t)|]}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <Slice64.slice UInt32.t> {a'0.current} {MutBorrow.get_id a'0}
+      [ s0 = MutBorrow.borrow_final <Slice64.slice UInt32.t> {a.current} {MutBorrow.get_id a}
           (fun (_ret: MutBorrow.t (Slice64.slice UInt32.t)) ->
-            [ &_6 <- _ret ] [ &a'0 <- { a'0 with current = _ret.final } ] s1)
+            [ &_6 <- _ret ] [ &a <- { a with current = _ret.final } ] s1)
       | s1 = new {(1: UInt64.t)} {(2: UInt64.t)} (fun (_ret: t_RangeInclusive) -> [ &_7 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
@@ -114,10 +114,10 @@ module M_range__slice_range_inclusive
           (fun (r: Slice64.slice UInt32.t) -> [ &s <- { s with current = r } ] s1)
       | s1 = -{resolve'0 s}- s2
       | s2 = -{resolve'0 _5}- s3
-      | s3 = -{resolve'0 a'0}- s4
-      | s4 = return''0 {_0} ] ]
+      | s3 = -{resolve'0 a}- s4
+      | s4 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & a'0: MutBorrow.t (Slice64.slice UInt32.t) = a
+    | & a: MutBorrow.t (Slice64.slice UInt32.t) = a
     | & s: MutBorrow.t (Slice64.slice UInt32.t) = Any.any_l ()
     | & _5: MutBorrow.t (Slice64.slice UInt32.t) = Any.any_l ()
     | & _6: MutBorrow.t (Slice64.slice UInt32.t) = Any.any_l ()
@@ -130,7 +130,7 @@ module M_range__slice_range_inclusive
     | & _13: Opaque.ptr = Any.any_l ()
     | & _14: UInt64.t = Any.any_l ()
     | & _15: bool = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:slice_range_inclusive ensures] Slice64.view a.final
+    [ return (result: ()) -> {[@expl:slice_range_inclusive ensures] Slice64.view a.final
       = Seq.create 4 [|(0: UInt32.t);(1: UInt32.t);(1: UInt32.t);(0: UInt32.t)|]}
-      (! return' {result}) ]
+      (! return {result}) ]
 end

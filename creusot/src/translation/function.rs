@@ -2,7 +2,7 @@ mod statement;
 mod terminator;
 
 use crate::{
-    analysis::{self, BodySpecs, BorrowData},
+    analysis::{self, BodyLocals, BodySpecs, BorrowData},
     backend::ty_inv::is_tyinv_trivial,
     ctx::*,
     translation::{
@@ -68,8 +68,8 @@ struct BodyTranslator<'a, 'tcx> {
     /// Map of the `snapshot!` blocks to their translated version.
     snapshots: HashMap<DefId, Term<'tcx>>,
 
-    // Translated locals: Symbol for debugging and user-facing error messages, and actual unique Ident
-    locals: HashMap<Local, (rustc_span::Symbol, Ident)>,
+    // Translated locals
+    locals: HashMap<Local, Ident>,
 
     // Variables that contain snapshots and specs.
     erased_locals: MixedBitSet<Local>,
@@ -104,26 +104,33 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         body_id: BodyId,
         f: F,
     ) -> R {
-        let (body, body_specs, borrow_data) = match body_id.def_id.as_local() {
+        let (body, body_specs, body_locals, borrow_data) = match body_id.def_id.as_local() {
             Some(def_id) => {
                 let body_with_facts = ctx.body_with_facts(def_id);
                 let body = match body_id.promoted {
                     None => &body_with_facts.body,
                     Some(promoted) => body_with_facts.promoted.get(promoted).unwrap(),
                 };
-                let mut body_specs = analysis::BodySpecs::from_body(ctx, body);
+                let mut body_specs = BodySpecs::from_body(ctx, body);
+                let body_locals = BodyLocals::from_body(ctx, body, &body_specs.erased_locals);
                 let borrow_data = match body_id.promoted {
-                    None => Some(analysis::run_with_specs(ctx, body_with_facts, &mut body_specs)),
+                    None => Some(analysis::run_with_specs(
+                        ctx,
+                        body_with_facts,
+                        &mut body_specs,
+                        &body_locals,
+                    )),
                     Some(_) => None,
                 };
-                (body, body_specs, borrow_data)
+                (body, body_specs, body_locals, borrow_data)
             }
             None => {
                 assert!(body_id.promoted.is_none());
                 let body = ctx.tcx.mir_for_ctfe(body_id.def_id);
-                let body_specs = analysis::BodySpecs::from_body(ctx, &body);
+                let body_specs = BodySpecs::from_body(ctx, &body);
+                let body_locals = BodyLocals::from_body(ctx, body, &body_specs.erased_locals);
                 let borrow_data = None;
-                (body, body_specs, borrow_data)
+                (body, body_specs, body_locals, borrow_data)
             }
         };
         let typing_env = ctx.typing_env(body_id.def_id);
@@ -133,10 +140,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             invariant_assertions,
             assertions,
             snapshots,
-            locals,
-            vars,
             erased_locals,
         } = body_specs;
+        let BodyLocals { locals, vars } = body_locals;
         let mut loop_variants = HashMap::new();
         for (loop_head, term) in variants {
             let variant_old_name =
@@ -377,7 +383,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
                 mir::ProjectionElem::Field(ix, ty) => mir::ProjectionElem::Field(ix, ty),
                 mir::ProjectionElem::Index(l) => {
-                    mir::ProjectionElem::Index(PIdent(self.locals[&l].1))
+                    mir::ProjectionElem::Index(PIdent(self.locals[&l]))
                 }
                 mir::ProjectionElem::ConstantIndex { offset, min_length, from_end } => {
                     mir::ProjectionElem::ConstantIndex { offset, min_length, from_end }
@@ -393,7 +399,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
             })
             .collect::<Box<[_]>>();
-        fmir::Place { local: self.locals[&pl.local].1, projections }
+        fmir::Place { local: self.locals[&pl.local], projections }
     }
 }
 

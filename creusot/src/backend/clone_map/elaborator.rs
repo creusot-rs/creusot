@@ -123,7 +123,7 @@ fn expand_program<'tcx>(
         // Inline the body of closures
         let mut decls = vec![Decl::Coma(program::to_why(ctx, &names, name, def_id.expect_local()))];
         if !pre_sig.contract.has_user_contract {
-            decls.extend(["'pre", "'post'return'"].map(|s| {
+            decls.extend(["'pre", "'post'return"].map(|s| {
                 Decl::Meta(Meta {
                     name: MetaIdent("rewrite_def".into()),
                     args: Box::new([
@@ -173,9 +173,8 @@ fn expand_program<'tcx>(
         pre_sig.add_type_invariant_spec(ctx, def_id, typing_env)
     }
 
-    let return_ident = Ident::fresh_local("return");
-    let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id, return_ident);
-    vec![program::val(sig.prototype, sig.contract, return_ident, sig.return_ty)]
+    let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id, name::return_());
+    vec![program::val(sig.prototype, sig.contract, name::return_(), sig.return_ty)]
 }
 
 /// Expand a logical item

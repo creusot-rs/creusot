@@ -35,27 +35,27 @@ module M_03_as_slice_of_cells__splits_up
   meta "rewrite_def" function index_logic'2
   
   let rec as_slice_of_cells (self: t_PredCell) (_pred: Seq.seq (Map.map UInt32.t bool))
-    (return' (x: Slice64.slice t_PredCell'0)) =
+    (return (x: Slice64.slice t_PredCell'0)) =
     {[@expl:as_slice_of_cells requires] forall s: Slice64.slice UInt32.t. index_logic (view self) s
       = (Seq.length _pred = Seq.length (Slice64.view s)
       /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view s)
         -> index_logic'0 (Seq.get _pred i) (index_logic'1 s i)))}
     any
-    [ return''0 (result: Slice64.slice t_PredCell'0) -> {forall i: int. 0 <= i /\ i < Seq.length _pred
+    [ return' (result: Slice64.slice t_PredCell'0) -> {forall i: int. 0 <= i /\ i < Seq.length _pred
         -> view'0 (index_logic'2 result i) = Seq.get _pred i}
       {Seq.length (Slice64.view result) = Seq.length _pred}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec get (self: t_PredCell'0) (return' (x: UInt32.t)) = any
-    [ return''0 (result: UInt32.t) -> {index_logic'0 (view'0 self) result} (! return' {result}) ]
+  let rec get (self: t_PredCell'0) (return (x: UInt32.t)) = any
+    [ return' (result: UInt32.t) -> {index_logic'0 (view'0 self) result} (! return {result}) ]
   
-  type tuple = { _p0: UInt32.t; _p1: UInt32.t }
+  type tuple = { f0: UInt32.t; f1: UInt32.t }
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec splits_up (cell: t_PredCell) (return' (x: tuple)) =
+  let rec splits_up (cell: t_PredCell) (return (x: tuple)) =
     {[@expl:splits_up requires] forall s: Slice64.slice UInt32.t. index_logic (view cell) s
       = (Seq.length (Slice64.view s) = 2
       /\ Int.mod (UInt32.t'int (index_logic'1 s 0)) 2 = 0 /\ Int.mod (UInt32.t'int (index_logic'1 s 1)) 2 = 1)}
@@ -65,7 +65,7 @@ module M_03_as_slice_of_cells__splits_up
         = 0 in let pred1 = fun (z: UInt32.t) -> Int.mod (UInt32.t'int z) 2 = 1 in Seq.create 2 [|pred0;pred1|] ] s1
       | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = as_slice_of_cells {cell'0} {snapshot} (fun (_ret: Slice64.slice t_PredCell'0) -> [ &slice <- _ret ] s1)
+      [ s0 = as_slice_of_cells {cell} {snapshot} (fun (_ret: Slice64.slice t_PredCell'0) -> [ &slice <- _ret ] s1)
       | s1 = bb2 ]
     | bb2 = s0
       [ s0 = [ &_11 <- (0: UInt64.t) ] s1
@@ -87,9 +87,9 @@ module M_03_as_slice_of_cells__splits_up
       [ s0 = Slice64.get <t_PredCell'0> {slice} {_16}
           (fun (r: t_PredCell'0) -> get {r} (fun (_ret: UInt32.t) -> [ &_14 <- _ret ] s1))
       | s1 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_0 <- { _p0 = _9; _p1 = _14 } ] s1 | s1 = return''0 {_0} ] ]
+    | bb6 = s0 [ s0 = [ &_0 <- { f0 = _9; f1 = _14 } ] s1 | s1 = return {_0} ] ]
     [ & _0: tuple = Any.any_l ()
-    | & cell'0: t_PredCell = cell
+    | & cell: t_PredCell = cell
     | & snapshot: Seq.seq (Map.map UInt32.t bool) = Any.any_l ()
     | & slice: Slice64.slice t_PredCell'0 = Any.any_l ()
     | & _9: UInt32.t = Any.any_l ()
@@ -100,7 +100,7 @@ module M_03_as_slice_of_cells__splits_up
     | & _16: UInt64.t = Any.any_l ()
     | & _17: UInt64.t = Any.any_l ()
     | & _18: bool = Any.any_l () ])
-    [ return''0 (result: tuple) -> {[@expl:splits_up ensures] Int.mod (UInt32.t'int result._p0) 2 = 0
-      /\ Int.mod (UInt32.t'int result._p1) 2 = 1}
-      (! return' {result}) ]
+    [ return (result: tuple) -> {[@expl:splits_up ensures] Int.mod (UInt32.t'int result.f0) 2 = 0
+      /\ Int.mod (UInt32.t'int result.f1) 2 = 1}
+      (! return {result}) ]
 end

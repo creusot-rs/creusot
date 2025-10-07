@@ -57,11 +57,11 @@ module M_all_zero__all_zero
   
   meta "select_lsinst" "all"
   
-  let rec all_zero (l: MutBorrow.t t_List) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &old_l <- l'0 ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &loop_l <- l'0 ] s1 | s1 = bb2 ]
-    | bb2 = bb2'0
-      [ bb2'0 = {[@expl:loop invariant #0] (forall i: int. 0 <= i /\ i < len loop_l.current
+  let rec all_zero (l: MutBorrow.t t_List) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = [ &old_l <- l ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &loop_l <- l ] s1 | s1 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = {[@expl:loop invariant #0] (forall i: int. 0 <= i /\ i < len loop_l.current
             -> get loop_l.final i = C_Some (0: UInt32.t))
         -> (forall i: int. 0 <= i /\ i < len old_l.current -> get (fin old_l) i = C_Some (0: UInt32.t))}
         {[@expl:loop invariant #1] len loop_l.final = len loop_l.current -> len (fin old_l) = len old_l.current}
@@ -88,17 +88,17 @@ module M_all_zero__all_zero
           | s5 = -{resolve'2 loop_l}- s6
           | s6 = [ &loop_l <- _14 ] s7
           | s7 = -{resolve'4 next}- s8
-          | s8 = bb2'0 ] ] ]
-    | bb6 = s0 [ s0 = -{resolve'2 loop_l}- s1 | s1 = return''0 {_0} ] ]
+          | s8 = bb2 ] ] ]
+    | bb6 = s0 [ s0 = -{resolve'2 loop_l}- s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & l'0: MutBorrow.t t_List = l
+    | & l: MutBorrow.t t_List = l
     | & old_l: MutBorrow.t t_List = Any.any_l ()
     | & loop_l: MutBorrow.t t_List = Any.any_l ()
     | & value: MutBorrow.t UInt32.t = Any.any_l ()
     | & next: MutBorrow.t t_List = Any.any_l ()
     | & _14: MutBorrow.t t_List = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:all_zero ensures #0] forall i: int. 0 <= i /\ i < len l.current
+    [ return (result: ()) -> {[@expl:all_zero ensures #0] forall i: int. 0 <= i /\ i < len l.current
         -> get l.final i = C_Some (0: UInt32.t)}
       {[@expl:all_zero ensures #1] len l.current = len l.final}
-      (! return' {result}) ]
+      (! return {result}) ]
 end

@@ -60,22 +60,22 @@ module M_inc_max_many__take_max
   
   meta "select_lsinst" "all"
   
-  let rec take_max (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (return' (x: MutBorrow.t UInt32.t)) = (! bb0
+  let rec take_max (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (return (x: MutBorrow.t UInt32.t)) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_6 <- UInt32.ge ma'0.current mb'0.current ] s1
+      [ s0 = [ &_6 <- UInt32.ge ma.current mb.current ] s1
       | s1 = any [ br0 -> {_6 = false} (! bb2) | br1 -> {_6} (! bb1) ] ]
     | bb1 = s0
-      [ s0 = -{resolve'0 mb'0}- s1
-      | s1 = MutBorrow.borrow_final <UInt32.t> {ma'0.current} {MutBorrow.get_id ma'0}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_9 <- _ret ] [ &ma'0 <- { ma'0 with current = _ret.final } ] s2)
+      [ s0 = -{resolve'0 mb}- s1
+      | s1 = MutBorrow.borrow_final <UInt32.t> {ma.current} {MutBorrow.get_id ma}
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_9 <- _ret ] [ &ma <- { ma with current = _ret.final } ] s2)
       | s2 = MutBorrow.borrow_final <UInt32.t> {_9.current} {MutBorrow.get_id _9}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &_9 <- { _9 with current = _ret.final } ] s3)
       | s3 = -{resolve'0 _9}- s4
       | s4 = bb3 ]
     | bb2 = s0
-      [ s0 = -{resolve'0 ma'0}- s1
-      | s1 = MutBorrow.borrow_final <UInt32.t> {mb'0.current} {MutBorrow.get_id mb'0}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &mb'0 <- { mb'0 with current = _ret.final } ] s2)
+      [ s0 = -{resolve'0 ma}- s1
+      | s1 = MutBorrow.borrow_final <UInt32.t> {mb.current} {MutBorrow.get_id mb}
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &mb <- { mb with current = _ret.final } ] s2)
       | s2 = bb3 ]
     | bb3 = s0
       [ s0 = MutBorrow.borrow_final <UInt32.t> {_5.current} {MutBorrow.get_id _5}
@@ -84,22 +84,22 @@ module M_inc_max_many__take_max
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_0 <- _ret ] [ &_3 <- { _3 with current = _ret.final } ] s2)
       | s2 = -{resolve'0 _5}- s3
       | s3 = -{resolve'0 _3}- s4
-      | s4 = -{resolve'0 mb'0}- s5
-      | s5 = -{resolve'0 ma'0}- s6
-      | s6 = return''0 {_0} ] ]
+      | s4 = -{resolve'0 mb}- s5
+      | s5 = -{resolve'0 ma}- s6
+      | s6 = return {_0} ] ]
     [ & _0: MutBorrow.t UInt32.t = Any.any_l ()
-    | & ma'0: MutBorrow.t UInt32.t = ma
-    | & mb'0: MutBorrow.t UInt32.t = mb
+    | & ma: MutBorrow.t UInt32.t = ma
+    | & mb: MutBorrow.t UInt32.t = mb
     | & _3: MutBorrow.t UInt32.t = Any.any_l ()
     | & _5: MutBorrow.t UInt32.t = Any.any_l ()
     | & _6: bool = Any.any_l ()
     | & _9: MutBorrow.t UInt32.t = Any.any_l () ])
-    [ return''0 (result: MutBorrow.t UInt32.t) -> {[@expl:take_max ensures] if UInt32.ge ma.current mb.current then
+    [ return (result: MutBorrow.t UInt32.t) -> {[@expl:take_max ensures] if UInt32.ge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
       }
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_inc_max_many__inc_max_many
   use creusot.prelude.MutBorrow
@@ -151,13 +151,13 @@ module M_inc_max_many__inc_max_many
   
   axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log x y <> C_Greater)
   
-  let rec take_max (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (return' (x: MutBorrow.t UInt32.t)) = any
-    [ return''0 (result: MutBorrow.t UInt32.t) -> {if UInt32.ge ma.current mb.current then
+  let rec take_max (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (return (x: MutBorrow.t UInt32.t)) = any
+    [ return' (result: MutBorrow.t UInt32.t) -> {if UInt32.ge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
       }
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
   
@@ -171,15 +171,15 @@ module M_inc_max_many__inc_max_many
   
   meta "select_lsinst" "all"
   
-  let rec inc_max_many (a: UInt32.t) (b: UInt32.t) (k: UInt32.t) (return' (x: ())) =
+  let rec inc_max_many (a: UInt32.t) (b: UInt32.t) (k: UInt32.t) (return (x: ())) =
     {[@expl:inc_max_many requires] UInt32.le a (1000000: UInt32.t)
     /\ UInt32.le b (1000000: UInt32.t) /\ UInt32.le k (1000000: UInt32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_mut <UInt32.t> {a'0}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_7 <- _ret ] [ &a'0 <- _ret.final ] s1)
-      | s1 = MutBorrow.borrow_mut <UInt32.t> {b'0}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_9 <- _ret ] [ &b'0 <- _ret.final ] s2)
+      [ s0 = MutBorrow.borrow_mut <UInt32.t> {a}
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_7 <- _ret ] [ &a <- _ret.final ] s1)
+      | s1 = MutBorrow.borrow_mut <UInt32.t> {b}
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_9 <- _ret ] [ &b <- _ret.final ] s2)
       | s2 = MutBorrow.borrow_final <UInt32.t> {_7.current} {MutBorrow.get_id _7}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_6 <- _ret ] [ &_7 <- { _7 with current = _ret.final } ] s3)
       | s3 = MutBorrow.borrow_final <UInt32.t> {_9.current} {MutBorrow.get_id _9}
@@ -189,21 +189,21 @@ module M_inc_max_many__inc_max_many
     | bb1 = s0
       [ s0 = -{resolve'0 _9}- s1
       | s1 = -{resolve'0 _7}- s2
-      | s2 = UInt32.add {mc.current} {k'0} (fun (_ret: UInt32.t) -> [ &mc <- { mc with current = _ret } ] s3)
+      | s2 = UInt32.add {mc.current} {k} (fun (_ret: UInt32.t) -> [ &mc <- { mc with current = _ret } ] s3)
       | s3 = -{resolve'0 mc}- s4
-      | s4 = UInt32.add {b'0} {k'0} (fun (_ret: UInt32.t) -> [ &_14 <- _ret ] s5)
-      | s5 = [ &_12 <- UInt32.ge a'0 _14 ] s6
+      | s4 = UInt32.add {b} {k} (fun (_ret: UInt32.t) -> [ &_14 <- _ret ] s5)
+      | s5 = [ &_12 <- UInt32.ge a _14 ] s6
       | s6 = any [ br0 -> {_12 = false} (! bb3) | br1 -> {_12} (! bb6) ] ]
     | bb3 = s0
-      [ s0 = UInt32.add {a'0} {k'0} (fun (_ret: UInt32.t) -> [ &_19 <- _ret ] s1)
-      | s1 = [ &_17 <- UInt32.ge b'0 _19 ] s2
+      [ s0 = UInt32.add {a} {k} (fun (_ret: UInt32.t) -> [ &_19 <- _ret ] s1)
+      | s1 = [ &_17 <- UInt32.ge b _19 ] s2
       | s2 = any [ br0 -> {_17 = false} (! bb5) | br1 -> {_17} (! bb6) ] ]
-    | bb6 = return''0 {_0}
+    | bb6 = return {_0}
     | bb5 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: UInt32.t = a
-    | & b'0: UInt32.t = b
-    | & k'0: UInt32.t = k
+    | & a: UInt32.t = a
+    | & b: UInt32.t = b
+    | & k: UInt32.t = k
     | & mc: MutBorrow.t UInt32.t = Any.any_l ()
     | & _6: MutBorrow.t UInt32.t = Any.any_l ()
     | & _7: MutBorrow.t UInt32.t = Any.any_l ()
@@ -212,5 +212,5 @@ module M_inc_max_many__inc_max_many
     | & _12: bool = Any.any_l ()
     | & _14: UInt32.t = Any.any_l ()
     | & _17: bool = Any.any_l ()
-    | & _19: UInt32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _19: UInt32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

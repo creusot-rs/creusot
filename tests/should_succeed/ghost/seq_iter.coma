@@ -32,12 +32,12 @@ module M_seq_iter__reverse_ghost
   
   axiom inv_axiom'1 [@rewrite]: forall x: Seq.seq t_T [inv'2 x]. inv'2 x = invariant''1 x
   
-  let rec new (return' (x: Seq.seq t_T)) = any
-    [ return''0 (result: Seq.seq t_T) -> {inv'2 result} {result = (Seq.empty: Seq.seq t_T)} (! return' {result}) ]
+  let rec new (return (x: Seq.seq t_T)) = any
+    [ return' (result: Seq.seq t_T) -> {inv'2 result} {result = (Seq.empty: Seq.seq t_T)} (! return {result}) ]
   
-  let rec into_inner (self: Seq.seq t_T) (return' (x: Seq.seq t_T)) =
+  let rec into_inner (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
     {[@expl:into_inner 'self' type invariant] inv'2 self}
-    any [ return''0 (result: Seq.seq t_T) -> {inv'1 result} {result = self} (! return' {result}) ]
+    any [ return' (result: Seq.seq t_T) -> {inv'1 result} {result = self} (! return {result}) ]
   
   type t_SeqIter = { t_SeqIter__inner: Seq.seq t_T }
   
@@ -50,8 +50,8 @@ module M_seq_iter__reverse_ghost
   
   function view (self: t_SeqIter) : Seq.seq t_T
   
-  let rec into_iter (self: Seq.seq t_T) (return' (x: t_SeqIter)) = {[@expl:into_iter 'self' type invariant] inv'1 self}
-    any [ return''0 (result: t_SeqIter) -> {inv'3 result} {view result = self} (! return' {result}) ]
+  let rec into_iter (self: Seq.seq t_T) (return (x: t_SeqIter)) = {[@expl:into_iter 'self' type invariant] inv'1 self}
+    any [ return' (result: t_SeqIter) -> {inv'3 result} {view result = self} (! return {result}) ]
   
   predicate well_founded_relation [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
@@ -89,14 +89,14 @@ module M_seq_iter__reverse_ghost
   
   predicate completed (self: MutBorrow.t t_SeqIter) = view self.current = (Seq.empty: Seq.seq t_T)
   
-  let rec next (self: MutBorrow.t t_SeqIter) (return' (x: t_Option)) = {[@expl:next 'self' type invariant] inv'4 self}
+  let rec next (self: MutBorrow.t t_SeqIter) (return (x: t_Option)) = {[@expl:next 'self' type invariant] inv'4 self}
     any
-    [ return''0 (result: t_Option) -> {inv'5 result}
+    [ return' (result: t_Option) -> {inv'5 result}
       {match result with
         | C_None -> completed self
         | C_Some v -> produces self.current (Seq.singleton v) self.final
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_SeqIter) = self.final = self.current
   
@@ -122,10 +122,10 @@ module M_seq_iter__reverse_ghost
   
   meta "rewrite_def" function push_front
   
-  let rec push_front_ghost (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return' (x'0: ())) =
+  let rec push_front_ghost (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
     {[@expl:push_front_ghost 'self' type invariant] inv'6 self}
     {[@expl:push_front_ghost 'x' type invariant] inv x}
-    any [ return''0 (result: ()) -> {self.final = push_front self.current x} (! return' {result}) ]
+    any [ return' (result: ()) -> {self.final = push_front self.current x} (! return {result}) ]
   
   predicate resolve'1 (_0: t_T)
   
@@ -159,24 +159,24 @@ module M_seq_iter__reverse_ghost
   
   meta "rewrite_def" predicate resolve'7
   
-  let rec new'0 (x: Seq.seq t_T) (return' (x'0: Seq.seq t_T)) = {[@expl:new 'x' type invariant] inv'1 x}
-    any [ return''0 (result: Seq.seq t_T) -> {inv'2 result} {result = x} (! return' {result}) ]
+  let rec new'0 (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) = {[@expl:new 'x' type invariant] inv'1 x}
+    any [ return' (result: Seq.seq t_T) -> {inv'2 result} {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec reverse_ghost (s: Seq.seq t_T) (return' (x: Seq.seq t_T)) = {[@expl:reverse_ghost 's' type invariant] inv'2 s}
+  let rec reverse_ghost (s: Seq.seq t_T) (return (x: Seq.seq t_T)) = {[@expl:reverse_ghost 's' type invariant] inv'2 s}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &len <- Seq.length s'0 ] s1 | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &len <- Seq.length s ] s1 | s1 = bb1 ]
     | bb1 = s0 [ s0 = new (fun (_ret: Seq.seq t_T) -> [ &_7 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = into_inner {_7} (fun (_ret: Seq.seq t_T) -> [ &result <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = into_inner {s'0} (fun (_ret: Seq.seq t_T) -> [ &_10 <- _ret ] s1) | s1 = bb4 ]
+    | bb3 = s0 [ s0 = into_inner {s} (fun (_ret: Seq.seq t_T) -> [ &_10 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0 [ s0 = into_iter {_10} (fun (_ret: t_SeqIter) -> [ &iter <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb6 ]
     | bb6 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq t_T ] s1 | s1 = bb8 ]
     | bb8 = bb8invariant
-      [ bb8'0 = {[@expl:loop variant] well_founded_relation variant_old_bb8 (len - Seq.length produced)} bb8invariant
+      [ bb8 = {[@expl:loop variant] well_founded_relation variant_old_bb8 (len - Seq.length produced)} bb8invariant
       | bb8invariant = {[@expl:for invariant] inv'1 produced}
         {[@expl:for invariant] inv'3 iter}
         {[@expl:for invariant] produces iter_old produced iter}
@@ -211,12 +211,12 @@ module M_seq_iter__reverse_ghost
                 [ &_32 <- _ret ] -{inv'1 _ret.final}-
                 [ &result <- _ret.final ] s3)
           | s3 = push_front_ghost {_32} {x} (fun (_ret: ()) -> [ &_31 <- _ret ] s4)
-          | s4 = bb8'0 ] ] ]
+          | s4 = bb8 ] ] ]
     | bb13 = s0 [ s0 = {[@expl:type invariant] inv'3 iter} s1 | s1 = -{resolve'7 iter}- s2 | s2 = bb20 ]
     | bb20 = s0 [ s0 = new'0 {result} (fun (_ret: Seq.seq t_T) -> [ &_0 <- _ret ] s1) | s1 = bb21 ]
-    | bb21 = return''0 {_0} ]
+    | bb21 = return {_0} ]
     [ & _0: Seq.seq t_T = Any.any_l ()
-    | & s'0: Seq.seq t_T = s
+    | & s: Seq.seq t_T = s
     | & len: int = Any.any_l ()
     | & result: Seq.seq t_T = Any.any_l ()
     | & _7: Seq.seq t_T = Any.any_l ()
@@ -233,9 +233,9 @@ module M_seq_iter__reverse_ghost
     | & _31: () = Any.any_l ()
     | & _32: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
     | & variant_old_bb8: int = Any.any_l () ])
-    [ return''0 (result: Seq.seq t_T) -> {[@expl:reverse_ghost result type invariant] inv'2 result}
+    [ return (result: Seq.seq t_T) -> {[@expl:reverse_ghost result type invariant] inv'2 result}
       {[@expl:reverse_ghost ensures] result = Reverse.reverse s}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_seq_iter__reverse_ghost_ref
   use seq.Seq
@@ -279,12 +279,12 @@ module M_seq_iter__reverse_ghost_ref
   
   axiom inv_axiom'2 [@rewrite]: forall x: Seq.seq t_T [inv'3 x]. inv'3 x = invariant''2 x
   
-  let rec new (return' (x: Seq.seq t_T)) = any
-    [ return''0 (result: Seq.seq t_T) -> {inv'3 result} {result = (Seq.empty: Seq.seq t_T)} (! return' {result}) ]
+  let rec new (return (x: Seq.seq t_T)) = any
+    [ return' (result: Seq.seq t_T) -> {inv'3 result} {result = (Seq.empty: Seq.seq t_T)} (! return {result}) ]
   
-  let rec into_inner (self: Seq.seq t_T) (return' (x: Seq.seq t_T)) =
+  let rec into_inner (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
     {[@expl:into_inner 'self' type invariant] inv'3 self}
-    any [ return''0 (result: Seq.seq t_T) -> {inv'2 result} {result = self} (! return' {result}) ]
+    any [ return' (result: Seq.seq t_T) -> {inv'2 result} {result = self} (! return {result}) ]
   
   predicate invariant''3 (self: t_T) = inv self
   
@@ -317,9 +317,9 @@ module M_seq_iter__reverse_ghost_ref
   
   axiom inv_axiom'6 [@rewrite]: forall x: Seq.seq t_T [inv'7 x]. inv'7 x = invariant''6 x
   
-  let rec into_inner'0 (self: Seq.seq t_T) (return' (x: Seq.seq t_T)) =
+  let rec into_inner'0 (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
     {[@expl:into_inner 'self' type invariant] inv'7 self}
-    any [ return''0 (result: Seq.seq t_T) -> {inv'6 result} {result = self} (! return' {result}) ]
+    any [ return' (result: Seq.seq t_T) -> {inv'6 result} {result = self} (! return {result}) ]
   
   type t_SeqIterRef = { t_SeqIterRef__inner: Seq.seq t_T; t_SeqIterRef__index: int }
   
@@ -335,9 +335,9 @@ module M_seq_iter__reverse_ghost_ref
   
   function view (self: t_SeqIterRef) : Seq.seq t_T
   
-  let rec into_iter (self: Seq.seq t_T) (return' (x: t_SeqIterRef)) =
+  let rec into_iter (self: Seq.seq t_T) (return (x: t_SeqIterRef)) =
     {[@expl:into_iter 'self' type invariant] inv'6 self}
-    any [ return''0 (result: t_SeqIterRef) -> {inv'8 result} {view result = self} (! return' {result}) ]
+    any [ return' (result: t_SeqIterRef) -> {inv'8 result} {view result = self} (! return {result}) ]
   
   predicate well_founded_relation [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
@@ -376,15 +376,14 @@ module M_seq_iter__reverse_ghost_ref
   
   predicate completed (self: MutBorrow.t t_SeqIterRef) = view self.current = (Seq.empty: Seq.seq t_T)
   
-  let rec next (self: MutBorrow.t t_SeqIterRef) (return' (x: t_Option)) =
-    {[@expl:next 'self' type invariant] inv'9 self}
+  let rec next (self: MutBorrow.t t_SeqIterRef) (return (x: t_Option)) = {[@expl:next 'self' type invariant] inv'9 self}
     any
-    [ return''0 (result: t_Option) -> {inv'10 result}
+    [ return' (result: t_Option) -> {inv'10 result}
       {match result with
         | C_None -> completed self
         | C_Some v -> produces self.current (Seq.singleton v) self.final
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_SeqIterRef) = self.final = self.current
   
@@ -410,30 +409,30 @@ module M_seq_iter__reverse_ghost_ref
   
   meta "rewrite_def" function push_front
   
-  let rec push_front_ghost (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return' (x'0: ())) =
+  let rec push_front_ghost (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
     {[@expl:push_front_ghost 'self' type invariant] inv'11 self}
     {[@expl:push_front_ghost 'x' type invariant] inv'0 x}
-    any [ return''0 (result: ()) -> {self.final = push_front self.current x} (! return' {result}) ]
+    any [ return' (result: ()) -> {self.final = push_front self.current x} (! return {result}) ]
   
-  let rec new'0 (x: Seq.seq t_T) (return' (x'0: Seq.seq t_T)) = {[@expl:new 'x' type invariant] inv'2 x}
-    any [ return''0 (result: Seq.seq t_T) -> {inv'3 result} {result = x} (! return' {result}) ]
+  let rec new'0 (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) = {[@expl:new 'x' type invariant] inv'2 x}
+    any [ return' (result: Seq.seq t_T) -> {inv'3 result} {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec reverse_ghost_ref (s: Seq.seq t_T) (return' (x: Seq.seq t_T)) =
+  let rec reverse_ghost_ref (s: Seq.seq t_T) (return (x: Seq.seq t_T)) =
     {[@expl:reverse_ghost_ref 's' type invariant] inv'7 s}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &len <- Seq.length s'0 ] s1 | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &len <- Seq.length s ] s1 | s1 = bb1 ]
     | bb1 = s0 [ s0 = new (fun (_ret: Seq.seq t_T) -> [ &_7 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = into_inner {_7} (fun (_ret: Seq.seq t_T) -> [ &result <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = into_inner'0 {s'0} (fun (_ret: Seq.seq t_T) -> [ &_10 <- _ret ] s1) | s1 = bb4 ]
+    | bb3 = s0 [ s0 = into_inner'0 {s} (fun (_ret: Seq.seq t_T) -> [ &_10 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0 [ s0 = into_iter {_10} (fun (_ret: t_SeqIterRef) -> [ &iter <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb6 ]
     | bb6 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq t_T ] s1 | s1 = bb8 ]
     | bb8 = bb8invariant
-      [ bb8'0 = {[@expl:loop variant] well_founded_relation variant_old_bb8 (len - Seq.length produced)} bb8invariant
+      [ bb8 = {[@expl:loop variant] well_founded_relation variant_old_bb8 (len - Seq.length produced)} bb8invariant
       | bb8invariant = {[@expl:for invariant] inv'2 produced}
         {[@expl:for invariant] inv'8 iter}
         {[@expl:for invariant] produces iter_old produced iter}
@@ -468,14 +467,14 @@ module M_seq_iter__reverse_ghost_ref
                 [ &_32 <- _ret ] -{inv'2 _ret.final}-
                 [ &result <- _ret.final ] s3)
           | s3 = push_front_ghost {_32} {x} (fun (_ret: ()) -> [ &_31 <- _ret ] s4)
-          | s4 = bb8'0 ] ] ]
+          | s4 = bb8 ] ] ]
     | bb13 = s0
       [ s0 = {[@expl:type invariant] inv'8 iter} s1
       | s1 = new'0 {result} (fun (_ret: Seq.seq t_T) -> [ &_0 <- _ret ] s2)
       | s2 = bb17 ]
-    | bb17 = return''0 {_0} ]
+    | bb17 = return {_0} ]
     [ & _0: Seq.seq t_T = Any.any_l ()
-    | & s'0: Seq.seq t_T = s
+    | & s: Seq.seq t_T = s
     | & len: int = Any.any_l ()
     | & result: Seq.seq t_T = Any.any_l ()
     | & _7: Seq.seq t_T = Any.any_l ()
@@ -492,7 +491,7 @@ module M_seq_iter__reverse_ghost_ref
     | & _31: () = Any.any_l ()
     | & _32: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
     | & variant_old_bb8: int = Any.any_l () ])
-    [ return''0 (result: Seq.seq t_T) -> {[@expl:reverse_ghost_ref result type invariant] inv'3 result}
+    [ return (result: Seq.seq t_T) -> {[@expl:reverse_ghost_ref result type invariant] inv'3 result}
       {[@expl:reverse_ghost_ref ensures] result = Reverse.reverse s}
-      (! return' {result}) ]
+      (! return {result}) ]
 end

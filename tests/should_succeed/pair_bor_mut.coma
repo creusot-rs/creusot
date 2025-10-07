@@ -4,7 +4,7 @@ module M_pair_bor_mut__pair_bor_mut
   
   type t_T
   
-  type tuple = { _p0: MutBorrow.t t_T; _p1: MutBorrow.t t_T }
+  type tuple = { f0: MutBorrow.t t_T; f1: MutBorrow.t t_T }
   
   predicate inv (_0: t_T)
   
@@ -27,9 +27,9 @@ module M_pair_bor_mut__pair_bor_mut
   predicate inv'1 (_0: tuple)
   
   axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x
-      = (let {_p0 = x0; _p1 = x1} = x in inv'0 x0 /\ inv'0 x1)
+      = (let {f0 = x0; f1 = x1} = x in inv'0 x0 /\ inv'0 x1)
   
-  predicate resolve'1 [@inline:trivial] (self: tuple) = resolve'0 self._p0 /\ resolve'0 self._p1
+  predicate resolve'1 [@inline:trivial] (self: tuple) = resolve'0 self.f0 /\ resolve'0 self.f1
   
   meta "rewrite_def" predicate resolve'1
   
@@ -41,16 +41,16 @@ module M_pair_bor_mut__pair_bor_mut
   
   meta "select_lsinst" "all"
   
-  let rec pair_bor_mut (p: tuple) (take_first: bool) (return' (x: MutBorrow.t t_T)) =
+  let rec pair_bor_mut (p: tuple) (take_first: bool) (return (x: MutBorrow.t t_T)) =
     {[@expl:pair_bor_mut 'p' type invariant] inv'1 p}
     (! bb0
-    [ bb0 = any [ br0 -> {take_first'0 = false} (! bb2) | br1 -> {take_first'0} (! bb1) ]
+    [ bb0 = any [ br0 -> {take_first = false} (! bb2) | br1 -> {take_first} (! bb1) ]
     | bb1 = s0
-      [ s0 = {inv (p'0._p0).current}
-        MutBorrow.borrow_final <t_T> {(p'0._p0).current} {MutBorrow.get_id p'0._p0}
+      [ s0 = {inv (p.f0).current}
+        MutBorrow.borrow_final <t_T> {(p.f0).current} {MutBorrow.get_id p.f0}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_7 <- _ret ] -{inv _ret.final}-
-            [ &p'0 <- { p'0 with _p0 = { p'0._p0 with current = _ret.final } } ] s1)
+            [ &p <- { p with f0 = { p.f0 with current = _ret.final } } ] s1)
       | s1 = {inv _7.current}
         MutBorrow.borrow_final <t_T> {_7.current} {MutBorrow.get_id _7}
           (fun (_ret: MutBorrow.t t_T) ->
@@ -60,11 +60,11 @@ module M_pair_bor_mut__pair_bor_mut
       | s3 = -{resolve'0 _7}- s4
       | s4 = bb3 ]
     | bb2 = s0
-      [ s0 = {inv (p'0._p1).current}
-        MutBorrow.borrow_final <t_T> {(p'0._p1).current} {MutBorrow.get_id p'0._p1}
+      [ s0 = {inv (p.f1).current}
+        MutBorrow.borrow_final <t_T> {(p.f1).current} {MutBorrow.get_id p.f1}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_5 <- _ret ] -{inv _ret.final}-
-            [ &p'0 <- { p'0 with _p1 = { p'0._p1 with current = _ret.final } } ] s1)
+            [ &p <- { p with f1 = { p.f1 with current = _ret.final } } ] s1)
       | s1 = bb3 ]
     | bb3 = s0
       [ s0 = {inv _5.current}
@@ -81,20 +81,20 @@ module M_pair_bor_mut__pair_bor_mut
       | s3 = -{resolve'0 _5}- s4
       | s4 = {[@expl:type invariant] inv'0 _3} s5
       | s5 = -{resolve'0 _3}- s6
-      | s6 = {[@expl:type invariant] inv'1 p'0} s7
-      | s7 = -{resolve'2 p'0}- s8
-      | s8 = return''0 {_0} ] ]
+      | s6 = {[@expl:type invariant] inv'1 p} s7
+      | s7 = -{resolve'2 p}- s8
+      | s8 = return {_0} ] ]
     [ & _0: MutBorrow.t t_T = Any.any_l ()
-    | & p'0: tuple = p
-    | & take_first'0: bool = take_first
+    | & p: tuple = p
+    | & take_first: bool = take_first
     | & _3: MutBorrow.t t_T = Any.any_l ()
     | & _5: MutBorrow.t t_T = Any.any_l ()
     | & _7: MutBorrow.t t_T = Any.any_l () ])
-    [ return''0 (result: MutBorrow.t t_T) -> {[@expl:pair_bor_mut result type invariant] inv'0 result}
+    [ return (result: MutBorrow.t t_T) -> {[@expl:pair_bor_mut result type invariant] inv'0 result}
       {[@expl:pair_bor_mut ensures] if take_first then
-        result = p._p0 /\ (p._p1).final = (p._p1).current
+        result = p.f0 /\ (p.f1).final = (p.f1).current
       else
-        result = p._p1 /\ (p._p0).final = (p._p0).current
+        result = p.f1 /\ (p.f0).final = (p.f0).current
       }
-      (! return' {result}) ]
+      (! return {result}) ]
 end

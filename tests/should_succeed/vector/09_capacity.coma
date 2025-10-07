@@ -57,21 +57,21 @@ module M_09_capacity__change_capacity
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  let rec reserve (self_: MutBorrow.t t_Vec) (additional: UInt64.t) (return' (x: ())) =
+  let rec reserve (self_: MutBorrow.t t_Vec) (additional: UInt64.t) (return (x: ())) =
     {[@expl:reserve 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: ()) -> {view self_.final = view self_.current} (! return' {result}) ]
+    any [ return' (result: ()) -> {view self_.final = view self_.current} (! return {result}) ]
   
-  let rec reserve_exact (self_: MutBorrow.t t_Vec) (additional: UInt64.t) (return' (x: ())) =
+  let rec reserve_exact (self_: MutBorrow.t t_Vec) (additional: UInt64.t) (return (x: ())) =
     {[@expl:reserve_exact 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: ()) -> {view self_.final = view self_.current} (! return' {result}) ]
+    any [ return' (result: ()) -> {view self_.final = view self_.current} (! return {result}) ]
   
-  let rec shrink_to_fit (self_: MutBorrow.t t_Vec) (return' (x: ())) =
+  let rec shrink_to_fit (self_: MutBorrow.t t_Vec) (return (x: ())) =
     {[@expl:shrink_to_fit 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: ()) -> {view self_.final = view self_.current} (! return' {result}) ]
+    any [ return' (result: ()) -> {view self_.final = view self_.current} (! return {result}) ]
   
-  let rec shrink_to (self_: MutBorrow.t t_Vec) (min_capacity: UInt64.t) (return' (x: ())) =
+  let rec shrink_to (self_: MutBorrow.t t_Vec) (min_capacity: UInt64.t) (return (x: ())) =
     {[@expl:shrink_to 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: ()) -> {view self_.final = view self_.current} (! return' {result}) ]
+    any [ return' (result: ()) -> {view self_.final = view self_.current} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
   
@@ -89,44 +89,43 @@ module M_09_capacity__change_capacity
   
   meta "select_lsinst" "all"
   
-  let rec change_capacity (v: MutBorrow.t t_Vec) (return' (x: ())) =
-    {[@expl:change_capacity 'v' type invariant] inv'3 v}
+  let rec change_capacity (v: MutBorrow.t t_Vec) (return (x: ())) = {[@expl:change_capacity 'v' type invariant] inv'3 v}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'2 v'0.current}
-        MutBorrow.borrow_mut <t_Vec> {v'0.current}
+      [ s0 = {inv'2 v.current}
+        MutBorrow.borrow_mut <t_Vec> {v.current}
           (fun (_ret: MutBorrow.t t_Vec) ->
             [ &_5 <- _ret ] -{inv'2 _ret.final}-
-            [ &v'0 <- { v'0 with current = _ret.final } ] s1)
+            [ &v <- { v with current = _ret.final } ] s1)
       | s1 = reserve {_5} {(100: UInt64.t)} (fun (_ret: ()) -> [ &_4 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'2 v'0.current}
-        MutBorrow.borrow_mut <t_Vec> {v'0.current}
+      [ s0 = {inv'2 v.current}
+        MutBorrow.borrow_mut <t_Vec> {v.current}
           (fun (_ret: MutBorrow.t t_Vec) ->
             [ &_7 <- _ret ] -{inv'2 _ret.final}-
-            [ &v'0 <- { v'0 with current = _ret.final } ] s1)
+            [ &v <- { v with current = _ret.final } ] s1)
       | s1 = reserve_exact {_7} {(200: UInt64.t)} (fun (_ret: ()) -> [ &_6 <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = s0
-      [ s0 = {inv'2 v'0.current}
-        MutBorrow.borrow_mut <t_Vec> {v'0.current}
+      [ s0 = {inv'2 v.current}
+        MutBorrow.borrow_mut <t_Vec> {v.current}
           (fun (_ret: MutBorrow.t t_Vec) ->
             [ &_9 <- _ret ] -{inv'2 _ret.final}-
-            [ &v'0 <- { v'0 with current = _ret.final } ] s1)
+            [ &v <- { v with current = _ret.final } ] s1)
       | s1 = shrink_to_fit {_9} (fun (_ret: ()) -> [ &_8 <- _ret ] s2)
       | s2 = bb3 ]
     | bb3 = s0
-      [ s0 = {inv'2 v'0.current}
-        MutBorrow.borrow_final <t_Vec> {v'0.current} {MutBorrow.get_id v'0}
+      [ s0 = {inv'2 v.current}
+        MutBorrow.borrow_final <t_Vec> {v.current} {MutBorrow.get_id v}
           (fun (_ret: MutBorrow.t t_Vec) ->
             [ &_11 <- _ret ] -{inv'2 _ret.final}-
-            [ &v'0 <- { v'0 with current = _ret.final } ] s1)
+            [ &v <- { v with current = _ret.final } ] s1)
       | s1 = shrink_to {_11} {(1: UInt64.t)} (fun (_ret: ()) -> [ &_10 <- _ret ] s2)
       | s2 = bb4 ]
-    | bb4 = s0 [ s0 = {[@expl:type invariant] inv'3 v'0} s1 | s1 = -{resolve'0 v'0}- s2 | s2 = return''0 {_0} ] ]
+    | bb4 = s0 [ s0 = {[@expl:type invariant] inv'3 v} s1 | s1 = -{resolve'0 v}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & v'0: MutBorrow.t t_Vec = v
+    | & v: MutBorrow.t t_Vec = v
     | & _4: () = Any.any_l ()
     | & _5: MutBorrow.t t_Vec = Any.any_l ()
     | & _6: () = Any.any_l ()
@@ -135,11 +134,11 @@ module M_09_capacity__change_capacity
     | & _9: MutBorrow.t t_Vec = Any.any_l ()
     | & _10: () = Any.any_l ()
     | & _11: MutBorrow.t t_Vec = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:change_capacity ensures #0] Seq.length (view v.final)
+    [ return (result: ()) -> {[@expl:change_capacity ensures #0] Seq.length (view v.final)
       = Seq.length (view v.current)}
       {[@expl:change_capacity ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view v.current)
         -> index_logic v.final i = index_logic v.current i}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_09_capacity__clear_vec
   use creusot.prelude.MutBorrow
@@ -200,8 +199,8 @@ module M_09_capacity__clear_vec
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  let rec clear (self_: MutBorrow.t t_Vec) (return' (x: ())) = {[@expl:clear 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: ()) -> {Seq.length (view self_.final) = 0} (! return' {result}) ]
+  let rec clear (self_: MutBorrow.t t_Vec) (return (x: ())) = {[@expl:clear 'self_' type invariant] inv'3 self_}
+    any [ return' (result: ()) -> {Seq.length (view self_.final) = 0} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
   
@@ -215,20 +214,20 @@ module M_09_capacity__clear_vec
   
   meta "select_lsinst" "all"
   
-  let rec clear_vec (v: MutBorrow.t t_Vec) (return' (x: ())) = {[@expl:clear_vec 'v' type invariant] inv'3 v}
+  let rec clear_vec (v: MutBorrow.t t_Vec) (return (x: ())) = {[@expl:clear_vec 'v' type invariant] inv'3 v}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'2 v'0.current}
-        MutBorrow.borrow_final <t_Vec> {v'0.current} {MutBorrow.get_id v'0}
+      [ s0 = {inv'2 v.current}
+        MutBorrow.borrow_final <t_Vec> {v.current} {MutBorrow.get_id v}
           (fun (_ret: MutBorrow.t t_Vec) ->
             [ &_4 <- _ret ] -{inv'2 _ret.final}-
-            [ &v'0 <- { v'0 with current = _ret.final } ] s1)
+            [ &v <- { v with current = _ret.final } ] s1)
       | s1 = clear {_4} (fun (_ret: ()) -> [ &_3 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 v'0} s1 | s1 = -{resolve'0 v'0}- s2 | s2 = return''0 {_0} ] ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 v} s1 | s1 = -{resolve'0 v}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & v'0: MutBorrow.t t_Vec = v
+    | & v: MutBorrow.t t_Vec = v
     | & _3: () = Any.any_l ()
     | & _4: MutBorrow.t t_Vec = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:clear_vec ensures] Seq.length (view v.final) = 0} (! return' {result}) ]
+    [ return (result: ()) -> {[@expl:clear_vec ensures] Seq.length (view v.final) = 0} (! return {result}) ]
 end

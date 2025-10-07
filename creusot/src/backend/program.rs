@@ -147,29 +147,24 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
 ) -> Defn {
     let def_id = body_id.to_def_id();
 
-    // We remove the barrier around the definition of closures without contracts
-    // (automatic inferrence of specifications)
-    let open_body = ctx.is_closure_like(def_id) && !ctx.sig(def_id).contract.has_user_contract;
-
-    // The function receives `outer_return` as an argument handler and
-    // defines the `inner_return` that wraps `outer_return` with the postcondition:
+    // The function receives name::return_ as an argument handler and
+    // redefines it in an handler that wraps it with the postcondition:
     //
-    // let rec f ... outer_return =
-    //   ... inner_return result ...
-    //   [ inner_return x -> {postcondition} (! outer_return x ) ]
-    let outer_return = Ident::fresh_local("return");
-    let inner_return = if open_body { outer_return } else { outer_return.refresh() };
+    // let rec f ... return =
+    //   ... return result ...
+    //   [ return x -> {postcondition} (! return x ) ]
     let sig = ctx.sig(def_id);
     let args = sig.inputs.iter().map(|(name, _, _)| name.0).collect::<Box<[_]>>();
     let body_id = BodyId::local(body_id);
     let mut recursive_calls = RecursiveCalls::new();
-    let mut body = why_body(ctx, names, body_id, None, &args, inner_return, &mut recursive_calls);
+    let mut body =
+        why_body(ctx, names, body_id, None, &args, name::return_(), &mut recursive_calls);
     let (mut sig, variant) = {
         let typing_env = names.typing_env();
         let mut pre_sig = sig.clone().normalize(ctx, typing_env);
         let variant = pre_sig.contract.variant.clone();
         pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
-        (lower_program_sig(ctx, names, name, pre_sig, def_id, outer_return), variant)
+        (lower_program_sig(ctx, names, name, pre_sig, def_id, name::return_()), variant)
     };
 
     let fmir_body = ctx.fmir_body(body_id).clone();
@@ -257,16 +252,18 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         body = body.let_(std::iter::once(Var(variant_name.0, ty, exp, IsRef::NotRef)))
     }
 
-    if !open_body {
+    // We remove the barrier around the definition of closures without contracts
+    // (automatic inferrence of specifications)
+    if !ctx.is_closure_like(def_id) || ctx.sig(def_id).contract.has_user_contract {
         let ensures = sig.contract.ensures.into_iter().map(Condition::labelled_exp);
-        let return_ = Expr::var(outer_return).app([Arg::Term(Exp::var(name::result()))]);
-        let postcond = ensures.rfold(return_.black_box(), |acc, cond| Expr::assert(cond, acc));
+        let ret = Expr::var(name::return_()).app([Arg::Term(Exp::var(name::result()))]);
+        let postcond = ensures.rfold(ret.black_box(), |acc, cond| Expr::assert(cond, acc));
         body = Expr::Defn(
             body.black_box().boxed(),
             false,
             [Defn {
                 prototype: Prototype {
-                    name: inner_return,
+                    name: name::return_(),
                     attrs: vec![],
                     params: [Param::Term(name::result(), sig.return_ty)].into(),
                 },

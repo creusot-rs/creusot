@@ -101,6 +101,10 @@ impl From<Symbol> for String {
 /// All of the calls to `stale()` are located in `creusot::naming`.
 /// Some refactoring could get rid of them.
 ///
+/// Another use of stale identifier is that they workaround the check for
+/// conflicts with keywords. This allows us to use keywords as names when we
+/// know this is allowed.
+///
 /// Another subtlety comes from serialization. Creusot serializes extern
 /// specs when compiling dependencies, and then deserializes when compiling
 /// the user's crate. If we just serialized `Ident` as pairs `(name, id)`,
@@ -272,7 +276,7 @@ where
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Name {
-    /// Second field is suffix "'pre" or "'post'return'"
+    /// Second field is suffix "'pre" or "'post'return"
     Local(Ident, Option<Symbol>),
     /// Qualified name, can contain quote-suffix.
     Global(QName),
@@ -328,7 +332,6 @@ const RESERVED_STR: &[&str] = &[
     "False",   // builtin constructor
     "current", // creusot prelude
     "final",   // creusot prelude
-    "abstract",
     "absurd",
     "alias",
     "any",

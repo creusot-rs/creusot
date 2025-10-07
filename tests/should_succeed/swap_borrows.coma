@@ -3,37 +3,37 @@ module M_swap_borrows__swap
   
   type t_T
   
-  type tuple = { _p0: t_T; _p1: t_T }
+  type tuple = { f0: t_T; f1: t_T }
   
   predicate inv (_0: t_T)
   
   predicate inv'0 (_0: tuple)
   
-  axiom inv_axiom [@rewrite]: forall x: tuple [inv'0 x]. inv'0 x = (let {_p0 = x0; _p1 = x1} = x in inv x0 /\ inv x1)
+  axiom inv_axiom [@rewrite]: forall x: tuple [inv'0 x]. inv'0 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv x1)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec swap (x: tuple) (return' (x'0: tuple)) = {[@expl:swap 'x' type invariant] inv'0 x}
+  let rec swap (x: tuple) (return (x'0: tuple)) = {[@expl:swap 'x' type invariant] inv'0 x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- { _p0 = x'0._p1; _p1 = x'0._p0 } ] s1 | s1 = bb3 ] | bb3 = return''0 {_0} ]
-    [ & _0: tuple = Any.any_l () | & x'0: tuple = x ])
-    [ return''0 (result: tuple) -> {[@expl:swap result type invariant] inv'0 result}
-      {[@expl:swap ensures] result = { _p0 = x._p1; _p1 = x._p0 }}
-      (! return' {result}) ]
+    [ bb0 = s0 [ s0 = [ &_0 <- { f0 = x.f1; f1 = x.f0 } ] s1 | s1 = bb3 ] | bb3 = return {_0} ]
+    [ & _0: tuple = Any.any_l () | & x: tuple = x ])
+    [ return (result: tuple) -> {[@expl:swap result type invariant] inv'0 result}
+      {[@expl:swap ensures] result = { f0 = x.f1; f1 = x.f0 }}
+      (! return {result}) ]
 end
 module M_swap_borrows__f
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type tuple = { _p0: UInt32.t; _p1: UInt32.t }
+  type tuple = { f0: UInt32.t; f1: UInt32.t }
   
-  type tuple'0 = { _p0'0: MutBorrow.t UInt32.t; _p1'0: MutBorrow.t UInt32.t }
+  type tuple'0 = { f0'0: MutBorrow.t UInt32.t; f1'0: MutBorrow.t UInt32.t }
   
-  let rec swap (x: tuple'0) (return' (x'0: tuple'0)) = any
-    [ return''0 (result: tuple'0) -> {result = { _p0'0 = x._p1'0; _p1'0 = x._p0'0 }} (! return' {result}) ]
+  let rec swap (x: tuple'0) (return (x'0: tuple'0)) = any
+    [ return' (result: tuple'0) -> {result = { f0'0 = x.f1'0; f1'0 = x.f0'0 }} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
   
@@ -47,28 +47,28 @@ module M_swap_borrows__f
   
   meta "select_lsinst" "all"
   
-  let rec f (return' (x: ())) = (! bb0
+  let rec f (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_3 <- { _p0 = (0: UInt32.t); _p1 = (0: UInt32.t) } ] s1
-      | s1 = [ &a <- _3._p0 ] s2
-      | s2 = [ &b <- _3._p1 ] s3
+      [ s0 = [ &_3 <- { f0 = (0: UInt32.t); f1 = (0: UInt32.t) } ] s1
+      | s1 = [ &a <- _3.f0 ] s2
+      | s2 = [ &b <- _3.f1 ] s3
       | s3 = MutBorrow.borrow_mut <UInt32.t> {a}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_6 <- _ret ] [ &a <- _ret.final ] s4)
       | s4 = MutBorrow.borrow_mut <UInt32.t> {b}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_8 <- _ret ] [ &b <- _ret.final ] s5)
       | s5 = MutBorrow.borrow_final <UInt32.t> {_8.current} {MutBorrow.get_id _8}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_7 <- _ret ] [ &_8 <- { _8 with current = _ret.final } ] s6)
-      | s6 = [ &_5 <- { _p0'0 = _6; _p1'0 = _7 } ] s7
+      | s6 = [ &_5 <- { f0'0 = _6; f1'0 = _7 } ] s7
       | s7 = swap {_5} (fun (_ret: tuple'0) -> [ &p <- _ret ] s8)
       | s8 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve'0 p._p1'0}- s1
+      [ s0 = -{resolve'0 p.f1'0}- s1
       | s1 = -{resolve'0 _8}- s2
-      | s2 = [ &p <- { p with _p0'0 = { p._p0'0 with current = (10: UInt32.t) } } ] s3
-      | s3 = -{resolve'0 p._p0'0}- s4
+      | s2 = [ &p <- { p with f0'0 = { p.f0'0 with current = (10: UInt32.t) } } ] s3
+      | s3 = -{resolve'0 p.f0'0}- s4
       | s4 = {[@expl:assertion] b = (10: UInt32.t)} s5
       | s5 = {[@expl:assertion] a = (0: UInt32.t)} s6
-      | s6 = return''0 {_0} ] ]
+      | s6 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a: UInt32.t = Any.any_l ()
     | & b: UInt32.t = Any.any_l ()
@@ -77,5 +77,5 @@ module M_swap_borrows__f
     | & _5: tuple'0 = Any.any_l ()
     | & _6: MutBorrow.t UInt32.t = Any.any_l ()
     | & _7: MutBorrow.t UInt32.t = Any.any_l ()
-    | & _8: MutBorrow.t UInt32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _8: MutBorrow.t UInt32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

@@ -363,7 +363,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Postcondition { item, subst, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
                 let ident: Ident = self.names.item(*item, subst).to_ident();
-                let name = Name::Local(ident, Some(why3::Symbol::intern("'post'return'")));
+                let name = Name::Local(ident, Some(why3::Symbol::intern("'post'return")));
                 Exp::Var(name).app(params)
             }
             TermKind::Capture(_) => unreachable!("Capture left in lowering"),

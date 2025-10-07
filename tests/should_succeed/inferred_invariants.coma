@@ -26,10 +26,10 @@ module M_inferred_invariants__f
   
   meta "select_lsinst" "all"
   
-  let rec f (_0: MutBorrow.t t_T) (return' (x: ())) = {[@expl:f '_0' type invariant] inv'0 _0}
+  let rec f (_0: MutBorrow.t t_T) (return (x: ())) = {[@expl:f '_0' type invariant] inv'0 _0}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 _1} s1 | s1 = -{resolve'0 _1}- s2 | s2 = return''0 {_0'0} ] ]
-    [ & _0'0: () = Any.any_l () | & _1: MutBorrow.t t_T = _0 ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 _0} s1 | s1 = -{resolve'0 _0}- s2 | s2 = return {_0'0} ] ]
+    [ & _0'0: () = Any.any_l () | & _0: MutBorrow.t t_T = _0 ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_inferred_invariants__simple
   use creusot.prelude.MutBorrow
@@ -47,33 +47,33 @@ module M_inferred_invariants__simple
   
   axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'0 x]. inv'0 x = invariant' x
   
-  let rec f (_0: MutBorrow.t t_T) (return' (x: ())) = {[@expl:f '_0' type invariant] inv'0 _0}
-    any [ return''0 (result: ()) -> (! return' {result}) ]
+  let rec f (_0: MutBorrow.t t_T) (return (x: ())) = {[@expl:f '_0' type invariant] inv'0 _0}
+    any [ return' (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec simple (x: MutBorrow.t t_T) (return' (x'0: ())) = {[@expl:simple 'x' type invariant] inv'0 x}
+  let rec simple (x: MutBorrow.t t_T) (return (x'0: ())) = {[@expl:simple 'x' type invariant] inv'0 x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_1_0 <- x'0 ] s1 | s1 = bb1 ]
-    | bb1 = bb1'0
-      [ bb1'0 = {[@expl:mut invariant] old_1_0.final = x'0.final}
-        {[@expl:loop invariant] inv'0 x'0}
+    [ bb0 = s0 [ s0 = [ &old_1_0 <- x ] s1 | s1 = bb1 ]
+    | bb1 = bb1
+      [ bb1 = {[@expl:mut invariant] old_1_0.final = x.final}
+        {[@expl:loop invariant] inv'0 x}
         (! s0)
         [ s0 = bb2 ]
         [ bb2 = s0
-          [ s0 = {inv x'0.current}
-            MutBorrow.borrow_mut <t_T> {x'0.current}
+          [ s0 = {inv x.current}
+            MutBorrow.borrow_mut <t_T> {x.current}
               (fun (_ret: MutBorrow.t t_T) ->
                 [ &_6 <- _ret ] -{inv _ret.final}-
-                [ &x'0 <- { x'0 with current = _ret.final } ] s1)
+                [ &x <- { x with current = _ret.final } ] s1)
           | s1 = f {_6} (fun (_ret: ()) -> [ &_4 <- _ret ] s2)
-          | s2 = bb1'0 ] ] ] ]
-    [ & x'0: MutBorrow.t t_T = x
+          | s2 = bb1 ] ] ] ]
+    [ & x: MutBorrow.t t_T = x
     | & _4: () = Any.any_l ()
     | & _6: MutBorrow.t t_T = Any.any_l ()
-    | & old_1_0: MutBorrow.t t_T = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & old_1_0: MutBorrow.t t_T = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_inferred_invariants__swapper
   use creusot.prelude.MutBorrow
@@ -103,40 +103,40 @@ module M_inferred_invariants__swapper
   
   meta "select_lsinst" "all"
   
-  let rec swapper (x: MutBorrow.t t_T) (y: MutBorrow.t t_T) (return' (x'0: ())) =
+  let rec swapper (x: MutBorrow.t t_T) (y: MutBorrow.t t_T) (return (x'0: ())) =
     {[@expl:swapper 'x' type invariant] inv'0 x}
     {[@expl:swapper 'y' type invariant] inv'0 y}
     (! bb0
     [ bb0 = bb1
-    | bb1 = bb1'0
-      [ bb1'0 = {[@expl:loop invariant #0] inv'0 x'0}
-        {[@expl:loop invariant #1] inv'0 y'0}
+    | bb1 = bb1
+      [ bb1 = {[@expl:loop invariant #0] inv'0 x}
+        {[@expl:loop invariant #1] inv'0 y}
         (! s0)
         [ s0 = bb2 ]
         [ bb2 = s0
-          [ s0 = [ &c <- x'0 ] s1
-          | s1 = {inv y'0.current}
-            MutBorrow.borrow_final <t_T> {y'0.current} {MutBorrow.get_id y'0}
+          [ s0 = [ &c <- x ] s1
+          | s1 = {inv y.current}
+            MutBorrow.borrow_final <t_T> {y.current} {MutBorrow.get_id y}
               (fun (_ret: MutBorrow.t t_T) ->
                 [ &_9 <- _ret ] -{inv _ret.final}-
-                [ &y'0 <- { y'0 with current = _ret.final } ] s2)
-          | s2 = [ &x'0 <- _9 ] s3
+                [ &y <- { y with current = _ret.final } ] s2)
+          | s2 = [ &x <- _9 ] s3
           | s3 = {inv c.current}
             MutBorrow.borrow_final <t_T> {c.current} {MutBorrow.get_id c}
               (fun (_ret: MutBorrow.t t_T) ->
                 [ &_10 <- _ret ] -{inv _ret.final}-
                 [ &c <- { c with current = _ret.final } ] s4)
-          | s4 = {[@expl:type invariant] inv'0 y'0} s5
-          | s5 = -{resolve'0 y'0}- s6
-          | s6 = [ &y'0 <- _10 ] s7
+          | s4 = {[@expl:type invariant] inv'0 y} s5
+          | s5 = -{resolve'0 y}- s6
+          | s6 = [ &y <- _10 ] s7
           | s7 = {[@expl:type invariant] inv'0 c} s8
           | s8 = -{resolve'0 c}- s9
-          | s9 = bb1'0 ] ] ] ]
-    [ & x'0: MutBorrow.t t_T = x
-    | & y'0: MutBorrow.t t_T = y
+          | s9 = bb1 ] ] ] ]
+    [ & x: MutBorrow.t t_T = x
+    | & y: MutBorrow.t t_T = y
     | & c: MutBorrow.t t_T = Any.any_l ()
     | & _9: MutBorrow.t t_T = Any.any_l ()
-    | & _10: MutBorrow.t t_T = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _10: MutBorrow.t t_T = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_inferred_invariants__tuple
   use creusot.prelude.MutBorrow
@@ -144,7 +144,7 @@ module M_inferred_invariants__tuple
   
   type t_T
   
-  type tuple = { _p0: MutBorrow.t t_T; _p1: bool }
+  type tuple = { f0: MutBorrow.t t_T; f1: bool }
   
   predicate inv (_0: t_T)
   
@@ -158,24 +158,23 @@ module M_inferred_invariants__tuple
   
   predicate inv'1 (_0: tuple)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {_p0 = x0; _p1 = x1} = x in inv'0 x0)
+  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {f0 = x0; f1 = x1} = x in inv'0 x0)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec tuple (d: tuple) (e: tuple) (return' (x: ())) = {[@expl:tuple 'd' type invariant] inv'1 d}
+  let rec tuple (d: tuple) (e: tuple) (return (x: ())) = {[@expl:tuple 'd' type invariant] inv'1 d}
     {[@expl:tuple 'e' type invariant] inv'1 e}
     (! bb0
     [ bb0 = bb1
-    | bb1 = bb1'0
-      [ bb1'0 = {[@expl:loop invariant #0] inv'1 d'0}
-        {[@expl:loop invariant #1] inv'1 e'0}
+    | bb1 = bb1
+      [ bb1 = {[@expl:loop invariant #0] inv'1 d}
+        {[@expl:loop invariant #1] inv'1 e}
         (! s0)
         [ s0 = bb2 ]
-        [ bb2 = s0 [ s0 = [ &c <- d'0 ] s1 | s1 = [ &d'0 <- e'0 ] s2 | s2 = [ &e'0 <- c ] s3 | s3 = bb1'0 ] ] ] ]
-    [ & d'0: tuple = d | & e'0: tuple = e | & c: tuple = Any.any_l () ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+        [ bb2 = s0 [ s0 = [ &c <- d ] s1 | s1 = [ &d <- e ] s2 | s2 = [ &e <- c ] s3 | s3 = bb1 ] ] ] ]
+    [ & d: tuple = d | & e: tuple = e | & c: tuple = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_inferred_invariants__temp_move
   use creusot.prelude.MutBorrow
@@ -205,26 +204,26 @@ module M_inferred_invariants__temp_move
   
   meta "select_lsinst" "all"
   
-  let rec temp_move (x: MutBorrow.t t_T) (return' (x'0: ())) = {[@expl:temp_move 'x' type invariant] inv'0 x}
+  let rec temp_move (x: MutBorrow.t t_T) (return (x'0: ())) = {[@expl:temp_move 'x' type invariant] inv'0 x}
     (! bb0
     [ bb0 = bb1
-    | bb1 = bb1'0
-      [ bb1'0 = {[@expl:loop invariant] inv'0 x'0}
+    | bb1 = bb1
+      [ bb1 = {[@expl:loop invariant] inv'0 x}
         (! s0)
         [ s0 = bb2 ]
         [ bb2 = s0
-          [ s0 = [ &c <- x'0 ] s1
+          [ s0 = [ &c <- x ] s1
           | s1 = {inv c.current}
             MutBorrow.borrow_final <t_T> {c.current} {MutBorrow.get_id c}
               (fun (_ret: MutBorrow.t t_T) ->
                 [ &_7 <- _ret ] -{inv _ret.final}-
                 [ &c <- { c with current = _ret.final } ] s2)
-          | s2 = [ &x'0 <- _7 ] s3
+          | s2 = [ &x <- _7 ] s3
           | s3 = {[@expl:type invariant] inv'0 c} s4
           | s4 = -{resolve'0 c}- s5
-          | s5 = bb1'0 ] ] ] ]
-    [ & x'0: MutBorrow.t t_T = x | & c: MutBorrow.t t_T = Any.any_l () | & _7: MutBorrow.t t_T = Any.any_l () ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+          | s5 = bb1 ] ] ] ]
+    [ & x: MutBorrow.t t_T = x | & c: MutBorrow.t t_T = Any.any_l () | & _7: MutBorrow.t t_T = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end
 module M_inferred_invariants__y
   use creusot.int.UInt64
@@ -253,8 +252,8 @@ module M_inferred_invariants__y
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
+  let rec len (self_: t_Vec) (return (x: UInt64.t)) = any
+    [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) = UInt64.t'int self < Seq.length seq
   
@@ -270,14 +269,14 @@ module M_inferred_invariants__y
   
   meta "rewrite_def" predicate resolve_elswhere
   
-  let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t Int32.t)) =
+  let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {has_value ix (view self_.current) result.current}
+    [ return' (result: MutBorrow.t Int32.t) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
@@ -299,31 +298,31 @@ module M_inferred_invariants__y
   
   meta "select_lsinst" "all"
   
-  let rec y (v: MutBorrow.t t_Vec) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &old_v <- v'0 ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &i <- (0: UInt64.t) ] s1 | s1 = [ &old_2_0 <- v'0 ] s2 | s2 = bb2 ]
-    | bb2 = bb2'0
-      [ bb2'0 = {[@expl:mut invariant] old_2_0.final = v'0.final}
-        {[@expl:loop invariant #0] Seq.length (view old_v.current) = Seq.length (view v'0.current)}
+  let rec y (v: MutBorrow.t t_Vec) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &i <- (0: UInt64.t) ] s1 | s1 = [ &old_2_0 <- v ] s2 | s2 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = {[@expl:mut invariant] old_2_0.final = v.final}
+        {[@expl:loop invariant #0] Seq.length (view old_v.current) = Seq.length (view v.current)}
         {[@expl:loop invariant #1] UInt64.t'int i <= 10}
         (! s0)
         [ s0 = bb3 ]
-        [ bb3 = s0 [ s0 = len {v'0.current} (fun (_ret: UInt64.t) -> [ &_12 <- _ret ] s1) | s1 = bb4 ]
+        [ bb3 = s0 [ s0 = len {v.current} (fun (_ret: UInt64.t) -> [ &_12 <- _ret ] s1) | s1 = bb4 ]
         | bb4 = s0
           [ s0 = [ &_10 <- UInt64.lt i _12 ] s1 | s1 = any [ br0 -> {_10 = false} (! bb8) | br1 -> {_10} (! bb5) ] ]
         | bb5 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Vec> {v'0.current}
-              (fun (_ret: MutBorrow.t t_Vec) -> [ &_15 <- _ret ] [ &v'0 <- { v'0 with current = _ret.final } ] s1)
+          [ s0 = MutBorrow.borrow_mut <t_Vec> {v.current}
+              (fun (_ret: MutBorrow.t t_Vec) -> [ &_15 <- _ret ] [ &v <- { v with current = _ret.final } ] s1)
           | s1 = index_mut {_15} {i} (fun (_ret: MutBorrow.t Int32.t) -> [ &_14 <- _ret ] s2)
           | s2 = bb6 ]
         | bb6 = s0 [ s0 = [ &_14 <- { _14 with current = (0: Int32.t) } ] s1 | s1 = -{resolve'0 _14}- s2 | s2 = bb8 ]
         | bb8 = s0
           [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1)
           | s1 = [ &_17 <- UInt64.gt i (10: UInt64.t) ] s2
-          | s2 = any [ br0 -> {_17 = false} (! bb2'0) | br1 -> {_17} (! bb9) ] ] ] ]
-    | bb9 = s0 [ s0 = -{resolve'2 v'0}- s1 | s1 = return''0 {_0} ] ]
+          | s2 = any [ br0 -> {_17 = false} (! bb2) | br1 -> {_17} (! bb9) ] ] ] ]
+    | bb9 = s0 [ s0 = -{resolve'2 v}- s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & v'0: MutBorrow.t t_Vec = v
+    | & v: MutBorrow.t t_Vec = v
     | & old_v: MutBorrow.t t_Vec = Any.any_l ()
     | & i: UInt64.t = Any.any_l ()
     | & _10: bool = Any.any_l ()
@@ -331,7 +330,7 @@ module M_inferred_invariants__y
     | & _14: MutBorrow.t Int32.t = Any.any_l ()
     | & _15: MutBorrow.t t_Vec = Any.any_l ()
     | & _17: bool = Any.any_l ()
-    | & old_2_0: MutBorrow.t t_Vec = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & old_2_0: MutBorrow.t t_Vec = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_inferred_invariants__nested_loops
   use creusot.int.Int32
@@ -350,13 +349,13 @@ module M_inferred_invariants__nested_loops
   
   meta "select_lsinst" "all"
   
-  let rec nested_loops (x: MutBorrow.t Int32.t) (return' (x'0: ())) = {[@expl:nested_loops requires] x.current
+  let rec nested_loops (x: MutBorrow.t Int32.t) (return (x'0: ())) = {[@expl:nested_loops requires] x.current
     = (0: Int32.t)}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &i <- (0: Int32.t) ] s1 | s1 = [ &old_1_0 <- x'0 ] s2 | s2 = bb1 ]
-    | bb1 = bb1'0
-      [ bb1'0 = {[@expl:mut invariant] old_1_0.final = x'0.final}
-        {[@expl:loop invariant] x'0.current = (0: Int32.t)}
+    [ bb0 = s0 [ s0 = [ &i <- (0: Int32.t) ] s1 | s1 = [ &old_1_0 <- x ] s2 | s2 = bb1 ]
+    | bb1 = bb1
+      [ bb1 = {[@expl:mut invariant] old_1_0.final = x.final}
+        {[@expl:loop invariant] x.current = (0: Int32.t)}
         (! s0)
         [ s0 = bb2 ]
         [ bb2 = s0
@@ -365,30 +364,30 @@ module M_inferred_invariants__nested_loops
         | bb4 = s0
           [ s0 = Int32.add {i} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &i <- _ret ] s1)
           | s1 = [ &j <- (0: Int32.t) ] s2
-          | s2 = [ &old_5_0 <- x'0 ] s3
+          | s2 = [ &old_5_0 <- x ] s3
           | s3 = bb5 ]
-        | bb5 = bb5'0
-          [ bb5'0 = {[@expl:mut invariant] old_5_0.final = x'0.final}
-            {[@expl:loop invariant] x'0.current = (0: Int32.t)}
+        | bb5 = bb5
+          [ bb5 = {[@expl:mut invariant] old_5_0.final = x.final}
+            {[@expl:loop invariant] x.current = (0: Int32.t)}
             (! s0)
             [ s0 = bb6 ]
             [ bb6 = s0
               [ s0 = [ &_16 <- Int32.gt j (10: Int32.t) ] s1
-              | s1 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb1'0) ] ]
+              | s1 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb1) ] ]
             | bb8 = s0
               [ s0 = Int32.add {j} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &j <- _ret ] s1)
-              | s1 = [ &x'0 <- { x'0 with current = (0: Int32.t) } ] s2
-              | s2 = bb5'0 ] ] ] ] ]
-    | bb3 = s0 [ s0 = -{resolve'0 x'0}- s1 | s1 = return''0 {_0} ] ]
+              | s1 = [ &x <- { x with current = (0: Int32.t) } ] s2
+              | s2 = bb5 ] ] ] ] ]
+    | bb3 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & x'0: MutBorrow.t Int32.t = x
+    | & x: MutBorrow.t Int32.t = x
     | & i: Int32.t = Any.any_l ()
     | & _9: bool = Any.any_l ()
     | & j: Int32.t = Any.any_l ()
     | & _16: bool = Any.any_l ()
     | & old_5_0: MutBorrow.t Int32.t = Any.any_l ()
     | & old_1_0: MutBorrow.t Int32.t = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:nested_loops ensures] x.final = (0: Int32.t)} (! return' {result}) ]
+    [ return (result: ()) -> {[@expl:nested_loops ensures] x.final = (0: Int32.t)} (! return {result}) ]
 end
 module M_inferred_invariants__nested_borrows
   use creusot.int.Int32
@@ -396,8 +395,8 @@ module M_inferred_invariants__nested_borrows
   use creusot.prelude.Any
   
   let rec replace (dest: MutBorrow.t (MutBorrow.t Int32.t)) (src: MutBorrow.t Int32.t)
-    (return' (x: MutBorrow.t Int32.t)) = any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {dest.final = src} {result = dest.current} (! return' {result}) ]
+    (return (x: MutBorrow.t Int32.t)) = any
+    [ return' (result: MutBorrow.t Int32.t) -> {dest.final = src} {result = dest.current} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t Int32.t)) = self.final = self.current
   
@@ -419,15 +418,15 @@ module M_inferred_invariants__nested_borrows
   
   meta "select_lsinst" "all"
   
-  let rec nested_borrows (x: MutBorrow.t (MutBorrow.t Int32.t)) (y: MutBorrow.t Int32.t) (return' (x'0: ())) =
+  let rec nested_borrows (x: MutBorrow.t (MutBorrow.t Int32.t)) (y: MutBorrow.t Int32.t) (return (x'0: ())) =
     {[@expl:nested_borrows requires] (x.current).current = (0: Int32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &i <- (0: Int32.t) ] s1 | s1 = [ &old_1_0 <- x'0 ] s2 | s2 = [ &old_1_1 <- x'0.current ] s3 | s3 = bb1 ]
-    | bb1 = bb1'0
-      [ bb1'0 = {[@expl:mut invariant] old_1_1.final = (x'0.current).final}
-        {[@expl:mut invariant] old_1_0.final = x'0.final}
-        {[@expl:loop invariant] (x'0.current).current = (0: Int32.t)}
+      [ s0 = [ &i <- (0: Int32.t) ] s1 | s1 = [ &old_1_0 <- x ] s2 | s2 = [ &old_1_1 <- x.current ] s3 | s3 = bb1 ]
+    | bb1 = bb1
+      [ bb1 = {[@expl:mut invariant] old_1_1.final = (x.current).final}
+        {[@expl:mut invariant] old_1_0.final = x.final}
+        {[@expl:loop invariant] (x.current).current = (0: Int32.t)}
         (! s0)
         [ s0 = bb2 ]
         [ bb2 = s0
@@ -435,25 +434,25 @@ module M_inferred_invariants__nested_borrows
           | s1 = any [ br0 -> {_12 = false} (! bb4) | br1 -> {_12} (! bb3) ] ]
         | bb4 = s0
           [ s0 = Int32.add {i} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &i <- _ret ] s1)
-          | s1 = [ &x'0 <- { x'0 with current = { x'0.current with current = (0: Int32.t) } } ] s2
-          | s2 = bb1'0 ] ] ]
+          | s1 = [ &x <- { x with current = { x.current with current = (0: Int32.t) } } ] s2
+          | s2 = bb1 ] ] ]
     | bb3 = s0
-      [ s0 = MutBorrow.borrow_final <MutBorrow.t Int32.t> {x'0.current} {MutBorrow.get_id x'0}
+      [ s0 = MutBorrow.borrow_final <MutBorrow.t Int32.t> {x.current} {MutBorrow.get_id x}
           (fun (_ret: MutBorrow.t (MutBorrow.t Int32.t)) ->
-            [ &_16 <- _ret ] [ &x'0 <- { x'0 with current = _ret.final } ] s1)
-      | s1 = MutBorrow.borrow_final <Int32.t> {y'0.current} {MutBorrow.get_id y'0}
-          (fun (_ret: MutBorrow.t Int32.t) -> [ &_17 <- _ret ] [ &y'0 <- { y'0 with current = _ret.final } ] s2)
+            [ &_16 <- _ret ] [ &x <- { x with current = _ret.final } ] s1)
+      | s1 = MutBorrow.borrow_final <Int32.t> {y.current} {MutBorrow.get_id y}
+          (fun (_ret: MutBorrow.t Int32.t) -> [ &_17 <- _ret ] [ &y <- { y with current = _ret.final } ] s2)
       | s2 = replace {_16} {_17} (fun (_ret: MutBorrow.t Int32.t) -> [ &b <- _ret ] s3)
       | s3 = bb5 ]
     | bb5 = s0
-      [ s0 = -{resolve'0 x'0}- s1
+      [ s0 = -{resolve'0 x}- s1
       | s1 = Int32.add {b.current} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &b <- { b with current = _ret } ] s2)
       | s2 = -{resolve'2 b}- s3
-      | s3 = -{resolve'2 y'0}- s4
-      | s4 = return''0 {_0} ] ]
+      | s3 = -{resolve'2 y}- s4
+      | s4 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & x'0: MutBorrow.t (MutBorrow.t Int32.t) = x
-    | & y'0: MutBorrow.t Int32.t = y
+    | & x: MutBorrow.t (MutBorrow.t Int32.t) = x
+    | & y: MutBorrow.t Int32.t = y
     | & i: Int32.t = Any.any_l ()
     | & _12: bool = Any.any_l ()
     | & b: MutBorrow.t Int32.t = Any.any_l ()
@@ -461,7 +460,7 @@ module M_inferred_invariants__nested_borrows
     | & _17: MutBorrow.t Int32.t = Any.any_l ()
     | & old_1_0: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l ()
     | & old_1_1: MutBorrow.t Int32.t = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:nested_borrows ensures #0] x.final = y}
+    [ return (result: ()) -> {[@expl:nested_borrows ensures #0] x.final = y}
       {[@expl:nested_borrows ensures #1] (x.current).final = (1: Int32.t)}
-      (! return' {result}) ]
+      (! return {result}) ]
 end

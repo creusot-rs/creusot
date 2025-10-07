@@ -7,7 +7,7 @@ module M_492__reborrow_tuple
   
   predicate inv (_0: t_T)
   
-  type tuple = { _p0: MutBorrow.t t_T; _p1: UInt32.t }
+  type tuple = { f0: MutBorrow.t t_T; f1: UInt32.t }
   
   predicate invariant' [@inline:trivial] (self: MutBorrow.t t_T) = inv self.current /\ inv self.final
   
@@ -27,29 +27,29 @@ module M_492__reborrow_tuple
   
   predicate inv'1 (_0: tuple)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {_p0 = x0; _p1 = x1} = x in inv'0 x0)
+  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {f0 = x0; f1 = x1} = x in inv'0 x0)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec reborrow_tuple (x: MutBorrow.t t_T) (return' (x'0: tuple)) =
+  let rec reborrow_tuple (x: MutBorrow.t t_T) (return (x'0: tuple)) =
     {[@expl:reborrow_tuple 'x' type invariant] inv'0 x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv x'0.current}
-        MutBorrow.borrow_final <t_T> {x'0.current} {MutBorrow.get_id x'0}
+      [ s0 = {inv x.current}
+        MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_3 <- _ret ] -{inv _ret.final}-
-            [ &x'0 <- { x'0 with current = _ret.final } ] s1)
-      | s1 = [ &_0 <- { _p0 = _3; _p1 = (32: UInt32.t) } ] s2
-      | s2 = {[@expl:type invariant] inv'0 x'0} s3
-      | s3 = -{resolve'0 x'0}- s4
-      | s4 = return''0 {_0} ] ]
-    [ & _0: tuple = Any.any_l () | & x'0: MutBorrow.t t_T = x | & _3: MutBorrow.t t_T = Any.any_l () ])
-    [ return''0 (result: tuple) -> {[@expl:reborrow_tuple result type invariant] inv'1 result}
-      {[@expl:reborrow_tuple ensures] (result._p0).current = x.current}
-      (! return' {result}) ]
+            [ &x <- { x with current = _ret.final } ] s1)
+      | s1 = [ &_0 <- { f0 = _3; f1 = (32: UInt32.t) } ] s2
+      | s2 = {[@expl:type invariant] inv'0 x} s3
+      | s3 = -{resolve'0 x}- s4
+      | s4 = return {_0} ] ]
+    [ & _0: tuple = Any.any_l () | & x: MutBorrow.t t_T = x | & _3: MutBorrow.t t_T = Any.any_l () ])
+    [ return (result: tuple) -> {[@expl:reborrow_tuple result type invariant] inv'1 result}
+      {[@expl:reborrow_tuple ensures] (result.f0).current = x.current}
+      (! return {result}) ]
 end
 module M_492__test
   use creusot.int.Int32
@@ -57,10 +57,10 @@ module M_492__test
   use creusot.int.UInt32
   use creusot.prelude.Any
   
-  type tuple = { _p0: MutBorrow.t Int32.t; _p1: UInt32.t }
+  type tuple = { f0: MutBorrow.t Int32.t; f1: UInt32.t }
   
-  let rec reborrow_tuple (x: MutBorrow.t Int32.t) (return' (x'0: tuple)) = any
-    [ return''0 (result: tuple) -> {(result._p0).current = x.current} (! return' {result}) ]
+  let rec reborrow_tuple (x: MutBorrow.t Int32.t) (return (x'0: tuple)) = any
+    [ return' (result: tuple) -> {(result.f0).current = x.current} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
@@ -74,7 +74,7 @@ module M_492__test
   
   meta "select_lsinst" "all"
   
-  let rec test (return' (x: ())) = (! bb0
+  let rec test (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (5: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
@@ -84,17 +84,17 @@ module M_492__test
       | s3 = reborrow_tuple {_5} (fun (_ret: tuple) -> [ &_4 <- _ret ] s4)
       | s4 = bb1 ]
     | bb1 = s0
-      [ s0 = [ &res <- _4._p0 ] s1
+      [ s0 = [ &res <- _4.f0 ] s1
       | s1 = -{resolve'0 _6}- s2
       | s2 = {[@expl:assertion] res.final = (5: Int32.t)} s3
       | s3 = [ &res <- { res with current = (10: Int32.t) } ] s4
       | s4 = -{resolve'0 res}- s5
-      | s5 = return''0 {_0} ] ]
+      | s5 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & res: MutBorrow.t Int32.t = Any.any_l ()
     | & _4: tuple = Any.any_l ()
     | & _5: MutBorrow.t Int32.t = Any.any_l ()
     | & _6: MutBorrow.t Int32.t = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:test ensures] false} (! return' {result}) ]
+    [ return (result: ()) -> {[@expl:test ensures] false} (! return {result}) ]
 end

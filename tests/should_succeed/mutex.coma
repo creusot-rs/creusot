@@ -14,24 +14,24 @@ module M_mutex__qyi5425553346843331945__call (* <AddsTwo<'a> as FakeFnOnce> *)
   
   type t_MutexGuard = { t_MutexGuard__0: t_GuardInner; t_MutexGuard__1: () }
   
-  let rec lock (self: t_Mutex) (return' (x: t_MutexGuard)) = any
-    [ return''0 (result: t_MutexGuard) -> {self.t_Mutex__1 = result.t_MutexGuard__1} (! return' {result}) ]
+  let rec lock (self: t_Mutex) (return (x: t_MutexGuard)) = any
+    [ return' (result: t_MutexGuard) -> {self.t_Mutex__1 = result.t_MutexGuard__1} (! return {result}) ]
   
   predicate inv (self: ()) (x: UInt32.t) = Int.mod (UInt32.t'int x) 2 = 0
   
-  let rec deref (self: t_MutexGuard) (return' (x: UInt32.t)) = any
-    [ return''0 (result: UInt32.t) -> {inv self.t_MutexGuard__1 result} (! return' {result}) ]
+  let rec deref (self: t_MutexGuard) (return (x: UInt32.t)) = any
+    [ return' (result: UInt32.t) -> {inv self.t_MutexGuard__1 result} (! return {result}) ]
   
-  let rec set (self: MutBorrow.t t_MutexGuard) (v: UInt32.t) (return' (x: ())) =
+  let rec set (self: MutBorrow.t t_MutexGuard) (v: UInt32.t) (return (x: ())) =
     {[@expl:set requires] inv (self.current).t_MutexGuard__1 v}
-    any [ return''0 (result: ()) -> (! return' {result}) ]
+    any [ return' (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call (self: t_AddsTwo) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = lock {self'0.t_AddsTwo__mutex} (fun (_ret: t_MutexGuard) -> [ &v <- _ret ] s1) | s1 = bb1 ]
+  let rec call (self: t_AddsTwo) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = lock {self.t_AddsTwo__mutex} (fun (_ret: t_MutexGuard) -> [ &v <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = deref {v} (fun (_ret: UInt32.t) -> [ &_5 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
       [ s0 = [ &val' <- _5 ] s1
@@ -48,9 +48,9 @@ module M_mutex__qyi5425553346843331945__call (* <AddsTwo<'a> as FakeFnOnce> *)
           (fun (_ret: MutBorrow.t t_MutexGuard) -> [ &_14 <- _ret ] [ &v <- _ret.final ] s1)
       | s1 = set {_14} {(0: UInt32.t)} (fun (_ret: ()) -> [ &_13 <- _ret ] s2)
       | s2 = bb8 ]
-    | bb8 = return''0 {_0} ]
+    | bb8 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & self'0: t_AddsTwo = self
+    | & self: t_AddsTwo = self
     | & v: t_MutexGuard = Any.any_l ()
     | & val': UInt32.t = Any.any_l ()
     | & _5: UInt32.t = Any.any_l ()
@@ -59,7 +59,7 @@ module M_mutex__qyi5425553346843331945__call (* <AddsTwo<'a> as FakeFnOnce> *)
     | & _10: MutBorrow.t t_MutexGuard = Any.any_l ()
     | & _11: UInt32.t = Any.any_l ()
     | & _13: () = Any.any_l ()
-    | & _14: MutBorrow.t t_MutexGuard = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _14: MutBorrow.t t_MutexGuard = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_mutex__concurrent
   use creusot.int.UInt32
@@ -73,11 +73,11 @@ module M_mutex__concurrent
   
   predicate inv (self: ()) (x: UInt32.t) = Int.mod (UInt32.t'int x) 2 = 0
   
-  let rec new (val': UInt32.t) (i: ()) (return' (x: t_Mutex)) = {[@expl:new requires] inv i val'}
-    any [ return''0 (result: t_Mutex) -> (! return' {result}) ]
+  let rec new (val': UInt32.t) (i: ()) (return (x: t_Mutex)) = {[@expl:new requires] inv i val'}
+    any [ return' (result: t_Mutex) -> (! return {result}) ]
   
-  let rec leak (b: t_Mutex) (return' (x: MutBorrow.t t_Mutex)) = any
-    [ return''0 (result: MutBorrow.t t_Mutex) -> {result.current = b} (! return' {result}) ]
+  let rec leak (b: t_Mutex) (return (x: MutBorrow.t t_Mutex)) = any
+    [ return' (result: MutBorrow.t t_Mutex) -> {result.current = b} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Mutex) = self.final = self.current
   
@@ -97,8 +97,8 @@ module M_mutex__concurrent
   
   predicate precondition (self: t_AddsTwo) = true
   
-  let rec spawn (f: t_AddsTwo) (return' (x: t_JoinHandle)) = {[@expl:spawn requires] precondition f}
-    any [ return''0 (result: t_JoinHandle) -> (! return' {result}) ]
+  let rec spawn (f: t_AddsTwo) (return (x: t_JoinHandle)) = {[@expl:spawn requires] precondition f}
+    any [ return' (result: t_JoinHandle) -> (! return {result}) ]
   
   type t_Result = C_Ok () | C_Err ()
   
@@ -106,18 +106,18 @@ module M_mutex__concurrent
   
   predicate inv'0 (self: t_SpawnPostCond) (v: ()) = postcondition self.t_SpawnPostCond__f v
   
-  let rec join (self: t_JoinHandle) (return' (x: t_Result)) = any
-    [ return''0 (result: t_Result) -> {match result with
+  let rec join (self: t_JoinHandle) (return (x: t_Result)) = any
+    [ return' (result: t_Result) -> {match result with
         | C_Ok v -> inv'0 self.t_JoinHandle__1 v
         | _ -> true
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec concurrent (return' (x: ())) = (! bb0
+  let rec concurrent (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- () ] s1 | s1 = new {(0: UInt32.t)} {_5} (fun (_ret: t_Mutex) -> [ &_4 <- _ret ] s2) | s2 = bb2 ]
     | bb2 = s0 [ s0 = leak {_4} (fun (_ret: MutBorrow.t t_Mutex) -> [ &_2 <- _ret ] s1) | s1 = bb3 ]
@@ -135,7 +135,7 @@ module M_mutex__concurrent
       | s3 = bb5 ]
     | bb5 = s0 [ s0 = join {j1} (fun (_ret: t_Result) -> [ &_16 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0 [ s0 = join {j2} (fun (_ret: t_Result) -> [ &_18 <- _ret ] s1) | s1 = bb9 ]
-    | bb9 = return''0 {_0} ]
+    | bb9 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & m: t_Mutex = Any.any_l ()
     | & _2: MutBorrow.t t_Mutex = Any.any_l ()
@@ -148,7 +148,7 @@ module M_mutex__concurrent
     | & _13: t_Mutex = Any.any_l ()
     | & j2: t_JoinHandle = Any.any_l ()
     | & _16: t_Result = Any.any_l ()
-    | & _18: t_Result = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _18: t_Result = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_mutex__qyi5425553346843331945__call__refines (* <AddsTwo<'a> as FakeFnOnce> *)
   type t_MutexInner

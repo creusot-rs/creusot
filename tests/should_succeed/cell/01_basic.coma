@@ -12,34 +12,34 @@ module M_01_basic__adds_two
   
   function view (self: t_PredCell) : Map.map UInt32.t bool
   
-  let rec get (self: t_PredCell) (return' (x: UInt32.t)) = any
-    [ return''0 (result: UInt32.t) -> {index_logic (view self) result} (! return' {result}) ]
+  let rec get (self: t_PredCell) (return (x: UInt32.t)) = any
+    [ return' (result: UInt32.t) -> {index_logic (view self) result} (! return {result}) ]
   
-  let rec set (self: t_PredCell) (v: UInt32.t) (return' (x: ())) = {[@expl:set requires] index_logic (view self) v}
-    any [ return''0 (result: ()) -> (! return' {result}) ]
+  let rec set (self: t_PredCell) (v: UInt32.t) (return (x: ())) = {[@expl:set requires] index_logic (view self) v}
+    any [ return' (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec adds_two (c: t_PredCell) (return' (x: ())) = {[@expl:adds_two requires] view c
+  let rec adds_two (c: t_PredCell) (return (x: ())) = {[@expl:adds_two requires] view c
     = fun (z: UInt32.t) -> Int.mod (UInt32.t'int z) 2 = 0}
     (! bb0
-    [ bb0 = s0 [ s0 = get {c'0} (fun (_ret: UInt32.t) -> [ &v <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = get {c} (fun (_ret: UInt32.t) -> [ &v <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
       [ s0 = [ &_5 <- UInt32.lt v (100000: UInt32.t) ] s1
       | s1 = any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb2) ] ]
     | bb2 = s0
       [ s0 = UInt32.add {v} {(2: UInt32.t)} (fun (_ret: UInt32.t) -> [ &_9 <- _ret ] s1)
-      | s1 = set {c'0} {_9} (fun (_ret: ()) -> [ &_7 <- _ret ] s2)
+      | s1 = set {c} {_9} (fun (_ret: ()) -> [ &_7 <- _ret ] s2)
       | s2 = bb6 ]
-    | bb4 = s0 [ s0 = set {c'0} {(0: UInt32.t)} (fun (_ret: ()) -> [ &_11 <- _ret ] s1) | s1 = bb6 ]
-    | bb6 = return''0 {_0} ]
+    | bb4 = s0 [ s0 = set {c} {(0: UInt32.t)} (fun (_ret: ()) -> [ &_11 <- _ret ] s1) | s1 = bb6 ]
+    | bb6 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & c'0: t_PredCell = c
+    | & c: t_PredCell = c
     | & v: UInt32.t = Any.any_l ()
     | & _5: bool = Any.any_l ()
     | & _7: () = Any.any_l ()
     | & _9: UInt32.t = Any.any_l ()
-    | & _11: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _11: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

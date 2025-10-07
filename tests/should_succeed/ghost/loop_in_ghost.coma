@@ -52,18 +52,18 @@ module M_loop_in_ghost__foo
   
   meta "rewrite_def" predicate well_founded_relation
   
-  let rec new (x: UInt32.t) (return' (x'0: UInt32.t)) = any
-    [ return''0 (result: UInt32.t) -> {result = x} (! return' {result}) ]
+  let rec new (x: UInt32.t) (return (x'0: UInt32.t)) = any
+    [ return' (result: UInt32.t) -> {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec foo (x: UInt32.t) (return' (x'0: UInt32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &y <- (0: UInt32.t) ] s1 | s1 = [ &i <- x'0 ] s2 | s2 = bb1 ]
+  let rec foo (x: UInt32.t) (return (x'0: UInt32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &y <- (0: UInt32.t) ] s1 | s1 = [ &i <- x ] s2 | s2 = bb1 ]
     | bb1 = bb1invariant
-      [ bb1'0 = {[@expl:loop variant] well_founded_relation variant_old_bb1 i} bb1invariant
-      | bb1invariant = {[@expl:loop invariant] UInt32.t'int y + UInt32.t'int i = UInt32.t'int x'0}
+      [ bb1 = {[@expl:loop variant] well_founded_relation variant_old_bb1 i} bb1invariant
+      | bb1invariant = {[@expl:loop invariant] UInt32.t'int y + UInt32.t'int i = UInt32.t'int x}
         (! [ &variant_old_bb1 <- i ] s0)
         [ s0 = bb2 ]
         [ bb2 = s0
@@ -72,14 +72,14 @@ module M_loop_in_ghost__foo
         | bb3 = s0
           [ s0 = UInt32.sub {i} {(1: UInt32.t)} (fun (_ret: UInt32.t) -> [ &i <- _ret ] s1)
           | s1 = UInt32.add {y} {(1: UInt32.t)} (fun (_ret: UInt32.t) -> [ &y <- _ret ] s2)
-          | s2 = bb1'0 ] ] ]
+          | s2 = bb1 ] ] ]
     | bb4 = s0 [ s0 = new {y} (fun (_ret: UInt32.t) -> [ &_0 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = return''0 {_0} ]
+    | bb5 = return {_0} ]
     [ & _0: UInt32.t = Any.any_l ()
-    | & x'0: UInt32.t = x
+    | & x: UInt32.t = x
     | & y: UInt32.t = Any.any_l ()
     | & i: UInt32.t = Any.any_l ()
     | & _11: bool = Any.any_l ()
     | & variant_old_bb1: UInt32.t = Any.any_l () ])
-    [ return''0 (result: UInt32.t) -> {[@expl:foo ensures] result = x} (! return' {result}) ]
+    [ return (result: UInt32.t) -> {[@expl:foo ensures] result = x} (! return {result}) ]
 end

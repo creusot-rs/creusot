@@ -24,7 +24,7 @@ module M_04_skip__qyi13909329693910717997__resolve_coherence (* <Skip<I> as creu
   
   constant self : t_Skip
   
-  function resolve_coherence (self'0: t_Skip) : ()
+  function resolve_coherence (self: t_Skip) : ()
   
   goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'1 self)
 end
@@ -66,7 +66,7 @@ module M_04_skip__qyi11393468722733824414__produces_refl (* <Skip<I> as common::
   
   constant self : t_Skip
   
-  function produces_refl'0 (self'0: t_Skip) : ()
+  function produces_refl'0 (self: t_Skip) : ()
   
   goal vc_produces_refl: [@expl:produces_refl ensures] produces'0 self (Seq.empty: Seq.seq t_Item) self
 end
@@ -116,7 +116,7 @@ module M_04_skip__qyi11393468722733824414__produces_trans (* <Skip<I> as common:
   
   constant c : t_Skip
   
-  function produces_trans'0 (a'0: t_Skip) (ab'0: Seq.seq t_Item) (b'0: t_Skip) (bc'0: Seq.seq t_Item) (c'0: t_Skip) : ()
+  function produces_trans'0 (a: t_Skip) (ab: Seq.seq t_Item) (b: t_Skip) (bc: Seq.seq t_Item) (c: t_Skip) : ()
   
   goal vc_produces_trans: produces'0 a ab b
     -> produces'0 b bc c -> ([@expl:produces_trans ensures] produces'0 a (Seq.(++) ab bc) c)
@@ -188,11 +188,11 @@ module M_04_skip__qyi11393468722733824414__next (* <Skip<I> as common::Iterator>
   axiom fn_mut_spec: forall self: (), args: (), res_state: (), res: UInt64.t. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec default (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {result = (0: UInt64.t)} (! return' {result}) ]
+  let rec default (return (x: UInt64.t)) = any
+    [ return' (result: UInt64.t) -> {result = (0: UInt64.t)} (! return {result}) ]
   
-  let rec take (dest: MutBorrow.t UInt64.t) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {result = dest.current} {postcondition () () dest.final} (! return' {result}) ]
+  let rec take (dest: MutBorrow.t UInt64.t) (return (x: UInt64.t)) = any
+    [ return' (result: UInt64.t) -> {result = dest.current} {postcondition () () dest.final} (! return {result}) ]
   
   predicate resolve'0 [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
   
@@ -271,8 +271,8 @@ module M_04_skip__qyi11393468722733824414__next (* <Skip<I> as common::Iterator>
           end
       /\ inv'4 res)
   
-  let rec next (self: MutBorrow.t t_I) (return' (x: t_Option)) = {[@expl:next requires] precondition () self}
-    any [ return''0 (result: t_Option) -> {postcondition_once'0 () self result} (! return' {result}) ]
+  let rec next (self: MutBorrow.t t_I) (return (x: t_Option)) = {[@expl:next requires] precondition () self}
+    any [ return' (result: t_Option) -> {postcondition_once'0 () self result} (! return {result}) ]
   
   let rec v_Some (input: t_Option) (ret (field_0: t_Item)) = any
     [ good (field_0: t_Item) -> {C_Some field_0 = input} (! ret {field_0})
@@ -305,35 +305,35 @@ module M_04_skip__qyi11393468722733824414__next (* <Skip<I> as common::Iterator>
   
   meta "select_lsinst" "all"
   
-  let rec next'0 (self: MutBorrow.t t_Skip) (return' (x: t_Option)) = {[@expl:next 'self' type invariant] inv'1 self}
+  let rec next'0 (self: MutBorrow.t t_Skip) (return (x: t_Option)) = {[@expl:next 'self' type invariant] inv'1 self}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_self <- self'0 ] s1 | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &old_self <- self ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = MutBorrow.borrow_final <UInt64.t> {(self'0.current).t_Skip__n}
-          {MutBorrow.inherit_id (MutBorrow.get_id self'0) 2}
+      [ s0 = MutBorrow.borrow_final <UInt64.t> {(self.current).t_Skip__n}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_ret: MutBorrow.t UInt64.t) ->
-            [ &_7 <- _ret ] [ &self'0 <- { self'0 with current = { self'0.current with t_Skip__n = _ret.final } } ] s1)
+            [ &_7 <- _ret ] [ &self <- { self with current = { self.current with t_Skip__n = _ret.final } } ] s1)
       | s1 = MutBorrow.borrow_final <UInt64.t> {_7.current} {MutBorrow.get_id _7}
           (fun (_ret: MutBorrow.t UInt64.t) -> [ &_6 <- _ret ] [ &_7 <- { _7 with current = _ret.final } ] s2)
       | s2 = take {_6} (fun (_ret: UInt64.t) -> [ &n <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = s0 [ s0 = -{resolve'1 _7}- s1 | s1 = [ &skipped <- Seq.empty: Seq.seq t_Item ] s2 | s2 = bb3 ]
-    | bb3 = s0 [ s0 = [ &old_4_0 <- self'0 ] s1 | s1 = bb4 ]
-    | bb4 = bb4'0
-      [ bb4'0 = {[@expl:mut invariant] old_4_0.final = self'0.final}
-        {[@expl:loop invariant #0] inv'1 self'0}
+    | bb3 = s0 [ s0 = [ &old_4_0 <- self ] s1 | s1 = bb4 ]
+    | bb4 = bb4
+      [ bb4 = {[@expl:mut invariant] old_4_0.final = self.final}
+        {[@expl:loop invariant #0] inv'1 self}
         {[@expl:loop invariant #1] Seq.length skipped + UInt64.t'int n = UInt64.t'int (old_self.current).t_Skip__n}
-        {[@expl:loop invariant #2] produces (old_self.current).t_Skip__iter skipped (self'0.current).t_Skip__iter}
+        {[@expl:loop invariant #2] produces (old_self.current).t_Skip__iter skipped (self.current).t_Skip__iter}
         {[@expl:loop invariant #3] forall i: int. 0 <= i /\ i < Seq.length skipped -> resolve'2 (Seq.get skipped i)}
-        {[@expl:loop invariant #4] UInt64.t'int (self'0.current).t_Skip__n = 0}
+        {[@expl:loop invariant #4] UInt64.t'int (self.current).t_Skip__n = 0}
         (! s0)
         [ s0 = bb5 ]
         [ bb5 = s0
-          [ s0 = {inv (self'0.current).t_Skip__iter}
-            MutBorrow.borrow_mut <t_I> {(self'0.current).t_Skip__iter}
+          [ s0 = {inv (self.current).t_Skip__iter}
+            MutBorrow.borrow_mut <t_I> {(self.current).t_Skip__iter}
               (fun (_ret: MutBorrow.t t_I) ->
                 [ &_19 <- _ret ] -{inv _ret.final}-
-                [ &self'0 <- { self'0 with current = { self'0.current with t_Skip__iter = _ret.final } } ] s1)
+                [ &self <- { self with current = { self.current with t_Skip__iter = _ret.final } } ] s1)
           | s1 = next {_19} (fun (_ret: t_Option) -> [ &r <- _ret ] s2)
           | s2 = bb6 ]
         | bb6 = s0
@@ -348,20 +348,14 @@ module M_04_skip__qyi11393468722733824414__next (* <Skip<I> as common::Iterator>
         | bb12 = s0
           [ s0 = [ &skipped <- _26 ] s1
           | s1 = UInt64.sub {n} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &n <- _ret ] s2)
-          | s2 = bb4'0 ] ] ]
+          | s2 = bb4 ] ] ]
     | bb7 = s0
-      [ s0 = {[@expl:type invariant] inv'1 self'0} s1
-      | s1 = -{resolve'4 self'0}- s2
-      | s2 = [ &_0 <- r ] s3
-      | s3 = bb16 ]
+      [ s0 = {[@expl:type invariant] inv'1 self} s1 | s1 = -{resolve'4 self}- s2 | s2 = [ &_0 <- r ] s3 | s3 = bb16 ]
     | bb9 = s0
-      [ s0 = {[@expl:type invariant] inv'1 self'0} s1
-      | s1 = -{resolve'4 self'0}- s2
-      | s2 = [ &_0 <- r ] s3
-      | s3 = bb16 ]
-    | bb16 = return''0 {_0} ]
+      [ s0 = {[@expl:type invariant] inv'1 self} s1 | s1 = -{resolve'4 self}- s2 | s2 = [ &_0 <- r ] s3 | s3 = bb16 ]
+    | bb16 = return {_0} ]
     [ & _0: t_Option = Any.any_l ()
-    | & self'0: MutBorrow.t t_Skip = self
+    | & self: MutBorrow.t t_Skip = self
     | & old_self: MutBorrow.t t_Skip = Any.any_l ()
     | & n: UInt64.t = Any.any_l ()
     | & _6: MutBorrow.t UInt64.t = Any.any_l ()
@@ -373,12 +367,12 @@ module M_04_skip__qyi11393468722733824414__next (* <Skip<I> as common::Iterator>
     | & x: t_Item = Any.any_l ()
     | & _26: Seq.seq t_Item = Any.any_l ()
     | & old_4_0: MutBorrow.t t_Skip = Any.any_l () ])
-    [ return''0 (result: t_Option) -> {[@expl:next result type invariant] inv'4 result}
+    [ return (result: t_Option) -> {[@expl:next result type invariant] inv'4 result}
       {[@expl:next ensures] match result with
         | C_None -> completed'0 self
         | C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_04_skip__qyi13909329693910717997__resolve_coherence__refines (* <Skip<I> as creusot_contracts::Resolve> *)
   use creusot.int.UInt64

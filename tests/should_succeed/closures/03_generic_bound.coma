@@ -60,44 +60,44 @@ module M_03_generic_bound__closure_param
     forall self: t_F, args: UInt32.t, res_state: t_F, res: (). postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec call (self_: t_F) (arg: UInt32.t) (return' (x: ())) = {[@expl:call 'self_' type invariant] inv'0 self_}
+  let rec call (self_: t_F) (arg: UInt32.t) (return (x: ())) = {[@expl:call 'self_' type invariant] inv'0 self_}
     {[@expl:call requires] precondition self_ arg}
-    any [ return''0 (result: ()) -> {postcondition self_ arg result} (! return' {result}) ]
+    any [ return' (result: ()) -> {postcondition self_ arg result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec closure_param (f: t_F) (return' (x: ())) = {[@expl:closure_param 'f' type invariant] inv f}
+  let rec closure_param (f: t_F) (return (x: ())) = {[@expl:closure_param 'f' type invariant] inv f}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv f'0} s1
-      | s1 = -{resolve f'0}- s2
+      [ s0 = {[@expl:type invariant] inv f} s1
+      | s1 = -{resolve f}- s2
       | s2 = [ &_3 <- (0: UInt32.t) ] s3
-      | s3 = call {f'0} {_3} (fun (_ret: ()) -> [ &_0 <- _ret ] s4)
+      | s3 = call {f} {_3} (fun (_ret: ()) -> [ &_0 <- _ret ] s4)
       | s4 = bb2 ]
-    | bb2 = return''0 {_0} ] [ & _0: () = Any.any_l () | & f'0: t_F = f | & _3: UInt32.t = Any.any_l () ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+    | bb2 = return {_0} ] [ & _0: () = Any.any_l () | & f: t_F = f | & _3: UInt32.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end
 module M_03_generic_bound__caller
   use creusot.prelude.Any
   use creusot.int.UInt32
   
-  let rec closure0 [@coma:extspec] (self: ()) (_x: UInt32.t) (return' (x: ())) = bb0
-    [ bb0 = return' {_0} ] [ & _0: () = Any.any_l () ]
+  let rec closure0 [@coma:extspec] (self: ()) (_x: UInt32.t) (return (x: ())) = bb0
+    [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
-  let rec closure_param (f: ()) (return' (x: ())) = any [ return''0 (result: ()) -> (! return' {result}) ]
+  let rec closure_param (f: ()) (return (x: ())) = any [ return' (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec caller (return' (x: ())) = (! bb0
+  let rec caller (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &_1 <- () ] s1 | s1 = closure_param {_1} (fun (_ret: ()) -> [ &_0 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = return''0 {_0} ] [ & _0: () = Any.any_l () | & _1: () = Any.any_l () ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+    | bb1 = return {_0} ] [ & _0: () = Any.any_l () | & _1: () = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end

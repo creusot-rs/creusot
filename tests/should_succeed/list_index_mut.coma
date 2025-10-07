@@ -72,15 +72,15 @@ module M_list_index_mut__index_mut
   
   type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_List)
   
-  let rec as_mut (self_: MutBorrow.t t_Option) (return' (x: t_Option'1)) = any
-    [ return''0 (result: t_Option'1) -> {self_.current = C_None -> result = C_None'1 /\ self_.final = C_None}
+  let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'1)) = any
+    [ return' (result: t_Option'1) -> {self_.current = C_None -> result = C_None'1 /\ self_.final = C_None}
       {self_.current = C_None
       \/ (exists r: MutBorrow.t t_List. result = C_Some'1 r
         /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Option'1) (return' (x: MutBorrow.t t_List)) = {[@expl:unwrap requires] self_ <> C_None'1}
-    any [ return''0 (result: MutBorrow.t t_List) -> {C_Some'1 result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option'1) (return (x: MutBorrow.t t_List)) = {[@expl:unwrap requires] self_ <> C_None'1}
+    any [ return' (result: MutBorrow.t t_List) -> {C_Some'1 result = self_} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
   
@@ -110,56 +110,55 @@ module M_list_index_mut__index_mut
   
   meta "select_lsinst" "all"
   
-  let rec index_mut (l: MutBorrow.t t_List) (ix: UInt64.t) (return' (x: MutBorrow.t UInt32.t)) =
+  let rec index_mut (l: MutBorrow.t t_List) (ix: UInt64.t) (return (x: MutBorrow.t UInt32.t)) =
     {[@expl:index_mut requires] UInt64.t'int ix < len l.current}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_l <- l'0 ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &old_ix <- ix'0 ] s1 | s1 = bb3 ]
-    | bb3 = bb3'0
-      [ bb3'0 = {[@expl:loop invariant #0] UInt64.le (0: UInt64.t) ix'0 /\ UInt64.t'int ix'0 < len l'0.current}
-        {[@expl:loop invariant #1] get l'0.current (UInt64.t'int ix'0) = get old_l.current (UInt64.t'int old_ix)}
-        {[@expl:loop invariant #2] get l'0.final (UInt64.t'int ix'0) = get old_l.final (UInt64.t'int old_ix)}
-        {[@expl:loop invariant #3] len l'0.final = len l'0.current -> len old_l.final = len old_l.current}
-        {[@expl:loop invariant #4] (forall i: int. 0 <= i /\ i < len l'0.current /\ i <> UInt64.t'int ix'0
-            -> get l'0.final i = get l'0.current i)
+    [ bb0 = s0 [ s0 = [ &old_l <- l ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &old_ix <- ix ] s1 | s1 = bb3 ]
+    | bb3 = bb3
+      [ bb3 = {[@expl:loop invariant #0] UInt64.le (0: UInt64.t) ix /\ UInt64.t'int ix < len l.current}
+        {[@expl:loop invariant #1] get l.current (UInt64.t'int ix) = get old_l.current (UInt64.t'int old_ix)}
+        {[@expl:loop invariant #2] get l.final (UInt64.t'int ix) = get old_l.final (UInt64.t'int old_ix)}
+        {[@expl:loop invariant #3] len l.final = len l.current -> len old_l.final = len old_l.current}
+        {[@expl:loop invariant #4] (forall i: int. 0 <= i /\ i < len l.current /\ i <> UInt64.t'int ix
+            -> get l.final i = get l.current i)
         -> (forall i: int. 0 <= i /\ i < len old_l.current /\ i <> UInt64.t'int old_ix
           -> get old_l.final i = get old_l.current i)}
         (! s0)
         [ s0 = bb4 ]
         [ bb4 = s0
-          [ s0 = [ &_21 <- UInt64.gt ix'0 (0: UInt64.t) ] s1
+          [ s0 = [ &_21 <- UInt64.gt ix (0: UInt64.t) ] s1
           | s1 = any [ br0 -> {_21 = false} (! bb8) | br1 -> {_21} (! bb5) ] ]
         | bb5 = s0
-          [ s0 = MutBorrow.borrow_final <t_Option> {(l'0.current).t_List__1}
-              {MutBorrow.inherit_id (MutBorrow.get_id l'0) 2}
+          [ s0 = MutBorrow.borrow_final <t_Option> {(l.current).t_List__1} {MutBorrow.inherit_id (MutBorrow.get_id l) 2}
               (fun (_ret: MutBorrow.t t_Option) ->
-                [ &_26 <- _ret ] [ &l'0 <- { l'0 with current = { l'0.current with t_List__1 = _ret.final } } ] s1)
+                [ &_26 <- _ret ] [ &l <- { l with current = { l.current with t_List__1 = _ret.final } } ] s1)
           | s1 = as_mut {_26} (fun (_ret: t_Option'1) -> [ &_25 <- _ret ] s2)
           | s2 = bb6 ]
         | bb6 = s0 [ s0 = unwrap {_25} (fun (_ret: MutBorrow.t t_List) -> [ &_24 <- _ret ] s1) | s1 = bb7 ]
         | bb7 = s0
           [ s0 = MutBorrow.borrow_final <t_List> {_24.current} {MutBorrow.get_id _24}
               (fun (_ret: MutBorrow.t t_List) -> [ &_23 <- _ret ] [ &_24 <- { _24 with current = _ret.final } ] s1)
-          | s1 = -{resolve'0 l'0}- s2
-          | s2 = [ &l'0 <- _23 ] s3
+          | s1 = -{resolve'0 l}- s2
+          | s2 = [ &l <- _23 ] s3
           | s3 = -{resolve'2 _24}- s4
-          | s4 = UInt64.sub {ix'0} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &ix'0 <- _ret ] s5)
-          | s5 = bb3'0 ] ] ]
+          | s4 = UInt64.sub {ix} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &ix <- _ret ] s5)
+          | s5 = bb3 ] ] ]
     | bb8 = s0
-      [ s0 = MutBorrow.borrow_final <UInt32.t> {(l'0.current).t_List__0} {MutBorrow.inherit_id (MutBorrow.get_id l'0) 1}
+      [ s0 = MutBorrow.borrow_final <UInt32.t> {(l.current).t_List__0} {MutBorrow.inherit_id (MutBorrow.get_id l) 1}
           (fun (_ret: MutBorrow.t UInt32.t) ->
-            [ &_28 <- _ret ] [ &l'0 <- { l'0 with current = { l'0.current with t_List__0 = _ret.final } } ] s1)
+            [ &_28 <- _ret ] [ &l <- { l with current = { l.current with t_List__0 = _ret.final } } ] s1)
       | s1 = MutBorrow.borrow_final <UInt32.t> {_28.current} {MutBorrow.get_id _28}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_3 <- _ret ] [ &_28 <- { _28 with current = _ret.final } ] s2)
       | s2 = MutBorrow.borrow_final <UInt32.t> {_3.current} {MutBorrow.get_id _3}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_0 <- _ret ] [ &_3 <- { _3 with current = _ret.final } ] s3)
       | s3 = -{resolve'4 _28}- s4
       | s4 = -{resolve'4 _3}- s5
-      | s5 = -{resolve'0 l'0}- s6
-      | s6 = return''0 {_0} ] ]
+      | s5 = -{resolve'0 l}- s6
+      | s6 = return {_0} ] ]
     [ & _0: MutBorrow.t UInt32.t = Any.any_l ()
-    | & l'0: MutBorrow.t t_List = l
-    | & ix'0: UInt64.t = ix
+    | & l: MutBorrow.t t_List = l
+    | & ix: UInt64.t = ix
     | & _3: MutBorrow.t UInt32.t = Any.any_l ()
     | & old_l: MutBorrow.t t_List = Any.any_l ()
     | & old_ix: UInt64.t = Any.any_l ()
@@ -169,13 +168,13 @@ module M_list_index_mut__index_mut
     | & _25: t_Option'1 = Any.any_l ()
     | & _26: MutBorrow.t t_Option = Any.any_l ()
     | & _28: MutBorrow.t UInt32.t = Any.any_l () ])
-    [ return''0 (result: MutBorrow.t UInt32.t) -> {[@expl:index_mut ensures #0] C_Some'0 (result.current)
+    [ return (result: MutBorrow.t UInt32.t) -> {[@expl:index_mut ensures #0] C_Some'0 (result.current)
       = get l.current (UInt64.t'int ix)}
       {[@expl:index_mut ensures #1] C_Some'0 (result.final) = get l.final (UInt64.t'int ix)}
       {[@expl:index_mut ensures #2] len l.final = len l.current}
       {[@expl:index_mut ensures #3] forall i: int. 0 <= i /\ i < len l.current /\ i <> UInt64.t'int ix
         -> get l.current i = get l.final i}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_list_index_mut__write
   use creusot.prelude.MutBorrow
@@ -204,14 +203,14 @@ module M_list_index_mut__write
       C_Some'0 i
   
   
-  let rec index_mut (l: MutBorrow.t t_List) (ix: UInt64.t) (return' (x: MutBorrow.t UInt32.t)) =
+  let rec index_mut (l: MutBorrow.t t_List) (ix: UInt64.t) (return (x: MutBorrow.t UInt32.t)) =
     {[@expl:index_mut requires] UInt64.t'int ix < len l.current}
     any
-    [ return''0 (result: MutBorrow.t UInt32.t) -> {C_Some'0 (result.current) = get l.current (UInt64.t'int ix)}
+    [ return' (result: MutBorrow.t UInt32.t) -> {C_Some'0 (result.current) = get l.current (UInt64.t'int ix)}
       {C_Some'0 (result.final) = get l.final (UInt64.t'int ix)}
       {len l.final = len l.current}
       {forall i: int. 0 <= i /\ i < len l.current /\ i <> UInt64.t'int ix -> get l.current i = get l.final i}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
   
@@ -233,30 +232,30 @@ module M_list_index_mut__write
   
   meta "select_lsinst" "all"
   
-  let rec write (l: MutBorrow.t t_List) (ix: UInt64.t) (v: UInt32.t) (return' (x: ())) =
+  let rec write (l: MutBorrow.t t_List) (ix: UInt64.t) (v: UInt32.t) (return (x: ())) =
     {[@expl:write requires] UInt64.t'int ix < len l.current}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <t_List> {l'0.current} {MutBorrow.get_id l'0}
-          (fun (_ret: MutBorrow.t t_List) -> [ &_10 <- _ret ] [ &l'0 <- { l'0 with current = _ret.final } ] s1)
-      | s1 = index_mut {_10} {ix'0} (fun (_ret: MutBorrow.t UInt32.t) -> [ &_9 <- _ret ] s2)
+      [ s0 = MutBorrow.borrow_final <t_List> {l.current} {MutBorrow.get_id l}
+          (fun (_ret: MutBorrow.t t_List) -> [ &_10 <- _ret ] [ &l <- { l with current = _ret.final } ] s1)
+      | s1 = index_mut {_10} {ix} (fun (_ret: MutBorrow.t UInt32.t) -> [ &_9 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = [ &_9 <- { _9 with current = v'0 } ] s1
+      [ s0 = [ &_9 <- { _9 with current = v } ] s1
       | s1 = -{resolve'0 _9}- s2
-      | s2 = -{resolve'2 l'0}- s3
-      | s3 = return''0 {_0} ] ]
+      | s2 = -{resolve'2 l}- s3
+      | s3 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & l'0: MutBorrow.t t_List = l
-    | & ix'0: UInt64.t = ix
-    | & v'0: UInt32.t = v
+    | & l: MutBorrow.t t_List = l
+    | & ix: UInt64.t = ix
+    | & v: UInt32.t = v
     | & _9: MutBorrow.t UInt32.t = Any.any_l ()
     | & _10: MutBorrow.t t_List = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:write ensures #0] C_Some'0 v = get l.final (UInt64.t'int ix)}
+    [ return (result: ()) -> {[@expl:write ensures #0] C_Some'0 v = get l.final (UInt64.t'int ix)}
       {[@expl:write ensures #1] len l.final = len l.current}
       {[@expl:write ensures #2] forall i: int. 0 <= i /\ i < len l.current /\ i <> UInt64.t'int ix
         -> get l.current i = get l.final i}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_list_index_mut__f
   use creusot.int.UInt32
@@ -285,13 +284,13 @@ module M_list_index_mut__f
       C_Some'0 i
   
   
-  let rec write (l: MutBorrow.t t_List) (ix: UInt64.t) (v: UInt32.t) (return' (x: ())) =
+  let rec write (l: MutBorrow.t t_List) (ix: UInt64.t) (v: UInt32.t) (return (x: ())) =
     {[@expl:write requires] UInt64.t'int ix < len l.current}
     any
-    [ return''0 (result: ()) -> {C_Some'0 v = get l.final (UInt64.t'int ix)}
+    [ return' (result: ()) -> {C_Some'0 v = get l.final (UInt64.t'int ix)}
       {len l.final = len l.current}
       {forall i: int. 0 <= i /\ i < len l.current /\ i <> UInt64.t'int ix -> get l.current i = get l.final i}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
   
@@ -305,7 +304,7 @@ module M_list_index_mut__f
   
   meta "select_lsinst" "all"
   
-  let rec f (return' (x: ())) = (! bb0
+  let rec f (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- C_None ] s1 | s1 = [ &_4 <- { t_List__0 = (10: UInt32.t); t_List__1 = _5 } ] s2 | s2 = bb2 ]
     | bb2 = s0 [ s0 = [ &_2 <- C_Some _4 ] s1 | s1 = bb3 ]
@@ -318,7 +317,7 @@ module M_list_index_mut__f
       | s2 = write {_7} {(0: UInt64.t)} {(2: UInt32.t)} (fun (_ret: ()) -> [ &_6 <- _ret ] s3)
       | s3 = bb5 ]
     | bb5 = s0 [ s0 = -{resolve'0 _8}- s1 | s1 = bb6 ]
-    | bb6 = return''0 {_0} ]
+    | bb6 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & l: t_List = Any.any_l ()
     | & _2: t_Option = Any.any_l ()
@@ -326,5 +325,5 @@ module M_list_index_mut__f
     | & _5: t_Option = Any.any_l ()
     | & _6: () = Any.any_l ()
     | & _7: MutBorrow.t t_List = Any.any_l ()
-    | & _8: MutBorrow.t t_List = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _8: MutBorrow.t t_List = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

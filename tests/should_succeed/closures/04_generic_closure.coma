@@ -70,26 +70,26 @@ module M_04_generic_closure__generic_closure
   axiom fn_mut_spec: forall self: t_F, args: t_A, res_state: t_F, res: t_B. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec call (self_: t_F) (arg: t_A) (return' (x: t_B)) = {[@expl:call 'self_' type invariant] inv'0 self_}
+  let rec call (self_: t_F) (arg: t_A) (return (x: t_B)) = {[@expl:call 'self_' type invariant] inv'0 self_}
     {[@expl:call 'arg' type invariant] inv'2 arg}
     {[@expl:call requires] precondition self_ arg}
-    any [ return''0 (result: t_B) -> {inv'3 result} {postcondition self_ arg result} (! return' {result}) ]
+    any [ return' (result: t_B) -> {inv'3 result} {postcondition self_ arg result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec generic_closure (f: t_F) (a: t_A) (return' (x: t_B)) = {[@expl:generic_closure 'f' type invariant] inv f}
+  let rec generic_closure (f: t_F) (a: t_A) (return (x: t_B)) = {[@expl:generic_closure 'f' type invariant] inv f}
     {[@expl:generic_closure 'a' type invariant] inv'1 a}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv f'0} s1
-      | s1 = -{resolve f'0}- s2
-      | s2 = [ &_4 <- a'0 ] s3
-      | s3 = call {f'0} {_4} (fun (_ret: t_B) -> [ &_0 <- _ret ] s4)
+      [ s0 = {[@expl:type invariant] inv f} s1
+      | s1 = -{resolve f}- s2
+      | s2 = [ &_4 <- a ] s3
+      | s3 = call {f} {_4} (fun (_ret: t_B) -> [ &_0 <- _ret ] s4)
       | s4 = bb4 ]
-    | bb4 = return''0 {_0} ] [ & _0: t_B = Any.any_l () | & f'0: t_F = f | & a'0: t_A = a | & _4: t_A = Any.any_l () ])
-    [ return''0 (result: t_B) -> {[@expl:generic_closure result type invariant] inv'3 result} (! return' {result}) ]
+    | bb4 = return {_0} ] [ & _0: t_B = Any.any_l () | & f: t_F = f | & a: t_A = a | & _4: t_A = Any.any_l () ])
+    [ return (result: t_B) -> {[@expl:generic_closure result type invariant] inv'3 result} (! return {result}) ]
 end
 module M_04_generic_closure__mapper
   use creusot.prelude.Any
@@ -100,26 +100,26 @@ module M_04_generic_closure__mapper
   
   predicate resolve (_0: t_A)
   
-  let rec closure0 [@coma:extspec] (self: ()) (_a: t_A) (return' (x: ())) = bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv _a'0} s1 | s1 = -{resolve _a'0}- s2 | s2 = bb1 ]
-    | bb1 = return' {_0} ] [ & _0: () = Any.any_l () | & _a'0: t_A = _a ]
+  let rec closure0 [@coma:extspec] (self: ()) (_a: t_A) (return (x: ())) = bb0
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv _a} s1 | s1 = -{resolve _a}- s2 | s2 = bb1 ] | bb1 = return {_0} ]
+    [ & _0: () = Any.any_l () | & _a: t_A = _a ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
-  let rec generic_closure (f: ()) (a: t_A) (return' (x: ())) = {[@expl:generic_closure 'a' type invariant] inv a}
-    any [ return''0 (result: ()) -> (! return' {result}) ]
+  let rec generic_closure (f: ()) (a: t_A) (return (x: ())) = {[@expl:generic_closure 'a' type invariant] inv a}
+    any [ return' (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec mapper (x: t_A) (return' (x'0: ())) = {[@expl:mapper 'x' type invariant] inv x}
+  let rec mapper (x: t_A) (return (x'0: ())) = {[@expl:mapper 'x' type invariant] inv x}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_3 <- () ] s1 | s1 = generic_closure {_3} {x'0} (fun (_ret: ()) -> [ &_2 <- _ret ] s2) | s2 = bb2 ]
-    | bb2 = return''0 {_0} ]
-    [ & _0: () = Any.any_l () | & x'0: t_A = x | & _2: () = Any.any_l () | & _3: () = Any.any_l () ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+      [ s0 = [ &_3 <- () ] s1 | s1 = generic_closure {_3} {x} (fun (_ret: ()) -> [ &_2 <- _ret ] s2) | s2 = bb2 ]
+    | bb2 = return {_0} ]
+    [ & _0: () = Any.any_l () | & x: t_A = x | & _2: () = Any.any_l () | & _3: () = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end

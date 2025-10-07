@@ -11,7 +11,7 @@ module M_02_fib__fib
   
   constant i : int
   
-  function fib (i'0: int) : int
+  function fib (i: int) : int
   
   goal vc_fib: if i <= 0 then
       true
@@ -37,7 +37,7 @@ module M_02_fib__lemma_fib_bound
   
   constant i : int
   
-  function lemma_fib_bound (i'0: int) : ()
+  function lemma_fib_bound (i: int) : ()
   
   goal vc_lemma_fib_bound: 0 <= i
     -> (if i = 0 then
@@ -94,9 +94,9 @@ module M_02_fib__fib_memo
   
   meta "rewrite_def" predicate has_value
   
-  let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: t_PredCell)) =
+  let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_PredCell)) =
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return''0 (result: t_PredCell) -> {has_value ix (view self_) result} (! return' {result}) ]
+    any [ return' (result: t_PredCell) -> {has_value ix (view self_) result} (! return {result}) ]
   
   type t_Option = C_None | C_Some UInt64.t
   
@@ -106,8 +106,8 @@ module M_02_fib__fib_memo
   
   function view'0 (self: t_PredCell) : Map.map t_Option bool
   
-  let rec get (self: t_PredCell) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {index_logic (view'0 self) result} (! return' {result}) ]
+  let rec get (self: t_PredCell) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {index_logic (view'0 self) result} (! return {result}) ]
   
   let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
     [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
@@ -125,8 +125,8 @@ module M_02_fib__fib_memo
   
   axiom lemma_fib_bound_spec: forall i: int. 0 <= i -> fib i <= Pow2int.pow2 i
   
-  let rec set (self: t_PredCell) (v: t_Option) (return' (x: ())) = {[@expl:set requires] index_logic (view'0 self) v}
-    any [ return''0 (result: ()) -> (! return' {result}) ]
+  let rec set (self: t_PredCell) (v: t_Option) (return (x: ())) = {[@expl:set requires] index_logic (view'0 self) v}
+    any [ return' (result: ()) -> (! return {result}) ]
   
   predicate invariant' (self: t_FibCache) =
     forall i: int. 0 <= i /\ i < Seq.length (view self.t_FibCache__0)
@@ -156,42 +156,42 @@ module M_02_fib__fib_memo
   
   meta "select_lsinst" "all"
   
-  let rec fib_memo (mem: t_FibCache) (i: UInt64.t) (return' (x: UInt64.t)) =
+  let rec fib_memo (mem: t_FibCache) (i: UInt64.t) (return (x: UInt64.t)) =
     {[@expl:fib_memo 'mem' type invariant] inv'0 mem}
     {[@expl:fib_memo requires #0] UInt64.t'int i < Seq.length (view mem.t_FibCache__0)}
     {[@expl:fib_memo requires #1] UInt64.t'int i <= 63}
     (! bb0
-    [ bb0 = s0 [ s0 = index {mem'0.t_FibCache__0} {i'0} (fun (_ret: t_PredCell) -> [ &_8 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = index {mem.t_FibCache__0} {i} (fun (_ret: t_PredCell) -> [ &_8 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = get {_8} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = any [ br0 -> {_6 = C_None} (! bb5) | br1 (x0: UInt64.t) -> {_6 = C_Some x0} (! bb6) ]
     | bb6 = s0 [ s0 = v_Some {_6} (fun (r0: UInt64.t) -> [ &v <- r0 ] s1) | s1 = [ &_0 <- v ] s2 | s2 = bb18 ]
     | bb5 = s0
-      [ s0 = [ &_14 <- i'0 = (0: UInt64.t) ] s1 | s1 = any [ br0 -> {_14 = false} (! bb8) | br1 -> {_14} (! bb7) ] ]
+      [ s0 = [ &_14 <- i = (0: UInt64.t) ] s1 | s1 = any [ br0 -> {_14 = false} (! bb8) | br1 -> {_14} (! bb7) ] ]
     | bb7 = s0 [ s0 = [ &fib_i <- (0: UInt64.t) ] s1 | s1 = bb15 ]
     | bb8 = s0
-      [ s0 = [ &_16 <- i'0 = (1: UInt64.t) ] s1 | s1 = any [ br0 -> {_16 = false} (! bb10) | br1 -> {_16} (! bb9) ] ]
+      [ s0 = [ &_16 <- i = (1: UInt64.t) ] s1 | s1 = any [ br0 -> {_16 = false} (! bb10) | br1 -> {_16} (! bb9) ] ]
     | bb9 = s0 [ s0 = [ &fib_i <- (1: UInt64.t) ] s1 | s1 = bb15 ]
     | bb10 = s0 [ s0 = [ &_18 <- () ] s1 | s1 = bb11 ]
     | bb11 = s0
-      [ s0 = UInt64.sub {i'0} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_22 <- _ret ] s1)
-      | s1 = fib_memo {mem'0} {_22} (fun (_ret: UInt64.t) -> [ &_20 <- _ret ] s2)
+      [ s0 = UInt64.sub {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_22 <- _ret ] s1)
+      | s1 = fib_memo {mem} {_22} (fun (_ret: UInt64.t) -> [ &_20 <- _ret ] s2)
       | s2 = bb12 ]
     | bb12 = s0
-      [ s0 = UInt64.sub {i'0} {(2: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_26 <- _ret ] s1)
-      | s1 = fib_memo {mem'0} {_26} (fun (_ret: UInt64.t) -> [ &_24 <- _ret ] s2)
+      [ s0 = UInt64.sub {i} {(2: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_26 <- _ret ] s1)
+      | s1 = fib_memo {mem} {_26} (fun (_ret: UInt64.t) -> [ &_24 <- _ret ] s2)
       | s2 = bb13 ]
     | bb13 = s0 [ s0 = UInt64.add {_20} {_24} (fun (_ret: UInt64.t) -> [ &fib_i <- _ret ] s1) | s1 = bb15 ]
     | bb15 = s0
-      [ s0 = {[@expl:assertion] UInt64.t'int fib_i = fib (UInt64.t'int i'0)} s1
-      | s1 = index {mem'0.t_FibCache__0} {i'0} (fun (_ret: t_PredCell) -> [ &_32 <- _ret ] s2)
+      [ s0 = {[@expl:assertion] UInt64.t'int fib_i = fib (UInt64.t'int i)} s1
+      | s1 = index {mem.t_FibCache__0} {i} (fun (_ret: t_PredCell) -> [ &_32 <- _ret ] s2)
       | s2 = bb16 ]
     | bb16 = s0
       [ s0 = [ &_35 <- C_Some fib_i ] s1 | s1 = set {_32} {_35} (fun (_ret: ()) -> [ &_30 <- _ret ] s2) | s2 = bb17 ]
     | bb17 = s0 [ s0 = [ &_0 <- fib_i ] s1 | s1 = bb18 ]
-    | bb18 = return''0 {_0} ]
+    | bb18 = return {_0} ]
     [ & _0: UInt64.t = Any.any_l ()
-    | & mem'0: t_FibCache = mem
-    | & i'0: UInt64.t = i
+    | & mem: t_FibCache = mem
+    | & i: UInt64.t = i
     | & _6: t_Option = Any.any_l ()
     | & _8: t_PredCell = Any.any_l ()
     | & v: UInt64.t = Any.any_l ()
@@ -206,6 +206,6 @@ module M_02_fib__fib_memo
     | & _30: () = Any.any_l ()
     | & _32: t_PredCell = Any.any_l ()
     | & _35: t_Option = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:fib_memo ensures] UInt64.t'int result = fib (UInt64.t'int i)}
-      (! return' {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:fib_memo ensures] UInt64.t'int result = fib (UInt64.t'int i)}
+      (! return {result}) ]
 end

@@ -6,8 +6,8 @@ module M_ghost_vec__ghost_vec
   use creusot.int.Int128
   use creusot.prelude.Any
   
-  let rec new (return' (x: Seq.seq Int32.t)) = any
-    [ return''0 (result: Seq.seq Int32.t) -> {result = (Seq.empty: Seq.seq Int32.t)} (! return' {result}) ]
+  let rec new (return (x: Seq.seq Int32.t)) = any
+    [ return' (result: Seq.seq Int32.t) -> {result = (Seq.empty: Seq.seq Int32.t)} (! return {result}) ]
   
   type t_Option = C_None | C_Some Int32.t
   
@@ -17,17 +17,17 @@ module M_ghost_vec__ghost_vec
       C_None
   
   
-  let rec deref (self: Seq.seq Int32.t) (return' (x: Seq.seq Int32.t)) = any
-    [ return''0 (result: Seq.seq Int32.t) -> {result = self} (! return' {result}) ]
+  let rec deref (self: Seq.seq Int32.t) (return (x: Seq.seq Int32.t)) = any
+    [ return' (result: Seq.seq Int32.t) -> {result = self} (! return {result}) ]
   
-  let rec is_empty_ghost (self: Seq.seq Int32.t) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (Seq.length self = 0)} (! return' {result}) ]
+  let rec is_empty_ghost (self: Seq.seq Int32.t) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (Seq.length self = 0)} (! return {result}) ]
   
-  let rec deref_mut (self: MutBorrow.t (Seq.seq Int32.t)) (return' (x: MutBorrow.t (Seq.seq Int32.t))) = any
-    [ return''0 (result: MutBorrow.t (Seq.seq Int32.t)) -> {result = self} (! return' {result}) ]
+  let rec deref_mut (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: MutBorrow.t (Seq.seq Int32.t))) = any
+    [ return' (result: MutBorrow.t (Seq.seq Int32.t)) -> {result = self} (! return {result}) ]
   
-  let rec push_back_ghost (self: MutBorrow.t (Seq.seq Int32.t)) (x: Int32.t) (return' (x'0: ())) = any
-    [ return''0 (result: ()) -> {self.final = Seq.snoc self.current x} (! return' {result}) ]
+  let rec push_back_ghost (self: MutBorrow.t (Seq.seq Int32.t)) (x: Int32.t) (return (x'0: ())) = any
+    [ return' (result: ()) -> {self.final = Seq.snoc self.current x} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (Seq.seq Int32.t)) = self.final = self.current
   
@@ -37,34 +37,34 @@ module M_ghost_vec__ghost_vec
   
   meta "rewrite_def" predicate resolve'0
   
-  let rec len_ghost (self: Seq.seq Int32.t) (return' (x: int)) = any
-    [ return''0 (result: int) -> {result = Seq.length self} (! return' {result}) ]
+  let rec len_ghost (self: Seq.seq Int32.t) (return (x: int)) = any
+    [ return' (result: int) -> {result = Seq.length self} (! return {result}) ]
   
-  let rec new'0 (value: Int128.t) (return' (x: int)) = any
-    [ return''0 (result: int) -> {result = Int128.to_int value} (! return' {result}) ]
+  let rec new'0 (value: Int128.t) (return (x: int)) = any
+    [ return' (result: int) -> {result = Int128.to_int value} (! return {result}) ]
   
-  let rec into_inner (self: int) (return' (x: int)) = any
-    [ return''0 (result: int) -> {result = self} (! return' {result}) ]
+  let rec into_inner (self: int) (return (x: int)) = any
+    [ return' (result: int) -> {result = self} (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 Int32.t
   
-  let rec get_ghost (self: Seq.seq Int32.t) (index: int) (return' (x: t_Option'0)) = any
-    [ return''0 (result: t_Option'0) -> {match get self index with
+  let rec get_ghost (self: Seq.seq Int32.t) (index: int) (return (x: t_Option'0)) = any
+    [ return' (result: t_Option'0) -> {match get self index with
         | C_None -> result = C_None'0
         | C_Some v -> result = C_Some'0 v
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t Int32.t)
   
-  let rec get_mut_ghost (self: MutBorrow.t (Seq.seq Int32.t)) (index: int) (return' (x: t_Option'1)) = any
-    [ return''0 (result: t_Option'1) -> {match result with
+  let rec get_mut_ghost (self: MutBorrow.t (Seq.seq Int32.t)) (index: int) (return (x: t_Option'1)) = any
+    [ return' (result: t_Option'1) -> {match result with
         | C_None'1 -> get self.current index = C_None /\ self.current = self.final
         | C_Some'1 r -> get self.current index = C_Some (r.current) /\ r.final = Seq.get self.final index
         end}
       {forall i: int. i <> index -> get self.current i = get self.final i}
       {Seq.length self.current = Seq.length self.final}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
@@ -80,34 +80,34 @@ module M_ghost_vec__ghost_vec
       (! {false}
       any) ]
   
-  let rec pop_back_ghost (self: MutBorrow.t (Seq.seq Int32.t)) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match result with
+  let rec pop_back_ghost (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {match result with
         | C_None -> self.current = (Seq.empty: Seq.seq Int32.t) /\ self.current = self.final
         | C_Some r -> self.current = Seq.snoc self.final r
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec new'1 (x: ()) (return' (x'0: ())) = any [ return''0 (result: ()) -> {result = x} (! return' {result}) ]
+  let rec new'1 (x: ()) (return (x'0: ())) = any [ return' (result: ()) -> {result = x} (! return {result}) ]
   
   function push_front [@inline:trivial] (self: Seq.seq Int32.t) (x: Int32.t) : Seq.seq Int32.t = Seq.cons x self
   
   meta "rewrite_def" function push_front
   
-  let rec push_front_ghost (self: MutBorrow.t (Seq.seq Int32.t)) (x: Int32.t) (return' (x'0: ())) = any
-    [ return''0 (result: ()) -> {self.final = push_front self.current x} (! return' {result}) ]
+  let rec push_front_ghost (self: MutBorrow.t (Seq.seq Int32.t)) (x: Int32.t) (return (x'0: ())) = any
+    [ return' (result: ()) -> {self.final = push_front self.current x} (! return {result}) ]
   
-  let rec pop_front_ghost (self: MutBorrow.t (Seq.seq Int32.t)) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match result with
+  let rec pop_front_ghost (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {match result with
         | C_None -> self.current = (Seq.empty: Seq.seq Int32.t) /\ self.current = self.final
         | C_Some r -> self.current = push_front self.final r
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec ghost_vec (return' (x: ())) = (! bb0
+  let rec ghost_vec (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = new (fun (_ret: Seq.seq Int32.t) -> [ &v <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
       [ s0 = {[@expl:assertion] forall i: int. get v i = C_None} s1
@@ -364,7 +364,7 @@ module M_ghost_vec__ghost_vec
       | s4 = {[@expl:assertion] pop4'0 = C_None} s5
       | s5 = new'1 {_101} (fun (_ret: ()) -> [ &_100 <- _ret ] s6)
       | s6 = bb60 ]
-    | bb60 = return''0 {_0}
+    | bb60 = return {_0}
     | bb5 = {false} any ]
     [ & _0: () = Any.any_l ()
     | & v: Seq.seq Int32.t = Any.any_l ()
@@ -453,5 +453,5 @@ module M_ghost_vec__ghost_vec
     | & pop4'0: t_Option = Any.any_l ()
     | & _127: MutBorrow.t (Seq.seq Int32.t) = Any.any_l ()
     | & _128: MutBorrow.t (Seq.seq Int32.t) = Any.any_l ()
-    | & _129: MutBorrow.t (Seq.seq Int32.t) = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _129: MutBorrow.t (Seq.seq Int32.t) = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

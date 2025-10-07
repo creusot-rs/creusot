@@ -7,16 +7,16 @@ module M_knapsack__max
   
   meta "select_lsinst" "all"
   
-  let rec max (a: UInt64.t) (b: UInt64.t) (return' (x: UInt64.t)) = {[@expl:max requires] true}
+  let rec max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = {[@expl:max requires] true}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_5 <- UInt64.lt a'0 b'0 ] s1 | s1 = any [ br0 -> {_5 = false} (! bb2) | br1 -> {_5} (! bb1) ] ]
-    | bb1 = s0 [ s0 = [ &_0 <- b'0 ] s1 | s1 = bb3 ]
-    | bb2 = s0 [ s0 = [ &_0 <- a'0 ] s1 | s1 = bb3 ]
-    | bb3 = return''0 {_0} ]
-    [ & _0: UInt64.t = Any.any_l () | & a'0: UInt64.t = a | & b'0: UInt64.t = b | & _5: bool = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:max ensures] UInt64.t'int result
+    [ bb0 = s0 [ s0 = [ &_5 <- UInt64.lt a b ] s1 | s1 = any [ br0 -> {_5 = false} (! bb2) | br1 -> {_5} (! bb1) ] ]
+    | bb1 = s0 [ s0 = [ &_0 <- b ] s1 | s1 = bb3 ]
+    | bb2 = s0 [ s0 = [ &_0 <- a ] s1 | s1 = bb3 ]
+    | bb3 = return {_0} ]
+    [ & _0: UInt64.t = Any.any_l () | & a: UInt64.t = a | & b: UInt64.t = b | & _5: bool = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@expl:max ensures] UInt64.t'int result
       = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_knapsack__m
   use creusot.int.UInt64
@@ -42,7 +42,7 @@ module M_knapsack__m
   
   constant w : int
   
-  function m (items'0: Seq.seq t_Item) (i'0: int) (w'0: int) : int
+  function m (items: Seq.seq t_Item) (i: int) (w: int) : int
   
   goal vc_m: 0 <= i /\ i <= Seq.length items
     -> 0 <= w
@@ -99,10 +99,10 @@ module M_knapsack__knapsack01_dyn
   
   meta "rewrite_def" function index_logic
   
-  let rec from_elem (elem: UInt64.t) (n: UInt64.t) (return' (x: t_Vec)) = any
-    [ return''0 (result: t_Vec) -> {Seq.length (view result) = UInt64.t'int n}
+  let rec from_elem (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec)) = any
+    [ return' (result: t_Vec) -> {Seq.length (view result) = UInt64.t'int n}
       {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic result i = elem}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_RawVec'0 = { t_RawVec__inner'0: t_RawVecInner; t_RawVec__qy95zmarker'0: () }
   
@@ -154,8 +154,8 @@ module M_knapsack__knapsack01_dyn
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_Vec'0 [inv'4 x]. inv'4 x = invariant''2 x
   
-  let rec len (self_: t_Vec'0) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'4 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
+  let rec len (self_: t_Vec'0) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'4 self_}
+    any [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return {result}) ]
   
   type t_RawVec'1 = { t_RawVec__inner'1: t_RawVecInner; t_RawVec__qy95zmarker'1: () }
   
@@ -169,10 +169,10 @@ module M_knapsack__knapsack01_dyn
   
   meta "rewrite_def" function index_logic'0
   
-  let rec from_elem'0 (elem: t_Vec) (n: UInt64.t) (return' (x: t_Vec'1)) = any
-    [ return''0 (result: t_Vec'1) -> {Seq.length (view'1 result) = UInt64.t'int n}
+  let rec from_elem'0 (elem: t_Vec) (n: UInt64.t) (return (x: t_Vec'1)) = any
+    [ return' (result: t_Vec'1) -> {Seq.length (view'1 result) = UInt64.t'int n}
       {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic'0 result i = elem}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   function m (items: Seq.seq t_Item) (i: int) (w: int) : int
   
@@ -210,10 +210,10 @@ module M_knapsack__knapsack01_dyn
   
   meta "rewrite_def" predicate has_value
   
-  let rec index (self_: t_Vec'0) (ix: UInt64.t) (return' (x: t_Item)) =
+  let rec index (self_: t_Vec'0) (ix: UInt64.t) (return (x: t_Item)) =
     {[@expl:index 'self_' type invariant] inv'4 self_}
     {[@expl:index requires] in_bounds ix (view'0 self_)}
-    any [ return''0 (result: t_Item) -> {inv'5 result} {has_value ix (view'0 self_) result} (! return' {result}) ]
+    any [ return' (result: t_Item) -> {inv'5 result} {has_value ix (view'0 self_) result} (! return {result}) ]
   
   predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec) = UInt64.t'int self < Seq.length seq
   
@@ -224,9 +224,9 @@ module M_knapsack__knapsack01_dyn
   
   meta "rewrite_def" predicate has_value'0
   
-  let rec index'0 (self_: t_Vec'1) (ix: UInt64.t) (return' (x: t_Vec)) =
+  let rec index'0 (self_: t_Vec'1) (ix: UInt64.t) (return (x: t_Vec)) =
     {[@expl:index requires] in_bounds'0 ix (view'1 self_)}
-    any [ return''0 (result: t_Vec) -> {has_value'0 ix (view'1 self_) result} (! return' {result}) ]
+    any [ return' (result: t_Vec) -> {has_value'0 ix (view'1 self_) result} (! return {result}) ]
   
   predicate in_bounds'1 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) = UInt64.t'int self < Seq.length seq
   
@@ -237,42 +237,42 @@ module M_knapsack__knapsack01_dyn
   
   meta "rewrite_def" predicate has_value'1
   
-  let rec index'1 (self_: t_Vec) (ix: UInt64.t) (return' (x: UInt64.t)) =
+  let rec index'1 (self_: t_Vec) (ix: UInt64.t) (return (x: UInt64.t)) =
     {[@expl:index requires] in_bounds'1 ix (view self_)}
-    any [ return''0 (result: UInt64.t) -> {has_value'1 ix (view self_) result} (! return' {result}) ]
+    any [ return' (result: UInt64.t) -> {has_value'1 ix (view self_) result} (! return {result}) ]
   
-  let rec max (a: UInt64.t) (b: UInt64.t) (return' (x: UInt64.t)) = {[@expl:max requires] true}
+  let rec max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = {[@expl:max requires] true}
     any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
-      (! return' {result}) ]
+    [ return' (result: UInt64.t) -> {UInt64.t'int result = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
+      (! return {result}) ]
   
   predicate resolve_elswhere [@inline:trivial] (self: UInt64.t) (old': Seq.seq t_Vec) (fin: Seq.seq t_Vec) =
     forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   
   meta "rewrite_def" predicate resolve_elswhere
   
-  let rec index_mut (self_: MutBorrow.t t_Vec'1) (ix: UInt64.t) (return' (x: MutBorrow.t t_Vec)) =
+  let rec index_mut (self_: MutBorrow.t t_Vec'1) (ix: UInt64.t) (return (x: MutBorrow.t t_Vec)) =
     {[@expl:index_mut requires] in_bounds'0 ix (view'1 self_.current)}
     any
-    [ return''0 (result: MutBorrow.t t_Vec) -> {has_value'0 ix (view'1 self_.current) result.current}
+    [ return' (result: MutBorrow.t t_Vec) -> {has_value'0 ix (view'1 self_.current) result.current}
       {has_value'0 ix (view'1 self_.final) result.final}
       {resolve_elswhere ix (view'1 self_.current) (view'1 self_.final)}
       {Seq.length (view'1 self_.final) = Seq.length (view'1 self_.current)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve_elswhere'0 [@inline:trivial] (self: UInt64.t) (old': Seq.seq UInt64.t) (fin: Seq.seq UInt64.t) =
     forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   
   meta "rewrite_def" predicate resolve_elswhere'0
   
-  let rec index_mut'0 (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t UInt64.t)) =
+  let rec index_mut'0 (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
     {[@expl:index_mut requires] in_bounds'1 ix (view self_.current)}
     any
-    [ return''0 (result: MutBorrow.t UInt64.t) -> {has_value'1 ix (view self_.current) result.current}
+    [ return' (result: MutBorrow.t UInt64.t) -> {has_value'1 ix (view self_.current) result.current}
       {has_value'1 ix (view self_.final) result.final}
       {resolve_elswhere'0 ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
   
@@ -319,8 +319,8 @@ module M_knapsack__knapsack01_dyn
   
   axiom inv_axiom'7 [@rewrite]: forall x: t_Vec'2 [inv'8 x]. inv'8 x = invariant''6 x
   
-  let rec with_capacity (capacity: UInt64.t) (return' (x: t_Vec'2)) = any
-    [ return''0 (result: t_Vec'2) -> {inv'8 result} {Seq.length (view'2 result) = 0} (! return' {result}) ]
+  let rec with_capacity (capacity: UInt64.t) (return (x: t_Vec'2)) = any
+    [ return' (result: t_Vec'2) -> {inv'8 result} {Seq.length (view'2 result) = 0} (! return {result}) ]
   
   predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_Vec'2) = inv'8 self.current /\ inv'8 self.final
   
@@ -330,10 +330,10 @@ module M_knapsack__knapsack01_dyn
   
   axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_Vec'2 [inv'9 x]. inv'9 x = invariant''7 x
   
-  let rec push (self_: MutBorrow.t t_Vec'2) (v: t_Item) (return' (x: ())) =
+  let rec push (self_: MutBorrow.t t_Vec'2) (v: t_Item) (return (x: ())) =
     {[@expl:push 'self_' type invariant] inv'9 self_}
     {[@expl:push 'v' type invariant] inv'5 v}
-    any [ return''0 (result: ()) -> {view'2 self_.final = Seq.snoc (view'2 self_.current) v} (! return' {result}) ]
+    any [ return' (result: ()) -> {view'2 self_.final = Seq.snoc (view'2 self_.current) v} (! return {result}) ]
   
   function index_logic'1 [@inline:trivial] (self: t_Vec'0) (ix: int) : t_Item = Seq.get (view'0 self) ix
   
@@ -343,7 +343,7 @@ module M_knapsack__knapsack01_dyn
   
   meta "select_lsinst" "all"
   
-  let rec knapsack01_dyn (items: t_Vec'0) (max_weight: UInt64.t) (return' (x: t_Vec'2)) =
+  let rec knapsack01_dyn (items: t_Vec'0) (max_weight: UInt64.t) (return (x: t_Vec'2)) =
     {[@expl:knapsack01_dyn 'items' type invariant] inv'4 items}
     {[@expl:knapsack01_dyn requires #0] Seq.length (view'0 items) < 10000000}
     {[@expl:knapsack01_dyn requires #1] UInt64.t'int max_weight < 10000000}
@@ -351,49 +351,49 @@ module M_knapsack__knapsack01_dyn
       -> UInt64.t'int (index_logic'1 items i).t_Item__value <= 10000000}
     (! bb0
     [ bb0 = s0
-      [ s0 = UInt64.add {max_weight'0} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_8 <- _ret ] s1)
+      [ s0 = UInt64.add {max_weight} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_8 <- _ret ] s1)
       | s1 = from_elem {(0: UInt64.t)} {_8} (fun (_ret: t_Vec) -> [ &_7 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = len {items'0} (fun (_ret: UInt64.t) -> [ &_11 <- _ret ] s1) | s1 = bb2 ]
+    | bb1 = s0 [ s0 = len {items} (fun (_ret: UInt64.t) -> [ &_11 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
       [ s0 = UInt64.add {_11} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_10 <- _ret ] s1)
       | s1 = from_elem'0 {_7} {_10} (fun (_ret: t_Vec'1) -> [ &best_value <- _ret ] s2)
       | s2 = bb3 ]
     | bb3 = s0 [ s0 = [ &i <- (0: UInt64.t) ] s1 | s1 = bb4 ]
-    | bb4 = bb4'0
-      [ bb4'0 = {[@expl:loop invariant #0] Seq.length (view'0 items'0) + 1 = Seq.length (view'1 best_value)}
+    | bb4 = bb4
+      [ bb4 = {[@expl:loop invariant #0] Seq.length (view'0 items) + 1 = Seq.length (view'1 best_value)}
         {[@expl:loop invariant #1] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length (view'1 best_value)
-          -> UInt64.t'int max_weight'0 + 1 = Seq.length (view (index_logic'0 best_value i'0))}
+          -> UInt64.t'int max_weight + 1 = Seq.length (view (index_logic'0 best_value i'0))}
         {[@expl:loop invariant #2] forall ii: int, ww: int. 0 <= ii
-            /\ ii <= UInt64.t'int i /\ 0 <= ww /\ ww <= UInt64.t'int max_weight'0
-          -> UInt64.t'int (Seq.get (view (index_logic'0 best_value ii)) ww) = m (view'0 items'0) ii ww}
+            /\ ii <= UInt64.t'int i /\ 0 <= ww /\ ww <= UInt64.t'int max_weight
+          -> UInt64.t'int (Seq.get (view (index_logic'0 best_value ii)) ww) = m (view'0 items) ii ww}
         {[@expl:loop invariant #3] forall ii: int, ww: int. 0 <= ii
-            /\ ii <= Seq.length (view'0 items'0) /\ 0 <= ww /\ ww <= UInt64.t'int max_weight'0
+            /\ ii <= Seq.length (view'0 items) /\ 0 <= ww /\ ww <= UInt64.t'int max_weight
           -> UInt64.t'int (Seq.get (view (index_logic'0 best_value ii)) ww) <= 10000000 * ii}
         (! s0)
         [ s0 = bb5 ]
-        [ bb5 = s0 [ s0 = len {items'0} (fun (_ret: UInt64.t) -> [ &_23 <- _ret ] s1) | s1 = bb6 ]
+        [ bb5 = s0 [ s0 = len {items} (fun (_ret: UInt64.t) -> [ &_23 <- _ret ] s1) | s1 = bb6 ]
         | bb6 = s0
           [ s0 = [ &_21 <- UInt64.lt i _23 ] s1 | s1 = any [ br0 -> {_21 = false} (! bb25) | br1 -> {_21} (! bb7) ] ]
-        | bb7 = s0 [ s0 = index {items'0} {i} (fun (_ret: t_Item) -> [ &_26 <- _ret ] s1) | s1 = bb8 ]
+        | bb7 = s0 [ s0 = index {items} {i} (fun (_ret: t_Item) -> [ &_26 <- _ret ] s1) | s1 = bb8 ]
         | bb8 = s0 [ s0 = [ &it <- _26 ] s1 | s1 = [ &w <- (0: UInt64.t) ] s2 | s2 = bb9 ]
-        | bb9 = bb9'0
-          [ bb9'0 = {[@expl:loop invariant #0] Seq.length (view'0 items'0) + 1 = Seq.length (view'1 best_value)}
+        | bb9 = bb9
+          [ bb9 = {[@expl:loop invariant #0] Seq.length (view'0 items) + 1 = Seq.length (view'1 best_value)}
             {[@expl:loop invariant #1] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length (view'1 best_value)
-              -> UInt64.t'int max_weight'0 + 1 = Seq.length (view (index_logic'0 best_value i'0))}
+              -> UInt64.t'int max_weight + 1 = Seq.length (view (index_logic'0 best_value i'0))}
             {[@expl:loop invariant #2] forall ii: int, ww: int. 0 <= ii
-                /\ ii <= UInt64.t'int i /\ 0 <= ww /\ ww <= UInt64.t'int max_weight'0
-              -> UInt64.t'int (Seq.get (view (index_logic'0 best_value ii)) ww) = m (view'0 items'0) ii ww}
+                /\ ii <= UInt64.t'int i /\ 0 <= ww /\ ww <= UInt64.t'int max_weight
+              -> UInt64.t'int (Seq.get (view (index_logic'0 best_value ii)) ww) = m (view'0 items) ii ww}
             {[@expl:loop invariant #3] forall ww: int. 0 <= ww /\ ww <= UInt64.t'int w - 1
               -> UInt64.t'int (Seq.get (view (index_logic'0 best_value (UInt64.t'int i + 1))) ww)
-              = m (view'0 items'0) (UInt64.t'int i + 1) ww}
+              = m (view'0 items) (UInt64.t'int i + 1) ww}
             {[@expl:loop invariant #4] forall ii: int, ww: int. 0 <= ii
-                /\ ii <= Seq.length (view'0 items'0) /\ 0 <= ww /\ ww <= UInt64.t'int max_weight'0
+                /\ ii <= Seq.length (view'0 items) /\ 0 <= ww /\ ww <= UInt64.t'int max_weight
               -> UInt64.t'int (Seq.get (view (index_logic'0 best_value ii)) ww) <= 10000000 * ii}
             (! s0)
             [ s0 = bb10 ]
             [ bb10 = s0
-              [ s0 = [ &_37 <- UInt64.le w max_weight'0 ] s1
+              [ s0 = [ &_37 <- UInt64.le w max_weight ] s1
               | s1 = any [ br0 -> {_37 = false} (! bb24) | br1 -> {_37} (! bb11) ] ]
             | bb11 = s0
               [ s0 = [ &_41 <- UInt64.gt it.t_Item__weight w ] s1
@@ -428,18 +428,18 @@ module M_knapsack__knapsack01_dyn
               | s1 = -{resolve'0 _68}- s2
               | s2 = -{resolve'2 _70}- s3
               | s3 = UInt64.add {w} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &w <- _ret ] s4)
-              | s4 = bb9'0 ] ] ]
-        | bb24 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb4'0 ] ] ]
-    | bb25 = s0 [ s0 = len {items'0} (fun (_ret: UInt64.t) -> [ &_78 <- _ret ] s1) | s1 = bb26 ]
+              | s4 = bb9 ] ] ]
+        | bb24 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb4 ] ] ]
+    | bb25 = s0 [ s0 = len {items} (fun (_ret: UInt64.t) -> [ &_78 <- _ret ] s1) | s1 = bb26 ]
     | bb26 = s0 [ s0 = with_capacity {_78} (fun (_ret: t_Vec'2) -> [ &result <- _ret ] s1) | s1 = bb27 ]
     | bb27 = s0
-      [ s0 = [ &left_weight <- max_weight'0 ] s1
-      | s1 = len {items'0} (fun (_ret: UInt64.t) -> [ &j <- _ret ] s2)
+      [ s0 = [ &left_weight <- max_weight ] s1
+      | s1 = len {items} (fun (_ret: UInt64.t) -> [ &j <- _ret ] s2)
       | s2 = bb29 ]
-    | bb29 = bb29'0
-      [ bb29'0 = {[@expl:loop invariant #0] inv'8 result}
-        {[@expl:loop invariant #1] UInt64.t'int j <= Seq.length (view'0 items'0)}
-        {[@expl:loop invariant #2] UInt64.t'int left_weight <= UInt64.t'int max_weight'0}
+    | bb29 = bb29
+      [ bb29 = {[@expl:loop invariant #0] inv'8 result}
+        {[@expl:loop invariant #1] UInt64.t'int j <= Seq.length (view'0 items)}
+        {[@expl:loop invariant #2] UInt64.t'int left_weight <= UInt64.t'int max_weight}
         (! s0)
         [ s0 = bb30 ]
         [ bb30 = s0
@@ -447,7 +447,7 @@ module M_knapsack__knapsack01_dyn
           | s1 = any [ br0 -> {_88 = false} (! bb41) | br1 -> {_88} (! bb31) ] ]
         | bb31 = s0
           [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &j <- _ret ] s1)
-          | s1 = index {items'0} {j} (fun (_ret: t_Item) -> [ &_91 <- _ret ] s2)
+          | s1 = index {items} {j} (fun (_ret: t_Item) -> [ &_91 <- _ret ] s2)
           | s2 = bb32 ]
         | bb32 = s0
           [ s0 = [ &it'0 <- _91 ] s1
@@ -458,7 +458,7 @@ module M_knapsack__knapsack01_dyn
         | bb34 = s0 [ s0 = index'0 {best_value} {j} (fun (_ret: t_Vec) -> [ &_106 <- _ret ] s1) | s1 = bb35 ]
         | bb35 = s0 [ s0 = index'1 {_106} {left_weight} (fun (_ret: UInt64.t) -> [ &_104 <- _ret ] s1) | s1 = bb36 ]
         | bb36 = s0
-          [ s0 = [ &_94 <- _96 <> _104 ] s1 | s1 = any [ br0 -> {_94 = false} (! bb29'0) | br1 -> {_94} (! bb37) ] ]
+          [ s0 = [ &_94 <- _96 <> _104 ] s1 | s1 = any [ br0 -> {_94 = false} (! bb29) | br1 -> {_94} (! bb37) ] ]
         | bb37 = s0
           [ s0 = {inv'8 result}
             MutBorrow.borrow_mut <t_Vec'2> {result}
@@ -467,12 +467,12 @@ module M_knapsack__knapsack01_dyn
           | s2 = bb38 ]
         | bb38 = s0
           [ s0 = UInt64.sub {left_weight} {it'0.t_Item__weight} (fun (_ret: UInt64.t) -> [ &left_weight <- _ret ] s1)
-          | s1 = bb29'0 ] ] ]
+          | s1 = bb29 ] ] ]
     | bb41 = s0 [ s0 = [ &_0 <- result ] s1 | s1 = bb43 ]
-    | bb43 = return''0 {_0} ]
+    | bb43 = return {_0} ]
     [ & _0: t_Vec'2 = Any.any_l ()
-    | & items'0: t_Vec'0 = items
-    | & max_weight'0: UInt64.t = max_weight
+    | & items: t_Vec'0 = items
+    | & max_weight: UInt64.t = max_weight
     | & best_value: t_Vec'1 = Any.any_l ()
     | & _7: t_Vec = Any.any_l ()
     | & _8: UInt64.t = Any.any_l ()
@@ -515,5 +515,5 @@ module M_knapsack__knapsack01_dyn
     | & _106: t_Vec = Any.any_l ()
     | & _110: () = Any.any_l ()
     | & _111: MutBorrow.t t_Vec'2 = Any.any_l () ])
-    [ return''0 (result: t_Vec'2) -> {[@expl:knapsack01_dyn result type invariant] inv'8 result} (! return' {result}) ]
+    [ return (result: t_Vec'2) -> {[@expl:knapsack01_dyn result type invariant] inv'8 result} (! return {result}) ]
 end

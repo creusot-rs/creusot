@@ -18,7 +18,7 @@ module M_11_repeat__qyi14249621087999913809__resolve_coherence (* <Repeat<A> as 
   
   constant self : t_Repeat
   
-  function resolve_coherence (self'0: t_Repeat) : ()
+  function resolve_coherence (self: t_Repeat) : ()
   
   goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'0 self)
 end
@@ -99,7 +99,7 @@ module M_11_repeat__qyi12123383775959562970__produces_refl (* <Repeat<A> as comm
   
   constant self : t_Repeat
   
-  function produces_refl (self'0: t_Repeat) : ()
+  function produces_refl (self: t_Repeat) : ()
   
   goal vc_produces_refl: [@expl:produces_refl ensures] produces self (Seq.empty: Seq.seq t_A) self
 end
@@ -188,7 +188,7 @@ module M_11_repeat__qyi12123383775959562970__produces_trans (* <Repeat<A> as com
   
   constant c : t_Repeat
   
-  function produces_trans (a'0: t_Repeat) (ab'0: Seq.seq t_A) (b'0: t_Repeat) (bc'0: Seq.seq t_A) (c'0: t_Repeat) : ()
+  function produces_trans (a: t_Repeat) (ab: Seq.seq t_A) (b: t_Repeat) (bc: Seq.seq t_A) (c: t_Repeat) : ()
   
   goal vc_produces_trans: produces a ab b
     -> produces b bc c -> ([@expl:produces_trans ensures] produces a (Seq.(++) ab bc) c)
@@ -246,8 +246,8 @@ module M_11_repeat__qyi12123383775959562970__next (* <Repeat<A> as common::Itera
   axiom postcondition_fndef: forall args: t_A, res: t_A [postcondition_once () args res]. postcondition_once () args res
       -> (let self_ = args in inv res)
   
-  let rec clone' (self_: t_A) (return' (x: t_A)) = {[@expl:clone requires] precondition () self_}
-    any [ return''0 (result: t_A) -> {postcondition_once () self_ result} (! return' {result}) ]
+  let rec clone' (self_: t_A) (return (x: t_A)) = {[@expl:clone requires] precondition () self_}
+    any [ return' (result: t_A) -> {postcondition_once () self_ result} (! return {result}) ]
   
   type t_Option = C_None | C_Some t_A
   
@@ -321,22 +321,22 @@ module M_11_repeat__qyi12123383775959562970__next (* <Repeat<A> as common::Itera
   
   meta "select_lsinst" "all"
   
-  let rec next (self: MutBorrow.t t_Repeat) (return' (x: t_Option)) = {[@expl:next 'self' type invariant] inv'1 self}
+  let rec next (self: MutBorrow.t t_Repeat) (return (x: t_Option)) = {[@expl:next 'self' type invariant] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv'1 self'0} s1
-      | s1 = -{resolve'0 self'0}- s2
-      | s2 = clone' {(self'0.current).t_Repeat__element} (fun (_ret: t_A) -> [ &_3 <- _ret ] s3)
+      [ s0 = {[@expl:type invariant] inv'1 self} s1
+      | s1 = -{resolve'0 self}- s2
+      | s2 = clone' {(self.current).t_Repeat__element} (fun (_ret: t_A) -> [ &_3 <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = s0 [ s0 = [ &_0 <- C_Some _3 ] s1 | s1 = bb2 ]
-    | bb2 = return''0 {_0} ]
-    [ & _0: t_Option = Any.any_l () | & self'0: MutBorrow.t t_Repeat = self | & _3: t_A = Any.any_l () ])
-    [ return''0 (result: t_Option) -> {[@expl:next result type invariant] inv'3 result}
+    | bb2 = return {_0} ]
+    [ & _0: t_Option = Any.any_l () | & self: MutBorrow.t t_Repeat = self | & _3: t_A = Any.any_l () ])
+    [ return (result: t_Option) -> {[@expl:next result type invariant] inv'3 result}
       {[@expl:next ensures] match result with
         | C_None -> completed self
         | C_Some v -> produces self.current (Seq.singleton v) self.final
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_11_repeat__qyi14249621087999913809__resolve_coherence__refines (* <Repeat<A> as creusot_contracts::Resolve> *)
   type t_A

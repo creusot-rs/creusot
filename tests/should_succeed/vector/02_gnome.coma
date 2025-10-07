@@ -132,8 +132,8 @@ module M_02_gnome__gnome_sort
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
+  let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
+    any [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) = UInt64.t'int self < Seq.length seq
   
@@ -152,16 +152,16 @@ module M_02_gnome__gnome_sort
   
   meta "rewrite_def" predicate has_value
   
-  let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: t_T)) = {[@expl:index 'self_' type invariant] inv'3 self_}
+  let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_T)) = {[@expl:index 'self_' type invariant] inv'3 self_}
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return''0 (result: t_T) -> {inv'4 result} {has_value ix (view self_) result} (! return' {result}) ]
+    any [ return' (result: t_T) -> {inv'4 result} {has_value ix (view self_) result} (! return {result}) ]
   
-  type tuple = { _p0: t_T; _p1: t_T }
+  type tuple = { f0: t_T; f1: t_T }
   
   predicate precondition (self: ()) (args: tuple)
   
   axiom precondition_fndef:
-    forall args: tuple [precondition () args]. (let {_p0 = self_; _p1 = other} = args in inv'4 other /\ inv'4 self_)
+    forall args: tuple [precondition () args]. (let {f0 = self_; f1 = other} = args in inv'4 other /\ inv'4 self_)
       -> precondition () args
   
   function deep_model'2 [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model self
@@ -172,11 +172,11 @@ module M_02_gnome__gnome_sort
   
   axiom postcondition_fndef:
     forall args: tuple, res: bool [postcondition_once () args res]. postcondition_once () args res
-      -> (let {_p0 = self_; _p1 = other} = args in res = le_log (deep_model'2 self_) (deep_model'2 other))
+      -> (let {f0 = self_; f1 = other} = args in res = le_log (deep_model'2 self_) (deep_model'2 other))
   
-  let rec le (self_: t_T) (other: t_T) (return' (x: bool)) = {[@expl:le requires] precondition () { _p0 = self_;
-                                                                                                    _p1 = other }}
-    any [ return''0 (result: bool) -> {postcondition_once () { _p0 = self_; _p1 = other } result} (! return' {result}) ]
+  let rec le (self_: t_T) (other: t_T) (return (x: bool)) = {[@expl:le requires] precondition () { f0 = self_;
+                                                                                                   f1 = other }}
+    any [ return' (result: bool) -> {postcondition_once () { f0 = self_; f1 = other } result} (! return {result}) ]
   
   predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
   
@@ -201,22 +201,22 @@ module M_02_gnome__gnome_sort
   
   axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'7 x]. inv'7 x = invariant''6 x
   
-  let rec deref_mut (self_: MutBorrow.t t_Vec) (return' (x: MutBorrow.t (Slice64.slice t_T))) =
+  let rec deref_mut (self_: MutBorrow.t t_Vec) (return (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:deref_mut 'self_' type invariant] inv'5 self_}
     any
-    [ return''0 (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'7 result}
+    [ return' (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'7 result}
       {Slice64.view result.current = view self_.current}
       {Slice64.view result.final = view self_.final}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec swap (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return' (x: ())) =
+  let rec swap (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
     {[@expl:swap 'self_' type invariant] inv'7 self_}
     {[@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current)}
     {[@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current)}
     any
-    [ return''0 (result: ()) ->
+    [ return' (result: ()) ->
     {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) = self.final = self.current
   
@@ -240,35 +240,35 @@ module M_02_gnome__gnome_sort
   
   meta "select_lsinst" "all"
   
-  let rec gnome_sort (v: MutBorrow.t t_Vec) (return' (x: ())) = {[@expl:gnome_sort 'v' type invariant] inv'5 v}
+  let rec gnome_sort (v: MutBorrow.t t_Vec) (return (x: ())) = {[@expl:gnome_sort 'v' type invariant] inv'5 v}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_v <- v'0 ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &i <- (0: UInt64.t) ] s1 | s1 = [ &old_2_0 <- v'0 ] s2 | s2 = bb2 ]
-    | bb2 = bb2'0
-      [ bb2'0 = {[@expl:mut invariant] old_2_0.final = v'0.final}
-        {[@expl:loop invariant #0] sorted_range (deep_model'1 v'0) 0 (UInt64.t'int i)}
-        {[@expl:loop invariant #1] permutation_of (view v'0.current) (view old_v.current)}
+    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &i <- (0: UInt64.t) ] s1 | s1 = [ &old_2_0 <- v ] s2 | s2 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = {[@expl:mut invariant] old_2_0.final = v.final}
+        {[@expl:loop invariant #0] sorted_range (deep_model'1 v) 0 (UInt64.t'int i)}
+        {[@expl:loop invariant #1] permutation_of (view v.current) (view old_v.current)}
         (! s0)
         [ s0 = bb3 ]
-        [ bb3 = s0 [ s0 = len {v'0.current} (fun (_ret: UInt64.t) -> [ &_13 <- _ret ] s1) | s1 = bb4 ]
+        [ bb3 = s0 [ s0 = len {v.current} (fun (_ret: UInt64.t) -> [ &_13 <- _ret ] s1) | s1 = bb4 ]
         | bb4 = s0
           [ s0 = [ &_11 <- UInt64.lt i _13 ] s1 | s1 = any [ br0 -> {_11 = false} (! bb17) | br1 -> {_11} (! bb5) ] ]
         | bb5 = s0
           [ s0 = [ &_15 <- i = (0: UInt64.t) ] s1 | s1 = any [ br0 -> {_15 = false} (! bb7) | br1 -> {_15} (! bb12) ] ]
         | bb7 = s0
           [ s0 = UInt64.sub {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_21 <- _ret ] s1)
-          | s1 = index {v'0.current} {_21} (fun (_ret: t_T) -> [ &_19 <- _ret ] s2)
+          | s1 = index {v.current} {_21} (fun (_ret: t_T) -> [ &_19 <- _ret ] s2)
           | s2 = bb8 ]
-        | bb8 = s0 [ s0 = index {v'0.current} {i} (fun (_ret: t_T) -> [ &_24 <- _ret ] s1) | s1 = bb9 ]
+        | bb8 = s0 [ s0 = index {v.current} {i} (fun (_ret: t_T) -> [ &_24 <- _ret ] s1) | s1 = bb9 ]
         | bb9 = s0 [ s0 = le {_19} {_24} (fun (_ret: bool) -> [ &_17 <- _ret ] s1) | s1 = bb10 ]
         | bb10 = any [ br0 -> {_17 = false} (! bb13) | br1 -> {_17} (! bb12) ]
-        | bb12 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb2'0 ]
+        | bb12 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb2 ]
         | bb13 = s0
-          [ s0 = {inv'2 v'0.current}
-            MutBorrow.borrow_mut <t_Vec> {v'0.current}
+          [ s0 = {inv'2 v.current}
+            MutBorrow.borrow_mut <t_Vec> {v.current}
               (fun (_ret: MutBorrow.t t_Vec) ->
                 [ &_30 <- _ret ] -{inv'2 _ret.final}-
-                [ &v'0 <- { v'0 with current = _ret.final } ] s1)
+                [ &v <- { v with current = _ret.final } ] s1)
           | s1 = deref_mut {_30} (fun (_ret: MutBorrow.t (Slice64.slice t_T)) -> [ &_29 <- _ret ] s2)
           | s2 = bb14 ]
         | bb14 = s0
@@ -284,10 +284,10 @@ module M_02_gnome__gnome_sort
           [ s0 = {[@expl:type invariant] inv'7 _29} s1
           | s1 = -{resolve'0 _29}- s2
           | s2 = UInt64.sub {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s3)
-          | s3 = bb2'0 ] ] ]
-    | bb17 = s0 [ s0 = {[@expl:type invariant] inv'5 v'0} s1 | s1 = -{resolve'2 v'0}- s2 | s2 = return''0 {_0} ] ]
+          | s3 = bb2 ] ] ]
+    | bb17 = s0 [ s0 = {[@expl:type invariant] inv'5 v} s1 | s1 = -{resolve'2 v}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & v'0: MutBorrow.t t_Vec = v
+    | & v: MutBorrow.t t_Vec = v
     | & old_v: MutBorrow.t t_Vec = Any.any_l ()
     | & i: UInt64.t = Any.any_l ()
     | & _11: bool = Any.any_l ()
@@ -303,7 +303,7 @@ module M_02_gnome__gnome_sort
     | & _30: MutBorrow.t t_Vec = Any.any_l ()
     | & _31: UInt64.t = Any.any_l ()
     | & old_2_0: MutBorrow.t t_Vec = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:gnome_sort ensures #0] sorted (deep_model'0 v.final)}
+    [ return (result: ()) -> {[@expl:gnome_sort ensures #0] sorted (deep_model'0 v.final)}
       {[@expl:gnome_sort ensures #1] permutation_of (view v.final) (view v.current)}
-      (! return' {result}) ]
+      (! return {result}) ]
 end

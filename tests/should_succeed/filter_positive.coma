@@ -17,7 +17,7 @@ module M_filter_positive__num_of_pos
   
   constant t : Seq.seq Int32.t
   
-  function num_of_pos (i'0: int) (j'0: int) (t'0: Seq.seq Int32.t) : int
+  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
   
   goal vc_num_of_pos: if i >= j then
       true
@@ -59,7 +59,7 @@ module M_filter_positive__lemma_num_of_pos_increasing
   
   constant t : Seq.seq Int32.t
   
-  function lemma_num_of_pos_increasing (i'0: int) (j'0: int) (k'0: int) (t'0: Seq.seq Int32.t) : ()
+  function lemma_num_of_pos_increasing (i: int) (j: int) (k: int) (t: Seq.seq Int32.t) : ()
   
   goal vc_lemma_num_of_pos_increasing: j <= k
     -> (if j < k then
@@ -92,7 +92,7 @@ module M_filter_positive__lemma_num_of_pos_strictly_increasing
   
   constant t : Seq.seq Int32.t
   
-  function lemma_num_of_pos_strictly_increasing (i'0: int) (t'0: Seq.seq Int32.t) : ()
+  function lemma_num_of_pos_strictly_increasing (i: int) (t: Seq.seq Int32.t) : ()
   
   goal vc_lemma_num_of_pos_strictly_increasing: 0 <= i /\ i < Seq.length t
     -> Int32.to_int (Seq.get t i) > 0
@@ -134,8 +134,8 @@ module M_filter_positive__m
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
+  let rec len (self_: t_Vec) (return (x: UInt64.t)) = any
+    [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) = UInt64.t'int self < Seq.length seq
   
@@ -146,18 +146,17 @@ module M_filter_positive__m
   
   meta "rewrite_def" predicate has_value
   
-  let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: Int32.t)) =
-    {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return''0 (result: Int32.t) -> {has_value ix (view self_) result} (! return' {result}) ]
+  let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: Int32.t)) = {[@expl:index requires] in_bounds ix (view self_)}
+    any [ return' (result: Int32.t) -> {has_value ix (view self_) result} (! return {result}) ]
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = Seq.get (view self) ix
   
   meta "rewrite_def" function index_logic
   
-  let rec from_elem (elem: Int32.t) (n: UInt64.t) (return' (x: t_Vec)) = any
-    [ return''0 (result: t_Vec) -> {Seq.length (view result) = UInt64.t'int n}
+  let rec from_elem (elem: Int32.t) (n: UInt64.t) (return (x: t_Vec)) = any
+    [ return' (result: t_Vec) -> {Seq.length (view result) = UInt64.t'int n}
       {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic result i = elem}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   function lemma_num_of_pos_strictly_increasing (i: int) (t: Seq.seq Int32.t) : () = ()
   
@@ -177,14 +176,14 @@ module M_filter_positive__m
   
   meta "rewrite_def" predicate resolve_elswhere
   
-  let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t Int32.t)) =
+  let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {has_value ix (view self_.current) result.current}
+    [ return' (result: MutBorrow.t Int32.t) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
@@ -198,47 +197,47 @@ module M_filter_positive__m
   
   meta "select_lsinst" "all"
   
-  let rec m (t: t_Vec) (return' (x: t_Vec)) = (! bb0
+  let rec m (t: t_Vec) (return (x: t_Vec)) = (! bb0
     [ bb0 = s0 [ s0 = [ &count <- (0: UInt64.t) ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = bb1 ]
-    | bb1 = bb1'0
-      [ bb1'0 = {[@expl:loop invariant #0] UInt64.t'int i <= Seq.length (view t'0)}
+    | bb1 = bb1
+      [ bb1 = {[@expl:loop invariant #0] UInt64.t'int i <= Seq.length (view t)}
         {[@expl:loop invariant #1] UInt64.t'int count <= UInt64.t'int i}
-        {[@expl:loop invariant #2] UInt64.t'int count = num_of_pos 0 (UInt64.t'int i) (view t'0)}
+        {[@expl:loop invariant #2] UInt64.t'int count = num_of_pos 0 (UInt64.t'int i) (view t)}
         (! s0)
         [ s0 = bb2 ]
-        [ bb2 = s0 [ s0 = len {t'0} (fun (_ret: UInt64.t) -> [ &_13 <- _ret ] s1) | s1 = bb3 ]
+        [ bb2 = s0 [ s0 = len {t} (fun (_ret: UInt64.t) -> [ &_13 <- _ret ] s1) | s1 = bb3 ]
         | bb3 = s0
           [ s0 = [ &_11 <- UInt64.lt i _13 ] s1 | s1 = any [ br0 -> {_11 = false} (! bb9) | br1 -> {_11} (! bb4) ] ]
-        | bb4 = s0 [ s0 = index {t'0} {i} (fun (_ret: Int32.t) -> [ &_18 <- _ret ] s1) | s1 = bb5 ]
+        | bb4 = s0 [ s0 = index {t} {i} (fun (_ret: Int32.t) -> [ &_18 <- _ret ] s1) | s1 = bb5 ]
         | bb5 = s0
           [ s0 = [ &_16 <- Int32.gt _18 (0: Int32.t) ] s1
           | s1 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb6) ] ]
         | bb6 = s0
           [ s0 = UInt64.add {count} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &count <- _ret ] s1) | s1 = bb8 ]
-        | bb8 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb1'0 ] ] ]
+        | bb8 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb1 ] ] ]
     | bb9 = s0 [ s0 = from_elem {(0: Int32.t)} {count} (fun (_ret: t_Vec) -> [ &u <- _ret ] s1) | s1 = bb10 ]
     | bb10 = s0 [ s0 = [ &count <- (0: UInt64.t) ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = bb11 ]
-    | bb11 = bb11'0
-      [ bb11'0 = {[@expl:loop invariant #0] UInt64.t'int count = num_of_pos 0 (UInt64.t'int i) (view t'0)}
-        {[@expl:loop invariant #1] Seq.length (view u) = num_of_pos 0 (Seq.length (view t'0)) (view t'0)}
+    | bb11 = bb11
+      [ bb11 = {[@expl:loop invariant #0] UInt64.t'int count = num_of_pos 0 (UInt64.t'int i) (view t)}
+        {[@expl:loop invariant #1] Seq.length (view u) = num_of_pos 0 (Seq.length (view t)) (view t)}
         (! s0)
         [ s0 = bb12 ]
-        [ bb12 = s0 [ s0 = len {t'0} (fun (_ret: UInt64.t) -> [ &_30 <- _ret ] s1) | s1 = bb13 ]
+        [ bb12 = s0 [ s0 = len {t} (fun (_ret: UInt64.t) -> [ &_30 <- _ret ] s1) | s1 = bb13 ]
         | bb13 = s0
           [ s0 = [ &_28 <- UInt64.lt i _30 ] s1 | s1 = any [ br0 -> {_28 = false} (! bb21) | br1 -> {_28} (! bb14) ] ]
-        | bb14 = s0 [ s0 = index {t'0} {i} (fun (_ret: Int32.t) -> [ &_35 <- _ret ] s1) | s1 = bb15 ]
+        | bb14 = s0 [ s0 = index {t} {i} (fun (_ret: Int32.t) -> [ &_35 <- _ret ] s1) | s1 = bb15 ]
         | bb15 = s0
           [ s0 = [ &_33 <- Int32.gt _35 (0: Int32.t) ] s1
           | s1 = any [ br0 -> {_33 = false} (! bb20) | br1 -> {_33} (! bb16) ] ]
         | bb16 = s0
           [ s0 =
-            {[@expl:assertion] let _ = lemma_num_of_pos_strictly_increasing (UInt64.t'int i) (view u) in num_of_pos 0 (UInt64.t'int i) (view t'0)
-            < num_of_pos 0 (UInt64.t'int i + 1) (view t'0)}
+            {[@expl:assertion] let _ = lemma_num_of_pos_strictly_increasing (UInt64.t'int i) (view u) in num_of_pos 0 (UInt64.t'int i) (view t)
+            < num_of_pos 0 (UInt64.t'int i + 1) (view t)}
             s1
           | s1 = {[@expl:assertion] let _ = lemma_num_of_pos_increasing 0 (UInt64.t'int i
-            + 1) (Seq.length (view t'0)) (view t'0) in UInt64.t'int count < Seq.length (view u)}
+            + 1) (Seq.length (view t)) (view t) in UInt64.t'int count < Seq.length (view u)}
             s2
-          | s2 = index {t'0} {i} (fun (_ret: Int32.t) -> [ &_43 <- _ret ] s3)
+          | s2 = index {t} {i} (fun (_ret: Int32.t) -> [ &_43 <- _ret ] s3)
           | s3 = bb17 ]
         | bb17 = s0
           [ s0 = MutBorrow.borrow_mut <t_Vec> {u}
@@ -250,12 +249,11 @@ module M_filter_positive__m
           | s1 = -{resolve'0 _46}- s2
           | s2 = UInt64.add {count} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &count <- _ret ] s3)
           | s3 = bb20 ]
-        | bb20 = s0
-          [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb11'0 ] ] ]
+        | bb20 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb11 ] ] ]
     | bb21 = s0 [ s0 = [ &_0 <- u ] s1 | s1 = bb23 ]
-    | bb23 = return''0 {_0} ]
+    | bb23 = return {_0} ]
     [ & _0: t_Vec = Any.any_l ()
-    | & t'0: t_Vec = t
+    | & t: t_Vec = t
     | & count: UInt64.t = Any.any_l ()
     | & i: UInt64.t = Any.any_l ()
     | & _11: bool = Any.any_l ()
@@ -269,5 +267,5 @@ module M_filter_positive__m
     | & _35: Int32.t = Any.any_l ()
     | & _43: Int32.t = Any.any_l ()
     | & _46: MutBorrow.t Int32.t = Any.any_l ()
-    | & _47: MutBorrow.t t_Vec = Any.any_l () ]) [ return''0 (result: t_Vec) -> (! return' {result}) ]
+    | & _47: MutBorrow.t t_Vec = Any.any_l () ]) [ return (result: t_Vec) -> (! return {result}) ]
 end

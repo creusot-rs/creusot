@@ -27,7 +27,7 @@ module M_own__qyi1891129895124532698__resolve_coherence (* <OwnResult<T, E> as c
   
   constant self : t_OwnResult
   
-  function resolve_coherence (self'0: t_OwnResult) : ()
+  function resolve_coherence (self: t_OwnResult) : ()
   
   goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'1 self)
 end
@@ -64,13 +64,13 @@ module M_own__qyi9370700355788413623__is_ok (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec is_ok (self: t_OwnResult) (return' (x: bool)) = {[@expl:is_ok 'self' type invariant] inv'2 self}
+  let rec is_ok (self: t_OwnResult) (return (x: bool)) = {[@expl:is_ok 'self' type invariant] inv'2 self}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb3) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb1) ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb3) | br1 (x0: t_E) -> {self = C_Err x0} (! bb1) ]
     | bb1 = s0 [ s0 = [ &_0 <- false ] s1 | s1 = bb4 ]
     | bb3 = s0 [ s0 = [ &_0 <- true ] s1 | s1 = bb4 ]
-    | bb4 = return''0 {_0} ] [ & _0: bool = Any.any_l () | & self'0: t_OwnResult = self ])
-    [ return''0 (result: bool) -> {[@expl:is_ok ensures] result = (exists t: t_T. self = C_Ok t)} (! return' {result}) ]
+    | bb4 = return {_0} ] [ & _0: bool = Any.any_l () | & self: t_OwnResult = self ])
+    [ return (result: bool) -> {[@expl:is_ok ensures] result = (exists t: t_T. self = C_Ok t)} (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__is_err (* OwnResult<T, E> *)
   use creusot.prelude.Any
@@ -101,20 +101,19 @@ module M_own__qyi9370700355788413623__is_err (* OwnResult<T, E> *)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult [inv'2 x]. inv'2 x = invariant' x
   
-  let rec is_ok (self: t_OwnResult) (return' (x: bool)) = {[@expl:is_ok 'self' type invariant] inv'2 self}
-    any [ return''0 (result: bool) -> {result = (exists t: t_T. self = C_Ok t)} (! return' {result}) ]
+  let rec is_ok (self: t_OwnResult) (return (x: bool)) = {[@expl:is_ok 'self' type invariant] inv'2 self}
+    any [ return' (result: bool) -> {result = (exists t: t_T. self = C_Ok t)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec is_err (self: t_OwnResult) (return' (x: bool)) = {[@expl:is_err 'self' type invariant] inv'2 self}
+  let rec is_err (self: t_OwnResult) (return (x: bool)) = {[@expl:is_err 'self' type invariant] inv'2 self}
     (! bb0
-    [ bb0 = s0 [ s0 = is_ok {self'0} (fun (_ret: bool) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- not _3 ] s1 | s1 = return''0 {_0} ] ]
-    [ & _0: bool = Any.any_l () | & self'0: t_OwnResult = self | & _3: bool = Any.any_l () ])
-    [ return''0 (result: bool) -> {[@expl:is_err ensures] result = (exists e: t_E. self = C_Err e)}
-      (! return' {result}) ]
+    [ bb0 = s0 [ s0 = is_ok {self} (fun (_ret: bool) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &_0 <- not _3 ] s1 | s1 = return {_0} ] ]
+    [ & _0: bool = Any.any_l () | & self: t_OwnResult = self | & _3: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@expl:is_err ensures] result = (exists e: t_E. self = C_Err e)} (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__ok (* OwnResult<T, E> *)
   use creusot.prelude.Any
@@ -161,25 +160,25 @@ module M_own__qyi9370700355788413623__ok (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec ok (self: t_OwnResult) (return' (x: t_Option)) = {[@expl:ok 'self' type invariant] inv'1 self}
+  let rec ok (self: t_OwnResult) (return (x: t_Option)) = {[@expl:ok 'self' type invariant] inv'1 self}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1)
+      [ s0 = v_Err {self} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv x'0} s2
       | s2 = -{resolve x'0}- s3
       | s3 = [ &_0 <- C_None ] s4
       | s4 = bb9 ]
-    | bb4 = s0 [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_0 <- C_Some x ] s2 | s2 = bb9 ]
-    | bb9 = return''0 {_0} ]
+    | bb4 = s0 [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_0 <- C_Some x ] s2 | s2 = bb9 ]
+    | bb9 = return {_0} ]
     [ & _0: t_Option = Any.any_l ()
-    | & self'0: t_OwnResult = self
+    | & self: t_OwnResult = self
     | & x: t_T = Any.any_l ()
     | & x'0: t_E = Any.any_l () ])
-    [ return''0 (result: t_Option) -> {[@expl:ok result type invariant] inv'2 result}
+    [ return (result: t_Option) -> {[@expl:ok result type invariant] inv'2 result}
       {[@expl:ok ensures #0] forall t: t_T. self = C_Ok t -> result = C_Some t}
       {[@expl:ok ensures #1] (exists e: t_E. self = C_Err e) -> result = C_None}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__err (* OwnResult<T, E> *)
   use creusot.prelude.Any
@@ -226,25 +225,25 @@ module M_own__qyi9370700355788413623__err (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec err (self: t_OwnResult) (return' (x: t_Option)) = {[@expl:err 'self' type invariant] inv'1 self}
+  let rec err (self: t_OwnResult) (return (x: t_Option)) = {[@expl:err 'self' type invariant] inv'1 self}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1) | s1 = [ &_0 <- C_Some x'0 ] s2 | s2 = bb9 ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
+    | bb3 = s0 [ s0 = v_Err {self} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1) | s1 = [ &_0 <- C_Some x'0 ] s2 | s2 = bb9 ]
     | bb4 = s0
-      [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &x <- r0 ] s1)
+      [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv x} s2
       | s2 = -{resolve x}- s3
       | s3 = [ &_0 <- C_None ] s4
       | s4 = bb9 ]
-    | bb9 = return''0 {_0} ]
+    | bb9 = return {_0} ]
     [ & _0: t_Option = Any.any_l ()
-    | & self'0: t_OwnResult = self
+    | & self: t_OwnResult = self
     | & x: t_T = Any.any_l ()
     | & x'0: t_E = Any.any_l () ])
-    [ return''0 (result: t_Option) -> {[@expl:err result type invariant] inv'2 result}
+    [ return (result: t_Option) -> {[@expl:err result type invariant] inv'2 result}
       {[@expl:err ensures #0] (exists t: t_T. self = C_Ok t) -> result = C_None}
       {[@expl:err ensures #1] forall e: t_E. self = C_Err e -> result = C_Some e}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__as_ref (* OwnResult<T, E> *)
   use creusot.prelude.Any
@@ -313,20 +312,20 @@ module M_own__qyi9370700355788413623__as_ref (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec as_ref (self: t_OwnResult) (return' (x: t_OwnResult'0)) = {[@expl:as_ref 'self' type invariant] inv'2 self}
+  let rec as_ref (self: t_OwnResult) (return (x: t_OwnResult'0)) = {[@expl:as_ref 'self' type invariant] inv'2 self}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1) | s1 = [ &_0 <- C_Err'0 x'0 ] s2 | s2 = bb5 ]
-    | bb4 = s0 [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_0 <- C_Ok'0 x ] s2 | s2 = bb5 ]
-    | bb5 = return''0 {_0} ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
+    | bb3 = s0 [ s0 = v_Err {self} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1) | s1 = [ &_0 <- C_Err'0 x'0 ] s2 | s2 = bb5 ]
+    | bb4 = s0 [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_0 <- C_Ok'0 x ] s2 | s2 = bb5 ]
+    | bb5 = return {_0} ]
     [ & _0: t_OwnResult'0 = Any.any_l ()
-    | & self'0: t_OwnResult = self
+    | & self: t_OwnResult = self
     | & x: t_T = Any.any_l ()
     | & x'0: t_E = Any.any_l () ])
-    [ return''0 (result: t_OwnResult'0) -> {[@expl:as_ref result type invariant] inv'5 result}
+    [ return (result: t_OwnResult'0) -> {[@expl:as_ref result type invariant] inv'5 result}
       {[@expl:as_ref ensures #0] forall t: t_T. self = C_Ok t -> result = C_Ok'0 t}
       {[@expl:as_ref ensures #1] forall e: t_E. self = C_Err e -> result = C_Err'0 e}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__as_mut (* OwnResult<T, E> *)
   use creusot.prelude.MutBorrow
@@ -420,19 +419,19 @@ module M_own__qyi9370700355788413623__as_mut (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec as_mut (self: MutBorrow.t t_OwnResult) (return' (x: t_OwnResult'0)) =
+  let rec as_mut (self: MutBorrow.t t_OwnResult) (return (x: t_OwnResult'0)) =
     {[@expl:as_mut 'self' type invariant] inv'4 self}
     (! bb0
     [ bb0 = any
-      [ br0 (x0: t_T) -> {self'0.current = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0.current = C_Err x0} (! bb3) ]
+      [ br0 (x0: t_T) -> {self.current = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self.current = C_Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = v_Err {self'0.current}
+      [ s0 = v_Err {self.current}
           (fun (r0: t_E) ->
             {inv r0}
-            MutBorrow.borrow_final <t_E> {r0} {MutBorrow.inherit_id (MutBorrow.get_id self'0) 1}
+            MutBorrow.borrow_final <t_E> {r0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
               (fun (_ret: MutBorrow.t t_E) ->
                 [ &x'0 <- _ret ] -{inv _ret.final}-
-                [ &self'0 <- { self'0 with current = C_Err _ret.final } ] s1))
+                [ &self <- { self with current = C_Err _ret.final } ] s1))
       | s1 = {inv x'0.current}
         MutBorrow.borrow_final <t_E> {x'0.current} {MutBorrow.get_id x'0}
           (fun (_ret: MutBorrow.t t_E) ->
@@ -443,13 +442,13 @@ module M_own__qyi9370700355788413623__as_mut (* OwnResult<T, E> *)
       | s4 = -{resolve'0 x'0}- s5
       | s5 = bb5 ]
     | bb4 = s0
-      [ s0 = v_Ok {self'0.current}
+      [ s0 = v_Ok {self.current}
           (fun (r0: t_T) ->
             {inv'1 r0}
-            MutBorrow.borrow_final <t_T> {r0} {MutBorrow.inherit_id (MutBorrow.get_id self'0) 1}
+            MutBorrow.borrow_final <t_T> {r0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
               (fun (_ret: MutBorrow.t t_T) ->
                 [ &x <- _ret ] -{inv'1 _ret.final}-
-                [ &self'0 <- { self'0 with current = C_Ok _ret.final } ] s1))
+                [ &self <- { self with current = C_Ok _ret.final } ] s1))
       | s1 = {inv'1 x.current}
         MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
           (fun (_ret: MutBorrow.t t_T) ->
@@ -459,19 +458,19 @@ module M_own__qyi9370700355788413623__as_mut (* OwnResult<T, E> *)
       | s3 = {[@expl:type invariant] inv'2 x} s4
       | s4 = -{resolve'2 x}- s5
       | s5 = bb5 ]
-    | bb5 = s0 [ s0 = {[@expl:type invariant] inv'4 self'0} s1 | s1 = -{resolve'4 self'0}- s2 | s2 = return''0 {_0} ] ]
+    | bb5 = s0 [ s0 = {[@expl:type invariant] inv'4 self} s1 | s1 = -{resolve'4 self}- s2 | s2 = return {_0} ] ]
     [ & _0: t_OwnResult'0 = Any.any_l ()
-    | & self'0: MutBorrow.t t_OwnResult = self
+    | & self: MutBorrow.t t_OwnResult = self
     | & x: MutBorrow.t t_T = Any.any_l ()
     | & _5: MutBorrow.t t_T = Any.any_l ()
     | & x'0: MutBorrow.t t_E = Any.any_l ()
     | & _7: MutBorrow.t t_E = Any.any_l () ])
-    [ return''0 (result: t_OwnResult'0) -> {[@expl:as_mut result type invariant] inv'5 result}
+    [ return (result: t_OwnResult'0) -> {[@expl:as_mut result type invariant] inv'5 result}
       {[@expl:as_mut ensures] exists t: MutBorrow.t t_T. self.current = C_Ok (t.current)
           /\ self.final = C_Ok (t.final) /\ result = C_Ok'0 t
         \/ (exists e: MutBorrow.t t_E. self.current = C_Err (e.current)
           /\ self.final = C_Err (e.final) /\ result = C_Err'0 e)}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__unwrap (* OwnResult<T, E> *)
   use creusot.prelude.Any
@@ -508,21 +507,21 @@ module M_own__qyi9370700355788413623__unwrap (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec unwrap (self: t_OwnResult) (return' (x: t_T)) = {[@expl:unwrap 'self' type invariant] inv'1 self}
+  let rec unwrap (self: t_OwnResult) (return (x: t_T)) = {[@expl:unwrap 'self' type invariant] inv'1 self}
     {[@expl:unwrap requires] exists t: t_T. self = C_Ok t}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
+      [ s0 = v_Err {self} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv _e} s2
       | s2 = -{resolve _e}- s3
       | s3 = {false} any ]
-    | bb4 = s0 [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- t ] s2 | s2 = bb6 ]
-    | bb6 = return''0 {_0} ]
-    [ & _0: t_T = Any.any_l () | & self'0: t_OwnResult = self | & t: t_T = Any.any_l () | & _e: t_E = Any.any_l () ])
-    [ return''0 (result: t_T) -> {[@expl:unwrap result type invariant] inv'0 result}
+    | bb4 = s0 [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- t ] s2 | s2 = bb6 ]
+    | bb6 = return {_0} ]
+    [ & _0: t_T = Any.any_l () | & self: t_OwnResult = self | & t: t_T = Any.any_l () | & _e: t_E = Any.any_l () ])
+    [ return (result: t_T) -> {[@expl:unwrap result type invariant] inv'0 result}
       {[@expl:unwrap ensures] C_Ok result = self}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__expect (* OwnResult<T, E> *)
   use creusot.prelude.Any
@@ -559,22 +558,21 @@ module M_own__qyi9370700355788413623__expect (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec expect (self: t_OwnResult) (msg: string) (return' (x: t_T)) =
-    {[@expl:expect 'self' type invariant] inv'1 self}
+  let rec expect (self: t_OwnResult) (msg: string) (return (x: t_T)) = {[@expl:expect 'self' type invariant] inv'1 self}
     {[@expl:expect requires] exists t: t_T. self = C_Ok t}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
+      [ s0 = v_Err {self} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv _e} s2
       | s2 = -{resolve _e}- s3
       | s3 = {false} any ]
-    | bb4 = s0 [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- t ] s2 | s2 = bb6 ]
-    | bb6 = return''0 {_0} ]
-    [ & _0: t_T = Any.any_l () | & self'0: t_OwnResult = self | & t: t_T = Any.any_l () | & _e: t_E = Any.any_l () ])
-    [ return''0 (result: t_T) -> {[@expl:expect result type invariant] inv'0 result}
+    | bb4 = s0 [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- t ] s2 | s2 = bb6 ]
+    | bb6 = return {_0} ]
+    [ & _0: t_T = Any.any_l () | & self: t_OwnResult = self | & t: t_T = Any.any_l () | & _e: t_E = Any.any_l () ])
+    [ return (result: t_T) -> {[@expl:expect result type invariant] inv'0 result}
       {[@expl:expect ensures] C_Ok result = self}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__unwrap_err (* OwnResult<T, E> *)
   use creusot.prelude.Any
@@ -611,21 +609,21 @@ module M_own__qyi9370700355788413623__unwrap_err (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec unwrap_err (self: t_OwnResult) (return' (x: t_E)) = {[@expl:unwrap_err 'self' type invariant] inv'1 self}
+  let rec unwrap_err (self: t_OwnResult) (return (x: t_E)) = {[@expl:unwrap_err 'self' type invariant] inv'1 self}
     {[@expl:unwrap_err requires] exists e: t_E. self = C_Err e}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- e ] s2 | s2 = bb6 ]
-    | bb6 = return''0 {_0}
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
+    | bb3 = s0 [ s0 = v_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- e ] s2 | s2 = bb6 ]
+    | bb6 = return {_0}
     | bb4 = s0
-      [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &_t <- r0 ] s1)
+      [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &_t <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv _t} s2
       | s2 = -{resolve _t}- s3
       | s3 = {false} any ] ]
-    [ & _0: t_E = Any.any_l () | & self'0: t_OwnResult = self | & _t: t_T = Any.any_l () | & e: t_E = Any.any_l () ])
-    [ return''0 (result: t_E) -> {[@expl:unwrap_err result type invariant] inv'0 result}
+    [ & _0: t_E = Any.any_l () | & self: t_OwnResult = self | & _t: t_T = Any.any_l () | & e: t_E = Any.any_l () ])
+    [ return (result: t_E) -> {[@expl:unwrap_err result type invariant] inv'0 result}
       {[@expl:unwrap_err ensures] C_Err result = self}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__unwrap_or (* OwnResult<T, E> *)
   use creusot.prelude.Any
@@ -664,29 +662,29 @@ module M_own__qyi9370700355788413623__unwrap_or (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec unwrap_or (self: t_OwnResult) (default: t_T) (return' (x: t_T)) =
+  let rec unwrap_or (self: t_OwnResult) (default: t_T) (return (x: t_T)) =
     {[@expl:unwrap_or 'self' type invariant] inv'1 self}
     {[@expl:unwrap_or 'default' type invariant] inv'0 default}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb2) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb2) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &e <- r0 ] s1)
+      [ s0 = v_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv e} s2
       | s2 = -{resolve e}- s3
-      | s3 = [ &_0 <- default'0 ] s4
+      | s3 = [ &_0 <- default ] s4
       | s4 = bb9 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'0 default'0} s1 | s1 = -{resolve'0 default'0}- s2 | s2 = bb4 ]
-    | bb4 = s0 [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- t ] s2 | s2 = bb9 ]
-    | bb9 = return''0 {_0} ]
+    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'0 default} s1 | s1 = -{resolve'0 default}- s2 | s2 = bb4 ]
+    | bb4 = s0 [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- t ] s2 | s2 = bb9 ]
+    | bb9 = return {_0} ]
     [ & _0: t_T = Any.any_l ()
-    | & self'0: t_OwnResult = self
-    | & default'0: t_T = default
+    | & self: t_OwnResult = self
+    | & default: t_T = default
     | & t: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return''0 (result: t_T) -> {[@expl:unwrap_or result type invariant] inv'0 result}
+    [ return (result: t_T) -> {[@expl:unwrap_or result type invariant] inv'0 result}
       {[@expl:unwrap_or ensures #0] forall t: t_T. self = C_Ok t -> result = t}
       {[@expl:unwrap_or ensures #1] (exists e: t_E. self = C_Err e) -> result = default}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__unwrap_or_default (* OwnResult<T, E> *)
   use creusot.prelude.Any
@@ -732,8 +730,8 @@ module M_own__qyi9370700355788413623__unwrap_or_default (* OwnResult<T, E> *)
   axiom postcondition_fndef: forall args: (), res: t_T [postcondition_once () args res]. postcondition_once () args res
       -> (let () = args in inv res)
   
-  let rec default (return' (x: t_T)) = {[@expl:default requires] precondition () ()}
-    any [ return''0 (result: t_T) -> {postcondition_once () () result} (! return' {result}) ]
+  let rec default (return (x: t_T)) = {[@expl:default requires] precondition () ()}
+    any [ return' (result: t_T) -> {postcondition_once () () result} (! return {result}) ]
   
   let rec v_Ok (input: t_OwnResult) (ret (field_0: t_T)) = any
     [ good (field_0: t_T) -> {C_Ok field_0 = input} (! ret {field_0})
@@ -795,21 +793,21 @@ module M_own__qyi9370700355788413623__unwrap_or_default (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec unwrap_or_default (self: t_OwnResult) (return' (x: t_T)) =
+  let rec unwrap_or_default (self: t_OwnResult) (return (x: t_T)) =
     {[@expl:unwrap_or_default 'self' type invariant] inv'1 self}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = {[@expl:type invariant] inv'1 self'0} s1
-      | s1 = -{resolve'2 self'0}- s2
+      [ s0 = {[@expl:type invariant] inv'1 self} s1
+      | s1 = -{resolve'2 self}- s2
       | s2 = default (fun (_ret: t_T) -> [ &_0 <- _ret ] s3)
       | s3 = bb7 ]
-    | bb4 = s0 [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_0 <- x ] s2 | s2 = bb7 ]
-    | bb7 = return''0 {_0} ] [ & _0: t_T = Any.any_l () | & self'0: t_OwnResult = self | & x: t_T = Any.any_l () ])
-    [ return''0 (result: t_T) -> {[@expl:unwrap_or_default result type invariant] inv result}
+    | bb4 = s0 [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_0 <- x ] s2 | s2 = bb7 ]
+    | bb7 = return {_0} ] [ & _0: t_T = Any.any_l () | & self: t_OwnResult = self | & x: t_T = Any.any_l () ])
+    [ return (result: t_T) -> {[@expl:unwrap_or_default result type invariant] inv result}
       {[@expl:unwrap_or_default ensures #0] forall t: t_T. self = C_Ok t -> result = t}
       {[@expl:unwrap_or_default ensures #1] (exists e: t_E. self = C_Err e) -> postcondition () () result}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__and (* OwnResult<T, E> *)
   use creusot.prelude.Any
@@ -874,33 +872,33 @@ module M_own__qyi9370700355788413623__and (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec and (self: t_OwnResult) (res: t_OwnResult'0) (return' (x: t_OwnResult'0)) =
+  let rec and (self: t_OwnResult) (res: t_OwnResult'0) (return (x: t_OwnResult'0)) =
     {[@expl:and 'self' type invariant] inv'3 self}
     {[@expl:and 'res' type invariant] inv'1 res}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = {[@expl:type invariant] inv'1 res'0} s1
-      | s1 = -{resolve'2 res'0}- s2
-      | s2 = v_Err {self'0} (fun (r0: t_E) -> [ &e <- r0 ] s3)
+      [ s0 = {[@expl:type invariant] inv'1 res} s1
+      | s1 = -{resolve'2 res}- s2
+      | s2 = v_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s3)
       | s3 = [ &_0 <- C_Err'0 e ] s4
       | s4 = bb10 ]
     | bb4 = s0
-      [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &x <- r0 ] s1)
+      [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv'2 x} s2
       | s2 = -{resolve'3 x}- s3
-      | s3 = [ &_0 <- res'0 ] s4
+      | s3 = [ &_0 <- res ] s4
       | s4 = bb10 ]
-    | bb10 = return''0 {_0} ]
+    | bb10 = return {_0} ]
     [ & _0: t_OwnResult'0 = Any.any_l ()
-    | & self'0: t_OwnResult = self
-    | & res'0: t_OwnResult'0 = res
+    | & self: t_OwnResult = self
+    | & res: t_OwnResult'0 = res
     | & x: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return''0 (result: t_OwnResult'0) -> {[@expl:and result type invariant] inv'1 result}
+    [ return (result: t_OwnResult'0) -> {[@expl:and result type invariant] inv'1 result}
       {[@expl:and ensures #0] (exists t: t_T. self = C_Ok t) -> result = res}
       {[@expl:and ensures #1] forall e: t_E. self = C_Err e -> result = C_Err'0 e}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi9370700355788413623__or (* OwnResult<T, E> *)
   use creusot.prelude.Any
@@ -965,29 +963,29 @@ module M_own__qyi9370700355788413623__or (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec or (self: t_OwnResult) (res: t_OwnResult'0) (return' (x: t_OwnResult'0)) =
+  let rec or (self: t_OwnResult) (res: t_OwnResult'0) (return (x: t_OwnResult'0)) =
     {[@expl:or 'self' type invariant] inv'3 self}
     {[@expl:or 'res' type invariant] inv'2 res}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb2) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb2) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &e <- r0 ] s1)
+      [ s0 = v_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv e} s2
       | s2 = -{resolve e}- s3
-      | s3 = [ &_0 <- res'0 ] s4
+      | s3 = [ &_0 <- res ] s4
       | s4 = bb10 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'2 res'0} s1 | s1 = -{resolve'3 res'0}- s2 | s2 = bb4 ]
-    | bb4 = s0 [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &v <- r0 ] s1) | s1 = [ &_0 <- C_Ok'0 v ] s2 | s2 = bb10 ]
-    | bb10 = return''0 {_0} ]
+    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'2 res} s1 | s1 = -{resolve'3 res}- s2 | s2 = bb4 ]
+    | bb4 = s0 [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &v <- r0 ] s1) | s1 = [ &_0 <- C_Ok'0 v ] s2 | s2 = bb10 ]
+    | bb10 = return {_0} ]
     [ & _0: t_OwnResult'0 = Any.any_l ()
-    | & self'0: t_OwnResult = self
-    | & res'0: t_OwnResult'0 = res
+    | & self: t_OwnResult = self
+    | & res: t_OwnResult'0 = res
     | & v: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return''0 (result: t_OwnResult'0) -> {[@expl:or result type invariant] inv'2 result}
+    [ return (result: t_OwnResult'0) -> {[@expl:or result type invariant] inv'2 result}
       {[@expl:or ensures #0] forall t: t_T. self = C_Ok t -> result = C_Ok'0 t}
       {[@expl:or ensures #1] (exists e: t_E. self = C_Err e) -> result = res}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi1738359920797260731__copied (* OwnResult<&T, E> *)
   use creusot.prelude.Any
@@ -1040,20 +1038,20 @@ module M_own__qyi1738359920797260731__copied (* OwnResult<&T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec copied (self: t_OwnResult) (return' (x: t_OwnResult'0)) = {[@expl:copied 'self' type invariant] inv'2 self}
+  let rec copied (self: t_OwnResult) (return (x: t_OwnResult'0)) = {[@expl:copied 'self' type invariant] inv'2 self}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- C_Err'0 e ] s2 | s2 = bb8 ]
-    | bb4 = s0 [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- C_Ok'0 t ] s2 | s2 = bb8 ]
-    | bb8 = return''0 {_0} ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
+    | bb3 = s0 [ s0 = v_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- C_Err'0 e ] s2 | s2 = bb8 ]
+    | bb4 = s0 [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- C_Ok'0 t ] s2 | s2 = bb8 ]
+    | bb8 = return {_0} ]
     [ & _0: t_OwnResult'0 = Any.any_l ()
-    | & self'0: t_OwnResult = self
+    | & self: t_OwnResult = self
     | & t: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return''0 (result: t_OwnResult'0) -> {[@expl:copied result type invariant] inv'3 result}
+    [ return (result: t_OwnResult'0) -> {[@expl:copied result type invariant] inv'3 result}
       {[@expl:copied ensures #0] forall t: t_T. self = C_Ok t -> result = C_Ok'0 t}
       {[@expl:copied ensures #1] forall e: t_E. self = C_Err e -> result = C_Err'0 e}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi1738359920797260731__cloned (* OwnResult<&T, E> *)
   use creusot.prelude.Any
@@ -1094,8 +1092,8 @@ module M_own__qyi1738359920797260731__cloned (* OwnResult<&T, E> *)
   axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
       -> (let self_ = args in inv res)
   
-  let rec clone' (self_: t_T) (return' (x: t_T)) = {[@expl:clone requires] precondition () self_}
-    any [ return''0 (result: t_T) -> {postcondition_once () self_ result} (! return' {result}) ]
+  let rec clone' (self_: t_T) (return (x: t_T)) = {[@expl:clone requires] precondition () self_}
+    any [ return' (result: t_T) -> {postcondition_once () self_ result} (! return {result}) ]
   
   predicate inv'1 (_0: t_E)
   
@@ -1115,7 +1113,7 @@ module M_own__qyi1738359920797260731__cloned (* OwnResult<&T, E> *)
         | C_Err'0 a_0 -> inv'1 a_0
         end
   
-  type tuple = { _p0: t_OwnResult; _p1: t_OwnResult'0 }
+  type tuple = { f0: t_OwnResult; f1: t_OwnResult'0 }
   
   predicate resolve [@inline:trivial] (_0: ()) = true
   
@@ -1173,28 +1171,28 @@ module M_own__qyi1738359920797260731__cloned (* OwnResult<&T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec cloned (self: t_OwnResult) (return' (x: t_OwnResult'0)) = {[@expl:cloned 'self' type invariant] inv'2 self}
+  let rec cloned (self: t_OwnResult) (return (x: t_OwnResult'0)) = {[@expl:cloned 'self' type invariant] inv'2 self}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- C_Err'0 e ] s2 | s2 = bb10 ]
+    [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
+    | bb3 = s0 [ s0 = v_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- C_Err'0 e ] s2 | s2 = bb10 ]
     | bb4 = s0
-      [ s0 = v_Ok {self'0} (fun (r0: t_T) -> [ &t <- r0 ] s1)
+      [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1)
       | s1 = clone' {t} (fun (_ret: t_T) -> [ &_5 <- _ret ] s2)
       | s2 = bb5 ]
     | bb5 = s0 [ s0 = [ &_0 <- C_Ok'0 _5 ] s1 | s1 = bb10 ]
-    | bb10 = return''0 {_0} ]
+    | bb10 = return {_0} ]
     [ & _0: t_OwnResult'0 = Any.any_l ()
-    | & self'0: t_OwnResult = self
+    | & self: t_OwnResult = self
     | & t: t_T = Any.any_l ()
     | & _5: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return''0 (result: t_OwnResult'0) -> {[@expl:cloned result type invariant] inv'3 result}
-      {[@expl:cloned ensures] match { _p0 = self; _p1 = result } with
-        | {_p0 = C_Ok s; _p1 = C_Ok'0 r} -> postcondition () s r
-        | {_p0 = C_Err s; _p1 = C_Err'0 r} -> s = r
+    [ return (result: t_OwnResult'0) -> {[@expl:cloned result type invariant] inv'3 result}
+      {[@expl:cloned ensures] match { f0 = self; f1 = result } with
+        | {f0 = C_Ok s; f1 = C_Ok'0 r} -> postcondition () s r
+        | {f0 = C_Err s; f1 = C_Err'0 r} -> s = r
         | _ -> false
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi10690551671874530681__copied (* OwnResult<&mut T, E> *)
   use creusot.prelude.MutBorrow
@@ -1256,26 +1254,25 @@ module M_own__qyi10690551671874530681__copied (* OwnResult<&mut T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec copied (self: t_OwnResult) (return' (x: t_OwnResult'0)) = {[@expl:copied 'self' type invariant] inv'2 self}
+  let rec copied (self: t_OwnResult) (return (x: t_OwnResult'0)) = {[@expl:copied 'self' type invariant] inv'2 self}
     (! bb0
-    [ bb0 = any
-      [ br0 (x0: MutBorrow.t t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- C_Err'0 e ] s2 | s2 = bb8 ]
+    [ bb0 = any [ br0 (x0: MutBorrow.t t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
+    | bb3 = s0 [ s0 = v_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- C_Err'0 e ] s2 | s2 = bb8 ]
     | bb4 = s0
-      [ s0 = v_Ok {self'0} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
+      [ s0 = v_Ok {self} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv'0 t} s2
       | s2 = -{resolve'0 t}- s3
       | s3 = [ &_0 <- C_Ok'0 (t.current) ] s4
       | s4 = bb8 ]
-    | bb8 = return''0 {_0} ]
+    | bb8 = return {_0} ]
     [ & _0: t_OwnResult'0 = Any.any_l ()
-    | & self'0: t_OwnResult = self
+    | & self: t_OwnResult = self
     | & t: MutBorrow.t t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return''0 (result: t_OwnResult'0) -> {[@expl:copied result type invariant] inv'3 result}
+    [ return (result: t_OwnResult'0) -> {[@expl:copied result type invariant] inv'3 result}
       {[@expl:copied ensures #0] forall t: MutBorrow.t t_T. self = C_Ok t -> result = C_Ok'0 (t.current) /\ resolve'0 t}
       {[@expl:copied ensures #1] forall e: t_E. self = C_Err e -> result = C_Err'0 e}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi10690551671874530681__cloned (* OwnResult<&mut T, E> *)
   use creusot.prelude.MutBorrow
@@ -1333,8 +1330,8 @@ module M_own__qyi10690551671874530681__cloned (* OwnResult<&mut T, E> *)
   axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
       -> (let self_ = args in inv res)
   
-  let rec clone' (self_: t_T) (return' (x: t_T)) = {[@expl:clone requires] precondition () self_}
-    any [ return''0 (result: t_T) -> {postcondition_once () self_ result} (! return' {result}) ]
+  let rec clone' (self_: t_T) (return (x: t_T)) = {[@expl:clone requires] precondition () self_}
+    any [ return' (result: t_T) -> {postcondition_once () self_ result} (! return {result}) ]
   
   predicate inv'2 (_0: t_E)
   
@@ -1354,7 +1351,7 @@ module M_own__qyi10690551671874530681__cloned (* OwnResult<&mut T, E> *)
         | C_Err'0 a_0 -> inv'2 a_0
         end
   
-  type tuple = { _p0: t_OwnResult; _p1: t_OwnResult'0 }
+  type tuple = { f0: t_OwnResult; f1: t_OwnResult'0 }
   
   predicate resolve'1 [@inline:trivial] (_0: ()) = true
   
@@ -1412,31 +1409,30 @@ module M_own__qyi10690551671874530681__cloned (* OwnResult<&mut T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec cloned (self: t_OwnResult) (return' (x: t_OwnResult'0)) = {[@expl:cloned 'self' type invariant] inv'3 self}
+  let rec cloned (self: t_OwnResult) (return (x: t_OwnResult'0)) = {[@expl:cloned 'self' type invariant] inv'3 self}
     (! bb0
-    [ bb0 = any
-      [ br0 (x0: MutBorrow.t t_T) -> {self'0 = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- C_Err'0 e ] s2 | s2 = bb10 ]
+    [ bb0 = any [ br0 (x0: MutBorrow.t t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
+    | bb3 = s0 [ s0 = v_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- C_Err'0 e ] s2 | s2 = bb10 ]
     | bb4 = s0
-      [ s0 = v_Ok {self'0} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
+      [ s0 = v_Ok {self} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv'0 t} s2
       | s2 = -{resolve'0 t}- s3
       | s3 = clone' {t.current} (fun (_ret: t_T) -> [ &_5 <- _ret ] s4)
       | s4 = bb5 ]
     | bb5 = s0 [ s0 = [ &_0 <- C_Ok'0 _5 ] s1 | s1 = bb10 ]
-    | bb10 = return''0 {_0} ]
+    | bb10 = return {_0} ]
     [ & _0: t_OwnResult'0 = Any.any_l ()
-    | & self'0: t_OwnResult = self
+    | & self: t_OwnResult = self
     | & t: MutBorrow.t t_T = Any.any_l ()
     | & _5: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return''0 (result: t_OwnResult'0) -> {[@expl:cloned result type invariant] inv'4 result}
-      {[@expl:cloned ensures] match { _p0 = self; _p1 = result } with
-        | {_p0 = C_Ok s; _p1 = C_Ok'0 r} -> postcondition () s.current r
-        | {_p0 = C_Err s; _p1 = C_Err'0 r} -> s = r
+    [ return (result: t_OwnResult'0) -> {[@expl:cloned result type invariant] inv'4 result}
+      {[@expl:cloned ensures] match { f0 = self; f1 = result } with
+        | {f0 = C_Ok s; f1 = C_Ok'0 r} -> postcondition () s.current r
+        | {f0 = C_Err s; f1 = C_Err'0 r} -> s = r
         | _ -> false
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi11106003418932042655__transpose (* OwnResult<std::option::Option<T>, E> *)
   use creusot.prelude.Any
@@ -1505,31 +1501,31 @@ module M_own__qyi11106003418932042655__transpose (* OwnResult<std::option::Optio
   
   meta "select_lsinst" "all"
   
-  let rec transpose (self: t_OwnResult) (return' (x: t_Option'0)) = {[@expl:transpose 'self' type invariant] inv'2 self}
+  let rec transpose (self: t_OwnResult) (return (x: t_Option'0)) = {[@expl:transpose 'self' type invariant] inv'2 self}
     (! bb0
-    [ bb0 = any [ br0 (x0: t_Option) -> {self'0 = C_Ok x0} (! bb2) | br1 (x0: t_E) -> {self'0 = C_Err x0} (! bb5) ]
-    | bb5 = s0 [ s0 = v_Err {self'0} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_11 <- C_Err'0 e ] s2 | s2 = bb11 ]
+    [ bb0 = any [ br0 (x0: t_Option) -> {self = C_Ok x0} (! bb2) | br1 (x0: t_E) -> {self = C_Err x0} (! bb5) ]
+    | bb5 = s0 [ s0 = v_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_11 <- C_Err'0 e ] s2 | s2 = bb11 ]
     | bb11 = s0 [ s0 = [ &_0 <- C_Some'0 _11 ] s1 | s1 = bb15 ]
-    | bb2 = v_Ok {self'0}
+    | bb2 = v_Ok {self}
         (fun (r0: t_Option) -> any [ br0 -> {r0 = C_None} (! bb6) | br1 (x0: t_T) -> {r0 = C_Some x0} (! bb7) ])
     | bb7 = s0
-      [ s0 = v_Ok {self'0} (fun (r0: t_Option) -> v_Some {r0} (fun (r0'0: t_T) -> [ &x <- r0'0 ] s1))
+      [ s0 = v_Ok {self} (fun (r0: t_Option) -> v_Some {r0} (fun (r0'0: t_T) -> [ &x <- r0'0 ] s1))
       | s1 = [ &_8 <- C_Ok'0 x ] s2
       | s2 = bb8 ]
     | bb8 = s0 [ s0 = [ &_0 <- C_Some'0 _8 ] s1 | s1 = bb15 ]
     | bb6 = s0 [ s0 = [ &_0 <- C_None'0 ] s1 | s1 = bb15 ]
-    | bb15 = return''0 {_0} ]
+    | bb15 = return {_0} ]
     [ & _0: t_Option'0 = Any.any_l ()
-    | & self'0: t_OwnResult = self
+    | & self: t_OwnResult = self
     | & x: t_T = Any.any_l ()
     | & _8: t_OwnResult'0 = Any.any_l ()
     | & e: t_E = Any.any_l ()
     | & _11: t_OwnResult'0 = Any.any_l () ])
-    [ return''0 (result: t_Option'0) -> {[@expl:transpose result type invariant] inv'4 result}
+    [ return (result: t_Option'0) -> {[@expl:transpose result type invariant] inv'4 result}
       {[@expl:transpose ensures #0] self = C_Ok (C_None) -> result = C_None'0}
       {[@expl:transpose ensures #1] forall t: t_T. self = C_Ok (C_Some t) -> result = C_Some'0 (C_Ok'0 t)}
       {[@expl:transpose ensures #2] forall e: t_E. self = C_Err e -> result = C_Some'0 (C_Err'0 e)}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_own__qyi1891129895124532698__resolve_coherence__refines (* <OwnResult<T, E> as creusot_contracts::Resolve> *)
   type t_T

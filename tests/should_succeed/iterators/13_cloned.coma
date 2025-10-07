@@ -18,7 +18,7 @@ module M_13_cloned__qyi15962217627105823597__resolve_coherence (* <Cloned<I> as 
   
   constant self : t_Cloned
   
-  function resolve_coherence (self'0: t_Cloned) : ()
+  function resolve_coherence (self: t_Cloned) : ()
   
   goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'0 self)
 end
@@ -113,7 +113,7 @@ module M_13_cloned__qyi8249401513993331368__produces_refl (* <Cloned<I> as commo
   
   constant self : t_Cloned
   
-  function produces_refl'0 (self'0: t_Cloned) : ()
+  function produces_refl'0 (self: t_Cloned) : ()
   
   goal vc_produces_refl: [@expl:produces_refl ensures] produces'0 self (Seq.empty: Seq.seq t_T) self
 end
@@ -216,7 +216,7 @@ module M_13_cloned__qyi8249401513993331368__produces_trans (* <Cloned<I> as comm
   
   constant c : t_Cloned
   
-  function produces_trans'0 (a'0: t_Cloned) (ab'0: Seq.seq t_T) (b'0: t_Cloned) (bc'0: Seq.seq t_T) (c'0: t_Cloned) : ()
+  function produces_trans'0 (a: t_Cloned) (ab: Seq.seq t_T) (b: t_Cloned) (bc: Seq.seq t_T) (c: t_Cloned) : ()
   
   goal vc_produces_trans: produces'0 a ab b
     -> produces'0 b bc c -> ([@expl:produces_trans ensures] produces'0 a (Seq.(++) ab bc) c)
@@ -291,8 +291,8 @@ module M_13_cloned__qyi8249401513993331368__next (* <Cloned<I> as common::Iterat
           end
       /\ inv'3 res)
   
-  let rec next (self: MutBorrow.t t_I) (return' (x: t_Option)) = {[@expl:next requires] precondition () self}
-    any [ return''0 (result: t_Option) -> {postcondition_once () self result} (! return' {result}) ]
+  let rec next (self: MutBorrow.t t_I) (return (x: t_Option)) = {[@expl:next requires] precondition () self}
+    any [ return' (result: t_Option) -> {postcondition_once () self result} (! return {result}) ]
   
   predicate inv'4 (_0: t_Cloned)
   
@@ -327,7 +327,7 @@ module M_13_cloned__qyi8249401513993331368__next (* <Cloned<I> as common::Iterat
         | C_Some'0 a_0 -> inv'1 a_0
         end
   
-  type tuple = { _p0: t_Option; _p1: t_Option'0 }
+  type tuple = { f0: t_Option; f1: t_Option'0 }
   
   predicate postcondition_once'0 (self: ()) (args: t_T) (result: t_T)
   
@@ -392,18 +392,18 @@ module M_13_cloned__qyi8249401513993331368__next (* <Cloned<I> as common::Iterat
   axiom precondition_fndef'0: forall args: t_T [precondition'0 () args]. (let self_ = args in inv'2 self_)
       -> precondition'0 () args
   
-  let rec clone' (self_: t_T) (return' (x: t_T)) = {[@expl:clone requires] precondition'0 () self_}
-    any [ return''0 (result: t_T) -> {postcondition_once'0 () self_ result} (! return' {result}) ]
+  let rec clone' (self_: t_T) (return (x: t_T)) = {[@expl:clone requires] precondition'0 () self_}
+    any [ return' (result: t_T) -> {postcondition_once'0 () self_ result} (! return {result}) ]
   
-  let rec cloned (self_: t_Option) (return' (x: t_Option'0)) = {[@expl:cloned 'self_' type invariant] inv'3 self_}
+  let rec cloned (self_: t_Option) (return (x: t_Option'0)) = {[@expl:cloned 'self_' type invariant] inv'3 self_}
     any
-    [ return''0 (result: t_Option'0) -> {inv'6 result}
-      {match { _p0 = self_; _p1 = result } with
-        | {_p0 = C_None; _p1 = C_None'0} -> true
-        | {_p0 = C_Some s; _p1 = C_Some'0 r} -> postcondition () s r
+    [ return' (result: t_Option'0) -> {inv'6 result}
+      {match { f0 = self_; f1 = result } with
+        | {f0 = C_None; f1 = C_None'0} -> true
+        | {f0 = C_Some s; f1 = C_Some'0 r} -> postcondition () s r
         | _ -> false
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate completed'0 (self: MutBorrow.t t_Cloned) =
     completed (MutBorrow.borrow_logic (self.current).t_Cloned__iter (self.final).t_Cloned__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
@@ -417,34 +417,32 @@ module M_13_cloned__qyi8249401513993331368__next (* <Cloned<I> as common::Iterat
   
   meta "select_lsinst" "all"
   
-  let rec next'0 (self: MutBorrow.t t_Cloned) (return' (x: t_Option'0)) =
-    {[@expl:next 'self' type invariant] inv'5 self}
+  let rec next'0 (self: MutBorrow.t t_Cloned) (return (x: t_Option'0)) = {[@expl:next 'self' type invariant] inv'5 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv (self'0.current).t_Cloned__iter}
-        MutBorrow.borrow_final <t_I> {(self'0.current).t_Cloned__iter}
-          {MutBorrow.inherit_id (MutBorrow.get_id self'0) 1}
+      [ s0 = {inv (self.current).t_Cloned__iter}
+        MutBorrow.borrow_final <t_I> {(self.current).t_Cloned__iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t t_I) ->
             [ &_4 <- _ret ] -{inv _ret.final}-
-            [ &self'0 <- { self'0 with current = { t_Cloned__iter = _ret.final } } ] s1)
+            [ &self <- { self with current = { t_Cloned__iter = _ret.final } } ] s1)
       | s1 = next {_4} (fun (_ret: t_Option) -> [ &_3 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv'5 self'0} s1
-      | s1 = -{resolve'0 self'0}- s2
+      [ s0 = {[@expl:type invariant] inv'5 self} s1
+      | s1 = -{resolve'0 self}- s2
       | s2 = cloned {_3} (fun (_ret: t_Option'0) -> [ &_0 <- _ret ] s3)
       | s3 = bb2 ]
-    | bb2 = return''0 {_0} ]
+    | bb2 = return {_0} ]
     [ & _0: t_Option'0 = Any.any_l ()
-    | & self'0: MutBorrow.t t_Cloned = self
+    | & self: MutBorrow.t t_Cloned = self
     | & _3: t_Option = Any.any_l ()
     | & _4: MutBorrow.t t_I = Any.any_l () ])
-    [ return''0 (result: t_Option'0) -> {[@expl:next result type invariant] inv'6 result}
+    [ return (result: t_Option'0) -> {[@expl:next result type invariant] inv'6 result}
       {[@expl:next ensures] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_13_cloned__qyi15962217627105823597__resolve_coherence__refines (* <Cloned<I> as creusot_contracts::Resolve> *)
   type t_I

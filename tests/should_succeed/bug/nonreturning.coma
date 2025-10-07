@@ -11,9 +11,9 @@ module M_nonreturning__f
   
   meta "select_lsinst" "all"
   
-  let rec f (return' (x: ())) = (! bb0
-    [ bb0 = bb1 | bb1 = bb1'0 [ bb1'0 = (! bb1'0) ] ])
-    [ return''0 (result: ()) -> {[@expl:f result type invariant] inv result} (! return' {result}) ]
+  let rec f (return (x: ())) = (! bb0
+    [ bb0 = bb1 | bb1 = bb1 [ bb1 = (! bb1) ] ])
+    [ return (result: ()) -> {[@expl:f result type invariant] inv result} (! return {result}) ]
 end
 module M_nonreturning__g
   use creusot.prelude.Any
@@ -26,15 +26,15 @@ module M_nonreturning__g
   
   axiom inv_axiom [@rewrite]: forall x: () [inv x]. inv x = invariant' x
   
-  let rec f (return' (x: ())) = any [ return''0 (result: ()) -> {inv result} (! return' {result}) ]
+  let rec f (return (x: ())) = any [ return' (result: ()) -> {inv result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec g (b: bool) (return' (x: ())) = (! bb0
-    [ bb0 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ]
+  let rec g (b: bool) (return (x: ())) = (! bb0
+    [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ]
     | bb1 = s0 [ s0 = f (fun (_ret: ()) -> [ &_5 <- _ret ] s1) | s1 = {false} any ]
-    | bb2 = return''0 {_0} ] [ & _0: () = Any.any_l () | & b'0: bool = b | & _5: () = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:g ensures] not b} (! return' {result}) ]
+    | bb2 = return {_0} ] [ & _0: () = Any.any_l () | & b: bool = b | & _5: () = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:g ensures] not b} (! return {result}) ]
 end

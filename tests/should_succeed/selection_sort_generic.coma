@@ -59,13 +59,13 @@ module M_selection_sort_generic__selection_sort
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
+  let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
+    any [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
-  let rec into_iter (self_: t_Range) (return' (x: t_Range)) = any
-    [ return''0 (result: t_Range) -> {result = self_} (! return' {result}) ]
+  let rec into_iter (self_: t_Range) (return (x: t_Range)) = any
+    [ return' (result: t_Range) -> {result = self_} (! return {result}) ]
   
   type t_DeepModelTy
   
@@ -182,12 +182,12 @@ module M_selection_sort_generic__selection_sort
   predicate completed (self: MutBorrow.t t_Range) =
     resolve self /\ deep_model'2 (self.current).t_Range__start >= deep_model'2 (self.current).t_Range__end
   
-  let rec next (self_: MutBorrow.t t_Range) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match result with
+  let rec next (self_: MutBorrow.t t_Range) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Range) = resolve _0
   
@@ -214,16 +214,16 @@ module M_selection_sort_generic__selection_sort
   
   meta "rewrite_def" predicate has_value
   
-  let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: t_T)) = {[@expl:index 'self_' type invariant] inv'3 self_}
+  let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_T)) = {[@expl:index 'self_' type invariant] inv'3 self_}
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return''0 (result: t_T) -> {inv'6 result} {has_value ix (view self_) result} (! return' {result}) ]
+    any [ return' (result: t_T) -> {inv'6 result} {has_value ix (view self_) result} (! return {result}) ]
   
-  type tuple = { _p0: t_T; _p1: t_T }
+  type tuple = { f0: t_T; f1: t_T }
   
   predicate precondition (self: ()) (args: tuple)
   
   axiom precondition_fndef:
-    forall args: tuple [precondition () args]. (let {_p0 = self_; _p1 = other} = args in inv'6 other /\ inv'6 self_)
+    forall args: tuple [precondition () args]. (let {f0 = self_; f1 = other} = args in inv'6 other /\ inv'6 self_)
       -> precondition () args
   
   function deep_model'3 [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model self
@@ -234,11 +234,11 @@ module M_selection_sort_generic__selection_sort
   
   axiom postcondition_fndef:
     forall args: tuple, res: bool [postcondition_once () args res]. postcondition_once () args res
-      -> (let {_p0 = self_; _p1 = other} = args in res = lt_log (deep_model'3 self_) (deep_model'3 other))
+      -> (let {f0 = self_; f1 = other} = args in res = lt_log (deep_model'3 self_) (deep_model'3 other))
   
-  let rec lt (self_: t_T) (other: t_T) (return' (x: bool)) = {[@expl:lt requires] precondition () { _p0 = self_;
-                                                                                                    _p1 = other }}
-    any [ return''0 (result: bool) -> {postcondition_once () { _p0 = self_; _p1 = other } result} (! return' {result}) ]
+  let rec lt (self_: t_T) (other: t_T) (return (x: bool)) = {[@expl:lt requires] precondition () { f0 = self_;
+                                                                                                   f1 = other }}
+    any [ return' (result: bool) -> {postcondition_once () { f0 = self_; f1 = other } result} (! return {result}) ]
   
   predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
   
@@ -263,22 +263,22 @@ module M_selection_sort_generic__selection_sort
   
   axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'9 x]. inv'9 x = invariant''6 x
   
-  let rec deref_mut (self_: MutBorrow.t t_Vec) (return' (x: MutBorrow.t (Slice64.slice t_T))) =
+  let rec deref_mut (self_: MutBorrow.t t_Vec) (return (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:deref_mut 'self_' type invariant] inv'7 self_}
     any
-    [ return''0 (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'9 result}
+    [ return' (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'9 result}
       {Slice64.view result.current = view self_.current}
       {Slice64.view result.final = view self_.final}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec swap (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return' (x: ())) =
+  let rec swap (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
     {[@expl:swap 'self_' type invariant] inv'9 self_}
     {[@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current)}
     {[@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current)}
     any
-    [ return''0 (result: ()) ->
+    [ return' (result: ()) ->
     {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) = self.final = self.current
   
@@ -302,25 +302,25 @@ module M_selection_sort_generic__selection_sort
   
   meta "select_lsinst" "all"
   
-  let rec selection_sort (v: MutBorrow.t t_Vec) (return' (x: ())) = {[@expl:selection_sort 'v' type invariant] inv'7 v}
+  let rec selection_sort (v: MutBorrow.t t_Vec) (return (x: ())) = {[@expl:selection_sort 'v' type invariant] inv'7 v}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_v <- v'0 ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = len {v'0.current} (fun (_ret: UInt64.t) -> [ &_8 <- _ret ] s1) | s1 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = len {v.current} (fun (_ret: UInt64.t) -> [ &_8 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
       [ s0 = [ &_7 <- { t_Range__start = (0: UInt64.t); t_Range__end = _8 } ] s1
       | s1 = into_iter {_7} (fun (_ret: t_Range) -> [ &iter <- _ret ] s2)
       | s2 = bb3 ]
     | bb3 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb4 ]
     | bb4 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb5 ]
-    | bb5 = s0 [ s0 = [ &old_6_0 <- v'0 ] s1 | s1 = bb6 ]
-    | bb6 = bb6'0
-      [ bb6'0 = {[@expl:mut invariant] old_6_0.final = v'0.final}
+    | bb5 = s0 [ s0 = [ &old_6_0 <- v ] s1 | s1 = bb6 ]
+    | bb6 = bb6
+      [ bb6 = {[@expl:mut invariant] old_6_0.final = v.final}
         {[@expl:for invariant] inv'5 produced}
         {[@expl:for invariant] inv'4 iter}
         {[@expl:for invariant] produces iter_old produced iter}
-        {[@expl:loop invariant #0] permutation_of (view v'0.current) (view old_v.current)}
-        {[@expl:loop invariant #1] sorted_range (deep_model'1 v'0) 0 (Seq.length produced)}
-        {[@expl:loop invariant #2] partition (deep_model'1 v'0) (Seq.length produced)}
+        {[@expl:loop invariant #0] permutation_of (view v.current) (view old_v.current)}
+        {[@expl:loop invariant #1] sorted_range (deep_model'1 v) 0 (Seq.length produced)}
+        {[@expl:loop invariant #2] partition (deep_model'1 v) (Seq.length produced)}
         (! s0)
         [ s0 = bb7 ]
         [ bb7 = s0
@@ -342,7 +342,7 @@ module M_selection_sort_generic__selection_sort
           | s1 = [ &i <- __creusot_proc_iter_elem ] s2
           | s2 = [ &min <- i ] s3
           | s3 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_34 <- _ret ] s4)
-          | s4 = len {v'0.current} (fun (_ret: UInt64.t) -> [ &_36 <- _ret ] s5)
+          | s4 = len {v.current} (fun (_ret: UInt64.t) -> [ &_36 <- _ret ] s5)
           | s5 = bb14 ]
         | bb14 = s0
           [ s0 = [ &_33 <- { t_Range__start = _34; t_Range__end = _36 } ] s1
@@ -350,13 +350,13 @@ module M_selection_sort_generic__selection_sort
           | s2 = bb15 ]
         | bb15 = s0 [ s0 = [ &iter_old'0 <- iter'0 ] s1 | s1 = bb16 ]
         | bb16 = s0 [ s0 = [ &produced'0 <- Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb18 ]
-        | bb18 = bb18'0
-          [ bb18'0 = {[@expl:for invariant] inv'5 produced'0}
+        | bb18 = bb18
+          [ bb18 = {[@expl:for invariant] inv'5 produced'0}
             {[@expl:for invariant] inv'4 iter'0}
             {[@expl:for invariant] produces iter_old'0 produced'0 iter'0}
             {[@expl:loop invariant #0] forall k: int. UInt64.t'int i <= k
                 /\ k < Seq.length produced'0 + UInt64.t'int i + 1
-              -> le_log (Seq.get (deep_model'1 v'0) (UInt64.t'int min)) (Seq.get (deep_model'1 v'0) k)}
+              -> le_log (Seq.get (deep_model'1 v) (UInt64.t'int min)) (Seq.get (deep_model'1 v) k)}
             {[@expl:loop invariant #1] UInt64.t'int i <= UInt64.t'int min
             /\ UInt64.t'int min < Seq.length produced'0 + UInt64.t'int i + 1}
             (! s0)
@@ -378,18 +378,18 @@ module M_selection_sort_generic__selection_sort
             | bb25 = s0
               [ s0 = [ &produced'0 <- _53 ] s1
               | s1 = [ &j <- __creusot_proc_iter_elem'0 ] s2
-              | s2 = index {v'0.current} {j} (fun (_ret: t_T) -> [ &_58 <- _ret ] s3)
+              | s2 = index {v.current} {j} (fun (_ret: t_T) -> [ &_58 <- _ret ] s3)
               | s3 = bb26 ]
-            | bb26 = s0 [ s0 = index {v'0.current} {min} (fun (_ret: t_T) -> [ &_62 <- _ret ] s1) | s1 = bb27 ]
+            | bb26 = s0 [ s0 = index {v.current} {min} (fun (_ret: t_T) -> [ &_62 <- _ret ] s1) | s1 = bb27 ]
             | bb27 = s0 [ s0 = lt {_58} {_62} (fun (_ret: bool) -> [ &_56 <- _ret ] s1) | s1 = bb28 ]
-            | bb28 = any [ br0 -> {_56 = false} (! bb18'0) | br1 -> {_56} (! bb29) ]
-            | bb29 = s0 [ s0 = [ &min <- j ] s1 | s1 = bb18'0 ] ] ]
+            | bb28 = any [ br0 -> {_56 = false} (! bb18) | br1 -> {_56} (! bb29) ]
+            | bb29 = s0 [ s0 = [ &min <- j ] s1 | s1 = bb18 ] ] ]
         | bb23 = s0
-          [ s0 = {inv'2 v'0.current}
-            MutBorrow.borrow_mut <t_Vec> {v'0.current}
+          [ s0 = {inv'2 v.current}
+            MutBorrow.borrow_mut <t_Vec> {v.current}
               (fun (_ret: MutBorrow.t t_Vec) ->
                 [ &_70 <- _ret ] -{inv'2 _ret.final}-
-                [ &v'0 <- { v'0 with current = _ret.final } ] s1)
+                [ &v <- { v with current = _ret.final } ] s1)
           | s1 = deref_mut {_70} (fun (_ret: MutBorrow.t (Slice64.slice t_T)) -> [ &_69 <- _ret ] s2)
           | s2 = bb32 ]
         | bb32 = s0
@@ -404,13 +404,13 @@ module M_selection_sort_generic__selection_sort
           [ s0 = {[@expl:type invariant] inv'9 _69} s1
           | s1 = -{resolve'2 _69}- s2
           | s2 = {[@expl:assertion] let i'0 = Seq.length produced in forall k1: int, k2: int. 0 <= k1
-                /\ k1 < i'0 /\ i'0 <= k2 /\ k2 < Seq.length (deep_model'1 v'0)
-              -> le_log (Seq.get (deep_model'1 v'0) k1) (Seq.get (deep_model'1 v'0) k2)}
+                /\ k1 < i'0 /\ i'0 <= k2 /\ k2 < Seq.length (deep_model'1 v)
+              -> le_log (Seq.get (deep_model'1 v) k1) (Seq.get (deep_model'1 v) k2)}
             s3
-          | s3 = bb6'0 ] ] ]
-    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'7 v'0} s1 | s1 = -{resolve'4 v'0}- s2 | s2 = return''0 {_0} ] ]
+          | s3 = bb6 ] ] ]
+    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'7 v} s1 | s1 = -{resolve'4 v}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & v'0: MutBorrow.t t_Vec = v
+    | & v: MutBorrow.t t_Vec = v
     | & old_v: MutBorrow.t t_Vec = Any.any_l ()
     | & iter: t_Range = Any.any_l ()
     | & _7: t_Range = Any.any_l ()
@@ -444,7 +444,7 @@ module M_selection_sort_generic__selection_sort
     | & _69: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _70: MutBorrow.t t_Vec = Any.any_l ()
     | & old_6_0: MutBorrow.t t_Vec = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:selection_sort ensures #0] sorted (deep_model'0 v.final)}
+    [ return (result: ()) -> {[@expl:selection_sort ensures #0] sorted (deep_model'0 v.final)}
       {[@expl:selection_sort ensures #1] permutation_of (view v.final) (view v.current)}
-      (! return' {result}) ]
+      (! return {result}) ]
 end

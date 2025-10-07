@@ -58,9 +58,9 @@ module M_695__inversed_if
   axiom fn_mut_spec: forall self: t_C, args: (), res_state: t_C, res: bool. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec call (self_: t_C) (arg: ()) (return' (x: bool)) = {[@expl:call 'self_' type invariant] inv'0 self_}
+  let rec call (self_: t_C) (arg: ()) (return (x: bool)) = {[@expl:call 'self_' type invariant] inv'0 self_}
     {[@expl:call requires] precondition self_ arg}
-    any [ return''0 (result: bool) -> {postcondition self_ arg result} (! return' {result}) ]
+    any [ return' (result: bool) -> {postcondition self_ arg result} (! return {result}) ]
   
   type t_B
   
@@ -70,46 +70,46 @@ module M_695__inversed_if
   
   predicate postcondition_once'0 (self: t_B) (args: bool) (result: ())
   
-  let rec call_once (self_: t_B) (arg: bool) (return' (x: ())) = {[@expl:call_once 'self_' type invariant] inv'1 self_}
+  let rec call_once (self_: t_B) (arg: bool) (return (x: ())) = {[@expl:call_once 'self_' type invariant] inv'1 self_}
     {[@expl:call_once requires] precondition'0 self_ arg}
-    any [ return''0 (result: ()) -> {postcondition_once'0 self_ arg result} (! return' {result}) ]
+    any [ return' (result: ()) -> {postcondition_once'0 self_ arg result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec inversed_if (cond: t_C) (branch: t_B) (return' (x: ())) = {[@expl:inversed_if 'cond' type invariant] inv cond}
+  let rec inversed_if (cond: t_C) (branch: t_B) (return (x: ())) = {[@expl:inversed_if 'cond' type invariant] inv cond}
     {[@expl:inversed_if 'branch' type invariant] inv'1 branch}
     {[@expl:inversed_if requires] precondition cond () /\ (forall b: bool. precondition'0 branch b)}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv cond'0} s1
-      | s1 = -{resolve cond'0}- s2
-      | s2 = call {cond'0} {_7} (fun (_ret: bool) -> [ &_5 <- _ret ] s3)
+      [ s0 = {[@expl:type invariant] inv cond} s1
+      | s1 = -{resolve cond}- s2
+      | s2 = call {cond} {_7} (fun (_ret: bool) -> [ &_5 <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ]
     | bb2 = s0
-      [ s0 = [ &_11 <- false ] s1 | s1 = call_once {branch'0} {_11} (fun (_ret: ()) -> [ &_0 <- _ret ] s2) | s2 = bb8 ]
+      [ s0 = [ &_11 <- false ] s1 | s1 = call_once {branch} {_11} (fun (_ret: ()) -> [ &_0 <- _ret ] s2) | s2 = bb8 ]
     | bb3 = s0
-      [ s0 = [ &_9 <- true ] s1 | s1 = call_once {branch'0} {_9} (fun (_ret: ()) -> [ &_0 <- _ret ] s2) | s2 = bb8 ]
-    | bb8 = return''0 {_0} ]
+      [ s0 = [ &_9 <- true ] s1 | s1 = call_once {branch} {_9} (fun (_ret: ()) -> [ &_0 <- _ret ] s2) | s2 = bb8 ]
+    | bb8 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & cond'0: t_C = cond
-    | & branch'0: t_B = branch
+    | & cond: t_C = cond
+    | & branch: t_B = branch
     | & _5: bool = Any.any_l ()
     | & _7: () = Any.any_l ()
     | & _9: bool = Any.any_l ()
     | & _11: bool = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:inversed_if ensures] exists b: bool. postcondition cond () b
+    [ return (result: ()) -> {[@expl:inversed_if ensures] exists b: bool. postcondition cond () b
         /\ postcondition_once'0 branch (not b) ()}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_695__valid
   use creusot.int.UInt32
   use creusot.prelude.Any
   use creusot.prelude.MutBorrow
   
-  type closure1 = { _0: UInt32.t }
+  type closure1 = { c0: UInt32.t }
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -156,25 +156,23 @@ module M_695__valid
   
   axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log x y <> C_Greater)
   
-  let rec closure1 (self: closure1) (return' (x: bool)) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &res <- UInt32.gt _1._0 (7: UInt32.t) ] s1 | s1 = [ &_0'0 <- res ] s2 | s2 = return''0 {_0'0} ] ]
-    [ & _0'0: bool = Any.any_l () | & _1: closure1 = self | & res: bool = Any.any_l () ])
-    [ return''0 (result: bool) -> {[@expl:closure ensures] result = UInt32.gt self._0 (7: UInt32.t)}
-      (! return' {result}) ]
+  let rec closure1 (self: closure1) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &res <- UInt32.gt self.c0 (7: UInt32.t) ] s1 | s1 = [ &_0 <- res ] s2 | s2 = return {_0} ] ]
+    [ & _0: bool = Any.any_l () | & self: closure1 = self | & res: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@expl:closure ensures] result = UInt32.gt self.c0 (7: UInt32.t)} (! return {result}) ]
   
-  type closure2 = { _0'0: MutBorrow.t UInt32.t }
+  type closure2 = { c0'0: MutBorrow.t UInt32.t }
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t closure2) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0'1: MutBorrow.t closure2) = resolve _0'1
+  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t closure2) = resolve _0
   
   meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_once [@inline:trivial] (self: closure2) (args: bool) (result: ()) =
-    let b = args in b /\ (self._0'0).final = (2: UInt32.t) \/ not b /\ (self._0'0).final = (1: UInt32.t)
+    let b = args in b /\ (self.c0'0).final = (2: UInt32.t) \/ not b /\ (self.c0'0).final = (1: UInt32.t)
   
   meta "rewrite_def" predicate postcondition_once
   
@@ -182,22 +180,22 @@ module M_695__valid
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0'1: MutBorrow.t UInt32.t) = resolve'1 _0'1
+  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t UInt32.t) = resolve'1 _0
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (_0'1: closure2) = resolve'2 _0'1._0'0
+  predicate resolve'3 [@inline:trivial] (_0: closure2) = resolve'2 _0.c0'0
   
   meta "rewrite_def" predicate resolve'3
   
   predicate hist_inv [@inline:trivial] (self: closure2) (result_state: closure2) =
-    (result_state._0'0).final = (self._0'0).final
+    (result_state.c0'0).final = (self.c0'0).final
   
   meta "rewrite_def" predicate hist_inv
   
   predicate postcondition_mut [@inline:trivial] (self: closure2) (args: bool) (result_state: closure2) (result: ()) =
-    let b = args in (b /\ (result_state._0'0).current = (2: UInt32.t)
-      \/ not b /\ (result_state._0'0).current = (1: UInt32.t))
+    let b = args in (b /\ (result_state.c0'0).current = (2: UInt32.t)
+      \/ not b /\ (result_state.c0'0).current = (1: UInt32.t))
     /\ hist_inv self result_state
   
   meta "rewrite_def" predicate postcondition_mut
@@ -222,19 +220,19 @@ module M_695__valid
     forall self: closure2, args: bool, res_state: closure2, res: (). postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  let rec closure2 (self: MutBorrow.t closure2) (b: bool) (return' (x: ())) = (! bb0
-    [ bb0 = any [ br0 -> {b'0 = false} (! bb2) | br1 -> {b'0} (! bb1) ]
+  let rec closure2 (self: MutBorrow.t closure2) (b: bool) (return (x: ())) = (! bb0
+    [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ]
     | bb1 = s0 [ s0 = [ &_4 <- (2: UInt32.t) ] s1 | s1 = bb3 ]
     | bb2 = s0 [ s0 = [ &_4 <- (1: UInt32.t) ] s1 | s1 = bb3 ]
     | bb3 = s0
-      [ s0 = [ &_1 <- { _1 with current = { _0'0 = { (_1.current)._0'0 with current = _4 } } } ] s1
-      | s1 = -{resolve'0 _1}- s2
-      | s2 = return''0 {_0'1} ] ]
-    [ & _0'1: () = Any.any_l () | & _1: MutBorrow.t closure2 = self | & b'0: bool = b | & _4: UInt32.t = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:closure ensures] b /\ ((self.final)._0'0).current = (2: UInt32.t)
-      \/ not b /\ ((self.final)._0'0).current = (1: UInt32.t)}
+      [ s0 = [ &self <- { self with current = { c0'0 = { (self.current).c0'0 with current = _4 } } } ] s1
+      | s1 = -{resolve'0 self}- s2
+      | s2 = return {_0} ] ]
+    [ & _0: () = Any.any_l () | & self: MutBorrow.t closure2 = self | & b: bool = b | & _4: UInt32.t = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:closure ensures] b /\ ((self.final).c0'0).current = (2: UInt32.t)
+      \/ not b /\ ((self.final).c0'0).current = (1: UInt32.t)}
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate precondition [@inline:trivial] (self: closure1) (args: ()) = true
   
@@ -245,11 +243,11 @@ module M_695__valid
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: closure1) (args: ()) (result: bool) =
-    result = UInt32.gt self._0 (7: UInt32.t)
+    result = UInt32.gt self.c0 (7: UInt32.t)
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  predicate resolve'4 [@inline:trivial] (_0'1: closure1) = true
+  predicate resolve'4 [@inline:trivial] (_0: closure1) = true
   
   meta "rewrite_def" predicate resolve'4
   
@@ -258,7 +256,7 @@ module M_695__valid
   meta "rewrite_def" predicate hist_inv'0
   
   predicate postcondition_mut'0 [@inline:trivial] (self: closure1) (args: ()) (result_state: closure1) (result: bool) =
-    result = UInt32.gt result_state._0 (7: UInt32.t) /\ hist_inv'0 self result_state
+    result = UInt32.gt result_state.c0 (7: UInt32.t) /\ hist_inv'0 self result_state
   
   meta "rewrite_def" predicate postcondition_mut'0
   
@@ -287,7 +285,7 @@ module M_695__valid
   axiom fn_hist_inv_spec: forall self: closure1, res_state: closure1. hist_inv'0 self res_state = (self = res_state)
   
   predicate postcondition [@inline:trivial] (self: closure1) (args: ()) (result: bool) =
-    result = UInt32.gt self._0 (7: UInt32.t)
+    result = UInt32.gt self.c0 (7: UInt32.t)
   
   meta "rewrite_def" predicate postcondition
   
@@ -302,34 +300,34 @@ module M_695__valid
     forall self: closure1, args: (), res_state: closure1, res: bool. postcondition_mut'0 self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec inversed_if (cond: closure1) (branch: closure2) (return' (x: ())) =
+  let rec inversed_if (cond: closure1) (branch: closure2) (return (x: ())) =
     {[@expl:inversed_if requires] precondition cond () /\ (forall b: bool. precondition'0 branch b)}
     any
-    [ return''0 (result: ()) -> {exists b: bool. postcondition cond () b /\ postcondition_once branch (not b) ()}
-      (! return' {result}) ]
+    [ return' (result: ()) -> {exists b: bool. postcondition cond () b /\ postcondition_once branch (not b) ()}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec valid (n: UInt32.t) (return' (x: UInt32.t)) = (! bb0
+  let rec valid (n: UInt32.t) (return (x: UInt32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &r <- (0: UInt32.t) ] s1
-      | s1 = [ &cond <- { _0 = n'0 } ] s2
+      | s1 = [ &cond <- { c0 = n } ] s2
       | s2 = MutBorrow.borrow_mut <UInt32.t> {r}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_7 <- _ret ] [ &r <- _ret.final ] s3)
-      | s3 = [ &branch <- { _0'0 = _7 } ] s4
+      | s3 = [ &branch <- { c0'0 = _7 } ] s4
       | s4 = inversed_if {cond} {branch} (fun (_ret: ()) -> [ &_8 <- _ret ] s5)
       | s5 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] false} s1 | s1 = [ &_0'1 <- r ] s2 | s2 = return''0 {_0'1} ] ]
-    [ & _0'1: UInt32.t = Any.any_l ()
-    | & n'0: UInt32.t = n
+    | bb1 = s0 [ s0 = {[@expl:assertion] false} s1 | s1 = [ &_0 <- r ] s2 | s2 = return {_0} ] ]
+    [ & _0: UInt32.t = Any.any_l ()
+    | & n: UInt32.t = n
     | & r: UInt32.t = Any.any_l ()
     | & cond: closure1 = Any.any_l ()
     | & branch: closure2 = Any.any_l ()
     | & _7: MutBorrow.t UInt32.t = Any.any_l ()
     | & _8: () = Any.any_l () ])
-    [ return''0 (result: UInt32.t) -> {[@expl:valid ensures] UInt32.gt n (7: UInt32.t) /\ result = (2: UInt32.t)
+    [ return (result: UInt32.t) -> {[@expl:valid ensures] UInt32.gt n (7: UInt32.t) /\ result = (2: UInt32.t)
       \/ UInt32.le n (7: UInt32.t) /\ result = (1: UInt32.t)}
-      (! return' {result}) ]
+      (! return {result}) ]
 end

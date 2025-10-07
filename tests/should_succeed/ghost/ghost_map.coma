@@ -32,14 +32,14 @@ module M_ghost_map__ghost_map
   
   predicate is_empty (self: t_FMap) = ext_eq self empty
   
-  let rec new (return' (x: t_FMap)) = any [ return''0 (result: t_FMap) -> {is_empty result} (! return' {result}) ]
+  let rec new (return (x: t_FMap)) = any [ return' (result: t_FMap) -> {is_empty result} (! return {result}) ]
   
   predicate contains [@inline:trivial] (self: t_FMap) (k: Int32.t) = get self k <> C_None
   
   meta "rewrite_def" predicate contains
   
-  let rec deref_mut (self: MutBorrow.t t_FMap) (return' (x: MutBorrow.t t_FMap)) = any
-    [ return''0 (result: MutBorrow.t t_FMap) -> {result = self} (! return' {result}) ]
+  let rec deref_mut (self: MutBorrow.t t_FMap) (return (x: MutBorrow.t t_FMap)) = any
+    [ return' (result: MutBorrow.t t_FMap) -> {result = self} (! return {result}) ]
   
   function insert (self: t_FMap) (k: Int32.t) (v: Int32.t) : t_FMap
   
@@ -49,10 +49,10 @@ module M_ghost_map__ghost_map
   axiom insert_spec'0: forall self: t_FMap, k: Int32.t, v: Int32.t. len (insert self k v)
       = (if contains self k then len self else len self + 1)
   
-  let rec insert_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (value: Int32.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {self.final = insert self.current key value}
+  let rec insert_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (value: Int32.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {self.final = insert self.current key value}
       {result = get self.current key}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_FMap) = self.final = self.current
   
@@ -62,11 +62,11 @@ module M_ghost_map__ghost_map
   
   meta "rewrite_def" predicate resolve'0
   
-  let rec deref (self: t_FMap) (return' (x: t_FMap)) = any
-    [ return''0 (result: t_FMap) -> {result = self} (! return' {result}) ]
+  let rec deref (self: t_FMap) (return (x: t_FMap)) = any
+    [ return' (result: t_FMap) -> {result = self} (! return {result}) ]
   
-  let rec len_ghost (self: t_FMap) (return' (x: int)) = any
-    [ return''0 (result: int) -> {result = len self} (! return' {result}) ]
+  let rec len_ghost (self: t_FMap) (return (x: int)) = any
+    [ return' (result: int) -> {result = len self} (! return {result}) ]
   
   predicate index_logic [@inline:trivial] (self: Map.map Int32.t bool) (a: Int32.t) = Map.get self a
   
@@ -92,8 +92,8 @@ module M_ghost_map__ghost_map
   
   meta "rewrite_def" function index_logic'0
   
-  let rec get_mut_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (return' (x: t_Option'0)) = any
-    [ return''0 (result: t_Option'0) -> {if contains self.current key then
+  let rec get_mut_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (return (x: t_Option'0)) = any
+    [ return' (result: t_Option'0) -> {if contains self.current key then
         match result with
           | C_None'0 -> false
           | C_Some'0 r -> contains self.final key
@@ -104,7 +104,7 @@ module M_ghost_map__ghost_map
       }
       {forall k: Int32.t. k <> key -> get self.current k = get self.final k}
       {len self.current = len self.final}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
@@ -120,7 +120,7 @@ module M_ghost_map__ghost_map
       (! {false}
       any) ]
   
-  type tuple = { _p0: MutBorrow.t Int32.t; _p1: MutBorrow.t t_FMap }
+  type tuple = { f0: MutBorrow.t Int32.t; f1: MutBorrow.t t_FMap }
   
   function remove (self: t_FMap) (k: Int32.t) : t_FMap
   
@@ -129,21 +129,21 @@ module M_ghost_map__ghost_map
   axiom remove_spec'0: forall self: t_FMap, k: Int32.t. len (remove self k)
       = (if contains self k then len self - 1 else len self)
   
-  let rec split_mut_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (return' (x: tuple)) =
+  let rec split_mut_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (return (x: tuple)) =
     {[@expl:split_mut_ghost requires] contains self.current key}
     any
-    [ return''0 (result: tuple) -> {(result._p1).current = remove self.current key}
-      {index_logic'0 self.current key = (result._p0).current
-      /\ self.final = insert (result._p1).final key (result._p0).final}
-      (! return' {result}) ]
+    [ return' (result: tuple) -> {(result.f1).current = remove self.current key}
+      {index_logic'0 self.current key = (result.f0).current
+      /\ self.final = insert (result.f1).final key (result.f0).final}
+      (! return {result}) ]
   
-  let rec remove_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {self.final = remove self.current key}
+  let rec remove_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {self.final = remove self.current key}
       {result = get self.current key}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec contains_ghost (self: t_FMap) (key: Int32.t) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = contains self key} (! return' {result}) ]
+  let rec contains_ghost (self: t_FMap) (key: Int32.t) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = contains self key} (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 Int32.t
   
@@ -152,17 +152,16 @@ module M_ghost_map__ghost_map
       | C_Some x -> C_Some'1 (Map.get f x)
       end
   
-  let rec get_ghost (self: t_FMap) (key: Int32.t) (return' (x: t_Option'1)) = any
-    [ return''0 (result: t_Option'1) -> {result = map_logic (get self key) (fun (v: Int32.t) -> v)}
-      (! return' {result}) ]
+  let rec get_ghost (self: t_FMap) (key: Int32.t) (return (x: t_Option'1)) = any
+    [ return' (result: t_Option'1) -> {result = map_logic (get self key) (fun (v: Int32.t) -> v)} (! return {result}) ]
   
-  let rec new'0 (x: ()) (return' (x'0: ())) = any [ return''0 (result: ()) -> {result = x} (! return' {result}) ]
+  let rec new'0 (x: ()) (return (x'0: ())) = any [ return' (result: ()) -> {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec ghost_map (return' (x: ())) = (! bb0
+  let rec ghost_map (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = new (fun (_ret: t_FMap) -> [ &map <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
       [ s0 = {[@expl:assertion] forall k: Int32.t. not contains map k} s1
@@ -252,8 +251,8 @@ module M_ghost_map__ghost_map
       | s3 = split_mut_ghost {_55} {_59} (fun (_ret: tuple) -> [ &_54 <- _ret ] s4)
       | s4 = bb19 ]
     | bb19 = s0
-      [ s0 = [ &x'0 <- _54._p0 ] s1
-      | s1 = [ &map2 <- _54._p1 ] s2
+      [ s0 = [ &x'0 <- _54.f0 ] s1
+      | s1 = [ &map2 <- _54.f1 ] s2
       | s2 = -{resolve'0 _56}- s3
       | s3 = [ &x'0 <- { x'0 with current = (42: Int32.t) } ] s4
       | s4 = -{resolve'2 x'0}- s5
@@ -379,7 +378,7 @@ module M_ghost_map__ghost_map
       | s2 = {[@expl:assertion] get3 = C_None'1} s3
       | s3 = new'0 {_3} (fun (_ret: ()) -> [ &_2 <- _ret ] s4)
       | s4 = bb40 ]
-    | bb40 = return''0 {_0} ]
+    | bb40 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & map: t_FMap = Any.any_l ()
     | & _2: () = Any.any_l ()
@@ -460,5 +459,5 @@ module M_ghost_map__ghost_map
     | & _159: Int32.t = Any.any_l ()
     | & _160: Int32.t = Any.any_l ()
     | & _161: Int32.t = Any.any_l ()
-    | & _162: Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _162: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

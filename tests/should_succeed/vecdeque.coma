@@ -25,17 +25,17 @@ module M_vecdeque__test_deque
   
   axiom view_spec: forall self: t_VecDeque. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  let rec with_capacity (capacity: UInt64.t) (return' (x: t_VecDeque)) = any
-    [ return''0 (result: t_VecDeque) -> {Seq.length (view result) = 0} (! return' {result}) ]
+  let rec with_capacity (capacity: UInt64.t) (return (x: t_VecDeque)) = any
+    [ return' (result: t_VecDeque) -> {Seq.length (view result) = 0} (! return {result}) ]
   
-  let rec is_empty (self_: t_VecDeque) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (Seq.length (view self_) = 0)} (! return' {result}) ]
+  let rec is_empty (self_: t_VecDeque) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (Seq.length (view self_) = 0)} (! return {result}) ]
   
-  let rec len (self_: t_VecDeque) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
+  let rec len (self_: t_VecDeque) (return (x: UInt64.t)) = any
+    [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
-  let rec new (return' (x: t_VecDeque)) = any
-    [ return''0 (result: t_VecDeque) -> {Seq.length (view result) = 0} (! return' {result}) ]
+  let rec new (return (x: t_VecDeque)) = any
+    [ return' (result: t_VecDeque) -> {Seq.length (view result) = 0} (! return {result}) ]
   
   type t_Option = C_None | C_Some UInt32.t
   
@@ -43,13 +43,13 @@ module M_vecdeque__test_deque
   
   meta "rewrite_def" function push_front
   
-  let rec pop_front (self_: MutBorrow.t t_VecDeque) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match result with
+  let rec pop_front (self_: MutBorrow.t t_VecDeque) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {match result with
         | C_Some t -> view self_.final = Seq.([..]) (view self_.current) 1 (Seq.length (view self_.current))
         /\ view self_.current = push_front (view self_.final) t
         | C_None -> self_.current = self_.final /\ Seq.length (view self_.current) = 0
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
@@ -68,33 +68,33 @@ module M_vecdeque__test_deque
   
   meta "rewrite_def" function deep_model'1
   
-  let rec eq (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
-  let rec pop_back (self_: MutBorrow.t t_VecDeque) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match result with
+  let rec pop_back (self_: MutBorrow.t t_VecDeque) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {match result with
         | C_Some t -> view self_.final = Seq.([..]) (view self_.current) 0 (Seq.length (view self_.current) - 1)
         /\ view self_.current = Seq.snoc (view self_.final) t
         | C_None -> self_.current = self_.final /\ Seq.length (view self_.current) = 0
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec push_front'0 (self_: MutBorrow.t t_VecDeque) (value: UInt32.t) (return' (x: ())) = any
-    [ return''0 (result: ()) -> {Seq.length (view self_.final) = Seq.length (view self_.current) + 1}
+  let rec push_front'0 (self_: MutBorrow.t t_VecDeque) (value: UInt32.t) (return (x: ())) = any
+    [ return' (result: ()) -> {Seq.length (view self_.final) = Seq.length (view self_.current) + 1}
       {view self_.final = push_front (view self_.current) value}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec push_back (self_: MutBorrow.t t_VecDeque) (value: UInt32.t) (return' (x: ())) = any
-    [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view self_.current) value} (! return' {result}) ]
+  let rec push_back (self_: MutBorrow.t t_VecDeque) (value: UInt32.t) (return (x: ())) = any
+    [ return' (result: ()) -> {view self_.final = Seq.snoc (view self_.current) value} (! return {result}) ]
   
-  let rec clear (self_: MutBorrow.t t_VecDeque) (return' (x: ())) = any
-    [ return''0 (result: ()) -> {Seq.length (view self_.final) = 0} (! return' {result}) ]
+  let rec clear (self_: MutBorrow.t t_VecDeque) (return (x: ())) = any
+    [ return' (result: ()) -> {Seq.length (view self_.final) = 0} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_deque (return' (x: ())) = (! bb0
+  let rec test_deque (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = with_capacity {(5: UInt64.t)} (fun (_ret: t_VecDeque) -> [ &deque <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_empty {deque} (fun (_ret: bool) -> [ &_3 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb3) ]
@@ -183,7 +183,7 @@ module M_vecdeque__test_deque
       | s2 = bb34 ]
     | bb34 = s0 [ s0 = is_empty {deque'0} (fun (_ret: bool) -> [ &_62 <- _ret ] s1) | s1 = bb35 ]
     | bb35 = any [ br0 -> {_62 = false} (! bb37) | br1 -> {_62} (! bb39) ]
-    | bb39 = return''0 {_0}
+    | bb39 = return {_0}
     | bb37 = {false} any
     | bb33 = {false} any
     | bb29 = {false} any
@@ -226,5 +226,5 @@ module M_vecdeque__test_deque
     | & _65: t_Option = Any.any_l ()
     | & _66: t_Option = Any.any_l ()
     | & _67: t_Option = Any.any_l ()
-    | & _68: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _68: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

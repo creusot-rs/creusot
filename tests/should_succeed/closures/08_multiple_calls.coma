@@ -4,15 +4,15 @@ module M_08_multiple_calls__multi_use
   
   type t_T
   
-  type closure0 = { _0: t_T }
+  type closure0 = { c0: t_T }
   
-  predicate inv (_0'0: t_T)
+  predicate inv (_0: t_T)
   
   predicate invariant' [@inline:trivial] (self: t_T) = inv self
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_0'0: t_T)
+  predicate inv'0 (_0: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
@@ -20,30 +20,30 @@ module M_08_multiple_calls__multi_use
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_0'0: t_T)
+  predicate inv'1 (_0: t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'1 x]. inv'1 x = invariant''0 x
   
-  predicate inv'2 (_0'0: closure0)
+  predicate inv'2 (_0: closure0)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: closure0 [inv'2 x]. inv'2 x = (let {_0 = x0} = x in inv'1 x0)
+  axiom inv_axiom'1 [@rewrite]: forall x: closure0 [inv'2 x]. inv'2 x = (let {c0 = x0} = x in inv'1 x0)
   
   predicate invariant''1 [@inline:trivial] (self: closure0) = inv'2 self
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'3 (_0'0: closure0)
+  predicate inv'3 (_0: closure0)
   
   axiom inv_axiom'2 [@rewrite]: forall x: closure0 [inv'3 x]. inv'3 x = invariant''1 x
   
-  let rec closure0 (self: closure0) (return' (x: UInt32.t)) = {[@expl:closure 'self' type invariant] inv'3 self}
-    {[@expl:closure requires] self._0 = self._0}
+  let rec closure0 (self: closure0) (return (x: UInt32.t)) = {[@expl:closure 'self' type invariant] inv'3 self}
+    {[@expl:closure requires] self.c0 = self.c0}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &res <- (0: UInt32.t) ] s1 | s1 = [ &_0'0 <- res ] s2 | s2 = return''0 {_0'0} ] ]
-    [ & _0'0: UInt32.t = Any.any_l () | & res: UInt32.t = Any.any_l () ])
-    [ return''0 (result: UInt32.t) -> (! return' {result}) ]
+    [ bb0 = s0 [ s0 = [ &res <- (0: UInt32.t) ] s1 | s1 = [ &_0 <- res ] s2 | s2 = return {_0} ] ]
+    [ & _0: UInt32.t = Any.any_l () | & res: UInt32.t = Any.any_l () ])
+    [ return (result: UInt32.t) -> (! return {result}) ]
   
-  predicate precondition [@inline:trivial] (self: closure0) (args: ()) = self._0 = self._0
+  predicate precondition [@inline:trivial] (self: closure0) (args: ()) = self.c0 = self.c0
   
   meta "rewrite_def" predicate precondition
   
@@ -51,9 +51,9 @@ module M_08_multiple_calls__multi_use
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve (_0'0: t_T)
+  predicate resolve (_0: t_T)
   
-  predicate resolve'0 [@inline:trivial] (_0'0: closure0) = resolve _0'0._0
+  predicate resolve'0 [@inline:trivial] (_0: closure0) = resolve _0.c0
   
   meta "rewrite_def" predicate resolve'0
   
@@ -110,7 +110,7 @@ module M_08_multiple_calls__multi_use
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  predicate resolve'1 [@inline:trivial] (_0'0: closure0) = true
+  predicate resolve'1 [@inline:trivial] (_0: closure0) = true
   
   meta "rewrite_def" predicate resolve'1
   
@@ -163,20 +163,20 @@ module M_08_multiple_calls__multi_use
     forall self: closure0, args: (), res_state: closure0, res: UInt32.t. postcondition_mut'0 self args res_state res
       = (postcondition'0 self args res /\ self = res_state)
   
-  let rec uses_fn (f: closure0) (return' (x: ())) = {[@expl:uses_fn 'f' type invariant] inv'2 f}
+  let rec uses_fn (f: closure0) (return (x: ())) = {[@expl:uses_fn 'f' type invariant] inv'2 f}
     {[@expl:uses_fn requires] precondition f ()}
     any
-    [ return''0 (result: ()) -> {exists f2: closure0, r: UInt32.t. f2 = f /\ postcondition'0 f2 () r}
-      (! return' {result}) ]
+    [ return' (result: ()) -> {exists f2: closure0, r: UInt32.t. f2 = f /\ postcondition'0 f2 () r}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec multi_use (x: t_T) (return' (x'0: ())) = {[@expl:multi_use 'x' type invariant] inv'0 x}
+  let rec multi_use (x: t_T) (return (x'0: ())) = {[@expl:multi_use 'x' type invariant] inv'0 x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &c <- { _0 = x'0 } ] s1 | s1 = uses_fn {c} (fun (_ret: ()) -> [ &_4 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = return''0 {_0'0} ]
-    [ & _0'0: () = Any.any_l () | & x'0: t_T = x | & c: closure0 = Any.any_l () | & _4: () = Any.any_l () ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+    [ bb0 = s0 [ s0 = [ &c <- { c0 = x } ] s1 | s1 = uses_fn {c} (fun (_ret: ()) -> [ &_4 <- _ret ] s2) | s2 = bb1 ]
+    | bb1 = return {_0} ]
+    [ & _0: () = Any.any_l () | & x: t_T = x | & c: closure0 = Any.any_l () | & _4: () = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end

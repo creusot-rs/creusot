@@ -7,7 +7,7 @@ module M_permcell__foo
   
   type t_PermCellOwn
   
-  type tuple = { _p0: t_PermCell; _p1: t_PermCellOwn }
+  type tuple = { f0: t_PermCell; f1: t_PermCellOwn }
   
   type t_Id
   
@@ -21,30 +21,30 @@ module M_permcell__foo
   
   meta "rewrite_def" function view
   
-  let rec new (value: Int32.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {id result._p0 = id'0 result._p1} {view result._p1 = value} (! return' {result}) ]
+  let rec new (value: Int32.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {id result.f0 = id'0 result.f1} {view result.f1 = value} (! return {result}) ]
   
-  let rec borrow (self: t_PermCellOwn) (return' (x: t_PermCellOwn)) = any
-    [ return''0 (result: t_PermCellOwn) -> {result = self} (! return' {result}) ]
+  let rec borrow (self: t_PermCellOwn) (return (x: t_PermCellOwn)) = any
+    [ return' (result: t_PermCellOwn) -> {result = self} (! return {result}) ]
   
-  let rec borrow'0 (self: t_PermCell) (perm: t_PermCellOwn) (return' (x: Int32.t)) = {[@expl:borrow requires] id self
+  let rec borrow'0 (self: t_PermCell) (perm: t_PermCellOwn) (return (x: Int32.t)) = {[@expl:borrow requires] id self
     = id'0 perm}
-    any [ return''0 (result: Int32.t) -> {result = view perm} (! return' {result}) ]
+    any [ return' (result: Int32.t) -> {result = view perm} (! return {result}) ]
   
-  let rec borrow_mut (self: MutBorrow.t t_PermCellOwn) (return' (x: MutBorrow.t t_PermCellOwn)) = any
-    [ return''0 (result: MutBorrow.t t_PermCellOwn) -> {result = self} (! return' {result}) ]
+  let rec borrow_mut (self: MutBorrow.t t_PermCellOwn) (return (x: MutBorrow.t t_PermCellOwn)) = any
+    [ return' (result: MutBorrow.t t_PermCellOwn) -> {result = self} (! return {result}) ]
   
   function fin [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) : t_PermCellOwn = self.final
   
   meta "rewrite_def" function fin
   
-  let rec borrow_mut'0 (self: t_PermCell) (perm: MutBorrow.t t_PermCellOwn) (return' (x: MutBorrow.t Int32.t)) =
+  let rec borrow_mut'0 (self: t_PermCell) (perm: MutBorrow.t t_PermCellOwn) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:borrow_mut requires] id self = id'0 perm.current}
     any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {id self = id'0 (fin perm)}
+    [ return' (result: MutBorrow.t Int32.t) -> {id self = id'0 (fin perm)}
       {result.current = view perm.current}
       {result.final = view (fin perm)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
@@ -54,27 +54,27 @@ module M_permcell__foo
   
   meta "rewrite_def" predicate resolve'0
   
-  let rec replace (self: t_PermCell) (perm: MutBorrow.t t_PermCellOwn) (val''0: Int32.t) (return' (x: Int32.t)) =
+  let rec replace (self: t_PermCell) (perm: MutBorrow.t t_PermCellOwn) (val''0: Int32.t) (return (x: Int32.t)) =
     {[@expl:replace requires] id self = id'0 perm.current}
     any
-    [ return''0 (result: Int32.t) -> {val''0 = view (fin perm)}
+    [ return' (result: Int32.t) -> {val''0 = view (fin perm)}
       {result = view perm.current}
       {id self = id'0 (fin perm)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec into_inner (self: t_PermCell) (perm: t_PermCellOwn) (return' (x: Int32.t)) =
+  let rec into_inner (self: t_PermCell) (perm: t_PermCellOwn) (return (x: Int32.t)) =
     {[@expl:into_inner requires] id self = id'0 perm}
-    any [ return''0 (result: Int32.t) -> {result = view perm} (! return' {result}) ]
+    any [ return' (result: Int32.t) -> {result = view perm} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec foo (return' (x: Int32.t)) = (! bb0
+  let rec foo (return (x: Int32.t)) = (! bb0
     [ bb0 = s0 [ s0 = new {(1: Int32.t)} (fun (_ret: tuple) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = [ &p <- _4._p0 ] s1
-      | s1 = [ &own <- _4._p1 ] s2
+      [ s0 = [ &p <- _4.f0 ] s1
+      | s1 = [ &own <- _4.f1 ] s2
       | s2 = borrow {own} (fun (_ret: t_PermCellOwn) -> [ &_10 <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = s0 [ s0 = borrow'0 {p} {_10} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s1) | s1 = bb3 ]
@@ -102,7 +102,7 @@ module M_permcell__foo
     | bb13 = s0
       [ s0 = [ &_27 <- _28 = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_27 = false} (! bb15) | br1 -> {_27} (! bb14) ] ]
     | bb14 = s0 [ s0 = into_inner {p} {own} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb16 ]
-    | bb16 = return''0 {_0}
+    | bb16 = return {_0}
     | bb15 = {false} any
     | bb11 = {false} any
     | bb5 = {false} any ]
@@ -123,5 +123,5 @@ module M_permcell__foo
     | & _28: Int32.t = Any.any_l ()
     | & _30: MutBorrow.t t_PermCellOwn = Any.any_l ()
     | & _31: MutBorrow.t t_PermCellOwn = Any.any_l () ])
-    [ return''0 (result: Int32.t) -> {[@expl:foo ensures] Int32.to_int result = 3} (! return' {result}) ]
+    [ return (result: Int32.t) -> {[@expl:foo ensures] Int32.to_int result = 3} (! return {result}) ]
 end

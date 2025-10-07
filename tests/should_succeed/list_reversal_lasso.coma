@@ -34,9 +34,9 @@ module M_list_reversal_lasso__qyi13715866738248475091__index (* <Memory as std::
   
   meta "rewrite_def" predicate has_value
   
-  let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: UInt64.t)) =
+  let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: UInt64.t)) =
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return''0 (result: UInt64.t) -> {has_value ix (view self_) result} (! return' {result}) ]
+    any [ return' (result: UInt64.t) -> {has_value ix (view self_) result} (! return {result}) ]
   
   predicate nonnull_ptr (self: t_Memory) (i: UInt64.t) =
     Seq.length (view self.t_Memory__0) <= UInt64.t'int const_MAX /\ UInt64.t'int i < Seq.length (view self.t_Memory__0)
@@ -51,16 +51,16 @@ module M_list_reversal_lasso__qyi13715866738248475091__index (* <Memory as std::
   
   meta "select_lsinst" "all"
   
-  let rec index'0 (self: t_Memory) (i: UInt64.t) (return' (x: UInt64.t)) = {[@expl:index requires] nonnull_ptr self i}
+  let rec index'0 (self: t_Memory) (i: UInt64.t) (return (x: UInt64.t)) = {[@expl:index requires] nonnull_ptr self i}
     (! bb0
-    [ bb0 = s0 [ s0 = index {self'0.t_Memory__0} {i'0} (fun (_ret: UInt64.t) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_5 <- _6 ] s1 | s1 = [ &_0 <- _5 ] s2 | s2 = return''0 {_0} ] ]
+    [ bb0 = s0 [ s0 = index {self.t_Memory__0} {i} (fun (_ret: UInt64.t) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &_5 <- _6 ] s1 | s1 = [ &_0 <- _5 ] s2 | s2 = return {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
-    | & self'0: t_Memory = self
-    | & i'0: UInt64.t = i
+    | & self: t_Memory = self
+    | & i: UInt64.t = i
     | & _5: UInt64.t = Any.any_l ()
     | & _6: UInt64.t = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:index ensures] result = index_logic'0 self i} (! return' {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:index ensures] result = index_logic'0 self i} (! return {result}) ]
 end
 module M_list_reversal_lasso__qyi14823043098042356205__index_mut (* <Memory as std::ops::IndexMut<usize>> *)
   use creusot.prelude.Opaque
@@ -104,14 +104,14 @@ module M_list_reversal_lasso__qyi14823043098042356205__index_mut (* <Memory as s
   
   meta "rewrite_def" predicate resolve_elswhere
   
-  let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t UInt64.t)) =
+  let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return''0 (result: MutBorrow.t UInt64.t) -> {has_value ix (view self_.current) result.current}
+    [ return' (result: MutBorrow.t UInt64.t) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
   
@@ -142,15 +142,15 @@ module M_list_reversal_lasso__qyi14823043098042356205__index_mut (* <Memory as s
   
   meta "select_lsinst" "all"
   
-  let rec index_mut'0 (self: MutBorrow.t t_Memory) (i: UInt64.t) (return' (x: MutBorrow.t UInt64.t)) =
+  let rec index_mut'0 (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
     {[@expl:index_mut requires] nonnull_ptr self.current i}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <t_Vec> {(self'0.current).t_Memory__0}
-          {MutBorrow.inherit_id (MutBorrow.get_id self'0) 1}
+      [ s0 = MutBorrow.borrow_final <t_Vec> {(self.current).t_Memory__0}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t t_Vec) ->
-            [ &_11 <- _ret ] [ &self'0 <- { self'0 with current = { t_Memory__0 = _ret.final } } ] s1)
-      | s1 = index_mut {_11} {i'0} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_10 <- _ret ] s2)
+            [ &_11 <- _ret ] [ &self <- { self with current = { t_Memory__0 = _ret.final } } ] s1)
+      | s1 = index_mut {_11} {i} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_10 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
       [ s0 = MutBorrow.borrow_final <UInt64.t> {_10.current} {MutBorrow.get_id _10}
@@ -162,23 +162,23 @@ module M_list_reversal_lasso__qyi14823043098042356205__index_mut (* <Memory as s
       | s3 = -{resolve'0 _10}- s4
       | s4 = -{resolve'0 _9}- s5
       | s5 = -{resolve'0 _3}- s6
-      | s6 = -{resolve'2 self'0}- s7
-      | s7 = return''0 {_0} ] ]
+      | s6 = -{resolve'2 self}- s7
+      | s7 = return {_0} ] ]
     [ & _0: MutBorrow.t UInt64.t = Any.any_l ()
-    | & self'0: MutBorrow.t t_Memory = self
-    | & i'0: UInt64.t = i
+    | & self: MutBorrow.t t_Memory = self
+    | & i: UInt64.t = i
     | & _3: MutBorrow.t UInt64.t = Any.any_l ()
     | & _9: MutBorrow.t UInt64.t = Any.any_l ()
     | & _10: MutBorrow.t UInt64.t = Any.any_l ()
     | & _11: MutBorrow.t t_Vec = Any.any_l () ])
-    [ return''0 (result: MutBorrow.t UInt64.t) -> {[@expl:index_mut ensures #0] result.current
+    [ return (result: MutBorrow.t UInt64.t) -> {[@expl:index_mut ensures #0] result.current
       = index_logic'0 self.current i}
       {[@expl:index_mut ensures #1] result.final = index_logic'0 self.final i}
       {[@expl:index_mut ensures #2] Seq.length (view (self.current).t_Memory__0)
       = Seq.length (view (self.final).t_Memory__0)}
       {[@expl:index_mut ensures #3] forall j: UInt64.t. nonnull_ptr self.current j /\ i <> j
         -> index_logic'0 self.final j = index_logic'0 self.current j}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_safe (* Memory *)
   use creusot.int.UInt64
@@ -223,18 +223,18 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_safe (* Memo
     forall i: UInt64.t. nonnull_ptr self i
       -> index_logic'0 self i = const_NULL \/ nonnull_ptr self (index_logic'0 self i)
   
-  let rec index (self: t_Memory) (i: UInt64.t) (return' (x: UInt64.t)) = {[@expl:index requires] nonnull_ptr self i}
-    any [ return''0 (result: UInt64.t) -> {result = index_logic'0 self i} (! return' {result}) ]
+  let rec index (self: t_Memory) (i: UInt64.t) (return (x: UInt64.t)) = {[@expl:index requires] nonnull_ptr self i}
+    any [ return' (result: UInt64.t) -> {result = index_logic'0 self i} (! return {result}) ]
   
-  let rec index_mut (self: MutBorrow.t t_Memory) (i: UInt64.t) (return' (x: MutBorrow.t UInt64.t)) =
+  let rec index_mut (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
     {[@expl:index_mut requires] nonnull_ptr self.current i}
     any
-    [ return''0 (result: MutBorrow.t UInt64.t) -> {result.current = index_logic'0 self.current i}
+    [ return' (result: MutBorrow.t UInt64.t) -> {result.current = index_logic'0 self.current i}
       {result.final = index_logic'0 self.final i}
       {Seq.length (view (self.current).t_Memory__0) = Seq.length (view (self.final).t_Memory__0)}
       {forall j: UInt64.t. nonnull_ptr self.current j /\ i <> j
         -> index_logic'0 self.final j = index_logic'0 self.current j}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
   
@@ -256,47 +256,46 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_safe (* Memo
   
   meta "select_lsinst" "all"
   
-  let rec list_reversal_safe (self: MutBorrow.t t_Memory) (l: UInt64.t) (return' (x: UInt64.t)) =
+  let rec list_reversal_safe (self: MutBorrow.t t_Memory) (l: UInt64.t) (return (x: UInt64.t)) =
     {[@expl:list_reversal_safe requires #0] mem_is_well_formed self.current}
     {[@expl:list_reversal_safe requires #1] l = const_NULL \/ nonnull_ptr self.current l}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &old_1_0 <- self'0 ] s2 | s2 = bb1 ]
-    | bb1 = bb1'0
-      [ bb1'0 = {[@expl:mut invariant] old_1_0.final = self'0.final}
-        {[@expl:loop invariant #0] r = const_NULL \/ nonnull_ptr self'0.current r}
-        {[@expl:loop invariant #1] l'0 = const_NULL \/ nonnull_ptr self'0.current l'0}
-        {[@expl:loop invariant #2] mem_is_well_formed self'0.current}
+    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &old_1_0 <- self ] s2 | s2 = bb1 ]
+    | bb1 = bb1
+      [ bb1 = {[@expl:mut invariant] old_1_0.final = self.final}
+        {[@expl:loop invariant #0] r = const_NULL \/ nonnull_ptr self.current r}
+        {[@expl:loop invariant #1] l = const_NULL \/ nonnull_ptr self.current l}
+        {[@expl:loop invariant #2] mem_is_well_formed self.current}
         (! s0)
         [ s0 = bb2 ]
         [ bb2 = s0
-          [ s0 = [ &_13 <- l'0 <> const_NULL ] s1 | s1 = any [ br0 -> {_13 = false} (! bb6) | br1 -> {_13} (! bb3) ] ]
+          [ s0 = [ &_13 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_13 = false} (! bb6) | br1 -> {_13} (! bb3) ] ]
         | bb3 = s0
-          [ s0 = [ &tmp <- l'0 ] s1
-          | s1 = index {self'0.current} {l'0} (fun (_ret: UInt64.t) -> [ &_17 <- _ret ] s2)
+          [ s0 = [ &tmp <- l ] s1
+          | s1 = index {self.current} {l} (fun (_ret: UInt64.t) -> [ &_17 <- _ret ] s2)
           | s2 = bb4 ]
         | bb4 = s0
-          [ s0 = [ &l'0 <- _17 ] s1
-          | s1 = MutBorrow.borrow_mut <t_Memory> {self'0.current}
-              (fun (_ret: MutBorrow.t t_Memory) ->
-                [ &_22 <- _ret ] [ &self'0 <- { self'0 with current = _ret.final } ] s2)
+          [ s0 = [ &l <- _17 ] s1
+          | s1 = MutBorrow.borrow_mut <t_Memory> {self.current}
+              (fun (_ret: MutBorrow.t t_Memory) -> [ &_22 <- _ret ] [ &self <- { self with current = _ret.final } ] s2)
           | s2 = index_mut {_22} {tmp} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_21 <- _ret ] s3)
           | s3 = bb5 ]
         | bb5 = s0
           [ s0 = [ &_21 <- { _21 with current = r } ] s1
           | s1 = -{resolve'0 _21}- s2
           | s2 = [ &r <- tmp ] s3
-          | s3 = bb1'0 ] ] ]
-    | bb6 = s0 [ s0 = -{resolve'2 self'0}- s1 | s1 = [ &_0 <- r ] s2 | s2 = return''0 {_0} ] ]
+          | s3 = bb1 ] ] ]
+    | bb6 = s0 [ s0 = -{resolve'2 self}- s1 | s1 = [ &_0 <- r ] s2 | s2 = return {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
-    | & self'0: MutBorrow.t t_Memory = self
-    | & l'0: UInt64.t = l
+    | & self: MutBorrow.t t_Memory = self
+    | & l: UInt64.t = l
     | & r: UInt64.t = Any.any_l ()
     | & _13: bool = Any.any_l ()
     | & tmp: UInt64.t = Any.any_l ()
     | & _17: UInt64.t = Any.any_l ()
     | & _21: MutBorrow.t UInt64.t = Any.any_l ()
     | & _22: MutBorrow.t t_Memory = Any.any_l ()
-    | & old_1_0: MutBorrow.t t_Memory = Any.any_l () ]) [ return''0 (result: UInt64.t) -> (! return' {result}) ]
+    | & old_1_0: MutBorrow.t t_Memory = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
 end
 module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_list (* Memory *)
   use creusot.int.UInt64
@@ -345,18 +344,18 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_list (* Memo
         /\ index_logic'0 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
     /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
   
-  let rec index_mut (self: MutBorrow.t t_Memory) (i: UInt64.t) (return' (x: MutBorrow.t UInt64.t)) =
+  let rec index_mut (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
     {[@expl:index_mut requires] nonnull_ptr self.current i}
     any
-    [ return''0 (result: MutBorrow.t UInt64.t) -> {result.current = index_logic'0 self.current i}
+    [ return' (result: MutBorrow.t UInt64.t) -> {result.current = index_logic'0 self.current i}
       {result.final = index_logic'0 self.final i}
       {Seq.length (view (self.current).t_Memory__0) = Seq.length (view (self.final).t_Memory__0)}
       {forall j: UInt64.t. nonnull_ptr self.current j /\ i <> j
         -> index_logic'0 self.final j = index_logic'0 self.current j}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec replace (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {dest.final = src} {result = dest.current} (! return' {result}) ]
+  let rec replace (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return (x: UInt64.t)) = any
+    [ return' (result: UInt64.t) -> {dest.final = src} {result = dest.current} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
   
@@ -381,26 +380,25 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_list (* Memo
   
   meta "select_lsinst" "all"
   
-  let rec list_reversal_list (self: MutBorrow.t t_Memory) (l: UInt64.t) (s: Seq.seq UInt64.t) (return' (x: UInt64.t)) =
+  let rec list_reversal_list (self: MutBorrow.t t_Memory) (l: UInt64.t) (s: Seq.seq UInt64.t) (return (x: UInt64.t)) =
     {[@expl:list_reversal_list requires] list self.current l s}
     (! bb0
     [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &n <- 0 ] s2 | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &old_2_0 <- self'0 ] s1 | s1 = bb2 ]
-    | bb2 = bb2'0
-      [ bb2'0 = {[@expl:mut invariant] old_2_0.final = self'0.final}
-        {[@expl:loop invariant #0] 0 <= n /\ n <= Seq.length s'0}
-        {[@expl:loop invariant #1] list_seg self'0.current l'0 s'0 const_NULL n (Seq.length s'0)}
-        {[@expl:loop invariant #2] list_seg self'0.current r (Reverse.reverse s'0) const_NULL (Seq.length s'0
-        - n) (Seq.length s'0)}
+    | bb1 = s0 [ s0 = [ &old_2_0 <- self ] s1 | s1 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = {[@expl:mut invariant] old_2_0.final = self.final}
+        {[@expl:loop invariant #0] 0 <= n /\ n <= Seq.length s}
+        {[@expl:loop invariant #1] list_seg self.current l s const_NULL n (Seq.length s)}
+        {[@expl:loop invariant #2] list_seg self.current r (Reverse.reverse s) const_NULL (Seq.length s
+        - n) (Seq.length s)}
         (! s0)
         [ s0 = bb3 ]
         [ bb3 = s0
-          [ s0 = [ &_16 <- l'0 <> const_NULL ] s1 | s1 = any [ br0 -> {_16 = false} (! bb9) | br1 -> {_16} (! bb4) ] ]
+          [ s0 = [ &_16 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_16 = false} (! bb9) | br1 -> {_16} (! bb4) ] ]
         | bb4 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Memory> {self'0.current}
-              (fun (_ret: MutBorrow.t t_Memory) ->
-                [ &_22 <- _ret ] [ &self'0 <- { self'0 with current = _ret.final } ] s1)
-          | s1 = index_mut {_22} {l'0} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_21 <- _ret ] s2)
+          [ s0 = MutBorrow.borrow_mut <t_Memory> {self.current}
+              (fun (_ret: MutBorrow.t t_Memory) -> [ &_22 <- _ret ] [ &self <- { self with current = _ret.final } ] s1)
+          | s1 = index_mut {_22} {l} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_21 <- _ret ] s2)
           | s2 = bb5 ]
         | bb5 = s0
           [ s0 = MutBorrow.borrow_final <UInt64.t> {_21.current} {MutBorrow.get_id _21}
@@ -409,7 +407,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_list (* Memo
               (fun (_ret: MutBorrow.t UInt64.t) -> [ &_26 <- _ret ] [ &r <- _ret.final ] s2)
           | s2 = MutBorrow.borrow_final <UInt64.t> {_26.current} {MutBorrow.get_id _26}
               (fun (_ret: MutBorrow.t UInt64.t) -> [ &_25 <- _ret ] [ &_26 <- { _26 with current = _ret.final } ] s3)
-          | s3 = replace {_25} {l'0} (fun (_ret: UInt64.t) -> [ &_24 <- _ret ] s4)
+          | s3 = replace {_25} {l} (fun (_ret: UInt64.t) -> [ &_24 <- _ret ] s4)
           | s4 = bb6 ]
         | bb6 = s0
           [ s0 = -{resolve'0 _26}- s1
@@ -420,15 +418,15 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_list (* Memo
         | bb7 = s0
           [ s0 = -{resolve'0 _21}- s1
           | s1 = -{resolve'0 _20}- s2
-          | s2 = [ &l'0 <- _18 ] s3
+          | s2 = [ &l <- _18 ] s3
           | s3 = [ &_28 <- n + 1 ] s4
           | s4 = bb8 ]
-        | bb8 = s0 [ s0 = [ &n <- _28 ] s1 | s1 = bb2'0 ] ] ]
-    | bb9 = s0 [ s0 = -{resolve'2 self'0}- s1 | s1 = [ &_0 <- r ] s2 | s2 = return''0 {_0} ] ]
+        | bb8 = s0 [ s0 = [ &n <- _28 ] s1 | s1 = bb2 ] ] ]
+    | bb9 = s0 [ s0 = -{resolve'2 self}- s1 | s1 = [ &_0 <- r ] s2 | s2 = return {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
-    | & self'0: MutBorrow.t t_Memory = self
-    | & l'0: UInt64.t = l
-    | & s'0: Seq.seq UInt64.t = s
+    | & self: MutBorrow.t t_Memory = self
+    | & l: UInt64.t = l
+    | & s: Seq.seq UInt64.t = s
     | & r: UInt64.t = Any.any_l ()
     | & n: int = Any.any_l ()
     | & _16: bool = Any.any_l ()
@@ -442,8 +440,8 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_list (* Memo
     | & _26: MutBorrow.t UInt64.t = Any.any_l ()
     | & _28: int = Any.any_l ()
     | & old_2_0: MutBorrow.t t_Memory = Any.any_l () ])
-    [ return''0 (result: UInt64.t) -> {[@expl:list_reversal_list ensures] list self.final result (Reverse.reverse s)}
-      (! return' {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:list_reversal_list ensures] list self.final result (Reverse.reverse s)}
+      (! return {result}) ]
 end
 module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_loop (* Memory *)
   use creusot.int.UInt64
@@ -492,18 +490,18 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_loop (* Memo
         /\ index_logic'0 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
     /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
   
-  let rec index_mut (self: MutBorrow.t t_Memory) (i: UInt64.t) (return' (x: MutBorrow.t UInt64.t)) =
+  let rec index_mut (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
     {[@expl:index_mut requires] nonnull_ptr self.current i}
     any
-    [ return''0 (result: MutBorrow.t UInt64.t) -> {result.current = index_logic'0 self.current i}
+    [ return' (result: MutBorrow.t UInt64.t) -> {result.current = index_logic'0 self.current i}
       {result.final = index_logic'0 self.final i}
       {Seq.length (view (self.current).t_Memory__0) = Seq.length (view (self.final).t_Memory__0)}
       {forall j: UInt64.t. nonnull_ptr self.current j /\ i <> j
         -> index_logic'0 self.final j = index_logic'0 self.current j}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec replace (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {dest.final = src} {result = dest.current} (! return' {result}) ]
+  let rec replace (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return (x: UInt64.t)) = any
+    [ return' (result: UInt64.t) -> {dest.final = src} {result = dest.current} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
   
@@ -532,36 +530,33 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_loop (* Memo
   
   meta "select_lsinst" "all"
   
-  let rec list_reversal_loop (self: MutBorrow.t t_Memory) (l: UInt64.t) (s: Seq.seq UInt64.t) (return' (x: UInt64.t)) =
+  let rec list_reversal_loop (self: MutBorrow.t t_Memory) (l: UInt64.t) (s: Seq.seq UInt64.t) (return (x: UInt64.t)) =
     {[@expl:list_reversal_loop requires #0] Seq.length s > 0}
     {[@expl:list_reversal_loop requires #1] loopqy95z self.current l s}
     (! bb0
     [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &n <- 0 ] s2 | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &old_2_0 <- self'0 ] s1 | s1 = bb2 ]
-    | bb2 = bb2'0
-      [ bb2'0 = {[@expl:mut invariant] old_2_0.final = self'0.final}
-        {[@expl:loop invariant #0] 0 <= n /\ n <= Seq.length s'0 + 1}
-        {[@expl:loop invariant #1] n = Seq.length s'0 + 1
-        -> l'0 = const_NULL
-        /\ r = Seq.get s'0 0
-        /\ nonnull_ptr self'0.current r
-        /\ index_logic'0 self'0.current r = Seq.get s'0 (Seq.length s'0 - 1)
-        /\ list_seg self'0.current (Seq.get s'0 (Seq.length s'0
-        - 1)) (Reverse.reverse s'0) (Seq.get s'0 0) 0 (Seq.length s'0 - 1)}
-        {[@expl:loop invariant #2] n <= Seq.length s'0
-        -> list_seg self'0.current l'0 s'0 (Seq.get s'0 0) n (Seq.length s'0)}
-        {[@expl:loop invariant #3] n <= Seq.length s'0
-        -> list_seg self'0.current r (Reverse.reverse s'0) const_NULL (Seq.length s'0 - n) (Seq.length s'0)}
+    | bb1 = s0 [ s0 = [ &old_2_0 <- self ] s1 | s1 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = {[@expl:mut invariant] old_2_0.final = self.final}
+        {[@expl:loop invariant #0] 0 <= n /\ n <= Seq.length s + 1}
+        {[@expl:loop invariant #1] n = Seq.length s + 1
+        -> l = const_NULL
+        /\ r = Seq.get s 0
+        /\ nonnull_ptr self.current r
+        /\ index_logic'0 self.current r = Seq.get s (Seq.length s - 1)
+        /\ list_seg self.current (Seq.get s (Seq.length s - 1)) (Reverse.reverse s) (Seq.get s 0) 0 (Seq.length s - 1)}
+        {[@expl:loop invariant #2] n <= Seq.length s -> list_seg self.current l s (Seq.get s 0) n (Seq.length s)}
+        {[@expl:loop invariant #3] n <= Seq.length s
+        -> list_seg self.current r (Reverse.reverse s) const_NULL (Seq.length s - n) (Seq.length s)}
         (! s0)
         [ s0 = bb3 ]
         [ bb3 = s0
-          [ s0 = [ &_18 <- l'0 <> const_NULL ] s1 | s1 = any [ br0 -> {_18 = false} (! bb9) | br1 -> {_18} (! bb4) ] ]
+          [ s0 = [ &_18 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_18 = false} (! bb9) | br1 -> {_18} (! bb4) ] ]
         | bb4 = s0
-          [ s0 = {[@expl:assertion] n = Seq.length s'0 -> l'0 = Seq.get (Reverse.reverse s'0) (Seq.length s'0 - 1)} s1
-          | s1 = MutBorrow.borrow_mut <t_Memory> {self'0.current}
-              (fun (_ret: MutBorrow.t t_Memory) ->
-                [ &_26 <- _ret ] [ &self'0 <- { self'0 with current = _ret.final } ] s2)
-          | s2 = index_mut {_26} {l'0} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_25 <- _ret ] s3)
+          [ s0 = {[@expl:assertion] n = Seq.length s -> l = Seq.get (Reverse.reverse s) (Seq.length s - 1)} s1
+          | s1 = MutBorrow.borrow_mut <t_Memory> {self.current}
+              (fun (_ret: MutBorrow.t t_Memory) -> [ &_26 <- _ret ] [ &self <- { self with current = _ret.final } ] s2)
+          | s2 = index_mut {_26} {l} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_25 <- _ret ] s3)
           | s3 = bb5 ]
         | bb5 = s0
           [ s0 = MutBorrow.borrow_final <UInt64.t> {_25.current} {MutBorrow.get_id _25}
@@ -570,7 +565,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_loop (* Memo
               (fun (_ret: MutBorrow.t UInt64.t) -> [ &_30 <- _ret ] [ &r <- _ret.final ] s2)
           | s2 = MutBorrow.borrow_final <UInt64.t> {_30.current} {MutBorrow.get_id _30}
               (fun (_ret: MutBorrow.t UInt64.t) -> [ &_29 <- _ret ] [ &_30 <- { _30 with current = _ret.final } ] s3)
-          | s3 = replace {_29} {l'0} (fun (_ret: UInt64.t) -> [ &_28 <- _ret ] s4)
+          | s3 = replace {_29} {l} (fun (_ret: UInt64.t) -> [ &_28 <- _ret ] s4)
           | s4 = bb6 ]
         | bb6 = s0
           [ s0 = -{resolve'0 _30}- s1
@@ -581,22 +576,22 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_loop (* Memo
         | bb7 = s0
           [ s0 = -{resolve'0 _25}- s1
           | s1 = -{resolve'0 _24}- s2
-          | s2 = [ &l'0 <- _22 ] s3
+          | s2 = [ &l <- _22 ] s3
           | s3 = [ &_32 <- n + 1 ] s4
           | s4 = bb8 ]
-        | bb8 = s0 [ s0 = [ &n <- _32 ] s1 | s1 = bb2'0 ] ] ]
+        | bb8 = s0 [ s0 = [ &n <- _32 ] s1 | s1 = bb2 ] ] ]
     | bb9 = s0
-      [ s0 = -{resolve'2 self'0}- s1
-      | s1 = {[@expl:assertion] forall i: int. 0 <= i /\ i < Seq.length s'0
-          -> Seq.get (push_front (Reverse.reverse (Seq.([..]) s'0 1 (Seq.length s'0))) (Seq.get s'0 0)) i
-          = (if i = 0 then Seq.get s'0 0 else Seq.get (Reverse.reverse s'0) (i - 1))}
+      [ s0 = -{resolve'2 self}- s1
+      | s1 = {[@expl:assertion] forall i: int. 0 <= i /\ i < Seq.length s
+          -> Seq.get (push_front (Reverse.reverse (Seq.([..]) s 1 (Seq.length s))) (Seq.get s 0)) i
+          = (if i = 0 then Seq.get s 0 else Seq.get (Reverse.reverse s) (i - 1))}
         s2
       | s2 = [ &_0 <- r ] s3
-      | s3 = return''0 {_0} ] ]
+      | s3 = return {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
-    | & self'0: MutBorrow.t t_Memory = self
-    | & l'0: UInt64.t = l
-    | & s'0: Seq.seq UInt64.t = s
+    | & self: MutBorrow.t t_Memory = self
+    | & l: UInt64.t = l
+    | & s: Seq.seq UInt64.t = s
     | & r: UInt64.t = Any.any_l ()
     | & n: int = Any.any_l ()
     | & _18: bool = Any.any_l ()
@@ -610,9 +605,9 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_loop (* Memo
     | & _30: MutBorrow.t UInt64.t = Any.any_l ()
     | & _32: int = Any.any_l ()
     | & old_2_0: MutBorrow.t t_Memory = Any.any_l () ])
-    [ return''0 (result: UInt64.t) ->
+    [ return (result: UInt64.t) ->
     {[@expl:list_reversal_loop ensures] loopqy95z self.final result (push_front (Reverse.reverse (Seq.([..]) s 1 (Seq.length s))) (Seq.get s 0))}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_lasso (* Memory *)
   use creusot.int.UInt64
@@ -661,18 +656,18 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_lasso (* Mem
         /\ index_logic'0 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
     /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
   
-  let rec index_mut (self: MutBorrow.t t_Memory) (i: UInt64.t) (return' (x: MutBorrow.t UInt64.t)) =
+  let rec index_mut (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
     {[@expl:index_mut requires] nonnull_ptr self.current i}
     any
-    [ return''0 (result: MutBorrow.t UInt64.t) -> {result.current = index_logic'0 self.current i}
+    [ return' (result: MutBorrow.t UInt64.t) -> {result.current = index_logic'0 self.current i}
       {result.final = index_logic'0 self.final i}
       {Seq.length (view (self.current).t_Memory__0) = Seq.length (view (self.final).t_Memory__0)}
       {forall j: UInt64.t. nonnull_ptr self.current j /\ i <> j
         -> index_logic'0 self.final j = index_logic'0 self.current j}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec replace (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {dest.final = src} {result = dest.current} (! return' {result}) ]
+  let rec replace (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return (x: UInt64.t)) = any
+    [ return' (result: UInt64.t) -> {dest.final = src} {result = dest.current} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
   
@@ -702,76 +697,72 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_lasso (* Mem
   meta "select_lsinst" "all"
   
   let rec list_reversal_lasso (self: MutBorrow.t t_Memory) (l: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t)
-    (return' (x: UInt64.t)) = {[@expl:list_reversal_lasso requires] lasso self.current l s1 s2}
+    (return (x: UInt64.t)) = {[@expl:list_reversal_lasso requires] lasso self.current l s1 s2}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1'1 | s1'1 = [ &n <- 0 ] s2'1 | s2'1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &old_2_0 <- self'0 ] s1'1 | s1'1 = bb2 ]
-    | bb2 = bb2'0
-      [ bb2'0 = {[@expl:mut invariant] old_2_0.final = self'0.final}
-        {[@expl:loop invariant #0] 0 <= n /\ n <= 2 * Seq.length s1'0 + Seq.length s2'0}
-        {[@expl:loop invariant #1] let mid = if Seq.length s2'0 = 0 then
-          Seq.get s1'0 (Seq.length s1'0 - 1)
+    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1'0 | s1'0 = [ &n <- 0 ] s2'0 | s2'0 = bb1 ]
+    | bb1 = s0 [ s0 = [ &old_2_0 <- self ] s1'0 | s1'0 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = {[@expl:mut invariant] old_2_0.final = self.final}
+        {[@expl:loop invariant #0] 0 <= n /\ n <= 2 * Seq.length s1 + Seq.length s2}
+        {[@expl:loop invariant #1] let mid = if Seq.length s2 = 0 then
+          Seq.get s1 (Seq.length s1 - 1)
         else
-          Seq.get s2'0 0
-         in n <= Seq.length s1'0
-        -> list_seg self'0.current l'0 s1'0 mid n (Seq.length s1'0)
-        /\ list_seg self'0.current mid s2'0 (Seq.get s1'0 (Seq.length s1'0 - 1)) 0 (Seq.length s2'0)
-        /\ list_seg self'0.current r (Reverse.reverse s1'0) const_NULL (Seq.length s1'0 - n) (Seq.length s1'0)}
-        {[@expl:loop invariant #2] Seq.length s1'0 < n /\ n <= Seq.length s1'0 + Seq.length s2'0
-        -> list_seg self'0.current l'0 s2'0 (Seq.get s1'0 (Seq.length s1'0 - 1)) (n - Seq.length s1'0) (Seq.length s2'0)
-        /\ list_seg self'0.current r (Reverse.reverse s2'0) (Seq.get s1'0 (Seq.length s1'0 - 1)) (Seq.length s1'0
-            + Seq.length s2'0
-          - n) (Seq.length s2'0)
-        /\ list_seg self'0.current (Seq.get s1'0 (Seq.length s1'0
-        - 1)) (Reverse.reverse s1'0) const_NULL 0 (Seq.length s1'0)}
-        {[@expl:loop invariant #3] let mid = if Seq.length s2'0 = 0 then
-          Seq.get s1'0 (Seq.length s1'0 - 1)
+          Seq.get s2 0
+         in n <= Seq.length s1
+        -> list_seg self.current l s1 mid n (Seq.length s1)
+        /\ list_seg self.current mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
+        /\ list_seg self.current r (Reverse.reverse s1) const_NULL (Seq.length s1 - n) (Seq.length s1)}
+        {[@expl:loop invariant #2] Seq.length s1 < n /\ n <= Seq.length s1 + Seq.length s2
+        -> list_seg self.current l s2 (Seq.get s1 (Seq.length s1 - 1)) (n - Seq.length s1) (Seq.length s2)
+        /\ list_seg self.current r (Reverse.reverse s2) (Seq.get s1 (Seq.length s1 - 1)) (Seq.length s1 + Seq.length s2
+          - n) (Seq.length s2)
+        /\ list_seg self.current (Seq.get s1 (Seq.length s1 - 1)) (Reverse.reverse s1) const_NULL 0 (Seq.length s1)}
+        {[@expl:loop invariant #3] let mid = if Seq.length s2 = 0 then
+          Seq.get s1 (Seq.length s1 - 1)
         else
-          Seq.get s2'0 (Seq.length s2'0 - 1)
-         in Seq.length s1'0 + Seq.length s2'0 < n
-        -> list_seg self'0.current l'0 (Reverse.reverse s1'0) const_NULL (n - Seq.length s1'0
-          - Seq.length s2'0) (Seq.length s1'0)
-        /\ list_seg self'0.current r s1'0 mid (2 * Seq.length s1'0 + Seq.length s2'0 - n) (Seq.length s1'0)
-        /\ list_seg self'0.current mid (Reverse.reverse s2'0) (Seq.get s1'0 (Seq.length s1'0 - 1)) 0 (Seq.length s2'0)}
+          Seq.get s2 (Seq.length s2 - 1)
+         in Seq.length s1 + Seq.length s2 < n
+        -> list_seg self.current l (Reverse.reverse s1) const_NULL (n - Seq.length s1 - Seq.length s2) (Seq.length s1)
+        /\ list_seg self.current r s1 mid (2 * Seq.length s1 + Seq.length s2 - n) (Seq.length s1)
+        /\ list_seg self.current mid (Reverse.reverse s2) (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)}
         (! s0)
         [ s0 = bb3 ]
         [ bb3 = s0
-          [ s0 = [ &_18 <- l'0 <> const_NULL ] s1'1
-          | s1'1 = any [ br0 -> {_18 = false} (! bb9) | br1 -> {_18} (! bb4) ] ]
+          [ s0 = [ &_18 <- l <> const_NULL ] s1'0 | s1'0 = any [ br0 -> {_18 = false} (! bb9) | br1 -> {_18} (! bb4) ] ]
         | bb4 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Memory> {self'0.current}
+          [ s0 = MutBorrow.borrow_mut <t_Memory> {self.current}
               (fun (_ret: MutBorrow.t t_Memory) ->
-                [ &_24 <- _ret ] [ &self'0 <- { self'0 with current = _ret.final } ] s1'1)
-          | s1'1 = index_mut {_24} {l'0} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_23 <- _ret ] s2'1)
-          | s2'1 = bb5 ]
+                [ &_24 <- _ret ] [ &self <- { self with current = _ret.final } ] s1'0)
+          | s1'0 = index_mut {_24} {l} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_23 <- _ret ] s2'0)
+          | s2'0 = bb5 ]
         | bb5 = s0
           [ s0 = MutBorrow.borrow_final <UInt64.t> {_23.current} {MutBorrow.get_id _23}
-              (fun (_ret: MutBorrow.t UInt64.t) -> [ &_22 <- _ret ] [ &_23 <- { _23 with current = _ret.final } ] s1'1)
-          | s1'1 = MutBorrow.borrow_mut <UInt64.t> {r}
-              (fun (_ret: MutBorrow.t UInt64.t) -> [ &_28 <- _ret ] [ &r <- _ret.final ] s2'1)
-          | s2'1 = MutBorrow.borrow_final <UInt64.t> {_28.current} {MutBorrow.get_id _28}
+              (fun (_ret: MutBorrow.t UInt64.t) -> [ &_22 <- _ret ] [ &_23 <- { _23 with current = _ret.final } ] s1'0)
+          | s1'0 = MutBorrow.borrow_mut <UInt64.t> {r}
+              (fun (_ret: MutBorrow.t UInt64.t) -> [ &_28 <- _ret ] [ &r <- _ret.final ] s2'0)
+          | s2'0 = MutBorrow.borrow_final <UInt64.t> {_28.current} {MutBorrow.get_id _28}
               (fun (_ret: MutBorrow.t UInt64.t) -> [ &_27 <- _ret ] [ &_28 <- { _28 with current = _ret.final } ] s3)
-          | s3 = replace {_27} {l'0} (fun (_ret: UInt64.t) -> [ &_26 <- _ret ] s4)
+          | s3 = replace {_27} {l} (fun (_ret: UInt64.t) -> [ &_26 <- _ret ] s4)
           | s4 = bb6 ]
         | bb6 = s0
-          [ s0 = -{resolve'0 _28}- s1'1
-          | s1'1 = MutBorrow.borrow_final <UInt64.t> {_22.current} {MutBorrow.get_id _22}
-              (fun (_ret: MutBorrow.t UInt64.t) -> [ &_21 <- _ret ] [ &_22 <- { _22 with current = _ret.final } ] s2'1)
-          | s2'1 = replace {_21} {_26} (fun (_ret: UInt64.t) -> [ &_20 <- _ret ] s3)
+          [ s0 = -{resolve'0 _28}- s1'0
+          | s1'0 = MutBorrow.borrow_final <UInt64.t> {_22.current} {MutBorrow.get_id _22}
+              (fun (_ret: MutBorrow.t UInt64.t) -> [ &_21 <- _ret ] [ &_22 <- { _22 with current = _ret.final } ] s2'0)
+          | s2'0 = replace {_21} {_26} (fun (_ret: UInt64.t) -> [ &_20 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = s0
-          [ s0 = -{resolve'0 _23}- s1'1
-          | s1'1 = -{resolve'0 _22}- s2'1
-          | s2'1 = [ &l'0 <- _20 ] s3
+          [ s0 = -{resolve'0 _23}- s1'0
+          | s1'0 = -{resolve'0 _22}- s2'0
+          | s2'0 = [ &l <- _20 ] s3
           | s3 = [ &_30 <- n + 1 ] s4
           | s4 = bb8 ]
-        | bb8 = s0 [ s0 = [ &n <- _30 ] s1'1 | s1'1 = bb2'0 ] ] ]
-    | bb9 = s0 [ s0 = -{resolve'2 self'0}- s1'1 | s1'1 = [ &_0 <- r ] s2'1 | s2'1 = return''0 {_0} ] ]
+        | bb8 = s0 [ s0 = [ &n <- _30 ] s1'0 | s1'0 = bb2 ] ] ]
+    | bb9 = s0 [ s0 = -{resolve'2 self}- s1'0 | s1'0 = [ &_0 <- r ] s2'0 | s2'0 = return {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
-    | & self'0: MutBorrow.t t_Memory = self
-    | & l'0: UInt64.t = l
-    | & s1'0: Seq.seq UInt64.t = s1
-    | & s2'0: Seq.seq UInt64.t = s2
+    | & self: MutBorrow.t t_Memory = self
+    | & l: UInt64.t = l
+    | & s1: Seq.seq UInt64.t = s1
+    | & s2: Seq.seq UInt64.t = s2
     | & r: UInt64.t = Any.any_l ()
     | & n: int = Any.any_l ()
     | & _18: bool = Any.any_l ()
@@ -785,9 +776,8 @@ module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_lasso (* Mem
     | & _28: MutBorrow.t UInt64.t = Any.any_l ()
     | & _30: int = Any.any_l ()
     | & old_2_0: MutBorrow.t t_Memory = Any.any_l () ])
-    [ return''0 (result: UInt64.t) ->
-    {[@expl:list_reversal_lasso ensures] lasso self.final result s1 (Reverse.reverse s2)}
-      (! return' {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:list_reversal_lasso ensures] lasso self.final result s1 (Reverse.reverse s2)}
+      (! return {result}) ]
 end
 module M_list_reversal_lasso__qyi2644757663130641572__find_ptr_in_seq (* Memory *)
   use creusot.int.UInt64
@@ -810,7 +800,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_ptr_in_seq (* Memory 
   
   constant p : int
   
-  function find_ptr_in_seq (s'0: Seq.seq UInt64.t) (i'0: int) (p'0: int) : t_Option
+  function find_ptr_in_seq (s: Seq.seq UInt64.t) (i: int) (p: int) : t_Option
   
   goal vc_find_ptr_in_seq: 0 <= i /\ i <= Seq.length s
     -> (if i = Seq.length s then
@@ -873,7 +863,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__pigeon (* Memory *)
   
   constant n : int
   
-  predicate pigeon (s'0: Seq.seq UInt64.t) (n'0: int)
+  predicate pigeon (s: Seq.seq UInt64.t) (n: int)
   
   goal vc_pigeon: 0 <= n
     -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
@@ -946,7 +936,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso_aux (* Memory *
   
   type t_Option = C_None | C_Some (Seq.seq UInt64.t)
   
-  type tuple = { _p0: Seq.seq UInt64.t; _p1: t_Option }
+  type tuple = { f0: Seq.seq UInt64.t; f1: t_Option }
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -1049,15 +1039,15 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso_aux (* Memory *
   
   constant s : Seq.seq UInt64.t
   
-  function find_lasso_aux (self'0: t_Memory) (first'0: UInt64.t) (last'0: UInt64.t) (s'0: Seq.seq UInt64.t) : tuple
+  function find_lasso_aux (self: t_Memory) (first: UInt64.t) (last: UInt64.t) (s: Seq.seq UInt64.t) : tuple
   
   goal vc_find_lasso_aux: mem_is_well_formed self
     -> last = const_NULL \/ nonnull_ptr self last
     -> list_seg self first s last 0 (Seq.length s)
     -> (if last = const_NULL then
-      [@expl:find_lasso_aux ensures] match { _p0 = s; _p1 = C_None } with
-        | {_p0 = s'0; _p1 = C_None} -> list self first s'0
-        | {_p0 = s1; _p1 = C_Some s2} -> lasso self first s1 s2
+      [@expl:find_lasso_aux ensures] match { f0 = s; f1 = C_None } with
+        | {f0 = s'0; f1 = C_None} -> list self first s'0
+        | {f0 = s1; f1 = C_Some s2} -> lasso self first s1 s2
         end
     else
       ([@expl:find_ptr_in_seq requires] 0 <= 0 /\ 0 <= Seq.length s)
@@ -1081,23 +1071,23 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso_aux (* Memory *
             /\ well_founded_relation (Seq.length (view self.t_Memory__0)
             - Seq.length s) (Seq.length (view self.t_Memory__0) - Seq.length (Seq.snoc s last)))
           /\ (match find_lasso_aux self first (index_logic'0 self last) (Seq.snoc s last) with
-              | {_p0 = s'0; _p1 = C_None} -> list self first s'0
-              | {_p0 = s1; _p1 = C_Some s2} -> lasso self first s1 s2
+              | {f0 = s'0; f1 = C_None} -> list self first s'0
+              | {f0 = s1; f1 = C_Some s2} -> lasso self first s1 s2
               end
           -> ([@expl:find_lasso_aux ensures] match find_lasso_aux self first (index_logic'0 self last) (Seq.snoc s last) with
-            | {_p0 = s'0; _p1 = C_None} -> list self first s'0
-            | {_p0 = s1; _p1 = C_Some s2} -> lasso self first s1 s2
+            | {f0 = s'0; f1 = C_None} -> list self first s'0
+            | {f0 = s1; f1 = C_Some s2} -> lasso self first s1 s2
             end))
         else
-          [@expl:find_lasso_aux ensures] match { _p0 = s; _p1 = C_None } with
-            | {_p0 = s'0; _p1 = C_None} -> list self first s'0
-            | {_p0 = s1; _p1 = C_Some s2} -> lasso self first s1 s2
+          [@expl:find_lasso_aux ensures] match { f0 = s; f1 = C_None } with
+            | {f0 = s'0; f1 = C_None} -> list self first s'0
+            | {f0 = s1; f1 = C_Some s2} -> lasso self first s1 s2
             end
         ))
-        | C_Some'0 i -> [@expl:find_lasso_aux ensures] match { _p0 = Seq.([..]) s 0 (i + 1);
-                                                               _p1 = C_Some (Seq.([..]) s (i + 1) (Seq.length s)) } with
-          | {_p0 = s'0; _p1 = C_None} -> list self first s'0
-          | {_p0 = s1; _p1 = C_Some s2} -> lasso self first s1 s2
+        | C_Some'0 i -> [@expl:find_lasso_aux ensures] match { f0 = Seq.([..]) s 0 (i + 1);
+                                                               f1 = C_Some (Seq.([..]) s (i + 1) (Seq.length s)) } with
+          | {f0 = s'0; f1 = C_None} -> list self first s'0
+          | {f0 = s1; f1 = C_Some s2} -> lasso self first s1 s2
           end
         end)
     )
@@ -1124,7 +1114,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso (* Memory *)
   
   type t_Option = C_None | C_Some (Seq.seq UInt64.t)
   
-  type tuple = { _p0: Seq.seq UInt64.t; _p1: t_Option }
+  type tuple = { f0: Seq.seq UInt64.t; f1: t_Option }
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -1219,15 +1209,15 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso (* Memory *)
       -> list_seg self first s last 0 (Seq.length s)
       -> find_lasso_aux self first last s
       = (if last = const_NULL then
-        { _p0 = s; _p1 = C_None }
+        { f0 = s; f1 = C_None }
       else
         match find_ptr_in_seq s 0 (UInt64.t'int last) with
           | C_None'0 -> if pigeon s (Seq.length (view self.t_Memory__0)) then
             find_lasso_aux self first (index_logic'0 self last) (Seq.snoc s last)
           else
-            { _p0 = s; _p1 = C_None }
+            { f0 = s; f1 = C_None }
           
-          | C_Some'0 i -> { _p0 = Seq.([..]) s 0 (i + 1); _p1 = C_Some (Seq.([..]) s (i + 1) (Seq.length s)) }
+          | C_Some'0 i -> { f0 = Seq.([..]) s 0 (i + 1); f1 = C_Some (Seq.([..]) s (i + 1) (Seq.length s)) }
           end
       )
   
@@ -1236,8 +1226,8 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso (* Memory *)
       -> last = const_NULL \/ nonnull_ptr self last
       -> list_seg self first s last 0 (Seq.length s)
       -> match find_lasso_aux self first last s with
-        | {_p0 = s'0; _p1 = C_None} -> list self first s'0
-        | {_p0 = s1; _p1 = C_Some s2} -> lasso self first s1 s2
+        | {f0 = s'0; f1 = C_None} -> list self first s'0
+        | {f0 = s1; f1 = C_Some s2} -> lasso self first s1 s2
         end
   
   meta "compute_max_steps" 1000000
@@ -1248,7 +1238,7 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso (* Memory *)
   
   constant first : UInt64.t
   
-  function find_lasso (self'0: t_Memory) (first'0: UInt64.t) : tuple
+  function find_lasso (self: t_Memory) (first: UInt64.t) : tuple
   
   goal vc_find_lasso: mem_is_well_formed self
     -> first = const_NULL \/ nonnull_ptr self first
@@ -1256,11 +1246,11 @@ module M_list_reversal_lasso__qyi2644757663130641572__find_lasso (* Memory *)
       && ([@expl:find_lasso_aux requires #1] first = const_NULL \/ nonnull_ptr self first)
       && ([@expl:find_lasso_aux requires #2] list_seg self first (Seq.empty: Seq.seq UInt64.t) first 0 (Seq.length (Seq.empty: Seq.seq UInt64.t))))
     /\ (match find_lasso_aux self first first (Seq.empty: Seq.seq UInt64.t) with
-        | {_p0 = s; _p1 = C_None} -> list self first s
-        | {_p0 = s1; _p1 = C_Some s2} -> lasso self first s1 s2
+        | {f0 = s; f1 = C_None} -> list self first s
+        | {f0 = s1; f1 = C_Some s2} -> lasso self first s1 s2
         end
     -> ([@expl:find_lasso ensures] match find_lasso_aux self first first (Seq.empty: Seq.seq UInt64.t) with
-      | {_p0 = s; _p1 = C_None} -> list self first s
-      | {_p0 = s1; _p1 = C_Some s2} -> lasso self first s1 s2
+      | {f0 = s; f1 = C_None} -> list self first s
+      | {f0 = s1; f1 = C_Some s2} -> lasso self first s1 s2
       end))
 end

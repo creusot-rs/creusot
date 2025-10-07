@@ -66,30 +66,9 @@ struct Scope {
     /// 3. render `e2` with that extended scope;
     /// 4. stitch together all of the produced `Doc`s and pop `x1` out of scope.
     ///
-    /// Remark 2: If there were no shadowing, this field could be simplified to have type `Vec<Vec<Ident>>`.
-    /// Unfortunately, `creusot::backend::logic::vcgen` currently generates code with shadowing
-    /// to deal with recursive logic functions:
-    ///
-    /// ```ignore
-    /// #[logic]
-    /// #[ensures(POST(result))]
-    /// fn f(x: usize) {
-    ///   if x > 0 {
-    ///     f(x - 1)
-    ///   }
-    /// }
-    /// ```
-    ///
-    /// generates
-    ///
-    /// ```ignore
-    /// constant x: usize
-    /// function f (x: usize): ()    (* x is shadowed here (also unused) *)
-    /// goal vc_f: ... POST(f(x-1)) -> POST(...)
-    /// ```
-    ///
-    /// I don't know if it's the only place to fix; we can probably avoid shadowing if we really want to.
-    undo: Vec<Vec<(Ident, Option<Symbol>)>>,
+    /// Remark 2: In cas of shadowing, we do not do anything, and keep the same symbold for the given
+    /// identifier
+    undo: Vec<Vec<Ident>>,
 }
 
 impl Scope {
@@ -106,29 +85,26 @@ impl Scope {
     /// Close the scope at the top of the stack, removing the chunk of binders that it contains.
     fn close(&mut self) {
         let undo = self.undo.pop().unwrap();
-        for (ident, old) in undo.into_iter().rev() {
-            let sym = match old {
-                None => self.rename.remove(&ident).unwrap(),
-                Some(old) => self.rename.insert(ident, old).unwrap(),
-            };
-            self.bound.remove(&sym);
+        for ident in undo.into_iter().rev() {
+            self.bound.remove(&self.rename.remove(&ident).unwrap());
         }
     }
 
     /// Bind an identifier in the current scope, assigning it a fresh symbol.
     fn bind(&mut self, ident: Ident) {
-        let mut sym = ident.name.to_identifier();
-        let name = sym.to_string();
-        for i in 0.. {
-            if !self.bound.contains(&sym) {
-                break;
+        self.rename.entry(ident).or_insert_with(|| {
+            let mut sym = if ident.id() == 0 { ident.name } else { ident.name.to_identifier() };
+            let name = sym.to_string();
+            for i in 0.. {
+                if !self.bound.contains(&sym) {
+                    break;
+                }
+                sym = Symbol::intern(&format!("{name}'{i}"));
             }
-            sym = Symbol::intern(&format!("{name}'{i}"));
-        }
-        self.bound.insert(sym);
-        let old = self.rename.insert(ident, sym);
-        self.undo.last_mut().unwrap().push((ident, old));
-        return;
+            self.bound.insert(sym);
+            self.undo.last_mut().unwrap().push(ident);
+            sym
+        });
     }
 
     /// Get the symbol associated with an identifier in the current scope by a previous call to `bind()`.

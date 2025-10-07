@@ -9,48 +9,48 @@ module M_checked_ops__test_u8_add_example
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let rec checked_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: UInt8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: UInt8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {result = UInt8.add self_ rhs} (! return' {result}) ]
+  let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {result = UInt8.add self_ rhs} (! return {result}) ]
   
-  let rec saturating_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {UInt8.t'int self_ + UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec saturating_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {UInt8.t'int self_ + UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int self_ + UInt8.t'int rhs}
       {UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN -> UInt8.t'int result = UInt8.t'int const_MIN}
       {UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX -> UInt8.t'int result = UInt8.t'int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: UInt8.t; _p1: bool }
+  type tuple = { f0: UInt8.t; f1: bool }
   
-  let rec overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {UInt8.t'int self_ + UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {UInt8.t'int self_ + UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
-      -> UInt8.t'int result._p0 = UInt8.t'int self_ + UInt8.t'int rhs}
-      {exists k: int. UInt8.t'int result._p0
+      -> UInt8.t'int result.f0 = UInt8.t'int self_ + UInt8.t'int rhs}
+      {exists k: int. UInt8.t'int result.f0
         = UInt8.t'int self_ + UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_add_example (return' (x: ())) = (! bb0
+  let rec test_u8_add_example (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = checked_add {(5: UInt8.t)} {(10: UInt8.t)} (fun (_ret: t_Option) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = unwrap {_4} (fun (_ret: UInt8.t) -> [ &_3 <- _ret ] s1) | s1 = bb2 ]
@@ -79,17 +79,17 @@ module M_checked_ops__test_u8_add_example
     | bb19 = s0
       [ s0 = overflowing_add {(5: UInt8.t)} {(10: UInt8.t)} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb21 ]
     | bb21 = s0
-      [ s0 = [ &_29 <- res._p0 = (15: UInt8.t) ] s1
+      [ s0 = [ &_29 <- res.f0 = (15: UInt8.t) ] s1
       | s1 = any [ br0 -> {_29 = false} (! bb26) | br1 -> {_29} (! bb22) ] ]
     | bb22 = s0
-      [ s0 = [ &_31 <- res._p1 = false ] s1 | s1 = any [ br0 -> {_31 = false} (! bb26) | br1 -> {_31} (! bb23) ] ]
+      [ s0 = [ &_31 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_31 = false} (! bb26) | br1 -> {_31} (! bb23) ] ]
     | bb23 = s0
       [ s0 = overflowing_add {(250: UInt8.t)} {(10: UInt8.t)} (fun (_ret: tuple) -> [ &res'0 <- _ret ] s1) | s1 = bb27 ]
     | bb27 = s0
-      [ s0 = [ &_36 <- res'0._p0 = (4: UInt8.t) ] s1
+      [ s0 = [ &_36 <- res'0.f0 = (4: UInt8.t) ] s1
       | s1 = any [ br0 -> {_36 = false} (! bb32) | br1 -> {_36} (! bb28) ] ]
-    | bb28 = s0 [ s0 = [ &_38 <- res'0._p1 ] s1 | s1 = any [ br0 -> {_38 = false} (! bb32) | br1 -> {_38} (! bb29) ] ]
-    | bb29 = return''0 {_0}
+    | bb28 = s0 [ s0 = [ &_38 <- res'0.f1 ] s1 | s1 = any [ br0 -> {_38 = false} (! bb32) | br1 -> {_38} (! bb29) ] ]
+    | bb29 = return {_0}
     | bb32 = {false} any
     | bb26 = {false} any
     | bb20 = {false} any
@@ -117,7 +117,7 @@ module M_checked_ops__test_u8_add_example
     | & _31: bool = Any.any_l ()
     | & res'0: tuple = Any.any_l ()
     | & _36: bool = Any.any_l ()
-    | & _38: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _38: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_u8_add_overflow
   use creusot.int.UInt8
@@ -130,71 +130,71 @@ module M_checked_ops__test_u8_add_overflow
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let rec checked_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {result = UInt8.add self_ rhs} (! return' {result}) ]
+  let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {result = UInt8.add self_ rhs} (! return {result}) ]
   
-  let rec saturating_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {UInt8.t'int self_ + UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec saturating_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {UInt8.t'int self_ + UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int self_ + UInt8.t'int rhs}
       {UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN -> UInt8.t'int result = UInt8.t'int const_MIN}
       {UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX -> UInt8.t'int result = UInt8.t'int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: UInt8.t; _p1: bool }
+  type tuple = { f0: UInt8.t; f1: bool }
   
-  let rec overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {UInt8.t'int self_ + UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {UInt8.t'int self_ + UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
-      -> UInt8.t'int result._p0 = UInt8.t'int self_ + UInt8.t'int rhs}
-      {exists k: int. UInt8.t'int result._p0
+      -> UInt8.t'int result.f0 = UInt8.t'int self_ + UInt8.t'int rhs}
+      {exists k: int. UInt8.t'int result.f0
         = UInt8.t'int self_ + UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_add_overflow (a: UInt8.t) (return' (x: ())) = {[@expl:test_u8_add_overflow requires] UInt8.t'int a
+  let rec test_u8_add_overflow (a: UInt8.t) (return (x: ())) = {[@expl:test_u8_add_overflow requires] UInt8.t'int a
     <> 0}
     (! bb0
-    [ bb0 = s0 [ s0 = checked_add {(255: UInt8.t)} {a'0} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = checked_add {(255: UInt8.t)} {a} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_6} (fun (_ret: bool) -> [ &_4 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]
-    | bb3 = s0 [ s0 = wrapping_add {(255: UInt8.t)} {a'0} (fun (_ret: UInt8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
+    | bb3 = s0 [ s0 = wrapping_add {(255: UInt8.t)} {a} (fun (_ret: UInt8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = UInt8.sub {a'0} {(1: UInt8.t)} (fun (_ret: UInt8.t) -> [ &_13 <- _ret ] s1)
+      [ s0 = UInt8.sub {a} {(1: UInt8.t)} (fun (_ret: UInt8.t) -> [ &_13 <- _ret ] s1)
       | s1 = [ &_10 <- _11 = _13 ] s2
       | s2 = any [ br0 -> {_10 = false} (! bb7) | br1 -> {_10} (! bb6) ] ]
-    | bb6 = s0 [ s0 = saturating_add {(255: UInt8.t)} {a'0} (fun (_ret: UInt8.t) -> [ &_18 <- _ret ] s1) | s1 = bb8 ]
+    | bb6 = s0 [ s0 = saturating_add {(255: UInt8.t)} {a} (fun (_ret: UInt8.t) -> [ &_18 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
       [ s0 = [ &_17 <- _18 = (255: UInt8.t) ] s1 | s1 = any [ br0 -> {_17 = false} (! bb10) | br1 -> {_17} (! bb9) ] ]
-    | bb9 = s0 [ s0 = overflowing_add {(255: UInt8.t)} {a'0} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
+    | bb9 = s0 [ s0 = overflowing_add {(255: UInt8.t)} {a} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0
-      [ s0 = UInt8.sub {a'0} {(1: UInt8.t)} (fun (_ret: UInt8.t) -> [ &_26 <- _ret ] s1)
-      | s1 = [ &_24 <- res._p0 = _26 ] s2
+      [ s0 = UInt8.sub {a} {(1: UInt8.t)} (fun (_ret: UInt8.t) -> [ &_26 <- _ret ] s1)
+      | s1 = [ &_24 <- res.f0 = _26 ] s2
       | s2 = any [ br0 -> {_24 = false} (! bb16) | br1 -> {_24} (! bb12) ] ]
-    | bb12 = s0 [ s0 = [ &_28 <- res._p1 ] s1 | s1 = any [ br0 -> {_28 = false} (! bb16) | br1 -> {_28} (! bb13) ] ]
-    | bb13 = return''0 {_0}
+    | bb12 = s0 [ s0 = [ &_28 <- res.f1 ] s1 | s1 = any [ br0 -> {_28 = false} (! bb16) | br1 -> {_28} (! bb13) ] ]
+    | bb13 = return {_0}
     | bb16 = {false} any
     | bb10 = {false} any
     | bb7 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: UInt8.t = a
+    | & a: UInt8.t = a
     | & _4: bool = Any.any_l ()
     | & _6: t_Option = Any.any_l ()
     | & _10: bool = Any.any_l ()
@@ -205,90 +205,90 @@ module M_checked_ops__test_u8_add_overflow
     | & res: tuple = Any.any_l ()
     | & _24: bool = Any.any_l ()
     | & _26: UInt8.t = Any.any_l ()
-    | & _28: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _28: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_u8_wrapping_add
   use creusot.int.UInt8
   use creusot.prelude.Any
   use mach.int.Int
   
-  let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {result = UInt8.add self_ rhs} (! return' {result}) ]
+  let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {result = UInt8.add self_ rhs} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_wrapping_add (a: UInt8.t) (b: UInt8.t) (return' (x: UInt8.t)) = (! bb0
-    [ bb0 = s0 [ s0 = wrapping_add {a'0} {b'0} (fun (_ret: UInt8.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = return''0 {_0} ] [ & _0: UInt8.t = Any.any_l () | & a'0: UInt8.t = a | & b'0: UInt8.t = b ])
-    [ return''0 (result: UInt8.t) -> {[@expl:test_u8_wrapping_add ensures] UInt8.t'int result
+  let rec test_u8_wrapping_add (a: UInt8.t) (b: UInt8.t) (return (x: UInt8.t)) = (! bb0
+    [ bb0 = s0 [ s0 = wrapping_add {a} {b} (fun (_ret: UInt8.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = return {_0} ] [ & _0: UInt8.t = Any.any_l () | & a: UInt8.t = a | & b: UInt8.t = b ])
+    [ return (result: UInt8.t) -> {[@expl:test_u8_wrapping_add ensures] UInt8.t'int result
         = UInt8.t'int a + UInt8.t'int b
       \/ UInt8.t'int result = UInt8.t'int a + UInt8.t'int b - 256}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_checked_ops__test_u8_overflowing_add
   use creusot.int.UInt8
   use mach.int.Int
   use creusot.prelude.Any
   
-  type tuple = { _p0: UInt8.t; _p1: bool }
+  type tuple = { f0: UInt8.t; f1: bool }
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let rec overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {UInt8.t'int self_ + UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {UInt8.t'int self_ + UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
-      -> UInt8.t'int result._p0 = UInt8.t'int self_ + UInt8.t'int rhs}
-      {exists k: int. UInt8.t'int result._p0
+      -> UInt8.t'int result.f0 = UInt8.t'int self_ + UInt8.t'int rhs}
+      {exists k: int. UInt8.t'int result.f0
         = UInt8.t'int self_ + UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {result = UInt8.add self_ rhs} (! return' {result}) ]
+  let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {result = UInt8.add self_ rhs} (! return {result}) ]
   
   type t_Option = C_None | C_Some UInt8.t
   
-  let rec checked_add (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_overflowing_add (a: UInt8.t) (b: UInt8.t) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = overflowing_add {a'0} {b'0} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = wrapping_add {a'0} {b'0} (fun (_ret: UInt8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_4 <- _6._p0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
-    | bb3 = s0 [ s0 = overflowing_add {a'0} {b'0} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = checked_add {a'0} {b'0} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
+  let rec test_u8_overflowing_add (a: UInt8.t) (b: UInt8.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = overflowing_add {a} {b} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = wrapping_add {a} {b} (fun (_ret: UInt8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &_4 <- _6.f0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
+    | bb3 = s0 [ s0 = overflowing_add {a} {b} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
+    | bb5 = s0 [ s0 = checked_add {a} {b} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0 [ s0 = is_none {_21} (fun (_ret: bool) -> [ &_19 <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_14 <- _16._p1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
-    | bb8 = return''0 {_0}
+    | bb7 = s0 [ s0 = [ &_14 <- _16.f1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
+    | bb8 = return {_0}
     | bb9 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: UInt8.t = a
-    | & b'0: UInt8.t = b
+    | & a: UInt8.t = a
+    | & b: UInt8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tuple = Any.any_l ()
     | & _9: UInt8.t = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tuple = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _21: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_u8_sub_example
   use creusot.int.UInt8
@@ -301,48 +301,48 @@ module M_checked_ops__test_u8_sub_example
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let rec checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: UInt8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: UInt8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {result = UInt8.sub self_ rhs} (! return' {result}) ]
+  let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {result = UInt8.sub self_ rhs} (! return {result}) ]
   
-  let rec saturating_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {UInt8.t'int self_ - UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec saturating_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {UInt8.t'int self_ - UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int self_ - UInt8.t'int rhs}
       {UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN -> UInt8.t'int result = UInt8.t'int const_MIN}
       {UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX -> UInt8.t'int result = UInt8.t'int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: UInt8.t; _p1: bool }
+  type tuple = { f0: UInt8.t; f1: bool }
   
-  let rec overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {UInt8.t'int self_ - UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {UInt8.t'int self_ - UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
-      -> UInt8.t'int result._p0 = UInt8.t'int self_ - UInt8.t'int rhs}
-      {exists k: int. UInt8.t'int result._p0
+      -> UInt8.t'int result.f0 = UInt8.t'int self_ - UInt8.t'int rhs}
+      {exists k: int. UInt8.t'int result.f0
         = UInt8.t'int self_ - UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_sub_example (return' (x: ())) = (! bb0
+  let rec test_u8_sub_example (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = checked_sub {(5: UInt8.t)} {(10: UInt8.t)} (fun (_ret: t_Option) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_4} (fun (_ret: bool) -> [ &_2 <- _ret ] s1) | s1 = bb2 ]
@@ -371,17 +371,17 @@ module M_checked_ops__test_u8_sub_example
     | bb19 = s0
       [ s0 = overflowing_sub {(5: UInt8.t)} {(10: UInt8.t)} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb21 ]
     | bb21 = s0
-      [ s0 = [ &_29 <- res._p0 = (251: UInt8.t) ] s1
+      [ s0 = [ &_29 <- res.f0 = (251: UInt8.t) ] s1
       | s1 = any [ br0 -> {_29 = false} (! bb26) | br1 -> {_29} (! bb22) ] ]
-    | bb22 = s0 [ s0 = [ &_31 <- res._p1 ] s1 | s1 = any [ br0 -> {_31 = false} (! bb26) | br1 -> {_31} (! bb23) ] ]
+    | bb22 = s0 [ s0 = [ &_31 <- res.f1 ] s1 | s1 = any [ br0 -> {_31 = false} (! bb26) | br1 -> {_31} (! bb23) ] ]
     | bb23 = s0
       [ s0 = overflowing_sub {(250: UInt8.t)} {(10: UInt8.t)} (fun (_ret: tuple) -> [ &res'0 <- _ret ] s1) | s1 = bb27 ]
     | bb27 = s0
-      [ s0 = [ &_36 <- res'0._p0 = (240: UInt8.t) ] s1
+      [ s0 = [ &_36 <- res'0.f0 = (240: UInt8.t) ] s1
       | s1 = any [ br0 -> {_36 = false} (! bb32) | br1 -> {_36} (! bb28) ] ]
     | bb28 = s0
-      [ s0 = [ &_38 <- res'0._p1 = false ] s1 | s1 = any [ br0 -> {_38 = false} (! bb32) | br1 -> {_38} (! bb29) ] ]
-    | bb29 = return''0 {_0}
+      [ s0 = [ &_38 <- res'0.f1 = false ] s1 | s1 = any [ br0 -> {_38 = false} (! bb32) | br1 -> {_38} (! bb29) ] ]
+    | bb29 = return {_0}
     | bb32 = {false} any
     | bb26 = {false} any
     | bb20 = {false} any
@@ -409,7 +409,7 @@ module M_checked_ops__test_u8_sub_example
     | & _31: bool = Any.any_l ()
     | & res'0: tuple = Any.any_l ()
     | & _36: bool = Any.any_l ()
-    | & _38: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _38: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_u8_sub_overflow
   use creusot.int.UInt8
@@ -422,73 +422,73 @@ module M_checked_ops__test_u8_sub_overflow
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let rec checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {result = UInt8.sub self_ rhs} (! return' {result}) ]
+  let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {result = UInt8.sub self_ rhs} (! return {result}) ]
   
-  let rec saturating_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {UInt8.t'int self_ - UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec saturating_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {UInt8.t'int self_ - UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int self_ - UInt8.t'int rhs}
       {UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN -> UInt8.t'int result = UInt8.t'int const_MIN}
       {UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX -> UInt8.t'int result = UInt8.t'int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: UInt8.t; _p1: bool }
+  type tuple = { f0: UInt8.t; f1: bool }
   
-  let rec overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {UInt8.t'int self_ - UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {UInt8.t'int self_ - UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
-      -> UInt8.t'int result._p0 = UInt8.t'int self_ - UInt8.t'int rhs}
-      {exists k: int. UInt8.t'int result._p0
+      -> UInt8.t'int result.f0 = UInt8.t'int self_ - UInt8.t'int rhs}
+      {exists k: int. UInt8.t'int result.f0
         = UInt8.t'int self_ - UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_sub_overflow (a: UInt8.t) (return' (x: ())) = {[@expl:test_u8_sub_overflow requires] UInt8.t'int a
+  let rec test_u8_sub_overflow (a: UInt8.t) (return (x: ())) = {[@expl:test_u8_sub_overflow requires] UInt8.t'int a
     <> 0}
     (! bb0
-    [ bb0 = s0 [ s0 = checked_sub {(0: UInt8.t)} {a'0} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = checked_sub {(0: UInt8.t)} {a} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_6} (fun (_ret: bool) -> [ &_4 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]
-    | bb3 = s0 [ s0 = wrapping_sub {(0: UInt8.t)} {a'0} (fun (_ret: UInt8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
+    | bb3 = s0 [ s0 = wrapping_sub {(0: UInt8.t)} {a} (fun (_ret: UInt8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = UInt8.sub {(255: UInt8.t)} {a'0} (fun (_ret: UInt8.t) -> [ &_14 <- _ret ] s1)
+      [ s0 = UInt8.sub {(255: UInt8.t)} {a} (fun (_ret: UInt8.t) -> [ &_14 <- _ret ] s1)
       | s1 = UInt8.add {_14} {(1: UInt8.t)} (fun (_ret: UInt8.t) -> [ &_13 <- _ret ] s2)
       | s2 = [ &_10 <- _11 = _13 ] s3
       | s3 = any [ br0 -> {_10 = false} (! bb7) | br1 -> {_10} (! bb6) ] ]
-    | bb6 = s0 [ s0 = saturating_sub {(0: UInt8.t)} {a'0} (fun (_ret: UInt8.t) -> [ &_19 <- _ret ] s1) | s1 = bb8 ]
+    | bb6 = s0 [ s0 = saturating_sub {(0: UInt8.t)} {a} (fun (_ret: UInt8.t) -> [ &_19 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
       [ s0 = [ &_18 <- _19 = (0: UInt8.t) ] s1 | s1 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ] ]
-    | bb9 = s0 [ s0 = overflowing_sub {(0: UInt8.t)} {a'0} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
+    | bb9 = s0 [ s0 = overflowing_sub {(0: UInt8.t)} {a} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0
-      [ s0 = UInt8.sub {(255: UInt8.t)} {a'0} (fun (_ret: UInt8.t) -> [ &_28 <- _ret ] s1)
+      [ s0 = UInt8.sub {(255: UInt8.t)} {a} (fun (_ret: UInt8.t) -> [ &_28 <- _ret ] s1)
       | s1 = UInt8.add {_28} {(1: UInt8.t)} (fun (_ret: UInt8.t) -> [ &_27 <- _ret ] s2)
-      | s2 = [ &_25 <- res._p0 = _27 ] s3
+      | s2 = [ &_25 <- res.f0 = _27 ] s3
       | s3 = any [ br0 -> {_25 = false} (! bb16) | br1 -> {_25} (! bb12) ] ]
-    | bb12 = s0 [ s0 = [ &_30 <- res._p1 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb16) | br1 -> {_30} (! bb13) ] ]
-    | bb13 = return''0 {_0}
+    | bb12 = s0 [ s0 = [ &_30 <- res.f1 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb16) | br1 -> {_30} (! bb13) ] ]
+    | bb13 = return {_0}
     | bb16 = {false} any
     | bb10 = {false} any
     | bb7 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: UInt8.t = a
+    | & a: UInt8.t = a
     | & _4: bool = Any.any_l ()
     | & _6: t_Option = Any.any_l ()
     | & _10: bool = Any.any_l ()
@@ -501,90 +501,90 @@ module M_checked_ops__test_u8_sub_overflow
     | & _25: bool = Any.any_l ()
     | & _27: UInt8.t = Any.any_l ()
     | & _28: UInt8.t = Any.any_l ()
-    | & _30: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _30: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_u8_wrapping_sub
   use creusot.int.UInt8
   use creusot.prelude.Any
   use mach.int.Int
   
-  let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {result = UInt8.sub self_ rhs} (! return' {result}) ]
+  let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {result = UInt8.sub self_ rhs} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_wrapping_sub (a: UInt8.t) (b: UInt8.t) (return' (x: UInt8.t)) = (! bb0
-    [ bb0 = s0 [ s0 = wrapping_sub {a'0} {b'0} (fun (_ret: UInt8.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = return''0 {_0} ] [ & _0: UInt8.t = Any.any_l () | & a'0: UInt8.t = a | & b'0: UInt8.t = b ])
-    [ return''0 (result: UInt8.t) -> {[@expl:test_u8_wrapping_sub ensures] UInt8.t'int result
+  let rec test_u8_wrapping_sub (a: UInt8.t) (b: UInt8.t) (return (x: UInt8.t)) = (! bb0
+    [ bb0 = s0 [ s0 = wrapping_sub {a} {b} (fun (_ret: UInt8.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = return {_0} ] [ & _0: UInt8.t = Any.any_l () | & a: UInt8.t = a | & b: UInt8.t = b ])
+    [ return (result: UInt8.t) -> {[@expl:test_u8_wrapping_sub ensures] UInt8.t'int result
         = UInt8.t'int a - UInt8.t'int b
       \/ UInt8.t'int result = UInt8.t'int a - UInt8.t'int b + 256}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_checked_ops__test_u8_overflowing_sub
   use creusot.int.UInt8
   use mach.int.Int
   use creusot.prelude.Any
   
-  type tuple = { _p0: UInt8.t; _p1: bool }
+  type tuple = { f0: UInt8.t; f1: bool }
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let rec overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {UInt8.t'int self_ - UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {UInt8.t'int self_ - UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
-      -> UInt8.t'int result._p0 = UInt8.t'int self_ - UInt8.t'int rhs}
-      {exists k: int. UInt8.t'int result._p0
+      -> UInt8.t'int result.f0 = UInt8.t'int self_ - UInt8.t'int rhs}
+      {exists k: int. UInt8.t'int result.f0
         = UInt8.t'int self_ - UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {result = UInt8.sub self_ rhs} (! return' {result}) ]
+  let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {result = UInt8.sub self_ rhs} (! return {result}) ]
   
   type t_Option = C_None | C_Some UInt8.t
   
-  let rec checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_overflowing_sub (a: UInt8.t) (b: UInt8.t) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = overflowing_sub {a'0} {b'0} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = wrapping_sub {a'0} {b'0} (fun (_ret: UInt8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_4 <- _6._p0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
-    | bb3 = s0 [ s0 = overflowing_sub {a'0} {b'0} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = checked_sub {a'0} {b'0} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
+  let rec test_u8_overflowing_sub (a: UInt8.t) (b: UInt8.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = overflowing_sub {a} {b} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = wrapping_sub {a} {b} (fun (_ret: UInt8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &_4 <- _6.f0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
+    | bb3 = s0 [ s0 = overflowing_sub {a} {b} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
+    | bb5 = s0 [ s0 = checked_sub {a} {b} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0 [ s0 = is_none {_21} (fun (_ret: bool) -> [ &_19 <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_14 <- _16._p1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
-    | bb8 = return''0 {_0}
+    | bb7 = s0 [ s0 = [ &_14 <- _16.f1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
+    | bb8 = return {_0}
     | bb9 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: UInt8.t = a
-    | & b'0: UInt8.t = b
+    | & a: UInt8.t = a
+    | & b: UInt8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tuple = Any.any_l ()
     | & _9: UInt8.t = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tuple = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _21: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_u8_mul_example
   use creusot.int.UInt8
@@ -597,48 +597,48 @@ module M_checked_ops__test_u8_mul_example
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let rec checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: UInt8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: UInt8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {result = UInt8.mul self_ rhs} (! return' {result}) ]
+  let rec wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {result = UInt8.mul self_ rhs} (! return {result}) ]
   
-  let rec saturating_mul (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {UInt8.t'int self_ * UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec saturating_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {UInt8.t'int self_ * UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int self_ * UInt8.t'int rhs}
       {UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN -> UInt8.t'int result = UInt8.t'int const_MIN}
       {UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX -> UInt8.t'int result = UInt8.t'int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: UInt8.t; _p1: bool }
+  type tuple = { f0: UInt8.t; f1: bool }
   
-  let rec overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {UInt8.t'int self_ * UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {UInt8.t'int self_ * UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
-      -> UInt8.t'int result._p0 = UInt8.t'int self_ * UInt8.t'int rhs}
-      {exists k: int. UInt8.t'int result._p0
+      -> UInt8.t'int result.f0 = UInt8.t'int self_ * UInt8.t'int rhs}
+      {exists k: int. UInt8.t'int result.f0
         = UInt8.t'int self_ * UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_mul_example (return' (x: ())) = (! bb0
+  let rec test_u8_mul_example (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = checked_mul {(5: UInt8.t)} {(10: UInt8.t)} (fun (_ret: t_Option) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = unwrap {_4} (fun (_ret: UInt8.t) -> [ &_3 <- _ret ] s1) | s1 = bb2 ]
@@ -667,17 +667,17 @@ module M_checked_ops__test_u8_mul_example
     | bb19 = s0
       [ s0 = overflowing_mul {(5: UInt8.t)} {(10: UInt8.t)} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb21 ]
     | bb21 = s0
-      [ s0 = [ &_29 <- res._p0 = (50: UInt8.t) ] s1
+      [ s0 = [ &_29 <- res.f0 = (50: UInt8.t) ] s1
       | s1 = any [ br0 -> {_29 = false} (! bb26) | br1 -> {_29} (! bb22) ] ]
     | bb22 = s0
-      [ s0 = [ &_31 <- res._p1 = false ] s1 | s1 = any [ br0 -> {_31 = false} (! bb26) | br1 -> {_31} (! bb23) ] ]
+      [ s0 = [ &_31 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_31 = false} (! bb26) | br1 -> {_31} (! bb23) ] ]
     | bb23 = s0
       [ s0 = overflowing_mul {(50: UInt8.t)} {(10: UInt8.t)} (fun (_ret: tuple) -> [ &res'0 <- _ret ] s1) | s1 = bb27 ]
     | bb27 = s0
-      [ s0 = [ &_36 <- res'0._p0 = (244: UInt8.t) ] s1
+      [ s0 = [ &_36 <- res'0.f0 = (244: UInt8.t) ] s1
       | s1 = any [ br0 -> {_36 = false} (! bb32) | br1 -> {_36} (! bb28) ] ]
-    | bb28 = s0 [ s0 = [ &_38 <- res'0._p1 ] s1 | s1 = any [ br0 -> {_38 = false} (! bb32) | br1 -> {_38} (! bb29) ] ]
-    | bb29 = return''0 {_0}
+    | bb28 = s0 [ s0 = [ &_38 <- res'0.f1 ] s1 | s1 = any [ br0 -> {_38 = false} (! bb32) | br1 -> {_38} (! bb29) ] ]
+    | bb29 = return {_0}
     | bb32 = {false} any
     | bb26 = {false} any
     | bb20 = {false} any
@@ -705,7 +705,7 @@ module M_checked_ops__test_u8_mul_example
     | & _31: bool = Any.any_l ()
     | & res'0: tuple = Any.any_l ()
     | & _36: bool = Any.any_l ()
-    | & _38: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _38: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_u8_mul_zero
   use creusot.int.UInt8
@@ -718,67 +718,66 @@ module M_checked_ops__test_u8_mul_zero
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let rec checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: UInt8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: UInt8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {result = UInt8.mul self_ rhs} (! return' {result}) ]
+  let rec wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {result = UInt8.mul self_ rhs} (! return {result}) ]
   
-  let rec saturating_mul (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {UInt8.t'int self_ * UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec saturating_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {UInt8.t'int self_ * UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int self_ * UInt8.t'int rhs}
       {UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN -> UInt8.t'int result = UInt8.t'int const_MIN}
       {UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX -> UInt8.t'int result = UInt8.t'int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: UInt8.t; _p1: bool }
+  type tuple = { f0: UInt8.t; f1: bool }
   
-  let rec overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {UInt8.t'int self_ * UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {UInt8.t'int self_ * UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
-      -> UInt8.t'int result._p0 = UInt8.t'int self_ * UInt8.t'int rhs}
-      {exists k: int. UInt8.t'int result._p0
+      -> UInt8.t'int result.f0 = UInt8.t'int self_ * UInt8.t'int rhs}
+      {exists k: int. UInt8.t'int result.f0
         = UInt8.t'int self_ * UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_mul_zero (a: UInt8.t) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = checked_mul {(0: UInt8.t)} {a'0} (fun (_ret: t_Option) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+  let rec test_u8_mul_zero (a: UInt8.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = checked_mul {(0: UInt8.t)} {a} (fun (_ret: t_Option) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = unwrap {_5} (fun (_ret: UInt8.t) -> [ &_4 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = [ &_3 <- _4 = (0: UInt8.t) ] s1 | s1 = any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb3) ] ]
-    | bb3 = s0 [ s0 = wrapping_mul {(0: UInt8.t)} {a'0} (fun (_ret: UInt8.t) -> [ &_10 <- _ret ] s1) | s1 = bb5 ]
+    | bb3 = s0 [ s0 = wrapping_mul {(0: UInt8.t)} {a} (fun (_ret: UInt8.t) -> [ &_10 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
       [ s0 = [ &_9 <- _10 = (0: UInt8.t) ] s1 | s1 = any [ br0 -> {_9 = false} (! bb7) | br1 -> {_9} (! bb6) ] ]
-    | bb6 = s0 [ s0 = saturating_mul {(0: UInt8.t)} {a'0} (fun (_ret: UInt8.t) -> [ &_15 <- _ret ] s1) | s1 = bb8 ]
+    | bb6 = s0 [ s0 = saturating_mul {(0: UInt8.t)} {a} (fun (_ret: UInt8.t) -> [ &_15 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
       [ s0 = [ &_14 <- _15 = (0: UInt8.t) ] s1 | s1 = any [ br0 -> {_14 = false} (! bb10) | br1 -> {_14} (! bb9) ] ]
-    | bb9 = s0 [ s0 = overflowing_mul {(0: UInt8.t)} {a'0} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
+    | bb9 = s0 [ s0 = overflowing_mul {(0: UInt8.t)} {a} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0
-      [ s0 = [ &_21 <- res._p0 = (0: UInt8.t) ] s1
-      | s1 = any [ br0 -> {_21 = false} (! bb16) | br1 -> {_21} (! bb12) ] ]
+      [ s0 = [ &_21 <- res.f0 = (0: UInt8.t) ] s1 | s1 = any [ br0 -> {_21 = false} (! bb16) | br1 -> {_21} (! bb12) ] ]
     | bb12 = s0
-      [ s0 = [ &_23 <- res._p1 = false ] s1 | s1 = any [ br0 -> {_23 = false} (! bb16) | br1 -> {_23} (! bb13) ] ]
-    | bb13 = return''0 {_0}
+      [ s0 = [ &_23 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_23 = false} (! bb16) | br1 -> {_23} (! bb13) ] ]
+    | bb13 = return {_0}
     | bb16 = {false} any
     | bb10 = {false} any
     | bb7 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: UInt8.t = a
+    | & a: UInt8.t = a
     | & _3: bool = Any.any_l ()
     | & _4: UInt8.t = Any.any_l ()
     | & _5: t_Option = Any.any_l ()
@@ -788,70 +787,70 @@ module M_checked_ops__test_u8_mul_zero
     | & _15: UInt8.t = Any.any_l ()
     | & res: tuple = Any.any_l ()
     | & _21: bool = Any.any_l ()
-    | & _23: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _23: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_u8_overflowing_mul
   use creusot.int.UInt8
   use mach.int.Int
   use creusot.prelude.Any
   
-  type tuple = { _p0: UInt8.t; _p1: bool }
+  type tuple = { f0: UInt8.t; f1: bool }
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let rec overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {UInt8.t'int self_ * UInt8.t'int rhs >= UInt8.t'int const_MIN
+  let rec overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {UInt8.t'int self_ * UInt8.t'int rhs >= UInt8.t'int const_MIN
         /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
-      -> UInt8.t'int result._p0 = UInt8.t'int self_ * UInt8.t'int rhs}
-      {exists k: int. UInt8.t'int result._p0
+      -> UInt8.t'int result.f0 = UInt8.t'int self_ * UInt8.t'int rhs}
+      {exists k: int. UInt8.t'int result.f0
         = UInt8.t'int self_ * UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) = any
-    [ return''0 (result: UInt8.t) -> {result = UInt8.mul self_ rhs} (! return' {result}) ]
+  let rec wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+    [ return' (result: UInt8.t) -> {result = UInt8.mul self_ rhs} (! return {result}) ]
   
   type t_Option = C_None | C_Some UInt8.t
   
-  let rec checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_overflowing_mul (a: UInt8.t) (b: UInt8.t) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = overflowing_mul {a'0} {b'0} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = wrapping_mul {a'0} {b'0} (fun (_ret: UInt8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_4 <- _6._p0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
-    | bb3 = s0 [ s0 = overflowing_mul {a'0} {b'0} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = checked_mul {a'0} {b'0} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
+  let rec test_u8_overflowing_mul (a: UInt8.t) (b: UInt8.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = overflowing_mul {a} {b} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = wrapping_mul {a} {b} (fun (_ret: UInt8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &_4 <- _6.f0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
+    | bb3 = s0 [ s0 = overflowing_mul {a} {b} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
+    | bb5 = s0 [ s0 = checked_mul {a} {b} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0 [ s0 = is_none {_21} (fun (_ret: bool) -> [ &_19 <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_14 <- _16._p1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
-    | bb8 = return''0 {_0}
+    | bb7 = s0 [ s0 = [ &_14 <- _16.f1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
+    | bb8 = return {_0}
     | bb9 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: UInt8.t = a
-    | & b'0: UInt8.t = b
+    | & a: UInt8.t = a
+    | & b: UInt8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tuple = Any.any_l ()
     | & _9: UInt8.t = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tuple = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _21: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_u8_div_example
   use creusot.int.UInt8
@@ -862,53 +861,53 @@ module M_checked_ops__test_u8_div_example
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
-  let rec checked_div (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int rhs = 0 \/ UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = Int.div (UInt8.t'int self_) (UInt8.t'int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: UInt8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: UInt8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec wrapping_div (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) =
+  let rec wrapping_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
     {[@expl:wrapping_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return''0 (result: UInt8.t) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+    [ return' (result: UInt8.t) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
       -> UInt8.t'int result = UInt8.t'int self_}
       {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
       \/ UInt8.t'int result = Int.div (UInt8.t'int self_) (UInt8.t'int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec saturating_div (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) =
+  let rec saturating_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
     {[@expl:saturating_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return''0 (result: UInt8.t) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+    [ return' (result: UInt8.t) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
       -> UInt8.t'int result = UInt8.t'int const_MIN}
       {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
       \/ UInt8.t'int result = Int.div (UInt8.t'int self_) (UInt8.t'int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: UInt8.t; _p1: bool }
+  type tuple = { f0: UInt8.t; f1: bool }
   
-  let rec overflowing_div (self_: UInt8.t) (rhs: UInt8.t) (return' (x: tuple)) =
+  let rec overflowing_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: tuple)) =
     {[@expl:overflowing_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return''0 (result: tuple) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
-      -> UInt8.t'int result._p0 = UInt8.t'int self_}
+    [ return' (result: tuple) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+      -> UInt8.t'int result.f0 = UInt8.t'int self_}
       {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
-      \/ UInt8.t'int result._p0 = Int.div (UInt8.t'int self_) (UInt8.t'int rhs)}
-      {result._p1 = (UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1)}
-      (! return' {result}) ]
+      \/ UInt8.t'int result.f0 = Int.div (UInt8.t'int self_) (UInt8.t'int rhs)}
+      {result.f1 = (UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1)}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_div_example (return' (x: ())) = (! bb0
+  let rec test_u8_div_example (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = checked_div {(5: UInt8.t)} {(0: UInt8.t)} (fun (_ret: t_Option) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_4} (fun (_ret: bool) -> [ &_2 <- _ret ] s1) | s1 = bb2 ]
@@ -928,11 +927,10 @@ module M_checked_ops__test_u8_div_example
     | bb13 = s0
       [ s0 = overflowing_div {(5: UInt8.t)} {(2: UInt8.t)} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb15 ]
     | bb15 = s0
-      [ s0 = [ &_21 <- res._p0 = (2: UInt8.t) ] s1
-      | s1 = any [ br0 -> {_21 = false} (! bb20) | br1 -> {_21} (! bb16) ] ]
+      [ s0 = [ &_21 <- res.f0 = (2: UInt8.t) ] s1 | s1 = any [ br0 -> {_21 = false} (! bb20) | br1 -> {_21} (! bb16) ] ]
     | bb16 = s0
-      [ s0 = [ &_23 <- res._p1 = false ] s1 | s1 = any [ br0 -> {_23 = false} (! bb20) | br1 -> {_23} (! bb17) ] ]
-    | bb17 = return''0 {_0}
+      [ s0 = [ &_23 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_23 = false} (! bb20) | br1 -> {_23} (! bb17) ] ]
+    | bb17 = return {_0}
     | bb20 = {false} any
     | bb14 = {false} any
     | bb11 = {false} any
@@ -950,7 +948,7 @@ module M_checked_ops__test_u8_div_example
     | & _17: UInt8.t = Any.any_l ()
     | & res: tuple = Any.any_l ()
     | & _21: bool = Any.any_l ()
-    | & _23: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _23: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_u8_div_no_overflow
   use creusot.int.UInt8
@@ -961,103 +959,103 @@ module M_checked_ops__test_u8_div_no_overflow
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
-  let rec checked_div (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int rhs = 0 \/ UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = Int.div (UInt8.t'int self_) (UInt8.t'int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: UInt8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: UInt8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec wrapping_div (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) =
+  let rec wrapping_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
     {[@expl:wrapping_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return''0 (result: UInt8.t) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+    [ return' (result: UInt8.t) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
       -> UInt8.t'int result = UInt8.t'int self_}
       {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
       \/ UInt8.t'int result = Int.div (UInt8.t'int self_) (UInt8.t'int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec saturating_div (self_: UInt8.t) (rhs: UInt8.t) (return' (x: UInt8.t)) =
+  let rec saturating_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
     {[@expl:saturating_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return''0 (result: UInt8.t) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+    [ return' (result: UInt8.t) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
       -> UInt8.t'int result = UInt8.t'int const_MIN}
       {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
       \/ UInt8.t'int result = Int.div (UInt8.t'int self_) (UInt8.t'int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: UInt8.t; _p1: bool }
+  type tuple = { f0: UInt8.t; f1: bool }
   
-  let rec overflowing_div (self_: UInt8.t) (rhs: UInt8.t) (return' (x: tuple)) =
+  let rec overflowing_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: tuple)) =
     {[@expl:overflowing_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return''0 (result: tuple) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
-      -> UInt8.t'int result._p0 = UInt8.t'int self_}
+    [ return' (result: tuple) -> {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+      -> UInt8.t'int result.f0 = UInt8.t'int self_}
       {UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
-      \/ UInt8.t'int result._p0 = Int.div (UInt8.t'int self_) (UInt8.t'int rhs)}
-      {result._p1 = (UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1)}
-      (! return' {result}) ]
+      \/ UInt8.t'int result.f0 = Int.div (UInt8.t'int self_) (UInt8.t'int rhs)}
+      {result.f1 = (UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1)}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_div_no_overflow (a: UInt8.t) (b: UInt8.t) (return' (x: ())) =
+  let rec test_u8_div_no_overflow (a: UInt8.t) (b: UInt8.t) (return (x: ())) =
     {[@expl:test_u8_div_no_overflow requires] UInt8.t'int b <> 0}
     (! bb0
-    [ bb0 = s0 [ s0 = checked_div {a'0} {b'0} (fun (_ret: t_Option) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = checked_div {a} {b} (fun (_ret: t_Option) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = unwrap {_7} (fun (_ret: UInt8.t) -> [ &_6 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = [ &_12 <- b'0 ] s1
+      [ s0 = [ &_12 <- b ] s1
       | s1 = [ &_13 <- _12 = (0: UInt8.t) ] s2
       | s2 = {[@expl:division by zero] not _13} s3
       | s3 = bb3 ]
     | bb3 = s0
-      [ s0 = UInt8.div {a'0} {_12} (fun (_ret: UInt8.t) -> [ &_10 <- _ret ] s1)
+      [ s0 = UInt8.div {a} {_12} (fun (_ret: UInt8.t) -> [ &_10 <- _ret ] s1)
       | s1 = [ &_5 <- _6 = _10 ] s2
       | s2 = any [ br0 -> {_5 = false} (! bb5) | br1 -> {_5} (! bb4) ] ]
-    | bb4 = s0 [ s0 = wrapping_div {a'0} {b'0} (fun (_ret: UInt8.t) -> [ &_17 <- _ret ] s1) | s1 = bb6 ]
+    | bb4 = s0 [ s0 = wrapping_div {a} {b} (fun (_ret: UInt8.t) -> [ &_17 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0
-      [ s0 = [ &_22 <- b'0 ] s1
+      [ s0 = [ &_22 <- b ] s1
       | s1 = [ &_23 <- _22 = (0: UInt8.t) ] s2
       | s2 = {[@expl:division by zero] not _23} s3
       | s3 = bb7 ]
     | bb7 = s0
-      [ s0 = UInt8.div {a'0} {_22} (fun (_ret: UInt8.t) -> [ &_20 <- _ret ] s1)
+      [ s0 = UInt8.div {a} {_22} (fun (_ret: UInt8.t) -> [ &_20 <- _ret ] s1)
       | s1 = [ &_16 <- _17 = _20 ] s2
       | s2 = any [ br0 -> {_16 = false} (! bb9) | br1 -> {_16} (! bb8) ] ]
-    | bb8 = s0 [ s0 = saturating_div {a'0} {b'0} (fun (_ret: UInt8.t) -> [ &_27 <- _ret ] s1) | s1 = bb10 ]
+    | bb8 = s0 [ s0 = saturating_div {a} {b} (fun (_ret: UInt8.t) -> [ &_27 <- _ret ] s1) | s1 = bb10 ]
     | bb10 = s0
-      [ s0 = [ &_32 <- b'0 ] s1
+      [ s0 = [ &_32 <- b ] s1
       | s1 = [ &_33 <- _32 = (0: UInt8.t) ] s2
       | s2 = {[@expl:division by zero] not _33} s3
       | s3 = bb11 ]
     | bb11 = s0
-      [ s0 = UInt8.div {a'0} {_32} (fun (_ret: UInt8.t) -> [ &_30 <- _ret ] s1)
+      [ s0 = UInt8.div {a} {_32} (fun (_ret: UInt8.t) -> [ &_30 <- _ret ] s1)
       | s1 = [ &_26 <- _27 = _30 ] s2
       | s2 = any [ br0 -> {_26 = false} (! bb13) | br1 -> {_26} (! bb12) ] ]
-    | bb12 = s0 [ s0 = overflowing_div {a'0} {b'0} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb14 ]
+    | bb12 = s0 [ s0 = overflowing_div {a} {b} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb14 ]
     | bb14 = s0
-      [ s0 = [ &_43 <- b'0 ] s1
+      [ s0 = [ &_43 <- b ] s1
       | s1 = [ &_44 <- _43 = (0: UInt8.t) ] s2
       | s2 = {[@expl:division by zero] not _44} s3
       | s3 = bb15 ]
     | bb15 = s0
-      [ s0 = UInt8.div {a'0} {_43} (fun (_ret: UInt8.t) -> [ &_41 <- _ret ] s1)
-      | s1 = [ &_39 <- res._p0 = _41 ] s2
+      [ s0 = UInt8.div {a} {_43} (fun (_ret: UInt8.t) -> [ &_41 <- _ret ] s1)
+      | s1 = [ &_39 <- res.f0 = _41 ] s2
       | s2 = any [ br0 -> {_39 = false} (! bb20) | br1 -> {_39} (! bb16) ] ]
     | bb16 = s0
-      [ s0 = [ &_45 <- res._p1 = false ] s1 | s1 = any [ br0 -> {_45 = false} (! bb20) | br1 -> {_45} (! bb17) ] ]
-    | bb17 = return''0 {_0}
+      [ s0 = [ &_45 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_45 = false} (! bb20) | br1 -> {_45} (! bb17) ] ]
+    | bb17 = return {_0}
     | bb20 = {false} any
     | bb13 = {false} any
     | bb9 = {false} any
     | bb5 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: UInt8.t = a
-    | & b'0: UInt8.t = b
+    | & a: UInt8.t = a
+    | & b: UInt8.t = b
     | & _5: bool = Any.any_l ()
     | & _6: UInt8.t = Any.any_l ()
     | & _7: t_Option = Any.any_l ()
@@ -1079,7 +1077,7 @@ module M_checked_ops__test_u8_div_no_overflow
     | & _41: UInt8.t = Any.any_l ()
     | & _43: UInt8.t = Any.any_l ()
     | & _44: bool = Any.any_l ()
-    | & _45: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _45: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_u8_div_zero
   use creusot.int.UInt8
@@ -1090,27 +1088,27 @@ module M_checked_ops__test_u8_div_zero
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
-  let rec checked_div (self_: UInt8.t) (rhs: UInt8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (UInt8.t'int rhs = 0 \/ UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1)}
       {forall r: UInt8.t. result = C_Some r -> UInt8.t'int r = Int.div (UInt8.t'int self_) (UInt8.t'int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_div_zero (a: UInt8.t) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = checked_div {a'0} {(0: UInt8.t)} (fun (_ret: t_Option) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+  let rec test_u8_div_zero (a: UInt8.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = checked_div {a} {(0: UInt8.t)} (fun (_ret: t_Option) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_5} (fun (_ret: bool) -> [ &_3 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb3) ]
-    | bb3 = return''0 {_0}
+    | bb3 = return {_0}
     | bb4 = {false} any ]
-    [ & _0: () = Any.any_l () | & a'0: UInt8.t = a | & _3: bool = Any.any_l () | & _5: t_Option = Any.any_l () ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+    [ & _0: () = Any.any_l () | & a: UInt8.t = a | & _3: bool = Any.any_l () | & _5: t_Option = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_add_example
   use creusot.int.Int8
@@ -1123,48 +1121,48 @@ module M_checked_ops__test_i8_add_example
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: Int8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.add self_ rhs} (! return' {result}) ]
+  let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.add self_ rhs} (! return {result}) ]
   
-  let rec saturating_add (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int self_ + Int8.to_int rhs}
       {Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN -> Int8.to_int result = Int8.to_int const_MIN}
       {Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX -> Int8.to_int result = Int8.to_int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
-  let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
-      -> Int8.to_int result._p0 = Int8.to_int self_ + Int8.to_int rhs}
-      {exists k: int. Int8.to_int result._p0
+      -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs}
+      {exists k: int. Int8.to_int result.f0
         = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_add_example (return' (x: ())) = (! bb0
+  let rec test_i8_add_example (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = checked_add {(5: Int8.t)} {(10: Int8.t)} (fun (_ret: t_Option) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = unwrap {_4} (fun (_ret: Int8.t) -> [ &_3 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = [ &_2 <- _3 = (15: Int8.t) ] s1 | s1 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ] ]
@@ -1203,23 +1201,22 @@ module M_checked_ops__test_i8_add_example
     | bb29 = s0
       [ s0 = overflowing_add {(5: Int8.t)} {(10: Int8.t)} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb31 ]
     | bb31 = s0
-      [ s0 = [ &_42 <- res._p0 = (15: Int8.t) ] s1
-      | s1 = any [ br0 -> {_42 = false} (! bb36) | br1 -> {_42} (! bb32) ] ]
+      [ s0 = [ &_42 <- res.f0 = (15: Int8.t) ] s1 | s1 = any [ br0 -> {_42 = false} (! bb36) | br1 -> {_42} (! bb32) ] ]
     | bb32 = s0
-      [ s0 = [ &_44 <- res._p1 = false ] s1 | s1 = any [ br0 -> {_44 = false} (! bb36) | br1 -> {_44} (! bb33) ] ]
+      [ s0 = [ &_44 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_44 = false} (! bb36) | br1 -> {_44} (! bb33) ] ]
     | bb33 = s0
       [ s0 = overflowing_add {(120: Int8.t)} {(10: Int8.t)} (fun (_ret: tuple) -> [ &res'0 <- _ret ] s1) | s1 = bb37 ]
     | bb37 = s0
-      [ s0 = [ &_49 <- res'0._p0 = (-126: Int8.t) ] s1
+      [ s0 = [ &_49 <- res'0.f0 = (-126: Int8.t) ] s1
       | s1 = any [ br0 -> {_49 = false} (! bb42) | br1 -> {_49} (! bb38) ] ]
-    | bb38 = s0 [ s0 = [ &_51 <- res'0._p1 ] s1 | s1 = any [ br0 -> {_51 = false} (! bb42) | br1 -> {_51} (! bb39) ] ]
+    | bb38 = s0 [ s0 = [ &_51 <- res'0.f1 ] s1 | s1 = any [ br0 -> {_51 = false} (! bb42) | br1 -> {_51} (! bb39) ] ]
     | bb39 = s0
       [ s0 = overflowing_add {(-120: Int8.t)} {(-10: Int8.t)} (fun (_ret: tuple) -> [ &res'1 <- _ret ] s1) | s1 = bb43 ]
     | bb43 = s0
-      [ s0 = [ &_56 <- res'1._p0 = (126: Int8.t) ] s1
+      [ s0 = [ &_56 <- res'1.f0 = (126: Int8.t) ] s1
       | s1 = any [ br0 -> {_56 = false} (! bb48) | br1 -> {_56} (! bb44) ] ]
-    | bb44 = s0 [ s0 = [ &_58 <- res'1._p1 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb48) | br1 -> {_58} (! bb45) ] ]
-    | bb45 = return''0 {_0}
+    | bb44 = s0 [ s0 = [ &_58 <- res'1.f1 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb48) | br1 -> {_58} (! bb45) ] ]
+    | bb45 = return {_0}
     | bb48 = {false} any
     | bb42 = {false} any
     | bb36 = {false} any
@@ -1260,7 +1257,7 @@ module M_checked_ops__test_i8_add_example
     | & _51: bool = Any.any_l ()
     | & res'1: tuple = Any.any_l ()
     | & _56: bool = Any.any_l ()
-    | & _58: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _58: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_add_overflow_pos
   use creusot.int.Int8
@@ -1273,73 +1270,73 @@ module M_checked_ops__test_i8_add_overflow_pos
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.add self_ rhs} (! return' {result}) ]
+  let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.add self_ rhs} (! return {result}) ]
   
-  let rec saturating_add (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int self_ + Int8.to_int rhs}
       {Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN -> Int8.to_int result = Int8.to_int const_MIN}
       {Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX -> Int8.to_int result = Int8.to_int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
-  let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
-      -> Int8.to_int result._p0 = Int8.to_int self_ + Int8.to_int rhs}
-      {exists k: int. Int8.to_int result._p0
+      -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs}
+      {exists k: int. Int8.to_int result.f0
         = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_add_overflow_pos (a: Int8.t) (return' (x: ())) =
+  let rec test_i8_add_overflow_pos (a: Int8.t) (return (x: ())) =
     {[@expl:test_i8_add_overflow_pos requires] Int8.to_int a > 0}
     (! bb0
-    [ bb0 = s0 [ s0 = checked_add {(127: Int8.t)} {a'0} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = checked_add {(127: Int8.t)} {a} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_6} (fun (_ret: bool) -> [ &_4 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]
-    | bb3 = s0 [ s0 = wrapping_add {(127: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
+    | bb3 = s0 [ s0 = wrapping_add {(127: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = Int8.sub {a'0} {(127: Int8.t)} (fun (_ret: Int8.t) -> [ &_14 <- _ret ] s1)
+      [ s0 = Int8.sub {a} {(127: Int8.t)} (fun (_ret: Int8.t) -> [ &_14 <- _ret ] s1)
       | s1 = Int8.sub {_14} {(2: Int8.t)} (fun (_ret: Int8.t) -> [ &_13 <- _ret ] s2)
       | s2 = [ &_10 <- _11 = _13 ] s3
       | s3 = any [ br0 -> {_10 = false} (! bb7) | br1 -> {_10} (! bb6) ] ]
-    | bb6 = s0 [ s0 = saturating_add {(127: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_19 <- _ret ] s1) | s1 = bb8 ]
+    | bb6 = s0 [ s0 = saturating_add {(127: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_19 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
       [ s0 = [ &_18 <- _19 = (127: Int8.t) ] s1 | s1 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ] ]
-    | bb9 = s0 [ s0 = overflowing_add {(127: Int8.t)} {a'0} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
+    | bb9 = s0 [ s0 = overflowing_add {(127: Int8.t)} {a} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0
-      [ s0 = Int8.sub {a'0} {(127: Int8.t)} (fun (_ret: Int8.t) -> [ &_28 <- _ret ] s1)
+      [ s0 = Int8.sub {a} {(127: Int8.t)} (fun (_ret: Int8.t) -> [ &_28 <- _ret ] s1)
       | s1 = Int8.sub {_28} {(2: Int8.t)} (fun (_ret: Int8.t) -> [ &_27 <- _ret ] s2)
-      | s2 = [ &_25 <- res._p0 = _27 ] s3
+      | s2 = [ &_25 <- res.f0 = _27 ] s3
       | s3 = any [ br0 -> {_25 = false} (! bb16) | br1 -> {_25} (! bb12) ] ]
-    | bb12 = s0 [ s0 = [ &_30 <- res._p1 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb16) | br1 -> {_30} (! bb13) ] ]
-    | bb13 = return''0 {_0}
+    | bb12 = s0 [ s0 = [ &_30 <- res.f1 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb16) | br1 -> {_30} (! bb13) ] ]
+    | bb13 = return {_0}
     | bb16 = {false} any
     | bb10 = {false} any
     | bb7 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: Int8.t = a
+    | & a: Int8.t = a
     | & _4: bool = Any.any_l ()
     | & _6: t_Option = Any.any_l ()
     | & _10: bool = Any.any_l ()
@@ -1352,7 +1349,7 @@ module M_checked_ops__test_i8_add_overflow_pos
     | & _25: bool = Any.any_l ()
     | & _27: Int8.t = Any.any_l ()
     | & _28: Int8.t = Any.any_l ()
-    | & _30: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _30: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_add_overflow_neg
   use creusot.int.Int8
@@ -1365,73 +1362,73 @@ module M_checked_ops__test_i8_add_overflow_neg
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.add self_ rhs} (! return' {result}) ]
+  let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.add self_ rhs} (! return {result}) ]
   
-  let rec saturating_add (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int self_ + Int8.to_int rhs}
       {Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN -> Int8.to_int result = Int8.to_int const_MIN}
       {Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX -> Int8.to_int result = Int8.to_int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
-  let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
-      -> Int8.to_int result._p0 = Int8.to_int self_ + Int8.to_int rhs}
-      {exists k: int. Int8.to_int result._p0
+      -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs}
+      {exists k: int. Int8.to_int result.f0
         = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_add_overflow_neg (a: Int8.t) (return' (x: ())) =
+  let rec test_i8_add_overflow_neg (a: Int8.t) (return (x: ())) =
     {[@expl:test_i8_add_overflow_neg requires] Int8.to_int a < 0}
     (! bb0
-    [ bb0 = s0 [ s0 = checked_add {(-128: Int8.t)} {a'0} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = checked_add {(-128: Int8.t)} {a} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_6} (fun (_ret: bool) -> [ &_4 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]
-    | bb3 = s0 [ s0 = wrapping_add {(-128: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
+    | bb3 = s0 [ s0 = wrapping_add {(-128: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = Int8.add {a'0} {(127: Int8.t)} (fun (_ret: Int8.t) -> [ &_14 <- _ret ] s1)
+      [ s0 = Int8.add {a} {(127: Int8.t)} (fun (_ret: Int8.t) -> [ &_14 <- _ret ] s1)
       | s1 = Int8.add {_14} {(1: Int8.t)} (fun (_ret: Int8.t) -> [ &_13 <- _ret ] s2)
       | s2 = [ &_10 <- _11 = _13 ] s3
       | s3 = any [ br0 -> {_10 = false} (! bb7) | br1 -> {_10} (! bb6) ] ]
-    | bb6 = s0 [ s0 = saturating_add {(-128: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_19 <- _ret ] s1) | s1 = bb8 ]
+    | bb6 = s0 [ s0 = saturating_add {(-128: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_19 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
       [ s0 = [ &_18 <- _19 = (-128: Int8.t) ] s1 | s1 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ] ]
-    | bb9 = s0 [ s0 = overflowing_add {(-128: Int8.t)} {a'0} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
+    | bb9 = s0 [ s0 = overflowing_add {(-128: Int8.t)} {a} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0
-      [ s0 = Int8.add {a'0} {(127: Int8.t)} (fun (_ret: Int8.t) -> [ &_28 <- _ret ] s1)
+      [ s0 = Int8.add {a} {(127: Int8.t)} (fun (_ret: Int8.t) -> [ &_28 <- _ret ] s1)
       | s1 = Int8.add {_28} {(1: Int8.t)} (fun (_ret: Int8.t) -> [ &_27 <- _ret ] s2)
-      | s2 = [ &_25 <- res._p0 = _27 ] s3
+      | s2 = [ &_25 <- res.f0 = _27 ] s3
       | s3 = any [ br0 -> {_25 = false} (! bb16) | br1 -> {_25} (! bb12) ] ]
-    | bb12 = s0 [ s0 = [ &_30 <- res._p1 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb16) | br1 -> {_30} (! bb13) ] ]
-    | bb13 = return''0 {_0}
+    | bb12 = s0 [ s0 = [ &_30 <- res.f1 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb16) | br1 -> {_30} (! bb13) ] ]
+    | bb13 = return {_0}
     | bb16 = {false} any
     | bb10 = {false} any
     | bb7 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: Int8.t = a
+    | & a: Int8.t = a
     | & _4: bool = Any.any_l ()
     | & _6: t_Option = Any.any_l ()
     | & _10: bool = Any.any_l ()
@@ -1444,91 +1441,91 @@ module M_checked_ops__test_i8_add_overflow_neg
     | & _25: bool = Any.any_l ()
     | & _27: Int8.t = Any.any_l ()
     | & _28: Int8.t = Any.any_l ()
-    | & _30: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _30: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_wrapping_add
   use creusot.int.Int8
   use creusot.prelude.Any
   use mach.int.Int
   
-  let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.add self_ rhs} (! return' {result}) ]
+  let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.add self_ rhs} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_wrapping_add (a: Int8.t) (b: Int8.t) (return' (x: Int8.t)) = (! bb0
-    [ bb0 = s0 [ s0 = wrapping_add {a'0} {b'0} (fun (_ret: Int8.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = return''0 {_0} ] [ & _0: Int8.t = Any.any_l () | & a'0: Int8.t = a | & b'0: Int8.t = b ])
-    [ return''0 (result: Int8.t) -> {[@expl:test_i8_wrapping_add ensures] Int8.to_int result
+  let rec test_i8_wrapping_add (a: Int8.t) (b: Int8.t) (return (x: Int8.t)) = (! bb0
+    [ bb0 = s0 [ s0 = wrapping_add {a} {b} (fun (_ret: Int8.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
+    [ & _0: Int8.t = Any.any_l () | & a: Int8.t = a | & b: Int8.t = b ])
+    [ return (result: Int8.t) -> {[@expl:test_i8_wrapping_add ensures] Int8.to_int result
         = Int8.to_int a + Int8.to_int b
       \/ Int8.to_int result = Int8.to_int a + Int8.to_int b - 256
       \/ Int8.to_int result = Int8.to_int a + Int8.to_int b + 256}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_checked_ops__test_i8_overflowing_add
   use creusot.int.Int8
   use mach.int.Int
   use creusot.prelude.Any
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {Int8.to_int self_ + Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
-      -> Int8.to_int result._p0 = Int8.to_int self_ + Int8.to_int rhs}
-      {exists k: int. Int8.to_int result._p0
+      -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs}
+      {exists k: int. Int8.to_int result.f0
         = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.add self_ rhs} (! return' {result}) ]
+  let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.add self_ rhs} (! return {result}) ]
   
   type t_Option = C_None | C_Some Int8.t
   
-  let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_overflowing_add (a: Int8.t) (b: Int8.t) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = overflowing_add {a'0} {b'0} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = wrapping_add {a'0} {b'0} (fun (_ret: Int8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_4 <- _6._p0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
-    | bb3 = s0 [ s0 = overflowing_add {a'0} {b'0} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = checked_add {a'0} {b'0} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
+  let rec test_i8_overflowing_add (a: Int8.t) (b: Int8.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = overflowing_add {a} {b} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = wrapping_add {a} {b} (fun (_ret: Int8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &_4 <- _6.f0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
+    | bb3 = s0 [ s0 = overflowing_add {a} {b} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
+    | bb5 = s0 [ s0 = checked_add {a} {b} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0 [ s0 = is_none {_21} (fun (_ret: bool) -> [ &_19 <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_14 <- _16._p1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
-    | bb8 = return''0 {_0}
+    | bb7 = s0 [ s0 = [ &_14 <- _16.f1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
+    | bb8 = return {_0}
     | bb9 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: Int8.t = a
-    | & b'0: Int8.t = b
+    | & a: Int8.t = a
+    | & b: Int8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tuple = Any.any_l ()
     | & _9: Int8.t = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tuple = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _21: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_sub_example
   use creusot.int.Int8
@@ -1541,48 +1538,48 @@ module M_checked_ops__test_i8_sub_example
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: Int8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.sub self_ rhs} (! return' {result}) ]
+  let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.sub self_ rhs} (! return {result}) ]
   
-  let rec saturating_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int self_ - Int8.to_int rhs}
       {Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN -> Int8.to_int result = Int8.to_int const_MIN}
       {Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX -> Int8.to_int result = Int8.to_int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
-  let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
-      -> Int8.to_int result._p0 = Int8.to_int self_ - Int8.to_int rhs}
-      {exists k: int. Int8.to_int result._p0
+      -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs}
+      {exists k: int. Int8.to_int result.f0
         = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_sub_example (return' (x: ())) = (! bb0
+  let rec test_i8_sub_example (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = checked_sub {(5: Int8.t)} {(10: Int8.t)} (fun (_ret: t_Option) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = unwrap {_4} (fun (_ret: Int8.t) -> [ &_3 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = [ &_2 <- _3 = (-5: Int8.t) ] s1 | s1 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ] ]
@@ -1622,24 +1619,23 @@ module M_checked_ops__test_i8_sub_example
     | bb29 = s0
       [ s0 = overflowing_sub {(5: Int8.t)} {(10: Int8.t)} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb31 ]
     | bb31 = s0
-      [ s0 = [ &_42 <- res._p0 = (-5: Int8.t) ] s1
-      | s1 = any [ br0 -> {_42 = false} (! bb36) | br1 -> {_42} (! bb32) ] ]
+      [ s0 = [ &_42 <- res.f0 = (-5: Int8.t) ] s1 | s1 = any [ br0 -> {_42 = false} (! bb36) | br1 -> {_42} (! bb32) ] ]
     | bb32 = s0
-      [ s0 = [ &_44 <- res._p1 = false ] s1 | s1 = any [ br0 -> {_44 = false} (! bb36) | br1 -> {_44} (! bb33) ] ]
+      [ s0 = [ &_44 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_44 = false} (! bb36) | br1 -> {_44} (! bb33) ] ]
     | bb33 = s0
       [ s0 = overflowing_sub {(120: Int8.t)} {(10: Int8.t)} (fun (_ret: tuple) -> [ &res'0 <- _ret ] s1) | s1 = bb37 ]
     | bb37 = s0
-      [ s0 = [ &_49 <- res'0._p0 = (110: Int8.t) ] s1
+      [ s0 = [ &_49 <- res'0.f0 = (110: Int8.t) ] s1
       | s1 = any [ br0 -> {_49 = false} (! bb42) | br1 -> {_49} (! bb38) ] ]
     | bb38 = s0
-      [ s0 = [ &_51 <- res'0._p1 = false ] s1 | s1 = any [ br0 -> {_51 = false} (! bb42) | br1 -> {_51} (! bb39) ] ]
+      [ s0 = [ &_51 <- res'0.f1 = false ] s1 | s1 = any [ br0 -> {_51 = false} (! bb42) | br1 -> {_51} (! bb39) ] ]
     | bb39 = s0
       [ s0 = overflowing_sub {(-120: Int8.t)} {(10: Int8.t)} (fun (_ret: tuple) -> [ &res'1 <- _ret ] s1) | s1 = bb43 ]
     | bb43 = s0
-      [ s0 = [ &_56 <- res'1._p0 = (126: Int8.t) ] s1
+      [ s0 = [ &_56 <- res'1.f0 = (126: Int8.t) ] s1
       | s1 = any [ br0 -> {_56 = false} (! bb48) | br1 -> {_56} (! bb44) ] ]
-    | bb44 = s0 [ s0 = [ &_58 <- res'1._p1 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb48) | br1 -> {_58} (! bb45) ] ]
-    | bb45 = return''0 {_0}
+    | bb44 = s0 [ s0 = [ &_58 <- res'1.f1 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb48) | br1 -> {_58} (! bb45) ] ]
+    | bb45 = return {_0}
     | bb48 = {false} any
     | bb42 = {false} any
     | bb36 = {false} any
@@ -1681,7 +1677,7 @@ module M_checked_ops__test_i8_sub_example
     | & _51: bool = Any.any_l ()
     | & res'1: tuple = Any.any_l ()
     | & _56: bool = Any.any_l ()
-    | & _58: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _58: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_sub_overflow_pos
   use creusot.int.Int8
@@ -1694,73 +1690,73 @@ module M_checked_ops__test_i8_sub_overflow_pos
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.sub self_ rhs} (! return' {result}) ]
+  let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.sub self_ rhs} (! return {result}) ]
   
-  let rec saturating_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int self_ - Int8.to_int rhs}
       {Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN -> Int8.to_int result = Int8.to_int const_MIN}
       {Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX -> Int8.to_int result = Int8.to_int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
-  let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
-      -> Int8.to_int result._p0 = Int8.to_int self_ - Int8.to_int rhs}
-      {exists k: int. Int8.to_int result._p0
+      -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs}
+      {exists k: int. Int8.to_int result.f0
         = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_sub_overflow_pos (a: Int8.t) (return' (x: ())) =
+  let rec test_i8_sub_overflow_pos (a: Int8.t) (return (x: ())) =
     {[@expl:test_i8_sub_overflow_pos requires] Int8.to_int a > 0}
     (! bb0
-    [ bb0 = s0 [ s0 = checked_sub {(-128: Int8.t)} {a'0} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = checked_sub {(-128: Int8.t)} {a} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_6} (fun (_ret: bool) -> [ &_4 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]
-    | bb3 = s0 [ s0 = wrapping_sub {(-128: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
+    | bb3 = s0 [ s0 = wrapping_sub {(-128: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = Int8.sub {(127: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_14 <- _ret ] s1)
+      [ s0 = Int8.sub {(127: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_14 <- _ret ] s1)
       | s1 = Int8.add {_14} {(1: Int8.t)} (fun (_ret: Int8.t) -> [ &_13 <- _ret ] s2)
       | s2 = [ &_10 <- _11 = _13 ] s3
       | s3 = any [ br0 -> {_10 = false} (! bb7) | br1 -> {_10} (! bb6) ] ]
-    | bb6 = s0 [ s0 = saturating_sub {(-128: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_19 <- _ret ] s1) | s1 = bb8 ]
+    | bb6 = s0 [ s0 = saturating_sub {(-128: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_19 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
       [ s0 = [ &_18 <- _19 = (-128: Int8.t) ] s1 | s1 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ] ]
-    | bb9 = s0 [ s0 = overflowing_sub {(-128: Int8.t)} {a'0} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
+    | bb9 = s0 [ s0 = overflowing_sub {(-128: Int8.t)} {a} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0
-      [ s0 = Int8.sub {(127: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_28 <- _ret ] s1)
+      [ s0 = Int8.sub {(127: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_28 <- _ret ] s1)
       | s1 = Int8.add {_28} {(1: Int8.t)} (fun (_ret: Int8.t) -> [ &_27 <- _ret ] s2)
-      | s2 = [ &_25 <- res._p0 = _27 ] s3
+      | s2 = [ &_25 <- res.f0 = _27 ] s3
       | s3 = any [ br0 -> {_25 = false} (! bb16) | br1 -> {_25} (! bb12) ] ]
-    | bb12 = s0 [ s0 = [ &_30 <- res._p1 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb16) | br1 -> {_30} (! bb13) ] ]
-    | bb13 = return''0 {_0}
+    | bb12 = s0 [ s0 = [ &_30 <- res.f1 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb16) | br1 -> {_30} (! bb13) ] ]
+    | bb13 = return {_0}
     | bb16 = {false} any
     | bb10 = {false} any
     | bb7 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: Int8.t = a
+    | & a: Int8.t = a
     | & _4: bool = Any.any_l ()
     | & _6: t_Option = Any.any_l ()
     | & _10: bool = Any.any_l ()
@@ -1773,7 +1769,7 @@ module M_checked_ops__test_i8_sub_overflow_pos
     | & _25: bool = Any.any_l ()
     | & _27: Int8.t = Any.any_l ()
     | & _28: Int8.t = Any.any_l ()
-    | & _30: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _30: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_sub_overflow_neg
   use creusot.int.Int8
@@ -1786,75 +1782,75 @@ module M_checked_ops__test_i8_sub_overflow_neg
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.sub self_ rhs} (! return' {result}) ]
+  let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.sub self_ rhs} (! return {result}) ]
   
-  let rec saturating_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int self_ - Int8.to_int rhs}
       {Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN -> Int8.to_int result = Int8.to_int const_MIN}
       {Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX -> Int8.to_int result = Int8.to_int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
-  let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
-      -> Int8.to_int result._p0 = Int8.to_int self_ - Int8.to_int rhs}
-      {exists k: int. Int8.to_int result._p0
+      -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs}
+      {exists k: int. Int8.to_int result.f0
         = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_sub_overflow_neg (a: Int8.t) (return' (x: ())) =
+  let rec test_i8_sub_overflow_neg (a: Int8.t) (return (x: ())) =
     {[@expl:test_i8_sub_overflow_neg requires] Int8.to_int a < 0}
     (! bb0
-    [ bb0 = s0 [ s0 = checked_sub {(127: Int8.t)} {a'0} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = checked_sub {(127: Int8.t)} {a} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_6} (fun (_ret: bool) -> [ &_4 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]
-    | bb3 = s0 [ s0 = wrapping_sub {(127: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
+    | bb3 = s0 [ s0 = wrapping_sub {(127: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_11 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = Int8.add {(2: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_15 <- _ret ] s1)
+      [ s0 = Int8.add {(2: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_15 <- _ret ] s1)
       | s1 = Int8.neg {_15} (fun (_ret: Int8.t) -> [ &_14 <- _ret ] s2)
       | s2 = Int8.sub {_14} {(127: Int8.t)} (fun (_ret: Int8.t) -> [ &_13 <- _ret ] s3)
       | s3 = [ &_10 <- _11 = _13 ] s4
       | s4 = any [ br0 -> {_10 = false} (! bb7) | br1 -> {_10} (! bb6) ] ]
-    | bb6 = s0 [ s0 = saturating_sub {(127: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_20 <- _ret ] s1) | s1 = bb8 ]
+    | bb6 = s0 [ s0 = saturating_sub {(127: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_20 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
       [ s0 = [ &_19 <- _20 = (127: Int8.t) ] s1 | s1 = any [ br0 -> {_19 = false} (! bb10) | br1 -> {_19} (! bb9) ] ]
-    | bb9 = s0 [ s0 = overflowing_sub {(127: Int8.t)} {a'0} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
+    | bb9 = s0 [ s0 = overflowing_sub {(127: Int8.t)} {a} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0
-      [ s0 = Int8.add {(2: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_30 <- _ret ] s1)
+      [ s0 = Int8.add {(2: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_30 <- _ret ] s1)
       | s1 = Int8.neg {_30} (fun (_ret: Int8.t) -> [ &_29 <- _ret ] s2)
       | s2 = Int8.sub {_29} {(127: Int8.t)} (fun (_ret: Int8.t) -> [ &_28 <- _ret ] s3)
-      | s3 = [ &_26 <- res._p0 = _28 ] s4
+      | s3 = [ &_26 <- res.f0 = _28 ] s4
       | s4 = any [ br0 -> {_26 = false} (! bb16) | br1 -> {_26} (! bb12) ] ]
-    | bb12 = s0 [ s0 = [ &_32 <- res._p1 ] s1 | s1 = any [ br0 -> {_32 = false} (! bb16) | br1 -> {_32} (! bb13) ] ]
-    | bb13 = return''0 {_0}
+    | bb12 = s0 [ s0 = [ &_32 <- res.f1 ] s1 | s1 = any [ br0 -> {_32 = false} (! bb16) | br1 -> {_32} (! bb13) ] ]
+    | bb13 = return {_0}
     | bb16 = {false} any
     | bb10 = {false} any
     | bb7 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: Int8.t = a
+    | & a: Int8.t = a
     | & _4: bool = Any.any_l ()
     | & _6: t_Option = Any.any_l ()
     | & _10: bool = Any.any_l ()
@@ -1869,91 +1865,91 @@ module M_checked_ops__test_i8_sub_overflow_neg
     | & _28: Int8.t = Any.any_l ()
     | & _29: Int8.t = Any.any_l ()
     | & _30: Int8.t = Any.any_l ()
-    | & _32: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _32: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_wrapping_sub
   use creusot.int.Int8
   use creusot.prelude.Any
   use mach.int.Int
   
-  let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.sub self_ rhs} (! return' {result}) ]
+  let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.sub self_ rhs} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_wrapping_sub (a: Int8.t) (b: Int8.t) (return' (x: Int8.t)) = (! bb0
-    [ bb0 = s0 [ s0 = wrapping_sub {a'0} {b'0} (fun (_ret: Int8.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = return''0 {_0} ] [ & _0: Int8.t = Any.any_l () | & a'0: Int8.t = a | & b'0: Int8.t = b ])
-    [ return''0 (result: Int8.t) -> {[@expl:test_i8_wrapping_sub ensures] Int8.to_int result
+  let rec test_i8_wrapping_sub (a: Int8.t) (b: Int8.t) (return (x: Int8.t)) = (! bb0
+    [ bb0 = s0 [ s0 = wrapping_sub {a} {b} (fun (_ret: Int8.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
+    [ & _0: Int8.t = Any.any_l () | & a: Int8.t = a | & b: Int8.t = b ])
+    [ return (result: Int8.t) -> {[@expl:test_i8_wrapping_sub ensures] Int8.to_int result
         = Int8.to_int a - Int8.to_int b
       \/ Int8.to_int result = Int8.to_int a - Int8.to_int b + 256
       \/ Int8.to_int result = Int8.to_int a - Int8.to_int b - 256}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_checked_ops__test_i8_overflowing_sub
   use creusot.int.Int8
   use mach.int.Int
   use creusot.prelude.Any
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {Int8.to_int self_ - Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
-      -> Int8.to_int result._p0 = Int8.to_int self_ - Int8.to_int rhs}
-      {exists k: int. Int8.to_int result._p0
+      -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs}
+      {exists k: int. Int8.to_int result.f0
         = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.sub self_ rhs} (! return' {result}) ]
+  let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.sub self_ rhs} (! return {result}) ]
   
   type t_Option = C_None | C_Some Int8.t
   
-  let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_overflowing_sub (a: Int8.t) (b: Int8.t) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = overflowing_sub {a'0} {b'0} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = wrapping_sub {a'0} {b'0} (fun (_ret: Int8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_4 <- _6._p0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
-    | bb3 = s0 [ s0 = overflowing_sub {a'0} {b'0} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = checked_sub {a'0} {b'0} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
+  let rec test_i8_overflowing_sub (a: Int8.t) (b: Int8.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = overflowing_sub {a} {b} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = wrapping_sub {a} {b} (fun (_ret: Int8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &_4 <- _6.f0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
+    | bb3 = s0 [ s0 = overflowing_sub {a} {b} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
+    | bb5 = s0 [ s0 = checked_sub {a} {b} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0 [ s0 = is_none {_21} (fun (_ret: bool) -> [ &_19 <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_14 <- _16._p1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
-    | bb8 = return''0 {_0}
+    | bb7 = s0 [ s0 = [ &_14 <- _16.f1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
+    | bb8 = return {_0}
     | bb9 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: Int8.t = a
-    | & b'0: Int8.t = b
+    | & a: Int8.t = a
+    | & b: Int8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tuple = Any.any_l ()
     | & _9: Int8.t = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tuple = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _21: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_mul_example
   use creusot.int.Int8
@@ -1966,48 +1962,48 @@ module M_checked_ops__test_i8_mul_example
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let rec checked_mul (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_mul (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: Int8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.mul self_ rhs} (! return' {result}) ]
+  let rec wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.mul self_ rhs} (! return {result}) ]
   
-  let rec saturating_mul (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ * Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec saturating_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {Int8.to_int self_ * Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int self_ * Int8.to_int rhs}
       {Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN -> Int8.to_int result = Int8.to_int const_MIN}
       {Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX -> Int8.to_int result = Int8.to_int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
-  let rec overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ * Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {Int8.to_int self_ * Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
-      -> Int8.to_int result._p0 = Int8.to_int self_ * Int8.to_int rhs}
-      {exists k: int. Int8.to_int result._p0
+      -> Int8.to_int result.f0 = Int8.to_int self_ * Int8.to_int rhs}
+      {exists k: int. Int8.to_int result.f0
         = Int8.to_int self_ * Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_mul_example (return' (x: ())) = (! bb0
+  let rec test_i8_mul_example (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = checked_mul {(5: Int8.t)} {(10: Int8.t)} (fun (_ret: t_Option) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = unwrap {_4} (fun (_ret: Int8.t) -> [ &_3 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = [ &_2 <- _3 = (50: Int8.t) ] s1 | s1 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ] ]
@@ -2046,23 +2042,22 @@ module M_checked_ops__test_i8_mul_example
     | bb29 = s0
       [ s0 = overflowing_mul {(5: Int8.t)} {(10: Int8.t)} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb31 ]
     | bb31 = s0
-      [ s0 = [ &_42 <- res._p0 = (50: Int8.t) ] s1
-      | s1 = any [ br0 -> {_42 = false} (! bb36) | br1 -> {_42} (! bb32) ] ]
+      [ s0 = [ &_42 <- res.f0 = (50: Int8.t) ] s1 | s1 = any [ br0 -> {_42 = false} (! bb36) | br1 -> {_42} (! bb32) ] ]
     | bb32 = s0
-      [ s0 = [ &_44 <- res._p1 = false ] s1 | s1 = any [ br0 -> {_44 = false} (! bb36) | br1 -> {_44} (! bb33) ] ]
+      [ s0 = [ &_44 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_44 = false} (! bb36) | br1 -> {_44} (! bb33) ] ]
     | bb33 = s0
       [ s0 = overflowing_mul {(50: Int8.t)} {(10: Int8.t)} (fun (_ret: tuple) -> [ &res'0 <- _ret ] s1) | s1 = bb37 ]
     | bb37 = s0
-      [ s0 = [ &_49 <- res'0._p0 = (-12: Int8.t) ] s1
+      [ s0 = [ &_49 <- res'0.f0 = (-12: Int8.t) ] s1
       | s1 = any [ br0 -> {_49 = false} (! bb42) | br1 -> {_49} (! bb38) ] ]
-    | bb38 = s0 [ s0 = [ &_51 <- res'0._p1 ] s1 | s1 = any [ br0 -> {_51 = false} (! bb42) | br1 -> {_51} (! bb39) ] ]
+    | bb38 = s0 [ s0 = [ &_51 <- res'0.f1 ] s1 | s1 = any [ br0 -> {_51 = false} (! bb42) | br1 -> {_51} (! bb39) ] ]
     | bb39 = s0
       [ s0 = overflowing_mul {(50: Int8.t)} {(-10: Int8.t)} (fun (_ret: tuple) -> [ &res'1 <- _ret ] s1) | s1 = bb43 ]
     | bb43 = s0
-      [ s0 = [ &_56 <- res'1._p0 = (12: Int8.t) ] s1
+      [ s0 = [ &_56 <- res'1.f0 = (12: Int8.t) ] s1
       | s1 = any [ br0 -> {_56 = false} (! bb48) | br1 -> {_56} (! bb44) ] ]
-    | bb44 = s0 [ s0 = [ &_58 <- res'1._p1 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb48) | br1 -> {_58} (! bb45) ] ]
-    | bb45 = return''0 {_0}
+    | bb44 = s0 [ s0 = [ &_58 <- res'1.f1 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb48) | br1 -> {_58} (! bb45) ] ]
+    | bb45 = return {_0}
     | bb48 = {false} any
     | bb42 = {false} any
     | bb36 = {false} any
@@ -2103,7 +2098,7 @@ module M_checked_ops__test_i8_mul_example
     | & _51: bool = Any.any_l ()
     | & res'1: tuple = Any.any_l ()
     | & _56: bool = Any.any_l ()
-    | & _58: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _58: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_mul_zero
   use creusot.int.Int8
@@ -2116,65 +2111,65 @@ module M_checked_ops__test_i8_mul_zero
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let rec checked_mul (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_mul (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: Int8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.mul self_ rhs} (! return' {result}) ]
+  let rec wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.mul self_ rhs} (! return {result}) ]
   
-  let rec saturating_mul (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ * Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec saturating_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {Int8.to_int self_ * Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int self_ * Int8.to_int rhs}
       {Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN -> Int8.to_int result = Int8.to_int const_MIN}
       {Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX -> Int8.to_int result = Int8.to_int const_MAX}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
-  let rec overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ * Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {Int8.to_int self_ * Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
-      -> Int8.to_int result._p0 = Int8.to_int self_ * Int8.to_int rhs}
-      {exists k: int. Int8.to_int result._p0
+      -> Int8.to_int result.f0 = Int8.to_int self_ * Int8.to_int rhs}
+      {exists k: int. Int8.to_int result.f0
         = Int8.to_int self_ * Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_mul_zero (a: Int8.t) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = checked_mul {(0: Int8.t)} {a'0} (fun (_ret: t_Option) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+  let rec test_i8_mul_zero (a: Int8.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = checked_mul {(0: Int8.t)} {a} (fun (_ret: t_Option) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = unwrap {_5} (fun (_ret: Int8.t) -> [ &_4 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = [ &_3 <- _4 = (0: Int8.t) ] s1 | s1 = any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb3) ] ]
-    | bb3 = s0 [ s0 = wrapping_mul {(0: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_10 <- _ret ] s1) | s1 = bb5 ]
+    | bb3 = s0 [ s0 = wrapping_mul {(0: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_10 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0 [ s0 = [ &_9 <- _10 = (0: Int8.t) ] s1 | s1 = any [ br0 -> {_9 = false} (! bb7) | br1 -> {_9} (! bb6) ] ]
-    | bb6 = s0 [ s0 = saturating_mul {(0: Int8.t)} {a'0} (fun (_ret: Int8.t) -> [ &_15 <- _ret ] s1) | s1 = bb8 ]
+    | bb6 = s0 [ s0 = saturating_mul {(0: Int8.t)} {a} (fun (_ret: Int8.t) -> [ &_15 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
       [ s0 = [ &_14 <- _15 = (0: Int8.t) ] s1 | s1 = any [ br0 -> {_14 = false} (! bb10) | br1 -> {_14} (! bb9) ] ]
-    | bb9 = s0 [ s0 = overflowing_mul {(0: Int8.t)} {a'0} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
+    | bb9 = s0 [ s0 = overflowing_mul {(0: Int8.t)} {a} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0
-      [ s0 = [ &_21 <- res._p0 = (0: Int8.t) ] s1 | s1 = any [ br0 -> {_21 = false} (! bb16) | br1 -> {_21} (! bb12) ] ]
+      [ s0 = [ &_21 <- res.f0 = (0: Int8.t) ] s1 | s1 = any [ br0 -> {_21 = false} (! bb16) | br1 -> {_21} (! bb12) ] ]
     | bb12 = s0
-      [ s0 = [ &_23 <- res._p1 = false ] s1 | s1 = any [ br0 -> {_23 = false} (! bb16) | br1 -> {_23} (! bb13) ] ]
-    | bb13 = return''0 {_0}
+      [ s0 = [ &_23 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_23 = false} (! bb16) | br1 -> {_23} (! bb13) ] ]
+    | bb13 = return {_0}
     | bb16 = {false} any
     | bb10 = {false} any
     | bb7 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: Int8.t = a
+    | & a: Int8.t = a
     | & _3: bool = Any.any_l ()
     | & _4: Int8.t = Any.any_l ()
     | & _5: t_Option = Any.any_l ()
@@ -2184,70 +2179,70 @@ module M_checked_ops__test_i8_mul_zero
     | & _15: Int8.t = Any.any_l ()
     | & res: tuple = Any.any_l ()
     | & _21: bool = Any.any_l ()
-    | & _23: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _23: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_overflowing_mul
   use creusot.int.Int8
   use mach.int.Int
   use creusot.prelude.Any
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let rec overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) = any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ * Int8.to_int rhs >= Int8.to_int const_MIN
+  let rec overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) = any
+    [ return' (result: tuple) -> {Int8.to_int self_ * Int8.to_int rhs >= Int8.to_int const_MIN
         /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
-      -> Int8.to_int result._p0 = Int8.to_int self_ * Int8.to_int rhs}
-      {exists k: int. Int8.to_int result._p0
+      -> Int8.to_int result.f0 = Int8.to_int self_ * Int8.to_int rhs}
+      {exists k: int. Int8.to_int result.f0
         = Int8.to_int self_ * Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1)}
-      {result._p1
+      {result.f1
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) = any
-    [ return''0 (result: Int8.t) -> {result = Int8.mul self_ rhs} (! return' {result}) ]
+  let rec wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+    [ return' (result: Int8.t) -> {result = Int8.mul self_ rhs} (! return {result}) ]
   
   type t_Option = C_None | C_Some Int8.t
   
-  let rec checked_mul (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_mul (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_overflowing_mul (a: Int8.t) (b: Int8.t) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = overflowing_mul {a'0} {b'0} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = wrapping_mul {a'0} {b'0} (fun (_ret: Int8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_4 <- _6._p0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
-    | bb3 = s0 [ s0 = overflowing_mul {a'0} {b'0} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = checked_mul {a'0} {b'0} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
+  let rec test_i8_overflowing_mul (a: Int8.t) (b: Int8.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = overflowing_mul {a} {b} (fun (_ret: tuple) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = wrapping_mul {a} {b} (fun (_ret: Int8.t) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &_4 <- _6.f0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
+    | bb3 = s0 [ s0 = overflowing_mul {a} {b} (fun (_ret: tuple) -> [ &_16 <- _ret ] s1) | s1 = bb5 ]
+    | bb5 = s0 [ s0 = checked_mul {a} {b} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0 [ s0 = is_none {_21} (fun (_ret: bool) -> [ &_19 <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_14 <- _16._p1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
-    | bb8 = return''0 {_0}
+    | bb7 = s0 [ s0 = [ &_14 <- _16.f1 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
+    | bb8 = return {_0}
     | bb9 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: Int8.t = a
-    | & b'0: Int8.t = b
+    | & a: Int8.t = a
+    | & b: Int8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tuple = Any.any_l ()
     | & _9: Int8.t = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tuple = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _21: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_div_example
   use creusot.int.Int8
@@ -2258,53 +2253,53 @@ module M_checked_ops__test_i8_div_example
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
-  let rec checked_div (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_div (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int rhs = 0 \/ Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int.div (Int8.to_int self_) (Int8.to_int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: Int8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec wrapping_div (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) =
+  let rec wrapping_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
     {[@expl:wrapping_div requires] Int8.to_int rhs <> 0}
     any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+    [ return' (result: Int8.t) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
       -> Int8.to_int result = Int8.to_int self_}
       {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
       \/ Int8.to_int result = Int.div (Int8.to_int self_) (Int8.to_int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec saturating_div (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) =
+  let rec saturating_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
     {[@expl:saturating_div requires] Int8.to_int rhs <> 0}
     any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+    [ return' (result: Int8.t) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
       -> Int8.to_int result = Int8.to_int const_MIN}
       {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
       \/ Int8.to_int result = Int.div (Int8.to_int self_) (Int8.to_int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
-  let rec overflowing_div (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) =
+  let rec overflowing_div (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) =
     {[@expl:overflowing_div requires] Int8.to_int rhs <> 0}
     any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
-      -> Int8.to_int result._p0 = Int8.to_int self_}
+    [ return' (result: tuple) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+      -> Int8.to_int result.f0 = Int8.to_int self_}
       {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
-      \/ Int8.to_int result._p0 = Int.div (Int8.to_int self_) (Int8.to_int rhs)}
-      {result._p1 = (Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1)}
-      (! return' {result}) ]
+      \/ Int8.to_int result.f0 = Int.div (Int8.to_int self_) (Int8.to_int rhs)}
+      {result.f1 = (Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1)}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_div_example (return' (x: ())) = (! bb0
+  let rec test_i8_div_example (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = checked_div {(5: Int8.t)} {(0: Int8.t)} (fun (_ret: t_Option) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_4} (fun (_ret: bool) -> [ &_2 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ]
@@ -2347,23 +2342,23 @@ module M_checked_ops__test_i8_div_example
     | bb33 = s0
       [ s0 = overflowing_div {(5: Int8.t)} {(2: Int8.t)} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb35 ]
     | bb35 = s0
-      [ s0 = [ &_47 <- res._p0 = (2: Int8.t) ] s1 | s1 = any [ br0 -> {_47 = false} (! bb40) | br1 -> {_47} (! bb36) ] ]
+      [ s0 = [ &_47 <- res.f0 = (2: Int8.t) ] s1 | s1 = any [ br0 -> {_47 = false} (! bb40) | br1 -> {_47} (! bb36) ] ]
     | bb36 = s0
-      [ s0 = [ &_49 <- res._p1 = false ] s1 | s1 = any [ br0 -> {_49 = false} (! bb40) | br1 -> {_49} (! bb37) ] ]
+      [ s0 = [ &_49 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_49 = false} (! bb40) | br1 -> {_49} (! bb37) ] ]
     | bb37 = s0
       [ s0 = overflowing_div {(5: Int8.t)} {(-2: Int8.t)} (fun (_ret: tuple) -> [ &res'0 <- _ret ] s1) | s1 = bb41 ]
     | bb41 = s0
-      [ s0 = [ &_54 <- res'0._p0 = (-2: Int8.t) ] s1
+      [ s0 = [ &_54 <- res'0.f0 = (-2: Int8.t) ] s1
       | s1 = any [ br0 -> {_54 = false} (! bb46) | br1 -> {_54} (! bb42) ] ]
     | bb42 = s0
-      [ s0 = [ &_56 <- res'0._p1 = false ] s1 | s1 = any [ br0 -> {_56 = false} (! bb46) | br1 -> {_56} (! bb43) ] ]
+      [ s0 = [ &_56 <- res'0.f1 = false ] s1 | s1 = any [ br0 -> {_56 = false} (! bb46) | br1 -> {_56} (! bb43) ] ]
     | bb43 = s0
       [ s0 = overflowing_div {(-128: Int8.t)} {(-1: Int8.t)} (fun (_ret: tuple) -> [ &res'1 <- _ret ] s1) | s1 = bb47 ]
     | bb47 = s0
-      [ s0 = [ &_61 <- res'1._p0 = (-128: Int8.t) ] s1
+      [ s0 = [ &_61 <- res'1.f0 = (-128: Int8.t) ] s1
       | s1 = any [ br0 -> {_61 = false} (! bb52) | br1 -> {_61} (! bb48) ] ]
-    | bb48 = s0 [ s0 = [ &_63 <- res'1._p1 ] s1 | s1 = any [ br0 -> {_63 = false} (! bb52) | br1 -> {_63} (! bb49) ] ]
-    | bb49 = return''0 {_0}
+    | bb48 = s0 [ s0 = [ &_63 <- res'1.f1 ] s1 | s1 = any [ br0 -> {_63 = false} (! bb52) | br1 -> {_63} (! bb49) ] ]
+    | bb49 = return {_0}
     | bb52 = {false} any
     | bb46 = {false} any
     | bb40 = {false} any
@@ -2408,7 +2403,7 @@ module M_checked_ops__test_i8_div_example
     | & _56: bool = Any.any_l ()
     | & res'1: tuple = Any.any_l ()
     | & _61: bool = Any.any_l ()
-    | & _63: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _63: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_div_no_overflow
   use creusot.int.Int8
@@ -2420,57 +2415,57 @@ module M_checked_ops__test_i8_div_no_overflow
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
-  let rec checked_div (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_div (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int rhs = 0 \/ Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int.div (Int8.to_int self_) (Int8.to_int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int8.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return' (result: Int8.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec wrapping_div (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) =
+  let rec wrapping_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
     {[@expl:wrapping_div requires] Int8.to_int rhs <> 0}
     any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+    [ return' (result: Int8.t) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
       -> Int8.to_int result = Int8.to_int self_}
       {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
       \/ Int8.to_int result = Int.div (Int8.to_int self_) (Int8.to_int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec saturating_div (self_: Int8.t) (rhs: Int8.t) (return' (x: Int8.t)) =
+  let rec saturating_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
     {[@expl:saturating_div requires] Int8.to_int rhs <> 0}
     any
-    [ return''0 (result: Int8.t) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+    [ return' (result: Int8.t) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
       -> Int8.to_int result = Int8.to_int const_MIN}
       {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
       \/ Int8.to_int result = Int.div (Int8.to_int self_) (Int8.to_int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: Int8.t; _p1: bool }
+  type tuple = { f0: Int8.t; f1: bool }
   
-  let rec overflowing_div (self_: Int8.t) (rhs: Int8.t) (return' (x: tuple)) =
+  let rec overflowing_div (self_: Int8.t) (rhs: Int8.t) (return (x: tuple)) =
     {[@expl:overflowing_div requires] Int8.to_int rhs <> 0}
     any
-    [ return''0 (result: tuple) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
-      -> Int8.to_int result._p0 = Int8.to_int self_}
+    [ return' (result: tuple) -> {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+      -> Int8.to_int result.f0 = Int8.to_int self_}
       {Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
-      \/ Int8.to_int result._p0 = Int.div (Int8.to_int self_) (Int8.to_int rhs)}
-      {result._p1 = (Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1)}
-      (! return' {result}) ]
+      \/ Int8.to_int result.f0 = Int.div (Int8.to_int self_) (Int8.to_int rhs)}
+      {result.f1 = (Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1)}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_div_no_overflow (a: Int8.t) (b: Int8.t) (return' (x: ())) =
+  let rec test_i8_div_no_overflow (a: Int8.t) (b: Int8.t) (return (x: ())) =
     {[@expl:test_i8_div_no_overflow requires] Int8.to_int b <> 0 /\ (Int8.to_int a <> - 128 \/ Int8.to_int b <> - 1)}
     (! bb0
-    [ bb0 = s0 [ s0 = checked_div {a'0} {b'0} (fun (_ret: t_Option) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = checked_div {a} {b} (fun (_ret: t_Option) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = unwrap {_7} (fun (_ret: Int8.t) -> [ &_6 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = [ &_11 <- a'0 ] s1
-      | s1 = [ &_12 <- b'0 ] s2
+      [ s0 = [ &_11 <- a ] s1
+      | s1 = [ &_12 <- b ] s2
       | s2 = [ &_13 <- _12 = (0: Int8.t) ] s3
       | s3 = {[@expl:division by zero] not _13} s4
       | s4 = bb3 ]
@@ -2484,10 +2479,10 @@ module M_checked_ops__test_i8_div_no_overflow
       [ s0 = Int8.div {_11} {_12} (fun (_ret: Int8.t) -> [ &_10 <- _ret ] s1)
       | s1 = [ &_5 <- _6 = _10 ] s2
       | s2 = any [ br0 -> {_5 = false} (! bb6) | br1 -> {_5} (! bb5) ] ]
-    | bb5 = s0 [ s0 = wrapping_div {a'0} {b'0} (fun (_ret: Int8.t) -> [ &_20 <- _ret ] s1) | s1 = bb7 ]
+    | bb5 = s0 [ s0 = wrapping_div {a} {b} (fun (_ret: Int8.t) -> [ &_20 <- _ret ] s1) | s1 = bb7 ]
     | bb7 = s0
-      [ s0 = [ &_24 <- a'0 ] s1
-      | s1 = [ &_25 <- b'0 ] s2
+      [ s0 = [ &_24 <- a ] s1
+      | s1 = [ &_25 <- b ] s2
       | s2 = [ &_26 <- _25 = (0: Int8.t) ] s3
       | s3 = {[@expl:division by zero] not _26} s4
       | s4 = bb8 ]
@@ -2501,10 +2496,10 @@ module M_checked_ops__test_i8_div_no_overflow
       [ s0 = Int8.div {_24} {_25} (fun (_ret: Int8.t) -> [ &_23 <- _ret ] s1)
       | s1 = [ &_19 <- _20 = _23 ] s2
       | s2 = any [ br0 -> {_19 = false} (! bb11) | br1 -> {_19} (! bb10) ] ]
-    | bb10 = s0 [ s0 = saturating_div {a'0} {b'0} (fun (_ret: Int8.t) -> [ &_33 <- _ret ] s1) | s1 = bb12 ]
+    | bb10 = s0 [ s0 = saturating_div {a} {b} (fun (_ret: Int8.t) -> [ &_33 <- _ret ] s1) | s1 = bb12 ]
     | bb12 = s0
-      [ s0 = [ &_37 <- a'0 ] s1
-      | s1 = [ &_38 <- b'0 ] s2
+      [ s0 = [ &_37 <- a ] s1
+      | s1 = [ &_38 <- b ] s2
       | s2 = [ &_39 <- _38 = (0: Int8.t) ] s3
       | s3 = {[@expl:division by zero] not _39} s4
       | s4 = bb13 ]
@@ -2518,10 +2513,10 @@ module M_checked_ops__test_i8_div_no_overflow
       [ s0 = Int8.div {_37} {_38} (fun (_ret: Int8.t) -> [ &_36 <- _ret ] s1)
       | s1 = [ &_32 <- _33 = _36 ] s2
       | s2 = any [ br0 -> {_32 = false} (! bb16) | br1 -> {_32} (! bb15) ] ]
-    | bb15 = s0 [ s0 = overflowing_div {a'0} {b'0} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb17 ]
+    | bb15 = s0 [ s0 = overflowing_div {a} {b} (fun (_ret: tuple) -> [ &res <- _ret ] s1) | s1 = bb17 ]
     | bb17 = s0
-      [ s0 = [ &_51 <- a'0 ] s1
-      | s1 = [ &_52 <- b'0 ] s2
+      [ s0 = [ &_51 <- a ] s1
+      | s1 = [ &_52 <- b ] s2
       | s2 = [ &_53 <- _52 = (0: Int8.t) ] s3
       | s3 = {[@expl:division by zero] not _53} s4
       | s4 = bb18 ]
@@ -2533,18 +2528,18 @@ module M_checked_ops__test_i8_div_no_overflow
       | s4 = bb19 ]
     | bb19 = s0
       [ s0 = Int8.div {_51} {_52} (fun (_ret: Int8.t) -> [ &_50 <- _ret ] s1)
-      | s1 = [ &_48 <- res._p0 = _50 ] s2
+      | s1 = [ &_48 <- res.f0 = _50 ] s2
       | s2 = any [ br0 -> {_48 = false} (! bb24) | br1 -> {_48} (! bb20) ] ]
     | bb20 = s0
-      [ s0 = [ &_57 <- res._p1 = false ] s1 | s1 = any [ br0 -> {_57 = false} (! bb24) | br1 -> {_57} (! bb21) ] ]
-    | bb21 = return''0 {_0}
+      [ s0 = [ &_57 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_57 = false} (! bb24) | br1 -> {_57} (! bb21) ] ]
+    | bb21 = return {_0}
     | bb24 = {false} any
     | bb16 = {false} any
     | bb11 = {false} any
     | bb6 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: Int8.t = a
-    | & b'0: Int8.t = b
+    | & a: Int8.t = a
+    | & b: Int8.t = b
     | & _5: bool = Any.any_l ()
     | & _6: Int8.t = Any.any_l ()
     | & _7: t_Option = Any.any_l ()
@@ -2582,7 +2577,7 @@ module M_checked_ops__test_i8_div_no_overflow
     | & _54: bool = Any.any_l ()
     | & _55: bool = Any.any_l ()
     | & _56: bool = Any.any_l ()
-    | & _57: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _57: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_checked_ops__test_i8_div_zero
   use creusot.int.Int8
@@ -2593,25 +2588,25 @@ module M_checked_ops__test_i8_div_zero
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
-  let rec checked_div (self_: Int8.t) (rhs: Int8.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {(result = C_None)
+  let rec checked_div (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option)) = any
+    [ return' (result: t_Option) -> {(result = C_None)
       = (Int8.to_int rhs = 0 \/ Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1)}
       {forall r: Int8.t. result = C_Some r -> Int8.to_int r = Int.div (Int8.to_int self_) (Int8.to_int rhs)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_i8_div_zero (a: Int8.t) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = checked_div {a'0} {(0: Int8.t)} (fun (_ret: t_Option) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+  let rec test_i8_div_zero (a: Int8.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = checked_div {a} {(0: Int8.t)} (fun (_ret: t_Option) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_5} (fun (_ret: bool) -> [ &_3 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb3) ]
-    | bb3 = return''0 {_0}
+    | bb3 = return {_0}
     | bb4 = {false} any ]
-    [ & _0: () = Any.any_l () | & a'0: Int8.t = a | & _3: bool = Any.any_l () | & _5: t_Option = Any.any_l () ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+    [ & _0: () = Any.any_l () | & a: Int8.t = a | & _3: bool = Any.any_l () | & _5: t_Option = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end
