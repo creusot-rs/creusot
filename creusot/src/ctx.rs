@@ -188,7 +188,7 @@ pub struct TranslationCtx<'tcx> {
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
     erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
-    erasures_to_check: Vec<(LocalDefId, Erasure<'tcx>)>,
+    erasures_to_check: IndexMap<LocalDefId, Erasure<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Box<Vec<DefId>>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
@@ -579,7 +579,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             };
             self.erased_local_defid.insert(eraser, erasure);
             if let Some(to_check) = to_check {
-                self.erasures_to_check.push((eraser, to_check));
+                self.erasures_to_check.insert(eraser, to_check);
             }
         }
         if self.erasures_to_check.is_empty() {
@@ -588,14 +588,14 @@ impl<'tcx> TranslationCtx<'tcx> {
         for (&def_id, _) in self.local_thir.iter() {
             if let Some(erasure) = extract_erasure_from_child(self, def_id) {
                 self.erased_local_defid.insert(def_id, Some(erasure.clone()));
-                self.erasures_to_check.push((def_id, erasure));
+                self.erasures_to_check.insert(def_id, erasure);
             }
         }
     }
 
     pub(crate) fn iter_erasures_to_check(
         &self,
-    ) -> impl Iterator<Item = &(LocalDefId, Erasure<'tcx>)> {
+    ) -> impl Iterator<Item = (&LocalDefId, &Erasure<'tcx>)> {
         self.erasures_to_check.iter()
     }
 
@@ -660,6 +660,10 @@ impl<'tcx> TranslationCtx<'tcx> {
             Some(local) => self.erased_local_defid.get(&local),
             None => self.externs.erasure(def_id),
         }
+    }
+
+    pub(crate) fn erasure_to_check(&self, def_id: LocalDefId) -> Option<&Erasure<'tcx>> {
+        self.erasures_to_check.get(&def_id)
     }
 }
 

@@ -15,7 +15,7 @@
 use std::{borrow::Cow, collections::HashMap, fmt::Formatter};
 
 use creusot_args::options::ErasureCheck;
-use rustc_abi::VariantIdx;
+use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_ast::{BindingMode, ByRef, Mutability};
 use rustc_errors::{Diag, DiagMessage, SubdiagMessage};
 use rustc_hir::{
@@ -422,6 +422,7 @@ enum AnfValue<'tcx> {
     Borrow(Box<AnfPlace<'tcx>>),
     RawBorrow(Box<AnfPlace<'tcx>>),
     Ctor(Ctor, Box<[(AnfValue<'tcx>, Span)]>),
+    Field(VariantIdx, FieldIdx, Box<AnfValue<'tcx>>),
     /// Cast from *[T] to *T
     Thin(Box<AnfValue<'tcx>>),
     /// Other casts
@@ -472,6 +473,7 @@ impl<'tcx> AnfPlace<'tcx> {
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 enum AnfProjection {
     Deref { unsafe_: bool },
+    Field { variant: VariantIdx, field: FieldIdx },
 }
 
 impl AnfProjection {
@@ -479,6 +481,7 @@ impl AnfProjection {
         use AnfProjection::*;
         match self {
             Deref { unsafe_ } => *unsafe_,
+            Field { .. } => false,
         }
     }
 }
@@ -501,6 +504,11 @@ impl<'tcx> AnfPlace<'tcx> {
 
     fn add_deref(&mut self, unsafe_: bool) {
         self.projections.push(AnfProjection::Deref { unsafe_ });
+    }
+
+    fn field(mut self, variant: VariantIdx, field: FieldIdx) -> Self {
+        self.projections.push(AnfProjection::Field { variant, field });
+        self
     }
 }
 
@@ -957,6 +965,10 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                     ));
                 }
             }
+            Field { lhs, variant_index, name } => {
+                let value = self.a_normal_form_expr(*lhs, stmts)?.0;
+                AnfValue::Field(*variant_index, *name, value.into())
+            }
             kind => {
                 return Err(self.unsupported_syntax_with_note(
                     expr.span,
@@ -1000,6 +1012,10 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 Ok(place)
             }
             Scope { value, .. } => self.a_normal_form_place(*value, stmts),
+            Field { lhs, variant_index, name } => {
+                let place = self.a_normal_form_place(*lhs, stmts)?;
+                Ok(place.field(*variant_index, *name))
+            }
             _ => {
                 let v = self.a_normal_form_expr(expr_id, stmts)?;
                 if let AnfValue::Var(Var::ExprId(expr_id2)) = v.0
@@ -1083,15 +1099,18 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 let _ = self.a_normal_form_expr(*expr, stmts)?;
             }
             Let { pattern, initializer, else_block, span, .. } => {
-                if let Some(_) = else_block {
-                    return Err(self.unsupported_syntax(*span, "unsupported let-else"));
-                }
                 let Some(initializer) = initializer else {
                     return Err(
                         self.unsupported_syntax(*span, "unsupported let without initializer")
                     );
                 };
                 if is_erasable(self.tcx, self.thir, *initializer) {
+                    if let Some(_) = else_block {
+                        return Err(self.unsupported_syntax(
+                            *span,
+                            "unexpected let-else in erased let (this shouldn't happen)",
+                        ));
+                    }
                     return Ok(());
                 }
                 let rhs = self.a_normal_form_expr(*initializer, stmts)?;
@@ -1286,6 +1305,9 @@ impl<'tcx> EqualityChecker<'tcx> {
                 c1 == c2
                     && args1.len() == args2.len()
                     && args1.iter().zip(args2).all(|(a1, a2)| self.equate_value(&a1.0, &a2.0))
+            }
+            (Field(variant1, field1, v1), Field(variant2, field2, v2)) => {
+                variant1 == variant2 && field1 == field2 && self.equate_value(v1, v2)
             }
             (Fn(f1, s1), Fn(f2, s2)) => f1 == f2 && s1 == s2,
             (Cast(from1, to1, value1), Cast(from2, to2, value2)) => {
@@ -1665,6 +1687,9 @@ impl<'tcx> PrintAnf<'tcx> {
                 Deref { unsafe_: _ } => {
                     write!(f, ".deref")?;
                 }
+                Field { variant: _, field } => {
+                    write!(f, ".{field:?}")?;
+                }
             }
         }
         Ok(())
@@ -1707,6 +1732,11 @@ impl<'tcx> PrintAnf<'tcx> {
                     write!(f, ")")?;
                 }
                 Ok(())
+            }
+            Field(variant, field, value) => {
+                write!(f, "Field({variant:?}, {field:?},")?;
+                self.print_value(value, f)?;
+                write!(f, ")")
             }
             Fn(def_id, subst) => write!(
                 f,
