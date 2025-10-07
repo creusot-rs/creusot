@@ -17,7 +17,10 @@ use rustc_hir::{
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     thir::{self, Expr, ExprKind, Thir, visit::Visitor},
-    ty::{Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, Ty, TyCtxt, TyKind},
+    ty::{
+        Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, Ty, TyCtxt, TyKind,
+        TypingEnv,
+    },
 };
 use rustc_span::Span;
 use rustc_type_ir::ConstKind;
@@ -257,7 +260,7 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
                 return Some((local_def_id, None, None));
             }
         };
-    let erased = build_erased(ctx.tcx, id_this, id_erased, subst_erased);
+    let erased = build_erased(ctx.tcx, ctx.typing_env(id_this), id_this, id_erased, subst_erased);
     let to_check = if is_trusted(ctx.tcx, id_this) {
         None
     } else {
@@ -287,9 +290,8 @@ pub(crate) fn extract_erasure_from_child<'tcx>(
         if is_trusted(ctx.tcx, parent) {
             return None;
         };
-        match ctx.erasure(parent) {
-            Some(Some(erased)) => break erased,
-            Some(None) => return None,
+        match ctx.erasure_to_check(LocalDefId { local_def_index: parent.index }) {
+            Some(erased) => break erased,
             None => {
                 continue;
             }
@@ -319,19 +321,21 @@ pub(crate) fn extract_erasure_from_child<'tcx>(
             ),
         )
     }
-    build_erased(ctx.tcx, def_id, erased, erased_subst).into()
+    build_erased(ctx.tcx, ctx.typing_env(def_id), def_id, erased, erased_subst).into()
 }
 
 fn build_erased<'tcx>(
     tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     def_id1: DefId,
     def_id2: DefId,
     subst2: GenericArgsRef<'tcx>,
 ) -> Erasure<'tcx> {
     let sig1 =
         tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(def_id1).instantiate_identity());
-    let sig2 =
-        tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(def_id2).instantiate(tcx, subst2));
+    let sig2 = tcx.instantiate_bound_regions_with_erased(
+        tcx.instantiate_and_normalize_erasing_regions(subst2, typing_env, tcx.fn_sig(def_id2)),
+    );
     let ty1 = sig1.output();
     let ty2 = sig2.output();
     if !eq_erased_ty(tcx, ty1, ty2) {
