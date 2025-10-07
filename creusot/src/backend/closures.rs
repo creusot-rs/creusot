@@ -375,17 +375,16 @@ impl<'tcx> ClosSubst<'tcx> {
             .map(|(f, cap, ty)| {
                 let span = cap.get_path_span(tcx);
                 let proj = self_.clone().proj(f, ty).span(span);
-                let term = match cap.info.capture_kind {
-                    UpvarCapture::ByValue => proj,
+                match cap.info.capture_kind {
+                    UpvarCapture::ByValue => Some(proj),
                     UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
-                        proj.cur()
+                        Some(proj.cur())
                     }
-                    UpvarCapture::ByRef(BorrowKind::Immutable) => proj.shr_deref(),
+                    UpvarCapture::ByRef(BorrowKind::Immutable) => Some(proj.shr_deref()),
                     UpvarCapture::ByUse => {
                         tcx.crash_and_error(span, "ByUse capture kind is not supported")
                     }
-                };
-                Some(term)
+                }
             })
             .collect();
         ClosSubst { cur_caps, old_caps: None }
@@ -402,19 +401,18 @@ impl<'tcx> ClosSubst<'tcx> {
                 let span = cap.get_path_span(tcx);
                 let proj_pre = self_pre.clone().proj(f, ty).span(span);
                 let proj_post = self_post.clone().proj(f, ty).span(span);
-                let (term_pre, term_post) = match cap.info.capture_kind {
-                    UpvarCapture::ByValue => (proj_pre, proj_post),
+                match cap.info.capture_kind {
+                    UpvarCapture::ByValue => (proj_pre, Some(proj_post)),
                     UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
-                        (proj_pre.cur(), proj_post.cur())
+                        (proj_pre.cur(), Some(proj_post.cur()))
                     }
                     UpvarCapture::ByRef(BorrowKind::Immutable) => {
-                        (proj_pre.shr_deref(), proj_post.shr_deref())
+                        (proj_pre.shr_deref(), Some(proj_post.shr_deref()))
                     }
                     UpvarCapture::ByUse => {
                         tcx.crash_and_error(span, "ByUse capture kind is not supported")
                     }
-                };
-                (term_pre, Some(term_post))
+                }
             })
             .unzip();
         ClosSubst { cur_caps, old_caps: Some(old_caps) }
@@ -433,7 +431,7 @@ impl<'tcx> ClosSubst<'tcx> {
             .map(|((f, cap, ty), post_owned_proj)| {
                 let span = cap.get_path_span(tcx);
                 let proj = self_pre.clone().proj(f, ty).span(span);
-                let (term_pre, term_post) = match cap.info.capture_kind {
+                match cap.info.capture_kind {
                     UpvarCapture::ByValue => (proj, post_owned_proj),
                     UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
                         assert_matches!(post_owned_proj, None);
@@ -446,8 +444,7 @@ impl<'tcx> ClosSubst<'tcx> {
                     UpvarCapture::ByUse => {
                         tcx.crash_and_error(span, "ByUse capture kind is not supported")
                     }
-                };
-                (term_pre, term_post)
+                }
             })
             .unzip();
         ClosSubst { cur_caps, old_caps: Some(old_caps) }

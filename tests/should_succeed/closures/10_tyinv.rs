@@ -17,10 +17,10 @@ pub fn f<T>(x: Zero<T>, y: Zero<T>) {
         let clos2 = #[ensures(result@ == 0)]
         || {
             proof_assert!(y.0@ == 0);
-            y.0
+            (*&y).0
         };
         clos2();
-        x.0
+        (*&x).0
     };
     clos();
 }

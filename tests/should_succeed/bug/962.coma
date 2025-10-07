@@ -1,0 +1,103 @@
+module M_962__disjoint_captures
+  use creusot.int.Int32
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  
+  type tuple = { _p0: Int32.t; _p1: Int32.t }
+  
+  type closure2 = { _0: MutBorrow.t Int32.t }
+  
+  predicate resolve [@inline:trivial] (self: MutBorrow.t closure2) = self.final = self.current
+  
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_0'0: MutBorrow.t closure2) = resolve _0'0
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate postcondition_once [@inline:trivial] (self: closure2) (args: ()) (result: ()) =
+    Int32.to_int (self._0).final = 1
+  
+  meta "rewrite_def" predicate postcondition_once
+  
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_0'0: MutBorrow.t Int32.t) = resolve'1 _0'0
+  
+  meta "rewrite_def" predicate resolve'2
+  
+  predicate resolve'3 [@inline:trivial] (_0'0: closure2) = resolve'2 _0'0._0
+  
+  meta "rewrite_def" predicate resolve'3
+  
+  predicate hist_inv [@inline:trivial] (self: closure2) (result_state: closure2) =
+    (result_state._0).final = (self._0).final
+  
+  meta "rewrite_def" predicate hist_inv
+  
+  predicate postcondition_mut [@inline:trivial] (self: closure2) (args: ()) (result_state: closure2) (result: ()) =
+    Int32.to_int (result_state._0).current = 1 /\ hist_inv self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut
+  
+  function fn_mut_once (self: closure2) (args: ()) (res: ()) : ()
+  
+  axiom fn_mut_once_spec: forall self: closure2, args: (), res: (). postcondition_once self args res
+      = (exists res_state: closure2. postcondition_mut self args res_state res /\ resolve'3 res_state)
+  
+  function hist_inv_trans (self: closure2) (b: closure2) (c: closure2) : ()
+  
+  axiom hist_inv_trans_spec: forall self: closure2, b: closure2, c: closure2. hist_inv self b
+      -> hist_inv b c -> hist_inv self c
+  
+  function hist_inv_refl (self: closure2) : ()
+  
+  axiom hist_inv_refl_spec: forall self: closure2. hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: closure2) (args: ()) (res_state: closure2) (res: ()) : ()
+  
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: closure2, args: (), res_state: closure2, res: (). postcondition_mut self args res_state res
+      -> hist_inv self res_state
+  
+  let rec closure2 (self: MutBorrow.t closure2) (return' (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = (1: Int32.t) } } } ] s1
+      | s1 = -{resolve'0 _1}- s2
+      | s2 = return''0 {_0'0} ] ] [ & _0'0: () = Any.any_l () | & _1: MutBorrow.t closure2 = self ])
+    [ return''0 (result: ()) -> {[@expl:closure ensures] Int32.to_int ((self.final)._0).current = 1}
+      {[@expl:closure hist_inv post] hist_inv self.current self.final}
+      (! return' {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec disjoint_captures (p: tuple) (return' (x: Int32.t)) = {[@expl:disjoint_captures requires] Int32.to_int p._p0
+    = 1}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &p0 <- p'0._p0 ] s1
+      | s1 = MutBorrow.borrow_mut <Int32.t> {p'0._p1}
+          (fun (_ret: MutBorrow.t Int32.t) -> [ &_6 <- _ret ] [ &p'0 <- { p'0 with _p1 = _ret.final } ] s2)
+      | s2 = [ &clos <- { _0 = _6 } ] s3
+      | s3 = MutBorrow.borrow_mut <closure2> {clos}
+          (fun (_ret: MutBorrow.t closure2) -> [ &_8 <- _ret ] [ &clos <- _ret.final ] s4)
+      | s4 = closure2 {_8} (fun (_ret: ()) -> [ &_7 <- _ret ] s5)
+      | s5 = bb1 ]
+    | bb1 = s0
+      [ s0 = -{resolve'3 clos}- s1
+      | s1 = Int32.add {p0} {p'0._p1} (fun (_ret: Int32.t) -> [ &_0'0 <- _ret ] s2)
+      | s2 = return''0 {_0'0} ] ]
+    [ & _0'0: Int32.t = Any.any_l ()
+    | & p'0: tuple = p
+    | & p0: Int32.t = Any.any_l ()
+    | & clos: closure2 = Any.any_l ()
+    | & _6: MutBorrow.t Int32.t = Any.any_l ()
+    | & _7: () = Any.any_l ()
+    | & _8: MutBorrow.t closure2 = Any.any_l ()
+    | & _9: () = Any.any_l () ])
+    [ return''0 (result: Int32.t) -> {[@expl:disjoint_captures ensures] Int32.to_int result = 2} (! return' {result}) ]
+end

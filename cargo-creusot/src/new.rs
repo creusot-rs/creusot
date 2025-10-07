@@ -55,7 +55,7 @@ creusot-contracts = {{ path = "{}" }}
         r#"[package]
 name = "{name}"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 creusot-contracts = "{CREUSOT_CONTRACTS_VERSION}"

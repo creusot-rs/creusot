@@ -248,7 +248,7 @@ impl PartialEq for Int {
     #[ensures(result == (*self == *other))]
     #[allow(unused_variables)]
     fn eq(&self, other: &Self) -> bool {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 }
 
@@ -258,7 +258,7 @@ impl PartialOrd for Int {
     #[ensures(result == Some((*self).cmp_log(*other)))]
     #[allow(unused_variables)]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 
     #[trusted]
@@ -266,7 +266,7 @@ impl PartialOrd for Int {
     #[ensures(result == (*self).lt_log(*other))]
     #[allow(unused_variables)]
     fn lt(&self, other: &Self) -> bool {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 
     #[trusted]
@@ -274,7 +274,7 @@ impl PartialOrd for Int {
     #[ensures(result == (*self).le_log(*other))]
     #[allow(unused_variables)]
     fn le(&self, other: &Self) -> bool {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 
     #[trusted]
@@ -282,7 +282,7 @@ impl PartialOrd for Int {
     #[ensures(result == (*self).gt_log(*other))]
     #[allow(unused_variables)]
     fn gt(&self, other: &Self) -> bool {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 
     #[trusted]
@@ -290,7 +290,7 @@ impl PartialOrd for Int {
     #[ensures(result == (*self).ge_log(*other))]
     #[allow(unused_variables)]
     fn ge(&self, other: &Self) -> bool {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 }
 
@@ -301,7 +301,7 @@ impl Add for Int {
     #[ensures(result == self + other)]
     #[allow(unused_variables)]
     fn add(self, other: Int) -> Self {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 }
 
@@ -312,7 +312,7 @@ impl Sub for Int {
     #[ensures(result == self - other)]
     #[allow(unused_variables)]
     fn sub(self, other: Int) -> Self {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 }
 
@@ -323,7 +323,7 @@ impl Mul for Int {
     #[ensures(result == self * other)]
     #[allow(unused_variables)]
     fn mul(self, other: Int) -> Self {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 }
 
@@ -334,7 +334,7 @@ impl Div for Int {
     #[ensures(result == self / other)]
     #[allow(unused_variables)]
     fn div(self, other: Int) -> Self {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 }
 
@@ -345,7 +345,7 @@ impl Rem for Int {
     #[ensures(result == self % other)]
     #[allow(unused_variables)]
     fn rem(self, other: Int) -> Self {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 }
 
@@ -355,6 +355,6 @@ impl Neg for Int {
     #[check(ghost)]
     #[ensures(result == -self)]
     fn neg(self) -> Self {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 }

@@ -7,7 +7,7 @@
 
 use pearlite_syn::{Term, term::*};
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
-use quote::{ToTokens, quote, quote_spanned};
+use quote::{ToTokens, quote_spanned};
 use std::collections::HashSet;
 use syn::{
     ExprMacro, Ident, Lit, Pat, PatIdent, PatType, UnOp,
@@ -84,11 +84,39 @@ impl Locals {
 }
 
 pub fn encode_term(term: &Term) -> Result<TokenStream, EncodeError> {
-    encode_term_(term, &mut Locals::new())
+    Ok(encode_term_(term, &mut Locals::new())?.toks())
+}
+
+// Pearlite terms can refer to function parameters of unsized types. However, pearlite terms often
+// appear in closures, which can only capture sized values. Hence, we wrap any reference to a variable x
+// with (*&x). In order to support partial captures, we try to do this wrapping at the place level
+// (i.e., if the user writes x.a, then we emit (&* x.a)). This is the purpose of this struct: if `encode_term_`
+// returns deref_bor: true, then we have to wrap the result in &* at a higher level.
+struct EncodingResult {
+    toks: TokenStream,
+    deref_bor: bool,
+}
+
+impl EncodingResult {
+    fn toks(self) -> TokenStream {
+        let EncodingResult { toks, deref_bor } = self;
+        if deref_bor {
+            let span = toks.span();
+            quote_spanned! { span => (*& #toks) }
+        } else {
+            toks
+        }
+    }
+}
+
+impl From<TokenStream> for EncodingResult {
+    fn from(toks: TokenStream) -> EncodingResult {
+        EncodingResult { toks, deref_bor: false }
+    }
 }
 
 // TODO: Rewrite this as a source to source transform and *then* call ToTokens on the result
-fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeError> {
+fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, EncodeError> {
     let sp = term.span();
     match term {
         // It's unclear what to do with macros. Either we translate the parameters, but then
@@ -97,7 +125,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeE
         // in pearlite...
         Term::Macro(ExprMacro { mac, .. }) => {
             if ["proof_assert", "pearlite", "seq"].iter().any(|i| mac.path.is_ident(i)) {
-                Ok(term.to_token_stream())
+                Ok(term.to_token_stream().into())
             } else {
                 Err(EncodeError::Unsupported(
                     sp,
@@ -135,57 +163,60 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeE
                 };
             }
 
-            let left = encode_term_(left, locals)?;
-            let right = encode_term_(right, locals)?;
+            let left = encode_term_(left, locals)?.toks();
+            let right = encode_term_(right, locals)?.toks();
             match op {
                 Eq(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_contracts::__stubs::equal(#left, #right) })
+                    Ok(quote_spanned! {sp=> ::creusot_contracts::__stubs::equal(#left, #right) }.into())
                 }
                 Ne(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_contracts::__stubs::neq(#left, #right) })
+                    Ok(quote_spanned! {sp=> ::creusot_contracts::__stubs::neq(#left, #right) }.into())
                 }
                 Lt(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::lt_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::lt_log(#left, #right) }.into(),
                 ),
                 Le(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::le_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::le_log(#left, #right) }.into(),
                 ),
                 Ge(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::ge_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::ge_log(#left, #right) }.into(),
                 ),
                 Gt(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::gt_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::gt_log(#left, #right) }.into(),
                 ),
                 Add(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::AddLogic::add(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::AddLogic::add(#left, #right) }.into(),
                 ),
                 Sub(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::SubLogic::sub(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::SubLogic::sub(#left, #right) }.into(),
                 ),
                 Mul(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::MulLogic::mul(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::MulLogic::mul(#left, #right) }.into(),
                 ),
                 Div(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::DivLogic::div(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::DivLogic::div(#left, #right) }.into(),
                 ),
                 Rem(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::RemLogic::rem(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::RemLogic::rem(#left, #right) }.into(),
                 ),
-                _ => Ok(quote_spanned! {sp=> #left #op #right }),
+                _ => Ok(quote_spanned! {sp=> #left #op #right }.into()),
             }
         }
-        Term::Block(TermBlock { block, .. }) => Ok(encode_block_(block, locals)),
+        Term::Block(TermBlock { block, .. }) => Ok(encode_block_(block, locals).into()),
         Term::Call(TermCall { func, args, .. }) => {
-            let args: Vec<_> =
-                args.into_iter().map(|t| encode_term_(t, locals)).collect::<Result<_, _>>()?;
+            let args: Vec<_> = args
+                .into_iter()
+                .map(|t| Ok(encode_term_(t, locals)?.toks()))
+                .collect::<Result<_, _>>()?;
             if let Term::Path(p) = &**func {
                 if p.inner.path.is_ident("old") {
                     return Ok(
-                        quote_spanned! {sp=> (*::creusot_contracts::__stubs::old( #(#args),* )) },
+                        quote_spanned! {sp=> (*::creusot_contracts::__stubs::old( #(#args),* )) }
+                            .into(),
                     );
                 }
                 // Don't wrap function calls in `*&`.
-                return Ok(quote_spanned! {sp=> #func (#(#args),*)});
+                return Ok(quote_spanned! {sp=> #func (#(#args),*)}.into());
             } else {
                 Err(EncodeError::Unsupported(
                     sp,
@@ -194,18 +225,18 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeE
             }
         }
         Term::Cast(TermCast { expr, as_token, ty }) => {
-            let expr_token = encode_term_(expr, locals)?;
-            Ok(quote_spanned! {sp=> #expr_token #as_token  #ty})
+            let expr_token = encode_term_(expr, locals)?.toks();
+            Ok(quote_spanned! {sp=> #expr_token #as_token  #ty}.into())
         }
         Term::Field(TermField { base, member, .. }) => {
-            let base = encode_term_(base, locals)?;
-            Ok(quote!(#base . #member))
+            let EncodingResult { toks, deref_bor } = encode_term_(base, locals)?;
+            Ok(EncodingResult { toks: quote_spanned!(sp => #toks . #member), deref_bor })
         }
         Term::Group(TermGroup { expr, .. }) => {
-            let term = encode_term_(expr, locals)?;
+            let term = encode_term_(expr, locals)?.toks();
             let mut res = TokenStream::new();
             res.extend_one(TokenTree::Group(Group::new(Delimiter::None, term)));
-            Ok(res)
+            Ok(res.into())
         }
         Term::If(TermIf { cond, then_branch, else_branch, .. }) => {
             let cond = if let Term::Paren(TermParen { expr, .. }) = &**cond
@@ -215,7 +246,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeE
             } else {
                 cond
             };
-            let cond = encode_term_(cond, locals)?;
+            let cond = encode_term_(cond, locals)?.toks();
             let then_branch: Vec<_> = then_branch
                 .stmts
                 .iter()
@@ -223,70 +254,73 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeE
                 .collect::<Result<_, _>>()?;
             let else_branch = match else_branch {
                 Some((_, t)) => {
-                    let term = encode_term_(t, locals)?;
+                    let term = encode_term_(t, locals)?.toks();
                     Some(quote_spanned! {sp=> else #term })
                 }
                 None => None,
             };
-            Ok(quote_spanned! {sp=> if #cond { #(#then_branch)* } #else_branch })
+            Ok(quote_spanned! {sp=> if #cond { #(#then_branch)* } #else_branch }.into())
         }
         Term::Index(TermIndex { expr, index, .. }) => {
             let expr =
                 if let Term::Paren(TermParen { expr, .. }) = &**expr { &**expr } else { expr };
 
-            let expr = encode_term_(expr, locals)?;
-            let index = encode_term_(index, locals)?;
+            let expr = encode_term_(expr, locals)?.toks();
+            let index = encode_term_(index, locals)?.toks();
 
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 // FIXME: this requires IndexLogic to be loaded
                 (#expr).index_logic(#index)
-            })
+            }
+            .into())
         }
         Term::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
         Term::Lit(TermLit { lit: lit @ Lit::Int(int) }) if int.suffix() == "" => {
             // FIXME: allow unbounded integers
-            Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
+            Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) }.into())
         }
         Term::Lit(TermLit { lit: Lit::Int(int) }) if int.suffix() == "int" => {
             let lit = syn::LitInt::new(int.base10_digits(), int.span());
-            Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
+            Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) }.into())
         }
-        Term::Lit(TermLit { lit }) => Ok(quote_spanned! {sp=> #lit }),
+        Term::Lit(TermLit { lit }) => Ok(quote_spanned! {sp=> #lit }.into()),
         Term::Match(TermMatch { expr, arms, .. }) => {
             let arms: Vec<_> =
                 arms.iter().map(|a| encode_arm_(a, locals)).collect::<Result<_, _>>()?;
-            let expr = encode_term_(expr, locals)?;
-            Ok(quote_spanned! {sp=> match #expr { #(#arms)* } })
+            let expr = encode_term_(expr, locals)?.toks();
+            Ok(quote_spanned! {sp=> match #expr { #(#arms)* } }.into())
         }
         Term::MethodCall(TermMethodCall { receiver, method, turbofish, args, .. }) => {
-            let receiver = encode_term_(receiver, locals)?;
-            let args: Vec<_> =
-                args.into_iter().map(|t| encode_term_(t, locals)).collect::<Result<_, _>>()?;
-            Ok(quote_spanned! {sp=> #receiver . #method #turbofish ( #(#args),*) })
+            let receiver = encode_term_(receiver, locals)?.toks();
+            let args: Vec<_> = args
+                .into_iter()
+                .map(|t| Ok(encode_term_(t, locals)?.toks()))
+                .collect::<Result<_, _>>()?;
+            Ok(quote_spanned! {sp=> #receiver . #method #turbofish ( #(#args),*) }.into())
         }
         Term::Paren(TermParen { paren_token, expr }) => {
             let mut tokens = TokenStream::new();
-            let term = encode_term_(expr, locals)?;
+            let EncodingResult { toks, deref_bor } = encode_term_(expr, locals)?;
             paren_token.surround(&mut tokens, |tokens| {
-                tokens.extend(term);
+                tokens.extend(toks);
             });
-            Ok(tokens)
+            Ok(EncodingResult { toks: tokens, deref_bor })
         }
         Term::Path(path) if let Some(ident) = path.inner.path.get_ident() => {
-            let term = if locals.is_ref_bound(ident) {
-                quote_spanned! { sp=> *#ident }
+            Ok(if locals.is_ref_bound(ident) {
+                quote_spanned! { sp=> (*#ident) }.into()
             } else {
-                quote_spanned! { sp=> *&#ident }
-            };
-            Ok(TokenStream::from(TokenTree::Group(Group::new(Delimiter::Parenthesis, term))))
+                EncodingResult { toks: quote_spanned! { sp=> #ident }, deref_bor: true }
+            })
         }
-        Term::Path(path) => Ok(quote_spanned! {sp=> #path}),
+        Term::Path(path) => Ok(quote_spanned! { sp=> #path }.into()),
         Term::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
         Term::Reference(TermReference { mutability, expr, .. }) => {
-            let term = encode_term_(expr, locals)?;
+            let term = encode_term_(expr, locals)?.toks();
             Ok(quote_spanned! {sp=>
                 & #mutability #term
-            })
+            }
+            .into())
         }
         Term::Repeat(_) => Err(EncodeError::Unsupported(term.span(), "Repeat".into())),
         Term::Struct(TermStruct { path, fields, rest, brace_token, dot2_token }) => {
@@ -301,7 +335,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeE
                 tv.member.to_tokens(&mut inner);
                 if let Some(colon) = tv.colon_token {
                     colon.to_tokens(&mut inner);
-                    inner.extend(encode_term_(&tv.expr, locals)?)
+                    inner.extend(encode_term_(&tv.expr, locals)?.toks())
                 }
                 punc.to_tokens(&mut inner);
             }
@@ -317,49 +351,59 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeE
                 rest.to_tokens(tokens);
             });
 
-            Ok(ts)
+            Ok(ts.into())
         }
         Term::Tuple(TermTuple { elems, .. }) => {
             if elems.is_empty() {
-                return Ok(quote_spanned! {sp=> () });
+                return Ok(quote_spanned! {sp=> () }.into());
             }
-            let elems: Vec<_> =
-                elems.into_iter().map(|t| encode_term_(t, locals)).collect::<Result<_, _>>()?;
-            Ok(quote_spanned! {sp=> (#(#elems),*,) })
+            let elems: Vec<_> = elems
+                .into_iter()
+                .map(|t| Ok(encode_term_(t, locals)?.toks()))
+                .collect::<Result<_, _>>()?;
+            Ok(quote_spanned! {sp=> (#(#elems),*,) }.into())
         }
-        Term::Type(ty) => Ok(quote_spanned! {sp=> #ty }),
-        Term::Unary(TermUnary { op, expr }) => {
-            let term = encode_term_(expr, locals)?;
-            if matches!(op, UnOp::Neg(_)) {
-                Ok(quote_spanned! {sp=> ::creusot_contracts::logic::ops::NegLogic::neg(#term) })
-            } else {
-                Ok(quote_spanned! {sp=>
-                    #op #term
-                })
+        Term::Type(ty) => Ok(quote_spanned! {sp=> #ty }.into()),
+        Term::Unary(TermUnary { op, expr }) => match op {
+            UnOp::Neg(_) => {
+                let term = encode_term_(expr, locals)?.toks();
+                Ok(quote_spanned! {sp=> ::creusot_contracts::logic::ops::NegLogic::neg(#term) }
+                    .into())
             }
-        }
+            UnOp::Deref(_) => {
+                let EncodingResult { toks, deref_bor } = encode_term_(expr, locals)?;
+                Ok(EncodingResult { toks: quote_spanned! {sp=> #op #toks }, deref_bor })
+            }
+            _ => {
+                let term = encode_term_(expr, locals)?.toks();
+                Ok(quote_spanned! {sp=> #op #term }.into())
+            }
+        },
         Term::Final(TermFinal { term, .. }) => {
-            let term = encode_term_(term, locals)?;
+            let term = encode_term_(term, locals)?.toks();
             Ok(quote_spanned! {sp=>
                 (*::creusot_contracts::logic::ops::Fin::fin(#term))
-            })
+            }
+            .into())
         }
         Term::View(TermView { term, .. }) => {
             let term = match &**term {
                 Term::Paren(TermParen { expr, .. }) => expr,
                 _ => term,
             };
-            let term = encode_term_(term, locals)?;
+            let term = encode_term_(term, locals)?.toks();
             Ok(quote_spanned! {sp=>
                 ::creusot_contracts::model::View::view(#term)
-            })
+            }
+            .into())
         }
         Term::LogEq(TermLogEq { lhs, rhs, .. }) => {
-            let lhs = encode_term_(lhs, locals)?;
-            let rhs = encode_term_(rhs, locals)?;
+            let lhs = encode_term_(lhs, locals)?.toks();
+            let rhs = encode_term_(rhs, locals)?.toks();
             Ok(quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::equal(#lhs, #rhs)
-            })
+            }
+            .into())
         }
         Term::Impl(TermImpl { hyp, cons, .. }) => {
             let hyp = match &**hyp {
@@ -369,25 +413,26 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeE
                 },
                 _ => hyp,
             };
-            let hyp = encode_term_(hyp, locals)?;
-            let cons = encode_term_(cons, locals)?;
+            let hyp = encode_term_(hyp, locals)?.toks();
+            let cons = encode_term_(cons, locals)?.toks();
             Ok(quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::implication(#hyp, #cons)
-            })
+            }
+            .into())
         }
         Term::Quant(TermQuant { quant_token, args, trigger, term, .. }) => {
             locals.open();
             let args_ref = args
                 .iter()
-                .map(|QuantArg { ident, ty }| {
+                .map(|qa @ QuantArg { ident, ty }| {
                     locals.bind_ref(ident.clone());
                     match ty {
-                        None => quote! { #ident: &_ },
-                        Some((_, ty)) => quote! { #ident: &#ty },
+                        None => quote_spanned! {qa.span()=> #ident: &_ },
+                        Some((_, ty)) => quote_spanned! {qa.span()=> #ident: &#ty },
                     }
                 })
                 .collect::<Vec<_>>();
-            let mut ts = encode_term_(term, locals)?;
+            let mut ts = encode_term_(term, locals)?.toks();
             ts = encode_trigger_(trigger, ts, locals)?;
             locals.close();
             Ok(quote_spanned! {sp=>
@@ -396,10 +441,11 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeE
                     #[creusot::logic_closure]
                     |#(#args_ref,)*| { #ts }
                 )
-            })
+            }
+            .into())
         }
-        Term::Dead(_) => Ok(quote_spanned! {sp=> (*::creusot_contracts::__stubs::dead()) }),
-        Term::Pearlite(term) => Ok(quote_spanned! {sp=> #term }),
+        Term::Dead(_) => Ok(quote_spanned! {sp=> (*::creusot_contracts::__stubs::dead()) }.into()),
+        Term::Pearlite(term) => Ok(quote_spanned! {sp=> #term }.into()),
         Term::Closure(clos) => {
             if clos.inputs.len() != 1 {
                 return Err(EncodeError::Unsupported(
@@ -451,12 +497,12 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeE
                     ..
                 }) => {
                     locals.bind_ref(ident.clone());
-                    quote! { #(#attrs)* #ident : &#ty }
+                    quote_spanned! {sp=> #(#attrs)* #ident : &#ty }
                 }
                 // |pat: ty|
                 Pat::Type(PatType { attrs, pat, ty, .. }) => {
                     pattern_bind(pat, locals);
-                    quote! { #(#attrs)* &#pat : &#ty }
+                    quote_spanned! {sp=> #(#attrs)* &#pat : &#ty }
                 }
                 // |x|
                 Pat::Ident(PatIdent {
@@ -467,20 +513,21 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<TokenStream, EncodeE
                     ..
                 }) => {
                     locals.bind_ref(ident.clone());
-                    quote! { #ident : &_ }
+                    quote_spanned! {sp=> #ident : &_ }
                 }
                 pat => {
                     pattern_bind(pat, locals);
-                    quote! { &#pat }
+                    quote_spanned! {sp=> &#pat }
                 }
             };
             let retty = &clos.output;
-            let clos = encode_term_(&clos.body, locals)?;
+            let clos = encode_term_(&clos.body, locals)?.toks();
             locals.close();
             Ok(quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::mapping_from_fn(
                     #[creusot::no_translate] #[creusot::logic_closure] |#input| #retty #clos)
-            })
+            }
+            .into())
         }
         Term::__Nonexhaustive => todo!(),
     }
@@ -493,9 +540,13 @@ fn encode_trigger_(
 ) -> Result<TokenStream, EncodeError> {
     while let [rest @ .., last] = trigger {
         trigger = rest;
-        let trigs =
-            last.terms.iter().map(|t| encode_term_(t, locals)).collect::<Result<Vec<_>, _>>()?;
-        ts = quote!(::creusot_contracts::__stubs::trigger((#(#trigs,)*), #ts))
+        let trigs = last
+            .terms
+            .iter()
+            .map(|t| Ok(encode_term_(t, locals)?.toks()))
+            .collect::<Result<Vec<_>, _>>()?;
+        let span = last.span();
+        ts = quote_spanned!(span=>::creusot_contracts::__stubs::trigger((#(#trigs,)*), #ts))
     }
     Ok(ts)
 }
@@ -526,20 +577,20 @@ fn encode_stmt_(stmt: &TermStmt, locals: &mut Locals) -> Result<TokenStream, Enc
     match stmt {
         TermStmt::Local(TLocal { let_token, pat, init, semi_token }) => {
             if let Some((eq_token, init)) = init {
-                let init = encode_term_(init, locals)?;
+                let init = encode_term_(init, locals)?.toks();
                 pattern_bind(pat, locals);
-                Ok(quote! { #let_token #pat #eq_token #init #semi_token })
+                Ok(quote_spanned! {stmt.span() => #let_token #pat #eq_token #init #semi_token })
             } else {
                 Err(EncodeError::LocalLetNoInit(pat.span()))
             }
         }
-        TermStmt::Expr(e) => encode_term_(e, locals),
+        TermStmt::Expr(e) => Ok(encode_term_(e, locals)?.toks()),
         TermStmt::Semi(t, s) => {
-            let term = encode_term_(t, locals)?;
-            Ok(quote! { #term #s })
+            let term = encode_term_(t, locals)?.toks();
+            Ok(quote_spanned! {stmt.span() => #term #s })
         }
-        TermStmt::Item(i) => Ok(quote! { #i }),
-        TermStmt::Empty(s) => Ok(quote! { #s }),
+        TermStmt::Item(i) => Ok(quote_spanned! {stmt.span() => #i }),
+        TermStmt::Empty(s) => Ok(quote_spanned! {stmt.span() => #s }),
     }
 }
 
@@ -566,9 +617,9 @@ fn encode_arm_(arm: &TermArm, locals: &mut Locals) -> Result<TokenStream, Encode
     let pat = &arm.pat;
     locals.open();
     pattern_bind(&pat, locals);
-    let body = encode_term_(&arm.body, locals)?;
+    let body = encode_term_(&arm.body, locals)?.toks();
     locals.close();
-    Ok(quote! { #pat => #body #comma })
+    Ok(quote_spanned! {arm.span()=> #pat => #body #comma })
 }
 
 #[cfg(test)]

@@ -4,8 +4,7 @@ use rustc_ast::{Mutability, visit::VisitorResult};
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{BorrowKind, Mutability::*, ProjectionElem},
-    thir::{ExprId, ExprKind, Thir},
+    mir::{Mutability::*, ProjectionElem},
     ty::{
         Const, GenericArgsRef, ParamConst, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
         TypingEnv,
@@ -17,7 +16,6 @@ use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 use std::{
     assert_matches::assert_matches,
     collections::{HashMap, HashSet},
-    fmt::{Display, Formatter},
 };
 
 mod from_thir;
@@ -855,80 +853,6 @@ impl<'tcx, F: Fn(Ident) -> Option<TermKind<'tcx>>> Subst<'tcx> for F {
     fn subst(&self, id: Ident) -> Option<TermKind<'tcx>> {
         self(id)
     }
-}
-
-#[allow(dead_code)]
-/// A debug printer for Thir which allows you to see a thir expression as a tree
-struct PrintExpr<'a, 'tcx>(&'a Thir<'tcx>, ExprId);
-
-impl Display for PrintExpr<'_, '_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        print_thir_expr(f, self.0, self.1)
-    }
-}
-
-#[allow(dead_code)]
-fn print_thir_expr(fmt: &mut Formatter, thir: &Thir, expr_id: ExprId) -> std::fmt::Result {
-    match &thir[expr_id].kind {
-        ExprKind::Call { fun, args, .. } => {
-            print_thir_expr(fmt, thir, *fun)?;
-            write!(fmt, "(")?;
-            for a in args.iter() {
-                print_thir_expr(fmt, thir, *a)?;
-                write!(fmt, ",")?;
-            }
-            write!(fmt, ")")?;
-        }
-        ExprKind::Deref { arg } => {
-            write!(fmt, "* ")?;
-            print_thir_expr(fmt, thir, *arg)?;
-        }
-        ExprKind::Borrow { borrow_kind, arg } => {
-            match borrow_kind {
-                BorrowKind::Shared => write!(fmt, "& ")?,
-                BorrowKind::Fake(..) => write!(fmt, "&fake ")?,
-                BorrowKind::Mut { .. } => write!(fmt, "&mut ")?,
-            };
-
-            print_thir_expr(fmt, thir, *arg)?;
-        }
-        ExprKind::Field { lhs, variant_index, name } => {
-            print_thir_expr(fmt, thir, *lhs)?;
-            let ty = thir[expr_id].ty;
-            let (var_name, field_name) = match ty.kind() {
-                TyKind::Adt(def, _) => {
-                    let var = &def.variants()[*variant_index];
-                    (var.name.to_string(), var.fields[*name].name.to_string())
-                }
-                TyKind::Tuple(_) => ("_".into(), format!("{name:?}")),
-                _ => unreachable!(),
-            };
-
-            write!(fmt, " as {var_name} . {field_name}")?;
-        }
-        ExprKind::Index { lhs, index } => {
-            print_thir_expr(fmt, thir, *lhs)?;
-            write!(fmt, "[")?;
-            print_thir_expr(fmt, thir, *index)?;
-            write!(fmt, "]")?;
-        }
-        ExprKind::ZstLiteral { .. } => match thir[expr_id].ty.kind() {
-            TyKind::FnDef(id, _) => write!(fmt, "{id:?}")?,
-            _ => write!(fmt, "zst")?,
-        },
-        ExprKind::Literal { lit, neg } => {
-            if *neg {
-                write!(fmt, "-")?;
-            }
-
-            write!(fmt, "{}", lit.node)?;
-        }
-        ExprKind::Use { source } => print_thir_expr(fmt, thir, *source)?,
-        ExprKind::VarRef { id } => write!(fmt, "{:?}", id.0)?,
-        ExprKind::Scope { value, .. } => print_thir_expr(fmt, thir, *value)?,
-        _ => write!(fmt, "{:?}", thir[expr_id])?,
-    }
-    Ok(())
 }
 
 /// Term paired with its free variables.
