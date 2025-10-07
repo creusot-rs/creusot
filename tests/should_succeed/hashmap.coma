@@ -497,12 +497,8 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Vec [inv'6 x]. inv'6 x = invariant''2 x
   
-  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq t_List = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'6 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
+    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   predicate invariant''3 [@inline:trivial] (self: t_K) = inv self
   
@@ -548,10 +544,6 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate in_bounds
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_List = view self.current
-  
-  meta "rewrite_def" function view'1
-  
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_List) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''5
@@ -572,13 +564,13 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t t_List)) =
     {[@expl:index_mut 'self_' type invariant] inv'8 self_}
-    {[@expl:index_mut requires] in_bounds ix (view'1 self_)}
+    {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
     [ return''0 (result: MutBorrow.t t_List) -> {inv'9 result}
-      {has_value ix (view'1 self_) result.current}
+      {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
-      {resolve_elswhere ix (view'1 self_) (view self_.final)}
-      {Seq.length (view self_.final) = Seq.length (view'1 self_)}
+      {resolve_elswhere ix (view self_.current) (view self_.final)}
+      {Seq.length (view self_.final) = Seq.length (view self_.current)}
       (! return' {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
@@ -742,12 +734,7 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   function bucket (self: t_MyHashMap) (k: t_DeepModelTy) : t_List =
     index_logic self.t_MyHashMap__buckets (bucket_ix self k)
   
-  function view'2 (self: t_MyHashMap) : Map.map t_DeepModelTy t_Option = fun (k: t_DeepModelTy) -> get (bucket self k) k
-  
-  function view'3 [@inline:trivial] (self: MutBorrow.t t_MyHashMap) : Map.map t_DeepModelTy t_Option =
-    view'2 self.current
-  
-  meta "rewrite_def" function view'3
+  function view'0 (self: t_MyHashMap) : Map.map t_DeepModelTy t_Option = fun (k: t_DeepModelTy) -> get (bucket self k) k
   
   meta "compute_max_steps" 1000000
   
@@ -913,8 +900,8 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
     | & _46: t_List = Any.any_l ()
     | & _47: tuple = Any.any_l ()
     | & _51: t_List = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:add ensures] forall i: t_DeepModelTy. Map.get (view'2 self.final) i
-        = (if i = deep_model key then C_Some val' else Map.get (view'3 self) i)}
+    [ return''0 (result: ()) -> {[@expl:add ensures] forall i: t_DeepModelTy. Map.get (view'0 self.final) i
+        = (if i = deep_model key then C_Some val' else Map.get (view'0 self.current) i)}
       (! return' {result}) ]
 end
 module M_hashmap__qyi9690720112976707081__get (* MyHashMap<K, V> *)
@@ -1032,12 +1019,8 @@ module M_hashmap__qyi9690720112976707081__get (* MyHashMap<K, V> *)
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_Vec [inv'7 x]. inv'7 x = invariant''3 x
   
-  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq t_List = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'7 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
+    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_List) = UInt64.t'int self < Seq.length seq
   
@@ -1057,8 +1040,8 @@ module M_hashmap__qyi9690720112976707081__get (* MyHashMap<K, V> *)
   meta "rewrite_def" predicate has_value
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: t_List)) = {[@expl:index 'self_' type invariant] inv'7 self_}
-    {[@expl:index requires] in_bounds ix (view'0 self_)}
-    any [ return''0 (result: t_List) -> {inv'8 result} {has_value ix (view'0 self_) result} (! return' {result}) ]
+    {[@expl:index requires] in_bounds ix (view self_)}
+    any [ return''0 (result: t_List) -> {inv'8 result} {has_value ix (view self_) result} (! return' {result}) ]
   
   type t_Option = C_None | C_Some t_V
   
@@ -1151,11 +1134,7 @@ module M_hashmap__qyi9690720112976707081__get (* MyHashMap<K, V> *)
         | C_Some'0 a_0 -> inv'11 a_0
         end
   
-  function view'1 (self: t_MyHashMap) : Map.map t_DeepModelTy t_Option = fun (k: t_DeepModelTy) -> get (bucket self k) k
-  
-  function view'2 [@inline:trivial] (self: t_MyHashMap) : Map.map t_DeepModelTy t_Option = view'1 self
-  
-  meta "rewrite_def" function view'2
+  function view'0 (self: t_MyHashMap) : Map.map t_DeepModelTy t_Option = fun (k: t_DeepModelTy) -> get (bucket self k) k
   
   meta "compute_max_steps" 1000000
   
@@ -1210,8 +1189,8 @@ module M_hashmap__qyi9690720112976707081__get (* MyHashMap<K, V> *)
     | & _32: t_List = Any.any_l () ])
     [ return''0 (result: t_Option'0) -> {[@expl:get result type invariant] inv'12 result}
       {[@expl:get ensures] match result with
-        | C_Some'0 v -> Map.get (view'2 self) (deep_model key) = C_Some v
-        | C_None'0 -> Map.get (view'2 self) (deep_model key) = C_None
+        | C_Some'0 v -> Map.get (view'0 self) (deep_model key) = C_Some v
+        | C_None'0 -> Map.get (view'0 self) (deep_model key) = C_None
         end}
       (! return' {result}) ]
 end
@@ -1298,12 +1277,8 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Vec [inv'6 x]. inv'6 x = invariant''2 x
   
-  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq t_List = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'6 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
+    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   type t_DeepModelTy
   
@@ -1351,26 +1326,13 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
   function bucket (self: t_MyHashMap) (k: t_DeepModelTy) : t_List =
     index_logic self.t_MyHashMap__buckets (bucket_ix self k)
   
-  function view'1 (self: t_MyHashMap) : Map.map t_DeepModelTy t_Option = fun (k: t_DeepModelTy) -> get (bucket self k) k
+  function view'0 (self: t_MyHashMap) : Map.map t_DeepModelTy t_Option = fun (k: t_DeepModelTy) -> get (bucket self k) k
   
   let rec new (size: UInt64.t) (return' (x: t_MyHashMap)) = {[@expl:new requires] 0 < UInt64.t'int size}
     any
     [ return''0 (result: t_MyHashMap) -> {inv'7 result}
-      {forall i: t_DeepModelTy. Map.get (view'1 result) i = C_None}
+      {forall i: t_DeepModelTy. Map.get (view'0 result) i = C_None}
       (! return' {result}) ]
-  
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_MyHashMap) : Map.map t_DeepModelTy t_Option =
-    view'1 self.current
-  
-  meta "rewrite_def" function view'2
-  
-  function view'3 [@inline:trivial] (self: MutBorrow.t t_MyHashMap) : Map.map t_DeepModelTy t_Option = view'2 self
-  
-  meta "rewrite_def" function view'3
-  
-  function view'4 [@inline:trivial] (self: MutBorrow.t t_MyHashMap) : Map.map t_DeepModelTy t_Option = view'3 self
-  
-  meta "rewrite_def" function view'4
   
   predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_MyHashMap) = inv'7 self.current /\ inv'7 self.final
   
@@ -1392,10 +1354,6 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate in_bounds
   
-  function view'5 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_List = view self.current
-  
-  meta "rewrite_def" function view'5
-  
   predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_List) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''6
@@ -1416,13 +1374,13 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
   
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t t_List)) =
     {[@expl:index_mut 'self_' type invariant] inv'9 self_}
-    {[@expl:index_mut requires] in_bounds ix (view'5 self_)}
+    {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
     [ return''0 (result: MutBorrow.t t_List) -> {inv'10 result}
-      {has_value ix (view'5 self_) result.current}
+      {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
-      {resolve_elswhere ix (view'5 self_) (view self_.final)}
-      {Seq.length (view self_.final) = Seq.length (view'5 self_)}
+      {resolve_elswhere ix (view self_.current) (view self_.final)}
+      {Seq.length (view self_.final) = Seq.length (view self_.current)}
       (! return' {result}) ]
   
   let rec replace (dest: MutBorrow.t t_List) (src: t_List) (return' (x: t_List)) =
@@ -1449,8 +1407,8 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
     {[@expl:add 'key' type invariant] inv key}
     {[@expl:add 'val' type invariant] inv'0 val'}
     any
-    [ return''0 (result: ()) -> {forall i: t_DeepModelTy. Map.get (view'1 self.final) i
-        = (if i = deep_model key then C_Some val' else Map.get (view'2 self) i)}
+    [ return''0 (result: ()) -> {forall i: t_DeepModelTy. Map.get (view'0 self.final) i
+        = (if i = deep_model key then C_Some val' else Map.get (view'0 self.current) i)}
       (! return' {result}) ]
   
   predicate resolve'1 (_0: t_V)
@@ -1473,7 +1431,7 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate resolve'5
   
-  predicate resolve'6 (self: t_MyHashMap) = forall k: t_DeepModelTy. resolve'3 (Map.get (view'1 self) k)
+  predicate resolve'6 (self: t_MyHashMap) = forall k: t_DeepModelTy. resolve'3 (Map.get (view'0 self) k)
   
   predicate resolve'7 [@inline:trivial] (_0: t_MyHashMap) = resolve'6 _0
   
@@ -1507,10 +1465,10 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
         {[@expl:loop invariant #0] inv'8 self'0}
         {[@expl:loop invariant #1] inv'7 new'0}
         {[@expl:loop invariant #2] forall k'0: t_DeepModelTy. bucket_ix old_self.current k'0 < UInt64.t'int i
-          -> Map.get (view'4 old_self) k'0 = Map.get (view'1 new'0) k'0}
+          -> Map.get (view'0 old_self.current) k'0 = Map.get (view'0 new'0) k'0}
         {[@expl:loop invariant #3] forall k'0: t_DeepModelTy. UInt64.t'int i <= bucket_ix old_self.current k'0
             /\ bucket_ix old_self.current k'0 <= Seq.length (view (old_self.current).t_MyHashMap__buckets)
-          -> Map.get (view'1 new'0) k'0 = C_None}
+          -> Map.get (view'0 new'0) k'0 = C_None}
         {[@expl:loop invariant #4] forall j: int. UInt64.t'int i <= j
             /\ j < Seq.length (view (old_self.current).t_MyHashMap__buckets)
           -> index_logic (self'0.current).t_MyHashMap__buckets j
@@ -1556,14 +1514,14 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
           [ bb10'0 = {[@expl:loop invariant #0] inv'7 new'0}
             {[@expl:loop invariant #1] inv'2 l}
             {[@expl:loop invariant #2] forall k'0: t_DeepModelTy. bucket_ix old_self.current k'0 < UInt64.t'int i
-              -> Map.get (view'4 old_self) k'0 = Map.get (view'1 new'0) k'0}
+              -> Map.get (view'0 old_self.current) k'0 = Map.get (view'0 new'0) k'0}
             {[@expl:loop invariant #3] forall k'0: t_DeepModelTy. UInt64.t'int i < bucket_ix old_self.current k'0
                 /\ bucket_ix old_self.current k'0 <= Seq.length (view (old_self.current).t_MyHashMap__buckets)
-              -> Map.get (view'1 new'0) k'0 = C_None}
+              -> Map.get (view'0 new'0) k'0 = C_None}
             {[@expl:loop invariant #4] forall k'0: t_DeepModelTy. bucket_ix old_self.current k'0 = UInt64.t'int i
-              -> Map.get (view'4 old_self) k'0
+              -> Map.get (view'0 old_self.current) k'0
               = match get l k'0 with
-                | C_None -> Map.get (view'1 new'0) k'0
+                | C_None -> Map.get (view'0 new'0) k'0
                 | C_Some v'0 -> C_Some v'0
                 end}
             {[@expl:loop invariant #5] no_double_binding l}
@@ -1587,7 +1545,7 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
           [ s0 = {[@expl:type invariant] inv'2 l} s1
           | s1 = -{resolve'5 l}- s2
           | s2 = {[@expl:assertion] forall k'0: t_DeepModelTy. bucket_ix old_self.current k'0 = UInt64.t'int i
-              -> Map.get (view'4 old_self) k'0 = Map.get (view'1 new'0) k'0}
+              -> Map.get (view'0 old_self.current) k'0 = Map.get (view'0 new'0) k'0}
             s3
           | s3 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s4)
           | s4 = bb4'0 ] ] ]
@@ -1620,8 +1578,8 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
     | & _45: () = Any.any_l ()
     | & _46: MutBorrow.t t_MyHashMap = Any.any_l ()
     | & old_4_0: MutBorrow.t t_MyHashMap = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:resize ensures] forall k: t_DeepModelTy. Map.get (view'1 self.final) k
-        = Map.get (view'2 self) k}
+    [ return''0 (result: ()) -> {[@expl:resize ensures] forall k: t_DeepModelTy. Map.get (view'0 self.final) k
+        = Map.get (view'0 self.current) k}
       (! return' {result}) ]
 end
 module M_hashmap__main
@@ -1722,16 +1680,12 @@ module M_hashmap__main
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_MyHashMap [inv'0 x]. inv'0 x = invariant''0 x
   
-  function view'1 [@inline:trivial] (self: t_MyHashMap) : Map.map int t_Option = view'0 self
-  
-  meta "rewrite_def" function view'1
-  
   let rec get'0 (self: t_MyHashMap) (key: UInt64.t) (return' (x: t_Option'0)) =
     {[@expl:get 'self' type invariant] inv'0 self}
     any
     [ return''0 (result: t_Option'0) -> {match result with
-        | C_Some'0 v -> Map.get (view'1 self) (deep_model key) = C_Some v
-        | C_None'0 -> Map.get (view'1 self) (deep_model key) = C_None
+        | C_Some'0 v -> Map.get (view'0 self) (deep_model key) = C_Some v
+        | C_None'0 -> Map.get (view'0 self) (deep_model key) = C_None
         end}
       (! return' {result}) ]
   
@@ -1743,15 +1697,11 @@ module M_hashmap__main
   
   axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_MyHashMap [inv'1 x]. inv'1 x = invariant''1 x
   
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_MyHashMap) : Map.map int t_Option = view'0 self.current
-  
-  meta "rewrite_def" function view'2
-  
   let rec add (self: MutBorrow.t t_MyHashMap) (key: UInt64.t) (val': Int64.t) (return' (x: ())) =
     {[@expl:add 'self' type invariant] inv'1 self}
     any
     [ return''0 (result: ()) -> {forall i: int. Map.get (view'0 self.final) i
-        = (if i = deep_model key then C_Some val' else Map.get (view'2 self) i)}
+        = (if i = deep_model key then C_Some val' else Map.get (view'0 self.current) i)}
       (! return' {result}) ]
   
   meta "compute_max_steps" 1000000

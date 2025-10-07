@@ -83,8 +83,21 @@ impl Locals {
     }
 }
 
-pub fn encode_term(term: &Term) -> Result<TokenStream, EncodeError> {
-    Ok(encode_term_(term, &mut Locals::new())?.toks())
+fn add_use(toks: TokenStream, span: Span) -> TokenStream {
+    quote_spanned! { span =>
+        {
+            #[allow(unused)]
+            use ::creusot_contracts::__stubs::{IndexLogicStub as _, ViewStub as _};
+            #toks
+        }
+    }
+}
+
+pub fn encode_term(term: &Term) -> TokenStream {
+    match encode_term_(term, &mut Locals::new()) {
+        Ok(r) => add_use(r.toks(), term.span()),
+        Err(e) => e.into_tokens(),
+    }
 }
 
 // Pearlite terms can refer to function parameters of unsized types. However, pearlite terms often
@@ -101,8 +114,7 @@ impl EncodingResult {
     fn toks(self) -> TokenStream {
         let EncodingResult { toks, deref_bor } = self;
         if deref_bor {
-            let span = toks.span();
-            quote_spanned! { span => (*& #toks) }
+            quote_spanned! { toks.span() => (*& #toks) }
         } else {
             toks
         }
@@ -268,11 +280,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             let expr = encode_term_(expr, locals)?.toks();
             let index = encode_term_(index, locals)?.toks();
 
-            Ok(quote_spanned! {sp=>
-                // FIXME: this requires IndexLogic to be loaded
-                (#expr).index_logic(#index)
-            }
-            .into())
+            Ok(quote_spanned! {sp=> (#expr).__creusot_index_logic_stub(#index)}.into())
         }
         Term::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
         Term::Lit(TermLit { lit: lit @ Lit::Int(int) }) if int.suffix() == "" => {
@@ -392,10 +400,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                 _ => term,
             };
             let term = encode_term_(term, locals)?.toks();
-            Ok(quote_spanned! {sp=>
-                ::creusot_contracts::model::View::view(#term)
-            }
-            .into())
+            Ok(quote_spanned! {sp=> ((#term).__creusot_view_stub()) }.into())
         }
         Term::LogEq(TermLogEq { lhs, rhs, .. }) => {
             let lhs = encode_term_(lhs, locals)?.toks();
@@ -551,26 +556,33 @@ fn encode_trigger_(
     Ok(ts)
 }
 
-pub fn encode_block(block: &TBlock) -> TokenStream {
-    encode_block_(block, &mut Locals::new())
-}
-
 fn encode_block_(block: &TBlock, locals: &mut Locals) -> TokenStream {
-    // If there are errors during encode_stmt_, still emit the braces
+    // If there are errors during encode_stmts_, still emit the braces
     // to allow the parser to skip over the body and discover more errors.
     let mut tokens = TokenStream::new();
     locals.open();
-    block.brace_token.surround(&mut tokens, |tokens| {
-        block.stmts.iter().for_each(|stmt| {
-            encode_stmt_(stmt, locals).unwrap_or_else(|e| e.into_tokens()).to_tokens(tokens)
-        })
-    });
+    block
+        .brace_token
+        .surround(&mut tokens, |tokens| encode_stmts_(&block.stmts, locals).to_tokens(tokens));
     locals.close();
     tokens
 }
 
-pub fn encode_stmt(stmt: &TermStmt) -> Result<TokenStream, EncodeError> {
-    encode_stmt_(stmt, &mut Locals::new())
+pub fn encode_block(block: &TBlock) -> TokenStream {
+    encode_stmts(&block.stmts, block.span())
+}
+
+fn encode_stmts_(stmts: &[TermStmt], locals: &mut Locals) -> TokenStream {
+    let mut tokens = TokenStream::new();
+    for stmt in stmts.iter() {
+        encode_stmt_(stmt, locals).unwrap_or_else(|e| e.into_tokens()).to_tokens(&mut tokens)
+    }
+    tokens
+}
+
+pub fn encode_stmts(stmts: &[TermStmt], span: Span) -> TokenStream {
+    let toks = encode_stmts_(stmts, &mut Locals::new());
+    add_use(toks, span)
 }
 
 fn encode_stmt_(stmt: &TermStmt, locals: &mut Locals) -> Result<TokenStream, EncodeError> {

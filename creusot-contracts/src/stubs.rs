@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{logic::ops::IndexLogic, model::View, *};
 
 #[logic(opaque)]
 #[intrinsic("equal")]
@@ -76,4 +76,43 @@ pub fn mapping_from_fn<A: ?Sized, B, F: FnOnce(&A) -> B>(_: F) -> crate::logic::
 #[intrinsic("seq_literal")]
 pub fn seq_literal<T>(_: &[T]) -> crate::logic::Seq<T> {
     dead
+}
+
+// The following three traits make it possible to leverage auto-deref for these operators
+// without importing the traits in the context.
+
+#[diagnostic::on_unimplemented(
+    message = "the type `{Self}` cannot be indexed by `{I}` in logic",
+    label = "`{Self}` cannot be indexed by `{I}` in logic"
+)]
+pub trait IndexLogicStub<I: ?Sized>: IndexLogic<I> {
+    #[logic]
+    #[intrinsic("index_logic_stub")]
+    fn __creusot_index_logic_stub(self, idx: I) -> Self::Item;
+}
+
+#[diagnostic::do_not_recommend]
+impl<I: ?Sized, T: ?Sized + IndexLogic<I>> IndexLogicStub<I> for T {
+    #[logic(opaque)]
+    fn __creusot_index_logic_stub(self, _idx: I) -> Self::Item {
+        dead
+    }
+}
+
+#[diagnostic::on_unimplemented(
+    message = "Cannot take the view of `{Self}`",
+    label = "no implementation for `{Self}@`"
+)]
+pub trait ViewStub: View {
+    #[logic]
+    #[intrinsic("view_stub")]
+    fn __creusot_view_stub(self) -> Self::ViewTy;
+}
+
+#[diagnostic::do_not_recommend]
+impl<T: ?Sized + View> ViewStub for T {
+    #[logic(opaque)]
+    fn __creusot_view_stub(self) -> Self::ViewTy {
+        dead
+    }
 }

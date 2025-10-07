@@ -155,10 +155,6 @@ module M_take_first_mut__take_first_mut
   
   function tail (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
-  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = Slice64.view self.current
-  
-  meta "rewrite_def" function view
-  
   let rec split_first_mut (self_: MutBorrow.t (Slice64.slice t_T)) (return' (x: t_Option)) =
     {[@expl:split_first_mut 'self_' type invariant] inv'3 self_}
     any
@@ -170,7 +166,8 @@ module M_take_first_mut__take_first_mut
         /\ Seq.length (Slice64.view self_.final) > 0
         /\ Slice64.view tail'0.current = tail (Slice64.view self_.current)
         /\ Slice64.view tail'0.final = tail (Slice64.view self_.final)
-        | C_None -> Seq.length (view self_) = 0 /\ self_.final = self_.current /\ view self_ = (Seq.empty: Seq.seq t_T)
+        | C_None -> Seq.length (Slice64.view self_.current) = 0
+        /\ self_.final = self_.current /\ Slice64.view self_.current = (Seq.empty: Seq.seq t_T)
         end}
       (! return' {result}) ]
   

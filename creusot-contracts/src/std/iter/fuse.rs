@@ -6,7 +6,7 @@ impl<I: Iterator> View for Fuse<I> {
     #[trusted]
     #[logic(opaque)]
     #[ensures(inv(self) ==> inv(result))]
-    #[ensures(forall<other: Fuse<I>> result == other@ ==> self == other)]
+    #[ensures(forall<other: Fuse<I>> result == other.view() ==> self == other)]
     fn view(self) -> Option<I> {
         dead
     }

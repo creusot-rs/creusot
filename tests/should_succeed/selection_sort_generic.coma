@@ -59,12 +59,8 @@ module M_selection_sort_generic__selection_sort
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
+    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
@@ -147,18 +143,6 @@ module M_selection_sort_generic__selection_sort
   
   predicate permutation_of (self: Seq.seq t_T) (other: Seq.seq t_T) = Permut.permut self other 0 (Seq.length self)
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view self.current
-  
-  meta "rewrite_def" function view'1
-  
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view'1 self
-  
-  meta "rewrite_def" function view'2
-  
-  function view'3 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view'2 self
-  
-  meta "rewrite_def" function view'3
-  
   function deep_model'2 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
   meta "rewrite_def" function deep_model'2
@@ -231,8 +215,8 @@ module M_selection_sort_generic__selection_sort
   meta "rewrite_def" predicate has_value
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: t_T)) = {[@expl:index 'self_' type invariant] inv'3 self_}
-    {[@expl:index requires] in_bounds ix (view'0 self_)}
-    any [ return''0 (result: t_T) -> {inv'6 result} {has_value ix (view'0 self_) result} (! return' {result}) ]
+    {[@expl:index requires] in_bounds ix (view self_)}
+    any [ return''0 (result: t_T) -> {inv'6 result} {has_value ix (view self_) result} (! return' {result}) ]
   
   type tuple = { _p0: t_T; _p1: t_T }
   
@@ -279,25 +263,21 @@ module M_selection_sort_generic__selection_sort
   
   axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'9 x]. inv'9 x = invariant''6 x
   
-  function view'4 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = Slice64.view self.current
-  
-  meta "rewrite_def" function view'4
-  
   let rec deref_mut (self_: MutBorrow.t t_Vec) (return' (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:deref_mut 'self_' type invariant] inv'7 self_}
     any
     [ return''0 (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'9 result}
-      {view'4 result = view'1 self_}
+      {Slice64.view result.current = view self_.current}
       {Slice64.view result.final = view self_.final}
       (! return' {result}) ]
   
   let rec swap (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return' (x: ())) =
     {[@expl:swap 'self_' type invariant] inv'9 self_}
-    {[@expl:swap requires #0] UInt64.t'int i < Seq.length (view'4 self_)}
-    {[@expl:swap requires #1] UInt64.t'int j < Seq.length (view'4 self_)}
+    {[@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current)}
+    {[@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current)}
     any
     [ return''0 (result: ()) ->
-    {Permut.exchange (Slice64.view self_.final) (view'4 self_) (UInt64.t'int i) (UInt64.t'int j)}
+    {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
       (! return' {result}) ]
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) = self.final = self.current
@@ -338,7 +318,7 @@ module M_selection_sort_generic__selection_sort
         {[@expl:for invariant] inv'5 produced}
         {[@expl:for invariant] inv'4 iter}
         {[@expl:for invariant] produces iter_old produced iter}
-        {[@expl:loop invariant #0] permutation_of (view'1 v'0) (view'3 old_v)}
+        {[@expl:loop invariant #0] permutation_of (view v'0.current) (view old_v.current)}
         {[@expl:loop invariant #1] sorted_range (deep_model'1 v'0) 0 (Seq.length produced)}
         {[@expl:loop invariant #2] partition (deep_model'1 v'0) (Seq.length produced)}
         (! s0)
@@ -465,6 +445,6 @@ module M_selection_sort_generic__selection_sort
     | & _70: MutBorrow.t t_Vec = Any.any_l ()
     | & old_6_0: MutBorrow.t t_Vec = Any.any_l () ])
     [ return''0 (result: ()) -> {[@expl:selection_sort ensures #0] sorted (deep_model'0 v.final)}
-      {[@expl:selection_sort ensures #1] permutation_of (view v.final) (view'1 v)}
+      {[@expl:selection_sort ensures #1] permutation_of (view v.final) (view v.current)}
       (! return' {result}) ]
 end

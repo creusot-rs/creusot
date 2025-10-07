@@ -83,9 +83,4 @@ impl<T: DeepModel + ?Sized> DeepModel for Box<T> {
 }
 
 #[cfg(not(feature = "nightly"))]
-impl<T: View + ?Sized> View for Box<T> {
-    type ViewTy = T::ViewTy;
-}
-
-#[cfg(not(feature = "nightly"))]
 impl<T: ?Sized> Invariant for Box<T> {}

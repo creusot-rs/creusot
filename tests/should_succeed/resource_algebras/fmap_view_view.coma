@@ -648,12 +648,8 @@ module M_fmap_view_view__qyi16747555808275470465__new (* Authority<K, V> *)
   
   meta "rewrite_def" function view'1
   
-  function view'2 [@inline:trivial] (self: t_Resource) : t_View = view'1 self
-  
-  meta "rewrite_def" function view'2
-  
   let rec alloc (r: t_View) (return' (x: t_Resource)) = any
-    [ return''0 (result: t_Resource) -> {view'2 result = r} (! return' {result}) ]
+    [ return''0 (result: t_Resource) -> {view'1 result = r} (! return' {result}) ]
   
   let rec into_inner (self: t_Resource) (return' (x: t_Resource)) = any
     [ return''0 (result: t_Resource) -> {result = self} (! return' {result}) ]
@@ -695,11 +691,7 @@ module M_fmap_view_view__qyi16747555808275470465__new (* Authority<K, V> *)
       | C_None -> such_that (fun (__0: t_FMap) -> true)
       end
   
-  function view'3 (self: t_Authority) : t_FMap = unwrap_logic (auth (view'1 self.t_Authority__0))
-  
-  function view'4 [@inline:trivial] (self: t_Authority) : t_FMap = view'3 self
-  
-  meta "rewrite_def" function view'4
+  function view'2 (self: t_Authority) : t_FMap = unwrap_logic (auth (view'1 self.t_Authority__0))
   
   meta "compute_max_steps" 1000000
   
@@ -720,7 +712,7 @@ module M_fmap_view_view__qyi16747555808275470465__new (* Authority<K, V> *)
     | & _5: t_Authority = Any.any_l ()
     | & _6: t_Resource = Any.any_l () ])
     [ return''0 (result: t_Authority) -> {[@expl:new result type invariant] inv'0 result}
-      {[@expl:new ensures] view'4 result = empty'0}
+      {[@expl:new ensures] view'2 result = empty'0}
       (! return' {result}) ]
 end
 module M_fmap_view_view__qyi16747555808275470465__insert (* Authority<K, V> *)
@@ -793,23 +785,19 @@ module M_fmap_view_view__qyi16747555808275470465__insert (* Authority<K, V> *)
   
   function view'1 (self: t_Authority) : t_FMap = unwrap_logic (auth (view'0 self.t_Authority__0))
   
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_Authority) : t_FMap = view'1 self.current
-  
-  meta "rewrite_def" function view'2
-  
   type t_Ag = { t_Ag__0: t_V }
   
   type t_FMap'0
   
   type t_Option'1 = C_None'1 | C_Some'1 t_Ag
   
-  function view'3 (self: t_FMap'0) : Map.map t_K t_Option'1
+  function view'2 (self: t_FMap'0) : Map.map t_K t_Option'1
   
   function len'0 (self: t_FMap'0) : int
   
   axiom len_spec'0: forall self: t_FMap'0. len'0 self >= 0
   
-  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_K) : t_Option'1 = Map.get (view'3 self) k
+  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_K) : t_Option'1 = Map.get (view'2 self) k
   
   meta "rewrite_def" function get'0
   
@@ -819,8 +807,8 @@ module M_fmap_view_view__qyi16747555808275470465__insert (* Authority<K, V> *)
   
   function insert'0 (self: t_FMap'0) (k: t_K) (v: t_Ag) : t_FMap'0
   
-  axiom insert_spec'1: forall self: t_FMap'0, k: t_K, v: t_Ag. view'3 (insert'0 self k v)
-      = Map.set (view'3 self) k (C_Some'1 v)
+  axiom insert_spec'1: forall self: t_FMap'0, k: t_K, v: t_Ag. view'2 (insert'0 self k v)
+      = Map.set (view'2 self) k (C_Some'1 v)
   
   axiom insert_spec'2: forall self: t_FMap'0, k: t_K, v: t_Ag. len'0 (insert'0 self k v)
       = (if contains'0 self k then len'0 self else len'0 self + 1)
@@ -829,7 +817,7 @@ module M_fmap_view_view__qyi16747555808275470465__insert (* Authority<K, V> *)
   
   axiom empty_spec: len'0 empty = 0
   
-  axiom empty_spec'0: view'3 empty = Const.const (C_None'1)
+  axiom empty_spec'0: view'2 empty = Const.const (C_None'1)
   
   function singleton (k: t_K) (v: t_Ag) : t_FMap'0 = insert'0 empty k v
   
@@ -1017,10 +1005,6 @@ module M_fmap_view_view__qyi16747555808275470465__insert (* Authority<K, V> *)
         | C_None'2 -> false
         end)
   
-  function view'4 [@inline:trivial] (self: MutBorrow.t t_Resource) : t_View = view'0 self.current
-  
-  meta "rewrite_def" function view'4
-  
   type t_Id
   
   function id (self: t_Resource) : t_Id
@@ -1042,10 +1026,10 @@ module M_fmap_view_view__qyi16747555808275470465__insert (* Authority<K, V> *)
       -> rel (C_Some'0 (self.t_ViewUpdateInsert__0)) self.t_ViewUpdateInsert__1
   
   let rec update'0 (self: MutBorrow.t t_Resource) (upd: t_ViewUpdateInsert) (return' (x: ())) =
-    {[@expl:update requires] premise upd (view'4 self)}
+    {[@expl:update requires] premise upd (view'0 self.current)}
     any
     [ return''0 (result: ()) -> {id self.final = id self.current}
-      {view'0 self.final = update upd (view'4 self) result}
+      {view'0 self.final = update upd (view'0 self.current) result}
       (! return' {result}) ]
   
   function new_frag [@inline:trivial] (frag'0: t_FMap'0) : t_View = new (C_None'0) frag'0
@@ -1117,7 +1101,7 @@ module M_fmap_view_view__qyi16747555808275470465__insert (* Authority<K, V> *)
       end
   
   let rec split_off (self: MutBorrow.t t_Resource) (r: t_View) (s: t_View) (return' (x: t_Resource)) =
-    {[@expl:split_off requires] incl_eq_op r s (view'4 self)}
+    {[@expl:split_off requires] incl_eq_op r s (view'0 self.current)}
     any
     [ return''0 (result: t_Resource) -> {id self.final = id self.current /\ id result = id self.current}
       {view'0 self.final = s}
@@ -1167,7 +1151,7 @@ module M_fmap_view_view__qyi16747555808275470465__insert (* Authority<K, V> *)
   
   type tuple'2 = { _p0'2: t_K; _p1'2: t_V }
   
-  function view'5 (self: t_Fragment) : tuple'2 = { _p0'2 = self.t_Fragment__1; _p1'2 = self.t_Fragment__2 }
+  function view'3 (self: t_Fragment) : tuple'2 = { _p0'2 = self.t_Fragment__1; _p1'2 = self.t_Fragment__2 }
   
   function id'1 (self: t_Fragment) : t_Id = id self.t_Fragment__0
   
@@ -1177,9 +1161,9 @@ module M_fmap_view_view__qyi16747555808275470465__insert (* Authority<K, V> *)
   
   let rec insert'1 (self: MutBorrow.t t_Authority) (k: t_K) (v: t_V) (return' (x: t_Fragment)) =
     {[@expl:insert 'self' type invariant] inv'0 self}
-    {[@expl:insert requires] not contains (view'2 self) k}
+    {[@expl:insert requires] not contains (view'1 self.current) k}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &auth'0 <- insert (view'2 self'0) k'0 v'0 ] s1 | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &auth'0 <- insert (view'1 self'0.current) k'0 v'0 ] s1 | s1 = bb1 ]
     | bb1 = s0 [ s0 = [ &frag'0 <- singleton k'0 { t_Ag__0 = v'0 } ] s1 | s1 = bb2 ]
     | bb2 = s0
       [ s0 = [ &_15 <- { t_ViewUpdateInsert__0 = auth'0; t_ViewUpdateInsert__1 = frag'0 } ] s1
@@ -1221,9 +1205,9 @@ module M_fmap_view_view__qyi16747555808275470465__insert (* Authority<K, V> *)
     | & _24: t_K = Any.any_l ()
     | & _26: t_V = Any.any_l () ])
     [ return''0 (result: t_Fragment) -> {[@expl:insert result type invariant] inv'1 result}
-      {[@expl:insert ensures #0] view'1 self.final = insert (view'2 self) k v}
+      {[@expl:insert ensures #0] view'1 self.final = insert (view'1 self.current) k v}
       {[@expl:insert ensures #1] id'0 self.final = id'0 self.current}
-      {[@expl:insert ensures #2] view'5 result = { _p0'2 = k; _p1'2 = v }}
+      {[@expl:insert ensures #2] view'3 result = { _p0'2 = k; _p1'2 = v }}
       {[@expl:insert ensures #3] id'1 result = id'0 self.current}
       (! return' {result}) ]
 end
@@ -1534,24 +1518,16 @@ module M_fmap_view_view__qyi16747555808275470465__contains (* Authority<K, V> *)
   
   meta "rewrite_def" function view'1
   
-  function view'2 [@inline:trivial] (self: t_Resource) : t_View = view'1 self
-  
-  meta "rewrite_def" function view'2
-  
   let rec join_shared (self: t_Resource) (other: t_Resource) (return' (x: t_Resource)) =
     {[@expl:join_shared requires] id self = id other}
     any
     [ return''0 (result: t_Resource) -> {id result = id self}
-      {incl_eq (view'2 self) (view'2 result) /\ incl_eq (view'2 other) (view'2 result)}
+      {incl_eq (view'1 self) (view'1 result) /\ incl_eq (view'1 other) (view'1 result)}
       (! return' {result}) ]
   
   type tuple'2 = { _p0'2: t_K; _p1'2: t_V }
   
-  function view'3 (self: t_Fragment) : tuple'2 = { _p0'2 = self.t_Fragment__1; _p1'2 = self.t_Fragment__2 }
-  
-  function view'4 [@inline:trivial] (self: t_Fragment) : tuple'2 = view'3 self
-  
-  meta "rewrite_def" function view'4
+  function view'2 (self: t_Fragment) : tuple'2 = { _p0'2 = self.t_Fragment__1; _p1'2 = self.t_Fragment__2 }
   
   predicate invariant' (self: t_Authority) = auth (view'1 self.t_Authority__0) <> C_None'3
   
@@ -1621,11 +1597,7 @@ module M_fmap_view_view__qyi16747555808275470465__contains (* Authority<K, V> *)
       | C_None'3 -> such_that (fun (__0: t_FMap'0) -> true)
       end
   
-  function view'5 (self: t_Authority) : t_FMap'0 = unwrap_logic (auth (view'1 self.t_Authority__0))
-  
-  function view'6 [@inline:trivial] (self: t_Authority) : t_FMap'0 = view'5 self
-  
-  meta "rewrite_def" function view'6
+  function view'3 (self: t_Authority) : t_FMap'0 = unwrap_logic (auth (view'1 self.t_Authority__0))
   
   meta "compute_max_steps" 1000000
   
@@ -1641,8 +1613,8 @@ module M_fmap_view_view__qyi16747555808275470465__contains (* Authority<K, V> *)
       | s1 = join_shared {self'0.t_Authority__0} {_8} (fun (_ret: t_Resource) -> [ &new_resource <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {[@expl:assertion] get (frag (view'2 new_resource)) (view'4 frag'1)._p0'2
-        = C_Some'1 { t_Ag__0 = (view'4 frag'1)._p1'2 }}
+      [ s0 = {[@expl:assertion] get (frag (view'1 new_resource)) (view'2 frag'1)._p0'2
+        = C_Some'1 { t_Ag__0 = (view'2 frag'1)._p1'2 }}
         s1
       | s1 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
@@ -1650,8 +1622,8 @@ module M_fmap_view_view__qyi16747555808275470465__contains (* Authority<K, V> *)
     | & frag'1: t_Fragment = frag'0
     | & new_resource: t_Resource = Any.any_l ()
     | & _8: t_Resource = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:contains ensures] get'0 (view'6 self) (view'4 frag'0)._p0'2
-      = C_Some'4 ((view'4 frag'0)._p1'2)}
+    [ return''0 (result: ()) -> {[@expl:contains ensures] get'0 (view'3 self) (view'2 frag'0)._p0'2
+      = C_Some'4 ((view'2 frag'0)._p1'2)}
       (! return' {result}) ]
 end
 module M_fmap_view_view__qyi9127813262067876198__clone (* <Fragment<K, V> as creusot_contracts::Clone> *)
@@ -1957,18 +1929,14 @@ module M_fmap_view_view__qyi9127813262067876198__clone (* <Fragment<K, V> as cre
   
   meta "rewrite_def" function view'1
   
-  function view'2 [@inline:trivial] (self: t_Resource) : t_View = view'1 self
-  
-  meta "rewrite_def" function view'2
-  
   type t_Id
   
   function id (self: t_Resource) : t_Id
   
-  let rec core'1 (self: t_Resource) (return' (x: t_Resource)) = {[@expl:core requires] core'0 (view'2 self) <> C_None}
+  let rec core'1 (self: t_Resource) (return' (x: t_Resource)) = {[@expl:core requires] core'0 (view'1 self) <> C_None}
     any
     [ return''0 (result: t_Resource) -> {id result = id self}
-      {C_Some (view'1 result) = core'0 (view'2 self)}
+      {C_Some (view'1 result) = core'0 (view'1 self)}
       (! return' {result}) ]
   
   function factor'2 (self: t_View) (factor'3: t_View) : t_Option = match factor'1 (frag self) (frag factor'3) with
@@ -2029,11 +1997,7 @@ module M_fmap_view_view__qyi9127813262067876198__clone (* <Fragment<K, V> as cre
   
   type tuple'2 = { _p0'2: t_K; _p1'2: t_V }
   
-  function view'3 (self: t_Fragment) : tuple'2 = { _p0'2 = self.t_Fragment__1; _p1'2 = self.t_Fragment__2 }
-  
-  function view'4 [@inline:trivial] (self: t_Fragment) : tuple'2 = view'3 self
-  
-  meta "rewrite_def" function view'4
+  function view'2 (self: t_Fragment) : tuple'2 = { _p0'2 = self.t_Fragment__1; _p1'2 = self.t_Fragment__2 }
   
   meta "compute_max_steps" 1000000
   
@@ -2049,7 +2013,7 @@ module M_fmap_view_view__qyi9127813262067876198__clone (* <Fragment<K, V> as cre
       | s1 = return''0 {_0} ] ]
     [ & _0: t_Fragment = Any.any_l () | & self'0: t_Fragment = self | & _3: t_Resource = Any.any_l () ])
     [ return''0 (result: t_Fragment) -> {[@expl:clone result type invariant] inv result}
-      {[@expl:clone ensures] view'3 result = view'4 self}
+      {[@expl:clone ensures] view'2 result = view'2 self}
       (! return' {result}) ]
 end
 module M_fmap_view_view__qyi16167685763649721615__rel_mono__refines (* <MapRelation<K, V> as creusot_contracts::logic::ra::view::ViewRel> *)
@@ -2765,14 +2729,10 @@ module M_fmap_view_view__qyi9127813262067876198__clone__refines (* <Fragment<K, 
   
   function view'2 (self: t_Fragment) : tuple'2 = { _p0'2 = self.t_Fragment__1; _p1'2 = self.t_Fragment__2 }
   
-  function view'3 [@inline:trivial] (self: t_Fragment) : tuple'2 = view'2 self
-  
-  meta "rewrite_def" function view'3
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self_: t_Fragment. inv'0 self_
-      -> inv'0 self_ /\ (forall result: t_Fragment. view'2 result = view'3 self_ /\ inv result -> inv result)
+      -> inv'0 self_ /\ (forall result: t_Fragment. view'2 result = view'2 self_ /\ inv result -> inv result)
 end

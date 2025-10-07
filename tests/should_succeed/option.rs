@@ -136,7 +136,7 @@ pub fn and_then() {
         (x@ == 1 && exists<y: i32> result == Some(y) && y@ == x@ + 1)
         || (x@ != 1 && result == None)
     )]
-    |x| {
+    |x: i32| {
         if x == 1 { Some(x + 1) } else { None }
     };
     assert!(some1.and_then(clos) == Some(2i32));

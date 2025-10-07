@@ -9,12 +9,8 @@ module M_insertion_sort__insertion_sort
   use creusot.prelude.Opaque
   use creusot.prelude.Any
   
-  function view [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   let rec len (self_: Slice64.slice Int32.t) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {Seq.length (view self_) = UInt64.t'int result} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return' {result}) ]
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
@@ -23,19 +19,6 @@ module M_insertion_sort__insertion_sort
   
   predicate permutation_of (self: Seq.seq Int32.t) (other: Seq.seq Int32.t) =
     Permut.permut self other 0 (Seq.length self)
-  
-  function view'0 [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t =
-    Slice64.view self.current
-  
-  meta "rewrite_def" function view'0
-  
-  function view'1 [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t = view'0 self
-  
-  meta "rewrite_def" function view'1
-  
-  function view'2 [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t = view'1 self
-  
-  meta "rewrite_def" function view'2
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -193,11 +176,11 @@ module M_insertion_sort__insertion_sort
   axiom cmp_le_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log'0 x y <> C_Greater)
   
   let rec swap (self_: MutBorrow.t (Slice64.slice Int32.t)) (i: UInt64.t) (j: UInt64.t) (return' (x: ())) =
-    {[@expl:swap requires #0] UInt64.t'int i < Seq.length (view'0 self_)}
-    {[@expl:swap requires #1] UInt64.t'int j < Seq.length (view'0 self_)}
+    {[@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current)}
+    {[@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current)}
     any
     [ return''0 (result: ()) ->
-    {Permut.exchange (Slice64.view self_.final) (view'0 self_) (UInt64.t'int i) (UInt64.t'int j)}
+    {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
       (! return' {result}) ]
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t (Slice64.slice Int32.t)) = self.final = self.current
@@ -229,9 +212,9 @@ module M_insertion_sort__insertion_sort
         {[@expl:for invariant] inv'0 produced}
         {[@expl:for invariant] inv iter}
         {[@expl:for invariant] produces iter_old produced iter}
-        {[@expl:loop invariant #0] sorted_range (view'0 array'0) 0 (Seq.length produced + 1)}
-        {[@expl:loop invariant #1] Seq.length (view'0 array'0) = UInt64.t'int n}
-        {[@expl:loop invariant #2] permutation_of (view'2 original) (view'0 array'0)}
+        {[@expl:loop invariant #0] sorted_range (Slice64.view array'0.current) 0 (Seq.length produced + 1)}
+        {[@expl:loop invariant #1] Seq.length (Slice64.view array'0.current) = UInt64.t'int n}
+        {[@expl:loop invariant #2] permutation_of (Slice64.view original.current) (Slice64.view array'0.current)}
         (! s0)
         [ s0 = bb7 ]
         [ bb7 = s0
@@ -257,8 +240,8 @@ module M_insertion_sort__insertion_sort
         | bb14 = bb14'0
           [ bb14'0 = {[@expl:mut invariant] old_14_0.final = array'0.final}
             {[@expl:loop invariant #0] UInt64.le j i}
-            {[@expl:loop invariant #1] Seq.length (view'0 array'0) = UInt64.t'int n}
-            {[@expl:loop invariant #2] permutation_of (view'2 original) (view'0 array'0)}
+            {[@expl:loop invariant #1] Seq.length (Slice64.view array'0.current) = UInt64.t'int n}
+            {[@expl:loop invariant #2] permutation_of (Slice64.view original.current) (Slice64.view array'0.current)}
             {[@expl:loop invariant #3] forall a: int, b: int. 0 <= a /\ a <= b /\ b <= UInt64.t'int i
               -> a <> UInt64.t'int j
               -> b <> UInt64.t'int j -> Int32.le (index_logic'0 array'0.current a) (index_logic'0 array'0.current b)}
@@ -305,7 +288,9 @@ module M_insertion_sort__insertion_sort
               [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &j <- _ret ] s1) | s1 = bb14'0 ] ] ] ] ]
     | bb11 = s0
       [ s0 = -{resolve'2 array'0}- s1
-      | s1 = {[@expl:assertion] sorted_range (view'0 array'0) 0 (Seq.length (view'0 array'0))} s2
+      | s1 =
+        {[@expl:assertion] sorted_range (Slice64.view array'0.current) 0 (Seq.length (Slice64.view array'0.current))}
+        s2
       | s2 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & array'0: MutBorrow.t (Slice64.slice Int32.t) = array
@@ -338,7 +323,7 @@ module M_insertion_sort__insertion_sort
     | & old_14_0: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & old_6_0: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l () ])
     [ return''0 (result: ()) ->
-    {[@expl:insertion_sort ensures #0] permutation_of (view'0 array) (Slice64.view array.final)}
+    {[@expl:insertion_sort ensures #0] permutation_of (Slice64.view array.current) (Slice64.view array.final)}
       {[@expl:insertion_sort ensures #1] sorted (Slice64.view array.final)}
       (! return' {result}) ]
 end

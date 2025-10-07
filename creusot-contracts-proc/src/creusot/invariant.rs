@@ -40,7 +40,7 @@ struct Variant {
 impl ToTokens for Invariant {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let span = self.span;
-        let term = pretyping::encode_term(&self.term).unwrap_or_else(|e| e.into_tokens());
+        let term = pretyping::encode_term(&self.term);
         let spec_closure = {
             let expl = match self.kind {
                 LoopInvariant(Some(n)) => format!("expl:loop invariant #{}", n),
@@ -65,7 +65,7 @@ impl ToTokens for Invariant {
 impl ToTokens for Variant {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let span = self.span;
-        let term = pretyping::encode_term(&self.term).unwrap_or_else(|e| e.into_tokens());
+        let term = pretyping::encode_term(&self.term);
         let spec_closure = quote_spanned! {span=>
           #[creusot::spec::variant::loop_]
           || { ::creusot_contracts::__stubs::variant_check(#term) }
@@ -294,7 +294,7 @@ pub(crate) fn desugar_variant(attr: TokenStream, tokens: TokenStream) -> Result<
 
 /// Generate the specification item corresponding to a function variant
 fn variant_to_tokens(span: Span, p: &pearlite_syn::Term) -> (String, TokenStream) {
-    let var_body = pretyping::encode_term(p).unwrap_or_else(|e| e.into_tokens());
+    let var_body = pretyping::encode_term(p);
     let name_tag = crate::creusot::generate_unique_string("variant");
 
     let variant_tokens = quote_spanned! {span=>

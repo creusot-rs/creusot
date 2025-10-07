@@ -57,25 +57,21 @@ module M_09_capacity__change_capacity
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view self.current
-  
-  meta "rewrite_def" function view'0
-  
   let rec reserve (self_: MutBorrow.t t_Vec) (additional: UInt64.t) (return' (x: ())) =
     {[@expl:reserve 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: ()) -> {view self_.final = view'0 self_} (! return' {result}) ]
+    any [ return''0 (result: ()) -> {view self_.final = view self_.current} (! return' {result}) ]
   
   let rec reserve_exact (self_: MutBorrow.t t_Vec) (additional: UInt64.t) (return' (x: ())) =
     {[@expl:reserve_exact 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: ()) -> {view self_.final = view'0 self_} (! return' {result}) ]
+    any [ return''0 (result: ()) -> {view self_.final = view self_.current} (! return' {result}) ]
   
   let rec shrink_to_fit (self_: MutBorrow.t t_Vec) (return' (x: ())) =
     {[@expl:shrink_to_fit 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: ()) -> {view self_.final = view'0 self_} (! return' {result}) ]
+    any [ return''0 (result: ()) -> {view self_.final = view self_.current} (! return' {result}) ]
   
   let rec shrink_to (self_: MutBorrow.t t_Vec) (min_capacity: UInt64.t) (return' (x: ())) =
     {[@expl:shrink_to 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: ()) -> {view self_.final = view'0 self_} (! return' {result}) ]
+    any [ return''0 (result: ()) -> {view self_.final = view self_.current} (! return' {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
   
@@ -139,8 +135,9 @@ module M_09_capacity__change_capacity
     | & _9: MutBorrow.t t_Vec = Any.any_l ()
     | & _10: () = Any.any_l ()
     | & _11: MutBorrow.t t_Vec = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:change_capacity ensures #0] Seq.length (view v.final) = Seq.length (view'0 v)}
-      {[@expl:change_capacity ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view'0 v)
+    [ return''0 (result: ()) -> {[@expl:change_capacity ensures #0] Seq.length (view v.final)
+      = Seq.length (view v.current)}
+      {[@expl:change_capacity ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view v.current)
         -> index_logic v.final i = index_logic v.current i}
       (! return' {result}) ]
 end

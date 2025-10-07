@@ -236,10 +236,6 @@ impl Parse for Attributes {
     }
 }
 
-fn fn_spec_body(p: &Term) -> TokenStream {
-    pretyping::encode_term(p).unwrap_or_else(|e| e.into_tokens())
-}
-
 fn spec_attrs(tag: Ident) -> TokenStream {
     let name_tag = tag.to_string();
     quote! {
@@ -259,7 +255,7 @@ enum FnSpecResultKind {
 // Generate a token stream for the item representing a specific
 // `requires` or `ensures`
 fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, p: Term) -> TokenStream {
-    let fn_spec_body = fn_spec_body(&p);
+    let fn_spec_body = pretyping::encode_term(&p);
     let attrs = spec_attrs(tag);
     let result = Ident::new("result", Span::call_site());
 
@@ -286,7 +282,7 @@ fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, p: Term) -> TokenStream {
 }
 
 fn sig_spec_item(tag: Ident, sig: Signature, p: Term) -> TokenStream {
-    let fn_spec_body = fn_spec_body(&p);
+    let fn_spec_body = pretyping::encode_term(&p);
     let attrs = spec_attrs(tag);
 
     quote! {

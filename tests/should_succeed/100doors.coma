@@ -96,21 +96,13 @@ module M_100doors__f
   
   meta "rewrite_def" predicate in_bounds
   
-  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq bool = view self
-  
-  meta "rewrite_def" function view'0
-  
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq bool) (out: bool) =
     Seq.get seq (UInt64.t'int self) = out
   
   meta "rewrite_def" predicate has_value
   
-  let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: bool)) = {[@expl:index requires] in_bounds ix (view'0 self_)}
-    any [ return''0 (result: bool) -> {has_value ix (view'0 self_) result} (! return' {result}) ]
-  
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq bool = view self.current
-  
-  meta "rewrite_def" function view'1
+  let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: bool)) = {[@expl:index requires] in_bounds ix (view self_)}
+    any [ return''0 (result: bool) -> {has_value ix (view self_) result} (! return' {result}) ]
   
   predicate resolve_elswhere [@inline:trivial] (self: UInt64.t) (old': Seq.seq bool) (fin: Seq.seq bool) =
     forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
@@ -118,12 +110,12 @@ module M_100doors__f
   meta "rewrite_def" predicate resolve_elswhere
   
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t bool)) =
-    {[@expl:index_mut requires] in_bounds ix (view'1 self_)}
+    {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return''0 (result: MutBorrow.t bool) -> {has_value ix (view'1 self_) result.current}
+    [ return''0 (result: MutBorrow.t bool) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
-      {resolve_elswhere ix (view'1 self_) (view self_.final)}
-      {Seq.length (view self_.final) = Seq.length (view'1 self_)}
+      {resolve_elswhere ix (view self_.current) (view self_.final)}
+      {Seq.length (view self_.final) = Seq.length (view self_.current)}
       (! return' {result}) ]
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t bool) = self.final = self.current

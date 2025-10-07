@@ -19,10 +19,6 @@ module M_array__test_array
   
   type t_Option = C_None | C_Some Int32.t
   
-  function view'0 [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t = Slice64.view self
-  
-  meta "rewrite_def" function view'0
-  
   function index_logic [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
     Seq.get (Slice64.view self) ix
   
@@ -30,7 +26,8 @@ module M_array__test_array
   
   function to_ref_seq (self: Slice64.slice Int32.t) : Seq.seq Int32.t
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice Int32.t. Seq.length (to_ref_seq self) = Seq.length (view'0 self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice Int32.t. Seq.length (to_ref_seq self)
+      = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice Int32.t. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
@@ -52,12 +49,8 @@ module M_array__test_array
   
   meta "rewrite_def" predicate resolve
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice Int32.t = view self.current
-  
-  meta "rewrite_def" function view'1
-  
   predicate completed (self: MutBorrow.t t_Iter) =
-    resolve self /\ Slice64.view (view'1 self) = (Seq.empty: Seq.seq Int32.t)
+    resolve self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq Int32.t)
   
   let rec next (self_: MutBorrow.t t_Iter) (return' (x: t_Option)) = any
     [ return''0 (result: t_Option) -> {match result with
@@ -140,11 +133,11 @@ module M_array__test_array
         | {t_IntoIter__inner = inner} -> inv'3 inner
         end
   
-  function view'2 (self: t_IntoIter) : Seq.seq Int32.t
+  function view'0 (self: t_IntoIter) : Seq.seq Int32.t
   
   let rec into_iter (self_: Slice64.array Int32.t) (return' (x: t_IntoIter)) =
     {[@expl:into_iter 'self_' type invariant] inv'0 self_}
-    any [ return''0 (result: t_IntoIter) -> {inv'4 result} {Slice64.view self_ = view'2 result} (! return' {result}) ]
+    any [ return''0 (result: t_IntoIter) -> {inv'4 result} {Slice64.view self_ = view'0 result} (! return' {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 Int32.t
   
@@ -157,7 +150,7 @@ module M_array__test_array
   axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_IntoIter [inv'5 x]. inv'5 x = invariant''1 x
   
   predicate produces'0 (self: t_IntoIter) (visited: Seq.seq Int32.t) (o: t_IntoIter) =
-    view'2 self = Seq.(++) visited (view'2 o)
+    view'0 self = Seq.(++) visited (view'0 o)
   
   function produces_trans'0 (a: t_IntoIter) (ab: Seq.seq Int32.t) (b: t_IntoIter) (bc: Seq.seq Int32.t) (c: t_IntoIter) : ()
    = ()
@@ -174,11 +167,8 @@ module M_array__test_array
   
   meta "rewrite_def" predicate resolve'0
   
-  function view'3 [@inline:trivial] (self: MutBorrow.t t_IntoIter) : Seq.seq Int32.t = view'2 self.current
-  
-  meta "rewrite_def" function view'3
-  
-  predicate completed'0 (self: MutBorrow.t t_IntoIter) = resolve'0 self /\ view'3 self = (Seq.empty: Seq.seq Int32.t)
+  predicate completed'0 (self: MutBorrow.t t_IntoIter) =
+    resolve'0 self /\ view'0 self.current = (Seq.empty: Seq.seq Int32.t)
   
   let rec next'0 (self_: MutBorrow.t t_IntoIter) (return' (x: t_Option'1)) =
     {[@expl:next 'self_' type invariant] inv'5 self_}

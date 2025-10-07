@@ -131,14 +131,8 @@ pub fn logic(in_tags: TS1, tokens: TS1) -> TS1 {
 }
 
 pub fn pearlite(tokens: TS1) -> TS1 {
-    let block = parse_macro_input!(tokens with TBlock::parse_within);
-    TS1::from(
-        block
-            .iter()
-            .map(pretyping::encode_stmt)
-            .collect::<std::result::Result<TokenStream, _>>()
-            .unwrap_or_else(|e| e.into_tokens()),
-    )
+    let stmts = parse_macro_input!(tokens with TBlock::parse_within);
+    TS1::from(pretyping::encode_stmts(&stmts, stmts.first().span().join(stmts.last().span()).unwrap()))
 }
 
 impl ToTokens for TraitItemSignature {

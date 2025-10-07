@@ -59,12 +59,8 @@ module M_03_knuth_shuffle__knuth_shuffle
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
+    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
@@ -72,18 +68,6 @@ module M_03_knuth_shuffle__knuth_shuffle
     [ return''0 (result: t_Range) -> {result = self_} (! return' {result}) ]
   
   predicate permutation_of (self: Seq.seq t_T) (other: Seq.seq t_T) = Permut.permut self other 0 (Seq.length self)
-  
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view self.current
-  
-  meta "rewrite_def" function view'1
-  
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view'1 self
-  
-  meta "rewrite_def" function view'2
-  
-  function view'3 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view'2 self
-  
-  meta "rewrite_def" function view'3
   
   function deep_model [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
@@ -168,25 +152,21 @@ module M_03_knuth_shuffle__knuth_shuffle
   
   axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'8 x]. inv'8 x = invariant''5 x
   
-  function view'4 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = Slice64.view self.current
-  
-  meta "rewrite_def" function view'4
-  
   let rec deref_mut (self_: MutBorrow.t t_Vec) (return' (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:deref_mut 'self_' type invariant] inv'6 self_}
     any
     [ return''0 (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'8 result}
-      {view'4 result = view'1 self_}
+      {Slice64.view result.current = view self_.current}
       {Slice64.view result.final = view self_.final}
       (! return' {result}) ]
   
   let rec swap (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return' (x: ())) =
     {[@expl:swap 'self_' type invariant] inv'8 self_}
-    {[@expl:swap requires #0] UInt64.t'int i < Seq.length (view'4 self_)}
-    {[@expl:swap requires #1] UInt64.t'int j < Seq.length (view'4 self_)}
+    {[@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current)}
+    {[@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current)}
     any
     [ return''0 (result: ()) ->
-    {Permut.exchange (Slice64.view self_.final) (view'4 self_) (UInt64.t'int i) (UInt64.t'int j)}
+    {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
       (! return' {result}) ]
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) = self.final = self.current
@@ -225,7 +205,7 @@ module M_03_knuth_shuffle__knuth_shuffle
         {[@expl:for invariant] inv'5 produced}
         {[@expl:for invariant] inv'4 iter}
         {[@expl:for invariant] produces iter_old produced iter}
-        {[@expl:loop invariant] permutation_of (view'1 v'0) (view'3 old_v)}
+        {[@expl:loop invariant] permutation_of (view v'0.current) (view old_v.current)}
         (! s0)
         [ s0 = bb7 ]
         [ bb7 = s0
@@ -293,6 +273,6 @@ module M_03_knuth_shuffle__knuth_shuffle
     | & _36: MutBorrow.t t_Vec = Any.any_l ()
     | & _38: UInt64.t = Any.any_l ()
     | & old_6_0: MutBorrow.t t_Vec = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:knuth_shuffle ensures] permutation_of (view v.final) (view'1 v)}
+    [ return''0 (result: ()) -> {[@expl:knuth_shuffle ensures] permutation_of (view v.final) (view v.current)}
       (! return' {result}) ]
 end
