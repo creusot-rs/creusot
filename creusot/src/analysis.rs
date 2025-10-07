@@ -47,7 +47,7 @@ use crate::{
     translation::{
         fmir::{self, BorrowKind},
         function::discriminator_for_switch,
-        pearlite::{self, Term},
+        pearlite::{Term, TermKind},
     },
     util::Orphan,
 };
@@ -184,7 +184,7 @@ impl<'tcx> BodySpecs<'tcx> {
 /// Read-only context for `Analysis`.
 /// This provides information about variables in Pearlite terms (assertions, snapshots, invariants).
 pub struct AnalysisEnv<'a, 'tcx> {
-    tree: fmir::ScopeTree<'tcx>,
+    tree: fmir::ScopeTree,
     corenamer: &'a HashMap<Ident, HirId>,
     locals: HashMap<Local, (Symbol, Ident)>,
     /// The substitution that replaces Term::Capture(xxx) into the corresponding projection
@@ -193,7 +193,7 @@ pub struct AnalysisEnv<'a, 'tcx> {
 
 impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
     fn new(
-        tree: fmir::ScopeTree<'tcx>,
+        tree: fmir::ScopeTree,
         corenamer: &'a HashMap<Ident, HirId>,
         locals: HashMap<Local, (Symbol, Ident)>,
         clos_subst: Option<ClosSubst<'tcx>>,
@@ -202,7 +202,7 @@ impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
     }
 
     /// Construct a substitution for an inline Pearlite expression (`proof_assert`, `snapshot`).
-    /// Pearlite identifiers come from HIR (`HirId`), which must correspond to places in the middle of a MIR body.
+    /// Pearlite identifiers come from HIR (`HirId`), which must correspond to locals in the middle of a MIR body.
     /// The `places` argument is constructed by `ScopeTree::visible_places`.
     ///
     /// This substitution can't just be represented as a `HashMap` because at this point we don't know its keys,
@@ -211,8 +211,8 @@ impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
         &self,
         tcx: TyCtxt<'tcx>,
         scope: mir::SourceScope,
-    ) -> impl Fn(Ident) -> Option<pearlite::TermKind<'tcx>> {
-        let places = self.tree.visible_places(scope);
+    ) -> impl Fn(Ident) -> Option<TermKind<'tcx>> {
+        let places = self.tree.visible_locals(scope);
         move |ident| {
             let var = *self
                 .corenamer
@@ -220,7 +220,8 @@ impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
                 .unwrap_or_else(|| panic!("HirId not found for {:?}", ident));
             let ident2 = tcx.hir_ident(var);
             match places.get(&ident2) {
-                Some(term) => Some(term.clone()),
+                Some(Some(pid)) => Some(TermKind::Var(*pid)),
+                Some(None) => panic!("Place found for {:?} is a capture", ident2),
                 None => panic!("No place found for {:?}", ident2),
             }
         }
@@ -888,7 +889,7 @@ pub(crate) fn run_with_specs<'tcx>(
     let corenamer = &ctx.corenamer.borrow();
     // We take `locals` from `body_specs` and put it back later
     let locals = std::mem::take(&mut body_specs.locals);
-    let tree = fmir::ScopeTree::build(&body.body, tcx, &locals);
+    let tree = fmir::ScopeTree::build(&body.body, &locals);
     let clos_subst = tcx.is_closure_like(def_id).then(|| {
         let loc = body_specs.vars.get_index(1).unwrap();
         let ty_env = tcx.type_of(def_id).instantiate_identity();

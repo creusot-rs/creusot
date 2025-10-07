@@ -745,7 +745,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             return Err(Error::msg(
                 span,
                 format!(
-                    "Logical reborrow of a partial closure is not possible, because the prophecy of the captured borrow is not visible within the closure."
+                    "Logical reborrow of a partial capture is not possible, because the prophecy of the captured borrow is not visible within the closure."
                 ),
             ));
         }
