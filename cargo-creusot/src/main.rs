@@ -98,17 +98,7 @@ fn invoke_cargo(
     if env::var_os("CARGO_TARGET_DIR").is_none() {
         cmd.env("CARGO_TARGET_DIR", root.join("target/creusot"));
     }
-
-    // Append flags to any pre-existing ones
-    // CARGO_ENCODED_RUSTFLAGS contains options to pass to rustc, separated by '\x1f'.
-    // https://doc.rust-lang.org/cargo/reference/environment-variables.html
-    let mut cargo_encoded_rustflags = match std::env::var("CARGO_ENCODED_RUSTFLAGS") {
-        Ok(flags) => flags + "\x1f",
-        Err(_) => String::new(),
-    };
-    cargo_encoded_rustflags.push_str("--creusot=");
-    cargo_encoded_rustflags.push_str(&serde_json::to_string(&args).unwrap());
-    cmd.env("CARGO_ENCODED_RUSTFLAGS", cargo_encoded_rustflags);
+    cmd.env("CREUSOT_ARGS", serde_json::to_string(&args).unwrap());
 
     if matches!(doc, Some(Doc::Doc)) {
         let mut rustdocflags = std::env::var("RUSTDOCFLAGS").unwrap_or_else(|_| String::new());

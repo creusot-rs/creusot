@@ -42,17 +42,23 @@ fn main() {
 fn setup_plugin() {
     let mut args = env::args().collect::<Vec<_>>();
 
-    let creusot = match args.iter().find_map(|arg| arg.strip_prefix("--creusot=")) {
-        Some(json) => {
-            let creusot = serde_json::from_str(json).unwrap();
+    let creusot = match std::env::var("CREUSOT_ARGS") {
+        Ok(json) => {
+            let creusot = serde_json::from_str(&json).unwrap();
             args.retain(|arg| !arg.starts_with("--creusot="));
             Some(creusot)
         }
-        None => args.iter().rposition(|arg| arg == "--").map(|pos| {
-            let mut creusot_args = args.split_off(pos);
-            creusot_args[0] = "creusot-rustc".to_string();
-            CreusotArgs::parse_from(creusot_args)
-        }),
+        Err(std::env::VarError::NotPresent) => {
+            args.iter().rposition(|arg| arg == "--").map(|pos| {
+                let mut creusot_args = args.split_off(pos);
+                creusot_args[0] = "creusot-rustc".to_string();
+                CreusotArgs::parse_from(creusot_args)
+            })
+        }
+        Err(std::env::VarError::NotUnicode(err)) => {
+            eprintln!("Bad unicode in CREUSOT_ARGS: {err:?}");
+            std::process::exit(1)
+        }
     };
     let opts = creusot.map(|creusot| {
         creusot.to_options().unwrap_or_else(|msg| {
