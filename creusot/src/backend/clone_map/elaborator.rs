@@ -12,7 +12,7 @@ use crate::{
         ty::{
             eliminator, translate_closure_ty, translate_tuple_ty, translate_ty, translate_tydecl,
         },
-        ty_inv::InvariantElaborator,
+        ty_inv::elaborate_inv,
     },
     contracts_items::{Intrinsic, get_builtin, is_inline, is_logic, why3_metas},
     ctx::{BodyId, HasTyCtxt as _, ItemType},
@@ -243,14 +243,40 @@ fn expand_logic<'tcx>(
     } else {
         let mut decls = val(sig.why_sig, kind);
 
-        if Intrinsic::Precondition.is(ctx, def_id) {
-            if let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind() {
-                let args_id = Ident::fresh_local("args").into();
-                let args = Term::var(args_id, subst.type_at(0));
-                if let Some(pre) = pre_fndef(ctx, typing_env, did_f, subst_f, args.clone()) {
-                    let args = [Term::unit(ctx.tcx).coerce(subst.type_at(1)), args];
-                    let call = Term::call(ctx.tcx, typing_env, def_id, subst, args);
-                    let trig = Box::new([Trigger(Box::new([call.clone()]))]);
+        if matches!(
+            ctx.intrinsic(def_id),
+            Intrinsic::Precondition
+                | Intrinsic::Postcondition
+                | Intrinsic::PostconditionMut
+                | Intrinsic::PostconditionOnce
+        ) && let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind()
+        {
+            // No definite instance if found for this method, so `term` has returned `None`
+            // However, we still emit an axiom telling that the specification should be a refinement.
+            let args_id = Ident::fresh_local("args").into();
+            let args_tup = Term::var(args_id, subst.type_at(0));
+
+            let res_id = Ident::fresh_local("res").into();
+            let res_ty = ctx.instantiate_bound_regions_with_erased(
+                ctx.fn_sig(did_f).instantiate(ctx.tcx, subst_f).output(),
+            );
+            let res = Term::var(res_id, res_ty);
+
+            let mut args = vec![Term::unit(ctx.tcx).coerce(subst.type_at(1)), args_tup.clone()];
+            match ctx.intrinsic(def_id) {
+                Intrinsic::Precondition => (),
+                Intrinsic::Postcondition | Intrinsic::PostconditionOnce => args.push(res.clone()),
+                Intrinsic::PostconditionMut => {
+                    args.extend([Term::unit(ctx.tcx).coerce(subst.type_at(1)), res.clone()])
+                }
+                _ => unreachable!(),
+            };
+
+            let call = Term::call(ctx.tcx, typing_env, def_id, subst, args);
+            let trig = Box::new([Trigger(Box::new([call.clone()]))]);
+
+            if Intrinsic::Precondition.is(ctx, def_id) {
+                if let Some(pre) = pre_fndef(ctx, typing_env, did_f, subst_f, args_tup) {
                     let axiom = pre.implies(call).forall_trig((args_id, subst.type_at(0)), trig);
                     decls.push(Decl::Axiom(Axiom {
                         name: Ident::fresh(ctx.crate_name(), "precondition_fndef"),
@@ -258,40 +284,17 @@ fn expand_logic<'tcx>(
                         axiom: lower_pure(ctx, &names, &axiom),
                     }))
                 }
-            }
-        } else if matches!(
-            ctx.intrinsic(def_id),
-            Intrinsic::Postcondition | Intrinsic::PostconditionMut | Intrinsic::PostconditionOnce
-        ) {
-            if let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind() {
-                let args_id = Ident::fresh_local("args").into();
-                let args = Term::var(args_id, subst.type_at(0));
-
-                let res_id = Ident::fresh_local("res").into();
-                let res_ty = ctx.instantiate_bound_regions_with_erased(
-                    ctx.fn_sig(did_f).instantiate(ctx.tcx, subst_f).output(),
+            } else if let Some(post) = post_fndef(ctx, typing_env, did_f, subst_f, args_tup, res) {
+                let axiom = call.implies(post).quant(
+                    QuantKind::Forall,
+                    Box::new([(args_id, subst.type_at(0)), (res_id, res_ty)]),
+                    trig,
                 );
-                let res = Term::var(res_id, res_ty);
-                if let Some(post) =
-                    post_fndef(ctx, typing_env, did_f, subst_f, args.clone(), res.clone())
-                {
-                    let mut v = vec![Term::unit(ctx.tcx).coerce(subst.type_at(1)), args, res];
-                    if Intrinsic::PostconditionMut.is(ctx, def_id) {
-                        v.insert(2, v[0].clone());
-                    }
-                    let call = Term::call(ctx.tcx, typing_env, def_id, subst, v);
-                    let trig = Box::new([Trigger(Box::new([call.clone()]))]);
-                    let axiom = call.implies(post).quant(
-                        QuantKind::Forall,
-                        Box::new([(args_id, subst.type_at(0)), (res_id, res_ty)]),
-                        trig,
-                    );
-                    decls.push(Decl::Axiom(Axiom {
-                        name: Ident::fresh(ctx.crate_name(), "postcondition_fndef"),
-                        rewrite: false,
-                        axiom: lower_pure(ctx, &names, &axiom),
-                    }))
-                }
+                decls.push(Decl::Axiom(Axiom {
+                    name: Ident::fresh(ctx.crate_name(), "postcondition_fndef"),
+                    rewrite: false,
+                    axiom: lower_pure(ctx, &names, &axiom),
+                }))
             }
         }
 
@@ -398,12 +401,10 @@ fn expand_ty_inv_axiom<'tcx>(
     ctx: &Why3Generator<'tcx>,
     ty: Ty<'tcx>,
 ) -> Vec<Decl> {
-    let param_env = elab.typing_env;
-    let span = elab.root_span;
+    let Some((term, rewrite)) = elaborate_inv(ctx, elab.typing_env, ty, elab.root_span) else {
+        return vec![];
+    };
     let names = elab.namer(Dependency::TyInvAxiom(ty));
-    let mut elab = InvariantElaborator::new(param_env, ctx);
-    let Some(term) = elab.elaborate_inv(ty, span) else { return vec![] };
-    let rewrite = elab.rewrite;
     let axiom = lower_pure_weakdep(ctx, &names, &term);
     let axiom =
         Axiom { name: names.dependency(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom };
@@ -709,7 +710,7 @@ fn resolve_term<'tcx>(
     }
 }
 
-/// Generate body of `postcondition_once` for `FnMut` closures.
+/// Generate body of `postcondition_once`
 fn postcondition_once_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -782,8 +783,8 @@ fn postcondition_once_term<'tcx>(
     }
 }
 
-/// Generate body of `postcondition_mut` for `FnMut` closures.
-fn fn_mut_postcond_term<'tcx>(
+/// Generate body of `postcondition_mut`
+fn postcondition_mut_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
@@ -792,7 +793,6 @@ fn fn_mut_postcond_term<'tcx>(
     let &[self_, args, result_state, result] = bound else {
         panic!("postcondition_mut must have 4 arguments. This should not happen. Found: {bound:?}")
     };
-    let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
     let args = Term::var(args, subst.type_at(0));
@@ -819,13 +819,13 @@ fn fn_mut_postcond_term<'tcx>(
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
-            let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
+            let closure_ty = def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::Postcondition.get(ctx);
             let post_args = [self_.clone().proj(0usize.into(), closure_ty), args, res];
             Some(
-                Term::call(tcx, typing_env, post_fn, subst_postcond, post_args)
+                Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args)
                     .conj(self_.eq(ctx.tcx, result_state)),
             )
         }
@@ -836,7 +836,7 @@ fn fn_mut_postcond_term<'tcx>(
             let post_fn = Intrinsic::PostconditionMut.get(ctx);
             let post_args = [self_.clone().cur(), args, result_state.clone().cur(), res];
             Some(
-                Term::call(tcx, typing_env, post_fn, subst_postcond, post_args)
+                Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args)
                     .conj(self_.fin().eq(ctx.tcx, result_state.fin())),
             )
         }
@@ -847,7 +847,7 @@ fn fn_mut_postcond_term<'tcx>(
             let post_args = [self_.clone().coerce(*cl), args, res];
             let post_fn = Intrinsic::Postcondition.get(ctx);
             Some(
-                Term::call(tcx, typing_env, post_fn, subst_postcond, post_args)
+                Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args)
                     .conj(self_.eq(ctx.tcx, result_state)),
             )
         }
@@ -858,7 +858,7 @@ fn fn_mut_postcond_term<'tcx>(
             let post_fn = Intrinsic::PostconditionMut.get(ctx);
             let closure_ty = bsubst.type_at(0);
             let post_args = [self_.coerce(closure_ty), args, result_state.coerce(closure_ty), res];
-            Some(Term::call(tcx, typing_env, post_fn, subst_postcond, post_args))
+            Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
@@ -873,14 +873,13 @@ fn fn_mut_postcond_term<'tcx>(
     }
 }
 
-/// Generate body of `postcondition` for `Fn` closures.
-fn fn_postcond_term<'tcx>(
+/// Generate body of `postcondition`
+fn postcondition_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
-    let tcx = ctx.tcx;
     let &[self_, args, result] = bound else {
         panic!("postcondition must have 3 arguments. This should not happen. Found: {bound:?}")
     };
@@ -902,29 +901,29 @@ fn fn_postcond_term<'tcx>(
         }
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
-            let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
+            let closure_ty = def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner);
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::Postcondition.get(ctx);
             let post_args = [self_.proj(0usize.into(), closure_ty), args, res];
-            Some(Term::call(tcx, typing_env, post_fn, subst_postcond, post_args))
+            Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         &TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(cl);
-            let subst_postcond = tcx.mk_args(&subst_postcond);
+            let subst_postcond = ctx.tcx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::Postcondition.get(ctx);
             let post_args = [self_.clone().coerce(cl), args, res];
-            Some(Term::call(tcx, typing_env, post_fn, subst_postcond, post_args))
+            Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = bsubst[0];
-            let subst_postcond = tcx.mk_args(&subst_postcond);
+            let subst_postcond = ctx.tcx.mk_args(&subst_postcond);
             let post_args = [self_.coerce(bsubst.type_at(0)), args, res];
             Some(Term::call(
-                tcx,
+                ctx.tcx,
                 typing_env,
                 Intrinsic::Postcondition.get(ctx),
                 subst_postcond,
@@ -976,7 +975,6 @@ fn precondition_term<'tcx>(
     subst: GenericArgsRef<'tcx>,
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
-    let tcx = ctx.tcx;
     let &[self_, args] = bound else {
         panic!("precondition_once must have 2 arguments. This should not happen. Found: {bound:?}")
     };
@@ -1015,7 +1013,7 @@ fn precondition_term<'tcx>(
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
-            let closure_ty = def.all_fields().next().unwrap().ty(tcx, subst_inner);
+            let closure_ty = def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let pre_fn = Intrinsic::Precondition.get(ctx);
@@ -1223,8 +1221,8 @@ fn term<'tcx>(
             structural_resolve(ctx, typing_env, subj, subst.type_at(0))
         }
         Intrinsic::PostconditionOnce => postcondition_once_term(ctx, typing_env, subst, bound),
-        Intrinsic::PostconditionMut => fn_mut_postcond_term(ctx, typing_env, subst, bound),
-        Intrinsic::Postcondition => fn_postcond_term(ctx, typing_env, subst, bound),
+        Intrinsic::PostconditionMut => postcondition_mut_term(ctx, typing_env, subst, bound),
+        Intrinsic::Postcondition => postcondition_term(ctx, typing_env, subst, bound),
         Intrinsic::Precondition => precondition_term(ctx, typing_env, subst, bound),
         Intrinsic::HistInv => fn_mut_hist_inv_term(ctx, typing_env, subst, bound),
         Intrinsic::SizeOfLogic => size_of_logic_term(ctx, typing_env, def_id, subst.type_at(0)),

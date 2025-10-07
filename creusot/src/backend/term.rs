@@ -251,7 +251,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Impl { box lhs, box rhs } => {
                 self.lower_term(lhs).implies(self.lower_term(rhs))
             }
-            TermKind::Old { box term } => {
+            TermKind::Old { .. } => {
                 self.ctx.crash_and_error(term.span, "`old` is not allowed here")
             }
             TermKind::Match { box scrutinee, arms } => {
@@ -366,6 +366,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let name = Name::Local(ident, Some(why3::Symbol::intern("'post'return'")));
                 Exp::Var(name).app(params)
             }
+            TermKind::Capture(_) => unreachable!("Capture left in lowering"),
         }
     }
 

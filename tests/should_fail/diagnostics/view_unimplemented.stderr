@@ -1,75 +1,71 @@
-error[E0599]: Cannot take the view of `S`
+error[E0599]: no method named `view` found for struct `S` in the current scope
   --> view_unimplemented.rs:9:15
    |
  5 | struct S;
-   | -------- method `view` not found for this struct because it doesn't satisfy `S: creusot_contracts::View`
+   | -------- method `view` not found for this struct
 ...
  9 |     let _ = x.view();
-   |               ^^^^ no implementation for `S@`
+   |               ^^^^ method not found in `S`
+   |
+  ::: ./creusot-contracts/src/model.rs:17:8
+   |
+17 |     fn view(self) -> Self::ViewTy;
+   |        ----
+   |        |
+   |        the method is available for `std::sync::Arc<S>` here
+   |        the method is available for `std::rc::Rc<S>` here
+   |        the method is available for `std::sync::Arc<&mut S>` here
+   |        the method is available for `std::rc::Rc<&mut S>` here
+   |        the method is available for `std::sync::Arc<&S>` here
+   |        the method is available for `std::rc::Rc<&S>` here
+   |
+help: consider wrapping the receiver expression with the appropriate type
+   |
+ 9 |     let _ = Arc::new(x).view();
+   |             +++++++++ +
+help: consider wrapping the receiver expression with the appropriate type
+   |
+ 9 |     let _ = Rc::new(x).view();
+   |             ++++++++ +
+help: consider wrapping the receiver expression with the appropriate type
+   |
+ 9 |     let _ = Arc::new(&mut x).view();
+   |             +++++++++++++  +
+help: consider wrapping the receiver expression with the appropriate type
+   |
+ 9 |     let _ = Rc::new(&mut x).view();
+   |             ++++++++++++  +
+help: consider wrapping the receiver expression with the appropriate type
+   |
+ 9 |     let _ = Arc::new(&x).view();
+   |             ++++++++++ +
+help: consider wrapping the receiver expression with the appropriate type
+   |
+ 9 |     let _ = Rc::new(&x).view();
+   |             +++++++++ +
+
+error[E0599]: Cannot take the view of `S`
+  --> view_unimplemented.rs:14:25
+   |
+ 5 | struct S;
+   | -------- method `__creusot_view_stub` not found for this struct because it doesn't satisfy `S: creusot_contracts::View`
+...
+14 |     let _ = pearlite! { x@ };
+   |                         ^^ no implementation for `S@`
    |
    = note: the following trait bounds were not satisfied:
            `S: creusot_contracts::View`
-           which is required by `&S: creusot_contracts::View`
-           `S: creusot_contracts::View`
-           `S: creusot_contracts::View`
-           which is required by `&mut S: creusot_contracts::View`
+           `&S: creusot_contracts::View`
+           `&mut S: creusot_contracts::View`
 note: the trait `creusot_contracts::View` must be implemented
   --> ./creusot-contracts/src/model.rs:13:1
    |
 13 | pub trait View {
    | ^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
-   = note: the following trait defines an item `view`, perhaps you need to implement it:
-           candidate #1: `creusot_contracts::View`
+   = note: the following trait defines an item `__creusot_view_stub`, perhaps you need to implement it:
+           candidate #1: `creusot_contracts::__stubs::ViewStub`
 
-error[E0277]: Cannot take the view of `S`
-  --> view_unimplemented.rs:14:13
-   |
-14 |     let _ = pearlite! { x@ };
-   |             ^^^^^^^^^^^^--^^
-   |             |           |
-   |             |           required by a bound introduced by this call
-   |             no implementation for `S@`
-   |
-help: the trait `creusot_contracts::View` is not implemented for `S`
-  --> view_unimplemented.rs:5:1
-   |
- 5 | struct S;
-   | ^^^^^^^^
-   = help: the following other types implement trait `creusot_contracts::View`:
-             &T
-             &mut T
-             [T; N]
-             [T]
-             char
-             creusot_contracts::Ghost<T>
-             creusot_contracts::Snapshot<T>
-             creusot_contracts::cell::PermCellOwn<T>
-           and 54 others
+error: aborting due to 2 previous errors
 
-error[E0277]: Cannot take the view of `S`
-  --> view_unimplemented.rs:14:25
-   |
-14 |     let _ = pearlite! { x@ };
-   |                         ^^ no implementation for `S@`
-   |
-help: the trait `creusot_contracts::View` is not implemented for `S`
-  --> view_unimplemented.rs:5:1
-   |
- 5 | struct S;
-   | ^^^^^^^^
-   = help: the following other types implement trait `creusot_contracts::View`:
-             &T
-             &mut T
-             [T; N]
-             [T]
-             char
-             creusot_contracts::Ghost<T>
-             creusot_contracts::Snapshot<T>
-             creusot_contracts::cell::PermCellOwn<T>
-           and 54 others
-
-error: aborting due to 3 previous errors
-
-Some errors have detailed explanations: E0277, E0599.
-For more information about an error, try `rustc --explain E0277`.
+For more information about this error, try `rustc --explain E0599`.

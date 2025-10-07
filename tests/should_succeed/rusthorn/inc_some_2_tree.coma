@@ -142,10 +142,6 @@ module M_inc_some_2_tree__qyi9454558703362393917__take_some_rest (* Tree *)
   
   meta "rewrite_def" predicate resolve'4
   
-  function view [@inline:trivial] (self: MutBorrow.t UInt32.t) : int = UInt32.t'int self.current
-  
-  meta "rewrite_def" function view
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -236,8 +232,9 @@ module M_inc_some_2_tree__qyi9454558703362393917__take_some_rest (* Tree *)
     | & _18: MutBorrow.t t_Tree = Any.any_l ()
     | & _19: MutBorrow.t t_Tree = Any.any_l () ])
     [ return''0 (result: tuple) -> {[@expl:take_some_rest ensures #0] sum self.final - sum self.current
-      = UInt32.t'int (result._p0).final + sum (result._p1).final - view result._p0 - sum (result._p1).current}
-      {[@expl:take_some_rest ensures #1] view result._p0 <= sum self.current}
+      = UInt32.t'int (result._p0).final + sum (result._p1).final - UInt32.t'int (result._p0).current
+      - sum (result._p1).current}
+      {[@expl:take_some_rest ensures #1] UInt32.t'int (result._p0).current <= sum self.current}
       {[@expl:take_some_rest ensures #2] sum (result._p1).current <= sum self.current}
       (! return' {result}) ]
 end
@@ -259,14 +256,11 @@ module M_inc_some_2_tree__inc_some_2_tree
   
   type tuple = { _p0: MutBorrow.t UInt32.t; _p1: MutBorrow.t t_Tree }
   
-  function view [@inline:trivial] (self: MutBorrow.t UInt32.t) : int = UInt32.t'int self.current
-  
-  meta "rewrite_def" function view
-  
   let rec take_some_rest (self: MutBorrow.t t_Tree) (return' (x: tuple)) = any
     [ return''0 (result: tuple) -> {sum self.final - sum self.current
-      = UInt32.t'int (result._p0).final + sum (result._p1).final - view result._p0 - sum (result._p1).current}
-      {view result._p0 <= sum self.current}
+      = UInt32.t'int (result._p0).final + sum (result._p1).final - UInt32.t'int (result._p0).current
+      - sum (result._p1).current}
+      {UInt32.t'int (result._p0).current <= sum self.current}
       {sum (result._p1).current <= sum self.current}
       (! return' {result}) ]
   

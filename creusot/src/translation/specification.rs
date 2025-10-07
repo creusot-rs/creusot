@@ -1,13 +1,11 @@
 use crate::{
-    backend::closures::ClosSubst,
+    backend::{closures::ClosSubst, ty_inv::inv_call},
     contracts_items::{
         Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_open_inv_result,
     },
     ctx::*,
     naming::{name, variable_name},
-    translation::pearlite::{
-        Ident, Literal, PIdent, Term, TermKind, TermVisitorMut, normalize, type_invariant_term,
-    },
+    translation::pearlite::{Ident, Literal, PIdent, Term, TermKind, normalize},
     util::erased_identity_for_item,
 };
 use rustc_hir::{AttrArgs, Safety, def::DefKind, def_id::DefId};
@@ -325,11 +323,11 @@ impl<'tcx> PreSignature<'tcx> {
 
         let new_requires = self.inputs.iter().enumerate().filter_map(|(i, (ident, span, ty))| {
             if !params_open_inv.contains(&i)
-                && let Some(term) = type_invariant_term(ctx, typing_env, ident.0, *span, *ty)
+                && let Some(term) = inv_call(ctx, typing_env, Term::var(ident.0, *ty))
             {
                 let expl =
                     format!("expl:{} '{}' type invariant", fn_name, ident.0.name().to_string());
-                Some(Condition { term, expl })
+                Some(Condition { term: term.span(*span), expl })
             } else {
                 None
             }
@@ -338,16 +336,16 @@ impl<'tcx> PreSignature<'tcx> {
 
         let ret_ty_span: Option<Span> = try { ctx.hir_get_fn_output(def_id.as_local()?)?.span() };
         if (ctx.def_kind(def_id) == DefKind::ConstParam || !is_open_inv_result(ctx.tcx, def_id))
-            && let Some(term) = type_invariant_term(
-                ctx,
-                typing_env,
-                name::result(),
-                ret_ty_span.unwrap_or_else(|| ctx.def_span(def_id)),
-                self.output,
-            )
+            && let Some(term) = inv_call(ctx, typing_env, Term::var(name::result(), self.output))
         {
             let expl = format!("expl:{} result type invariant", fn_name);
-            self.contract.ensures.insert(0, Condition { term, expl });
+            self.contract.ensures.insert(
+                0,
+                Condition {
+                    term: term.span(ret_ty_span.unwrap_or_else(|| ctx.def_span(def_id))),
+                    expl,
+                },
+            );
         }
     }
 }
@@ -382,26 +380,32 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             ClosureKind::FnMut => self_.clone().cur(),
             ClosureKind::FnOnce => self_.clone(),
         };
-
-        let mut pre_subst = ClosSubst::pre(ctx, def_id.expect_local(), self_pre.clone());
+        let pre_subst = ClosSubst::pre_or_cur(ctx.tcx, def_id.expect_local(), self_pre);
         for pre in &mut presig.contract.requires {
-            pre_subst.visit_mut_term(&mut pre.term);
+            pre_subst.subst(ctx.tcx, &mut pre.term);
         }
 
-        let mut post_subst = if kind == ClosureKind::FnOnce {
-            // If this is an FnOnce closure, then variables captured by value
-            // are consumed by the closure, and thus we cannot refer to them in
-            // the post state.
-            let post_owned_projs = repeat(None);
-            ClosSubst::post_owned(ctx, def_id.expect_local(), self_pre, post_owned_projs)
-        } else {
-            let self_post =
-                if kind == ClosureKind::Fn { self_pre.clone() } else { self_.clone().fin() };
-            ClosSubst::post_ref(ctx, def_id.expect_local(), self_pre, self_post)
+        let post_subst = match kind {
+            ClosureKind::FnOnce => {
+                // If this is an FnOnce closure, then variables captured by value are
+                // consumed by the closure, and thus we cannot refer to them in the post state.
+                ClosSubst::post_owned(ctx.tcx, def_id.expect_local(), self_.clone(), repeat(None))
+            }
+            ClosureKind::FnMut => ClosSubst::post_ref(
+                ctx.tcx,
+                def_id.expect_local(),
+                self_.clone().cur(),
+                self_.clone().fin(),
+            ),
+            ClosureKind::Fn => ClosSubst::post_ref(
+                ctx.tcx,
+                def_id.expect_local(),
+                self_.clone().shr_deref(),
+                self_.clone().shr_deref(),
+            ),
         };
-
         for post in &mut presig.contract.ensures {
-            post_subst.visit_mut_term(&mut post.term);
+            post_subst.subst(ctx.tcx, &mut post.term);
         }
 
         if kind == ClosureKind::FnMut {

@@ -17,8 +17,8 @@ use crate::{
     naming::name,
     translation::{
         pearlite::{
-            BinOp, Literal, Pattern, PatternKind, Term, TermKind, TermVisitor, UnOp,
-            super_visit_term,
+            BinOp, Literal, Pattern, PatternKind, Term, TermKind, UnOp,
+            visit::{TermVisitor, super_visit_term},
         },
         traits::TraitResolved,
     },
@@ -586,6 +586,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Precondition { .. } | TermKind::Postcondition { .. } => {
                 Err(VCError::PrePostInLemma(t.span))
             }
+            TermKind::Capture(_) => unreachable!("Capture left in VCGen")
         }
     }
 

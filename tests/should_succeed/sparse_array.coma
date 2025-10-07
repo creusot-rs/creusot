@@ -309,10 +309,6 @@ module M_sparse_array__qyi963773560051086010__get (* Sparse<T, SIZE> *)
   
   axiom view_spec: forall self: t_Sparse. Seq.length (view self) = UInt64.t'int const_SIZE
   
-  function view'0 [@inline:trivial] (self: t_Sparse) : Seq.seq t_Option'0 = view self
-  
-  meta "rewrite_def" function view'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -363,10 +359,10 @@ module M_sparse_array__qyi963773560051086010__get (* Sparse<T, SIZE> *)
     | & _20: bool = Any.any_l () ])
     [ return''0 (result: t_Option) -> {[@expl:get result type invariant] inv'8 result}
       {[@expl:get ensures #0] match result with
-        | C_None -> Seq.get (view'0 self) (UInt64.t'int i) = C_None'0
-        | C_Some x -> Seq.get (view'0 self) (UInt64.t'int i) = C_Some'0 x
+        | C_None -> Seq.get (view self) (UInt64.t'int i) = C_None'0
+        | C_Some x -> Seq.get (view self) (UInt64.t'int i) = C_Some'0 x
         end}
-      {[@expl:get ensures #1] match Seq.get (view'0 self) (UInt64.t'int i) with
+      {[@expl:get ensures #1] match Seq.get (view self) (UInt64.t'int i) with
         | C_None'0 -> result = C_None
         | C_Some'0 _ -> true
         end}
@@ -906,10 +902,6 @@ module M_sparse_array__qyi963773560051086010__set (* Sparse<T, SIZE> *)
   
   axiom view_spec: forall self: t_Sparse. Seq.length (view self) = UInt64.t'int const_SIZE
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Sparse) : Seq.seq t_Option = view self.current
-  
-  meta "rewrite_def" function view'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -996,7 +988,7 @@ module M_sparse_array__qyi963773560051086010__set (* Sparse<T, SIZE> *)
     | & _30: bool = Any.any_l () ])
     [ return''0 (result: ()) -> {[@expl:set ensures #0] forall j: int. 0 <= j
           /\ j < UInt64.t'int const_SIZE /\ j <> UInt64.t'int i
-        -> Seq.get (view self.final) j = Seq.get (view'0 self) j}
+        -> Seq.get (view self.final) j = Seq.get (view self.current) j}
       {[@expl:set ensures #1] Seq.get (view self.final) (UInt64.t'int i) = C_Some v}
       (! return' {result}) ]
 end
@@ -1274,18 +1266,14 @@ module M_sparse_array__f
   
   axiom inv_axiom'7 [@rewrite]: forall x: t_Sparse [inv'7 x]. inv'7 x = invariant''5 x
   
-  function view'1 [@inline:trivial] (self: t_Sparse) : Seq.seq t_Option = view self
-  
-  meta "rewrite_def" function view'1
-  
   let rec get (self: t_Sparse) (i: UInt64.t) (return' (x: t_Option'0)) = {[@expl:get 'self' type invariant] inv'7 self}
     {[@expl:get requires] UInt64.t'int i < UInt64.t'int (10: UInt64.t)}
     any
     [ return''0 (result: t_Option'0) -> {match result with
-        | C_None'0 -> Seq.get (view'1 self) (UInt64.t'int i) = C_None
-        | C_Some'0 x -> Seq.get (view'1 self) (UInt64.t'int i) = C_Some x
+        | C_None'0 -> Seq.get (view self) (UInt64.t'int i) = C_None
+        | C_Some'0 x -> Seq.get (view self) (UInt64.t'int i) = C_Some x
         end}
-      {match Seq.get (view'1 self) (UInt64.t'int i) with
+      {match Seq.get (view self) (UInt64.t'int i) with
         | C_None -> result = C_None'0
         | C_Some _ -> true
         end}
@@ -1299,19 +1287,15 @@ module M_sparse_array__f
   
   axiom inv_axiom'8 [@rewrite]: forall x: t_Sparse'0 [inv'8 x]. inv'8 x = invariant''6 x
   
-  function view'2 [@inline:trivial] (self: t_Sparse'0) : Seq.seq t_Option = view'0 self
-  
-  meta "rewrite_def" function view'2
-  
   let rec get'0 (self: t_Sparse'0) (i: UInt64.t) (return' (x: t_Option'0)) =
     {[@expl:get 'self' type invariant] inv'8 self}
     {[@expl:get requires] UInt64.t'int i < UInt64.t'int (20: UInt64.t)}
     any
     [ return''0 (result: t_Option'0) -> {match result with
-        | C_None'0 -> Seq.get (view'2 self) (UInt64.t'int i) = C_None
-        | C_Some'0 x -> Seq.get (view'2 self) (UInt64.t'int i) = C_Some x
+        | C_None'0 -> Seq.get (view'0 self) (UInt64.t'int i) = C_None
+        | C_Some'0 x -> Seq.get (view'0 self) (UInt64.t'int i) = C_Some x
         end}
-      {match Seq.get (view'2 self) (UInt64.t'int i) with
+      {match Seq.get (view'0 self) (UInt64.t'int i) with
         | C_None -> result = C_None'0
         | C_Some _ -> true
         end}
@@ -1325,16 +1309,12 @@ module M_sparse_array__f
   
   axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_Sparse [inv'9 x]. inv'9 x = invariant''7 x
   
-  function view'3 [@inline:trivial] (self: MutBorrow.t t_Sparse) : Seq.seq t_Option = view self.current
-  
-  meta "rewrite_def" function view'3
-  
   let rec set (self: MutBorrow.t t_Sparse) (i: UInt64.t) (v: Int32.t) (return' (x: ())) =
     {[@expl:set 'self' type invariant] inv'9 self}
     {[@expl:set requires] UInt64.t'int i < UInt64.t'int (10: UInt64.t)}
     any
     [ return''0 (result: ()) -> {forall j: int. 0 <= j /\ j < UInt64.t'int (10: UInt64.t) /\ j <> UInt64.t'int i
-        -> Seq.get (view self.final) j = Seq.get (view'3 self) j}
+        -> Seq.get (view self.final) j = Seq.get (view self.current) j}
       {Seq.get (view self.final) (UInt64.t'int i) = C_Some v}
       (! return' {result}) ]
   
@@ -1346,22 +1326,14 @@ module M_sparse_array__f
   
   axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_Sparse'0 [inv'10 x]. inv'10 x = invariant''8 x
   
-  function view'4 [@inline:trivial] (self: MutBorrow.t t_Sparse'0) : Seq.seq t_Option = view'0 self.current
-  
-  meta "rewrite_def" function view'4
-  
   let rec set'0 (self: MutBorrow.t t_Sparse'0) (i: UInt64.t) (v: Int32.t) (return' (x: ())) =
     {[@expl:set 'self' type invariant] inv'10 self}
     {[@expl:set requires] UInt64.t'int i < UInt64.t'int (20: UInt64.t)}
     any
     [ return''0 (result: ()) -> {forall j: int. 0 <= j /\ j < UInt64.t'int (20: UInt64.t) /\ j <> UInt64.t'int i
-        -> Seq.get (view'0 self.final) j = Seq.get (view'4 self) j}
+        -> Seq.get (view'0 self.final) j = Seq.get (view'0 self.current) j}
       {Seq.get (view'0 self.final) (UInt64.t'int i) = C_Some v}
       (! return' {result}) ]
-  
-  function view'5 [@inline:trivial] (self: Int32.t) : int = Int32.to_int self
-  
-  meta "rewrite_def" function view'5
   
   meta "compute_max_steps" 1000000
   
@@ -1397,12 +1369,12 @@ module M_sparse_array__f
       [ s0 = [ &y <- _18 ] s1
       | s1 = {[@expl:assertion] match x with
           | C_None'0 -> false
-          | C_Some'0 z -> view'5 z = 1
+          | C_Some'0 z -> Int32.to_int z = 1
           end}
         s2
       | s2 = {[@expl:assertion] match y with
           | C_None'0 -> false
-          | C_Some'0 z -> view'5 z = 2
+          | C_Some'0 z -> Int32.to_int z = 2
           end}
         s3
       | s3 = get {a} {(7: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_24 <- _ret ] s4)

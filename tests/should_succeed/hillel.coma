@@ -1,9 +1,9 @@
 module M_hillel__right_pad
   use seq.Seq
-  use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
   use creusot.int.UInt64
   use mach.int.Int
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
@@ -25,18 +25,6 @@ module M_hillel__right_pad
   function view (self: t_Vec) : Seq.seq t_T
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
-  
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view self.current
-  
-  meta "rewrite_def" function view'0
-  
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view'0 self
-  
-  meta "rewrite_def" function view'1
-  
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view'1 self
-  
-  meta "rewrite_def" function view'2
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T = Seq.get (view self) ix
   
@@ -73,12 +61,8 @@ module M_hillel__right_pad
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'3 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = view self
-  
-  meta "rewrite_def" function view'3
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'3 self_)} (! return' {result}) ]
+    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
   
@@ -90,7 +74,7 @@ module M_hillel__right_pad
   
   let rec push (self_: MutBorrow.t t_Vec) (v: t_T) (return' (x: ())) = {[@expl:push 'self_' type invariant] inv'4 self_}
     {[@expl:push 'v' type invariant] inv v}
-    any [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view'0 self_) v} (! return' {result}) ]
+    any [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return' {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
   
@@ -112,15 +96,15 @@ module M_hillel__right_pad
     | bb1 = s0 [ s0 = [ &old_2_0 <- str'0 ] s1 | s1 = bb2 ]
     | bb2 = bb2'0
       [ bb2'0 = {[@expl:mut invariant] old_2_0.final = str'0.final}
-        {[@expl:loop invariant #0] Seq.length (view'2 old_str) <= Seq.length (view'0 str'0)}
-        {[@expl:loop invariant #1] Seq.length (view'2 old_str) < UInt64.t'int len'1
-        -> Seq.length (view'0 str'0) <= UInt64.t'int len'1}
-        {[@expl:loop invariant #2] Seq.length (view'0 str'0) > UInt64.t'int len'1
-        -> Seq.length (view'0 str'0) = Seq.length (view'2 old_str)}
-        {[@expl:loop invariant #3] forall i: int. 0 <= i /\ i < Seq.length (view'2 old_str)
+        {[@expl:loop invariant #0] Seq.length (view old_str.current) <= Seq.length (view str'0.current)}
+        {[@expl:loop invariant #1] Seq.length (view old_str.current) < UInt64.t'int len'1
+        -> Seq.length (view str'0.current) <= UInt64.t'int len'1}
+        {[@expl:loop invariant #2] Seq.length (view str'0.current) > UInt64.t'int len'1
+        -> Seq.length (view str'0.current) = Seq.length (view old_str.current)}
+        {[@expl:loop invariant #3] forall i: int. 0 <= i /\ i < Seq.length (view old_str.current)
           -> index_logic str'0.current i = index_logic old_str.current i}
-        {[@expl:loop invariant #4] forall i: int. Seq.length (view'2 old_str) <= i /\ i < Seq.length (view'0 str'0)
-          -> index_logic str'0.current i = pad'0}
+        {[@expl:loop invariant #4] forall i: int. Seq.length (view old_str.current) <= i
+            /\ i < Seq.length (view str'0.current) -> index_logic str'0.current i = pad'0}
         (! s0)
         [ s0 = bb3 ]
         [ bb3 = s0 [ s0 = len {str'0.current} (fun (_ret: UInt64.t) -> [ &_20 <- _ret ] s1) | s1 = bb4 ]
@@ -146,16 +130,16 @@ module M_hillel__right_pad
     | & _24: MutBorrow.t t_Vec = Any.any_l ()
     | & old_2_0: MutBorrow.t t_Vec = Any.any_l () ])
     [ return''0 (result: ()) -> {[@expl:right_pad ensures #0] Seq.length (view str.final) >= UInt64.t'int len'0
-      /\ Seq.length (view str.final) >= Seq.length (view'0 str)}
+      /\ Seq.length (view str.final) >= Seq.length (view str.current)}
       {[@expl:right_pad ensures #1] Seq.length (view str.final) = UInt64.t'int len'0
-      \/ Seq.length (view str.final) = Seq.length (view'0 str)}
-      {[@expl:right_pad ensures #2] UInt64.t'int len'0 <= Seq.length (view'0 str)
-      -> Seq.length (view str.final) = Seq.length (view'0 str)}
-      {[@expl:right_pad ensures #3] UInt64.t'int len'0 > Seq.length (view'0 str)
+      \/ Seq.length (view str.final) = Seq.length (view str.current)}
+      {[@expl:right_pad ensures #2] UInt64.t'int len'0 <= Seq.length (view str.current)
+      -> Seq.length (view str.final) = Seq.length (view str.current)}
+      {[@expl:right_pad ensures #3] UInt64.t'int len'0 > Seq.length (view str.current)
       -> Seq.length (view str.final) = UInt64.t'int len'0}
-      {[@expl:right_pad ensures #4] forall i: int. 0 <= i /\ i < Seq.length (view'0 str)
+      {[@expl:right_pad ensures #4] forall i: int. 0 <= i /\ i < Seq.length (view str.current)
         -> index_logic str.final i = index_logic str.current i}
-      {[@expl:right_pad ensures #5] forall i: int. Seq.length (view'0 str) <= i /\ i < UInt64.t'int len'0
+      {[@expl:right_pad ensures #5] forall i: int. Seq.length (view str.current) <= i /\ i < UInt64.t'int len'0
         -> index_logic str.final i = pad}
       (! return' {result}) ]
 end
@@ -191,18 +175,6 @@ module M_hillel__left_pad
   
   meta "rewrite_def" function index_logic
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view self.current
-  
-  meta "rewrite_def" function view'0
-  
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view'0 self
-  
-  meta "rewrite_def" function view'1
-  
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view'1 self
-  
-  meta "rewrite_def" function view'2
-  
   predicate inv (_0: t_T)
   
   predicate invariant' (self: t_T) = inv self
@@ -234,12 +206,8 @@ module M_hillel__left_pad
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'3 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = view self
-  
-  meta "rewrite_def" function view'3
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'3 self_)} (! return' {result}) ]
+    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
   
@@ -253,7 +221,7 @@ module M_hillel__left_pad
     {[@expl:insert 'self_' type invariant] inv'4 self_}
     {[@expl:insert 'element' type invariant] inv element}
     any
-    [ return''0 (result: ()) -> {Seq.length (view self_.final) = Seq.length (view'0 self_) + 1}
+    [ return''0 (result: ()) -> {Seq.length (view self_.final) = Seq.length (view self_.current) + 1}
       {forall i: int. 0 <= i /\ i < UInt64.t'int index -> index_logic self_.final i = index_logic self_.current i}
       {index_logic self_.final (UInt64.t'int index) = element}
       {forall i: int. UInt64.t'int index < i /\ i < Seq.length (view self_.final)
@@ -281,13 +249,13 @@ module M_hillel__left_pad
     | bb2 = s0 [ s0 = [ &old_3_0 <- str'0 ] s1 | s1 = bb3 ]
     | bb3 = bb3'0
       [ bb3'0 = {[@expl:mut invariant] old_3_0.final = str'0.final}
-        {[@expl:loop invariant #0] Seq.length (view'2 old_str) <= Seq.length (view'0 str'0)}
-        {[@expl:loop invariant #1] Seq.length (view'2 old_str) < UInt64.t'int len'1
-        -> Seq.length (view'0 str'0) <= UInt64.t'int len'1}
-        {[@expl:loop invariant #2] Seq.length (view'0 str'0) > UInt64.t'int len'1
-        -> Seq.length (view'0 str'0) = Seq.length (view'2 old_str)}
-        {[@expl:loop invariant #3] c = Seq.length (view'0 str'0) - Seq.length (view'2 old_str)}
-        {[@expl:loop invariant #4] forall i: int. c <= i /\ i < Seq.length (view'0 str'0)
+        {[@expl:loop invariant #0] Seq.length (view old_str.current) <= Seq.length (view str'0.current)}
+        {[@expl:loop invariant #1] Seq.length (view old_str.current) < UInt64.t'int len'1
+        -> Seq.length (view str'0.current) <= UInt64.t'int len'1}
+        {[@expl:loop invariant #2] Seq.length (view str'0.current) > UInt64.t'int len'1
+        -> Seq.length (view str'0.current) = Seq.length (view old_str.current)}
+        {[@expl:loop invariant #3] c = Seq.length (view str'0.current) - Seq.length (view old_str.current)}
+        {[@expl:loop invariant #4] forall i: int. c <= i /\ i < Seq.length (view str'0.current)
           -> index_logic str'0.current i = index_logic old_str.current (i - c)}
         {[@expl:loop invariant #5] forall i: int. 0 <= i /\ i < c -> index_logic str'0.current i = pad'0}
         (! s0)
@@ -319,13 +287,13 @@ module M_hillel__left_pad
     | & _27: int = Any.any_l ()
     | & old_3_0: MutBorrow.t t_Vec = Any.any_l () ])
     [ return''0 (result: ()) -> {[@expl:left_pad ensures #0] Seq.length (view str.final) >= UInt64.t'int len'0
-      /\ Seq.length (view str.final) >= Seq.length (view'0 str)}
+      /\ Seq.length (view str.final) >= Seq.length (view str.current)}
       {[@expl:left_pad ensures #1] Seq.length (view str.final) = UInt64.t'int len'0
-      \/ Seq.length (view str.final) = Seq.length (view'0 str)}
-      {[@expl:left_pad ensures #2] forall i: int. 0 <= i /\ i < Seq.length (view str.final) - Seq.length (view'0 str)
-        -> index_logic str.final i = pad}
-      {[@expl:left_pad ensures #3] forall i: int. 0 <= i /\ i < Seq.length (view'0 str)
-        -> index_logic str.final (i + (Seq.length (view str.final) - Seq.length (view'0 str)))
+      \/ Seq.length (view str.final) = Seq.length (view str.current)}
+      {[@expl:left_pad ensures #2] forall i: int. 0 <= i
+          /\ i < Seq.length (view str.final) - Seq.length (view str.current) -> index_logic str.final i = pad}
+      {[@expl:left_pad ensures #3] forall i: int. 0 <= i /\ i < Seq.length (view str.current)
+        -> index_logic str.final (i + (Seq.length (view str.final) - Seq.length (view str.current)))
         = index_logic str.current i}
       (! return' {result}) ]
 end
@@ -456,25 +424,18 @@ module M_hillel__insert_unique
   
   axiom inv_axiom'4 [@rewrite]: forall x: Slice64.slice t_T [inv'5 x]. inv'5 x = invariant''4 x
   
-  function view'0 [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view'0
-  
-  function view'1 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = view self
-  
-  meta "rewrite_def" function view'1
-  
   let rec deref (self_: t_Vec) (return' (x: Slice64.slice t_T)) = {[@expl:deref 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: Slice64.slice t_T) -> {inv'5 result} {view'0 result = view'1 self_} (! return' {result}) ]
+    any
+    [ return''0 (result: Slice64.slice t_T) -> {inv'5 result} {Slice64.view result = view self_} (! return' {result}) ]
   
   type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_Iter = { t_Iter__ptr: t_NonNull'0; t_Iter__end_or_len: Opaque.ptr; t_Iter__qy95zmarker: () }
   
-  function view'2 (self: t_Iter) : Slice64.slice t_T
+  function view'0 (self: t_Iter) : Slice64.slice t_T
   
   let rec iter (self_: Slice64.slice t_T) (return' (x: t_Iter)) = {[@expl:iter 'self_' type invariant] inv'5 self_}
-    any [ return''0 (result: t_Iter) -> {view'2 result = self_} (! return' {result}) ]
+    any [ return''0 (result: t_Iter) -> {view'0 result = self_} (! return' {result}) ]
   
   let rec into_iter (self_: t_Iter) (return' (x: t_Iter)) = any
     [ return''0 (result: t_Iter) -> {result = self_} (! return' {result}) ]
@@ -489,13 +450,13 @@ module M_hillel__insert_unique
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (view'0 self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic'0 self i
   
   predicate produces (self: t_Iter) (visited: Seq.seq t_T) (tl: t_Iter) =
-    to_ref_seq (view'2 self) = Seq.(++) visited (to_ref_seq (view'2 tl))
+    to_ref_seq (view'0 self) = Seq.(++) visited (to_ref_seq (view'0 tl))
   
   function produces_trans (a: t_Iter) (ab: Seq.seq t_T) (b: t_Iter) (bc: Seq.seq t_T) (c: t_Iter) : () = ()
   
@@ -547,11 +508,8 @@ module M_hillel__insert_unique
   
   meta "rewrite_def" predicate resolve
   
-  function view'3 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice t_T = view'2 self.current
-  
-  meta "rewrite_def" function view'3
-  
-  predicate completed (self: MutBorrow.t t_Iter) = resolve self /\ Slice64.view (view'3 self) = (Seq.empty: Seq.seq t_T)
+  predicate completed (self: MutBorrow.t t_Iter) =
+    resolve self /\ Slice64.view (view'0 self.current) = (Seq.empty: Seq.seq t_T)
   
   let rec next (self_: MutBorrow.t t_Iter) (return' (x: t_Option)) = any
     [ return''0 (result: t_Option) -> {inv'10 result}
@@ -607,14 +565,10 @@ module M_hillel__insert_unique
     forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s
       -> Seq.get s i = Seq.get s j -> i = j
   
-  function view'4 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_T = view self.current
-  
-  meta "rewrite_def" function view'4
-  
   let rec push (self_: MutBorrow.t t_Vec) (v: t_T) (return' (x: ())) =
     {[@expl:push 'self_' type invariant] inv'12 self_}
     {[@expl:push 'v' type invariant] inv v}
-    any [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view'4 self_) v} (! return' {result}) ]
+    any [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -777,12 +731,8 @@ module M_hillel__unique
   
   axiom inv_axiom'3 [@rewrite]: forall x: Slice64.slice t_T [inv'4 x]. inv'4 x = invariant''3 x
   
-  function view'0 [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec len (self_: Slice64.slice t_T) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'4 self_}
-    any [ return''0 (result: UInt64.t) -> {Seq.length (view'0 self_) = UInt64.t'int result} (! return' {result}) ]
+    any [ return''0 (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return' {result}) ]
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
@@ -805,7 +755,7 @@ module M_hillel__unique
   
   function deep_model'0 (self: Slice64.slice t_T) : Seq.seq t_DeepModelTy
   
-  axiom deep_model_spec: forall self: Slice64.slice t_T. Seq.length (view'0 self) = Seq.length (deep_model'0 self)
+  axiom deep_model_spec: forall self: Slice64.slice t_T. Seq.length (Slice64.view self) = Seq.length (deep_model'0 self)
   
   axiom deep_model_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i /\ i < Seq.length (deep_model'0 self)
         -> Seq.get (deep_model'0 self) i = deep_model (index_logic self i)
@@ -981,10 +931,10 @@ module M_hillel__unique
         | bb17 = s0 [ s0 = [ &sub_str <- _42 ] s1 | s1 = bb7'0 ] ] ]
     | bb12 = s0
       [ s0 =
-        {[@expl:assertion] is_subset (Seq.([..]) (deep_model'1 str'0) 0 (Seq.length (view'0 str'0))) (deep_model'2 unique'0)}
+        {[@expl:assertion] is_subset (Seq.([..]) (deep_model'1 str'0) 0 (Seq.length (Slice64.view str'0))) (deep_model'2 unique'0)}
         s1
       | s1 =
-        {[@expl:assertion] Seq.(==) (Seq.([..]) (deep_model'1 str'0) 0 (Seq.length (view'0 str'0))) (deep_model'1 str'0)}
+        {[@expl:assertion] Seq.(==) (Seq.([..]) (deep_model'1 str'0) 0 (Seq.length (Slice64.view str'0))) (deep_model'1 str'0)}
         s2
       | s2 = [ &_0 <- unique'0 ] s3
       | s3 = bb18 ]
@@ -1172,10 +1122,6 @@ module M_hillel__fulcrum
   axiom sum_range_spec: forall seq: Seq.seq UInt32.t, from: int, to': int. 0 <= from
         /\ from <= to' /\ to' <= Seq.length seq -> sum_range seq from to' >= 0
   
-  function view'0 [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = Slice64.view self
-  
-  meta "rewrite_def" function view'0
-  
   function index_logic [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
     Seq.get (Slice64.view self) ix
   
@@ -1183,7 +1129,8 @@ module M_hillel__fulcrum
   
   function to_ref_seq (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice UInt32.t. Seq.length (to_ref_seq self) = Seq.length (view'0 self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice UInt32.t. Seq.length (to_ref_seq self)
+      = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice UInt32.t. forall i: int. 0 <= i
           /\ i < Seq.length (to_ref_seq self) -> Seq.get (to_ref_seq self) i = index_logic self i
@@ -1215,12 +1162,8 @@ module M_hillel__fulcrum
   
   meta "rewrite_def" predicate resolve
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice UInt32.t = view self.current
-  
-  meta "rewrite_def" function view'1
-  
   predicate completed (self: MutBorrow.t t_Iter) =
-    resolve self /\ Slice64.view (view'1 self) = (Seq.empty: Seq.seq UInt32.t)
+    resolve self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq UInt32.t)
   
   let rec next (self_: MutBorrow.t t_Iter) (return' (x: t_Option)) = any
     [ return''0 (result: t_Option) -> {match result with
@@ -1238,7 +1181,7 @@ module M_hillel__fulcrum
     | bad -> {forall field_0: UInt32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
   let rec len (self_: Slice64.slice UInt32.t) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {Seq.length (view'0 self_) = UInt64.t'int result} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return' {result}) ]
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
@@ -1329,8 +1272,8 @@ module M_hillel__fulcrum
   meta "select_lsinst" "all"
   
   let rec fulcrum (s: Slice64.slice UInt32.t) (return' (x: UInt64.t)) =
-    {[@expl:fulcrum requires #0] sum_range (view'0 s) 0 (Seq.length (view'0 s)) <= 1000}
-    {[@expl:fulcrum requires #1] Seq.length (view'0 s) > 0}
+    {[@expl:fulcrum requires #0] sum_range (Slice64.view s) 0 (Seq.length (Slice64.view s)) <= 1000}
+    {[@expl:fulcrum requires #1] Seq.length (Slice64.view s) > 0}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &total <- (0: UInt32.t) ] s1
@@ -1342,8 +1285,8 @@ module M_hillel__fulcrum
       [ bb4'0 = {[@expl:for invariant] inv'0 produced}
         {[@expl:for invariant] inv iter}
         {[@expl:for invariant] produces iter_old produced iter}
-        {[@expl:loop invariant #0] UInt32.t'int total = sum_range (view'0 s'0) 0 (Seq.length produced)}
-        {[@expl:loop invariant #1] UInt32.t'int total <= sum_range (view'0 s'0) 0 (Seq.length (view'0 s'0))}
+        {[@expl:loop invariant #0] UInt32.t'int total = sum_range (Slice64.view s'0) 0 (Seq.length produced)}
+        {[@expl:loop invariant #1] UInt32.t'int total <= sum_range (Slice64.view s'0) 0 (Seq.length (Slice64.view s'0))}
         (! s0)
         [ s0 = bb5 ]
         [ bb5 = s0
@@ -1366,7 +1309,7 @@ module M_hillel__fulcrum
           | s2 = UInt32.add {total} {x} (fun (_ret: UInt32.t) -> [ &total <- _ret ] s3)
           | s3 = bb4'0 ] ] ]
     | bb9 = s0
-      [ s0 = {[@expl:assertion] UInt32.t'int total = sum_range (view'0 s'0) 0 (Seq.length (view'0 s'0))} s1
+      [ s0 = {[@expl:assertion] UInt32.t'int total = sum_range (Slice64.view s'0) 0 (Seq.length (Slice64.view s'0))} s1
       | s1 = [ &min_i <- (0: UInt64.t) ] s2
       | s2 = [ &min_dist <- total ] s3
       | s3 = [ &sum <- (0: UInt32.t) ] s4
@@ -1382,13 +1325,13 @@ module M_hillel__fulcrum
       [ bb16'0 = {[@expl:for invariant] inv'2 produced'0}
         {[@expl:for invariant] inv'1 iter'0}
         {[@expl:for invariant] produces'0 iter_old'0 produced'0 iter'0}
-        {[@expl:loop invariant #0] UInt32.t'int sum = sum_range (view'0 s'0) 0 (Seq.length produced'0)}
+        {[@expl:loop invariant #0] UInt32.t'int sum = sum_range (Slice64.view s'0) 0 (Seq.length produced'0)}
         {[@expl:loop invariant #1] UInt32.t'int sum <= UInt32.t'int total}
         {[@expl:loop invariant #2] UInt64.t'int min_i <= Seq.length produced'0
-        /\ UInt64.t'int min_i < Seq.length (view'0 s'0)}
-        {[@expl:loop invariant #3] UInt32.t'int min_dist = score (view'0 s'0) (UInt64.t'int min_i)}
+        /\ UInt64.t'int min_i < Seq.length (Slice64.view s'0)}
+        {[@expl:loop invariant #3] UInt32.t'int min_dist = score (Slice64.view s'0) (UInt64.t'int min_i)}
         {[@expl:loop invariant #4] forall j: int. 0 <= j /\ j < Seq.length produced'0
-          -> score (view'0 s'0) (UInt64.t'int min_i) <= score (view'0 s'0) j}
+          -> score (Slice64.view s'0) (UInt64.t'int min_i) <= score (Slice64.view s'0) j}
         (! s0)
         [ s0 = bb17 ]
         [ bb17 = s0
@@ -1459,8 +1402,8 @@ module M_hillel__fulcrum
     | & _75: UInt64.t = Any.any_l ()
     | & _76: bool = Any.any_l () ])
     [ return''0 (result: UInt64.t) -> {[@expl:fulcrum ensures #0] 0 <= UInt64.t'int result
-      /\ UInt64.t'int result < Seq.length (view'0 s)}
-      {[@expl:fulcrum ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view'0 s)
-        -> score (view'0 s) (UInt64.t'int result) <= score (view'0 s) i}
+      /\ UInt64.t'int result < Seq.length (Slice64.view s)}
+      {[@expl:fulcrum ensures #1] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view s)
+        -> score (Slice64.view s) (UInt64.t'int result) <= score (Slice64.view s) i}
       (! return' {result}) ]
 end

@@ -230,9 +230,9 @@ module M_inferred_invariants__y
   use creusot.int.UInt64
   use mach.int.Int
   use seq.Seq
-  use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
   use creusot.int.Int32
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
@@ -253,24 +253,8 @@ module M_inferred_invariants__y
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq Int32.t = view self.current
-  
-  meta "rewrite_def" function view'0
-  
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq Int32.t = view'0 self
-  
-  meta "rewrite_def" function view'1
-  
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq Int32.t = view'1 self
-  
-  meta "rewrite_def" function view'2
-  
-  function view'3 [@inline:trivial] (self: t_Vec) : Seq.seq Int32.t = view self
-  
-  meta "rewrite_def" function view'3
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'3 self_)} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) = UInt64.t'int self < Seq.length seq
   
@@ -287,12 +271,12 @@ module M_inferred_invariants__y
   meta "rewrite_def" predicate resolve_elswhere
   
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t Int32.t)) =
-    {[@expl:index_mut requires] in_bounds ix (view'0 self_)}
+    {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {has_value ix (view'0 self_) result.current}
+    [ return''0 (result: MutBorrow.t Int32.t) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
-      {resolve_elswhere ix (view'0 self_) (view self_.final)}
-      {Seq.length (view self_.final) = Seq.length (view'0 self_)}
+      {resolve_elswhere ix (view self_.current) (view self_.final)}
+      {Seq.length (view self_.final) = Seq.length (view self_.current)}
       (! return' {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
@@ -320,7 +304,7 @@ module M_inferred_invariants__y
     | bb1 = s0 [ s0 = [ &i <- (0: UInt64.t) ] s1 | s1 = [ &old_2_0 <- v'0 ] s2 | s2 = bb2 ]
     | bb2 = bb2'0
       [ bb2'0 = {[@expl:mut invariant] old_2_0.final = v'0.final}
-        {[@expl:loop invariant #0] Seq.length (view'2 old_v) = Seq.length (view'0 v'0)}
+        {[@expl:loop invariant #0] Seq.length (view old_v.current) = Seq.length (view v'0.current)}
         {[@expl:loop invariant #1] UInt64.t'int i <= 10}
         (! s0)
         [ s0 = bb3 ]

@@ -137,19 +137,11 @@ module M_12_ghost_code__ghost_check
   
   function logi_drop (_0: t_Vec) : () = ()
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq Int32.t = view self.current
-  
-  meta "rewrite_def" function view'0
-  
   let rec push (self_: MutBorrow.t t_Vec) (v: Int32.t) (return' (x: ())) = any
-    [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view'0 self_) v} (! return' {result}) ]
-  
-  function view'1 [@inline:trivial] (self: t_Vec) : Seq.seq Int32.t = view self
-  
-  meta "rewrite_def" function view'1
+    [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return' {result}) ]
   
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'1 self_)} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -181,19 +173,12 @@ module M_12_ghost_code__takes_struct
   
   type t_MyStruct = { t_MyStruct__f: UInt32.t; t_MyStruct__g: UInt32.t }
   
-  function view [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
-  
-  meta "rewrite_def" function view
-  
-  function view'0 [@inline:trivial] (self: UInt32.t) : int = view self
-  
-  meta "rewrite_def" function view'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec takes_struct (x: t_MyStruct) (return' (x'0: ())) = {[@expl:takes_struct requires] view'0 x.t_MyStruct__g = 0}
+  let rec takes_struct (x: t_MyStruct) (return' (x'0: ())) = {[@expl:takes_struct requires] UInt32.t'int x.t_MyStruct__g
+    = 0}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_3 <- x'0.t_MyStruct__f ] s1 | s1 = bb1 ]
     | bb1 = s0 [ s0 = [ &x'0 <- { x'0 with t_MyStruct__g = _3 } ] s1 | s1 = return''0 {_0} ] ]

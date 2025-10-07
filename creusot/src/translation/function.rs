@@ -220,7 +220,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             locals: self.vars,
             variant_locals,
             function_variant: PIdent(self.function_variant),
-            arg_count: self.body.arg_count,
             blocks: self.past_blocks,
             fresh: self.fresh_id,
             block_spans: self

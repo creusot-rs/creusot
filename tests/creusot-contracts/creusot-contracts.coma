@@ -125,14 +125,6 @@ module M_creusot_contracts__cell__permcell__qyi12443308788980502857__take (* cel
   
   meta "rewrite_def" function fin
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) : t_T = view self.current
-  
-  meta "rewrite_def" function view'0
-  
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) : t_T = view'0 self
-  
-  meta "rewrite_def" function view'1
-  
   let rec replace (self: t_PermCell) (perm: MutBorrow.t t_PermCellOwn) (val''0: t_T) (return' (x: t_T)) =
     {[@expl:replace 'perm' type invariant] inv'3 perm}
     {[@expl:replace 'val' type invariant] inv val''0}
@@ -140,7 +132,7 @@ module M_creusot_contracts__cell__permcell__qyi12443308788980502857__take (* cel
     any
     [ return''0 (result: t_T) -> {inv result}
       {val''0 = view (fin perm)}
-      {result = view'1 perm}
+      {result = view perm.current}
       {id self = id'0 (fin perm)}
       (! return' {result}) ]
   
@@ -213,7 +205,7 @@ module M_creusot_contracts__cell__permcell__qyi12443308788980502857__take (* cel
     | & _9: t_T = Any.any_l () ])
     [ return''0 (result: t_T) -> {[@expl:take result type invariant] inv result}
       {[@expl:take ensures #0] id self = id'0 (fin perm)}
-      {[@expl:take ensures #1] result = view'1 perm}
+      {[@expl:take ensures #1] result = view perm.current}
       {[@expl:take ensures #2] postcondition () () (view (fin perm))}
       (! return' {result}) ]
 end
@@ -318,10 +310,6 @@ module M_creusot_contracts__ghost__fn_ghost__qyi2064759324376620136__clone (* <g
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: t_FnGhostWrapper) : t_F = view self
-  
-  meta "rewrite_def" function view'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -334,7 +322,7 @@ module M_creusot_contracts__ghost__fn_ghost__qyi2064759324376620136__clone (* <g
     | bb2 = return''0 {_0} ]
     [ & _0: t_FnGhostWrapper = Any.any_l () | & self'0: t_FnGhostWrapper = self | & _3: t_F = Any.any_l () ])
     [ return''0 (result: t_FnGhostWrapper) -> {[@expl:clone result type invariant] inv'1 result}
-      {[@expl:clone ensures] postcondition () (view'0 self) (view result)}
+      {[@expl:clone ensures] postcondition () (view self) (view result)}
       (! return' {result}) ]
 end
 module M_creusot_contracts__ghost__fn_ghost__qyi3756533087425350211__qy95z_new (* ghost::fn_ghost::FnGhostWrapper<F> *)
@@ -1354,12 +1342,8 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
   
   meta "rewrite_def" function view'0
   
-  function view'1 [@inline:trivial] (self: t_Resource) : t_View = view'0 self
-  
-  meta "rewrite_def" function view'1
-  
   let rec alloc (r: t_View) (return' (x: t_Resource)) = any
-    [ return''0 (result: t_Resource) -> {view'1 result = r} (! return' {result}) ]
+    [ return''0 (result: t_Resource) -> {view'0 result = r} (! return' {result}) ]
   
   let rec into_inner (self: t_Resource) (return' (x: t_Resource)) = any
     [ return''0 (result: t_Resource) -> {result = self} (! return' {result}) ]
@@ -1391,9 +1375,9 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
   
   type t_Option'2 = C_None'2 | C_Some'2 t_V
   
-  function view'2 (self: t_FMap'0) : Map.map t_K t_Option'2
+  function view'1 (self: t_FMap'0) : Map.map t_K t_Option'2
   
-  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_K) : t_Option'2 = Map.get (view'2 self) k
+  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_K) : t_Option'2 = Map.get (view'1 self) k
   
   meta "rewrite_def" function get'0
   
@@ -1434,18 +1418,14 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
       | C_None -> such_that (fun (__0: t_FMap) -> true)
       end
   
-  function view'3 (self: t_Authority) : t_FMap'0 =
+  function view'2 (self: t_Authority) : t_FMap'0 =
     map (unwrap_logic (auth (view'0 self.t_Authority__0))) (fun (__0: tuple'0) -> let {_p1'0 = x} = __0 in x.t_Ag__0)
-  
-  function view'4 [@inline:trivial] (self: t_Authority) : t_FMap'0 = view'3 self
-  
-  meta "rewrite_def" function view'4
   
   constant empty'0 : t_FMap'0
   
   axiom empty_spec'1: len'0 empty'0 = 0
   
-  axiom empty_spec'2: view'2 empty'0 = Const.const (C_None'2)
+  axiom empty_spec'2: view'1 empty'0 = Const.const (C_None'2)
   
   meta "compute_max_steps" 1000000
   
@@ -1459,7 +1439,7 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
       [ s0 = [ &_3 <- { t_Authority__0 = _4 } ] s1
       | s1 = new'0 {_3} (fun (_ret: t_Authority) -> [ &r <- _ret ] s2)
       | s2 = bb4 ]
-    | bb4 = s0 [ s0 = {[@expl:assertion] ext_eq (view'4 r) empty'0} s1 | s1 = [ &_0 <- r ] s2 | s2 = return''0 {_0} ] ]
+    | bb4 = s0 [ s0 = {[@expl:assertion] ext_eq (view'2 r) empty'0} s1 | s1 = [ &_0 <- r ] s2 | s2 = return''0 {_0} ] ]
     [ & _0: t_Authority = Any.any_l ()
     | & r: t_Authority = Any.any_l ()
     | & _3: t_Authority = Any.any_l ()
@@ -1467,7 +1447,7 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
     | & _5: t_Resource = Any.any_l ()
     | & _6: t_View = Any.any_l () ])
     [ return''0 (result: t_Authority) -> {[@expl:new result type invariant] inv'0 result}
-      {[@expl:new ensures] view'4 result = empty'0}
+      {[@expl:new ensures] view'2 result = empty'0}
       (! return' {result}) ]
 end
 module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__insert (* ghost::resource::fmap_view::Authority<K, V> *)
@@ -1710,10 +1690,6 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
   
   meta "rewrite_def" function view'0
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Resource) : t_View = view'0 self.current
-  
-  meta "rewrite_def" function view'1
-  
   type t_Id
   
   function id (self: t_Resource) : t_Id
@@ -1762,19 +1738,19 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
       -> (let {_p0'1 = auth'0; _p1'1 = frag'0} = update self.t_AuthUpdate__0 (unwrap_logic (auth from)) (frag from) in rel (C_Some auth'0) frag'0)
   
   let rec update'1 (self: MutBorrow.t t_Resource) (upd: t_AuthUpdate) (return' (x: ())) =
-    {[@expl:update requires] premise'0 upd (view'1 self)}
+    {[@expl:update requires] premise'0 upd (view'0 self.current)}
     any
     [ return''0 (result: ()) -> {id self.final = id self.current}
-      {view'0 self.final = update'0 upd (view'1 self) result}
+      {view'0 self.final = update'0 upd (view'0 self.current) result}
       (! return' {result}) ]
   
   type t_FMap'0
   
   type t_Option'2 = C_None'2 | C_Some'2 t_V
   
-  function view'2 (self: t_FMap'0) : Map.map t_K t_Option'2
+  function view'1 (self: t_FMap'0) : Map.map t_K t_Option'2
   
-  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_K) : t_Option'2 = Map.get (view'2 self) k
+  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_K) : t_Option'2 = Map.get (view'1 self) k
   
   meta "rewrite_def" function get'0
   
@@ -1801,12 +1777,8 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
   
   axiom map_spec'0: forall self: t_FMap, f: Map.map tuple'0 t_V. len'0 (map self f) = len self
   
-  function view'3 (self: t_Authority) : t_FMap'0 =
+  function view'2 (self: t_Authority) : t_FMap'0 =
     map (unwrap_logic (auth (view'0 self.t_Authority__0))) (fun (__0: tuple'0) -> let {_p1'0 = x} = __0 in x.t_Ag__0)
-  
-  function view'4 [@inline:trivial] (self: MutBorrow.t t_Authority) : t_FMap'0 = view'3 self.current
-  
-  meta "rewrite_def" function view'4
   
   predicate contains'0 [@inline:trivial] (self: t_FMap'0) (k: t_K) = get'0 self k <> C_None'2
   
@@ -1814,19 +1786,11 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
   
   function insert'0 (self: t_FMap'0) (k: t_K) (v: t_V) : t_FMap'0
   
-  axiom insert_spec'1: forall self: t_FMap'0, k: t_K, v: t_V. view'2 (insert'0 self k v)
-      = Map.set (view'2 self) k (C_Some'2 v)
+  axiom insert_spec'1: forall self: t_FMap'0, k: t_K, v: t_V. view'1 (insert'0 self k v)
+      = Map.set (view'1 self) k (C_Some'2 v)
   
   axiom insert_spec'2: forall self: t_FMap'0, k: t_K, v: t_V. len'0 (insert'0 self k v)
       = (if contains'0 self k then len'0 self else len'0 self + 1)
-  
-  function view'5 [@inline:trivial] (self: t_Authority) : t_FMap'0 = view'3 self
-  
-  meta "rewrite_def" function view'5
-  
-  function view'6 [@inline:trivial] (self: t_Authority) : t_FMap'0 = view'5 self
-  
-  meta "rewrite_def" function view'6
   
   predicate invariant' (self: t_Authority) = auth (view'0 self.t_Authority__0) <> C_None
   
@@ -1914,14 +1878,10 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
         | C_None'3 -> true
         end
   
-  function view'7 [@inline:trivial] (self: t_Resource) : t_View = view'0 self
-  
-  meta "rewrite_def" function view'7
-  
-  let rec core'1 (self: t_Resource) (return' (x: t_Resource)) = {[@expl:core requires] core'0 (view'7 self) <> C_None'3}
+  let rec core'1 (self: t_Resource) (return' (x: t_Resource)) = {[@expl:core requires] core'0 (view'0 self) <> C_None'3}
     any
     [ return''0 (result: t_Resource) -> {id result = id self}
-      {C_Some'3 (view'0 result) = core'0 (view'7 self)}
+      {C_Some'3 (view'0 result) = core'0 (view'0 self)}
       (! return' {result}) ]
   
   type t_Fragment = { t_Fragment__0: t_Resource; t_Fragment__1: t_K; t_Fragment__2: t_V }
@@ -1941,7 +1901,7 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
   
   type tuple'3 = { _p0'3: t_K; _p1'3: t_V }
   
-  function view'8 (self: t_Fragment) : tuple'3 = { _p0'3 = self.t_Fragment__1; _p1'3 = self.t_Fragment__2 }
+  function view'3 (self: t_Fragment) : tuple'3 = { _p0'3 = self.t_Fragment__1; _p1'3 = self.t_Fragment__2 }
   
   function id'1 (self: t_Fragment) : t_Id = id self.t_Fragment__0
   
@@ -1951,7 +1911,7 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
   
   let rec insert'1 (self: MutBorrow.t t_Authority) (k: t_K) (v: t_V) (return' (x: t_Fragment)) =
     {[@expl:insert 'self' type invariant] inv'0 self}
-    {[@expl:insert requires] not contains'0 (view'4 self) k}
+    {[@expl:insert requires] not contains'0 (view'2 self.current) k}
     (! bb0
     [ bb0 = s0 [ s0 = [ &s <- self'0.current ] s1 | s1 = bb1 ]
     | bb1 = s0 [ s0 = [ &_16 <- { t_Ag__0 = v'0 } ] s1 | s1 = bb2 ]
@@ -1965,7 +1925,7 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
       | s3 = update'1 {_12} {_13} (fun (_ret: ()) -> [ &_11 <- _ret ] s4)
       | s4 = bb3 ]
     | bb3 = s0
-      [ s0 = {[@expl:assertion] ext_eq (view'4 self'0) (insert'0 (view'6 s) k'0 v'0)} s1
+      [ s0 = {[@expl:assertion] ext_eq (view'2 self'0.current) (insert'0 (view'2 s) k'0 v'0)} s1
       | s1 = {[@expl:type invariant] inv'0 self'0} s2
       | s2 = -{resolve'0 self'0}- s3
       | s3 = core'1 {(self'0.current).t_Authority__0} (fun (_ret: t_Resource) -> [ &_20 <- _ret ] s4)
@@ -1984,9 +1944,9 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
     | & _16: t_Ag = Any.any_l ()
     | & _20: t_Resource = Any.any_l () ])
     [ return''0 (result: t_Fragment) -> {[@expl:insert result type invariant] inv'1 result}
-      {[@expl:insert ensures #0] view'3 self.final = insert'0 (view'4 self) k v}
+      {[@expl:insert ensures #0] view'2 self.final = insert'0 (view'2 self.current) k v}
       {[@expl:insert ensures #1] id'0 self.final = id'0 self.current}
-      {[@expl:insert ensures #2] view'8 result = { _p0'3 = k; _p1'3 = v }}
+      {[@expl:insert ensures #2] view'3 result = { _p0'3 = k; _p1'3 = v }}
       {[@expl:insert ensures #3] id'1 result = id'0 self.current}
       (! return' {result}) ]
 end
@@ -2286,24 +2246,16 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
   
   meta "rewrite_def" function view'0
   
-  function view'1 [@inline:trivial] (self: t_Resource) : t_View = view'0 self
-  
-  meta "rewrite_def" function view'1
-  
   let rec join_shared (self: t_Resource) (other: t_Resource) (return' (x: t_Resource)) =
     {[@expl:join_shared requires] id self = id other}
     any
     [ return''0 (result: t_Resource) -> {id result = id self}
-      {incl_eq (view'1 self) (view'1 result) /\ incl_eq (view'1 other) (view'1 result)}
+      {incl_eq (view'0 self) (view'0 result) /\ incl_eq (view'0 other) (view'0 result)}
       (! return' {result}) ]
   
   type tuple'2 = { _p0'2: t_K; _p1'2: t_V }
   
-  function view'2 (self: t_Fragment) : tuple'2 = { _p0'2 = self.t_Fragment__1; _p1'2 = self.t_Fragment__2 }
-  
-  function view'3 [@inline:trivial] (self: t_Fragment) : tuple'2 = view'2 self
-  
-  meta "rewrite_def" function view'3
+  function view'1 (self: t_Fragment) : tuple'2 = { _p0'2 = self.t_Fragment__1; _p1'2 = self.t_Fragment__2 }
   
   predicate invariant' (self: t_Authority) = auth (view'0 self.t_Authority__0) <> C_None'0
   
@@ -2350,9 +2302,9 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
   
   type t_Option'3 = C_None'3 | C_Some'3 t_V
   
-  function view'4 (self: t_FMap'0) : Map.map t_K t_Option'3
+  function view'2 (self: t_FMap'0) : Map.map t_K t_Option'3
   
-  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_K) : t_Option'3 = Map.get (view'4 self) k
+  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_K) : t_Option'3 = Map.get (view'2 self) k
   
   meta "rewrite_def" function get'0
   
@@ -2389,12 +2341,8 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
       | C_None'0 -> such_that (fun (__0: t_FMap) -> true)
       end
   
-  function view'5 (self: t_Authority) : t_FMap'0 =
+  function view'3 (self: t_Authority) : t_FMap'0 =
     map (unwrap_logic (auth (view'0 self.t_Authority__0))) (fun (__0: tuple'0) -> let {_p1'0 = x} = __0 in x.t_Ag__0)
-  
-  function view'6 [@inline:trivial] (self: t_Authority) : t_FMap'0 = view'5 self
-  
-  meta "rewrite_def" function view'6
   
   meta "compute_max_steps" 1000000
   
@@ -2410,8 +2358,8 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
       | s1 = join_shared {self'0.t_Authority__0} {_8} (fun (_ret: t_Resource) -> [ &new_resource <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {[@expl:assertion] get (frag (view'1 new_resource)) (view'3 frag'1)._p0'2
-        = C_Some'1 { t_Ag__0 = (view'3 frag'1)._p1'2 }}
+      [ s0 = {[@expl:assertion] get (frag (view'0 new_resource)) (view'1 frag'1)._p0'2
+        = C_Some'1 { t_Ag__0 = (view'1 frag'1)._p1'2 }}
         s1
       | s1 = return''0 {_0} ] ]
     [ & _0: () = Any.any_l ()
@@ -2419,8 +2367,8 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi4074634815133952471__
     | & frag'1: t_Fragment = frag'0
     | & new_resource: t_Resource = Any.any_l ()
     | & _8: t_Resource = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:contains ensures] get'0 (view'6 self) (view'3 frag'0)._p0'2
-      = C_Some'3 ((view'3 frag'0)._p1'2)}
+    [ return''0 (result: ()) -> {[@expl:contains ensures] get'0 (view'3 self) (view'1 frag'0)._p0'2
+      = C_Some'3 ((view'1 frag'0)._p1'2)}
       (! return' {result}) ]
 end
 module M_creusot_contracts__ghost__resource__fmap_view__qyi11277603908270514611__clone (* <ghost::resource::fmap_view::Fragment<K, V> as std::clone::Clone> *)
@@ -2715,18 +2663,14 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi11277603908270514611_
   
   meta "rewrite_def" function view'0
   
-  function view'1 [@inline:trivial] (self: t_Resource) : t_View = view'0 self
-  
-  meta "rewrite_def" function view'1
-  
   type t_Id
   
   function id (self: t_Resource) : t_Id
   
-  let rec core'1 (self: t_Resource) (return' (x: t_Resource)) = {[@expl:core requires] core'0 (view'1 self) <> C_None}
+  let rec core'1 (self: t_Resource) (return' (x: t_Resource)) = {[@expl:core requires] core'0 (view'0 self) <> C_None}
     any
     [ return''0 (result: t_Resource) -> {id result = id self}
-      {C_Some (view'0 result) = core'0 (view'1 self)}
+      {C_Some (view'0 result) = core'0 (view'0 self)}
       (! return' {result}) ]
   
   predicate invariant' (self: t_Fragment) =
@@ -2750,11 +2694,7 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi11277603908270514611_
   
   type tuple'2 = { _p0'2: t_K; _p1'2: t_V }
   
-  function view'2 (self: t_Fragment) : tuple'2 = { _p0'2 = self.t_Fragment__1; _p1'2 = self.t_Fragment__2 }
-  
-  function view'3 [@inline:trivial] (self: t_Fragment) : tuple'2 = view'2 self
-  
-  meta "rewrite_def" function view'3
+  function view'1 (self: t_Fragment) : tuple'2 = { _p0'2 = self.t_Fragment__1; _p1'2 = self.t_Fragment__2 }
   
   function id'0 (self: t_Fragment) : t_Id = id self.t_Fragment__0
   
@@ -2772,7 +2712,7 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi11277603908270514611_
       | s1 = return''0 {_0} ] ]
     [ & _0: t_Fragment = Any.any_l () | & self'0: t_Fragment = self | & _4: t_Resource = Any.any_l () ])
     [ return''0 (result: t_Fragment) -> {[@expl:clone result type invariant] inv result}
-      {[@expl:clone ensures #0] view'2 result = view'3 self}
+      {[@expl:clone ensures #0] view'1 result = view'1 self}
       {[@expl:clone ensures #1] id'0 result = id'0 self}
       (! return' {result}) ]
 end
@@ -2865,16 +2805,12 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__split_of
   
   meta "rewrite_def" predicate resolve'0
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Resource) : t_R = view self.current
-  
-  meta "rewrite_def" function view'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec split_off (self: MutBorrow.t t_Resource) (r: t_R) (s: t_R) (return' (x: t_Resource)) =
-    {[@expl:split_off requires] incl_eq_op r s (view'0 self)}
+    {[@expl:split_off requires] incl_eq_op r s (view self.current)}
     (! bb0
     [ bb0 = s0 [ s0 = dummy (fun (_ret: t_Resource) -> [ &_10 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
@@ -2988,10 +2924,6 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__join_in 
   
   meta "rewrite_def" predicate resolve'0
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Resource) : t_R = view self.current
-  
-  meta "rewrite_def" function view'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -3023,7 +2955,7 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__join_in 
     | & _12: t_Resource = Any.any_l ()
     | & _13: MutBorrow.t t_Resource = Any.any_l () ])
     [ return''0 (result: ()) -> {[@expl:join_in ensures #0] id self.final = id self.current}
-      {[@expl:join_in ensures #1] C_Some (view self.final) = op (view'0 self) (view other)}
+      {[@expl:join_in ensures #1] C_Some (view self.final) = op (view self.current) (view other)}
       (! return' {result}) ]
 end
 module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__weaken (* ghost::resource::m::Resource<R> *)
@@ -3093,10 +3025,6 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__weaken (
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Resource) : t_R = view self.current
-  
-  meta "rewrite_def" function view'0
-  
   predicate incl_eq (self: t_R) (other: t_R) = self = other \/ incl self other
   
   predicate incl_eq_op (a: t_R) (b: t_R) (x: t_R) =
@@ -3110,7 +3038,7 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__weaken (
   function id (self: t_Resource) : t_Id
   
   let rec split_off (self: MutBorrow.t t_Resource) (r: t_R) (s: t_R) (return' (x: t_Resource)) =
-    {[@expl:split_off requires] incl_eq_op r s (view'0 self)}
+    {[@expl:split_off requires] incl_eq_op r s (view self.current)}
     any
     [ return''0 (result: t_Resource) -> {id self.final = id self.current /\ id result = id self.current}
       {view self.final = s}
@@ -3130,9 +3058,9 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__weaken (
   meta "select_lsinst" "all"
   
   let rec weaken (self: MutBorrow.t t_Resource) (target: t_R) (return' (x: ())) =
-    {[@expl:weaken requires] incl target (view'0 self)}
+    {[@expl:weaken requires] incl target (view self.current)}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &f <- unwrap_logic (factor (view'0 self'0) target'0) ] s1 | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &f <- unwrap_logic (factor (view self'0.current) target'0) ] s1 | s1 = bb1 ]
     | bb1 = s0
       [ s0 = MutBorrow.borrow_final <t_Resource> {self'0.current} {MutBorrow.get_id self'0}
           (fun (_ret: MutBorrow.t t_Resource) -> [ &_9 <- _ret ] [ &self'0 <- { self'0 with current = _ret.final } ] s1)
@@ -3174,10 +3102,6 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__update (
   function view [@inline:trivial] (self: t_Resource) : t_R = val' self
   
   meta "rewrite_def" function view
-  
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Resource) : t_R = view self.current
-  
-  meta "rewrite_def" function view'0
   
   type t_Choice
   
@@ -3273,7 +3197,7 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__update (
   function id (self: t_Resource) : t_Id
   
   let rec update_raw (self: MutBorrow.t t_Resource) (target_s: Set.set t_R) (return' (x: t_R)) =
-    {[@expl:update_raw requires] forall f: t_Option. op'0 (C_Some (view'0 self)) f <> C_None'0
+    {[@expl:update_raw requires] forall f: t_Option. op'0 (C_Some (view self.current)) f <> C_None'0
       -> (exists x: t_R. contains target_s x /\ op'0 (C_Some x) f <> C_None'0)}
     any
     [ return''0 (result: t_R) -> {id self.final = id self.current}
@@ -3295,12 +3219,12 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__update (
   
   let rec update'0 (self: MutBorrow.t t_Resource) (upd: t_U) (return' (x: t_Choice)) =
     {[@expl:update 'upd' type invariant] inv upd}
-    {[@expl:update requires] premise upd (view'0 self)}
+    {[@expl:update requires] premise upd (view self.current)}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:type invariant] inv upd'0} s1
       | s1 = -{resolve upd'0}- s2
-      | s2 = [ &v <- view'0 self'0 ] s3
+      | s2 = [ &v <- view self'0.current ] s3
       | s3 = bb1 ]
     | bb1 = s0 [ s0 = [ &target_s <- fun (r'0: t_R) -> exists ch: t_Choice. update upd'0 v ch = r'0 ] s1 | s1 = bb2 ]
     | bb2 = s0
@@ -3330,7 +3254,7 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__update (
     | & r: t_R = Any.any_l ()
     | & _17: MutBorrow.t t_Resource = Any.any_l () ])
     [ return''0 (result: t_Choice) -> {[@expl:update ensures #0] id self.final = id self.current}
-      {[@expl:update ensures #1] view self.final = update upd (view'0 self) result}
+      {[@expl:update ensures #1] view self.final = update upd (view self.current) result}
       (! return' {result}) ]
 end
 module M_creusot_contracts__ghost__qyi11517682701084838082__clone (* <ghost::Ghost<T> as std::clone::Clone> *)
@@ -3420,12 +3344,8 @@ module M_creusot_contracts__invariant__qyi11000281680484769800__clone (* <invari
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant''0 x
   
-  function view'0 [@inline:trivial] (self: t_Subset) : t_T = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec deref (self: t_Subset) (return' (x: t_T)) = any
-    [ return''0 (result: t_T) -> {inv'0 result} {result = view'0 self} (! return' {result}) ]
+    [ return''0 (result: t_T) -> {inv'0 result} {result = view self} (! return' {result}) ]
   
   predicate precondition (self: ()) (args: t_T)
   
@@ -3514,7 +3434,7 @@ module M_creusot_contracts__invariant__qyi11000281680484769800__clone (* <invari
     | & _3: () = Any.any_l ()
     | & _5: t_T = Any.any_l ()
     | & _7: t_T = Any.any_l () ])
-    [ return''0 (result: t_Subset) -> {[@expl:clone ensures] postcondition () (view'0 self) (view result)}
+    [ return''0 (result: t_Subset) -> {[@expl:clone ensures] postcondition () (view self) (view result)}
       (! return' {result}) ]
 end
 module M_creusot_contracts__logic__fmap__qyi17941324210461407630__ext_eq (* logic::fmap::FMap<K, V> *)
@@ -4157,11 +4077,7 @@ module M_creusot_contracts__logic__fmap__qyi17788021891652805456__next (* <logic
   
   axiom produces_refl_spec: forall self: t_FMapIter. produces self (Seq.empty: Seq.seq tuple) self
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_FMapIter) : t_FMap = view'0 self.current
-  
-  meta "rewrite_def" function view'1
-  
-  predicate completed (self: MutBorrow.t t_FMapIter) = is_empty (view'1 self)
+  predicate completed (self: MutBorrow.t t_FMapIter) = is_empty (view'0 self.current)
   
   meta "compute_max_steps" 1000000
   
@@ -22798,13 +22714,13 @@ module M_creusot_contracts__logic__seq__qyi3278447201291925478__index_mut (* <lo
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_3 <- _ret ] -{inv _ret.final}-
             [ &_8 <- { _8 with current = _ret.final } ] s1)
-      | s1 = {inv _3.current}
+      | s1 = {[@expl:type invariant] inv'3 _8} s2
+      | s2 = -{resolve'0 _8}- s3
+      | s3 = {inv _3.current}
         MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv _ret.final}-
-            [ &_3 <- { _3 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'3 _8} s3
-      | s3 = -{resolve'0 _8}- s4
+            [ &_3 <- { _3 with current = _ret.final } ] s4)
       | s4 = {[@expl:type invariant] inv'3 _3} s5
       | s5 = -{resolve'0 _3}- s6
       | s6 = {[@expl:type invariant] inv'2 self'0} s7
@@ -22975,11 +22891,7 @@ module M_creusot_contracts__logic__seq__qyi785709447733932085__next (* <logic::s
   
   axiom produces_refl_spec: forall self: t_SeqIter. produces self (Seq.empty: Seq.seq t_T) self
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_SeqIter) : Seq.seq t_T = view self.current
-  
-  meta "rewrite_def" function view'0
-  
-  predicate completed (self: MutBorrow.t t_SeqIter) = view'0 self = (Seq.empty: Seq.seq t_T)
+  predicate completed (self: MutBorrow.t t_SeqIter) = view self.current = (Seq.empty: Seq.seq t_T)
   
   meta "compute_max_steps" 1000000
   
@@ -23249,10 +23161,6 @@ module M_creusot_contracts__logic__seq__qyi15242110712714185722__next (* <logic:
   
   meta "rewrite_def" predicate resolve'0
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_SeqIterRef) : Seq.seq t_T = view self.current
-  
-  meta "rewrite_def" function view'0
-  
   let rec v_Some (input: t_Option) (ret (field_0: t_T)) = any
     [ good (field_0: t_T) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_T [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
@@ -23276,7 +23184,7 @@ module M_creusot_contracts__logic__seq__qyi15242110712714185722__next (* <logic:
   
   axiom produces_refl_spec: forall self: t_SeqIterRef. produces self (Seq.empty: Seq.seq t_T) self
   
-  predicate completed (self: MutBorrow.t t_SeqIterRef) = view'0 self = (Seq.empty: Seq.seq t_T)
+  predicate completed (self: MutBorrow.t t_SeqIterRef) = view self.current = (Seq.empty: Seq.seq t_T)
   
   meta "compute_max_steps" 1000000
   
@@ -23296,7 +23204,7 @@ module M_creusot_contracts__logic__seq__qyi15242110712714185722__next (* <logic:
       | s1 = -{resolve'0 self'0}- s2
       | s2 = {[@expl:assertion] (self'0.current).t_SeqIterRef__index = Seq.length (self'0.current).t_SeqIterRef__inner}
         s3
-      | s3 = {[@expl:assertion] view'0 self'0 = (Seq.empty: Seq.seq t_T)} s4
+      | s3 = {[@expl:assertion] view self'0.current = (Seq.empty: Seq.seq t_T)} s4
       | s4 = [ &_0 <- C_None ] s5
       | s5 = bb7 ]
     | bb4 = s0
@@ -27684,10 +27592,6 @@ module M_creusot_contracts__peano__qyi18300662544233371341__lt (* <peano::PeanoI
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: t_PeanoInt) : UInt64.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -27705,7 +27609,7 @@ module M_creusot_contracts__peano__qyi18300662544233371341__lt (* <peano::PeanoI
     | & self'0: t_PeanoInt = self
     | & other'0: t_PeanoInt = other
     | & _4: t_Option = Any.any_l () ])
-    [ return''0 (result: bool) -> {[@expl:lt ensures] result = UInt64.lt (view'0 self) (view'0 other)}
+    [ return''0 (result: bool) -> {[@expl:lt ensures] result = UInt64.lt (view self) (view other)}
       (! return' {result}) ]
 end
 module M_creusot_contracts__peano__qyi18300662544233371341__le (* <peano::PeanoInt as std::cmp::PartialOrd> *)
@@ -27834,10 +27738,6 @@ module M_creusot_contracts__peano__qyi18300662544233371341__le (* <peano::PeanoI
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: t_PeanoInt) : UInt64.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -27855,7 +27755,7 @@ module M_creusot_contracts__peano__qyi18300662544233371341__le (* <peano::PeanoI
     | & self'0: t_PeanoInt = self
     | & other'0: t_PeanoInt = other
     | & _4: t_Option = Any.any_l () ])
-    [ return''0 (result: bool) -> {[@expl:le ensures] result = UInt64.le (view'0 self) (view'0 other)}
+    [ return''0 (result: bool) -> {[@expl:le ensures] result = UInt64.le (view self) (view other)}
       (! return' {result}) ]
 end
 module M_creusot_contracts__peano__qyi18300662544233371341__gt (* <peano::PeanoInt as std::cmp::PartialOrd> *)
@@ -27984,10 +27884,6 @@ module M_creusot_contracts__peano__qyi18300662544233371341__gt (* <peano::PeanoI
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: t_PeanoInt) : UInt64.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -28005,7 +27901,7 @@ module M_creusot_contracts__peano__qyi18300662544233371341__gt (* <peano::PeanoI
     | & self'0: t_PeanoInt = self
     | & other'0: t_PeanoInt = other
     | & _4: t_Option = Any.any_l () ])
-    [ return''0 (result: bool) -> {[@expl:gt ensures] result = UInt64.gt (view'0 self) (view'0 other)}
+    [ return''0 (result: bool) -> {[@expl:gt ensures] result = UInt64.gt (view self) (view other)}
       (! return' {result}) ]
 end
 module M_creusot_contracts__peano__qyi18300662544233371341__ge (* <peano::PeanoInt as std::cmp::PartialOrd> *)
@@ -28134,10 +28030,6 @@ module M_creusot_contracts__peano__qyi18300662544233371341__ge (* <peano::PeanoI
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: t_PeanoInt) : UInt64.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -28155,7 +28047,7 @@ module M_creusot_contracts__peano__qyi18300662544233371341__ge (* <peano::PeanoI
     | & self'0: t_PeanoInt = self
     | & other'0: t_PeanoInt = other
     | & _4: t_Option = Any.any_l () ])
-    [ return''0 (result: bool) -> {[@expl:ge ensures] result = UInt64.ge (view'0 self) (view'0 other)}
+    [ return''0 (result: bool) -> {[@expl:ge ensures] result = UInt64.ge (view self) (view other)}
       (! return' {result}) ]
 end
 module M_creusot_contracts__peano__qyi18409208157518949721__cmp (* <peano::PeanoInt as std::cmp::Ord> *)
@@ -36962,25 +36854,21 @@ module M_creusot_contracts__std__deque__qyi7285194934641240501__produces_refl (*
   
   type t_T
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (view self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
   
-  function view'0 (self: t_Iter'0) : Slice64.slice t_T
+  function view (self: t_Iter'0) : Slice64.slice t_T
   
   predicate produces (self: t_Iter'0) (visited: Seq.seq t_T) (tl: t_Iter'0) =
-    to_ref_seq (view'0 self) = Seq.(++) visited (to_ref_seq (view'0 tl))
+    to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -37010,25 +36898,21 @@ module M_creusot_contracts__std__deque__qyi7285194934641240501__produces_trans (
   
   type t_T
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (view self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
   
-  function view'0 (self: t_Iter'0) : Slice64.slice t_T
+  function view (self: t_Iter'0) : Slice64.slice t_T
   
   predicate produces (self: t_Iter'0) (visited: Seq.seq t_T) (tl: t_Iter'0) =
-    to_ref_seq (view'0 self) = Seq.(++) visited (to_ref_seq (view'0 tl))
+    to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -38476,14 +38360,11 @@ module M_creusot_contracts__std__iter__fuse__qyi12953744680688287360__is_fused (
   
   axiom produces_refl_spec'0: forall self: t_Fuse. produces'0 self (Seq.empty: Seq.seq t_Item) self
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Fuse) : t_Option = view self.current
-  
-  meta "rewrite_def" function view'0
-  
   predicate completed (self: MutBorrow.t t_I)
   
   predicate completed'0 (self: MutBorrow.t t_Fuse) =
-    (view'0 self = C_None \/ (exists it: MutBorrow.t t_I. completed it /\ view'0 self = C_Some (it.current)))
+    (view self.current = C_None
+      \/ (exists it: MutBorrow.t t_I. completed it /\ view self.current = C_Some (it.current)))
     /\ view self.final = C_None
   
   meta "compute_max_steps" 1000000
@@ -42772,15 +42653,11 @@ module M_creusot_contracts__std__option__extern_spec_std_option_T_Option_T_as_sl
   
   axiom inv_axiom'3 [@rewrite]: forall x: Slice64.slice t_T [inv'4 x]. inv'4 x = invariant''3 x
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   let rec from_ref (s: t_T) (return' (x: Slice64.slice t_T)) = {[@expl:from_ref 's' type invariant] inv'0 s}
     any
     [ return''0 (result: Slice64.slice t_T) -> {inv'4 result}
-      {Seq.length (view result) = 1}
-      {Seq.get (view result) 0 = s}
+      {Seq.length (Slice64.view result) = 1}
+      {Seq.get (Slice64.view result) 0 = s}
       (! return' {result}) ]
   
   predicate inv'5 (_0: t_Option)
@@ -42836,8 +42713,8 @@ module M_creusot_contracts__std__option__extern_spec_std_option_T_Option_T_as_sl
     [ return''0 (result: Slice64.slice t_T) ->
     {[@expl:extern_spec_std_option_T_Option_T_as_slice_body result type invariant] inv'4 result}
       {[@expl:extern_spec_std_option_T_Option_T_as_slice_body ensures] match self_ with
-        | C_None -> Seq.length (view result) = 0
-        | C_Some t -> Seq.length (view result) = 1 /\ Seq.get (view result) 0 = t
+        | C_None -> Seq.length (Slice64.view result) = 0
+        | C_Some t -> Seq.length (Slice64.view result) = 1 /\ Seq.get (Slice64.view result) 0 = t
         end}
       (! return' {result}) ]
 end
@@ -42901,16 +42778,12 @@ module M_creusot_contracts__std__option__extern_spec_std_option_T_Option_T_as_mu
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'4 x]. inv'4 x = invariant''3 x
   
-  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = Slice64.view self.current
-  
-  meta "rewrite_def" function view
-  
   let rec from_mut (s: MutBorrow.t t_T) (return' (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:from_mut 's' type invariant] inv'0 s}
     any
     [ return''0 (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'4 result}
-      {Seq.length (view result) = 1}
-      {Seq.get (view result) 0 = s.current}
+      {Seq.length (Slice64.view result.current) = 1}
+      {Seq.get (Slice64.view result.current) 0 = s.current}
       {Seq.length (Slice64.view result.final) = 1}
       {Seq.get (Slice64.view result.final) 0 = s.final}
       (! return' {result}) ]
@@ -43050,13 +42923,13 @@ module M_creusot_contracts__std__option__extern_spec_std_option_T_Option_T_as_mu
           (fun (_ret: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_2 <- _ret ] -{inv'3 _ret.final}-
             [ &_4 <- { _4 with current = _ret.final } ] s1)
-      | s1 = {inv'3 _2.current}
+      | s1 = {[@expl:type invariant] inv'4 _4} s2
+      | s2 = -{resolve'0 _4}- s3
+      | s3 = {inv'3 _2.current}
         MutBorrow.borrow_final <Slice64.slice t_T> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_0 <- _ret ] -{inv'3 _ret.final}-
-            [ &_2 <- { _2 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'4 _4} s3
-      | s3 = -{resolve'0 _4}- s4
+            [ &_2 <- { _2 with current = _ret.final } ] s4)
       | s4 = {[@expl:type invariant] inv'4 _2} s5
       | s5 = -{resolve'0 _2}- s6
       | s6 = {[@expl:type invariant] inv'6 self_'0} s7
@@ -43075,7 +42948,7 @@ module M_creusot_contracts__std__option__extern_spec_std_option_T_Option_T_as_mu
     [ return''0 (result: MutBorrow.t (Slice64.slice t_T)) ->
     {[@expl:extern_spec_std_option_T_Option_T_as_mut_slice_body result type invariant] inv'4 result}
       {[@expl:extern_spec_std_option_T_Option_T_as_mut_slice_body ensures] match self_.current with
-        | C_None -> Seq.length (view result) = 0
+        | C_None -> Seq.length (Slice64.view result.current) = 0
         | C_Some _ -> exists b: MutBorrow.t t_T. self_.current = C_Some (b.current)
           /\ self_.final = C_Some (b.final)
           /\ Seq.get (Slice64.view result.current) 0 = b.current
@@ -44592,13 +44465,13 @@ module M_creusot_contracts__std__option__extern_spec_std_option_T_Option_T_inser
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_3 <- _ret ] -{inv _ret.final}-
             [ &_8 <- { _8 with current = _ret.final } ] s5)
-      | s5 = {inv _3.current}
+      | s5 = {[@expl:type invariant] inv'1 _8} s6
+      | s6 = -{resolve'3 _8}- s7
+      | s7 = {inv _3.current}
         MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv _ret.final}-
-            [ &_3 <- { _3 with current = _ret.final } ] s6)
-      | s6 = {[@expl:type invariant] inv'1 _8} s7
-      | s7 = -{resolve'3 _8}- s8
+            [ &_3 <- { _3 with current = _ret.final } ] s8)
       | s8 = {[@expl:type invariant] inv'1 _3} s9
       | s9 = -{resolve'3 _3}- s10
       | s10 = bb9 ]
@@ -44732,13 +44605,13 @@ module M_creusot_contracts__std__option__extern_spec_std_option_T_Option_T_get_o
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_3 <- _ret ] -{inv _ret.final}-
             [ &_9 <- { _9 with current = _ret.final } ] s5)
-      | s5 = {inv _3.current}
+      | s5 = {[@expl:type invariant] inv'1 _9} s6
+      | s6 = -{resolve'3 _9}- s7
+      | s7 = {inv _3.current}
         MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv _ret.final}-
-            [ &_3 <- { _3 with current = _ret.final } ] s6)
-      | s6 = {[@expl:type invariant] inv'1 _9} s7
-      | s7 = -{resolve'3 _9}- s8
+            [ &_3 <- { _3 with current = _ret.final } ] s8)
       | s8 = {[@expl:type invariant] inv'1 _3} s9
       | s9 = -{resolve'3 _3}- s10
       | s10 = bb14 ]
@@ -44923,13 +44796,13 @@ module M_creusot_contracts__std__option__extern_spec_std_option_T_Option_T_get_o
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_8 <- _ret ] -{inv'0 _ret.final}-
             [ &_13 <- { _13 with current = _ret.final } ] s1)
-      | s1 = {inv'0 _8.current}
+      | s1 = {[@expl:type invariant] inv'1 _13} s2
+      | s2 = -{resolve'1 _13}- s3
+      | s3 = {inv'0 _8.current}
         MutBorrow.borrow_final <t_T> {_8.current} {MutBorrow.get_id _8}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_6 <- _ret ] -{inv'0 _ret.final}-
-            [ &_8 <- { _8 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'1 _13} s3
-      | s3 = -{resolve'1 _13}- s4
+            [ &_8 <- { _8 with current = _ret.final } ] s4)
       | s4 = {[@expl:type invariant] inv'1 _8} s5
       | s5 = -{resolve'1 _8}- s6
       | s6 = bb12 ]
@@ -44939,13 +44812,13 @@ module M_creusot_contracts__std__option__extern_spec_std_option_T_Option_T_get_o
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_3 <- _ret ] -{inv'0 _ret.final}-
             [ &_6 <- { _6 with current = _ret.final } ] s1)
-      | s1 = {inv'0 _3.current}
+      | s1 = {[@expl:type invariant] inv'1 _6} s2
+      | s2 = -{resolve'1 _6}- s3
+      | s3 = {inv'0 _3.current}
         MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv'0 _ret.final}-
-            [ &_3 <- { _3 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'1 _6} s3
-      | s3 = -{resolve'1 _6}- s4
+            [ &_3 <- { _3 with current = _ret.final } ] s4)
       | s4 = {[@expl:type invariant] inv'1 _3} s5
       | s5 = -{resolve'1 _3}- s6
       | s6 = bb13 ]
@@ -47703,10 +47576,6 @@ module M_creusot_contracts__std__slice__qyi314041225306698538__as_ptr_own (* <[T
   
   axiom inv_axiom'8 [@rewrite]: forall x: tuple'0 [inv'9 x]. inv'9 x = (let {_p0'0 = x0; _p1'0 = x1} = x in inv'7 x1)
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -47729,7 +47598,7 @@ module M_creusot_contracts__std__slice__qyi314041225306698538__as_ptr_own (* <[T
     | & _9: Opaque.ptr = Any.any_l () ])
     [ return''0 (result: tuple'0) -> {[@expl:as_ptr_own result type invariant] inv'9 result}
       {[@expl:as_ptr_own ensures #0] result._p0'0 = Opaque.thin (ptr result._p1'0)}
-      {[@expl:as_ptr_own ensures #1] view self = view (val' result._p1'0)}
+      {[@expl:as_ptr_own ensures #1] Slice64.view self = Slice64.view (val' result._p1'0)}
       (! return' {result}) ]
 end
 module M_creusot_contracts__std__slice__qyi18390169926879820046__produces_refl (* <std::slice::Iter<'a, T> as std::iter::Iterator> *)
@@ -47748,25 +47617,21 @@ module M_creusot_contracts__std__slice__qyi18390169926879820046__produces_refl (
   
   type t_T
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (view self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
   
-  function view'0 (self: t_Iter) : Slice64.slice t_T
+  function view (self: t_Iter) : Slice64.slice t_T
   
   predicate produces (self: t_Iter) (visited: Seq.seq t_T) (tl: t_Iter) =
-    to_ref_seq (view'0 self) = Seq.(++) visited (to_ref_seq (view'0 tl))
+    to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -47794,25 +47659,21 @@ module M_creusot_contracts__std__slice__qyi18390169926879820046__produces_trans 
   
   type t_T
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (view self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
   
-  function view'0 (self: t_Iter) : Slice64.slice t_T
+  function view (self: t_Iter) : Slice64.slice t_T
   
   predicate produces (self: t_Iter) (visited: Seq.seq t_T) (tl: t_Iter) =
-    to_ref_seq (view'0 self) = Seq.(++) visited (to_ref_seq (view'0 tl))
+    to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -47850,10 +47711,6 @@ module M_creusot_contracts__std__slice__qyi16967112428427721086__produces_refl (
   
   type t_T
   
-  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = Slice64.view self.current
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
@@ -47861,20 +47718,20 @@ module M_creusot_contracts__std__slice__qyi16967112428427721086__produces_refl (
   function to_mut_seq (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq (MutBorrow.t t_T)
   
   axiom to_mut_seq_spec: forall self: MutBorrow.t (Slice64.slice t_T). Seq.length (to_mut_seq self)
-      = Seq.length (view self)
+      = Seq.length (Slice64.view self.current)
   
   axiom to_mut_seq_spec'0: forall self: MutBorrow.t (Slice64.slice t_T). forall i: int. 0 <= i
           /\ i < Seq.length (to_mut_seq self)
         -> Seq.get (to_mut_seq self) i
         = MutBorrow.borrow_logic (index_logic self.current i) (index_logic self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
-  function view'0 (self: t_IterMut) : MutBorrow.t (Slice64.slice t_T)
+  function view (self: t_IterMut) : MutBorrow.t (Slice64.slice t_T)
   
-  axiom view_spec: forall self: t_IterMut. Seq.length (Slice64.view (view'0 self).final)
-      = Seq.length (Slice64.view (view'0 self).current)
+  axiom view_spec: forall self: t_IterMut. Seq.length (Slice64.view (view self).final)
+      = Seq.length (Slice64.view (view self).current)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t t_T)) (tl: t_IterMut) =
-    to_mut_seq (view'0 self) = Seq.(++) visited (to_mut_seq (view'0 tl))
+    to_mut_seq (view self) = Seq.(++) visited (to_mut_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -47903,10 +47760,6 @@ module M_creusot_contracts__std__slice__qyi16967112428427721086__produces_trans 
   
   type t_T
   
-  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = Slice64.view self.current
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
@@ -47914,20 +47767,20 @@ module M_creusot_contracts__std__slice__qyi16967112428427721086__produces_trans 
   function to_mut_seq (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq (MutBorrow.t t_T)
   
   axiom to_mut_seq_spec: forall self: MutBorrow.t (Slice64.slice t_T). Seq.length (to_mut_seq self)
-      = Seq.length (view self)
+      = Seq.length (Slice64.view self.current)
   
   axiom to_mut_seq_spec'0: forall self: MutBorrow.t (Slice64.slice t_T). forall i: int. 0 <= i
           /\ i < Seq.length (to_mut_seq self)
         -> Seq.get (to_mut_seq self) i
         = MutBorrow.borrow_logic (index_logic self.current i) (index_logic self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
-  function view'0 (self: t_IterMut) : MutBorrow.t (Slice64.slice t_T)
+  function view (self: t_IterMut) : MutBorrow.t (Slice64.slice t_T)
   
-  axiom view_spec: forall self: t_IterMut. Seq.length (Slice64.view (view'0 self).final)
-      = Seq.length (Slice64.view (view'0 self).current)
+  axiom view_spec: forall self: t_IterMut. Seq.length (Slice64.view (view self).final)
+      = Seq.length (Slice64.view (view self).current)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t t_T)) (tl: t_IterMut) =
-    to_mut_seq (view'0 self) = Seq.(++) visited (to_mut_seq (view'0 tl))
+    to_mut_seq (view self) = Seq.(++) visited (to_mut_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -49305,18 +49158,13 @@ module M_creusot_contracts__ghost__fn_ghost__qyi2064759324376620136__clone__refi
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: t_FnGhostWrapper) : t_F = view self
-  
-  meta "rewrite_def" function view'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self_: t_FnGhostWrapper. inv'1 self_
       -> inv'1 self_
-      /\ (forall result: t_FnGhostWrapper. postcondition () (view'0 self_) (view result) /\ inv'0 result
-        -> inv'0 result)
+      /\ (forall result: t_FnGhostWrapper. postcondition () (view self_) (view result) /\ inv'0 result -> inv'0 result)
 end
 module M_creusot_contracts__ghost__resource__fmap_view__qyi11277603908270514611__clone__refines (* <ghost::resource::fmap_view::Fragment<K, V> as std::clone::Clone> *)
   type namespace_other
@@ -49572,17 +49420,13 @@ module M_creusot_contracts__ghost__resource__fmap_view__qyi11277603908270514611_
   
   function view'1 (self: t_Fragment) : tuple'1 = { _p0'1 = self.t_Fragment__1; _p1'1 = self.t_Fragment__2 }
   
-  function view'2 [@inline:trivial] (self: t_Fragment) : tuple'1 = view'1 self
-  
-  meta "rewrite_def" function view'2
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self_: t_Fragment. inv'0 self_
       -> inv'0 self_
-      /\ (forall result: t_Fragment. id'0 result = id'0 self_ /\ view'1 result = view'2 self_ /\ inv result
+      /\ (forall result: t_Fragment. id'0 result = id'0 self_ /\ view'1 result = view'1 self_ /\ inv result
         -> inv result)
 end
 module M_creusot_contracts__ghost__qyi11517682701084838082__clone__refines (* <ghost::Ghost<T> as std::clone::Clone> *)
@@ -50193,11 +50037,7 @@ module M_creusot_contracts__logic__fmap__qyi17788021891652805456__next__refines 
   
   predicate is_empty (self: t_FMap) = ext_eq self empty
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_FMapIter) : t_FMap = view'0 self.current
-  
-  meta "rewrite_def" function view'1
-  
-  predicate completed (self: MutBorrow.t t_FMapIter) = is_empty (view'1 self)
+  predicate completed (self: MutBorrow.t t_FMapIter) = is_empty (view'0 self.current)
   
   function insert (self: t_FMap) (k: t_K) (v: t_V) : t_FMap
   
@@ -50376,11 +50216,7 @@ module M_creusot_contracts__logic__fmap__qyi8978282872089338506__next__refines (
         = C_Some'1 v)
       = (get self.t_FMapIterRef__inner k = C_Some v))
   
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_FMapIterRef) : t_FMap'0 = view'1 self.current
-  
-  meta "rewrite_def" function view'2
-  
-  predicate completed (self: MutBorrow.t t_FMapIterRef) = is_empty (view'2 self)
+  predicate completed (self: MutBorrow.t t_FMapIterRef) = is_empty (view'1 self.current)
   
   function get'1 (self: Seq.seq tuple) (ix: int) : t_Option'0 = if 0 <= ix /\ ix < Seq.length self then
       C_Some'0 (Seq.get self ix)
@@ -50491,11 +50327,7 @@ module M_creusot_contracts__logic__seq__qyi785709447733932085__next__refines (* 
   
   axiom produces_refl_spec: forall self: t_SeqIter. produces self (Seq.empty: Seq.seq t_T) self
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_SeqIter) : Seq.seq t_T = view self.current
-  
-  meta "rewrite_def" function view'0
-  
-  predicate completed (self: MutBorrow.t t_SeqIter) = view'0 self = (Seq.empty: Seq.seq t_T)
+  predicate completed (self: MutBorrow.t t_SeqIter) = view self.current = (Seq.empty: Seq.seq t_T)
   
   predicate inv'4 (_0: t_Option)
   
@@ -50598,11 +50430,7 @@ module M_creusot_contracts__logic__seq__qyi15242110712714185722__next__refines (
   
   axiom produces_refl_spec: forall self: t_SeqIterRef. produces self (Seq.empty: Seq.seq t_T) self
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_SeqIterRef) : Seq.seq t_T = view self.current
-  
-  meta "rewrite_def" function view'0
-  
-  predicate completed (self: MutBorrow.t t_SeqIterRef) = view'0 self = (Seq.empty: Seq.seq t_T)
+  predicate completed (self: MutBorrow.t t_SeqIterRef) = view self.current = (Seq.empty: Seq.seq t_T)
   
   predicate invariant''4 [@inline:trivial] (self: t_T) = inv self
   
@@ -52832,25 +52660,21 @@ module M_creusot_contracts__std__deque__qyi7285194934641240501__produces_trans__
   
   type t_T
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (view self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
   
-  function view'0 (self: t_Iter'0) : Slice64.slice t_T
+  function view (self: t_Iter'0) : Slice64.slice t_T
   
   predicate produces (self: t_Iter'0) (visited: Seq.seq t_T) (tl: t_Iter'0) =
-    to_ref_seq (view'0 self) = Seq.(++) visited (to_ref_seq (view'0 tl))
+    to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -52880,25 +52704,21 @@ module M_creusot_contracts__std__deque__qyi7285194934641240501__produces_refl__r
   
   type t_T
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (view self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
   
-  function view'0 (self: t_Iter'0) : Slice64.slice t_T
+  function view (self: t_Iter'0) : Slice64.slice t_T
   
   predicate produces (self: t_Iter'0) (visited: Seq.seq t_T) (tl: t_Iter'0) =
-    to_ref_seq (view'0 self) = Seq.(++) visited (to_ref_seq (view'0 tl))
+    to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -55530,25 +55350,21 @@ module M_creusot_contracts__std__slice__qyi18390169926879820046__produces_trans_
   
   type t_T
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (view self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
   
-  function view'0 (self: t_Iter) : Slice64.slice t_T
+  function view (self: t_Iter) : Slice64.slice t_T
   
   predicate produces (self: t_Iter) (visited: Seq.seq t_T) (tl: t_Iter) =
-    to_ref_seq (view'0 self) = Seq.(++) visited (to_ref_seq (view'0 tl))
+    to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -55576,25 +55392,21 @@ module M_creusot_contracts__std__slice__qyi18390169926879820046__produces_refl__
   
   type t_T
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
   
   function to_ref_seq (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (view self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq self) = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
   
-  function view'0 (self: t_Iter) : Slice64.slice t_T
+  function view (self: t_Iter) : Slice64.slice t_T
   
   predicate produces (self: t_Iter) (visited: Seq.seq t_T) (tl: t_Iter) =
-    to_ref_seq (view'0 self) = Seq.(++) visited (to_ref_seq (view'0 tl))
+    to_ref_seq (view self) = Seq.(++) visited (to_ref_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -55620,10 +55432,6 @@ module M_creusot_contracts__std__slice__qyi16967112428427721086__produces_trans_
   
   type t_T
   
-  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = Slice64.view self.current
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
@@ -55631,20 +55439,20 @@ module M_creusot_contracts__std__slice__qyi16967112428427721086__produces_trans_
   function to_mut_seq (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq (MutBorrow.t t_T)
   
   axiom to_mut_seq_spec: forall self: MutBorrow.t (Slice64.slice t_T). Seq.length (to_mut_seq self)
-      = Seq.length (view self)
+      = Seq.length (Slice64.view self.current)
   
   axiom to_mut_seq_spec'0: forall self: MutBorrow.t (Slice64.slice t_T). forall i: int. 0 <= i
           /\ i < Seq.length (to_mut_seq self)
         -> Seq.get (to_mut_seq self) i
         = MutBorrow.borrow_logic (index_logic self.current i) (index_logic self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
-  function view'0 (self: t_IterMut) : MutBorrow.t (Slice64.slice t_T)
+  function view (self: t_IterMut) : MutBorrow.t (Slice64.slice t_T)
   
-  axiom view_spec: forall self: t_IterMut. Seq.length (Slice64.view (view'0 self).final)
-      = Seq.length (Slice64.view (view'0 self).current)
+  axiom view_spec: forall self: t_IterMut. Seq.length (Slice64.view (view self).final)
+      = Seq.length (Slice64.view (view self).current)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t t_T)) (tl: t_IterMut) =
-    to_mut_seq (view'0 self) = Seq.(++) visited (to_mut_seq (view'0 tl))
+    to_mut_seq (view self) = Seq.(++) visited (to_mut_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -55673,10 +55481,6 @@ module M_creusot_contracts__std__slice__qyi16967112428427721086__produces_refl__
   
   type t_T
   
-  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = Slice64.view self.current
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
@@ -55684,20 +55488,20 @@ module M_creusot_contracts__std__slice__qyi16967112428427721086__produces_refl__
   function to_mut_seq (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq (MutBorrow.t t_T)
   
   axiom to_mut_seq_spec: forall self: MutBorrow.t (Slice64.slice t_T). Seq.length (to_mut_seq self)
-      = Seq.length (view self)
+      = Seq.length (Slice64.view self.current)
   
   axiom to_mut_seq_spec'0: forall self: MutBorrow.t (Slice64.slice t_T). forall i: int. 0 <= i
           /\ i < Seq.length (to_mut_seq self)
         -> Seq.get (to_mut_seq self) i
         = MutBorrow.borrow_logic (index_logic self.current i) (index_logic self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
-  function view'0 (self: t_IterMut) : MutBorrow.t (Slice64.slice t_T)
+  function view (self: t_IterMut) : MutBorrow.t (Slice64.slice t_T)
   
-  axiom view_spec: forall self: t_IterMut. Seq.length (Slice64.view (view'0 self).final)
-      = Seq.length (Slice64.view (view'0 self).current)
+  axiom view_spec: forall self: t_IterMut. Seq.length (Slice64.view (view self).final)
+      = Seq.length (Slice64.view (view self).current)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t t_T)) (tl: t_IterMut) =
-    to_mut_seq (view'0 self) = Seq.(++) visited (to_mut_seq (view'0 tl))
+    to_mut_seq (view self) = Seq.(++) visited (to_mut_seq (view tl))
   
   meta "compute_max_steps" 1000000
   
@@ -56082,10 +55886,6 @@ module M_creusot_contracts__peano__qyi18300662544233371341__le__refines (* <pean
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: t_PeanoInt) : UInt64.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   function deep_model [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.t_PeanoInt__0
   
   meta "rewrite_def" function deep_model
@@ -56099,7 +55899,7 @@ module M_creusot_contracts__peano__qyi18300662544233371341__le__refines (* <pean
   meta "select_lsinst" "all"
   
   goal refines: forall self_: t_PeanoInt. forall other: t_PeanoInt. forall result: bool. result
-            = UInt64.le (view'0 self_) (view'0 other) -> result = UInt64.le (deep_model'0 self_) (deep_model'0 other)
+            = UInt64.le (view self_) (view other) -> result = UInt64.le (deep_model'0 self_) (deep_model'0 other)
 end
 module M_creusot_contracts__peano__qyi18300662544233371341__lt__refines (* <peano::PeanoInt as std::cmp::PartialOrd> *)
   type namespace_other
@@ -56159,10 +55959,6 @@ module M_creusot_contracts__peano__qyi18300662544233371341__lt__refines (* <pean
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: t_PeanoInt) : UInt64.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   function deep_model [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.t_PeanoInt__0
   
   meta "rewrite_def" function deep_model
@@ -56176,7 +55972,7 @@ module M_creusot_contracts__peano__qyi18300662544233371341__lt__refines (* <pean
   meta "select_lsinst" "all"
   
   goal refines: forall self_: t_PeanoInt. forall other: t_PeanoInt. forall result: bool. result
-            = UInt64.lt (view'0 self_) (view'0 other) -> result = UInt64.lt (deep_model'0 self_) (deep_model'0 other)
+            = UInt64.lt (view self_) (view other) -> result = UInt64.lt (deep_model'0 self_) (deep_model'0 other)
 end
 module M_creusot_contracts__peano__qyi18300662544233371341__gt__refines (* <peano::PeanoInt as std::cmp::PartialOrd> *)
   type namespace_other
@@ -56236,10 +56032,6 @@ module M_creusot_contracts__peano__qyi18300662544233371341__gt__refines (* <pean
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: t_PeanoInt) : UInt64.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   function deep_model [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.t_PeanoInt__0
   
   meta "rewrite_def" function deep_model
@@ -56253,7 +56045,7 @@ module M_creusot_contracts__peano__qyi18300662544233371341__gt__refines (* <pean
   meta "select_lsinst" "all"
   
   goal refines: forall self_: t_PeanoInt. forall other: t_PeanoInt. forall result: bool. result
-            = UInt64.gt (view'0 self_) (view'0 other) -> result = UInt64.gt (deep_model'0 self_) (deep_model'0 other)
+            = UInt64.gt (view self_) (view other) -> result = UInt64.gt (deep_model'0 self_) (deep_model'0 other)
 end
 module M_creusot_contracts__peano__qyi18300662544233371341__ge__refines (* <peano::PeanoInt as std::cmp::PartialOrd> *)
   type namespace_other
@@ -56313,10 +56105,6 @@ module M_creusot_contracts__peano__qyi18300662544233371341__ge__refines (* <pean
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: t_PeanoInt) : UInt64.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   function deep_model [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.t_PeanoInt__0
   
   meta "rewrite_def" function deep_model
@@ -56330,7 +56118,7 @@ module M_creusot_contracts__peano__qyi18300662544233371341__ge__refines (* <pean
   meta "select_lsinst" "all"
   
   goal refines: forall self_: t_PeanoInt. forall other: t_PeanoInt. forall result: bool. result
-            = UInt64.ge (view'0 self_) (view'0 other) -> result = UInt64.ge (deep_model'0 self_) (deep_model'0 other)
+            = UInt64.ge (view self_) (view other) -> result = UInt64.ge (deep_model'0 self_) (deep_model'0 other)
 end
 module M_creusot_contracts__logic__ord__qyi2486556465392689020__cmp_ge_log__refines (* <&T as logic::ord::OrdLogic> *)
   type namespace_other
@@ -73121,14 +72909,11 @@ module M_creusot_contracts__std__iter__fuse__qyi12953744680688287360__is_fused__
   
   axiom produces_refl_spec'0: forall self: t_Fuse. produces'0 self (Seq.empty: Seq.seq t_Item) self
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Fuse) : t_Option = view self.current
-  
-  meta "rewrite_def" function view'0
-  
   predicate completed (self: MutBorrow.t t_I)
   
   predicate completed'0 (self: MutBorrow.t t_Fuse) =
-    (view'0 self = C_None \/ (exists it: MutBorrow.t t_I. completed it /\ view'0 self = C_Some (it.current)))
+    (view self.current = C_None
+      \/ (exists it: MutBorrow.t t_I. completed it /\ view self.current = C_Some (it.current)))
     /\ view self.final = C_None
   
   meta "compute_max_steps" 1000000
@@ -73499,10 +73284,6 @@ module M_creusot_contracts__std__slice__qyi314041225306698538__as_ptr_own__refin
   
   axiom inv_axiom'2 [@rewrite]: forall x: Slice64.slice t_T [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   type t_PtrOwn
   
   function val' (self: t_PtrOwn) : Slice64.slice t_T
@@ -73565,6 +73346,6 @@ module M_creusot_contracts__std__slice__qyi314041225306698538__as_ptr_own__refin
   
   goal refines: forall self: Slice64.slice t_T. inv'3 self
       -> inv'3 self
-      /\ (forall result: tuple. view self = view (val' result._p1)
+      /\ (forall result: tuple. Slice64.view self = Slice64.view (val' result._p1)
           /\ result._p0 = Opaque.thin (ptr result._p1) /\ inv'8 result -> inv'8 result)
 end

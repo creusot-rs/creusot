@@ -93,14 +93,6 @@ impl<T: ?Sized> DerefMut for Ghost<T> {
     }
 }
 
-impl<T: ?Sized + View> View for Ghost<T> {
-    type ViewTy = T::ViewTy;
-    #[logic(open, inline)]
-    fn view(self) -> Self::ViewTy {
-        (*self).view()
-    }
-}
-
 impl<T: ?Sized + Fin> Fin for Ghost<T> {
     type Target = T::Target;
 

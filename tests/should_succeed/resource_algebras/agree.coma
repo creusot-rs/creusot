@@ -54,15 +54,11 @@ module M_agree__agreement
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: t_Resource) : t_Ag = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec join_shared (self: t_Resource) (other: t_Resource) (return' (x: t_Resource)) =
     {[@expl:join_shared requires] id self = id other}
     any
     [ return''0 (result: t_Resource) -> {id result = id self}
-      {incl_eq (view'0 self) (view'0 result) /\ incl_eq (view'0 other) (view'0 result)}
+      {incl_eq (view self) (view result) /\ incl_eq (view other) (view result)}
       (! return' {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -74,5 +70,5 @@ module M_agree__agreement
     [ bb0 = s0 [ s0 = join_shared {x'0} {y'0} (fun (_ret: t_Resource) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = return''0 {_0} ]
     [ & _0: () = Any.any_l () | & x'0: t_Resource = x | & y'0: t_Resource = y | & _5: t_Resource = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:agreement ensures] view'0 x = view'0 y} (! return' {result}) ]
+    [ return''0 (result: ()) -> {[@expl:agreement ensures] view x = view y} (! return' {result}) ]
 end

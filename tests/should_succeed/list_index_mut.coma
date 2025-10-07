@@ -25,14 +25,6 @@ module M_list_index_mut__index_mut
       C_Some'0 i
   
   
-  function view [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
-  
-  meta "rewrite_def" function view
-  
-  function view'0 [@inline:trivial] (self: UInt64.t) : int = view self
-  
-  meta "rewrite_def" function view'0
-  
   type t_Ordering = C_Less | C_Equal | C_Greater
   
   function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
@@ -125,12 +117,12 @@ module M_list_index_mut__index_mut
     | bb1 = s0 [ s0 = [ &old_ix <- ix'0 ] s1 | s1 = bb3 ]
     | bb3 = bb3'0
       [ bb3'0 = {[@expl:loop invariant #0] UInt64.le (0: UInt64.t) ix'0 /\ UInt64.t'int ix'0 < len l'0.current}
-        {[@expl:loop invariant #1] get l'0.current (UInt64.t'int ix'0) = get old_l.current (view'0 old_ix)}
-        {[@expl:loop invariant #2] get l'0.final (UInt64.t'int ix'0) = get old_l.final (view'0 old_ix)}
+        {[@expl:loop invariant #1] get l'0.current (UInt64.t'int ix'0) = get old_l.current (UInt64.t'int old_ix)}
+        {[@expl:loop invariant #2] get l'0.final (UInt64.t'int ix'0) = get old_l.final (UInt64.t'int old_ix)}
         {[@expl:loop invariant #3] len l'0.final = len l'0.current -> len old_l.final = len old_l.current}
         {[@expl:loop invariant #4] (forall i: int. 0 <= i /\ i < len l'0.current /\ i <> UInt64.t'int ix'0
             -> get l'0.final i = get l'0.current i)
-        -> (forall i: int. 0 <= i /\ i < len old_l.current /\ i <> view'0 old_ix
+        -> (forall i: int. 0 <= i /\ i < len old_l.current /\ i <> UInt64.t'int old_ix
           -> get old_l.final i = get old_l.current i)}
         (! s0)
         [ s0 = bb4 ]

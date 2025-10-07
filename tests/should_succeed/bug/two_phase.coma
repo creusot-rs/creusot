@@ -24,19 +24,11 @@ module M_two_phase__test
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq UInt64.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
-  
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq UInt64.t = view self.current
-  
-  meta "rewrite_def" function view'1
+    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   let rec push (self_: MutBorrow.t t_Vec) (v: UInt64.t) (return' (x: ())) = any
-    [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view'1 self_) v} (! return' {result}) ]
+    [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return' {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
   
@@ -67,8 +59,8 @@ module M_two_phase__test
     | & _3: () = Any.any_l ()
     | & _4: MutBorrow.t t_Vec = Any.any_l ()
     | & _5: UInt64.t = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:test ensures] UInt64.t'int (index_logic v.final (Seq.length (view'1 v)))
-      = Seq.length (view'1 v)}
+    [ return''0 (result: ()) -> {[@expl:test ensures] UInt64.t'int (index_logic v.final (Seq.length (view v.current)))
+      = Seq.length (view v.current)}
       (! return' {result}) ]
 end
 module M_two_phase__qyi14099956410468907124__insert (* VacantEntry<'_, K> *)
@@ -156,10 +148,6 @@ module M_two_phase__qyi14099956410468907124__insert (* VacantEntry<'_, K> *)
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'4 x]. inv'4 x = invariant''3 x
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq t_K = view self.current
-  
-  meta "rewrite_def" function view'0
-  
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_K = Seq.get (view self) ix
   
   meta "rewrite_def" function index_logic
@@ -168,7 +156,7 @@ module M_two_phase__qyi14099956410468907124__insert (* VacantEntry<'_, K> *)
     {[@expl:insert 'self_' type invariant] inv'4 self_}
     {[@expl:insert 'element' type invariant] inv element}
     any
-    [ return''0 (result: ()) -> {Seq.length (view self_.final) = Seq.length (view'0 self_) + 1}
+    [ return''0 (result: ()) -> {Seq.length (view self_.final) = Seq.length (view self_.current) + 1}
       {forall i: int. 0 <= i /\ i < UInt64.t'int index -> index_logic self_.final i = index_logic self_.current i}
       {index_logic self_.final (UInt64.t'int index) = element}
       {forall i: int. UInt64.t'int index < i /\ i < Seq.length (view self_.final)

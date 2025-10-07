@@ -205,11 +205,7 @@ module M_collections__roundtrip_hashmap_into_iter
   
   predicate is_empty (self: t_FMap) = ext_eq self empty
   
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_IntoIter'0) : t_FMap = view'0 self.current
-  
-  meta "rewrite_def" function view'2
-  
-  predicate completed (self: MutBorrow.t t_IntoIter'0) = resolve'0 self /\ is_empty (view'2 self)
+  predicate completed (self: MutBorrow.t t_IntoIter'0) = resolve'0 self /\ is_empty (view'0 self.current)
   
   predicate from_iter_post (prod: Seq.seq tuple'0) (res: t_HashMap'0) =
     forall k: t_DeepModelTy, v: t_V. (get (view res) k = C_Some'0 v)
@@ -250,14 +246,6 @@ module M_collections__roundtrip_hashmap_into_iter
   
   meta "rewrite_def" function index_logic'0
   
-  function view'3 [@inline:trivial] (self: t_HashMap'0) : t_FMap = view self
-  
-  meta "rewrite_def" function view'3
-  
-  function view'4 [@inline:trivial] (self: t_HashMap'0) : t_FMap = view'3 self
-  
-  meta "rewrite_def" function view'4
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -275,7 +263,7 @@ module M_collections__roundtrip_hashmap_into_iter
         s1
       | s1 = {[@expl:assertion] forall k: t_DeepModelTy. contains'0 (view r) k = contains'0 (view xs_snap) k} s2
       | s2 = {[@expl:assertion] forall k: t_DeepModelTy. index_logic'0 (view r) k = index_logic'0 (view xs_snap) k} s3
-      | s3 = {[@expl:assertion] ext_eq (view r) (view'4 xs_snap)} s4
+      | s3 = {[@expl:assertion] ext_eq (view r) (view xs_snap)} s4
       | s4 = [ &_0 <- r ] s5
       | s5 = bb7 ]
     | bb7 = return''0 {_0} ]
@@ -339,14 +327,10 @@ module M_collections__roundtrip_hashmap_iter
   
   function view (self: t_HashMap'0) : t_FMap
   
-  function view'0 [@inline:trivial] (self: t_HashMap'0) : t_FMap = view self
-  
-  meta "rewrite_def" function view'0
-  
-  function view'1 (self: t_Iter'0) : t_FMap
+  function view'0 (self: t_Iter'0) : t_FMap
   
   let rec iter (self_: t_HashMap'0) (return' (x: t_Iter'0)) = any
-    [ return''0 (result: t_Iter'0) -> {view'0 self_ = view'1 result} (! return' {result}) ]
+    [ return''0 (result: t_Iter'0) -> {view self_ = view'0 result} (! return' {result}) ]
   
   type t_RawTable'0 = { t_RawTable__table'0: t_RawTableInner; t_RawTable__alloc'0: (); t_RawTable__marker'0: () }
   
@@ -375,9 +359,9 @@ module M_collections__roundtrip_hashmap_iter
   
   type t_Option = C_None | C_Some t_V
   
-  function view'2 (self: t_FMap) : Map.map t_DeepModelTy t_Option
+  function view'1 (self: t_FMap) : Map.map t_DeepModelTy t_Option
   
-  function get [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_Option = Map.get (view'2 self) k
+  function get [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_Option = Map.get (view'1 self) k
   
   meta "rewrite_def" function get
   
@@ -388,15 +372,15 @@ module M_collections__roundtrip_hashmap_iter
   meta "rewrite_def" function deep_model'0
   
   predicate produces (self: t_Iter'0) (visited: Seq.seq tuple) (o: t_Iter'0) =
-    len (view'1 self) = Seq.length visited + len (view'1 o)
+    len (view'0 self) = Seq.length visited + len (view'0 o)
     /\ (forall k: t_K, v: t_V. contains visited { _p0 = k; _p1 = v }
-        -> get (view'1 self) (deep_model'0 k) = C_Some v /\ get (view'1 o) (deep_model'0 k) = C_None)
-    /\ (forall k: t_DeepModelTy, v: t_V. get (view'1 o) k = C_Some v
-        -> get (view'1 self) k = C_Some v
+        -> get (view'0 self) (deep_model'0 k) = C_Some v /\ get (view'0 o) (deep_model'0 k) = C_None)
+    /\ (forall k: t_DeepModelTy, v: t_V. get (view'0 o) k = C_Some v
+        -> get (view'0 self) k = C_Some v
         /\ not (exists k2: t_K, v2: t_V. deep_model'0 k2 = k /\ contains visited { _p0 = k2; _p1 = v2 }))
-    /\ (forall k: t_DeepModelTy, v: t_V. get (view'1 self) k = C_Some v
+    /\ (forall k: t_DeepModelTy, v: t_V. get (view'0 self) k = C_Some v
         -> (exists k2: t_K. deep_model'0 k2 = k /\ contains visited { _p0 = k2; _p1 = v })
-        \/ get (view'1 o) k = C_Some v)
+        \/ get (view'0 o) k = C_Some v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
         /\ 0 <= i2
@@ -425,30 +409,26 @@ module M_collections__roundtrip_hashmap_iter
   
   axiom empty_spec: len empty = 0
   
-  axiom empty_spec'0: view'2 empty = Const.const (C_None)
+  axiom empty_spec'0: view'1 empty = Const.const (C_None)
   
   predicate is_empty (self: t_FMap) = ext_eq self empty
   
-  function view'3 [@inline:trivial] (self: MutBorrow.t t_Iter'0) : t_FMap = view'1 self.current
-  
-  meta "rewrite_def" function view'3
-  
-  predicate completed (self: MutBorrow.t t_Iter'0) = resolve'0 self /\ is_empty (view'3 self)
+  predicate completed (self: MutBorrow.t t_Iter'0) = resolve'0 self /\ is_empty (view'0 self.current)
   
   type t_FMap'0
   
   type t_Option'0 = C_None'0 | C_Some'0 t_V
   
-  function view'4 (self: t_FMap'0) : Map.map t_DeepModelTy t_Option'0
+  function view'2 (self: t_FMap'0) : Map.map t_DeepModelTy t_Option'0
   
-  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_DeepModelTy) : t_Option'0 = Map.get (view'4 self) k
+  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_DeepModelTy) : t_Option'0 = Map.get (view'2 self) k
   
   meta "rewrite_def" function get'0
   
-  function view'5 (self: t_HashMap'2) : t_FMap'0
+  function view'3 (self: t_HashMap'2) : t_FMap'0
   
   predicate from_iter_post (prod: Seq.seq tuple) (res: t_HashMap'2) =
-    forall k: t_DeepModelTy, v: t_V. (get'0 (view'5 res) k = C_Some'0 v)
+    forall k: t_DeepModelTy, v: t_V. (get'0 (view'3 res) k = C_Some'0 v)
       = (exists i: int, k1: t_K. 0 <= i
         /\ i < Seq.length prod
         /\ deep_model'0 k1 = k
@@ -471,7 +451,7 @@ module M_collections__roundtrip_hashmap_iter
     | bb3 = s0
       [ s0 = {[@expl:assertion] exists prod: Seq.seq tuple, it1: MutBorrow.t t_Iter'0. completed it1
           /\ produces it0 prod it1.current
-          /\ (forall k: t_DeepModelTy, v: t_V. (get'0 (view'5 r) k = C_Some'0 v)
+          /\ (forall k: t_DeepModelTy, v: t_V. (get'0 (view'3 r) k = C_Some'0 v)
             = (exists k1: t_K. deep_model'0 k1 = k /\ contains prod { _p0 = k1; _p1 = v }))}
         s1
       | s1 = [ &_0 <- r ] s2
@@ -483,8 +463,8 @@ module M_collections__roundtrip_hashmap_iter
     | & it0: t_Iter'0 = Any.any_l ()
     | & r: t_HashMap'2 = Any.any_l () ])
     [ return''0 (result: t_HashMap'2) ->
-    {[@expl:roundtrip_hashmap_iter ensures] forall k: t_DeepModelTy, v: t_V. (get'0 (view'5 result) k = C_Some'0 v)
-        = (get (view'0 xs) k = C_Some v)}
+    {[@expl:roundtrip_hashmap_iter ensures] forall k: t_DeepModelTy, v: t_V. (get'0 (view'3 result) k = C_Some'0 v)
+        = (get (view xs) k = C_Some v)}
       (! return' {result}) ]
 end
 module M_collections__roundtrip_hashmap_iter_mut
@@ -693,16 +673,12 @@ module M_collections__roundtrip_hashmap_iter_mut
   
   predicate is_empty (self: t_FMap'0) = ext_eq self empty
   
-  function view'3 [@inline:trivial] (self: MutBorrow.t t_IterMut'0) : t_FMap'0 = view'2 self.current
+  predicate completed (self: MutBorrow.t t_IterMut'0) = resolve'0 self /\ is_empty (view'2 self.current)
   
-  meta "rewrite_def" function view'3
-  
-  predicate completed (self: MutBorrow.t t_IterMut'0) = resolve'0 self /\ is_empty (view'3 self)
-  
-  function view'4 (self: t_HashMap'2) : t_FMap'0
+  function view'3 (self: t_HashMap'2) : t_FMap'0
   
   predicate from_iter_post (prod: Seq.seq tuple) (res: t_HashMap'2) =
-    forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get'0 (view'4 res) k = C_Some'0 v)
+    forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get'0 (view'3 res) k = C_Some'0 v)
       = (exists i: int, k1: t_K. 0 <= i
         /\ i < Seq.length prod
         /\ deep_model'0 k1 = k
@@ -723,10 +699,6 @@ module M_collections__roundtrip_hashmap_iter_mut
   
   meta "rewrite_def" predicate resolve'2
   
-  function view'5 [@inline:trivial] (self: MutBorrow.t t_HashMap'0) : t_FMap = view'0 self.current
-  
-  meta "rewrite_def" function view'5
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -742,7 +714,7 @@ module M_collections__roundtrip_hashmap_iter_mut
     | bb3 = s0
       [ s0 = {[@expl:assertion] exists prod: Seq.seq tuple, it1: MutBorrow.t t_IterMut'0. completed it1
           /\ produces it0 prod it1.current
-          /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get'0 (view'4 r) k = C_Some'0 v)
+          /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get'0 (view'3 r) k = C_Some'0 v)
             = (exists k1: t_K. deep_model'0 k1 = k /\ contains'1 prod { _p0 = k1; _p1 = v }))}
         s1
       | s1 = [ &_0 <- r ] s2
@@ -755,12 +727,12 @@ module M_collections__roundtrip_hashmap_iter_mut
     | & it0: t_IterMut'0 = Any.any_l ()
     | & r: t_HashMap'2 = Any.any_l () ])
     [ return''0 (result: t_HashMap'2) ->
-    {[@expl:roundtrip_hashmap_iter_mut ensures #0] forall k: t_DeepModelTy, v: MutBorrow.t t_V. get'0 (view'4 result) k
-          = C_Some'0 v -> get (view'5 xs) k = C_Some (v.current) /\ get (view'0 xs.final) k = C_Some (v.final)}
-      {[@expl:roundtrip_hashmap_iter_mut ensures #1] forall k: t_DeepModelTy, v: t_V. get (view'5 xs) k = C_Some v
-        -> contains'0 (view'4 result) k /\ (index_logic'2 (view'4 result) k).current = v}
+    {[@expl:roundtrip_hashmap_iter_mut ensures #0] forall k: t_DeepModelTy, v: MutBorrow.t t_V. get'0 (view'3 result) k
+          = C_Some'0 v -> get (view'0 xs.current) k = C_Some (v.current) /\ get (view'0 xs.final) k = C_Some (v.final)}
+      {[@expl:roundtrip_hashmap_iter_mut ensures #1] forall k: t_DeepModelTy, v: t_V. get (view'0 xs.current) k
+          = C_Some v -> contains'0 (view'3 result) k /\ (index_logic'2 (view'3 result) k).current = v}
       {[@expl:roundtrip_hashmap_iter_mut ensures #2] forall k: t_DeepModelTy, v: t_V. get (view'0 xs.final) k = C_Some v
-        -> contains'0 (view'4 result) k /\ (index_logic'2 (view'4 result) k).final = v}
+        -> contains'0 (view'3 result) k /\ (index_logic'2 (view'3 result) k).final = v}
       (! return' {result}) ]
 end
 module M_collections__roundtrip_hashset_into_iter
@@ -953,11 +925,7 @@ module M_collections__roundtrip_hashset_into_iter
   
   axiom produces_refl_spec: forall self: t_IntoIter'1. produces self (Seq.empty: Seq.seq t_T) self
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_IntoIter'1) : Fset.fset t_DeepModelTy = view'0 self.current
-  
-  meta "rewrite_def" function view'1
-  
-  predicate completed (self: MutBorrow.t t_IntoIter'1) = Fset.is_empty (view'1 self)
+  predicate completed (self: MutBorrow.t t_IntoIter'1) = Fset.is_empty (view'0 self.current)
   
   predicate from_iter_post (prod: Seq.seq t_T) (res: t_HashSet'0) =
     forall x: t_DeepModelTy. contains (view res) x = (exists x1: t_T. deep_model x1 = x /\ contains'0 prod x1)
@@ -1035,14 +1003,10 @@ module M_collections__roundtrip_hashset_iter
   
   function view (self: t_HashSet'0) : Fset.fset t_DeepModelTy
   
-  function view'0 [@inline:trivial] (self: t_HashSet'0) : Fset.fset t_DeepModelTy = view self
-  
-  meta "rewrite_def" function view'0
-  
-  function view'1 (self: t_Iter'1) : Fset.fset t_DeepModelTy
+  function view'0 (self: t_Iter'1) : Fset.fset t_DeepModelTy
   
   let rec iter (self_: t_HashSet'0) (return' (x: t_Iter'1)) = any
-    [ return''0 (result: t_Iter'1) -> {view'0 self_ = view'1 result} (! return' {result}) ]
+    [ return''0 (result: t_Iter'1) -> {view self_ = view'0 result} (! return' {result}) ]
   
   type t_RawTable'0 = { t_RawTable__table'0: t_RawTableInner; t_RawTable__alloc'0: (); t_RawTable__marker'0: () }
   
@@ -1071,13 +1035,13 @@ module M_collections__roundtrip_hashset_iter
   predicate contains'0 (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
   predicate set_produces (start: t_Iter'1) (visited: Seq.seq t_T) (end': t_Iter'1) =
-    Fset.cardinal (view'1 start) = Seq.length visited + Fset.cardinal (view'1 end')
-    /\ (forall x: t_DeepModelTy. contains (view'1 start) x
-        -> (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 visited x1) \/ contains (view'1 end') x)
+    Fset.cardinal (view'0 start) = Seq.length visited + Fset.cardinal (view'0 end')
+    /\ (forall x: t_DeepModelTy. contains (view'0 start) x
+        -> (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 visited x1) \/ contains (view'0 end') x)
     /\ (forall x: t_T. contains'0 visited x
-        -> contains (view'1 start) (deep_model'0 x) /\ not contains (view'1 end') (deep_model'0 x))
-    /\ (forall x: t_DeepModelTy. contains (view'1 end') x
-        -> contains (view'1 start) x /\ not (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 visited x1))
+        -> contains (view'0 start) (deep_model'0 x) /\ not contains (view'0 end') (deep_model'0 x))
+    /\ (forall x: t_DeepModelTy. contains (view'0 end') x
+        -> contains (view'0 start) x /\ not (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
         /\ 0 <= j /\ j < Seq.length visited /\ deep_model'0 (Seq.get visited i) = deep_model'0 (Seq.get visited j)
@@ -1109,16 +1073,12 @@ module M_collections__roundtrip_hashset_iter
   
   axiom produces_refl_spec: forall self: t_Iter'1. produces self (Seq.empty: Seq.seq t_T) self
   
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_Iter'1) : Fset.fset t_DeepModelTy = view'1 self.current
+  predicate completed (self: MutBorrow.t t_Iter'1) = Fset.is_empty (view'0 self.current)
   
-  meta "rewrite_def" function view'2
-  
-  predicate completed (self: MutBorrow.t t_Iter'1) = Fset.is_empty (view'2 self)
-  
-  function view'3 (self: t_HashSet'2) : Fset.fset t_DeepModelTy
+  function view'1 (self: t_HashSet'2) : Fset.fset t_DeepModelTy
   
   predicate from_iter_post (prod: Seq.seq t_T) (res: t_HashSet'2) =
-    forall x: t_DeepModelTy. contains (view'3 res) x = (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 prod x1)
+    forall x: t_DeepModelTy. contains (view'1 res) x = (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 prod x1)
   
   let rec collect (self_: t_Iter'1) (return' (x: t_HashSet'2)) = any
     [ return''0 (result: t_HashSet'2) -> {exists done': MutBorrow.t t_Iter'1, prod: Seq.seq t_T. resolve done'.final
@@ -1134,7 +1094,7 @@ module M_collections__roundtrip_hashset_iter
     | bb1 = s0 [ s0 = collect {_3} (fun (_ret: t_HashSet'2) -> [ &_0 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = return''0 {_0} ]
     [ & _0: t_HashSet'2 = Any.any_l () | & xs'0: t_HashSet'0 = xs | & _3: t_Iter'1 = Any.any_l () ])
-    [ return''0 (result: t_HashSet'2) -> {[@expl:roundtrip_hashset_iter ensures] view'3 result = view'0 xs}
+    [ return''0 (result: t_HashSet'2) -> {[@expl:roundtrip_hashset_iter ensures] view'1 result = view xs}
       (! return' {result}) ]
 end
 module M_collections__hashset_intersection
@@ -1197,12 +1157,8 @@ module M_collections__hashset_intersection
   
   function view'0 (self: t_HashSet'0) : Fset.fset t_DeepModelTy
   
-  function view'1 [@inline:trivial] (self: t_HashSet'0) : Fset.fset t_DeepModelTy = view'0 self
-  
-  meta "rewrite_def" function view'1
-  
   let rec intersection (self_: t_HashSet'0) (other: t_HashSet'0) (return' (x: t_Intersection)) = any
-    [ return''0 (result: t_Intersection) -> {view result = Fset.inter (view'1 self_) (view'1 other)}
+    [ return''0 (result: t_Intersection) -> {view result = Fset.inter (view'0 self_) (view'0 other)}
       (! return' {result}) ]
   
   type t_Copied = { t_Copied__it: t_Intersection }
@@ -1306,11 +1262,7 @@ module M_collections__hashset_intersection
   
   meta "rewrite_def" predicate resolve'2
   
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_Intersection) : Fset.fset t_DeepModelTy = view self.current
-  
-  meta "rewrite_def" function view'2
-  
-  predicate completed (self: MutBorrow.t t_Intersection) = resolve'2 self /\ Fset.is_empty (view'2 self)
+  predicate completed (self: MutBorrow.t t_Intersection) = resolve'2 self /\ Fset.is_empty (view self.current)
   
   predicate completed'0 (self: MutBorrow.t t_Copied) =
     exists inner: MutBorrow.t t_Intersection. inner.current = iter self.current
@@ -1341,7 +1293,7 @@ module M_collections__hashset_intersection
     | & _4: t_Copied = Any.any_l ()
     | & _5: t_Intersection = Any.any_l () ])
     [ return''0 (result: t_HashSet'0) -> {[@expl:hashset_intersection ensures] view'0 result
-      = Fset.inter (view'1 xs) (view'1 ys)}
+      = Fset.inter (view'0 xs) (view'0 ys)}
       (! return' {result}) ]
 end
 module M_collections__hashset_difference
@@ -1404,12 +1356,8 @@ module M_collections__hashset_difference
   
   function view'0 (self: t_HashSet'0) : Fset.fset t_DeepModelTy
   
-  function view'1 [@inline:trivial] (self: t_HashSet'0) : Fset.fset t_DeepModelTy = view'0 self
-  
-  meta "rewrite_def" function view'1
-  
   let rec difference (self_: t_HashSet'0) (other: t_HashSet'0) (return' (x: t_Difference)) = any
-    [ return''0 (result: t_Difference) -> {view result = Fset.diff (view'1 self_) (view'1 other)} (! return' {result}) ]
+    [ return''0 (result: t_Difference) -> {view result = Fset.diff (view'0 self_) (view'0 other)} (! return' {result}) ]
   
   type t_Copied = { t_Copied__it: t_Difference }
   
@@ -1512,11 +1460,7 @@ module M_collections__hashset_difference
   
   meta "rewrite_def" predicate resolve'2
   
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_Difference) : Fset.fset t_DeepModelTy = view self.current
-  
-  meta "rewrite_def" function view'2
-  
-  predicate completed (self: MutBorrow.t t_Difference) = resolve'2 self /\ Fset.is_empty (view'2 self)
+  predicate completed (self: MutBorrow.t t_Difference) = resolve'2 self /\ Fset.is_empty (view self.current)
   
   predicate completed'0 (self: MutBorrow.t t_Copied) =
     exists inner: MutBorrow.t t_Difference. inner.current = iter self.current
@@ -1547,6 +1491,6 @@ module M_collections__hashset_difference
     | & _4: t_Copied = Any.any_l ()
     | & _5: t_Difference = Any.any_l () ])
     [ return''0 (result: t_HashSet'0) -> {[@expl:hashset_difference ensures] view'0 result
-      = Fset.diff (view'1 xs) (view'1 ys)}
+      = Fset.diff (view'0 xs) (view'0 ys)}
       (! return' {result}) ]
 end

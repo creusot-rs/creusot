@@ -1769,10 +1769,6 @@ module M_final_borrows__index_mut_slice
   
   meta "rewrite_def" predicate resolve'2
   
-  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq t_T = Slice64.view self.current
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic
@@ -1783,7 +1779,7 @@ module M_final_borrows__index_mut_slice
   
   let rec index_mut_slice (v: MutBorrow.t (Slice64.slice t_T)) (return' (x: MutBorrow.t t_T)) =
     {[@expl:index_mut_slice 'v' type invariant] inv'4 v}
-    {[@expl:index_mut_slice requires] Seq.length (view v) = 42}
+    {[@expl:index_mut_slice requires] Seq.length (Slice64.view v.current) = 42}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- (12: UInt64.t) ] s1

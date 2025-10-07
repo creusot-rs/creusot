@@ -13,6 +13,7 @@ use crate::*;
 pub trait View {
     type ViewTy;
     #[logic]
+    #[intrinsic("view")]
     fn view(self) -> Self::ViewTy;
 }
 
@@ -36,27 +37,11 @@ impl<T: DeepModel + ?Sized> DeepModel for &T {
     }
 }
 
-impl<T: View + ?Sized> View for &T {
-    type ViewTy = T::ViewTy;
-    #[logic(open, inline)]
-    fn view(self) -> Self::ViewTy {
-        (*self).view()
-    }
-}
-
 impl<T: DeepModel + ?Sized> DeepModel for &mut T {
     type DeepModelTy = T::DeepModelTy;
     #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         (*self).deep_model()
-    }
-}
-
-impl<T: View + ?Sized> View for &mut T {
-    type ViewTy = T::ViewTy;
-    #[logic(open, inline)]
-    fn view(self) -> Self::ViewTy {
-        (*self).view()
     }
 }
 

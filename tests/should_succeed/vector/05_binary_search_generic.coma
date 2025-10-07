@@ -56,12 +56,8 @@ module M_05_binary_search_generic__binary_search
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq t_T = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
+    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   predicate resolve (_0: t_T)
   
@@ -196,8 +192,8 @@ module M_05_binary_search_generic__binary_search
   meta "rewrite_def" predicate has_value
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: t_T)) = {[@expl:index 'self_' type invariant] inv'3 self_}
-    {[@expl:index requires] in_bounds ix (view'0 self_)}
-    any [ return''0 (result: t_T) -> {inv'4 result} {has_value ix (view'0 self_) result} (! return' {result}) ]
+    {[@expl:index requires] in_bounds ix (view self_)}
+    any [ return''0 (result: t_T) -> {inv'4 result} {has_value ix (view self_) result} (! return' {result}) ]
   
   type tuple = { _p0: t_T; _p1: t_T }
   
@@ -251,7 +247,7 @@ module M_05_binary_search_generic__binary_search
   let rec binary_search (arr: t_Vec) (elem: t_T) (return' (x: t_Result)) =
     {[@expl:binary_search 'arr' type invariant] inv'3 arr}
     {[@expl:binary_search 'elem' type invariant] inv elem}
-    {[@expl:binary_search requires #0] Seq.length (view'0 arr) <= UInt64.t'int const_MAX}
+    {[@expl:binary_search requires #0] Seq.length (view arr) <= UInt64.t'int const_MAX}
     {[@expl:binary_search requires #1] sorted (deep_model'1 arr)}
     (! bb0
     [ bb0 = s0 [ s0 = len {arr'0} (fun (_ret: UInt64.t) -> [ &_10 <- _ret ] s1) | s1 = bb1 ]
@@ -266,11 +262,11 @@ module M_05_binary_search_generic__binary_search
     | bb4 = s0 [ s0 = [ &base <- (0: UInt64.t) ] s1 | s1 = bb5 ]
     | bb5 = bb5'0
       [ bb5'0 = {[@expl:loop invariant #0] 0 < UInt64.t'int size
-        /\ UInt64.t'int size + UInt64.t'int base <= Seq.length (view'0 arr'0)}
+        /\ UInt64.t'int size + UInt64.t'int base <= Seq.length (view arr'0)}
         {[@expl:loop invariant #1] forall i: UInt64.t. UInt64.lt i base
           -> le_log (Seq.get (deep_model'1 arr'0) (UInt64.t'int i)) (deep_model elem'0)}
         {[@expl:loop invariant #2] forall i: UInt64.t. UInt64.t'int base + UInt64.t'int size <= UInt64.t'int i
-            /\ UInt64.t'int i < Seq.length (view'0 arr'0)
+            /\ UInt64.t'int i < Seq.length (view arr'0)
           -> lt_log (deep_model elem'0) (Seq.get (deep_model'1 arr'0) (UInt64.t'int i))}
         (! s0)
         [ s0 = bb6 ]
@@ -334,7 +330,7 @@ module M_05_binary_search_generic__binary_search
         -> (forall i: UInt64.t. UInt64.lt i x
           -> le_log (Seq.get (deep_model'1 arr) (UInt64.t'int i)) (deep_model elem))}
       {[@expl:binary_search ensures #2] forall x: UInt64.t. result = C_Err x
-        -> (forall i: UInt64.t. UInt64.le x i /\ UInt64.t'int i < Seq.length (view'0 arr)
+        -> (forall i: UInt64.t. UInt64.le x i /\ UInt64.t'int i < Seq.length (view arr)
           -> lt_log (deep_model elem) (Seq.get (deep_model'1 arr) (UInt64.t'int i)))}
       (! return' {result}) ]
 end

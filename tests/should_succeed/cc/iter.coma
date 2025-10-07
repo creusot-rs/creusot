@@ -18,10 +18,6 @@ module M_iter__test_mut_ref
   
   type t_Option = C_None | C_Some Int32.t
   
-  function view'0 [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t = Slice64.view self
-  
-  meta "rewrite_def" function view'0
-  
   function index_logic [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
     Seq.get (Slice64.view self) ix
   
@@ -29,7 +25,8 @@ module M_iter__test_mut_ref
   
   function to_ref_seq (self: Slice64.slice Int32.t) : Seq.seq Int32.t
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice Int32.t. Seq.length (to_ref_seq self) = Seq.length (view'0 self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice Int32.t. Seq.length (to_ref_seq self)
+      = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice Int32.t. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
@@ -51,12 +48,8 @@ module M_iter__test_mut_ref
   
   meta "rewrite_def" predicate resolve
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice Int32.t = view self.current
-  
-  meta "rewrite_def" function view'1
-  
   predicate completed (self: MutBorrow.t t_Iter) =
-    resolve self /\ Slice64.view (view'1 self) = (Seq.empty: Seq.seq Int32.t)
+    resolve self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq Int32.t)
   
   let rec next (self_: MutBorrow.t t_Iter) (return' (x: t_Option)) = any
     [ return''0 (result: t_Option) -> {match result with
@@ -347,17 +340,13 @@ module M_iter__test_filter
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Filter [inv'2 x]. inv'2 x = invariant''0 x
   
-  function view'0 [@inline:trivial] (self: Slice64.slice bool) : Seq.seq bool = Slice64.view self
-  
-  meta "rewrite_def" function view'0
-  
   predicate index_logic [@inline:trivial] (self: Slice64.slice bool) (ix: int) = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" predicate index_logic
   
   function to_ref_seq (self: Slice64.slice bool) : Seq.seq bool
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice bool. Seq.length (to_ref_seq self) = Seq.length (view'0 self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice bool. Seq.length (to_ref_seq self) = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice bool. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
@@ -399,12 +388,8 @@ module M_iter__test_filter
   
   meta "rewrite_def" predicate resolve'2
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice bool = view self.current
-  
-  meta "rewrite_def" function view'1
-  
   predicate completed (self: MutBorrow.t t_Iter) =
-    resolve'2 self /\ Slice64.view (view'1 self) = (Seq.empty: Seq.seq bool)
+    resolve'2 self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq bool)
   
   predicate completed'0 (self: MutBorrow.t t_Filter) =
     (exists s: Seq.seq bool, e: MutBorrow.t t_Iter. produces (iter'0 self.current) s e.current
@@ -736,17 +721,13 @@ module M_iter__test_filter_map
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_FilterMap [inv'2 x]. inv'2 x = invariant''0 x
   
-  function view'0 [@inline:trivial] (self: Slice64.slice bool) : Seq.seq bool = Slice64.view self
-  
-  meta "rewrite_def" function view'0
-  
   predicate index_logic [@inline:trivial] (self: Slice64.slice bool) (ix: int) = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" predicate index_logic
   
   function to_ref_seq (self: Slice64.slice bool) : Seq.seq bool
   
-  axiom to_ref_seq_spec: forall self: Slice64.slice bool. Seq.length (to_ref_seq self) = Seq.length (view'0 self)
+  axiom to_ref_seq_spec: forall self: Slice64.slice bool. Seq.length (to_ref_seq self) = Seq.length (Slice64.view self)
   
   axiom to_ref_seq_spec'0: forall self: Slice64.slice bool. forall i: int. 0 <= i /\ i < Seq.length (to_ref_seq self)
         -> Seq.get (to_ref_seq self) i = index_logic self i
@@ -789,12 +770,8 @@ module M_iter__test_filter_map
   
   meta "rewrite_def" predicate resolve'2
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Iter) : Slice64.slice bool = view self.current
-  
-  meta "rewrite_def" function view'1
-  
   predicate completed (self: MutBorrow.t t_Iter) =
-    resolve'2 self /\ Slice64.view (view'1 self) = (Seq.empty: Seq.seq bool)
+    resolve'2 self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq bool)
   
   predicate completed'0 (self: MutBorrow.t t_FilterMap) =
     (exists s: Seq.seq bool, e: MutBorrow.t t_Iter. produces (iter'0 self.current) s e.current

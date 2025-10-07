@@ -30,11 +30,12 @@ use rustc_mir_dataflow::{
     on_all_children_bits,
 };
 use rustc_span::Symbol;
-use rustc_type_ir::TyKind;
+use rustc_type_ir::{ClosureKind, TyKind};
 use why3::Ident;
 
 use crate::{
     analysis::resolve::{HasMoveDataExt as _, Resolver, place_contains_borrow_deref},
+    backend::closures::ClosSubst,
     callbacks,
     contracts_items::{is_erasure, is_snapshot_closure, is_spec},
     ctx::{HasTyCtxt, TranslationCtx},
@@ -158,10 +159,7 @@ impl<'tcx> BodySpecs<'tcx> {
         let mut erased_locals = MixedBitSet::new_empty(body.local_decls.len());
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let ty::TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if is_spec(tcx, *def_id)
-                    || is_erasure(tcx, *def_id)
-                    || is_snapshot_closure(tcx, *def_id)
-                {
+                if is_spec(tcx, *def_id) || is_erasure(tcx, *def_id) {
                     erased_locals.insert(local);
                 }
             }
@@ -189,6 +187,8 @@ pub struct AnalysisEnv<'a, 'tcx> {
     tree: fmir::ScopeTree<'tcx>,
     corenamer: &'a HashMap<Ident, HirId>,
     locals: HashMap<Local, (Symbol, Ident)>,
+    /// The substitution that replaces Term::Capture(xxx) into the corresponding projection
+    clos_subst: Option<ClosSubst<'tcx>>,
 }
 
 impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
@@ -196,8 +196,9 @@ impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
         tree: fmir::ScopeTree<'tcx>,
         corenamer: &'a HashMap<Ident, HirId>,
         locals: HashMap<Local, (Symbol, Ident)>,
+        clos_subst: Option<ClosSubst<'tcx>>,
     ) -> Self {
-        AnalysisEnv { tree, corenamer, locals }
+        AnalysisEnv { tree, corenamer, locals, clos_subst }
     }
 
     /// Construct a substitution for an inline Pearlite expression (`proof_assert`, `snapshot`).
@@ -629,6 +630,9 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 let subst = self.analysis_env.inline_pearlite_subst(tcx, scope);
                 for term in variants_and_invariants {
                     term.subst(&subst);
+                    if let Some(s) = &self.analysis_env.clos_subst {
+                        s.subst(tcx, term);
+                    }
                     self.analysis_env.check_use_in_logic(
                         term,
                         tcx,
@@ -706,23 +710,26 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             mir::Rvalue::Aggregate(box kind, _ops) => match kind {
                 mir::AggregateKind::Closure(def_id, _subst) => {
                     let tcx = self.tcx();
-                    let spec = self
+                    if let Some(term) = self
                         .body_specs
                         .invariant_assertions
                         .get_mut(def_id)
                         .map(|(term, _)| term)
-                        .or_else(|| self.body_specs.assertions.get_mut(def_id));
-                    spec.into_iter().for_each(|term| {
+                        .or_else(|| self.body_specs.assertions.get_mut(def_id))
+                    {
                         let bad_vars = self.resolver.bad_vars_at(loc);
                         let subst = self.analysis_env.inline_pearlite_subst(tcx, si.scope);
                         term.subst(&subst);
+                        if let Some(s) = &self.analysis_env.clos_subst {
+                            s.subst(tcx, term);
+                        }
                         self.analysis_env.check_use_in_logic(
                             term,
                             tcx,
                             &self.resolver.move_data(),
                             &bad_vars,
                         );
-                    })
+                    }
                 }
                 _ => {}
             },
@@ -751,30 +758,30 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 self.resolve_before_assignment(need, &resolved, loc, destination);
 
                 // If this is a snapshot, check that it doesn't use uninitialized or borrowed variables
-                // (if this is not a snapshot, it won't be found in `self.body_specs.snapshots` so this will be a noop)
                 let &TyKind::FnDef(_fun_def_id, subst) = func.ty(self.body(), self.tcx()).kind()
                 else {
                     self.fatal_error(fn_span, "unsupported function call type").emit()
                 };
                 if let Some(ty) = subst.get(1)
                     && let ty::GenericArgKind::Type(ty) = ty.kind()
+                    && let &ty::TyKind::Closure(def_id, _) = ty.kind()
+                    && is_snapshot_closure(self.tcx(), def_id)
                 {
-                    if let ty::TyKind::Closure(def_id, _) = ty.kind() {
-                        let tcx = self.tcx();
-                        self.body_specs.snapshots.get_mut(def_id).into_iter().for_each(|term| {
-                            let bad_vars = self.resolver.bad_vars_at(loc);
-                            let subst = self
-                                .analysis_env
-                                .inline_pearlite_subst(tcx, terminator.source_info.scope);
-                            term.subst(&subst);
-                            self.analysis_env.check_use_in_logic(
-                                term,
-                                tcx,
-                                &self.resolver.move_data(),
-                                &bad_vars,
-                            );
-                        });
+                    let tcx = self.tcx();
+                    let term = self.body_specs.snapshots.get_mut(&def_id).unwrap();
+                    let bad_vars = self.resolver.bad_vars_at(loc);
+                    let subst =
+                        self.analysis_env.inline_pearlite_subst(tcx, terminator.source_info.scope);
+                    term.subst(&subst);
+                    if let Some(s) = &self.analysis_env.clos_subst {
+                        s.subst(tcx, term);
                     }
+                    self.analysis_env.check_use_in_logic(
+                        term,
+                        tcx,
+                        &self.resolver.move_data(),
+                        &bad_vars,
+                    );
                 }
 
                 self.store_resolved_before(loc);
@@ -861,7 +868,7 @@ pub(crate) fn run_without_specs<'a, 'tcx>(
     let body = callbacks::get_body(tcx, def_id);
     let mut body_specs = BodySpecs::empty();
     let corenamer = HashMap::new();
-    let analysis_env = AnalysisEnv::new(fmir::ScopeTree::empty(), &corenamer, HashMap::new());
+    let analysis_env = AnalysisEnv::new(fmir::ScopeTree::empty(), &corenamer, HashMap::new(), None);
 
     let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
     let mut analysis = Analysis::new(tcx, analysis_env, &body, &mut body_specs, &move_data);
@@ -875,13 +882,27 @@ pub(crate) fn run_with_specs<'tcx>(
     body: &BodyWithBorrowckFacts<'tcx>,
     body_specs: &mut BodySpecs<'tcx>,
 ) -> BorrowData<'tcx> {
-    debug!("run_with_specs for {}", ctx.tcx.def_path_str(body.body.source.def_id()));
+    let def_id = body.body.source.def_id();
+    debug!("run_with_specs for {}", ctx.tcx.def_path_str(def_id));
     let tcx = ctx.tcx;
     let corenamer = &ctx.corenamer.borrow();
     // We take `locals` from `body_specs` and put it back later
     let locals = std::mem::take(&mut body_specs.locals);
     let tree = fmir::ScopeTree::build(&body.body, tcx, &locals);
-    let analysis_env = AnalysisEnv::new(tree, corenamer, locals);
+    let clos_subst = tcx.is_closure_like(def_id).then(|| {
+        let loc = body_specs.vars.get_index(1).unwrap();
+        let ty_env = tcx.type_of(def_id).instantiate_identity();
+        let TyKind::Closure(_, subst) = ty_env.kind() else { unreachable!() };
+        let self_ = Term::var(*loc.0, loc.1.ty);
+        let self_ = match subst.as_closure().kind() {
+            ClosureKind::Fn => self_.clone().shr_deref(),
+            ClosureKind::FnMut => self_.clone().cur(),
+            ClosureKind::FnOnce => self_.clone(),
+        };
+        assert_eq!(ctx.erase_and_anonymize_regions(self_.ty), ty_env);
+        ClosSubst::pre_or_cur(tcx, def_id.expect_local(), self_)
+    });
+    let analysis_env = AnalysisEnv::new(tree, corenamer, locals, clos_subst);
     let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
     let mut analysis = Analysis::new(tcx, analysis_env, body, body_specs, &move_data);
     analysis.run();

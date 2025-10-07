@@ -31,7 +31,7 @@ impl PartialEq for Id {
     #[ensures(result == (*self == *other))]
     #[allow(unused_variables)]
     fn eq(&self, other: &Self) -> bool {
-        unreachable!("BUG: called ghost function in normal code")
+        panic!()
     }
 
     #[check(ghost)]

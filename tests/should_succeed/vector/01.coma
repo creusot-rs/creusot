@@ -25,12 +25,8 @@ module M_01__all_zero
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq UInt32.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
@@ -40,18 +36,6 @@ module M_01__all_zero
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt32.t = Seq.get (view self) ix
   
   meta "rewrite_def" function index_logic
-  
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq UInt32.t = view self.current
-  
-  meta "rewrite_def" function view'1
-  
-  function view'2 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq UInt32.t = view'1 self
-  
-  meta "rewrite_def" function view'2
-  
-  function view'3 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq UInt32.t = view'2 self
-  
-  meta "rewrite_def" function view'3
   
   function deep_model [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
@@ -122,12 +106,12 @@ module M_01__all_zero
   meta "rewrite_def" predicate resolve_elswhere
   
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t UInt32.t)) =
-    {[@expl:index_mut requires] in_bounds ix (view'1 self_)}
+    {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return''0 (result: MutBorrow.t UInt32.t) -> {has_value ix (view'1 self_) result.current}
+    [ return''0 (result: MutBorrow.t UInt32.t) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
-      {resolve_elswhere ix (view'1 self_) (view self_.final)}
-      {Seq.length (view self_.final) = Seq.length (view'1 self_)}
+      {resolve_elswhere ix (view self_.current) (view self_.final)}
+      {Seq.length (view self_.final) = Seq.length (view self_.current)}
       (! return' {result}) ]
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
@@ -165,7 +149,7 @@ module M_01__all_zero
         {[@expl:for invariant] inv'0 produced}
         {[@expl:for invariant] inv iter}
         {[@expl:for invariant] produces iter_old produced iter}
-        {[@expl:loop invariant #0] Seq.length (view'1 v'0) = Seq.length (view'3 old_v)}
+        {[@expl:loop invariant #0] Seq.length (view v'0.current) = Seq.length (view old_v.current)}
         {[@expl:loop invariant #1] forall j: int. 0 <= j /\ j < Seq.length produced
           -> index_logic v'0.current j = (0: UInt32.t)}
         (! s0)
@@ -213,6 +197,6 @@ module M_01__all_zero
     | & old_6_0: MutBorrow.t t_Vec = Any.any_l () ])
     [ return''0 (result: ()) -> {[@expl:all_zero ensures #0] forall i: int. 0 <= i /\ i < Seq.length (view v.final)
         -> index_logic v.final i = (0: UInt32.t)}
-      {[@expl:all_zero ensures #1] Seq.length (view'1 v) = Seq.length (view v.final)}
+      {[@expl:all_zero ensures #1] Seq.length (view v.current) = Seq.length (view v.final)}
       (! return' {result}) ]
 end

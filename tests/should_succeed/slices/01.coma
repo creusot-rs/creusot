@@ -6,16 +6,12 @@ module M_01__index_slice
   use seq.Seq
   use mach.int.Int
   
-  function view [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec index_slice (a: Slice64.slice UInt32.t) (return' (x: UInt32.t)) = {[@expl:index_slice requires] 10
-    < Seq.length (view a)}
+    < Seq.length (Slice64.view a)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_3 <- (10: UInt64.t) ] s1
@@ -47,11 +43,6 @@ module M_01__index_mut_slice
   
   meta "rewrite_def" predicate resolve'0
   
-  function view [@inline:trivial] (self: MutBorrow.t (Slice64.slice UInt32.t)) : Seq.seq UInt32.t =
-    Slice64.view self.current
-  
-  meta "rewrite_def" function view
-  
   function index_logic [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
     Seq.get (Slice64.view self) ix
   
@@ -62,7 +53,7 @@ module M_01__index_mut_slice
   meta "select_lsinst" "all"
   
   let rec index_mut_slice (a: MutBorrow.t (Slice64.slice UInt32.t)) (return' (x: ())) =
-    {[@expl:index_mut_slice requires] Seq.length (view a) = 5}
+    {[@expl:index_mut_slice requires] Seq.length (Slice64.view a.current) = 5}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- (2: UInt64.t) ] s1
@@ -126,12 +117,8 @@ module M_01__slice_first
   
   axiom inv_axiom'2 [@rewrite]: forall x: Slice64.slice t_T [inv'3 x]. inv'3 x = invariant''2 x
   
-  function view [@inline:trivial] (self: Slice64.slice t_T) : Seq.seq t_T = Slice64.view self
-  
-  meta "rewrite_def" function view
-  
   let rec len (self_: Slice64.slice t_T) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: UInt64.t) -> {Seq.length (view self_) = UInt64.t'int result} (! return' {result}) ]
+    any [ return''0 (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return' {result}) ]
   
   type t_Option = C_None | C_Some t_T
   
@@ -185,7 +172,7 @@ module M_01__slice_first
     [ return''0 (result: t_Option) -> {[@expl:slice_first result type invariant] inv'5 result}
       {[@expl:slice_first ensures] match result with
         | C_Some v -> v = index_logic a 0
-        | C_None -> Seq.length (view a) = 0
+        | C_None -> Seq.length (Slice64.view a) = 0
         end}
       (! return' {result}) ]
 end

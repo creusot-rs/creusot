@@ -199,7 +199,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[check(terminates)]
     #[requires(ptr == own.ptr())]
     pub unsafe fn drop(ptr: *const T, own: Ghost<PtrOwn<T>>) {
-        let _ = Self::to_box(ptr, own);
+        let _ = unsafe { Self::to_box(ptr, own) };
     }
 
     /// If one owns two `PtrOwn`s in ghost code, then they are for different pointers.

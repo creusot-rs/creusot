@@ -28,24 +28,16 @@ module M_vecdeque__test_deque
   let rec with_capacity (capacity: UInt64.t) (return' (x: t_VecDeque)) = any
     [ return''0 (result: t_VecDeque) -> {Seq.length (view result) = 0} (! return' {result}) ]
   
-  function view'0 [@inline:trivial] (self: t_VecDeque) : Seq.seq UInt32.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec is_empty (self_: t_VecDeque) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (Seq.length (view'0 self_) = 0)} (! return' {result}) ]
+    [ return''0 (result: bool) -> {result = (Seq.length (view self_) = 0)} (! return' {result}) ]
   
   let rec len (self_: t_VecDeque) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   let rec new (return' (x: t_VecDeque)) = any
     [ return''0 (result: t_VecDeque) -> {Seq.length (view result) = 0} (! return' {result}) ]
   
   type t_Option = C_None | C_Some UInt32.t
-  
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_VecDeque) : Seq.seq UInt32.t = view self.current
-  
-  meta "rewrite_def" function view'1
   
   function push_front [@inline:trivial] (self: Seq.seq UInt32.t) (x: UInt32.t) : Seq.seq UInt32.t = Seq.cons x self
   
@@ -53,9 +45,9 @@ module M_vecdeque__test_deque
   
   let rec pop_front (self_: MutBorrow.t t_VecDeque) (return' (x: t_Option)) = any
     [ return''0 (result: t_Option) -> {match result with
-        | C_Some t -> view self_.final = Seq.([..]) (view'1 self_) 1 (Seq.length (view'1 self_))
-        /\ view'1 self_ = push_front (view self_.final) t
-        | C_None -> self_.current = self_.final /\ Seq.length (view'1 self_) = 0
+        | C_Some t -> view self_.final = Seq.([..]) (view self_.current) 1 (Seq.length (view self_.current))
+        /\ view self_.current = push_front (view self_.final) t
+        | C_None -> self_.current = self_.final /\ Seq.length (view self_.current) = 0
         end}
       (! return' {result}) ]
   
@@ -81,19 +73,19 @@ module M_vecdeque__test_deque
   
   let rec pop_back (self_: MutBorrow.t t_VecDeque) (return' (x: t_Option)) = any
     [ return''0 (result: t_Option) -> {match result with
-        | C_Some t -> view self_.final = Seq.([..]) (view'1 self_) 0 (Seq.length (view'1 self_) - 1)
-        /\ view'1 self_ = Seq.snoc (view self_.final) t
-        | C_None -> self_.current = self_.final /\ Seq.length (view'1 self_) = 0
+        | C_Some t -> view self_.final = Seq.([..]) (view self_.current) 0 (Seq.length (view self_.current) - 1)
+        /\ view self_.current = Seq.snoc (view self_.final) t
+        | C_None -> self_.current = self_.final /\ Seq.length (view self_.current) = 0
         end}
       (! return' {result}) ]
   
   let rec push_front'0 (self_: MutBorrow.t t_VecDeque) (value: UInt32.t) (return' (x: ())) = any
-    [ return''0 (result: ()) -> {Seq.length (view self_.final) = Seq.length (view'1 self_) + 1}
-      {view self_.final = push_front (view'1 self_) value}
+    [ return''0 (result: ()) -> {Seq.length (view self_.final) = Seq.length (view self_.current) + 1}
+      {view self_.final = push_front (view self_.current) value}
       (! return' {result}) ]
   
   let rec push_back (self_: MutBorrow.t t_VecDeque) (value: UInt32.t) (return' (x: ())) = any
-    [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view'1 self_) value} (! return' {result}) ]
+    [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view self_.current) value} (! return' {result}) ]
   
   let rec clear (self_: MutBorrow.t t_VecDeque) (return' (x: ())) = any
     [ return''0 (result: ()) -> {Seq.length (view self_.final) = 0} (! return' {result}) ]

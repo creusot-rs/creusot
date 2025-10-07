@@ -42,19 +42,11 @@ module M_excl__exclusivity
   
   meta "rewrite_def" function view
   
-  function view'0 [@inline:trivial] (self: MutBorrow.t t_Resource) : t_Excl = view self.current
-  
-  meta "rewrite_def" function view'0
-  
-  function view'1 [@inline:trivial] (self: t_Resource) : t_Excl = view self
-  
-  meta "rewrite_def" function view'1
-  
   let rec valid_shared (self: MutBorrow.t t_Resource) (other: t_Resource) (return' (x: ())) =
     {[@expl:valid_shared requires] id self.current = id other}
     any
     [ return''0 (result: ()) -> {self.final = self.current}
-      {op (view'0 self) (view'1 other) <> C_None}
+      {op (view self.current) (view other) <> C_None}
       (! return' {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Resource) = self.final = self.current

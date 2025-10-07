@@ -134,12 +134,8 @@ module M_filter_positive__m
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  function view'0 [@inline:trivial] (self: t_Vec) : Seq.seq Int32.t = view self
-  
-  meta "rewrite_def" function view'0
-  
   let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return' {result}) ]
+    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) = UInt64.t'int self < Seq.length seq
   
@@ -151,8 +147,8 @@ module M_filter_positive__m
   meta "rewrite_def" predicate has_value
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: Int32.t)) =
-    {[@expl:index requires] in_bounds ix (view'0 self_)}
-    any [ return''0 (result: Int32.t) -> {has_value ix (view'0 self_) result} (! return' {result}) ]
+    {[@expl:index requires] in_bounds ix (view self_)}
+    any [ return''0 (result: Int32.t) -> {has_value ix (view self_) result} (! return' {result}) ]
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = Seq.get (view self) ix
   
@@ -176,22 +172,18 @@ module M_filter_positive__m
   axiom lemma_num_of_pos_increasing_spec: forall i: int, j: int, k: int, t: Seq.seq Int32.t. j <= k
       -> num_of_pos i j t <= num_of_pos i k t
   
-  function view'1 [@inline:trivial] (self: MutBorrow.t t_Vec) : Seq.seq Int32.t = view self.current
-  
-  meta "rewrite_def" function view'1
-  
   predicate resolve_elswhere [@inline:trivial] (self: UInt64.t) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   
   meta "rewrite_def" predicate resolve_elswhere
   
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t Int32.t)) =
-    {[@expl:index_mut requires] in_bounds ix (view'1 self_)}
+    {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {has_value ix (view'1 self_) result.current}
+    [ return''0 (result: MutBorrow.t Int32.t) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
-      {resolve_elswhere ix (view'1 self_) (view self_.final)}
-      {Seq.length (view self_.final) = Seq.length (view'1 self_)}
+      {resolve_elswhere ix (view self_.current) (view self_.final)}
+      {Seq.length (view self_.final) = Seq.length (view self_.current)}
       (! return' {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current

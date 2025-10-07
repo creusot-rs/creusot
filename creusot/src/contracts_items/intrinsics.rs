@@ -101,53 +101,56 @@ impl Intrinsic {
 }
 
 contracts_items! {
-    "inv"                       Inv
-    "resolve"                   Resolve
-    "structural_resolve"        StructuralResolve
-    "invariant"                 Invariant
-    "resolve_method"            ResolveMethod
-    "snapshot_from_fn"          SnapshotFromFn
-    "snapshot_deref"            SnapshotDeref
-    "snapshot_deref_mut"        SnapshotDerefMut
-    "ghost_new"                 GhostNew
-    "ghost_into_inner"          GhostIntoInner
+    "align_of_logic"            AlignOfLogic
+    "closure_result"            ClosureResult
+    "dead"                      Dead
+    "equal"                     Equal
+    "exists"                    Exists
+    "fn_ghost"                  FnGhost
+    "fn_ghost_wrapper"          FnGhostWrapper
+    "forall"                    Forall
+    "ghost"                     Ghost
     "ghost_deref"               GhostDeref
     "ghost_deref_mut"           GhostDerefMut
-    "index_logic"               IndexLogic
-    "precondition"              Precondition
-    "postcondition_once"        PostconditionOnce
-    "postcondition_mut"         PostconditionMut
+    "ghost_into_inner"          GhostIntoInner
+    "ghost_new"                 GhostNew
     "hist_inv"                  HistInv
-    "postcondition"             Postcondition
-    "tokens_new"                TokensNew
+    "implication"               Implication
+    "index_logic"               IndexLogic
+    "index_logic_stub"          IndexLogicStub
     "int"                       Int
-    "snapshot"                  Snapshot
-    "ghost"                     Ghost
-    "fn_ghost_wrapper"          FnGhostWrapper
-    "namespace"                 Namespace
-    "fn_ghost"                  FnGhost
-    "size_of_logic"             SizeOfLogic
-    "align_of_logic"            AlignOfLogic
+    "inv"                       Inv
+    "invariant"                 Invariant
     "is_aligned_logic"          IsAlignedLogic
     "is_aligned_logic_sized"    IsAlignedLogicSized
     "is_aligned_logic_slice"    IsAlignedLogicSlice
-    "forall"                    Forall
-    "exists"                    Exists
-    "trigger"                   Trigger
-    "implication"               Implication
-    "equal"                     Equal
-    "neq"                       Neq
-    "variant_check"             VariantCheck
-    "old"                       Old
-    "dead"                      Dead
-    "closure_result"            ClosureResult
-    "seq_literal"               SeqLiteral
     "metadata_matches"          MetadataMatches
     "metadata_matches_slice"    MetadataMatchesSlice
     "metadata_matches_str"      MetadataMatchesStr
-    "well_founded_relation"     WellFoundedRelation
-    "ptr_own_as_ref"            PtrOwnAsRef
+    "namespace"                 Namespace
+    "neq"                       Neq
+    "old"                       Old
+    "postcondition"             Postcondition
+    "postcondition_mut"         PostconditionMut
+    "postcondition_once"        PostconditionOnce
+    "precondition"              Precondition
     "ptr_own_as_mut"            PtrOwnAsMut
-    "ptr_own_from_ref"          PtrOwnFromRef
+    "ptr_own_as_ref"            PtrOwnAsRef
     "ptr_own_from_mut"          PtrOwnFromMut
+    "ptr_own_from_ref"          PtrOwnFromRef
+    "resolve"                   Resolve
+    "resolve_method"            ResolveMethod
+    "seq_literal"               SeqLiteral
+    "size_of_logic"             SizeOfLogic
+    "snapshot"                  Snapshot
+    "snapshot_deref"            SnapshotDeref
+    "snapshot_deref_mut"        SnapshotDerefMut
+    "snapshot_from_fn"          SnapshotFromFn
+    "structural_resolve"        StructuralResolve
+    "tokens_new"                TokensNew
+    "trigger"                   Trigger
+    "view"                      View
+    "view_stub"                 ViewStub
+    "variant_check"             VariantCheck
+    "well_founded_relation"     WellFoundedRelation
 }

@@ -18,10 +18,6 @@ module M_03_as_slice_of_cells__splits_up
   
   function view (self: t_PredCell) : Map.map (Slice64.slice UInt32.t) bool
   
-  function view'0 [@inline:trivial] (self: t_PredCell) : Map.map (Slice64.slice UInt32.t) bool = view self
-  
-  meta "rewrite_def" function view'0
-  
   predicate index_logic'0 [@inline:trivial] (self: Map.map UInt32.t bool) (a: UInt32.t) = Map.get self a
   
   meta "rewrite_def" predicate index_logic'0
@@ -31,49 +27,37 @@ module M_03_as_slice_of_cells__splits_up
   
   meta "rewrite_def" function index_logic'1
   
-  function view'1 (self: t_PredCell'0) : Map.map UInt32.t bool
+  function view'0 (self: t_PredCell'0) : Map.map UInt32.t bool
   
   function index_logic'2 [@inline:trivial] (self: Slice64.slice t_PredCell'0) (ix: int) : t_PredCell'0 =
     Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_logic'2
   
-  function view'2 [@inline:trivial] (self: Slice64.slice t_PredCell'0) : Seq.seq t_PredCell'0 = Slice64.view self
-  
-  meta "rewrite_def" function view'2
-  
   let rec as_slice_of_cells (self: t_PredCell) (_pred: Seq.seq (Map.map UInt32.t bool))
     (return' (x: Slice64.slice t_PredCell'0)) =
-    {[@expl:as_slice_of_cells requires] forall s: Slice64.slice UInt32.t. index_logic (view'0 self) s
+    {[@expl:as_slice_of_cells requires] forall s: Slice64.slice UInt32.t. index_logic (view self) s
       = (Seq.length _pred = Seq.length (Slice64.view s)
       /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view s)
         -> index_logic'0 (Seq.get _pred i) (index_logic'1 s i)))}
     any
     [ return''0 (result: Slice64.slice t_PredCell'0) -> {forall i: int. 0 <= i /\ i < Seq.length _pred
-        -> view'1 (index_logic'2 result i) = Seq.get _pred i}
-      {Seq.length (view'2 result) = Seq.length _pred}
+        -> view'0 (index_logic'2 result i) = Seq.get _pred i}
+      {Seq.length (Slice64.view result) = Seq.length _pred}
       (! return' {result}) ]
   
-  function view'3 [@inline:trivial] (self: t_PredCell'0) : Map.map UInt32.t bool = view'1 self
-  
-  meta "rewrite_def" function view'3
-  
   let rec get (self: t_PredCell'0) (return' (x: UInt32.t)) = any
-    [ return''0 (result: UInt32.t) -> {index_logic'0 (view'3 self) result} (! return' {result}) ]
+    [ return''0 (result: UInt32.t) -> {index_logic'0 (view'0 self) result} (! return' {result}) ]
   
   type tuple = { _p0: UInt32.t; _p1: UInt32.t }
-  
-  function view'4 [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t = Slice64.view self
-  
-  meta "rewrite_def" function view'4
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec splits_up (cell: t_PredCell) (return' (x: tuple)) =
-    {[@expl:splits_up requires] forall s: Slice64.slice UInt32.t. index_logic (view'0 cell) s
-      = (Seq.length (view'4 s) = 2
+    {[@expl:splits_up requires] forall s: Slice64.slice UInt32.t. index_logic (view cell) s
+      = (Seq.length (Slice64.view s) = 2
       /\ Int.mod (UInt32.t'int (index_logic'1 s 0)) 2 = 0 /\ Int.mod (UInt32.t'int (index_logic'1 s 1)) 2 = 1)}
     (! bb0
     [ bb0 = s0
