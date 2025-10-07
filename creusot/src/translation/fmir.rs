@@ -1,7 +1,6 @@
 use crate::{
     backend::projections::projection_ty,
-    ctx::HasTyCtxt as _,
-    translation::pearlite::{PIdent, Term, TermKind},
+    translation::pearlite::{PIdent, Term},
 };
 use indexmap::IndexMap;
 use rustc_abi::VariantIdx;
@@ -11,7 +10,7 @@ use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{
         self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, PlaceTy, Promoted, SourceScope,
-        UnOp,
+        UnOp, VarDebugInfoContents,
     },
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TypeFoldable, TypeVisitable},
 };
@@ -456,52 +455,34 @@ impl<'tcx> TypeFoldable<TyCtxt<'tcx>> for Body<'tcx> {
 /// the surrounding MIR block (this is precomputed by `ScopeTree::visible_places`),
 /// (3) get the `Place` from that binder to replace the variable.
 /// This happens in `inline_pearlite_subst`.
-// FIXME : Is this compatible with macro hygiene?
 #[derive(Debug)]
-pub struct ScopeTree<'tcx>(
-    HashMap<SourceScope, (Vec<(rustc_span::Ident, TermKind<'tcx>)>, Option<SourceScope>)>,
+pub struct ScopeTree(
+    HashMap<SourceScope, (Vec<(rustc_span::Ident, Option<PIdent>)>, Option<SourceScope>)>,
 );
 
-impl<'tcx> ScopeTree<'tcx> {
+impl ScopeTree {
     pub fn empty() -> Self {
         ScopeTree(HashMap::new())
     }
 
     /// Extract the scope tree from a MIR body.
-    pub fn build(
-        body: &mir::Body<'tcx>,
-        tcx: TyCtxt<'tcx>,
-        locals: &HashMap<Local, (Symbol, Ident)>,
-    ) -> Self {
-        use rustc_middle::mir::VarDebugInfoContents::Place;
-        let mut scope_tree: HashMap<
-            SourceScope,
-            (Vec<(rustc_span::Ident, TermKind<'tcx>)>, Option<_>),
-        > = Default::default();
+    pub fn build<'tcx>(body: &mir::Body<'tcx>, locals: &HashMap<Local, (Symbol, Ident)>) -> Self {
+        let mut scope_tree = ScopeTree(HashMap::new());
 
         for var_info in &body.var_debug_info {
             // All variables in the DebugVarInfo should be user variables and thus be just places
             // If the variable is local to the function the place will have no projections.
-            // Else this is a captured variable.
-            let p = match var_info.value {
-                Place(p) => {
-                    place_to_term(tcx, p, locals, &body.local_decls).unwrap_or_else(|span| {
-                        tcx.span_bug(span, "Partial captures are not supported here")
-                    })
-                }
-                _ => panic!(),
-            };
-            let info = var_info.source_info;
+            // Else this is a captured variable, and we don't need to consider it.
+            let VarDebugInfoContents::Place(p) = var_info.value else { panic!() };
+            let t = if p.projection.is_empty() { Some(locals[&p.local].1.into()) } else { None };
 
-            let scope = info.scope;
-            let scope_data = &body.source_scopes[scope];
-
-            let entry = scope_tree.entry(scope).or_default();
+            let scope = var_info.source_info.scope;
+            let entry = scope_tree.0.entry(scope).or_default();
 
             let ident = rustc_span::Ident { name: var_info.name, span: var_info.source_info.span };
-            entry.0.push((ident, p));
+            entry.0.push((ident, t));
 
-            if let Some(parent) = scope_data.parent_scope {
+            if let Some(parent) = body.source_scopes[scope].parent_scope {
                 entry.1 = Some(parent);
             } else {
                 // Only the argument scope has no parent, because it's the root.
@@ -511,76 +492,38 @@ impl<'tcx> ScopeTree<'tcx> {
 
         for (scope, scope_data) in body.source_scopes.iter_enumerated() {
             if let Some(parent) = scope_data.parent_scope {
-                scope_tree.entry(scope).or_default().1 = Some(parent);
-                scope_tree.entry(parent).or_default();
+                scope_tree.0.entry(scope).or_default().1 = Some(parent);
+                scope_tree.0.entry(parent).or_default();
             } else {
                 // Only the argument scope has no parent, because it's the root.
                 assert_eq!(scope, OUTERMOST_SOURCE_SCOPE);
             }
         }
-        ScopeTree(scope_tree)
+
+        // body.source_scopes is empty (not even a root) for functions without locals
+        scope_tree.0.entry(OUTERMOST_SOURCE_SCOPE).or_default();
+
+        scope_tree
     }
 
-    /// Obtain MIR places for HIR variables visible in a given scope.
-    pub fn visible_places(&self, scope: SourceScope) -> HashMap<rustc_span::Ident, TermKind<'tcx>> {
+    /// Obtain MIR locals for HIR variables visible in a given scope.
+    pub fn visible_locals(
+        &self,
+        mut scope: SourceScope,
+    ) -> HashMap<rustc_span::Ident, Option<PIdent>> {
         let mut locals = HashMap::new();
-        let mut to_visit = Some(scope);
-
-        while let Some(s) = to_visit.take() {
-            match self.0.get(&s) {
-                None => to_visit = None,
-                Some((places, parent)) => {
-                    for (id, term) in places {
-                        locals.entry(*id).or_insert_with(|| term.clone()); // If multiple binders have the same identifier, use the closest one
-                    }
-                    to_visit = *parent;
-                }
+        loop {
+            let (places, parent) = self.0.get(&scope).unwrap();
+            for (id, pid) in places {
+                // If multiple binders have the same identifier, use the closest one
+                locals.entry(*id).or_insert_with(|| *pid);
             }
+            let Some(parent) = parent else { break };
+            scope = *parent
         }
 
         locals
     }
-}
-
-/// Translate a place to a term. The place must represent a single named variable, so it can be
-/// - A simple `mir::Local`.
-/// - A capture. In this case, the place will simply be a local (the capture's envirnoment)
-///   followed by
-///   + a `Deref` projection if the closure is FnMut.
-///   + a `Field` projection.
-///   + a `Deref` projection if the capture is mutable.
-fn place_to_term<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    p: mir::Place<'tcx>,
-    locals: &HashMap<Local, (Symbol, Ident)>,
-    local_decls: &mir::LocalDecls<'tcx>,
-) -> Result<TermKind<'tcx>, Span> {
-    let span = local_decls[p.local].source_info.span;
-    let mut kind = TermKind::Var(locals[&p.local].1.into());
-    for (place_ref, proj) in p.iter_projections() {
-        let ty = place_ref.ty(local_decls, tcx).ty;
-        match proj {
-            mir::ProjectionElem::Deref => {
-                if ty.is_mutable_ptr() {
-                    kind = TermKind::Cur { term: Box::new(Term { ty, span, kind }) };
-                } else {
-                    kind = TermKind::Coerce { arg: Box::new(Term { ty, span, kind }) }
-                }
-            }
-            mir::ProjectionElem::Field(idx, _) => {
-                kind = TermKind::Projection { lhs: Box::new(Term { ty, span, kind }), idx };
-            }
-            // The rest are impossible for a place generated by a closure capture.
-            mir::ProjectionElem::Index(_)
-            | mir::ProjectionElem::ConstantIndex { .. }
-            | mir::ProjectionElem::Subslice { .. }
-            | mir::ProjectionElem::Downcast { .. }
-            | mir::ProjectionElem::OpaqueCast(_)
-            | mir::ProjectionElem::Subtype(_)
-            | mir::ProjectionElem::UnwrapUnsafeBinder(_) => return Err(span),
-        };
-    }
-    Ok(kind)
 }
 
 pub(crate) trait FmirVisitor<'tcx>: Sized {
