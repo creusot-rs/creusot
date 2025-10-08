@@ -353,18 +353,17 @@ module M_inference__closure_fn_mut
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) =
-    (result_state.c0).final = (self.c0).final
+  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
   meta "rewrite_def" predicate hist_inv
   
   let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (x: Int32.t) (return (x'0: Int32.t)) = bb0
     [ bb0 = s0
-      [ s0 = Int32.add {((self.current).c0).current} {x}
+      [ s0 = Int32.add {self.current.c0.current} {x}
           (fun (_ret: Int32.t) ->
-            [ &self <- { self with current = { c0 = { (self.current).c0 with current = _ret } } } ] s1)
+            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
       | s1 = -{resolve'0 self}- s2
-      | s2 = [ &_0 <- ((self.current).c0).current ] s3
+      | s2 = [ &_0 <- self.current.c0.current ] s3
       | s3 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () | & self: MutBorrow.t closure0 = self | & x: Int32.t = x ]
   
   meta "rewrite_def" predicate closure0'pre

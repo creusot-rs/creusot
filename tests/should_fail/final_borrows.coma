@@ -230,12 +230,12 @@ module M_final_borrows__unnesting_fails
           (fun (_ret: MutBorrow.t Int32.t) -> [ &bor <- _ret ] [ &x <- _ret.final ] s2)
       | s2 = MutBorrow.borrow_mut <MutBorrow.t Int32.t> {bor}
           (fun (_ret: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &nested <- _ret ] [ &bor <- _ret.final ] s3)
-      | s3 = MutBorrow.borrow_mut <Int32.t> {(nested.current).current}
+      | s3 = MutBorrow.borrow_mut <Int32.t> {nested.current.current}
           (fun (_ret: MutBorrow.t Int32.t) ->
             [ &rebor1 <- _ret ] [ &nested <- { nested with current = { nested.current with current = _ret.final } } ]
             s4)
       | s4 = -{resolve'0 rebor1}- s5
-      | s5 = MutBorrow.borrow_mut <Int32.t> {(nested.current).current}
+      | s5 = MutBorrow.borrow_mut <Int32.t> {nested.current.current}
           (fun (_ret: MutBorrow.t Int32.t) ->
             [ &rebor2 <- _ret ] [ &nested <- { nested with current = { nested.current with current = _ret.final } } ]
             s6)

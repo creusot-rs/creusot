@@ -56,9 +56,9 @@ module M_02_iter_mut__qyi17529651713103399036__produces_refl (* <IterMut<'a, T> 
         = MutBorrow.borrow_logic (index_logic self.current i) (index_logic self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t t_T)) (tl: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).current)
-      = Seq.length visited + Seq.length (Slice64.view (tl.t_IterMut__inner).current)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.current)
+      = Seq.length visited + Seq.length (Slice64.view tl.t_IterMut__inner.current)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view self.t_IterMut__inner.current)
       -> (Seq.get (to_mut_seq self.t_IterMut__inner) i).current
         = (Seq.get (Seq.(++) visited (to_mut_seq tl.t_IterMut__inner)) i).current
       /\ (Seq.get (to_mut_seq self.t_IterMut__inner) i).final
@@ -99,9 +99,9 @@ module M_02_iter_mut__qyi17529651713103399036__produces_trans (* <IterMut<'a, T>
         = MutBorrow.borrow_logic (index_logic self.current i) (index_logic self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t t_T)) (tl: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).current)
-      = Seq.length visited + Seq.length (Slice64.view (tl.t_IterMut__inner).current)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.current)
+      = Seq.length visited + Seq.length (Slice64.view tl.t_IterMut__inner.current)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view self.t_IterMut__inner.current)
       -> (Seq.get (to_mut_seq self.t_IterMut__inner) i).current
         = (Seq.get (Seq.(++) visited (to_mut_seq tl.t_IterMut__inner)) i).current
       /\ (Seq.get (to_mut_seq self.t_IterMut__inner) i).final
@@ -208,21 +208,21 @@ module M_02_iter_mut__qyi17529651713103399036__next (* <IterMut<'a, T> as common
     any
     [ return' (result: t_Option) -> {inv'6 result}
       {match result with
-        | C_Some r -> r.current = index_logic (self_.current).current 0
-        /\ r.final = index_logic (self_.current).final 0
-        /\ Seq.length (Slice64.view (self_.current).current) > 0
-        /\ Seq.length (Slice64.view (self_.current).final) > 0
-        /\ Slice64.view (self_.final).current = tail (Slice64.view (self_.current).current)
-        /\ Slice64.view (self_.final).final = tail (Slice64.view (self_.current).final)
-        | C_None -> Slice64.view (self_.final).current = (Seq.empty: Seq.seq t_T)
-        /\ Slice64.view (self_.current).final = (Seq.empty: Seq.seq t_T)
-        /\ Slice64.view (self_.current).current = (Seq.empty: Seq.seq t_T)
-        /\ Slice64.view (self_.final).final = (Seq.empty: Seq.seq t_T)
+        | C_Some r -> r.current = index_logic self_.current.current 0
+        /\ r.final = index_logic self_.current.final 0
+        /\ Seq.length (Slice64.view self_.current.current) > 0
+        /\ Seq.length (Slice64.view self_.current.final) > 0
+        /\ Slice64.view self_.final.current = tail (Slice64.view self_.current.current)
+        /\ Slice64.view self_.final.final = tail (Slice64.view self_.current.final)
+        | C_None -> Slice64.view self_.final.current = (Seq.empty: Seq.seq t_T)
+        /\ Slice64.view self_.current.final = (Seq.empty: Seq.seq t_T)
+        /\ Slice64.view self_.current.current = (Seq.empty: Seq.seq t_T)
+        /\ Slice64.view self_.final.final = (Seq.empty: Seq.seq t_T)
         end}
       (! return {result}) ]
   
   predicate invariant''5 (self: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).final) = Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.final) = Seq.length (Slice64.view self.t_IterMut__inner.current)
   
   predicate inv'7 (_1: t_IterMut)
   
@@ -253,8 +253,8 @@ module M_02_iter_mut__qyi17529651713103399036__next (* <IterMut<'a, T> as common
   meta "rewrite_def" predicate resolve'1
   
   predicate completed (self: MutBorrow.t t_IterMut) =
-    resolve'1 (self.current).t_IterMut__inner
-    /\ Seq.(==) (Slice64.view ((self.current).t_IterMut__inner).current) (Seq.empty: Seq.seq t_T)
+    resolve'1 self.current.t_IterMut__inner
+    /\ Seq.(==) (Slice64.view self.current.t_IterMut__inner.current) (Seq.empty: Seq.seq t_T)
   
   function to_mut_seq (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq (MutBorrow.t t_T)
   
@@ -267,9 +267,9 @@ module M_02_iter_mut__qyi17529651713103399036__next (* <IterMut<'a, T> as common
         = MutBorrow.borrow_logic (index_logic self.current i) (index_logic self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t t_T)) (tl: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).current)
-      = Seq.length visited + Seq.length (Slice64.view (tl.t_IterMut__inner).current)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.current)
+      = Seq.length visited + Seq.length (Slice64.view tl.t_IterMut__inner.current)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view self.t_IterMut__inner.current)
       -> (Seq.get (to_mut_seq self.t_IterMut__inner) i).current
         = (Seq.get (Seq.(++) visited (to_mut_seq tl.t_IterMut__inner)) i).current
       /\ (Seq.get (to_mut_seq self.t_IterMut__inner) i).final
@@ -282,8 +282,8 @@ module M_02_iter_mut__qyi17529651713103399036__next (* <IterMut<'a, T> as common
   let rec next (self: MutBorrow.t t_IterMut) (return (x: t_Option)) = {[@expl:next 'self' type invariant] inv'8 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'3 (self.current).t_IterMut__inner}
-        MutBorrow.borrow_final <MutBorrow.t (Slice64.slice t_T)> {(self.current).t_IterMut__inner}
+      [ s0 = {inv'3 self.current.t_IterMut__inner}
+        MutBorrow.borrow_final <MutBorrow.t (Slice64.slice t_T)> {self.current.t_IterMut__inner}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) ->
             [ &_3 <- _ret ] -{inv'3 _ret.final}-
@@ -313,7 +313,7 @@ module M_02_iter_mut__qyi13152079231411878505__into_iter (* IterMut<'a, T> *)
   type t_IterMut = { t_IterMut__inner: MutBorrow.t (Slice64.slice t_T) }
   
   predicate invariant' (self: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).final) = Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.final) = Seq.length (Slice64.view self.t_IterMut__inner.current)
   
   predicate inv (_1: t_T)
   
@@ -478,7 +478,7 @@ module M_02_iter_mut__iter_mut
   meta "rewrite_def" predicate resolve'2
   
   predicate invariant''5 (self: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).final) = Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.final) = Seq.length (Slice64.view self.t_IterMut__inner.current)
   
   predicate inv'6 (_1: t_IterMut)
   
@@ -530,8 +530,8 @@ module M_02_iter_mut__iter_mut
     | & _8: MutBorrow.t t_Vec = Any.any_l ()
     | & _9: () = Any.any_l () ])
     [ return (result: t_IterMut) -> {[@expl:iter_mut result type invariant] inv'6 result}
-      {[@expl:iter_mut ensures #0] Slice64.view (result.t_IterMut__inner).current = view v.current}
-      {[@expl:iter_mut ensures #1] Slice64.view (result.t_IterMut__inner).final = view v.final}
+      {[@expl:iter_mut ensures #0] Slice64.view result.t_IterMut__inner.current = view v.current}
+      {[@expl:iter_mut ensures #1] Slice64.view result.t_IterMut__inner.final = view v.final}
       {[@expl:iter_mut ensures #2] Seq.length (view v.final) = Seq.length (view v.current)}
       (! return {result}) ]
 end
@@ -559,7 +559,7 @@ module M_02_iter_mut__all_zero
   type t_IterMut = { t_IterMut__inner: MutBorrow.t (Slice64.slice UInt64.t) }
   
   predicate invariant' (self: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).final) = Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.final) = Seq.length (Slice64.view self.t_IterMut__inner.current)
   
   predicate inv (_1: t_IterMut)
   
@@ -577,8 +577,8 @@ module M_02_iter_mut__all_zero
   
   let rec iter_mut (v: MutBorrow.t t_Vec) (return (x: t_IterMut)) = any
     [ return' (result: t_IterMut) -> {inv result}
-      {Slice64.view (result.t_IterMut__inner).current = view v.current}
-      {Slice64.view (result.t_IterMut__inner).final = view v.final}
+      {Slice64.view result.t_IterMut__inner.current = view v.current}
+      {Slice64.view result.t_IterMut__inner.final = view v.final}
       {Seq.length (view v.final) = Seq.length (view v.current)}
       (! return {result}) ]
   
@@ -601,9 +601,9 @@ module M_02_iter_mut__all_zero
         = MutBorrow.borrow_logic (index_logic self.current i) (index_logic self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t UInt64.t)) (tl: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).current)
-      = Seq.length visited + Seq.length (Slice64.view (tl.t_IterMut__inner).current)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.current)
+      = Seq.length visited + Seq.length (Slice64.view tl.t_IterMut__inner.current)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view self.t_IterMut__inner.current)
       -> (Seq.get (to_mut_seq self.t_IterMut__inner) i).current
         = (Seq.get (Seq.(++) visited (to_mut_seq tl.t_IterMut__inner)) i).current
       /\ (Seq.get (to_mut_seq self.t_IterMut__inner) i).final
@@ -635,8 +635,8 @@ module M_02_iter_mut__all_zero
   meta "rewrite_def" predicate resolve
   
   predicate completed (self: MutBorrow.t t_IterMut) =
-    resolve (self.current).t_IterMut__inner
-    /\ Seq.(==) (Slice64.view ((self.current).t_IterMut__inner).current) (Seq.empty: Seq.seq UInt64.t)
+    resolve self.current.t_IterMut__inner
+    /\ Seq.(==) (Slice64.view self.current.t_IterMut__inner.current) (Seq.empty: Seq.seq UInt64.t)
   
   let rec next (self: MutBorrow.t t_IterMut) (return (x: t_Option)) = {[@expl:next 'self' type invariant] inv'0 self}
     any
@@ -763,7 +763,7 @@ module M_02_iter_mut__qyi6848152694368153063__resolve_coherence__refines (* <Ite
       end
   
   predicate invariant' (self: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).final) = Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.final) = Seq.length (Slice64.view self.t_IterMut__inner.current)
   
   predicate inv (_1: t_T)
   
@@ -839,9 +839,9 @@ module M_02_iter_mut__qyi17529651713103399036__produces_trans__refines (* <IterM
         = MutBorrow.borrow_logic (index_logic self.current i) (index_logic self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t t_T)) (tl: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).current)
-      = Seq.length visited + Seq.length (Slice64.view (tl.t_IterMut__inner).current)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.current)
+      = Seq.length visited + Seq.length (Slice64.view tl.t_IterMut__inner.current)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view self.t_IterMut__inner.current)
       -> (Seq.get (to_mut_seq self.t_IterMut__inner) i).current
         = (Seq.get (Seq.(++) visited (to_mut_seq tl.t_IterMut__inner)) i).current
       /\ (Seq.get (to_mut_seq self.t_IterMut__inner) i).final
@@ -868,7 +868,7 @@ module M_02_iter_mut__qyi17529651713103399036__next__refines (* <IterMut<'a, T> 
   type t_IterMut = { t_IterMut__inner: MutBorrow.t (Slice64.slice t_T) }
   
   predicate invariant' (self: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).final) = Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.final) = Seq.length (Slice64.view self.t_IterMut__inner.current)
   
   predicate inv (_1: t_T)
   
@@ -925,8 +925,8 @@ module M_02_iter_mut__qyi17529651713103399036__next__refines (* <IterMut<'a, T> 
   meta "rewrite_def" predicate resolve
   
   predicate completed (self: MutBorrow.t t_IterMut) =
-    resolve (self.current).t_IterMut__inner
-    /\ Seq.(==) (Slice64.view ((self.current).t_IterMut__inner).current) (Seq.empty: Seq.seq t_T)
+    resolve self.current.t_IterMut__inner
+    /\ Seq.(==) (Slice64.view self.current.t_IterMut__inner.current) (Seq.empty: Seq.seq t_T)
   
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
@@ -943,9 +943,9 @@ module M_02_iter_mut__qyi17529651713103399036__next__refines (* <IterMut<'a, T> 
         = MutBorrow.borrow_logic (index_logic self.current i) (index_logic self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t t_T)) (tl: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).current)
-      = Seq.length visited + Seq.length (Slice64.view (tl.t_IterMut__inner).current)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.current)
+      = Seq.length visited + Seq.length (Slice64.view tl.t_IterMut__inner.current)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view self.t_IterMut__inner.current)
       -> (Seq.get (to_mut_seq self.t_IterMut__inner) i).current
         = (Seq.get (Seq.(++) visited (to_mut_seq tl.t_IterMut__inner)) i).current
       /\ (Seq.get (to_mut_seq self.t_IterMut__inner) i).final
@@ -1009,9 +1009,9 @@ module M_02_iter_mut__qyi17529651713103399036__produces_refl__refines (* <IterMu
         = MutBorrow.borrow_logic (index_logic self.current i) (index_logic self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
   predicate produces (self: t_IterMut) (visited: Seq.seq (MutBorrow.t t_T)) (tl: t_IterMut) =
-    Seq.length (Slice64.view (self.t_IterMut__inner).current)
-      = Seq.length visited + Seq.length (Slice64.view (tl.t_IterMut__inner).current)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view (self.t_IterMut__inner).current)
+    Seq.length (Slice64.view self.t_IterMut__inner.current)
+      = Seq.length visited + Seq.length (Slice64.view tl.t_IterMut__inner.current)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view self.t_IterMut__inner.current)
       -> (Seq.get (to_mut_seq self.t_IterMut__inner) i).current
         = (Seq.get (Seq.(++) visited (to_mut_seq tl.t_IterMut__inner)) i).current
       /\ (Seq.get (to_mut_seq self.t_IterMut__inner) i).final

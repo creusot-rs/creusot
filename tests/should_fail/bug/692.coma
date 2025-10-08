@@ -145,7 +145,7 @@ module M_692__valid_normal
   meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_once [@inline:trivial] (self: closure2) (args: bool) (result: ()) =
-    let b = args in b /\ (self.c0'0).final = (2: UInt32.t) \/ not b /\ (self.c0'0).final = (1: UInt32.t)
+    let b = args in b /\ self.c0'0.final = (2: UInt32.t) \/ not b /\ self.c0'0.final = (1: UInt32.t)
   
   meta "rewrite_def" predicate postcondition_once
   
@@ -162,13 +162,13 @@ module M_692__valid_normal
   meta "rewrite_def" predicate resolve'3
   
   predicate hist_inv [@inline:trivial] (self: closure2) (result_state: closure2) =
-    (result_state.c0'0).final = (self.c0'0).final
+    result_state.c0'0.final = self.c0'0.final
   
   meta "rewrite_def" predicate hist_inv
   
   predicate postcondition_mut [@inline:trivial] (self: closure2) (args: bool) (result_state: closure2) (result: ()) =
-    let b = args in (b /\ (result_state.c0'0).current = (2: UInt32.t)
-      \/ not b /\ (result_state.c0'0).current = (1: UInt32.t))
+    let b = args in (b /\ result_state.c0'0.current = (2: UInt32.t)
+      \/ not b /\ result_state.c0'0.current = (1: UInt32.t))
     /\ hist_inv self result_state
   
   meta "rewrite_def" predicate postcondition_mut
@@ -198,12 +198,12 @@ module M_692__valid_normal
     | bb1 = s0 [ s0 = [ &_4 <- (2: UInt32.t) ] s1 | s1 = bb3 ]
     | bb2 = s0 [ s0 = [ &_4 <- (1: UInt32.t) ] s1 | s1 = bb3 ]
     | bb3 = s0
-      [ s0 = [ &self <- { self with current = { c0'0 = { (self.current).c0'0 with current = _4 } } } ] s1
+      [ s0 = [ &self <- { self with current = { c0'0 = { self.current.c0'0 with current = _4 } } } ] s1
       | s1 = -{resolve'0 self}- s2
       | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l () | & self: MutBorrow.t closure2 = self | & b: bool = b | & _4: UInt32.t = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:closure ensures] b /\ ((self.final).c0'0).current = (2: UInt32.t)
-      \/ not b /\ ((self.final).c0'0).current = (1: UInt32.t)}
+    [ return (result: ()) -> {[@expl:closure ensures] b /\ self.final.c0'0.current = (2: UInt32.t)
+      \/ not b /\ self.final.c0'0.current = (1: UInt32.t)}
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return {result}) ]
   

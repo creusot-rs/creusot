@@ -16,7 +16,7 @@ module M_962__disjoint_captures
   meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_once [@inline:trivial] (self: closure2) (args: ()) (result: ()) =
-    Int32.to_int (self.c0).final = 1
+    Int32.to_int self.c0.final = 1
   
   meta "rewrite_def" predicate postcondition_once
   
@@ -32,13 +32,12 @@ module M_962__disjoint_captures
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv [@inline:trivial] (self: closure2) (result_state: closure2) =
-    (result_state.c0).final = (self.c0).final
+  predicate hist_inv [@inline:trivial] (self: closure2) (result_state: closure2) = result_state.c0.final = self.c0.final
   
   meta "rewrite_def" predicate hist_inv
   
   predicate postcondition_mut [@inline:trivial] (self: closure2) (args: ()) (result_state: closure2) (result: ()) =
-    Int32.to_int (result_state.c0).current = 1 /\ hist_inv self result_state
+    Int32.to_int result_state.c0.current = 1 /\ hist_inv self result_state
   
   meta "rewrite_def" predicate postcondition_mut
   
@@ -64,10 +63,10 @@ module M_962__disjoint_captures
   
   let rec closure2 (self: MutBorrow.t closure2) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &self <- { self with current = { c0 = { (self.current).c0 with current = (1: Int32.t) } } } ] s1
+      [ s0 = [ &self <- { self with current = { c0 = { self.current.c0 with current = (1: Int32.t) } } } ] s1
       | s1 = -{resolve'0 self}- s2
       | s2 = return {_0} ] ] [ & _0: () = Any.any_l () | & self: MutBorrow.t closure2 = self ])
-    [ return (result: ()) -> {[@expl:closure ensures] Int32.to_int ((self.final).c0).current = 1}
+    [ return (result: ()) -> {[@expl:closure ensures] Int32.to_int self.final.c0.current = 1}
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return {result}) ]
   

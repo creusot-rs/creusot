@@ -902,18 +902,17 @@ module M_03_std_iterators__counter
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) =
-    (result_state.c0).final = (self.c0).final
+  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
   meta "rewrite_def" predicate hist_inv
   
   let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (x: UInt32.t) (_prod: Seq.seq UInt32.t)
     (return (x'0: UInt32.t)) = bb0
     [ bb0 = s0
-      [ s0 = {[@expl:assertion] UInt64.t'int ((self.current).c0).current = Seq.length _prod} s1
-      | s1 = UInt64.add {((self.current).c0).current} {(1: UInt64.t)}
+      [ s0 = {[@expl:assertion] UInt64.t'int self.current.c0.current = Seq.length _prod} s1
+      | s1 = UInt64.add {self.current.c0.current} {(1: UInt64.t)}
           (fun (_ret: UInt64.t) ->
-            [ &self <- { self with current = { c0 = { (self.current).c0 with current = _ret } } } ] s2)
+            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s2)
       | s2 = -{resolve'0 self}- s3
       | s3 = [ &_0 <- x ] s4
       | s4 = return {_0} ] ]
@@ -1099,9 +1098,9 @@ module M_03_std_iterators__counter
   axiom produces_refl_spec'1: forall self: t_MapInv. produces'0 self (Seq.empty: Seq.seq UInt32.t) self
   
   predicate completed'0 (self: MutBorrow.t t_MapInv) =
-    (self.final).t_MapInv__produced = (Seq.empty: Seq.seq UInt32.t)
-    /\ completed (MutBorrow.borrow_logic (self.current).t_MapInv__iter (self.final).t_MapInv__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
-    /\ (self.current).t_MapInv__func = (self.final).t_MapInv__func
+    self.final.t_MapInv__produced = (Seq.empty: Seq.seq UInt32.t)
+    /\ completed (MutBorrow.borrow_logic self.current.t_MapInv__iter self.final.t_MapInv__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
+    /\ self.current.t_MapInv__func = self.final.t_MapInv__func
   
   predicate from_iter_post (prod: Seq.seq UInt32.t) (res: t_Vec) = prod = view res
   
@@ -1238,7 +1237,7 @@ module M_03_std_iterators__sum_range
   meta "rewrite_def" predicate resolve
   
   predicate completed (self: MutBorrow.t t_Range) =
-    resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
+    resolve self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
   
   let rec next (self_: MutBorrow.t t_Range) (return (x: t_Option)) = any
     [ return' (result: t_Option) -> {match result with
@@ -1346,7 +1345,7 @@ module M_03_std_iterators__enumerate_range
   meta "rewrite_def" predicate resolve
   
   predicate completed (self: MutBorrow.t t_Range) =
-    resolve self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
+    resolve self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -1693,7 +1692,7 @@ module M_03_std_iterators__my_reverse
   meta "rewrite_def" predicate resolve'0
   
   predicate completed (self: MutBorrow.t t_Range) =
-    resolve'0 self /\ deep_model (self.current).t_Range__start >= deep_model (self.current).t_Range__end
+    resolve'0 self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
   
   predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Range) = resolve'0 _1
   

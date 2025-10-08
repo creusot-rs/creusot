@@ -1214,12 +1214,12 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
   let rec rotate_right (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:rotate_right 'self' type invariant] inv'7 self}
     {[@expl:rotate_right requires #0] internal_invariant self.current}
-    {[@expl:rotate_right requires #1] color (self.current).t_Node__left = C_Red}
+    {[@expl:rotate_right requires #1] color self.current.t_Node__left = C_Red}
     (! bb0
     [ bb0 = s0 [ s0 = [ &old_self <- self ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'2 ((self.current).t_Node__left).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {((self.current).t_Node__left).t_Tree__node}
+      [ s0 = {inv'2 self.current.t_Node__left.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Node__left.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_16 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { self.current with t_Node__left = { t_Tree__node = _ret.final } } } ] s1)
@@ -1236,8 +1236,8 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
       | s2 = unwrap {_14} (fun (_ret: t_Node) -> [ &x <- _ret ] s3)
       | s3 = bb3 ]
     | bb3 = s0
-      [ s0 = {inv'1 (self.current).t_Node__left}
-        MutBorrow.borrow_mut <t_Tree> {(self.current).t_Node__left}
+      [ s0 = {inv'1 self.current.t_Node__left}
+        MutBorrow.borrow_mut <t_Tree> {self.current.t_Node__left}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_19 <- _ret ] -{inv'1 _ret.final}-
             [ &self <- { self with current = { self.current with t_Node__left = _ret.final } } ] s1)
@@ -1281,7 +1281,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'8 _25} s1
       | s1 = -{resolve'5 _25}- s2
-      | s2 = MutBorrow.borrow_final <t_Color> {(self.current).t_Node__color}
+      | s2 = MutBorrow.borrow_final <t_Color> {self.current.t_Node__color}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_ret: MutBorrow.t t_Color) ->
             [ &_28 <- _ret ] [ &self <- { self with current = { self.current with t_Node__color = _ret.final } } ] s3)
@@ -1297,14 +1297,14 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
       [ s0 = -{resolve'7 _30}- s1
       | s1 = -{resolve'7 _28}- s2
       | s2 =
-        {[@expl:assertion] has_mapping (old_self.current).t_Node__left (deep_model (self.current).t_Node__key) (self.current).t_Node__val}
+        {[@expl:assertion] has_mapping old_self.current.t_Node__left (deep_model self.current.t_Node__key) self.current.t_Node__val}
         s3
       | s3 = [ &_34 <- C_Some x ] s4
       | s4 = bb7 ]
     | bb7 = s0 [ s0 = [ &_33 <- { t_Tree__node = _34 } ] s1 | s1 = bb9 ]
     | bb9 = s0
-      [ s0 = {[@expl:type invariant] inv'1 (self.current).t_Node__right} s1
-      | s1 = -{resolve'10 (self.current).t_Node__right}- s2
+      [ s0 = {[@expl:type invariant] inv'1 self.current.t_Node__right} s1
+      | s1 = -{resolve'10 self.current.t_Node__right}- s2
       | s2 = [ &self <- { self with current = { self.current with t_Node__right = _33 } } ] s3
       | s3 = {[@expl:type invariant] inv'7 self} s4
       | s4 = -{resolve'12 self}- s5
@@ -1336,15 +1336,14 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
     [ return (result: ()) -> {[@expl:rotate_right ensures #0] same_mappings self.current self.final}
       {[@expl:rotate_right ensures #1] internal_invariant self.final}
       {[@expl:rotate_right ensures #2] height'0 self.current = height'0 self.final}
-      {[@expl:rotate_right ensures #3] lt_log (deep_model (self.final).t_Node__key) (deep_model (self.current).t_Node__key)}
-      {[@expl:rotate_right ensures #4] color (self.final).t_Node__right = C_Red}
-      {[@expl:rotate_right ensures #5] (self.final).t_Node__color = (self.current).t_Node__color}
-      {[@expl:rotate_right ensures #6] exists l: t_Node, r: t_Node. ((self.current).t_Node__left).t_Tree__node
-          = C_Some l
-        /\ ((self.final).t_Node__right).t_Tree__node = C_Some r
-        /\ { f0 = (self.final).t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
-          = { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = (self.current).t_Node__right }
-        /\ r.t_Node__key = (self.current).t_Node__key}
+      {[@expl:rotate_right ensures #3] lt_log (deep_model self.final.t_Node__key) (deep_model self.current.t_Node__key)}
+      {[@expl:rotate_right ensures #4] color self.final.t_Node__right = C_Red}
+      {[@expl:rotate_right ensures #5] self.final.t_Node__color = self.current.t_Node__color}
+      {[@expl:rotate_right ensures #6] exists l: t_Node, r: t_Node. self.current.t_Node__left.t_Tree__node = C_Some l
+        /\ self.final.t_Node__right.t_Tree__node = C_Some r
+        /\ { f0 = self.final.t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
+          = { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = self.current.t_Node__right }
+        /\ r.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
 end
 module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
@@ -1693,12 +1692,12 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
   let rec rotate_left (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:rotate_left 'self' type invariant] inv'7 self}
     {[@expl:rotate_left requires #0] internal_invariant self.current}
-    {[@expl:rotate_left requires #1] color (self.current).t_Node__right = C_Red}
+    {[@expl:rotate_left requires #1] color self.current.t_Node__right = C_Red}
     (! bb0
     [ bb0 = s0 [ s0 = [ &old_self <- self ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'2 ((self.current).t_Node__right).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {((self.current).t_Node__right).t_Tree__node}
+      [ s0 = {inv'2 self.current.t_Node__right.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Node__right.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_16 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { self.current with t_Node__right = { t_Tree__node = _ret.final } } } ] s1)
@@ -1715,8 +1714,8 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
       | s2 = unwrap {_14} (fun (_ret: t_Node) -> [ &x <- _ret ] s3)
       | s3 = bb3 ]
     | bb3 = s0
-      [ s0 = {inv'1 (self.current).t_Node__right}
-        MutBorrow.borrow_mut <t_Tree> {(self.current).t_Node__right}
+      [ s0 = {inv'1 self.current.t_Node__right}
+        MutBorrow.borrow_mut <t_Tree> {self.current.t_Node__right}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_19 <- _ret ] -{inv'1 _ret.final}-
             [ &self <- { self with current = { self.current with t_Node__right = _ret.final } } ] s1)
@@ -1760,7 +1759,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'8 _25} s1
       | s1 = -{resolve'5 _25}- s2
-      | s2 = MutBorrow.borrow_final <t_Color> {(self.current).t_Node__color}
+      | s2 = MutBorrow.borrow_final <t_Color> {self.current.t_Node__color}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_ret: MutBorrow.t t_Color) ->
             [ &_28 <- _ret ] [ &self <- { self with current = { self.current with t_Node__color = _ret.final } } ] s3)
@@ -1776,14 +1775,14 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
       [ s0 = -{resolve'7 _30}- s1
       | s1 = -{resolve'7 _28}- s2
       | s2 =
-        {[@expl:assertion] has_mapping (old_self.current).t_Node__right (deep_model (self.current).t_Node__key) (self.current).t_Node__val}
+        {[@expl:assertion] has_mapping old_self.current.t_Node__right (deep_model self.current.t_Node__key) self.current.t_Node__val}
         s3
       | s3 = [ &_34 <- C_Some x ] s4
       | s4 = bb7 ]
     | bb7 = s0 [ s0 = [ &_33 <- { t_Tree__node = _34 } ] s1 | s1 = bb9 ]
     | bb9 = s0
-      [ s0 = {[@expl:type invariant] inv'1 (self.current).t_Node__left} s1
-      | s1 = -{resolve'10 (self.current).t_Node__left}- s2
+      [ s0 = {[@expl:type invariant] inv'1 self.current.t_Node__left} s1
+      | s1 = -{resolve'10 self.current.t_Node__left}- s2
       | s2 = [ &self <- { self with current = { self.current with t_Node__left = _33 } } ] s3
       | s3 = {[@expl:type invariant] inv'7 self} s4
       | s4 = -{resolve'12 self}- s5
@@ -1815,15 +1814,14 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
     [ return (result: ()) -> {[@expl:rotate_left ensures #0] same_mappings self.current self.final}
       {[@expl:rotate_left ensures #1] internal_invariant self.final}
       {[@expl:rotate_left ensures #2] height'0 self.current = height'0 self.final}
-      {[@expl:rotate_left ensures #3] lt_log (deep_model (self.current).t_Node__key) (deep_model (self.final).t_Node__key)}
-      {[@expl:rotate_left ensures #4] color (self.final).t_Node__left = C_Red}
-      {[@expl:rotate_left ensures #5] (self.final).t_Node__color = (self.current).t_Node__color}
-      {[@expl:rotate_left ensures #6] exists l: t_Node, r: t_Node. ((self.current).t_Node__right).t_Tree__node
-          = C_Some r
-        /\ ((self.final).t_Node__left).t_Tree__node = C_Some l
-        /\ { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = (self.final).t_Node__right }
-          = { f0 = (self.current).t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
-        /\ l.t_Node__key = (self.current).t_Node__key}
+      {[@expl:rotate_left ensures #3] lt_log (deep_model self.current.t_Node__key) (deep_model self.final.t_Node__key)}
+      {[@expl:rotate_left ensures #4] color self.final.t_Node__left = C_Red}
+      {[@expl:rotate_left ensures #5] self.final.t_Node__color = self.current.t_Node__color}
+      {[@expl:rotate_left ensures #6] exists l: t_Node, r: t_Node. self.current.t_Node__right.t_Tree__node = C_Some r
+        /\ self.final.t_Node__left.t_Tree__node = C_Some l
+        /\ { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = self.final.t_Node__right }
+          = { f0 = self.current.t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
+        /\ l.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
 end
 module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
@@ -2083,13 +2081,13 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
   let rec flip_colors (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:flip_colors 'self' type invariant] inv'8 self}
     {[@expl:flip_colors requires #0] internal_invariant self.current}
-    {[@expl:flip_colors requires #1] ((self.current).t_Node__left).t_Tree__node <> C_None}
-    {[@expl:flip_colors requires #2] ((self.current).t_Node__right).t_Tree__node <> C_None}
-    {[@expl:flip_colors requires #3] color (self.current).t_Node__left = color (self.current).t_Node__right}
+    {[@expl:flip_colors requires #1] self.current.t_Node__left.t_Tree__node <> C_None}
+    {[@expl:flip_colors requires #2] self.current.t_Node__right.t_Tree__node <> C_None}
+    {[@expl:flip_colors requires #3] color self.current.t_Node__left = color self.current.t_Node__right}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'2 ((self.current).t_Node__left).t_Tree__node}
-        MutBorrow.borrow_final <t_Option> {((self.current).t_Node__left).t_Tree__node}
+      [ s0 = {inv'2 self.current.t_Node__left.t_Tree__node}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Node__left.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_15 <- _ret ] -{inv'2 _ret.final}-
@@ -2098,15 +2096,15 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
       | s2 = bb1 ]
     | bb1 = s0 [ s0 = unwrap {_14} (fun (_ret: MutBorrow.t t_Node) -> [ &_13 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = [ &_13 <- { _13 with current = { _13.current with t_Node__color = (self.current).t_Node__color } } ] s1
+      [ s0 = [ &_13 <- { _13 with current = { _13.current with t_Node__color = self.current.t_Node__color } } ] s1
       | s1 = {[@expl:type invariant] inv'6 _13} s2
       | s2 = -{resolve'0 _13}- s3
-      | s3 = MutBorrow.borrow_final <t_Color> {(self.current).t_Node__color}
+      | s3 = MutBorrow.borrow_final <t_Color> {self.current.t_Node__color}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_ret: MutBorrow.t t_Color) ->
             [ &_18 <- _ret ] [ &self <- { self with current = { self.current with t_Node__color = _ret.final } } ] s4)
-      | s4 = {inv'2 ((self.current).t_Node__right).t_Tree__node}
-        MutBorrow.borrow_final <t_Option> {((self.current).t_Node__right).t_Tree__node}
+      | s4 = {inv'2 self.current.t_Node__right.t_Tree__node}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Node__right.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 5) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_23 <- _ret ] -{inv'2 _ret.final}-
@@ -2115,7 +2113,7 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
       | s6 = bb3 ]
     | bb3 = s0 [ s0 = unwrap {_22} (fun (_ret: MutBorrow.t t_Node) -> [ &_21 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0
-      [ s0 = MutBorrow.borrow_final <t_Color> {(_21.current).t_Node__color}
+      [ s0 = MutBorrow.borrow_final <t_Color> {_21.current.t_Node__color}
           {MutBorrow.inherit_id (MutBorrow.get_id _21) 2}
           (fun (_ret: MutBorrow.t t_Color) ->
             [ &_20 <- _ret ] [ &_21 <- { _21 with current = { _21.current with t_Node__color = _ret.final } } ] s1)
@@ -2149,22 +2147,20 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
     [ return (result: ()) -> {[@expl:flip_colors ensures #0] internal_invariant self.final}
       {[@expl:flip_colors ensures #1] height'0 self.current = height'0 self.final}
       {[@expl:flip_colors ensures #2] same_mappings self.current self.final}
-      {[@expl:flip_colors ensures #3] (self.current).t_Node__key = (self.final).t_Node__key}
-      {[@expl:flip_colors ensures #4] exists l1: t_Node, l2: t_Node. ((self.current).t_Node__left).t_Tree__node
-          = C_Some l1
-        /\ ((self.final).t_Node__left).t_Tree__node = C_Some l2
+      {[@expl:flip_colors ensures #3] self.current.t_Node__key = self.final.t_Node__key}
+      {[@expl:flip_colors ensures #4] exists l1: t_Node, l2: t_Node. self.current.t_Node__left.t_Tree__node = C_Some l1
+        /\ self.final.t_Node__left.t_Tree__node = C_Some l2
         /\ l1.t_Node__left = l2.t_Node__left
         /\ l1.t_Node__right = l2.t_Node__right
         /\ l1.t_Node__key = l2.t_Node__key
-        /\ (self.current).t_Node__color = l2.t_Node__color /\ (self.final).t_Node__color = l1.t_Node__color}
-      {[@expl:flip_colors ensures #5] exists r1: t_Node, r2: t_Node. ((self.current).t_Node__right).t_Tree__node
-          = C_Some r1
-        /\ ((self.final).t_Node__right).t_Tree__node = C_Some r2
+        /\ self.current.t_Node__color = l2.t_Node__color /\ self.final.t_Node__color = l1.t_Node__color}
+      {[@expl:flip_colors ensures #5] exists r1: t_Node, r2: t_Node. self.current.t_Node__right.t_Tree__node = C_Some r1
+        /\ self.final.t_Node__right.t_Tree__node = C_Some r2
         /\ r1.t_Node__left = r2.t_Node__left
         /\ r1.t_Node__right = r2.t_Node__right
         /\ r1.t_Node__key = r2.t_Node__key
-        /\ (self.current).t_Node__color = r2.t_Node__color
-        /\ (self.final).t_Node__color = r1.t_Node__color /\ r1.t_Node__key = r2.t_Node__key}
+        /\ self.current.t_Node__color = r2.t_Node__color
+        /\ self.final.t_Node__color = r1.t_Node__color /\ r1.t_Node__key = r2.t_Node__key}
       (! return {result}) ]
 end
 module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
@@ -2365,19 +2361,19 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
   let rec rotate_left (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:rotate_left 'self' type invariant] inv'6 self}
     {[@expl:rotate_left requires #0] internal_invariant self.current}
-    {[@expl:rotate_left requires #1] color (self.current).t_Node__right = C_Red}
+    {[@expl:rotate_left requires #1] color self.current.t_Node__right = C_Red}
     any
     [ return' (result: ()) -> {same_mappings self.current self.final}
       {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
-      {lt_log (deep_model (self.current).t_Node__key) (deep_model (self.final).t_Node__key)}
-      {color (self.final).t_Node__left = C_Red}
-      {(self.final).t_Node__color = (self.current).t_Node__color}
-      {exists l: t_Node, r: t_Node. ((self.current).t_Node__right).t_Tree__node = C_Some r
-        /\ ((self.final).t_Node__left).t_Tree__node = C_Some l
-        /\ { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = (self.final).t_Node__right }
-          = { f0 = (self.current).t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
-        /\ l.t_Node__key = (self.current).t_Node__key}
+      {lt_log (deep_model self.current.t_Node__key) (deep_model self.final.t_Node__key)}
+      {color self.final.t_Node__left = C_Red}
+      {self.final.t_Node__color = self.current.t_Node__color}
+      {exists l: t_Node, r: t_Node. self.current.t_Node__right.t_Tree__node = C_Some r
+        /\ self.final.t_Node__left.t_Tree__node = C_Some l
+        /\ { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = self.final.t_Node__right }
+          = { f0 = self.current.t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
+        /\ l.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 t_Node
@@ -2420,45 +2416,45 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
   let rec rotate_right (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:rotate_right 'self' type invariant] inv'6 self}
     {[@expl:rotate_right requires #0] internal_invariant self.current}
-    {[@expl:rotate_right requires #1] color (self.current).t_Node__left = C_Red}
+    {[@expl:rotate_right requires #1] color self.current.t_Node__left = C_Red}
     any
     [ return' (result: ()) -> {same_mappings self.current self.final}
       {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
-      {lt_log (deep_model (self.final).t_Node__key) (deep_model (self.current).t_Node__key)}
-      {color (self.final).t_Node__right = C_Red}
-      {(self.final).t_Node__color = (self.current).t_Node__color}
-      {exists l: t_Node, r: t_Node. ((self.current).t_Node__left).t_Tree__node = C_Some l
-        /\ ((self.final).t_Node__right).t_Tree__node = C_Some r
-        /\ { f0 = (self.final).t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
-          = { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = (self.current).t_Node__right }
-        /\ r.t_Node__key = (self.current).t_Node__key}
+      {lt_log (deep_model self.final.t_Node__key) (deep_model self.current.t_Node__key)}
+      {color self.final.t_Node__right = C_Red}
+      {self.final.t_Node__color = self.current.t_Node__color}
+      {exists l: t_Node, r: t_Node. self.current.t_Node__left.t_Tree__node = C_Some l
+        /\ self.final.t_Node__right.t_Tree__node = C_Some r
+        /\ { f0 = self.final.t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
+          = { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = self.current.t_Node__right }
+        /\ r.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
   
   let rec flip_colors (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:flip_colors 'self' type invariant] inv'6 self}
     {[@expl:flip_colors requires #0] internal_invariant self.current}
-    {[@expl:flip_colors requires #1] ((self.current).t_Node__left).t_Tree__node <> C_None}
-    {[@expl:flip_colors requires #2] ((self.current).t_Node__right).t_Tree__node <> C_None}
-    {[@expl:flip_colors requires #3] color (self.current).t_Node__left = color (self.current).t_Node__right}
+    {[@expl:flip_colors requires #1] self.current.t_Node__left.t_Tree__node <> C_None}
+    {[@expl:flip_colors requires #2] self.current.t_Node__right.t_Tree__node <> C_None}
+    {[@expl:flip_colors requires #3] color self.current.t_Node__left = color self.current.t_Node__right}
     any
     [ return' (result: ()) -> {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
       {same_mappings self.current self.final}
-      {(self.current).t_Node__key = (self.final).t_Node__key}
-      {exists l1: t_Node, l2: t_Node. ((self.current).t_Node__left).t_Tree__node = C_Some l1
-        /\ ((self.final).t_Node__left).t_Tree__node = C_Some l2
+      {self.current.t_Node__key = self.final.t_Node__key}
+      {exists l1: t_Node, l2: t_Node. self.current.t_Node__left.t_Tree__node = C_Some l1
+        /\ self.final.t_Node__left.t_Tree__node = C_Some l2
         /\ l1.t_Node__left = l2.t_Node__left
         /\ l1.t_Node__right = l2.t_Node__right
         /\ l1.t_Node__key = l2.t_Node__key
-        /\ (self.current).t_Node__color = l2.t_Node__color /\ (self.final).t_Node__color = l1.t_Node__color}
-      {exists r1: t_Node, r2: t_Node. ((self.current).t_Node__right).t_Tree__node = C_Some r1
-        /\ ((self.final).t_Node__right).t_Tree__node = C_Some r2
+        /\ self.current.t_Node__color = l2.t_Node__color /\ self.final.t_Node__color = l1.t_Node__color}
+      {exists r1: t_Node, r2: t_Node. self.current.t_Node__right.t_Tree__node = C_Some r1
+        /\ self.final.t_Node__right.t_Tree__node = C_Some r2
         /\ r1.t_Node__left = r2.t_Node__left
         /\ r1.t_Node__right = r2.t_Node__right
         /\ r1.t_Node__key = r2.t_Node__key
-        /\ (self.current).t_Node__color = r2.t_Node__color
-        /\ (self.final).t_Node__color = r1.t_Node__color /\ r1.t_Node__key = r2.t_Node__key}
+        /\ self.current.t_Node__color = r2.t_Node__color
+        /\ self.final.t_Node__color = r1.t_Node__color /\ r1.t_Node__key = r2.t_Node__key}
       (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
@@ -2505,16 +2501,16 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
   
   let rec balance (self: MutBorrow.t t_Node) (return (x: ())) = {[@expl:balance 'self' type invariant] inv'6 self}
     {[@expl:balance requires #0] internal_invariant self.current}
-    {[@expl:balance requires #1] (self.current).t_Node__color = C_Red /\ color (self.current).t_Node__left = C_Red
-    -> color_invariant (self.current).t_Node__left}
-    {[@expl:balance requires #2] (self.current).t_Node__color = C_Red /\ color (self.current).t_Node__right = C_Red
-    -> color_invariant (self.current).t_Node__right}
-    {[@expl:balance requires #3] (self.current).t_Node__color = C_Red
-      /\ color (self.current).t_Node__right = C_Red /\ color (self.current).t_Node__left = C_Red -> false}
+    {[@expl:balance requires #1] self.current.t_Node__color = C_Red /\ color self.current.t_Node__left = C_Red
+    -> color_invariant self.current.t_Node__left}
+    {[@expl:balance requires #2] self.current.t_Node__color = C_Red /\ color self.current.t_Node__right = C_Red
+    -> color_invariant self.current.t_Node__right}
+    {[@expl:balance requires #3] self.current.t_Node__color = C_Red
+      /\ color self.current.t_Node__right = C_Red /\ color self.current.t_Node__left = C_Red -> false}
     (! bb0
-    [ bb0 = s0 [ s0 = is_red {(self.current).t_Node__right} (fun (_ret: bool) -> [ &_15 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = is_red {self.current.t_Node__right} (fun (_ret: bool) -> [ &_15 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = any [ br0 -> {_15 = false} (! bb9) | br1 -> {_15} (! bb2) ]
-    | bb2 = s0 [ s0 = is_red {(self.current).t_Node__left} (fun (_ret: bool) -> [ &_17 <- _ret ] s1) | s1 = bb3 ]
+    | bb2 = s0 [ s0 = is_red {self.current.t_Node__left} (fun (_ret: bool) -> [ &_17 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = any [ br0 -> {_17 = false} (! bb5) | br1 -> {_17} (! bb9) ]
     | bb5 = s0
       [ s0 = {inv'1 self.current}
@@ -2524,10 +2520,10 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
             [ &self <- { self with current = _ret.final } ] s1)
       | s1 = rotate_left {_20} (fun (_ret: ()) -> [ &_19 <- _ret ] s2)
       | s2 = bb9 ]
-    | bb9 = s0 [ s0 = is_red {(self.current).t_Node__left} (fun (_ret: bool) -> [ &_22 <- _ret ] s1) | s1 = bb10 ]
+    | bb9 = s0 [ s0 = is_red {self.current.t_Node__left} (fun (_ret: bool) -> [ &_22 <- _ret ] s1) | s1 = bb10 ]
     | bb10 = any [ br0 -> {_22 = false} (! bb20) | br1 -> {_22} (! bb11) ]
     | bb11 = s0
-      [ s0 = as_ref {((self.current).t_Node__left).t_Tree__node} (fun (_ret: t_Option'0) -> [ &_27 <- _ret ] s1)
+      [ s0 = as_ref {self.current.t_Node__left.t_Tree__node} (fun (_ret: t_Option'0) -> [ &_27 <- _ret ] s1)
       | s1 = bb12 ]
     | bb12 = s0 [ s0 = unwrap {_27} (fun (_ret: t_Node) -> [ &_26 <- _ret ] s1) | s1 = bb13 ]
     | bb13 = s0 [ s0 = is_red {_26.t_Node__left} (fun (_ret: bool) -> [ &_24 <- _ret ] s1) | s1 = bb14 ]
@@ -2540,9 +2536,9 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
             [ &self <- { self with current = _ret.final } ] s1)
       | s1 = rotate_right {_30} (fun (_ret: ()) -> [ &_29 <- _ret ] s2)
       | s2 = bb20 ]
-    | bb20 = s0 [ s0 = is_red {(self.current).t_Node__left} (fun (_ret: bool) -> [ &_31 <- _ret ] s1) | s1 = bb21 ]
+    | bb20 = s0 [ s0 = is_red {self.current.t_Node__left} (fun (_ret: bool) -> [ &_31 <- _ret ] s1) | s1 = bb21 ]
     | bb21 = any [ br0 -> {_31 = false} (! bb27) | br1 -> {_31} (! bb22) ]
-    | bb22 = s0 [ s0 = is_red {(self.current).t_Node__right} (fun (_ret: bool) -> [ &_33 <- _ret ] s1) | s1 = bb23 ]
+    | bb22 = s0 [ s0 = is_red {self.current.t_Node__right} (fun (_ret: bool) -> [ &_33 <- _ret ] s1) | s1 = bb23 ]
     | bb23 = any [ br0 -> {_33 = false} (! bb26) | br1 -> {_33} (! bb24) ]
     | bb24 = s0
       [ s0 = {inv'1 self.current}
@@ -2575,8 +2571,8 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
     [ return (result: ()) -> {[@expl:balance ensures #0] same_mappings self.current self.final}
       {[@expl:balance ensures #1] internal_invariant self.final}
       {[@expl:balance ensures #2] height'0 self.current = height'0 self.final}
-      {[@expl:balance ensures #3] color_invariant (self.current).t_Node__left
-        /\ color (self.current).t_Node__right = C_Black -> self.current = self.final}
+      {[@expl:balance ensures #3] color_invariant self.current.t_Node__left
+        /\ color self.current.t_Node__right = C_Black -> self.current = self.final}
       {[@expl:balance ensures #4] match_n (cpn (C_Black) (cpn (C_Red) (C_CPL (C_Red)) (C_CPL (C_Black))) (C_CPL (C_Black))) self.current
       -> match_n (C_CPL (C_Red)) self.final}
       {[@expl:balance ensures #5] match_n (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Red))) self.current
@@ -2772,27 +2768,27 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
   let rec flip_colors (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:flip_colors 'self' type invariant] inv'5 self}
     {[@expl:flip_colors requires #0] internal_invariant self.current}
-    {[@expl:flip_colors requires #1] ((self.current).t_Node__left).t_Tree__node <> C_None}
-    {[@expl:flip_colors requires #2] ((self.current).t_Node__right).t_Tree__node <> C_None}
-    {[@expl:flip_colors requires #3] color (self.current).t_Node__left = color (self.current).t_Node__right}
+    {[@expl:flip_colors requires #1] self.current.t_Node__left.t_Tree__node <> C_None}
+    {[@expl:flip_colors requires #2] self.current.t_Node__right.t_Tree__node <> C_None}
+    {[@expl:flip_colors requires #3] color self.current.t_Node__left = color self.current.t_Node__right}
     any
     [ return' (result: ()) -> {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
       {same_mappings self.current self.final}
-      {(self.current).t_Node__key = (self.final).t_Node__key}
-      {exists l1: t_Node, l2: t_Node. ((self.current).t_Node__left).t_Tree__node = C_Some l1
-        /\ ((self.final).t_Node__left).t_Tree__node = C_Some l2
+      {self.current.t_Node__key = self.final.t_Node__key}
+      {exists l1: t_Node, l2: t_Node. self.current.t_Node__left.t_Tree__node = C_Some l1
+        /\ self.final.t_Node__left.t_Tree__node = C_Some l2
         /\ l1.t_Node__left = l2.t_Node__left
         /\ l1.t_Node__right = l2.t_Node__right
         /\ l1.t_Node__key = l2.t_Node__key
-        /\ (self.current).t_Node__color = l2.t_Node__color /\ (self.final).t_Node__color = l1.t_Node__color}
-      {exists r1: t_Node, r2: t_Node. ((self.current).t_Node__right).t_Tree__node = C_Some r1
-        /\ ((self.final).t_Node__right).t_Tree__node = C_Some r2
+        /\ self.current.t_Node__color = l2.t_Node__color /\ self.final.t_Node__color = l1.t_Node__color}
+      {exists r1: t_Node, r2: t_Node. self.current.t_Node__right.t_Tree__node = C_Some r1
+        /\ self.final.t_Node__right.t_Tree__node = C_Some r2
         /\ r1.t_Node__left = r2.t_Node__left
         /\ r1.t_Node__right = r2.t_Node__right
         /\ r1.t_Node__key = r2.t_Node__key
-        /\ (self.current).t_Node__color = r2.t_Node__color
-        /\ (self.final).t_Node__color = r1.t_Node__color /\ r1.t_Node__key = r2.t_Node__key}
+        /\ self.current.t_Node__color = r2.t_Node__color
+        /\ self.final.t_Node__color = r1.t_Node__color /\ r1.t_Node__key = r2.t_Node__key}
       (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 (MutBorrow.t t_Node)
@@ -2860,37 +2856,37 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
   let rec rotate_right (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:rotate_right 'self' type invariant] inv'5 self}
     {[@expl:rotate_right requires #0] internal_invariant self.current}
-    {[@expl:rotate_right requires #1] color (self.current).t_Node__left = C_Red}
+    {[@expl:rotate_right requires #1] color self.current.t_Node__left = C_Red}
     any
     [ return' (result: ()) -> {same_mappings self.current self.final}
       {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
-      {lt_log (deep_model (self.final).t_Node__key) (deep_model (self.current).t_Node__key)}
-      {color (self.final).t_Node__right = C_Red}
-      {(self.final).t_Node__color = (self.current).t_Node__color}
-      {exists l: t_Node, r: t_Node. ((self.current).t_Node__left).t_Tree__node = C_Some l
-        /\ ((self.final).t_Node__right).t_Tree__node = C_Some r
-        /\ { f0 = (self.final).t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
-          = { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = (self.current).t_Node__right }
-        /\ r.t_Node__key = (self.current).t_Node__key}
+      {lt_log (deep_model self.final.t_Node__key) (deep_model self.current.t_Node__key)}
+      {color self.final.t_Node__right = C_Red}
+      {self.final.t_Node__color = self.current.t_Node__color}
+      {exists l: t_Node, r: t_Node. self.current.t_Node__left.t_Tree__node = C_Some l
+        /\ self.final.t_Node__right.t_Tree__node = C_Some r
+        /\ { f0 = self.final.t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
+          = { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = self.current.t_Node__right }
+        /\ r.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
   
   let rec rotate_left (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:rotate_left 'self' type invariant] inv'5 self}
     {[@expl:rotate_left requires #0] internal_invariant self.current}
-    {[@expl:rotate_left requires #1] color (self.current).t_Node__right = C_Red}
+    {[@expl:rotate_left requires #1] color self.current.t_Node__right = C_Red}
     any
     [ return' (result: ()) -> {same_mappings self.current self.final}
       {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
-      {lt_log (deep_model (self.current).t_Node__key) (deep_model (self.final).t_Node__key)}
-      {color (self.final).t_Node__left = C_Red}
-      {(self.final).t_Node__color = (self.current).t_Node__color}
-      {exists l: t_Node, r: t_Node. ((self.current).t_Node__right).t_Tree__node = C_Some r
-        /\ ((self.final).t_Node__left).t_Tree__node = C_Some l
-        /\ { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = (self.final).t_Node__right }
-          = { f0 = (self.current).t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
-        /\ l.t_Node__key = (self.current).t_Node__key}
+      {lt_log (deep_model self.current.t_Node__key) (deep_model self.final.t_Node__key)}
+      {color self.final.t_Node__left = C_Red}
+      {self.final.t_Node__color = self.current.t_Node__color}
+      {exists l: t_Node, r: t_Node. self.current.t_Node__right.t_Tree__node = C_Some r
+        /\ self.final.t_Node__left.t_Tree__node = C_Some l
+        /\ { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = self.final.t_Node__right }
+          = { f0 = self.current.t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
+        /\ l.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
@@ -2937,7 +2933,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
   
   let rec move_red_left (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
     {[@expl:move_red_left 'self' type invariant] inv'5 self}
-    {[@expl:move_red_left requires #0] ((self.current).t_Node__right).t_Tree__node <> C_None}
+    {[@expl:move_red_left requires #0] self.current.t_Node__right.t_Tree__node <> C_None}
     {[@expl:move_red_left requires #1] internal_invariant self.current}
     {[@expl:move_red_left requires #2] match_n (cpn (C_Red) (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Black))) (C_CPL (C_Black))) self.current}
     (! bb0
@@ -2950,8 +2946,8 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
       | s1 = flip_colors {_16} (fun (_ret: ()) -> [ &_15 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'3 ((self.current).t_Node__right).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {((self.current).t_Node__right).t_Tree__node}
+      [ s0 = {inv'3 self.current.t_Node__right.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Node__right.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_22 <- _ret ] -{inv'3 _ret.final}-
             [ &self <- { self with current = { self.current with t_Node__right = { t_Tree__node = _ret.final } } } ] s1)
@@ -2961,12 +2957,12 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'7 _20} s1
       | s1 = -{resolve'0 _20}- s2
-      | s2 = is_red {(_20.current).t_Node__left} (fun (_ret: bool) -> [ &_18 <- _ret ] s3)
+      | s2 = is_red {_20.current.t_Node__left} (fun (_ret: bool) -> [ &_18 <- _ret ] s3)
       | s3 = bb4 ]
     | bb4 = any [ br0 -> {_18 = false} (! bb13) | br1 -> {_18} (! bb5) ]
     | bb5 = s0
-      [ s0 = {inv'3 ((self.current).t_Node__right).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {((self.current).t_Node__right).t_Tree__node}
+      [ s0 = {inv'3 self.current.t_Node__right.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Node__right.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_28 <- _ret ] -{inv'3 _ret.final}-
             [ &self <- { self with current = { self.current with t_Node__right = { t_Tree__node = _ret.final } } } ] s1)
@@ -3000,8 +2996,8 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
       | s1 = flip_colors {_32} (fun (_ret: ()) -> [ &_31 <- _ret ] s2)
       | s2 = bb10 ]
     | bb10 = s0
-      [ s0 = {inv'3 ((self.current).t_Node__left).t_Tree__node}
-        MutBorrow.borrow_final <t_Option> {((self.current).t_Node__left).t_Tree__node}
+      [ s0 = {inv'3 self.current.t_Node__left.t_Tree__node}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Node__left.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_35 <- _ret ] -{inv'3 _ret.final}-
@@ -3049,17 +3045,17 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
       -> internal_invariant self.final}
       {[@expl:move_red_left ensures #2] height'0 result.current = height'0 result.final
       -> height'0 self.current = height'0 self.final}
-      {[@expl:move_red_left ensures #3] (self.current).t_Node__key = (result.current).t_Node__key}
+      {[@expl:move_red_left ensures #3] self.current.t_Node__key = result.current.t_Node__key}
       {[@expl:move_red_left ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.current k v
         -> has_mapping'0 self.current k v}
       {[@expl:move_red_left ensures #5] forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v
-          /\ le_log k (deep_model (self.current).t_Node__key) -> has_mapping'0 result.current k v}
+          /\ le_log k (deep_model self.current.t_Node__key) -> has_mapping'0 result.current k v}
       {[@expl:move_red_left ensures #6] forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.final k v
         = (has_mapping'0 result.final k v \/ has_mapping'0 self.current k v /\ not has_mapping'0 result.current k v)}
       {[@expl:move_red_left ensures #7] match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) result.current
       \/ match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) result.current}
       {[@expl:move_red_left ensures #8] color_invariant'0 result.final
-        /\ (color (result.current).t_Node__right = C_Black -> (result.final).t_Node__color = C_Black)
+        /\ (color result.current.t_Node__right = C_Black -> result.final.t_Node__color = C_Black)
       -> color_invariant'0 self.final}
       (! return {result}) ]
 end
@@ -3248,27 +3244,27 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
   let rec flip_colors (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:flip_colors 'self' type invariant] inv'5 self}
     {[@expl:flip_colors requires #0] internal_invariant self.current}
-    {[@expl:flip_colors requires #1] ((self.current).t_Node__left).t_Tree__node <> C_None}
-    {[@expl:flip_colors requires #2] ((self.current).t_Node__right).t_Tree__node <> C_None}
-    {[@expl:flip_colors requires #3] color (self.current).t_Node__left = color (self.current).t_Node__right}
+    {[@expl:flip_colors requires #1] self.current.t_Node__left.t_Tree__node <> C_None}
+    {[@expl:flip_colors requires #2] self.current.t_Node__right.t_Tree__node <> C_None}
+    {[@expl:flip_colors requires #3] color self.current.t_Node__left = color self.current.t_Node__right}
     any
     [ return' (result: ()) -> {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
       {same_mappings self.current self.final}
-      {(self.current).t_Node__key = (self.final).t_Node__key}
-      {exists l1: t_Node, l2: t_Node. ((self.current).t_Node__left).t_Tree__node = C_Some l1
-        /\ ((self.final).t_Node__left).t_Tree__node = C_Some l2
+      {self.current.t_Node__key = self.final.t_Node__key}
+      {exists l1: t_Node, l2: t_Node. self.current.t_Node__left.t_Tree__node = C_Some l1
+        /\ self.final.t_Node__left.t_Tree__node = C_Some l2
         /\ l1.t_Node__left = l2.t_Node__left
         /\ l1.t_Node__right = l2.t_Node__right
         /\ l1.t_Node__key = l2.t_Node__key
-        /\ (self.current).t_Node__color = l2.t_Node__color /\ (self.final).t_Node__color = l1.t_Node__color}
-      {exists r1: t_Node, r2: t_Node. ((self.current).t_Node__right).t_Tree__node = C_Some r1
-        /\ ((self.final).t_Node__right).t_Tree__node = C_Some r2
+        /\ self.current.t_Node__color = l2.t_Node__color /\ self.final.t_Node__color = l1.t_Node__color}
+      {exists r1: t_Node, r2: t_Node. self.current.t_Node__right.t_Tree__node = C_Some r1
+        /\ self.final.t_Node__right.t_Tree__node = C_Some r2
         /\ r1.t_Node__left = r2.t_Node__left
         /\ r1.t_Node__right = r2.t_Node__right
         /\ r1.t_Node__key = r2.t_Node__key
-        /\ (self.current).t_Node__color = r2.t_Node__color
-        /\ (self.final).t_Node__color = r1.t_Node__color /\ r1.t_Node__key = r2.t_Node__key}
+        /\ self.current.t_Node__color = r2.t_Node__color
+        /\ self.final.t_Node__color = r1.t_Node__color /\ r1.t_Node__key = r2.t_Node__key}
       (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 (MutBorrow.t t_Node)
@@ -3336,19 +3332,19 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
   let rec rotate_right (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:rotate_right 'self' type invariant] inv'5 self}
     {[@expl:rotate_right requires #0] internal_invariant self.current}
-    {[@expl:rotate_right requires #1] color (self.current).t_Node__left = C_Red}
+    {[@expl:rotate_right requires #1] color self.current.t_Node__left = C_Red}
     any
     [ return' (result: ()) -> {same_mappings self.current self.final}
       {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
-      {lt_log (deep_model (self.final).t_Node__key) (deep_model (self.current).t_Node__key)}
-      {color (self.final).t_Node__right = C_Red}
-      {(self.final).t_Node__color = (self.current).t_Node__color}
-      {exists l: t_Node, r: t_Node. ((self.current).t_Node__left).t_Tree__node = C_Some l
-        /\ ((self.final).t_Node__right).t_Tree__node = C_Some r
-        /\ { f0 = (self.final).t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
-          = { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = (self.current).t_Node__right }
-        /\ r.t_Node__key = (self.current).t_Node__key}
+      {lt_log (deep_model self.final.t_Node__key) (deep_model self.current.t_Node__key)}
+      {color self.final.t_Node__right = C_Red}
+      {self.final.t_Node__color = self.current.t_Node__color}
+      {exists l: t_Node, r: t_Node. self.current.t_Node__left.t_Tree__node = C_Some l
+        /\ self.final.t_Node__right.t_Tree__node = C_Some r
+        /\ { f0 = self.final.t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
+          = { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = self.current.t_Node__right }
+        /\ r.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
@@ -3395,7 +3391,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
   
   let rec move_red_right (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
     {[@expl:move_red_right 'self' type invariant] inv'5 self}
-    {[@expl:move_red_right requires #0] ((self.current).t_Node__left).t_Tree__node <> C_None}
+    {[@expl:move_red_right requires #0] self.current.t_Node__left.t_Tree__node <> C_None}
     {[@expl:move_red_right requires #1] internal_invariant self.current}
     {[@expl:move_red_right requires #2] match_n (cpn (C_Red) (C_CPL (C_Black)) (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Black)))) self.current}
     (! bb0
@@ -3408,8 +3404,8 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
       | s1 = flip_colors {_16} (fun (_ret: ()) -> [ &_15 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'3 ((self.current).t_Node__left).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {((self.current).t_Node__left).t_Tree__node}
+      [ s0 = {inv'3 self.current.t_Node__left.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Node__left.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_22 <- _ret ] -{inv'3 _ret.final}-
             [ &self <- { self with current = { self.current with t_Node__left = { t_Tree__node = _ret.final } } } ] s1)
@@ -3419,7 +3415,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'7 _20} s1
       | s1 = -{resolve'0 _20}- s2
-      | s2 = is_red {(_20.current).t_Node__left} (fun (_ret: bool) -> [ &_18 <- _ret ] s3)
+      | s2 = is_red {_20.current.t_Node__left} (fun (_ret: bool) -> [ &_18 <- _ret ] s3)
       | s3 = bb4 ]
     | bb4 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb5) ]
     | bb5 = s0
@@ -3439,8 +3435,8 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
       | s1 = flip_colors {_27} (fun (_ret: ()) -> [ &_26 <- _ret ] s2)
       | s2 = bb7 ]
     | bb7 = s0
-      [ s0 = {inv'3 ((self.current).t_Node__right).t_Tree__node}
-        MutBorrow.borrow_final <t_Option> {((self.current).t_Node__right).t_Tree__node}
+      [ s0 = {inv'3 self.current.t_Node__right.t_Tree__node}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Node__right.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 5) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_30 <- _ret ] -{inv'3 _ret.final}-
@@ -3483,17 +3479,17 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
       -> internal_invariant self.final}
       {[@expl:move_red_right ensures #2] height'0 result.current = height'0 result.final
       -> height'0 self.current = height'0 self.final}
-      {[@expl:move_red_right ensures #3] (result.current).t_Node__key = (self.current).t_Node__key}
+      {[@expl:move_red_right ensures #3] result.current.t_Node__key = self.current.t_Node__key}
       {[@expl:move_red_right ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.current k v
         -> has_mapping'0 self.current k v}
       {[@expl:move_red_right ensures #5] forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v
-          /\ le_log (deep_model (self.current).t_Node__key) k -> has_mapping'0 result.current k v}
+          /\ le_log (deep_model self.current.t_Node__key) k -> has_mapping'0 result.current k v}
       {[@expl:move_red_right ensures #6] forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.final k v
         = (has_mapping'0 result.final k v \/ has_mapping'0 self.current k v /\ not has_mapping'0 result.current k v)}
       {[@expl:move_red_right ensures #7] match_n (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Red))) result.current
       \/ match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) result.current}
       {[@expl:move_red_right ensures #8] color_invariant'0 result.final
-        /\ (color (result.current).t_Node__left = C_Black -> (result.final).t_Node__color = C_Black)
+        /\ (color result.current.t_Node__left = C_Black -> result.final.t_Node__color = C_Black)
       -> color_invariant'0 self.final}
       (! return {result}) ]
 end
@@ -3818,17 +3814,17 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
   
   let rec balance (self: MutBorrow.t t_Node) (return (x: ())) = {[@expl:balance 'self' type invariant] inv'9 self}
     {[@expl:balance requires #0] internal_invariant self.current}
-    {[@expl:balance requires #1] (self.current).t_Node__color = C_Red /\ color (self.current).t_Node__left = C_Red
-    -> color_invariant (self.current).t_Node__left}
-    {[@expl:balance requires #2] (self.current).t_Node__color = C_Red /\ color (self.current).t_Node__right = C_Red
-    -> color_invariant (self.current).t_Node__right}
-    {[@expl:balance requires #3] (self.current).t_Node__color = C_Red
-      /\ color (self.current).t_Node__right = C_Red /\ color (self.current).t_Node__left = C_Red -> false}
+    {[@expl:balance requires #1] self.current.t_Node__color = C_Red /\ color self.current.t_Node__left = C_Red
+    -> color_invariant self.current.t_Node__left}
+    {[@expl:balance requires #2] self.current.t_Node__color = C_Red /\ color self.current.t_Node__right = C_Red
+    -> color_invariant self.current.t_Node__right}
+    {[@expl:balance requires #3] self.current.t_Node__color = C_Red
+      /\ color self.current.t_Node__right = C_Red /\ color self.current.t_Node__left = C_Red -> false}
     any
     [ return' (result: ()) -> {same_mappings self.current self.final}
       {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
-      {color_invariant (self.current).t_Node__left /\ color (self.current).t_Node__right = C_Black
+      {color_invariant self.current.t_Node__left /\ color self.current.t_Node__right = C_Black
       -> self.current = self.final}
       {match_n (cpn (C_Black) (cpn (C_Red) (C_CPL (C_Red)) (C_CPL (C_Black))) (C_CPL (C_Black))) self.current
       -> match_n (C_CPL (C_Red)) self.final}
@@ -3853,8 +3849,8 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
     {[@expl:insert_rec requires #1] color_invariant self.current}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'2 (self.current).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {(self.current).t_Tree__node}
+      [ s0 = {inv'2 self.current.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_11 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s1)
@@ -3879,8 +3875,8 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
       | s1 = bb24 ]
     | bb24 = s0 [ s0 = [ &_31 <- C_Some _33 ] s1 | s1 = bb26 ]
     | bb26 = s0
-      [ s0 = {[@expl:type invariant] inv'2 (self.current).t_Tree__node} s1
-      | s1 = -{resolve'7 (self.current).t_Tree__node}- s2
+      [ s0 = {[@expl:type invariant] inv'2 self.current.t_Tree__node} s1
+      | s1 = -{resolve'7 self.current.t_Tree__node}- s2
       | s2 = [ &self <- { self with current = { t_Tree__node = _31 } } ] s3
       | s3 = {[@expl:type invariant] inv'6 self} s4
       | s4 = -{resolve'9 self}- s5
@@ -3893,13 +3889,13 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
               (fun (_ret: MutBorrow.t t_Node) ->
                 [ &node <- _ret ] -{inv'4 _ret.final}-
                 [ &_11 <- { _11 with current = C_Some _ret.final } ] s1))
-      | s1 = [ &_18 <- (node.current).t_Node__key ] s2
+      | s1 = [ &_18 <- node.current.t_Node__key ] s2
       | s2 = cmp {key} {_18} (fun (_ret: t_Ordering) -> [ &_15 <- _ret ] s3)
       | s3 = bb3 ]
     | bb3 = any [ br0 -> {_15 = C_Less} (! bb9) | br1 -> {_15 = C_Equal} (! bb6) | br2 -> {_15 = C_Greater} (! bb7) ]
     | bb7 = s0
-      [ s0 = {inv'1 (node.current).t_Node__right}
-        MutBorrow.borrow_mut <t_Tree> {(node.current).t_Node__right}
+      [ s0 = {inv'1 node.current.t_Node__right}
+        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__right}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_25 <- _ret ] -{inv'1 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
@@ -3907,8 +3903,8 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
       | s2 = bb15 ]
     | bb6 = s0 [ s0 = {[@expl:type invariant] inv key} s1 | s1 = -{resolve'10 key}- s2 | s2 = bb11 ]
     | bb11 = s0
-      [ s0 = {[@expl:type invariant] inv'0 (node.current).t_Node__val} s1
-      | s1 = -{resolve'1 (node.current).t_Node__val}- s2
+      [ s0 = {[@expl:type invariant] inv'0 node.current.t_Node__val} s1
+      | s1 = -{resolve'1 node.current.t_Node__val}- s2
       | s2 = [ &node <- { node with current = { node.current with t_Node__val = val' } } ] s3
       | s3 = {[@expl:type invariant] inv'8 node} s4
       | s4 = -{resolve'12 node}- s5
@@ -3918,8 +3914,8 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
       | s8 = -{resolve'9 self}- s9
       | s9 = bb32 ]
     | bb9 = s0
-      [ s0 = {inv'1 (node.current).t_Node__left}
-        MutBorrow.borrow_mut <t_Tree> {(node.current).t_Node__left}
+      [ s0 = {inv'1 node.current.t_Node__left}
+        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__left}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_20 <- _ret ] -{inv'1 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__left = _ret.final } } ] s1)
@@ -4227,19 +4223,19 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   let rec rotate_right (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:rotate_right 'self' type invariant] inv'8 self}
     {[@expl:rotate_right requires #0] internal_invariant self.current}
-    {[@expl:rotate_right requires #1] color (self.current).t_Node__left = C_Red}
+    {[@expl:rotate_right requires #1] color self.current.t_Node__left = C_Red}
     any
     [ return' (result: ()) -> {same_mappings self.current self.final}
       {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
-      {lt_log (deep_model (self.final).t_Node__key) (deep_model (self.current).t_Node__key)}
-      {color (self.final).t_Node__right = C_Red}
-      {(self.final).t_Node__color = (self.current).t_Node__color}
-      {exists l: t_Node, r: t_Node. ((self.current).t_Node__left).t_Tree__node = C_Some l
-        /\ ((self.final).t_Node__right).t_Tree__node = C_Some r
-        /\ { f0 = (self.final).t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
-          = { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = (self.current).t_Node__right }
-        /\ r.t_Node__key = (self.current).t_Node__key}
+      {lt_log (deep_model self.final.t_Node__key) (deep_model self.current.t_Node__key)}
+      {color self.final.t_Node__right = C_Red}
+      {self.final.t_Node__color = self.current.t_Node__color}
+      {exists l: t_Node, r: t_Node. self.current.t_Node__left.t_Tree__node = C_Some l
+        /\ self.final.t_Node__right.t_Tree__node = C_Some r
+        /\ { f0 = self.final.t_Node__left; f1 = r.t_Node__left; f2 = r.t_Node__right }
+          = { f0 = l.t_Node__left; f1 = l.t_Node__right; f2 = self.current.t_Node__right }
+        /\ r.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 t_Node
@@ -4311,7 +4307,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   
   let rec move_red_right (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
     {[@expl:move_red_right 'self' type invariant] inv'8 self}
-    {[@expl:move_red_right requires #0] ((self.current).t_Node__left).t_Tree__node <> C_None}
+    {[@expl:move_red_right requires #0] self.current.t_Node__left.t_Tree__node <> C_None}
     {[@expl:move_red_right requires #1] internal_invariant self.current}
     {[@expl:move_red_right requires #2] match_n (cpn (C_Red) (C_CPL (C_Black)) (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Black)))) self.current}
     any
@@ -4322,16 +4318,16 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
         /\ (forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.final k v -> has_mapping'0 result.current k v)
       -> internal_invariant self.final}
       {height'0 result.current = height'0 result.final -> height'0 self.current = height'0 self.final}
-      {(result.current).t_Node__key = (self.current).t_Node__key}
+      {result.current.t_Node__key = self.current.t_Node__key}
       {forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.current k v -> has_mapping'0 self.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v
-          /\ le_log (deep_model (self.current).t_Node__key) k -> has_mapping'0 result.current k v}
+      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v /\ le_log (deep_model self.current.t_Node__key) k
+        -> has_mapping'0 result.current k v}
       {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.final k v
         = (has_mapping'0 result.final k v \/ has_mapping'0 self.current k v /\ not has_mapping'0 result.current k v)}
       {match_n (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Red))) result.current
       \/ match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) result.current}
       {color_invariant'0 result.final
-        /\ (color (result.current).t_Node__left = C_Black -> (result.final).t_Node__color = C_Black)
+        /\ (color result.current.t_Node__left = C_Black -> result.final.t_Node__color = C_Black)
       -> color_invariant'0 self.final}
       (! return {result}) ]
   
@@ -4347,17 +4343,17 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   
   let rec balance (self: MutBorrow.t t_Node) (return (x: ())) = {[@expl:balance 'self' type invariant] inv'8 self}
     {[@expl:balance requires #0] internal_invariant self.current}
-    {[@expl:balance requires #1] (self.current).t_Node__color = C_Red /\ color (self.current).t_Node__left = C_Red
-    -> color_invariant (self.current).t_Node__left}
-    {[@expl:balance requires #2] (self.current).t_Node__color = C_Red /\ color (self.current).t_Node__right = C_Red
-    -> color_invariant (self.current).t_Node__right}
-    {[@expl:balance requires #3] (self.current).t_Node__color = C_Red
-      /\ color (self.current).t_Node__right = C_Red /\ color (self.current).t_Node__left = C_Red -> false}
+    {[@expl:balance requires #1] self.current.t_Node__color = C_Red /\ color self.current.t_Node__left = C_Red
+    -> color_invariant self.current.t_Node__left}
+    {[@expl:balance requires #2] self.current.t_Node__color = C_Red /\ color self.current.t_Node__right = C_Red
+    -> color_invariant self.current.t_Node__right}
+    {[@expl:balance requires #3] self.current.t_Node__color = C_Red
+      /\ color self.current.t_Node__right = C_Red /\ color self.current.t_Node__left = C_Red -> false}
     any
     [ return' (result: ()) -> {same_mappings self.current self.final}
       {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
-      {color_invariant (self.current).t_Node__left /\ color (self.current).t_Node__right = C_Black
+      {color_invariant self.current.t_Node__left /\ color self.current.t_Node__right = C_Black
       -> self.current = self.final}
       {match_n (cpn (C_Black) (cpn (C_Red) (C_CPL (C_Red)) (C_CPL (C_Black))) (C_CPL (C_Black))) self.current
       -> match_n (C_CPL (C_Red)) self.final}
@@ -4488,8 +4484,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
     \/ match_t (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.current}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'2 (self.current).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {(self.current).t_Tree__node}
+      [ s0 = {inv'2 self.current.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_15 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s1)
@@ -4507,7 +4503,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'6 _13} s1
       | s1 = -{resolve'0 _13}- s2
-      | s2 = is_red {(node.current).t_Node__left} (fun (_ret: bool) -> [ &_17 <- _ret ] s3)
+      | s2 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_17 <- _ret ] s3)
       | s3 = bb4 ]
     | bb4 = any [ br0 -> {_17 = false} (! bb8) | br1 -> {_17} (! bb5) ]
     | bb5 = s0
@@ -4519,12 +4515,12 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
       | s1 = rotate_right {_19} (fun (_ret: ()) -> [ &_16 <- _ret ] s2)
       | s2 = bb8 ]
     | bb8 = any
-      [ br0 -> {((node.current).t_Node__right).t_Tree__node = C_None} (! bb9)
-      | br1 (x0: t_Node) -> {((node.current).t_Node__right).t_Tree__node = C_Some x0} (! bb15) ]
-    | bb15 = s0 [ s0 = is_red {(node.current).t_Node__right} (fun (_ret: bool) -> [ &_30 <- _ret ] s1) | s1 = bb16 ]
+      [ br0 -> {node.current.t_Node__right.t_Tree__node = C_None} (! bb9)
+      | br1 (x0: t_Node) -> {node.current.t_Node__right.t_Tree__node = C_Some x0} (! bb15) ]
+    | bb15 = s0 [ s0 = is_red {node.current.t_Node__right} (fun (_ret: bool) -> [ &_30 <- _ret ] s1) | s1 = bb16 ]
     | bb16 = any [ br0 -> {_30 = false} (! bb18) | br1 -> {_30} (! bb26) ]
     | bb18 = s0
-      [ s0 = as_ref {((node.current).t_Node__right).t_Tree__node} (fun (_ret: t_Option'1) -> [ &_35 <- _ret ] s1)
+      [ s0 = as_ref {node.current.t_Node__right.t_Tree__node} (fun (_ret: t_Option'1) -> [ &_35 <- _ret ] s1)
       | s1 = bb19 ]
     | bb19 = s0 [ s0 = unwrap'0 {_35} (fun (_ret: t_Node) -> [ &_34 <- _ret ] s1) | s1 = bb20 ]
     | bb20 = s0 [ s0 = is_red {_34.t_Node__left} (fun (_ret: bool) -> [ &_32 <- _ret ] s1) | s1 = bb21 ]
@@ -4550,8 +4546,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
       | s5 = -{resolve'2 _38}- s6
       | s6 = bb26 ]
     | bb26 = s0
-      [ s0 = {inv'1 (node.current).t_Node__right}
-        MutBorrow.borrow_mut <t_Tree> {(node.current).t_Node__right}
+      [ s0 = {inv'1 node.current.t_Node__right}
+        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__right}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_41 <- _ret ] -{inv'1 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
@@ -4574,8 +4570,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
       | s5 = bb31 ]
     | bb9 = s0 [ s0 = {[@expl:type invariant] inv'8 node} s1 | s1 = -{resolve'2 node}- s2 | s2 = bb10 ]
     | bb10 = s0
-      [ s0 = {inv'2 (self.current).t_Tree__node}
-        MutBorrow.borrow_final <t_Option> {(self.current).t_Tree__node} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+      [ s0 = {inv'2 self.current.t_Tree__node}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Tree__node} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_26 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s1)
@@ -4954,7 +4950,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   
   let rec move_red_left (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
     {[@expl:move_red_left 'self' type invariant] inv'8 self}
-    {[@expl:move_red_left requires #0] ((self.current).t_Node__right).t_Tree__node <> C_None}
+    {[@expl:move_red_left requires #0] self.current.t_Node__right.t_Tree__node <> C_None}
     {[@expl:move_red_left requires #1] internal_invariant self.current}
     {[@expl:move_red_left requires #2] match_n (cpn (C_Red) (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Black))) (C_CPL (C_Black))) self.current}
     any
@@ -4965,16 +4961,16 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
         /\ (forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.final k v -> has_mapping'0 result.current k v)
       -> internal_invariant self.final}
       {height'0 result.current = height'0 result.final -> height'0 self.current = height'0 self.final}
-      {(self.current).t_Node__key = (result.current).t_Node__key}
+      {self.current.t_Node__key = result.current.t_Node__key}
       {forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.current k v -> has_mapping'0 self.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v
-          /\ le_log k (deep_model (self.current).t_Node__key) -> has_mapping'0 result.current k v}
+      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v /\ le_log k (deep_model self.current.t_Node__key)
+        -> has_mapping'0 result.current k v}
       {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.final k v
         = (has_mapping'0 result.final k v \/ has_mapping'0 self.current k v /\ not has_mapping'0 result.current k v)}
       {match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) result.current
       \/ match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) result.current}
       {color_invariant'0 result.final
-        /\ (color (result.current).t_Node__right = C_Black -> (result.final).t_Node__color = C_Black)
+        /\ (color result.current.t_Node__right = C_Black -> result.final.t_Node__color = C_Black)
       -> color_invariant'0 self.final}
       (! return {result}) ]
   
@@ -4993,17 +4989,17 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   
   let rec balance (self: MutBorrow.t t_Node) (return (x: ())) = {[@expl:balance 'self' type invariant] inv'8 self}
     {[@expl:balance requires #0] internal_invariant self.current}
-    {[@expl:balance requires #1] (self.current).t_Node__color = C_Red /\ color (self.current).t_Node__left = C_Red
-    -> color_invariant (self.current).t_Node__left}
-    {[@expl:balance requires #2] (self.current).t_Node__color = C_Red /\ color (self.current).t_Node__right = C_Red
-    -> color_invariant (self.current).t_Node__right}
-    {[@expl:balance requires #3] (self.current).t_Node__color = C_Red
-      /\ color (self.current).t_Node__right = C_Red /\ color (self.current).t_Node__left = C_Red -> false}
+    {[@expl:balance requires #1] self.current.t_Node__color = C_Red /\ color self.current.t_Node__left = C_Red
+    -> color_invariant self.current.t_Node__left}
+    {[@expl:balance requires #2] self.current.t_Node__color = C_Red /\ color self.current.t_Node__right = C_Red
+    -> color_invariant self.current.t_Node__right}
+    {[@expl:balance requires #3] self.current.t_Node__color = C_Red
+      /\ color self.current.t_Node__right = C_Red /\ color self.current.t_Node__left = C_Red -> false}
     any
     [ return' (result: ()) -> {same_mappings self.current self.final}
       {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
-      {color_invariant (self.current).t_Node__left /\ color (self.current).t_Node__right = C_Black
+      {color_invariant self.current.t_Node__left /\ color self.current.t_Node__right = C_Black
       -> self.current = self.final}
       {match_n (cpn (C_Black) (cpn (C_Red) (C_CPL (C_Red)) (C_CPL (C_Black))) (C_CPL (C_Black))) self.current
       -> match_n (C_CPL (C_Red)) self.final}
@@ -5134,8 +5130,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
     \/ match_t (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.current}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'2 (self.current).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {(self.current).t_Tree__node}
+      [ s0 = {inv'2 self.current.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_15 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s1)
@@ -5154,12 +5150,12 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       [ s0 = {[@expl:type invariant] inv'6 _13} s1
       | s1 = -{resolve'0 _13}- s2
       | s2 = any
-        [ br0 -> {((node.current).t_Node__left).t_Tree__node = C_None} (! bb4)
-        | br1 (x0: t_Node) -> {((node.current).t_Node__left).t_Tree__node = C_Some x0} (! bb10) ] ]
-    | bb10 = s0 [ s0 = is_red {(node.current).t_Node__left} (fun (_ret: bool) -> [ &_26 <- _ret ] s1) | s1 = bb11 ]
+        [ br0 -> {node.current.t_Node__left.t_Tree__node = C_None} (! bb4)
+        | br1 (x0: t_Node) -> {node.current.t_Node__left.t_Tree__node = C_Some x0} (! bb10) ] ]
+    | bb10 = s0 [ s0 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_26 <- _ret ] s1) | s1 = bb11 ]
     | bb11 = any [ br0 -> {_26 = false} (! bb13) | br1 -> {_26} (! bb21) ]
     | bb13 = s0
-      [ s0 = as_ref {((node.current).t_Node__left).t_Tree__node} (fun (_ret: t_Option'1) -> [ &_31 <- _ret ] s1)
+      [ s0 = as_ref {node.current.t_Node__left.t_Tree__node} (fun (_ret: t_Option'1) -> [ &_31 <- _ret ] s1)
       | s1 = bb14 ]
     | bb14 = s0 [ s0 = unwrap'0 {_31} (fun (_ret: t_Node) -> [ &_30 <- _ret ] s1) | s1 = bb15 ]
     | bb15 = s0 [ s0 = is_red {_30.t_Node__left} (fun (_ret: bool) -> [ &_28 <- _ret ] s1) | s1 = bb16 ]
@@ -5185,8 +5181,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       | s5 = -{resolve'2 _34}- s6
       | s6 = bb21 ]
     | bb21 = s0
-      [ s0 = {inv'1 (node.current).t_Node__left}
-        MutBorrow.borrow_mut <t_Tree> {(node.current).t_Node__left}
+      [ s0 = {inv'1 node.current.t_Node__left}
+        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__left}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_37 <- _ret ] -{inv'1 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__left = _ret.final } } ] s1)
@@ -5209,8 +5205,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       | s5 = bb26 ]
     | bb4 = s0 [ s0 = {[@expl:type invariant] inv'8 node} s1 | s1 = -{resolve'2 node}- s2 | s2 = bb5 ]
     | bb5 = s0
-      [ s0 = {inv'2 (self.current).t_Tree__node}
-        MutBorrow.borrow_final <t_Option> {(self.current).t_Tree__node} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+      [ s0 = {inv'2 self.current.t_Tree__node}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Tree__node} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_22 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s1)
@@ -5552,19 +5548,19 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   let rec rotate_right (self: MutBorrow.t t_Node) (return (x: ())) =
     {[@expl:rotate_right 'self' type invariant] inv'8 self}
     {[@expl:rotate_right requires #0] internal_invariant self.current}
-    {[@expl:rotate_right requires #1] color (self.current).t_Node__left = C_Red}
+    {[@expl:rotate_right requires #1] color self.current.t_Node__left = C_Red}
     any
     [ return' (result: ()) -> {same_mappings self.current self.final}
       {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
-      {lt_log (deep_model (self.final).t_Node__key) (deep_model (self.current).t_Node__key)}
-      {color (self.final).t_Node__right = C_Red}
-      {(self.final).t_Node__color = (self.current).t_Node__color}
-      {exists l: t_Node, r: t_Node. ((self.current).t_Node__left).t_Tree__node = C_Some l
-        /\ ((self.final).t_Node__right).t_Tree__node = C_Some r
-        /\ { f0'0 = (self.final).t_Node__left; f1'0 = r.t_Node__left; f2 = r.t_Node__right }
-          = { f0'0 = l.t_Node__left; f1'0 = l.t_Node__right; f2 = (self.current).t_Node__right }
-        /\ r.t_Node__key = (self.current).t_Node__key}
+      {lt_log (deep_model self.final.t_Node__key) (deep_model self.current.t_Node__key)}
+      {color self.final.t_Node__right = C_Red}
+      {self.final.t_Node__color = self.current.t_Node__color}
+      {exists l: t_Node, r: t_Node. self.current.t_Node__left.t_Tree__node = C_Some l
+        /\ self.final.t_Node__right.t_Tree__node = C_Some r
+        /\ { f0'0 = self.final.t_Node__left; f1'0 = r.t_Node__left; f2 = r.t_Node__right }
+          = { f0'0 = l.t_Node__left; f1'0 = l.t_Node__right; f2 = self.current.t_Node__right }
+        /\ r.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
   
   type tuple'1 = { f0'1: t_K; f1'1: t_V }
@@ -5753,7 +5749,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   let rec move_red_right (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
     {[@expl:move_red_right 'self' type invariant] inv'8 self}
-    {[@expl:move_red_right requires #0] ((self.current).t_Node__left).t_Tree__node <> C_None}
+    {[@expl:move_red_right requires #0] self.current.t_Node__left.t_Tree__node <> C_None}
     {[@expl:move_red_right requires #1] internal_invariant self.current}
     {[@expl:move_red_right requires #2] match_n (cpn (C_Red) (C_CPL (C_Black)) (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Black)))) self.current}
     any
@@ -5764,16 +5760,16 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
         /\ (forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.final k v -> has_mapping'0 result.current k v)
       -> internal_invariant self.final}
       {height'0 result.current = height'0 result.final -> height'0 self.current = height'0 self.final}
-      {(result.current).t_Node__key = (self.current).t_Node__key}
+      {result.current.t_Node__key = self.current.t_Node__key}
       {forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.current k v -> has_mapping'0 self.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v
-          /\ le_log (deep_model (self.current).t_Node__key) k -> has_mapping'0 result.current k v}
+      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v /\ le_log (deep_model self.current.t_Node__key) k
+        -> has_mapping'0 result.current k v}
       {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.final k v
         = (has_mapping'0 result.final k v \/ has_mapping'0 self.current k v /\ not has_mapping'0 result.current k v)}
       {match_n (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Red))) result.current
       \/ match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) result.current}
       {color_invariant'0 result.final
-        /\ (color (result.current).t_Node__left = C_Black -> (result.final).t_Node__color = C_Black)
+        /\ (color result.current.t_Node__left = C_Black -> result.final.t_Node__color = C_Black)
       -> color_invariant'0 self.final}
       (! return {result}) ]
   
@@ -5890,7 +5886,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   let rec move_red_left (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
     {[@expl:move_red_left 'self' type invariant] inv'8 self}
-    {[@expl:move_red_left requires #0] ((self.current).t_Node__right).t_Tree__node <> C_None}
+    {[@expl:move_red_left requires #0] self.current.t_Node__right.t_Tree__node <> C_None}
     {[@expl:move_red_left requires #1] internal_invariant self.current}
     {[@expl:move_red_left requires #2] match_n (cpn (C_Red) (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Black))) (C_CPL (C_Black))) self.current}
     any
@@ -5901,32 +5897,32 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
         /\ (forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.final k v -> has_mapping'0 result.current k v)
       -> internal_invariant self.final}
       {height'0 result.current = height'0 result.final -> height'0 self.current = height'0 self.final}
-      {(self.current).t_Node__key = (result.current).t_Node__key}
+      {self.current.t_Node__key = result.current.t_Node__key}
       {forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.current k v -> has_mapping'0 self.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v
-          /\ le_log k (deep_model (self.current).t_Node__key) -> has_mapping'0 result.current k v}
+      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v /\ le_log k (deep_model self.current.t_Node__key)
+        -> has_mapping'0 result.current k v}
       {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.final k v
         = (has_mapping'0 result.final k v \/ has_mapping'0 self.current k v /\ not has_mapping'0 result.current k v)}
       {match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) result.current
       \/ match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) result.current}
       {color_invariant'0 result.final
-        /\ (color (result.current).t_Node__right = C_Black -> (result.final).t_Node__color = C_Black)
+        /\ (color result.current.t_Node__right = C_Black -> result.final.t_Node__color = C_Black)
       -> color_invariant'0 self.final}
       (! return {result}) ]
   
   let rec balance (self: MutBorrow.t t_Node) (return (x: ())) = {[@expl:balance 'self' type invariant] inv'8 self}
     {[@expl:balance requires #0] internal_invariant self.current}
-    {[@expl:balance requires #1] (self.current).t_Node__color = C_Red /\ color (self.current).t_Node__left = C_Red
-    -> color_invariant (self.current).t_Node__left}
-    {[@expl:balance requires #2] (self.current).t_Node__color = C_Red /\ color (self.current).t_Node__right = C_Red
-    -> color_invariant (self.current).t_Node__right}
-    {[@expl:balance requires #3] (self.current).t_Node__color = C_Red
-      /\ color (self.current).t_Node__right = C_Red /\ color (self.current).t_Node__left = C_Red -> false}
+    {[@expl:balance requires #1] self.current.t_Node__color = C_Red /\ color self.current.t_Node__left = C_Red
+    -> color_invariant self.current.t_Node__left}
+    {[@expl:balance requires #2] self.current.t_Node__color = C_Red /\ color self.current.t_Node__right = C_Red
+    -> color_invariant self.current.t_Node__right}
+    {[@expl:balance requires #3] self.current.t_Node__color = C_Red
+      /\ color self.current.t_Node__right = C_Red /\ color self.current.t_Node__left = C_Red -> false}
     any
     [ return' (result: ()) -> {same_mappings self.current self.final}
       {internal_invariant self.final}
       {height'0 self.current = height'0 self.final}
-      {color_invariant (self.current).t_Node__left /\ color (self.current).t_Node__right = C_Black
+      {color_invariant self.current.t_Node__left /\ color self.current.t_Node__right = C_Black
       -> self.current = self.final}
       {match_n (cpn (C_Black) (cpn (C_Red) (C_CPL (C_Red)) (C_CPL (C_Black))) (C_CPL (C_Black))) self.current
       -> match_n (C_CPL (C_Red)) self.final}
@@ -5961,8 +5957,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
     \/ match_t (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.current}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'2 (self.current).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {(self.current).t_Tree__node}
+      [ s0 = {inv'2 self.current.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_16 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s1)
@@ -5980,13 +5976,13 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'6 _14} s1
       | s1 = -{resolve'0 _14}- s2
-      | s2 = [ &_21 <- (node.current).t_Node__key ] s3
+      | s2 = [ &_21 <- node.current.t_Node__key ] s3
       | s3 = cmp {key} {_21} (fun (_ret: t_Ordering) -> [ &_18 <- _ret ] s4)
       | s4 = bb4 ]
     | bb4 = any [ br0 -> {_18 = C_Less} (! bb7) | br1 -> {_18 = C_Equal} (! bb5) | br2 -> {_18 = C_Greater} (! bb5) ]
     | bb5 = s0
       [ s0 = [ &ord <- _18 ] s1
-      | s1 = is_red {(node.current).t_Node__left} (fun (_ret: bool) -> [ &_42 <- _ret ] s2)
+      | s1 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_42 <- _ret ] s2)
       | s2 = bb26 ]
     | bb26 = any [ br0 -> {_42 = false} (! bb33) | br1 -> {_42} (! bb27) ]
     | bb27 = s0
@@ -5998,8 +5994,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s1 = rotate_right {_45} (fun (_ret: ()) -> [ &_44 <- _ret ] s2)
       | s2 = bb28 ]
     | bb28 = s0
-      [ s0 = {inv'1 (node.current).t_Node__right}
-        MutBorrow.borrow_mut <t_Tree> {(node.current).t_Node__right}
+      [ s0 = {inv'1 node.current.t_Node__right}
+        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__right}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_47 <- _ret ] -{inv'1 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
@@ -6007,8 +6003,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s2 = bb30 ]
     | bb30 = s0 [ s0 = [ &r <- _46 ] s1 | s1 = bb69 ]
     | bb33 = s0
-      [ s0 = is_none {((node.current).t_Node__right).t_Tree__node} (fun (_ret: bool) -> [ &_50 <- _ret ] s1)
-      | s1 = bb34 ]
+      [ s0 = is_none {node.current.t_Node__right.t_Tree__node} (fun (_ret: bool) -> [ &_50 <- _ret ] s1) | s1 = bb34 ]
     | bb34 = any [ br0 -> {_50 = false} (! bb44) | br1 -> {_50} (! bb35) ]
     | bb35 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
@@ -6016,8 +6011,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s2 = any
         [ br0 -> {ord = C_Less} (! bb38) | br1 -> {ord = C_Equal} (! bb38) | br2 -> {ord = C_Greater} (! bb36) ] ]
     | bb38 = s0
-      [ s0 = {inv'2 (self.current).t_Tree__node}
-        MutBorrow.borrow_final <t_Option> {(self.current).t_Tree__node} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+      [ s0 = {inv'2 self.current.t_Tree__node}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Tree__node} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_59 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s1)
@@ -6046,7 +6041,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
     | bb36 = s0 [ s0 = {[@expl:type invariant] inv'12 self} s1 | s1 = -{resolve'7 self}- s2 | s2 = bb37 ]
     | bb37 = s0 [ s0 = [ &_0 <- C_None'1 ] s1 | s1 = bb76 ]
     | bb44 = s0
-      [ s0 = as_ref {((node.current).t_Node__right).t_Tree__node} (fun (_ret: t_Option'2) -> [ &_67 <- _ret ] s1)
+      [ s0 = as_ref {node.current.t_Node__right.t_Tree__node} (fun (_ret: t_Option'2) -> [ &_67 <- _ret ] s1)
       | s1 = bb45 ]
     | bb45 = s0 [ s0 = unwrap'1 {_67} (fun (_ret: t_Node) -> [ &_66 <- _ret ] s1) | s1 = bb46 ]
     | bb46 = s0 [ s0 = is_red {_66.t_Node__left} (fun (_ret: bool) -> [ &_64 <- _ret ] s1) | s1 = bb47 ]
@@ -6074,8 +6069,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
     | bb51 = any
       [ br0 -> {ord = C_Less} (! bb63) | br1 -> {ord = C_Equal} (! bb53) | br2 -> {ord = C_Greater} (! bb63) ]
     | bb63 = s0
-      [ s0 = {inv'1 (node.current).t_Node__right}
-        MutBorrow.borrow_mut <t_Tree> {(node.current).t_Node__right}
+      [ s0 = {inv'1 node.current.t_Node__right}
+        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__right}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_90 <- _ret ] -{inv'1 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
@@ -6083,8 +6078,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s2 = bb65 ]
     | bb65 = s0 [ s0 = [ &r <- _89 ] s1 | s1 = bb69 ]
     | bb53 = s0
-      [ s0 = {inv'1 (node.current).t_Node__right}
-        MutBorrow.borrow_mut <t_Tree> {(node.current).t_Node__right}
+      [ s0 = {inv'1 node.current.t_Node__right}
+        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__right}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_74 <- _ret ] -{inv'1 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
@@ -6092,8 +6087,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s2 = bb54 ]
     | bb54 = s0 [ s0 = [ &_75 <- () ] s1 | s1 = bb55 ]
     | bb55 = s0
-      [ s0 = {inv (node.current).t_Node__key}
-        MutBorrow.borrow_mut <t_K> {(node.current).t_Node__key}
+      [ s0 = {inv node.current.t_Node__key}
+        MutBorrow.borrow_mut <t_K> {node.current.t_Node__key}
           (fun (_ret: MutBorrow.t t_K) ->
             [ &_79 <- _ret ] -{inv _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__key = _ret.final } } ] s1)
@@ -6119,8 +6114,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s1 = -{resolve'12 _81}- s2
       | s2 = {[@expl:type invariant] inv'16 _79} s3
       | s3 = -{resolve'12 _79}- s4
-      | s4 = {inv'0 (node.current).t_Node__val}
-        MutBorrow.borrow_mut <t_V> {(node.current).t_Node__val}
+      | s4 = {inv'0 node.current.t_Node__val}
+        MutBorrow.borrow_mut <t_V> {node.current.t_Node__val}
           (fun (_ret: MutBorrow.t t_V) ->
             [ &_84 <- _ret ] -{inv'0 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__val = _ret.final } } ] s5)
@@ -6150,7 +6145,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s5 = bb59 ]
     | bb59 = s0 [ s0 = [ &r <- _87 ] s1 | s1 = bb69 ]
     | bb7 = s0
-      [ s0 = is_none {((node.current).t_Node__left).t_Tree__node} (fun (_ret: bool) -> [ &_24 <- _ret ] s1) | s1 = bb8 ]
+      [ s0 = is_none {node.current.t_Node__left.t_Tree__node} (fun (_ret: bool) -> [ &_24 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = any [ br0 -> {_24 = false} (! bb10) | br1 -> {_24} (! bb9) ]
     | bb9 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
@@ -6159,10 +6154,10 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s3 = -{resolve'7 self}- s4
       | s4 = [ &_0 <- C_None'1 ] s5
       | s5 = bb76 ]
-    | bb10 = s0 [ s0 = is_red {(node.current).t_Node__left} (fun (_ret: bool) -> [ &_28 <- _ret ] s1) | s1 = bb11 ]
+    | bb10 = s0 [ s0 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_28 <- _ret ] s1) | s1 = bb11 ]
     | bb11 = any [ br0 -> {_28 = false} (! bb13) | br1 -> {_28} (! bb21) ]
     | bb13 = s0
-      [ s0 = as_ref {((node.current).t_Node__left).t_Tree__node} (fun (_ret: t_Option'2) -> [ &_33 <- _ret ] s1)
+      [ s0 = as_ref {node.current.t_Node__left.t_Tree__node} (fun (_ret: t_Option'2) -> [ &_33 <- _ret ] s1)
       | s1 = bb14 ]
     | bb14 = s0 [ s0 = unwrap'1 {_33} (fun (_ret: t_Node) -> [ &_32 <- _ret ] s1) | s1 = bb15 ]
     | bb15 = s0 [ s0 = is_red {_32.t_Node__left} (fun (_ret: bool) -> [ &_30 <- _ret ] s1) | s1 = bb16 ]
@@ -6188,8 +6183,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s5 = -{resolve'2 _36}- s6
       | s6 = bb21 ]
     | bb21 = s0
-      [ s0 = {inv'1 (node.current).t_Node__left}
-        MutBorrow.borrow_mut <t_Tree> {(node.current).t_Node__left}
+      [ s0 = {inv'1 node.current.t_Node__left}
+        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__left}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_39 <- _ret ] -{inv'1 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__left = _ret.final } } ] s1)
@@ -6971,8 +6966,8 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
     {[@expl:insert 'val' type invariant] inv'0 val'}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'2 (self.current).t_Map__0}
-        MutBorrow.borrow_mut <t_Tree> {(self.current).t_Map__0}
+      [ s0 = {inv'2 self.current.t_Map__0}
+        MutBorrow.borrow_mut <t_Tree> {self.current.t_Map__0}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_6 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = _ret.final } } ] s1)
@@ -6980,8 +6975,8 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
       | s2 = bb1 ]
     | bb1 = s0
       [ s0 = [ &_9 <- C_Black ] s1
-      | s1 = {inv'4 ((self.current).t_Map__0).t_Tree__node}
-        MutBorrow.borrow_final <t_Option> {((self.current).t_Map__0).t_Tree__node}
+      | s1 = {inv'4 self.current.t_Map__0.t_Tree__node}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Map__0.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_12 <- _ret ] -{inv'4 _ret.final}-
@@ -7380,8 +7375,8 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
     (! bb0
     [ bb0 = s0 [ s0 = [ &old_self <- self ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'2 ((self.current).t_Map__0).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {((self.current).t_Map__0).t_Tree__node}
+      [ s0 = {inv'2 self.current.t_Map__0.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Map__0.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_6 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s1)
@@ -7401,7 +7396,7 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
               (fun (_ret: MutBorrow.t t_Node) ->
                 [ &node <- _ret ] -{inv'4 _ret.final}-
                 [ &_6 <- { _6 with current = C_Some _ret.final } ] s1))
-      | s1 = is_red {(node.current).t_Node__left} (fun (_ret: bool) -> [ &_9 <- _ret ] s2)
+      | s1 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_9 <- _ret ] s2)
       | s2 = bb4 ]
     | bb4 = any [ br0 -> {_9 = false} (! bb6) | br1 -> {_9} (! bb5) ]
     | bb5 = s0
@@ -7419,20 +7414,20 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
       | s5 = -{resolve'0 _6}- s6
       | s6 = bb7 ]
     | bb7 = s0
-      [ s0 = {[@expl:assertion] same_mappings (old_self.current).t_Map__0 (self.current).t_Map__0} s1
-      | s1 = {inv'1 (self.current).t_Map__0}
-        MutBorrow.borrow_mut <t_Tree> {(self.current).t_Map__0}
+      [ s0 = {[@expl:assertion] same_mappings old_self.current.t_Map__0 self.current.t_Map__0} s1
+      | s1 = {inv'1 self.current.t_Map__0}
+        MutBorrow.borrow_mut <t_Tree> {self.current.t_Map__0}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_16 <- _ret ] -{inv'1 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = _ret.final } } ] s2)
       | s2 = delete_max_rec {_16} (fun (_ret: tuple) -> [ &r <- _ret ] s3)
       | s3 = bb9 ]
-    | bb9 = s0 [ s0 = is_red {(self.current).t_Map__0} (fun (_ret: bool) -> [ &_18 <- _ret ] s1) | s1 = bb10 ]
+    | bb9 = s0 [ s0 = is_red {self.current.t_Map__0} (fun (_ret: bool) -> [ &_18 <- _ret ] s1) | s1 = bb10 ]
     | bb10 = any [ br0 -> {_18 = false} (! bb14) | br1 -> {_18} (! bb11) ]
     | bb11 = s0
       [ s0 = [ &_20 <- C_Black ] s1
-      | s1 = {inv'2 ((self.current).t_Map__0).t_Tree__node}
-        MutBorrow.borrow_final <t_Option> {((self.current).t_Map__0).t_Tree__node}
+      | s1 = {inv'2 self.current.t_Map__0.t_Tree__node}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Map__0.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_23 <- _ret ] -{inv'2 _ret.final}-
@@ -7839,8 +7834,8 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
     (! bb0
     [ bb0 = s0 [ s0 = [ &_3 <- () ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'2 ((self.current).t_Map__0).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {((self.current).t_Map__0).t_Tree__node}
+      [ s0 = {inv'2 self.current.t_Map__0.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Map__0.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_6 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s1)
@@ -7860,7 +7855,7 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
               (fun (_ret: MutBorrow.t t_Node) ->
                 [ &node <- _ret ] -{inv'4 _ret.final}-
                 [ &_6 <- { _6 with current = C_Some _ret.final } ] s1))
-      | s1 = is_red {(node.current).t_Node__left} (fun (_ret: bool) -> [ &_9 <- _ret ] s2)
+      | s1 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_9 <- _ret ] s2)
       | s2 = bb4 ]
     | bb4 = any [ br0 -> {_9 = false} (! bb6) | br1 -> {_9} (! bb5) ]
     | bb5 = s0
@@ -7878,19 +7873,19 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
       | s5 = -{resolve'0 _6}- s6
       | s6 = bb7 ]
     | bb7 = s0
-      [ s0 = {inv'1 (self.current).t_Map__0}
-        MutBorrow.borrow_mut <t_Tree> {(self.current).t_Map__0}
+      [ s0 = {inv'1 self.current.t_Map__0}
+        MutBorrow.borrow_mut <t_Tree> {self.current.t_Map__0}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_14 <- _ret ] -{inv'1 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = _ret.final } } ] s1)
       | s1 = delete_min_rec {_14} (fun (_ret: tuple) -> [ &r <- _ret ] s2)
       | s2 = bb9 ]
-    | bb9 = s0 [ s0 = is_red {(self.current).t_Map__0} (fun (_ret: bool) -> [ &_16 <- _ret ] s1) | s1 = bb10 ]
+    | bb9 = s0 [ s0 = is_red {self.current.t_Map__0} (fun (_ret: bool) -> [ &_16 <- _ret ] s1) | s1 = bb10 ]
     | bb10 = any [ br0 -> {_16 = false} (! bb14) | br1 -> {_16} (! bb11) ]
     | bb11 = s0
       [ s0 = [ &_18 <- C_Black ] s1
-      | s1 = {inv'2 ((self.current).t_Map__0).t_Tree__node}
-        MutBorrow.borrow_final <t_Option> {((self.current).t_Map__0).t_Tree__node}
+      | s1 = {inv'2 self.current.t_Map__0.t_Tree__node}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Map__0.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_21 <- _ret ] -{inv'2 _ret.final}-
@@ -8311,8 +8306,8 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
     (! bb0
     [ bb0 = s0 [ s0 = [ &_5 <- () ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'2 ((self.current).t_Map__0).t_Tree__node}
-        MutBorrow.borrow_mut <t_Option> {((self.current).t_Map__0).t_Tree__node}
+      [ s0 = {inv'2 self.current.t_Map__0.t_Tree__node}
+        MutBorrow.borrow_mut <t_Option> {self.current.t_Map__0.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_8 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s1)
@@ -8332,7 +8327,7 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
               (fun (_ret: MutBorrow.t t_Node) ->
                 [ &node <- _ret ] -{inv'4 _ret.final}-
                 [ &_8 <- { _8 with current = C_Some _ret.final } ] s1))
-      | s1 = is_red {(node.current).t_Node__left} (fun (_ret: bool) -> [ &_11 <- _ret ] s2)
+      | s1 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_11 <- _ret ] s2)
       | s2 = bb4 ]
     | bb4 = any [ br0 -> {_11 = false} (! bb6) | br1 -> {_11} (! bb5) ]
     | bb5 = s0
@@ -8350,19 +8345,19 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
       | s5 = -{resolve'0 _8}- s6
       | s6 = bb7 ]
     | bb7 = s0
-      [ s0 = {inv'1 (self.current).t_Map__0}
-        MutBorrow.borrow_mut <t_Tree> {(self.current).t_Map__0}
+      [ s0 = {inv'1 self.current.t_Map__0}
+        MutBorrow.borrow_mut <t_Tree> {self.current.t_Map__0}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_16 <- _ret ] -{inv'1 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = _ret.final } } ] s1)
       | s1 = delete_rec {_16} {key} (fun (_ret: t_Option'1) -> [ &r <- _ret ] s2)
       | s2 = bb9 ]
-    | bb9 = s0 [ s0 = is_red {(self.current).t_Map__0} (fun (_ret: bool) -> [ &_19 <- _ret ] s1) | s1 = bb10 ]
+    | bb9 = s0 [ s0 = is_red {self.current.t_Map__0} (fun (_ret: bool) -> [ &_19 <- _ret ] s1) | s1 = bb10 ]
     | bb10 = any [ br0 -> {_19 = false} (! bb14) | br1 -> {_19} (! bb11) ]
     | bb11 = s0
       [ s0 = [ &_21 <- C_Black ] s1
-      | s1 = {inv'2 ((self.current).t_Map__0).t_Tree__node}
-        MutBorrow.borrow_final <t_Option> {((self.current).t_Map__0).t_Tree__node}
+      | s1 = {inv'2 self.current.t_Map__0.t_Tree__node}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Map__0.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_24 <- _ret ] -{inv'2 _ret.final}-
@@ -9090,8 +9085,8 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
     (! bb0
     [ bb0 = s0 [ s0 = [ &_5 <- () ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'2 (self.current).t_Map__0}
-        MutBorrow.borrow_final <t_Tree> {(self.current).t_Map__0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+      [ s0 = {inv'2 self.current.t_Map__0}
+        MutBorrow.borrow_final <t_Tree> {self.current.t_Map__0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &tree <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = _ret.final } } ] s1)
@@ -9118,8 +9113,8 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
         (! s0)
         [ s0 = bb4 ]
         [ bb4 = s0
-          [ s0 = {inv'4 (tree.current).t_Tree__node}
-            MutBorrow.borrow_final <t_Option> {(tree.current).t_Tree__node}
+          [ s0 = {inv'4 tree.current.t_Tree__node}
+            MutBorrow.borrow_final <t_Option> {tree.current.t_Tree__node}
               {MutBorrow.inherit_id (MutBorrow.get_id tree) 1}
               (fun (_ret: MutBorrow.t t_Option) ->
                 [ &_23 <- _ret ] -{inv'4 _ret.final}-
@@ -9134,14 +9129,14 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
                   (fun (_ret: MutBorrow.t t_Node) ->
                     [ &node <- _ret ] -{inv'3 _ret.final}-
                     [ &_23 <- { _23 with current = C_Some _ret.final } ] s1))
-          | s1 = [ &_29 <- (node.current).t_Node__key ] s2
+          | s1 = [ &_29 <- node.current.t_Node__key ] s2
           | s2 = cmp {key} {_29} (fun (_ret: t_Ordering) -> [ &_26 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = any
           [ br0 -> {_26 = C_Less} (! bb13) | br1 -> {_26 = C_Equal} (! bb12) | br2 -> {_26 = C_Greater} (! bb11) ]
         | bb11 = s0
-          [ s0 = {inv'2 (node.current).t_Node__right}
-            MutBorrow.borrow_final <t_Tree> {(node.current).t_Node__right}
+          [ s0 = {inv'2 node.current.t_Node__right}
+            MutBorrow.borrow_final <t_Tree> {node.current.t_Node__right}
               {MutBorrow.inherit_id (MutBorrow.get_id node) 5}
               (fun (_ret: MutBorrow.t t_Tree) ->
                 [ &_37 <- _ret ] -{inv'2 _ret.final}-
@@ -9158,9 +9153,8 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
           | s6 = -{resolve'0 _37}- s7
           | s7 = bb14 ]
         | bb13 = s0
-          [ s0 = {inv'2 (node.current).t_Node__left}
-            MutBorrow.borrow_final <t_Tree> {(node.current).t_Node__left}
-              {MutBorrow.inherit_id (MutBorrow.get_id node) 1}
+          [ s0 = {inv'2 node.current.t_Node__left}
+            MutBorrow.borrow_final <t_Tree> {node.current.t_Node__left} {MutBorrow.inherit_id (MutBorrow.get_id node) 1}
               (fun (_ret: MutBorrow.t t_Tree) ->
                 [ &_32 <- _ret ] -{inv'2 _ret.final}-
                 [ &node <- { node with current = { node.current with t_Node__left = _ret.final } } ] s1)
@@ -9187,8 +9181,8 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
       | s2 = [ &_0 <- C_None'1 ] s3
       | s3 = bb16 ]
     | bb12 = s0
-      [ s0 = {inv'0 (node.current).t_Node__val}
-        MutBorrow.borrow_final <t_V> {(node.current).t_Node__val} {MutBorrow.inherit_id (MutBorrow.get_id node) 4}
+      [ s0 = {inv'0 node.current.t_Node__val}
+        MutBorrow.borrow_final <t_V> {node.current.t_Node__val} {MutBorrow.inherit_id (MutBorrow.get_id node) 4}
           (fun (_ret: MutBorrow.t t_V) ->
             [ &_35 <- _ret ] -{inv'0 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__val = _ret.final } } ] s1)

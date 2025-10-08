@@ -749,7 +749,7 @@ impl Print for Exp {
             }
             Exp::Var(v) => v.pretty_value_name(alloc, scope),
             Exp::RecField { record, label } => {
-                parens!(alloc, scope, self.precedence().next(), record)
+                parens!(alloc, scope, self.precedence(), record)
                     .append(".")
                     .append(label.pretty_value_name(alloc, scope))
             }
