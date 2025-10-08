@@ -500,8 +500,8 @@ pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(PIdent, Span, Ty)
                 .iter()
                 .cloned()
                 .zip(sig.inputs().iter().cloned())
-                .enumerate()
-                .map(|(ix, (ident, ty))| match ident {
+                .zip(1..) // We start numbering from 1 to match locals numbering (_0 is the return value)
+                .map(|((ident, ty), ix)| match ident {
                     Some(rustc_span::Ident { name, span }) => {
                         let name = name.as_str();
                         let ident = if name.is_empty() || name == "_" {
