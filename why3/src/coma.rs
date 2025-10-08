@@ -195,13 +195,13 @@ impl Expr {
 
     /// Adds a set of mutually recursive where bindings around `self`
     pub fn where_(self, defs: Box<[Defn]>) -> Self {
-        // If we have `x [ x = z ]` replace this by `z`
         if defs.is_empty() {
             self
         } else if defs.len() == 1
             && !defs[0].body.occurs(&defs[0].prototype.name)
             && self.as_variable().is_some_and(|qn| qn == &defs[0].prototype.name)
         {
+            // If we have `x [ x = z ]` replace this by `z`
             let [d] = *defs.into_array::<1>().unwrap();
             d.body
         } else {
@@ -225,7 +225,7 @@ impl Expr {
         }
     }
 
-    /// Checks whether a symbol of name `cont` occurs in `self`
+    /// Checks whether a continuation symbol of name `cont` occurs in `self`
     pub fn occurs(&self, cont: &Ident) -> bool {
         match self {
             Expr::Name(Name::Local(v, _)) => v == cont,
@@ -241,19 +241,21 @@ impl Expr {
                     .any(|n| n == cont);
                 !in_params && body.occurs(cont)
             }
-            Expr::Defn(e, _, defs) => {
-                e.occurs(cont)
-                    || defs.iter().any(|d| {
-                        let in_params = d
-                            .prototype
-                            .params
-                            .iter()
-                            .filter_map(
-                                |p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None },
-                            )
-                            .any(|n| n == cont);
-                        !in_params && d.body.occurs(cont)
-                    })
+            Expr::Defn(e, rec, defs) => {
+                let redef = defs.iter().any(|d| &d.prototype.name == cont);
+                (!redef && e.occurs(cont))
+                    || (!(redef && *rec)
+                        && defs.iter().any(|d| {
+                            let in_params = d
+                                .prototype
+                                .params
+                                .iter()
+                                .filter_map(|p| {
+                                    if let Param::Cont(n, _, _) = &*p { Some(n) } else { None }
+                                })
+                                .any(|n| n == cont);
+                            !in_params && d.body.occurs(cont)
+                        }))
             }
             Expr::Assign(e, _) => e.occurs(cont),
             Expr::Let(e, _) => e.occurs(cont),
@@ -304,28 +306,6 @@ impl Print for Param {
                 doc
             }
         }
-    }
-}
-
-impl Print for Var {
-    fn pretty<'a, A: pretty::DocAllocator<'a>>(
-        &'a self,
-        alloc: &'a A,
-        scope: &mut Why3Scope,
-    ) -> pretty::DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        scope.bind_value(self.0);
-        docs![
-            alloc,
-            if matches!(self.3, IsRef::Ref) { alloc.text("& ") } else { alloc.nil() },
-            self.0.pretty_value_name(alloc, scope),
-            ": ",
-            self.1.pretty(alloc, scope),
-            " = ",
-            self.2.pretty(alloc, scope)
-        ]
     }
 }
 
@@ -455,11 +435,27 @@ impl Print for Expr {
             }
             Expr::Let(cont, lets) => {
                 scope.open();
+                let bodies: Vec<_> = lets.iter().map(|l| l.2.pretty(alloc, scope)).collect();
                 let lets = alloc
                     .line()
                     .append(bracket_list(
                         alloc,
-                        lets.iter().map(|l| l.pretty(alloc, scope)),
+                        lets.iter().zip(bodies).map(|(l, b)| {
+                            scope.bind_value(l.0);
+                            docs![
+                                alloc,
+                                if matches!(l.3, IsRef::Ref) {
+                                    alloc.text("& ")
+                                } else {
+                                    alloc.nil()
+                                },
+                                l.0.pretty_value_name(alloc, scope),
+                                ": ",
+                                l.1.pretty(alloc, scope),
+                                " = ",
+                                b
+                            ]
+                        }),
                         alloc.line().append(alloc.text("| ")),
                     ))
                     .group();

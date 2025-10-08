@@ -27,19 +27,19 @@ module M_invariant_moves__test_invariant_move
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  let rec pop (self_: MutBorrow.t t_Vec) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match result with
+  let rec pop (self_: MutBorrow.t t_Vec) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {match result with
         | C_Some t -> view self_.final = Seq.([..]) (view self_.current) 0 (Seq.length (view self_.current) - 1)
         /\ view self_.current = Seq.snoc (view self_.final) t
         | C_None -> self_.current = self_.final /\ Seq.length (view self_.current) = 0
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -47,26 +47,26 @@ module M_invariant_moves__test_invariant_move
   
   meta "select_lsinst" "all"
   
-  let rec test_invariant_move (x: t_Vec) (return' (x'0: ())) = (! bb0
+  let rec test_invariant_move (x: t_Vec) (return (x'0: ())) = (! bb0
     [ bb0 = bb1
-    | bb1 = bb1'0
-      [ bb1'0 = {[@expl:loop invariant] x'0 = x'0}
+    | bb1 = bb1
+      [ bb1 = {[@expl:loop invariant] x = x}
         (! s0)
         [ s0 = bb2 ]
         [ bb2 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Vec> {x'0}
-              (fun (_ret: MutBorrow.t t_Vec) -> [ &_7 <- _ret ] [ &x'0 <- _ret.final ] s1)
+          [ s0 = MutBorrow.borrow_mut <t_Vec> {x}
+              (fun (_ret: MutBorrow.t t_Vec) -> [ &_7 <- _ret ] [ &x <- _ret.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Vec> {_7.current} {MutBorrow.get_id _7}
               (fun (_ret: MutBorrow.t t_Vec) -> [ &_6 <- _ret ] [ &_7 <- { _7 with current = _ret.final } ] s2)
           | s2 = pop {_6} (fun (_ret: t_Option) -> [ &_5 <- _ret ] s3)
           | s3 = bb3 ]
         | bb3 = s0
           [ s0 = -{resolve'0 _7}- s1
-          | s1 = any [ br0 -> {_5 = C_None} (! bb7) | br1 (x0: UInt32.t) -> {_5 = C_Some x0} (! bb1'0) ] ] ] ]
-    | bb7 = return''0 {_0} ]
+          | s1 = any [ br0 -> {_5 = C_None} (! bb7) | br1 (x0: UInt32.t) -> {_5 = C_Some x0} (! bb1) ] ] ] ]
+    | bb7 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & x'0: t_Vec = x
+    | & x: t_Vec = x
     | & _5: t_Option = Any.any_l ()
     | & _6: MutBorrow.t t_Vec = Any.any_l ()
-    | & _7: MutBorrow.t t_Vec = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _7: MutBorrow.t t_Vec = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

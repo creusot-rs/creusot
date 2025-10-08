@@ -6,10 +6,10 @@ module M_12_ghost_code__ghost_arg
   
   meta "select_lsinst" "all"
   
-  let rec ghost_arg (g: UInt32.t) (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_x <- g'0 ] s1 | s1 = bb1 ] | bb1 = return''0 {_0} ]
-    [ & _0: () = Any.any_l () | & g'0: UInt32.t = g | & _x: UInt32.t = Any.any_l () ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+  let rec ghost_arg (g: UInt32.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_x <- g ] s1 | s1 = bb1 ] | bb1 = return {_0} ]
+    [ & _0: () = Any.any_l () | & g: UInt32.t = g | & _x: UInt32.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end
 module M_12_ghost_code__ghost_vec
   use creusot.prelude.Opaque
@@ -37,18 +37,17 @@ module M_12_ghost_code__ghost_vec
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  let rec new (return' (x: t_Vec)) = any
-    [ return''0 (result: t_Vec) -> {Seq.length (view result) = 0} (! return' {result}) ]
+  let rec new (return (x: t_Vec)) = any [ return (result: t_Vec) -> {Seq.length (view result) = 0} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec ghost_vec (return' (x: ())) = (! bb0
+  let rec ghost_vec (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = new (fun (_ret: t_Vec) -> [ &x <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = [ &_s <- x ] s1 | s1 = bb3 ]
-    | bb3 = return''0 {_0} ] [ & _0: () = Any.any_l () | & x: t_Vec = Any.any_l () | & _s: t_Vec = Any.any_l () ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+    | bb3 = return {_0} ] [ & _0: () = Any.any_l () | & x: t_Vec = Any.any_l () | & _s: t_Vec = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end
 module M_12_ghost_code__ghost_copy
   use creusot.int.Int32
@@ -59,17 +58,17 @@ module M_12_ghost_code__ghost_copy
   
   meta "select_lsinst" "all"
   
-  let rec ghost_copy (return' (x: ())) = (! bb0
+  let rec ghost_copy (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &a <- (0: Int32.t) ] s1
       | s1 = [ &_s <- Seq.snoc (Seq.empty: Seq.seq Int32.t) (0: Int32.t) ] s2
       | s2 = bb1 ]
     | bb1 = s0 [ s0 = [ &_4 <- Seq.snoc _s a ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_s <- _4 ] s1 | s1 = return''0 {_0} ] ]
+    | bb2 = s0 [ s0 = [ &_s <- _4 ] s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a: Int32.t = Any.any_l ()
     | & _s: Seq.seq Int32.t = Any.any_l ()
-    | & _4: Seq.seq Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _4: Seq.seq Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_12_ghost_code__ghost_is_copy
   use creusot.int.Int32
@@ -80,7 +79,7 @@ module M_12_ghost_code__ghost_is_copy
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t Int32.t) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -88,7 +87,7 @@ module M_12_ghost_code__ghost_is_copy
   
   meta "select_lsinst" "all"
   
-  let rec ghost_is_copy (return' (x: ())) = (! bb0
+  let rec ghost_is_copy (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (0: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
@@ -97,13 +96,13 @@ module M_12_ghost_code__ghost_is_copy
       | s3 = [ &g <- r ] s4
       | s4 = bb1 ]
     | bb1 = s0
-      [ s0 = [ &g1 <- g ] s1 | s1 = [ &g2 <- g ] s2 | s2 = {[@expl:assertion] g1 = g2} s3 | s3 = return''0 {_0} ] ]
+      [ s0 = [ &g1 <- g ] s1 | s1 = [ &g2 <- g ] s2 | s2 = {[@expl:assertion] g1 = g2} s3 | s3 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & r: MutBorrow.t Int32.t = Any.any_l ()
     | & g: MutBorrow.t Int32.t = Any.any_l ()
     | & g1: MutBorrow.t Int32.t = Any.any_l ()
-    | & g2: MutBorrow.t Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & g2: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_12_ghost_code__ghost_check
   use creusot.prelude.Opaque
@@ -132,22 +131,21 @@ module M_12_ghost_code__ghost_check
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  let rec new (return' (x: t_Vec)) = any
-    [ return''0 (result: t_Vec) -> {Seq.length (view result) = 0} (! return' {result}) ]
+  let rec new (return (x: t_Vec)) = any [ return (result: t_Vec) -> {Seq.length (view result) = 0} (! return {result}) ]
   
-  function logi_drop (_0: t_Vec) : () = ()
+  function logi_drop (_1: t_Vec) : () = ()
   
-  let rec push (self_: MutBorrow.t t_Vec) (v: Int32.t) (return' (x: ())) = any
-    [ return''0 (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return' {result}) ]
+  let rec push (self_: MutBorrow.t t_Vec) (v: Int32.t) (return (x: ())) = any
+    [ return (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
   
-  let rec len (self_: t_Vec) (return' (x: UInt64.t)) = any
-    [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
+  let rec len (self_: t_Vec) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec ghost_check (return' (x: ())) = (! bb0
+  let rec ghost_check (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = new (fun (_ret: t_Vec) -> [ &x <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = [ &_2 <- let _ = logi_drop x in () ] s1 | s1 = bb2 ]
     | bb2 = s0
@@ -157,7 +155,7 @@ module M_12_ghost_code__ghost_check
     | bb3 = s0 [ s0 = len {x} (fun (_ret: UInt64.t) -> [ &_8 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0
       [ s0 = [ &_7 <- _8 = (1: UInt64.t) ] s1 | s1 = any [ br0 -> {_7 = false} (! bb6) | br1 -> {_7} (! bb7) ] ]
-    | bb7 = return''0 {_0}
+    | bb7 = return {_0}
     | bb6 = {false} any ]
     [ & _0: () = Any.any_l ()
     | & x: t_Vec = Any.any_l ()
@@ -165,7 +163,7 @@ module M_12_ghost_code__ghost_check
     | & _4: () = Any.any_l ()
     | & _5: MutBorrow.t t_Vec = Any.any_l ()
     | & _7: bool = Any.any_l ()
-    | & _8: UInt64.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _8: UInt64.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_12_ghost_code__takes_struct
   use creusot.int.UInt32
@@ -177,11 +175,11 @@ module M_12_ghost_code__takes_struct
   
   meta "select_lsinst" "all"
   
-  let rec takes_struct (x: t_MyStruct) (return' (x'0: ())) = {[@expl:takes_struct requires] UInt32.t'int x.t_MyStruct__g
+  let rec takes_struct (x: t_MyStruct) (return (x'0: ())) = {[@expl:takes_struct requires] UInt32.t'int x.t_MyStruct__g
     = 0}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_3 <- x'0.t_MyStruct__f ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &x'0 <- { x'0 with t_MyStruct__g = _3 } ] s1 | s1 = return''0 {_0} ] ]
-    [ & _0: () = Any.any_l () | & x'0: t_MyStruct = x | & _3: UInt32.t = Any.any_l () ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+    [ bb0 = s0 [ s0 = [ &_3 <- x.t_MyStruct__f ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &x <- { x with t_MyStruct__g = _3 } ] s1 | s1 = return {_0} ] ]
+    [ & _0: () = Any.any_l () | & x: t_MyStruct = x | & _3: UInt32.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end

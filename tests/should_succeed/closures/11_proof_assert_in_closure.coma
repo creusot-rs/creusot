@@ -2,42 +2,42 @@ module M_11_proof_assert_in_closure__immutable_capture
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  type closure0 = { _0: Int32.t }
+  type closure0 = { c0: Int32.t }
   
-  let rec closure0 (self: closure0) (return' (x: ())) = {[@expl:closure requires] self._0 = (1: Int32.t)}
+  let rec closure0 (self: closure0) (return (x: ())) = {[@expl:closure requires] self.c0 = (1: Int32.t)}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:assertion] _1._0 = (1: Int32.t)} s1 | s1 = return''0 {_0'0} ] ]
-    [ & _0'0: () = Any.any_l () | & _1: closure0 = self ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    [ bb0 = s0 [ s0 = {[@expl:assertion] self.c0 = (1: Int32.t)} s1 | s1 = return {_0} ] ]
+    [ & _0: () = Any.any_l () | & self: closure0 = self ]) [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec immutable_capture (return' (x: ())) = (! bb0
+  let rec immutable_capture (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
-      | s1 = [ &_4 <- { _0 = x } ] s2
+      | s1 = [ &_4 <- { c0 = x } ] s2
       | s2 = closure0 {_4} (fun (_ret: ()) -> [ &_2 <- _ret ] s3)
       | s3 = bb1 ]
-    | bb1 = return''0 {_0'0} ]
-    [ & _0'0: () = Any.any_l ()
+    | bb1 = return {_0} ]
+    [ & _0: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & _2: () = Any.any_l ()
     | & _4: closure0 = Any.any_l ()
-    | & _6: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _6: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_11_proof_assert_in_closure__mutable_capture
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type closure0 = { _0: MutBorrow.t Int32.t }
+  type closure0 = { c0: MutBorrow.t Int32.t }
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t closure0) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0'0: MutBorrow.t closure0) = resolve _0'0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure0) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -49,16 +49,15 @@ module M_11_proof_assert_in_closure__mutable_capture
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0'0: MutBorrow.t Int32.t) = resolve'1 _0'0
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (_0'0: closure0) = resolve'2 _0'0._0
+  predicate resolve'3 [@inline:trivial] (_1: closure0) = resolve'2 _1.c0
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) =
-    (result_state._0).final = (self._0).final
+  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
   meta "rewrite_def" predicate hist_inv
   
@@ -87,57 +86,56 @@ module M_11_proof_assert_in_closure__mutable_capture
     forall self: closure0, args: (), res_state: closure0, res: (). postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  let rec closure0 (self: MutBorrow.t closure0) (return' (x: ())) =
-    {[@expl:closure requires] ((self.current)._0).current = (1: Int32.t)}
+  let rec closure0 (self: MutBorrow.t closure0) (return (x: ())) = {[@expl:closure requires] self.current.c0.current
+    = (1: Int32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:assertion] ((_1.current)._0).current = (1: Int32.t)} s1
-      | s1 = [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = (2: Int32.t) } } } ] s2
-      | s2 = -{resolve'0 _1}- s3
-      | s3 = {[@expl:assertion] ((_1.current)._0).current = (2: Int32.t)} s4
-      | s4 = return''0 {_0'0} ] ] [ & _0'0: () = Any.any_l () | & _1: MutBorrow.t closure0 = self ])
-    [ return''0 (result: ()) -> {[@expl:closure hist_inv post] hist_inv self.current self.final} (! return' {result}) ]
+      [ s0 = {[@expl:assertion] self.current.c0.current = (1: Int32.t)} s1
+      | s1 = [ &self <- { self with current = { c0 = { self.current.c0 with current = (2: Int32.t) } } } ] s2
+      | s2 = -{resolve'0 self}- s3
+      | s3 = {[@expl:assertion] self.current.c0.current = (2: Int32.t)} s4
+      | s4 = return {_0} ] ] [ & _0: () = Any.any_l () | & self: MutBorrow.t closure0 = self ])
+    [ return (result: ()) -> {[@expl:closure hist_inv post] hist_inv self.current self.final} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec mutable_capture (return' (x: ())) = (! bb0
+  let rec mutable_capture (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_5 <- _ret ] [ &x <- _ret.final ] s2)
-      | s2 = [ &_4 <- { _0 = _5 } ] s3
+      | s2 = [ &_4 <- { c0 = _5 } ] s3
       | s3 = MutBorrow.borrow_mut <closure0> {_4}
           (fun (_ret: MutBorrow.t closure0) -> [ &_3 <- _ret ] [ &_4 <- _ret.final ] s4)
       | s4 = closure0 {_3} (fun (_ret: ()) -> [ &_2 <- _ret ] s5)
       | s5 = bb1 ]
-    | bb1 = s0 [ s0 = -{resolve'3 _4}- s1 | s1 = return''0 {_0'0} ] ]
-    [ & _0'0: () = Any.any_l ()
+    | bb1 = s0 [ s0 = -{resolve'3 _4}- s1 | s1 = return {_0} ] ]
+    [ & _0: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & _2: () = Any.any_l ()
     | & _3: MutBorrow.t closure0 = Any.any_l ()
     | & _4: closure0 = Any.any_l ()
     | & _5: MutBorrow.t Int32.t = Any.any_l ()
-    | & _6: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _6: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_11_proof_assert_in_closure__captures_and_call
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type closure0 = { _0: MutBorrow.t Int32.t }
+  type closure0 = { c0: MutBorrow.t Int32.t }
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t closure0) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0'0: MutBorrow.t closure0) = resolve _0'0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure0) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate postcondition_once [@inline:trivial] (self: closure0) (args: ()) (result: ()) =
-    (self._0).final = (2: Int32.t)
+  predicate postcondition_once [@inline:trivial] (self: closure0) (args: ()) (result: ()) = self.c0.final = (2: Int32.t)
   
   meta "rewrite_def" predicate postcondition_once
   
@@ -145,21 +143,20 @@ module M_11_proof_assert_in_closure__captures_and_call
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0'0: MutBorrow.t Int32.t) = resolve'1 _0'0
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (_0'0: closure0) = resolve'2 _0'0._0
+  predicate resolve'3 [@inline:trivial] (_1: closure0) = resolve'2 _1.c0
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) =
-    (result_state._0).final = (self._0).final
+  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
   meta "rewrite_def" predicate hist_inv
   
   predicate postcondition_mut [@inline:trivial] (self: closure0) (args: ()) (result_state: closure0) (result: ()) =
-    (result_state._0).current = (2: Int32.t) /\ hist_inv self result_state
+    result_state.c0.current = (2: Int32.t) /\ hist_inv self result_state
   
   meta "rewrite_def" predicate postcondition_mut
   
@@ -183,42 +180,42 @@ module M_11_proof_assert_in_closure__captures_and_call
     forall self: closure0, args: (), res_state: closure0, res: (). postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  let rec closure0 (self: MutBorrow.t closure0) (return' (x: ())) =
-    {[@expl:closure requires] ((self.current)._0).current = (1: Int32.t)}
+  let rec closure0 (self: MutBorrow.t closure0) (return (x: ())) = {[@expl:closure requires] self.current.c0.current
+    = (1: Int32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:assertion] ((_1.current)._0).current = (1: Int32.t)} s1
-      | s1 = [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = (2: Int32.t) } } } ] s2
-      | s2 = -{resolve'0 _1}- s3
-      | s3 = {[@expl:assertion] ((_1.current)._0).current = (2: Int32.t)} s4
-      | s4 = return''0 {_0'0} ] ] [ & _0'0: () = Any.any_l () | & _1: MutBorrow.t closure0 = self ])
-    [ return''0 (result: ()) -> {[@expl:closure ensures] ((self.final)._0).current = (2: Int32.t)}
+      [ s0 = {[@expl:assertion] self.current.c0.current = (1: Int32.t)} s1
+      | s1 = [ &self <- { self with current = { c0 = { self.current.c0 with current = (2: Int32.t) } } } ] s2
+      | s2 = -{resolve'0 self}- s3
+      | s3 = {[@expl:assertion] self.current.c0.current = (2: Int32.t)} s4
+      | s4 = return {_0} ] ] [ & _0: () = Any.any_l () | & self: MutBorrow.t closure0 = self ])
+    [ return (result: ()) -> {[@expl:closure ensures] self.final.c0.current = (2: Int32.t)}
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  predicate precondition [@inline:trivial] (self: closure0) (args: ()) = (self._0).current = (1: Int32.t)
+  predicate precondition [@inline:trivial] (self: closure0) (args: ()) = self.c0.current = (1: Int32.t)
   
   meta "rewrite_def" predicate precondition
   
-  let rec calls_closure (f: closure0) (return' (x: ())) = {[@expl:calls_closure requires] precondition f ()}
-    any [ return''0 (result: ()) -> {postcondition_once f () ()} (! return' {result}) ]
+  let rec calls_closure (f: closure0) (return (x: ())) = {[@expl:calls_closure requires] precondition f ()}
+    any [ return (result: ()) -> {postcondition_once f () ()} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec captures_and_call (return' (x: ())) = (! bb0
+  let rec captures_and_call (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_3 <- _ret ] [ &x <- _ret.final ] s2)
-      | s2 = [ &clos <- { _0 = _3 } ] s3
+      | s2 = [ &clos <- { c0 = _3 } ] s3
       | s3 = calls_closure {clos} (fun (_ret: ()) -> [ &_4 <- _ret ] s4)
       | s4 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] x = (2: Int32.t)} s1 | s1 = return''0 {_0'0} ] ]
-    [ & _0'0: () = Any.any_l ()
+    | bb1 = s0 [ s0 = {[@expl:assertion] x = (2: Int32.t)} s1 | s1 = return {_0} ] ]
+    [ & _0: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & clos: closure0 = Any.any_l ()
     | & _3: MutBorrow.t Int32.t = Any.any_l ()
-    | & _4: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _4: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

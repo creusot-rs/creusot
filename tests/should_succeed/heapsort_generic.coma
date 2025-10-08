@@ -71,7 +71,7 @@ module M_heapsort_generic__heap_frag_max
   
   constant end' : int
   
-  function heap_frag_max (s'0: Seq.seq t_T) (i'0: int) (end''0: int) : ()
+  function heap_frag_max (s: Seq.seq t_T) (i: int) (end': int) : ()
   
   goal vc_heap_frag_max: heap_frag s 0 end'
     -> 0 <= i /\ i < end'
@@ -187,11 +187,11 @@ module M_heapsort_generic__sift_down
   
   predicate permutation_of (self: Seq.seq t_T) (other: Seq.seq t_T) = Permut.permut self other 0 (Seq.length self)
   
-  predicate inv (_0: t_T)
+  predicate inv (_1: t_T)
   
   predicate invariant' (self: t_T) = inv self
   
-  predicate inv'0 (_0: t_T)
+  predicate inv'0 (_1: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
@@ -200,13 +200,13 @@ module M_heapsort_generic__sift_down
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_0: Seq.seq t_T)
+  predicate inv'1 (_1: Seq.seq t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
   
   predicate invariant''1 (self: t_Vec) = inv'1 (view self)
   
-  predicate inv'2 (_0: t_Vec)
+  predicate inv'2 (_1: t_Vec)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
@@ -214,7 +214,7 @@ module M_heapsort_generic__sift_down
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_0: MutBorrow.t t_Vec)
+  predicate inv'3 (_1: MutBorrow.t t_Vec)
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
@@ -222,7 +222,7 @@ module M_heapsort_generic__sift_down
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'4 (_0: t_Vec)
+  predicate inv'4 (_1: t_Vec)
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_Vec [inv'4 x]. inv'4 x = invariant''3 x
   
@@ -234,7 +234,7 @@ module M_heapsort_generic__sift_down
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'5 (_0: t_T)
+  predicate inv'5 (_1: t_T)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_T [inv'5 x]. inv'5 x = invariant''4 x
   
@@ -243,16 +243,16 @@ module M_heapsort_generic__sift_down
   
   meta "rewrite_def" predicate has_value
   
-  let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: t_T)) = {[@expl:index 'self_' type invariant] inv'4 self_}
+  let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_T)) = {[@expl:index 'self_' type invariant] inv'4 self_}
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return''0 (result: t_T) -> {inv'5 result} {has_value ix (view self_) result} (! return' {result}) ]
+    any [ return (result: t_T) -> {inv'5 result} {has_value ix (view self_) result} (! return {result}) ]
   
-  type tuple = { _p0: t_T; _p1: t_T }
+  type tuple = { f0: t_T; f1: t_T }
   
   predicate precondition (self: ()) (args: tuple)
   
   axiom precondition_fndef:
-    forall args: tuple [precondition () args]. (let {_p0 = self_; _p1 = other} = args in inv'5 other /\ inv'5 self_)
+    forall args: tuple [precondition () args]. (let {f0 = self_; f1 = other} = args in inv'5 other /\ inv'5 self_)
       -> precondition () args
   
   function deep_model'2 [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model self
@@ -263,32 +263,31 @@ module M_heapsort_generic__sift_down
   
   axiom postcondition_fndef:
     forall args: tuple, res: bool [postcondition_once () args res]. postcondition_once () args res
-      -> (let {_p0 = self_; _p1 = other} = args in res = lt_log (deep_model'2 self_) (deep_model'2 other))
+      -> (let {f0 = self_; f1 = other} = args in res = lt_log (deep_model'2 self_) (deep_model'2 other))
   
-  let rec lt (self_: t_T) (other: t_T) (return' (x: bool)) = {[@expl:lt requires] precondition () { _p0 = self_;
-                                                                                                    _p1 = other }}
-    any [ return''0 (result: bool) -> {postcondition_once () { _p0 = self_; _p1 = other } result} (! return' {result}) ]
+  let rec lt (self_: t_T) (other: t_T) (return (x: bool)) = {[@expl:lt requires] precondition () { f0 = self_;
+                                                                                                   f1 = other }}
+    any [ return (result: bool) -> {postcondition_once () { f0 = self_; f1 = other } result} (! return {result}) ]
   
   predicate precondition'0 (self: ()) (args: tuple)
   
   axiom precondition_fndef'0:
-    forall args: tuple [precondition'0 () args]. (let {_p0 = self_; _p1 = other} = args in inv'5 other /\ inv'5 self_)
+    forall args: tuple [precondition'0 () args]. (let {f0 = self_; f1 = other} = args in inv'5 other /\ inv'5 self_)
       -> precondition'0 () args
   
   predicate postcondition_once'0 (self: ()) (args: tuple) (result: bool)
   
   axiom postcondition_fndef'0:
     forall args: tuple, res: bool [postcondition_once'0 () args res]. postcondition_once'0 () args res
-      -> (let {_p0 = self_; _p1 = other} = args in res = le_log (deep_model'2 self_) (deep_model'2 other))
+      -> (let {f0 = self_; f1 = other} = args in res = le_log (deep_model'2 self_) (deep_model'2 other))
   
-  let rec le (self_: t_T) (other: t_T) (return' (x: bool)) = {[@expl:le requires] precondition'0 () { _p0 = self_;
-                                                                                                      _p1 = other }}
-    any
-    [ return''0 (result: bool) -> {postcondition_once'0 () { _p0 = self_; _p1 = other } result} (! return' {result}) ]
+  let rec le (self_: t_T) (other: t_T) (return (x: bool)) = {[@expl:le requires] precondition'0 () { f0 = self_;
+                                                                                                     f1 = other }}
+    any [ return (result: bool) -> {postcondition_once'0 () { f0 = self_; f1 = other } result} (! return {result}) ]
   
   predicate invariant''5 (self: Slice64.slice t_T) = inv'1 (Slice64.view self)
   
-  predicate inv'6 (_0: Slice64.slice t_T)
+  predicate inv'6 (_1: Slice64.slice t_T)
   
   axiom inv_axiom'5 [@rewrite]: forall x: Slice64.slice t_T [inv'6 x]. inv'6 x = invariant''5 x
   
@@ -297,32 +296,32 @@ module M_heapsort_generic__sift_down
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'7 (_0: MutBorrow.t (Slice64.slice t_T))
+  predicate inv'7 (_1: MutBorrow.t (Slice64.slice t_T))
   
   axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'7 x]. inv'7 x = invariant''6 x
   
-  let rec deref_mut (self_: MutBorrow.t t_Vec) (return' (x: MutBorrow.t (Slice64.slice t_T))) =
+  let rec deref_mut (self_: MutBorrow.t t_Vec) (return (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:deref_mut 'self_' type invariant] inv'3 self_}
     any
-    [ return''0 (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'7 result}
+    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'7 result}
       {Slice64.view result.current = view self_.current}
       {Slice64.view result.final = view self_.final}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec swap (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return' (x: ())) =
+  let rec swap (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
     {[@expl:swap 'self_' type invariant] inv'7 self_}
     {[@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current)}
     {[@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current)}
     any
-    [ return''0 (result: ()) ->
+    [ return (result: ()) ->
     {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (Slice64.slice t_T)) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -330,7 +329,7 @@ module M_heapsort_generic__sift_down
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'1 _0
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
@@ -341,68 +340,67 @@ module M_heapsort_generic__sift_down
   
   meta "select_lsinst" "all"
   
-  let rec sift_down (v: MutBorrow.t t_Vec) (start: UInt64.t) (end': UInt64.t) (return' (x: ())) =
+  let rec sift_down (v: MutBorrow.t t_Vec) (start: UInt64.t) (end': UInt64.t) (return (x: ())) =
     {[@expl:sift_down 'v' type invariant] inv'3 v}
     {[@expl:sift_down requires #0] heap_frag (deep_model'1 v) (UInt64.t'int start + 1) (UInt64.t'int end')}
     {[@expl:sift_down requires #1] UInt64.t'int start < UInt64.t'int end'}
     {[@expl:sift_down requires #2] UInt64.t'int end' <= Seq.length (view v.current)}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_v <- v'0 ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &i <- start'0 ] s1 | s1 = [ &old_2_0 <- v'0 ] s2 | s2 = bb2 ]
-    | bb2 = bb2'0
-      [ bb2'0 = {[@expl:mut invariant] old_2_0.final = v'0.final}
-        {[@expl:loop invariant #0] inv'3 v'0}
-        {[@expl:loop invariant #1] permutation_of (view v'0.current) (view old_v.current)}
-        {[@expl:loop invariant #2] UInt64.t'int start'0 <= UInt64.t'int i /\ UInt64.t'int i < UInt64.t'int end''0}
-        {[@expl:loop invariant #3] forall j: int. 0 <= j /\ j < UInt64.t'int start'0
-            \/ UInt64.t'int end''0 <= j /\ j < Seq.length (view v'0.current)
-          -> index_logic old_v.current j = index_logic v'0.current j}
-        {[@expl:loop invariant #4] forall m: t_DeepModelTy. (forall j: int. UInt64.t'int start'0 <= j
-                /\ j < UInt64.t'int end''0 -> le_log (Seq.get (deep_model'1 old_v) j) m)
-          -> (forall j: int. UInt64.t'int start'0 <= j /\ j < UInt64.t'int end''0
-            -> le_log (Seq.get (deep_model'1 v'0) j) m)}
-        {[@expl:loop invariant #5] forall j: int. UInt64.t'int start'0 <= parent j
-            /\ j < UInt64.t'int end''0 /\ UInt64.t'int i <> parent j
-          -> le_log (Seq.get (deep_model'1 v'0) j) (Seq.get (deep_model'1 v'0) (parent j))}
-        {[@expl:loop invariant #6] let c = 2 * UInt64.t'int i + 1 in c < UInt64.t'int end''0
-          /\ UInt64.t'int start'0 <= parent (UInt64.t'int i)
-        -> le_log (Seq.get (deep_model'1 v'0) c) (Seq.get (deep_model'1 v'0) (parent (parent c)))}
-        {[@expl:loop invariant #7] let c = 2 * UInt64.t'int i + 2 in c < UInt64.t'int end''0
-          /\ UInt64.t'int start'0 <= parent (UInt64.t'int i)
-        -> le_log (Seq.get (deep_model'1 v'0) c) (Seq.get (deep_model'1 v'0) (parent (parent c)))}
+    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &i <- start ] s1 | s1 = [ &old_2_0 <- v ] s2 | s2 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = {[@expl:mut invariant] old_2_0.final = v.final}
+        {[@expl:loop invariant #0] inv'3 v}
+        {[@expl:loop invariant #1] permutation_of (view v.current) (view old_v.current)}
+        {[@expl:loop invariant #2] UInt64.t'int start <= UInt64.t'int i /\ UInt64.t'int i < UInt64.t'int end'}
+        {[@expl:loop invariant #3] forall j: int. 0 <= j /\ j < UInt64.t'int start
+            \/ UInt64.t'int end' <= j /\ j < Seq.length (view v.current)
+          -> index_logic old_v.current j = index_logic v.current j}
+        {[@expl:loop invariant #4] forall m: t_DeepModelTy. (forall j: int. UInt64.t'int start <= j
+                /\ j < UInt64.t'int end' -> le_log (Seq.get (deep_model'1 old_v) j) m)
+          -> (forall j: int. UInt64.t'int start <= j /\ j < UInt64.t'int end' -> le_log (Seq.get (deep_model'1 v) j) m)}
+        {[@expl:loop invariant #5] forall j: int. UInt64.t'int start <= parent j
+            /\ j < UInt64.t'int end' /\ UInt64.t'int i <> parent j
+          -> le_log (Seq.get (deep_model'1 v) j) (Seq.get (deep_model'1 v) (parent j))}
+        {[@expl:loop invariant #6] let c = 2 * UInt64.t'int i + 1 in c < UInt64.t'int end'
+          /\ UInt64.t'int start <= parent (UInt64.t'int i)
+        -> le_log (Seq.get (deep_model'1 v) c) (Seq.get (deep_model'1 v) (parent (parent c)))}
+        {[@expl:loop invariant #7] let c = 2 * UInt64.t'int i + 2 in c < UInt64.t'int end'
+          /\ UInt64.t'int start <= parent (UInt64.t'int i)
+        -> le_log (Seq.get (deep_model'1 v) c) (Seq.get (deep_model'1 v) (parent (parent c)))}
         (! s0)
         [ s0 = bb3 ]
         [ bb3 = s0
           [ s0 = [ &_30 <- (2: UInt64.t) = (0: UInt64.t) ] s1 | s1 = {[@expl:division by zero] not _30} s2 | s2 = bb4 ]
         | bb4 = s0
-          [ s0 = UInt64.div {end''0} {(2: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_28 <- _ret ] s1)
+          [ s0 = UInt64.div {end'} {(2: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_28 <- _ret ] s1)
           | s1 = [ &_26 <- UInt64.ge i _28 ] s2
           | s2 = any [ br0 -> {_26 = false} (! bb6) | br1 -> {_26} (! bb5) ] ]
         | bb6 = s0
           [ s0 = UInt64.mul {(2: UInt64.t)} {i} (fun (_ret: UInt64.t) -> [ &_33 <- _ret ] s1)
           | s1 = UInt64.add {_33} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &child <- _ret ] s2)
           | s2 = UInt64.add {child} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_37 <- _ret ] s3)
-          | s3 = [ &_36 <- UInt64.lt _37 end''0 ] s4
+          | s3 = [ &_36 <- UInt64.lt _37 end' ] s4
           | s4 = any [ br0 -> {_36 = false} (! bb15) | br1 -> {_36} (! bb7) ] ]
-        | bb7 = s0 [ s0 = index {v'0.current} {child} (fun (_ret: t_T) -> [ &_42 <- _ret ] s1) | s1 = bb9 ]
+        | bb7 = s0 [ s0 = index {v.current} {child} (fun (_ret: t_T) -> [ &_42 <- _ret ] s1) | s1 = bb9 ]
         | bb9 = s0
           [ s0 = UInt64.add {child} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_48 <- _ret ] s1)
-          | s1 = index {v'0.current} {_48} (fun (_ret: t_T) -> [ &_46 <- _ret ] s2)
+          | s1 = index {v.current} {_48} (fun (_ret: t_T) -> [ &_46 <- _ret ] s2)
           | s2 = bb10 ]
         | bb10 = s0 [ s0 = lt {_42} {_46} (fun (_ret: bool) -> [ &_40 <- _ret ] s1) | s1 = bb11 ]
         | bb11 = any [ br0 -> {_40 = false} (! bb15) | br1 -> {_40} (! bb12) ]
         | bb12 = s0
           [ s0 = UInt64.add {child} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &child <- _ret ] s1) | s1 = bb15 ]
-        | bb15 = s0 [ s0 = index {v'0.current} {child} (fun (_ret: t_T) -> [ &_53 <- _ret ] s1) | s1 = bb16 ]
-        | bb16 = s0 [ s0 = index {v'0.current} {i} (fun (_ret: t_T) -> [ &_57 <- _ret ] s1) | s1 = bb17 ]
+        | bb15 = s0 [ s0 = index {v.current} {child} (fun (_ret: t_T) -> [ &_53 <- _ret ] s1) | s1 = bb16 ]
+        | bb16 = s0 [ s0 = index {v.current} {i} (fun (_ret: t_T) -> [ &_57 <- _ret ] s1) | s1 = bb17 ]
         | bb17 = s0 [ s0 = le {_53} {_57} (fun (_ret: bool) -> [ &_51 <- _ret ] s1) | s1 = bb18 ]
         | bb18 = any [ br0 -> {_51 = false} (! bb20) | br1 -> {_51} (! bb19) ]
         | bb20 = s0
-          [ s0 = {inv'2 v'0.current}
-            MutBorrow.borrow_mut <t_Vec> {v'0.current}
+          [ s0 = {inv'2 v.current}
+            MutBorrow.borrow_mut <t_Vec> {v.current}
               (fun (_ret: MutBorrow.t t_Vec) ->
                 [ &_64 <- _ret ] -{inv'2 _ret.final}-
-                [ &v'0 <- { v'0 with current = _ret.final } ] s1)
+                [ &v <- { v with current = _ret.final } ] s1)
           | s1 = deref_mut {_64} (fun (_ret: MutBorrow.t (Slice64.slice t_T)) -> [ &_63 <- _ret ] s2)
           | s2 = bb21 ]
         | bb21 = s0
@@ -417,14 +415,14 @@ module M_heapsort_generic__sift_down
           [ s0 = {[@expl:type invariant] inv'7 _63} s1
           | s1 = -{resolve'0 _63}- s2
           | s2 = [ &i <- child ] s3
-          | s3 = bb2'0 ] ] ]
-    | bb5 = s0 [ s0 = {[@expl:type invariant] inv'3 v'0} s1 | s1 = -{resolve'2 v'0}- s2 | s2 = bb23 ]
-    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'3 v'0} s1 | s1 = -{resolve'2 v'0}- s2 | s2 = bb23 ]
-    | bb23 = return''0 {_0} ]
+          | s3 = bb2 ] ] ]
+    | bb5 = s0 [ s0 = {[@expl:type invariant] inv'3 v} s1 | s1 = -{resolve'2 v}- s2 | s2 = bb23 ]
+    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'3 v} s1 | s1 = -{resolve'2 v}- s2 | s2 = bb23 ]
+    | bb23 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & v'0: MutBorrow.t t_Vec = v
-    | & start'0: UInt64.t = start
-    | & end''0: UInt64.t = end'
+    | & v: MutBorrow.t t_Vec = v
+    | & start: UInt64.t = start
+    | & end': UInt64.t = end'
     | & old_v: MutBorrow.t t_Vec = Any.any_l ()
     | & i: UInt64.t = Any.any_l ()
     | & _26: bool = Any.any_l ()
@@ -446,7 +444,7 @@ module M_heapsort_generic__sift_down
     | & _63: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _64: MutBorrow.t t_Vec = Any.any_l ()
     | & old_2_0: MutBorrow.t t_Vec = Any.any_l () ])
-    [ return''0 (result: ()) ->
+    [ return (result: ()) ->
     {[@expl:sift_down ensures #0] heap_frag (deep_model'0 v.final) (UInt64.t'int start) (UInt64.t'int end')}
       {[@expl:sift_down ensures #1] permutation_of (view v.final) (view v.current)}
       {[@expl:sift_down ensures #2] forall i: int. 0 <= i /\ i < UInt64.t'int start
@@ -456,7 +454,7 @@ module M_heapsort_generic__sift_down
               /\ j < UInt64.t'int end' -> le_log (Seq.get (deep_model'1 v) j) m)
         -> (forall j: int. UInt64.t'int start <= j /\ j < UInt64.t'int end'
           -> le_log (Seq.get (deep_model'0 v.final) j) m)}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_heapsort_generic__heap_sort
   use creusot.prelude.Opaque
@@ -482,11 +480,11 @@ module M_heapsort_generic__heap_sort
   
   type t_T
   
-  predicate inv (_0: t_T)
+  predicate inv (_1: t_T)
   
   predicate invariant' (self: t_T) = inv self
   
-  predicate inv'0 (_0: t_T)
+  predicate inv'0 (_1: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
@@ -495,7 +493,7 @@ module M_heapsort_generic__heap_sort
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_0: Seq.seq t_T)
+  predicate inv'1 (_1: Seq.seq t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
   
@@ -507,7 +505,7 @@ module M_heapsort_generic__heap_sort
   
   predicate invariant''1 (self: t_Vec) = inv'1 (view self)
   
-  predicate inv'2 (_0: t_Vec)
+  predicate inv'2 (_1: t_Vec)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
@@ -515,12 +513,12 @@ module M_heapsort_generic__heap_sort
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_0: t_Vec)
+  predicate inv'3 (_1: t_Vec)
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
-  let rec len (self_: t_Vec) (return' (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return''0 (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return' {result}) ]
+  let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
+    any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   type t_DeepModelTy
   
@@ -601,17 +599,17 @@ module M_heapsort_generic__heap_sort
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'4 (_0: MutBorrow.t t_Vec)
+  predicate inv'4 (_1: MutBorrow.t t_Vec)
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'4 x]. inv'4 x = invariant''3 x
   
-  let rec sift_down (v: MutBorrow.t t_Vec) (start: UInt64.t) (end': UInt64.t) (return' (x: ())) =
+  let rec sift_down (v: MutBorrow.t t_Vec) (start: UInt64.t) (end': UInt64.t) (return (x: ())) =
     {[@expl:sift_down 'v' type invariant] inv'4 v}
     {[@expl:sift_down requires #0] heap_frag (deep_model'1 v) (UInt64.t'int start + 1) (UInt64.t'int end')}
     {[@expl:sift_down requires #1] UInt64.t'int start < UInt64.t'int end'}
     {[@expl:sift_down requires #2] UInt64.t'int end' <= Seq.length (view v.current)}
     any
-    [ return''0 (result: ()) -> {heap_frag (deep_model'0 v.final) (UInt64.t'int start) (UInt64.t'int end')}
+    [ return (result: ()) -> {heap_frag (deep_model'0 v.final) (UInt64.t'int start) (UInt64.t'int end')}
       {permutation_of (view v.final) (view v.current)}
       {forall i: int. 0 <= i /\ i < UInt64.t'int start \/ UInt64.t'int end' <= i /\ i < Seq.length (view v.current)
         -> index_logic v.current i = index_logic v.final i}
@@ -619,14 +617,14 @@ module M_heapsort_generic__heap_sort
             -> le_log (Seq.get (deep_model'1 v) j) m)
         -> (forall j: int. UInt64.t'int start <= j /\ j < UInt64.t'int end'
           -> le_log (Seq.get (deep_model'0 v.final) j) m)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate sorted_range (s: Seq.seq t_DeepModelTy) (l: int) (u: int) =
     forall i: int, j: int. l <= i /\ i < j /\ j < u -> le_log (Seq.get s i) (Seq.get s j)
   
   predicate invariant''4 (self: Slice64.slice t_T) = inv'1 (Slice64.view self)
   
-  predicate inv'5 (_0: Slice64.slice t_T)
+  predicate inv'5 (_1: Slice64.slice t_T)
   
   axiom inv_axiom'4 [@rewrite]: forall x: Slice64.slice t_T [inv'5 x]. inv'5 x = invariant''4 x
   
@@ -635,32 +633,32 @@ module M_heapsort_generic__heap_sort
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'6 (_0: MutBorrow.t (Slice64.slice t_T))
+  predicate inv'6 (_1: MutBorrow.t (Slice64.slice t_T))
   
   axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'6 x]. inv'6 x = invariant''5 x
   
-  let rec deref_mut (self_: MutBorrow.t t_Vec) (return' (x: MutBorrow.t (Slice64.slice t_T))) =
+  let rec deref_mut (self_: MutBorrow.t t_Vec) (return (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:deref_mut 'self_' type invariant] inv'4 self_}
     any
-    [ return''0 (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'6 result}
+    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'6 result}
       {Slice64.view result.current = view self_.current}
       {Slice64.view result.final = view self_.final}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec swap (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return' (x: ())) =
+  let rec swap (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
     {[@expl:swap 'self_' type invariant] inv'6 self_}
     {[@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current)}
     {[@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current)}
     any
-    [ return''0 (result: ()) ->
+    [ return (result: ()) ->
     {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t (Slice64.slice t_T)) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -676,7 +674,7 @@ module M_heapsort_generic__heap_sort
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'1 _0
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
@@ -686,21 +684,21 @@ module M_heapsort_generic__heap_sort
   
   meta "select_lsinst" "all"
   
-  let rec heap_sort (v: MutBorrow.t t_Vec) (return' (x: ())) = {[@expl:heap_sort 'v' type invariant] inv'4 v}
+  let rec heap_sort (v: MutBorrow.t t_Vec) (return (x: ())) = {[@expl:heap_sort 'v' type invariant] inv'4 v}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_v <- v'0 ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = len {v'0.current} (fun (_ret: UInt64.t) -> [ &_7 <- _ret ] s1) | s1 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = len {v.current} (fun (_ret: UInt64.t) -> [ &_7 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
       [ s0 = [ &_9 <- (2: UInt64.t) = (0: UInt64.t) ] s1 | s1 = {[@expl:division by zero] not _9} s2 | s2 = bb3 ]
     | bb3 = s0
       [ s0 = UInt64.div {_7} {(2: UInt64.t)} (fun (_ret: UInt64.t) -> [ &start <- _ret ] s1)
-      | s1 = [ &old_4_0 <- v'0 ] s2
+      | s1 = [ &old_4_0 <- v ] s2
       | s2 = bb4 ]
-    | bb4 = bb4'0
-      [ bb4'0 = {[@expl:mut invariant] old_4_0.final = v'0.final}
-        {[@expl:loop invariant #0] permutation_of (view v'0.current) (view old_v.current)}
-        {[@expl:loop invariant #1] heap_frag (deep_model'1 v'0) (UInt64.t'int start) (Seq.length (view v'0.current))}
-        {[@expl:loop invariant #2] UInt64.t'int start <= Int.div (Seq.length (view v'0.current)) 2}
+    | bb4 = bb4
+      [ bb4 = {[@expl:mut invariant] old_4_0.final = v.final}
+        {[@expl:loop invariant #0] permutation_of (view v.current) (view old_v.current)}
+        {[@expl:loop invariant #1] heap_frag (deep_model'1 v) (UInt64.t'int start) (Seq.length (view v.current))}
+        {[@expl:loop invariant #2] UInt64.t'int start <= Int.div (Seq.length (view v.current)) 2}
         (! s0)
         [ s0 = bb5 ]
         [ bb5 = s0
@@ -708,27 +706,27 @@ module M_heapsort_generic__heap_sort
           | s1 = any [ br0 -> {_16 = false} (! bb9) | br1 -> {_16} (! bb6) ] ]
         | bb6 = s0
           [ s0 = UInt64.sub {start} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &start <- _ret ] s1)
-          | s1 = len {v'0.current} (fun (_ret: UInt64.t) -> [ &_21 <- _ret ] s2)
+          | s1 = len {v.current} (fun (_ret: UInt64.t) -> [ &_21 <- _ret ] s2)
           | s2 = bb7 ]
         | bb7 = s0
-          [ s0 = {inv'2 v'0.current}
-            MutBorrow.borrow_mut <t_Vec> {v'0.current}
+          [ s0 = {inv'2 v.current}
+            MutBorrow.borrow_mut <t_Vec> {v.current}
               (fun (_ret: MutBorrow.t t_Vec) ->
                 [ &_19 <- _ret ] -{inv'2 _ret.final}-
-                [ &v'0 <- { v'0 with current = _ret.final } ] s1)
+                [ &v <- { v with current = _ret.final } ] s1)
           | s1 = sift_down {_19} {start} {_21} (fun (_ret: ()) -> [ &_18 <- _ret ] s2)
-          | s2 = bb4'0 ] ] ]
-    | bb9 = s0 [ s0 = len {v'0.current} (fun (_ret: UInt64.t) -> [ &end' <- _ret ] s1) | s1 = bb10 ]
-    | bb10 = s0 [ s0 = [ &old_11_0 <- v'0 ] s1 | s1 = bb11 ]
-    | bb11 = bb11'0
-      [ bb11'0 = {[@expl:mut invariant] old_11_0.final = v'0.final}
-        {[@expl:loop invariant #0] UInt64.t'int end' <= Seq.length (view v'0.current)}
-        {[@expl:loop invariant #1] permutation_of (view v'0.current) (view old_v.current)}
-        {[@expl:loop invariant #2] heap_frag (deep_model'1 v'0) 0 (UInt64.t'int end')}
-        {[@expl:loop invariant #3] sorted_range (deep_model'1 v'0) (UInt64.t'int end') (Seq.length (view v'0.current))}
+          | s2 = bb4 ] ] ]
+    | bb9 = s0 [ s0 = len {v.current} (fun (_ret: UInt64.t) -> [ &end' <- _ret ] s1) | s1 = bb10 ]
+    | bb10 = s0 [ s0 = [ &old_11_0 <- v ] s1 | s1 = bb11 ]
+    | bb11 = bb11
+      [ bb11 = {[@expl:mut invariant] old_11_0.final = v.final}
+        {[@expl:loop invariant #0] UInt64.t'int end' <= Seq.length (view v.current)}
+        {[@expl:loop invariant #1] permutation_of (view v.current) (view old_v.current)}
+        {[@expl:loop invariant #2] heap_frag (deep_model'1 v) 0 (UInt64.t'int end')}
+        {[@expl:loop invariant #3] sorted_range (deep_model'1 v) (UInt64.t'int end') (Seq.length (view v.current))}
         {[@expl:loop invariant #4] forall i: int, j: int. 0 <= i
-            /\ i < UInt64.t'int end' /\ UInt64.t'int end' <= j /\ j < Seq.length (view v'0.current)
-          -> le_log (Seq.get (deep_model'1 v'0) i) (Seq.get (deep_model'1 v'0) j)}
+            /\ i < UInt64.t'int end' /\ UInt64.t'int end' <= j /\ j < Seq.length (view v.current)
+          -> le_log (Seq.get (deep_model'1 v) i) (Seq.get (deep_model'1 v) j)}
         (! s0)
         [ s0 = bb12 ]
         [ bb12 = s0
@@ -736,11 +734,11 @@ module M_heapsort_generic__heap_sort
           | s1 = any [ br0 -> {_32 = false} (! bb17) | br1 -> {_32} (! bb13) ] ]
         | bb13 = s0
           [ s0 = UInt64.sub {end'} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &end' <- _ret ] s1)
-          | s1 = {inv'2 v'0.current}
-            MutBorrow.borrow_mut <t_Vec> {v'0.current}
+          | s1 = {inv'2 v.current}
+            MutBorrow.borrow_mut <t_Vec> {v.current}
               (fun (_ret: MutBorrow.t t_Vec) ->
                 [ &_37 <- _ret ] -{inv'2 _ret.final}-
-                [ &v'0 <- { v'0 with current = _ret.final } ] s2)
+                [ &v <- { v with current = _ret.final } ] s2)
           | s2 = deref_mut {_37} (fun (_ret: MutBorrow.t (Slice64.slice t_T)) -> [ &_36 <- _ret ] s3)
           | s3 = bb14 ]
         | bb14 = s0
@@ -755,21 +753,21 @@ module M_heapsort_generic__heap_sort
           [ s0 = {[@expl:type invariant] inv'6 _36} s1
           | s1 = -{resolve'0 _36}- s2
           | s2 =
-            {[@expl:assertion] let _ = heap_frag_max (deep_model'1 v'0) 0 (UInt64.t'int end') in forall i: int, j: int. 0
+            {[@expl:assertion] let _ = heap_frag_max (deep_model'1 v) 0 (UInt64.t'int end') in forall i: int, j: int. 0
                   <= i
-                /\ i < UInt64.t'int end' /\ UInt64.t'int end' <= j /\ j < Seq.length (view v'0.current)
-              -> le_log (Seq.get (deep_model'1 v'0) i) (Seq.get (deep_model'1 v'0) j)}
+                /\ i < UInt64.t'int end' /\ UInt64.t'int end' <= j /\ j < Seq.length (view v.current)
+              -> le_log (Seq.get (deep_model'1 v) i) (Seq.get (deep_model'1 v) j)}
             s3
-          | s3 = {inv'2 v'0.current}
-            MutBorrow.borrow_mut <t_Vec> {v'0.current}
+          | s3 = {inv'2 v.current}
+            MutBorrow.borrow_mut <t_Vec> {v.current}
               (fun (_ret: MutBorrow.t t_Vec) ->
                 [ &_42 <- _ret ] -{inv'2 _ret.final}-
-                [ &v'0 <- { v'0 with current = _ret.final } ] s4)
+                [ &v <- { v with current = _ret.final } ] s4)
           | s4 = sift_down {_42} {(0: UInt64.t)} {end'} (fun (_ret: ()) -> [ &_41 <- _ret ] s5)
-          | s5 = bb11'0 ] ] ]
-    | bb17 = s0 [ s0 = {[@expl:type invariant] inv'4 v'0} s1 | s1 = -{resolve'2 v'0}- s2 | s2 = return''0 {_0} ] ]
+          | s5 = bb11 ] ] ]
+    | bb17 = s0 [ s0 = {[@expl:type invariant] inv'4 v} s1 | s1 = -{resolve'2 v}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & v'0: MutBorrow.t t_Vec = v
+    | & v: MutBorrow.t t_Vec = v
     | & old_v: MutBorrow.t t_Vec = Any.any_l ()
     | & start: UInt64.t = Any.any_l ()
     | & _7: UInt64.t = Any.any_l ()
@@ -788,7 +786,7 @@ module M_heapsort_generic__heap_sort
     | & _42: MutBorrow.t t_Vec = Any.any_l ()
     | & old_4_0: MutBorrow.t t_Vec = Any.any_l ()
     | & old_11_0: MutBorrow.t t_Vec = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:heap_sort ensures #0] sorted (deep_model'0 v.final)}
+    [ return (result: ()) -> {[@expl:heap_sort ensures #0] sorted (deep_model'0 v.final)}
       {[@expl:heap_sort ensures #1] permutation_of (view v.final) (view v.current)}
-      (! return' {result}) ]
+      (! return {result}) ]
 end

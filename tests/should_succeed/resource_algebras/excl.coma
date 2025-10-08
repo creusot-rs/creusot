@@ -10,11 +10,11 @@ module M_excl__exclusivity
   
   function id (self: t_Resource) : t_Id
   
-  let rec id_ghost (self: t_Resource) (return' (x: t_Id)) = any
-    [ return''0 (result: t_Id) -> {result = id self} (! return' {result}) ]
+  let rec id_ghost (self: t_Resource) (return (x: t_Id)) = any
+    [ return (result: t_Id) -> {result = id self} (! return {result}) ]
   
-  let rec eq (self: t_Id) (other: t_Id) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self = other)} (! return' {result}) ]
+  let rec eq (self: t_Id) (other: t_Id) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (self = other)} (! return {result}) ]
   
   type t_Excl = { t_Excl__0: Int32.t }
   
@@ -42,18 +42,18 @@ module M_excl__exclusivity
   
   meta "rewrite_def" function view
   
-  let rec valid_shared (self: MutBorrow.t t_Resource) (other: t_Resource) (return' (x: ())) =
+  let rec valid_shared (self: MutBorrow.t t_Resource) (other: t_Resource) (return (x: ())) =
     {[@expl:valid_shared requires] id self.current = id other}
     any
-    [ return''0 (result: ()) -> {self.final = self.current}
+    [ return (result: ()) -> {self.final = self.current}
       {op (view self.current) (view other) <> C_None}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Resource) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Resource) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Resource) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -61,29 +61,29 @@ module M_excl__exclusivity
   
   meta "select_lsinst" "all"
   
-  let rec exclusivity (x: MutBorrow.t t_Resource) (y: t_Resource) (return' (x'0: ())) = (! bb0
-    [ bb0 = s0 [ s0 = id_ghost {x'0.current} (fun (_ret: t_Id) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = id_ghost {y'0} (fun (_ret: t_Id) -> [ &_10 <- _ret ] s1) | s1 = bb2 ]
+  let rec exclusivity (x: MutBorrow.t t_Resource) (y: t_Resource) (return (x'0: ())) = (! bb0
+    [ bb0 = s0 [ s0 = id_ghost {x.current} (fun (_ret: t_Id) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = id_ghost {y} (fun (_ret: t_Id) -> [ &_10 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = eq {_7} {_10} (fun (_ret: bool) -> [ &_5 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = any [ br0 -> {_5 = false} (! bb8) | br1 -> {_5} (! bb4) ]
     | bb4 = s0
-      [ s0 = MutBorrow.borrow_final <t_Resource> {x'0.current} {MutBorrow.get_id x'0}
-          (fun (_ret: MutBorrow.t t_Resource) -> [ &_13 <- _ret ] [ &x'0 <- { x'0 with current = _ret.final } ] s1)
-      | s1 = valid_shared {_13} {y'0} (fun (_ret: ()) -> [ &_12 <- _ret ] s2)
+      [ s0 = MutBorrow.borrow_final <t_Resource> {x.current} {MutBorrow.get_id x}
+          (fun (_ret: MutBorrow.t t_Resource) -> [ &_13 <- _ret ] [ &x <- { x with current = _ret.final } ] s1)
+      | s1 = valid_shared {_13} {y} (fun (_ret: ()) -> [ &_12 <- _ret ] s2)
       | s2 = bb5 ]
-    | bb5 = s0 [ s0 = -{resolve'0 x'0}- s1 | s1 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb9) ] ]
+    | bb5 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb9) ] ]
     | bb6 = {false} any
-    | bb8 = s0 [ s0 = -{resolve'0 x'0}- s1 | s1 = bb9 ]
-    | bb9 = return''0 {_0} ]
+    | bb8 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = bb9 ]
+    | bb9 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & x'0: MutBorrow.t t_Resource = x
-    | & y'0: t_Resource = y
+    | & x: MutBorrow.t t_Resource = x
+    | & y: t_Resource = y
     | & _5: bool = Any.any_l ()
     | & _7: t_Id = Any.any_l ()
     | & _10: t_Id = Any.any_l ()
     | & _12: () = Any.any_l ()
     | & _13: MutBorrow.t t_Resource = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:exclusivity ensures #0] id x.current <> id y}
+    [ return (result: ()) -> {[@expl:exclusivity ensures #0] id x.current <> id y}
       {[@expl:exclusivity ensures #1] x.current = x.final}
-      (! return' {result}) ]
+      (! return {result}) ]
 end

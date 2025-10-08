@@ -4,13 +4,13 @@ module M_09_fnonce_resolve__f
   use creusot.prelude.Any
   use mach.int.Int
   
-  type closure0 = { _0: bool; _1: MutBorrow.t Int32.t; _2: MutBorrow.t Int32.t }
+  type closure0 = { c0: bool; c1: MutBorrow.t Int32.t; c2: MutBorrow.t Int32.t }
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0'0: MutBorrow.t Int32.t) = resolve _0'0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -18,7 +18,7 @@ module M_09_fnonce_resolve__f
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0'0: MutBorrow.t Int32.t) = resolve'1 _0'0
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
@@ -26,52 +26,51 @@ module M_09_fnonce_resolve__f
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate resolve'4 [@inline:trivial] (_0'0: MutBorrow.t Int32.t) = resolve'3 _0'0
+  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'3 _1
   
   meta "rewrite_def" predicate resolve'4
   
-  let rec closure0 (self: closure0) (return' (x: ())) = {[@expl:closure requires] Int32.to_int (self._2).current = 1
-    /\ Int32.to_int (self._1).current = 1}
+  let rec closure0 (self: closure0) (return (x: ())) = {[@expl:closure requires] Int32.to_int self.c2.current = 1
+    /\ Int32.to_int self.c1.current = 1}
     (! bb0
-    [ bb0 = any [ br0 -> {_1'0._0 = false} (! bb3) | br1 -> {_1'0._0} (! bb1) ]
+    [ bb0 = any [ br0 -> {self.c0 = false} (! bb3) | br1 -> {self.c0} (! bb1) ]
     | bb1 = s0
-      [ s0 = -{match _1'0 with
-          | {_1 = x} -> resolve'4 x
+      [ s0 = -{match self with
+          | {c1 = x} -> resolve'4 x
           | _ -> true
           end}-
         s1
-      | s1 = {[@expl:assertion] Int32.to_int (_1'0._1).final = 1} s2
-      | s2 = [ &bx2 <- _1'0._2 ] s3
+      | s1 = {[@expl:assertion] Int32.to_int self.c1.final = 1} s2
+      | s2 = [ &bx2 <- self.c2 ] s3
       | s3 = Int32.add {bx2.current} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &bx2 <- { bx2 with current = _ret } ] s4)
       | s4 = -{resolve'0 bx2}- s5
       | s5 = {[@expl:assertion] Int32.to_int bx2.final = 2} s6
       | s6 = bb6 ]
     | bb3 = s0
-      [ s0 = -{match _1'0 with
-          | {_2 = x} -> resolve'2 x
+      [ s0 = -{match self with
+          | {c2 = x} -> resolve'2 x
           | _ -> true
           end}-
         s1
-      | s1 = {[@expl:assertion] Int32.to_int (_1'0._2).final = 1} s2
-      | s2 = [ &by2 <- _1'0._1 ] s3
+      | s1 = {[@expl:assertion] Int32.to_int self.c2.final = 1} s2
+      | s2 = [ &by2 <- self.c1 ] s3
       | s3 = Int32.add {by2.current} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &by2 <- { by2 with current = _ret } ] s4)
       | s4 = -{resolve'0 by2}- s5
       | s5 = {[@expl:assertion] Int32.to_int by2.final = 2} s6
       | s6 = bb6 ]
-    | bb6 = return''0 {_0'0} ]
-    [ & _0'0: () = Any.any_l ()
-    | & _1'0: closure0 = self
+    | bb6 = return {_0} ]
+    [ & _0: () = Any.any_l ()
+    | & self: closure0 = self
     | & bx2: MutBorrow.t Int32.t = Any.any_l ()
     | & by2: MutBorrow.t Int32.t = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:closure ensures] Int32.to_int (self._2).final + Int32.to_int (self._1).final
-      = 3}
-      (! return' {result}) ]
+    [ return (result: ()) -> {[@expl:closure ensures] Int32.to_int self.c2.final + Int32.to_int self.c1.final = 3}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f (c: bool) (return' (x: ())) = (! bb0
+  let rec f (c: bool) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = [ &y <- (1: Int32.t) ] s2
@@ -85,13 +84,13 @@ module M_09_fnonce_resolve__f
       | s1 = bb2 ]
     | bb2 = s0 [ s0 = [ &by' <- _8 ] s1 | s1 = bb3 ]
     | bb3 = s0
-      [ s0 = [ &f'0 <- { _0 = c'0; _1 = by'; _2 = bx } ] s1
+      [ s0 = [ &f'0 <- { c0 = c; c1 = by'; c2 = bx } ] s1
       | s1 = closure0 {f'0} (fun (_ret: ()) -> [ &_10 <- _ret ] s2)
       | s2 = bb4 ]
     | bb4 = s0 [ s0 = {[@expl:assertion] Int32.to_int x + Int32.to_int y = 3} s1 | s1 = bb7 ]
-    | bb7 = return''0 {_0'0} ]
-    [ & _0'0: () = Any.any_l ()
-    | & c'0: bool = c
+    | bb7 = return {_0} ]
+    [ & _0: () = Any.any_l ()
+    | & c: bool = c
     | & x: Int32.t = Any.any_l ()
     | & y: Int32.t = Any.any_l ()
     | & bx: MutBorrow.t Int32.t = Any.any_l ()
@@ -100,5 +99,5 @@ module M_09_fnonce_resolve__f
     | & _8: MutBorrow.t Int32.t = Any.any_l ()
     | & f'0: closure0 = Any.any_l ()
     | & _10: () = Any.any_l ()
-    | & _12: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _12: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

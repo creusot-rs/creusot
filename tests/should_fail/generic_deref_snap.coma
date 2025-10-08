@@ -9,13 +9,13 @@ module M_generic_deref_snap__deref_wrap
   
   axiom precondition_fndef: forall args: t_T [precondition () args]. (let self_ = args in false) -> precondition () args
   
-  predicate inv (_0: t_Target)
+  predicate inv (_1: t_Target)
   
   predicate invariant' [@inline:trivial] (self: t_Target) = inv self
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_0: t_Target)
+  predicate inv'0 (_1: t_Target)
   
   axiom inv_axiom [@rewrite]: forall x: t_Target [inv'0 x]. inv'0 x = invariant' x
   
@@ -25,20 +25,20 @@ module M_generic_deref_snap__deref_wrap
     forall args: t_T, res: t_Target [postcondition_once () args res]. postcondition_once () args res
       -> (let self_ = args in inv'0 res)
   
-  let rec deref (self_: t_T) (return' (x: t_Target)) = {[@expl:deref requires] precondition () self_}
-    any [ return''0 (result: t_Target) -> {postcondition_once () self_ result} (! return' {result}) ]
+  let rec deref (self_: t_T) (return (x: t_Target)) = {[@expl:deref requires] precondition () self_}
+    any [ return (result: t_Target) -> {postcondition_once () self_ result} (! return {result}) ]
   
-  predicate inv'1 (_0: t_T)
+  predicate inv'1 (_1: t_T)
   
   predicate invariant''0 [@inline:trivial] (self: t_T) = inv'1 self
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_0: t_T)
+  predicate inv'2 (_1: t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'2 x]. inv'2 x = invariant''0 x
   
-  predicate resolve [@inline:trivial] (_0: ()) = true
+  predicate resolve [@inline:trivial] (_1: ()) = true
   
   meta "rewrite_def" predicate resolve
   
@@ -94,15 +94,15 @@ module M_generic_deref_snap__deref_wrap
   
   meta "select_lsinst" "all"
   
-  let rec deref_wrap (x: t_T) (return' (x'0: t_Target)) = {[@expl:deref_wrap 'x' type invariant] inv'2 x}
+  let rec deref_wrap (x: t_T) (return (x'0: t_Target)) = {[@expl:deref_wrap 'x' type invariant] inv'2 x}
     {[@expl:deref_wrap requires] precondition () x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_6 <- x'0 ] s1 | s1 = deref {_6} (fun (_ret: t_Target) -> [ &_4 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- _4 ] s1 | s1 = return''0 {_0} ] ]
-    [ & _0: t_Target = Any.any_l () | & x'0: t_T = x | & _4: t_Target = Any.any_l () | & _6: t_T = Any.any_l () ])
-    [ return''0 (result: t_Target) -> {[@expl:deref_wrap result type invariant] inv'0 result}
+    [ bb0 = s0 [ s0 = [ &_6 <- x ] s1 | s1 = deref {_6} (fun (_ret: t_Target) -> [ &_4 <- _ret ] s2) | s2 = bb1 ]
+    | bb1 = s0 [ s0 = [ &_0 <- _4 ] s1 | s1 = return {_0} ] ]
+    [ & _0: t_Target = Any.any_l () | & x: t_T = x | & _4: t_Target = Any.any_l () | & _6: t_T = Any.any_l () ])
+    [ return (result: t_Target) -> {[@expl:deref_wrap result type invariant] inv'0 result}
       {[@expl:deref_wrap ensures] postcondition () x result}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_generic_deref_snap__bad
   use creusot.int.Int32
@@ -119,7 +119,7 @@ module M_generic_deref_snap__bad
     forall args: Int32.t, res: Int32.t [postcondition_once () args res]. postcondition_once () args res
       -> (let self_ = args in true)
   
-  predicate resolve [@inline:trivial] (_0: ()) = true
+  predicate resolve [@inline:trivial] (_1: ()) = true
   
   meta "rewrite_def" predicate resolve
   
@@ -172,16 +172,16 @@ module M_generic_deref_snap__bad
     forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec deref_wrap (x: Int32.t) (return' (x'0: Int32.t)) = {[@expl:deref_wrap requires] precondition () x}
-    any [ return''0 (result: Int32.t) -> {postcondition () x result} (! return' {result}) ]
+  let rec deref_wrap (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:deref_wrap requires] precondition () x}
+    any [ return (result: Int32.t) -> {postcondition () x result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec bad (x: Int32.t) (return' (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_4 <- x'0 ] s1 | s1 = deref_wrap {_4} (fun (_ret: Int32.t) -> [ &_2 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- _2 ] s1 | s1 = return''0 {_0} ] ]
-    [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x | & _2: Int32.t = Any.any_l () | & _4: Int32.t = Any.any_l () ])
-    [ return''0 (result: Int32.t) -> (! return' {result}) ]
+  let rec bad (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_4 <- x ] s1 | s1 = deref_wrap {_4} (fun (_ret: Int32.t) -> [ &_2 <- _ret ] s2) | s2 = bb1 ]
+    | bb1 = s0 [ s0 = [ &_0 <- _2 ] s1 | s1 = return {_0} ] ]
+    [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x | & _2: Int32.t = Any.any_l () | & _4: Int32.t = Any.any_l () ])
+    [ return (result: Int32.t) -> (! return {result}) ]
 end

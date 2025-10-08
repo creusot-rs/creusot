@@ -4,17 +4,17 @@ module M_option__is_some_none
   
   type t_Option = C_None | C_Some Int32.t
   
-  let rec is_some (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ <> C_None)} (! return' {result}) ]
+  let rec is_some (self_: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (self_ <> C_None)} (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec is_some_none (return' (x: ())) = (! bb0
+  let rec is_some_none (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -27,7 +27,7 @@ module M_option__is_some_none
     | bb8 = any [ br0 -> {_10 = false} (! bb10) | br1 -> {_10} (! bb14) ]
     | bb10 = s0 [ s0 = is_none {none} (fun (_ret: bool) -> [ &_12 <- _ret ] s1) | s1 = bb11 ]
     | bb11 = any [ br0 -> {_12 = false} (! bb14) | br1 -> {_12} (! bb12) ]
-    | bb12 = return''0 {_0}
+    | bb12 = return {_0}
     | bb14 = {false} any
     | bb7 = {false} any ]
     [ & _0: () = Any.any_l ()
@@ -36,7 +36,7 @@ module M_option__is_some_none
     | & _4: bool = Any.any_l ()
     | & _6: bool = Any.any_l ()
     | & _10: bool = Any.any_l ()
-    | & _12: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _12: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__unwrap
   use creusot.int.Int32
@@ -44,27 +44,27 @@ module M_option__unwrap
   
   type t_Option = C_None | C_Some Int32.t
   
-  let rec unwrap (self_: t_Option) (return' (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int32.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return (result: Int32.t) -> {C_Some result = self_} (! return {result}) ]
   
-  let rec expect (self_: t_Option) (msg: string) (return' (x: Int32.t)) = {[@expl:expect requires] self_ <> C_None}
-    any [ return''0 (result: Int32.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec expect (self_: t_Option) (msg: string) (return (x: Int32.t)) = {[@expl:expect requires] self_ <> C_None}
+    any [ return (result: Int32.t) -> {C_Some result = self_} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_0: Int32.t) = true
+  predicate resolve [@inline:trivial] (_1: Int32.t) = true
   
   meta "rewrite_def" predicate resolve
   
-  let rec unwrap_or (self_: t_Option) (default: Int32.t) (return' (x: Int32.t)) = any
-    [ return''0 (result: Int32.t) -> {self_ = C_None -> result = default}
+  let rec unwrap_or (self_: t_Option) (default: Int32.t) (return (x: Int32.t)) = any
+    [ return (result: Int32.t) -> {self_ = C_None -> result = default}
       {self_ = C_None \/ self_ = C_Some result /\ resolve default}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
     let () = args in result = (0: Int32.t)
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve'0 [@inline:trivial] (_0: ()) = true
+  predicate resolve'0 [@inline:trivial] (_1: ()) = true
   
   meta "rewrite_def" predicate resolve'0
   
@@ -115,72 +115,71 @@ module M_option__unwrap
   axiom fn_mut_spec: forall self: (), args: (), res_state: (), res: Int32.t. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec default (return' (x: Int32.t)) = any
-    [ return''0 (result: Int32.t) -> {result = (0: Int32.t)} (! return' {result}) ]
+  let rec default (return (x: Int32.t)) = any
+    [ return (result: Int32.t) -> {result = (0: Int32.t)} (! return {result}) ]
   
-  let rec unwrap_or_default (self_: t_Option) (return' (x: Int32.t)) = any
-    [ return''0 (result: Int32.t) -> {self_ = C_None -> postcondition () () result}
+  let rec unwrap_or_default (self_: t_Option) (return (x: Int32.t)) = any
+    [ return (result: Int32.t) -> {self_ = C_None -> postcondition () () result}
       {self_ = C_None \/ self_ = C_Some result}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure0 [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0 [ bb0 = {false} any ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate precondition [@inline:trivial] (self: ()) (args: ()) = closure0'pre self
   
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
-    closure0'post'return' self result
+    closure0'post'return self result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec unwrap_or_else (self_: t_Option) (f: ()) (return' (x: Int32.t)) = {[@expl:unwrap_or_else requires] self_
+  let rec unwrap_or_else (self_: t_Option) (f: ()) (return (x: Int32.t)) = {[@expl:unwrap_or_else requires] self_
       = C_None -> precondition f ()}
     any
-    [ return''0 (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {match self_ with
         | C_None -> postcondition_once'0 f () result
         | C_Some t -> result = t
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure1 [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- (3: Int32.t) ] s1 | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () ]
+  let rec closure1 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- (3: Int32.t) ] s1 | s1 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () ]
   
   meta "rewrite_def" predicate closure1'pre
   
-  meta "rewrite_def" predicate closure1'post'return'
+  meta "rewrite_def" predicate closure1'post'return
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: ()) = closure1'pre self
   
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
-    closure1'post'return' self result
+    closure1'post'return self result
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  let rec unwrap_or_else'0 (self_: t_Option) (f: ()) (return' (x: Int32.t)) = {[@expl:unwrap_or_else requires] self_
+  let rec unwrap_or_else'0 (self_: t_Option) (f: ()) (return (x: Int32.t)) = {[@expl:unwrap_or_else requires] self_
       = C_None -> precondition'0 f ()}
     any
-    [ return''0 (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {match self_ with
         | C_None -> postcondition_once'1 f () result
         | C_Some t -> result = t
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap_unchecked (self_: t_Option) (return' (x: Int32.t)) = {[@expl:unwrap_unchecked requires] self_
-    <> C_None}
-    any [ return''0 (result: Int32.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap_unchecked (self_: t_Option) (return (x: Int32.t)) = {[@expl:unwrap_unchecked requires] self_ <> C_None}
+    any [ return (result: Int32.t) -> {C_Some result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec unwrap'0 (return' (x: ())) = (! bb0
+  let rec unwrap'0 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -220,7 +219,7 @@ module M_option__unwrap
     | bb23 = s0 [ s0 = unwrap_unchecked {some} (fun (_ret: Int32.t) -> [ &_49 <- _ret ] s1) | s1 = bb25 ]
     | bb25 = s0
       [ s0 = [ &_48 <- _49 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_48 = false} (! bb27) | br1 -> {_48} (! bb26) ] ]
-    | bb26 = return''0 {_0}
+    | bb26 = return {_0}
     | bb27 = {false} any
     | bb24 = {false} any
     | bb21 = {false} any
@@ -253,7 +252,7 @@ module M_option__unwrap
     | & _43: Int32.t = Any.any_l ()
     | & _45: () = Any.any_l ()
     | & _48: bool = Any.any_l ()
-    | & _49: Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _49: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__map
   use creusot.int.Int32
@@ -261,11 +260,11 @@ module M_option__map
   
   type t_Option = C_None | C_Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: ())) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: ())) = bb0 [ bb0 = {false} any ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   type t_Option'0 = C_None'0 | C_Some'0 ()
   
@@ -274,20 +273,20 @@ module M_option__map
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: ()) =
-    let _0 = args in closure0'post'return' self _0 result
+    let _0 = args in closure0'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once
   
-  let rec map (self_: t_Option) (f: ()) (return' (x: t_Option'0)) = {[@expl:map requires] match self_ with
+  let rec map (self_: t_Option) (f: ()) (return (x: t_Option'0)) = {[@expl:map requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition f t
       end}
     any
-    [ return''0 (result: t_Option'0) -> {match self_ with
+    [ return (result: t_Option'0) -> {match self_ with
         | C_None -> result = C_None'0
         | C_Some t -> exists r: (). result = C_Some'0 r /\ postcondition_once f t r
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   function deep_model [@inline:trivial] (self: ()) : () = ()
   
@@ -304,35 +303,35 @@ module M_option__map
   
   meta "rewrite_def" function deep_model'1
   
-  let rec eq (self_: t_Option'0) (rhs: t_Option'0) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option'0) (rhs: t_Option'0) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
-  let rec closure1 [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: Int32.t)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0'0 <- (3: Int32.t) ] s1 | s1 = return' {_0'0} ] ] [ & _0'0: Int32.t = Any.any_l () ]
+  let rec closure1 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: Int32.t)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0'0 <- (3: Int32.t) ] s1 | s1 = return {_0'0} ] ] [ & _0'0: Int32.t = Any.any_l () ]
   
   meta "rewrite_def" predicate closure1'pre
   
-  meta "rewrite_def" predicate closure1'post'return'
+  meta "rewrite_def" predicate closure1'post'return
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) = let _0 = args in closure1'pre self _0
   
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    let _0 = args in closure1'post'return' self _0 result
+    let _0 = args in closure1'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec map'0 (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:map requires] match self_ with
+  let rec map'0 (self_: t_Option) (f: ()) (return (x: t_Option)) = {[@expl:map requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition'0 f t
       end}
     any
-    [ return''0 (result: t_Option) -> {match self_ with
+    [ return (result: t_Option) -> {match self_ with
         | C_None -> result = C_None
         | C_Some t -> exists r: Int32.t. result = C_Some r /\ postcondition_once'0 f t r
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 int
   
@@ -351,42 +350,42 @@ module M_option__map
   
   meta "rewrite_def" function deep_model'4
   
-  let rec eq'0 (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'4 self_ = deep_model'4 rhs)} (! return' {result}) ]
+  let rec eq'0 (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'4 self_ = deep_model'4 rhs)} (! return {result}) ]
   
-  let rec closure2 [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: Int32.t)) = bb0
-    [ bb0 = s0 [ s0 = Int32.add {x'0} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = return' {_0} ] ]
-    [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x ]
+  let rec closure2 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: Int32.t)) = bb0
+    [ bb0 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = return {_0} ] ]
+    [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x ]
   
   meta "rewrite_def" predicate closure2'pre
   
-  meta "rewrite_def" predicate closure2'post'return'
+  meta "rewrite_def" predicate closure2'post'return
   
   predicate precondition'1 [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in closure2'pre self x
   
   meta "rewrite_def" predicate precondition'1
   
   predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    let x = args in closure2'post'return' self x result
+    let x = args in closure2'post'return self x result
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  let rec map'1 (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:map requires] match self_ with
+  let rec map'1 (self_: t_Option) (f: ()) (return (x: t_Option)) = {[@expl:map requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition'1 f t
       end}
     any
-    [ return''0 (result: t_Option) -> {match self_ with
+    [ return (result: t_Option) -> {match self_ with
         | C_None -> result = C_None
         | C_Some t -> exists r: Int32.t. result = C_Some r /\ postcondition_once'1 f t r
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec map'2 (return' (x: ())) = (! bb0
+  let rec map'2 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -423,7 +422,7 @@ module M_option__map
       | s1 = eq'0 {_24} {_30} (fun (_ret: bool) -> [ &_22 <- _ret ] s2)
       | s2 = bb10 ]
     | bb10 = any [ br0 -> {_22 = false} (! bb12) | br1 -> {_22} (! bb11) ]
-    | bb11 = return''0 {_0}
+    | bb11 = return {_0}
     | bb12 = {false} any
     | bb8 = {false} any
     | bb4 = {false} any ]
@@ -441,7 +440,7 @@ module M_option__map
     | & _26: () = Any.any_l ()
     | & _30: t_Option = Any.any_l ()
     | & _31: t_Option = Any.any_l ()
-    | & _32: t_Option'0 = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _32: t_Option'0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__inspect
   use creusot.int.Int32
@@ -449,32 +448,32 @@ module M_option__inspect
   
   type t_Option = C_None | C_Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: ())) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: ())) = bb0 [ bb0 = {false} any ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) = let _0 = args in closure0'pre self _0
   
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: ()) =
-    let _0 = args in closure0'post'return' self _0 result
+    let _0 = args in closure0'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once
   
-  let rec inspect (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:inspect requires] match self_ with
+  let rec inspect (self_: t_Option) (f: ()) (return (x: t_Option)) = {[@expl:inspect requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition f t
       end}
     any
-    [ return''0 (result: t_Option) -> {result = self_}
+    [ return (result: t_Option) -> {result = self_}
       {match self_ with
         | C_None -> true
         | C_Some t -> postcondition_once f t ()
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
@@ -493,42 +492,42 @@ module M_option__inspect
   
   meta "rewrite_def" function deep_model'1
   
-  let rec eq (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
-  let rec closure1 [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: ())) = bb0
-    [ bb0 = return' {_0'0} ] [ & _0'0: () = Any.any_l () ]
+  let rec closure1 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: ())) = bb0
+    [ bb0 = return {_0'0} ] [ & _0'0: () = Any.any_l () ]
   
   meta "rewrite_def" predicate closure1'pre
   
-  meta "rewrite_def" predicate closure1'post'return'
+  meta "rewrite_def" predicate closure1'post'return
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) = let _0 = args in closure1'pre self _0
   
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: Int32.t) (result: ()) =
-    let _0 = args in closure1'post'return' self _0 result
+    let _0 = args in closure1'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec inspect'0 (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:inspect requires] match self_ with
+  let rec inspect'0 (self_: t_Option) (f: ()) (return (x: t_Option)) = {[@expl:inspect requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition'0 f t
       end}
     any
-    [ return''0 (result: t_Option) -> {result = self_}
+    [ return (result: t_Option) -> {result = self_}
       {match self_ with
         | C_None -> true
         | C_Some t -> postcondition_once'0 f t ()
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec inspect'1 (return' (x: ())) = (! bb0
+  let rec inspect'1 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -554,7 +553,7 @@ module M_option__inspect
       | s1 = eq {_15} {_21} (fun (_ret: bool) -> [ &_13 <- _ret ] s2)
       | s2 = bb6 ]
     | bb6 = any [ br0 -> {_13 = false} (! bb8) | br1 -> {_13} (! bb7) ]
-    | bb7 = return''0 {_0}
+    | bb7 = return {_0}
     | bb8 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
@@ -567,7 +566,7 @@ module M_option__inspect
     | & _15: t_Option = Any.any_l ()
     | & _17: () = Any.any_l ()
     | & _21: t_Option = Any.any_l ()
-    | & _22: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _22: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__map_or
   use creusot.int.Int32
@@ -575,102 +574,102 @@ module M_option__map_or
   
   type t_Option = C_None | C_Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: Int32.t)) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: Int32.t)) = bb0 [ bb0 = {false} any ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) = let _0 = args in closure0'pre self _0
   
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    let _0 = args in closure0'post'return' self _0 result
+    let _0 = args in closure0'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once
   
-  let rec map_or (self_: t_Option) (default: Int32.t) (f: ()) (return' (x: Int32.t)) =
+  let rec map_or (self_: t_Option) (default: Int32.t) (f: ()) (return (x: Int32.t)) =
     {[@expl:map_or requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition f t
       end}
     any
-    [ return''0 (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {match self_ with
         | C_None -> result = default
         | C_Some t -> postcondition_once f t result
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure1 [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: Int32.t)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0'0 <- (3: Int32.t) ] s1 | s1 = return' {_0'0} ] ] [ & _0'0: Int32.t = Any.any_l () ]
+  let rec closure1 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: Int32.t)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0'0 <- (3: Int32.t) ] s1 | s1 = return {_0'0} ] ] [ & _0'0: Int32.t = Any.any_l () ]
   
   meta "rewrite_def" predicate closure1'pre
   
-  meta "rewrite_def" predicate closure1'post'return'
+  meta "rewrite_def" predicate closure1'post'return
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) = let _0 = args in closure1'pre self _0
   
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    let _0 = args in closure1'post'return' self _0 result
+    let _0 = args in closure1'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec map_or'0 (self_: t_Option) (default: Int32.t) (f: ()) (return' (x: Int32.t)) =
+  let rec map_or'0 (self_: t_Option) (default: Int32.t) (f: ()) (return (x: Int32.t)) =
     {[@expl:map_or requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition'0 f t
       end}
     any
-    [ return''0 (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {match self_ with
         | C_None -> result = default
         | C_Some t -> postcondition_once'0 f t result
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure2 [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: Int32.t)) = bb0
-    [ bb0 = s0 [ s0 = Int32.add {x'0} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = return' {_0} ] ]
-    [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x ]
+  let rec closure2 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: Int32.t)) = bb0
+    [ bb0 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = return {_0} ] ]
+    [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x ]
   
   meta "rewrite_def" predicate closure2'pre
   
-  meta "rewrite_def" predicate closure2'post'return'
+  meta "rewrite_def" predicate closure2'post'return
   
   predicate precondition'1 [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in closure2'pre self x
   
   meta "rewrite_def" predicate precondition'1
   
   predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    let x = args in closure2'post'return' self x result
+    let x = args in closure2'post'return self x result
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  let rec map_or'1 (self_: t_Option) (default: Int32.t) (f: ()) (return' (x: Int32.t)) =
+  let rec map_or'1 (self_: t_Option) (default: Int32.t) (f: ()) (return (x: Int32.t)) =
     {[@expl:map_or requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition'1 f t
       end}
     any
-    [ return''0 (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {match self_ with
         | C_None -> result = default
         | C_Some t -> postcondition_once'1 f t result
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure3 [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- (2: Int32.t) ] s1 | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () ]
+  let rec closure3 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- (2: Int32.t) ] s1 | s1 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () ]
   
   meta "rewrite_def" predicate closure3'pre
   
-  meta "rewrite_def" predicate closure3'post'return'
+  meta "rewrite_def" predicate closure3'post'return
   
-  let rec closure4 [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: Int32.t)) = bb0 [ bb0 = {false} any ]
+  let rec closure4 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: Int32.t)) = bb0 [ bb0 = {false} any ]
   
   meta "rewrite_def" predicate closure4'pre
   
-  meta "rewrite_def" predicate closure4'post'return'
+  meta "rewrite_def" predicate closure4'post'return
   
   predicate precondition'2 [@inline:trivial] (self: ()) (args: ()) = closure3'pre self
   
@@ -681,40 +680,40 @@ module M_option__map_or
   meta "rewrite_def" predicate precondition'3
   
   predicate postcondition_once'2 [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
-    closure3'post'return' self result
+    closure3'post'return self result
   
   meta "rewrite_def" predicate postcondition_once'2
   
   predicate postcondition_once'3 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    let _0 = args in closure4'post'return' self _0 result
+    let _0 = args in closure4'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once'3
   
-  let rec map_or_else (self_: t_Option) (default: ()) (f: ()) (return' (x: Int32.t)) =
+  let rec map_or_else (self_: t_Option) (default: ()) (f: ()) (return (x: Int32.t)) =
     {[@expl:map_or_else requires] match self_ with
       | C_None -> precondition'2 default ()
       | C_Some t -> precondition'3 f t
       end}
     any
-    [ return''0 (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {match self_ with
         | C_None -> postcondition_once'2 default () result
         | C_Some t -> postcondition_once'3 f t result
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure5 [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0 [ bb0 = {false} any ]
+  let rec closure5 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0 [ bb0 = {false} any ]
   
   meta "rewrite_def" predicate closure5'pre
   
-  meta "rewrite_def" predicate closure5'post'return'
+  meta "rewrite_def" predicate closure5'post'return
   
-  let rec closure6 [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: Int32.t)) = bb0
-    [ bb0 = s0 [ s0 = Int32.add {x'0} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = return' {_0} ] ]
-    [ & _0: Int32.t = Any.any_l () | & x'0: Int32.t = x ]
+  let rec closure6 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: Int32.t)) = bb0
+    [ bb0 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = return {_0} ] ]
+    [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x ]
   
   meta "rewrite_def" predicate closure6'pre
   
-  meta "rewrite_def" predicate closure6'post'return'
+  meta "rewrite_def" predicate closure6'post'return
   
   predicate precondition'4 [@inline:trivial] (self: ()) (args: ()) = closure5'pre self
   
@@ -725,32 +724,32 @@ module M_option__map_or
   meta "rewrite_def" predicate precondition'5
   
   predicate postcondition_once'4 [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
-    closure5'post'return' self result
+    closure5'post'return self result
   
   meta "rewrite_def" predicate postcondition_once'4
   
   predicate postcondition_once'5 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    let x = args in closure6'post'return' self x result
+    let x = args in closure6'post'return self x result
   
   meta "rewrite_def" predicate postcondition_once'5
   
-  let rec map_or_else'0 (self_: t_Option) (default: ()) (f: ()) (return' (x: Int32.t)) =
+  let rec map_or_else'0 (self_: t_Option) (default: ()) (f: ()) (return (x: Int32.t)) =
     {[@expl:map_or_else requires] match self_ with
       | C_None -> precondition'4 default ()
       | C_Some t -> precondition'5 f t
       end}
     any
-    [ return''0 (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {match self_ with
         | C_None -> postcondition_once'4 default () result
         | C_Some t -> postcondition_once'5 f t result
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec map_or'2 (return' (x: ())) = (! bb0
+  let rec map_or'2 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -784,7 +783,7 @@ module M_option__map_or
       | s3 = bb13 ]
     | bb13 = s0
       [ s0 = [ &_29 <- _30 = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_29 = false} (! bb15) | br1 -> {_29} (! bb14) ] ]
-    | bb14 = return''0 {_0}
+    | bb14 = return {_0}
     | bb15 = {false} any
     | bb12 = {false} any
     | bb9 = {false} any
@@ -809,7 +808,7 @@ module M_option__map_or
     | & _29: bool = Any.any_l ()
     | & _30: Int32.t = Any.any_l ()
     | & _32: () = Any.any_l ()
-    | & _33: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _33: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__ok_or
   use creusot.int.Int32
@@ -819,72 +818,71 @@ module M_option__ok_or
   
   type t_Result = C_Ok Int32.t | C_Err bool
   
-  predicate resolve [@inline:trivial] (_0: bool) = true
+  predicate resolve [@inline:trivial] (_1: bool) = true
   
   meta "rewrite_def" predicate resolve
   
-  let rec ok_or (self_: t_Option) (err: bool) (return' (x: t_Result)) = any
-    [ return''0 (result: t_Result) -> {match self_ with
+  let rec ok_or (self_: t_Option) (err: bool) (return (x: t_Result)) = any
+    [ return (result: t_Result) -> {match self_ with
         | C_None -> result = C_Err err
         | C_Some t -> result = C_Ok t /\ resolve err
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure0 [@coma:extspec] (self: ()) (return' (x: bool)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- true ] s1 | s1 = return' {_0} ] ] [ & _0: bool = Any.any_l () ]
+  let rec closure0 [@coma:extspec] (self: ()) (return (x: bool)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- true ] s1 | s1 = return {_0} ] ] [ & _0: bool = Any.any_l () ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate precondition [@inline:trivial] (self: ()) (args: ()) = closure0'pre self
   
   meta "rewrite_def" predicate precondition
   
-  predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: bool) =
-    closure0'post'return' self result
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: bool) = closure0'post'return self result
   
   meta "rewrite_def" predicate postcondition_once
   
-  let rec ok_or_else (self_: t_Option) (err: ()) (return' (x: t_Result)) = {[@expl:ok_or_else requires] self_ = C_None
+  let rec ok_or_else (self_: t_Option) (err: ()) (return (x: t_Result)) = {[@expl:ok_or_else requires] self_ = C_None
     -> precondition err ()}
     any
-    [ return''0 (result: t_Result) -> {match self_ with
+    [ return (result: t_Result) -> {match self_ with
         | C_None -> exists r: bool. result = C_Err r /\ postcondition_once err () r
         | C_Some t -> result = C_Ok t
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure1 [@coma:extspec] (self: ()) (return' (x: bool)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- false ] s1 | s1 = return' {_0} ] ] [ & _0: bool = Any.any_l () ]
+  let rec closure1 [@coma:extspec] (self: ()) (return (x: bool)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- false ] s1 | s1 = return {_0} ] ] [ & _0: bool = Any.any_l () ]
   
   meta "rewrite_def" predicate closure1'pre
   
-  meta "rewrite_def" predicate closure1'post'return'
+  meta "rewrite_def" predicate closure1'post'return
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: ()) = closure1'pre self
   
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: ()) (result: bool) =
-    closure1'post'return' self result
+    closure1'post'return self result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec ok_or_else'0 (self_: t_Option) (err: ()) (return' (x: t_Result)) = {[@expl:ok_or_else requires] self_ = C_None
+  let rec ok_or_else'0 (self_: t_Option) (err: ()) (return (x: t_Result)) = {[@expl:ok_or_else requires] self_ = C_None
     -> precondition'0 err ()}
     any
-    [ return''0 (result: t_Result) -> {match self_ with
+    [ return (result: t_Result) -> {match self_ with
         | C_None -> exists r: bool. result = C_Err r /\ postcondition_once'0 err () r
         | C_Some t -> result = C_Ok t
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec ok_or'0 (return' (x: ())) = (! bb0
+  let rec ok_or'0 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -904,7 +902,7 @@ module M_option__ok_or
       | s1 = [ &_18 <- () ] s2
       | s2 = ok_or_else'0 {some} {_18} (fun (_ret: t_Result) -> [ &ok'0 <- _ret ] s3)
       | s3 = bb4 ]
-    | bb4 = s0 [ s0 = {[@expl:assertion] ok'0 = C_Ok (1: Int32.t)} s1 | s1 = return''0 {_0} ] ]
+    | bb4 = s0 [ s0 = {[@expl:assertion] ok'0 = C_Ok (1: Int32.t)} s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & none: t_Option = Any.any_l ()
     | & some: t_Option = Any.any_l ()
@@ -913,7 +911,7 @@ module M_option__ok_or
     | & err'0: t_Result = Any.any_l ()
     | & _13: () = Any.any_l ()
     | & ok'0: t_Result = Any.any_l ()
-    | & _18: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _18: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__as_mut
   use creusot.int.Int32
@@ -924,18 +922,18 @@ module M_option__as_mut
   
   type t_Option'0 = C_None'0 | C_Some'0 (MutBorrow.t Int32.t)
   
-  let rec as_mut (self_: MutBorrow.t t_Option) (return' (x: t_Option'0)) = any
-    [ return''0 (result: t_Option'0) -> {self_.current = C_None -> result = C_None'0 /\ self_.final = C_None}
+  let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'0)) = any
+    [ return (result: t_Option'0) -> {self_.current = C_None -> result = C_None'0 /\ self_.final = C_None}
       {self_.current = C_None
       \/ (exists r: MutBorrow.t Int32.t. result = C_Some'0 r
         /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t Int32.t) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -947,24 +945,24 @@ module M_option__as_mut
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0: t_Option'0) = resolve'1 _0
+  predicate resolve'2 [@inline:trivial] (_1: t_Option'0) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
-  let rec is_none (self_: t_Option'0) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None'0)} (! return' {result}) ]
+  let rec is_none (self_: t_Option'0) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (self_ = C_None'0)} (! return {result}) ]
   
-  let rec unwrap (self_: t_Option'0) (return' (x: MutBorrow.t Int32.t)) = {[@expl:unwrap requires] self_ <> C_None'0}
-    any [ return''0 (result: MutBorrow.t Int32.t) -> {C_Some'0 result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option'0) (return (x: MutBorrow.t Int32.t)) = {[@expl:unwrap requires] self_ <> C_None'0}
+    any [ return (result: MutBorrow.t Int32.t) -> {C_Some'0 result = self_} (! return {result}) ]
   
-  let rec unwrap'0 (self_: t_Option) (return' (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int32.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap'0 (self_: t_Option) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return (result: Int32.t) -> {C_Some result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec as_mut'0 (return' (x: ())) = (! bb0
+  let rec as_mut'0 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -1000,7 +998,7 @@ module M_option__as_mut
       | s3 = bb12 ]
     | bb12 = s0
       [ s0 = [ &_21 <- _22 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_21 = false} (! bb14) | br1 -> {_21} (! bb13) ] ]
-    | bb13 = return''0 {_0}
+    | bb13 = return {_0}
     | bb14 = {false} any
     | bb9 = {false} any
     | bb4 = {false} any ]
@@ -1019,7 +1017,7 @@ module M_option__as_mut
     | & _18: t_Option'0 = Any.any_l ()
     | & _19: MutBorrow.t t_Option = Any.any_l ()
     | & _21: bool = Any.any_l ()
-    | & _22: Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _22: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__as_ref
   use creusot.int.Int32
@@ -1029,22 +1027,22 @@ module M_option__as_ref
   
   type t_Option'0 = C_None'0 | C_Some'0 Int32.t
   
-  let rec as_ref (self_: t_Option) (return' (x: t_Option'0)) = any
-    [ return''0 (result: t_Option'0) -> {self_ = C_None -> result = C_None'0}
+  let rec as_ref (self_: t_Option) (return (x: t_Option'0)) = any
+    [ return (result: t_Option'0) -> {self_ = C_None -> result = C_None'0}
       {self_ = C_None \/ (exists r: Int32.t. result = C_Some'0 r /\ self_ = C_Some r)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option'0) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None'0)} (! return' {result}) ]
+  let rec is_none (self_: t_Option'0) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (self_ = C_None'0)} (! return {result}) ]
   
-  let rec unwrap (self_: t_Option'0) (return' (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None'0}
-    any [ return''0 (result: Int32.t) -> {C_Some'0 result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option'0) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None'0}
+    any [ return (result: Int32.t) -> {C_Some'0 result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec as_ref'0 (return' (x: ())) = (! bb0
+  let rec as_ref'0 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -1056,7 +1054,7 @@ module M_option__as_ref
     | bb5 = s0 [ s0 = unwrap {_13} (fun (_ret: Int32.t) -> [ &_12 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0
       [ s0 = [ &_10 <- _12 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_10 = false} (! bb8) | br1 -> {_10} (! bb7) ] ]
-    | bb7 = return''0 {_0}
+    | bb7 = return {_0}
     | bb8 = {false} any
     | bb4 = {false} any ]
     [ & _0: () = Any.any_l ()
@@ -1066,7 +1064,7 @@ module M_option__as_ref
     | & _6: t_Option'0 = Any.any_l ()
     | & _10: bool = Any.any_l ()
     | & _12: Int32.t = Any.any_l ()
-    | & _13: t_Option'0 = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _13: t_Option'0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__replace
   use creusot.int.Int32
@@ -1075,20 +1073,20 @@ module M_option__replace
   
   type t_Option = C_None | C_Some Int32.t
   
-  let rec replace (self_: MutBorrow.t t_Option) (value: Int32.t) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {result = self_.current /\ self_.final = C_Some value} (! return' {result}) ]
+  let rec replace (self_: MutBorrow.t t_Option) (value: Int32.t) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {result = self_.current /\ self_.final = C_Some value} (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int32.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return (result: Int32.t) -> {C_Some result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec replace'0 (return' (x: ())) = (! bb0
+  let rec replace'0 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -1123,7 +1121,7 @@ module M_option__replace
     | bb17 = s0 [ s0 = unwrap {some} (fun (_ret: Int32.t) -> [ &_33 <- _ret ] s1) | s1 = bb19 ]
     | bb19 = s0
       [ s0 = [ &_32 <- _33 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_32 = false} (! bb21) | br1 -> {_32} (! bb20) ] ]
-    | bb20 = return''0 {_0}
+    | bb20 = return {_0}
     | bb21 = {false} any
     | bb18 = {false} any
     | bb14 = {false} any
@@ -1149,7 +1147,7 @@ module M_option__replace
     | & _28: t_Option = Any.any_l ()
     | & _29: MutBorrow.t t_Option = Any.any_l ()
     | & _32: bool = Any.any_l ()
-    | & _33: Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _33: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__and_or_xor
   use creusot.int.Int32
@@ -1157,7 +1155,7 @@ module M_option__and_or_xor
   
   type t_Option = C_None | C_Some Int32.t
   
-  predicate resolve [@inline:trivial] (_0: Int32.t) = true
+  predicate resolve [@inline:trivial] (_1: Int32.t) = true
   
   meta "rewrite_def" predicate resolve
   
@@ -1169,10 +1167,10 @@ module M_option__and_or_xor
   
   meta "rewrite_def" predicate resolve'0
   
-  let rec and (self_: t_Option) (optb: t_Option) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {self_ = C_None -> result = C_None /\ resolve'0 optb}
+  let rec and (self_: t_Option) (optb: t_Option) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {self_ = C_None -> result = C_None /\ resolve'0 optb}
       {self_ = C_None \/ result = optb /\ resolve'0 self_}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
@@ -1191,30 +1189,30 @@ module M_option__and_or_xor
   
   meta "rewrite_def" function deep_model'1
   
-  let rec eq (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
-  let rec or (self_: t_Option) (optb: t_Option) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {self_ = C_None -> result = optb}
+  let rec or (self_: t_Option) (optb: t_Option) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {self_ = C_None -> result = optb}
       {self_ = C_None \/ result = self_ /\ resolve'0 optb}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: t_Option; _p1: t_Option }
+  type tuple = { f0: t_Option; f1: t_Option }
   
-  let rec xor (self_: t_Option) (optb: t_Option) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match { _p0 = self_; _p1 = optb } with
-        | {_p0 = C_None; _p1 = C_None} -> result = C_None
-        | {_p0 = C_Some t1; _p1 = C_Some t2} -> result = C_None /\ resolve t1 /\ resolve t2
-        | {_p0 = C_Some t; _p1 = C_None} -> result = C_Some t
-        | {_p0 = C_None; _p1 = C_Some t} -> result = C_Some t
+  let rec xor (self_: t_Option) (optb: t_Option) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {match { f0 = self_; f1 = optb } with
+        | {f0 = C_None; f1 = C_None} -> result = C_None
+        | {f0 = C_Some t1; f1 = C_Some t2} -> result = C_None /\ resolve t1 /\ resolve t2
+        | {f0 = C_Some t; f1 = C_None} -> result = C_Some t
+        | {f0 = C_None; f1 = C_Some t} -> result = C_Some t
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec and_or_xor (return' (x: ())) = (! bb0
+  let rec and_or_xor (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -1351,7 +1349,7 @@ module M_option__and_or_xor
       | s1 = eq {_105} {_111} (fun (_ret: bool) -> [ &_103 <- _ret ] s2)
       | s2 = bb46 ]
     | bb46 = any [ br0 -> {_103 = false} (! bb48) | br1 -> {_103} (! bb47) ]
-    | bb47 = return''0 {_0}
+    | bb47 = return {_0}
     | bb48 = {false} any
     | bb44 = {false} any
     | bb40 = {false} any
@@ -1408,7 +1406,7 @@ module M_option__and_or_xor
     | & _119: t_Option = Any.any_l ()
     | & _120: t_Option = Any.any_l ()
     | & _121: t_Option = Any.any_l ()
-    | & _122: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _122: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__and_then
   use creusot.int.Int32
@@ -1417,31 +1415,31 @@ module M_option__and_then
   
   type t_Option = C_None | C_Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: t_Option)) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: t_Option)) = bb0 [ bb0 = {false} any ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) = let _0 = args in closure0'pre self _0
   
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: t_Option) =
-    let _0 = args in closure0'post'return' self _0 result
+    let _0 = args in closure0'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once
   
-  let rec and_then (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:and_then requires] match self_ with
+  let rec and_then (self_: t_Option) (f: ()) (return (x: t_Option)) = {[@expl:and_then requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition f t
       end}
     any
-    [ return''0 (result: t_Option) -> {match self_ with
+    [ return (result: t_Option) -> {match self_ with
         | C_None -> result = C_None
         | C_Some t -> postcondition_once f t result
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
@@ -1460,27 +1458,26 @@ module M_option__and_then
   
   meta "rewrite_def" function deep_model'1
   
-  let rec eq (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
-  let rec closure1 (self: ()) (x: Int32.t) (return' (x'0: t_Option)) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_4 <- x'0 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_4 = false} (! bb2) | br1 -> {_4} (! bb1) ] ]
+  let rec closure1 (self: ()) (x: Int32.t) (return (x'0: t_Option)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_4 <- x = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_4 = false} (! bb2) | br1 -> {_4} (! bb1) ] ]
     | bb1 = s0
-      [ s0 = Int32.add {x'0} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_6 <- _ret ] s1)
+      [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_6 <- _ret ] s1)
       | s1 = [ &res <- C_Some _6 ] s2
       | s2 = bb3 ]
     | bb2 = s0 [ s0 = [ &res <- C_None ] s1 | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &_0 <- res ] s1 | s1 = return''0 {_0} ] ]
+    | bb3 = s0 [ s0 = [ &_0 <- res ] s1 | s1 = return {_0} ] ]
     [ & _0: t_Option = Any.any_l ()
-    | & x'0: Int32.t = x
+    | & x: Int32.t = x
     | & res: t_Option = Any.any_l ()
     | & _4: bool = Any.any_l ()
     | & _6: Int32.t = Any.any_l () ])
-    [ return''0 (result: t_Option) -> {[@expl:closure ensures] Int32.to_int x = 1
+    [ return (result: t_Option) -> {[@expl:closure ensures] Int32.to_int x = 1
         /\ (exists y: Int32.t. result = C_Some y /\ Int32.to_int y = Int32.to_int x + 1)
       \/ Int32.to_int x <> 1 /\ result = C_None}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in true
   
@@ -1492,22 +1489,22 @@ module M_option__and_then
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec and_then'0 (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:and_then requires] match self_ with
+  let rec and_then'0 (self_: t_Option) (f: ()) (return (x: t_Option)) = {[@expl:and_then requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition'0 f t
       end}
     any
-    [ return''0 (result: t_Option) -> {match self_ with
+    [ return (result: t_Option) -> {match self_ with
         | C_None -> result = C_None
         | C_Some t -> postcondition_once'0 f t result
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec and_then'1 (return' (x: ())) = (! bb0
+  let rec and_then'1 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some1 <- C_Some (1: Int32.t) ] s2
@@ -1545,7 +1542,7 @@ module M_option__and_then
       | s1 = eq {_26} {_32} (fun (_ret: bool) -> [ &_24 <- _ret ] s2)
       | s2 = bb10 ]
     | bb10 = any [ br0 -> {_24 = false} (! bb12) | br1 -> {_24} (! bb11) ]
-    | bb11 = return''0 {_0}
+    | bb11 = return {_0}
     | bb12 = {false} any
     | bb8 = {false} any
     | bb4 = {false} any ]
@@ -1563,7 +1560,7 @@ module M_option__and_then
     | & _26: t_Option = Any.any_l ()
     | & _32: t_Option = Any.any_l ()
     | & _33: t_Option = Any.any_l ()
-    | & _34: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _34: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__filter
   use creusot.int.Int32
@@ -1571,38 +1568,38 @@ module M_option__filter
   
   type t_Option = C_None | C_Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: bool)) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: bool)) = bb0 [ bb0 = {false} any ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) = let _0 = args in closure0'pre self _0
   
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
-    let _0 = args in closure0'post'return' self _0 result
+    let _0 = args in closure0'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve [@inline:trivial] (_0: Int32.t) = true
+  predicate resolve [@inline:trivial] (_1: Int32.t) = true
   
   meta "rewrite_def" predicate resolve
   
-  let rec filter (self_: t_Option) (predicate': ()) (return' (x: t_Option)) = {[@expl:filter requires] match self_ with
+  let rec filter (self_: t_Option) (predicate': ()) (return (x: t_Option)) = {[@expl:filter requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition predicate' t
       end}
     any
-    [ return''0 (result: t_Option) -> {match self_ with
+    [ return (result: t_Option) -> {match self_ with
         | C_None -> result = C_None
         | C_Some t -> match result with
           | C_None -> postcondition_once predicate' t false /\ resolve t
           | C_Some r -> postcondition_once predicate' t true /\ r = t
           end
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
@@ -1621,78 +1618,76 @@ module M_option__filter
   
   meta "rewrite_def" function deep_model'1
   
-  let rec eq (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
-  let rec closure1 [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: bool)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- x'0 = (1: Int32.t) ] s1 | s1 = return' {_0} ] ]
-    [ & _0: bool = Any.any_l () | & x'0: Int32.t = x ]
+  let rec closure1 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: bool)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- x = (1: Int32.t) ] s1 | s1 = return {_0} ] ]
+    [ & _0: bool = Any.any_l () | & x: Int32.t = x ]
   
   meta "rewrite_def" predicate closure1'pre
   
-  meta "rewrite_def" predicate closure1'post'return'
+  meta "rewrite_def" predicate closure1'post'return
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in closure1'pre self x
   
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
-    let x = args in closure1'post'return' self x result
+    let x = args in closure1'post'return self x result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec filter'0 (self_: t_Option) (predicate': ()) (return' (x: t_Option)) =
-    {[@expl:filter requires] match self_ with
+  let rec filter'0 (self_: t_Option) (predicate': ()) (return (x: t_Option)) = {[@expl:filter requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition'0 predicate' t
       end}
     any
-    [ return''0 (result: t_Option) -> {match self_ with
+    [ return (result: t_Option) -> {match self_ with
         | C_None -> result = C_None
         | C_Some t -> match result with
           | C_None -> postcondition_once'0 predicate' t false /\ resolve t
           | C_Some r -> postcondition_once'0 predicate' t true /\ r = t
           end
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure2 [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: bool)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- x'0 = (2: Int32.t) ] s1 | s1 = return' {_0} ] ]
-    [ & _0: bool = Any.any_l () | & x'0: Int32.t = x ]
+  let rec closure2 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: bool)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- x = (2: Int32.t) ] s1 | s1 = return {_0} ] ]
+    [ & _0: bool = Any.any_l () | & x: Int32.t = x ]
   
   meta "rewrite_def" predicate closure2'pre
   
-  meta "rewrite_def" predicate closure2'post'return'
+  meta "rewrite_def" predicate closure2'post'return
   
   predicate precondition'1 [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in closure2'pre self x
   
   meta "rewrite_def" predicate precondition'1
   
   predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
-    let x = args in closure2'post'return' self x result
+    let x = args in closure2'post'return self x result
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  let rec filter'1 (self_: t_Option) (predicate': ()) (return' (x: t_Option)) =
-    {[@expl:filter requires] match self_ with
+  let rec filter'1 (self_: t_Option) (predicate': ()) (return (x: t_Option)) = {[@expl:filter requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition'1 predicate' t
       end}
     any
-    [ return''0 (result: t_Option) -> {match self_ with
+    [ return (result: t_Option) -> {match self_ with
         | C_None -> result = C_None
         | C_Some t -> match result with
           | C_None -> postcondition_once'1 predicate' t false /\ resolve t
           | C_Some r -> postcondition_once'1 predicate' t true /\ r = t
           end
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec filter'2 (return' (x: ())) = (! bb0
+  let rec filter'2 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -1728,7 +1723,7 @@ module M_option__filter
       | s1 = eq {_24} {_30} (fun (_ret: bool) -> [ &_22 <- _ret ] s2)
       | s2 = bb10 ]
     | bb10 = any [ br0 -> {_22 = false} (! bb12) | br1 -> {_22} (! bb11) ]
-    | bb11 = return''0 {_0}
+    | bb11 = return {_0}
     | bb12 = {false} any
     | bb8 = {false} any
     | bb4 = {false} any ]
@@ -1746,7 +1741,7 @@ module M_option__filter
     | & _26: () = Any.any_l ()
     | & _30: t_Option = Any.any_l ()
     | & _31: t_Option = Any.any_l ()
-    | & _32: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _32: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__is_some_and
   use creusot.int.Int32
@@ -1754,94 +1749,94 @@ module M_option__is_some_and
   
   type t_Option = C_None | C_Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: bool)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- x'0 = (1: Int32.t) ] s1 | s1 = return' {_0} ] ]
-    [ & _0: bool = Any.any_l () | & x'0: Int32.t = x ]
+  let rec closure0 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: bool)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- x = (1: Int32.t) ] s1 | s1 = return {_0} ] ]
+    [ & _0: bool = Any.any_l () | & x: Int32.t = x ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in closure0'pre self x
   
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
-    let x = args in closure0'post'return' self x result
+    let x = args in closure0'post'return self x result
   
   meta "rewrite_def" predicate postcondition_once
   
-  let rec is_some_and (self_: t_Option) (f: ()) (return' (x: bool)) = {[@expl:is_some_and requires] match self_ with
+  let rec is_some_and (self_: t_Option) (f: ()) (return (x: bool)) = {[@expl:is_some_and requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition f t
       end}
     any
-    [ return''0 (result: bool) -> {match self_ with
+    [ return (result: bool) -> {match self_ with
         | C_None -> result = false
         | C_Some t -> postcondition_once f t result
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure1 [@coma:extspec] (self: ()) (x: Int32.t) (return' (x'0: bool)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- x'0 = (1: Int32.t) ] s1 | s1 = return' {_0} ] ]
-    [ & _0: bool = Any.any_l () | & x'0: Int32.t = x ]
+  let rec closure1 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: bool)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- x = (1: Int32.t) ] s1 | s1 = return {_0} ] ]
+    [ & _0: bool = Any.any_l () | & x: Int32.t = x ]
   
   meta "rewrite_def" predicate closure1'pre
   
-  meta "rewrite_def" predicate closure1'post'return'
+  meta "rewrite_def" predicate closure1'post'return
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in closure1'pre self x
   
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
-    let x = args in closure1'post'return' self x result
+    let x = args in closure1'post'return self x result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec is_some_and'0 (self_: t_Option) (f: ()) (return' (x: bool)) = {[@expl:is_some_and requires] match self_ with
+  let rec is_some_and'0 (self_: t_Option) (f: ()) (return (x: bool)) = {[@expl:is_some_and requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition'0 f t
       end}
     any
-    [ return''0 (result: bool) -> {match self_ with
+    [ return (result: bool) -> {match self_ with
         | C_None -> result = false
         | C_Some t -> postcondition_once'0 f t result
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure2 [@coma:extspec] (self: ()) (_0: Int32.t) (return' (x: bool)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0'0 <- true ] s1 | s1 = return' {_0'0} ] ] [ & _0'0: bool = Any.any_l () ]
+  let rec closure2 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: bool)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0'0 <- true ] s1 | s1 = return {_0'0} ] ] [ & _0'0: bool = Any.any_l () ]
   
   meta "rewrite_def" predicate closure2'pre
   
-  meta "rewrite_def" predicate closure2'post'return'
+  meta "rewrite_def" predicate closure2'post'return
   
   predicate precondition'1 [@inline:trivial] (self: ()) (args: Int32.t) = let _0 = args in closure2'pre self _0
   
   meta "rewrite_def" predicate precondition'1
   
   predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: Int32.t) (result: bool) =
-    let _0 = args in closure2'post'return' self _0 result
+    let _0 = args in closure2'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  let rec is_some_and'1 (self_: t_Option) (f: ()) (return' (x: bool)) = {[@expl:is_some_and requires] match self_ with
+  let rec is_some_and'1 (self_: t_Option) (f: ()) (return (x: bool)) = {[@expl:is_some_and requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition'1 f t
       end}
     any
-    [ return''0 (result: bool) -> {match self_ with
+    [ return (result: bool) -> {match self_ with
         | C_None -> result = false
         | C_Some t -> postcondition_once'1 f t result
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec is_some_and'2 (return' (x: ())) = (! bb0
+  let rec is_some_and'2 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some1 <- C_Some (1: Int32.t) ] s2
@@ -1858,7 +1853,7 @@ module M_option__is_some_and
       [ s0 = [ &_17 <- () ] s1 | s1 = is_some_and'1 {none} {_17} (fun (_ret: bool) -> [ &_15 <- _ret ] s2) | s2 = bb7 ]
     | bb7 = any [ br0 -> {_15 = false} (! bb9) | br1 -> {_15} (! bb8) ]
     | bb8 = {false} any
-    | bb9 = return''0 {_0}
+    | bb9 = return {_0}
     | bb3 = {false} any ]
     [ & _0: () = Any.any_l ()
     | & none: t_Option = Any.any_l ()
@@ -1869,7 +1864,7 @@ module M_option__is_some_and
     | & _10: bool = Any.any_l ()
     | & _12: () = Any.any_l ()
     | & _15: bool = Any.any_l ()
-    | & _17: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _17: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__or_else
   use creusot.int.Int32
@@ -1877,30 +1872,30 @@ module M_option__or_else
   
   type t_Option = C_None | C_Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (return' (x: t_Option)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- C_Some (2: Int32.t) ] s1 | s1 = return' {_0} ] ] [ & _0: t_Option = Any.any_l () ]
+  let rec closure0 [@coma:extspec] (self: ()) (return (x: t_Option)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- C_Some (2: Int32.t) ] s1 | s1 = return {_0} ] ] [ & _0: t_Option = Any.any_l () ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate precondition [@inline:trivial] (self: ()) (args: ()) = closure0'pre self
   
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
-    closure0'post'return' self result
+    closure0'post'return self result
   
   meta "rewrite_def" predicate postcondition_once
   
-  let rec or_else (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:or_else requires] self_ = C_None
+  let rec or_else (self_: t_Option) (f: ()) (return (x: t_Option)) = {[@expl:or_else requires] self_ = C_None
     -> precondition f ()}
     any
-    [ return''0 (result: t_Option) -> {match self_ with
+    [ return (result: t_Option) -> {match self_ with
         | C_None -> postcondition_once f () result
         | C_Some t -> result = C_Some t
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
@@ -1919,63 +1914,63 @@ module M_option__or_else
   
   meta "rewrite_def" function deep_model'1
   
-  let rec eq (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
-  let rec closure1 [@coma:extspec] (self: ()) (return' (x: t_Option)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- C_None ] s1 | s1 = return' {_0} ] ] [ & _0: t_Option = Any.any_l () ]
+  let rec closure1 [@coma:extspec] (self: ()) (return (x: t_Option)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- C_None ] s1 | s1 = return {_0} ] ] [ & _0: t_Option = Any.any_l () ]
   
   meta "rewrite_def" predicate closure1'pre
   
-  meta "rewrite_def" predicate closure1'post'return'
+  meta "rewrite_def" predicate closure1'post'return
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: ()) = closure1'pre self
   
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
-    closure1'post'return' self result
+    closure1'post'return self result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec or_else'0 (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:or_else requires] self_ = C_None
+  let rec or_else'0 (self_: t_Option) (f: ()) (return (x: t_Option)) = {[@expl:or_else requires] self_ = C_None
     -> precondition'0 f ()}
     any
-    [ return''0 (result: t_Option) -> {match self_ with
+    [ return (result: t_Option) -> {match self_ with
         | C_None -> postcondition_once'0 f () result
         | C_Some t -> result = C_Some t
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure2 [@coma:extspec] (self: ()) (return' (x: t_Option)) = bb0 [ bb0 = {false} any ]
+  let rec closure2 [@coma:extspec] (self: ()) (return (x: t_Option)) = bb0 [ bb0 = {false} any ]
   
   meta "rewrite_def" predicate closure2'pre
   
-  meta "rewrite_def" predicate closure2'post'return'
+  meta "rewrite_def" predicate closure2'post'return
   
   predicate precondition'1 [@inline:trivial] (self: ()) (args: ()) = closure2'pre self
   
   meta "rewrite_def" predicate precondition'1
   
   predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
-    closure2'post'return' self result
+    closure2'post'return self result
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  let rec or_else'1 (self_: t_Option) (f: ()) (return' (x: t_Option)) = {[@expl:or_else requires] self_ = C_None
+  let rec or_else'1 (self_: t_Option) (f: ()) (return (x: t_Option)) = {[@expl:or_else requires] self_ = C_None
     -> precondition'1 f ()}
     any
-    [ return''0 (result: t_Option) -> {match self_ with
+    [ return (result: t_Option) -> {match self_ with
         | C_None -> postcondition_once'1 f () result
         | C_Some t -> result = C_Some t
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec or_else'2 (return' (x: ())) = (! bb0
+  let rec or_else'2 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -2012,7 +2007,7 @@ module M_option__or_else
       | s1 = eq {_24} {_30} (fun (_ret: bool) -> [ &_22 <- _ret ] s2)
       | s2 = bb10 ]
     | bb10 = any [ br0 -> {_22 = false} (! bb12) | br1 -> {_22} (! bb11) ]
-    | bb11 = return''0 {_0}
+    | bb11 = return {_0}
     | bb12 = {false} any
     | bb8 = {false} any
     | bb4 = {false} any ]
@@ -2030,7 +2025,7 @@ module M_option__or_else
     | & _26: () = Any.any_l ()
     | & _30: t_Option = Any.any_l ()
     | & _31: t_Option = Any.any_l ()
-    | & _32: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _32: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__insert
   use creusot.int.Int32
@@ -2039,23 +2034,23 @@ module M_option__insert
   
   type t_Option = C_None | C_Some Int32.t
   
-  predicate resolve [@inline:trivial] (_0: Int32.t) = true
+  predicate resolve [@inline:trivial] (_1: Int32.t) = true
   
   meta "rewrite_def" predicate resolve
   
-  let rec insert (self_: MutBorrow.t t_Option) (value: Int32.t) (return' (x: MutBorrow.t Int32.t)) = any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {match self_.current with
+  let rec insert (self_: MutBorrow.t t_Option) (value: Int32.t) (return (x: MutBorrow.t Int32.t)) = any
+    [ return (result: MutBorrow.t Int32.t) -> {match self_.current with
         | C_Some t -> resolve t
         | C_None -> true
         end}
       {result.current = value /\ self_.final = C_Some (result.final)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve'0 [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (_0: MutBorrow.t Int32.t) = resolve'0 _0
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'0 _1
   
   meta "rewrite_def" predicate resolve'1
   
@@ -2076,14 +2071,14 @@ module M_option__insert
   
   meta "rewrite_def" function deep_model'1
   
-  let rec eq (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec insert'0 (return' (x: ())) = (! bb0
+  let rec insert'0 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -2123,7 +2118,7 @@ module M_option__insert
       | s3 = eq {some} {_27} (fun (_ret: bool) -> [ &_22 <- _ret ] s4)
       | s4 = bb10 ]
     | bb10 = any [ br0 -> {_22 = false} (! bb12) | br1 -> {_22} (! bb11) ]
-    | bb11 = return''0 {_0}
+    | bb11 = return {_0}
     | bb12 = {false} any
     | bb9 = s0 [ s0 = -{resolve'1 i2}- s1 | s1 = {false} any ]
     | bb6 = {false} any
@@ -2140,7 +2135,7 @@ module M_option__insert
     | & _18: bool = Any.any_l ()
     | & _22: bool = Any.any_l ()
     | & _27: t_Option = Any.any_l ()
-    | & _28: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _28: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__get_or_insert
   use creusot.int.Int32
@@ -2149,22 +2144,22 @@ module M_option__get_or_insert
   
   type t_Option = C_None | C_Some Int32.t
   
-  predicate resolve [@inline:trivial] (_0: Int32.t) = true
+  predicate resolve [@inline:trivial] (_1: Int32.t) = true
   
   meta "rewrite_def" predicate resolve
   
-  let rec get_or_insert (self_: MutBorrow.t t_Option) (value: Int32.t) (return' (x: MutBorrow.t Int32.t)) = any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {match self_.current with
+  let rec get_or_insert (self_: MutBorrow.t t_Option) (value: Int32.t) (return (x: MutBorrow.t Int32.t)) = any
+    [ return (result: MutBorrow.t Int32.t) -> {match self_.current with
         | C_None -> result.current = value /\ self_.final = C_Some (result.final)
         | C_Some _ -> self_.current = C_Some (result.current) /\ self_.final = C_Some (result.final) /\ resolve value
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve'0 [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (_0: MutBorrow.t Int32.t) = resolve'0 _0
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'0 _1
   
   meta "rewrite_def" predicate resolve'1
   
@@ -2185,63 +2180,63 @@ module M_option__get_or_insert
   
   meta "rewrite_def" function deep_model'1
   
-  let rec eq (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
-  let rec closure0 [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- (2: Int32.t) ] s1 | s1 = return' {_0} ] ] [ & _0: Int32.t = Any.any_l () ]
+  let rec closure0 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- (2: Int32.t) ] s1 | s1 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate precondition [@inline:trivial] (self: ()) (args: ()) = closure0'pre self
   
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
-    closure0'post'return' self result
+    closure0'post'return self result
   
   meta "rewrite_def" predicate postcondition_once
   
-  let rec get_or_insert_with (self_: MutBorrow.t t_Option) (f: ()) (return' (x: MutBorrow.t Int32.t)) =
+  let rec get_or_insert_with (self_: MutBorrow.t t_Option) (f: ()) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:get_or_insert_with requires] self_.current = C_None -> precondition f ()}
     any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {match self_.current with
+    [ return (result: MutBorrow.t Int32.t) -> {match self_.current with
         | C_None -> postcondition_once f () result.current /\ self_.final = C_Some (result.final)
         | C_Some _ -> self_.current = C_Some (result.current) /\ self_.final = C_Some (result.final)
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure1 [@coma:extspec] (self: ()) (return' (x: Int32.t)) = bb0 [ bb0 = {false} any ]
+  let rec closure1 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0 [ bb0 = {false} any ]
   
   meta "rewrite_def" predicate closure1'pre
   
-  meta "rewrite_def" predicate closure1'post'return'
+  meta "rewrite_def" predicate closure1'post'return
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: ()) = closure1'pre self
   
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
-    closure1'post'return' self result
+    closure1'post'return self result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec get_or_insert_with'0 (self_: MutBorrow.t t_Option) (f: ()) (return' (x: MutBorrow.t Int32.t)) =
+  let rec get_or_insert_with'0 (self_: MutBorrow.t t_Option) (f: ()) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:get_or_insert_with requires] self_.current = C_None -> precondition'0 f ()}
     any
-    [ return''0 (result: MutBorrow.t Int32.t) -> {match self_.current with
+    [ return (result: MutBorrow.t Int32.t) -> {match self_.current with
         | C_None -> postcondition_once'0 f () result.current /\ self_.final = C_Some (result.final)
         | C_Some _ -> self_.current = C_Some (result.current) /\ self_.final = C_Some (result.final)
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec get_or_insert'0 (return' (x: ())) = (! bb0
+  let rec get_or_insert'0 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -2325,7 +2320,7 @@ module M_option__get_or_insert
       | s3 = eq {some} {_55} (fun (_ret: bool) -> [ &_50 <- _ret ] s4)
       | s4 = bb22 ]
     | bb22 = any [ br0 -> {_50 = false} (! bb24) | br1 -> {_50} (! bb23) ]
-    | bb23 = return''0 {_0}
+    | bb23 = return {_0}
     | bb24 = {false} any
     | bb21 = s0 [ s0 = -{resolve'1 i2'0}- s1 | s1 = {false} any ]
     | bb18 = {false} any
@@ -2360,7 +2355,7 @@ module M_option__get_or_insert
     | & _55: t_Option = Any.any_l ()
     | & _56: t_Option = Any.any_l ()
     | & _57: t_Option = Any.any_l ()
-    | & _58: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _58: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__take
   use creusot.int.Int32
@@ -2369,20 +2364,20 @@ module M_option__take
   
   type t_Option = C_None | C_Some Int32.t
   
-  let rec take (self_: MutBorrow.t t_Option) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {result = self_.current /\ self_.final = C_None} (! return' {result}) ]
+  let rec take (self_: MutBorrow.t t_Option) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {result = self_.current /\ self_.final = C_None} (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int32.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return (result: Int32.t) -> {C_Some result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec take'0 (return' (x: ())) = (! bb0
+  let rec take'0 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -2404,7 +2399,7 @@ module M_option__take
       [ s0 = [ &_14 <- _15 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_14 = false} (! bb11) | br1 -> {_14} (! bb10) ] ]
     | bb10 = s0 [ s0 = is_none {some} (fun (_ret: bool) -> [ &_20 <- _ret ] s1) | s1 = bb12 ]
     | bb12 = any [ br0 -> {_20 = false} (! bb14) | br1 -> {_20} (! bb13) ]
-    | bb13 = return''0 {_0}
+    | bb13 = return {_0}
     | bb14 = {false} any
     | bb11 = {false} any
     | bb7 = {false} any
@@ -2420,7 +2415,7 @@ module M_option__take
     | & _15: Int32.t = Any.any_l ()
     | & _16: t_Option = Any.any_l ()
     | & _17: MutBorrow.t t_Option = Any.any_l ()
-    | & _20: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _20: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__take_if
   use creusot.int.Int32
@@ -2433,18 +2428,18 @@ module M_option__take_if
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t Int32.t) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return' (x: bool)) = bb0
-    [ bb0 = s0 [ s0 = -{resolve'0 _2}- s1 | s1 = {false} any ] ] [ & _2: MutBorrow.t Int32.t = _0 ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return (x: bool)) = bb0
+    [ bb0 = s0 [ s0 = -{resolve'0 _0}- s1 | s1 = {false} any ] ] [ & _0: MutBorrow.t Int32.t = _0 ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
-  predicate inv (_0: MutBorrow.t Int32.t)
+  predicate inv (_1: MutBorrow.t Int32.t)
   
   axiom inv_axiom [@rewrite]: forall x: MutBorrow.t Int32.t [inv x]. inv x = true
   
@@ -2454,17 +2449,17 @@ module M_option__take_if
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
-    let _0 = args in closure0'post'return' self _0 result
+    let _0 = args in closure0'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once
   
-  let rec take_if (self_: MutBorrow.t t_Option) (predicate': ()) (return' (x: t_Option)) =
+  let rec take_if (self_: MutBorrow.t t_Option) (predicate': ()) (return (x: t_Option)) =
     {[@expl:take_if requires] match self_.current with
       | C_None -> true
       | C_Some t -> forall b: MutBorrow.t Int32.t. inv b /\ b.current = t -> precondition predicate' b
       end}
     any
-    [ return''0 (result: t_Option) -> {match self_.current with
+    [ return (result: t_Option) -> {match self_.current with
         | C_None -> result = C_None /\ self_.final = C_None
         | C_Some cur -> exists b: MutBorrow.t Int32.t, res: bool. inv b
           /\ cur = b.current
@@ -2475,7 +2470,7 @@ module M_option__take_if
             self_.final = C_Some (b.final) /\ result = C_None
           )
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
@@ -2494,16 +2489,16 @@ module M_option__take_if
   
   meta "rewrite_def" function deep_model'1
   
-  let rec eq (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
-  let rec closure1 [@coma:extspec] (self: ()) (x: MutBorrow.t Int32.t) (return' (x'0: bool)) = bb0
-    [ bb0 = s0 [ s0 = -{resolve'0 x'0}- s1 | s1 = [ &_0 <- x'0.current = (2: Int32.t) ] s2 | s2 = return' {_0} ] ]
-    [ & _0: bool = Any.any_l () | & x'0: MutBorrow.t Int32.t = x ]
+  let rec closure1 [@coma:extspec] (self: ()) (x: MutBorrow.t Int32.t) (return (x'0: bool)) = bb0
+    [ bb0 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = [ &_0 <- x.current = (2: Int32.t) ] s2 | s2 = return {_0} ] ]
+    [ & _0: bool = Any.any_l () | & x: MutBorrow.t Int32.t = x ]
   
   meta "rewrite_def" predicate closure1'pre
   
-  meta "rewrite_def" predicate closure1'post'return'
+  meta "rewrite_def" predicate closure1'post'return
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) =
     let x = args in closure1'pre self x
@@ -2511,17 +2506,17 @@ module M_option__take_if
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
-    let x = args in closure1'post'return' self x result
+    let x = args in closure1'post'return self x result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec take_if'0 (self_: MutBorrow.t t_Option) (predicate': ()) (return' (x: t_Option)) =
+  let rec take_if'0 (self_: MutBorrow.t t_Option) (predicate': ()) (return (x: t_Option)) =
     {[@expl:take_if requires] match self_.current with
       | C_None -> true
       | C_Some t -> forall b: MutBorrow.t Int32.t. inv b /\ b.current = t -> precondition'0 predicate' b
       end}
     any
-    [ return''0 (result: t_Option) -> {match self_.current with
+    [ return (result: t_Option) -> {match self_.current with
         | C_None -> result = C_None /\ self_.final = C_None
         | C_Some cur -> exists b: MutBorrow.t Int32.t, res: bool. inv b
           /\ cur = b.current
@@ -2532,20 +2527,19 @@ module M_option__take_if
             self_.final = C_Some (b.final) /\ result = C_None
           )
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec closure2 [@coma:extspec] (self: ()) (x: MutBorrow.t Int32.t) (return' (x'0: bool)) = bb0
+  let rec closure2 [@coma:extspec] (self: ()) (x: MutBorrow.t Int32.t) (return (x'0: bool)) = bb0
     [ bb0 = s0
-      [ s0 = [ &res <- x'0.current = (1: Int32.t) ] s1
-      | s1 = [ &x'0 <- { x'0 with current = (3: Int32.t) } ] s2
-      | s2 = -{resolve'0 x'0}- s3
+      [ s0 = [ &res <- x.current = (1: Int32.t) ] s1
+      | s1 = [ &x <- { x with current = (3: Int32.t) } ] s2
+      | s2 = -{resolve'0 x}- s3
       | s3 = [ &_0 <- res ] s4
-      | s4 = return' {_0} ] ]
-    [ & _0: bool = Any.any_l () | & x'0: MutBorrow.t Int32.t = x | & res: bool = Any.any_l () ]
+      | s4 = return {_0} ] ] [ & _0: bool = Any.any_l () | & x: MutBorrow.t Int32.t = x | & res: bool = Any.any_l () ]
   
   meta "rewrite_def" predicate closure2'pre
   
-  meta "rewrite_def" predicate closure2'post'return'
+  meta "rewrite_def" predicate closure2'post'return
   
   predicate precondition'1 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) =
     let x = args in closure2'pre self x
@@ -2553,17 +2547,17 @@ module M_option__take_if
   meta "rewrite_def" predicate precondition'1
   
   predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
-    let x = args in closure2'post'return' self x result
+    let x = args in closure2'post'return self x result
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  let rec take_if'1 (self_: MutBorrow.t t_Option) (predicate': ()) (return' (x: t_Option)) =
+  let rec take_if'1 (self_: MutBorrow.t t_Option) (predicate': ()) (return (x: t_Option)) =
     {[@expl:take_if requires] match self_.current with
       | C_None -> true
       | C_Some t -> forall b: MutBorrow.t Int32.t. inv b /\ b.current = t -> precondition'1 predicate' b
       end}
     any
-    [ return''0 (result: t_Option) -> {match self_.current with
+    [ return (result: t_Option) -> {match self_.current with
         | C_None -> result = C_None /\ self_.final = C_None
         | C_Some cur -> exists b: MutBorrow.t Int32.t, res: bool. inv b
           /\ cur = b.current
@@ -2574,13 +2568,13 @@ module M_option__take_if
             self_.final = C_Some (b.final) /\ result = C_None
           )
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec take_if'2 (return' (x: ())) = (! bb0
+  let rec take_if'2 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -2643,7 +2637,7 @@ module M_option__take_if
       | s1 = eq {some} {_42} (fun (_ret: bool) -> [ &_37 <- _ret ] s2)
       | s2 = bb16 ]
     | bb16 = any [ br0 -> {_37 = false} (! bb18) | br1 -> {_37} (! bb17) ]
-    | bb17 = return''0 {_0}
+    | bb17 = return {_0}
     | bb18 = {false} any
     | bb15 = {false} any
     | bb11 = {false} any
@@ -2670,7 +2664,7 @@ module M_option__take_if
     | & _43: t_Option = Any.any_l ()
     | & _44: t_Option = Any.any_l ()
     | & _45: t_Option = Any.any_l ()
-    | & _46: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _46: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__copied_cloned
   use creusot.int.Int32
@@ -2681,48 +2675,48 @@ module M_option__copied_cloned
   
   type t_Option'0 = C_None'0 | C_Some'0 Int32.t
   
-  let rec as_ref (self_: t_Option) (return' (x: t_Option'0)) = any
-    [ return''0 (result: t_Option'0) -> {self_ = C_None -> result = C_None'0}
+  let rec as_ref (self_: t_Option) (return (x: t_Option'0)) = any
+    [ return (result: t_Option'0) -> {self_ = C_None -> result = C_None'0}
       {self_ = C_None \/ (exists r: Int32.t. result = C_Some'0 r /\ self_ = C_Some r)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec copied (self_: t_Option'0) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match self_ with
+  let rec copied (self_: t_Option'0) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {match self_ with
         | C_None'0 -> result = C_None
         | C_Some'0 s -> result = C_Some s
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int32.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return (result: Int32.t) -> {C_Some result = self_} (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t Int32.t)
   
-  let rec as_mut (self_: MutBorrow.t t_Option) (return' (x: t_Option'1)) = any
-    [ return''0 (result: t_Option'1) -> {self_.current = C_None -> result = C_None'1 /\ self_.final = C_None}
+  let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'1)) = any
+    [ return (result: t_Option'1) -> {self_.current = C_None -> result = C_None'1 /\ self_.final = C_None}
       {self_.current = C_None
       \/ (exists r: MutBorrow.t Int32.t. result = C_Some'1 r
         /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec copied'0 (self_: t_Option'1) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match self_ with
+  let rec copied'0 (self_: t_Option'1) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {match self_ with
         | C_None'1 -> result = C_None
         | C_Some'1 s -> result = C_Some (s.current) /\ s.final = s.current
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: t_Option'0; _p1: t_Option }
+  type tuple = { f0: t_Option'0; f1: t_Option }
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     let self_ = args in result = self_
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve [@inline:trivial] (_0: ()) = true
+  predicate resolve [@inline:trivial] (_1: ()) = true
   
   meta "rewrite_def" predicate resolve
   
@@ -2774,32 +2768,32 @@ module M_option__copied_cloned
     forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec clone' (self_: Int32.t) (return' (x: Int32.t)) = any
-    [ return''0 (result: Int32.t) -> {result = self_} (! return' {result}) ]
+  let rec clone' (self_: Int32.t) (return (x: Int32.t)) = any
+    [ return (result: Int32.t) -> {result = self_} (! return {result}) ]
   
-  let rec cloned (self_: t_Option'0) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match { _p0 = self_; _p1 = result } with
-        | {_p0 = C_None'0; _p1 = C_None} -> true
-        | {_p0 = C_Some'0 s; _p1 = C_Some r} -> postcondition () s r
+  let rec cloned (self_: t_Option'0) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {match { f0 = self_; f1 = result } with
+        | {f0 = C_None'0; f1 = C_None} -> true
+        | {f0 = C_Some'0 s; f1 = C_Some r} -> postcondition () s r
         | _ -> false
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple'0 = { _p0'0: t_Option'1; _p1'0: t_Option }
+  type tuple'0 = { f0'0: t_Option'1; f1'0: t_Option }
   
-  let rec cloned'0 (self_: t_Option'1) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match { _p0'0 = self_; _p1'0 = result } with
-        | {_p0'0 = C_None'1; _p1'0 = C_None} -> true
-        | {_p0'0 = C_Some'1 s; _p1'0 = C_Some r} -> postcondition () s.current r /\ s.final = s.current
+  let rec cloned'0 (self_: t_Option'1) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {match { f0'0 = self_; f1'0 = result } with
+        | {f0'0 = C_None'1; f1'0 = C_None} -> true
+        | {f0'0 = C_Some'1 s; f1'0 = C_Some r} -> postcondition () s.current r /\ s.final = s.current
         | _ -> false
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec copied_cloned (return' (x: ())) = (! bb0
+  let rec copied_cloned (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &some <- C_Some (1: Int32.t) ] s2
@@ -2856,7 +2850,7 @@ module M_option__copied_cloned
     | bb37 = s0 [ s0 = unwrap {_55} (fun (_ret: Int32.t) -> [ &_54 <- _ret ] s1) | s1 = bb38 ]
     | bb38 = s0
       [ s0 = [ &_53 <- _54 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_53 = false} (! bb40) | br1 -> {_53} (! bb39) ] ]
-    | bb39 = return''0 {_0}
+    | bb39 = return {_0}
     | bb40 = {false} any
     | bb35 = {false} any
     | bb30 = {false} any
@@ -2899,7 +2893,7 @@ module M_option__copied_cloned
     | & _54: Int32.t = Any.any_l ()
     | & _55: t_Option = Any.any_l ()
     | & _56: t_Option'1 = Any.any_l ()
-    | & _57: MutBorrow.t t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _57: MutBorrow.t t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__zip_unzip
   use creusot.int.Int32
@@ -2909,13 +2903,13 @@ module M_option__zip_unzip
   
   type t_Option'0 = C_None'0 | C_Some'0 bool
   
-  type tuple = { _p0: Int32.t; _p1: bool }
+  type tuple = { f0: Int32.t; f1: bool }
   
   type t_Option'1 = C_None'1 | C_Some'1 tuple
   
-  type tuple'0 = { _p0'0: t_Option; _p1'0: t_Option'0 }
+  type tuple'0 = { f0'0: t_Option; f1'0: t_Option'0 }
   
-  predicate resolve [@inline:trivial] (_0: bool) = true
+  predicate resolve [@inline:trivial] (_1: bool) = true
   
   meta "rewrite_def" predicate resolve
   
@@ -2927,7 +2921,7 @@ module M_option__zip_unzip
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (_0: Int32.t) = true
+  predicate resolve'1 [@inline:trivial] (_1: Int32.t) = true
   
   meta "rewrite_def" predicate resolve'1
   
@@ -2939,15 +2933,15 @@ module M_option__zip_unzip
   
   meta "rewrite_def" predicate resolve'2
   
-  let rec zip (self_: t_Option) (other: t_Option'0) (return' (x: t_Option'1)) = any
-    [ return''0 (result: t_Option'1) -> {match { _p0'0 = self_; _p1'0 = other } with
-        | {_p0'0 = C_None} -> result = C_None'1 /\ resolve'0 other
-        | {_p1'0 = C_None'0} -> result = C_None'1 /\ resolve'2 self_
-        | {_p0'0 = C_Some t; _p1'0 = C_Some'0 u} -> result = C_Some'1 { _p0 = t; _p1 = u }
+  let rec zip (self_: t_Option) (other: t_Option'0) (return (x: t_Option'1)) = any
+    [ return (result: t_Option'1) -> {match { f0'0 = self_; f1'0 = other } with
+        | {f0'0 = C_None} -> result = C_None'1 /\ resolve'0 other
+        | {f1'0 = C_None'0} -> result = C_None'1 /\ resolve'2 self_
+        | {f0'0 = C_Some t; f1'0 = C_Some'0 u} -> result = C_Some'1 { f0 = t; f1 = u }
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple'1 = { _p0'1: int; _p1'1: bool }
+  type tuple'1 = { f0'1: int; f1'1: bool }
   
   type t_Option'2 = C_None'2 | C_Some'2 tuple'1
   
@@ -2959,8 +2953,8 @@ module M_option__zip_unzip
   
   meta "rewrite_def" predicate deep_model'0
   
-  function deep_model'1 [@inline:trivial] (self: tuple) : tuple'1 = { _p0'1 = deep_model self._p0;
-                                                                      _p1'1 = deep_model'0 self._p1 }
+  function deep_model'1 [@inline:trivial] (self: tuple) : tuple'1 = { f0'1 = deep_model self.f0;
+                                                                      f1'1 = deep_model'0 self.f1 }
   
   meta "rewrite_def" function deep_model'1
   
@@ -2975,15 +2969,15 @@ module M_option__zip_unzip
   
   meta "rewrite_def" function deep_model'3
   
-  let rec eq (self_: t_Option'1) (rhs: t_Option'1) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'3 self_ = deep_model'3 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option'1) (rhs: t_Option'1) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'3 self_ = deep_model'3 rhs)} (! return {result}) ]
   
-  let rec unzip (self_: t_Option'1) (return' (x: tuple'0)) = any
-    [ return''0 (result: tuple'0) -> {match self_ with
-        | C_None'1 -> result = { _p0'0 = C_None; _p1'0 = C_None'0 }
-        | C_Some'1 {_p0 = t; _p1 = u} -> result = { _p0'0 = C_Some t; _p1'0 = C_Some'0 u }
+  let rec unzip (self_: t_Option'1) (return (x: tuple'0)) = any
+    [ return (result: tuple'0) -> {match self_ with
+        | C_None'1 -> result = { f0'0 = C_None; f1'0 = C_None'0 }
+        | C_Some'1 {f0 = t; f1 = u} -> result = { f0'0 = C_Some t; f1'0 = C_Some'0 u }
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_Option'3 = C_None'3 | C_Some'3 int
   
@@ -2998,8 +2992,8 @@ module M_option__zip_unzip
   
   meta "rewrite_def" function deep_model'5
   
-  let rec eq'0 (self_: t_Option) (rhs: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'5 self_ = deep_model'5 rhs)} (! return' {result}) ]
+  let rec eq'0 (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'5 self_ = deep_model'5 rhs)} (! return {result}) ]
   
   function deep_model'6 [@inline:trivial] (self: t_Option'0) : t_Option'0 = match self with
       | C_Some'0 t -> C_Some'0 (deep_model'0 t)
@@ -3012,14 +3006,14 @@ module M_option__zip_unzip
   
   meta "rewrite_def" function deep_model'7
   
-  let rec eq'1 (self_: t_Option'0) (rhs: t_Option'0) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'7 self_ = deep_model'7 rhs)} (! return' {result}) ]
+  let rec eq'1 (self_: t_Option'0) (rhs: t_Option'0) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'7 self_ = deep_model'7 rhs)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec zip_unzip (return' (x: ())) = (! bb0
+  let rec zip_unzip (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none_int <- C_None ] s1
       | s1 = [ &none_bool <- C_None'0 ] s2
@@ -3057,7 +3051,7 @@ module M_option__zip_unzip
     | bb13 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
-          [ s0'0 = [ &_2 <- { _p0 = (1: Int32.t); _p1 = true } ] s1'0
+          [ s0'0 = [ &_2 <- { f0 = (1: Int32.t); f1 = true } ] s1'0
           | s1'0 = [ &_1 <- C_Some'1 _2 ] s2'0
           | s2'0 = [ &_0'0 <- _1 ] s3
           | s3 = _const_ret {_0'0} ] ]
@@ -3068,7 +3062,7 @@ module M_option__zip_unzip
     | bb14 = any [ br0 -> {_33 = false} (! bb16) | br1 -> {_33} (! bb15) ]
     | bb15 = s0
       [ s0 = [ &none_zipped <- C_None'1 ] s1
-      | s1 = [ &_44 <- { _p0 = (1: Int32.t); _p1 = true } ] s2
+      | s1 = [ &_44 <- { f0 = (1: Int32.t); f1 = true } ] s2
       | s2 = [ &some_zipped <- C_Some'1 _44 ] s3
       | s3 = unzip {none_zipped} (fun (_ret: tuple'0) -> [ &none_unzip <- _ret ] s4)
       | s4 = bb17 ]
@@ -3078,7 +3072,7 @@ module M_option__zip_unzip
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_None ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option = Any.any_l () | & _1: t_Option = Any.any_l () ]
         [ _const_ret (_const: t_Option) -> [ &_76 <- _const ] s1 ]
-      | s1 = eq'0 {none_unzip._p0'0} {_76} (fun (_ret: bool) -> [ &_50 <- _ret ] s2)
+      | s1 = eq'0 {none_unzip.f0'0} {_76} (fun (_ret: bool) -> [ &_50 <- _ret ] s2)
       | s2 = bb19 ]
     | bb19 = any [ br0 -> {_50 = false} (! bb21) | br1 -> {_50} (! bb20) ]
     | bb20 = s0
@@ -3086,7 +3080,7 @@ module M_option__zip_unzip
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_None'0 ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option'0 = Any.any_l () | & _1: t_Option'0 = Any.any_l () ]
         [ _const_ret (_const: t_Option'0) -> [ &_75 <- _const ] s1 ]
-      | s1 = eq'1 {none_unzip._p1'0} {_75} (fun (_ret: bool) -> [ &_56 <- _ret ] s2)
+      | s1 = eq'1 {none_unzip.f1'0} {_75} (fun (_ret: bool) -> [ &_56 <- _ret ] s2)
       | s2 = bb22 ]
     | bb22 = any [ br0 -> {_56 = false} (! bb24) | br1 -> {_56} (! bb23) ]
     | bb23 = s0
@@ -3095,7 +3089,7 @@ module M_option__zip_unzip
           [ s0'0 = [ &_1 <- C_Some (1: Int32.t) ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option = Any.any_l () | & _1: t_Option = Any.any_l () ]
         [ _const_ret (_const: t_Option) -> [ &_74 <- _const ] s1 ]
-      | s1 = eq'0 {some_unzip._p0'0} {_74} (fun (_ret: bool) -> [ &_62 <- _ret ] s2)
+      | s1 = eq'0 {some_unzip.f0'0} {_74} (fun (_ret: bool) -> [ &_62 <- _ret ] s2)
       | s2 = bb25 ]
     | bb25 = any [ br0 -> {_62 = false} (! bb27) | br1 -> {_62} (! bb26) ]
     | bb26 = s0
@@ -3104,10 +3098,10 @@ module M_option__zip_unzip
           [ s0'0 = [ &_1 <- C_Some'0 true ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option'0 = Any.any_l () | & _1: t_Option'0 = Any.any_l () ]
         [ _const_ret (_const: t_Option'0) -> [ &_73 <- _const ] s1 ]
-      | s1 = eq'1 {some_unzip._p1'0} {_73} (fun (_ret: bool) -> [ &_68 <- _ret ] s2)
+      | s1 = eq'1 {some_unzip.f1'0} {_73} (fun (_ret: bool) -> [ &_68 <- _ret ] s2)
       | s2 = bb28 ]
     | bb28 = any [ br0 -> {_68 = false} (! bb30) | br1 -> {_68} (! bb29) ]
-    | bb29 = return''0 {_0}
+    | bb29 = return {_0}
     | bb30 = {false} any
     | bb27 = {false} any
     | bb24 = {false} any
@@ -3145,7 +3139,7 @@ module M_option__zip_unzip
     | & _77: t_Option'1 = Any.any_l ()
     | & _78: t_Option'1 = Any.any_l ()
     | & _79: t_Option'1 = Any.any_l ()
-    | & _80: t_Option'1 = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _80: t_Option'1 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__transpose
   use creusot.int.Int32
@@ -3159,17 +3153,17 @@ module M_option__transpose
   
   type t_Result'0 = C_Ok'0 t_Option'0 | C_Err'0 bool
   
-  let rec transpose (self_: t_Option) (return' (x: t_Result'0)) = any
-    [ return''0 (result: t_Result'0) -> {match self_ with
+  let rec transpose (self_: t_Option) (return (x: t_Result'0)) = any
+    [ return (result: t_Result'0) -> {match self_ with
         | C_None -> result = C_Ok'0 (C_None'0)
         | C_Some (C_Ok ok) -> result = C_Ok'0 (C_Some'0 ok)
         | C_Some (C_Err err) -> result = C_Err'0 err
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Result'0) (return' (x: t_Option'0)) = {[@expl:unwrap requires] exists t: t_Option'0. self_
+  let rec unwrap (self_: t_Result'0) (return (x: t_Option'0)) = {[@expl:unwrap requires] exists t: t_Option'0. self_
       = C_Ok'0 t}
-    any [ return''0 (result: t_Option'0) -> {C_Ok'0 result = self_} (! return' {result}) ]
+    any [ return (result: t_Option'0) -> {C_Ok'0 result = self_} (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 int
   
@@ -3188,18 +3182,18 @@ module M_option__transpose
   
   meta "rewrite_def" function deep_model'1
   
-  let rec eq (self_: t_Option'0) (rhs: t_Option'0) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return' {result}) ]
+  let rec eq (self_: t_Option'0) (rhs: t_Option'0) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
-  let rec unwrap_err (self_: t_Result'0) (return' (x: bool)) = {[@expl:unwrap_err requires] exists e: bool. self_
+  let rec unwrap_err (self_: t_Result'0) (return (x: bool)) = {[@expl:unwrap_err requires] exists e: bool. self_
       = C_Err'0 e}
-    any [ return''0 (result: bool) -> {C_Err'0 result = self_} (! return' {result}) ]
+    any [ return (result: bool) -> {C_Err'0 result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec transpose'0 (return' (x: ())) = (! bb0
+  let rec transpose'0 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &none <- C_None ] s1
       | s1 = [ &_3 <- C_Ok (1: Int32.t) ] s2
@@ -3231,7 +3225,7 @@ module M_option__transpose
     | bb9 = s0 [ s0 = transpose {some_err} (fun (_ret: t_Result'0) -> [ &_27 <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0 [ s0 = unwrap_err {_27} (fun (_ret: bool) -> [ &_26 <- _ret ] s1) | s1 = bb12 ]
     | bb12 = s0 [ s0 = [ &_25 <- _26 ] s1 | s1 = any [ br0 -> {_25 = false} (! bb14) | br1 -> {_25} (! bb13) ] ]
-    | bb13 = return''0 {_0}
+    | bb13 = return {_0}
     | bb14 = {false} any
     | bb10 = {false} any
     | bb5 = {false} any ]
@@ -3251,7 +3245,7 @@ module M_option__transpose
     | & _26: bool = Any.any_l ()
     | & _27: t_Result'0 = Any.any_l ()
     | & _30: t_Option'0 = Any.any_l ()
-    | & _31: t_Option'0 = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _31: t_Option'0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__flatten
   use creusot.int.Int32
@@ -3261,22 +3255,22 @@ module M_option__flatten
   
   type t_Option'0 = C_None'0 | C_Some'0 t_Option
   
-  let rec flatten (self_: t_Option'0) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {self_ = C_None'0 -> result = C_None}
+  let rec flatten (self_: t_Option'0) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {self_ = C_None'0 -> result = C_None}
       {self_ = C_None'0 \/ self_ = C_Some'0 result}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = (self_ = C_None)} (! return' {result}) ]
+  let rec is_none (self_: t_Option) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return' (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return''0 (result: Int32.t) -> {C_Some result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return (result: Int32.t) -> {C_Some result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec flatten'0 (return' (x: ())) = (! bb0
+  let rec flatten'0 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &opt <- C_None'0 ] s1 | s1 = flatten {opt} (fun (_ret: t_Option) -> [ &_5 <- _ret ] s2) | s2 = bb1 ]
     | bb1 = s0 [ s0 = is_none {_5} (fun (_ret: bool) -> [ &_3 <- _ret ] s1) | s1 = bb2 ]
@@ -3296,7 +3290,7 @@ module M_option__flatten
     | bb9 = s0 [ s0 = unwrap {_21} (fun (_ret: Int32.t) -> [ &_20 <- _ret ] s1) | s1 = bb10 ]
     | bb10 = s0
       [ s0 = [ &_19 <- _20 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_19 = false} (! bb12) | br1 -> {_19} (! bb11) ] ]
-    | bb11 = return''0 {_0}
+    | bb11 = return {_0}
     | bb12 = {false} any
     | bb8 = {false} any
     | bb4 = {false} any ]
@@ -3312,7 +3306,7 @@ module M_option__flatten
     | & _17: t_Option = Any.any_l ()
     | & _19: bool = Any.any_l ()
     | & _20: Int32.t = Any.any_l ()
-    | & _21: t_Option = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _21: t_Option = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_option__resolve
   use creusot.int.Int32
@@ -3325,17 +3319,17 @@ module M_option__resolve
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t Int32.t) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
-  let rec closure1 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return' (x: bool)) = bb0
-    [ bb0 = s0 [ s0 = -{resolve'0 _2}- s1 | s1 = [ &_0'0 <- true ] s2 | s2 = return' {_0'0} ] ]
-    [ & _0'0: bool = Any.any_l () | & _2: MutBorrow.t Int32.t = _0 ]
+  let rec closure1 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return (x: bool)) = bb0
+    [ bb0 = s0 [ s0 = -{resolve'0 _0}- s1 | s1 = [ &_0'0 <- true ] s2 | s2 = return {_0'0} ] ]
+    [ & _0'0: bool = Any.any_l () | & _0: MutBorrow.t Int32.t = _0 ]
   
   meta "rewrite_def" predicate closure1'pre
   
-  meta "rewrite_def" predicate closure1'post'return'
+  meta "rewrite_def" predicate closure1'post'return
   
   predicate precondition [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) =
     let _0 = args in closure1'pre self _0
@@ -3343,24 +3337,24 @@ module M_option__resolve
   meta "rewrite_def" predicate precondition
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
-    let _0 = args in closure1'post'return' self _0 result
+    let _0 = args in closure1'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once
   
-  let rec is_some_and (self_: t_Option) (f: ()) (return' (x: bool)) = {[@expl:is_some_and requires] match self_ with
+  let rec is_some_and (self_: t_Option) (f: ()) (return (x: bool)) = {[@expl:is_some_and requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition f t
       end}
     any
-    [ return''0 (result: bool) -> {match self_ with
+    [ return (result: bool) -> {match self_ with
         | C_None -> result = false
         | C_Some t -> postcondition_once f t result
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 Int32.t
   
-  predicate resolve'1 [@inline:trivial] (_0: Int32.t) = true
+  predicate resolve'1 [@inline:trivial] (_1: Int32.t) = true
   
   meta "rewrite_def" predicate resolve'1
   
@@ -3380,26 +3374,26 @@ module M_option__resolve
   
   meta "rewrite_def" predicate resolve'3
   
-  let rec and (self_: t_Option) (optb: t_Option'0) (return' (x: t_Option'0)) = any
-    [ return''0 (result: t_Option'0) -> {self_ = C_None -> result = C_None'0 /\ resolve'2 optb}
+  let rec and (self_: t_Option) (optb: t_Option'0) (return (x: t_Option'0)) = any
+    [ return (result: t_Option'0) -> {self_ = C_None -> result = C_None'0 /\ resolve'2 optb}
       {self_ = C_None \/ result = optb /\ resolve'3 self_}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec or (self_: t_Option) (optb: t_Option) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {self_ = C_None -> result = optb}
+  let rec or (self_: t_Option) (optb: t_Option) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {self_ = C_None -> result = optb}
       {self_ = C_None \/ result = self_ /\ resolve'3 optb}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  predicate resolve'4 [@inline:trivial] (_0: t_Option) = resolve'3 _0
+  predicate resolve'4 [@inline:trivial] (_1: t_Option) = resolve'3 _1
   
   meta "rewrite_def" predicate resolve'4
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return' (x: bool)) = bb0
-    [ bb0 = s0 [ s0 = [ &_0'0 <- false ] s1 | s1 = return' {_0'0} ] ] [ & _0'0: bool = Any.any_l () ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return (x: bool)) = bb0
+    [ bb0 = s0 [ s0 = [ &_0'0 <- false ] s1 | s1 = return {_0'0} ] ] [ & _0'0: bool = Any.any_l () ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate precondition'0 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) =
     let _0 = args in closure0'pre self _0
@@ -3407,79 +3401,79 @@ module M_option__resolve
   meta "rewrite_def" predicate precondition'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) (result: bool) =
-    let _0 = args in closure0'post'return' self _0 result
+    let _0 = args in closure0'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec filter (self_: t_Option) (predicate': ()) (return' (x: t_Option)) = {[@expl:filter requires] match self_ with
+  let rec filter (self_: t_Option) (predicate': ()) (return (x: t_Option)) = {[@expl:filter requires] match self_ with
       | C_None -> true
       | C_Some t -> precondition'0 predicate' t
       end}
     any
-    [ return''0 (result: t_Option) -> {match self_ with
+    [ return (result: t_Option) -> {match self_ with
         | C_None -> result = C_None
         | C_Some t -> match result with
           | C_None -> postcondition_once'0 predicate' t false /\ resolve'0 t
           | C_Some r -> postcondition_once'0 predicate' t true /\ r = t
           end
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple = { _p0: t_Option; _p1: t_Option }
+  type tuple = { f0: t_Option; f1: t_Option }
   
-  let rec xor (self_: t_Option) (optb: t_Option) (return' (x: t_Option)) = any
-    [ return''0 (result: t_Option) -> {match { _p0 = self_; _p1 = optb } with
-        | {_p0 = C_None; _p1 = C_None} -> result = C_None
-        | {_p0 = C_Some t1; _p1 = C_Some t2} -> result = C_None /\ resolve'0 t1 /\ resolve'0 t2
-        | {_p0 = C_Some t; _p1 = C_None} -> result = C_Some t
-        | {_p0 = C_None; _p1 = C_Some t} -> result = C_Some t
+  let rec xor (self_: t_Option) (optb: t_Option) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {match { f0 = self_; f1 = optb } with
+        | {f0 = C_None; f1 = C_None} -> result = C_None
+        | {f0 = C_Some t1; f1 = C_Some t2} -> result = C_None /\ resolve'0 t1 /\ resolve'0 t2
+        | {f0 = C_Some t; f1 = C_None} -> result = C_Some t
+        | {f0 = C_None; f1 = C_Some t} -> result = C_Some t
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   let rec insert (self_: MutBorrow.t t_Option) (value: MutBorrow.t Int32.t)
-    (return' (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
-    [ return''0 (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {match self_.current with
+    (return (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
+    [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {match self_.current with
         | C_Some t -> resolve'0 t
         | C_None -> true
         end}
       {result.current = value /\ self_.final = C_Some (result.final)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve'5 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t Int32.t)) = self.final = self.current
   
   meta "rewrite_def" predicate resolve'5
   
-  predicate resolve'6 [@inline:trivial] (_0: MutBorrow.t (MutBorrow.t Int32.t)) = resolve'5 _0
+  predicate resolve'6 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = resolve'5 _1
   
   meta "rewrite_def" predicate resolve'6
   
   let rec get_or_insert (self_: MutBorrow.t t_Option) (value: MutBorrow.t Int32.t)
-    (return' (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
-    [ return''0 (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {match self_.current with
+    (return (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
+    [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {match self_.current with
         | C_None -> result.current = value /\ self_.final = C_Some (result.final)
         | C_Some _ -> self_.current = C_Some (result.current) /\ self_.final = C_Some (result.final) /\ resolve'0 value
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  type tuple'0 = { _p0'0: MutBorrow.t Int32.t; _p1'0: Int32.t }
+  type tuple'0 = { f0'0: MutBorrow.t Int32.t; f1'0: Int32.t }
   
   type t_Option'1 = C_None'1 | C_Some'1 tuple'0
   
-  type tuple'1 = { _p0'1: t_Option; _p1'1: t_Option'0 }
+  type tuple'1 = { f0'1: t_Option; f1'1: t_Option'0 }
   
-  let rec zip (self_: t_Option) (other: t_Option'0) (return' (x: t_Option'1)) = any
-    [ return''0 (result: t_Option'1) -> {match { _p0'1 = self_; _p1'1 = other } with
-        | {_p0'1 = C_None} -> result = C_None'1 /\ resolve'2 other
-        | {_p1'1 = C_None'0} -> result = C_None'1 /\ resolve'3 self_
-        | {_p0'1 = C_Some t; _p1'1 = C_Some'0 u} -> result = C_Some'1 { _p0'0 = t; _p1'0 = u }
+  let rec zip (self_: t_Option) (other: t_Option'0) (return (x: t_Option'1)) = any
+    [ return (result: t_Option'1) -> {match { f0'1 = self_; f1'1 = other } with
+        | {f0'1 = C_None} -> result = C_None'1 /\ resolve'2 other
+        | {f1'1 = C_None'0} -> result = C_None'1 /\ resolve'3 self_
+        | {f0'1 = C_Some t; f1'1 = C_Some'0 u} -> result = C_Some'1 { f0'0 = t; f1'0 = u }
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  predicate resolve'7 [@inline:trivial] (self: tuple'0) = resolve'0 self._p0'0 /\ resolve'1 self._p1'0
+  predicate resolve'7 [@inline:trivial] (self: tuple'0) = resolve'0 self.f0'0 /\ resolve'1 self.f1'0
   
   meta "rewrite_def" predicate resolve'7
   
-  predicate resolve'8 [@inline:trivial] (_0: tuple'0) = resolve'7 _0
+  predicate resolve'8 [@inline:trivial] (_1: tuple'0) = resolve'7 _1
   
   meta "rewrite_def" predicate resolve'8
   
@@ -3491,23 +3485,23 @@ module M_option__resolve
   
   meta "rewrite_def" predicate resolve'9
   
-  predicate resolve'10 [@inline:trivial] (_0: t_Option'1) = resolve'9 _0
+  predicate resolve'10 [@inline:trivial] (_1: t_Option'1) = resolve'9 _1
   
   meta "rewrite_def" predicate resolve'10
   
-  let rec copied (self_: t_Option) (return' (x: t_Option'0)) = any
-    [ return''0 (result: t_Option'0) -> {match self_ with
+  let rec copied (self_: t_Option) (return (x: t_Option'0)) = any
+    [ return (result: t_Option'0) -> {match self_ with
         | C_None -> result = C_None'0
         | C_Some s -> result = C_Some'0 (s.current) /\ s.final = s.current
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate postcondition_once'1 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
     let self_ = args in result = self_
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  predicate resolve'11 [@inline:trivial] (_0: ()) = true
+  predicate resolve'11 [@inline:trivial] (_1: ()) = true
   
   meta "rewrite_def" predicate resolve'11
   
@@ -3559,22 +3553,22 @@ module M_option__resolve
     forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut self args res_state res
       = (postcondition self args res /\ self = res_state)
   
-  let rec clone' (self_: Int32.t) (return' (x: Int32.t)) = any
-    [ return''0 (result: Int32.t) -> {result = self_} (! return' {result}) ]
+  let rec clone' (self_: Int32.t) (return (x: Int32.t)) = any
+    [ return (result: Int32.t) -> {result = self_} (! return {result}) ]
   
-  let rec cloned (self_: t_Option) (return' (x: t_Option'0)) = any
-    [ return''0 (result: t_Option'0) -> {match { _p0'1 = self_; _p1'1 = result } with
-        | {_p0'1 = C_None; _p1'1 = C_None'0} -> true
-        | {_p0'1 = C_Some s; _p1'1 = C_Some'0 r} -> postcondition () s.current r /\ s.final = s.current
+  let rec cloned (self_: t_Option) (return (x: t_Option'0)) = any
+    [ return (result: t_Option'0) -> {match { f0'1 = self_; f1'1 = result } with
+        | {f0'1 = C_None; f1'1 = C_None'0} -> true
+        | {f0'1 = C_Some s; f1'1 = C_Some'0 r} -> postcondition () s.current r /\ s.final = s.current
         | _ -> false
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec resolve'12 (return' (x: ())) = (! bb0
+  let rec resolve'12 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
@@ -3717,7 +3711,7 @@ module M_option__resolve
       | s3 = bb42 ]
     | bb42 = s0
       [ s0 = [ &_114 <- x'7 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_114 = false} (! bb44) | br1 -> {_114} (! bb43) ] ]
-    | bb43 = return''0 {_0}
+    | bb43 = return {_0}
     | bb44 = {false} any
     | bb41 = {false} any
     | bb38 = {false} any
@@ -3800,5 +3794,5 @@ module M_option__resolve
     | & opt'7: t_Option = Any.any_l ()
     | & _110: MutBorrow.t Int32.t = Any.any_l ()
     | & _111: t_Option'0 = Any.any_l ()
-    | & _114: bool = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _114: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

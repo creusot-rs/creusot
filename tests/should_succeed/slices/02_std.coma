@@ -83,10 +83,10 @@ module M_02_std__binary_search
   
   axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
   
-  let rec binary_search (self_: Slice64.slice UInt32.t) (x: UInt32.t) (return' (x'0: t_Result)) =
+  let rec binary_search (self_: Slice64.slice UInt32.t) (x: UInt32.t) (return (x'0: t_Result)) =
     {[@expl:binary_search requires] sorted (deep_model'1 self_)}
     any
-    [ return''0 (result: t_Result) -> {forall i: UInt64.t. result = C_Ok i
+    [ return (result: t_Result) -> {forall i: UInt64.t. result = C_Ok i
         -> UInt64.t'int i < Seq.length (Slice64.view self_)
         /\ Seq.get (deep_model'0 self_) (UInt64.t'int i) = deep_model'2 x}
       {forall i: UInt64.t. result = C_Err i
@@ -98,17 +98,16 @@ module M_02_std__binary_search
       {forall i: UInt64.t. result = C_Err i
         -> (forall j: UInt64.t. UInt64.le i j /\ UInt64.t'int j < Seq.length (Slice64.view self_)
           -> deep_model'2 x < Seq.get (deep_model'1 self_) (UInt64.t'int j))}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec unwrap (self_: t_Result) (return' (x: UInt64.t)) = {[@expl:unwrap requires] exists t: UInt64.t. self_
-      = C_Ok t}
-    any [ return''0 (result: UInt64.t) -> {C_Ok result = self_} (! return' {result}) ]
+  let rec unwrap (self_: t_Result) (return (x: UInt64.t)) = {[@expl:unwrap requires] exists t: UInt64.t. self_ = C_Ok t}
+    any [ return (result: UInt64.t) -> {C_Ok result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec binary_search'0 (s: Slice64.slice UInt32.t) (return' (x: UInt64.t)) =
+  let rec binary_search'0 (s: Slice64.slice UInt32.t) (return (x: UInt64.t)) =
     {[@expl:binary_search requires #0] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view s)
       -> UInt32.t'int (index_logic s i) = i}
     {[@expl:binary_search requires #1] Seq.length (Slice64.view s) = 5}
@@ -118,14 +117,14 @@ module M_02_std__binary_search
         [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- (2: UInt32.t) ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
         [ & _0'0: UInt32.t = Any.any_l () ] [ _const_ret (_const: UInt32.t) -> [ &_12 <- _const ] s1 ]
       | s1 = [ &_8 <- _12 ] s2
-      | s2 = binary_search {s'0} {_8} (fun (_ret: t_Result) -> [ &_5 <- _ret ] s3)
+      | s2 = binary_search {s} {_8} (fun (_ret: t_Result) -> [ &_5 <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = s0 [ s0 = unwrap {_5} (fun (_ret: UInt64.t) -> [ &ix <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = {[@expl:assertion] UInt64.t'int ix < 5} s1 | s1 = [ &_0 <- ix ] s2 | s2 = return''0 {_0} ] ]
+    | bb2 = s0 [ s0 = {[@expl:assertion] UInt64.t'int ix < 5} s1 | s1 = [ &_0 <- ix ] s2 | s2 = return {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
-    | & s'0: Slice64.slice UInt32.t = s
+    | & s: Slice64.slice UInt32.t = s
     | & ix: UInt64.t = Any.any_l ()
     | & _5: t_Result = Any.any_l ()
     | & _8: UInt32.t = Any.any_l ()
-    | & _12: UInt32.t = Any.any_l () ]) [ return''0 (result: UInt64.t) -> (! return' {result}) ]
+    | & _12: UInt32.t = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
 end

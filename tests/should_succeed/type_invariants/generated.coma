@@ -10,13 +10,13 @@ module M_generated__use_foo
   
   type t_Foo = C_A (MutBorrow.t t_Sum10) UInt64.t | C_B UInt32.t
   
-  type tuple = { _p0: t_Foo; _p1: MutBorrow.t t_Sum10 }
+  type tuple = { f0: t_Foo; f1: MutBorrow.t t_Sum10 }
   
   type t_Foo'0 = C_A'0 (MutBorrow.t t_Sum10) UInt64.t | C_B'0 tuple
   
   predicate invariant' (self: t_Sum10) = Int32.to_int self.t_Sum10__0 + Int32.to_int self.t_Sum10__1 = 10
   
-  predicate inv (_0: t_Sum10)
+  predicate inv (_1: t_Sum10)
   
   axiom inv_axiom [@rewrite]: forall x: t_Sum10 [inv x]. inv x
       = (invariant' x
@@ -28,28 +28,28 @@ module M_generated__use_foo
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_0: MutBorrow.t t_Sum10)
+  predicate inv'0 (_1: MutBorrow.t t_Sum10)
   
   axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Sum10 [inv'0 x]. inv'0 x = invariant''0 x
   
-  predicate inv'1 (_0: t_Foo)
+  predicate inv'1 (_1: t_Foo)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Foo [inv'1 x]. inv'1 x
       = match x with
-        | C_A f1 f2 -> inv'0 f1
+        | C_A f1'0 f2 -> inv'0 f1'0
         | C_B a_0 -> true
         end
   
-  predicate inv'2 (_0: tuple)
+  predicate inv'2 (_1: tuple)
   
   axiom inv_axiom'2 [@rewrite]: forall x: tuple [inv'2 x]. inv'2 x
-      = (let {_p0 = x0; _p1 = x1} = x in inv'1 x0 /\ inv'0 x1)
+      = (let {f0 = x0; f1 = x1} = x in inv'1 x0 /\ inv'0 x1)
   
-  predicate inv'3 (_0: t_Foo'0)
+  predicate inv'3 (_1: t_Foo'0)
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_Foo'0 [inv'3 x]. inv'3 x
       = match x with
-        | C_A'0 f1 f2 -> inv'0 f1
+        | C_A'0 f1'0 f2 -> inv'0 f1'0
         | C_B'0 a_0 -> inv'2 a_0
         end
   
@@ -57,9 +57,8 @@ module M_generated__use_foo
   
   meta "select_lsinst" "all"
   
-  let rec use_foo (x: t_Foo'0) (return' (x'0: ())) = {[@expl:use_foo 'x' type invariant] inv'3 x}
+  let rec use_foo (x: t_Foo'0) (return (x'0: ())) = {[@expl:use_foo 'x' type invariant] inv'3 x}
     (! bb0
-    [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv'3 x'0} s1 | s1 = {[@expl:assertion] inv'3 x'0} s2 | s2 = return''0 {_0} ] ]
-    [ & _0: () = Any.any_l () | & x'0: t_Foo'0 = x ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'3 x} s1 | s1 = {[@expl:assertion] inv'3 x} s2 | s2 = return {_0} ] ]
+    [ & _0: () = Any.any_l () | & x: t_Foo'0 = x ]) [ return (result: ()) -> (! return {result}) ]
 end

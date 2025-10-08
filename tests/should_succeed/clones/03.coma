@@ -3,9 +3,9 @@ module M_03__prog
   
   type t_T
   
-  predicate inv (_0: t_T)
+  predicate inv (_1: t_T)
   
-  predicate resolve (_0: t_T)
+  predicate resolve (_1: t_T)
   
   predicate omg (_x: t_T) = true
   
@@ -13,11 +13,11 @@ module M_03__prog
   
   meta "select_lsinst" "all"
   
-  let rec prog (x: t_T) (return' (x'0: ())) = {[@expl:prog 'x' type invariant] inv x}
+  let rec prog (x: t_T) (return (x'0: ())) = {[@expl:prog 'x' type invariant] inv x}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv x'0} s1 | s1 = -{resolve x'0}- s2 | s2 = bb1 ]
-    | bb1 = return''0 {_0} ] [ & _0: () = Any.any_l () | & x'0: t_T = x ])
-    [ return''0 (result: ()) -> {[@expl:prog ensures] omg x} (! return' {result}) ]
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv x} s1 | s1 = -{resolve x}- s2 | s2 = bb1 ] | bb1 = return {_0} ]
+    [ & _0: () = Any.any_l () | & x: t_T = x ])
+    [ return (result: ()) -> {[@expl:prog ensures] omg x} (! return {result}) ]
 end
 module M_03__prog2
   use creusot.int.Int32
@@ -25,7 +25,7 @@ module M_03__prog2
   
   predicate omg (_x: Int32.t) = true
   
-  let rec prog (x: Int32.t) (return' (x'0: ())) = any [ return''0 (result: ()) -> {omg x} (! return' {result}) ]
+  let rec prog (x: Int32.t) (return (x'0: ())) = any [ return (result: ()) -> {omg x} (! return {result}) ]
   
   predicate omg'0 (_x: int) = true
   
@@ -33,15 +33,15 @@ module M_03__prog2
   
   meta "select_lsinst" "all"
   
-  let rec prog2 (return' (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = prog {(0: Int32.t)} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ] | bb1 = return''0 {_0} ]
+  let rec prog2 (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = prog {(0: Int32.t)} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
     [ & _0: () = Any.any_l () | & _2: () = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:prog2 ensures] omg'0 0} (! return' {result}) ]
+    [ return (result: ()) -> {[@expl:prog2 ensures] omg'0 0} (! return {result}) ]
 end
 module M_03__prog3
   use creusot.prelude.Any
   
-  type tuple = { _p0: int; _p1: int }
+  type tuple = { f0: int; f1: int }
   
   predicate omg (_x: tuple) = true
   
@@ -49,7 +49,7 @@ module M_03__prog3
   
   meta "select_lsinst" "all"
   
-  let rec prog3 (return' (x: ())) = (! bb0
-    [ bb0 = return''0 {_0} ] [ & _0: () = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:prog3 ensures] omg { _p0 = 0; _p1 = 0 }} (! return' {result}) ]
+  let rec prog3 (return (x: ())) = (! bb0
+    [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:prog3 ensures] omg { f0 = 0; f1 = 0 }} (! return {result}) ]
 end

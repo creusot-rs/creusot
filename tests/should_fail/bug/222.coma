@@ -21,9 +21,9 @@ module M_222__uses_invariant
   
   type t_Once = { t_Once__0: t_Option }
   
-  predicate inv (_0: t_T)
+  predicate inv (_1: t_T)
   
-  predicate inv'0 (_0: t_Option)
+  predicate inv'0 (_1: t_Option)
   
   axiom inv_axiom [@rewrite]: forall x: t_Option [inv'0 x]. inv'0 x
       = match x with
@@ -35,17 +35,15 @@ module M_222__uses_invariant
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'1 (_0: MutBorrow.t t_Option)
+  predicate inv'1 (_1: MutBorrow.t t_Option)
   
   axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Option [inv'1 x]. inv'1 x = invariant' x
   
-  let rec take (self_: MutBorrow.t t_Option) (return' (x: t_Option)) = {[@expl:take 'self_' type invariant] inv'1 self_}
+  let rec take (self_: MutBorrow.t t_Option) (return (x: t_Option)) = {[@expl:take 'self_' type invariant] inv'1 self_}
     any
-    [ return''0 (result: t_Option) -> {inv'0 result}
-      {result = self_.current /\ self_.final = C_None}
-      (! return' {result}) ]
+    [ return (result: t_Option) -> {inv'0 result} {result = self_.current /\ self_.final = C_None} (! return {result}) ]
   
-  predicate resolve (_0: t_T)
+  predicate resolve (_1: t_T)
   
   predicate resolve'0 [@inline:trivial] (self: t_Option) =
     match self with
@@ -55,11 +53,11 @@ module M_222__uses_invariant
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (_0: t_Option) = resolve'0 _0
+  predicate resolve'1 [@inline:trivial] (_1: t_Option) = resolve'0 _1
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate inv'2 (_0: t_Once)
+  predicate inv'2 (_1: t_Once)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Once [inv'2 x]. inv'2 x
       = match x with
@@ -70,7 +68,7 @@ module M_222__uses_invariant
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'3 (_0: MutBorrow.t t_Once)
+  predicate inv'3 (_1: MutBorrow.t t_Once)
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Once [inv'3 x]. inv'3 x = invariant''0 x
   
@@ -78,7 +76,7 @@ module M_222__uses_invariant
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (_0: MutBorrow.t t_Once) = resolve'2 _0
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Once) = resolve'2 _1
   
   meta "rewrite_def" predicate resolve'3
   
@@ -88,25 +86,25 @@ module M_222__uses_invariant
   
   meta "select_lsinst" "all"
   
-  let rec uses_invariant (x: MutBorrow.t t_Once) (return' (x'0: ())) =
+  let rec uses_invariant (x: MutBorrow.t t_Once) (return (x'0: ())) =
     {[@expl:uses_invariant 'x' type invariant] inv'3 x}
     {[@expl:uses_invariant requires] invariant''1 x.current}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'0 (x'0.current).t_Once__0}
-        MutBorrow.borrow_final <t_Option> {(x'0.current).t_Once__0} {MutBorrow.inherit_id (MutBorrow.get_id x'0) 1}
+      [ s0 = {inv'0 x.current.t_Once__0}
+        MutBorrow.borrow_final <t_Option> {x.current.t_Once__0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_5 <- _ret ] -{inv'0 _ret.final}-
-            [ &x'0 <- { x'0 with current = { t_Once__0 = _ret.final } } ] s1)
+            [ &x <- { x with current = { t_Once__0 = _ret.final } } ] s1)
       | s1 = take {_5} (fun (_ret: t_Option) -> [ &_4 <- _ret ] s2)
       | s2 = {[@expl:type invariant] inv'0 _4} s3
       | s3 = -{resolve'1 _4}- s4
       | s4 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 x'0} s1 | s1 = -{resolve'3 x'0}- s2 | s2 = bb2 ]
-    | bb2 = return''0 {_0} ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 x} s1 | s1 = -{resolve'3 x}- s2 | s2 = bb2 ]
+    | bb2 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & x'0: MutBorrow.t t_Once = x
+    | & x: MutBorrow.t t_Once = x
     | & _4: t_Option = Any.any_l ()
     | & _5: MutBorrow.t t_Option = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:uses_invariant ensures] invariant''1 x.final} (! return' {result}) ]
+    [ return (result: ()) -> {[@expl:uses_invariant ensures] invariant''1 x.final} (! return {result}) ]
 end

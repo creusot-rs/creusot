@@ -11,7 +11,7 @@ module M_mapping_test__incr
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_T) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_T) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -24,21 +24,20 @@ module M_mapping_test__incr
   
   meta "select_lsinst" "all"
   
-  let rec incr (t: MutBorrow.t t_T) (return' (x: ())) = {[@expl:incr requires #0] 0 <= Int32.to_int (t.current).t_T__a}
-    {[@expl:incr requires #1] Int32.to_int (t.current).t_T__a < 1000}
+  let rec incr (t: MutBorrow.t t_T) (return (x: ())) = {[@expl:incr requires #0] 0 <= Int32.to_int t.current.t_T__a}
+    {[@expl:incr requires #1] Int32.to_int t.current.t_T__a < 1000}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_t <- t'0 ] s1 | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &old_t <- t ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = Int32.add {(t'0.current).t_T__a} {(1: Int32.t)}
-          (fun (_ret: Int32.t) -> [ &t'0 <- { t'0 with current = { t_T__a = _ret } } ] s1)
-      | s1 = -{resolve'0 t'0}- s2
-      | s2 = {[@expl:assertion] view t'0.final = Map.set (view old_t.current) (Int32.to_int (old_t.current).t_T__a) 1}
-        s3
-      | s3 = return''0 {_0} ] ]
-    [ & _0: () = Any.any_l () | & t'0: MutBorrow.t t_T = t | & old_t: MutBorrow.t t_T = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:incr ensures] view t.final
-      = Map.set (view t.current) (Int32.to_int (t.current).t_T__a) 1}
-      (! return' {result}) ]
+      [ s0 = Int32.add {t.current.t_T__a} {(1: Int32.t)}
+          (fun (_ret: Int32.t) -> [ &t <- { t with current = { t_T__a = _ret } } ] s1)
+      | s1 = -{resolve'0 t}- s2
+      | s2 = {[@expl:assertion] view t.final = Map.set (view old_t.current) (Int32.to_int old_t.current.t_T__a) 1} s3
+      | s3 = return {_0} ] ]
+    [ & _0: () = Any.any_l () | & t: MutBorrow.t t_T = t | & old_t: MutBorrow.t t_T = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:incr ensures] view t.final
+      = Map.set (view t.current) (Int32.to_int t.current.t_T__a) 1}
+      (! return {result}) ]
 end
 module M_mapping_test__f
   use creusot.int.Int32
@@ -54,17 +53,17 @@ module M_mapping_test__f
   axiom view_spec: forall self: t_T. forall i: int. Map.get (view self) i
         = (if 0 <= i /\ i < Int32.to_int self.t_T__a then 1 else 0)
   
-  let rec incr (t: MutBorrow.t t_T) (return' (x: ())) = {[@expl:incr requires #0] 0 <= Int32.to_int (t.current).t_T__a}
-    {[@expl:incr requires #1] Int32.to_int (t.current).t_T__a < 1000}
+  let rec incr (t: MutBorrow.t t_T) (return (x: ())) = {[@expl:incr requires #0] 0 <= Int32.to_int t.current.t_T__a}
+    {[@expl:incr requires #1] Int32.to_int t.current.t_T__a < 1000}
     any
-    [ return''0 (result: ()) -> {view t.final = Map.set (view t.current) (Int32.to_int (t.current).t_T__a) 1}
-      (! return' {result}) ]
+    [ return (result: ()) -> {view t.final = Map.set (view t.current) (Int32.to_int t.current.t_T__a) 1}
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_T) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_T) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -72,7 +71,7 @@ module M_mapping_test__f
   
   meta "select_lsinst" "all"
   
-  let rec f (return' (x: ())) = (! bb0
+  let rec f (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- { t_T__a = (42: Int32.t) } ] s1
       | s1 = {[@expl:assertion] Map.get (view x) 13 = 1} s2
@@ -86,10 +85,10 @@ module M_mapping_test__f
       [ s0 = -{resolve'0 _8}- s1
       | s1 = {[@expl:assertion] Map.get (view x) 13 = 1} s2
       | s2 = {[@expl:assertion] Map.get (view x) 42 = 1} s3
-      | s3 = return''0 {_0} ] ]
+      | s3 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: t_T = Any.any_l ()
     | & _6: () = Any.any_l ()
     | & _7: MutBorrow.t t_T = Any.any_l ()
-    | & _8: MutBorrow.t t_T = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _8: MutBorrow.t t_T = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

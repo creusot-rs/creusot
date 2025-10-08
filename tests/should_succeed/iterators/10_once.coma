@@ -5,7 +5,7 @@ module M_10_once__qyi13268780623672429765__resolve_coherence (* <Once<T> as creu
   
   type t_Once = { t_Once__0: t_Option }
   
-  predicate resolve (_0: t_T)
+  predicate resolve (_1: t_T)
   
   predicate resolve'0 [@inline:trivial] (self: t_Option) =
     match self with
@@ -15,12 +15,12 @@ module M_10_once__qyi13268780623672429765__resolve_coherence (* <Once<T> as creu
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (_0: t_Option) = resolve'0 _0
+  predicate resolve'1 [@inline:trivial] (_1: t_Option) = resolve'0 _1
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate structural_resolve (_0: t_Once) =
-    match _0 with
+  predicate structural_resolve (_1: t_Once) =
+    match _1 with
       | {t_Once__0 = x0} -> resolve'1 x0
       end
   
@@ -32,7 +32,7 @@ module M_10_once__qyi13268780623672429765__resolve_coherence (* <Once<T> as creu
   
   constant self : t_Once
   
-  function resolve_coherence (self'0: t_Once) : ()
+  function resolve_coherence (self: t_Once) : ()
   
   goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'2 self)
 end
@@ -55,7 +55,7 @@ module M_10_once__qyi13094531909677028354__produces_refl (* <Once<T> as common::
   
   constant self : t_Once
   
-  function produces_refl (self'0: t_Once) : ()
+  function produces_refl (self: t_Once) : ()
   
   goal vc_produces_refl: [@expl:produces_refl ensures] produces self (Seq.empty: Seq.seq t_T) self
 end
@@ -86,7 +86,7 @@ module M_10_once__qyi13094531909677028354__produces_trans (* <Once<T> as common:
   
   constant c : t_Once
   
-  function produces_trans (a'0: t_Once) (ab'0: Seq.seq t_T) (b'0: t_Once) (bc'0: Seq.seq t_T) (c'0: t_Once) : ()
+  function produces_trans (a: t_Once) (ab: Seq.seq t_T) (b: t_Once) (bc: Seq.seq t_T) (c: t_Once) : ()
   
   goal vc_produces_trans: produces a ab b
     -> produces b bc c -> ([@expl:produces_trans ensures] produces a (Seq.(++) ab bc) c)
@@ -102,9 +102,9 @@ module M_10_once__qyi13094531909677028354__next (* <Once<T> as common::Iterator>
   
   type t_Once = { t_Once__0: t_Option }
   
-  predicate inv (_0: t_T)
+  predicate inv (_1: t_T)
   
-  predicate inv'0 (_0: t_Option)
+  predicate inv'0 (_1: t_Option)
   
   axiom inv_axiom [@rewrite]: forall x: t_Option [inv'0 x]. inv'0 x
       = match x with
@@ -116,17 +116,15 @@ module M_10_once__qyi13094531909677028354__next (* <Once<T> as common::Iterator>
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'1 (_0: MutBorrow.t t_Option)
+  predicate inv'1 (_1: MutBorrow.t t_Option)
   
   axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Option [inv'1 x]. inv'1 x = invariant' x
   
-  let rec take (self_: MutBorrow.t t_Option) (return' (x: t_Option)) = {[@expl:take 'self_' type invariant] inv'1 self_}
+  let rec take (self_: MutBorrow.t t_Option) (return (x: t_Option)) = {[@expl:take 'self_' type invariant] inv'1 self_}
     any
-    [ return''0 (result: t_Option) -> {inv'0 result}
-      {result = self_.current /\ self_.final = C_None}
-      (! return' {result}) ]
+    [ return (result: t_Option) -> {inv'0 result} {result = self_.current /\ self_.final = C_None} (! return {result}) ]
   
-  predicate inv'2 (_0: t_Once)
+  predicate inv'2 (_1: t_Once)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Once [inv'2 x]. inv'2 x
       = match x with
@@ -137,7 +135,7 @@ module M_10_once__qyi13094531909677028354__next (* <Once<T> as common::Iterator>
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'3 (_0: MutBorrow.t t_Once)
+  predicate inv'3 (_1: MutBorrow.t t_Once)
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Once [inv'3 x]. inv'3 x = invariant''0 x
   
@@ -145,7 +143,7 @@ module M_10_once__qyi13094531909677028354__next (* <Once<T> as common::Iterator>
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_Once) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Once) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -159,25 +157,24 @@ module M_10_once__qyi13094531909677028354__next (* <Once<T> as common::Iterator>
   
   meta "select_lsinst" "all"
   
-  let rec next (self: MutBorrow.t t_Once) (return' (x: t_Option)) = {[@expl:next 'self' type invariant] inv'3 self}
+  let rec next (self: MutBorrow.t t_Once) (return (x: t_Option)) = {[@expl:next 'self' type invariant] inv'3 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'0 (self'0.current).t_Once__0}
-        MutBorrow.borrow_final <t_Option> {(self'0.current).t_Once__0}
-          {MutBorrow.inherit_id (MutBorrow.get_id self'0) 1}
+      [ s0 = {inv'0 self.current.t_Once__0}
+        MutBorrow.borrow_final <t_Option> {self.current.t_Once__0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
             [ &_3 <- _ret ] -{inv'0 _ret.final}-
-            [ &self'0 <- { self'0 with current = { t_Once__0 = _ret.final } } ] s1)
+            [ &self <- { self with current = { t_Once__0 = _ret.final } } ] s1)
       | s1 = take {_3} (fun (_ret: t_Option) -> [ &_0 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 self'0} s1 | s1 = -{resolve'0 self'0}- s2 | s2 = return''0 {_0} ] ]
-    [ & _0: t_Option = Any.any_l () | & self'0: MutBorrow.t t_Once = self | & _3: MutBorrow.t t_Option = Any.any_l () ])
-    [ return''0 (result: t_Option) -> {[@expl:next result type invariant] inv'0 result}
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = return {_0} ] ]
+    [ & _0: t_Option = Any.any_l () | & self: MutBorrow.t t_Once = self | & _3: MutBorrow.t t_Option = Any.any_l () ])
+    [ return (result: t_Option) -> {[@expl:next result type invariant] inv'0 result}
       {[@expl:next ensures] match result with
         | C_None -> completed self
         | C_Some v -> produces self.current (Seq.singleton v) self.final
         end}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_10_once__qyi13268780623672429765__resolve_coherence__refines (* <Once<T> as creusot_contracts::Resolve> *)
   type t_T
@@ -186,7 +183,7 @@ module M_10_once__qyi13268780623672429765__resolve_coherence__refines (* <Once<T
   
   type t_Once = { t_Once__0: t_Option }
   
-  predicate resolve (_0: t_T)
+  predicate resolve (_1: t_T)
   
   predicate resolve'0 [@inline:trivial] (self: t_Option) =
     match self with
@@ -196,18 +193,18 @@ module M_10_once__qyi13268780623672429765__resolve_coherence__refines (* <Once<T
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (_0: t_Option) = resolve'0 _0
+  predicate resolve'1 [@inline:trivial] (_1: t_Option) = resolve'0 _1
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate structural_resolve (_0: t_Once) =
-    match _0 with
+  predicate structural_resolve (_1: t_Once) =
+    match _1 with
       | {t_Once__0 = x0} -> resolve'1 x0
       end
   
-  predicate inv (_0: t_T)
+  predicate inv (_1: t_T)
   
-  predicate inv'0 (_0: t_Option)
+  predicate inv'0 (_1: t_Option)
   
   axiom inv_axiom [@rewrite]: forall x: t_Option [inv'0 x]. inv'0 x
       = match x with
@@ -215,7 +212,7 @@ module M_10_once__qyi13268780623672429765__resolve_coherence__refines (* <Once<T
         | C_Some a_0 -> inv a_0
         end
   
-  predicate inv'1 (_0: t_Once)
+  predicate inv'1 (_1: t_Once)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Once [inv'1 x]. inv'1 x
       = match x with
@@ -241,9 +238,9 @@ module M_10_once__qyi13094531909677028354__next__refines (* <Once<T> as common::
   
   type t_Once = { t_Once__0: t_Option }
   
-  predicate inv (_0: t_T)
+  predicate inv (_1: t_T)
   
-  predicate inv'0 (_0: t_Option)
+  predicate inv'0 (_1: t_Option)
   
   axiom inv_axiom [@rewrite]: forall x: t_Option [inv'0 x]. inv'0 x
       = match x with
@@ -251,7 +248,7 @@ module M_10_once__qyi13094531909677028354__next__refines (* <Once<T> as common::
         | C_Some a_0 -> inv a_0
         end
   
-  predicate inv'1 (_0: t_Once)
+  predicate inv'1 (_1: t_Once)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Once [inv'1 x]. inv'1 x
       = match x with
@@ -262,7 +259,7 @@ module M_10_once__qyi13094531909677028354__next__refines (* <Once<T> as common::
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'2 (_0: MutBorrow.t t_Once)
+  predicate inv'2 (_1: MutBorrow.t t_Once)
   
   axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_Once [inv'2 x]. inv'2 x = invariant' x
   

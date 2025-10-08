@@ -56,15 +56,13 @@ module M_incorrect_variant__incorrect_recursion
   
   meta "select_lsinst" "all"
   
-  let rec incorrect_recursion (x: Int32.t) (return' (x'0: ())) = (! bb0
+  let rec incorrect_recursion (x: Int32.t) (return (x'0: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_3 <- Int32.lt x'0 (-10: Int32.t) ] s1
-      | s1 = any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb13) ] ]
+      [ s0 = [ &_3 <- Int32.lt x (-10: Int32.t) ] s1 | s1 = any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb13) ] ]
     | bb2 = s0
-      [ s0 = [ &_5 <- Int32.gt x'0 (10: Int32.t) ] s1
-      | s1 = any [ br0 -> {_5 = false} (! bb5) | br1 -> {_5} (! bb13) ] ]
+      [ s0 = [ &_5 <- Int32.gt x (10: Int32.t) ] s1 | s1 = any [ br0 -> {_5 = false} (! bb5) | br1 -> {_5} (! bb13) ] ]
     | bb5 = s0
-      [ s0 = [ &_9 <- x'0 ] s1
+      [ s0 = [ &_9 <- x ] s1
       | s1 = [ &_10 <- (2: Int32.t) = (0: Int32.t) ] s2
       | s2 = {[@expl:remainder by zero] not _10} s3
       | s3 = bb6 ]
@@ -79,16 +77,16 @@ module M_incorrect_variant__incorrect_recursion
       | s1 = [ &_7 <- _8 = (0: Int32.t) ] s2
       | s2 = any [ br0 -> {_7 = false} (! bb10) | br1 -> {_7} (! bb8) ] ]
     | bb8 = s0
-      [ s0 = Int32.add {x'0} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_14 <- _ret ] s1)
-      | s1 = incorrect_recursion'0 {_14} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
+      [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_14 <- _ret ] s1)
+      | s1 = incorrect_recursion {_14} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
       | s2 = bb13 ]
     | bb10 = s0
-      [ s0 = Int32.sub {x'0} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_16 <- _ret ] s1)
-      | s1 = incorrect_recursion'0 {_16} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
+      [ s0 = Int32.sub {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_16 <- _ret ] s1)
+      | s1 = incorrect_recursion {_16} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
       | s2 = bb13 ]
-    | bb13 = return''0 {_0} ]
+    | bb13 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & x'0: Int32.t = x
+    | & x: Int32.t = x
     | & _3: bool = Any.any_l ()
     | & _5: bool = Any.any_l ()
     | & _7: bool = Any.any_l ()
@@ -100,10 +98,9 @@ module M_incorrect_variant__incorrect_recursion
     | & _13: bool = Any.any_l ()
     | & _14: Int32.t = Any.any_l ()
     | & _16: Int32.t = Any.any_l () ]
-    [ incorrect_recursion'0 (x'0: Int32.t) (_ret (_r: ())) ->
-    {[@expl:function variant] well_founded_relation function_variant x'0}
-      incorrect_recursion {x'0} (_ret) ] [ function_variant: Int32.t = x ])
-    [ return''0 (result: ()) -> (! return' {result}) ]
+    [ incorrect_recursion (x: Int32.t) (_ret (_r: ())) ->
+    {[@expl:function variant] well_founded_relation function_variant x}
+      incorrect_recursion {x} (_ret) ] [ function_variant: Int32.t = x ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_incorrect_variant__incorrect_recursion_logic
   use mach.int.Int
@@ -118,7 +115,7 @@ module M_incorrect_variant__incorrect_recursion_logic
   
   constant x : int
   
-  function incorrect_recursion_logic (x'0: int) : int
+  function incorrect_recursion_logic (x: int) : int
   
   goal vc_incorrect_recursion_logic: if x = 0 then
       [@expl:incorrect_recursion_logic ensures] 0 = 0
@@ -192,20 +189,20 @@ module M_incorrect_variant__incorrect_loop_variant
   
   meta "select_lsinst" "all"
   
-  let rec incorrect_loop_variant (x: Int32.t) (return' (x'0: ())) = (! bb0
+  let rec incorrect_loop_variant (x: Int32.t) (return (x'0: ())) = (! bb0
     [ bb0 = bb1
     | bb1 = bb1invariant
-      [ bb1'0 = {[@expl:loop variant] well_founded_relation variant_old_bb1 x'0} bb1invariant
-      | bb1invariant = (! [ &variant_old_bb1 <- x'0 ] s0
+      [ bb1 = {[@expl:loop variant] well_founded_relation variant_old_bb1 x} bb1invariant
+      | bb1invariant = (! [ &variant_old_bb1 <- x ] s0
         [ s0 = bb2 ])
         [ bb2 = s0
-          [ s0 = [ &_5 <- Int32.ge x'0 (-10: Int32.t) ] s1
+          [ s0 = [ &_5 <- Int32.ge x (-10: Int32.t) ] s1
           | s1 = any [ br0 -> {_5 = false} (! bb12) | br1 -> {_5} (! bb3) ] ]
         | bb3 = s0
-          [ s0 = [ &_7 <- Int32.le x'0 (10: Int32.t) ] s1
+          [ s0 = [ &_7 <- Int32.le x (10: Int32.t) ] s1
           | s1 = any [ br0 -> {_7 = false} (! bb12) | br1 -> {_7} (! bb4) ] ]
         | bb4 = s0
-          [ s0 = [ &_11 <- x'0 ] s1
+          [ s0 = [ &_11 <- x ] s1
           | s1 = [ &_12 <- (2: Int32.t) = (0: Int32.t) ] s2
           | s2 = {[@expl:remainder by zero] not _12} s3
           | s3 = bb5 ]
@@ -219,11 +216,11 @@ module M_incorrect_variant__incorrect_loop_variant
           [ s0 = Int32.rem {_11} {(2: Int32.t)} (fun (_ret: Int32.t) -> [ &_10 <- _ret ] s1)
           | s1 = [ &_9 <- _10 = (0: Int32.t) ] s2
           | s2 = any [ br0 -> {_9 = false} (! bb8) | br1 -> {_9} (! bb7) ] ]
-        | bb7 = s0 [ s0 = Int32.add {x'0} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &x'0 <- _ret ] s1) | s1 = bb1'0 ]
-        | bb8 = s0 [ s0 = Int32.sub {x'0} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &x'0 <- _ret ] s1) | s1 = bb1'0 ] ] ]
-    | bb12 = return''0 {_0} ]
+        | bb7 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &x <- _ret ] s1) | s1 = bb1 ]
+        | bb8 = s0 [ s0 = Int32.sub {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &x <- _ret ] s1) | s1 = bb1 ] ] ]
+    | bb12 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & x'0: Int32.t = x
+    | & x: Int32.t = x
     | & _5: bool = Any.any_l ()
     | & _7: bool = Any.any_l ()
     | & _9: bool = Any.any_l ()
@@ -233,5 +230,5 @@ module M_incorrect_variant__incorrect_loop_variant
     | & _13: bool = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _15: bool = Any.any_l ()
-    | & variant_old_bb1: Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & variant_old_bb1: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

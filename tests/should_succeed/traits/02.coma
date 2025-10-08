@@ -3,15 +3,15 @@ module M_02__omg
   
   type t_T
   
-  predicate inv (_0: t_T)
+  predicate inv (_1: t_T)
   
-  predicate resolve (_0: t_T)
+  predicate resolve (_1: t_T)
   
   predicate invariant' [@inline:trivial] (self: t_T) = inv self
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_0: t_T)
+  predicate inv'0 (_1: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
@@ -26,20 +26,20 @@ module M_02__omg
     forall args: t_T, res: bool [postcondition_once () args res]. postcondition_once () args res
       -> (let self = args in res = true)
   
-  let rec is_true (self: t_T) (return' (x: bool)) = {[@expl:is_true requires] precondition () self}
-    any [ return''0 (result: bool) -> {postcondition_once () self result} (! return' {result}) ]
+  let rec is_true (self: t_T) (return (x: bool)) = {[@expl:is_true requires] precondition () self}
+    any [ return (result: bool) -> {postcondition_once () self result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec omg (a: t_T) (return' (x: bool)) = {[@expl:omg 'a' type invariant] inv a}
+  let rec omg (a: t_T) (return (x: bool)) = {[@expl:omg 'a' type invariant] inv a}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv a'0} s1
-      | s1 = -{resolve a'0}- s2
-      | s2 = is_true {a'0} (fun (_ret: bool) -> [ &_0 <- _ret ] s3)
+      [ s0 = {[@expl:type invariant] inv a} s1
+      | s1 = -{resolve a}- s2
+      | s2 = is_true {a} (fun (_ret: bool) -> [ &_0 <- _ret ] s3)
       | s3 = bb2 ]
-    | bb2 = return''0 {_0} ] [ & _0: bool = Any.any_l () | & a'0: t_T = a ])
-    [ return''0 (result: bool) -> {[@expl:omg ensures] result = true} (! return' {result}) ]
+    | bb2 = return {_0} ] [ & _0: bool = Any.any_l () | & a: t_T = a ])
+    [ return (result: bool) -> {[@expl:omg ensures] result = true} (! return {result}) ]
 end

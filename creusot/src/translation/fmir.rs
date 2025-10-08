@@ -14,7 +14,7 @@ use rustc_middle::{
     },
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TypeFoldable, TypeVisitable},
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::Span;
 use std::collections::HashMap;
 use why3::Ident;
 
@@ -466,7 +466,7 @@ impl ScopeTree {
     }
 
     /// Extract the scope tree from a MIR body.
-    pub fn build<'tcx>(body: &mir::Body<'tcx>, locals: &HashMap<Local, (Symbol, Ident)>) -> Self {
+    pub fn build<'tcx>(body: &mir::Body<'tcx>, locals: &HashMap<Local, Ident>) -> Self {
         let mut scope_tree = ScopeTree(HashMap::new());
 
         for var_info in &body.var_debug_info {
@@ -474,7 +474,7 @@ impl ScopeTree {
             // If the variable is local to the function the place will have no projections.
             // Else this is a captured variable, and we don't need to consider it.
             let VarDebugInfoContents::Place(p) = var_info.value else { panic!() };
-            let t = if p.projection.is_empty() { Some(locals[&p.local].1.into()) } else { None };
+            let t = if p.projection.is_empty() { Some(locals[&p.local].into()) } else { None };
 
             let scope = var_info.source_info.scope;
             let entry = scope_tree.0.entry(scope).or_default();

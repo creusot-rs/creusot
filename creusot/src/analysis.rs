@@ -29,7 +29,6 @@ use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
     on_all_children_bits,
 };
-use rustc_span::Symbol;
 use rustc_type_ir::{ClosureKind, TyKind};
 use why3::Ident;
 
@@ -134,9 +133,6 @@ pub(crate) struct BodySpecs<'tcx> {
     pub(crate) assertions: HashMap<DefId, Term<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
     pub(crate) snapshots: HashMap<DefId, Term<'tcx>>,
-    /// This is empty during analysis (moved into `PreAnalysisCtx`).
-    pub(crate) locals: HashMap<Local, (Symbol, Ident)>,
-    pub(crate) vars: fmir::LocalDecls<'tcx>,
     pub(crate) erased_locals: MixedBitSet<Local>,
 }
 
@@ -148,23 +144,19 @@ impl<'tcx> BodySpecs<'tcx> {
             invariant_assertions: HashMap::new(),
             assertions: HashMap::new(),
             snapshots: HashMap::new(),
-            locals: HashMap::new(),
-            vars: fmir::LocalDecls::new(),
             erased_locals: MixedBitSet::new_empty(0),
         }
     }
 
     pub fn from_body(ctx: &TranslationCtx<'tcx>, body: &mir::Body<'tcx>) -> Self {
-        let tcx = ctx.tcx;
         let mut erased_locals = MixedBitSet::new_empty(body.local_decls.len());
-        body.local_decls.iter_enumerated().for_each(|(local, decl)| {
-            if let ty::TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if is_spec(tcx, *def_id) || is_erasure(tcx, *def_id) {
-                    erased_locals.insert(local);
-                }
+        for (local, decl) in body.local_decls.iter_enumerated() {
+            if let ty::TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind()
+                && (is_spec(ctx.tcx, *def_id) || is_erasure(ctx.tcx, *def_id))
+            {
+                erased_locals.insert(local);
             }
-        });
-        let (vars, locals) = translate_vars(ctx.crate_name(), body, &erased_locals);
+        }
         let InvariantsAndVariants { invariants, variants, assertions: invariant_assertions } =
             corrected_invariant_names_and_locations(ctx, body);
         let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, body);
@@ -174,8 +166,6 @@ impl<'tcx> BodySpecs<'tcx> {
             invariant_assertions,
             assertions,
             snapshots,
-            locals,
-            vars,
             erased_locals,
         }
     }
@@ -186,7 +176,7 @@ impl<'tcx> BodySpecs<'tcx> {
 pub struct AnalysisEnv<'a, 'tcx> {
     tree: fmir::ScopeTree,
     corenamer: &'a HashMap<Ident, HirId>,
-    locals: HashMap<Local, (Symbol, Ident)>,
+    locals: &'a HashMap<Local, Ident>,
     /// The substitution that replaces Term::Capture(xxx) into the corresponding projection
     clos_subst: Option<ClosSubst<'tcx>>,
 }
@@ -195,7 +185,7 @@ impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
     fn new(
         tree: fmir::ScopeTree,
         corenamer: &'a HashMap<Ident, HirId>,
-        locals: HashMap<Local, (Symbol, Ident)>,
+        locals: &'a HashMap<Local, Ident>,
         clos_subst: Option<ClosSubst<'tcx>>,
     ) -> Self {
         AnalysisEnv { tree, corenamer, locals, clos_subst }
@@ -237,11 +227,14 @@ impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
         // TODO: We should refine this check to consider places and not only locals
         let free_vars = term.free_vars();
         for f in bad_vars.iter() {
-            if let Some((sym, ident)) =
+            if let Some(ident) =
                 move_data.move_paths[f].place.as_local().and_then(|l| self.locals.get(&l))
                 && free_vars.contains(ident)
             {
-                let msg = format!("Use of borrowed or uninitialized variable {}", sym.as_str());
+                let msg = format!(
+                    "Use of borrowed or uninitialized variable {}",
+                    ident.name().to_string()
+                );
                 tcx.crash_and_error(term.span, msg);
             }
         }
@@ -869,7 +862,8 @@ pub(crate) fn run_without_specs<'a, 'tcx>(
     let body = callbacks::get_body(tcx, def_id);
     let mut body_specs = BodySpecs::empty();
     let corenamer = HashMap::new();
-    let analysis_env = AnalysisEnv::new(fmir::ScopeTree::empty(), &corenamer, HashMap::new(), None);
+    let locals = HashMap::new();
+    let analysis_env = AnalysisEnv::new(fmir::ScopeTree::empty(), &corenamer, &locals, None);
 
     let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
     let mut analysis = Analysis::new(tcx, analysis_env, &body, &mut body_specs, &move_data);
@@ -882,16 +876,16 @@ pub(crate) fn run_with_specs<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     body: &BodyWithBorrowckFacts<'tcx>,
     body_specs: &mut BodySpecs<'tcx>,
+    body_locals: &BodyLocals<'tcx>,
 ) -> BorrowData<'tcx> {
     let def_id = body.body.source.def_id();
     debug!("run_with_specs for {}", ctx.tcx.def_path_str(def_id));
     let tcx = ctx.tcx;
     let corenamer = &ctx.corenamer.borrow();
     // We take `locals` from `body_specs` and put it back later
-    let locals = std::mem::take(&mut body_specs.locals);
-    let tree = fmir::ScopeTree::build(&body.body, &locals);
+    let tree = fmir::ScopeTree::build(&body.body, &body_locals.locals);
     let clos_subst = tcx.is_closure_like(def_id).then(|| {
-        let loc = body_specs.vars.get_index(1).unwrap();
+        let loc = body_locals.vars.get_index(1).unwrap();
         let ty_env = tcx.type_of(def_id).instantiate_identity();
         let TyKind::Closure(_, subst) = ty_env.kind() else { unreachable!() };
         let self_ = Term::var(*loc.0, loc.1.ty);
@@ -903,61 +897,71 @@ pub(crate) fn run_with_specs<'tcx>(
         assert_eq!(ctx.erase_and_anonymize_regions(self_.ty), ty_env);
         ClosSubst::pre_or_cur(tcx, def_id.expect_local(), self_)
     });
-    let analysis_env = AnalysisEnv::new(tree, corenamer, locals, clos_subst);
+    let analysis_env = AnalysisEnv::new(tree, corenamer, &body_locals.locals, clos_subst);
     let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
     let mut analysis = Analysis::new(tcx, analysis_env, body, body_specs, &move_data);
     analysis.run();
-
-    let data = analysis.data;
-    let AnalysisEnv { locals, .. } = analysis.analysis_env;
-    body_specs.locals = locals;
-    data
+    analysis.data
 }
 
-/// Find a fmir name for each variable in `body`.
-///
-/// This will skip mir variables that are in `erased_locals`.
-///
-/// # Returns
-/// - The mapping of mir locals to the symbol used in fmir.
-/// - Each (unique) fmir symbol is then mapped to the [`LocalDecl`] information of the
-///   mir local (the `vars` variable).
-fn translate_vars<'tcx>(
-    crate_name: why3::Symbol,
-    body: &mir::Body<'tcx>,
-    erased_locals: &MixedBitSet<Local>,
-) -> (fmir::LocalDecls<'tcx>, HashMap<Local, (Symbol, Ident)>) {
-    let mut vars = fmir::LocalDecls::with_capacity(body.local_decls.len());
-    let mut locals = HashMap::new();
-    let external_body = !body.source.def_id().is_local();
+pub(crate) struct BodyLocals<'tcx> {
+    pub(crate) locals: HashMap<Local, Ident>,
+    pub(crate) vars: fmir::LocalDecls<'tcx>,
+}
 
-    use mir::VarDebugInfoContents::Place;
+impl<'tcx> BodyLocals<'tcx> {
+    /// Find a fmir name for each variable in `body`.
+    ///
+    /// This will skip mir variables that are in `erased_locals`.
+    ///
+    /// # Returns
+    /// - The mapping of mir locals to the symbol used in fmir.
+    /// - Each (unique) fmir symbol is then mapped to the [`LocalDecl`] information of the
+    ///   mir local (the `vars` variable).
+    pub(crate) fn from_body(
+        ctx: &TranslationCtx<'tcx>,
+        body: &mir::Body<'tcx>,
+        erased_locals: &MixedBitSet<Local>,
+    ) -> BodyLocals<'tcx> {
+        let mut vars = fmir::LocalDecls::with_capacity(body.local_decls.len());
+        let mut locals = HashMap::new();
+        let external_body = !body.source.def_id().is_local();
 
-    for (loc, d) in body.local_decls.iter_enumerated() {
-        if erased_locals.contains(loc) {
-            continue;
+        let args = &ctx.sig(body.source.def_id()).inputs;
+
+        for (loc, d) in body.local_decls.iter_enumerated() {
+            if erased_locals.contains(loc) {
+                continue;
+            }
+            let ident = if 0 < loc.index() && loc.index() <= args.len() {
+                args[loc.index() - 1].0.0
+            } else
+            // `is_user_variable` panics if the body comes from another crate
+            if external_body || !d.is_user_variable() {
+                Ident::fresh(ctx.crate_name(), &format!("_{}", loc.index()))
+            } else {
+                let x = body.var_debug_info.iter().find(|var_info| match var_info.value {
+                    mir::VarDebugInfoContents::Place(p) => {
+                        p.as_local().map(|l| l == loc).unwrap_or(false)
+                    }
+                    _ => false,
+                });
+                let debug_info = x.expect("expected user variable to have name");
+                Ident::fresh(ctx.crate_name(), variable_name(debug_info.name.as_str()))
+            };
+            locals.insert(loc, ident);
+            vars.insert(
+                ident,
+                fmir::LocalDecl {
+                    span: d.source_info.span,
+                    ty: d.ty,
+                    temp: !external_body && !d.is_user_variable(),
+                    arg: 0 < loc.index() && loc.index() <= body.arg_count,
+                },
+            );
         }
-        // `is_user_variable` panics if the body comes from another crate
-        let temp = external_body || !d.is_user_variable();
-        let name = if temp {
-            format!("_{}", loc.index())
-        } else {
-            let x = body.var_debug_info.iter().find(|var_info| match var_info.value {
-                Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
-                _ => false,
-            });
-            let debug_info = x.expect("expected user variable to have name");
-            variable_name(debug_info.name.as_str())
-        };
-        let ident = Ident::fresh(crate_name, &name);
-        locals.insert(loc, (Symbol::intern(&name), ident));
-        let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
-        vars.insert(
-            ident,
-            fmir::LocalDecl { span: d.source_info.span, ty: d.ty, temp, arg: is_arg },
-        );
+        BodyLocals { vars, locals }
     }
-    (vars, locals)
 }
 
 #[allow(dead_code)]

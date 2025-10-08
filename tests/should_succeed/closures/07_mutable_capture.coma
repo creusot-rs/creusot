@@ -5,18 +5,18 @@ module M_07_mutable_capture__test_fnmut
   use creusot.prelude.Any
   use mach.int.Int
   
-  type closure1 = { _0: MutBorrow.t UInt32.t }
+  type closure1 = { c0: MutBorrow.t UInt32.t }
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t closure1) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0'0: MutBorrow.t closure1) = resolve _0'0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure1) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_once [@inline:trivial] (self: closure1) (args: ()) (result: Int32.t) =
-    UInt32.t'int (self._0).final = UInt32.t'int (self._0).current + 1
+    UInt32.t'int self.c0.final = UInt32.t'int self.c0.current + 1
   
   meta "rewrite_def" predicate postcondition_once
   
@@ -24,21 +24,20 @@ module M_07_mutable_capture__test_fnmut
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0'0: MutBorrow.t UInt32.t) = resolve'1 _0'0
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (_0'0: closure1) = resolve'2 _0'0._0
+  predicate resolve'3 [@inline:trivial] (_1: closure1) = resolve'2 _1.c0
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv [@inline:trivial] (self: closure1) (result_state: closure1) =
-    (result_state._0).final = (self._0).final
+  predicate hist_inv [@inline:trivial] (self: closure1) (result_state: closure1) = result_state.c0.final = self.c0.final
   
   meta "rewrite_def" predicate hist_inv
   
   predicate postcondition_mut [@inline:trivial] (self: closure1) (args: ()) (result_state: closure1) (result: Int32.t) =
-    UInt32.t'int (result_state._0).current = UInt32.t'int (self._0).current + 1 /\ hist_inv self result_state
+    UInt32.t'int result_state.c0.current = UInt32.t'int self.c0.current + 1 /\ hist_inv self result_state
   
   meta "rewrite_def" predicate postcondition_mut
   
@@ -62,36 +61,37 @@ module M_07_mutable_capture__test_fnmut
     forall self: closure1, args: (), res_state: closure1, res: Int32.t. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  let rec closure1 (self: MutBorrow.t closure1) (return' (x: Int32.t)) =
-    {[@expl:closure requires] UInt32.t'int ((self.current)._0).current < 1000000}
+  let rec closure1 (self: MutBorrow.t closure1) (return (x: Int32.t)) =
+    {[@expl:closure requires] UInt32.t'int self.current.c0.current < 1000000}
     (! bb0
     [ bb0 = s0
-      [ s0 = UInt32.add {((_1.current)._0).current} {(1: UInt32.t)}
-          (fun (_ret: UInt32.t) -> [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s1)
-      | s1 = -{resolve'0 _1}- s2
+      [ s0 = UInt32.add {self.current.c0.current} {(1: UInt32.t)}
+          (fun (_ret: UInt32.t) ->
+            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
+      | s1 = -{resolve'0 self}- s2
       | s2 = [ &res'0 <- (5: Int32.t) ] s3
       | s3 = [ &res <- res'0 ] s4
-      | s4 = [ &_0'0 <- res ] s5
-      | s5 = return''0 {_0'0} ] ]
-    [ & _0'0: Int32.t = Any.any_l ()
-    | & _1: MutBorrow.t closure1 = self
+      | s4 = [ &_0 <- res ] s5
+      | s5 = return {_0} ] ]
+    [ & _0: Int32.t = Any.any_l ()
+    | & self: MutBorrow.t closure1 = self
     | & res: Int32.t = Any.any_l ()
     | & res'0: Int32.t = Any.any_l () ])
-    [ return''0 (result: Int32.t) -> {[@expl:closure ensures] UInt32.t'int ((self.final)._0).current
-      = UInt32.t'int ((self.current)._0).current + 1}
+    [ return (result: Int32.t) -> {[@expl:closure ensures] UInt32.t'int self.final.c0.current
+      = UInt32.t'int self.current.c0.current + 1}
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_fnmut (x: UInt32.t) (return' (x'0: ())) = {[@expl:test_fnmut requires] UInt32.t'int x = 100000}
+  let rec test_fnmut (x: UInt32.t) (return (x'0: ())) = {[@expl:test_fnmut requires] UInt32.t'int x = 100000}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x'0}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_4 <- _ret ] [ &x'0 <- _ret.final ] s1)
-      | s1 = [ &c <- { _0 = _4 } ] s2
+      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x}
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_4 <- _ret ] [ &x <- _ret.final ] s1)
+      | s1 = [ &c <- { c0 = _4 } ] s2
       | s2 = MutBorrow.borrow_mut <closure1> {c}
           (fun (_ret: MutBorrow.t closure1) -> [ &_6 <- _ret ] [ &c <- _ret.final ] s3)
       | s3 = closure1 {_6} (fun (_ret: Int32.t) -> [ &_5 <- _ret ] s4)
@@ -101,10 +101,9 @@ module M_07_mutable_capture__test_fnmut
           (fun (_ret: MutBorrow.t closure1) -> [ &_9 <- _ret ] [ &c <- _ret.final ] s1)
       | s1 = closure1 {_9} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = s0
-      [ s0 = -{resolve'3 c}- s1 | s1 = {[@expl:assertion] UInt32.t'int x'0 = 100002} s2 | s2 = return''0 {_0'0} ] ]
-    [ & _0'0: () = Any.any_l ()
-    | & x'0: UInt32.t = x
+    | bb2 = s0 [ s0 = -{resolve'3 c}- s1 | s1 = {[@expl:assertion] UInt32.t'int x = 100002} s2 | s2 = return {_0} ] ]
+    [ & _0: () = Any.any_l ()
+    | & x: UInt32.t = x
     | & c: closure1 = Any.any_l ()
     | & _4: MutBorrow.t UInt32.t = Any.any_l ()
     | & _5: Int32.t = Any.any_l ()
@@ -112,7 +111,7 @@ module M_07_mutable_capture__test_fnmut
     | & _7: () = Any.any_l ()
     | & _8: Int32.t = Any.any_l ()
     | & _9: MutBorrow.t closure1 = Any.any_l ()
-    | & _10: () = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _10: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_07_mutable_capture__call_fnmut
   use creusot.prelude.MutBorrow
@@ -121,13 +120,13 @@ module M_07_mutable_capture__call_fnmut
   
   type t_F
   
-  predicate inv (_0: t_F)
+  predicate inv (_1: t_F)
   
   predicate invariant' [@inline:trivial] (self: MutBorrow.t t_F) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_0: MutBorrow.t t_F)
+  predicate inv'0 (_1: MutBorrow.t t_F)
   
   axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
   
@@ -135,7 +134,7 @@ module M_07_mutable_capture__call_fnmut
   
   predicate postcondition_once (self: t_F) (args: ()) (result: Int32.t)
   
-  predicate resolve (_0: t_F)
+  predicate resolve (_1: t_F)
   
   predicate postcondition_mut (self: t_F) (args: ()) (result_state: t_F) (result: Int32.t)
   
@@ -160,44 +159,44 @@ module M_07_mutable_capture__call_fnmut
     forall self: t_F, args: (), res_state: t_F, res: Int32.t. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  let rec call_mut (self_: MutBorrow.t t_F) (arg: ()) (return' (x: Int32.t)) =
+  let rec call_mut (self_: MutBorrow.t t_F) (arg: ()) (return (x: Int32.t)) =
     {[@expl:call_mut 'self_' type invariant] inv'0 self_}
     {[@expl:call_mut requires] precondition self_.current arg}
-    any [ return''0 (result: Int32.t) -> {postcondition_mut self_.current arg self_.final result} (! return' {result}) ]
+    any [ return (result: Int32.t) -> {postcondition_mut self_.current arg self_.final result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_fnmut (f: t_F) (return' (x: Int32.t)) = {[@expl:call_fnmut 'f' type invariant] inv f}
+  let rec call_fnmut (f: t_F) (return (x: Int32.t)) = {[@expl:call_fnmut 'f' type invariant] inv f}
     {[@expl:call_fnmut requires #0] precondition f ()}
     {[@expl:call_fnmut requires #1] forall st1: t_F, r: Int32.t. postcondition_mut f () st1 r -> precondition st1 ()}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv f'0}
-        MutBorrow.borrow_mut <t_F> {f'0}
-          (fun (_ret: MutBorrow.t t_F) -> [ &_6 <- _ret ] -{inv _ret.final}- [ &f'0 <- _ret.final ] s1)
+      [ s0 = {inv f}
+        MutBorrow.borrow_mut <t_F> {f}
+          (fun (_ret: MutBorrow.t t_F) -> [ &_6 <- _ret ] -{inv _ret.final}- [ &f <- _ret.final ] s1)
       | s1 = call_mut {_6} {_7} (fun (_ret: Int32.t) -> [ &_5 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv f'0}
-        MutBorrow.borrow_mut <t_F> {f'0}
-          (fun (_ret: MutBorrow.t t_F) -> [ &_8 <- _ret ] -{inv _ret.final}- [ &f'0 <- _ret.final ] s1)
+      [ s0 = {inv f}
+        MutBorrow.borrow_mut <t_F> {f}
+          (fun (_ret: MutBorrow.t t_F) -> [ &_8 <- _ret ] -{inv _ret.final}- [ &f <- _ret.final ] s1)
       | s1 = call_mut {_8} {_9} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv f'0} s1 | s1 = -{resolve f'0}- s2 | s2 = bb3 ]
-    | bb3 = return''0 {_0} ]
+    | bb2 = s0 [ s0 = {[@expl:type invariant] inv f} s1 | s1 = -{resolve f}- s2 | s2 = bb3 ]
+    | bb3 = return {_0} ]
     [ & _0: Int32.t = Any.any_l ()
-    | & f'0: t_F = f
+    | & f: t_F = f
     | & _5: Int32.t = Any.any_l ()
     | & _6: MutBorrow.t t_F = Any.any_l ()
     | & _7: () = Any.any_l ()
     | & _8: MutBorrow.t t_F = Any.any_l ()
     | & _9: () = Any.any_l () ])
-    [ return''0 (result: Int32.t) ->
+    [ return (result: Int32.t) ->
     {[@expl:call_fnmut ensures] exists st1: t_F, st2: t_F, r: Int32.t. postcondition_mut f () st1 r
         /\ postcondition_mut st1 () st2 result /\ resolve st2}
-      (! return' {result}) ]
+      (! return {result}) ]
 end
 module M_07_mutable_capture__call_fnonce
   use creusot.int.Int32
@@ -205,26 +204,26 @@ module M_07_mutable_capture__call_fnonce
   
   type t_F
   
-  predicate inv (_0: t_F)
+  predicate inv (_1: t_F)
   
   predicate precondition (self: t_F) (args: ())
   
   predicate postcondition_once (self: t_F) (args: ()) (result: Int32.t)
   
-  let rec call_once (self_: t_F) (arg: ()) (return' (x: Int32.t)) = {[@expl:call_once 'self_' type invariant] inv self_}
+  let rec call_once (self_: t_F) (arg: ()) (return (x: Int32.t)) = {[@expl:call_once 'self_' type invariant] inv self_}
     {[@expl:call_once requires] precondition self_ arg}
-    any [ return''0 (result: Int32.t) -> {postcondition_once self_ arg result} (! return' {result}) ]
+    any [ return (result: Int32.t) -> {postcondition_once self_ arg result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_fnonce (f: t_F) (return' (x: Int32.t)) = {[@expl:call_fnonce 'f' type invariant] inv f}
+  let rec call_fnonce (f: t_F) (return (x: Int32.t)) = {[@expl:call_fnonce 'f' type invariant] inv f}
     {[@expl:call_fnonce requires] precondition f ()}
     (! bb0
-    [ bb0 = s0 [ s0 = call_once {f'0} {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = return''0 {_0} ] [ & _0: Int32.t = Any.any_l () | & f'0: t_F = f | & _5: () = Any.any_l () ])
-    [ return''0 (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once f () result} (! return' {result}) ]
+    [ bb0 = s0 [ s0 = call_once {f} {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb2 ] | bb2 = return {_0} ]
+    [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & _5: () = Any.any_l () ])
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once f () result} (! return {result}) ]
 end
 module M_07_mutable_capture__test_fnmut2
   use creusot.prelude.MutBorrow
@@ -233,18 +232,18 @@ module M_07_mutable_capture__test_fnmut2
   use creusot.prelude.Any
   use mach.int.Int
   
-  type closure1 = { _0: MutBorrow.t UInt32.t }
+  type closure1 = { c0: MutBorrow.t UInt32.t }
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t closure1) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0'0: MutBorrow.t closure1) = resolve _0'0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure1) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_once [@inline:trivial] (self: closure1) (args: ()) (result: Int32.t) =
-    UInt32.t'int (self._0).final = UInt32.t'int (self._0).current + 1
+    UInt32.t'int self.c0.final = UInt32.t'int self.c0.current + 1
   
   meta "rewrite_def" predicate postcondition_once
   
@@ -252,21 +251,20 @@ module M_07_mutable_capture__test_fnmut2
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0'0: MutBorrow.t UInt32.t) = resolve'1 _0'0
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (_0'0: closure1) = resolve'2 _0'0._0
+  predicate resolve'3 [@inline:trivial] (_1: closure1) = resolve'2 _1.c0
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv [@inline:trivial] (self: closure1) (result_state: closure1) =
-    (result_state._0).final = (self._0).final
+  predicate hist_inv [@inline:trivial] (self: closure1) (result_state: closure1) = result_state.c0.final = self.c0.final
   
   meta "rewrite_def" predicate hist_inv
   
   predicate postcondition_mut [@inline:trivial] (self: closure1) (args: ()) (result_state: closure1) (result: Int32.t) =
-    UInt32.t'int (result_state._0).current = UInt32.t'int (self._0).current + 1 /\ hist_inv self result_state
+    UInt32.t'int result_state.c0.current = UInt32.t'int self.c0.current + 1 /\ hist_inv self result_state
   
   meta "rewrite_def" predicate postcondition_mut
   
@@ -290,27 +288,28 @@ module M_07_mutable_capture__test_fnmut2
     forall self: closure1, args: (), res_state: closure1, res: Int32.t. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  let rec closure1 (self: MutBorrow.t closure1) (return' (x: Int32.t)) =
-    {[@expl:closure requires] UInt32.t'int ((self.current)._0).current < 1000000}
+  let rec closure1 (self: MutBorrow.t closure1) (return (x: Int32.t)) =
+    {[@expl:closure requires] UInt32.t'int self.current.c0.current < 1000000}
     (! bb0
     [ bb0 = s0
-      [ s0 = UInt32.add {((_1.current)._0).current} {(1: UInt32.t)}
-          (fun (_ret: UInt32.t) -> [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s1)
-      | s1 = -{resolve'0 _1}- s2
+      [ s0 = UInt32.add {self.current.c0.current} {(1: UInt32.t)}
+          (fun (_ret: UInt32.t) ->
+            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
+      | s1 = -{resolve'0 self}- s2
       | s2 = [ &res'0 <- (5: Int32.t) ] s3
       | s3 = [ &res <- res'0 ] s4
-      | s4 = [ &_0'0 <- res ] s5
-      | s5 = return''0 {_0'0} ] ]
-    [ & _0'0: Int32.t = Any.any_l ()
-    | & _1: MutBorrow.t closure1 = self
+      | s4 = [ &_0 <- res ] s5
+      | s5 = return {_0} ] ]
+    [ & _0: Int32.t = Any.any_l ()
+    | & self: MutBorrow.t closure1 = self
     | & res: Int32.t = Any.any_l ()
     | & res'0: Int32.t = Any.any_l () ])
-    [ return''0 (result: Int32.t) -> {[@expl:closure ensures] UInt32.t'int ((self.final)._0).current
-      = UInt32.t'int ((self.current)._0).current + 1}
+    [ return (result: Int32.t) -> {[@expl:closure ensures] UInt32.t'int self.final.c0.current
+      = UInt32.t'int self.current.c0.current + 1}
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  predicate precondition [@inline:trivial] (self: closure1) (args: ()) = UInt32.t'int (self._0).current < 1000000
+  predicate precondition [@inline:trivial] (self: closure1) (args: ()) = UInt32.t'int self.c0.current < 1000000
   
   meta "rewrite_def" predicate precondition
   
@@ -355,47 +354,47 @@ module M_07_mutable_capture__test_fnmut2
     forall self: MutBorrow.t closure1, args: (), res_state: MutBorrow.t closure1, res: Int32.t. postcondition_mut'0 self args res_state res
       -> hist_inv'0 self res_state
   
-  let rec call_fnmut (f: MutBorrow.t closure1) (return' (x: Int32.t)) =
+  let rec call_fnmut (f: MutBorrow.t closure1) (return (x: Int32.t)) =
     {[@expl:call_fnmut requires #0] precondition'0 f ()}
     {[@expl:call_fnmut requires #1] forall st1: MutBorrow.t closure1, r: Int32.t. postcondition_mut'0 f () st1 r
       -> precondition'0 st1 ()}
     any
-    [ return''0 (result: Int32.t) ->
+    [ return (result: Int32.t) ->
     {exists st1: MutBorrow.t closure1, st2: MutBorrow.t closure1, r: Int32.t. postcondition_mut'0 f () st1 r
         /\ postcondition_mut'0 st1 () st2 result /\ resolve'0 st2}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  let rec call_fnmut'0 (f: closure1) (return' (x: Int32.t)) = {[@expl:call_fnmut requires #0] precondition f ()}
+  let rec call_fnmut'0 (f: closure1) (return (x: Int32.t)) = {[@expl:call_fnmut requires #0] precondition f ()}
     {[@expl:call_fnmut requires #1] forall st1: closure1, r: Int32.t. postcondition_mut f () st1 r
       -> precondition st1 ()}
     any
-    [ return''0 (result: Int32.t) -> {exists st1: closure1, st2: closure1, r: Int32.t. postcondition_mut f () st1 r
+    [ return (result: Int32.t) -> {exists st1: closure1, st2: closure1, r: Int32.t. postcondition_mut f () st1 r
         /\ postcondition_mut st1 () st2 result /\ resolve'3 st2}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_fnmut2 (x: UInt32.t) (return' (x'0: ())) = {[@expl:test_fnmut2 requires] UInt32.t'int x = 100000}
+  let rec test_fnmut2 (x: UInt32.t) (return (x'0: ())) = {[@expl:test_fnmut2 requires] UInt32.t'int x = 100000}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x'0}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_4 <- _ret ] [ &x'0 <- _ret.final ] s1)
-      | s1 = [ &c <- { _0 = _4 } ] s2
+      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x}
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_4 <- _ret ] [ &x <- _ret.final ] s1)
+      | s1 = [ &c <- { c0 = _4 } ] s2
       | s2 = MutBorrow.borrow_mut <closure1> {c}
           (fun (_ret: MutBorrow.t closure1) -> [ &_6 <- _ret ] [ &c <- _ret.final ] s3)
       | s3 = call_fnmut {_6} (fun (_ret: Int32.t) -> [ &_5 <- _ret ] s4)
       | s4 = bb1 ]
     | bb1 = s0 [ s0 = call_fnmut'0 {c} (fun (_ret: Int32.t) -> [ &_7 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x'0 = 100004} s1 | s1 = return''0 {_0'0} ] ]
-    [ & _0'0: () = Any.any_l ()
-    | & x'0: UInt32.t = x
+    | bb2 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x = 100004} s1 | s1 = return {_0} ] ]
+    [ & _0: () = Any.any_l ()
+    | & x: UInt32.t = x
     | & c: closure1 = Any.any_l ()
     | & _4: MutBorrow.t UInt32.t = Any.any_l ()
     | & _5: Int32.t = Any.any_l ()
     | & _6: MutBorrow.t closure1 = Any.any_l ()
-    | & _7: Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _7: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_07_mutable_capture__test_fnmut3
   use creusot.prelude.MutBorrow
@@ -403,13 +402,13 @@ module M_07_mutable_capture__test_fnmut3
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  type closure0 = { _0: MutBorrow.t UInt32.t }
+  type closure0 = { c0: MutBorrow.t UInt32.t }
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t closure0) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0'0: MutBorrow.t closure0) = resolve _0'0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure0) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -417,41 +416,41 @@ module M_07_mutable_capture__test_fnmut3
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0'0: MutBorrow.t UInt32.t) = resolve'1 _0'0
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (_0'0: closure0) = resolve'2 _0'0._0
+  predicate resolve'3 [@inline:trivial] (_1: closure0) = resolve'2 _1.c0
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) =
-    (result_state._0).final = (self._0).final
+  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
   meta "rewrite_def" predicate hist_inv
   
-  let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (return' (x: Int32.t)) = bb0
+  let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (return (x: Int32.t)) = bb0
     [ bb0 = s0
-      [ s0 = UInt32.add {((_1.current)._0).current} {(1: UInt32.t)}
-          (fun (_ret: UInt32.t) -> [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s1)
-      | s1 = -{resolve'0 _1}- s2
-      | s2 = [ &_0'0 <- (5: Int32.t) ] s3
-      | s3 = return' {_0'0} ] ] [ & _0'0: Int32.t = Any.any_l () | & _1: MutBorrow.t closure0 = self ]
+      [ s0 = UInt32.add {self.current.c0.current} {(1: UInt32.t)}
+          (fun (_ret: UInt32.t) ->
+            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
+      | s1 = -{resolve'0 self}- s2
+      | s2 = [ &_0 <- (5: Int32.t) ] s3
+      | s3 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () | & self: MutBorrow.t closure0 = self ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate postcondition_once [@inline:trivial] (self: closure0) (args: ()) (result: Int32.t) =
     exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
-          /\ bor_self.final = e /\ closure0'post'return' bor_self result /\ hist_inv self e)
+          /\ bor_self.final = e /\ closure0'post'return bor_self result /\ hist_inv self e)
       /\ resolve'3 e
   
   meta "rewrite_def" predicate postcondition_once
   
   predicate postcondition_mut [@inline:trivial] (self: closure0) (args: ()) (result_state: closure0) (result: Int32.t) =
     exists bor_self: MutBorrow.t closure0. bor_self.current = self
-      /\ bor_self.final = result_state /\ closure0'post'return' bor_self result /\ hist_inv self result_state
+      /\ bor_self.final = result_state /\ closure0'post'return bor_self result /\ hist_inv self result_state
   
   meta "rewrite_def" predicate postcondition_mut
   
@@ -489,36 +488,36 @@ module M_07_mutable_capture__test_fnmut3
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  let rec call_fnonce (f: MutBorrow.t closure0) (return' (x: Int32.t)) =
+  let rec call_fnonce (f: MutBorrow.t closure0) (return (x: Int32.t)) =
     {[@expl:call_fnonce requires] precondition'0 f ()}
-    any [ return''0 (result: Int32.t) -> {postcondition_once'0 f () result} (! return' {result}) ]
+    any [ return (result: Int32.t) -> {postcondition_once'0 f () result} (! return {result}) ]
   
-  let rec call_fnonce'0 (f: closure0) (return' (x: Int32.t)) = {[@expl:call_fnonce requires] precondition f ()}
-    any [ return''0 (result: Int32.t) -> {postcondition_once f () result} (! return' {result}) ]
+  let rec call_fnonce'0 (f: closure0) (return (x: Int32.t)) = {[@expl:call_fnonce requires] precondition f ()}
+    any [ return (result: Int32.t) -> {postcondition_once f () result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_fnmut3 (x: UInt32.t) (return' (x'0: ())) = {[@expl:test_fnmut3 requires] UInt32.t'int x = 100000}
+  let rec test_fnmut3 (x: UInt32.t) (return (x'0: ())) = {[@expl:test_fnmut3 requires] UInt32.t'int x = 100000}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x'0}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_4 <- _ret ] [ &x'0 <- _ret.final ] s1)
-      | s1 = [ &c <- { _0 = _4 } ] s2
+      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x}
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_4 <- _ret ] [ &x <- _ret.final ] s1)
+      | s1 = [ &c <- { c0 = _4 } ] s2
       | s2 = MutBorrow.borrow_mut <closure0> {c}
           (fun (_ret: MutBorrow.t closure0) -> [ &_6 <- _ret ] [ &c <- _ret.final ] s3)
       | s3 = call_fnonce {_6} (fun (_ret: Int32.t) -> [ &_5 <- _ret ] s4)
       | s4 = bb1 ]
     | bb1 = s0 [ s0 = call_fnonce'0 {c} (fun (_ret: Int32.t) -> [ &_7 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x'0 = 100002} s1 | s1 = return''0 {_0'0} ] ]
-    [ & _0'0: () = Any.any_l ()
-    | & x'0: UInt32.t = x
+    | bb2 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x = 100002} s1 | s1 = return {_0} ] ]
+    [ & _0: () = Any.any_l ()
+    | & x: UInt32.t = x
     | & c: closure0 = Any.any_l ()
     | & _4: MutBorrow.t UInt32.t = Any.any_l ()
     | & _5: Int32.t = Any.any_l ()
     | & _6: MutBorrow.t closure0 = Any.any_l ()
-    | & _7: Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _7: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_07_mutable_capture__test_fnmut2box
   use creusot.prelude.MutBorrow
@@ -527,18 +526,18 @@ module M_07_mutable_capture__test_fnmut2box
   use creusot.prelude.Any
   use mach.int.Int
   
-  type closure1 = { _0: MutBorrow.t UInt32.t }
+  type closure1 = { c0: MutBorrow.t UInt32.t }
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t closure1) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0'0: MutBorrow.t closure1) = resolve _0'0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure1) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_once [@inline:trivial] (self: closure1) (args: ()) (result: Int32.t) =
-    UInt32.t'int (self._0).final = UInt32.t'int (self._0).current + 1
+    UInt32.t'int self.c0.final = UInt32.t'int self.c0.current + 1
   
   meta "rewrite_def" predicate postcondition_once
   
@@ -546,21 +545,20 @@ module M_07_mutable_capture__test_fnmut2box
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0'0: MutBorrow.t UInt32.t) = resolve'1 _0'0
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (_0'0: closure1) = resolve'2 _0'0._0
+  predicate resolve'3 [@inline:trivial] (_1: closure1) = resolve'2 _1.c0
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv [@inline:trivial] (self: closure1) (result_state: closure1) =
-    (result_state._0).final = (self._0).final
+  predicate hist_inv [@inline:trivial] (self: closure1) (result_state: closure1) = result_state.c0.final = self.c0.final
   
   meta "rewrite_def" predicate hist_inv
   
   predicate postcondition_mut [@inline:trivial] (self: closure1) (args: ()) (result_state: closure1) (result: Int32.t) =
-    UInt32.t'int (result_state._0).current = UInt32.t'int (self._0).current + 1 /\ hist_inv self result_state
+    UInt32.t'int result_state.c0.current = UInt32.t'int self.c0.current + 1 /\ hist_inv self result_state
   
   meta "rewrite_def" predicate postcondition_mut
   
@@ -584,27 +582,28 @@ module M_07_mutable_capture__test_fnmut2box
     forall self: closure1, args: (), res_state: closure1, res: Int32.t. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  let rec closure1 (self: MutBorrow.t closure1) (return' (x: Int32.t)) =
-    {[@expl:closure requires] UInt32.t'int ((self.current)._0).current < 1000000}
+  let rec closure1 (self: MutBorrow.t closure1) (return (x: Int32.t)) =
+    {[@expl:closure requires] UInt32.t'int self.current.c0.current < 1000000}
     (! bb0
     [ bb0 = s0
-      [ s0 = UInt32.add {((_1.current)._0).current} {(1: UInt32.t)}
-          (fun (_ret: UInt32.t) -> [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s1)
-      | s1 = -{resolve'0 _1}- s2
+      [ s0 = UInt32.add {self.current.c0.current} {(1: UInt32.t)}
+          (fun (_ret: UInt32.t) ->
+            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
+      | s1 = -{resolve'0 self}- s2
       | s2 = [ &res'0 <- (5: Int32.t) ] s3
       | s3 = [ &res <- res'0 ] s4
-      | s4 = [ &_0'0 <- res ] s5
-      | s5 = return''0 {_0'0} ] ]
-    [ & _0'0: Int32.t = Any.any_l ()
-    | & _1: MutBorrow.t closure1 = self
+      | s4 = [ &_0 <- res ] s5
+      | s5 = return {_0} ] ]
+    [ & _0: Int32.t = Any.any_l ()
+    | & self: MutBorrow.t closure1 = self
     | & res: Int32.t = Any.any_l ()
     | & res'0: Int32.t = Any.any_l () ])
-    [ return''0 (result: Int32.t) -> {[@expl:closure ensures] UInt32.t'int ((self.final)._0).current
-      = UInt32.t'int ((self.current)._0).current + 1}
+    [ return (result: Int32.t) -> {[@expl:closure ensures] UInt32.t'int self.final.c0.current
+      = UInt32.t'int self.current.c0.current + 1}
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
-      (! return' {result}) ]
+      (! return {result}) ]
   
-  predicate precondition [@inline:trivial] (self: closure1) (args: ()) = UInt32.t'int (self._0).current < 1000000
+  predicate precondition [@inline:trivial] (self: closure1) (args: ()) = UInt32.t'int self.c0.current < 1000000
   
   meta "rewrite_def" predicate precondition
   
@@ -630,7 +629,7 @@ module M_07_mutable_capture__test_fnmut2box
   
   meta "rewrite_def" predicate resolve'4
   
-  predicate resolve'5 [@inline:trivial] (_0'0: MutBorrow.t closure1) = resolve'4 _0'0
+  predicate resolve'5 [@inline:trivial] (_1: MutBorrow.t closure1) = resolve'4 _1
   
   meta "rewrite_def" predicate resolve'5
   
@@ -698,15 +697,15 @@ module M_07_mutable_capture__test_fnmut2box
     forall self: MutBorrow.t closure1, args: (), res_state: MutBorrow.t closure1, res: Int32.t. postcondition_mut'1 self args res_state res
       -> hist_inv'1 self res_state
   
-  let rec call_fnmut (f: MutBorrow.t closure1) (return' (x: Int32.t)) =
+  let rec call_fnmut (f: MutBorrow.t closure1) (return (x: Int32.t)) =
     {[@expl:call_fnmut requires #0] precondition'1 f ()}
     {[@expl:call_fnmut requires #1] forall st1: MutBorrow.t closure1, r: Int32.t. postcondition_mut'1 f () st1 r
       -> precondition'1 st1 ()}
     any
-    [ return''0 (result: Int32.t) ->
+    [ return (result: Int32.t) ->
     {exists st1: MutBorrow.t closure1, st2: MutBorrow.t closure1, r: Int32.t. postcondition_mut'1 f () st1 r
         /\ postcondition_mut'1 st1 () st2 result /\ resolve'5 st2}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate precondition'2 [@inline:trivial] (self: closure1) (args: ()) = precondition self args
   
@@ -730,7 +729,7 @@ module M_07_mutable_capture__test_fnmut2box
   
   meta "rewrite_def" predicate resolve'6
   
-  predicate resolve'7 [@inline:trivial] (_0'0: closure1) = resolve'6 _0'0
+  predicate resolve'7 [@inline:trivial] (_1: closure1) = resolve'6 _1
   
   meta "rewrite_def" predicate resolve'7
   
@@ -738,7 +737,7 @@ module M_07_mutable_capture__test_fnmut2box
   
   meta "rewrite_def" predicate resolve'8
   
-  predicate resolve'9 [@inline:trivial] (_0'0: closure1) = resolve'8 _0'0
+  predicate resolve'9 [@inline:trivial] (_1: closure1) = resolve'8 _1
   
   meta "rewrite_def" predicate resolve'9
   
@@ -800,37 +799,37 @@ module M_07_mutable_capture__test_fnmut2box
     forall self: closure1, args: (), res_state: closure1, res: Int32.t. postcondition_mut'3 self args res_state res
       -> hist_inv'3 self res_state
   
-  let rec call_fnmut'0 (f: closure1) (return' (x: Int32.t)) = {[@expl:call_fnmut requires #0] precondition'3 f ()}
+  let rec call_fnmut'0 (f: closure1) (return (x: Int32.t)) = {[@expl:call_fnmut requires #0] precondition'3 f ()}
     {[@expl:call_fnmut requires #1] forall st1: closure1, r: Int32.t. postcondition_mut'3 f () st1 r
       -> precondition'3 st1 ()}
     any
-    [ return''0 (result: Int32.t) -> {exists st1: closure1, st2: closure1, r: Int32.t. postcondition_mut'3 f () st1 r
+    [ return (result: Int32.t) -> {exists st1: closure1, st2: closure1, r: Int32.t. postcondition_mut'3 f () st1 r
         /\ postcondition_mut'3 st1 () st2 result /\ resolve'9 st2}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_fnmut2box (x: UInt32.t) (return' (x'0: ())) = {[@expl:test_fnmut2box requires] UInt32.t'int x = 100000}
+  let rec test_fnmut2box (x: UInt32.t) (return (x'0: ())) = {[@expl:test_fnmut2box requires] UInt32.t'int x = 100000}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x'0}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_4 <- _ret ] [ &x'0 <- _ret.final ] s1)
-      | s1 = [ &c <- { _0 = _4 } ] s2
+      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x}
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_4 <- _ret ] [ &x <- _ret.final ] s1)
+      | s1 = [ &c <- { c0 = _4 } ] s2
       | s2 = MutBorrow.borrow_mut <closure1> {c}
           (fun (_ret: MutBorrow.t closure1) -> [ &_7 <- _ret ] [ &c <- _ret.final ] s3)
       | s3 = bb1 ]
     | bb1 = s0 [ s0 = call_fnmut {_7} (fun (_ret: Int32.t) -> [ &_5 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0 [ s0 = call_fnmut'0 {c} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x'0 = 100004} s1 | s1 = return''0 {_0'0} ] ]
-    [ & _0'0: () = Any.any_l ()
-    | & x'0: UInt32.t = x
+    | bb5 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x = 100004} s1 | s1 = return {_0} ] ]
+    [ & _0: () = Any.any_l ()
+    | & x: UInt32.t = x
     | & c: closure1 = Any.any_l ()
     | & _4: MutBorrow.t UInt32.t = Any.any_l ()
     | & _5: Int32.t = Any.any_l ()
     | & _7: MutBorrow.t closure1 = Any.any_l ()
-    | & _8: Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _8: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_07_mutable_capture__test_fnmut3box
   use creusot.prelude.MutBorrow
@@ -838,13 +837,13 @@ module M_07_mutable_capture__test_fnmut3box
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  type closure0 = { _0: MutBorrow.t UInt32.t }
+  type closure0 = { c0: MutBorrow.t UInt32.t }
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t closure0) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0'0: MutBorrow.t closure0) = resolve _0'0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure0) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -852,41 +851,41 @@ module M_07_mutable_capture__test_fnmut3box
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0'0: MutBorrow.t UInt32.t) = resolve'1 _0'0
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (_0'0: closure0) = resolve'2 _0'0._0
+  predicate resolve'3 [@inline:trivial] (_1: closure0) = resolve'2 _1.c0
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) =
-    (result_state._0).final = (self._0).final
+  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
   meta "rewrite_def" predicate hist_inv
   
-  let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (return' (x: Int32.t)) = bb0
+  let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (return (x: Int32.t)) = bb0
     [ bb0 = s0
-      [ s0 = UInt32.add {((_1.current)._0).current} {(1: UInt32.t)}
-          (fun (_ret: UInt32.t) -> [ &_1 <- { _1 with current = { _0 = { (_1.current)._0 with current = _ret } } } ] s1)
-      | s1 = -{resolve'0 _1}- s2
-      | s2 = [ &_0'0 <- (5: Int32.t) ] s3
-      | s3 = return' {_0'0} ] ] [ & _0'0: Int32.t = Any.any_l () | & _1: MutBorrow.t closure0 = self ]
+      [ s0 = UInt32.add {self.current.c0.current} {(1: UInt32.t)}
+          (fun (_ret: UInt32.t) ->
+            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
+      | s1 = -{resolve'0 self}- s2
+      | s2 = [ &_0 <- (5: Int32.t) ] s3
+      | s3 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () | & self: MutBorrow.t closure0 = self ]
   
   meta "rewrite_def" predicate closure0'pre
   
-  meta "rewrite_def" predicate closure0'post'return'
+  meta "rewrite_def" predicate closure0'post'return
   
   predicate postcondition_once [@inline:trivial] (self: closure0) (args: ()) (result: Int32.t) =
     exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
-          /\ bor_self.final = e /\ closure0'post'return' bor_self result /\ hist_inv self e)
+          /\ bor_self.final = e /\ closure0'post'return bor_self result /\ hist_inv self e)
       /\ resolve'3 e
   
   meta "rewrite_def" predicate postcondition_once
   
   predicate postcondition_mut [@inline:trivial] (self: closure0) (args: ()) (result_state: closure0) (result: Int32.t) =
     exists bor_self: MutBorrow.t closure0. bor_self.current = self
-      /\ bor_self.final = result_state /\ closure0'post'return' bor_self result /\ hist_inv self result_state
+      /\ bor_self.final = result_state /\ closure0'post'return bor_self result /\ hist_inv self result_state
   
   meta "rewrite_def" predicate postcondition_mut
   
@@ -966,9 +965,9 @@ module M_07_mutable_capture__test_fnmut3box
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  let rec call_fnonce (f: MutBorrow.t (MutBorrow.t closure0)) (return' (x: Int32.t)) =
+  let rec call_fnonce (f: MutBorrow.t (MutBorrow.t closure0)) (return (x: Int32.t)) =
     {[@expl:call_fnonce requires] precondition'1 f ()}
-    any [ return''0 (result: Int32.t) -> {postcondition_once'1 f () result} (! return' {result}) ]
+    any [ return (result: Int32.t) -> {postcondition_once'1 f () result} (! return {result}) ]
   
   predicate precondition'2 [@inline:trivial] (self: closure0) (args: ()) = precondition self args
   
@@ -988,19 +987,19 @@ module M_07_mutable_capture__test_fnmut3box
   
   meta "rewrite_def" predicate postcondition_once'3
   
-  let rec call_fnonce'0 (f: closure0) (return' (x: Int32.t)) = {[@expl:call_fnonce requires] precondition'3 f ()}
-    any [ return''0 (result: Int32.t) -> {postcondition_once'3 f () result} (! return' {result}) ]
+  let rec call_fnonce'0 (f: closure0) (return (x: Int32.t)) = {[@expl:call_fnonce requires] precondition'3 f ()}
+    any [ return (result: Int32.t) -> {postcondition_once'3 f () result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_fnmut3box (x: UInt32.t) (return' (x'0: ())) = {[@expl:test_fnmut3box requires] UInt32.t'int x = 100000}
+  let rec test_fnmut3box (x: UInt32.t) (return (x'0: ())) = {[@expl:test_fnmut3box requires] UInt32.t'int x = 100000}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x'0}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_4 <- _ret ] [ &x'0 <- _ret.final ] s1)
-      | s1 = [ &c <- { _0 = _4 } ] s2
+      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x}
+          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_4 <- _ret ] [ &x <- _ret.final ] s1)
+      | s1 = [ &c <- { c0 = _4 } ] s2
       | s2 = MutBorrow.borrow_mut <closure0> {c}
           (fun (_ret: MutBorrow.t closure0) -> [ &_7 <- _ret ] [ &c <- _ret.final ] s3)
       | s3 = MutBorrow.borrow_mut <MutBorrow.t closure0> {_7}
@@ -1009,13 +1008,13 @@ module M_07_mutable_capture__test_fnmut3box
       | s5 = bb1 ]
     | bb1 = s0 [ s0 = -{resolve'0 _7}- s1 | s1 = bb3 ]
     | bb3 = s0 [ s0 = call_fnonce'0 {c} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x'0 = 100002} s1 | s1 = return''0 {_0'0} ] ]
-    [ & _0'0: () = Any.any_l ()
-    | & x'0: UInt32.t = x
+    | bb4 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x = 100002} s1 | s1 = return {_0} ] ]
+    [ & _0: () = Any.any_l ()
+    | & x: UInt32.t = x
     | & c: closure0 = Any.any_l ()
     | & _4: MutBorrow.t UInt32.t = Any.any_l ()
     | & _5: Int32.t = Any.any_l ()
     | & _6: MutBorrow.t (MutBorrow.t closure0) = Any.any_l ()
     | & _7: MutBorrow.t closure0 = Any.any_l ()
-    | & _8: Int32.t = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _8: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

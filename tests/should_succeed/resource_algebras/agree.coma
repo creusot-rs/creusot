@@ -54,21 +54,21 @@ module M_agree__agreement
   
   meta "rewrite_def" function view
   
-  let rec join_shared (self: t_Resource) (other: t_Resource) (return' (x: t_Resource)) =
+  let rec join_shared (self: t_Resource) (other: t_Resource) (return (x: t_Resource)) =
     {[@expl:join_shared requires] id self = id other}
     any
-    [ return''0 (result: t_Resource) -> {id result = id self}
+    [ return (result: t_Resource) -> {id result = id self}
       {incl_eq (view self) (view result) /\ incl_eq (view other) (view result)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec agreement (x: t_Resource) (y: t_Resource) (return' (x'0: ())) = {[@expl:agreement requires] id x = id y}
+  let rec agreement (x: t_Resource) (y: t_Resource) (return (x'0: ())) = {[@expl:agreement requires] id x = id y}
     (! bb0
-    [ bb0 = s0 [ s0 = join_shared {x'0} {y'0} (fun (_ret: t_Resource) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = return''0 {_0} ]
-    [ & _0: () = Any.any_l () | & x'0: t_Resource = x | & y'0: t_Resource = y | & _5: t_Resource = Any.any_l () ])
-    [ return''0 (result: ()) -> {[@expl:agreement ensures] view x = view y} (! return' {result}) ]
+    [ bb0 = s0 [ s0 = join_shared {x} {y} (fun (_ret: t_Resource) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = return {_0} ]
+    [ & _0: () = Any.any_l () | & x: t_Resource = x | & y: t_Resource = y | & _5: t_Resource = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:agreement ensures] view x = view y} (! return {result}) ]
 end

@@ -3,9 +3,9 @@ module M_constrained_types__uses_concrete_instance
   use mach.int.Int
   use creusot.prelude.Any
   
-  type tuple = { _p0: UInt32.t; _p1: UInt32.t }
+  type tuple = { f0: UInt32.t; f1: UInt32.t }
   
-  type tuple'0 = { _p0'0: int; _p1'0: int }
+  type tuple'0 = { f0'0: int; f1'0: int }
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -51,9 +51,8 @@ module M_constrained_types__uses_concrete_instance
   
   axiom cmp_le_log_spec: forall x: int, y: int. (x <= y) = (cmp_log x y <> C_Greater)
   
-  function cmp_log'0 (self: tuple'0) (o: tuple'0) : t_Ordering = let r = cmp_log self._p0'0 o._p0'0 in if r
-    = C_Equal then
-      cmp_log self._p1'0 o._p1'0
+  function cmp_log'0 (self: tuple'0) (o: tuple'0) : t_Ordering = let r = cmp_log self.f0'0 o.f0'0 in if r = C_Equal then
+      cmp_log self.f1'0 o.f1'0
     else
       r
   
@@ -79,25 +78,25 @@ module M_constrained_types__uses_concrete_instance
   
   axiom refl_spec'0: forall x: tuple'0. cmp_log'0 x x = C_Equal
   
-  predicate gt_log (self: tuple'0) (o: tuple'0) = self._p0'0 = o._p0'0 /\ self._p1'0 > o._p1'0 \/ self._p0'0 > o._p0'0
+  predicate gt_log (self: tuple'0) (o: tuple'0) = self.f0'0 = o.f0'0 /\ self.f1'0 > o.f1'0 \/ self.f0'0 > o.f0'0
   
   function cmp_gt_log'0 (x: tuple'0) (y: tuple'0) : ()
   
   axiom cmp_gt_log_spec'0: forall x: tuple'0, y: tuple'0. gt_log x y = (cmp_log'0 x y = C_Greater)
   
-  predicate ge_log (self: tuple'0) (o: tuple'0) = self._p0'0 = o._p0'0 /\ self._p1'0 >= o._p1'0 \/ self._p0'0 > o._p0'0
+  predicate ge_log (self: tuple'0) (o: tuple'0) = self.f0'0 = o.f0'0 /\ self.f1'0 >= o.f1'0 \/ self.f0'0 > o.f0'0
   
   function cmp_ge_log'0 (x: tuple'0) (y: tuple'0) : ()
   
   axiom cmp_ge_log_spec'0: forall x: tuple'0, y: tuple'0. ge_log x y = (cmp_log'0 x y <> C_Less)
   
-  predicate lt_log (self: tuple'0) (o: tuple'0) = self._p0'0 = o._p0'0 /\ self._p1'0 < o._p1'0 \/ self._p0'0 < o._p0'0
+  predicate lt_log (self: tuple'0) (o: tuple'0) = self.f0'0 = o.f0'0 /\ self.f1'0 < o.f1'0 \/ self.f0'0 < o.f0'0
   
   function cmp_lt_log'0 (x: tuple'0) (y: tuple'0) : ()
   
   axiom cmp_lt_log_spec'0: forall x: tuple'0, y: tuple'0. lt_log x y = (cmp_log'0 x y = C_Less)
   
-  predicate le_log (self: tuple'0) (o: tuple'0) = self._p0'0 = o._p0'0 /\ self._p1'0 <= o._p1'0 \/ self._p0'0 < o._p0'0
+  predicate le_log (self: tuple'0) (o: tuple'0) = self.f0'0 = o.f0'0 /\ self.f1'0 <= o.f1'0 \/ self.f0'0 < o.f0'0
   
   function cmp_le_log'0 (x: tuple'0) (y: tuple'0) : ()
   
@@ -107,8 +106,8 @@ module M_constrained_types__uses_concrete_instance
   
   meta "rewrite_def" function deep_model
   
-  function deep_model'0 [@inline:trivial] (self: tuple) : tuple'0 = { _p0'0 = deep_model self._p0;
-                                                                      _p1'0 = deep_model self._p1 }
+  function deep_model'0 [@inline:trivial] (self: tuple) : tuple'0 = { f0'0 = deep_model self.f0;
+                                                                      f1'0 = deep_model self.f1 }
   
   meta "rewrite_def" function deep_model'0
   
@@ -116,15 +115,14 @@ module M_constrained_types__uses_concrete_instance
   
   meta "rewrite_def" function deep_model'1
   
-  let rec lt (self_: tuple) (o: tuple) (return' (x: bool)) = any
-    [ return''0 (result: bool) -> {result = lt_log (deep_model'1 self_) (deep_model'1 o)} (! return' {result}) ]
+  let rec lt (self_: tuple) (o: tuple) (return (x: bool)) = any
+    [ return (result: bool) -> {result = lt_log (deep_model'1 self_) (deep_model'1 o)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec uses_concrete_instance (x: tuple) (y: tuple) (return' (x'0: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = lt {x'0} {y'0} (fun (_ret: bool) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return''0 {_0} ]
-    [ & _0: bool = Any.any_l () | & x'0: tuple = x | & y'0: tuple = y ])
-    [ return''0 (result: bool) -> (! return' {result}) ]
+  let rec uses_concrete_instance (x: tuple) (y: tuple) (return (x'0: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = lt {x} {y} (fun (_ret: bool) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
+    [ & _0: bool = Any.any_l () | & x: tuple = x | & y: tuple = y ]) [ return (result: bool) -> (! return {result}) ]
 end

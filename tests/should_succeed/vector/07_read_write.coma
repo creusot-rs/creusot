@@ -20,11 +20,11 @@ module M_07_read_write__read_write
   
   type t_T
   
-  predicate inv (_0: t_T)
+  predicate inv (_1: t_T)
   
   predicate invariant' (self: t_T) = inv self
   
-  predicate inv'0 (_0: t_T)
+  predicate inv'0 (_1: t_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
   
@@ -33,7 +33,7 @@ module M_07_read_write__read_write
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_0: Seq.seq t_T)
+  predicate inv'1 (_1: Seq.seq t_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
   
@@ -45,7 +45,7 @@ module M_07_read_write__read_write
   
   predicate invariant''1 (self: t_Vec) = inv'1 (view self)
   
-  predicate inv'2 (_0: t_Vec)
+  predicate inv'2 (_1: t_Vec)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
@@ -53,7 +53,7 @@ module M_07_read_write__read_write
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_0: MutBorrow.t t_Vec)
+  predicate inv'3 (_1: MutBorrow.t t_Vec)
   
   axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
@@ -65,7 +65,7 @@ module M_07_read_write__read_write
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'4 (_0: MutBorrow.t t_T)
+  predicate inv'4 (_1: MutBorrow.t t_T)
   
   axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_T [inv'4 x]. inv'4 x = invariant''3 x
   
@@ -79,22 +79,22 @@ module M_07_read_write__read_write
   
   meta "rewrite_def" predicate resolve_elswhere
   
-  let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return' (x: MutBorrow.t t_T)) =
+  let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return (x: MutBorrow.t t_T)) =
     {[@expl:index_mut 'self_' type invariant] inv'3 self_}
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return''0 (result: MutBorrow.t t_T) -> {inv'4 result}
+    [ return (result: MutBorrow.t t_T) -> {inv'4 result}
       {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
-      (! return' {result}) ]
+      (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_0: MutBorrow.t t_T) = resolve _0
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_T) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
   
@@ -102,7 +102,7 @@ module M_07_read_write__read_write
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_0: MutBorrow.t t_Vec) = resolve'1 _0
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve'1 _1
   
   meta "rewrite_def" predicate resolve'2
   
@@ -110,7 +110,7 @@ module M_07_read_write__read_write
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'5 (_0: t_Vec)
+  predicate inv'5 (_1: t_Vec)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''4 x
   
@@ -118,19 +118,19 @@ module M_07_read_write__read_write
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'6 (_0: t_T)
+  predicate inv'6 (_1: t_T)
   
   axiom inv_axiom'5 [@rewrite]: forall x: t_T [inv'6 x]. inv'6 x = invariant''5 x
   
-  let rec index (self_: t_Vec) (ix: UInt64.t) (return' (x: t_T)) = {[@expl:index 'self_' type invariant] inv'5 self_}
+  let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_T)) = {[@expl:index 'self_' type invariant] inv'5 self_}
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return''0 (result: t_T) -> {inv'6 result} {has_value ix (view self_) result} (! return' {result}) ]
+    any [ return (result: t_T) -> {inv'6 result} {has_value ix (view self_) result} (! return {result}) ]
   
-  type tuple = { _p0: t_T; _p1: t_T }
+  type tuple = { f0: t_T; f1: t_T }
   
   predicate precondition (self: ()) (args: tuple)
   
-  axiom precondition_fndef: forall args: tuple [precondition () args]. (let {_p0 = self_; _p1 = rhs} = args in inv'6 rhs
+  axiom precondition_fndef: forall args: tuple [precondition () args]. (let {f0 = self_; f1 = rhs} = args in inv'6 rhs
         /\ inv'6 self_) -> precondition () args
   
   type t_DeepModelTy
@@ -145,47 +145,46 @@ module M_07_read_write__read_write
   
   axiom postcondition_fndef:
     forall args: tuple, res: bool [postcondition_once () args res]. postcondition_once () args res
-      -> (let {_p0 = self_; _p1 = rhs} = args in res = (deep_model'0 self_ = deep_model'0 rhs))
+      -> (let {f0 = self_; f1 = rhs} = args in res = (deep_model'0 self_ = deep_model'0 rhs))
   
-  let rec eq (self_: t_T) (rhs: t_T) (return' (x: bool)) = {[@expl:eq requires] precondition () { _p0 = self_;
-                                                                                                  _p1 = rhs }}
-    any [ return''0 (result: bool) -> {postcondition_once () { _p0 = self_; _p1 = rhs } result} (! return' {result}) ]
+  let rec eq (self_: t_T) (rhs: t_T) (return (x: bool)) = {[@expl:eq requires] precondition () { f0 = self_; f1 = rhs }}
+    any [ return (result: bool) -> {postcondition_once () { f0 = self_; f1 = rhs } result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec read_write (a: MutBorrow.t t_Vec) (i: UInt64.t) (x: t_T) (return' (x'0: ())) =
+  let rec read_write (a: MutBorrow.t t_Vec) (i: UInt64.t) (x: t_T) (return (x'0: ())) =
     {[@expl:read_write 'a' type invariant] inv'3 a}
     {[@expl:read_write 'x' type invariant] inv x}
     {[@expl:read_write requires] UInt64.t'int i < Seq.length (view a.current)}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'2 a'0.current}
-        MutBorrow.borrow_final <t_Vec> {a'0.current} {MutBorrow.get_id a'0}
+      [ s0 = {inv'2 a.current}
+        MutBorrow.borrow_final <t_Vec> {a.current} {MutBorrow.get_id a}
           (fun (_ret: MutBorrow.t t_Vec) ->
             [ &_7 <- _ret ] -{inv'2 _ret.final}-
-            [ &a'0 <- { a'0 with current = _ret.final } ] s1)
-      | s1 = index_mut {_7} {i'0} (fun (_ret: MutBorrow.t t_T) -> [ &_6 <- _ret ] s2)
+            [ &a <- { a with current = _ret.final } ] s1)
+      | s1 = index_mut {_7} {i} (fun (_ret: MutBorrow.t t_T) -> [ &_6 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = [ &_6 <- { _6 with current = x'0 } ] s1
+      [ s0 = [ &_6 <- { _6 with current = x } ] s1
       | s1 = {[@expl:type invariant] inv'4 _6} s2
       | s2 = -{resolve'0 _6}- s3
-      | s3 = {[@expl:type invariant] inv'3 a'0} s4
-      | s4 = -{resolve'2 a'0}- s5
-      | s5 = index {a'0.current} {i'0} (fun (_ret: t_T) -> [ &_12 <- _ret ] s6)
+      | s3 = {[@expl:type invariant] inv'3 a} s4
+      | s4 = -{resolve'2 a}- s5
+      | s5 = index {a.current} {i} (fun (_ret: t_T) -> [ &_12 <- _ret ] s6)
       | s6 = bb2 ]
-    | bb2 = s0 [ s0 = eq {_12} {x'0} (fun (_ret: bool) -> [ &_10 <- _ret ] s1) | s1 = bb3 ]
+    | bb2 = s0 [ s0 = eq {_12} {x} (fun (_ret: bool) -> [ &_10 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = any [ br0 -> {_10 = false} (! bb5) | br1 -> {_10} (! bb4) ]
-    | bb4 = return''0 {_0}
+    | bb4 = return {_0}
     | bb5 = {false} any ]
     [ & _0: () = Any.any_l ()
-    | & a'0: MutBorrow.t t_Vec = a
-    | & i'0: UInt64.t = i
-    | & x'0: t_T = x
+    | & a: MutBorrow.t t_Vec = a
+    | & i: UInt64.t = i
+    | & x: t_T = x
     | & _6: MutBorrow.t t_T = Any.any_l ()
     | & _7: MutBorrow.t t_Vec = Any.any_l ()
     | & _10: bool = Any.any_l ()
-    | & _12: t_T = Any.any_l () ]) [ return''0 (result: ()) -> (! return' {result}) ]
+    | & _12: t_T = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
