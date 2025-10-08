@@ -748,11 +748,9 @@ impl Print for Exp {
                 doc
             }
             Exp::Var(v) => v.pretty_value_name(alloc, scope),
-            Exp::RecField { record, label } => {
-                parens!(alloc, scope, self.precedence(), record)
-                    .append(".")
-                    .append(label.pretty_value_name(alloc, scope))
-            }
+            Exp::RecField { record, label } => parens!(alloc, scope, self.precedence(), record)
+                .append(".")
+                .append(label.pretty_value_name(alloc, scope)),
 
             Exp::Tuple(args) => alloc
                 .intersperse(args.iter().map(|a| parens!(alloc, scope, Precedence::Cast, a)), ", ")
