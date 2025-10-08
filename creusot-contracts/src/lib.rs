@@ -64,6 +64,8 @@
         hint_must_use,
         pointer_is_aligned_to,
         edition_panic,
+        new_range_api,
+        range_bounds_is_empty,
     )
 )]
 
