@@ -10,7 +10,7 @@ mod inner {
         i
     }
 
-    #[logic(open(self), law)]
+    #[logic(open(self))]
     #[ensures(forall<i, j> #[trigger(id(i), id(j))] i <= j ==> id(i) <= id(j))]
     pub fn id_mono() {}
 }
