@@ -26,6 +26,7 @@ pub mod ops;
 pub mod option;
 pub mod panicking;
 pub mod ptr;
+pub mod range;
 pub mod rc;
 pub mod result;
 pub mod slice;

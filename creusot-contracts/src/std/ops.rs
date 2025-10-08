@@ -206,6 +206,334 @@ extern_spec! {
     }
 }
 
+impl<T: DeepModel> DeepModel for Bound<T> {
+    type DeepModelTy = Bound<T::DeepModelTy>;
+
+    #[logic]
+    fn deep_model(self) -> Self::DeepModelTy {
+        match self {
+            Bound::Included(b) => Bound::Included(b.deep_model()),
+            Bound::Excluded(b) => Bound::Excluded(b.deep_model()),
+            Bound::Unbounded => Bound::Unbounded,
+        }
+    }
+}
+
+/// Methods for the specification of [`::std::ops::RangeBounds`].
+pub trait RangeBounds<T: ?Sized + DeepModel<DeepModelTy: OrdLogic>>:
+    ::std::ops::RangeBounds<T>
+{
+    #[logic]
+    fn start_bound_logic(&self) -> Bound<&T>;
+
+    #[logic]
+    fn end_bound_logic(&self) -> Bound<&T>;
+}
+
+/// Membership to an interval `(Bound<T>, Bound<T>)`.
+#[logic(open)]
+pub fn between<T: OrdLogic>(lo: Bound<T>, item: T, hi: Bound<T>) -> bool {
+    lower_bound(lo, item) && upper_bound(item, hi)
+}
+
+/// Comparison with a lower bound.
+#[logic(open)]
+pub fn lower_bound<T: OrdLogic>(lo: Bound<T>, item: T) -> bool {
+    pearlite! {
+        match lo {
+            Bound::Included(lo) => lo <= item,
+            Bound::Excluded(lo) => lo < item,
+            Bound::Unbounded => true,
+        }
+    }
+}
+
+/// Comparison with an upper bound.
+#[logic(open)]
+pub fn upper_bound<T: OrdLogic>(item: T, hi: Bound<T>) -> bool {
+    pearlite! {
+        match hi {
+            Bound::Included(hi) => item <= hi,
+            Bound::Excluded(lo) => lo < item,
+            Bound::Unbounded => true,
+        }
+    }
+}
+
+extern_spec! {
+    mod std {
+        mod ops {
+            trait RangeBounds<T>
+            where
+                Self: RangeBounds<T>,
+                T: ?Sized + DeepModel,
+                T::DeepModelTy: OrdLogic,
+            {
+                #[ensures(result == self.start_bound_logic())]
+                fn start_bound(&self) -> Bound<&T>;
+
+                #[ensures(result == self.end_bound_logic())]
+                fn end_bound(&self) -> Bound<&T>;
+
+                #[ensures(between(self.start_bound_logic().deep_model(), item.deep_model(), self.end_bound_logic().deep_model()))]
+                fn contains<U>(&self, item: &U) -> bool
+                where
+                    T: PartialOrd<U>,
+                    U: ?Sized + PartialOrd<T> + DeepModel<DeepModelTy = T::DeepModelTy>;
+
+                #[ensures(!exists<item: T::DeepModelTy> between(self.start_bound_logic().deep_model(), item, self.end_bound_logic().deep_model()))]
+                fn is_empty(&self) -> bool
+                where T: PartialOrd;
+            }
+        }
+    }
+}
+
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeFull {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Unbounded
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Unbounded
+    }
+}
+
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeFrom<T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(&self.start)
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Unbounded
+    }
+}
+
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeTo<T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Unbounded
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Excluded(&self.end)
+    }
+}
+
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for Range<T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(&self.start)
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Excluded(&self.end)
+    }
+}
+
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeInclusive<T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(&self.start_log())
+    }
+
+    #[logic(opaque)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        dead
+    }
+}
+
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeToInclusive<T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Unbounded
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(&self.end)
+    }
+}
+
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for (Bound<T>, Bound<T>) {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        match *self {
+            (Bound::Included(ref start), _) => Bound::Included(start),
+            (Bound::Excluded(ref start), _) => Bound::Excluded(start),
+            (Bound::Unbounded, _) => Bound::Unbounded,
+        }
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        match *self {
+            (_, Bound::Included(ref end)) => Bound::Included(end),
+            (_, Bound::Excluded(ref end)) => Bound::Excluded(end),
+            (_, Bound::Unbounded) => Bound::Unbounded,
+        }
+    }
+}
+
+impl<'a, T: ?Sized + 'a + DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T>
+    for (Bound<&'a T>, Bound<&'a T>)
+{
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        self.0
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        self.1
+    }
+}
+
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeFrom<&T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(self.start)
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Unbounded
+    }
+}
+
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeTo<&T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Unbounded
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Excluded(self.end)
+    }
+}
+
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for Range<&T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(self.start)
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Excluded(self.end)
+    }
+}
+
+// I don't know why this impl is different from the one for `RangeInclusive<T>`.
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeInclusive<&T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(&self.start_log())
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(&self.end_log())
+    }
+}
+
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeToInclusive<&T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Unbounded
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(self.end)
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::Range<T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(&self.start)
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Excluded(&self.end)
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::Range<&T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(self.start)
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Excluded(self.end)
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::RangeFrom<T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(&self.start)
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Unbounded
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::RangeFrom<&T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(self.start)
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Unbounded
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::RangeInclusive<T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(&self.start)
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(&self.last)
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::RangeInclusive<&T> {
+    #[logic(open)]
+    fn start_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(self.start)
+    }
+
+    #[logic(open)]
+    fn end_bound_logic(&self) -> Bound<&T> {
+        Bound::Included(self.last)
+    }
+}
+
 pub trait RangeInclusiveExt<Idx> {
     #[logic]
     fn start_log(self) -> Idx;
