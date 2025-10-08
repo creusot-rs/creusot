@@ -62,7 +62,7 @@ module M_hillel__right_pad
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
   let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+    any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
   
@@ -74,7 +74,7 @@ module M_hillel__right_pad
   
   let rec push (self_: MutBorrow.t t_Vec) (v: t_T) (return (x: ())) = {[@expl:push 'self_' type invariant] inv'4 self_}
     {[@expl:push 'v' type invariant] inv v}
-    any [ return' (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
+    any [ return (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
   
@@ -207,7 +207,7 @@ module M_hillel__left_pad
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
   let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+    any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
   
@@ -221,7 +221,7 @@ module M_hillel__left_pad
     {[@expl:insert 'self_' type invariant] inv'4 self_}
     {[@expl:insert 'element' type invariant] inv element}
     any
-    [ return' (result: ()) -> {Seq.length (view self_.final) = Seq.length (view self_.current) + 1}
+    [ return (result: ()) -> {Seq.length (view self_.final) = Seq.length (view self_.current) + 1}
       {forall i: int. 0 <= i /\ i < UInt64.t'int index -> index_logic self_.final i = index_logic self_.current i}
       {index_logic self_.final (UInt64.t'int index) = element}
       {forall i: int. UInt64.t'int index < i /\ i < Seq.length (view self_.final)
@@ -425,7 +425,7 @@ module M_hillel__insert_unique
   axiom inv_axiom'4 [@rewrite]: forall x: Slice64.slice t_T [inv'5 x]. inv'5 x = invariant''4 x
   
   let rec deref (self_: t_Vec) (return (x: Slice64.slice t_T)) = {[@expl:deref 'self_' type invariant] inv'3 self_}
-    any [ return' (result: Slice64.slice t_T) -> {inv'5 result} {Slice64.view result = view self_} (! return {result}) ]
+    any [ return (result: Slice64.slice t_T) -> {inv'5 result} {Slice64.view result = view self_} (! return {result}) ]
   
   type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
   
@@ -434,10 +434,10 @@ module M_hillel__insert_unique
   function view'0 (self: t_Iter) : Slice64.slice t_T
   
   let rec iter (self_: Slice64.slice t_T) (return (x: t_Iter)) = {[@expl:iter 'self_' type invariant] inv'5 self_}
-    any [ return' (result: t_Iter) -> {view'0 result = self_} (! return {result}) ]
+    any [ return (result: t_Iter) -> {view'0 result = self_} (! return {result}) ]
   
   let rec into_iter (self_: t_Iter) (return (x: t_Iter)) = any
-    [ return' (result: t_Iter) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Iter) -> {result = self_} (! return {result}) ]
   
   function deep_model'2 [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model self
   
@@ -511,7 +511,7 @@ module M_hillel__insert_unique
     resolve self /\ Slice64.view (view'0 self.current) = (Seq.empty: Seq.seq t_T)
   
   let rec next (self_: MutBorrow.t t_Iter) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {inv'10 result}
+    [ return (result: t_Option) -> {inv'10 result}
       {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
@@ -540,7 +540,7 @@ module M_hillel__insert_unique
   
   let rec eq (self_: t_T) (rhs: t_T) (return (x: bool)) = {[@expl:eq 'self_' type invariant] inv'11 self_}
     {[@expl:eq 'rhs' type invariant] inv'11 rhs}
-    any [ return' (result: bool) -> {result = (deep_model'3 self_ = deep_model'3 rhs)} (! return {result}) ]
+    any [ return (result: bool) -> {result = (deep_model'3 self_ = deep_model'3 rhs)} (! return {result}) ]
   
   predicate resolve'1 (_1: t_T)
   
@@ -566,7 +566,7 @@ module M_hillel__insert_unique
   
   let rec push (self_: MutBorrow.t t_Vec) (v: t_T) (return (x: ())) = {[@expl:push 'self_' type invariant] inv'12 self_}
     {[@expl:push 'v' type invariant] inv v}
-    any [ return' (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
+    any [ return (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -713,7 +713,7 @@ module M_hillel__unique
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
   let rec new (return (x: t_Vec)) = any
-    [ return' (result: t_Vec) -> {inv'2 result} {Seq.length (view result) = 0} (! return {result}) ]
+    [ return (result: t_Vec) -> {inv'2 result} {Seq.length (view result) = 0} (! return {result}) ]
   
   predicate invariant''2 (self: Slice64.slice t_T) = inv'1 (Slice64.view self)
   
@@ -730,12 +730,12 @@ module M_hillel__unique
   axiom inv_axiom'3 [@rewrite]: forall x: Slice64.slice t_T [inv'4 x]. inv'4 x = invariant''3 x
   
   let rec len (self_: Slice64.slice t_T) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'4 self_}
-    any [ return' (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    any [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
   let rec into_iter (self_: t_Range) (return (x: t_Range)) = any
-    [ return' (result: t_Range) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range) -> {result = self_} (! return {result}) ]
   
   type t_DeepModelTy
   
@@ -817,7 +817,7 @@ module M_hillel__unique
     resolve self /\ deep_model'3 self.current.t_Range__start >= deep_model'3 self.current.t_Range__end
   
   let rec next (self_: MutBorrow.t t_Range) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {match result with
+    [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
@@ -848,7 +848,7 @@ module M_hillel__unique
     {[@expl:insert_unique 'elem' type invariant] inv elem}
     {[@expl:insert_unique requires] is_unique (deep_model'4 vec)}
     any
-    [ return' (result: ()) -> {is_unique (deep_model'2 vec.final)}
+    [ return (result: ()) -> {is_unique (deep_model'2 vec.final)}
       {is_subset (deep_model'4 vec) (deep_model'2 vec.final)}
       {is_subset (deep_model'2 vec.final) (Seq.snoc (deep_model'4 vec) (deep_model elem))}
       {contains (deep_model'2 vec.final) (deep_model elem)}
@@ -1108,7 +1108,7 @@ module M_hillel__fulcrum
   function view (self: t_Iter) : Slice64.slice UInt32.t
   
   let rec into_iter (self_: Slice64.slice UInt32.t) (return (x: t_Iter)) = any
-    [ return' (result: t_Iter) -> {self_ = view result} (! return {result}) ]
+    [ return (result: t_Iter) -> {self_ = view result} (! return {result}) ]
   
   function sum_range (seq: Seq.seq UInt32.t) (from: int) (to': int) : int
   
@@ -1164,7 +1164,7 @@ module M_hillel__fulcrum
     resolve self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq UInt32.t)
   
   let rec next (self_: MutBorrow.t t_Iter) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {match result with
+    [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
@@ -1179,12 +1179,12 @@ module M_hillel__fulcrum
     | bad -> {forall field_0: UInt32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
   let rec len (self_: Slice64.slice UInt32.t) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
   let rec into_iter'0 (self_: t_Range) (return (x: t_Range)) = any
-    [ return' (result: t_Range) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range) -> {result = self_} (! return {result}) ]
   
   function sum_range_split (seq: Seq.seq UInt32.t) (from: int) (to': int) (i: int) : ()
   
@@ -1247,7 +1247,7 @@ module M_hillel__fulcrum
     resolve'1 self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
   
   let rec next'0 (self_: MutBorrow.t t_Range) (return (x: t_Option'0)) = any
-    [ return' (result: t_Option'0) -> {match result with
+    [ return (result: t_Option'0) -> {match result with
         | C_None'0 -> completed'0 self_
         | C_Some'0 v -> produces'0 self_.current (Seq.singleton v) self_.final
         end}
@@ -1262,7 +1262,7 @@ module M_hillel__fulcrum
     | bad -> {forall field_0: UInt64.t [C_Some'0 field_0: t_Option'0]. C_Some'0 field_0 <> input} (! {false} any) ]
   
   let rec abs_diff'0 (self_: UInt32.t) (other: UInt32.t) (return (x: UInt32.t)) = any
-    [ return' (result: UInt32.t) -> {UInt32.t'int result = abs_diff (UInt32.t'int self_) (UInt32.t'int other)}
+    [ return (result: UInt32.t) -> {UInt32.t'int result = abs_diff (UInt32.t'int self_) (UInt32.t'int other)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

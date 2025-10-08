@@ -20,7 +20,7 @@ module M_wrong_permissions__unknown_permcell_permission
   
   let rec borrow (self: t_PermCell) (perm: t_PermCellOwn) (return (x: Int32.t)) = {[@expl:borrow requires] id self
     = id'0 perm}
-    any [ return' (result: Int32.t) -> {result = view perm} (! return {result}) ]
+    any [ return (result: Int32.t) -> {result = view perm} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -57,14 +57,14 @@ module M_wrong_permissions__wrong_permcell_permission
   meta "rewrite_def" function view
   
   let rec new (value: Int32.t) (return (x: tuple)) = any
-    [ return' (result: tuple) -> {id result.f0 = id'0 result.f1} {view result.f1 = value} (! return {result}) ]
+    [ return (result: tuple) -> {id result.f0 = id'0 result.f1} {view result.f1 = value} (! return {result}) ]
   
   let rec borrow (self: t_PermCellOwn) (return (x: t_PermCellOwn)) = any
-    [ return' (result: t_PermCellOwn) -> {result = self} (! return {result}) ]
+    [ return (result: t_PermCellOwn) -> {result = self} (! return {result}) ]
   
   let rec borrow'0 (self: t_PermCell) (perm: t_PermCellOwn) (return (x: Int32.t)) = {[@expl:borrow requires] id self
     = id'0 perm}
-    any [ return' (result: Int32.t) -> {result = view perm} (! return {result}) ]
+    any [ return (result: Int32.t) -> {result = view perm} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -138,7 +138,7 @@ module M_wrong_permissions__unknown_ptr_own_permission
   let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return (x: Int32.t)) =
     {[@expl:as_ref 'own' type invariant] inv'2 own}
     {[@expl:as_ref requires] ptr'0 = ptr own}
-    any [ return' (result: Int32.t) -> {result = val' own} (! return {result}) ]
+    any [ return (result: Int32.t) -> {result = val' own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -200,7 +200,7 @@ module M_wrong_permissions__wrong_ptr_own_permission
   axiom inv_axiom'2 [@rewrite]: forall x: tuple [inv'2 x]. inv'2 x = (let {f0 = x0; f1 = x1} = x in inv'1 x1)
   
   let rec new (v: Int32.t) (return (x: tuple)) = any
-    [ return' (result: tuple) -> {inv'2 result} {ptr result.f1 = result.f0 /\ val' result.f1 = v} (! return {result}) ]
+    [ return (result: tuple) -> {inv'2 result} {ptr result.f1 = result.f0 /\ val' result.f1 = v} (! return {result}) ]
   
   predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = inv'1 self
   
@@ -227,12 +227,12 @@ module M_wrong_permissions__wrong_ptr_own_permission
   axiom inv_axiom'5 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''3 x
   
   let rec borrow (self: t_PtrOwn) (return (x: t_PtrOwn)) = {[@expl:borrow 'self' type invariant] inv'3 self}
-    any [ return' (result: t_PtrOwn) -> {inv'5 result} {result = self} (! return {result}) ]
+    any [ return (result: t_PtrOwn) -> {inv'5 result} {result = self} (! return {result}) ]
   
   let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return (x: Int32.t)) =
     {[@expl:as_ref 'own' type invariant] inv'5 own}
     {[@expl:as_ref requires] ptr'0 = ptr own}
-    any [ return' (result: Int32.t) -> {result = val' own} (! return {result}) ]
+    any [ return (result: Int32.t) -> {result = val' own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

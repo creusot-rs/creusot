@@ -10,7 +10,7 @@ module M_linked_list__qyi10858349784728989480__new (* List<T> *)
   predicate is_null_logic (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   let rec null (return (x: Opaque.ptr)) = any
-    [ return' (result: Opaque.ptr) -> {is_null_logic result} (! return {result}) ]
+    [ return (result: Opaque.ptr) -> {is_null_logic result} (! return {result}) ]
   
   type t_PtrOwn
   
@@ -64,9 +64,7 @@ module M_linked_list__qyi10858349784728989480__new (* List<T> *)
   axiom inv_axiom'3 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'3 x]. inv'3 x = invariant''2 x
   
   let rec new (return (x: Seq.seq t_PtrOwn)) = any
-    [ return' (result: Seq.seq t_PtrOwn) -> {inv'3 result}
-      {result = (Seq.empty: Seq.seq t_PtrOwn)}
-      (! return {result}) ]
+    [ return (result: Seq.seq t_PtrOwn) -> {inv'3 result} {result = (Seq.empty: Seq.seq t_PtrOwn)} (! return {result}) ]
   
   type t_List = { t_List__first: Opaque.ptr; t_List__last: Opaque.ptr; t_List__seq: Seq.seq t_PtrOwn }
   
@@ -125,7 +123,7 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   predicate is_null_logic (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   let rec null (return (x: Opaque.ptr)) = any
-    [ return' (result: Opaque.ptr) -> {is_null_logic result} (! return {result}) ]
+    [ return (result: Opaque.ptr) -> {is_null_logic result} (! return {result}) ]
   
   type t_T
   
@@ -186,14 +184,14 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   
   let rec from_box (val''0: t_Cell) (return (x: tuple)) = {[@expl:from_box 'val' type invariant] inv'1 val''0}
     any
-    [ return' (result: tuple) -> {inv'5 result}
+    [ return (result: tuple) -> {inv'5 result}
       {ptr result.f1 = result.f0 /\ val' result.f1 = val''0}
       (! return {result}) ]
   
   type t_List = { t_List__first: Opaque.ptr; t_List__last: Opaque.ptr; t_List__seq: Seq.seq t_PtrOwn }
   
   let rec is_null (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = is_null_logic self_} (! return {result}) ]
+    [ return (result: bool) -> {result = is_null_logic self_} (! return {result}) ]
   
   predicate invariant''2 (self: t_PtrOwn) = inv'3 self
   
@@ -236,19 +234,18 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   
   let rec deref (self: Seq.seq t_PtrOwn) (return (x: Seq.seq t_PtrOwn)) =
     {[@expl:deref 'self' type invariant] inv'9 self}
-    any [ return' (result: Seq.seq t_PtrOwn) -> {inv'10 result} {result = self} (! return {result}) ]
+    any [ return (result: Seq.seq t_PtrOwn) -> {inv'10 result} {result = self} (! return {result}) ]
   
   let rec len_ghost (self: Seq.seq t_PtrOwn) (return (x: int)) = {[@expl:len_ghost 'self' type invariant] inv'10 self}
-    any [ return' (result: int) -> {result = Seq.length self} (! return {result}) ]
+    any [ return (result: int) -> {result = Seq.length self} (! return {result}) ]
   
   let rec new (value: Int128.t) (return (x: int)) = any
-    [ return' (result: int) -> {result = Int128.to_int value} (! return {result}) ]
+    [ return (result: int) -> {result = Int128.to_int value} (! return {result}) ]
   
-  let rec into_inner (self: int) (return (x: int)) = any
-    [ return' (result: int) -> {result = self} (! return {result}) ]
+  let rec into_inner (self: int) (return (x: int)) = any [ return (result: int) -> {result = self} (! return {result}) ]
   
   let rec sub (self: int) (other: int) (return (x: int)) = any
-    [ return' (result: int) -> {result = self - other} (! return {result}) ]
+    [ return (result: int) -> {result = self - other} (! return {result}) ]
   
   predicate invariant''7 [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
     inv'8 self.current /\ inv'8 self.final
@@ -270,7 +267,7 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   
   let rec deref_mut (self: MutBorrow.t (Seq.seq t_PtrOwn)) (return (x: MutBorrow.t (Seq.seq t_PtrOwn))) =
     {[@expl:deref_mut 'self' type invariant] inv'11 self}
-    any [ return' (result: MutBorrow.t (Seq.seq t_PtrOwn)) -> {inv'12 result} {result = self} (! return {result}) ]
+    any [ return (result: MutBorrow.t (Seq.seq t_PtrOwn)) -> {inv'12 result} {result = self} (! return {result}) ]
   
   type t_Option = C_None | C_Some (MutBorrow.t t_PtrOwn)
   
@@ -301,7 +298,7 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   let rec get_mut_ghost (self: MutBorrow.t (Seq.seq t_PtrOwn)) (index: int) (return (x: t_Option)) =
     {[@expl:get_mut_ghost 'self' type invariant] inv'12 self}
     any
-    [ return' (result: t_Option) -> {inv'14 result}
+    [ return (result: t_Option) -> {inv'14 result}
       {match result with
         | C_None -> get self.current index = C_None'0 /\ self.current = self.final
         | C_Some r -> get self.current index = C_Some'0 (r.current) /\ r.final = Seq.get self.final index
@@ -313,7 +310,7 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   let rec unwrap (self_: t_Option) (return (x: MutBorrow.t t_PtrOwn)) =
     {[@expl:unwrap 'self_' type invariant] inv'14 self_}
     {[@expl:unwrap requires] self_ <> C_None}
-    any [ return' (result: MutBorrow.t t_PtrOwn) -> {inv'13 result} {C_Some result = self_} (! return {result}) ]
+    any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'13 result} {C_Some result = self_} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) = self.final = self.current
   
@@ -341,7 +338,7 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   
   let rec new'0 (x: MutBorrow.t t_PtrOwn) (return (x'0: MutBorrow.t t_PtrOwn)) =
     {[@expl:new 'x' type invariant] inv'13 x}
-    any [ return' (result: MutBorrow.t t_PtrOwn) -> {inv'15 result} {result = x} (! return {result}) ]
+    any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'15 result} {result = x} (! return {result}) ]
   
   predicate invariant''11 [@inline:trivial] (self: MutBorrow.t t_Cell) = inv'0 self.current /\ inv'0 self.final
   
@@ -359,7 +356,7 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
     {[@expl:as_mut 'own' type invariant] inv'15 own}
     {[@expl:as_mut requires] ptr'0 = ptr own.current}
     any
-    [ return' (result: MutBorrow.t t_Cell) -> {inv'16 result}
+    [ return (result: MutBorrow.t t_Cell) -> {inv'16 result}
       {result.current = val' own.current}
       {ptr (fin own) = ptr own.current}
       {val' (fin own) = result.final}
@@ -374,12 +371,12 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   meta "rewrite_def" predicate resolve'4
   
   let rec into_inner'0 (self: t_PtrOwn) (return (x: t_PtrOwn)) = {[@expl:into_inner 'self' type invariant] inv'4 self}
-    any [ return' (result: t_PtrOwn) -> {inv'3 result} {result = self} (! return {result}) ]
+    any [ return (result: t_PtrOwn) -> {inv'3 result} {result = self} (! return {result}) ]
   
   let rec push_back_ghost (self: MutBorrow.t (Seq.seq t_PtrOwn)) (x: t_PtrOwn) (return (x'0: ())) =
     {[@expl:push_back_ghost 'self' type invariant] inv'12 self}
     {[@expl:push_back_ghost 'x' type invariant] inv'3 x}
-    any [ return' (result: ()) -> {self.final = Seq.snoc self.current x} (! return {result}) ]
+    any [ return (result: ()) -> {self.final = Seq.snoc self.current x} (! return {result}) ]
   
   predicate invariant''12 (self: t_List) =
     self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
@@ -415,7 +412,7 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   
   meta "rewrite_def" predicate resolve'6
   
-  let rec new'1 (x: ()) (return (x'0: ())) = any [ return' (result: ()) -> {result = x} (! return {result}) ]
+  let rec new'1 (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
   function seq_map (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
     Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))
@@ -630,10 +627,10 @@ module M_linked_list__qyi10858349784728989480__push_front (* List<T> *)
   
   let rec new (v: t_Cell) (return (x: tuple)) = {[@expl:new 'v' type invariant] inv'0 v}
     any
-    [ return' (result: tuple) -> {inv'4 result} {ptr result.f1 = result.f0 /\ val' result.f1 = v} (! return {result}) ]
+    [ return (result: tuple) -> {inv'4 result} {ptr result.f1 = result.f0 /\ val' result.f1 = v} (! return {result}) ]
   
   let rec is_null (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = is_null_logic self_} (! return {result}) ]
+    [ return (result: bool) -> {result = is_null_logic self_} (! return {result}) ]
   
   predicate invariant''1 (self: t_PtrOwn) = inv'2 self
   
@@ -678,10 +675,10 @@ module M_linked_list__qyi10858349784728989480__push_front (* List<T> *)
   
   let rec deref_mut (self: MutBorrow.t (Seq.seq t_PtrOwn)) (return (x: MutBorrow.t (Seq.seq t_PtrOwn))) =
     {[@expl:deref_mut 'self' type invariant] inv'8 self}
-    any [ return' (result: MutBorrow.t (Seq.seq t_PtrOwn)) -> {inv'9 result} {result = self} (! return {result}) ]
+    any [ return (result: MutBorrow.t (Seq.seq t_PtrOwn)) -> {inv'9 result} {result = self} (! return {result}) ]
   
   let rec into_inner (self: t_PtrOwn) (return (x: t_PtrOwn)) = {[@expl:into_inner 'self' type invariant] inv'3 self}
-    any [ return' (result: t_PtrOwn) -> {inv'2 result} {result = self} (! return {result}) ]
+    any [ return (result: t_PtrOwn) -> {inv'2 result} {result = self} (! return {result}) ]
   
   function push_front [@inline:trivial] (self: Seq.seq t_PtrOwn) (x: t_PtrOwn) : Seq.seq t_PtrOwn = Seq.cons x self
   
@@ -690,7 +687,7 @@ module M_linked_list__qyi10858349784728989480__push_front (* List<T> *)
   let rec push_front_ghost (self: MutBorrow.t (Seq.seq t_PtrOwn)) (x: t_PtrOwn) (return (x'0: ())) =
     {[@expl:push_front_ghost 'self' type invariant] inv'9 self}
     {[@expl:push_front_ghost 'x' type invariant] inv'2 x}
-    any [ return' (result: ()) -> {self.final = push_front self.current x} (! return {result}) ]
+    any [ return (result: ()) -> {self.final = push_front self.current x} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) = self.final = self.current
   
@@ -734,7 +731,7 @@ module M_linked_list__qyi10858349784728989480__push_front (* List<T> *)
   
   meta "rewrite_def" predicate resolve'2
   
-  let rec new'0 (x: ()) (return (x'0: ())) = any [ return' (result: ()) -> {result = x} (! return {result}) ]
+  let rec new'0 (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
   function seq_map (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
     Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))

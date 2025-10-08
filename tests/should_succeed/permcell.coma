@@ -22,17 +22,17 @@ module M_permcell__foo
   meta "rewrite_def" function view
   
   let rec new (value: Int32.t) (return (x: tuple)) = any
-    [ return' (result: tuple) -> {id result.f0 = id'0 result.f1} {view result.f1 = value} (! return {result}) ]
+    [ return (result: tuple) -> {id result.f0 = id'0 result.f1} {view result.f1 = value} (! return {result}) ]
   
   let rec borrow (self: t_PermCellOwn) (return (x: t_PermCellOwn)) = any
-    [ return' (result: t_PermCellOwn) -> {result = self} (! return {result}) ]
+    [ return (result: t_PermCellOwn) -> {result = self} (! return {result}) ]
   
   let rec borrow'0 (self: t_PermCell) (perm: t_PermCellOwn) (return (x: Int32.t)) = {[@expl:borrow requires] id self
     = id'0 perm}
-    any [ return' (result: Int32.t) -> {result = view perm} (! return {result}) ]
+    any [ return (result: Int32.t) -> {result = view perm} (! return {result}) ]
   
   let rec borrow_mut (self: MutBorrow.t t_PermCellOwn) (return (x: MutBorrow.t t_PermCellOwn)) = any
-    [ return' (result: MutBorrow.t t_PermCellOwn) -> {result = self} (! return {result}) ]
+    [ return (result: MutBorrow.t t_PermCellOwn) -> {result = self} (! return {result}) ]
   
   function fin [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) : t_PermCellOwn = self.final
   
@@ -41,7 +41,7 @@ module M_permcell__foo
   let rec borrow_mut'0 (self: t_PermCell) (perm: MutBorrow.t t_PermCellOwn) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:borrow_mut requires] id self = id'0 perm.current}
     any
-    [ return' (result: MutBorrow.t Int32.t) -> {id self = id'0 (fin perm)}
+    [ return (result: MutBorrow.t Int32.t) -> {id self = id'0 (fin perm)}
       {result.current = view perm.current}
       {result.final = view (fin perm)}
       (! return {result}) ]
@@ -57,14 +57,14 @@ module M_permcell__foo
   let rec replace (self: t_PermCell) (perm: MutBorrow.t t_PermCellOwn) (val''0: Int32.t) (return (x: Int32.t)) =
     {[@expl:replace requires] id self = id'0 perm.current}
     any
-    [ return' (result: Int32.t) -> {val''0 = view (fin perm)}
+    [ return (result: Int32.t) -> {val''0 = view (fin perm)}
       {result = view perm.current}
       {id self = id'0 (fin perm)}
       (! return {result}) ]
   
   let rec into_inner (self: t_PermCell) (perm: t_PermCellOwn) (return (x: Int32.t)) =
     {[@expl:into_inner requires] id self = id'0 perm}
-    any [ return' (result: Int32.t) -> {result = view perm} (! return {result}) ]
+    any [ return (result: Int32.t) -> {result = view perm} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

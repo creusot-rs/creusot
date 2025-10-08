@@ -17,8 +17,7 @@ module M_instant__test_instant
   
   axiom view_spec: forall self: t_Instant'0. view self >= 0
   
-  let rec now (return (x: t_Instant'0)) = any
-    [ return' (result: t_Instant'0) -> {view result >= 0} (! return {result}) ]
+  let rec now (return (x: t_Instant'0)) = any [ return (result: t_Instant'0) -> {view result >= 0} (! return {result}) ]
   
   type t_Duration = { t_Duration__secs: UInt64.t; t_Duration__nanos: t_Nanoseconds }
   
@@ -32,10 +31,10 @@ module M_instant__test_instant
       /\ view'0 self <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999
   
   let rec from_secs (secs: UInt64.t) (return (x: t_Duration)) = any
-    [ return' (result: t_Duration) -> {view'0 result = secs_to_nanos (UInt64.t'int secs)} (! return {result}) ]
+    [ return (result: t_Duration) -> {view'0 result = secs_to_nanos (UInt64.t'int secs)} (! return {result}) ]
   
   let rec elapsed (self_: t_Instant'0) (return (x: t_Duration)) = any
-    [ return' (result: t_Duration) -> {view'0 result >= 0} (! return {result}) ]
+    [ return (result: t_Duration) -> {view'0 result >= 0} (! return {result}) ]
   
   function deep_model [@inline:trivial] (self: t_Duration) : int = view'0 self
   
@@ -46,7 +45,7 @@ module M_instant__test_instant
   meta "rewrite_def" function deep_model'0
   
   let rec ge (self_: t_Duration) (other: t_Duration) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = (deep_model'0 self_ >= deep_model'0 other)} (! return {result}) ]
+    [ return (result: bool) -> {result = (deep_model'0 self_ >= deep_model'0 other)} (! return {result}) ]
   
   type t_Option = C_None | C_Some t_Instant'0
   
@@ -162,66 +161,66 @@ module M_instant__test_instant
   axiom cmp_le_log_spec'0: forall x: t_Option'0, y: t_Option'0. le_log x y = (cmp_log'0 x y <> C_Greater)
   
   let rec checked_add (self_: t_Instant'0) (duration: t_Duration) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {view'0 duration = 0 -> deep_model'2 result = C_Some'0 (view self_)}
+    [ return (result: t_Option) -> {view'0 duration = 0 -> deep_model'2 result = C_Some'0 (view self_)}
       {view'0 duration > 0 /\ result <> C_None -> lt_log (C_Some'0 (view self_)) (deep_model'2 result)}
       (! return {result}) ]
   
   let rec unwrap (self_: t_Option) (return (x: t_Instant'0)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return' (result: t_Instant'0) -> {C_Some result = self_} (! return {result}) ]
+    any [ return (result: t_Instant'0) -> {C_Some result = self_} (! return {result}) ]
   
   function deep_model'3 [@inline:trivial] (self: t_Instant'0) : int = deep_model'1 self
   
   meta "rewrite_def" function deep_model'3
   
   let rec eq (self_: t_Instant'0) (rhs: t_Instant'0) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = (deep_model'3 self_ = deep_model'3 rhs)} (! return {result}) ]
+    [ return (result: bool) -> {result = (deep_model'3 self_ = deep_model'3 rhs)} (! return {result}) ]
   
   let rec add (self_: t_Instant'0) (rhs: t_Duration) (return (x: t_Instant'0)) = any
-    [ return' (result: t_Instant'0) -> {view'0 rhs = 0 -> view self_ = view result}
+    [ return (result: t_Instant'0) -> {view'0 rhs = 0 -> view self_ = view result}
       {view'0 rhs > 0 -> view self_ < view result}
       (! return {result}) ]
   
   let rec checked_sub (self_: t_Instant'0) (duration: t_Duration) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {view'0 duration = 0 -> deep_model'2 result = C_Some'0 (view self_)}
+    [ return (result: t_Option) -> {view'0 duration = 0 -> deep_model'2 result = C_Some'0 (view self_)}
       {view'0 duration > 0 /\ result <> C_None -> gt_log (C_Some'0 (view self_)) (deep_model'2 result)}
       (! return {result}) ]
   
   let rec sub (self_: t_Instant'0) (rhs: t_Duration) (return (x: t_Instant'0)) = any
-    [ return' (result: t_Instant'0) -> {view'0 rhs = 0 -> view self_ = view result}
+    [ return (result: t_Instant'0) -> {view'0 rhs = 0 -> view self_ = view result}
       {view'0 rhs > 0 -> view self_ > view result}
       (! return {result}) ]
   
   let rec sub'0 (self_: t_Instant'0) (other: t_Instant'0) (return (x: t_Duration)) = any
-    [ return' (result: t_Duration) -> {view self_ > view other -> view'0 result > 0}
+    [ return (result: t_Duration) -> {view self_ > view other -> view'0 result > 0}
       {view self_ <= view other -> view'0 result = 0}
       (! return {result}) ]
   
   let rec eq'0 (self_: t_Duration) (rhs: t_Duration) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = (deep_model'0 self_ = deep_model'0 rhs)} (! return {result}) ]
+    [ return (result: bool) -> {result = (deep_model'0 self_ = deep_model'0 rhs)} (! return {result}) ]
   
   let rec gt (self_: t_Duration) (other: t_Duration) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = (deep_model'0 self_ > deep_model'0 other)} (! return {result}) ]
+    [ return (result: bool) -> {result = (deep_model'0 self_ > deep_model'0 other)} (! return {result}) ]
   
   let rec duration_since (self_: t_Instant'0) (earlier: t_Instant'0) (return (x: t_Duration)) = any
-    [ return' (result: t_Duration) -> {view self_ > view earlier -> view'0 result > 0}
+    [ return (result: t_Duration) -> {view self_ > view earlier -> view'0 result > 0}
       {view self_ <= view earlier -> view'0 result = 0}
       (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 t_Duration
   
   let rec checked_duration_since (self_: t_Instant'0) (earlier: t_Instant'0) (return (x: t_Option'1)) = any
-    [ return' (result: t_Option'1) -> {view self_ >= view earlier -> result <> C_None'1}
+    [ return (result: t_Option'1) -> {view self_ >= view earlier -> result <> C_None'1}
       {view self_ < view earlier -> result = C_None'1}
       (! return {result}) ]
   
   let rec is_some (self_: t_Option'1) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = (self_ <> C_None'1)} (! return {result}) ]
+    [ return (result: bool) -> {result = (self_ <> C_None'1)} (! return {result}) ]
   
   let rec is_none (self_: t_Option'1) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = (self_ = C_None'1)} (! return {result}) ]
+    [ return (result: bool) -> {result = (self_ = C_None'1)} (! return {result}) ]
   
   let rec saturating_duration_since (self_: t_Instant'0) (earlier: t_Instant'0) (return (x: t_Duration)) = any
-    [ return' (result: t_Duration) -> {view self_ > view earlier -> view'0 result > 0}
+    [ return (result: t_Duration) -> {view self_ > view earlier -> view'0 result > 0}
       {view self_ <= view earlier -> view'0 result = 0}
       (! return {result}) ]
   

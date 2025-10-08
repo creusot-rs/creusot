@@ -7,11 +7,11 @@ module M_seq__f
   use creusot.prelude.Any
   
   let rec new (return (x: Seq.seq (MutBorrow.t UInt64.t))) = any
-    [ return' (result: Seq.seq (MutBorrow.t UInt64.t)) -> {result = (Seq.empty: Seq.seq (MutBorrow.t UInt64.t))}
+    [ return (result: Seq.seq (MutBorrow.t UInt64.t)) -> {result = (Seq.empty: Seq.seq (MutBorrow.t UInt64.t))}
       (! return {result}) ]
   
   let rec into_inner (self: Seq.seq (MutBorrow.t UInt64.t)) (return (x: Seq.seq (MutBorrow.t UInt64.t))) = any
-    [ return' (result: Seq.seq (MutBorrow.t UInt64.t)) -> {result = self} (! return {result}) ]
+    [ return (result: Seq.seq (MutBorrow.t UInt64.t)) -> {result = self} (! return {result}) ]
   
   function push_front [@inline:trivial] (self: Seq.seq (MutBorrow.t UInt64.t)) (x: MutBorrow.t UInt64.t) : Seq.seq (MutBorrow.t UInt64.t)
    = Seq.cons x self
@@ -19,12 +19,12 @@ module M_seq__f
   meta "rewrite_def" function push_front
   
   let rec push_front_ghost (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (x: MutBorrow.t UInt64.t)
-    (return (x'0: ())) = any [ return' (result: ()) -> {self.final = push_front self.current x} (! return {result}) ]
+    (return (x'0: ())) = any [ return (result: ()) -> {self.final = push_front self.current x} (! return {result}) ]
   
   let rec new'0 (value: Int128.t) (return (x: int)) = any
-    [ return' (result: int) -> {result = Int128.to_int value} (! return {result}) ]
+    [ return (result: int) -> {result = Int128.to_int value} (! return {result}) ]
   
-  let rec deref (self: int) (return (x: int)) = any [ return' (result: int) -> {result = self} (! return {result}) ]
+  let rec deref (self: int) (return (x: int)) = any [ return (result: int) -> {result = self} (! return {result}) ]
   
   type t_Option = C_None | C_Some (MutBorrow.t (MutBorrow.t UInt64.t))
   
@@ -37,7 +37,7 @@ module M_seq__f
   
   
   let rec get_mut_ghost (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (index: int) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {match result with
+    [ return (result: t_Option) -> {match result with
         | C_None -> get self.current index = C_None'0 /\ self.current = self.final
         | C_Some r -> get self.current index = C_Some'0 (r.current) /\ r.final = Seq.get self.final index
         end}
@@ -47,7 +47,7 @@ module M_seq__f
   
   let rec unwrap (self_: t_Option) (return (x: MutBorrow.t (MutBorrow.t UInt64.t))) = {[@expl:unwrap requires] self_
     <> C_None}
-    any [ return' (result: MutBorrow.t (MutBorrow.t UInt64.t)) -> {C_Some result = self_} (! return {result}) ]
+    any [ return (result: MutBorrow.t (MutBorrow.t UInt64.t)) -> {C_Some result = self_} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t UInt64.t)) = self.final = self.current
   
@@ -84,7 +84,7 @@ module M_seq__f
   meta "rewrite_def" predicate resolve'6
   
   let rec new'1 (x: UInt64.t) (return (x'0: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {result = x} (! return {result}) ]
+    [ return (result: UInt64.t) -> {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

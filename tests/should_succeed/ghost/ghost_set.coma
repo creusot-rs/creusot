@@ -5,21 +5,21 @@ module M_ghost_set__ghost_map
   use creusot.prelude.Any
   
   let rec new (return (x: Fset.fset Int32.t)) = any
-    [ return' (result: Fset.fset Int32.t) -> {Fset.is_empty result} (! return {result}) ]
+    [ return (result: Fset.fset Int32.t) -> {Fset.is_empty result} (! return {result}) ]
   
   predicate contains [@inline:trivial] (self: Fset.fset Int32.t) (e: Int32.t) = Fset.mem e self
   
   meta "rewrite_def" predicate contains
   
   let rec deref_mut (self: MutBorrow.t (Fset.fset Int32.t)) (return (x: MutBorrow.t (Fset.fset Int32.t))) = any
-    [ return' (result: MutBorrow.t (Fset.fset Int32.t)) -> {result = self} (! return {result}) ]
+    [ return (result: MutBorrow.t (Fset.fset Int32.t)) -> {result = self} (! return {result}) ]
   
   function insert [@inline:trivial] (self: Fset.fset Int32.t) (e: Int32.t) : Fset.fset Int32.t = Fset.add e self
   
   meta "rewrite_def" function insert
   
   let rec insert_ghost (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return (x: bool)) = any
-    [ return' (result: bool) -> {self.final = insert self.current value}
+    [ return (result: bool) -> {self.final = insert self.current value}
       {result = (not contains self.current value)}
       (! return {result}) ]
   
@@ -32,10 +32,10 @@ module M_ghost_set__ghost_map
   meta "rewrite_def" predicate resolve'0
   
   let rec deref (self: Fset.fset Int32.t) (return (x: Fset.fset Int32.t)) = any
-    [ return' (result: Fset.fset Int32.t) -> {result = self} (! return {result}) ]
+    [ return (result: Fset.fset Int32.t) -> {result = self} (! return {result}) ]
   
   let rec len_ghost (self: Fset.fset Int32.t) (return (x: int)) = any
-    [ return' (result: int) -> {result = Fset.cardinal self} (! return {result}) ]
+    [ return (result: int) -> {result = Fset.cardinal self} (! return {result}) ]
   
   type tuple = { f0: Int32.t; f1: Int32.t; f2: Int32.t }
   
@@ -44,14 +44,14 @@ module M_ghost_set__ghost_map
   meta "rewrite_def" function remove
   
   let rec remove_ghost (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return (x: bool)) = any
-    [ return' (result: bool) -> {self.final = remove self.current value}
+    [ return (result: bool) -> {self.final = remove self.current value}
       {result = contains self.current value}
       (! return {result}) ]
   
   let rec contains_ghost (self: Fset.fset Int32.t) (value: Int32.t) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = contains self value} (! return {result}) ]
+    [ return (result: bool) -> {result = contains self value} (! return {result}) ]
   
-  let rec new'0 (x: ()) (return (x'0: ())) = any [ return' (result: ()) -> {result = x} (! return {result}) ]
+  let rec new'0 (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

@@ -15,7 +15,7 @@ module M_fn_ghost__foo
   function view (self: t_FnGhostWrapper) : ()
   
   let rec qy95z_new (f: ()) (return (x: t_FnGhostWrapper)) = any
-    [ return' (result: t_FnGhostWrapper) -> {view result = f} (! return {result}) ]
+    [ return (result: t_FnGhostWrapper) -> {view result = f} (! return {result}) ]
   
   predicate precondition [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in closure0'pre self x
   
@@ -144,17 +144,17 @@ module M_fn_ghost__foo
   
   let rec takes_ghost_fn (f: t_FnGhostWrapper) (return (x: Int32.t)) =
     {[@expl:takes_ghost_fn requires] precondition'0 f (1: Int32.t)}
-    any [ return' (result: Int32.t) -> {postcondition'0 f (1: Int32.t) result} (! return {result}) ]
+    any [ return (result: Int32.t) -> {postcondition'0 f (1: Int32.t) result} (! return {result}) ]
   
   let rec takes_ghost_fnmut (f: t_FnGhostWrapper) (return (x: Int32.t)) =
     {[@expl:takes_ghost_fnmut requires] precondition'0 f (1: Int32.t)}
     any
-    [ return' (result: Int32.t) -> {exists f2: t_FnGhostWrapper. postcondition_mut'0 f (1: Int32.t) f2 result}
+    [ return (result: Int32.t) -> {exists f2: t_FnGhostWrapper. postcondition_mut'0 f (1: Int32.t) f2 result}
       (! return {result}) ]
   
   let rec takes_ghost_fnonce (f: t_FnGhostWrapper) (return (x: Int32.t)) =
     {[@expl:takes_ghost_fnonce requires] precondition'0 f (1: Int32.t)}
-    any [ return' (result: Int32.t) -> {postcondition_once'0 f (1: Int32.t) result} (! return {result}) ]
+    any [ return (result: Int32.t) -> {postcondition_once'0 f (1: Int32.t) result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -251,7 +251,7 @@ module M_fn_ghost__takes_ghost_fn
   
   let rec call (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) = {[@expl:call 'self_' type invariant] inv'0 self_}
     {[@expl:call requires] precondition self_ arg}
-    any [ return' (result: Int32.t) -> {postcondition self_ arg result} (! return {result}) ]
+    any [ return (result: Int32.t) -> {postcondition self_ arg result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -319,7 +319,7 @@ module M_fn_ghost__takes_ghost_fnmut
   let rec call_mut (self_: MutBorrow.t t_F) (arg: Int32.t) (return (x: Int32.t)) =
     {[@expl:call_mut 'self_' type invariant] inv'0 self_}
     {[@expl:call_mut requires] precondition self_.current arg}
-    any [ return' (result: Int32.t) -> {postcondition_mut self_.current arg self_.final result} (! return {result}) ]
+    any [ return (result: Int32.t) -> {postcondition_mut self_.current arg self_.final result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -360,7 +360,7 @@ module M_fn_ghost__takes_ghost_fnonce
   let rec call_once (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
     {[@expl:call_once 'self_' type invariant] inv self_}
     {[@expl:call_once requires] precondition self_ arg}
-    any [ return' (result: Int32.t) -> {postcondition_once self_ arg result} (! return {result}) ]
+    any [ return (result: Int32.t) -> {postcondition_once self_ arg result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

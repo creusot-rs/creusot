@@ -206,7 +206,7 @@ module M_02_iter_mut__qyi17529651713103399036__next (* <IterMut<'a, T> as common
   let rec split_off_first_mut (self_: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) (return (x: t_Option)) =
     {[@expl:split_off_first_mut 'self_' type invariant] inv'4 self_}
     any
-    [ return' (result: t_Option) -> {inv'6 result}
+    [ return (result: t_Option) -> {inv'6 result}
       {match result with
         | C_Some r -> r.current = index_logic self_.current.current 0
         /\ r.final = index_logic self_.current.final 0
@@ -452,7 +452,7 @@ module M_02_iter_mut__iter_mut
     {[@expl:index_mut 'self_' type invariant] inv'3 self_}
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return' (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'5 result}
+    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'5 result}
       {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
@@ -576,14 +576,14 @@ module M_02_iter_mut__all_zero
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
   let rec iter_mut (v: MutBorrow.t t_Vec) (return (x: t_IterMut)) = any
-    [ return' (result: t_IterMut) -> {inv result}
+    [ return (result: t_IterMut) -> {inv result}
       {Slice64.view result.t_IterMut__inner.current = view v.current}
       {Slice64.view result.t_IterMut__inner.final = view v.final}
       {Seq.length (view v.final) = Seq.length (view v.current)}
       (! return {result}) ]
   
   let rec into_iter (self: t_IterMut) (return (x: t_IterMut)) = {[@expl:into_iter 'self' type invariant] inv self}
-    any [ return' (result: t_IterMut) -> {inv result} {result = self} (! return {result}) ]
+    any [ return (result: t_IterMut) -> {inv result} {result = self} (! return {result}) ]
   
   function index_logic [@inline:trivial] (self: Slice64.slice UInt64.t) (ix: int) : UInt64.t =
     Seq.get (Slice64.view self) ix
@@ -640,7 +640,7 @@ module M_02_iter_mut__all_zero
   
   let rec next (self: MutBorrow.t t_IterMut) (return (x: t_Option)) = {[@expl:next 'self' type invariant] inv'0 self}
     any
-    [ return' (result: t_Option) -> {match result with
+    [ return (result: t_Option) -> {match result with
         | C_None -> completed self
         | C_Some v -> produces self.current (Seq.singleton v) self.final
         end}

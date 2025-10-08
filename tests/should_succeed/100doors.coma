@@ -29,14 +29,14 @@ module M_100doors__f
   meta "rewrite_def" predicate index_logic
   
   let rec from_elem (elem: bool) (n: UInt64.t) (return (x: t_Vec)) = any
-    [ return' (result: t_Vec) -> {Seq.length (view result) = UInt64.t'int n}
+    [ return (result: t_Vec) -> {Seq.length (view result) = UInt64.t'int n}
       {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic result i = elem}
       (! return {result}) ]
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
   let rec into_iter (self_: t_Range) (return (x: t_Range)) = any
-    [ return' (result: t_Range) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range) -> {result = self_} (! return {result}) ]
   
   function deep_model [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
@@ -78,7 +78,7 @@ module M_100doors__f
     resolve self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
   
   let rec next (self_: MutBorrow.t t_Range) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {match result with
+    [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
@@ -102,7 +102,7 @@ module M_100doors__f
   meta "rewrite_def" predicate has_value
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: bool)) = {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return' (result: bool) -> {has_value ix (view self_) result} (! return {result}) ]
+    any [ return (result: bool) -> {has_value ix (view self_) result} (! return {result}) ]
   
   predicate resolve_elswhere [@inline:trivial] (self: UInt64.t) (old': Seq.seq bool) (fin: Seq.seq bool) =
     forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
@@ -112,7 +112,7 @@ module M_100doors__f
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return (x: MutBorrow.t bool)) =
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return' (result: MutBorrow.t bool) -> {has_value ix (view self_.current) result.current}
+    [ return (result: MutBorrow.t bool) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}

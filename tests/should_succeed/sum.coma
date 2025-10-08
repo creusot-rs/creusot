@@ -24,13 +24,13 @@ module M_sum__sum_first_n
       -> deep_model (start_log self) <= deep_model (end_log self)
   
   let rec new (start: UInt32.t) (end': UInt32.t) (return (x: t_RangeInclusive)) = any
-    [ return' (result: t_RangeInclusive) -> {start_log result = start}
+    [ return (result: t_RangeInclusive) -> {start_log result = start}
       {end_log result = end'}
       {deep_model start <= deep_model end' -> not is_empty_log result}
       (! return {result}) ]
   
   let rec into_iter (self_: t_RangeInclusive) (return (x: t_RangeInclusive)) = any
-    [ return' (result: t_RangeInclusive) -> {result = self_} (! return {result}) ]
+    [ return (result: t_RangeInclusive) -> {result = self_} (! return {result}) ]
   
   function range_inclusive_len (r: t_RangeInclusive) : int = if is_empty_log r then
       0
@@ -71,7 +71,7 @@ module M_sum__sum_first_n
   predicate completed (self: MutBorrow.t t_RangeInclusive) = is_empty_log self.current /\ is_empty_log self.final
   
   let rec next (self_: MutBorrow.t t_RangeInclusive) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {match result with
+    [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}

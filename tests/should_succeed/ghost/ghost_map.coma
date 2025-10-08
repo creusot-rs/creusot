@@ -32,14 +32,14 @@ module M_ghost_map__ghost_map
   
   predicate is_empty (self: t_FMap) = ext_eq self empty
   
-  let rec new (return (x: t_FMap)) = any [ return' (result: t_FMap) -> {is_empty result} (! return {result}) ]
+  let rec new (return (x: t_FMap)) = any [ return (result: t_FMap) -> {is_empty result} (! return {result}) ]
   
   predicate contains [@inline:trivial] (self: t_FMap) (k: Int32.t) = get self k <> C_None
   
   meta "rewrite_def" predicate contains
   
   let rec deref_mut (self: MutBorrow.t t_FMap) (return (x: MutBorrow.t t_FMap)) = any
-    [ return' (result: MutBorrow.t t_FMap) -> {result = self} (! return {result}) ]
+    [ return (result: MutBorrow.t t_FMap) -> {result = self} (! return {result}) ]
   
   function insert (self: t_FMap) (k: Int32.t) (v: Int32.t) : t_FMap
   
@@ -50,7 +50,7 @@ module M_ghost_map__ghost_map
       = (if contains self k then len self else len self + 1)
   
   let rec insert_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (value: Int32.t) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {self.final = insert self.current key value}
+    [ return (result: t_Option) -> {self.final = insert self.current key value}
       {result = get self.current key}
       (! return {result}) ]
   
@@ -63,10 +63,10 @@ module M_ghost_map__ghost_map
   meta "rewrite_def" predicate resolve'0
   
   let rec deref (self: t_FMap) (return (x: t_FMap)) = any
-    [ return' (result: t_FMap) -> {result = self} (! return {result}) ]
+    [ return (result: t_FMap) -> {result = self} (! return {result}) ]
   
   let rec len_ghost (self: t_FMap) (return (x: int)) = any
-    [ return' (result: int) -> {result = len self} (! return {result}) ]
+    [ return (result: int) -> {result = len self} (! return {result}) ]
   
   predicate index_logic [@inline:trivial] (self: Map.map Int32.t bool) (a: Int32.t) = Map.get self a
   
@@ -93,7 +93,7 @@ module M_ghost_map__ghost_map
   meta "rewrite_def" function index_logic'0
   
   let rec get_mut_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (return (x: t_Option'0)) = any
-    [ return' (result: t_Option'0) -> {if contains self.current key then
+    [ return (result: t_Option'0) -> {if contains self.current key then
         match result with
           | C_None'0 -> false
           | C_Some'0 r -> contains self.final key
@@ -132,17 +132,17 @@ module M_ghost_map__ghost_map
   let rec split_mut_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (return (x: tuple)) =
     {[@expl:split_mut_ghost requires] contains self.current key}
     any
-    [ return' (result: tuple) -> {result.f1.current = remove self.current key}
+    [ return (result: tuple) -> {result.f1.current = remove self.current key}
       {index_logic'0 self.current key = result.f0.current /\ self.final = insert result.f1.final key result.f0.final}
       (! return {result}) ]
   
   let rec remove_ghost (self: MutBorrow.t t_FMap) (key: Int32.t) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {self.final = remove self.current key}
+    [ return (result: t_Option) -> {self.final = remove self.current key}
       {result = get self.current key}
       (! return {result}) ]
   
   let rec contains_ghost (self: t_FMap) (key: Int32.t) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = contains self key} (! return {result}) ]
+    [ return (result: bool) -> {result = contains self key} (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 Int32.t
   
@@ -152,9 +152,9 @@ module M_ghost_map__ghost_map
       end
   
   let rec get_ghost (self: t_FMap) (key: Int32.t) (return (x: t_Option'1)) = any
-    [ return' (result: t_Option'1) -> {result = map_logic (get self key) (fun (v: Int32.t) -> v)} (! return {result}) ]
+    [ return (result: t_Option'1) -> {result = map_logic (get self key) (fun (v: Int32.t) -> v)} (! return {result}) ]
   
-  let rec new'0 (x: ()) (return (x'0: ())) = any [ return' (result: ()) -> {result = x} (! return {result}) ]
+  let rec new'0 (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

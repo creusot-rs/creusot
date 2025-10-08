@@ -33,10 +33,10 @@ module M_fmap__resolves
   
   predicate is_empty (self: t_FMap) = ext_eq self empty
   
-  let rec new (return (x: t_FMap)) = any [ return' (result: t_FMap) -> {is_empty result} (! return {result}) ]
+  let rec new (return (x: t_FMap)) = any [ return (result: t_FMap) -> {is_empty result} (! return {result}) ]
   
   let rec into_inner (self: t_FMap) (return (x: t_FMap)) = any
-    [ return' (result: t_FMap) -> {result = self} (! return {result}) ]
+    [ return (result: t_FMap) -> {result = self} (! return {result}) ]
   
   predicate contains [@inline:trivial] (self: t_FMap) (k: MutBorrow.t UInt64.t) = get self k <> C_None
   
@@ -52,7 +52,7 @@ module M_fmap__resolves
   
   let rec insert_ghost (self: MutBorrow.t t_FMap) (key: MutBorrow.t UInt64.t) (value: MutBorrow.t UInt64.t)
     (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {self.final = insert self.current key value}
+    [ return (result: t_Option) -> {self.final = insert self.current key value}
       {result = get self.current key}
       (! return {result}) ]
   
@@ -81,7 +81,7 @@ module M_fmap__resolves
   function view'0 (self: t_FMapIter) : t_FMap
   
   let rec into_iter (self: t_FMap) (return (x: t_FMapIter)) = any
-    [ return' (result: t_FMapIter) -> {view'0 result = self} (! return {result}) ]
+    [ return (result: t_FMapIter) -> {view'0 result = self} (! return {result}) ]
   
   type tuple = { f0: MutBorrow.t UInt64.t; f1: MutBorrow.t UInt64.t }
   
@@ -131,7 +131,7 @@ module M_fmap__resolves
   predicate completed (self: MutBorrow.t t_FMapIter) = is_empty (view'0 self.current)
   
   let rec next (self: MutBorrow.t t_FMapIter) (return (x: t_Option'0)) = any
-    [ return' (result: t_Option'0) -> {match result with
+    [ return (result: t_Option'0) -> {match result with
         | C_None'0 -> completed self
         | C_Some'0 {f0 = k; f1 = v} -> produces self.current (Seq.singleton { f0 = k; f1 = v }) self.final
         /\ view'0 self.current = insert (view'0 self.final) k v
@@ -164,7 +164,7 @@ module M_fmap__resolves
   meta "rewrite_def" predicate resolve'8
   
   let rec new'0 (x: UInt64.t) (return (x'0: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {result = x} (! return {result}) ]
+    [ return (result: UInt64.t) -> {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

@@ -174,7 +174,7 @@ fn expand_program<'tcx>(
     }
 
     let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id, name::return_());
-    vec![program::val(sig.prototype, sig.contract, name::return_(), sig.return_ty)]
+    vec![program::val(sig.prototype, sig.contract, sig.return_ty)]
 }
 
 /// Expand a logical item

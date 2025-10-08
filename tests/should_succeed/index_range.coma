@@ -25,11 +25,10 @@ module M_index_range__create_arr
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  let rec new (return (x: t_Vec)) = any
-    [ return' (result: t_Vec) -> {Seq.length (view result) = 0} (! return {result}) ]
+  let rec new (return (x: t_Vec)) = any [ return (result: t_Vec) -> {Seq.length (view result) = 0} (! return {result}) ]
   
   let rec push (self_: MutBorrow.t t_Vec) (v: Int32.t) (return (x: ())) = any
-    [ return' (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
+    [ return (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : Int32.t = Seq.get (view self) ix
   
@@ -120,7 +119,7 @@ module M_index_range__test_range
   meta "rewrite_def" function index_logic
   
   let rec create_arr (return (x: t_Vec)) = any
-    [ return' (result: t_Vec) -> {Seq.length (view result) = 5
+    [ return (result: t_Vec) -> {Seq.length (view result) = 5
       /\ Int32.to_int (index_logic result 0) = 0
       /\ Int32.to_int (index_logic result 1) = 1
       /\ Int32.to_int (index_logic result 2) = 2
@@ -138,24 +137,24 @@ module M_index_range__test_range
   
   let rec index (self_: t_Vec) (ix: t_Range) (return (x: Slice64.slice Int32.t)) =
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return' (result: Slice64.slice Int32.t) -> {has_value ix (view self_) result} (! return {result}) ]
+    any [ return (result: Slice64.slice Int32.t) -> {has_value ix (view self_) result} (! return {result}) ]
   
   let rec len (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
   let rec deref (self_: t_Vec) (return (x: Slice64.slice Int32.t)) = any
-    [ return' (result: Slice64.slice Int32.t) -> {Slice64.view result = view self_} (! return {result}) ]
+    [ return (result: Slice64.slice Int32.t) -> {Slice64.view result = view self_} (! return {result}) ]
   
   type t_Option = C_None | C_Some (Slice64.slice Int32.t)
   
   let rec get (self_: Slice64.slice Int32.t) (ix: t_Range) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {in_bounds ix (Slice64.view self_)
+    [ return (result: t_Option) -> {in_bounds ix (Slice64.view self_)
       -> (exists r: Slice64.slice Int32.t. result = C_Some r /\ has_value ix (Slice64.view self_) r)}
       {in_bounds ix (Slice64.view self_) \/ result = C_None}
       (! return {result}) ]
   
   let rec is_none (self_: t_Option) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
+    [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   predicate resolve_elswhere (self: t_Range) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. 0 <= i
@@ -165,7 +164,7 @@ module M_index_range__test_range
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: t_Range) (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return' (result: MutBorrow.t (Slice64.slice Int32.t)) -> {has_value ix (view self_.current) result.current}
+    [ return (result: MutBorrow.t (Slice64.slice Int32.t)) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
@@ -180,7 +179,7 @@ module M_index_range__test_range
   meta "rewrite_def" predicate resolve'0
   
   let rec len'0 (self_: t_Vec) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) = UInt64.t'int self < Seq.length seq
   
@@ -193,7 +192,7 @@ module M_index_range__test_range
   
   let rec index'0 (self_: t_Vec) (ix: UInt64.t) (return (x: Int32.t)) =
     {[@expl:index requires] in_bounds'0 ix (view self_)}
-    any [ return' (result: Int32.t) -> {has_value'0 ix (view self_) result} (! return {result}) ]
+    any [ return (result: Int32.t) -> {has_value'0 ix (view self_) result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -498,7 +497,7 @@ module M_index_range__test_range_to
   meta "rewrite_def" function index_logic
   
   let rec create_arr (return (x: t_Vec)) = any
-    [ return' (result: t_Vec) -> {Seq.length (view result) = 5
+    [ return (result: t_Vec) -> {Seq.length (view result) = 5
       /\ Int32.to_int (index_logic result 0) = 0
       /\ Int32.to_int (index_logic result 1) = 1
       /\ Int32.to_int (index_logic result 2) = 2
@@ -514,24 +513,24 @@ module M_index_range__test_range_to
   
   let rec index (self_: t_Vec) (ix: t_RangeTo) (return (x: Slice64.slice Int32.t)) =
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return' (result: Slice64.slice Int32.t) -> {has_value ix (view self_) result} (! return {result}) ]
+    any [ return (result: Slice64.slice Int32.t) -> {has_value ix (view self_) result} (! return {result}) ]
   
   let rec len (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
   let rec deref (self_: t_Vec) (return (x: Slice64.slice Int32.t)) = any
-    [ return' (result: Slice64.slice Int32.t) -> {Slice64.view result = view self_} (! return {result}) ]
+    [ return (result: Slice64.slice Int32.t) -> {Slice64.view result = view self_} (! return {result}) ]
   
   type t_Option = C_None | C_Some (Slice64.slice Int32.t)
   
   let rec get (self_: Slice64.slice Int32.t) (ix: t_RangeTo) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {in_bounds ix (Slice64.view self_)
+    [ return (result: t_Option) -> {in_bounds ix (Slice64.view self_)
       -> (exists r: Slice64.slice Int32.t. result = C_Some r /\ has_value ix (Slice64.view self_) r)}
       {in_bounds ix (Slice64.view self_) \/ result = C_None}
       (! return {result}) ]
   
   let rec is_none (self_: t_Option) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
+    [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   predicate resolve_elswhere (self: t_RangeTo) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. UInt64.t'int self.t_RangeTo__end <= i /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
@@ -539,7 +538,7 @@ module M_index_range__test_range_to
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: t_RangeTo) (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return' (result: MutBorrow.t (Slice64.slice Int32.t)) -> {has_value ix (view self_.current) result.current}
+    [ return (result: MutBorrow.t (Slice64.slice Int32.t)) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
@@ -554,7 +553,7 @@ module M_index_range__test_range_to
   meta "rewrite_def" predicate resolve'0
   
   let rec len'0 (self_: t_Vec) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) = UInt64.t'int self < Seq.length seq
   
@@ -567,7 +566,7 @@ module M_index_range__test_range_to
   
   let rec index'0 (self_: t_Vec) (ix: UInt64.t) (return (x: Int32.t)) =
     {[@expl:index requires] in_bounds'0 ix (view self_)}
-    any [ return' (result: Int32.t) -> {has_value'0 ix (view self_) result} (! return {result}) ]
+    any [ return (result: Int32.t) -> {has_value'0 ix (view self_) result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -779,7 +778,7 @@ module M_index_range__test_range_from
   meta "rewrite_def" function index_logic
   
   let rec create_arr (return (x: t_Vec)) = any
-    [ return' (result: t_Vec) -> {Seq.length (view result) = 5
+    [ return (result: t_Vec) -> {Seq.length (view result) = 5
       /\ Int32.to_int (index_logic result 0) = 0
       /\ Int32.to_int (index_logic result 1) = 1
       /\ Int32.to_int (index_logic result 2) = 2
@@ -796,24 +795,24 @@ module M_index_range__test_range_from
   
   let rec index (self_: t_Vec) (ix: t_RangeFrom) (return (x: Slice64.slice Int32.t)) =
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return' (result: Slice64.slice Int32.t) -> {has_value ix (view self_) result} (! return {result}) ]
+    any [ return (result: Slice64.slice Int32.t) -> {has_value ix (view self_) result} (! return {result}) ]
   
   let rec len (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
   let rec deref (self_: t_Vec) (return (x: Slice64.slice Int32.t)) = any
-    [ return' (result: Slice64.slice Int32.t) -> {Slice64.view result = view self_} (! return {result}) ]
+    [ return (result: Slice64.slice Int32.t) -> {Slice64.view result = view self_} (! return {result}) ]
   
   type t_Option = C_None | C_Some (Slice64.slice Int32.t)
   
   let rec get (self_: Slice64.slice Int32.t) (ix: t_RangeFrom) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {in_bounds ix (Slice64.view self_)
+    [ return (result: t_Option) -> {in_bounds ix (Slice64.view self_)
       -> (exists r: Slice64.slice Int32.t. result = C_Some r /\ has_value ix (Slice64.view self_) r)}
       {in_bounds ix (Slice64.view self_) \/ result = C_None}
       (! return {result}) ]
   
   let rec is_none (self_: t_Option) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
+    [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   predicate resolve_elswhere (self: t_RangeFrom) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. 0 <= i /\ i < UInt64.t'int self.t_RangeFrom__start /\ i < Seq.length old'
@@ -822,7 +821,7 @@ module M_index_range__test_range_from
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: t_RangeFrom) (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return' (result: MutBorrow.t (Slice64.slice Int32.t)) -> {has_value ix (view self_.current) result.current}
+    [ return (result: MutBorrow.t (Slice64.slice Int32.t)) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
@@ -837,7 +836,7 @@ module M_index_range__test_range_from
   meta "rewrite_def" predicate resolve'0
   
   let rec len'0 (self_: t_Vec) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) = UInt64.t'int self < Seq.length seq
   
@@ -850,7 +849,7 @@ module M_index_range__test_range_from
   
   let rec index'0 (self_: t_Vec) (ix: UInt64.t) (return (x: Int32.t)) =
     {[@expl:index requires] in_bounds'0 ix (view self_)}
-    any [ return' (result: Int32.t) -> {has_value'0 ix (view self_) result} (! return {result}) ]
+    any [ return (result: Int32.t) -> {has_value'0 ix (view self_) result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1075,7 +1074,7 @@ module M_index_range__test_range_full
   meta "rewrite_def" function index_logic
   
   let rec create_arr (return (x: t_Vec)) = any
-    [ return' (result: t_Vec) -> {Seq.length (view result) = 5
+    [ return (result: t_Vec) -> {Seq.length (view result) = 5
       /\ Int32.to_int (index_logic result 0) = 0
       /\ Int32.to_int (index_logic result 1) = 1
       /\ Int32.to_int (index_logic result 2) = 2
@@ -1088,17 +1087,17 @@ module M_index_range__test_range_full
   
   let rec index (self_: t_Vec) (ix: ()) (return (x: Slice64.slice Int32.t)) =
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return' (result: Slice64.slice Int32.t) -> {has_value ix (view self_) result} (! return {result}) ]
+    any [ return (result: Slice64.slice Int32.t) -> {has_value ix (view self_) result} (! return {result}) ]
   
   let rec len (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
   predicate resolve_elswhere (self: ()) (_old: Seq.seq Int32.t) (_fin: Seq.seq Int32.t) = true
   
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: ()) (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return' (result: MutBorrow.t (Slice64.slice Int32.t)) -> {has_value ix (view self_.current) result.current}
+    [ return (result: MutBorrow.t (Slice64.slice Int32.t)) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
@@ -1113,7 +1112,7 @@ module M_index_range__test_range_full
   meta "rewrite_def" predicate resolve'0
   
   let rec len'0 (self_: t_Vec) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) = UInt64.t'int self < Seq.length seq
   
@@ -1126,7 +1125,7 @@ module M_index_range__test_range_full
   
   let rec index'0 (self_: t_Vec) (ix: UInt64.t) (return (x: Int32.t)) =
     {[@expl:index requires] in_bounds'0 ix (view self_)}
-    any [ return' (result: Int32.t) -> {has_value'0 ix (view self_) result} (! return {result}) ]
+    any [ return (result: Int32.t) -> {has_value'0 ix (view self_) result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1338,7 +1337,7 @@ module M_index_range__test_range_to_inclusive
   meta "rewrite_def" function index_logic
   
   let rec create_arr (return (x: t_Vec)) = any
-    [ return' (result: t_Vec) -> {Seq.length (view result) = 5
+    [ return (result: t_Vec) -> {Seq.length (view result) = 5
       /\ Int32.to_int (index_logic result 0) = 0
       /\ Int32.to_int (index_logic result 1) = 1
       /\ Int32.to_int (index_logic result 2) = 2
@@ -1355,24 +1354,24 @@ module M_index_range__test_range_to_inclusive
   
   let rec index (self_: t_Vec) (ix: t_RangeToInclusive) (return (x: Slice64.slice Int32.t)) =
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return' (result: Slice64.slice Int32.t) -> {has_value ix (view self_) result} (! return {result}) ]
+    any [ return (result: Slice64.slice Int32.t) -> {has_value ix (view self_) result} (! return {result}) ]
   
   let rec len (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
   let rec deref (self_: t_Vec) (return (x: Slice64.slice Int32.t)) = any
-    [ return' (result: Slice64.slice Int32.t) -> {Slice64.view result = view self_} (! return {result}) ]
+    [ return (result: Slice64.slice Int32.t) -> {Slice64.view result = view self_} (! return {result}) ]
   
   type t_Option = C_None | C_Some (Slice64.slice Int32.t)
   
   let rec get (self_: Slice64.slice Int32.t) (ix: t_RangeToInclusive) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {in_bounds ix (Slice64.view self_)
+    [ return (result: t_Option) -> {in_bounds ix (Slice64.view self_)
       -> (exists r: Slice64.slice Int32.t. result = C_Some r /\ has_value ix (Slice64.view self_) r)}
       {in_bounds ix (Slice64.view self_) \/ result = C_None}
       (! return {result}) ]
   
   let rec is_none (self_: t_Option) (return (x: bool)) = any
-    [ return' (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
+    [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
   predicate resolve_elswhere (self: t_RangeToInclusive) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. UInt64.t'int self.t_RangeToInclusive__end < i /\ i < Seq.length old'
@@ -1381,7 +1380,7 @@ module M_index_range__test_range_to_inclusive
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: t_RangeToInclusive)
     (return (x: MutBorrow.t (Slice64.slice Int32.t))) = {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return' (result: MutBorrow.t (Slice64.slice Int32.t)) -> {has_value ix (view self_.current) result.current}
+    [ return (result: MutBorrow.t (Slice64.slice Int32.t)) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
@@ -1396,7 +1395,7 @@ module M_index_range__test_range_to_inclusive
   meta "rewrite_def" predicate resolve'0
   
   let rec len'0 (self_: t_Vec) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) = UInt64.t'int self < Seq.length seq
   
@@ -1409,7 +1408,7 @@ module M_index_range__test_range_to_inclusive
   
   let rec index'0 (self_: t_Vec) (ix: UInt64.t) (return (x: Int32.t)) =
     {[@expl:index requires] in_bounds'0 ix (view self_)}
-    any [ return' (result: Int32.t) -> {has_value'0 ix (view self_) result} (! return {result}) ]
+    any [ return (result: Int32.t) -> {has_value'0 ix (view self_) result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

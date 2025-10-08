@@ -95,32 +95,21 @@ pub(crate) fn translate_function<'tcx>(
     Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } })
 }
 
-pub(crate) fn val(
-    sig: Prototype,
-    contract: Contract,
-    return_ident: Ident,
-    return_ty: why3::ty::Type,
-) -> Decl {
+pub(crate) fn val(sig: Prototype, contract: Contract, return_ty: why3::ty::Type) -> Decl {
     let requires = contract.requires.into_iter().map(Condition::labelled_exp);
-    let body = requires.rfold(Expr::Any, |acc, cond| Expr::assert(cond, acc));
+    let cont = requires.rfold(Expr::Any, |acc, cond| Expr::assert(cond, acc));
 
-    let mut postcond = Expr::var(return_ident).app([Arg::Term(Exp::var(name::result()))]);
-    postcond = postcond.black_box();
+    let mut body = Expr::var(name::return_()).app([Arg::Term(Exp::var(name::result()))]);
+    body = body.black_box();
     let ensures = contract.ensures.into_iter().map(Condition::unlabelled_exp);
-    postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
+    body = ensures.rfold(body, |acc, cond| Expr::assert(cond, acc));
 
+    let params = [Param::Term(name::result(), return_ty)].into();
     let body = Expr::Defn(
-        body.boxed(),
+        cont.boxed(),
         false,
-        [Defn {
-            prototype: Prototype {
-                name: return_ident.refresh(), // not used in the body
-                attrs: vec![],
-                params: [Param::Term(name::result(), return_ty)].into(),
-            },
-            body: postcond,
-        }]
-        .into(),
+        [Defn { prototype: Prototype { name: name::return_(), attrs: vec![], params }, body }]
+            .into(),
     );
     Decl::Coma(Defn { prototype: Prototype { attrs: Vec::new(), ..sig }, body })
 }

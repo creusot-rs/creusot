@@ -5,7 +5,7 @@ module M_06_knights_tour__qyi50474406909270761__clone (* <Point as creusot_contr
   type t_Point = { t_Point__x: Int64.t; t_Point__y: Int64.t }
   
   let rec clone' (self_: Int64.t) (return (x: Int64.t)) = any
-    [ return' (result: Int64.t) -> {result = self_} (! return {result}) ]
+    [ return (result: Int64.t) -> {result = self_} (! return {result}) ]
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: Int64.t) (result: Int64.t) =
     let self_ = args in result = self_
@@ -162,7 +162,7 @@ module M_06_knights_tour__qyi4580598960913230815__new (* Board *)
   meta "rewrite_def" function index_logic
   
   let rec from_elem (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec)) = any
-    [ return' (result: t_Vec) -> {Seq.length (view result) = UInt64.t'int n}
+    [ return (result: t_Vec) -> {Seq.length (view result) = UInt64.t'int n}
       {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic result i = elem}
       (! return {result}) ]
   
@@ -302,7 +302,7 @@ module M_06_knights_tour__qyi4580598960913230815__new (* Board *)
     {[@expl:map_inv requires #1] reinitialize}
     {[@expl:map_inv requires #2] preservation self func}
     any
-    [ return' (result: t_MapInv) -> {inv result}
+    [ return (result: t_MapInv) -> {inv result}
       {result = { t_MapInv__iter = self; t_MapInv__func = func; t_MapInv__produced = Seq.empty: Seq.seq UInt64.t }}
       (! return {result}) ]
   
@@ -368,7 +368,7 @@ module M_06_knights_tour__qyi4580598960913230815__new (* Board *)
   
   let rec collect (self_: t_MapInv) (return (x: t_Vec'0)) = {[@expl:collect 'self_' type invariant] inv self_}
     any
-    [ return' (result: t_Vec'0) -> {exists done': MutBorrow.t t_MapInv, prod: Seq.seq t_Vec. resolve'5 done'.final
+    [ return (result: t_Vec'0) -> {exists done': MutBorrow.t t_MapInv, prod: Seq.seq t_Vec. resolve'5 done'.final
         /\ completed'0 done' /\ produces'0 self_ prod done'.current /\ from_iter_post prod result}
       (! return {result}) ]
   
@@ -452,7 +452,7 @@ module M_06_knights_tour__qyi4580598960913230815__available (* Board *)
   meta "rewrite_def" predicate has_value
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_Vec'0)) = {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return' (result: t_Vec'0) -> {has_value ix (view self_) result} (! return {result}) ]
+    any [ return (result: t_Vec'0) -> {has_value ix (view self_) result} (! return {result}) ]
   
   predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) = UInt64.t'int self < Seq.length seq
   
@@ -469,7 +469,7 @@ module M_06_knights_tour__qyi4580598960913230815__available (* Board *)
   
   let rec index'0 (self_: t_Vec'0) (ix: UInt64.t) (return (x: UInt64.t)) =
     {[@expl:index requires] in_bounds'0 ix (view'0 self_)}
-    any [ return' (result: UInt64.t) -> {has_value'0 ix (view'0 self_) result} (! return {result}) ]
+    any [ return (result: UInt64.t) -> {has_value'0 ix (view'0 self_) result} (! return {result}) ]
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_Vec'0 = Seq.get (view self) ix
   
@@ -566,7 +566,7 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree (* Board *)
   meta "rewrite_def" function index_logic
   
   let rec moves (return (x: t_Vec)) = any
-    [ return' (result: t_Vec) -> {Seq.length (view result) = 8}
+    [ return (result: t_Vec) -> {Seq.length (view result) = 8}
       {forall i: int. 0 <= i /\ i < 8
         -> - 2 <= Int64.to_int (index_logic result i).f0
         /\ Int64.to_int (index_logic result i).f0 <= 2
@@ -588,7 +588,7 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree (* Board *)
   function view'0 (self: t_IntoIter) : Seq.seq tuple
   
   let rec into_iter (self_: t_Vec) (return (x: t_IntoIter)) = any
-    [ return' (result: t_IntoIter) -> {view self_ = view'0 result} (! return {result}) ]
+    [ return (result: t_IntoIter) -> {view self_ = view'0 result} (! return {result}) ]
   
   predicate produces (self: t_IntoIter) (visited: Seq.seq tuple) (rhs: t_IntoIter) =
     view'0 self = Seq.(++) visited (view'0 rhs)
@@ -621,7 +621,7 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree (* Board *)
   predicate completed (self: MutBorrow.t t_IntoIter) = resolve self /\ view'0 self.current = (Seq.empty: Seq.seq tuple)
   
   let rec next (self_: MutBorrow.t t_IntoIter) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {match result with
+    [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
@@ -644,7 +644,7 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree (* Board *)
     {[@expl:mov requires #2] - 10000 <= Int64.to_int p.f0 /\ Int64.to_int p.f0 <= 10000}
     {[@expl:mov requires #3] - 10000 <= Int64.to_int p.f1 /\ Int64.to_int p.f1 <= 10000}
     any
-    [ return' (result: t_Point) -> {Int64.to_int result.t_Point__x = Int64.to_int self.t_Point__x + Int64.to_int p.f0}
+    [ return (result: t_Point) -> {Int64.to_int result.t_Point__x = Int64.to_int self.t_Point__x + Int64.to_int p.f0}
       {Int64.to_int result.t_Point__y = Int64.to_int self.t_Point__y + Int64.to_int p.f1}
       (! return {result}) ]
   
@@ -682,7 +682,7 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree (* Board *)
     /\ 0 <= Int64.to_int p.t_Point__y /\ Int64.to_int p.t_Point__y < UInt64.t'int self.t_Board__size
   
   let rec available (self: t_Board) (p: t_Point) (return (x: bool)) = {[@expl:available requires] wf self}
-    any [ return' (result: bool) -> {result -> in_bounds self p} (! return {result}) ]
+    any [ return (result: bool) -> {result -> in_bounds self p} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -797,7 +797,7 @@ module M_06_knights_tour__qyi4580598960913230815__set (* Board *)
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return (x: MutBorrow.t t_Vec'0)) =
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return' (result: MutBorrow.t t_Vec'0) -> {has_value ix (view self_.current) result.current}
+    [ return (result: MutBorrow.t t_Vec'0) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
@@ -824,7 +824,7 @@ module M_06_knights_tour__qyi4580598960913230815__set (* Board *)
   let rec index_mut'0 (self_: MutBorrow.t t_Vec'0) (ix: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
     {[@expl:index_mut requires] in_bounds'0 ix (view'0 self_.current)}
     any
-    [ return' (result: MutBorrow.t UInt64.t) -> {has_value'0 ix (view'0 self_.current) result.current}
+    [ return (result: MutBorrow.t UInt64.t) -> {has_value'0 ix (view'0 self_.current) result.current}
       {has_value'0 ix (view'0 self_.final) result.final}
       {resolve_elswhere'0 ix (view'0 self_.current) (view'0 self_.final)}
       {Seq.length (view'0 self_.final) = Seq.length (view'0 self_.current)}
@@ -952,7 +952,7 @@ module M_06_knights_tour__min
   function view'0 (self: t_Iter) : Slice64.slice tuple
   
   let rec into_iter (self_: t_Vec) (return (x: t_Iter)) = any
-    [ return' (result: t_Iter) -> {view self_ = Slice64.view (view'0 result)} (! return {result}) ]
+    [ return (result: t_Iter) -> {view self_ = Slice64.view (view'0 result)} (! return {result}) ]
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : tuple = Seq.get (view self) ix
   
@@ -999,7 +999,7 @@ module M_06_knights_tour__min
     resolve self /\ Slice64.view (view'0 self.current) = (Seq.empty: Seq.seq tuple)
   
   let rec next (self_: MutBorrow.t t_Iter) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {match result with
+    [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
@@ -1138,7 +1138,7 @@ module M_06_knights_tour__knights_tour
       -> Seq.length (view'0 (index_logic self.t_Board__field i)) = UInt64.t'int self.t_Board__size)
   
   let rec new (size: UInt64.t) (return (x: t_Board)) = {[@expl:new requires] UInt64.t'int size <= 1000}
-    any [ return' (result: t_Board) -> {result.t_Board__size = size} {wf result} (! return {result}) ]
+    any [ return (result: t_Board) -> {result.t_Board__size = size} {wf result} (! return {result}) ]
   
   type t_Point = { t_Point__x: Int64.t; t_Point__y: Int64.t }
   
@@ -1151,7 +1151,7 @@ module M_06_knights_tour__knights_tour
     {[@expl:set requires #0] wf self.current}
     {[@expl:set requires #1] in_bounds self.current p}
     any
-    [ return' (result: ()) -> {wf self.final}
+    [ return (result: ()) -> {wf self.final}
       {self.final.t_Board__size = self.current.t_Board__size}
       (! return {result}) ]
   
@@ -1163,7 +1163,7 @@ module M_06_knights_tour__knights_tour
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
   let rec into_iter (self_: t_Range) (return (x: t_Range)) = any
-    [ return' (result: t_Range) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range) -> {result = self_} (! return {result}) ]
   
   function deep_model [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
@@ -1205,7 +1205,7 @@ module M_06_knights_tour__knights_tour
     resolve self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
   
   let rec next (self_: MutBorrow.t t_Range) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {match result with
+    [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
@@ -1230,7 +1230,7 @@ module M_06_knights_tour__knights_tour
   axiom view_spec'1: forall self: t_Vec'1. Seq.length (view'1 self) <= UInt64.t'int const_MAX
   
   let rec new'0 (return (x: t_Vec'1)) = any
-    [ return' (result: t_Vec'1) -> {Seq.length (view'1 result) = 0} (! return {result}) ]
+    [ return (result: t_Vec'1) -> {Seq.length (view'1 result) = 0} (! return {result}) ]
   
   type t_RawVec'2 = { t_RawVec__inner'2: t_RawVecInner; t_RawVec__qy95zmarker'2: () }
   
@@ -1247,7 +1247,7 @@ module M_06_knights_tour__knights_tour
   meta "rewrite_def" function index_logic'0
   
   let rec moves (return (x: t_Vec'2)) = any
-    [ return' (result: t_Vec'2) -> {Seq.length (view'2 result) = 8}
+    [ return (result: t_Vec'2) -> {Seq.length (view'2 result) = 8}
       {forall i: int. 0 <= i /\ i < 8
         -> - 2 <= Int64.to_int (index_logic'0 result i).f0'0
         /\ Int64.to_int (index_logic'0 result i).f0'0 <= 2
@@ -1269,7 +1269,7 @@ module M_06_knights_tour__knights_tour
   function view'3 (self: t_IntoIter) : Seq.seq tuple'0
   
   let rec into_iter'0 (self_: t_Vec'2) (return (x: t_IntoIter)) = any
-    [ return' (result: t_IntoIter) -> {view'2 self_ = view'3 result} (! return {result}) ]
+    [ return (result: t_IntoIter) -> {view'2 self_ = view'3 result} (! return {result}) ]
   
   function index_logic'1 [@inline:trivial] (self: t_Vec'1) (ix: int) : tuple = Seq.get (view'1 self) ix
   
@@ -1307,7 +1307,7 @@ module M_06_knights_tour__knights_tour
     resolve'1 self /\ view'3 self.current = (Seq.empty: Seq.seq tuple'0)
   
   let rec next'0 (self_: MutBorrow.t t_IntoIter) (return (x: t_Option'0)) = any
-    [ return' (result: t_Option'0) -> {match result with
+    [ return (result: t_Option'0) -> {match result with
         | C_None'0 -> completed'0 self_
         | C_Some'0 v -> produces'0 self_.current (Seq.singleton v) self_.final
         end}
@@ -1328,24 +1328,24 @@ module M_06_knights_tour__knights_tour
     {[@expl:mov requires #2] - 10000 <= Int64.to_int p.f0'0 /\ Int64.to_int p.f0'0 <= 10000}
     {[@expl:mov requires #3] - 10000 <= Int64.to_int p.f1'0 /\ Int64.to_int p.f1'0 <= 10000}
     any
-    [ return' (result: t_Point) -> {Int64.to_int result.t_Point__x = Int64.to_int self.t_Point__x + Int64.to_int p.f0'0}
+    [ return (result: t_Point) -> {Int64.to_int result.t_Point__x = Int64.to_int self.t_Point__x + Int64.to_int p.f0'0}
       {Int64.to_int result.t_Point__y = Int64.to_int self.t_Point__y + Int64.to_int p.f1'0}
       (! return {result}) ]
   
   let rec available (self: t_Board) (p: t_Point) (return (x: bool)) = {[@expl:available requires] wf self}
-    any [ return' (result: bool) -> {result -> in_bounds self p} (! return {result}) ]
+    any [ return (result: bool) -> {result -> in_bounds self p} (! return {result}) ]
   
   let rec count_degree (self: t_Board) (p: t_Point) (return (x: UInt64.t)) = {[@expl:count_degree requires #0] wf self}
     {[@expl:count_degree requires #1] in_bounds self p}
-    any [ return' (result: UInt64.t) -> (! return {result}) ]
+    any [ return (result: UInt64.t) -> (! return {result}) ]
   
   let rec push (self_: MutBorrow.t t_Vec'1) (v: tuple) (return (x: ())) = any
-    [ return' (result: ()) -> {view'1 self_.final = Seq.snoc (view'1 self_.current) v} (! return {result}) ]
+    [ return (result: ()) -> {view'1 self_.final = Seq.snoc (view'1 self_.current) v} (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 tuple
   
   let rec min (v: t_Vec'1) (return (x: t_Option'1)) = any
-    [ return' (result: t_Option'1) -> {forall r: tuple. result = C_Some'1 r
+    [ return (result: t_Option'1) -> {forall r: tuple. result = C_Some'1 r
         -> (exists i: int. 0 <= i /\ i < Seq.length (view'1 v) /\ index_logic'1 v i = r)}
       (! return {result}) ]
   

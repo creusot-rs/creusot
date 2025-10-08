@@ -48,7 +48,7 @@ module M_inferred_invariants__simple
   axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'0 x]. inv'0 x = invariant' x
   
   let rec f (_1: MutBorrow.t t_T) (return (x: ())) = {[@expl:f '_1' type invariant] inv'0 _1}
-    any [ return' (result: ()) -> (! return {result}) ]
+    any [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -253,7 +253,7 @@ module M_inferred_invariants__y
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
   let rec len (self_: t_Vec) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) = UInt64.t'int self < Seq.length seq
   
@@ -272,7 +272,7 @@ module M_inferred_invariants__y
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return' (result: MutBorrow.t Int32.t) -> {has_value ix (view self_.current) result.current}
+    [ return (result: MutBorrow.t Int32.t) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
@@ -396,7 +396,7 @@ module M_inferred_invariants__nested_borrows
   
   let rec replace (dest: MutBorrow.t (MutBorrow.t Int32.t)) (src: MutBorrow.t Int32.t)
     (return (x: MutBorrow.t Int32.t)) = any
-    [ return' (result: MutBorrow.t Int32.t) -> {dest.final = src} {result = dest.current} (! return {result}) ]
+    [ return (result: MutBorrow.t Int32.t) -> {dest.final = src} {result = dest.current} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t Int32.t)) = self.final = self.current
   

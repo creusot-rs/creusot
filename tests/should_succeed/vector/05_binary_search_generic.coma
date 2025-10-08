@@ -57,7 +57,7 @@ module M_05_binary_search_generic__binary_search
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
   let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+    any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate resolve (_1: t_T)
   
@@ -193,7 +193,7 @@ module M_05_binary_search_generic__binary_search
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_T)) = {[@expl:index 'self_' type invariant] inv'3 self_}
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return' (result: t_T) -> {inv'4 result} {has_value ix (view self_) result} (! return {result}) ]
+    any [ return (result: t_T) -> {inv'4 result} {has_value ix (view self_) result} (! return {result}) ]
   
   type tuple = { f0: t_T; f1: t_T }
   
@@ -215,7 +215,7 @@ module M_05_binary_search_generic__binary_search
   
   let rec gt (self_: t_T) (other: t_T) (return (x: bool)) = {[@expl:gt requires] precondition () { f0 = self_;
                                                                                                    f1 = other }}
-    any [ return' (result: bool) -> {postcondition_once () { f0 = self_; f1 = other } result} (! return {result}) ]
+    any [ return (result: bool) -> {postcondition_once () { f0 = self_; f1 = other } result} (! return {result}) ]
   
   predicate precondition'0 (self: ()) (args: tuple)
   
@@ -231,8 +231,7 @@ module M_05_binary_search_generic__binary_search
   
   let rec cmp (self_: t_T) (rhs: t_T) (return (x: t_Ordering)) = {[@expl:cmp requires] precondition'0 () { f0 = self_;
                                                                                                            f1 = rhs }}
-    any
-    [ return' (result: t_Ordering) -> {postcondition_once'0 () { f0 = self_; f1 = rhs } result} (! return {result}) ]
+    any [ return (result: t_Ordering) -> {postcondition_once'0 () { f0 = self_; f1 = rhs } result} (! return {result}) ]
   
   predicate sorted_range (s: Seq.seq t_DeepModelTy) (l: int) (u: int) =
     forall i: int, j: int. l <= i /\ i <= j /\ j < u -> le_log (Seq.get s i) (Seq.get s j)

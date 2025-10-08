@@ -88,7 +88,7 @@ module M_bitwalker__peek_bit_array8
   meta "rewrite_def" predicate has_value
   
   let rec get (self_: Slice64.slice UInt8.t) (ix: UInt64.t) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {in_bounds ix (Slice64.view self_)
+    [ return (result: t_Option) -> {in_bounds ix (Slice64.view self_)
       -> (exists r: UInt8.t. result = C_Some r /\ has_value ix (Slice64.view self_) r)}
       {in_bounds ix (Slice64.view self_) \/ result = C_None}
       (! return {result}) ]
@@ -144,7 +144,7 @@ module M_bitwalker__peek_bit_array8
   
   let rec peek_bit_u8 (x: UInt8.t) (left: UInt64.t) (return (x'0: bool)) =
     {[@expl:peek_bit_u8 requires] UInt64.lt left (8: UInt64.t)}
-    any [ return' (result: bool) -> (! return {result}) ]
+    any [ return (result: bool) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -263,11 +263,11 @@ module M_bitwalker__peek
   use creusot.prelude.Any
   
   let rec len (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
   let rec peek_bit_array8 (addr: Slice64.slice UInt8.t) (left: UInt64.t) (return (x: bool)) =
     {[@expl:peek_bit_array8 requires] UInt64.t'int left < 8 * Seq.length (Slice64.view addr)}
-    any [ return' (result: bool) -> (! return {result}) ]
+    any [ return (result: bool) -> (! return {result}) ]
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -316,7 +316,7 @@ module M_bitwalker__peek
   
   let rec poke_bit_64 (value: UInt64.t) (left: UInt64.t) (flag: bool) (return (x: UInt64.t)) =
     {[@expl:poke_bit_64 requires] UInt64.lt left (64: UInt64.t)}
-    any [ return' (result: UInt64.t) -> (! return {result}) ]
+    any [ return (result: UInt64.t) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -569,7 +569,7 @@ module M_bitwalker__poke_8bit_array
   
   let rec poke_8bit (byte: UInt8.t) (left: UInt64.t) (flag: bool) (return (x: UInt8.t)) =
     {[@expl:poke_8bit requires] UInt64.lt left (8: UInt64.t)}
-    any [ return' (result: UInt8.t) -> (! return {result}) ]
+    any [ return (result: UInt8.t) -> (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice UInt8.t)) = self.final = self.current
   
@@ -651,7 +651,7 @@ module M_bitwalker__poke
   use creusot.prelude.Any
   
   let rec len (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice UInt8.t)) = self.final = self.current
   
@@ -708,12 +708,12 @@ module M_bitwalker__poke
   
   let rec peek_64bit (value: UInt64.t) (left: UInt64.t) (return (x: bool)) =
     {[@expl:peek_64bit requires] UInt64.lt left (64: UInt64.t)}
-    any [ return' (result: bool) -> (! return {result}) ]
+    any [ return (result: bool) -> (! return {result}) ]
   
   let rec poke_8bit_array (addr: MutBorrow.t (Slice64.slice UInt8.t)) (left: UInt64.t) (flag: bool) (return (x: ())) =
     {[@expl:poke_8bit_array requires] UInt64.t'int left < 8 * Seq.length (Slice64.view addr.current)}
     any
-    [ return' (result: ()) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
+    [ return (result: ()) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -860,14 +860,14 @@ module M_bitwalker__peekthenpoke
     {[@expl:peek requires #0] Seq.length (Slice64.view addr) < 10000000}
     {[@expl:peek requires #1] UInt64.le length (64: UInt64.t)}
     {[@expl:peek requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr)}
-    any [ return' (result: UInt64.t) -> (! return {result}) ]
+    any [ return (result: UInt64.t) -> (! return {result}) ]
   
   let rec poke (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t)) (value: UInt64.t)
     (return (x: Int8.t)) = {[@expl:poke requires #0] Seq.length (Slice64.view addr.current) < 10000000}
     {[@expl:poke requires #1] UInt64.le length (64: UInt64.t)}
     {[@expl:poke requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr.current)}
     any
-    [ return' (result: Int8.t) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
+    [ return (result: Int8.t) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice UInt8.t)) = self.final = self.current
@@ -964,7 +964,7 @@ module M_bitwalker__pokethenpeek
     {[@expl:poke requires #1] UInt64.le length (64: UInt64.t)}
     {[@expl:poke requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr.current)}
     any
-    [ return' (result: Int8.t) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
+    [ return (result: Int8.t) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice UInt8.t)) = self.final = self.current
@@ -979,7 +979,7 @@ module M_bitwalker__pokethenpeek
     {[@expl:peek requires #0] Seq.length (Slice64.view addr) < 10000000}
     {[@expl:peek requires #1] UInt64.le length (64: UInt64.t)}
     {[@expl:peek requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr)}
-    any [ return' (result: UInt64.t) -> (! return {result}) ]
+    any [ return (result: UInt64.t) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

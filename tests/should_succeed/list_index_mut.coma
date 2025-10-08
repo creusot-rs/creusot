@@ -73,14 +73,14 @@ module M_list_index_mut__index_mut
   type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_List)
   
   let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'1)) = any
-    [ return' (result: t_Option'1) -> {self_.current = C_None -> result = C_None'1 /\ self_.final = C_None}
+    [ return (result: t_Option'1) -> {self_.current = C_None -> result = C_None'1 /\ self_.final = C_None}
       {self_.current = C_None
       \/ (exists r: MutBorrow.t t_List. result = C_Some'1 r
         /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
       (! return {result}) ]
   
   let rec unwrap (self_: t_Option'1) (return (x: MutBorrow.t t_List)) = {[@expl:unwrap requires] self_ <> C_None'1}
-    any [ return' (result: MutBorrow.t t_List) -> {C_Some'1 result = self_} (! return {result}) ]
+    any [ return (result: MutBorrow.t t_List) -> {C_Some'1 result = self_} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
   
@@ -206,7 +206,7 @@ module M_list_index_mut__write
   let rec index_mut (l: MutBorrow.t t_List) (ix: UInt64.t) (return (x: MutBorrow.t UInt32.t)) =
     {[@expl:index_mut requires] UInt64.t'int ix < len l.current}
     any
-    [ return' (result: MutBorrow.t UInt32.t) -> {C_Some'0 (result.current) = get l.current (UInt64.t'int ix)}
+    [ return (result: MutBorrow.t UInt32.t) -> {C_Some'0 (result.current) = get l.current (UInt64.t'int ix)}
       {C_Some'0 (result.final) = get l.final (UInt64.t'int ix)}
       {len l.final = len l.current}
       {forall i: int. 0 <= i /\ i < len l.current /\ i <> UInt64.t'int ix -> get l.current i = get l.final i}
@@ -287,7 +287,7 @@ module M_list_index_mut__f
   let rec write (l: MutBorrow.t t_List) (ix: UInt64.t) (v: UInt32.t) (return (x: ())) =
     {[@expl:write requires] UInt64.t'int ix < len l.current}
     any
-    [ return' (result: ()) -> {C_Some'0 v = get l.final (UInt64.t'int ix)}
+    [ return (result: ()) -> {C_Some'0 v = get l.final (UInt64.t'int ix)}
       {len l.final = len l.current}
       {forall i: int. 0 <= i /\ i < len l.current /\ i <> UInt64.t'int ix -> get l.current i = get l.final i}
       (! return {result}) ]

@@ -26,12 +26,12 @@ module M_01__all_zero
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
   let rec len (self_: t_Vec) (return (x: UInt64.t)) = any
-    [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
   
   let rec into_iter (self_: t_Range) (return (x: t_Range)) = any
-    [ return' (result: t_Range) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range) -> {result = self_} (! return {result}) ]
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt32.t = Seq.get (view self) ix
   
@@ -77,7 +77,7 @@ module M_01__all_zero
     resolve self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
   
   let rec next (self_: MutBorrow.t t_Range) (return (x: t_Option)) = any
-    [ return' (result: t_Option) -> {match result with
+    [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
@@ -108,7 +108,7 @@ module M_01__all_zero
   let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return (x: MutBorrow.t UInt32.t)) =
     {[@expl:index_mut requires] in_bounds ix (view self_.current)}
     any
-    [ return' (result: MutBorrow.t UInt32.t) -> {has_value ix (view self_.current) result.current}
+    [ return (result: MutBorrow.t UInt32.t) -> {has_value ix (view self_.current) result.current}
       {has_value ix (view self_.final) result.final}
       {resolve_elswhere ix (view self_.current) (view self_.final)}
       {Seq.length (view self_.final) = Seq.length (view self_.current)}

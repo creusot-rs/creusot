@@ -133,7 +133,7 @@ module M_02_gnome__gnome_sort
   axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
   
   let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return' (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+    any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) = UInt64.t'int self < Seq.length seq
   
@@ -154,7 +154,7 @@ module M_02_gnome__gnome_sort
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_T)) = {[@expl:index 'self_' type invariant] inv'3 self_}
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return' (result: t_T) -> {inv'4 result} {has_value ix (view self_) result} (! return {result}) ]
+    any [ return (result: t_T) -> {inv'4 result} {has_value ix (view self_) result} (! return {result}) ]
   
   type tuple = { f0: t_T; f1: t_T }
   
@@ -176,7 +176,7 @@ module M_02_gnome__gnome_sort
   
   let rec le (self_: t_T) (other: t_T) (return (x: bool)) = {[@expl:le requires] precondition () { f0 = self_;
                                                                                                    f1 = other }}
-    any [ return' (result: bool) -> {postcondition_once () { f0 = self_; f1 = other } result} (! return {result}) ]
+    any [ return (result: bool) -> {postcondition_once () { f0 = self_; f1 = other } result} (! return {result}) ]
   
   predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
   
@@ -204,7 +204,7 @@ module M_02_gnome__gnome_sort
   let rec deref_mut (self_: MutBorrow.t t_Vec) (return (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:deref_mut 'self_' type invariant] inv'5 self_}
     any
-    [ return' (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'7 result}
+    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'7 result}
       {Slice64.view result.current = view self_.current}
       {Slice64.view result.final = view self_.final}
       (! return {result}) ]
@@ -214,7 +214,7 @@ module M_02_gnome__gnome_sort
     {[@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current)}
     {[@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current)}
     any
-    [ return' (result: ()) ->
+    [ return (result: ()) ->
     {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
       (! return {result}) ]
   

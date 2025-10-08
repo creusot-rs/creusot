@@ -15,16 +15,16 @@ module M_mutex__qyi5425553346843331945__call (* <AddsTwo<'a> as FakeFnOnce> *)
   type t_MutexGuard = { t_MutexGuard__0: t_GuardInner; t_MutexGuard__1: () }
   
   let rec lock (self: t_Mutex) (return (x: t_MutexGuard)) = any
-    [ return' (result: t_MutexGuard) -> {self.t_Mutex__1 = result.t_MutexGuard__1} (! return {result}) ]
+    [ return (result: t_MutexGuard) -> {self.t_Mutex__1 = result.t_MutexGuard__1} (! return {result}) ]
   
   predicate inv (self: ()) (x: UInt32.t) = Int.mod (UInt32.t'int x) 2 = 0
   
   let rec deref (self: t_MutexGuard) (return (x: UInt32.t)) = any
-    [ return' (result: UInt32.t) -> {inv self.t_MutexGuard__1 result} (! return {result}) ]
+    [ return (result: UInt32.t) -> {inv self.t_MutexGuard__1 result} (! return {result}) ]
   
   let rec set (self: MutBorrow.t t_MutexGuard) (v: UInt32.t) (return (x: ())) =
     {[@expl:set requires] inv self.current.t_MutexGuard__1 v}
-    any [ return' (result: ()) -> (! return {result}) ]
+    any [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -74,10 +74,10 @@ module M_mutex__concurrent
   predicate inv (self: ()) (x: UInt32.t) = Int.mod (UInt32.t'int x) 2 = 0
   
   let rec new (val': UInt32.t) (i: ()) (return (x: t_Mutex)) = {[@expl:new requires] inv i val'}
-    any [ return' (result: t_Mutex) -> (! return {result}) ]
+    any [ return (result: t_Mutex) -> (! return {result}) ]
   
   let rec leak (b: t_Mutex) (return (x: MutBorrow.t t_Mutex)) = any
-    [ return' (result: MutBorrow.t t_Mutex) -> {result.current = b} (! return {result}) ]
+    [ return (result: MutBorrow.t t_Mutex) -> {result.current = b} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_Mutex) = self.final = self.current
   
@@ -98,7 +98,7 @@ module M_mutex__concurrent
   predicate precondition (self: t_AddsTwo) = true
   
   let rec spawn (f: t_AddsTwo) (return (x: t_JoinHandle)) = {[@expl:spawn requires] precondition f}
-    any [ return' (result: t_JoinHandle) -> (! return {result}) ]
+    any [ return (result: t_JoinHandle) -> (! return {result}) ]
   
   type t_Result = C_Ok () | C_Err ()
   
@@ -107,7 +107,7 @@ module M_mutex__concurrent
   predicate inv'0 (self: t_SpawnPostCond) (v: ()) = postcondition self.t_SpawnPostCond__f v
   
   let rec join (self: t_JoinHandle) (return (x: t_Result)) = any
-    [ return' (result: t_Result) -> {match result with
+    [ return (result: t_Result) -> {match result with
         | C_Ok v -> inv'0 self.t_JoinHandle__1 v
         | _ -> true
         end}

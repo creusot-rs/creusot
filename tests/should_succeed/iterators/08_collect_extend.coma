@@ -11,7 +11,7 @@ module M_08_collect_extend__extend
   predicate inv (_1: t_I)
   
   let rec into_iter (self_: t_I) (return (x: t_I)) = {[@expl:into_iter 'self_' type invariant] inv self_}
-    any [ return' (result: t_I) -> {inv result} {result = self_} (! return {result}) ]
+    any [ return (result: t_I) -> {inv result} {result = self_} (! return {result}) ]
   
   type t_T
   
@@ -111,7 +111,7 @@ module M_08_collect_extend__extend
       /\ inv'6 res)
   
   let rec next (self_: MutBorrow.t t_I) (return (x: t_Option)) = {[@expl:next requires] precondition () self_}
-    any [ return' (result: t_Option) -> {postcondition_once () self_ result} (! return {result}) ]
+    any [ return (result: t_Option) -> {postcondition_once () self_ result} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_I) = self.final = self.current
   
@@ -127,7 +127,7 @@ module M_08_collect_extend__extend
   
   let rec push (self_: MutBorrow.t t_Vec) (v: t_T) (return (x: ())) = {[@expl:push 'self_' type invariant] inv'4 self_}
     {[@expl:push 'v' type invariant] inv'0 v}
-    any [ return' (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
+    any [ return (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
   
   predicate resolve'1 (_1: t_I)
   
@@ -268,14 +268,14 @@ module M_08_collect_extend__collect
   axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
   let rec new (return (x: t_Vec)) = any
-    [ return' (result: t_Vec) -> {inv'2 result} {Seq.length (view result) = 0} (! return {result}) ]
+    [ return (result: t_Vec) -> {inv'2 result} {Seq.length (view result) = 0} (! return {result}) ]
   
   type t_I
   
   predicate inv'3 (_1: t_I)
   
   let rec into_iter (self_: t_I) (return (x: t_I)) = {[@expl:into_iter 'self_' type invariant] inv'3 self_}
-    any [ return' (result: t_I) -> {inv'3 result} {result = self_} (! return {result}) ]
+    any [ return (result: t_I) -> {inv'3 result} {result = self_} (! return {result}) ]
   
   predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
@@ -324,7 +324,7 @@ module M_08_collect_extend__collect
       /\ inv'5 res)
   
   let rec next (self_: MutBorrow.t t_I) (return (x: t_Option)) = {[@expl:next requires] precondition () self_}
-    any [ return' (result: t_Option) -> {postcondition_once () self_ result} (! return {result}) ]
+    any [ return (result: t_Option) -> {postcondition_once () self_ result} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_I) = self.final = self.current
   
@@ -349,7 +349,7 @@ module M_08_collect_extend__collect
   let rec push (self_: MutBorrow.t t_Vec) (v: t_Item) (return (x: ())) =
     {[@expl:push 'self_' type invariant] inv'6 self_}
     {[@expl:push 'v' type invariant] inv v}
-    any [ return' (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
+    any [ return (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
   
   predicate resolve'1 (_1: t_I)
   
@@ -462,7 +462,7 @@ module M_08_collect_extend__extend_index
   function view'0 (self: t_IntoIter) : Seq.seq UInt32.t
   
   let rec into_iter (self_: t_Vec) (return (x: t_IntoIter)) = any
-    [ return' (result: t_IntoIter) -> {view self_ = view'0 result} (! return {result}) ]
+    [ return (result: t_IntoIter) -> {view self_ = view'0 result} (! return {result}) ]
   
   predicate produces (self: t_IntoIter) (visited: Seq.seq UInt32.t) (rhs: t_IntoIter) =
     view'0 self = Seq.(++) visited (view'0 rhs)
@@ -486,7 +486,7 @@ module M_08_collect_extend__extend_index
     resolve self /\ view'0 self.current = (Seq.empty: Seq.seq UInt32.t)
   
   let rec extend (vec: MutBorrow.t t_Vec) (iter: t_IntoIter) (return (x: ())) = any
-    [ return' (result: ()) -> {exists done': MutBorrow.t t_IntoIter, prod: Seq.seq UInt32.t. completed done'
+    [ return (result: ()) -> {exists done': MutBorrow.t t_IntoIter, prod: Seq.seq UInt32.t. completed done'
         /\ produces iter prod done'.current /\ view vec.final = Seq.(++) (view vec.current) prod}
       (! return {result}) ]
   
@@ -578,7 +578,7 @@ module M_08_collect_extend__collect_example
   
   let rec collect (iter: t_I) (return (x: t_Vec)) = {[@expl:collect 'iter' type invariant] inv iter}
     any
-    [ return' (result: t_Vec) -> {exists done': MutBorrow.t t_I, prod: Seq.seq UInt32.t. resolve done'.final
+    [ return (result: t_Vec) -> {exists done': MutBorrow.t t_I, prod: Seq.seq UInt32.t. resolve done'.final
         /\ completed done' /\ produces iter prod done'.current /\ view result = prod}
       (! return {result}) ]
   
