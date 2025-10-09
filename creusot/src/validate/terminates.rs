@@ -95,7 +95,10 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
         if !is_logic(ctx.tcx, def_id) && is_trusted_item(ctx.tcx, def_id) {
             continue;
         }
-        let (thir, expr) = ctx.get_local_thir(local_id).unwrap();
+        let Some((thir, expr)) = ctx.get_local_thir(local_id) else {
+            ctx.dcx().abort_if_errors();
+            unreachable!();
+        };
         let mut visitor = GhostLoops { thir, ctx, is_in_ghost: false };
         visitor.visit_expr(&thir[*expr]);
     }
