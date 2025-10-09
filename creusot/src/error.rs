@@ -5,7 +5,6 @@ pub type CreusotResult<T> = Result<T, Error>;
 
 pub(crate) enum Error {
     MustPrint(Message),
-    ErrorGuaranteed,
 }
 
 // TODO: make this a vector of spans and strings
@@ -34,10 +33,6 @@ impl Error {
     pub(crate) fn abort(self, tcx: TyCtxt) -> ! {
         match self {
             Error::MustPrint(msg) => msg.emit(tcx),
-            Error::ErrorGuaranteed => {
-                tcx.dcx().abort_if_errors();
-                tcx.dcx().bug("unexpected ErrorGuaranteed")
-            }
         }
     }
 }

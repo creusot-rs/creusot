@@ -9,7 +9,7 @@ use rustc_span::Span;
 pub(crate) fn validate_tokens_new<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: DefId,
-    &(ref thir, expr): &(Thir<'tcx>, ExprId),
+    (thir, expr): (&Thir<'tcx>, ExprId),
 ) {
     let mut in_main = false;
     if let Some((main_did, _)) = ctx.entry_fn(()) {

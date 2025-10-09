@@ -32,3 +32,10 @@ pub fn add(x: usize, y: usize) -> usize {
 pub fn add2(x: usize, y: usize) -> usize {
     x + x
 }
+
+pub trait Quux {
+    fn quux();
+}
+
+#[erasure(T::quux)]
+pub fn quux2<T: Quux>() {}
