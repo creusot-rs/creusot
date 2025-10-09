@@ -74,7 +74,7 @@ impl Purity {
 pub(crate) fn validate_purity<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: DefId,
-    &(ref thir, expr): &(Thir<'tcx>, ExprId),
+    (thir, expr): (&Thir<'tcx>, ExprId),
 ) {
     // Only start traversing from top-level definitions. Closures will be visited during the traversal
     // of their parents so that they can inherit the context from their parent.
@@ -160,10 +160,10 @@ impl PurityVisitor<'_, '_> {
 
     /// Validate the body of a spec closure.
     fn validate_spec_purity(&mut self, closure_id: LocalDefId, prophetic: bool) {
-        // If this is None there must be a type error that will be reported later so we can skip this silently.
-        let Some((thir, expr)) = self.ctx.get_local_thir(closure_id) else { return };
+        let (thir, expr) = self.ctx.thir_body(closure_id);
+        let thir = &thir.borrow();
         PurityVisitor { thir, context: Purity::Logic { prophetic }, ..*self }
-            .visit_expr(&thir[*expr]);
+            .visit_expr(&thir[expr]);
     }
 
     /// Return `false` if this is not a `creusot::spec` or `creusot::erasure` closure.
@@ -294,9 +294,9 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                         format!("unexpected spec closure {}", self.ctx.def_path_str(closure_id)),
                     );
                 }
-                // If this is None there must be a type error that will be reported later so we can skip this silently.
-                let Some((thir, expr)) = self.ctx.get_local_thir(closure_id) else { return };
-                PurityVisitor { thir, ..*self }.visit_expr(&thir[*expr]);
+                let (thir, expr) = self.ctx.thir_body(closure_id);
+                let thir = &thir.borrow();
+                PurityVisitor { thir, ..*self }.visit_expr(&thir[expr]);
             }
             ExprKind::Scope {
                 region_scope: _,

@@ -10,17 +10,13 @@ pub(crate) mod traits;
 use crate::{
     backend::Why3Generator,
     contracts_items::is_no_translate,
-    ctx::{Thir, TranslationCtx, gather_params_open_inv},
+    ctx::{TranslationCtx, gather_params_open_inv},
     metadata,
     translated_item::FileModule,
     validate::validate,
 };
 use creusot_args::options::{Options, Output};
-use indexmap::IndexMap;
-use rustc_hir::{
-    def::DefKind,
-    def_id::{DefId, LocalDefId},
-};
+use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
@@ -29,25 +25,11 @@ use why3::{
     printer::{render_decls, render_module},
 };
 
-pub(crate) fn before_analysis<'tcx>(
-    tcx: TyCtxt<'tcx>,
-) -> (IndexMap<LocalDefId, Thir<'tcx>>, HashMap<DefId, Vec<usize>>) {
+pub(crate) fn before_analysis<'tcx>(tcx: TyCtxt<'tcx>) -> HashMap<DefId, Vec<usize>> {
     let start = Instant::now();
-
     let params_open_inv = gather_params_open_inv(tcx);
-
-    // Clone all THIR bodies before they are stolen by `analysis`
-    let mut thir = IndexMap::new();
-    for def_id in tcx.hir_body_owners() {
-        // If a body is missing, it means that there was an error, and we know that because `Err` is `ErrorGuaranteed`.
-        // Keep going. We will abort later in `translation::after_analysis` after doing more checks that could raise more errors.
-        if let Ok((th, expr0)) = tcx.thir_body(def_id) {
-            thir.insert(def_id, (th.borrow().clone(), expr0));
-        }
-    }
-
     debug!("before_analysis: {:?}", start.elapsed());
-    (thir, params_open_inv)
+    params_open_inv
 }
 
 fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
@@ -68,16 +50,17 @@ fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
 pub(crate) fn after_analysis<'tcx>(
     tcx: TyCtxt<'tcx>,
     opts: Options,
-    thir: IndexMap<LocalDefId, Thir<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
-    let mut ctx = TranslationCtx::new(tcx, opts.clone(), thir, params_open_inv);
+    let mut ctx = TranslationCtx::new(tcx, opts.clone(), params_open_inv);
     ctx.load_extern_specs();
     ctx.load_erasures();
     validate(&ctx);
-    ctx.dcx().abort_if_errors();
     debug!("after_analysis_validate: {:?}", start.elapsed());
+    if let Some(err) = tcx.dcx().has_errors_or_delayed_bugs() {
+        err.raise_fatal()
+    }
 
     let start = Instant::now();
     let mut why3 = Why3Generator::new(ctx);

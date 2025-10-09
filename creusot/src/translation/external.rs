@@ -70,9 +70,10 @@ impl<'tcx> ExternSpec<'tcx> {
 pub(crate) fn extract_extern_specs_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     local_def_id: LocalDefId,
-    &(ref thir, expr): &(Thir<'tcx>, thir::ExprId),
+    (thir, expr): ThirExpr<'tcx>,
 ) -> (DefId, ExternSpec<'tcx>) {
     let def_id = local_def_id.to_def_id();
+    let thir = &thir.borrow();
     let span = ctx.def_span(def_id);
     let contract = contract_clauses_of(ctx, def_id).unwrap();
     let (id, subst) = extract_extern_item(thir, expr).unwrap();
@@ -205,7 +206,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItem<'a, 'tcx> {
 pub(crate) fn extract_erasure_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     local_def_id: LocalDefId,
-    &(ref thir, expr): &(Thir<'tcx>, thir::ExprId),
+    (thir, expr): ThirExpr<'tcx>,
 ) -> Option<(LocalDefId, Option<Erasure<'tcx>>, Option<Erasure<'tcx>>)> {
     let def_id = local_def_id.to_def_id();
     let (id_this, (id_erased, subst_erased), (id_resolved, subst_resolved)) =
@@ -213,7 +214,7 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
             None => return None,
             Some(ErasureKind::Parent) => {
                 let parent = ctx.tcx.parent(def_id);
-                let (id_erased, subst_erased) = extract_extern_item(thir, expr).unwrap();
+                let (id_erased, subst_erased) = extract_extern_item(&thir.borrow(), expr).unwrap();
                 debug!("extract_erasure_from_item: {parent:?} erases to {id_erased:?}");
                 let (id_resolved, subst_resolved) = TraitResolved::resolve_item(
                     ctx.tcx,

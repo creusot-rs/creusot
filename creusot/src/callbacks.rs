@@ -105,9 +105,9 @@ impl Callbacks for ToWhy {
     }
 
     fn after_expansion<'tcx>(&mut self, c: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-        let (thir, params_open_inv) = crate::translation::before_analysis(tcx);
+        let params_open_inv = crate::translation::before_analysis(tcx);
         let _ = tcx.analysis(());
-        let _ = crate::translation::after_analysis(tcx, self.opts.clone(), thir, params_open_inv);
+        let _ = crate::translation::after_analysis(tcx, self.opts.clone(), params_open_inv);
 
         c.sess.dcx().abort_if_errors();
 
@@ -202,22 +202,19 @@ impl Callbacks for WithoutContracts {
             .hir_body_owners()
             .filter_map(|local_id| {
                 if erasure_required.contains(&local_id) {
-                    let thir = tcx.thir_body(local_id).ok()?;
-                    let erased = a_normal_form_without_specs(
-                        tcx,
-                        local_id,
-                        (&*thir.0.borrow(), thir.1),
-                        self.opts.erasure_check,
-                    )?;
+                    let erased =
+                        a_normal_form_without_specs(tcx, local_id, self.opts.erasure_check)?;
                     Some((local_id.to_def_id(), erased))
                 } else {
                     None
                 }
             })
             .collect();
+        if let Some(err) = c.sess.dcx().has_errors_or_delayed_bugs() {
+            err.raise_fatal()
+        }
         let metadata = BinaryMetadata::without_specs(erased_thir);
         crate::metadata::dump_exports(tcx, &Default::default(), metadata);
-        c.sess.dcx().abort_if_errors();
         Compilation::Continue
     }
 }

@@ -28,6 +28,7 @@ use rustc_ast::{
     visit::{FnKind, Visitor, walk_fn},
 };
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
+use rustc_data_structures::steal::Steal;
 use rustc_errors::{Diag, DiagMessage, FatalAbort};
 use rustc_hir::{
     HirId,
@@ -168,7 +169,7 @@ impl<'tcx> HasTyCtxt<'tcx> for TyCtxt<'tcx> {
     }
 }
 
-pub type Thir<'tcx> = (thir::Thir<'tcx>, thir::ExprId);
+pub type ThirExpr<'tcx> = (&'tcx Steal<thir::Thir<'tcx>>, thir::ExprId);
 
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
@@ -179,7 +180,6 @@ pub struct TranslationCtx<'tcx> {
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
     creusot_items: HashMap<Symbol, DefId>,
-    local_thir: IndexMap<LocalDefId, Thir<'tcx>>,
     /// This field tracks recursive calls, where we should check that a variant
     /// decreases.
     pub(crate) variant_calls: RefCell<IndexMap<DefId, IndexSet<DefId>>>,
@@ -239,7 +239,6 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn new(
         tcx: TyCtxt<'tcx>,
         opts: Options,
-        local_thir: IndexMap<LocalDefId, Thir<'tcx>>,
         params_open_inv: HashMap<DefId, Vec<usize>>,
     ) -> Self {
         let creusot_items = tcx
@@ -266,7 +265,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             creusot_items,
             variant_calls: RefCell::new(IndexMap::new()),
             opts,
-            local_thir,
             erasure_required: Default::default(),
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
@@ -297,24 +295,13 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.variant_calls.borrow().get(&caller).is_some_and(|calls| calls.contains(&callee))
     }
 
-    /// If this returns `None`, there must have been a type error in the body.
-    /// Callers can then skip whatever they were doing silently because Creusot will abort in the end (in `after_analysis`).
-    pub(crate) fn get_local_thir(
-        &self,
-        def_id: LocalDefId,
-    ) -> Option<&(thir::Thir<'tcx>, thir::ExprId)> {
-        self.local_thir.get(&def_id)
+    pub(crate) fn thir_body(&self, def_id: LocalDefId) -> ThirExpr<'tcx> {
+        self.tcx.thir_body(&def_id).unwrap_or_else(|err| err.raise_fatal())
     }
 
     pub(crate) fn erased_thir(&self, def_id: DefId) -> Option<&AnfBlock<'tcx>> {
         self.erasure_required.borrow_mut().insert(def_id);
         self.externs.erased_thir(def_id)
-    }
-
-    pub(crate) fn iter_local_thir(
-        &self,
-    ) -> impl Iterator<Item = (&LocalDefId, &(thir::Thir<'tcx>, thir::ExprId))> {
-        self.local_thir.iter()
     }
 
     queryish!(trait_impl, DefId, Vec<Refinement<'tcx>>, translate_impl);
@@ -438,11 +425,12 @@ impl<'tcx> TranslationCtx<'tcx> {
         if erasure_required.is_empty() {
             return vec![];
         }
-        self.local_thir
-            .iter()
-            .filter_map(|(local_id, thir)| {
-                if erasure_required.contains(local_id) {
-                    let erasure = crate::validate::a_normal_form_for_export(self, *local_id, thir)?;
+        self.tcx
+            .hir_body_owners()
+            .filter_map(|local_id| {
+                let thir = self.thir_body(local_id);
+                if erasure_required.contains(&local_id) {
+                    let erasure = crate::validate::a_normal_form_for_export(self, local_id, thir)?;
                     Some((local_id.to_def_id(), erasure))
                 } else {
                     None
@@ -511,7 +499,8 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn load_extern_specs(&mut self) {
         let mut traits_or_impls = Vec::new();
 
-        for (&def_id, thir) in self.local_thir.iter() {
+        for def_id in self.tcx.hir_body_owners() {
+            let thir = self.tcx.thir_body(def_id).unwrap_or_else(|err| err.raise_fatal());
             if is_extern_spec(self.tcx, def_id.to_def_id()) {
                 if let Some(container) = self.opt_associated_item(def_id.to_def_id()) {
                     traits_or_impls.push(container.def_id)
@@ -555,7 +544,8 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn load_erasures(&mut self) {
-        for (&def_id, thir) in self.local_thir.iter() {
+        for def_id in self.tcx.hir_body_owners() {
+            let thir = self.tcx.thir_body(def_id).unwrap_or_else(|err| err.raise_fatal());
             let Some((eraser, erasure, to_check)) = extract_erasure_from_item(self, def_id, thir)
             else {
                 continue;
@@ -568,7 +558,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         if self.erasures_to_check.is_empty() {
             return;
         }
-        for (&def_id, _) in self.local_thir.iter() {
+        for def_id in self.tcx.hir_body_owners() {
             if let Some(erasure) = extract_erasure_from_child(self, def_id) {
                 self.erased_local_defid.insert(def_id, Some(erasure.clone()));
                 self.erasures_to_check.insert(def_id, erasure);

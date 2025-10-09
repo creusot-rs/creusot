@@ -36,7 +36,7 @@ use rustc_type_ir::{Interner, VisitorResult as _};
 use crate::{
     backend::is_trusted_item,
     contracts_items::{Intrinsic, is_before_loop, is_erasure, is_spec},
-    ctx::{Erasure, HasTyCtxt, TranslationCtx},
+    ctx::{Erasure, HasTyCtxt, ThirExpr, TranslationCtx},
     translation::traits::TraitResolved,
     util::{NamelessGenericArgs, ODecodable, OEncodable},
     validate::{is_ghost_block, is_ghost_or_snap},
@@ -87,10 +87,11 @@ fn check_erasure<'tcx>(
         return Ok(());
     }
     let left_span = ctx.def_span(left_local);
-    let Some(left_thir) = ctx.get_local_thir(left_local) else {
+    if ctx.tcx.hir_node_by_def_id(left_local).associated_body().is_none() {
         ctx.error(left_span, "#[erasure] function must have a body").emit();
         return Err(None);
-    };
+    }
+    let left_thir = ctx.thir_body(left_local);
     let left = a_normal_form_or_error(ctx, left_local, left_thir).ok_or_else(|| {
         debug!("{:#?}", left_thir);
         None
@@ -116,10 +117,11 @@ fn check_erasure<'tcx>(
             Some(anf) => Cow::Borrowed(anf),
         },
         Some(right_local) => {
-            let Some(right_thir) = ctx.get_local_thir(right_local) else {
-                ctx.error(ctx.def_span(right_local), "#[erasure] target must have a body").emit();
+            if ctx.tcx.hir_node_by_def_id(right_local).associated_body().is_none() {
+                ctx.error(left_span, "#[erasure] target must have a body").emit();
                 return Err(None);
-            };
+            }
+            let right_thir = ctx.thir_body(right_local);
             let anf = a_normal_form_or_error(ctx, right_local, right_thir).ok_or_else(|| {
                 debug!("{:#?}", right_thir);
                 None
@@ -564,9 +566,9 @@ impl<D: Decoder> Decodable<D> for LogicalOp {
 fn a_normal_form_or_error<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: LocalDefId,
-    (thir, expr): &(Thir<'tcx>, ExprId),
+    thir: ThirExpr<'tcx>,
 ) -> Option<AnfBlock<'tcx>> {
-    a_normal_form_(ctx.tcx, Some(ctx), def_id, (thir, *expr), rustc_errors::Level::Error)
+    a_normal_form_(ctx.tcx, Some(ctx), def_id, thir, rustc_errors::Level::Error)
 }
 
 /// Convert a THIR expression to ANF, using the `--erasure-check` option to set the error or warning level.
@@ -575,10 +577,10 @@ fn a_normal_form_or_error<'tcx>(
 pub fn a_normal_form_for_export<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: LocalDefId,
-    (thir, expr): &(Thir<'tcx>, ExprId),
+    thir: ThirExpr<'tcx>,
 ) -> Option<AnfBlock<'tcx>> {
     let level = erasure_check_level(ctx.opts.erasure_check);
-    a_normal_form_(ctx.tcx, Some(ctx), def_id, (thir, *expr), level)
+    a_normal_form_(ctx.tcx, Some(ctx), def_id, thir, level)
 }
 
 /// Convert a THIR expression to ANF, without access to `TranslationCtx`.
@@ -586,10 +588,16 @@ pub fn a_normal_form_for_export<'tcx>(
 pub fn a_normal_form_without_specs<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: LocalDefId,
-    thir: (&Thir<'tcx>, ExprId),
     erasure_check: ErasureCheck,
 ) -> Option<AnfBlock<'tcx>> {
-    a_normal_form_(tcx, None, def_id, thir, erasure_check_level(erasure_check))
+    let level = erasure_check_level(erasure_check);
+    if tcx.hir_node_by_def_id(def_id).associated_body().is_none() {
+        warn_or_error(tcx, level, tcx.def_span(def_id), "#[erasure] target must have a body")
+            .emit();
+        return None;
+    }
+    let thir = tcx.thir_body(def_id).unwrap_or_else(|err| err.raise_fatal());
+    a_normal_form_(tcx, None, def_id, thir, level)
 }
 
 /// This is the implementation shared by the variants above.
@@ -597,10 +605,11 @@ fn a_normal_form_<'tcx>(
     tcx: TyCtxt<'tcx>,
     ctx: Option<&TranslationCtx<'tcx>>,
     def_id: LocalDefId,
-    (thir, expr): (&Thir<'tcx>, ExprId),
+    (thir, expr): ThirExpr<'tcx>,
     level: rustc_errors::Level,
 ) -> Option<AnfBlock<'tcx>> {
-    let mut ctx = AnfBuilder::new(tcx, ctx, def_id, thir, level);
+    let thir = thir.borrow();
+    let mut ctx = AnfBuilder::new(tcx, ctx, def_id, &thir, level);
     let pattern = ctx.a_normal_form_args().ok()?;
     ctx.a_normal_form_expr_block_(expr, pattern, Vec::new(), None).ok()
 }

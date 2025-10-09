@@ -9,6 +9,8 @@ mod terminates;
 mod tokens_new;
 mod traits;
 
+use std::ops::Deref as _;
+
 pub(crate) use self::{
     erasure::{AnfBlock, a_normal_form_for_export, a_normal_form_without_specs},
     ghost::GhostValidate,
@@ -49,8 +51,11 @@ pub(crate) fn is_ghost_or_snap(tcx: TyCtxt, ty: Ty) -> bool {
 }
 
 pub(crate) fn validate(ctx: &TranslationCtx) {
-    for (&def_id, thir) in ctx.iter_local_thir() {
-        let def_id = def_id.to_def_id();
+    for local_id in ctx.tcx.hir_body_owners() {
+        let def_id = local_id.to_def_id();
+        let (thir, expr) = ctx.thir_body(local_id);
+        let thir = thir.borrow();
+        let thir = (thir.deref(), expr);
         if get_builtin(ctx.tcx, def_id).is_some() || ctx.intrinsic(def_id).synthetic() {
             continue;
         }
