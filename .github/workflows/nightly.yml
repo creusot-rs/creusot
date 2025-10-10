@@ -26,9 +26,12 @@ jobs:
         path: ~/.local/share/creusot/_opam
         key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
         restore-keys: ${{ runner.os }}-opam-
+    - run: sudo apt update && sudo apt install opam libzmq3-dev
+      if: matrix.os == 'ubuntu-latest'
+    - run: brew update && brew install opam autoconf zeromq zlib
+      if: matrix.os == 'macos-latest'
     - name: Setup environment
       run: |
-        sudo apt update && sudo apt install opam libzmq3-dev
         opam init --bare
         opam --cli=2.1 var --global in-creusot-ci=true
     - name: Install Creusot
