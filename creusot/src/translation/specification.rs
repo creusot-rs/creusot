@@ -269,7 +269,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     } else {
         if contract.is_empty()
             && !def_id.is_local()
-            && ctx.externs.get(def_id.krate).is_none()
+            && ctx.externs.is_external_crate(def_id.krate)
             && ctx.item_type(def_id) == ItemType::Program
         {
             contract.extern_no_spec = true;
