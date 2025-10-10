@@ -191,6 +191,16 @@ macro_rules! spec_unsized {
         extern_spec! {
             impl $type {
                     #[check(ghost)]
+                    #[ensures(if self == $zero { result == (self == $zero) } else { result == (self@ % rhs@ == 0) })]
+                    fn is_multiple_of(self, rhs: Self) -> bool;
+                    // {
+                    //     match rhs {
+                    //         0 => self == 0,
+                    //         _ => self % rhs == 0,
+                    //     }
+                    // }
+
+                    #[check(ghost)]
                     #[ensures(result == (self != $zero && self & (self - $one) == $zero))]
                     fn is_power_of_two(self) -> bool;
             }

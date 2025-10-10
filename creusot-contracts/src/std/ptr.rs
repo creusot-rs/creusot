@@ -188,6 +188,13 @@ extern_spec! {
 
         #[check(ghost)]
         #[erasure]
+        #[ensures(result == self as _)]
+        fn cast<U>(self) -> *const U {
+            self as _
+        }
+
+        #[check(ghost)]
+        #[erasure]
         #[ensures(result == self.is_aligned_logic())]
         fn is_aligned(self) -> bool
             where T: Sized,
@@ -217,6 +224,13 @@ extern_spec! {
         #[check(ghost)]
         #[ensures(result == self.is_null_logic())]
         fn is_null(self) -> bool;
+
+        #[check(ghost)]
+        #[erasure]
+        #[ensures(result == self as _)]
+        fn cast<U>(self) -> *mut U {
+            self as _
+        }
 
         #[check(ghost)]
         #[erasure]
