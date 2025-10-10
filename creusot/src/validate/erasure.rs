@@ -965,19 +965,15 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                     AnfValue::Thin(value.into())
                 } else if is_noop_cast(self.tcx, self.typing_env, source_ty, expr.ty) {
                     value
-                } else if is_primitive_cast(source_ty, expr.ty) {
-                    AnfValue::Cast(source_ty, expr.ty, value.into())
                 } else {
-                    return Err(self.unsupported_syntax(
-                        expr.span,
-                        format!("unsupported cast from {:?} to {:?}", source_ty, expr.ty),
-                    ));
+                    AnfValue::Cast(source_ty, expr.ty, value.into())
                 }
             }
             Field { lhs, variant_index, name } => {
                 let value = self.a_normal_form_expr(*lhs, stmts)?.0;
                 AnfValue::Field(*variant_index, *name, value.into())
             }
+            ValueTypeAscription { source, .. } => self.a_normal_form_expr(*source, stmts)?.0,
             kind => {
                 return Err(self.unsupported_syntax_with_note(
                     expr.span,
@@ -1230,18 +1226,6 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
     fn var(&self, hir_id: thir::LocalVarId) -> Var {
         assert!(hir_id.0.owner.def_id == self.def_id);
         Var::HirId(hir_id.0.local_id)
-    }
-}
-
-fn is_primitive_cast(from: ty::Ty, to: ty::Ty) -> bool {
-    is_primitive(from) && is_primitive(to)
-}
-
-fn is_primitive(ty: ty::Ty) -> bool {
-    use rustc_type_ir::TyKind::*;
-    match ty.kind() {
-        Bool | Char | Int(_) | Uint(_) | Float(_) => true,
-        _ => false,
     }
 }
 
