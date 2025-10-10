@@ -1,0 +1,50 @@
+module M_fake_ref__range
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_Bound = C_Included UInt64.t | C_Excluded UInt64.t | C_Unbounded
+  
+  let rec v_Excluded (input: t_Bound) (ret (field_0: UInt64.t)) = any
+    [ good (field_0: UInt64.t) -> {C_Excluded field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: UInt64.t [C_Excluded field_0: t_Bound]. C_Excluded field_0 <> input} (! {false} any) ]
+  
+  let rec v_Included (input: t_Bound) (ret (field_0: UInt64.t)) = any
+    [ good (field_0: UInt64.t) -> {C_Included field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: UInt64.t [C_Included field_0: t_Bound]. C_Included field_0 <> input} (! {false} any) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec range (range'0: t_Bound) (return (x: UInt64.t)) = (! bb0
+    [ bb0 = any
+      [ br0 (x0: UInt64.t) -> {range'0 = C_Included x0} (! bb5)
+      | br1 (x0: UInt64.t) -> {range'0 = C_Excluded x0} (! bb4)
+      | br2 -> {range'0 = C_Unbounded} (! bb1) ]
+    | bb4 = s0
+      [ s0 = v_Excluded {range'0} (fun (r0: UInt64.t) -> [ &end''2 <- r0 ] s1)
+      | s1 = [ &_12 <- end''2 = (0: UInt64.t) ] s2
+      | s2 = any [ br0 -> {_12 = false} (! bb1) | br1 -> {_12} (! bb8) ] ]
+    | bb8 = s0
+      [ s0 = v_Excluded {range'0} (fun (r0: UInt64.t) -> [ &end''1 <- r0 ] s1)
+      | s1 = [ &_0 <- (0: UInt64.t) ] s2
+      | s2 = bb10 ]
+    | bb5 = s0
+      [ s0 = v_Included {range'0} (fun (r0: UInt64.t) -> [ &end''0 <- r0 ] s1)
+      | s1 = [ &_8 <- end''0 = (0: UInt64.t) ] s2
+      | s2 = any [ br0 -> {_8 = false} (! bb1) | br1 -> {_8} (! bb6) ] ]
+    | bb6 = s0
+      [ s0 = v_Included {range'0} (fun (r0: UInt64.t) -> [ &end' <- r0 ] s1)
+      | s1 = [ &_0 <- (0: UInt64.t) ] s2
+      | s2 = bb10 ]
+    | bb1 = s0 [ s0 = [ &_0 <- (1: UInt64.t) ] s1 | s1 = bb10 ]
+    | bb10 = return {_0} ]
+    [ & _0: UInt64.t = Any.any_l ()
+    | & range'0: t_Bound = range'0
+    | & end': UInt64.t = Any.any_l ()
+    | & end''0: UInt64.t = Any.any_l ()
+    | & _8: bool = Any.any_l ()
+    | & end''1: UInt64.t = Any.any_l ()
+    | & end''2: UInt64.t = Any.any_l ()
+    | & _12: bool = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
+end
