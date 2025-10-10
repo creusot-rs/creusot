@@ -70,6 +70,10 @@ impl<'tcx> Metadata<'tcx> {
         self.erased_defid.get(&id)
     }
 
+    pub(crate) fn is_external_crate(&self, cnum: CrateNum) -> bool {
+        self.get(cnum).is_none_or(|meta| meta.is_external_crate)
+    }
+
     pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, PathBuf>) {
         for &cnum in tcx.crates(()) {
             if cnum == LOCAL_CRATE {
@@ -101,18 +105,10 @@ pub struct CrateMetadata<'tcx> {
     creusot_items: HashMap<Symbol, DefId>,
     intrinsics: HashMap<Symbol, DefId>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
+    is_external_crate: bool,
 }
 
 impl<'tcx> CrateMetadata<'tcx> {
-    pub(crate) fn new() -> Self {
-        Self {
-            terms: Default::default(),
-            creusot_items: Default::default(),
-            intrinsics: Default::default(),
-            params_open_inv: Default::default(),
-        }
-    }
-
     pub(crate) fn term(&self, def_id: DefId) -> Option<&ScopedTerm<'tcx>> {
         assert!(!def_id.is_local());
         self.terms.get(&def_id)
@@ -144,15 +140,13 @@ impl<'tcx> CrateMetadata<'tcx> {
         let binary_path = creusot_metadata_path(tcx, overrides, cnum);
         let metadata = load_binary_metadata(tcx, cnum, &binary_path)?;
 
-        let mut meta = CrateMetadata::new();
-
-        for (def_id, summary) in metadata.terms.into_iter() {
-            meta.terms.insert(def_id, summary);
-        }
-
-        meta.intrinsics = metadata.intrinsics;
-        meta.creusot_items = metadata.creusot_items;
-        meta.params_open_inv = metadata.params_open_inv;
+        let meta = CrateMetadata {
+            terms: metadata.terms.into_iter().collect(),
+            creusot_items: metadata.creusot_items,
+            intrinsics: metadata.intrinsics,
+            params_open_inv: metadata.params_open_inv,
+            is_external_crate: metadata.is_external_crate,
+        };
 
         Some((meta, metadata.extern_specs, metadata.erased_thir, metadata.erased_defid))
     }
@@ -171,6 +165,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
     params_open_inv: HashMap<DefId, Vec<usize>>,
     erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
     erased_defid: Vec<(DefId, Option<Erasure<'tcx>>)>,
+    is_external_crate: bool,
 }
 
 impl<'tcx> BinaryMetadata<'tcx> {
@@ -198,6 +193,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
             params_open_inv,
             erased_thir,
             erased_defid,
+            is_external_crate: false,
         }
     }
 
@@ -210,6 +206,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
             params_open_inv: HashMap::new(),
             erased_thir,
             erased_defid: Vec::new(),
+            is_external_crate: true,
         }
     }
 }
