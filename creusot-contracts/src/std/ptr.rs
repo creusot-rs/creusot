@@ -40,14 +40,14 @@ pub fn metadata_matches<T: ?Sized>(_value: T, _metadata: <T as Pointee>::Metadat
 #[logic(open)]
 #[intrinsic("metadata_matches_slice")]
 pub fn metadata_matches_slice<T>(value: [T], len: usize) -> bool {
-    pearlite! { value@.len() == len@ && len@ * size_of_logic::<T>() <= isize::MAX@ }
+    pearlite! { value@.len() == len@ }
 }
 
 /// Definition of [`metadata_matches`] for string slices.
 #[logic(open)]
 #[intrinsic("metadata_matches_str")]
 pub fn metadata_matches_str(value: str, len: usize) -> bool {
-    pearlite! { value@.to_bytes().len() == len@ && len@ <= isize::MAX@ }
+    pearlite! { value@.to_bytes().len() == len@ }
 }
 
 /// Whether a pointer is aligned.

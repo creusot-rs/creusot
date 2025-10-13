@@ -88,6 +88,7 @@ impl Intrinsic {
             Intrinsic::Resolve
                 | Intrinsic::StructuralResolve
                 | Intrinsic::SizeOfLogic
+                | Intrinsic::SizeOfValLogic
                 | Intrinsic::AlignOfLogic
                 | Intrinsic::IsAlignedLogic
                 | Intrinsic::Postcondition
@@ -142,6 +143,10 @@ contracts_items! {
     "resolve_method"            ResolveMethod
     "seq_literal"               SeqLiteral
     "size_of_logic"             SizeOfLogic
+    "size_of_val_logic"         SizeOfValLogic
+    "size_of_val_logic_sized"   SizeOfValLogicSized
+    "size_of_val_logic_slice"   SizeOfValLogicSlice
+    "size_of_val_logic_str"     SizeOfValLogicStr
     "snapshot"                  Snapshot
     "snapshot_deref"            SnapshotDeref
     "snapshot_deref_mut"        SnapshotDerefMut
