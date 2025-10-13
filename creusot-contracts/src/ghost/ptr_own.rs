@@ -139,7 +139,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[ensures(*result.1.val() == *r)]
     #[ensures(*(^result.1.inner_logic()).val() == ^r)]
     #[intrinsic("ptr_own_from_mut")]
-    pub fn from_mut(r: &mut T) -> (*const T, Ghost<&mut PtrOwn<T>>) {
+    pub fn from_mut(r: &mut T) -> (*mut T, Ghost<&mut PtrOwn<T>>) {
         (r, Ghost::conjure())
     }
 
@@ -192,13 +192,13 @@ impl<T: ?Sized> PtrOwn<T> {
     #[trusted]
     #[check(terminates)]
     #[allow(unused_variables)]
-    #[requires(ptr == own.ptr())]
+    #[requires(ptr as *const T == own.ptr())]
     #[ensures(*result == *own.val())]
     #[ensures((^own).ptr() == own.ptr())]
     #[ensures(*(^own).val() == ^result)]
     #[intrinsic("ptr_own_as_mut")]
-    pub unsafe fn as_mut(ptr: *const T, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
-        unsafe { &mut *(ptr as *mut _) }
+    pub unsafe fn as_mut(ptr: *mut T, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
+        unsafe { &mut *ptr }
     }
 
     /// Transfers ownership of `own` back into a [`Box`].
