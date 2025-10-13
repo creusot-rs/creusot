@@ -65,7 +65,7 @@ impl<T> List<T> {
         } else {
             let cell_last = unsafe {
                 PtrOwn::as_mut(
-                    self.last,
+                    self.last as *mut Cell<T>,
                     ghost! {
                         let off = self.seq.len_ghost() - 1int;
                         self.seq.get_mut_ghost(off).unwrap()

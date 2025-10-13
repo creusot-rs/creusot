@@ -74,6 +74,32 @@ pub fn size_of_logic<T>() -> Int {
     dead
 }
 
+#[trusted]
+#[logic(open)]
+#[intrinsic("size_of_val_logic")]
+#[ensures(0 <= result)]
+pub fn size_of_val_logic<T: ?Sized>(val: &T) -> Int {
+    dead
+}
+
+#[logic(open)]
+#[intrinsic("size_of_val_logic_sized")]
+pub fn size_of_val_logic_sized<T>(_val: &T) -> Int {
+    size_of_logic::<T>()
+}
+
+#[logic(open)]
+#[intrinsic("size_of_val_logic_slice")]
+pub fn size_of_val_logic_slice<T>(val: &[T]) -> Int {
+    pearlite! { size_of_logic::<T>() * val@.len() }
+}
+
+#[logic(open)]
+#[intrinsic("size_of_val_logic_str")]
+pub fn size_of_val_logic_str(val: &str) -> Int {
+    pearlite! { val@.to_bytes().len() }
+}
+
 /// [`align_of`] as a logic `Int` value.
 ///
 /// [`align_of`]: https://doc.rust-lang.org/std/mem/fn.align_of.html

@@ -379,20 +379,14 @@ fn build_erased<'tcx>(
 /// `ty1` equals `ty2` up to erasure if:
 /// - `ty1 == ty2`
 /// - `ty2 == (ty3, Ghost<_>)` and `ty1` equals `ty2` up to erasure
-/// - `*mut T` and `*const T` are also equal up to erasure
 fn eq_erased_ty<'tcx>(tcx: TyCtxt<'tcx>, ty1: Ty<'tcx>, ty2: Ty<'tcx>) -> bool {
     if ty1 == ty2 {
         return true;
     }
     match ty1.kind() {
-        TyKind::Tuple(tys)
-            if tys.len() == 2
-                && eq_erased_ty(tcx, tys[0], ty2)
-                && is_ghost_or_snap(tcx, tys[1]) =>
-        {
-            true
+        TyKind::Tuple(tys) => {
+            tys.len() == 2 && eq_erased_ty(tcx, tys[0], ty2) && is_ghost_or_snap(tcx, tys[1])
         }
-        TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = ty2.kind() => ty1 == ty2,
         _ => false,
     }
 }

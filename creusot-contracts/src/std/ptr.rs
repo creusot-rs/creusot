@@ -40,14 +40,14 @@ pub fn metadata_matches<T: ?Sized>(_value: T, _metadata: <T as Pointee>::Metadat
 #[logic(open)]
 #[intrinsic("metadata_matches_slice")]
 pub fn metadata_matches_slice<T>(value: [T], len: usize) -> bool {
-    pearlite! { value@.len() == len@ && len@ * size_of_logic::<T>() <= isize::MAX@ }
+    pearlite! { value@.len() == len@ }
 }
 
 /// Definition of [`metadata_matches`] for string slices.
 #[logic(open)]
 #[intrinsic("metadata_matches_str")]
 pub fn metadata_matches_str(value: str, len: usize) -> bool {
-    pearlite! { value@.to_bytes().len() == len@ && len@ <= isize::MAX@ }
+    pearlite! { value@.to_bytes().len() == len@ }
 }
 
 /// Whether a pointer is aligned.
@@ -176,6 +176,63 @@ impl<T: ?Sized> PointerExt<T> for *mut T {
     }
 }
 
+pub trait SizedPointerExt<T>: PointerExt<T> {
+    #[logic]
+    #[ensures(self.addr_logic()@ + offset * size_of_logic::<T>() < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset * size_of_logic::<T>())]
+    fn offset_logic(self, offset: Int) -> *const T;
+
+    #[logic(law)]
+    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
+    fn offset_logic_assoc(self, offset1: Int, offset2: Int);
+}
+
+impl<T> SizedPointerExt<T> for *const T {
+    #[trusted]
+    #[logic(opaque)]
+    #[ensures(self.addr_logic()@ + offset * size_of_logic::<T>() < usize::MAX@ ==> result.addr_logic()@ == self.addr_logic()@ + offset * size_of_logic::<T>())]
+    fn offset_logic(self, offset: Int) -> *const T {
+        dead
+    }
+
+    #[trusted]
+    #[logic(law)]
+    #[ensures(self.offset_logic(offset1).offset_logic(offset2) == self.offset_logic(offset1 + offset2))]
+    fn offset_logic_assoc(self, offset1: Int, offset2: Int) {}
+}
+
+/// Extension methods for `*const [T]`
+pub trait SlicePointerExt<T>: PointerExt<[T]> {
+    #[logic]
+    fn as_ptr_logic(self) -> *const T;
+
+    #[logic]
+    fn len_logic(self) -> Int;
+
+    #[logic(law)]
+    #[ensures(self.as_ptr_logic() == other.as_ptr_logic() && self.len_logic() == other.len_logic() ==> self == other)]
+    fn slice_ptr_ext(self, other: Self);
+}
+
+impl<T> SlicePointerExt<T> for *const [T] {
+    /// Convert `*const [T]` to `*const T`.
+    #[logic(open)]
+    fn as_ptr_logic(self) -> *const T {
+        self as *const T
+    }
+
+    /// Get the length metadata of the pointer.
+    #[logic(open)]
+    fn len_logic(self) -> Int {
+        pearlite! { metadata_logic(self)@ }
+    }
+
+    /// Extensionality of slice pointers.
+    #[trusted]
+    #[logic(law)]
+    #[ensures(self.as_ptr_logic() == other.as_ptr_logic() && self.len_logic() == other.len_logic() ==> self == other)]
+    fn slice_ptr_ext(self, other: Self) {}
+}
+
 extern_spec! {
     impl<T: ?Sized> *const T {
         #[check(ghost)]
@@ -255,6 +312,16 @@ extern_spec! {
         }
     }
 
+    impl<T> *const [T] {
+        #[ensures(result@ == self.len_logic())]
+        fn len(self) -> usize;
+    }
+
+    impl<T> *mut [T] {
+        #[ensures(result@ == self.len_logic())]
+        fn len(self) -> usize;
+    }
+
     mod std {
         mod ptr {
             #[check(ghost)]
@@ -284,6 +351,12 @@ extern_spec! {
             #[check(ghost)]
             #[ensures(false)]
             unsafe fn read_volatile<T>(src: *const T) -> T;
+
+            #[ensures(result.as_ptr_logic() == data && result.len_logic() == len@)]
+            fn slice_from_raw_parts<T>(data: *const T, len: usize) -> *const [T];
+
+            #[ensures((result as *const [T]).as_ptr_logic() == data as *const T && (result as *const [T]).len_logic() == len@)]
+            fn slice_from_raw_parts_mut<T>(data: *mut T, len: usize) -> *mut [T];
         }
     }
 
