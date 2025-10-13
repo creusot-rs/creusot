@@ -171,6 +171,6 @@ pub fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
 }
 
 #[erasure(slice_as_mut_ptr)]
-pub fn slice_as_mut_ptr_own<T>(s: &mut [T]) -> (*const T, Ghost<&mut PtrOwn<[T]>>) {
+pub fn slice_as_mut_ptr_own<T>(s: &mut [T]) -> (*mut T, Ghost<&mut PtrOwn<[T]>>) {
     s.as_mut_ptr_own()
 }

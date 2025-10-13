@@ -208,7 +208,7 @@ mod implementation {
                 // path compression
                 ghost_let!(mut uf = &mut uf.0);
                 ghost_let!(mut_perm = uf.perms.get_mut_ghost(&elem).unwrap());
-                unsafe { *PtrOwn::as_mut(elem.0, mut_perm) = Node::Link(root) };
+                unsafe { *PtrOwn::as_mut(elem.0 as *mut Node<T>, mut_perm) = Node::Link(root) };
                 root
             }
         }
@@ -252,8 +252,9 @@ mod implementation {
         }
 
         let (perm_x, mut m) = ghost!(uf.perms.split_mut_ghost(&x)).split();
-        let bx = unsafe { PtrOwn::as_mut(x.0, perm_x) };
-        let by = unsafe { PtrOwn::as_mut(y.0, ghost!(m.get_mut_ghost(&y).unwrap())) };
+        let bx = unsafe { PtrOwn::as_mut(x.0 as *mut Node<T>, perm_x) };
+        let by =
+            unsafe { PtrOwn::as_mut(y.0 as *mut Node<T>, ghost!(m.get_mut_ghost(&y).unwrap())) };
 
         let Node::Root { rank: rx, .. } = bx else { unreachable!() };
         let Node::Root { rank: ry, .. } = by else { unreachable!() };
