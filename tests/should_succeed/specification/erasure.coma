@@ -269,6 +269,8 @@ module M_erasure__test_ptr2
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
+  use mach.int.Int
+  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_PtrOwn
@@ -281,31 +283,49 @@ module M_erasure__test_ptr2
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_T) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_T) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function val' (self: t_PtrOwn) : t_T
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv (_1: Opaque.ptr)
+  constant size_of_T : int
   
-  axiom inv_axiom [@rewrite]: forall x: Opaque.ptr [inv x]. inv x = true
+  axiom size_of_T_spec: 0 <= size_of_T
   
-  predicate invariant' (self: t_PtrOwn) =
+  function size_of_val_logic [@inline:trivial] (val''0: t_T) : int = size_of_T
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: t_T. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate inv (_1: t_T)
+  
+  predicate invariant' [@inline:trivial] (self: t_T) = inv self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'0 (_1: t_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv (ptr self)
-  
-  predicate inv'0 (_1: t_PtrOwn)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
-  
-  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = inv'0 self
-  
-  meta "rewrite_def" predicate invariant''0
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'0 (val' self)
   
   predicate inv'1 (_1: t_PtrOwn)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
   
   predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = inv'1 self
   
@@ -313,40 +333,40 @@ module M_erasure__test_ptr2
   
   predicate inv'2 (_1: t_PtrOwn)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate inv'3 (_1: t_T)
-  
-  predicate invariant''2 [@inline:trivial] (self: t_T) = inv'3 self
+  predicate invariant''2 [@inline:trivial] (self: t_PtrOwn) = inv'2 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_1: t_T)
+  predicate inv'3 (_1: t_PtrOwn)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_T [inv'4 x]. inv'4 x = invariant''2 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''2 x
   
-  let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return (x: t_T)) = {[@expl:as_ref 'own' type invariant] inv'2 own}
+  let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return (x: t_T)) = {[@expl:as_ref 'own' type invariant] inv'3 own}
     {[@expl:as_ref requires] ptr'0 = ptr own}
-    any [ return (result: t_T) -> {inv'4 result} {result = val' own} (! return {result}) ]
+    any [ return (result: t_T) -> {inv'0 result} {result = val' own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec test_ptr2 (x: Opaque.ptr) (own: t_PtrOwn) (return (x'0: t_T)) =
-    {[@expl:test_ptr2 'own' type invariant] inv'2 own}
+    {[@expl:test_ptr2 'own' type invariant] inv'3 own}
     {[@expl:test_ptr2 requires] false}
     (! bb0
     [ bb0 = s0 [ s0 = as_ref {x} {own} (fun (_ret: t_T) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = [ &_0 <- _5 ] s1 | s1 = return {_0} ] ]
     [ & _0: t_T = Any.any_l () | & x: Opaque.ptr = x | & own: t_PtrOwn = own | & _5: t_T = Any.any_l () ])
-    [ return (result: t_T) -> {[@expl:test_ptr2 result type invariant] inv'4 result} (! return {result}) ]
+    [ return (result: t_T) -> {[@expl:test_ptr2 result type invariant] inv'0 result} (! return {result}) ]
 end
 module M_erasure__test_ptr_mut2
   use creusot.prelude.Opaque
   use creusot.prelude.MutBorrow
   use creusot.prelude.Ptr
   use creusot.int.UInt64
+  use mach.int.Int
+  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_PtrOwn
@@ -359,56 +379,80 @@ module M_erasure__test_ptr_mut2
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_T) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_T) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function val' (self: t_PtrOwn) : t_T
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv (_1: Opaque.ptr)
+  constant size_of_T : int
   
-  axiom inv_axiom [@rewrite]: forall x: Opaque.ptr [inv x]. inv x = true
+  axiom size_of_T_spec: 0 <= size_of_T
   
-  predicate invariant' (self: t_PtrOwn) =
+  function size_of_val_logic [@inline:trivial] (val''0: t_T) : int = size_of_T
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: t_T. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate inv (_1: t_T)
+  
+  predicate invariant' [@inline:trivial] (self: t_T) = inv self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'0 (_1: t_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'0 (val' self)
   
-  predicate inv'0 (_1: t_PtrOwn)
+  predicate inv'1 (_1: t_PtrOwn)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'0 self.current /\ inv'0 self.final
-  
-  meta "rewrite_def" predicate invariant''0
-  
-  predicate inv'1 (_1: MutBorrow.t t_PtrOwn)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
-  
-  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'1 self
+  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''1
   
   predicate inv'2 (_1: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
   
-  predicate inv'3 (_1: t_T)
-  
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_T) = inv'3 self.current /\ inv'3 self.final
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'2 self
   
   meta "rewrite_def" predicate invariant''2
   
+  predicate inv'3 (_1: MutBorrow.t t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'3 x]. inv'3 x = invariant''2 x
+  
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_T) = inv self.current /\ inv self.final
+  
+  meta "rewrite_def" predicate invariant''3
+  
   predicate inv'4 (_1: MutBorrow.t t_T)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_T [inv'4 x]. inv'4 x = invariant''2 x
+  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_T [inv'4 x]. inv'4 x = invariant''3 x
   
   function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = self.final
   
   meta "rewrite_def" function fin
   
   let rec as_mut (ptr'0: Opaque.ptr) (own: MutBorrow.t t_PtrOwn) (return (x: MutBorrow.t t_T)) =
-    {[@expl:as_mut 'own' type invariant] inv'2 own}
+    {[@expl:as_mut 'own' type invariant] inv'3 own}
     {[@expl:as_mut requires] ptr'0 = ptr own.current}
     any
     [ return (result: MutBorrow.t t_T) -> {inv'4 result}
@@ -430,25 +474,25 @@ module M_erasure__test_ptr_mut2
   meta "select_lsinst" "all"
   
   let rec test_ptr_mut2 (x: Opaque.ptr) (own: MutBorrow.t t_PtrOwn) (return (x'0: MutBorrow.t t_T)) =
-    {[@expl:test_ptr_mut2 'own' type invariant] inv'2 own}
+    {[@expl:test_ptr_mut2 'own' type invariant] inv'3 own}
     {[@expl:test_ptr_mut2 requires] false}
     (! bb0
     [ bb0 = s0 [ s0 = as_mut {x} {own} (fun (_ret: MutBorrow.t t_T) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'3 _7.current}
+      [ s0 = {inv _7.current}
         MutBorrow.borrow_final <t_T> {_7.current} {MutBorrow.get_id _7}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_6 <- _ret ] -{inv'3 _ret.final}-
+            [ &_6 <- _ret ] -{inv _ret.final}-
             [ &_7 <- { _7 with current = _ret.final } ] s1)
-      | s1 = {inv'3 _6.current}
+      | s1 = {inv _6.current}
         MutBorrow.borrow_final <t_T> {_6.current} {MutBorrow.get_id _6}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_3 <- _ret ] -{inv'3 _ret.final}-
+            [ &_3 <- _ret ] -{inv _ret.final}-
             [ &_6 <- { _6 with current = _ret.final } ] s2)
-      | s2 = {inv'3 _3.current}
+      | s2 = {inv _3.current}
         MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_0 <- _ret ] -{inv'3 _ret.final}-
+            [ &_0 <- _ret ] -{inv _ret.final}-
             [ &_3 <- { _3 with current = _ret.final } ] s3)
       | s3 = {[@expl:type invariant] inv'4 _7} s4
       | s4 = -{resolve'0 _7}- s5

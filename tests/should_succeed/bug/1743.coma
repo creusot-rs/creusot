@@ -5,6 +5,7 @@ module M_1743__qyi7570507176118332595__minimize (* S *)
   use creusot.int.UInt64
   use creusot.int.Int32
   use mach.int.Int
+  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_PtrOwn
@@ -17,19 +18,41 @@ module M_1743__qyi7570507176118332595__minimize (* S *)
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: Int32.t) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: Int32.t) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function val' (self: t_PtrOwn) : Int32.t
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv (_1: Opaque.ptr)
+  constant size_of_i32: int = 4
   
-  axiom inv_axiom [@rewrite]: forall x: Opaque.ptr [inv x]. inv x = true
+  meta "rewrite_def" constant size_of_i32
+  
+  axiom size_of_i32_spec: 0 <= size_of_i32
+  
+  function size_of_val_logic [@inline:trivial] (val''0: Int32.t) : int = size_of_i32
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: Int32.t. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate inv (_1: Int32.t)
+  
+  axiom inv_axiom [@rewrite]: forall x: Int32.t [inv x]. inv x = true
   
   predicate invariant' (self: t_PtrOwn) =
     not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv (val' self)
   
   predicate inv'0 (_1: t_PtrOwn)
   

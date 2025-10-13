@@ -36,7 +36,21 @@ extern_spec! {
             #[ensures(result@ == size_of_logic::<T>())]
             fn size_of<T>() -> usize;
 
+            // Note: you may be tempted to add `result@ <= isize::MAX@`.
+            // Indeed, allocation size is bounded; source: https://doc.rust-lang.org/std/ptr/index.html#allocation
+            // But this is not true in ghost code. Counterexample:
+            //
+            // ```
+            // #[ensures(false)]
+            // pub fn bad() {
+            //     ghost! {
+            //         let x = [0usize; usize::MAX];
+            //         let _ = ::std::mem::size_of_val(&x);
+            //     };
+            // }
+            // ```
             #[check(ghost)]
+            #[ensures(result@ == size_of_val_logic::<T>(val))]
             fn size_of_val<T: ?Sized>(val: &T) -> usize;
 
             #[check(ghost)]
@@ -67,18 +81,48 @@ extern_spec! {
 /// [`size_of`]: https://doc.rust-lang.org/std/mem/fn.size_of.html
 /// [RRTL]: https://doc.rust-lang.org/stable/reference/type-layout.html
 #[trusted]
-#[logic(open)]
+#[logic(open, inline)]
 #[intrinsic("size_of_logic")]
 #[ensures(0 <= result)]
 pub fn size_of_logic<T>() -> Int {
     dead
 }
 
+/// [`size_of_val`] as a logic `Int` value.
+#[trusted]
+#[logic(open, inline)]
+#[intrinsic("size_of_val_logic")]
+#[ensures(0 <= result)]
+pub fn size_of_val_logic<T: ?Sized>(val: &T) -> Int {
+    dead
+}
+
+#[allow(unused)]
+#[logic]
+#[intrinsic("size_of_val_logic_sized")]
+fn size_of_val_logic_sized<T>(_val: &T) -> Int {
+    size_of_logic::<T>()
+}
+
+#[allow(unused)]
+#[logic]
+#[intrinsic("size_of_val_logic_slice")]
+fn size_of_val_logic_slice<T>(val: &[T]) -> Int {
+    pearlite! { size_of_logic::<T>() * val@.len() }
+}
+
+#[allow(unused)]
+#[logic]
+#[intrinsic("size_of_val_logic_str")]
+fn size_of_val_logic_str(val: &str) -> Int {
+    pearlite! { val@.to_bytes().len() }
+}
+
 /// [`align_of`] as a logic `Int` value.
 ///
 /// [`align_of`]: https://doc.rust-lang.org/std/mem/fn.align_of.html
 #[trusted]
-#[logic(open)]
+#[logic(open, inline)]
 #[intrinsic("align_of_logic")]
 #[ensures(0usize != result && result & (result - 1usize) == 0usize)]
 #[ensures(size_of_logic::<T>() % result@ == 0)]
