@@ -59,7 +59,8 @@ impl<T> PtrOwn<T> {
     #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == v)]
     pub fn new(v: T) -> (*const T, Ghost<PtrOwn<T>>) {
-        Self::from_box(Box::new(v))
+        let (x, y) = Self::from_box(Box::new(v));
+        (x as *const T, y)
     }
 
     /// If one owns two `PtrOwn`s in ghost code, with a non-zero sized type, then they are for different pointers.
@@ -97,7 +98,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == *val)]
     #[erasure(Box::into_raw)]
-    pub fn from_box(val: Box<T>) -> (*const T, Ghost<PtrOwn<T>>) {
+    pub fn from_box(val: Box<T>) -> (*mut T, Ghost<PtrOwn<T>>) {
         assert!(core::mem::size_of_val::<T>(&*val) > 0, "PtrOwn doesn't support ZSTs");
         (Box::into_raw(val), Ghost::conjure())
     }
@@ -211,11 +212,11 @@ impl<T: ?Sized> PtrOwn<T> {
     /// [type documentation](PtrOwn).
     #[trusted]
     #[check(terminates)]
-    #[requires(ptr == own.ptr())]
+    #[requires(ptr as *const T == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
-    // #[erasure(Box::from_raw)]
-    pub unsafe fn to_box(ptr: *const T, own: Ghost<PtrOwn<T>>) -> Box<T> {
+    #[erasure(Box::from_raw)]
+    pub unsafe fn to_box(ptr: *mut T, own: Ghost<PtrOwn<T>>) -> Box<T> {
         unsafe { Box::from_raw(ptr as *mut _) }
     }
 
@@ -230,7 +231,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[check(terminates)]
     #[requires(ptr == own.ptr())]
     pub unsafe fn drop(ptr: *const T, own: Ghost<PtrOwn<T>>) {
-        let _ = unsafe { Self::to_box(ptr, own) };
+        let _ = unsafe { Self::to_box(ptr as *mut T, own) };
     }
 
     /// The pointer of a `PtrOwn` is always aligned.

@@ -75,7 +75,7 @@ pub trait SliceExt<T> {
     fn as_ptr_own(&self) -> (*const T, Ghost<&PtrOwn<[T]>>);
 
     #[check(ghost)]
-    fn as_mut_ptr_own(&mut self) -> (*const T, Ghost<&mut PtrOwn<[T]>>);
+    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut PtrOwn<[T]>>);
 }
 
 impl<T> SliceExt<T> for [T] {
@@ -109,14 +109,14 @@ impl<T> SliceExt<T> for [T] {
     /// Convert `&mut [T]` to `*mut T` and a mutable ownership token.
     #[trusted]
     #[check(ghost)]
-    #[ensures(result.0 == result.1.ptr().as_ptr_logic())]
-    #[ensures(result.0 == (^result.1.inner_logic()).ptr().as_ptr_logic())]
+    #[ensures(result.0 as *const T == result.1.ptr().as_ptr_logic())]
+    #[ensures(result.0 as *const T == (^result.1.inner_logic()).ptr().as_ptr_logic())]
     #[ensures(self@ == result.1.val()@)]
     #[ensures((^self)@ == (^result.1.inner_logic()).val()@)]
     #[erasure(Self::as_mut_ptr)]
-    fn as_mut_ptr_own(&mut self) -> (*const T, Ghost<&mut PtrOwn<[T]>>) {
+    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut PtrOwn<[T]>>) {
         let (ptr, own) = PtrOwn::from_mut(self);
-        (ptr as *const T, own)
+        (ptr as *mut T, own)
     }
 }
 
