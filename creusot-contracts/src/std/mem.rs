@@ -50,7 +50,7 @@ extern_spec! {
             // }
             // ```
             #[check(ghost)]
-            #[ensures(result@ == size_of_val_logic::<T>(val))]
+            #[ensures(result@ == size_of_val_logic::<T>(*val))]
             fn size_of_val<T: ?Sized>(val: &T) -> usize;
 
             #[check(ghost)]
@@ -93,28 +93,28 @@ pub fn size_of_logic<T>() -> Int {
 #[logic(open, inline)]
 #[intrinsic("size_of_val_logic")]
 #[ensures(0 <= result)]
-pub fn size_of_val_logic<T: ?Sized>(val: &T) -> Int {
+pub fn size_of_val_logic<T: ?Sized>(val: T) -> Int {
     dead
 }
 
 #[allow(unused)]
 #[logic]
 #[intrinsic("size_of_val_logic_sized")]
-fn size_of_val_logic_sized<T>(_val: &T) -> Int {
+fn size_of_val_logic_sized<T>(_val: T) -> Int {
     size_of_logic::<T>()
 }
 
 #[allow(unused)]
 #[logic]
 #[intrinsic("size_of_val_logic_slice")]
-fn size_of_val_logic_slice<T>(val: &[T]) -> Int {
+fn size_of_val_logic_slice<T>(val: [T]) -> Int {
     pearlite! { size_of_logic::<T>() * val@.len() }
 }
 
 #[allow(unused)]
 #[logic]
 #[intrinsic("size_of_val_logic_str")]
-fn size_of_val_logic_str(val: &str) -> Int {
+fn size_of_val_logic_str(val: str) -> Int {
     pearlite! { val@.to_bytes().len() }
 }
 
