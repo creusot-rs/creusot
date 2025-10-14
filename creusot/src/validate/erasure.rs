@@ -1122,6 +1122,9 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 let mut pattern = &**pattern;
                 loop {
                     match &pattern.kind {
+                        PatKind::Binding { .. } if is_ghost_or_snap(self.tcx, pattern.ty) => {
+                            return Ok(());
+                        }
                         PatKind::Binding {
                             var,
                             mode: BindingMode(ByRef::No, Mutability::Not),
