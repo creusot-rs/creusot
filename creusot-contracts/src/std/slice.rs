@@ -71,7 +71,7 @@ pub trait SliceExt<T> {
     #[logic]
     fn to_ref_seq(&self) -> Seq<&T>;
 
-    #[check(ghost)]
+    #[check(terminates)]
     fn as_ptr_own(&self) -> (*const T, Ghost<&PtrOwn<[T]>>);
 }
 
@@ -94,7 +94,7 @@ impl<T> SliceExt<T> for [T] {
     }
 
     /// Convert `&[T]` to `*const T` and a shared ownership token.
-    #[check(ghost)]
+    #[check(terminates)]
     #[ensures(result.0 == result.1.ptr() as *const T)]
     #[ensures(self@ == result.1.val()@)]
     #[erasure(Self::as_ptr)]

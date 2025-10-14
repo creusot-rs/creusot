@@ -4,6 +4,7 @@ module M_linked_list__qyi10858349784728989480__new (* List<T> *)
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
+  use creusot.int.Int64
   use creusot.prelude.Any
   use map.Map
   
@@ -22,53 +23,86 @@ module M_linked_list__qyi10858349784728989480__new (* List<T> *)
   
   type t_Cell = { t_Cell__v: t_T; t_Cell__next: Opaque.ptr }
   
-  predicate metadata_matches (_value: t_Cell) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Cell) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function val' (self: t_PtrOwn) : t_Cell
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv (_1: Opaque.ptr)
+  constant size_of_Cell_T : int
   
-  axiom inv_axiom [@rewrite]: forall x: Opaque.ptr [inv x]. inv x = true
+  axiom size_of_Cell_T_spec: 0 <= size_of_Cell_T
   
-  predicate invariant' (self: t_PtrOwn) =
+  function size_of_val_logic [@inline:trivial] (val''0: t_Cell) : int = size_of_Cell_T
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: t_Cell. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate inv (_1: t_T)
+  
+  predicate inv'0 (_1: t_Cell)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Cell [inv'0 x]. inv'0 x
+      = match x with
+        | {t_Cell__v = v; t_Cell__next = next} -> inv v
+        end
+  
+  predicate invariant' [@inline:trivial] (self: t_Cell) = inv'0 self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'1 (_1: t_Cell)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Cell [inv'1 x]. inv'1 x = invariant' x
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'1 (val' self)
   
-  predicate inv'0 (_1: t_PtrOwn)
+  predicate inv'2 (_1: t_PtrOwn)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''0 x
   
-  predicate invariant''0 (self: t_PtrOwn) = inv'0 self
+  predicate invariant''1 (self: t_PtrOwn) = inv'2 self
   
-  predicate inv'1 (_1: t_PtrOwn)
+  predicate inv'3 (_1: t_PtrOwn)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
   
-  predicate invariant''1 [@inline:trivial] (self: Seq.seq t_PtrOwn) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant''1
-  
-  predicate inv'2 (_1: Seq.seq t_PtrOwn)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
-  
-  predicate invariant''2 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'2 self
+  predicate invariant''2 [@inline:trivial] (self: Seq.seq t_PtrOwn) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv'3 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_1: Seq.seq t_PtrOwn)
+  predicate inv'4 (_1: Seq.seq t_PtrOwn)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'3 x]. inv'3 x = invariant''2 x
+  axiom inv_axiom'3 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'4 x]. inv'4 x = invariant''2 x
+  
+  predicate invariant''3 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'4 self
+  
+  meta "rewrite_def" predicate invariant''3
+  
+  predicate inv'5 (_1: Seq.seq t_PtrOwn)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'5 x]. inv'5 x = invariant''3 x
   
   let rec new (return (x: Seq.seq t_PtrOwn)) = any
-    [ return (result: Seq.seq t_PtrOwn) -> {inv'3 result} {result = (Seq.empty: Seq.seq t_PtrOwn)} (! return {result}) ]
+    [ return (result: Seq.seq t_PtrOwn) -> {inv'5 result} {result = (Seq.empty: Seq.seq t_PtrOwn)} (! return {result}) ]
   
   type t_List = { t_List__first: Opaque.ptr; t_List__last: Opaque.ptr; t_List__seq: Seq.seq t_PtrOwn }
   
-  predicate invariant''3 (self: t_List) =
+  predicate invariant''4 (self: t_List) =
     self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
       /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
     \/ Seq.length self.t_List__seq > 0
@@ -78,12 +112,12 @@ module M_linked_list__qyi10858349784728989480__new (* List<T> *)
         -> (val' (Seq.get self.t_List__seq i)).t_Cell__next = ptr (Seq.get self.t_List__seq (i + 1)))
     /\ is_null_logic (val' (Seq.get self.t_List__seq (Seq.length self.t_List__seq - 1))).t_Cell__next
   
-  predicate inv'4 (_1: t_List)
+  predicate inv'6 (_1: t_List)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_List [inv'4 x]. inv'4 x
-      = (invariant''3 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_List [inv'6 x]. inv'6 x
+      = (invariant''4 x
       /\ match x with
-        | {t_List__first = first; t_List__last = last; t_List__seq = seq} -> inv'3 seq
+        | {t_List__first = first; t_List__last = last; t_List__seq = seq} -> inv'5 seq
         end)
   
   function seq_map (s: Seq.seq t_PtrOwn) (f: Map.map t_PtrOwn t_T) : Seq.seq t_T =
@@ -105,7 +139,7 @@ module M_linked_list__qyi10858349784728989480__new (* List<T> *)
     | & _2: Opaque.ptr = Any.any_l ()
     | & _3: Opaque.ptr = Any.any_l ()
     | & _4: Seq.seq t_PtrOwn = Any.any_l () ])
-    [ return (result: t_List) -> {[@expl:new result type invariant] inv'4 result}
+    [ return (result: t_List) -> {[@expl:new result type invariant] inv'6 result}
       {[@expl:new ensures] view result = (Seq.empty: Seq.seq t_T)}
       (! return {result}) ]
 end
@@ -113,8 +147,9 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use seq.Seq
   use mach.int.Int
+  use creusot.int.Int64
+  use seq.Seq
   use creusot.int.Int128
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -152,31 +187,55 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_Cell) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Cell) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function val' (self: t_PtrOwn) : t_Cell
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'2 (_1: Opaque.ptr)
+  constant size_of_Cell_T : int
   
-  axiom inv_axiom'1 [@rewrite]: forall x: Opaque.ptr [inv'2 x]. inv'2 x = true
+  axiom size_of_Cell_T_spec: 0 <= size_of_Cell_T
   
-  predicate invariant''0 (self: t_PtrOwn) =
+  function size_of_val_logic [@inline:trivial] (val''0: t_Cell) : int = size_of_Cell_T
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: t_Cell. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate invariant''0 [@inline:trivial] (self: t_Cell) = inv'0 self
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'2 (_1: t_Cell)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Cell [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) =
     not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'2 (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'2 (val' self)
   
   predicate inv'3 (_1: t_PtrOwn)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''0 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
   
-  predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = inv'3 self
+  predicate invariant''2 [@inline:trivial] (self: t_PtrOwn) = inv'3 self
   
-  meta "rewrite_def" predicate invariant''1
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'4 (_1: t_PtrOwn)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_PtrOwn [inv'4 x]. inv'4 x = invariant''1 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_PtrOwn [inv'4 x]. inv'4 x = invariant''2 x
   
   predicate inv'5 (_1: tuple)
   
@@ -193,44 +252,44 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   let rec is_null (self_: Opaque.ptr) (return (x: bool)) = any
     [ return (result: bool) -> {result = is_null_logic self_} (! return {result}) ]
   
-  predicate invariant''2 (self: t_PtrOwn) = inv'3 self
+  predicate invariant''3 (self: t_PtrOwn) = inv'3 self
   
   predicate inv'6 (_1: t_PtrOwn)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PtrOwn [inv'6 x]. inv'6 x = invariant''2 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_PtrOwn [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate invariant''3 [@inline:trivial] (self: Seq.seq t_PtrOwn) =
+  predicate invariant''4 [@inline:trivial] (self: Seq.seq t_PtrOwn) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'6 (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant''3
-  
-  predicate inv'7 (_1: Seq.seq t_PtrOwn)
-  
-  axiom inv_axiom'6 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'7 x]. inv'7 x = invariant''3 x
-  
-  predicate invariant''4 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'7 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'8 (_1: Seq.seq t_PtrOwn)
+  predicate inv'7 (_1: Seq.seq t_PtrOwn)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'8 x]. inv'8 x = invariant''4 x
+  axiom inv_axiom'6 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'7 x]. inv'7 x = invariant''4 x
   
-  predicate invariant''5 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'8 self
+  predicate invariant''5 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'7 self
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'9 (_1: Seq.seq t_PtrOwn)
+  predicate inv'8 (_1: Seq.seq t_PtrOwn)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'9 x]. inv'9 x = invariant''5 x
+  axiom inv_axiom'7 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'8 x]. inv'8 x = invariant''5 x
   
-  predicate invariant''6 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'7 self
+  predicate invariant''6 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'8 self
   
   meta "rewrite_def" predicate invariant''6
   
+  predicate inv'9 (_1: Seq.seq t_PtrOwn)
+  
+  axiom inv_axiom'8 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'9 x]. inv'9 x = invariant''6 x
+  
+  predicate invariant''7 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'7 self
+  
+  meta "rewrite_def" predicate invariant''7
+  
   predicate inv'10 (_1: Seq.seq t_PtrOwn)
   
-  axiom inv_axiom'9 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'10 x]. inv'10 x = invariant''6 x
+  axiom inv_axiom'9 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'10 x]. inv'10 x = invariant''7 x
   
   let rec deref (self: Seq.seq t_PtrOwn) (return (x: Seq.seq t_PtrOwn)) =
     {[@expl:deref 'self' type invariant] inv'9 self}
@@ -247,23 +306,23 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   let rec sub (self: int) (other: int) (return (x: int)) = any
     [ return (result: int) -> {result = self - other} (! return {result}) ]
   
-  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    inv'8 self.current /\ inv'8 self.final
-  
-  meta "rewrite_def" predicate invariant''7
-  
-  predicate inv'11 (_1: MutBorrow.t (Seq.seq t_PtrOwn))
-  
-  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'11 x]. inv'11 x = invariant''7 x
-  
   predicate invariant''8 [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    inv'7 self.current /\ inv'7 self.final
+    inv'8 self.current /\ inv'8 self.final
   
   meta "rewrite_def" predicate invariant''8
   
+  predicate inv'11 (_1: MutBorrow.t (Seq.seq t_PtrOwn))
+  
+  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'11 x]. inv'11 x = invariant''8 x
+  
+  predicate invariant''9 [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
+    inv'7 self.current /\ inv'7 self.final
+  
+  meta "rewrite_def" predicate invariant''9
+  
   predicate inv'12 (_1: MutBorrow.t (Seq.seq t_PtrOwn))
   
-  axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'12 x]. inv'12 x = invariant''8 x
+  axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'12 x]. inv'12 x = invariant''9 x
   
   let rec deref_mut (self: MutBorrow.t (Seq.seq t_PtrOwn)) (return (x: MutBorrow.t (Seq.seq t_PtrOwn))) =
     {[@expl:deref_mut 'self' type invariant] inv'11 self}
@@ -271,13 +330,13 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   
   type t_Option = C_None | C_Some (MutBorrow.t t_PtrOwn)
   
-  predicate invariant''9 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'3 self.current /\ inv'3 self.final
+  predicate invariant''10 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'3 self.current /\ inv'3 self.final
   
-  meta "rewrite_def" predicate invariant''9
+  meta "rewrite_def" predicate invariant''10
   
   predicate inv'13 (_1: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'12 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'13 x]. inv'13 x = invariant''9 x
+  axiom inv_axiom'12 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'13 x]. inv'13 x = invariant''10 x
   
   predicate inv'14 (_1: t_Option)
   
@@ -328,25 +387,25 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate invariant''10 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'13 self
+  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'13 self
   
-  meta "rewrite_def" predicate invariant''10
+  meta "rewrite_def" predicate invariant''11
   
   predicate inv'15 (_1: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'15 x]. inv'15 x = invariant''10 x
+  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'15 x]. inv'15 x = invariant''11 x
   
   let rec new'0 (x: MutBorrow.t t_PtrOwn) (return (x'0: MutBorrow.t t_PtrOwn)) =
     {[@expl:new 'x' type invariant] inv'13 x}
     any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'15 result} {result = x} (! return {result}) ]
   
-  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t t_Cell) = inv'0 self.current /\ inv'0 self.final
+  predicate invariant''12 [@inline:trivial] (self: MutBorrow.t t_Cell) = inv'0 self.current /\ inv'0 self.final
   
-  meta "rewrite_def" predicate invariant''11
+  meta "rewrite_def" predicate invariant''12
   
   predicate inv'16 (_1: MutBorrow.t t_Cell)
   
-  axiom inv_axiom'15 [@rewrite]: forall x: MutBorrow.t t_Cell [inv'16 x]. inv'16 x = invariant''11 x
+  axiom inv_axiom'15 [@rewrite]: forall x: MutBorrow.t t_Cell [inv'16 x]. inv'16 x = invariant''12 x
   
   function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = self.final
   
@@ -378,7 +437,7 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
     {[@expl:push_back_ghost 'x' type invariant] inv'3 x}
     any [ return (result: ()) -> {self.final = Seq.snoc self.current x} (! return {result}) ]
   
-  predicate invariant''12 (self: t_List) =
+  predicate invariant''13 (self: t_List) =
     self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
       /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
     \/ Seq.length self.t_List__seq > 0
@@ -391,18 +450,18 @@ module M_linked_list__qyi10858349784728989480__push_back (* List<T> *)
   predicate inv'17 (_1: t_List)
   
   axiom inv_axiom'16 [@rewrite]: forall x: t_List [inv'17 x]. inv'17 x
-      = (invariant''12 x
+      = (invariant''13 x
       /\ match x with
         | {t_List__first = first; t_List__last = last; t_List__seq = seq} -> inv'8 seq
         end)
   
-  predicate invariant''13 [@inline:trivial] (self: MutBorrow.t t_List) = inv'17 self.current /\ inv'17 self.final
+  predicate invariant''14 [@inline:trivial] (self: MutBorrow.t t_List) = inv'17 self.current /\ inv'17 self.final
   
-  meta "rewrite_def" predicate invariant''13
+  meta "rewrite_def" predicate invariant''14
   
   predicate inv'18 (_1: MutBorrow.t t_List)
   
-  axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_List [inv'18 x]. inv'18 x = invariant''13 x
+  axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_List [inv'18 x]. inv'18 x = invariant''14 x
   
   predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
   
@@ -565,8 +624,9 @@ module M_linked_list__qyi10858349784728989480__push_front (* List<T> *)
   use seq.Seq
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use creusot.prelude.MutBorrow
   use mach.int.Int
+  use creusot.int.Int64
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use map.Map
   
@@ -595,31 +655,55 @@ module M_linked_list__qyi10858349784728989480__push_front (* List<T> *)
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_Cell) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Cell) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function val' (self: t_PtrOwn) : t_Cell
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'1 (_1: Opaque.ptr)
+  constant size_of_Cell_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'1 x]. inv'1 x = true
+  axiom size_of_Cell_T_spec: 0 <= size_of_Cell_T
   
-  predicate invariant' (self: t_PtrOwn) =
+  function size_of_val_logic [@inline:trivial] (val''0: t_Cell) : int = size_of_Cell_T
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: t_Cell. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate invariant' [@inline:trivial] (self: t_Cell) = inv'0 self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'1 (_1: t_Cell)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Cell [inv'1 x]. inv'1 x = invariant' x
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'1 (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'1 (val' self)
   
   predicate inv'2 (_1: t_PtrOwn)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant' x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''0 x
   
-  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = inv'2 self
+  predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = inv'2 self
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'3 (_1: t_PtrOwn)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''0 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate inv'4 (_1: tuple)
   
@@ -632,46 +716,46 @@ module M_linked_list__qyi10858349784728989480__push_front (* List<T> *)
   let rec is_null (self_: Opaque.ptr) (return (x: bool)) = any
     [ return (result: bool) -> {result = is_null_logic self_} (! return {result}) ]
   
-  predicate invariant''1 (self: t_PtrOwn) = inv'2 self
+  predicate invariant''2 (self: t_PtrOwn) = inv'2 self
   
   predicate inv'5 (_1: t_PtrOwn)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''1 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''2 x
   
-  predicate invariant''2 [@inline:trivial] (self: Seq.seq t_PtrOwn) =
+  predicate invariant''3 [@inline:trivial] (self: Seq.seq t_PtrOwn) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'5 (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant''2
-  
-  predicate inv'6 (_1: Seq.seq t_PtrOwn)
-  
-  axiom inv_axiom'5 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'6 x]. inv'6 x = invariant''2 x
-  
-  predicate invariant''3 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'6 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'7 (_1: Seq.seq t_PtrOwn)
+  predicate inv'6 (_1: Seq.seq t_PtrOwn)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'7 x]. inv'7 x = invariant''3 x
+  axiom inv_axiom'5 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'6 x]. inv'6 x = invariant''3 x
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    inv'7 self.current /\ inv'7 self.final
+  predicate invariant''4 [@inline:trivial] (self: Seq.seq t_PtrOwn) = inv'6 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'8 (_1: MutBorrow.t (Seq.seq t_PtrOwn))
+  predicate inv'7 (_1: Seq.seq t_PtrOwn)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'8 x]. inv'8 x = invariant''4 x
+  axiom inv_axiom'6 [@rewrite]: forall x: Seq.seq t_PtrOwn [inv'7 x]. inv'7 x = invariant''4 x
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
-    inv'6 self.current /\ inv'6 self.final
+    inv'7 self.current /\ inv'7 self.final
   
   meta "rewrite_def" predicate invariant''5
   
+  predicate inv'8 (_1: MutBorrow.t (Seq.seq t_PtrOwn))
+  
+  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'8 x]. inv'8 x = invariant''5 x
+  
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn)) =
+    inv'6 self.current /\ inv'6 self.final
+  
+  meta "rewrite_def" predicate invariant''6
+  
   predicate inv'9 (_1: MutBorrow.t (Seq.seq t_PtrOwn))
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'9 x]. inv'9 x = invariant''5 x
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_PtrOwn) [inv'9 x]. inv'9 x = invariant''6 x
   
   let rec deref_mut (self: MutBorrow.t (Seq.seq t_PtrOwn)) (return (x: MutBorrow.t (Seq.seq t_PtrOwn))) =
     {[@expl:deref_mut 'self' type invariant] inv'8 self}
@@ -697,7 +781,7 @@ module M_linked_list__qyi10858349784728989480__push_front (* List<T> *)
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate invariant''6 (self: t_List) =
+  predicate invariant''7 (self: t_List) =
     self.t_List__seq = (Seq.empty: Seq.seq t_PtrOwn)
       /\ is_null_logic self.t_List__first /\ is_null_logic self.t_List__last
     \/ Seq.length self.t_List__seq > 0
@@ -710,18 +794,18 @@ module M_linked_list__qyi10858349784728989480__push_front (* List<T> *)
   predicate inv'10 (_1: t_List)
   
   axiom inv_axiom'9 [@rewrite]: forall x: t_List [inv'10 x]. inv'10 x
-      = (invariant''6 x
+      = (invariant''7 x
       /\ match x with
         | {t_List__first = first; t_List__last = last; t_List__seq = seq} -> inv'7 seq
         end)
   
-  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_List) = inv'10 self.current /\ inv'10 self.final
+  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_List) = inv'10 self.current /\ inv'10 self.final
   
-  meta "rewrite_def" predicate invariant''7
+  meta "rewrite_def" predicate invariant''8
   
   predicate inv'11 (_1: MutBorrow.t t_List)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_List [inv'11 x]. inv'11 x = invariant''7 x
+  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_List [inv'11 x]. inv'11 x = invariant''8 x
   
   predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
   

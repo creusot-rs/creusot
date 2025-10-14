@@ -50,6 +50,7 @@ module M_union_find__implementation__qyi1944850640244667852__domain (* implement
   use creusot.int.UInt64
   use creusot.prelude.Ptr
   use mach.int.Int
+  use creusot.int.Int64
   
   type t_Element = { t_Element__0: Opaque.ptr }
   
@@ -166,44 +167,78 @@ module M_union_find__implementation__qyi1944850640244667852__domain (* implement
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'0 (_1: Opaque.ptr)
+  constant size_of_Node_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  axiom size_of_Node_T_spec: 0 <= size_of_Node_T
   
-  predicate invariant''0 (self: t_PtrOwn) =
-    not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_T
   
-  predicate inv'1 (_1: t_PtrOwn)
+  meta "rewrite_def" function size_of_val_logic
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
   
-  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
-    forall k: t_Element. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
   
-  meta "rewrite_def" predicate invariant''1
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate inv'2 (_1: t_FMap)
+  predicate inv'0 (_1: t_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  predicate inv'1 (_1: t_Node)
   
-  predicate inv'3 (_1: t_UFInner)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
       = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'2 perms
+        | C_Root rank payload -> inv'0 payload
+        | C_Link a_0 -> true
         end
   
-  predicate inv'4 (_1: t_UnionFind)
+  predicate invariant''0 [@inline:trivial] (self: t_Node) = inv'1 self
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UnionFind [inv'4 x]. inv'4 x
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'2 (_1: t_Node)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'2 (val' self)
+  
+  predicate inv'3 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
+    forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''2
+  
+  predicate inv'4 (_1: t_FMap)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
+  
+  predicate inv'5 (_1: t_UFInner)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
+      = match x with
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'4 perms
+        end
+  
+  predicate inv'6 (_1: t_UnionFind)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'6 x]. inv'6 x
       = (invariant' x
       /\ match x with
-        | {t_UnionFind__0 = a_0} -> inv'3 a_0
+        | {t_UnionFind__0 = a_0} -> inv'5 a_0
         end)
   
   meta "compute_max_steps" 1000000
@@ -214,7 +249,7 @@ module M_union_find__implementation__qyi1944850640244667852__domain (* implement
   
   function domain (self: t_UnionFind) : Fset.fset t_Element
   
-  goal vc_domain: inv'4 self
+  goal vc_domain: inv'6 self
     -> (let result = self.t_UnionFind__0.t_UFInner__domain in [@expl:domain ensures] forall e1: t_Element, e2: t_Element. contains result e1
         /\ contains result e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
 end
@@ -225,6 +260,7 @@ module M_union_find__implementation__qyi1944850640244667852__roots_map (* implem
   use creusot.int.UInt64
   use creusot.prelude.Ptr
   use mach.int.Int
+  use creusot.int.Int64
   
   type t_Element = { t_Element__0: Opaque.ptr }
   
@@ -341,49 +377,83 @@ module M_union_find__implementation__qyi1944850640244667852__roots_map (* implem
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'0 (_1: Opaque.ptr)
+  constant size_of_Node_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  axiom size_of_Node_T_spec: 0 <= size_of_Node_T
   
-  predicate invariant''0 (self: t_PtrOwn) =
-    not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_T
   
-  predicate inv'1 (_1: t_PtrOwn)
+  meta "rewrite_def" function size_of_val_logic
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
   
-  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
-    forall k: t_Element. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
   
-  meta "rewrite_def" predicate invariant''1
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate inv'2 (_1: t_FMap)
+  predicate inv'0 (_1: t_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  predicate inv'1 (_1: t_Node)
   
-  predicate inv'3 (_1: t_UFInner)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
       = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'2 perms
+        | C_Root rank payload -> inv'0 payload
+        | C_Link a_0 -> true
         end
   
-  predicate inv'4 (_1: t_UnionFind)
+  predicate invariant''0 [@inline:trivial] (self: t_Node) = inv'1 self
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UnionFind [inv'4 x]. inv'4 x
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'2 (_1: t_Node)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'2 (val' self)
+  
+  predicate inv'3 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
+    forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
+  
+  meta "rewrite_def" predicate invariant''2
+  
+  predicate inv'4 (_1: t_FMap)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
+  
+  predicate inv'5 (_1: t_UFInner)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
+      = match x with
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'4 perms
+        end
+  
+  predicate inv'6 (_1: t_UnionFind)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'6 x]. inv'6 x
       = (invariant' x
       /\ match x with
-        | {t_UnionFind__0 = a_0} -> inv'3 a_0
+        | {t_UnionFind__0 = a_0} -> inv'5 a_0
         end)
   
   function domain (self: t_UnionFind) : Fset.fset t_Element = self.t_UnionFind__0.t_UFInner__domain
   
-  axiom domain_spec: forall self: t_UnionFind. inv'4 self
+  axiom domain_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e1: t_Element, e2: t_Element. contains (domain self) e1
           /\ contains (domain self) e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
   
@@ -397,7 +467,7 @@ module M_union_find__implementation__qyi1944850640244667852__roots_map (* implem
   
   function roots_map (self: t_UnionFind) : Map.map t_Element t_Element
   
-  goal vc_roots_map: inv'4 self
+  goal vc_roots_map: inv'6 self
     -> (let result = self.t_UnionFind__0.t_UFInner__roots in [@expl:roots_map ensures] forall e: t_Element. in_domain self e
       -> in_domain self (index_logic'1 result e)
       /\ index_logic'1 result e = index_logic'1 result (index_logic'1 result e))
@@ -409,6 +479,7 @@ module M_union_find__implementation__new
   use creusot.prelude.Ptr
   use creusot.int.UInt64
   use mach.int.Int
+  use creusot.int.Int64
   use map.Const
   use creusot.prelude.Any
   
@@ -446,23 +517,57 @@ module M_union_find__implementation__new
   
   type t_Node = C_Root t_PeanoInt t_T | C_Link t_Element
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function val' (self: t_PtrOwn) : t_Node
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'0 (_1: Opaque.ptr)
+  constant size_of_Node_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  axiom size_of_Node_T_spec: 0 <= size_of_Node_T
   
-  predicate invariant' (self: t_PtrOwn) =
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_T
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate inv'0 (_1: t_T)
+  
+  predicate inv'1 (_1: t_Node)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
+      = match x with
+        | C_Root rank payload -> inv'0 payload
+        | C_Link a_0 -> true
+        end
+  
+  predicate invariant' [@inline:trivial] (self: t_Node) = inv'1 self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'2 (_1: t_Node)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant' x
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'2 (val' self)
   
-  predicate inv'1 (_1: t_PtrOwn)
+  predicate inv'3 (_1: t_PtrOwn)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant' x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''0 x
   
   predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = Map.get self a
   
@@ -486,22 +591,22 @@ module M_union_find__implementation__new
   
   meta "rewrite_def" function index_logic'0
   
-  predicate invariant''0 [@inline:trivial] (self: t_FMap) =
-    forall k: t_Element. contains self k -> inv k /\ inv'1 (index_logic'0 self k)
-  
-  meta "rewrite_def" predicate invariant''0
-  
-  predicate inv'2 (_1: t_FMap)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''0 x
-  
-  predicate invariant''1 [@inline:trivial] (self: t_FMap) = inv'2 self
+  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
+    forall k: t_Element. contains self k -> inv k /\ inv'3 (index_logic'0 self k)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'3 (_1: t_FMap)
+  predicate inv'4 (_1: t_FMap)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'3 x]. inv'3 x = invariant''1 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''1 x
+  
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) = inv'4 self
+  
+  meta "rewrite_def" predicate invariant''2
+  
+  predicate inv'5 (_1: t_FMap)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_FMap [inv'5 x]. inv'5 x = invariant''2 x
   
   predicate ext_eq (self: t_FMap) (other: t_FMap) = forall k: t_Element. get self k = get other k
   
@@ -520,10 +625,10 @@ module M_union_find__implementation__new
   predicate is_empty (self: t_FMap) = ext_eq self empty
   
   let rec new (return (x: t_FMap)) = any
-    [ return (result: t_FMap) -> {inv'3 result} {is_empty result} (! return {result}) ]
+    [ return (result: t_FMap) -> {inv'5 result} {is_empty result} (! return {result}) ]
   
-  let rec into_inner (self: t_FMap) (return (x: t_FMap)) = {[@expl:into_inner 'self' type invariant] inv'3 self}
-    any [ return (result: t_FMap) -> {inv'2 result} {result = self} (! return {result}) ]
+  let rec into_inner (self: t_FMap) (return (x: t_FMap)) = {[@expl:into_inner 'self' type invariant] inv'5 self}
+    any [ return (result: t_FMap) -> {inv'4 result} {result = self} (! return {result}) ]
   
   predicate index_logic'1 [@inline:trivial] (self: Map.map (Map.map t_Element t_T) bool) (a: Map.map t_Element t_T) =
     Map.get self a
@@ -589,7 +694,7 @@ module M_union_find__implementation__new
   
   meta "rewrite_def" function index_logic'6
   
-  predicate invariant''2 [@inline:trivial] (self: t_UnionFind) =
+  predicate invariant''3 [@inline:trivial] (self: t_UnionFind) =
     (forall e1: t_Element, e2: t_Element. contains'0 self.t_UnionFind__0.t_UFInner__domain e1
           /\ contains'0 self.t_UnionFind__0.t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
     /\ (forall e: t_Element. contains'0 self.t_UnionFind__0.t_UFInner__domain e
@@ -613,37 +718,37 @@ module M_union_find__implementation__new
           end
       /\ index_logic'6 self.t_UnionFind__0.t_UFInner__depth e <= self.t_UnionFind__0.t_UFInner__max_depth)
   
-  meta "rewrite_def" predicate invariant''2
-  
-  predicate inv'4 (_1: t_UFInner)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'4 x]. inv'4 x
-      = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'2 perms
-        end
-  
-  predicate inv'5 (_1: t_UnionFind)
-  
-  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'5 x]. inv'5 x
-      = (invariant''2 x
-      /\ match x with
-        | {t_UnionFind__0 = a_0} -> inv'4 a_0
-        end)
-  
-  predicate invariant''3 [@inline:trivial] (self: t_UnionFind) = inv'5 self
-  
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'6 (_1: t_UnionFind)
+  predicate inv'6 (_1: t_UFInner)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_UnionFind [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UFInner [inv'6 x]. inv'6 x
+      = match x with
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'4 perms
+        end
   
-  let rec new'0 (x: t_UnionFind) (return (x'0: t_UnionFind)) = {[@expl:new 'x' type invariant] inv'5 x}
-    any [ return (result: t_UnionFind) -> {inv'6 result} {result = x} (! return {result}) ]
+  predicate inv'7 (_1: t_UnionFind)
+  
+  axiom inv_axiom'6 [@rewrite]: forall x: t_UnionFind [inv'7 x]. inv'7 x
+      = (invariant''3 x
+      /\ match x with
+        | {t_UnionFind__0 = a_0} -> inv'6 a_0
+        end)
+  
+  predicate invariant''4 [@inline:trivial] (self: t_UnionFind) = inv'7 self
+  
+  meta "rewrite_def" predicate invariant''4
+  
+  predicate inv'8 (_1: t_UnionFind)
+  
+  axiom inv_axiom'7 [@rewrite]: forall x: t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
+  
+  let rec new'0 (x: t_UnionFind) (return (x'0: t_UnionFind)) = {[@expl:new 'x' type invariant] inv'7 x}
+    any [ return (result: t_UnionFind) -> {inv'8 result} {result = x} (! return {result}) ]
   
   function domain (self: t_UnionFind) : Fset.fset t_Element = self.t_UnionFind__0.t_UFInner__domain
   
-  axiom domain_spec: forall self: t_UnionFind. inv'5 self
+  axiom domain_spec: forall self: t_UnionFind. inv'7 self
       -> (forall e1: t_Element, e2: t_Element. contains'0 (domain self) e1
           /\ contains'0 (domain self) e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
   
@@ -680,7 +785,7 @@ module M_union_find__implementation__new
     | & _10: Map.map t_Element int = Any.any_l ()
     | & _12: Map.map t_Element t_Element = Any.any_l ()
     | & _14: int = Any.any_l () ])
-    [ return (result: t_UnionFind) -> {[@expl:new result type invariant] inv'6 result}
+    [ return (result: t_UnionFind) -> {[@expl:new result type invariant] inv'8 result}
       {[@expl:new ensures] Fset.is_empty (domain result)}
       (! return {result}) ]
 end
@@ -688,10 +793,11 @@ module M_union_find__implementation__make
   use creusot.int.UInt64
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
+  use mach.int.Int
+  use creusot.int.Int64
   use creusot.prelude.MutBorrow
   use set.Fset
   use map.Map
-  use mach.int.Int
   use creusot.prelude.Any
   
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
@@ -725,31 +831,55 @@ module M_union_find__implementation__make
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function val' (self: t_PtrOwn) : t_Node
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'1 (_1: Opaque.ptr)
+  constant size_of_Node_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'1 x]. inv'1 x = true
+  axiom size_of_Node_T_spec: 0 <= size_of_Node_T
   
-  predicate invariant' (self: t_PtrOwn) =
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_T
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate invariant' [@inline:trivial] (self: t_Node) = inv'0 self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'1 (_1: t_Node)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x = invariant' x
+  
+  predicate invariant''0 (self: t_PtrOwn) =
     not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'1 (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'1 (val' self)
   
   predicate inv'2 (_1: t_PtrOwn)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant' x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''0 x
   
-  predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = inv'2 self
+  predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = inv'2 self
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant''1
   
   predicate inv'3 (_1: t_PtrOwn)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''0 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate inv'4 (_1: tuple)
   
@@ -829,7 +959,7 @@ module M_union_find__implementation__make
   
   meta "rewrite_def" function index_logic'3
   
-  predicate invariant''1 [@inline:trivial] (self: t_UnionFind) =
+  predicate invariant''2 [@inline:trivial] (self: t_UnionFind) =
     (forall e1: t_Element, e2: t_Element. contains self.t_UnionFind__0.t_UFInner__domain e1
           /\ contains self.t_UnionFind__0.t_UFInner__domain e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
     /\ (forall e: t_Element. contains self.t_UnionFind__0.t_UFInner__domain e
@@ -853,20 +983,20 @@ module M_union_find__implementation__make
           end
       /\ index_logic'3 self.t_UnionFind__0.t_UFInner__depth e <= self.t_UnionFind__0.t_UFInner__max_depth)
   
-  meta "rewrite_def" predicate invariant''1
+  meta "rewrite_def" predicate invariant''2
   
   predicate inv'5 (_1: t_Element)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Element [inv'5 x]. inv'5 x = true
   
-  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
+  predicate invariant''3 [@inline:trivial] (self: t_FMap) =
     forall k: t_Element. contains'0 self k -> inv'5 k /\ inv'2 (index_logic'0 self k)
   
-  meta "rewrite_def" predicate invariant''2
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'6 (_1: t_FMap)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_FMap [inv'6 x]. inv'6 x = invariant''2 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_FMap [inv'6 x]. inv'6 x = invariant''3 x
   
   predicate inv'7 (_1: t_UFInner)
   
@@ -878,26 +1008,26 @@ module M_union_find__implementation__make
   predicate inv'8 (_1: t_UnionFind)
   
   axiom inv_axiom'7 [@rewrite]: forall x: t_UnionFind [inv'8 x]. inv'8 x
-      = (invariant''1 x
+      = (invariant''2 x
       /\ match x with
         | {t_UnionFind__0 = a_0} -> inv'7 a_0
         end)
   
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'8 self.current /\ inv'8 self.final
-  
-  meta "rewrite_def" predicate invariant''3
-  
-  predicate inv'9 (_1: MutBorrow.t t_UnionFind)
-  
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'9 x]. inv'9 x = invariant''3 x
-  
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'9 self
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'8 self.current /\ inv'8 self.final
   
   meta "rewrite_def" predicate invariant''4
   
+  predicate inv'9 (_1: MutBorrow.t t_UnionFind)
+  
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'9 x]. inv'9 x = invariant''4 x
+  
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'9 self
+  
+  meta "rewrite_def" predicate invariant''5
+  
   predicate inv'10 (_1: MutBorrow.t t_UnionFind)
   
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'10 x]. inv'10 x = invariant''4 x
+  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'10 x]. inv'10 x = invariant''5 x
   
   let rec into_inner'0 (self: MutBorrow.t t_UnionFind) (return (x: MutBorrow.t t_UnionFind)) =
     {[@expl:into_inner 'self' type invariant] inv'10 self}
@@ -930,21 +1060,21 @@ module M_union_find__implementation__make
   
   type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
   
-  predicate invariant''5 [@inline:trivial] (self: t_FMap) = inv'6 self
-  
-  meta "rewrite_def" predicate invariant''5
-  
-  predicate inv'11 (_1: t_FMap)
-  
-  axiom inv_axiom'10 [@rewrite]: forall x: t_FMap [inv'11 x]. inv'11 x = invariant''5 x
-  
-  predicate invariant''6 [@inline:trivial] (self: t_PtrOwn) = inv'2 self
+  predicate invariant''6 [@inline:trivial] (self: t_FMap) = inv'6 self
   
   meta "rewrite_def" predicate invariant''6
   
+  predicate inv'11 (_1: t_FMap)
+  
+  axiom inv_axiom'10 [@rewrite]: forall x: t_FMap [inv'11 x]. inv'11 x = invariant''6 x
+  
+  predicate invariant''7 [@inline:trivial] (self: t_PtrOwn) = inv'2 self
+  
+  meta "rewrite_def" predicate invariant''7
+  
   predicate inv'12 (_1: t_PtrOwn)
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''6 x
+  axiom inv_axiom'11 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''7 x
   
   predicate inv'13 (_1: t_Option'0)
   
@@ -970,13 +1100,13 @@ module M_union_find__implementation__make
     [ good (field_0: t_PtrOwn) -> {C_Some'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_PtrOwn [C_Some'0 field_0: t_Option'0]. C_Some'0 field_0 <> input} (! {false} any) ]
   
-  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'2 self.current /\ inv'2 self.final
+  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'2 self.current /\ inv'2 self.final
   
-  meta "rewrite_def" predicate invariant''7
+  meta "rewrite_def" predicate invariant''8
   
   predicate inv'14 (_1: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'13 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'14 x]. inv'14 x = invariant''7 x
+  axiom inv_axiom'13 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'14 x]. inv'14 x = invariant''8 x
   
   let rec disjoint_lemma (own1: MutBorrow.t t_PtrOwn) (own2: t_PtrOwn) (return (x: ())) =
     {[@expl:disjoint_lemma 'own1' type invariant] inv'14 own1}
@@ -994,13 +1124,13 @@ module M_union_find__implementation__make
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_FMap) = inv'6 self.current /\ inv'6 self.final
+  predicate invariant''9 [@inline:trivial] (self: MutBorrow.t t_FMap) = inv'6 self.current /\ inv'6 self.final
   
-  meta "rewrite_def" predicate invariant''8
+  meta "rewrite_def" predicate invariant''9
   
   predicate inv'15 (_1: MutBorrow.t t_FMap)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'15 x]. inv'15 x = invariant''8 x
+  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'15 x]. inv'15 x = invariant''9 x
   
   predicate inv'16 (_1: t_Option)
   
@@ -1212,6 +1342,7 @@ module M_union_find__implementation__find_inner
   use creusot.int.UInt64
   use creusot.prelude.Ptr
   use mach.int.Int
+  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_Element = { t_Element__0: Opaque.ptr }
@@ -1329,106 +1460,140 @@ module M_union_find__implementation__find_inner
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'0 (_1: Opaque.ptr)
+  constant size_of_Node_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  axiom size_of_Node_T_spec: 0 <= size_of_Node_T
   
-  predicate invariant''0 (self: t_PtrOwn) =
-    not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_T
   
-  predicate inv'1 (_1: t_PtrOwn)
+  meta "rewrite_def" function size_of_val_logic
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
   
-  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
-    forall k: t_Element. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
   
-  meta "rewrite_def" predicate invariant''1
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate inv'2 (_1: t_FMap)
+  predicate inv'0 (_1: t_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  predicate inv'1 (_1: t_Node)
   
-  predicate inv'3 (_1: t_UFInner)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
       = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'2 perms
+        | C_Root rank payload -> inv'0 payload
+        | C_Link a_0 -> true
         end
   
-  predicate inv'4 (_1: t_UnionFind)
+  predicate invariant''0 [@inline:trivial] (self: t_Node) = inv'1 self
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UnionFind [inv'4 x]. inv'4 x
-      = (invariant' x
-      /\ match x with
-        | {t_UnionFind__0 = a_0} -> inv'3 a_0
-        end)
+  meta "rewrite_def" predicate invariant''0
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'4 self.current /\ inv'4 self.final
+  predicate inv'2 (_1: t_Node)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'2 (val' self)
+  
+  predicate inv'3 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
+    forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'4 (_1: t_FMap)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'5 x]. inv'5 x = invariant''2 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
   
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'5 self
+  predicate inv'5 (_1: t_UFInner)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
+      = match x with
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'4 perms
+        end
+  
+  predicate inv'6 (_1: t_UnionFind)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'6 x]. inv'6 x
+      = (invariant' x
+      /\ match x with
+        | {t_UnionFind__0 = a_0} -> inv'5 a_0
+        end)
+  
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'6 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'7 (_1: MutBorrow.t t_UnionFind)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'6 self
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'7 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'7 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'8 (_1: MutBorrow.t t_UnionFind)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'7 x]. inv'7 x = invariant''4 x
+  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
   
-  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'5 self
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'8 self
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'8 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'9 (_1: MutBorrow.t t_UnionFind)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'8 x]. inv'8 x = invariant''5 x
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'9 x]. inv'9 x = invariant''5 x
   
-  let rec deref (self: MutBorrow.t t_UnionFind) (return (x: MutBorrow.t t_UnionFind)) =
-    {[@expl:deref 'self' type invariant] inv'7 self}
-    any [ return (result: MutBorrow.t t_UnionFind) -> {inv'8 result} {result = self} (! return {result}) ]
-  
-  type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
-  
-  predicate invariant''6 [@inline:trivial] (self: t_FMap) = inv'2 self
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'7 self
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'9 (_1: t_FMap)
+  predicate inv'10 (_1: MutBorrow.t t_UnionFind)
   
-  axiom inv_axiom'9 [@rewrite]: forall x: t_FMap [inv'9 x]. inv'9 x = invariant''6 x
+  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'10 x]. inv'10 x = invariant''6 x
   
-  predicate invariant''7 [@inline:trivial] (self: t_PtrOwn) = inv'1 self
+  let rec deref (self: MutBorrow.t t_UnionFind) (return (x: MutBorrow.t t_UnionFind)) =
+    {[@expl:deref 'self' type invariant] inv'9 self}
+    any [ return (result: MutBorrow.t t_UnionFind) -> {inv'10 result} {result = self} (! return {result}) ]
+  
+  type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
+  
+  predicate invariant''7 [@inline:trivial] (self: t_FMap) = inv'4 self
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'10 (_1: t_PtrOwn)
+  predicate inv'11 (_1: t_FMap)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_PtrOwn [inv'10 x]. inv'10 x = invariant''7 x
+  axiom inv_axiom'10 [@rewrite]: forall x: t_FMap [inv'11 x]. inv'11 x = invariant''7 x
   
-  predicate inv'11 (_1: t_Option'0)
+  predicate invariant''8 [@inline:trivial] (self: t_PtrOwn) = inv'3 self
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_Option'0 [inv'11 x]. inv'11 x
+  meta "rewrite_def" predicate invariant''8
+  
+  predicate inv'12 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'11 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''8 x
+  
+  predicate inv'13 (_1: t_Option'0)
+  
+  axiom inv_axiom'12 [@rewrite]: forall x: t_Option'0 [inv'13 x]. inv'13 x
       = match x with
         | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'10 a_0
+        | C_Some'0 a_0 -> inv'12 a_0
         end
   
   function map_logic (self: t_Option) (f: Map.map t_PtrOwn t_PtrOwn) : t_Option'0 = match self with
@@ -1437,76 +1602,58 @@ module M_union_find__implementation__find_inner
       end
   
   let rec get_ghost (self: t_FMap) (key: t_Element) (return (x: t_Option'0)) =
-    {[@expl:get_ghost 'self' type invariant] inv'9 self}
+    {[@expl:get_ghost 'self' type invariant] inv'11 self}
     any
-    [ return (result: t_Option'0) -> {inv'11 result}
+    [ return (result: t_Option'0) -> {inv'13 result}
       {result = map_logic (get self key) (fun (v: t_PtrOwn) -> v)}
       (! return {result}) ]
   
-  let rec unwrap (self_: t_Option'0) (return (x: t_PtrOwn)) = {[@expl:unwrap 'self_' type invariant] inv'11 self_}
+  let rec unwrap (self_: t_Option'0) (return (x: t_PtrOwn)) = {[@expl:unwrap 'self_' type invariant] inv'13 self_}
     {[@expl:unwrap requires] self_ <> C_None'0}
-    any [ return (result: t_PtrOwn) -> {inv'10 result} {C_Some'0 result = self_} (! return {result}) ]
+    any [ return (result: t_PtrOwn) -> {inv'12 result} {C_Some'0 result = self_} (! return {result}) ]
   
-  predicate invariant''8 [@inline:trivial] (self: t_PtrOwn) = inv'10 self
-  
-  meta "rewrite_def" predicate invariant''8
-  
-  predicate inv'12 (_1: t_PtrOwn)
-  
-  axiom inv_axiom'12 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''8 x
-  
-  let rec new (x: t_PtrOwn) (return (x'0: t_PtrOwn)) = {[@expl:new 'x' type invariant] inv'10 x}
-    any [ return (result: t_PtrOwn) -> {inv'12 result} {result = x} (! return {result}) ]
-  
-  predicate inv'13 (_1: t_T)
-  
-  predicate inv'14 (_1: t_Node)
-  
-  axiom inv_axiom'13 [@rewrite]: forall x: t_Node [inv'14 x]. inv'14 x
-      = match x with
-        | C_Root rank payload -> inv'13 payload
-        | C_Link a_0 -> true
-        end
-  
-  predicate invariant''9 [@inline:trivial] (self: t_Node) = inv'14 self
+  predicate invariant''9 [@inline:trivial] (self: t_PtrOwn) = inv'12 self
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'15 (_1: t_Node)
+  predicate inv'14 (_1: t_PtrOwn)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: t_Node [inv'15 x]. inv'15 x = invariant''9 x
+  axiom inv_axiom'13 [@rewrite]: forall x: t_PtrOwn [inv'14 x]. inv'14 x = invariant''9 x
+  
+  let rec new (x: t_PtrOwn) (return (x'0: t_PtrOwn)) = {[@expl:new 'x' type invariant] inv'12 x}
+    any [ return (result: t_PtrOwn) -> {inv'14 result} {result = x} (! return {result}) ]
   
   let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return (x: t_Node)) =
-    {[@expl:as_ref 'own' type invariant] inv'12 own}
+    {[@expl:as_ref 'own' type invariant] inv'14 own}
     {[@expl:as_ref requires] ptr'0 = ptr own}
-    any [ return (result: t_Node) -> {inv'15 result} {result = val' own} (! return {result}) ]
+    any [ return (result: t_Node) -> {inv'2 result} {result = val' own} (! return {result}) ]
   
   let rec v_Link (input: t_Node) (ret (field_0: t_Element)) = any
     [ good (field_0: t_Element) -> {C_Link field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_Element [C_Link field_0: t_Node]. C_Link field_0 <> input} (! {false} any) ]
   
   predicate invariant''10 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
-    inv'6 self.current /\ inv'6 self.final
+    inv'8 self.current /\ inv'8 self.final
   
   meta "rewrite_def" predicate invariant''10
   
-  predicate inv'16 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
+  predicate inv'15 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
   
-  axiom inv_axiom'15 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'16 x]. inv'16 x = invariant''10 x
+  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'15 x]. inv'15 x = invariant''10 x
   
   predicate invariant''11 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
-    inv'5 self.current /\ inv'5 self.final
+    inv'7 self.current /\ inv'7 self.final
   
   meta "rewrite_def" predicate invariant''11
   
-  predicate inv'17 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
+  predicate inv'16 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
   
-  axiom inv_axiom'16 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'17 x]. inv'17 x = invariant''11 x
+  axiom inv_axiom'15 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'16 x]. inv'16 x = invariant''11 x
   
   let rec deref_mut (self: MutBorrow.t (MutBorrow.t t_UnionFind)) (return (x: MutBorrow.t (MutBorrow.t t_UnionFind))) =
-    {[@expl:deref_mut 'self' type invariant] inv'16 self}
+    {[@expl:deref_mut 'self' type invariant] inv'15 self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind)) -> {inv'17 result} {result = self} (! return {result}) ]
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind)) -> {inv'16 result} {result = self} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) = self.final = self.current
   
@@ -1525,75 +1672,75 @@ module M_union_find__implementation__find_inner
   meta "rewrite_def" predicate resolve'2
   
   let rec new'0 (x: MutBorrow.t t_UnionFind) (return (x'0: MutBorrow.t t_UnionFind)) =
-    {[@expl:new 'x' type invariant] inv'5 x}
-    any [ return (result: MutBorrow.t t_UnionFind) -> {inv'6 result} {result = x} (! return {result}) ]
+    {[@expl:new 'x' type invariant] inv'7 x}
+    any [ return (result: MutBorrow.t t_UnionFind) -> {inv'8 result} {result = x} (! return {result}) ]
   
-  predicate invariant''12 [@inline:trivial] (self: MutBorrow.t t_UFInner) = inv'3 self.current /\ inv'3 self.final
+  predicate invariant''12 [@inline:trivial] (self: MutBorrow.t t_UFInner) = inv'5 self.current /\ inv'5 self.final
   
   meta "rewrite_def" predicate invariant''12
   
-  predicate inv'18 (_1: MutBorrow.t t_UFInner)
+  predicate inv'17 (_1: MutBorrow.t t_UFInner)
   
-  axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'18 x]. inv'18 x = invariant''12 x
+  axiom inv_axiom'16 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'17 x]. inv'17 x = invariant''12 x
   
-  predicate invariant''13 [@inline:trivial] (self: MutBorrow.t t_UFInner) = inv'18 self
+  predicate invariant''13 [@inline:trivial] (self: MutBorrow.t t_UFInner) = inv'17 self
   
   meta "rewrite_def" predicate invariant''13
   
-  predicate inv'19 (_1: MutBorrow.t t_UFInner)
+  predicate inv'18 (_1: MutBorrow.t t_UFInner)
   
-  axiom inv_axiom'18 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'19 x]. inv'19 x = invariant''13 x
+  axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'18 x]. inv'18 x = invariant''13 x
   
   let rec new'1 (x: MutBorrow.t t_UFInner) (return (x'0: MutBorrow.t t_UFInner)) =
-    {[@expl:new 'x' type invariant] inv'18 x}
-    any [ return (result: MutBorrow.t t_UFInner) -> {inv'19 result} {result = x} (! return {result}) ]
+    {[@expl:new 'x' type invariant] inv'17 x}
+    any [ return (result: MutBorrow.t t_UFInner) -> {inv'18 result} {result = x} (! return {result}) ]
   
   predicate invariant''14 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
-    inv'19 self.current /\ inv'19 self.final
+    inv'18 self.current /\ inv'18 self.final
   
   meta "rewrite_def" predicate invariant''14
   
-  predicate inv'20 (_1: MutBorrow.t (MutBorrow.t t_UFInner))
+  predicate inv'19 (_1: MutBorrow.t (MutBorrow.t t_UFInner))
   
-  axiom inv_axiom'19 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'20 x]. inv'20 x = invariant''14 x
+  axiom inv_axiom'18 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'19 x]. inv'19 x = invariant''14 x
   
   predicate invariant''15 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
-    inv'18 self.current /\ inv'18 self.final
+    inv'17 self.current /\ inv'17 self.final
   
   meta "rewrite_def" predicate invariant''15
   
-  predicate inv'21 (_1: MutBorrow.t (MutBorrow.t t_UFInner))
+  predicate inv'20 (_1: MutBorrow.t (MutBorrow.t t_UFInner))
   
-  axiom inv_axiom'20 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'21 x]. inv'21 x = invariant''15 x
+  axiom inv_axiom'19 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'20 x]. inv'20 x = invariant''15 x
   
   let rec deref_mut'0 (self: MutBorrow.t (MutBorrow.t t_UFInner)) (return (x: MutBorrow.t (MutBorrow.t t_UFInner))) =
-    {[@expl:deref_mut 'self' type invariant] inv'20 self}
-    any [ return (result: MutBorrow.t (MutBorrow.t t_UFInner)) -> {inv'21 result} {result = self} (! return {result}) ]
+    {[@expl:deref_mut 'self' type invariant] inv'19 self}
+    any [ return (result: MutBorrow.t (MutBorrow.t t_UFInner)) -> {inv'20 result} {result = self} (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_PtrOwn)
   
-  predicate invariant''16 [@inline:trivial] (self: MutBorrow.t t_FMap) = inv'2 self.current /\ inv'2 self.final
+  predicate invariant''16 [@inline:trivial] (self: MutBorrow.t t_FMap) = inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''16
   
-  predicate inv'22 (_1: MutBorrow.t t_FMap)
+  predicate inv'21 (_1: MutBorrow.t t_FMap)
   
-  axiom inv_axiom'21 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'22 x]. inv'22 x = invariant''16 x
+  axiom inv_axiom'20 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'21 x]. inv'21 x = invariant''16 x
   
-  predicate invariant''17 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'1 self.current /\ inv'1 self.final
+  predicate invariant''17 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''17
   
-  predicate inv'23 (_1: MutBorrow.t t_PtrOwn)
+  predicate inv'22 (_1: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'22 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'23 x]. inv'23 x = invariant''17 x
+  axiom inv_axiom'21 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'22 x]. inv'22 x = invariant''17 x
   
-  predicate inv'24 (_1: t_Option'1)
+  predicate inv'23 (_1: t_Option'1)
   
-  axiom inv_axiom'23 [@rewrite]: forall x: t_Option'1 [inv'24 x]. inv'24 x
+  axiom inv_axiom'22 [@rewrite]: forall x: t_Option'1 [inv'23 x]. inv'23 x
       = match x with
         | C_None'1 -> true
-        | C_Some'1 a_0 -> inv'23 a_0
+        | C_Some'1 a_0 -> inv'22 a_0
         end
   
   function len (self: t_FMap) : int
@@ -1601,9 +1748,9 @@ module M_union_find__implementation__find_inner
   axiom len_spec: forall self: t_FMap. len self >= 0
   
   let rec get_mut_ghost (self: MutBorrow.t t_FMap) (key: t_Element) (return (x: t_Option'1)) =
-    {[@expl:get_mut_ghost 'self' type invariant] inv'22 self}
+    {[@expl:get_mut_ghost 'self' type invariant] inv'21 self}
     any
-    [ return (result: t_Option'1) -> {inv'24 result}
+    [ return (result: t_Option'1) -> {inv'23 result}
       {if contains'0 self.current key then
         match result with
           | C_None'1 -> false
@@ -1618,9 +1765,9 @@ module M_union_find__implementation__find_inner
       (! return {result}) ]
   
   let rec unwrap'0 (self_: t_Option'1) (return (x: MutBorrow.t t_PtrOwn)) =
-    {[@expl:unwrap 'self_' type invariant] inv'24 self_}
+    {[@expl:unwrap 'self_' type invariant] inv'23 self_}
     {[@expl:unwrap requires] self_ <> C_None'1}
-    any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'23 result} {C_Some'1 result = self_} (! return {result}) ]
+    any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'22 result} {C_Some'1 result = self_} (! return {result}) ]
   
   predicate resolve'3 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) = self.final = self.current
   
@@ -1630,17 +1777,17 @@ module M_union_find__implementation__find_inner
   
   meta "rewrite_def" predicate resolve'4
   
-  predicate invariant''18 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'23 self
+  predicate invariant''18 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'22 self
   
   meta "rewrite_def" predicate invariant''18
   
-  predicate inv'25 (_1: MutBorrow.t t_PtrOwn)
+  predicate inv'24 (_1: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'24 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'25 x]. inv'25 x = invariant''18 x
+  axiom inv_axiom'23 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'24 x]. inv'24 x = invariant''18 x
   
   let rec new'2 (x: MutBorrow.t t_PtrOwn) (return (x'0: MutBorrow.t t_PtrOwn)) =
-    {[@expl:new 'x' type invariant] inv'23 x}
-    any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'25 result} {result = x} (! return {result}) ]
+    {[@expl:new 'x' type invariant] inv'22 x}
+    any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'24 result} {result = x} (! return {result}) ]
   
   predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = self.final = self.current
   
@@ -1650,23 +1797,23 @@ module M_union_find__implementation__find_inner
   
   meta "rewrite_def" predicate resolve'6
   
-  predicate invariant''19 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'14 self.current /\ inv'14 self.final
+  predicate invariant''19 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''19
   
-  predicate inv'26 (_1: MutBorrow.t t_Node)
+  predicate inv'25 (_1: MutBorrow.t t_Node)
   
-  axiom inv_axiom'25 [@rewrite]: forall x: MutBorrow.t t_Node [inv'26 x]. inv'26 x = invariant''19 x
+  axiom inv_axiom'24 [@rewrite]: forall x: MutBorrow.t t_Node [inv'25 x]. inv'25 x = invariant''19 x
   
   function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = self.final
   
   meta "rewrite_def" function fin
   
   let rec as_mut (ptr'0: Opaque.ptr) (own: MutBorrow.t t_PtrOwn) (return (x: MutBorrow.t t_Node)) =
-    {[@expl:as_mut 'own' type invariant] inv'25 own}
+    {[@expl:as_mut 'own' type invariant] inv'24 own}
     {[@expl:as_mut requires] ptr'0 = ptr own.current}
     any
-    [ return (result: MutBorrow.t t_Node) -> {inv'26 result}
+    [ return (result: MutBorrow.t t_Node) -> {inv'25 result}
       {result.current = val' own.current}
       {ptr (fin own) = ptr own.current}
       {val' (fin own) = result.final}
@@ -1706,7 +1853,7 @@ module M_union_find__implementation__find_inner
   
   function domain (self: t_UnionFind) : Fset.fset t_Element = self.t_UnionFind__0.t_UFInner__domain
   
-  axiom domain_spec: forall self: t_UnionFind. inv'4 self
+  axiom domain_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e1: t_Element, e2: t_Element. contains (domain self) e1
           /\ contains (domain self) e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
   
@@ -1714,7 +1861,7 @@ module M_union_find__implementation__find_inner
   
   function roots_map (self: t_UnionFind) : Map.map t_Element t_Element = self.t_UnionFind__0.t_UFInner__roots
   
-  axiom roots_map_spec: forall self: t_UnionFind. inv'4 self
+  axiom roots_map_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e: t_Element. in_domain self e
         -> in_domain self (index_logic'1 (roots_map self) e)
         /\ index_logic'1 (roots_map self) e = index_logic'1 (roots_map self) (index_logic'1 (roots_map self) e))
@@ -1740,7 +1887,7 @@ module M_union_find__implementation__find_inner
   meta "select_lsinst" "all"
   
   let rec find_inner (uf: MutBorrow.t t_UnionFind) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find_inner 'uf' type invariant] inv'6 uf}
+    {[@expl:find_inner 'uf' type invariant] inv'8 uf}
     {[@expl:find_inner requires] in_domain uf.current elem}
     (! bb0
     [ bb0 = s0 [ s0 = deref {uf} (fun (_ret: MutBorrow.t t_UnionFind) -> [ &_13 <- _ret ] s1) | s1 = bb1 ]
@@ -1757,53 +1904,53 @@ module M_union_find__implementation__find_inner
       | br1 (x0: t_Element) -> {_17 = C_Link x0} (! bb8) ]
     | bb8 = s0
       [ s0 = v_Link {_17} (fun (r0: t_Element) -> [ &e <- r0 ] s1)
-      | s1 = {inv'6 uf}
+      | s1 = {inv'8 uf}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind> {uf}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) ->
-            [ &_28 <- _ret ] -{inv'6 _ret.final}-
+            [ &_28 <- _ret ] -{inv'8 _ret.final}-
             [ &uf <- _ret.final ] s2)
       | s2 = deref_mut {_28} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_27 <- _ret ] s3)
       | s3 = bb10 ]
     | bb10 = s0
-      [ s0 = {inv'4 _27.current.current}
+      [ s0 = {inv'6 _27.current.current}
         MutBorrow.borrow_mut <t_UnionFind> {_27.current.current}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_26 <- _ret ] -{inv'4 _ret.final}-
+            [ &_26 <- _ret ] -{inv'6 _ret.final}-
             [ &_27 <- { _27 with current = { _27.current with current = _ret.final } } ] s1)
-      | s1 = {inv'4 _26.current}
+      | s1 = {inv'6 _26.current}
         MutBorrow.borrow_final <t_UnionFind> {_26.current} {MutBorrow.get_id _26}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_25 <- _ret ] -{inv'4 _ret.final}-
+            [ &_25 <- _ret ] -{inv'6 _ret.final}-
             [ &_26 <- { _26 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'17 _27} s3
+      | s2 = {[@expl:type invariant] inv'16 _27} s3
       | s3 = -{resolve'0 _27}- s4
-      | s4 = {[@expl:type invariant] inv'5 _26} s5
+      | s4 = {[@expl:type invariant] inv'7 _26} s5
       | s5 = -{resolve'2 _26}- s6
-      | s6 = {inv'4 _25.current}
+      | s6 = {inv'6 _25.current}
         MutBorrow.borrow_final <t_UnionFind> {_25.current} {MutBorrow.get_id _25}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_24 <- _ret ] -{inv'4 _ret.final}-
+            [ &_24 <- _ret ] -{inv'6 _ret.final}-
             [ &_25 <- { _25 with current = _ret.final } ] s7)
       | s7 = new'0 {_24} (fun (_ret: MutBorrow.t t_UnionFind) -> [ &_23 <- _ret ] s8)
       | s8 = bb11 ]
     | bb11 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _25} s1
+      [ s0 = {[@expl:type invariant] inv'7 _25} s1
       | s1 = -{resolve'2 _25}- s2
       | s2 = find_inner {_23} {e} (fun (_ret: t_Element) -> [ &root'0 <- _ret ] s3)
       | s3 = bb12 ]
     | bb12 = s0
-      [ s0 = {inv'6 uf}
+      [ s0 = {inv'8 uf}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind> {uf}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) ->
-            [ &_32 <- _ret ] -{inv'6 _ret.final}-
+            [ &_32 <- _ret ] -{inv'8 _ret.final}-
             [ &uf <- _ret.final ] s1)
       | s1 = deref_mut {_32} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_31 <- _ret ] s2)
       | s2 = bb13 ]
     | bb13 = s0
-      [ s0 = {inv'3 _31.current.current.t_UnionFind__0}
+      [ s0 = {inv'5 _31.current.current.t_UnionFind__0}
         MutBorrow.borrow_mut <t_UFInner> {_31.current.current.t_UnionFind__0}
           (fun (_ret: MutBorrow.t t_UFInner) ->
-            [ &__temp <- _ret ] -{inv'3 _ret.final}-
+            [ &__temp <- _ret ] -{inv'5 _ret.final}-
             [ &_31 <- { _31 with current = { _31.current with current = { t_UnionFind__0 = _ret.final } } } ] s1)
       | s1 = new'1 {__temp} (fun (_ret: MutBorrow.t t_UFInner) -> [ &uf'0 <- _ret ] s2)
       | s2 = bb14 ]
@@ -1811,54 +1958,54 @@ module M_union_find__implementation__find_inner
       [ s0 = {[@expl:assertion] index_logic'3 uf'0.current.t_UFInner__depth elem
         < index_logic'3 uf'0.current.t_UFInner__depth root'0}
         s1
-      | s1 = {inv'19 uf'0}
+      | s1 = {inv'18 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_43 <- _ret ] -{inv'19 _ret.final}-
+            [ &_43 <- _ret ] -{inv'18 _ret.final}-
             [ &uf'0 <- _ret.final ] s2)
       | s2 = deref_mut'0 {_43} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_42 <- _ret ] s3)
       | s3 = bb15 ]
     | bb15 = s0
       [ s0 = [ &_45 <- elem ] s1
-      | s1 = {inv'2 _42.current.current.t_UFInner__perms}
+      | s1 = {inv'4 _42.current.current.t_UFInner__perms}
         MutBorrow.borrow_mut <t_FMap> {_42.current.current.t_UFInner__perms}
           (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_41 <- _ret ] -{inv'2 _ret.final}-
+            [ &_41 <- _ret ] -{inv'4 _ret.final}-
             [ &_42 <- { _42 with current = { _42.current with current = { _42.current.current with t_UFInner__perms = _ret.final } } } ]
             s2)
       | s2 = get_mut_ghost {_41} {_45} (fun (_ret: t_Option'1) -> [ &_40 <- _ret ] s3)
       | s3 = bb16 ]
     | bb16 = s0 [ s0 = unwrap'0 {_40} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_39 <- _ret ] s1) | s1 = bb17 ]
     | bb17 = s0
-      [ s0 = {[@expl:type invariant] inv'21 _42} s1
+      [ s0 = {[@expl:type invariant] inv'20 _42} s1
       | s1 = -{resolve'4 _42}- s2
-      | s2 = {inv'1 _39.current}
+      | s2 = {inv'3 _39.current}
         MutBorrow.borrow_final <t_PtrOwn> {_39.current} {MutBorrow.get_id _39}
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
-            [ &_38 <- _ret ] -{inv'1 _ret.final}-
+            [ &_38 <- _ret ] -{inv'3 _ret.final}-
             [ &_39 <- { _39 with current = _ret.final } ] s3)
       | s3 = new'2 {_38} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &mut_perm <- _ret ] s4)
       | s4 = bb18 ]
     | bb18 = s0
-      [ s0 = {[@expl:type invariant] inv'23 _39} s1
+      [ s0 = {[@expl:type invariant] inv'22 _39} s1
       | s1 = -{resolve'6 _39}- s2
       | s2 = [ &_47 <- C_Link root'0 ] s3
       | s3 = as_mut {elem.t_Element__0} {mut_perm} (fun (_ret: MutBorrow.t t_Node) -> [ &_49 <- _ret ] s4)
       | s4 = bb20 ]
     | bb20 = s0
-      [ s0 = {[@expl:type invariant] inv'14 _49.current} s1
+      [ s0 = {[@expl:type invariant] inv'1 _49.current} s1
       | s1 = [ &_49 <- { _49 with current = _47 } ] s2
-      | s2 = {[@expl:type invariant] inv'26 _49} s3
+      | s2 = {[@expl:type invariant] inv'25 _49} s3
       | s3 = -{resolve'8 _49}- s4
-      | s4 = {[@expl:type invariant] inv'19 uf'0} s5
+      | s4 = {[@expl:type invariant] inv'18 uf'0} s5
       | s5 = -{resolve'12 uf'0}- s6
-      | s6 = {[@expl:type invariant] inv'17 _31} s7
+      | s6 = {[@expl:type invariant] inv'16 _31} s7
       | s7 = -{resolve'0 _31}- s8
-      | s8 = {[@expl:type invariant] inv'6 uf} s9
+      | s8 = {[@expl:type invariant] inv'8 uf} s9
       | s9 = -{resolve'14 uf}- s10
       | s10 = bb22 ]
     | bb22 = s0 [ s0 = [ &_0 <- root'0 ] s1 | s1 = bb23 ]
-    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'6 uf} s1 | s1 = -{resolve'14 uf}- s2 | s2 = bb9 ]
+    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'8 uf} s1 | s1 = -{resolve'14 uf}- s2 | s2 = bb9 ]
     | bb9 = s0 [ s0 = [ &_0 <- elem ] s1 | s1 = bb23 ]
     | bb23 = return {_0} ]
     [ & _0: t_Element = Any.any_l ()
@@ -1914,6 +2061,7 @@ module M_union_find__implementation__find
   use mach.int.Int
   use creusot.int.UInt64
   use creusot.prelude.Ptr
+  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_Element = { t_Element__0: Opaque.ptr }
@@ -2031,65 +2179,99 @@ module M_union_find__implementation__find
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'0 (_1: Opaque.ptr)
+  constant size_of_Node_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  axiom size_of_Node_T_spec: 0 <= size_of_Node_T
   
-  predicate invariant''0 (self: t_PtrOwn) =
-    not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_T
   
-  predicate inv'1 (_1: t_PtrOwn)
+  meta "rewrite_def" function size_of_val_logic
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
   
-  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
-    forall k: t_Element. contains'0 self k -> inv k /\ inv'1 (index_logic'1 self k)
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
   
-  meta "rewrite_def" predicate invariant''1
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate inv'2 (_1: t_FMap)
+  predicate inv'0 (_1: t_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  predicate inv'1 (_1: t_Node)
   
-  predicate inv'3 (_1: t_UFInner)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
       = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'2 perms
+        | C_Root rank payload -> inv'0 payload
+        | C_Link a_0 -> true
         end
   
-  predicate inv'4 (_1: t_UnionFind)
+  predicate invariant''0 [@inline:trivial] (self: t_Node) = inv'1 self
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UnionFind [inv'4 x]. inv'4 x
-      = (invariant' x
-      /\ match x with
-        | {t_UnionFind__0 = a_0} -> inv'3 a_0
-        end)
+  meta "rewrite_def" predicate invariant''0
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'4 self.current /\ inv'4 self.final
+  predicate inv'2 (_1: t_Node)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'2 (val' self)
+  
+  predicate inv'3 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
+    forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'1 self k)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'4 (_1: t_FMap)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'5 x]. inv'5 x = invariant''2 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
   
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'5 self
+  predicate inv'5 (_1: t_UFInner)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
+      = match x with
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'4 perms
+        end
+  
+  predicate inv'6 (_1: t_UnionFind)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'6 x]. inv'6 x
+      = (invariant' x
+      /\ match x with
+        | {t_UnionFind__0 = a_0} -> inv'5 a_0
+        end)
+  
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'6 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'7 (_1: MutBorrow.t t_UnionFind)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
+  
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'7 self
+  
+  meta "rewrite_def" predicate invariant''4
+  
+  predicate inv'8 (_1: MutBorrow.t t_UnionFind)
+  
+  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
   
   function domain (self: t_UnionFind) : Fset.fset t_Element = self.t_UnionFind__0.t_UFInner__domain
   
-  axiom domain_spec: forall self: t_UnionFind. inv'4 self
+  axiom domain_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e1: t_Element, e2: t_Element. contains (domain self) e1
           /\ contains (domain self) e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
   
@@ -2097,7 +2279,7 @@ module M_union_find__implementation__find
   
   function roots_map (self: t_UnionFind) : Map.map t_Element t_Element = self.t_UnionFind__0.t_UFInner__roots
   
-  axiom roots_map_spec: forall self: t_UnionFind. inv'4 self
+  axiom roots_map_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e: t_Element. in_domain self e
         -> in_domain self (index_logic'2 (roots_map self) e)
         /\ index_logic'2 (roots_map self) e = index_logic'2 (roots_map self) (index_logic'2 (roots_map self) e))
@@ -2115,7 +2297,7 @@ module M_union_find__implementation__find
   meta "rewrite_def" function fin
   
   let rec find_inner (uf: MutBorrow.t t_UnionFind) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find_inner 'uf' type invariant] inv'6 uf}
+    {[@expl:find_inner 'uf' type invariant] inv'8 uf}
     {[@expl:find_inner requires] in_domain uf.current elem}
     any
     [ return (result: t_Element) -> {result = root uf.current elem}
@@ -2130,7 +2312,7 @@ module M_union_find__implementation__find
   meta "select_lsinst" "all"
   
   let rec find (uf: MutBorrow.t t_UnionFind) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find 'uf' type invariant] inv'6 uf}
+    {[@expl:find 'uf' type invariant] inv'8 uf}
     {[@expl:find requires] in_domain uf.current elem}
     (! bb0
     [ bb0 = s0 [ s0 = find_inner {uf} {elem} (fun (_ret: t_Element) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
@@ -2147,6 +2329,7 @@ module M_union_find__implementation__get
   use creusot.int.UInt64
   use creusot.prelude.Ptr
   use mach.int.Int
+  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_Element = { t_Element__0: Opaque.ptr }
@@ -2264,105 +2447,139 @@ module M_union_find__implementation__get
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'0 (_1: Opaque.ptr)
+  constant size_of_Node_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  axiom size_of_Node_T_spec: 0 <= size_of_Node_T
   
-  predicate invariant''0 (self: t_PtrOwn) =
-    not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_T
   
-  predicate inv'1 (_1: t_PtrOwn)
+  meta "rewrite_def" function size_of_val_logic
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
   
-  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
-    forall k: t_Element. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
   
-  meta "rewrite_def" predicate invariant''1
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate inv'2 (_1: t_FMap)
+  predicate inv'0 (_1: t_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  predicate inv'1 (_1: t_Node)
   
-  predicate inv'3 (_1: t_UFInner)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
       = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'2 perms
+        | C_Root rank payload -> inv'0 payload
+        | C_Link a_0 -> true
         end
   
-  predicate inv'4 (_1: t_UnionFind)
+  predicate invariant''0 [@inline:trivial] (self: t_Node) = inv'1 self
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UnionFind [inv'4 x]. inv'4 x
-      = (invariant' x
-      /\ match x with
-        | {t_UnionFind__0 = a_0} -> inv'3 a_0
-        end)
+  meta "rewrite_def" predicate invariant''0
   
-  predicate invariant''2 [@inline:trivial] (self: t_UnionFind) = inv'4 self
+  predicate inv'2 (_1: t_Node)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'2 (val' self)
+  
+  predicate inv'3 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
+    forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: t_UnionFind)
+  predicate inv'4 (_1: t_FMap)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'5 x]. inv'5 x = invariant''2 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
   
-  predicate invariant''3 [@inline:trivial] (self: t_UnionFind) = inv'5 self
+  predicate inv'5 (_1: t_UFInner)
   
-  meta "rewrite_def" predicate invariant''3
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
+      = match x with
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'4 perms
+        end
   
   predicate inv'6 (_1: t_UnionFind)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_UnionFind [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'6 x]. inv'6 x
+      = (invariant' x
+      /\ match x with
+        | {t_UnionFind__0 = a_0} -> inv'5 a_0
+        end)
   
-  predicate invariant''4 [@inline:trivial] (self: t_UnionFind) = inv'6 self
+  predicate invariant''3 [@inline:trivial] (self: t_UnionFind) = inv'6 self
   
-  meta "rewrite_def" predicate invariant''4
+  meta "rewrite_def" predicate invariant''3
   
   predicate inv'7 (_1: t_UnionFind)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_UnionFind [inv'7 x]. inv'7 x = invariant''4 x
+  axiom inv_axiom'6 [@rewrite]: forall x: t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate invariant''5 [@inline:trivial] (self: t_UnionFind) = inv'5 self
+  predicate invariant''4 [@inline:trivial] (self: t_UnionFind) = inv'7 self
   
-  meta "rewrite_def" predicate invariant''5
+  meta "rewrite_def" predicate invariant''4
   
   predicate inv'8 (_1: t_UnionFind)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_UnionFind [inv'8 x]. inv'8 x = invariant''5 x
+  axiom inv_axiom'7 [@rewrite]: forall x: t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
   
-  let rec deref (self: t_UnionFind) (return (x: t_UnionFind)) = {[@expl:deref 'self' type invariant] inv'7 self}
-    any [ return (result: t_UnionFind) -> {inv'8 result} {result = self} (! return {result}) ]
+  predicate invariant''5 [@inline:trivial] (self: t_UnionFind) = inv'8 self
   
-  type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
+  meta "rewrite_def" predicate invariant''5
   
-  predicate invariant''6 [@inline:trivial] (self: t_FMap) = inv'2 self
+  predicate inv'9 (_1: t_UnionFind)
+  
+  axiom inv_axiom'8 [@rewrite]: forall x: t_UnionFind [inv'9 x]. inv'9 x = invariant''5 x
+  
+  predicate invariant''6 [@inline:trivial] (self: t_UnionFind) = inv'7 self
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'9 (_1: t_FMap)
+  predicate inv'10 (_1: t_UnionFind)
   
-  axiom inv_axiom'9 [@rewrite]: forall x: t_FMap [inv'9 x]. inv'9 x = invariant''6 x
+  axiom inv_axiom'9 [@rewrite]: forall x: t_UnionFind [inv'10 x]. inv'10 x = invariant''6 x
   
-  predicate invariant''7 [@inline:trivial] (self: t_PtrOwn) = inv'1 self
+  let rec deref (self: t_UnionFind) (return (x: t_UnionFind)) = {[@expl:deref 'self' type invariant] inv'9 self}
+    any [ return (result: t_UnionFind) -> {inv'10 result} {result = self} (! return {result}) ]
+  
+  type t_Option'0 = C_None'0 | C_Some'0 t_PtrOwn
+  
+  predicate invariant''7 [@inline:trivial] (self: t_FMap) = inv'4 self
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'10 (_1: t_PtrOwn)
+  predicate inv'11 (_1: t_FMap)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_PtrOwn [inv'10 x]. inv'10 x = invariant''7 x
+  axiom inv_axiom'10 [@rewrite]: forall x: t_FMap [inv'11 x]. inv'11 x = invariant''7 x
   
-  predicate inv'11 (_1: t_Option'0)
+  predicate invariant''8 [@inline:trivial] (self: t_PtrOwn) = inv'3 self
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_Option'0 [inv'11 x]. inv'11 x
+  meta "rewrite_def" predicate invariant''8
+  
+  predicate inv'12 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'11 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''8 x
+  
+  predicate inv'13 (_1: t_Option'0)
+  
+  axiom inv_axiom'12 [@rewrite]: forall x: t_Option'0 [inv'13 x]. inv'13 x
       = match x with
         | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'10 a_0
+        | C_Some'0 a_0 -> inv'12 a_0
         end
   
   function map_logic (self: t_Option) (f: Map.map t_PtrOwn t_PtrOwn) : t_Option'0 = match self with
@@ -2371,49 +2588,31 @@ module M_union_find__implementation__get
       end
   
   let rec get_ghost (self: t_FMap) (key: t_Element) (return (x: t_Option'0)) =
-    {[@expl:get_ghost 'self' type invariant] inv'9 self}
+    {[@expl:get_ghost 'self' type invariant] inv'11 self}
     any
-    [ return (result: t_Option'0) -> {inv'11 result}
+    [ return (result: t_Option'0) -> {inv'13 result}
       {result = map_logic (get self key) (fun (v: t_PtrOwn) -> v)}
       (! return {result}) ]
   
-  let rec unwrap (self_: t_Option'0) (return (x: t_PtrOwn)) = {[@expl:unwrap 'self_' type invariant] inv'11 self_}
+  let rec unwrap (self_: t_Option'0) (return (x: t_PtrOwn)) = {[@expl:unwrap 'self_' type invariant] inv'13 self_}
     {[@expl:unwrap requires] self_ <> C_None'0}
-    any [ return (result: t_PtrOwn) -> {inv'10 result} {C_Some'0 result = self_} (! return {result}) ]
+    any [ return (result: t_PtrOwn) -> {inv'12 result} {C_Some'0 result = self_} (! return {result}) ]
   
-  predicate invariant''8 [@inline:trivial] (self: t_PtrOwn) = inv'10 self
-  
-  meta "rewrite_def" predicate invariant''8
-  
-  predicate inv'12 (_1: t_PtrOwn)
-  
-  axiom inv_axiom'12 [@rewrite]: forall x: t_PtrOwn [inv'12 x]. inv'12 x = invariant''8 x
-  
-  let rec new (x: t_PtrOwn) (return (x'0: t_PtrOwn)) = {[@expl:new 'x' type invariant] inv'10 x}
-    any [ return (result: t_PtrOwn) -> {inv'12 result} {result = x} (! return {result}) ]
-  
-  predicate inv'13 (_1: t_T)
-  
-  predicate inv'14 (_1: t_Node)
-  
-  axiom inv_axiom'13 [@rewrite]: forall x: t_Node [inv'14 x]. inv'14 x
-      = match x with
-        | C_Root rank payload -> inv'13 payload
-        | C_Link a_0 -> true
-        end
-  
-  predicate invariant''9 [@inline:trivial] (self: t_Node) = inv'14 self
+  predicate invariant''9 [@inline:trivial] (self: t_PtrOwn) = inv'12 self
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'15 (_1: t_Node)
+  predicate inv'14 (_1: t_PtrOwn)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: t_Node [inv'15 x]. inv'15 x = invariant''9 x
+  axiom inv_axiom'13 [@rewrite]: forall x: t_PtrOwn [inv'14 x]. inv'14 x = invariant''9 x
+  
+  let rec new (x: t_PtrOwn) (return (x'0: t_PtrOwn)) = {[@expl:new 'x' type invariant] inv'12 x}
+    any [ return (result: t_PtrOwn) -> {inv'14 result} {result = x} (! return {result}) ]
   
   let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return (x: t_Node)) =
-    {[@expl:as_ref 'own' type invariant] inv'12 own}
+    {[@expl:as_ref 'own' type invariant] inv'14 own}
     {[@expl:as_ref requires] ptr'0 = ptr own}
-    any [ return (result: t_Node) -> {inv'15 result} {result = val' own} (! return {result}) ]
+    any [ return (result: t_Node) -> {inv'2 result} {result = val' own} (! return {result}) ]
   
   let rec v_Root (input: t_Node) (ret (rank: t_PeanoInt) (payload: t_T)) = any
     [ good (rank: t_PeanoInt) (payload: t_T) -> {C_Root rank payload = input} (! ret {rank} {payload})
@@ -2423,7 +2622,7 @@ module M_union_find__implementation__get
   
   function domain (self: t_UnionFind) : Fset.fset t_Element = self.t_UnionFind__0.t_UFInner__domain
   
-  axiom domain_spec: forall self: t_UnionFind. inv'4 self
+  axiom domain_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e1: t_Element, e2: t_Element. contains (domain self) e1
           /\ contains (domain self) e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
   
@@ -2431,20 +2630,20 @@ module M_union_find__implementation__get
   
   function roots_map (self: t_UnionFind) : Map.map t_Element t_Element = self.t_UnionFind__0.t_UFInner__roots
   
-  axiom roots_map_spec: forall self: t_UnionFind. inv'4 self
+  axiom roots_map_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e: t_Element. in_domain self e
         -> in_domain self (index_logic'1 (roots_map self) e)
         /\ index_logic'1 (roots_map self) e = index_logic'1 (roots_map self) (index_logic'1 (roots_map self) e))
   
   function root (self: t_UnionFind) (e: t_Element) : t_Element = index_logic'1 (roots_map self) e
   
-  predicate invariant''10 [@inline:trivial] (self: t_T) = inv'13 self
+  predicate invariant''10 [@inline:trivial] (self: t_T) = inv'0 self
   
   meta "rewrite_def" predicate invariant''10
   
-  predicate inv'16 (_1: t_T)
+  predicate inv'15 (_1: t_T)
   
-  axiom inv_axiom'15 [@rewrite]: forall x: t_T [inv'16 x]. inv'16 x = invariant''10 x
+  axiom inv_axiom'14 [@rewrite]: forall x: t_T [inv'15 x]. inv'15 x = invariant''10 x
   
   function payloads_map (self: t_UnionFind) : Map.map t_Element t_T = self.t_UnionFind__0.t_UFInner__payloads
   
@@ -2454,7 +2653,7 @@ module M_union_find__implementation__get
   
   meta "select_lsinst" "all"
   
-  let rec get'0 (uf: t_UnionFind) (elem: t_Element) (return (x: t_T)) = {[@expl:get 'uf' type invariant] inv'6 uf}
+  let rec get'0 (uf: t_UnionFind) (elem: t_Element) (return (x: t_T)) = {[@expl:get 'uf' type invariant] inv'8 uf}
     {[@expl:get requires #0] in_domain uf elem}
     {[@expl:get requires #1] root uf elem = elem}
     (! bb0
@@ -2484,7 +2683,7 @@ module M_union_find__implementation__get
     | & _13: t_Element = Any.any_l ()
     | & _14: t_Node = Any.any_l ()
     | & payload'0: t_T = Any.any_l () ])
-    [ return (result: t_T) -> {[@expl:get result type invariant] inv'16 result}
+    [ return (result: t_T) -> {[@expl:get result type invariant] inv'15 result}
       {[@expl:get ensures] result = payload uf elem}
       (! return {result}) ]
 end
@@ -2496,6 +2695,7 @@ module M_union_find__implementation__equiv
   use creusot.int.UInt64
   use creusot.prelude.Ptr
   use mach.int.Int
+  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_Element = { t_Element__0: Opaque.ptr }
@@ -2613,83 +2813,118 @@ module M_union_find__implementation__equiv
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'0 (_1: Opaque.ptr)
+  constant size_of_Node_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  axiom size_of_Node_T_spec: 0 <= size_of_Node_T
   
-  predicate invariant''0 (self: t_PtrOwn) =
-    not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_T
   
-  predicate inv'1 (_1: t_PtrOwn)
+  meta "rewrite_def" function size_of_val_logic
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
   
-  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
-    forall k: t_Element. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
   
-  meta "rewrite_def" predicate invariant''1
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate inv'2 (_1: t_FMap)
+  predicate inv'0 (_1: t_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  predicate inv'1 (_1: t_Node)
   
-  predicate inv'3 (_1: t_UFInner)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
       = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'2 perms
+        | C_Root rank payload -> inv'0 payload
+        | C_Link a_0 -> true
         end
   
-  predicate inv'4 (_1: t_UnionFind)
+  predicate invariant''0 [@inline:trivial] (self: t_Node) = inv'1 self
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UnionFind [inv'4 x]. inv'4 x
-      = (invariant' x
-      /\ match x with
-        | {t_UnionFind__0 = a_0} -> inv'3 a_0
-        end)
+  meta "rewrite_def" predicate invariant''0
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'4 self.current /\ inv'4 self.final
+  predicate inv'2 (_1: t_Node)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'2 (val' self)
+  
+  predicate inv'3 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
+    forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'4 (_1: t_FMap)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'5 x]. inv'5 x = invariant''2 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
   
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'5 self
+  predicate inv'5 (_1: t_UFInner)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
+      = match x with
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'4 perms
+        end
+  
+  predicate inv'6 (_1: t_UnionFind)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'6 x]. inv'6 x
+      = (invariant' x
+      /\ match x with
+        | {t_UnionFind__0 = a_0} -> inv'5 a_0
+        end)
+  
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'6 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'7 (_1: MutBorrow.t t_UnionFind)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
-    inv'6 self.current /\ inv'6 self.final
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'7 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'7 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
+  predicate inv'8 (_1: MutBorrow.t t_UnionFind)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'7 x]. inv'7 x = invariant''4 x
+  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
-    inv'5 self.current /\ inv'5 self.final
+    inv'8 self.current /\ inv'8 self.final
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'8 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
+  predicate inv'9 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'8 x]. inv'8 x = invariant''5 x
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'9 x]. inv'9 x = invariant''5 x
+  
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+    inv'7 self.current /\ inv'7 self.final
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'10 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
+  
+  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'10 x]. inv'10 x = invariant''6 x
   
   let rec deref_mut (self: MutBorrow.t (MutBorrow.t t_UnionFind)) (return (x: MutBorrow.t (MutBorrow.t t_UnionFind))) =
-    {[@expl:deref_mut 'self' type invariant] inv'7 self}
-    any [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind)) -> {inv'8 result} {result = self} (! return {result}) ]
+    {[@expl:deref_mut 'self' type invariant] inv'9 self}
+    any
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind)) -> {inv'10 result} {result = self} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) = self.final = self.current
   
@@ -2708,12 +2943,12 @@ module M_union_find__implementation__equiv
   meta "rewrite_def" predicate resolve'2
   
   let rec new (x: MutBorrow.t t_UnionFind) (return (x'0: MutBorrow.t t_UnionFind)) =
-    {[@expl:new 'x' type invariant] inv'5 x}
-    any [ return (result: MutBorrow.t t_UnionFind) -> {inv'6 result} {result = x} (! return {result}) ]
+    {[@expl:new 'x' type invariant] inv'7 x}
+    any [ return (result: MutBorrow.t t_UnionFind) -> {inv'8 result} {result = x} (! return {result}) ]
   
   function domain (self: t_UnionFind) : Fset.fset t_Element = self.t_UnionFind__0.t_UFInner__domain
   
-  axiom domain_spec: forall self: t_UnionFind. inv'4 self
+  axiom domain_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e1: t_Element, e2: t_Element. contains (domain self) e1
           /\ contains (domain self) e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
   
@@ -2721,7 +2956,7 @@ module M_union_find__implementation__equiv
   
   function roots_map (self: t_UnionFind) : Map.map t_Element t_Element = self.t_UnionFind__0.t_UFInner__roots
   
-  axiom roots_map_spec: forall self: t_UnionFind. inv'4 self
+  axiom roots_map_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e: t_Element. in_domain self e
         -> in_domain self (index_logic'1 (roots_map self) e)
         /\ index_logic'1 (roots_map self) e = index_logic'1 (roots_map self) (index_logic'1 (roots_map self) e))
@@ -2735,7 +2970,7 @@ module M_union_find__implementation__equiv
     /\ roots_map self.current = roots_map self.final /\ payloads_map self.current = payloads_map self.final
   
   let rec find (uf: MutBorrow.t t_UnionFind) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find 'uf' type invariant] inv'6 uf}
+    {[@expl:find 'uf' type invariant] inv'8 uf}
     {[@expl:find requires] in_domain uf.current elem}
     any [ return (result: t_Element) -> {result = root uf.current elem} {unchanged uf} (! return {result}) ]
   
@@ -2751,42 +2986,42 @@ module M_union_find__implementation__equiv
   meta "select_lsinst" "all"
   
   let rec equiv (uf: MutBorrow.t t_UnionFind) (e1: t_Element) (e2: t_Element) (return (x: bool)) =
-    {[@expl:equiv 'uf' type invariant] inv'6 uf}
+    {[@expl:equiv 'uf' type invariant] inv'8 uf}
     {[@expl:equiv requires #0] in_domain uf.current e1}
     {[@expl:equiv requires #1] in_domain uf.current e2}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'6 uf}
+      [ s0 = {inv'8 uf}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind> {uf}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) ->
-            [ &_14 <- _ret ] -{inv'6 _ret.final}-
+            [ &_14 <- _ret ] -{inv'8 _ret.final}-
             [ &uf <- _ret.final ] s1)
       | s1 = deref_mut {_14} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_13 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'4 _13.current.current}
+      [ s0 = {inv'6 _13.current.current}
         MutBorrow.borrow_mut <t_UnionFind> {_13.current.current}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_12 <- _ret ] -{inv'4 _ret.final}-
+            [ &_12 <- _ret ] -{inv'6 _ret.final}-
             [ &_13 <- { _13 with current = { _13.current with current = _ret.final } } ] s1)
-      | s1 = {inv'4 _12.current}
+      | s1 = {inv'6 _12.current}
         MutBorrow.borrow_final <t_UnionFind> {_12.current} {MutBorrow.get_id _12}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_11 <- _ret ] -{inv'4 _ret.final}-
+            [ &_11 <- _ret ] -{inv'6 _ret.final}-
             [ &_12 <- { _12 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'8 _13} s3
+      | s2 = {[@expl:type invariant] inv'10 _13} s3
       | s3 = -{resolve'0 _13}- s4
-      | s4 = {[@expl:type invariant] inv'5 _12} s5
+      | s4 = {[@expl:type invariant] inv'7 _12} s5
       | s5 = -{resolve'2 _12}- s6
-      | s6 = {inv'4 _11.current}
+      | s6 = {inv'6 _11.current}
         MutBorrow.borrow_final <t_UnionFind> {_11.current} {MutBorrow.get_id _11}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_10 <- _ret ] -{inv'4 _ret.final}-
+            [ &_10 <- _ret ] -{inv'6 _ret.final}-
             [ &_11 <- { _11 with current = _ret.final } ] s7)
       | s7 = new {_10} (fun (_ret: MutBorrow.t t_UnionFind) -> [ &_9 <- _ret ] s8)
       | s8 = bb2 ]
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _11} s1
+      [ s0 = {[@expl:type invariant] inv'7 _11} s1
       | s1 = -{resolve'2 _11}- s2
       | s2 = find {_9} {e1} (fun (_ret: t_Element) -> [ &r1 <- _ret ] s3)
       | s3 = bb3 ]
@@ -2817,6 +3052,7 @@ module M_union_find__implementation__link
   use set.Fset
   use map.Map
   use mach.int.Int
+  use creusot.int.Int64
   use int.MinMax
   use creusot.prelude.Any
   
@@ -2942,61 +3178,95 @@ module M_union_find__implementation__link
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'0 (_1: Opaque.ptr)
+  constant size_of_Node_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  axiom size_of_Node_T_spec: 0 <= size_of_Node_T
   
-  predicate invariant''0 (self: t_PtrOwn) =
-    not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_T
   
-  predicate inv'1 (_1: t_PtrOwn)
+  meta "rewrite_def" function size_of_val_logic
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
   
-  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
-    forall k: t_Element. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
   
-  meta "rewrite_def" predicate invariant''1
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate inv'2 (_1: t_FMap)
+  predicate inv'0 (_1: t_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  predicate inv'1 (_1: t_Node)
   
-  predicate inv'3 (_1: t_UFInner)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
       = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'2 perms
+        | C_Root rank payload -> inv'0 payload
+        | C_Link a_0 -> true
         end
   
-  predicate inv'4 (_1: t_UnionFind)
+  predicate invariant''0 [@inline:trivial] (self: t_Node) = inv'1 self
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UnionFind [inv'4 x]. inv'4 x
-      = (invariant' x
-      /\ match x with
-        | {t_UnionFind__0 = a_0} -> inv'3 a_0
-        end)
+  meta "rewrite_def" predicate invariant''0
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'4 self.current /\ inv'4 self.final
+  predicate inv'2 (_1: t_Node)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'2 (val' self)
+  
+  predicate inv'3 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
+    forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'4 (_1: t_FMap)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'5 x]. inv'5 x = invariant''2 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
   
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'5 self
+  predicate inv'5 (_1: t_UFInner)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
+      = match x with
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'4 perms
+        end
+  
+  predicate inv'6 (_1: t_UnionFind)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'6 x]. inv'6 x
+      = (invariant' x
+      /\ match x with
+        | {t_UnionFind__0 = a_0} -> inv'5 a_0
+        end)
+  
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'6 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'7 (_1: MutBorrow.t t_UnionFind)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
+  
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'7 self
+  
+  meta "rewrite_def" predicate invariant''4
+  
+  predicate inv'8 (_1: MutBorrow.t t_UnionFind)
+  
+  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t t_UnionFind) = self.final = self.current
   
@@ -3014,92 +3284,93 @@ module M_union_find__implementation__link
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
-    inv'6 self.current /\ inv'6 self.final
-  
-  meta "rewrite_def" predicate invariant''4
-  
-  predicate inv'7 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
-  
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'7 x]. inv'7 x = invariant''4 x
-  
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
-    inv'5 self.current /\ inv'5 self.final
+    inv'8 self.current /\ inv'8 self.final
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'8 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
+  predicate inv'9 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'8 x]. inv'8 x = invariant''5 x
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'9 x]. inv'9 x = invariant''5 x
   
-  let rec deref_mut (self: MutBorrow.t (MutBorrow.t t_UnionFind)) (return (x: MutBorrow.t (MutBorrow.t t_UnionFind))) =
-    {[@expl:deref_mut 'self' type invariant] inv'7 self}
-    any [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind)) -> {inv'8 result} {result = self} (! return {result}) ]
-  
-  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_UFInner) = inv'3 self.current /\ inv'3 self.final
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+    inv'7 self.current /\ inv'7 self.final
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'9 (_1: MutBorrow.t t_UFInner)
+  predicate inv'10 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
   
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'9 x]. inv'9 x = invariant''6 x
+  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'10 x]. inv'10 x = invariant''6 x
   
-  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_UFInner) = inv'9 self
+  let rec deref_mut (self: MutBorrow.t (MutBorrow.t t_UnionFind)) (return (x: MutBorrow.t (MutBorrow.t t_UnionFind))) =
+    {[@expl:deref_mut 'self' type invariant] inv'9 self}
+    any
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind)) -> {inv'10 result} {result = self} (! return {result}) ]
+  
+  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_UFInner) = inv'5 self.current /\ inv'5 self.final
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'10 (_1: MutBorrow.t t_UFInner)
+  predicate inv'11 (_1: MutBorrow.t t_UFInner)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'10 x]. inv'10 x = invariant''7 x
+  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'11 x]. inv'11 x = invariant''7 x
   
-  let rec new (x: MutBorrow.t t_UFInner) (return (x'0: MutBorrow.t t_UFInner)) =
-    {[@expl:new 'x' type invariant] inv'9 x}
-    any [ return (result: MutBorrow.t t_UFInner) -> {inv'10 result} {result = x} (! return {result}) ]
-  
-  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
-    inv'10 self.current /\ inv'10 self.final
+  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_UFInner) = inv'11 self
   
   meta "rewrite_def" predicate invariant''8
   
-  predicate inv'11 (_1: MutBorrow.t (MutBorrow.t t_UFInner))
+  predicate inv'12 (_1: MutBorrow.t t_UFInner)
   
-  axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'11 x]. inv'11 x = invariant''8 x
+  axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t t_UFInner [inv'12 x]. inv'12 x = invariant''8 x
+  
+  let rec new (x: MutBorrow.t t_UFInner) (return (x'0: MutBorrow.t t_UFInner)) =
+    {[@expl:new 'x' type invariant] inv'11 x}
+    any [ return (result: MutBorrow.t t_UFInner) -> {inv'12 result} {result = x} (! return {result}) ]
   
   predicate invariant''9 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
-    inv'9 self.current /\ inv'9 self.final
+    inv'12 self.current /\ inv'12 self.final
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'12 (_1: MutBorrow.t (MutBorrow.t t_UFInner))
+  predicate inv'13 (_1: MutBorrow.t (MutBorrow.t t_UFInner))
   
-  axiom inv_axiom'12 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'12 x]. inv'12 x = invariant''9 x
+  axiom inv_axiom'12 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'13 x]. inv'13 x = invariant''9 x
   
-  let rec deref_mut'0 (self: MutBorrow.t (MutBorrow.t t_UFInner)) (return (x: MutBorrow.t (MutBorrow.t t_UFInner))) =
-    {[@expl:deref_mut 'self' type invariant] inv'11 self}
-    any [ return (result: MutBorrow.t (MutBorrow.t t_UFInner)) -> {inv'12 result} {result = self} (! return {result}) ]
-  
-  type tuple = { f0: MutBorrow.t t_PtrOwn; f1: MutBorrow.t t_FMap }
-  
-  predicate invariant''10 [@inline:trivial] (self: MutBorrow.t t_FMap) = inv'2 self.current /\ inv'2 self.final
+  predicate invariant''10 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner)) =
+    inv'11 self.current /\ inv'11 self.final
   
   meta "rewrite_def" predicate invariant''10
   
-  predicate inv'13 (_1: MutBorrow.t t_FMap)
+  predicate inv'14 (_1: MutBorrow.t (MutBorrow.t t_UFInner))
   
-  axiom inv_axiom'13 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'13 x]. inv'13 x = invariant''10 x
+  axiom inv_axiom'13 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UFInner) [inv'14 x]. inv'14 x = invariant''10 x
   
-  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'1 self.current /\ inv'1 self.final
+  let rec deref_mut'0 (self: MutBorrow.t (MutBorrow.t t_UFInner)) (return (x: MutBorrow.t (MutBorrow.t t_UFInner))) =
+    {[@expl:deref_mut 'self' type invariant] inv'13 self}
+    any [ return (result: MutBorrow.t (MutBorrow.t t_UFInner)) -> {inv'14 result} {result = self} (! return {result}) ]
+  
+  type tuple = { f0: MutBorrow.t t_PtrOwn; f1: MutBorrow.t t_FMap }
+  
+  predicate invariant''11 [@inline:trivial] (self: MutBorrow.t t_FMap) = inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''11
   
-  predicate inv'14 (_1: MutBorrow.t t_PtrOwn)
+  predicate inv'15 (_1: MutBorrow.t t_FMap)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'14 x]. inv'14 x = invariant''11 x
+  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'15 x]. inv'15 x = invariant''11 x
   
-  predicate inv'15 (_1: tuple)
+  predicate invariant''12 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'3 self.current /\ inv'3 self.final
   
-  axiom inv_axiom'15 [@rewrite]: forall x: tuple [inv'15 x]. inv'15 x
-      = (let {f0 = x0; f1 = x1} = x in inv'14 x0 /\ inv'13 x1)
+  meta "rewrite_def" predicate invariant''12
+  
+  predicate inv'16 (_1: MutBorrow.t t_PtrOwn)
+  
+  axiom inv_axiom'15 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'16 x]. inv'16 x = invariant''12 x
+  
+  predicate inv'17 (_1: tuple)
+  
+  axiom inv_axiom'16 [@rewrite]: forall x: tuple [inv'17 x]. inv'17 x
+      = (let {f0 = x0; f1 = x1} = x in inv'16 x0 /\ inv'15 x1)
   
   function len (self: t_FMap) : int
   
@@ -3121,10 +3392,10 @@ module M_union_find__implementation__link
       = (if contains'0 self k then len self else len self + 1)
   
   let rec split_mut_ghost (self: MutBorrow.t t_FMap) (key: t_Element) (return (x: tuple)) =
-    {[@expl:split_mut_ghost 'self' type invariant] inv'13 self}
+    {[@expl:split_mut_ghost 'self' type invariant] inv'15 self}
     {[@expl:split_mut_ghost requires] contains'0 self.current key}
     any
-    [ return (result: tuple) -> {inv'15 result}
+    [ return (result: tuple) -> {inv'17 result}
       {result.f1.current = remove self.current key}
       {index_logic'0 self.current key = result.f0.current /\ self.final = insert result.f1.final key result.f0.final}
       (! return {result}) ]
@@ -3137,68 +3408,58 @@ module M_union_find__implementation__link
   
   meta "rewrite_def" predicate resolve'4
   
-  predicate invariant''12 [@inline:trivial] (self: tuple) = inv'15 self
-  
-  meta "rewrite_def" predicate invariant''12
-  
-  predicate inv'16 (_1: tuple)
-  
-  axiom inv_axiom'16 [@rewrite]: forall x: tuple [inv'16 x]. inv'16 x = invariant''12 x
-  
-  let rec new'0 (x: tuple) (return (x'0: tuple)) = {[@expl:new 'x' type invariant] inv'15 x}
-    any [ return (result: tuple) -> {inv'16 result} {result = x} (! return {result}) ]
-  
-  type tuple'0 = { f0'0: MutBorrow.t t_PtrOwn; f1'0: MutBorrow.t t_FMap }
-  
-  predicate invariant''13 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'14 self
+  predicate invariant''13 [@inline:trivial] (self: tuple) = inv'17 self
   
   meta "rewrite_def" predicate invariant''13
   
-  predicate inv'17 (_1: MutBorrow.t t_PtrOwn)
+  predicate inv'18 (_1: tuple)
   
-  axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'17 x]. inv'17 x = invariant''13 x
+  axiom inv_axiom'17 [@rewrite]: forall x: tuple [inv'18 x]. inv'18 x = invariant''13 x
   
-  predicate invariant''14 [@inline:trivial] (self: MutBorrow.t t_FMap) = inv'13 self
+  let rec new'0 (x: tuple) (return (x'0: tuple)) = {[@expl:new 'x' type invariant] inv'17 x}
+    any [ return (result: tuple) -> {inv'18 result} {result = x} (! return {result}) ]
+  
+  type tuple'0 = { f0'0: MutBorrow.t t_PtrOwn; f1'0: MutBorrow.t t_FMap }
+  
+  predicate invariant''14 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'16 self
   
   meta "rewrite_def" predicate invariant''14
   
-  predicate inv'18 (_1: MutBorrow.t t_FMap)
+  predicate inv'19 (_1: MutBorrow.t t_PtrOwn)
   
-  axiom inv_axiom'18 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'18 x]. inv'18 x = invariant''14 x
+  axiom inv_axiom'18 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'19 x]. inv'19 x = invariant''14 x
   
-  predicate inv'19 (_1: tuple'0)
-  
-  axiom inv_axiom'19 [@rewrite]: forall x: tuple'0 [inv'19 x]. inv'19 x
-      = (let {f0'0 = x0; f1'0 = x1} = x in inv'17 x0 /\ inv'18 x1)
-  
-  let rec split (self: tuple) (return (x: tuple'0)) = {[@expl:split 'self' type invariant] inv'16 self}
-    any
-    [ return (result: tuple'0) -> {inv'19 result} {self.f0 = result.f0'0} {self.f1 = result.f1'0} (! return {result}) ]
-  
-  predicate inv'20 (_1: t_T)
-  
-  predicate inv'21 (_1: t_Node)
-  
-  axiom inv_axiom'20 [@rewrite]: forall x: t_Node [inv'21 x]. inv'21 x
-      = match x with
-        | C_Root rank payload -> inv'20 payload
-        | C_Link a_0 -> true
-        end
-  
-  predicate invariant''15 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'21 self.current /\ inv'21 self.final
+  predicate invariant''15 [@inline:trivial] (self: MutBorrow.t t_FMap) = inv'15 self
   
   meta "rewrite_def" predicate invariant''15
   
+  predicate inv'20 (_1: MutBorrow.t t_FMap)
+  
+  axiom inv_axiom'19 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'20 x]. inv'20 x = invariant''15 x
+  
+  predicate inv'21 (_1: tuple'0)
+  
+  axiom inv_axiom'20 [@rewrite]: forall x: tuple'0 [inv'21 x]. inv'21 x
+      = (let {f0'0 = x0; f1'0 = x1} = x in inv'19 x0 /\ inv'20 x1)
+  
+  let rec split (self: tuple) (return (x: tuple'0)) = {[@expl:split 'self' type invariant] inv'18 self}
+    any
+    [ return (result: tuple'0) -> {inv'21 result} {self.f0 = result.f0'0} {self.f1 = result.f1'0} (! return {result}) ]
+  
+  predicate invariant''16 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'1 self.current /\ inv'1 self.final
+  
+  meta "rewrite_def" predicate invariant''16
+  
   predicate inv'22 (_1: MutBorrow.t t_Node)
   
-  axiom inv_axiom'21 [@rewrite]: forall x: MutBorrow.t t_Node [inv'22 x]. inv'22 x = invariant''15 x
+  axiom inv_axiom'21 [@rewrite]: forall x: MutBorrow.t t_Node [inv'22 x]. inv'22 x = invariant''16 x
   
   function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = self.final
   
   meta "rewrite_def" function fin
   
   let rec as_mut (ptr'0: Opaque.ptr) (own: MutBorrow.t t_PtrOwn) (return (x: MutBorrow.t t_Node)) =
-    {[@expl:as_mut 'own' type invariant] inv'17 own}
+    {[@expl:as_mut 'own' type invariant] inv'19 own}
     {[@expl:as_mut requires] ptr'0 = ptr own.current}
     any
     [ return (result: MutBorrow.t t_Node) -> {inv'22 result}
@@ -3215,23 +3476,23 @@ module M_union_find__implementation__link
   
   meta "rewrite_def" predicate resolve'6
   
-  predicate invariant''16 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap)) =
-    inv'18 self.current /\ inv'18 self.final
-  
-  meta "rewrite_def" predicate invariant''16
-  
-  predicate inv'23 (_1: MutBorrow.t (MutBorrow.t t_FMap))
-  
-  axiom inv_axiom'22 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_FMap) [inv'23 x]. inv'23 x = invariant''16 x
-  
   predicate invariant''17 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap)) =
-    inv'13 self.current /\ inv'13 self.final
+    inv'20 self.current /\ inv'20 self.final
   
   meta "rewrite_def" predicate invariant''17
   
+  predicate inv'23 (_1: MutBorrow.t (MutBorrow.t t_FMap))
+  
+  axiom inv_axiom'22 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_FMap) [inv'23 x]. inv'23 x = invariant''17 x
+  
+  predicate invariant''18 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap)) =
+    inv'15 self.current /\ inv'15 self.final
+  
+  meta "rewrite_def" predicate invariant''18
+  
   predicate inv'24 (_1: MutBorrow.t (MutBorrow.t t_FMap))
   
-  axiom inv_axiom'23 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_FMap) [inv'24 x]. inv'24 x = invariant''17 x
+  axiom inv_axiom'23 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_FMap) [inv'24 x]. inv'24 x = invariant''18 x
   
   let rec deref_mut'1 (self: MutBorrow.t (MutBorrow.t t_FMap)) (return (x: MutBorrow.t (MutBorrow.t t_FMap))) =
     {[@expl:deref_mut 'self' type invariant] inv'23 self}
@@ -3244,11 +3505,11 @@ module M_union_find__implementation__link
   axiom inv_axiom'24 [@rewrite]: forall x: t_Option'0 [inv'25 x]. inv'25 x
       = match x with
         | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'14 a_0
+        | C_Some'0 a_0 -> inv'16 a_0
         end
   
   let rec get_mut_ghost (self: MutBorrow.t t_FMap) (key: t_Element) (return (x: t_Option'0)) =
-    {[@expl:get_mut_ghost 'self' type invariant] inv'13 self}
+    {[@expl:get_mut_ghost 'self' type invariant] inv'15 self}
     any
     [ return (result: t_Option'0) -> {inv'25 result}
       {if contains'0 self.current key then
@@ -3267,7 +3528,7 @@ module M_union_find__implementation__link
   let rec unwrap (self_: t_Option'0) (return (x: MutBorrow.t t_PtrOwn)) =
     {[@expl:unwrap 'self_' type invariant] inv'25 self_}
     {[@expl:unwrap requires] self_ <> C_None'0}
-    any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'14 result} {C_Some'0 result = self_} (! return {result}) ]
+    any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'16 result} {C_Some'0 result = self_} (! return {result}) ]
   
   predicate resolve'7 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap)) = self.final = self.current
   
@@ -3286,8 +3547,8 @@ module M_union_find__implementation__link
   meta "rewrite_def" predicate resolve'10
   
   let rec new'1 (x: MutBorrow.t t_PtrOwn) (return (x'0: MutBorrow.t t_PtrOwn)) =
-    {[@expl:new 'x' type invariant] inv'14 x}
-    any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'17 result} {result = x} (! return {result}) ]
+    {[@expl:new 'x' type invariant] inv'16 x}
+    any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'19 result} {result = x} (! return {result}) ]
   
   let rec v_Root (input: t_Node) (ret (rank: t_PeanoInt) (payload: t_T)) = any
     [ good (rank: t_PeanoInt) (payload: t_T) -> {C_Root rank payload = input} (! ret {rank} {payload})
@@ -3406,7 +3667,7 @@ module M_union_find__implementation__link
   
   function domain (self: t_UnionFind) : Fset.fset t_Element = self.t_UnionFind__0.t_UFInner__domain
   
-  axiom domain_spec: forall self: t_UnionFind. inv'4 self
+  axiom domain_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e1: t_Element, e2: t_Element. contains (domain self) e1
           /\ contains (domain self) e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
   
@@ -3414,7 +3675,7 @@ module M_union_find__implementation__link
   
   function roots_map (self: t_UnionFind) : Map.map t_Element t_Element = self.t_UnionFind__0.t_UFInner__roots
   
-  axiom roots_map_spec: forall self: t_UnionFind. inv'4 self
+  axiom roots_map_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e: t_Element. in_domain self e
         -> in_domain self (index_logic'1 (roots_map self) e)
         /\ index_logic'1 (roots_map self) e = index_logic'1 (roots_map self) (index_logic'1 (roots_map self) e))
@@ -3436,50 +3697,50 @@ module M_union_find__implementation__link
   meta "select_lsinst" "all"
   
   let rec link (uf: MutBorrow.t t_UnionFind) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
-    {[@expl:link 'uf' type invariant] inv'6 uf}
+    {[@expl:link 'uf' type invariant] inv'8 uf}
     {[@expl:link requires #0] in_domain uf.current x /\ in_domain uf.current y}
     {[@expl:link requires #1] root uf.current x = x /\ root uf.current y = y}
     (! bb0
     [ bb0 = s0 [ s0 = eq {x} {y} (fun (_ret: bool) -> [ &_11 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = any [ br0 -> {_11 = false} (! bb3) | br1 -> {_11} (! bb2) ]
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv'6 uf} s1 | s1 = -{resolve'2 uf}- s2 | s2 = [ &_0 <- x ] s3 | s3 = bb51 ]
+      [ s0 = {[@expl:type invariant] inv'8 uf} s1 | s1 = -{resolve'2 uf}- s2 | s2 = [ &_0 <- x ] s3 | s3 = bb51 ]
     | bb3 = s0
-      [ s0 = {inv'6 uf}
+      [ s0 = {inv'8 uf}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind> {uf}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) ->
-            [ &_17 <- _ret ] -{inv'6 _ret.final}-
+            [ &_17 <- _ret ] -{inv'8 _ret.final}-
             [ &uf <- _ret.final ] s1)
       | s1 = deref_mut {_17} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_16 <- _ret ] s2)
       | s2 = bb4 ]
     | bb4 = s0
-      [ s0 = {inv'3 _16.current.current.t_UnionFind__0}
+      [ s0 = {inv'5 _16.current.current.t_UnionFind__0}
         MutBorrow.borrow_mut <t_UFInner> {_16.current.current.t_UnionFind__0}
           (fun (_ret: MutBorrow.t t_UFInner) ->
-            [ &__temp <- _ret ] -{inv'3 _ret.final}-
+            [ &__temp <- _ret ] -{inv'5 _ret.final}-
             [ &_16 <- { _16 with current = { _16.current with current = { t_UnionFind__0 = _ret.final } } } ] s1)
       | s1 = new {__temp} (fun (_ret: MutBorrow.t t_UFInner) -> [ &uf'0 <- _ret ] s2)
       | s2 = bb5 ]
     | bb5 = s0
-      [ s0 = {inv'10 uf'0}
+      [ s0 = {inv'12 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_27 <- _ret ] -{inv'10 _ret.final}-
+            [ &_27 <- _ret ] -{inv'12 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
       | s1 = deref_mut'0 {_27} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_26 <- _ret ] s2)
       | s2 = bb6 ]
     | bb6 = s0
       [ s0 = [ &_29 <- x ] s1
-      | s1 = {inv'2 _26.current.current.t_UFInner__perms}
+      | s1 = {inv'4 _26.current.current.t_UFInner__perms}
         MutBorrow.borrow_mut <t_FMap> {_26.current.current.t_UFInner__perms}
           (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_25 <- _ret ] -{inv'2 _ret.final}-
+            [ &_25 <- _ret ] -{inv'4 _ret.final}-
             [ &_26 <- { _26 with current = { _26.current with current = { _26.current.current with t_UFInner__perms = _ret.final } } } ]
             s2)
       | s2 = split_mut_ghost {_25} {_29} (fun (_ret: tuple) -> [ &_24 <- _ret ] s3)
       | s3 = bb7 ]
     | bb7 = s0
-      [ s0 = {[@expl:type invariant] inv'12 _26} s1
+      [ s0 = {[@expl:type invariant] inv'14 _26} s1
       | s1 = -{resolve'4 _26}- s2
       | s2 = new'0 {_24} (fun (_ret: tuple) -> [ &_23 <- _ret ] s3)
       | s3 = bb8 ]
@@ -3490,57 +3751,57 @@ module M_union_find__implementation__link
       | s2 = as_mut {x.t_Element__0} {perm_x} (fun (_ret: MutBorrow.t t_Node) -> [ &_31 <- _ret ] s3)
       | s3 = bb10 ]
     | bb10 = s0
-      [ s0 = {inv'21 _31.current}
+      [ s0 = {inv'1 _31.current}
         MutBorrow.borrow_final <t_Node> {_31.current} {MutBorrow.get_id _31}
           (fun (_ret: MutBorrow.t t_Node) ->
-            [ &bx <- _ret ] -{inv'21 _ret.final}-
+            [ &bx <- _ret ] -{inv'1 _ret.final}-
             [ &_31 <- { _31 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'22 _31} s2
       | s2 = -{resolve'6 _31}- s3
-      | s3 = {inv'18 m}
+      | s3 = {inv'20 m}
         MutBorrow.borrow_mut <MutBorrow.t t_FMap> {m}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_FMap)) ->
-            [ &_44 <- _ret ] -{inv'18 _ret.final}-
+            [ &_44 <- _ret ] -{inv'20 _ret.final}-
             [ &m <- _ret.final ] s4)
       | s4 = deref_mut'1 {_44} (fun (_ret: MutBorrow.t (MutBorrow.t t_FMap)) -> [ &_43 <- _ret ] s5)
       | s5 = bb11 ]
     | bb11 = s0
       [ s0 = [ &_46 <- y ] s1
-      | s1 = {inv'2 _43.current.current}
+      | s1 = {inv'4 _43.current.current}
         MutBorrow.borrow_mut <t_FMap> {_43.current.current}
           (fun (_ret: MutBorrow.t t_FMap) ->
-            [ &_42 <- _ret ] -{inv'2 _ret.final}-
+            [ &_42 <- _ret ] -{inv'4 _ret.final}-
             [ &_43 <- { _43 with current = { _43.current with current = _ret.final } } ] s2)
       | s2 = get_mut_ghost {_42} {_46} (fun (_ret: t_Option'0) -> [ &_41 <- _ret ] s3)
       | s3 = bb12 ]
     | bb12 = s0 [ s0 = unwrap {_41} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_40 <- _ret ] s1) | s1 = bb13 ]
     | bb13 = s0
-      [ s0 = {inv'1 _40.current}
+      [ s0 = {inv'3 _40.current}
         MutBorrow.borrow_final <t_PtrOwn> {_40.current} {MutBorrow.get_id _40}
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
-            [ &_39 <- _ret ] -{inv'1 _ret.final}-
+            [ &_39 <- _ret ] -{inv'3 _ret.final}-
             [ &_40 <- { _40 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'24 _43} s2
       | s2 = -{resolve'8 _43}- s3
-      | s3 = {[@expl:type invariant] inv'14 _40} s4
+      | s3 = {[@expl:type invariant] inv'16 _40} s4
       | s4 = -{resolve'10 _40}- s5
-      | s5 = {inv'1 _39.current}
+      | s5 = {inv'3 _39.current}
         MutBorrow.borrow_final <t_PtrOwn> {_39.current} {MutBorrow.get_id _39}
           (fun (_ret: MutBorrow.t t_PtrOwn) ->
-            [ &_38 <- _ret ] -{inv'1 _ret.final}-
+            [ &_38 <- _ret ] -{inv'3 _ret.final}-
             [ &_39 <- { _39 with current = _ret.final } ] s6)
       | s6 = new'1 {_38} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_37 <- _ret ] s7)
       | s7 = bb14 ]
     | bb14 = s0
-      [ s0 = {[@expl:type invariant] inv'14 _39} s1
+      [ s0 = {[@expl:type invariant] inv'16 _39} s1
       | s1 = -{resolve'10 _39}- s2
       | s2 = as_mut {y.t_Element__0} {_37} (fun (_ret: MutBorrow.t t_Node) -> [ &_35 <- _ret ] s3)
       | s3 = bb15 ]
     | bb15 = s0
-      [ s0 = {inv'21 _35.current}
+      [ s0 = {inv'1 _35.current}
         MutBorrow.borrow_final <t_Node> {_35.current} {MutBorrow.get_id _35}
           (fun (_ret: MutBorrow.t t_Node) ->
-            [ &by' <- _ret ] -{inv'21 _ret.final}-
+            [ &by' <- _ret ] -{inv'1 _ret.final}-
             [ &_35 <- { _35 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'22 _35} s2
       | s2 = -{resolve'6 _35}- s3
@@ -3581,12 +3842,12 @@ module M_union_find__implementation__link
       | s1 = -{resolve'12 rx}- s2
       | s2 = {[@expl:type invariant] inv'22 by'} s3
       | s3 = -{resolve'6 by'}- s4
-      | s4 = {[@expl:type invariant] inv'18 m} s5
+      | s4 = {[@expl:type invariant] inv'20 m} s5
       | s5 = -{resolve'16 m}- s6
       | s6 = [ &_56 <- C_Link y ] s7
       | s7 = bb24 ]
     | bb24 = s0
-      [ s0 = {[@expl:type invariant] inv'21 bx.current} s1
+      [ s0 = {[@expl:type invariant] inv'1 bx.current} s1
       | s1 = [ &bx <- { bx with current = _56 } ] s2
       | s2 = {[@expl:type invariant] inv'22 bx} s3
       | s3 = -{resolve'6 bx}- s4
@@ -3599,10 +3860,10 @@ module M_union_find__implementation__link
          ] s1
       | s1 = bb27 ]
     | bb27 = s0
-      [ s0 = {inv'10 uf'0}
+      [ s0 = {inv'12 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_63 <- _ret ] -{inv'10 _ret.final}-
+            [ &_63 <- _ret ] -{inv'12 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
       | s1 = deref_mut'0 {_63} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_62 <- _ret ] s2)
       | s2 = bb28 ]
@@ -3610,15 +3871,15 @@ module M_union_find__implementation__link
       [ s0 =
         [ &_62 <- { _62 with current = { _62.current with current = { _62.current.current with t_UFInner__roots = _60 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'12 _62} s2
+      | s1 = {[@expl:type invariant] inv'14 _62} s2
       | s2 = -{resolve'4 _62}- s3
       | s3 = [ &_64 <- uf'0.current.t_UFInner__max_depth + 1 ] s4
       | s4 = bb29 ]
     | bb29 = s0
-      [ s0 = {inv'10 uf'0}
+      [ s0 = {inv'12 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_67 <- _ret ] -{inv'10 _ret.final}-
+            [ &_67 <- _ret ] -{inv'12 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
       | s1 = deref_mut'0 {_67} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_66 <- _ret ] s2)
       | s2 = bb30 ]
@@ -3626,17 +3887,17 @@ module M_union_find__implementation__link
       [ s0 =
         [ &_66 <- { _66 with current = { _66.current with current = { _66.current.current with t_UFInner__max_depth = _64 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'12 _66} s2
+      | s1 = {[@expl:type invariant] inv'14 _66} s2
       | s2 = -{resolve'4 _66}- s3
       | s3 = [ &_68 <- Map.set uf'0.current.t_UFInner__depth y (1
         + MinMax.max (index_logic'3 uf'0.current.t_UFInner__depth x) (index_logic'3 uf'0.current.t_UFInner__depth y)) ]
         s4
       | s4 = bb31 ]
     | bb31 = s0
-      [ s0 = {inv'10 uf'0}
+      [ s0 = {inv'12 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_71 <- _ret ] -{inv'10 _ret.final}-
+            [ &_71 <- _ret ] -{inv'12 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
       | s1 = deref_mut'0 {_71} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_70 <- _ret ] s2)
       | s2 = bb32 ]
@@ -3644,13 +3905,13 @@ module M_union_find__implementation__link
       [ s0 =
         [ &_70 <- { _70 with current = { _70.current with current = { _70.current.current with t_UFInner__depth = _68 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'12 _70} s2
+      | s1 = {[@expl:type invariant] inv'14 _70} s2
       | s2 = -{resolve'4 _70}- s3
-      | s3 = {[@expl:type invariant] inv'10 uf'0} s4
+      | s3 = {[@expl:type invariant] inv'12 uf'0} s4
       | s4 = -{resolve'20 uf'0}- s5
-      | s5 = {[@expl:type invariant] inv'8 _16} s6
+      | s5 = {[@expl:type invariant] inv'10 _16} s6
       | s6 = -{resolve'22 _16}- s7
-      | s7 = {[@expl:type invariant] inv'6 uf} s8
+      | s7 = {[@expl:type invariant] inv'8 uf} s8
       | s8 = -{resolve'2 uf}- s9
       | s9 = new'2 {_59} (fun (_ret: ()) -> [ &_58 <- _ret ] s10)
       | s10 = bb33 ]
@@ -3667,11 +3928,11 @@ module M_union_find__implementation__link
       [ s0 = -{resolve'12 rx}- s1 | s1 = {[@expl:type invariant] inv'22 bx} s2 | s2 = -{resolve'6 bx}- s3 | s3 = bb39 ]
     | bb39 = s0 [ s0 = [ &_78 <- C_Link x ] s1 | s1 = bb40 ]
     | bb40 = s0
-      [ s0 = {[@expl:type invariant] inv'21 by'.current} s1
+      [ s0 = {[@expl:type invariant] inv'1 by'.current} s1
       | s1 = [ &by' <- { by' with current = _78 } ] s2
       | s2 = {[@expl:type invariant] inv'22 by'} s3
       | s3 = -{resolve'6 by'}- s4
-      | s4 = {[@expl:type invariant] inv'18 m} s5
+      | s4 = {[@expl:type invariant] inv'20 m} s5
       | s5 = -{resolve'16 m}- s6
       | s6 = bb42 ]
     | bb42 = s0
@@ -3682,10 +3943,10 @@ module M_union_find__implementation__link
          ] s1
       | s1 = bb43 ]
     | bb43 = s0
-      [ s0 = {inv'10 uf'0}
+      [ s0 = {inv'12 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_85 <- _ret ] -{inv'10 _ret.final}-
+            [ &_85 <- _ret ] -{inv'12 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
       | s1 = deref_mut'0 {_85} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_84 <- _ret ] s2)
       | s2 = bb44 ]
@@ -3693,15 +3954,15 @@ module M_union_find__implementation__link
       [ s0 =
         [ &_84 <- { _84 with current = { _84.current with current = { _84.current.current with t_UFInner__roots = _82 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'12 _84} s2
+      | s1 = {[@expl:type invariant] inv'14 _84} s2
       | s2 = -{resolve'4 _84}- s3
       | s3 = [ &_86 <- uf'0.current.t_UFInner__max_depth + 1 ] s4
       | s4 = bb45 ]
     | bb45 = s0
-      [ s0 = {inv'10 uf'0}
+      [ s0 = {inv'12 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_89 <- _ret ] -{inv'10 _ret.final}-
+            [ &_89 <- _ret ] -{inv'12 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
       | s1 = deref_mut'0 {_89} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_88 <- _ret ] s2)
       | s2 = bb46 ]
@@ -3709,17 +3970,17 @@ module M_union_find__implementation__link
       [ s0 =
         [ &_88 <- { _88 with current = { _88.current with current = { _88.current.current with t_UFInner__max_depth = _86 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'12 _88} s2
+      | s1 = {[@expl:type invariant] inv'14 _88} s2
       | s2 = -{resolve'4 _88}- s3
       | s3 = [ &_90 <- Map.set uf'0.current.t_UFInner__depth x (1
         + MinMax.max (index_logic'3 uf'0.current.t_UFInner__depth x) (index_logic'3 uf'0.current.t_UFInner__depth y)) ]
         s4
       | s4 = bb47 ]
     | bb47 = s0
-      [ s0 = {inv'10 uf'0}
+      [ s0 = {inv'12 uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner> {uf'0}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) ->
-            [ &_93 <- _ret ] -{inv'10 _ret.final}-
+            [ &_93 <- _ret ] -{inv'12 _ret.final}-
             [ &uf'0 <- _ret.final ] s1)
       | s1 = deref_mut'0 {_93} (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner)) -> [ &_92 <- _ret ] s2)
       | s2 = bb48 ]
@@ -3727,13 +3988,13 @@ module M_union_find__implementation__link
       [ s0 =
         [ &_92 <- { _92 with current = { _92.current with current = { _92.current.current with t_UFInner__depth = _90 } } } ]
         s1
-      | s1 = {[@expl:type invariant] inv'12 _92} s2
+      | s1 = {[@expl:type invariant] inv'14 _92} s2
       | s2 = -{resolve'4 _92}- s3
-      | s3 = {[@expl:type invariant] inv'10 uf'0} s4
+      | s3 = {[@expl:type invariant] inv'12 uf'0} s4
       | s4 = -{resolve'20 uf'0}- s5
-      | s5 = {[@expl:type invariant] inv'8 _16} s6
+      | s5 = {[@expl:type invariant] inv'10 _16} s6
       | s6 = -{resolve'22 _16}- s7
-      | s7 = {[@expl:type invariant] inv'6 uf} s8
+      | s7 = {[@expl:type invariant] inv'8 uf} s8
       | s8 = -{resolve'2 uf}- s9
       | s9 = new'2 {_81} (fun (_ret: ()) -> [ &_80 <- _ret ] s10)
       | s10 = bb49 ]
@@ -3819,6 +4080,7 @@ module M_union_find__implementation__union
   use creusot.int.UInt64
   use creusot.prelude.Ptr
   use mach.int.Int
+  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_Element = { t_Element__0: Opaque.ptr }
@@ -3936,83 +4198,118 @@ module M_union_find__implementation__union
   
   predicate ptr_is_aligned_opaque (self: t_PtrOwn)
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'0 (_1: Opaque.ptr)
+  constant size_of_Node_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  axiom size_of_Node_T_spec: 0 <= size_of_Node_T
   
-  predicate invariant''0 (self: t_PtrOwn) =
-    not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_T
   
-  predicate inv'1 (_1: t_PtrOwn)
+  meta "rewrite_def" function size_of_val_logic
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
   
-  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
-    forall k: t_Element. contains'0 self k -> inv k /\ inv'1 (index_logic'0 self k)
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
   
-  meta "rewrite_def" predicate invariant''1
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate inv'2 (_1: t_FMap)
+  predicate inv'0 (_1: t_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
+  predicate inv'1 (_1: t_Node)
   
-  predicate inv'3 (_1: t_UFInner)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
       = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'2 perms
+        | C_Root rank payload -> inv'0 payload
+        | C_Link a_0 -> true
         end
   
-  predicate inv'4 (_1: t_UnionFind)
+  predicate invariant''0 [@inline:trivial] (self: t_Node) = inv'1 self
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UnionFind [inv'4 x]. inv'4 x
-      = (invariant' x
-      /\ match x with
-        | {t_UnionFind__0 = a_0} -> inv'3 a_0
-        end)
+  meta "rewrite_def" predicate invariant''0
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'4 self.current /\ inv'4 self.final
+  predicate inv'2 (_1: t_Node)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'2 (val' self)
+  
+  predicate inv'3 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
+    forall k: t_Element. contains'0 self k -> inv k /\ inv'3 (index_logic'0 self k)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'4 (_1: t_FMap)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'5 x]. inv'5 x = invariant''2 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
   
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'5 self
+  predicate inv'5 (_1: t_UFInner)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
+      = match x with
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'4 perms
+        end
+  
+  predicate inv'6 (_1: t_UnionFind)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'6 x]. inv'6 x
+      = (invariant' x
+      /\ match x with
+        | {t_UnionFind__0 = a_0} -> inv'5 a_0
+        end)
+  
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'6 (_1: MutBorrow.t t_UnionFind)
+  predicate inv'7 (_1: MutBorrow.t t_UnionFind)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
-    inv'6 self.current /\ inv'6 self.final
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_UnionFind) = inv'7 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'7 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
+  predicate inv'8 (_1: MutBorrow.t t_UnionFind)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'7 x]. inv'7 x = invariant''4 x
+  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_UnionFind [inv'8 x]. inv'8 x = invariant''4 x
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
-    inv'5 self.current /\ inv'5 self.final
+    inv'8 self.current /\ inv'8 self.final
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'8 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
+  predicate inv'9 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'8 x]. inv'8 x = invariant''5 x
+  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'9 x]. inv'9 x = invariant''5 x
+  
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) =
+    inv'7 self.current /\ inv'7 self.final
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'10 (_1: MutBorrow.t (MutBorrow.t t_UnionFind))
+  
+  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_UnionFind) [inv'10 x]. inv'10 x = invariant''6 x
   
   let rec deref_mut (self: MutBorrow.t (MutBorrow.t t_UnionFind)) (return (x: MutBorrow.t (MutBorrow.t t_UnionFind))) =
-    {[@expl:deref_mut 'self' type invariant] inv'7 self}
-    any [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind)) -> {inv'8 result} {result = self} (! return {result}) ]
+    {[@expl:deref_mut 'self' type invariant] inv'9 self}
+    any
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind)) -> {inv'10 result} {result = self} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind)) = self.final = self.current
   
@@ -4031,12 +4328,12 @@ module M_union_find__implementation__union
   meta "rewrite_def" predicate resolve'2
   
   let rec new (x: MutBorrow.t t_UnionFind) (return (x'0: MutBorrow.t t_UnionFind)) =
-    {[@expl:new 'x' type invariant] inv'5 x}
-    any [ return (result: MutBorrow.t t_UnionFind) -> {inv'6 result} {result = x} (! return {result}) ]
+    {[@expl:new 'x' type invariant] inv'7 x}
+    any [ return (result: MutBorrow.t t_UnionFind) -> {inv'8 result} {result = x} (! return {result}) ]
   
   function domain (self: t_UnionFind) : Fset.fset t_Element = self.t_UnionFind__0.t_UFInner__domain
   
-  axiom domain_spec: forall self: t_UnionFind. inv'4 self
+  axiom domain_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e1: t_Element, e2: t_Element. contains (domain self) e1
           /\ contains (domain self) e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
   
@@ -4044,7 +4341,7 @@ module M_union_find__implementation__union
   
   function roots_map (self: t_UnionFind) : Map.map t_Element t_Element = self.t_UnionFind__0.t_UFInner__roots
   
-  axiom roots_map_spec: forall self: t_UnionFind. inv'4 self
+  axiom roots_map_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e: t_Element. in_domain self e
         -> in_domain self (index_logic'1 (roots_map self) e)
         /\ index_logic'1 (roots_map self) e = index_logic'1 (roots_map self) (index_logic'1 (roots_map self) e))
@@ -4058,7 +4355,7 @@ module M_union_find__implementation__union
     /\ roots_map self.current = roots_map self.final /\ payloads_map self.current = payloads_map self.final
   
   let rec find (uf: MutBorrow.t t_UnionFind) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find 'uf' type invariant] inv'6 uf}
+    {[@expl:find 'uf' type invariant] inv'8 uf}
     {[@expl:find requires] in_domain uf.current elem}
     any [ return (result: t_Element) -> {result = root uf.current elem} {unchanged uf} (! return {result}) ]
   
@@ -4071,7 +4368,7 @@ module M_union_find__implementation__union
   meta "rewrite_def" function fin
   
   let rec link (uf: MutBorrow.t t_UnionFind) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
-    {[@expl:link 'uf' type invariant] inv'6 uf}
+    {[@expl:link 'uf' type invariant] inv'8 uf}
     {[@expl:link requires #0] in_domain uf.current x /\ in_domain uf.current y}
     {[@expl:link requires #1] root uf.current x = x /\ root uf.current y = y}
     any
@@ -4092,76 +4389,76 @@ module M_union_find__implementation__union
   meta "select_lsinst" "all"
   
   let rec union (uf: MutBorrow.t t_UnionFind) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
-    {[@expl:union 'uf' type invariant] inv'6 uf}
+    {[@expl:union 'uf' type invariant] inv'8 uf}
     {[@expl:union requires] in_domain uf.current x /\ in_domain uf.current y}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'6 uf}
+      [ s0 = {inv'8 uf}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind> {uf}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) ->
-            [ &_14 <- _ret ] -{inv'6 _ret.final}-
+            [ &_14 <- _ret ] -{inv'8 _ret.final}-
             [ &uf <- _ret.final ] s1)
       | s1 = deref_mut {_14} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_13 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'4 _13.current.current}
+      [ s0 = {inv'6 _13.current.current}
         MutBorrow.borrow_mut <t_UnionFind> {_13.current.current}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_12 <- _ret ] -{inv'4 _ret.final}-
+            [ &_12 <- _ret ] -{inv'6 _ret.final}-
             [ &_13 <- { _13 with current = { _13.current with current = _ret.final } } ] s1)
-      | s1 = {inv'4 _12.current}
+      | s1 = {inv'6 _12.current}
         MutBorrow.borrow_final <t_UnionFind> {_12.current} {MutBorrow.get_id _12}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_11 <- _ret ] -{inv'4 _ret.final}-
+            [ &_11 <- _ret ] -{inv'6 _ret.final}-
             [ &_12 <- { _12 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'8 _13} s3
+      | s2 = {[@expl:type invariant] inv'10 _13} s3
       | s3 = -{resolve'0 _13}- s4
-      | s4 = {[@expl:type invariant] inv'5 _12} s5
+      | s4 = {[@expl:type invariant] inv'7 _12} s5
       | s5 = -{resolve'2 _12}- s6
-      | s6 = {inv'4 _11.current}
+      | s6 = {inv'6 _11.current}
         MutBorrow.borrow_final <t_UnionFind> {_11.current} {MutBorrow.get_id _11}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_10 <- _ret ] -{inv'4 _ret.final}-
+            [ &_10 <- _ret ] -{inv'6 _ret.final}-
             [ &_11 <- { _11 with current = _ret.final } ] s7)
       | s7 = new {_10} (fun (_ret: MutBorrow.t t_UnionFind) -> [ &_9 <- _ret ] s8)
       | s8 = bb2 ]
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _11} s1
+      [ s0 = {[@expl:type invariant] inv'7 _11} s1
       | s1 = -{resolve'2 _11}- s2
       | s2 = find {_9} {x} (fun (_ret: t_Element) -> [ &rx <- _ret ] s3)
       | s3 = bb3 ]
     | bb3 = s0
-      [ s0 = {inv'6 uf}
+      [ s0 = {inv'8 uf}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind> {uf}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) ->
-            [ &_22 <- _ret ] -{inv'6 _ret.final}-
+            [ &_22 <- _ret ] -{inv'8 _ret.final}-
             [ &uf <- _ret.final ] s1)
       | s1 = deref_mut {_22} (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind)) -> [ &_21 <- _ret ] s2)
       | s2 = bb4 ]
     | bb4 = s0
-      [ s0 = {inv'4 _21.current.current}
+      [ s0 = {inv'6 _21.current.current}
         MutBorrow.borrow_mut <t_UnionFind> {_21.current.current}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_20 <- _ret ] -{inv'4 _ret.final}-
+            [ &_20 <- _ret ] -{inv'6 _ret.final}-
             [ &_21 <- { _21 with current = { _21.current with current = _ret.final } } ] s1)
-      | s1 = {inv'4 _20.current}
+      | s1 = {inv'6 _20.current}
         MutBorrow.borrow_final <t_UnionFind> {_20.current} {MutBorrow.get_id _20}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_19 <- _ret ] -{inv'4 _ret.final}-
+            [ &_19 <- _ret ] -{inv'6 _ret.final}-
             [ &_20 <- { _20 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'8 _21} s3
+      | s2 = {[@expl:type invariant] inv'10 _21} s3
       | s3 = -{resolve'0 _21}- s4
-      | s4 = {[@expl:type invariant] inv'5 _20} s5
+      | s4 = {[@expl:type invariant] inv'7 _20} s5
       | s5 = -{resolve'2 _20}- s6
-      | s6 = {inv'4 _19.current}
+      | s6 = {inv'6 _19.current}
         MutBorrow.borrow_final <t_UnionFind> {_19.current} {MutBorrow.get_id _19}
           (fun (_ret: MutBorrow.t t_UnionFind) ->
-            [ &_18 <- _ret ] -{inv'4 _ret.final}-
+            [ &_18 <- _ret ] -{inv'6 _ret.final}-
             [ &_19 <- { _19 with current = _ret.final } ] s7)
       | s7 = new {_18} (fun (_ret: MutBorrow.t t_UnionFind) -> [ &_17 <- _ret ] s8)
       | s8 = bb5 ]
     | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _19} s1
+      [ s0 = {[@expl:type invariant] inv'7 _19} s1
       | s1 = -{resolve'2 _19}- s2
       | s2 = find {_17} {y} (fun (_ret: t_Element) -> [ &ry <- _ret ] s3)
       | s3 = bb6 ]
@@ -4203,6 +4500,8 @@ module M_union_find__example
   use map.Map
   use creusot.prelude.Ptr
   use creusot.int.UInt64
+  use mach.int.Int
+  use creusot.int.Int64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
@@ -4250,19 +4549,41 @@ module M_union_find__example
   
   type t_Node = C_Root t_PeanoInt Int32.t | C_Link t_Element
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function val' (self: t_PtrOwn) : t_Node
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'0 (_1: Opaque.ptr)
+  constant size_of_Node_i32: int = 16
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  meta "rewrite_def" constant size_of_Node_i32
+  
+  axiom size_of_Node_i32_spec: 0 <= size_of_Node_i32
+  
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_i32
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate inv'0 (_1: t_Node)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'0 x]. inv'0 x = true
   
   predicate invariant''0 (self: t_PtrOwn) =
     not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'0 (val' self)
   
   predicate inv'1 (_1: t_PtrOwn)
   
@@ -4605,6 +4926,8 @@ module M_union_find__example_addrs_eq
   use set.Fset
   use map.Map
   use creusot.prelude.Ptr
+  use mach.int.Int
+  use creusot.int.Int64
   
   type t_Element = { t_Element__0: Opaque.ptr }
   
@@ -4661,23 +4984,57 @@ module M_union_find__example_addrs_eq
   
   type t_Node = C_Root t_PeanoInt t_T | C_Link t_Element
   
-  predicate metadata_matches (_value: t_Node) (_metadata: ()) = true
+  predicate metadata_matches [@inline:trivial] (_value: t_Node) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
   
   function val' (self: t_PtrOwn) : t_Node
   
   function metadata_logic (_1: Opaque.ptr) : ()
   
-  predicate inv'0 (_1: Opaque.ptr)
+  constant size_of_Node_T : int
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Opaque.ptr [inv'0 x]. inv'0 x = true
+  axiom size_of_Node_T_spec: 0 <= size_of_Node_T
   
-  predicate invariant''0 (self: t_PtrOwn) =
+  function size_of_val_logic [@inline:trivial] (val''0: t_Node) : int = size_of_Node_T
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: t_Node. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate inv'0 (_1: t_T)
+  
+  predicate inv'1 (_1: t_Node)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
+      = match x with
+        | C_Root rank payload -> inv'0 payload
+        | C_Link a_0 -> true
+        end
+  
+  predicate invariant''0 [@inline:trivial] (self: t_Node) = inv'1 self
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'2 (_1: t_Node)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) =
     not is_null_logic (ptr self)
-    /\ ptr_is_aligned_opaque self /\ metadata_matches (val' self) (metadata_logic (ptr self)) /\ inv'0 (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'2 (val' self)
   
-  predicate inv'1 (_1: t_PtrOwn)
+  predicate inv'3 (_1: t_PtrOwn)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate index_logic [@inline:trivial] (self: Map.map t_PtrOwn bool) (a: t_PtrOwn) = Map.get self a
   
@@ -4701,37 +5058,37 @@ module M_union_find__example_addrs_eq
   
   meta "rewrite_def" function index_logic'0
   
-  predicate invariant''1 [@inline:trivial] (self: t_FMap) =
-    forall k: t_Element. contains self k -> inv k /\ inv'1 (index_logic'0 self k)
-  
-  meta "rewrite_def" predicate invariant''1
-  
-  predicate inv'2 (_1: t_FMap)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''1 x
-  
-  predicate inv'3 (_1: t_UFInner)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_UFInner [inv'3 x]. inv'3 x
-      = match x with
-        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'2 perms
-        end
-  
-  predicate inv'4 (_1: t_UnionFind)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_UnionFind [inv'4 x]. inv'4 x
-      = (invariant' x
-      /\ match x with
-        | {t_UnionFind__0 = a_0} -> inv'3 a_0
-        end)
-  
-  predicate invariant''2 [@inline:trivial] (self: t_UnionFind) = inv'4 self
+  predicate invariant''2 [@inline:trivial] (self: t_FMap) =
+    forall k: t_Element. contains self k -> inv k /\ inv'3 (index_logic'0 self k)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: t_UnionFind)
+  predicate inv'4 (_1: t_FMap)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'5 x]. inv'5 x = invariant''2 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_FMap [inv'4 x]. inv'4 x = invariant''2 x
+  
+  predicate inv'5 (_1: t_UFInner)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_UFInner [inv'5 x]. inv'5 x
+      = match x with
+        | {t_UFInner__domain = domain; t_UFInner__perms = perms; t_UFInner__payloads = payloads; t_UFInner__roots = roots; t_UFInner__depth = depth; t_UFInner__max_depth = max_depth} -> inv'4 perms
+        end
+  
+  predicate inv'6 (_1: t_UnionFind)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: t_UnionFind [inv'6 x]. inv'6 x
+      = (invariant' x
+      /\ match x with
+        | {t_UnionFind__0 = a_0} -> inv'5 a_0
+        end)
+  
+  predicate invariant''3 [@inline:trivial] (self: t_UnionFind) = inv'6 self
+  
+  meta "rewrite_def" predicate invariant''3
+  
+  predicate inv'7 (_1: t_UnionFind)
+  
+  axiom inv_axiom'6 [@rewrite]: forall x: t_UnionFind [inv'7 x]. inv'7 x = invariant''3 x
   
   predicate contains'0 [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = Fset.mem e self
   
@@ -4739,7 +5096,7 @@ module M_union_find__example_addrs_eq
   
   function domain (self: t_UnionFind) : Fset.fset t_Element
   
-  axiom domain_spec: forall self: t_UnionFind. inv'4 self
+  axiom domain_spec: forall self: t_UnionFind. inv'6 self
       -> (forall e1: t_Element, e2: t_Element. contains'0 (domain self) e1
           /\ contains'0 (domain self) e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
   
@@ -4750,7 +5107,7 @@ module M_union_find__example_addrs_eq
   meta "select_lsinst" "all"
   
   let rec example_addrs_eq (uf: t_UnionFind) (e1: t_Element) (e2: t_Element) (return (x: ())) =
-    {[@expl:example_addrs_eq 'uf' type invariant] inv'5 uf}
+    {[@expl:example_addrs_eq 'uf' type invariant] inv'7 uf}
     {[@expl:example_addrs_eq requires] in_domain uf e1 /\ in_domain uf e2}
     (! bb0
     [ bb0 = s0 [ s0 = eq {e1} {e2} (fun (_ret: bool) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]

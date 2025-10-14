@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::std::mem::{align_of_logic, size_of_logic};
+use crate::std::mem::align_of_logic;
 use crate::*;
 pub use ::std::ptr::*;
 
@@ -30,24 +30,26 @@ pub fn metadata_logic<T: ?Sized>(_: *const T) -> <T as Pointee>::Metadata {
 /// so two Why3 declarations instead of one.
 ///
 /// [from_raw_parts]: https://doc.rust-lang.org/core/slice/fn.from_raw_parts.html
-#[logic(open)]
+#[logic(open, inline)]
 #[intrinsic("metadata_matches")]
 pub fn metadata_matches<T: ?Sized>(_value: T, _metadata: <T as Pointee>::Metadata) -> bool {
     dead
 }
 
 /// Definition of [`metadata_matches`] for slices.
-#[logic(open)]
+#[allow(unused)]
+#[logic]
 #[intrinsic("metadata_matches_slice")]
-pub fn metadata_matches_slice<T>(value: [T], len: usize) -> bool {
-    pearlite! { value@.len() == len@ && len@ * size_of_logic::<T>() <= isize::MAX@ }
+fn metadata_matches_slice<T>(value: [T], len: usize) -> bool {
+    pearlite! { value@.len() == len@ }
 }
 
 /// Definition of [`metadata_matches`] for string slices.
-#[logic(open)]
+#[allow(unused)]
+#[logic]
 #[intrinsic("metadata_matches_str")]
-pub fn metadata_matches_str(value: str, len: usize) -> bool {
-    pearlite! { value@.to_bytes().len() == len@ && len@ <= isize::MAX@ }
+fn metadata_matches_str(value: str, len: usize) -> bool {
+    pearlite! { value@.to_bytes().len() == len@ }
 }
 
 /// Whether a pointer is aligned.
@@ -62,23 +64,25 @@ pub fn metadata_matches_str(value: str, len: usize) -> bool {
 ///
 /// [is_aligned]: https://doc.rust-lang.org/std/primitive.pointer.html#method.is_aligned
 #[allow(unused_variables)]
-#[logic(open)]
+#[logic(open, inline)]
 #[intrinsic("is_aligned_logic")]
 pub fn is_aligned_logic<T: ?Sized>(ptr: *const T) -> bool {
     dead
 }
 
 /// Definition of [`is_aligned_logic`] for `T: Sized`.
-#[logic(open)]
+#[allow(unused)]
+#[logic]
 #[intrinsic("is_aligned_logic_sized")]
-pub fn is_aligned_logic_sized<T>(ptr: *const T) -> bool {
+fn is_aligned_logic_sized<T>(ptr: *const T) -> bool {
     ptr.is_aligned_to_logic(align_of_logic::<T>())
 }
 
 /// Definition of [`is_aligned_logic`] for `[T]`.
-#[logic(open)]
+#[allow(unused)]
+#[logic]
 #[intrinsic("is_aligned_logic_slice")]
-pub fn is_aligned_logic_slice<T>(ptr: *const [T]) -> bool {
+fn is_aligned_logic_slice<T>(ptr: *const [T]) -> bool {
     ptr.is_aligned_to_logic(align_of_logic::<T>())
 }
 

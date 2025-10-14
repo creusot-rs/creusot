@@ -1139,6 +1139,36 @@ fn size_of_array<'tcx>(
     Some(item_size.bin_op(ctx.int_ty(), BinOp::Mul, Term::int(ctx.int_ty(), n)))
 }
 
+fn size_of_val_logic_term<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    subst: GenericArgsRef<'tcx>,
+    args: &[Ident],
+) -> Option<Term<'tcx>> {
+    let param = subst.type_at(0);
+    if param.is_sized(ctx.tcx, typing_env) {
+        let size_of_val_logic_sized = Intrinsic::SizeOfValLogicSized.get(ctx);
+        return term(ctx, typing_env, args, size_of_val_logic_sized, subst);
+    }
+    match param.kind() {
+        TyKind::Slice(ty) => {
+            let size_of_val_logic_slice = Intrinsic::SizeOfValLogicSlice.get(ctx);
+            return term(
+                ctx,
+                typing_env,
+                args,
+                size_of_val_logic_slice,
+                ctx.mk_args(&[(*ty).into()]),
+            );
+        }
+        TyKind::Str => {
+            let size_of_val_logic_str = Intrinsic::SizeOfValLogicStr.get(ctx);
+            return term(ctx, typing_env, args, size_of_val_logic_str, ctx.mk_args(&[]));
+        }
+        _ => None,
+    }
+}
+
 fn align_of_logic_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -1225,6 +1255,7 @@ fn term<'tcx>(
         Intrinsic::Precondition => precondition_term(ctx, typing_env, subst, bound),
         Intrinsic::HistInv => fn_mut_hist_inv_term(ctx, typing_env, subst, bound),
         Intrinsic::SizeOfLogic => size_of_logic_term(ctx, typing_env, def_id, subst.type_at(0)),
+        Intrinsic::SizeOfValLogic => size_of_val_logic_term(ctx, typing_env, subst, bound),
         Intrinsic::AlignOfLogic => align_of_logic_term(ctx, typing_env, def_id, subst.type_at(0)),
         Intrinsic::IsAlignedLogic => {
             is_aligned_logic_term(ctx, typing_env, subst.type_at(0), bound)

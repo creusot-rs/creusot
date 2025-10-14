@@ -3,7 +3,10 @@
 use ::std::marker::PhantomData;
 
 #[cfg(creusot)]
-use crate::std::ptr::{metadata_logic, metadata_matches};
+use crate::std::{
+    mem::size_of_val_logic,
+    ptr::{metadata_logic, metadata_matches},
+};
 use crate::*;
 
 /// Token that represents the ownership of a memory cell
@@ -22,6 +25,21 @@ use crate::*;
 /// When using Creusot to verify the code, all methods should be safe to call. Indeed,
 /// Creusot ensures that every operation on the inner value uses the right [`PtrOwn`] object
 /// created by [`PtrOwn::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
+///
+/// # `#[check(terminates)]`
+///
+/// `PtrOwn` methods, particularly constructors (`new`, `from_box`, `from_ref`,
+/// `from_mut`), are marked `check(terminates)` rather than `check(ghost)`
+/// to prevent two things from happening in ghost code:
+/// 1. running out of pointer addresses;
+/// 2. allocating too large objects.
+///
+/// Note that we already can't guard against these issues in program code.
+/// But preventing them in ghost code is even more imperative to ensure soundness.
+///
+/// Specifically, creating too many pointers contradicts the [`PtrOwn::disjoint_lemma`],
+/// and allocating too large objects contradicts the [`PtrOwn::invariant`] that
+/// allocations have size at most `isize::MAX`.
 #[allow(dead_code)]
 #[opaque]
 pub struct PtrOwn<T: ?Sized>(PhantomData<T>);
@@ -43,10 +61,17 @@ impl<T: ?Sized> PtrOwn<T> {
 impl<T: ?Sized> Invariant for PtrOwn<T> {
     #[logic(open, prophetic)]
     fn invariant(self) -> bool {
-        !self.ptr().is_null_logic()
-            && self.ptr_is_aligned_opaque()
-            && metadata_matches(*self.val(), metadata_logic(self.ptr()))
-            && inv(self.ptr())
+        pearlite! {
+            !self.ptr().is_null_logic()
+                && self.ptr_is_aligned_opaque()
+                && metadata_matches(*self.val(), metadata_logic(self.ptr()))
+                // Allocations can never be larger than `isize` (source: https://doc.rust-lang.org/std/ptr/index.html#allocation)
+                && size_of_val_logic(self.val()) <= isize::MAX@
+                // The allocation fits in the address space
+                // (this is needed to verify (a `PtrOwn` variant of) `<*const T>::add`, which checks this condition)
+                && self.ptr().addr_logic()@ + size_of_val_logic(self.val()) <= usize::MAX@
+                && inv(self.val())
+        }
     }
 }
 
@@ -83,7 +108,7 @@ impl<T: ?Sized> PtrOwn<T> {
     /// r as *const T  // or *mut T (both are allowed)
     /// ```
     #[trusted]
-    #[check(ghost)]
+    #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(result.1.ptr() == result.0)]
     #[ensures(*result.1.val() == *r)]
     #[intrinsic("ptr_own_from_ref")]
@@ -103,7 +128,7 @@ impl<T: ?Sized> PtrOwn<T> {
     /// r as *const T  // or *mut T (both are allowed)
     /// ```
     #[trusted]
-    #[check(ghost)]
+    #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(result.1.ptr() == result.0)]
     #[ensures(*result.1.val() == *r)]
     #[ensures(*(^result.1.inner_logic()).val() == ^r)]

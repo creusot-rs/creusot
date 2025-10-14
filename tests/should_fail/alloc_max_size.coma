@@ -1,0 +1,184 @@
+module M_alloc_max_size__main
+  use creusot.int.UInt64
+  use creusot.slice.Slice64
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.Any
+  
+  predicate inv (_1: Seq.seq UInt64.t)
+  
+  axiom inv_axiom [@rewrite]: forall x: Seq.seq UInt64.t [inv x]. inv x = true
+  
+  predicate invariant' (self: Slice64.array UInt64.t) =
+    inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (18446744073709551615: UInt64.t)
+  
+  predicate inv'0 (_1: Slice64.array UInt64.t)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Slice64.array UInt64.t [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate invariant''0 [@inline:trivial] (self: Slice64.array UInt64.t) = inv'0 self
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'1 (_1: Slice64.array UInt64.t)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.array UInt64.t [inv'1 x]. inv'1 x = invariant''0 x
+  
+  constant size_of_usize: int = 8
+  
+  meta "rewrite_def" constant size_of_usize
+  
+  axiom size_of_usize_spec: 0 <= size_of_usize
+  
+  constant size_of_array_usize_18446744073709551615: int = size_of_usize * 18446744073709551615
+  
+  meta "rewrite_def" constant size_of_array_usize_18446744073709551615
+  
+  axiom size_of_array_usize_18446744073709551615_spec: 0 <= size_of_array_usize_18446744073709551615
+  
+  function size_of_val_logic [@inline:trivial] (val': Slice64.array UInt64.t) : int =
+    size_of_array_usize_18446744073709551615
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val': Slice64.array UInt64.t. 0 <= size_of_val_logic val'
+  
+  let rec size_of_val (val': Slice64.array UInt64.t) (return (x: UInt64.t)) =
+    {[@expl:size_of_val 'val' type invariant] inv'1 val'}
+    any [ return (result: UInt64.t) -> {UInt64.t'int result = size_of_val_logic val'} (! return {result}) ]
+  
+  let rec new (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec main (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = Slice64.create <UInt64.t> {(18446744073709551615: UInt64.t)} {fun (_: int) -> (0: UInt64.t)}
+          (fun (_res: Slice64.array UInt64.t) -> [ &x <- _res ] s1)
+      | s1 = [ &_7 <- x ] s2
+      | s2 = size_of_val {_7} (fun (_ret: UInt64.t) -> [ &_5 <- _ret ] s3)
+      | s3 = bb1 ]
+    | bb1 = s0 [ s0 = new {_3} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = return {_0} ]
+    [ & _0: () = Any.any_l ()
+    | & _2: () = Any.any_l ()
+    | & _3: () = Any.any_l ()
+    | & x: Slice64.array UInt64.t = Any.any_l ()
+    | & _5: UInt64.t = Any.any_l ()
+    | & _7: Slice64.array UInt64.t = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:main ensures] false} (! return {result}) ]
+end
+module M_alloc_max_size__g
+  use creusot.int.UInt64
+  use creusot.slice.Slice64
+  use creusot.prelude.Opaque
+  use seq.Seq
+  use creusot.prelude.Ptr
+  use mach.int.Int
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  
+  type t_PtrOwn
+  
+  type tuple = { f0: Opaque.ptr; f1: t_PtrOwn }
+  
+  predicate inv (_1: Seq.seq UInt64.t)
+  
+  axiom inv_axiom [@rewrite]: forall x: Seq.seq UInt64.t [inv x]. inv x = true
+  
+  predicate invariant' (self: Slice64.array UInt64.t) =
+    inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (18446744073709551615: UInt64.t)
+  
+  predicate inv'0 (_1: Slice64.array UInt64.t)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Slice64.array UInt64.t [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate is_null_logic (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ptr (self: t_PtrOwn) : Opaque.ptr
+  
+  predicate ptr_is_aligned_opaque (self: t_PtrOwn)
+  
+  predicate metadata_matches [@inline:trivial] (_value: Slice64.array UInt64.t) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
+  
+  function val' (self: t_PtrOwn) : Slice64.array UInt64.t
+  
+  function metadata_logic (_1: Opaque.ptr) : ()
+  
+  constant size_of_usize: int = 8
+  
+  meta "rewrite_def" constant size_of_usize
+  
+  axiom size_of_usize_spec: 0 <= size_of_usize
+  
+  constant size_of_array_usize_18446744073709551615: int = size_of_usize * 18446744073709551615
+  
+  meta "rewrite_def" constant size_of_array_usize_18446744073709551615
+  
+  axiom size_of_array_usize_18446744073709551615_spec: 0 <= size_of_array_usize_18446744073709551615
+  
+  function size_of_val_logic [@inline:trivial] (val''0: Slice64.array UInt64.t) : int =
+    size_of_array_usize_18446744073709551615
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: Slice64.array UInt64.t. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate invariant''0 [@inline:trivial] (self: Slice64.array UInt64.t) = inv'0 self
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'1 (_1: Slice64.array UInt64.t)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.array UInt64.t [inv'1 x]. inv'1 x = invariant''0 x
+  
+  predicate invariant''1 (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'1 (val' self)
+  
+  predicate inv'2 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
+  
+  predicate invariant''2 [@inline:trivial] (self: t_PtrOwn) = inv'2 self
+  
+  meta "rewrite_def" predicate invariant''2
+  
+  predicate inv'3 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''2 x
+  
+  predicate inv'4 (_1: tuple)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: tuple [inv'4 x]. inv'4 x = (let {f0 = x0; f1 = x1} = x in inv'3 x1)
+  
+  let rec new (v: Slice64.array UInt64.t) (return (x: tuple)) = {[@expl:new 'v' type invariant] inv'0 v}
+    any
+    [ return (result: tuple) -> {inv'4 result} {ptr result.f1 = result.f0 /\ val' result.f1 = v} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec g (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = Slice64.create <UInt64.t> {(18446744073709551615: UInt64.t)} {fun (_: int) -> (0: UInt64.t)}
+          (fun (_res: Slice64.array UInt64.t) -> [ &x <- _res ] s1)
+      | s1 = new {x} (fun (_ret: tuple) -> [ &_3 <- _ret ] s2)
+      | s2 = bb1 ]
+    | bb1 = return {_0} ]
+    [ & _0: () = Any.any_l () | & x: Slice64.array UInt64.t = Any.any_l () | & _3: tuple = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:g ensures] false} (! return {result}) ]
+end
