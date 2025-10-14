@@ -66,10 +66,10 @@ impl<T: ?Sized> Invariant for PtrOwn<T> {
                 && self.ptr_is_aligned_opaque()
                 && metadata_matches(*self.val(), metadata_logic(self.ptr()))
                 // Allocations can never be larger than `isize` (source: https://doc.rust-lang.org/std/ptr/index.html#allocation)
-                && size_of_val_logic(self.val()) <= isize::MAX@
+                && size_of_val_logic(*self.val()) <= isize::MAX@
                 // The allocation fits in the address space
                 // (this is needed to verify (a `PtrOwn` variant of) `<*const T>::add`, which checks this condition)
-                && self.ptr().addr_logic()@ + size_of_val_logic(self.val()) <= usize::MAX@
+                && self.ptr().addr_logic()@ + size_of_val_logic(*self.val()) <= usize::MAX@
                 && inv(self.val())
         }
     }
