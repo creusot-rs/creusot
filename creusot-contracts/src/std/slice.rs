@@ -73,6 +73,9 @@ pub trait SliceExt<T> {
 
     #[check(terminates)]
     fn as_ptr_own(&self) -> (*const T, Ghost<&PtrOwn<[T]>>);
+
+    #[check(terminates)]
+    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut PtrOwn<[T]>>);
 }
 
 impl<T> SliceExt<T> for [T] {
@@ -96,11 +99,22 @@ impl<T> SliceExt<T> for [T] {
     /// Convert `&[T]` to `*const T` and a shared ownership token.
     #[check(terminates)]
     #[ensures(result.0 == result.1.ptr() as *const T)]
-    #[ensures(self@ == result.1.val()@)]
+    #[ensures(self == result.1.val())]
     #[erasure(Self::as_ptr)]
     fn as_ptr_own(&self) -> (*const T, Ghost<&PtrOwn<[T]>>) {
         let (ptr, own) = PtrOwn::from_ref(self);
         (ptr as *const T, own)
+    }
+
+    /// Convert `&mut [T]` to `*mut T` and a mutable ownership token.
+    #[check(terminates)]
+    #[ensures(result.0 as *const T == result.1.ptr() as *const T)]
+    #[ensures(&*self == result.1.val())]
+    #[ensures(&^self == (^result.1).val())]
+    #[erasure(Self::as_mut_ptr)]
+    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut PtrOwn<[T]>>) {
+        let (ptr, own) = PtrOwn::from_mut(self);
+        (ptr as *mut T, own)
     }
 }
 

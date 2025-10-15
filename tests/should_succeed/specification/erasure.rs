@@ -156,3 +156,21 @@ pub fn ghost_split() {}
 pub fn ghost_split2() {
     let (_, _) = ghost! { ((), ()) }.split();
 }
+
+pub fn slice_as_ptr<T>(s: &[T]) -> *const T {
+    s.as_ptr()
+}
+
+#[erasure(slice_as_ptr)]
+pub fn slice_as_ptr_own<T>(s: &[T]) -> (*const T, Ghost<&PtrOwn<[T]>>) {
+    s.as_ptr_own()
+}
+
+pub fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
+    s.as_mut_ptr()
+}
+
+#[erasure(slice_as_mut_ptr)]
+pub fn slice_as_mut_ptr_own<T>(s: &mut [T]) -> (*mut T, Ghost<&mut PtrOwn<[T]>>) {
+    s.as_mut_ptr_own()
+}
