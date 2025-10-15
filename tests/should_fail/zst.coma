@@ -1,0 +1,285 @@
+module M_zst__zst_pointers_may_be_equal
+  use creusot.slice.Slice64
+  use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Ptr
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  
+  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  
+  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  
+  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
+  
+  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  
+  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  
+  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view (self: t_Vec) : Seq.seq ()
+  
+  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  
+  function view'0 [@inline:trivial] (self: Slice64.slice ()) : Seq.seq () = Slice64.view self
+  
+  meta "rewrite_def" function view'0
+  
+  let rec into_vec (self_: Slice64.slice ()) (return (x: t_Vec)) = any
+    [ return (result: t_Vec) -> {view result = view'0 self_} (! return {result}) ]
+  
+  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq ()) = UInt64.t'int self < Seq.length seq
+  
+  meta "rewrite_def" predicate in_bounds
+  
+  predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq ()) (out: ()) =
+    Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value
+  
+  predicate resolve_elswhere [@inline:trivial] (self: UInt64.t) (old': Seq.seq ()) (fin: Seq.seq ()) =
+    forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+  
+  meta "rewrite_def" predicate resolve_elswhere
+  
+  let rec index_mut (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return (x: MutBorrow.t ())) =
+    {[@expl:index_mut requires] in_bounds ix (view self_.current)}
+    any
+    [ return (result: MutBorrow.t ()) -> {has_value ix (view self_.current) result.current}
+      {has_value ix (view self_.final) result.final}
+      {resolve_elswhere ix (view self_.current) (view self_.final)}
+      {Seq.length (view self_.final) = Seq.length (view self_.current)}
+      (! return {result}) ]
+  
+  type t_PtrOwn
+  
+  type tuple = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn }
+  
+  predicate is_null_logic (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ptr (self: t_PtrOwn) : Opaque.ptr
+  
+  predicate ptr_is_aligned_opaque (self: t_PtrOwn)
+  
+  predicate metadata_matches [@inline:trivial] (_value: ()) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches
+  
+  function val' (self: t_PtrOwn) : ()
+  
+  function metadata_logic (_1: Opaque.ptr) : ()
+  
+  constant size_of_unit: int = 0
+  
+  meta "rewrite_def" constant size_of_unit
+  
+  axiom size_of_unit_spec: 0 <= size_of_unit
+  
+  function size_of_val_logic [@inline:trivial] (val''0: ()) : int = size_of_unit
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: (). 0 <= size_of_val_logic val''0
+  
+  constant const_MAX'0: Int64.t = (9223372036854775807: Int64.t)
+  
+  predicate inv (_1: ())
+  
+  axiom inv_axiom [@rewrite]: forall x: () [inv x]. inv x = true
+  
+  predicate invariant' (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX'0
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX
+    /\ inv (val' self)
+  
+  predicate inv'0 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'0 self.current /\ inv'0 self.final
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'1 (_1: MutBorrow.t t_PtrOwn)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  
+  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'1 self
+  
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'2 (_1: MutBorrow.t t_PtrOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
+  
+  predicate inv'3 (_1: tuple)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: tuple [inv'3 x]. inv'3 x = (let {f0 = x0; f1 = x1} = x in inv'2 x1)
+  
+  let rec from_mut (r: MutBorrow.t ()) (return (x: tuple)) = any
+    [ return (result: tuple) -> {inv'3 result}
+      {ptr result.f1.current = result.f0}
+      {val' result.f1.current = r.current}
+      {val' result.f1.final = r.final}
+      (! return {result}) ]
+  
+  predicate resolve [@inline:trivial] (self: MutBorrow.t ()) = self.final = self.current
+  
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t ()) = resolve _1
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: ())) = {[@expl:index requires] in_bounds ix (view self_)}
+    any [ return (result: ()) -> {has_value ix (view self_) result} (! return {result}) ]
+  
+  type tuple'0 = { f0'0: Opaque.ptr; f1'0: t_PtrOwn }
+  
+  predicate invariant''2 [@inline:trivial] (self: t_PtrOwn) = inv'0 self
+  
+  meta "rewrite_def" predicate invariant''2
+  
+  predicate inv'4 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'4 x]. inv'4 x = invariant''2 x
+  
+  predicate invariant''3 [@inline:trivial] (self: t_PtrOwn) = inv'4 self
+  
+  meta "rewrite_def" predicate invariant''3
+  
+  predicate inv'5 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''3 x
+  
+  predicate inv'6 (_1: tuple'0)
+  
+  axiom inv_axiom'6 [@rewrite]: forall x: tuple'0 [inv'6 x]. inv'6 x = (let {f0'0 = x0; f1'0 = x1} = x in inv'5 x1)
+  
+  let rec from_ref (r: ()) (return (x: tuple'0)) = any
+    [ return (result: tuple'0) -> {inv'6 result}
+      {ptr result.f1'0 = result.f0'0}
+      {val' result.f1'0 = r}
+      (! return {result}) ]
+  
+  let rec into_inner (self: MutBorrow.t t_PtrOwn) (return (x: MutBorrow.t t_PtrOwn)) =
+    {[@expl:into_inner 'self' type invariant] inv'2 self}
+    any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'1 result} {result = self} (! return {result}) ]
+  
+  let rec into_inner'0 (self: t_PtrOwn) (return (x: t_PtrOwn)) = {[@expl:into_inner 'self' type invariant] inv'5 self}
+    any [ return (result: t_PtrOwn) -> {inv'4 result} {result = self} (! return {result}) ]
+  
+  let rec disjoint_lemma (own1: MutBorrow.t t_PtrOwn) (own2: t_PtrOwn) (return (x: ())) =
+    {[@expl:disjoint_lemma 'own1' type invariant] inv'1 own1}
+    {[@expl:disjoint_lemma 'own2' type invariant] inv'4 own2}
+    {[@expl:disjoint_lemma requires] size_of_unit <> 0}
+    any
+    [ return (result: ()) -> {Ptr.addr_logic_u64 (ptr own1.current) <> Ptr.addr_logic_u64 (ptr own2)}
+      {own1.current = own1.final}
+      (! return {result}) ]
+  
+  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = self.final = self.current
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn) = resolve'1 _1
+  
+  meta "rewrite_def" predicate resolve'2
+  
+  let rec new (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec zst_pointers_may_be_equal (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp: Slice64.array ()) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = _5
+          /\ Seq.length __arr_temp.Slice64.elts = 1}-
+          [ &_4 <- __arr_temp ] s1) ]
+      | s1 = bb2 ]
+    | bb2 = s0 [ s0 = into_vec {_4} (fun (_ret: t_Vec) -> [ &v0 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = s0
+      [ s0 = any
+        [ any_ (__arr_temp: Slice64.array ()) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = _10
+          /\ Seq.length __arr_temp.Slice64.elts = 1}-
+          [ &_9 <- __arr_temp ] s1) ]
+      | s1 = bb5 ]
+    | bb5 = s0 [ s0 = into_vec {_9} (fun (_ret: t_Vec) -> [ &v1 <- _ret ] s1) | s1 = bb6 ]
+    | bb6 = s0
+      [ s0 = MutBorrow.borrow_mut <t_Vec> {v0}
+          (fun (_ret: MutBorrow.t t_Vec) -> [ &_17 <- _ret ] [ &v0 <- _ret.final ] s1)
+      | s1 = index_mut {_17} {(0: UInt64.t)} (fun (_ret: MutBorrow.t ()) -> [ &_16 <- _ret ] s2)
+      | s2 = bb7 ]
+    | bb7 = s0
+      [ s0 = MutBorrow.borrow_final <()> {_16.current} {MutBorrow.get_id _16}
+          (fun (_ret: MutBorrow.t ()) -> [ &_15 <- _ret ] [ &_16 <- { _16 with current = _ret.final } ] s1)
+      | s1 = MutBorrow.borrow_final <()> {_15.current} {MutBorrow.get_id _15}
+          (fun (_ret: MutBorrow.t ()) -> [ &_14 <- _ret ] [ &_15 <- { _15 with current = _ret.final } ] s2)
+      | s2 = from_mut {_14} (fun (_ret: tuple) -> [ &_13 <- _ret ] s3)
+      | s3 = bb8 ]
+    | bb8 = s0
+      [ s0 = [ &p1 <- _13.f0 ] s1
+      | s1 = [ &own1 <- _13.f1 ] s2
+      | s2 = -{resolve'0 _16}- s3
+      | s3 = -{resolve'0 _15}- s4
+      | s4 = index {v1} {(0: UInt64.t)} (fun (_ret: ()) -> [ &_23 <- _ret ] s5)
+      | s5 = bb9 ]
+    | bb9 = s0
+      [ s0 = [ &_22 <- _23 ] s1 | s1 = from_ref {_22} (fun (_ret: tuple'0) -> [ &_20 <- _ret ] s2) | s2 = bb10 ]
+    | bb10 = s0
+      [ s0 = [ &p2 <- _20.f0'0 ] s1
+      | s1 = [ &own2 <- _20.f1'0 ] s2
+      | s2 = into_inner {own1} (fun (_ret: MutBorrow.t t_PtrOwn) -> [ &_28 <- _ret ] s3)
+      | s3 = bb11 ]
+    | bb11 = s0 [ s0 = into_inner'0 {own2} (fun (_ret: t_PtrOwn) -> [ &_31 <- _ret ] s1) | s1 = bb12 ]
+    | bb12 = s0
+      [ s0 = {inv'0 _28.current}
+        MutBorrow.borrow_final <t_PtrOwn> {_28.current} {MutBorrow.get_id _28}
+          (fun (_ret: MutBorrow.t t_PtrOwn) ->
+            [ &_27 <- _ret ] -{inv'0 _ret.final}-
+            [ &_28 <- { _28 with current = _ret.final } ] s1)
+      | s1 = disjoint_lemma {_27} {_31} (fun (_ret: ()) -> [ &_26 <- _ret ] s2)
+      | s2 = bb13 ]
+    | bb13 = s0
+      [ s0 = {[@expl:type invariant] inv'1 _28} s1
+      | s1 = -{resolve'2 _28}- s2
+      | s2 = new {_26} (fun (_ret: ()) -> [ &_25 <- _ret ] s3)
+      | s3 = bb14 ]
+    | bb14 = s0 [ s0 = {[@expl:assertion] Ptr.addr_logic_u64 p1 <> Ptr.addr_logic_u64 p2} s1 | s1 = bb16 ]
+    | bb16 = return {_0} ]
+    [ & _0: () = Any.any_l ()
+    | & v0: t_Vec = Any.any_l ()
+    | & _4: Slice64.array () = Any.any_l ()
+    | & _5: () = Any.any_l ()
+    | & v1: t_Vec = Any.any_l ()
+    | & _9: Slice64.array () = Any.any_l ()
+    | & _10: () = Any.any_l ()
+    | & p1: Opaque.ptr = Any.any_l ()
+    | & own1: MutBorrow.t t_PtrOwn = Any.any_l ()
+    | & _13: tuple = Any.any_l ()
+    | & _14: MutBorrow.t () = Any.any_l ()
+    | & _15: MutBorrow.t () = Any.any_l ()
+    | & _16: MutBorrow.t () = Any.any_l ()
+    | & _17: MutBorrow.t t_Vec = Any.any_l ()
+    | & p2: Opaque.ptr = Any.any_l ()
+    | & own2: t_PtrOwn = Any.any_l ()
+    | & _20: tuple'0 = Any.any_l ()
+    | & _22: () = Any.any_l ()
+    | & _23: () = Any.any_l ()
+    | & _25: () = Any.any_l ()
+    | & _26: () = Any.any_l ()
+    | & _27: MutBorrow.t t_PtrOwn = Any.any_l ()
+    | & _28: MutBorrow.t t_PtrOwn = Any.any_l ()
+    | & _31: t_PtrOwn = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end

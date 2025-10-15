@@ -4,7 +4,7 @@ use ::std::marker::PhantomData;
 
 #[cfg(creusot)]
 use crate::std::{
-    mem::size_of_val_logic,
+    mem::{size_of_logic, size_of_val_logic},
     ptr::{metadata_logic, metadata_matches},
 };
 use crate::*;
@@ -83,6 +83,15 @@ impl<T> PtrOwn<T> {
     pub fn new(v: T) -> (*mut T, Ghost<PtrOwn<T>>) {
         Self::from_box(Box::new(v))
     }
+
+    /// If one owns two `PtrOwn`s for non-zero sized types, then they are for different pointers.
+    #[trusted]
+    #[check(ghost)]
+    #[requires(size_of_logic::<T>() != 0)]
+    #[ensures(own1.ptr().addr_logic() != own2.ptr().addr_logic())]
+    #[ensures(*own1 == ^own1)]
+    #[allow(unused_variables)]
+    pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {}
 }
 
 impl<T: ?Sized> PtrOwn<T> {
@@ -226,14 +235,6 @@ impl<T: ?Sized> PtrOwn<T> {
     pub unsafe fn drop(ptr: *mut T, own: Ghost<PtrOwn<T>>) {
         let _ = unsafe { Self::to_box(ptr, own) };
     }
-
-    /// If one owns two `PtrOwn`s in ghost code, then they are for different pointers.
-    #[trusted]
-    #[check(ghost)]
-    #[ensures(own1.ptr().addr_logic() != own2.ptr().addr_logic())]
-    #[ensures(*own1 == ^own1)]
-    #[allow(unused_variables)]
-    pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {}
 
     /// The pointer of a `PtrOwn` is always aligned.
     #[check(ghost)]
