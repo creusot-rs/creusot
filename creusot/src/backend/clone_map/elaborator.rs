@@ -299,8 +299,35 @@ fn expand_logic<'tcx>(
 
         decls
     };
+    match ctx.intrinsic(def_id) {
+        Intrinsic::SizeOfLogic => {
+            decls.extend(axiom_nonzero_size_of(ctx, typing_env, name, subst.type_at(0)))
+        }
+        _ => {}
+    }
     decls.extend(why3_metas(ctx.tcx, def_id, name).map(|m| Decl::Meta(m)));
     decls
+}
+
+/// Generate an axiom `is_sized_logic > 0` if that can be guaranteed and the type does not already
+/// have a known constant size.
+fn axiom_nonzero_size_of<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    name: Ident,
+    ty: Ty<'tcx>,
+) -> Option<Decl> {
+    let size_unknown =
+        ctx.tcx.layout_of(ty::PseudoCanonicalInput { typing_env, value: ty }).is_err();
+    if size_unknown && ctx.is_nonzero_sized(ty) {
+        Some(Decl::Axiom(Axiom {
+            name: Ident::fresh_local(format!("nonzero_{}", name.name().to_string())),
+            rewrite: false,
+            axiom: Exp::BinaryOp(why3::exp::BinOp::Gt, Exp::var(name).boxed(), Exp::int(0).boxed()),
+        }))
+    } else {
+        None
+    }
 }
 
 /// Constants require some special handling because they can be defined with arbitrary Rust expressions

@@ -41,8 +41,8 @@ use rustc_middle::{
     mir::Promoted,
     thir,
     ty::{
-        Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, ResolverAstLowering, Ty, TyCtxt,
-        TypingEnv, TypingMode, Visibility,
+        self, Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, ResolverAstLowering, Ty,
+        TyCtxt, TypingEnv, TypingMode, Visibility,
     },
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
@@ -198,6 +198,8 @@ pub struct TranslationCtx<'tcx> {
     renamer: RefCell<HashMap<HirId, Ident>>,
     pub corenamer: RefCell<HashMap<Ident, HirId>>,
     crate_name: OnceCell<why3::Symbol>,
+    inhabited_ty: RefCell<HashMap<Ty<'tcx>, bool>>,
+    nonzero_sized_ty: RefCell<HashMap<Ty<'tcx>, bool>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -278,6 +280,8 @@ impl<'tcx> TranslationCtx<'tcx> {
             renamer: Default::default(),
             corenamer: Default::default(),
             crate_name: Default::default(),
+            nonzero_sized_ty: Default::default(),
+            inhabited_ty: Default::default(),
         }
     }
 
@@ -638,6 +642,16 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn erasure_to_check(&self, def_id: LocalDefId) -> Option<&Erasure<'tcx>> {
         self.erasures_to_check.get(&def_id)
     }
+
+    /// If `true`, the type is definitely non-zero sized. This is a best-effort underapproximation.
+    pub fn is_nonzero_sized(&self, ty: Ty<'tcx>) -> bool {
+        is_nonzero_sized(
+            self.tcx,
+            &mut self.nonzero_sized_ty.borrow_mut(),
+            &mut self.inhabited_ty.borrow_mut(),
+            ty,
+        )
+    }
 }
 
 impl<'tcx> HasTyCtxt<'tcx> for TranslationCtx<'tcx> {
@@ -657,4 +671,166 @@ pub struct Erasure<'tcx> {
     pub def: (DefId, GenericArgsRef<'tcx>),
     /// `true` for ghost arguments to erase
     pub erase_args: Vec<bool>,
+}
+
+/// If `true`, the type is definitely non-zero sized. This is a best-effort underapproximation.
+fn is_nonzero_sized<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    nonzero_sized_cache: &mut HashMap<Ty<'tcx>, bool>,
+    inhabited_cache: &mut HashMap<Ty<'tcx>, bool>,
+    ty: Ty<'tcx>,
+) -> bool {
+    if let Some(&b) = nonzero_sized_cache.get(&ty) {
+        return b;
+    }
+    use rustc_type_ir::TyKind::*;
+    let b = match ty.kind() {
+        Bool | Char | Int(_) | Uint(_) | Float(_) | Ref(_, _, _) | RawPtr(_, _) => true,
+        Adt(def, args) => {
+            def.is_box()
+                || is_nonzero_sized_adt(tcx, nonzero_sized_cache, inhabited_cache, def, args)
+        }
+        Tuple(tys) => {
+            tys.iter().any(|ty| is_nonzero_sized(tcx, nonzero_sized_cache, inhabited_cache, ty))
+                && tys.iter().all(|ty| is_inhabited(tcx, inhabited_cache, ty))
+        }
+        Array(ty, len) => {
+            is_nonzero_const(tcx, *len)
+                && is_nonzero_sized(tcx, nonzero_sized_cache, inhabited_cache, *ty)
+        }
+        _ => false,
+    };
+    nonzero_sized_cache.insert(ty, b);
+    b
+}
+
+/// If `true`, the constant is definitely non-zero. This is a best-effort underapproximation.
+fn is_nonzero_const<'tcx>(tcx: TyCtxt<'tcx>, len: ty::Const<'tcx>) -> bool {
+    match len.kind() {
+        ty::ConstKind::Value(v) => v.try_to_target_usize(tcx).iter().any(|size| *size != 0),
+        _ => false,
+    }
+}
+
+/// Determining whether a user-defined type is zero-sized is tricky because
+/// Rust makes very few guarantees about layout. For example, the compiler
+/// is free to omit constructors if it can determine that they are uninhabited.
+/// We use heuristics to find cases where some bits are definitely needed to
+/// represent this type.
+///
+/// A `struct` or `enum` is non-zero sized if either:
+/// - there are two inhabited constructors;
+/// - there is one inhabited constructor with at least one non-zero sized field.
+fn is_nonzero_sized_adt<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    nonzero_sized_cache: &mut HashMap<Ty<'tcx>, bool>,
+    inhabited_cache: &mut HashMap<Ty<'tcx>, bool>,
+    def: &ty::AdtDef<'tcx>,
+    args: GenericArgsRef<'tcx>,
+) -> bool {
+    use rustc_type_ir::inherent::AdtDef;
+    if def.is_struct() || def.is_enum() {
+        let inhabiteds = def
+            .variants()
+            .into_iter()
+            .filter(|variant| {
+                variant.fields.iter().all(|field| {
+                    is_inhabited(
+                        tcx,
+                        inhabited_cache,
+                        tcx.type_of(field.did).instantiate(tcx, args),
+                    )
+                })
+            })
+            .collect::<Vec<_>>();
+        inhabiteds.len() >= 2
+            || inhabiteds.into_iter().any(|variant| {
+                variant.fields.iter().any(|field| {
+                    is_nonzero_sized(
+                        tcx,
+                        nonzero_sized_cache,
+                        inhabited_cache,
+                        tcx.type_of(field.did).instantiate(tcx, args),
+                    )
+                })
+            })
+    } else if def.is_union() {
+        def.all_field_tys(tcx)
+            .iter_instantiated(tcx, args)
+            .any(|ty| is_nonzero_sized(tcx, nonzero_sized_cache, inhabited_cache, ty))
+    } else {
+        false
+    }
+}
+
+/// If `true`, the type is definitely inhabited. This is a best-effort underapproximation.
+fn is_inhabited<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    inhabited_cache: &mut HashMap<Ty<'tcx>, bool>,
+    ty: Ty<'tcx>,
+) -> bool {
+    if let Some(&b) = inhabited_cache.get(&ty) {
+        return b;
+    }
+    let b = is_inhabited_(tcx, inhabited_cache, &mut Vec::new(), ty);
+    inhabited_cache.insert(ty, b);
+    b
+}
+
+// See `is_inhabited_adt` for the handling of recursive types with `visited`.
+fn is_inhabited_<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    inhabited_cache: &HashMap<Ty<'tcx>, bool>,
+    visited: &mut Vec<ty::AdtDef<'tcx>>,
+    ty: Ty<'tcx>,
+) -> bool {
+    use rustc_type_ir::TyKind::*;
+    match ty.kind() {
+        Bool | Char | Int(_) | Uint(_) | Float(_) | RawPtr(_, _) | Str | Slice(_) => true,
+        Ref(_, ty, _) => is_inhabited_(tcx, inhabited_cache, visited, *ty),
+        Adt(def, args) if def.is_box() => {
+            is_inhabited_(tcx, inhabited_cache, visited, args.type_at(0))
+        }
+        Adt(def, args) => is_inhabited_adt(tcx, inhabited_cache, visited, *def, args),
+        Tuple(tys) => tys.iter().all(|ty| is_inhabited_(tcx, inhabited_cache, visited, ty)),
+        // [T; 0] is also inhabited but who needs to know that? Make a PR if you do!
+        Array(ty, _) => is_inhabited_(tcx, inhabited_cache, visited, *ty),
+        _ => false,
+    }
+}
+
+// To handle recursive types, we keep track of ADTs we've already seen and return `false` if we re-encounter one.
+// Since we may return `false` for types which end up being inhabited, we do not modify the cache during this process.
+fn is_inhabited_adt<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    inhabited_cache: &HashMap<Ty<'tcx>, bool>,
+    visited: &mut Vec<ty::AdtDef<'tcx>>,
+    def: ty::AdtDef<'tcx>,
+    args: GenericArgsRef<'tcx>,
+) -> bool {
+    if visited.contains(&def) {
+        return false;
+    }
+    visited.push(def);
+    let inhabited = if def.is_struct() || def.is_enum() {
+        def.variants().into_iter().any(|variant| {
+            variant.fields.iter().all(|field| {
+                is_inhabited_(
+                    tcx,
+                    inhabited_cache,
+                    visited,
+                    tcx.type_of(field.did).instantiate(tcx, args),
+                )
+            })
+        })
+    } else if def.is_union() {
+        use rustc_type_ir::inherent::AdtDef as _;
+        def.all_field_tys(tcx)
+            .iter_instantiated(tcx, args)
+            .any(|ty| is_inhabited_(tcx, inhabited_cache, visited, ty))
+    } else {
+        false
+    };
+    visited.pop();
+    inhabited
 }
