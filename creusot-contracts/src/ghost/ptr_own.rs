@@ -101,7 +101,6 @@ impl<T: ?Sized> PtrOwn<T> {
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == *val)]
     #[erasure(Box::into_raw)]
     pub fn from_box(val: Box<T>) -> (*mut T, Ghost<PtrOwn<T>>) {
-        assert!(core::mem::size_of_val::<T>(&*val) > 0, "PtrOwn doesn't support ZSTs");
         (Box::into_raw(val), Ghost::conjure())
     }
 
